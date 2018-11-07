@@ -32,6 +32,7 @@ namespace utopia {
 		{
 			print_backend_info();
 			UTOPIA_RUN_TEST(newton_cg_test);
+			UTOPIA_RUN_TEST(grad_descent_test); 
 			UTOPIA_RUN_TEST(solver_from_params_test);
 			UTOPIA_RUN_TEST(tr_test);
 			UTOPIA_RUN_TEST(ls_test);
@@ -136,6 +137,23 @@ namespace utopia {
 			utopia_test_assert(approxeq(expected, actual));
 			//! [NL solve example]
 		}
+
+		void grad_descent_test()
+		{
+			//set-up problem
+			int n = 10;
+			Vector actual = values(n, 1.0);
+			TestFunctionND_1<Matrix, Vector> fun(n);
+
+			auto solver = GradientDescent<Matrix, Vector>();  
+			solver.set_dumping_parameter(0.05); 
+			solver.solve(fun, actual); 
+
+			//test outcome...
+			Vector expected = values(n, 0.468919);
+			utopia_test_assert(approxeq(expected, actual));
+		}
+
 
 		void newton_cg_test()
 		{

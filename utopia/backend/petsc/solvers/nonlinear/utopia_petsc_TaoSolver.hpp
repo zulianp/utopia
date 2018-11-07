@@ -49,12 +49,12 @@ namespace utopia {
 
 
 	template<class Matrix, class Vector>
-	class TaoSolver final : public NonLinearSolver<Matrix, Vector> {
+	class TaoSolver final : public NewtonBasedNonLinearSolver<Matrix, Vector> {
 	public:
 		typedef utopia::BoxConstraints<Vector> BoxConstraints;
 
 		TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver)
-		: NonLinearSolver<Matrix, Vector>(linear_solver)
+		: NewtonBasedNonLinearSolver<Matrix, Vector>(linear_solver)
 		{
 			this->atol(1e-19);
 			this->rtol(1e-12); 
@@ -62,7 +62,7 @@ namespace utopia {
 		}
 
 		TaoSolver()
-		: NonLinearSolver<Matrix, Vector>(nullptr)
+		: NewtonBasedNonLinearSolver<Matrix, Vector>(nullptr)
 		{
 			this->atol(1e-19);
 			this->rtol(1e-12); 

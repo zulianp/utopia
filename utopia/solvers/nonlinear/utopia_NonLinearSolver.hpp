@@ -29,9 +29,7 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                        const Parameters &params = Parameters()): 
-                        linear_solver_(linear_solver),
+        NonLinearSolver(const Parameters &params = Parameters()): 
                         params_(params)
         {
             set_parameters(params);        
@@ -50,33 +48,6 @@ namespace utopia
             return converged; 
         }
 
-
-
-        /**
-         * @brief      Enables the differentiation control.
-         *
-         * @param[in]  checkDiff  Option, if eanable diff_control or no. 
-         */
-        void enable_differentiation_control(bool checkDiff) 
-        {
-            check_diff_ = checkDiff; 
-        }
-
-        inline bool differentiation_control_enabled() const 
-        {
-            return check_diff_; 
-        }
-
-        bool check_values(const SizeType iterations, const Function<Matrix, Vector> &fun, const Vector &x, const Vector &gradient, const Matrix &hessian)
-        {
-            if (check_diff_ && !controller_.check(fun, x, gradient, hessian)) 
-            {
-                exit_solver(iterations, norm2(gradient), ConvergenceReason::DIVERGED_INNER); 
-                return false;
-            }
-
-            return true;
-        }
 
         /**
          * @brief      Getter for parameters. 
@@ -103,24 +74,8 @@ namespace utopia
 
             log_iterates_       = params.log_iterates(); 
             log_system_         = params.log_system(); 
-            check_diff_         = params.differentiation_control(); 
-
-            // if(linear_solver_)
-            //     linear_solver_->set_parameters(params); 
         }
 
-
-        /**
-         * @brief      Changes linear solver used inside of nonlinear-solver. 
-         *
-         * @param[in]  linear_solver  The linear solver
-         */
-        virtual void set_linear_solver(const std::shared_ptr<Solver> &linear_solver)
-        {
-            linear_solver_ = linear_solver; 
-        }
-
-        inline DiffController &controller() { return controller_; }
 
 protected:
         /**
@@ -270,34 +225,9 @@ public:
 
         Scalar get_time() { return _time.get_seconds();  }
 
-        inline std::shared_ptr<Solver> linear_solver() const
-        {
-            return linear_solver_;
-        }
 
     protected:
-        inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
-        {
-            linear_solver_->update(make_ref(mat));
-            return linear_solver_->apply(rhs, sol);
-        }
-
-        inline bool has_preconditioned_solver()
-        {
-            return dynamic_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get());
-        }
-
-
-        inline bool linear_solve(const Matrix &mat, const Matrix &prec, const Vector &rhs, Vector &sol)
-        {
-            static_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())->update(make_ref(mat), make_ref(prec));
-            return linear_solver_->apply(rhs, sol);
-        }
-
-
-        std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */  
         Parameters params_;                         /*!< Solver parameters. */  
-        DiffController controller_;
 
         // ... GENERAL SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */  
@@ -310,8 +240,6 @@ public:
 
         bool log_iterates_;             /*!< Monitoring of iterate. */  
         bool log_system_;               /*!< Monitoring of hessian/jacobian. */  
-        bool check_diff_;               /*!< Enable differentiation control. */  
-
 
         Chrono _time;                 /*!<Timing of solver. */
 

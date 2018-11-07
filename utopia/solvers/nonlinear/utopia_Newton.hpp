@@ -30,17 +30,17 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Newton : public NonLinearSolver<Matrix, Vector>
+    class Newton : public NewtonBasedNonLinearSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver Solver;
+        typedef typename NewtonBasedNonLinearSolver<Matrix, Vector>::Solver Solver;
         typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
 
     public:
        Newton(  const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
                 const Parameters params                       = Parameters() ):
-                NonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1)
+                NewtonBasedNonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1)
                 {
                     set_parameters(params);
                 }

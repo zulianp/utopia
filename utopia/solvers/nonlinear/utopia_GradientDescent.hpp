@@ -1,5 +1,5 @@
-#ifndef UTOPIA_SOLVER_GRADIENTDESCENT_HPP
-#define UTOPIA_SOLVER_GRADIENTDESCENT_HPP
+#ifndef UTOPIA_GRADIENT_DESCENT_SOLVER_HPP
+#define UTOPIA_GRADIENT_DESCENT_SOLVER_HPP
 
 #include "utopia_Core.hpp"
 #include "utopia_LinearSolver.hpp"
@@ -15,42 +15,30 @@ namespace utopia
 {
     /**
      * @brief      The Gradient Descent solver.
-     *             Solver doesn't contain any globalization strategy, but it is possible to set-up damping parameter.
-     *
-     *             The new iterate is obtained as:
-     *              \f$ x_{k+1} = x_{k} - \alpha * H(x_k)^{-1} g(x_k), \f$ \n
-     *              where \f$ \alpha  \f$ is duming parameter,
-     *                    \f$ g  \f$ is gradient and \f$ H  \f$ is Hessian.
-     *              Default value of \f$ \alpha  \f$ is 1, therefore full Newton step.
-     *
-     * Example usage:
-     * @snippet tests/utopia_SolverTest.cpp Gradient Descent
      *
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class GradientDescent : public NonLinearSolver<Matrix, Vector>
+    template<class Matrix, class Vector>
+    class GradientDescent final: public NonLinearSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver Solver;
+
         typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
 
     public:
-       GradientDescent(  const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-                const Parameters params                       = Parameters() ):
-                NonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1)
-                {
-                    set_parameters(params);
-                }
+       GradientDescent( const Parameters params   = Parameters() ):
+                        NonLinearSolver<Matrix, Vector>(params), alpha_(1.0)
+        {
+            set_parameters(params);
+        }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
            using namespace utopia;
 
             Vector grad, step;
-            Matrix hessian, preconditioner;
 
             Scalar g_norm, g0_norm, r_norm, s_norm;
             SizeType it = 0;
@@ -96,8 +84,6 @@ namespace utopia
 
                 // notify listener
                 fun.update(x);
-
-
                 fun.gradient(x, grad);
 
                 // norms needed for convergence check
@@ -142,6 +128,12 @@ namespace utopia
     }
 
 
+    virtual void set_dumping_parameter(const Scalar & alpha)
+    {
+        alpha_ = alpha; 
+    }
+
+
     private:
         Scalar alpha_;   /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
@@ -149,4 +141,4 @@ namespace utopia
     };
 
 }
-#endif //UTOPIA_SOLVER_NEWTON_HPP
+#endif //UTOPIA_GRADIENT_DESCENT_SOLVER_HPP

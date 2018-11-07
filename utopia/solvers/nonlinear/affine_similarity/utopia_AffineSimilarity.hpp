@@ -15,17 +15,17 @@ namespace utopia
 {
     
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class AffineSimilarity : public NonLinearSolver<Matrix, Vector>
+    class AffineSimilarity : public NewtonBasedNonLinearSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver Solver;
+        typedef typename NewtonBasedNonLinearSolver<Matrix, Vector>::Solver Solver;
         typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
 
     public:
        AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
                             const Parameters params                       = Parameters() ):
-                            NonLinearSolver<Matrix, Vector>(linear_solver, params), 
+                            NewtonBasedNonLinearSolver<Matrix, Vector>(linear_solver, params), 
                             mass_init_(false), 
                             scaling_init_(false),
                             tau_max_(1e9),

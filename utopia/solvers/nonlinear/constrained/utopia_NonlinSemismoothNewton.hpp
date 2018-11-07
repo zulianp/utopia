@@ -22,17 +22,17 @@ namespace utopia
      * @tparam     Vector 
      */
     template<class Matrix, class Vector>
-    class NonlinSemismoothNewton : public NonLinearSolver<Matrix, Vector> 
+    class NonlinSemismoothNewton : public NewtonBasedNonLinearSolver<Matrix, Vector> 
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver Solver;
+        typedef typename NewtonBasedNonLinearSolver<Matrix, Vector>::Solver Solver;
         typedef utopia::BoxConstraints<Vector>      BoxConstraints;
 
     public:
        NonlinSemismoothNewton(  const std::shared_ptr <Solver> &linear_solver, 
-                                const Parameters   params                       = Parameters())
-                                                    : NonLinearSolver<Matrix, Vector>(linear_solver, params)
+                                const Parameters   params                       = Parameters()): 
+                                NewtonBasedNonLinearSolver<Matrix, Vector>(linear_solver, params)
         {  
 
         }
@@ -136,7 +136,7 @@ namespace utopia
 
         virtual void set_parameters(const Parameters params) override
         {
-            NonLinearSolver<Matrix, Vector>::set_parameters(params);
+            NewtonBasedNonLinearSolver<Matrix, Vector>::set_parameters(params);
         }
     
     private:

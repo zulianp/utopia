@@ -2,6 +2,7 @@
 #define UTOPIA_LSR1_HPP
 
 #include "utopia_Core.hpp"
+#include "utopia_HessianApproximation.hpp"
 
 
 namespace utopia

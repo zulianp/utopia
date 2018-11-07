@@ -11,14 +11,14 @@
     	template<class Matrix, class Vector>
      	class QuasiTrustRegionVariableBound :   public VariableBoundSolverInterface<Vector>, 
                                               public TrustRegionBase<Matrix, Vector>, 
-                                              public NonLinearSolver<Matrix, Vector>
+                                              public NewtonBasedNonLinearSolver<Matrix, Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::TRBoxSubproblem<Matrix, Vector>       TRBoxSubproblem;  
         typedef utopia::TrustRegionBase<Matrix, Vector>       TrustRegionBase; 
-        typedef utopia::NonLinearSolver<Matrix, Vector>       NonLinearSolver;
+        typedef utopia::NewtonBasedNonLinearSolver<Matrix, Vector>       NonLinearSolver;
 
         typedef utopia::HessianApproximation<Vector>          HessianApproximation;
 

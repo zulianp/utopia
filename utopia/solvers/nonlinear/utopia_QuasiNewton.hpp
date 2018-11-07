@@ -16,7 +16,7 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class QuasiNewton : public NonLinearSolver<Matrix, Vector>
+    class QuasiNewton : public NewtonBasedNonLinearSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                               Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
@@ -31,7 +31,7 @@ namespace utopia
         QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
                     const std::shared_ptr <Solver> &linear_solver,
                     const Parameters params = Parameters()):
-                    NonLinearSolver<Matrix, Vector>(), 
+                    NewtonBasedNonLinearSolver<Matrix, Vector>(), 
                     alpha_(1.0),
                     hessian_approx_strategy_(hessian_approx), 
                     mf_linear_solver_(linear_solver)

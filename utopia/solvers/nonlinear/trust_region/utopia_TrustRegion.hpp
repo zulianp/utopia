@@ -1,6 +1,7 @@
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_HPP
-#include "utopia_NonLinearSolver.hpp"
+
+#include "utopia_NewtonBasedNonLinearSolver.hpp"
 #include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Dogleg.hpp"
@@ -16,7 +17,7 @@
        * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
        *             Design of class allows to provide different TR strategies in order to solve TR subproblem.
        */
-     	class TrustRegion : public NonLinearSolver<Matrix, Vector>,
+     	class TrustRegion : public NewtonBasedNonLinearSolver<Matrix, Vector>,
                           public TrustRegionBase<Matrix, Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -25,7 +26,7 @@
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
 
         typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase;
-        typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
+        typedef utopia::NewtonBasedNonLinearSolver<Matrix, Vector> NonLinearSolver;
 
      	public:
       TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>(),

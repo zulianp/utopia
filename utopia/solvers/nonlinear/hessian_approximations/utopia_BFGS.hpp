@@ -2,7 +2,7 @@
 #define UTOPIA_HESSIAN_BFGS_HPP
 
 #include "utopia_Core.hpp"
-
+#include "utopia_HessianApproximation.hpp"
 
 namespace utopia
 {
