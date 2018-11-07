@@ -605,6 +605,7 @@ namespace utopia {
 		}
 
 		static void disp(const Vector &vec);
+		static void disp(const Matrix &mat);
 		// static void disp(const CRSMatrix<Scalar> &mat);
 
 
