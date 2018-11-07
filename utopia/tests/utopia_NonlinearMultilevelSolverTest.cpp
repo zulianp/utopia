@@ -125,7 +125,7 @@ namespace utopia
 
 	        auto direct_solver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
 	        auto coarse_solver = std::make_shared<Newton<utopia::DSMatrixd, utopia::DVectord> >(direct_solver);
-	       	auto strategy = std::make_shared<utopia::Backtracking<utopia::DSMatrixd, utopia::DVectord>>();
+	       	auto strategy = std::make_shared<utopia::Backtracking<utopia::DVectord>>();
 	        coarse_solver->set_line_search_strategy(strategy);
 	        coarse_solver->atol(1e-7);
 	        coarse_solver->max_it(1);

@@ -23,8 +23,8 @@ namespace utopia {
         reprinte by SIAM (1996), Section 6.3.2.
         @todo check params naming properly...
      */
-    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Backtracking final : public LSStrategy<Matrix, Vector>
+    template<class Vector, int Backend = Traits<Vector>::Backend>
+    class Backtracking final : public LSStrategy<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
@@ -34,7 +34,7 @@ namespace utopia {
 
 
         Backtracking(const Parameters params = Parameters() )
-        : LSStrategy<Matrix, Vector>(params)
+        : LSStrategy<Vector>(params)
 
         {
             set_parameters(params);
@@ -53,13 +53,13 @@ namespace utopia {
          * @return
          */
 
-        bool get_alpha(LeastSquaresFunction<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
+        bool get_alpha(LeastSquaresFunctionBase<Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
         {
             return get_alpha_aux_home_made(fun, g, x, d, alpha);
         }
 
 
-        bool get_alpha(Function<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
+        bool get_alpha(FunctionBase<Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
         {
             return get_alpha_aux_home_made(fun, g, x, d, alpha);
         }

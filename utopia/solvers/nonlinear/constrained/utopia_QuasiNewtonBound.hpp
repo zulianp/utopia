@@ -22,13 +22,13 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class QuasiNewtonBound :    public NewtonBasedNonLinearSolver<Matrix, Vector>, 
+    class QuasiNewtonBound :    public NewtonBase<Matrix, Vector>, 
                                 public VariableBoundSolverInterface<Vector> 
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
         
-        typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy;
+        typedef utopia::LSStrategy<Vector>                      LSStrategy;
         typedef utopia::HessianApproximation<Vector>            HessianApproximation;
 
         typedef utopia::LinearSolver<Matrix, Vector>            Solver;
@@ -39,7 +39,7 @@ namespace utopia
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
                             const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
                             const Parameters params = Parameters()):
-        NewtonBasedNonLinearSolver<Matrix, Vector>(linear_solver, params), 
+        NewtonBase<Matrix, Vector>(linear_solver, params), 
         hessian_approx_strategy_(hessian_approx), alpha_(1.0)
         {
             set_parameters(params);

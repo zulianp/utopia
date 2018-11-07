@@ -74,7 +74,7 @@ namespace utopia {
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 						cg.max_it(size(x).get(0));
 
-						auto backtracking = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+						auto backtracking = std::make_shared<utopia::Backtracking<Vector> >();
 
 						Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
 						newton.set_line_search_strategy(backtracking);

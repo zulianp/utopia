@@ -88,7 +88,7 @@ namespace utopia
 
 
     virtual bool check_convergence(
-      Monitor<Matrix, Vector> &monitor,
+      Monitor<Vector> &monitor,
       const NumericalTollerance<Scalar> &tol,
       const SizeType max_it,
       const SizeType &it, 

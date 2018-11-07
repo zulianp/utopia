@@ -29,11 +29,11 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonLinearGaussSeidel<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+        typedef UTOPIA_SCALAR(Vector)                Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)             SizeType;
 
-        typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+        typedef utopia::SNESSolver<Matrix, Vector>   SNESSolver;
+        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
 
 
         public:

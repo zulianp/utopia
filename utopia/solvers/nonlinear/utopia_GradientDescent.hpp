@@ -19,22 +19,22 @@ namespace utopia
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector>
-    class GradientDescent final: public NonLinearSolver<Matrix, Vector>
+    template<class Vector>
+    class GradientDescent final: public MatrixFreeNonLinearSolver<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
+        typedef utopia::LSStrategy<Vector> LSStrategy; 
 
     public:
        GradientDescent( const Parameters params   = Parameters() ):
-                        NonLinearSolver<Matrix, Vector>(params), alpha_(1.0)
+                        MatrixFreeNonLinearSolver<Vector>(params), alpha_(1.0)
         {
             set_parameters(params);
         }
 
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+        bool solve(FunctionBase<Vector> &fun, Vector &x) override
         {
            using namespace utopia;
 

@@ -22,16 +22,16 @@ namespace utopia
     
     
     template<typename Matrix, typename Vector>
-    class SNESSolver<Matrix, Vector, PETSC> : public NewtonBasedNonLinearSolver<Matrix, Vector>, public NonLinearSmoother<Matrix, Vector>
+    class SNESSolver<Matrix, Vector, PETSC> : public NewtonBase<Matrix, Vector>, public NonLinearSmoother<Matrix, Vector>
     {
         
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         
-        typedef typename NewtonBasedNonLinearSolver<Matrix, Vector>::Solver  LinearSolver;
+        typedef typename NewtonBase<Matrix, Vector>::Solver  LinearSolver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>         Smoother;
-        typedef utopia::NewtonBasedNonLinearSolver<Matrix, Vector>           NonLinearSolver;
+        typedef utopia::NewtonBase<Matrix, Vector>           NonLinearSolver;
         typedef utopia::Function<Matrix, Vector>                  Function;
         
         

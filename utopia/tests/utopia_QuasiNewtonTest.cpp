@@ -20,13 +20,12 @@ namespace utopia
 			void run_sparse()
 			{
 				UTOPIA_RUN_TEST(Quasi_TR_test_sparse); 
-				// UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
-				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
-				// UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
-				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+				UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
+				UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
+				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
 				
-
 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}	
@@ -53,10 +52,10 @@ namespace utopia
 				auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
 				lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hessian_approx->get_apply_Hinv())); 
 
-				QuasiNewton<Matrix, Vector> nlsolver(hessian_approx, lsolver);
+				QuasiNewton<Vector> nlsolver(hessian_approx, lsolver);
 				nlsolver.set_parameters(params);
 
-				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
 				nlsolver.set_line_search_strategy(line_search);
 				
 				
@@ -155,10 +154,10 @@ namespace utopia
 	    		auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
 	    		lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx->get_apply_Hinv())); 
 
-				QuasiNewton<Matrix, Vector> nlsolver(hess_approx, lsolver);
+				QuasiNewton<Vector> nlsolver(hess_approx, lsolver);
 				nlsolver.set_parameters(params);
 
-				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
 				nlsolver.set_line_search_strategy(line_search);
 				
 				SimpleQuadraticFunction<Matrix, Vector> fun;
@@ -470,7 +469,7 @@ namespace utopia
 
 
 		QuasiNewtonTest()
-		: _n(10), _verbose(false) { }
+		: _n(10), _verbose(true) { }
 		
 	private:
 		int _n;

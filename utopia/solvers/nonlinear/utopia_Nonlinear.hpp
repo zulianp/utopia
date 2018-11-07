@@ -11,7 +11,7 @@
 
 // base solvers 
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_NewtonBasedNonLinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 
 
 #include "utopia_Newton.hpp"

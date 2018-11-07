@@ -7,6 +7,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
+#include "utopia_QuasiNewtonBase.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -15,31 +16,30 @@
 namespace utopia
 {
 
-    template<class Matrix, class Vector>
-    class QuasiNewton : public NewtonBasedNonLinearSolver<Matrix, Vector>
+    template<class Vector>
+    class QuasiNewton : public MatrixFreeNonLinearSolver<Vector>, public QuasiNewtonBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                               Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
         
-        typedef utopia::LSStrategy<Matrix, Vector>                  LSStrategy;
+        typedef utopia::LSStrategy<Vector>                          LSStrategy;
+
         typedef utopia::HessianApproximation<Vector>                HessianApproximation;
-        
-        typedef utopia::MatrixFreeLinearSolver<Vector>              Solver;
+        typedef utopia::MatrixFreeLinearSolver<Vector>              LinSolver;
         
     public:
 
         QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
-                    const std::shared_ptr <Solver> &linear_solver,
+                    const std::shared_ptr <LinSolver> &linear_solver,
                     const Parameters params = Parameters()):
-                    NewtonBasedNonLinearSolver<Matrix, Vector>(), 
-                    alpha_(1.0),
-                    hessian_approx_strategy_(hessian_approx), 
-                    mf_linear_solver_(linear_solver)
+                    MatrixFreeNonLinearSolver<Vector>(params),
+                    QuasiNewtonBase<Vector>(hessian_approx, linear_solver), 
+                    alpha_(1.0)
         {
             set_parameters(params);
         }
         
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+        bool solve(FunctionBase<Vector> &fun, Vector &x) override
         {
             using namespace utopia;
             
@@ -64,9 +64,7 @@ namespace utopia
 
             while(!converged)
             {
-                auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
-                mf_linear_solver_->solve(multiplication_action, -1.0*g, s); 
-
+                this->linear_solve(-1.0 * g, s); 
 
                 if(ls_strategy_) 
                     ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
@@ -84,7 +82,7 @@ namespace utopia
 
                 // diff between fresh and old grad...
                 y = g - y; 
-                hessian_approx_strategy_->update(s, y);
+                this->update(s, y);
 
                 // print iteration status on every iteration
                 if(this->verbose_)
@@ -102,7 +100,7 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            NonLinearSolver<Matrix, Vector>::set_parameters(params);
+            MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
             alpha_ = params.alpha();
             
         }
@@ -124,26 +122,9 @@ namespace utopia
         
         
         
-        /**
-         * @brief      Sets strategy for computing step-size.
-         *
-         * @param[in]  strategy  The line-search strategy.
-         *
-         * @return
-         */
-        virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
-        {
-            hessian_approx_strategy_      = strategy;
-            return true;
-        }
-        
-        
     protected:
         Scalar alpha_;                                          /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
-        
-        std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
-        std::shared_ptr<Solver> mf_linear_solver_;                      /*!< Linear solver parameters. */  
         
     };
     

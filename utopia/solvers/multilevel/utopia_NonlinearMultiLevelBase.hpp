@@ -29,7 +29,8 @@ namespace utopia {
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Matrix, Vector> {
+    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Vector> 
+    {
 
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -209,13 +210,6 @@ namespace utopia {
                 if(mpi_world_rank() == 0)
                     std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
             }
-        }
-
-
-        virtual bool solver_monitor(const SizeType& /*it*/, Vector & /*x*/, Matrix & /*H*/) override
-        {
-            std::cout<<"utopia::NonlinearMultilevelBase:: WE ARE NOT SUPPORTING this function at the moment... \n";
-            return true;
         }
 
         /**

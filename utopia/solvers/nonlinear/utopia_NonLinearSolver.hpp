@@ -20,34 +20,21 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector>
-    class NonLinearSolver : public Monitor<Matrix, Vector>
+    template<class Vector>
+    class NonLinearSolverInterface : public Monitor<Vector>
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-        NonLinearSolver(const Parameters &params = Parameters()): 
+        NonLinearSolverInterface(const Parameters &params = Parameters()): 
                         params_(params)
         {
             set_parameters(params);        
         }
 
-        virtual ~NonLinearSolver() {}
-
-        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
-
-
-        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
-        {
-            fun.set_rhs(rhs); 
-            bool converged = this->solve(fun, x); 
-            fun.reset_rhs(); 
-            return converged; 
-        }
-
+        virtual ~NonLinearSolverInterface() {}
 
         /**
          * @brief      Getter for parameters. 
@@ -71,31 +58,10 @@ namespace utopia
             max_it_             = params.max_it(); 
             verbose_            = params.verbose(); 
             time_statistics_    = params.time_statistics();  
-
-            log_iterates_       = params.log_iterates(); 
-            log_system_         = params.log_system(); 
         }
 
 
 protected:
-        /**
-         * @brief      Monitors(creating matlab script) iterate, hessian on given iterate.
-         */
-        virtual bool solver_monitor(const SizeType& it, Vector & x, Matrix & H) override
-        {
-            if(log_iterates_)
-            {
-                monitor(it, x);
-            }
-            if(log_system_)
-            {
-                monitor(it, H); 
-            }
-
-            return true; 
-        }
-
-
         virtual void print_statistics(const SizeType & it_global)
         {
             std::string path = "log_output_path";
@@ -209,8 +175,6 @@ public:
         SizeType    max_it()  const            { return max_it_; } 
         bool        verbose() const                     { return verbose_; } 
         bool        time_statistics() const       { return time_statistics_; } 
-        bool        log_iterates() const          {return log_iterates_; }
-        bool        log_system() const          {return log_system_; }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         void atol(const Scalar & atol_in ) { atol_ = atol_in; }; 
@@ -219,9 +183,6 @@ public:
         void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
         void verbose(const bool & verbose_in ) { verbose_ = verbose_in; }; 
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
-        void log_iterates(const bool & log_iterates) { log_iterates_  = log_iterates; }; 
-        void log_system(const bool & log_system) { log_system_  = log_system; }; 
-
 
         Scalar get_time() { return _time.get_seconds();  }
 
@@ -238,12 +199,55 @@ public:
         bool verbose_;              /*!< Verobse enable? . */  
         SizeType time_statistics_;      /*!< Perform time stats or not? */  
 
-        bool log_iterates_;             /*!< Monitoring of iterate. */  
-        bool log_system_;               /*!< Monitoring of hessian/jacobian. */  
-
         Chrono _time;                 /*!<Timing of solver. */
 
     };
+
+
+
+    template<class Matrix, class Vector>
+    class NonLinearSolver : public NonLinearSolverInterface<Vector>
+    {
+    
+    public:
+        NonLinearSolver(const Parameters &params = Parameters()): 
+                        NonLinearSolverInterface<Vector>(params)
+        {
+
+        }
+
+        virtual ~NonLinearSolver() {}
+
+        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
+
+        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
+        {
+            fun.set_rhs(rhs); 
+            bool converged = this->solve(fun, x); 
+            fun.reset_rhs(); 
+            return converged; 
+        }
+    };
+
+
+    template<class Vector>
+    class MatrixFreeNonLinearSolver : public NonLinearSolverInterface<Vector>
+    {
+    
+    public:
+        MatrixFreeNonLinearSolver(const Parameters &params = Parameters()):  
+                                    NonLinearSolverInterface<Vector>(params)
+        {
+
+        }
+
+        virtual ~MatrixFreeNonLinearSolver() {}
+
+        virtual bool solve(FunctionBase<Vector> &fun, Vector &x) = 0;
+
+    };
+
+
 }
 
 #endif //UTOPIA_UTOPIA_NONLINEARSOLVER_HPP

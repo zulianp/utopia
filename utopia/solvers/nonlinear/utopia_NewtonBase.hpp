@@ -16,7 +16,7 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class NewtonBasedNonLinearSolver : public NonLinearSolver<Matrix, Vector>
+    class NewtonBase : public NonLinearSolver<Matrix, Vector>
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -24,7 +24,7 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-        NewtonBasedNonLinearSolver(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
+        NewtonBase(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
                         const Parameters &params = Parameters()): 
                         NonLinearSolver<Matrix, Vector>(params), 
                         linear_solver_(linear_solver)
@@ -32,9 +32,9 @@ namespace utopia
             set_parameters(params);        
         }
 
-        virtual ~NewtonBasedNonLinearSolver() {}
+        virtual ~NewtonBase() {}
 
-
+    
         /**
          * @brief      Enables the differentiation control.
          *

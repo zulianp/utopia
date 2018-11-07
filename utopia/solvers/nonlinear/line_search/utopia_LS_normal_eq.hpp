@@ -21,7 +21,7 @@ namespace utopia
   class LeastSquaresNewton : public NonLinearLeastSquaresSolver<Matrix, Vector> 
   {
     typedef typename NonLinearLeastSquaresSolver<Matrix, Vector>::Solver Solver;
-    typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
+    typedef utopia::LSStrategy<Vector> LSStrategy; 
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 

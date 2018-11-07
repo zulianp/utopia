@@ -55,7 +55,7 @@ namespace utopia {
 		void ls_normal_eq()
 		{
 			LeastSquaresNewton<Matrix, Vector> newton(std::make_shared<ConjugateGradient<Matrix, Vector>>());
-			auto ls_strat  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+			auto ls_strat  = std::make_shared<utopia::Backtracking<Vector> >();
 			newton.set_line_search_strategy(ls_strat);
 
 			EmptyLSFun fun;
@@ -145,7 +145,7 @@ namespace utopia {
 			Vector actual = values(n, 1.0);
 			TestFunctionND_1<Matrix, Vector> fun(n);
 
-			auto solver = GradientDescent<Matrix, Vector>();  
+			auto solver = GradientDescent<Vector>();  
 			solver.set_dumping_parameter(0.05); 
 			solver.solve(fun, actual); 
 
@@ -312,8 +312,8 @@ namespace utopia {
 				Newton<Matrix, Vector> nlsolver2(lsolver);
 
 
-				auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >();
-				auto strategy_bc  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector> >();
+				auto strategy_bc  = std::make_shared<utopia::Backtracking<Vector> >();
 
 				strategy_sbc->set_parameters(params);
 				strategy_bc->set_parameters(params);
