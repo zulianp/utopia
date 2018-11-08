@@ -1,8 +1,9 @@
 #ifndef UTOPIA_INTERSECT_HPP
 #define UTOPIA_INTERSECT_HPP
 
-#include "utopia_intersector.hpp"
 #include "utopia_Socket.hpp"
+#include "utopia_libmesh_Utils.hpp"
+#include "utopia_intersector.hpp"
 
 #include <libmesh/elem.h>
 

@@ -42,6 +42,15 @@ namespace utopia {
 			std::vector<Matrix> &mat
 			) override;
 
+		// bool volume_to_side_assemble(
+		// 	const Elem &master,
+		// 	FEType master_type,
+		// 	const Elem &slave,
+		// 	FEType slave_type,
+		// 	const int slave_side_num,
+		// 	std::vector<Matrix> &mat
+		// ) override;
+
 		inline const QMortarBuilder &get_q_builder() const
 		{
 			assert(q_builder);
@@ -61,6 +70,8 @@ namespace utopia {
 			return index == 0 ? MASTER_X_SLAVE : SLAVE_X_SLAVE;
 		}
 
+		void print_stats(std::ostream &os = std::cout) const override;
+
 	private:
 		int dim;
 		bool use_biorth;
@@ -75,6 +86,7 @@ namespace utopia {
 		std::unique_ptr<libMesh::FEBase> trial_fe, test_fe;
 
 		bool assemble_mass_mat_;
+		int max_n_quad_points_;
 
 		void init_fe(
 			const Elem &trial,

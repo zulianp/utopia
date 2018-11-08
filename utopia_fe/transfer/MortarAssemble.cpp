@@ -59,6 +59,12 @@ namespace utopia {
 		return order;
 	}
 
+	void Transform1::apply(const libMesh::Point &ref, libMesh::Point &world) const
+	{
+		assert( (libMesh::FE<1, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
+		world = libMesh::FE<1, libMesh::LAGRANGE>::map(&elem_, ref);
+	}
+
 	void Transform1::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
 	{
 		ref = libMesh::FE<1, libMesh::LAGRANGE>::inverse_map(&elem_, world, 1e-10);
@@ -669,7 +675,6 @@ namespace utopia {
 		} else if(is_tri(type)) {
 			return 0.5;
 		} else if(is_prism(type)) {
-			m_utopia_warning_once("> ref_volume is returned as 1.");
 			return 1.;
 		} else if(is_pyramid(type)) {
 			return 1./0.75;
@@ -705,7 +710,7 @@ namespace utopia {
 		libMesh::Point p;
 		ref_ir.resize(global_ir.n_points());
 
-		libMesh::DenseMatrix<libMesh::Real> A_inv;
+		// libMesh::DenseMatrix<libMesh::Real> A_inv;
 
 		const double factor = ref_volume(type);
 		
@@ -723,8 +728,8 @@ namespace utopia {
 			sum_of_weights += ref_ir.get_weights()[i];
 		}
 
-		assert(sum_of_weights > 0.);
-		assert(sum_of_weights <= factor + 1e-6);
+		// assert(sum_of_weights > 0.);
+		// assert(sum_of_weights <= factor + 5e-4);
 	}
 
 	void transform_to_reference_surf(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir)
@@ -1950,7 +1955,9 @@ namespace utopia {
 			intersection.type = P_MESH_TYPE_SURF;
 			return ok;
 		} else {
-			return Intersector::intersect_convex_polyhedra(poly1, poly2, &intersection);
+			bool ok = Intersector::intersect_convex_polyhedra(poly1, poly2, &intersection);
+			intersection.type = P_MESH_TYPE_UNSTRUCTURED;
+			return ok;
 		}
 	}
 

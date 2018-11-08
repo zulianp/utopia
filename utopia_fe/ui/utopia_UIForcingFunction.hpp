@@ -34,27 +34,27 @@ namespace utopia {
 		~UIForcingFunction() {}
 
 		void read(Input &is) override {
-			is.read_all([this](Input &is) {
+			is.get_all([this](Input &is) {
 
 				int block = -1;
 
 				std::string type = "volume";
-				is.read("block", block);
-				is.read("type", type);
+				is.get("block", block);
+				is.get("type", type);
 
 #ifdef WITH_TINY_EXPR
 				std::string value;
-				is.read("value", value);
+				is.get("value", value);
 				auto f = symbolic(value);
 #else
 				double value = 0.;
-				is.read("value", value);
+				is.get("value", value);
 				auto f = coeff(value);
 #endif //WITH_TINY_EXPR
 
 				if(type == "surface") {
 					int normalize_by_area = 0;
-					is.read("normalize-by-area", normalize_by_area);
+					is.get("normalize-by-area", normalize_by_area);
 
 					double area = 1.;
 					if(normalize_by_area) {
@@ -93,30 +93,30 @@ namespace utopia {
 		virtual ~UIForcingFunction() {}
 
 		void read(Input &is) override {
-			is.read_all([this](Input &is) {
+			is.get_all([this](Input &is) {
 
 				int block = -1;
 				int coord = 0;
 
 				std::string type = "volume";
-				is.read("block", block);
-				is.read("coord", coord);
-				is.read("type", type);
+				is.get("block", block);
+				is.get("coord", coord);
+				is.get("type", type);
 
 #ifdef WITH_TINY_EXPR
 				std::string value;
-				is.read("value", value);
+				is.get("value", value);
 				auto f = symbolic(value);
 #else
 				double value = 0.;
-				is.read("value", value);
+				is.get("value", value);
 				auto f = coeff(value);
 #endif //WITH_TINY_EXPR
 
 				if(type == "surface") {
 
 					int normalize_by_area = 0;
-					is.read("normalize-by-area", normalize_by_area);
+					is.get("normalize-by-area", normalize_by_area);
 
 					double area = 1.;
 					if(normalize_by_area) {

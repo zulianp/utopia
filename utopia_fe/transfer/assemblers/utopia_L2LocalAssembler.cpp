@@ -33,7 +33,8 @@ namespace utopia {
 	// composite_ir(dim),
 	q_trial(dim),
 	q_test(dim),
-	assemble_mass_mat_(assemble_mass_mat)
+	assemble_mass_mat_(assemble_mass_mat),
+	max_n_quad_points_(0)
 	{
 
 		if(dim == 1) {
@@ -68,6 +69,8 @@ namespace utopia {
 		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
 			return false;
 		}
+
+		max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
 
 		init_biorth(test, test_type);
 		init_fe(trial, trial_type, test, test_type);
@@ -105,8 +108,8 @@ namespace utopia {
 		}
 
 
-		auto trial_fe   = libMesh::FEBase::build(trial.dim(), trial_type);
-		auto test_fe    = libMesh::FEBase::build(test.dim(),  test_type);
+		auto trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
+		auto test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
 		
 		const int order = std::max(
 			order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order), 
@@ -117,6 +120,8 @@ namespace utopia {
 		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
 			return false;
 		}
+
+		max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
 
 		init_biorth(test, test_type);
 		init_fe(trial, trial_type, test, test_type);
@@ -144,6 +149,61 @@ namespace utopia {
 		return true;
 
 	}
+
+	// bool L2LocalAssembler::volume_to_side_assemble(
+	// 	const Elem &master,
+	// 	FEType master_type,
+	// 	const Elem &slave,
+	// 	FEType slave_type,
+	// 	const int slave_side_num,
+	// 	std::vector<Matrix> &mat) 
+	// {
+	// 	mat.resize(n_forms());
+
+	// 	auto trial_fe   = libMesh::FEBase::build(trial.dim(), trial_type);
+	// 	auto test_fe    = libMesh::FEBase::build(test.dim(),  test_type);
+		
+	// 	const int order = std::max(
+	// 		order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order), 
+	// 		order_for_l2_integral(dim, test, test_type.order, test, test_type.order)
+	// 	);
+
+	// 	auto side_ptr = test.build_side_ptr(slave_side_num);
+
+	// 	if(!q_builder->build(trial, trial_type, *side_ptr, test_type, q_trial, q_test)) {
+	// 		return false;
+	// 	}
+
+	// 	init_biorth(test, test_type);
+	// 	init_fe(trial, trial_type, test, test_type);
+
+	// 	trial_fe->attach_quadrature_rule(&q_trial);
+	// 	trial_fe->get_phi();
+	// 	trial_fe->reinit(&trial);
+
+	// 	test_fe->attach_quadrature_rule(&q_test);
+	// 	test_fe->get_phi();
+	// 	test_fe->get_JxW();
+	// 	test_fe->reinit(&test, slave_side_num);
+
+	// 	if(use_biorth) {
+	// 		mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
+	// 		if(assemble_mass_mat_) {
+	// 			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
+	// 		}
+	// 	} else {
+	// 		mortar_assemble(*trial_fe, *test_fe, mat[0]);
+
+	// 		if(assemble_mass_mat_) {
+	// 			mortar_assemble(*test_fe,  *test_fe, mat[1]);
+	// 		}
+	// 	}
+
+	// 	assert(check(mat[0]));
+	// 	assert(!assemble_mass_mat_ || check(mat[1]));
+
+	// 	return true;
+	// }
 
 	void L2LocalAssembler::init_fe(
 		const Elem &trial,
@@ -187,5 +247,10 @@ namespace utopia {
 		biorth_elem->attach_quadrature_rule(&qg);
 		biorth_elem->reinit(&el);
 		mortar_assemble_weights(*biorth_elem, weights);
+	}
+
+	void L2LocalAssembler::print_stats(std::ostream &os) const
+	{
+		os << "max-n-quad-points: " << max_n_quad_points_ << "\n";
 	}
 }

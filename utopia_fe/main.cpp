@@ -42,6 +42,8 @@
 #include "utopia_Intrepid2Test.hpp"
 #include "utopia_IntersectTest.hpp"
 
+#include "utopia_Grid2MeshTransferApp.hpp"
+
 #include <functional>
 
 #include "par_moonolith.hpp"
@@ -84,7 +86,7 @@ int main(int argc, char *argv[])
 	    runners["test_msh_reader"] = test_msh_reader;
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
-	    
+
 	    // runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
@@ -173,6 +175,12 @@ int main(int argc, char *argv[])
 				ContactApp app;
 				app.init(init);
 				app.run(argv[ip1]);
+			} else if(argv[i] == Grid2MeshTransferApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				Grid2MeshTransferApp app;
+				app.init(init);
+				app.run(argv[ip1]);
 			}
 
 		}
@@ -181,3 +189,5 @@ int main(int argc, char *argv[])
 	MOONOLITH_PROFILING_END();
     return Utopia::Finalize();
 }
+
+
