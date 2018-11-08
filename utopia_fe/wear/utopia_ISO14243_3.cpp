@@ -18,12 +18,12 @@ namespace utopia {
 		normalize_axial_force_by_area_ = 0;
 
 		std::string temp;
-		is.read("flexion-extension-angle-axis", temp); flexion_extension_angle_axis_ = temp[0];
-		is.read("axial-force-axis", temp); 		       axial_force_axis_char = temp[0];
-		is.read("ap-motion-axis", temp); 			   ap_motion_axis_ = temp[0];
-		is.read("tibial-rotation-axis", temp); 	       tibial_rotation_axis_ = temp[0];
+		is.get("flexion-extension-angle-axis", temp); flexion_extension_angle_axis_ = temp[0];
+		is.get("axial-force-axis", temp); 		       axial_force_axis_char = temp[0];
+		is.get("ap-motion-axis", temp); 			   ap_motion_axis_ = temp[0];
+		is.get("tibial-rotation-axis", temp); 	       tibial_rotation_axis_ = temp[0];
 
-		is.read("normalize-axial-force-by-area", normalize_axial_force_by_area_);
+		is.get("normalize-axial-force-by-area", normalize_axial_force_by_area_);
 
 		switch(axial_force_axis_char) {
 			case 'x':
@@ -56,14 +56,14 @@ namespace utopia {
 		tibial_block_ = -1;
 		axial_force_side_ = -1;
 
-		is.read("femural-block", femural_block_); assert(femural_block_ != -1);
-		is.read("tibial-block", tibial_block_); assert(tibial_block_ != -1);
-		is.read("axial-force-side", axial_force_side_); assert(axial_force_side_ != -1);
+		is.get("femural-block", femural_block_); assert(femural_block_ != -1);
+		is.get("tibial-block", tibial_block_); assert(tibial_block_ != -1);
+		is.get("axial-force-side", axial_force_side_); assert(axial_force_side_ != -1);
 
 		dt_ = 0.1;
-		is.read("dt", dt_);
+		is.get("dt", dt_);
 
-		is.read("csv", temp);
+		is.get("csv", temp);
 
 		bool ok = read(temp); assert(ok);
 	}

@@ -1,50 +1,37 @@
-// #ifndef UTOPIA_JSON_STREAM_HPP
-// #define UTOPIA_JSON_STREAM_HPP
+#ifndef UTOPIA_JSON_STREAM_HPP
+#define UTOPIA_JSON_STREAM_HPP
 
-// #include <memory>
-// #include "utopia_Base.hpp"
-// #include "utopia_Path.hpp"
-// #include "utopia_Input.hpp"
+#include <memory>
+#include "utopia_Base.hpp"
+#include "utopia_Path.hpp"
+#include "utopia_Input.hpp"
 
+namespace utopia {
 
-// namespace utopia {
+	class JSONInput final : public Input {
+	public:
+		JSONInput();
+		~JSONInput();
 
-// 	class JSONInput final : public Input {
-// 	public:
-// 		JSONInput();
-// 		~JSONInput();
+		bool open(const Path &path);
 
-// 		bool open(const Path &path) override;
-// 		bool object_begin(const std::string &name) override;
-// 		bool object_end() override;
+		SizeType size() const override;
+		void get(std::vector<std::shared_ptr<IConvertible>> &values) override;
+		void get_all(std::function<void(Input &)> lambda) override;
+		void get(const std::string &key, bool &val) override;
+		void get(const std::string &key, double &val) override;
+		void get(const std::string &key, int &val) override;
+		void get(const std::string &key, SizeType &val) override;
+		void get(const std::string &key, std::string &val) override;
+		void get(const std::string &key, Configurable &val) override;
+		void get(const std::string &key, std::function<void(Input &)> lambda) override;
+		bool good() const override;
 
-// 		void read(double &val) override;
-// 		void read(int &val) override;
-// 		void read(SizeType &val) override;
-// 		void read(std::string &val) override;
+	private:
 
-// 		void read(const std::string &key, double &val) override;
-// 		void read(const std::string &key, int &val) override;
-// 		void read(const std::string &key, SizeType &val) override;
-// 		void read(const std::string &key, std::string &val) override;
+		class Impl;
+		std::unique_ptr<Impl> impl_;
+	};
+}
 
-
-// 		bool good() const override;
-
-
-// 		void start() override;
-// 		void start(const std::string &name) override;
-
-// 		std::string name() override;
-// 		bool good() override;
-// 		bool next() override;
-// 		void finish() override;
-
-// 	private:
-
-// 		class Impl;
-// 		std::unique_ptr<Impl> impl_;
-// 	};
-// }
-
-// #endif //UTOPIA_JSON_STREAM_HPP
+#endif //UTOPIA_JSON_STREAM_HPP

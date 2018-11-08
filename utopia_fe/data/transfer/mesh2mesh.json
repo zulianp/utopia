@@ -1,0 +1,57 @@
+{
+	"transfer": {
+		"type": "l2-projection",
+		"biorth-basis": false,
+		"function": "-z",
+		"master": {
+			"mesh": {
+				"type": "cube",
+				"elem-type": "hex",
+				"order": 1,
+				"n-x": 16,
+				"n-y": 80,
+				"n-z": 180,
+				"min-x": 0.0,
+				"min-y": 0.0,
+				"min-z": 0.0,
+				"max-x": 1.0,
+				"max-y": 5.0,
+				"max-z": 10.0
+			},
+			"space": {
+				"system-name" : "master",
+				"variables" : [
+					{
+						"name" : "u_m",
+						"order" : 1
+					}
+				]
+			}
+		},
+		"slave": {
+			"mesh": {
+				"type": "cube",
+				"elem-type": "hex",
+				"order": 1,
+				"n-x": 16,
+				"n-y": 80,
+				"n-z": 180,
+				"min-x": 0.0,
+				"min-y": 0.0,
+				"min-z": 0.0,
+				"max-x": 1.0,
+				"max-y": 5.0,
+				"max-z": 10.0
+			},
+			"space": {
+				"system-name" : "slave",
+				"variables" : [
+					{
+						"name" : "u_s",
+						"order" : 1
+					}
+				]
+			}
+		}
+	}
+}

@@ -26,15 +26,15 @@ namespace utopia {
 			std::string stabilization = "none";
 			Scalar stabilization_mag = 0.0001;
 
-			is.read("material", material);
-			is.read("stabilization", stabilization);
-			is.read("stabilization-mag", stabilization_mag);
+			is.get("material", material);
+			is.get("stabilization", stabilization);
+			is.get("stabilization-mag", stabilization_mag);
 
 			//FIXME
 			Scalar lambda, mu;
-			is.read("parameters", [&](Input &sub_is) {
-				sub_is.read("lambda", lambda);
-				sub_is.read("mu", mu);
+			is.get("parameters", [&](Input &sub_is) {
+				sub_is.get("lambda", lambda);
+				sub_is.get("mu", mu);
 			});
 
 			LameeParameters params(mu, lambda);

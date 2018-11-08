@@ -3,11 +3,11 @@
 	<!-- <type>interpolation</type> -->
 	<type>l2-projection</type>
 	<biorth-basis>0</biorth-basis>
-<!-- 	<function>-x</function> -->
+	<function>-x</function>
 
 	<!-- <force-shell>true</force-shell> -->
 	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
-	<function-type>constant</function-type>
+	<!-- <function-type>constant</function-type> -->
 	<!-- <function>1.</function> -->
 
 	<!-- MASTER -->

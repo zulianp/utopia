@@ -13,7 +13,7 @@ namespace utopia {
 	{
 		// std::string type = ISO14243_3::name();
 		std::string type = OldConfiguration::name();
-		is.read("type", type);
+		is.get("type", type);
 
 		auto it = conf_types_.find(type);
 

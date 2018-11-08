@@ -8,6 +8,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_Operations.hpp"
 #include "utopia_Recorder.hpp"
+#include "utopia_MatrixFreeLinearSolver.hpp"
 
 #include <cmath>
 #include <cassert>
@@ -15,10 +16,12 @@
 namespace utopia {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGradient : public IterativeSolver<Matrix, Vector> {
+	class ProjectedGradient : public IterativeSolver<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
 	public:
 		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
 		DEF_UTOPIA_SCALAR(Matrix)
+
+		using IterativeSolver<Matrix, Vector>::solve;
 
 		virtual bool set_box_constraints(const BoxConstraints & box)
 		{
@@ -35,17 +38,26 @@ namespace utopia {
 
 		bool apply(const Vector &b, Vector &x) override
 		{
+			auto A_ptr = utopia::op(this->get_operator());
+			return solve(*A_ptr, b, x);
+		}
+
+		bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override 
+		{
 			// UTOPIA_RECORD_SCOPE_BEGIN("apply");
 
 			if(this->verbose())
 				this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-			const Matrix &A = *this->get_operator();
+			init(local_size(b).get(0));
+			
 			const auto &upbo = *constraints_.upper_bound();
 			const auto &lobo = *constraints_.lower_bound();
 
 			x_old = x;
-			u = b - A * x;
+			A.apply(x, u);
+			u = b - u;
+			// u = b - A * x;
 			p = u;
 			Scalar alpha = 1.;
 
@@ -71,7 +83,10 @@ namespace utopia {
 
 				// UTOPIA_RECORD_VALUE("x = utopia::min(upbo, x)", x);
 
-				u = b - A * x;
+				A.apply(x, u);
+				u = b - u;
+
+				// u = b - A * x;
 
 				{
 					Read<Vector>  r_u(u), r_x(x), r_upbo(upbo), r_lobo(lobo);
@@ -107,7 +122,22 @@ namespace utopia {
 				if(converged) break;
 
 				x_old = x;
-				alpha = dot(u, p)/dot(p, A * p);
+				A.apply(p, Ap);
+				alpha = dot(u, p)/dot(p, Ap);
+
+				if(std::isinf(alpha) || alpha == 0. || std::isnan(alpha)) {
+					const Scalar diff = norm2(x_old - x);
+
+					// UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
+
+					if(this->verbose()) {
+					    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+					}
+
+					converged = this->check_convergence(iteration, 1, 1, diff);
+					break;
+
+				}
 			}
 
 			// UTOPIA_RECORD_SCOPE_END("apply");
@@ -115,17 +145,17 @@ namespace utopia {
 		}
 
 
-		void init(const Matrix &A)
+		void init(const SizeType &ls)
 		{
-			auto s = local_size(A);
-			p = local_zeros(s.get(0));
+			p  = local_zeros(ls);
+			Ap = local_zeros(ls);
 		}
 
 
 		virtual void update(const std::shared_ptr<const Matrix> &op) override
 		{
 		    IterativeSolver<Matrix, Vector>::update(op);
-		    init(*op);
+		    // init(*op);
 		}
 
 		ProjectedGradient()
@@ -143,7 +173,7 @@ namespace utopia {
 		BoxConstraints constraints_;
 
 		//buffers
-		Vector x_old, x_half, p, u;
+		Vector x_old, x_half, p, u, Ap;
 	};
 }
 

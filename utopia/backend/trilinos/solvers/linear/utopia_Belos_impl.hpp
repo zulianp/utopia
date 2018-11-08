@@ -94,14 +94,14 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(Parameters params)
-    : impl_(make_unique<Impl>())
+    : impl_(utopia::make_unique<Impl>())
     {
         set_parameters(params);
     }
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
-    : impl_(make_unique<Impl>(*other.impl_)) {
+    : impl_(utopia::make_unique<Impl>(*other.impl_)) {
         //FIXME
     }
 
@@ -109,7 +109,7 @@ namespace utopia {
     BelosSolver<Matrix, Vector, TRILINOS>::~BelosSolver() {}
 
     template <typename Matrix, typename Vector>
-    BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver() : impl_(make_unique<Impl>()) {}
+    BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver() : impl_(utopia::make_unique<Impl>()) {}
 
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op,

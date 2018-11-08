@@ -14,12 +14,13 @@ namespace utopia {
 	class TransferOptions {
 	public:
 		TransferOptions()
-		: from_var_num(0), to_var_num(0), n_var(1), tags({})
+		: from_var_num(0), to_var_num(0), n_var(1), to_trace_space(false), tags({})
 		{}
 
 		int from_var_num;
 		int to_var_num;
 		int n_var;
+		bool to_trace_space;
 		std::vector< std::pair<int, int> > tags;
 	};
 
@@ -90,7 +91,7 @@ namespace utopia {
 	/**
 	 * @brief constructed as (D^-1 * B) * ( . )
 	 */
-	class L2TransferOperator : public TransferOperator {
+	class L2TransferOperator final : public TransferOperator {
 	public:
 		inline void apply(const UVector &from, UVector &to) const override
 		{
@@ -173,7 +174,7 @@ namespace utopia {
 		std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
 	};
 
-	class PseudoL2TransferOperator : public TransferOperator {
+	class PseudoL2TransferOperator final : public TransferOperator {
 	public:
 		inline void apply(const UVector &from, UVector &to) const override
 		{
@@ -240,7 +241,38 @@ namespace utopia {
 		std::shared_ptr<USparseMatrix> T;
 	};
 
-	class Interpolator : public TransferOperator {
+	class BidirectionalOperator final : public TransferOperator {
+	public:
+		BidirectionalOperator(
+			const std::shared_ptr<TransferOperator> &forward,
+			const std::shared_ptr<TransferOperator> &backward
+		) : forward_(forward), backward_(backward)
+		{}
+
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			forward_->apply(from, to);
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const
+		{
+			backward_->apply(from, to);
+		}
+
+		inline void describe(std::ostream &os) const 
+		{
+			forward_->describe(os);
+			backward_->describe(os);
+		}
+
+		inline bool write(const Path &) const { return false; }
+
+	private:
+		std::shared_ptr<TransferOperator> forward_;
+		std::shared_ptr<TransferOperator> backward_;
+	};
+
+	class Interpolator final : public TransferOperator {
 	public:
 		inline void apply(const UVector &from, UVector &to) const override
 		{
@@ -301,7 +333,9 @@ namespace utopia {
 		INTERPOLATION = 0,
 		L2_PROJECTION = 1,
 		PSEUDO_L2_PROJECTION = 2,
-		APPROX_L2_PROJECTION = 3
+		APPROX_L2_PROJECTION = 3,
+		BIDIRECTIONAL_L2_PROJECTION = 4,
+		BIDIRECTIONAL_PSEUDO_L2_PROJECTION = 5,
 	};
 }
 

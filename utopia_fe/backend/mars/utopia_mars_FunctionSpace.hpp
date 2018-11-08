@@ -16,7 +16,7 @@ namespace utopia {
 	template<mars::Integer Dim, mars::Integer ManifoldDim>
 	class Traits<MarsFunctionSpace<Dim, ManifoldDim>> {
 	public:
-
+		using SizeType = mars::Integer;
 	};
 
 	//P0/P1 only

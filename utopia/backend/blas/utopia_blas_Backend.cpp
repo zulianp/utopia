@@ -851,6 +851,17 @@ namespace utopia {
 		std::cout << std::endl;
 	}
 
+	void BLASBackend::disp(const Matrix &mat)
+	{
+		for(SizeType i = 0; i < mat.rows(); ++i) {
+			for(SizeType j = 0; j < mat.cols(); ++j) {
+				std::cout << mat.get(i, j) << "\t";
+			}
+
+			std::cout << std::endl;
+		}
+	}
+
 	// void BLASBackend::disp(const CRSMatrix<Scalar> &mat)
 	// {
 	// 	disp(mat, std::cout);

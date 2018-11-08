@@ -45,6 +45,20 @@ namespace utopia {
 			return assemble(master, master_type, slave, slave_type, mat[0]);
 		}
 
+		// virtual bool volume_to_side_assemble(
+		// 	const Elem &master,
+		// 	FEType master_type,
+		// 	const Elem &slave,
+		// 	FEType slave_type,
+		// 	const int slave_side_num,
+		// 	std::vector<Matrix> &mat
+		// 	) 
+		// {
+		// 	//TODO
+		// 	assert(false && "implement me");
+		// 	return false;
+		// }
+
 		virtual int n_forms() const
 		{
 			return 1;
@@ -54,6 +68,11 @@ namespace utopia {
 		{
 			(void) index;
 			return MASTER_X_SLAVE;
+		}
+
+		virtual void print_stats(std::ostream &os = std::cout) const
+		{
+			(void)os;
 		}
 	};
 }

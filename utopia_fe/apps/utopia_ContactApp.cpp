@@ -37,17 +37,17 @@ namespace utopia {
 		{
 		    try {
 
-		        is.read("mesh", mesh_);
-		        is.read("space", space_);
-		        is.read("contact", params_);
+		        is.get("mesh", mesh_);
+		        is.get("space", space_);
+		        is.get("contact", params_);
 
 		        auto model            = make_unique<MaterialT>(space_.space());
 		        auto forcing_function = make_unique<ForcingFunctionT>(space_.space());
 
-		        is.read("model", *model);
-		        is.read("forcing-functions", *forcing_function);
-		        is.read("dt", dt_);
-		        is.read("use-amg", use_amg_);
+		        is.get("model", *model);
+		        is.get("forcing-functions", *forcing_function);
+		        is.get("dt", dt_);
+		        is.get("use-amg", use_amg_);
 
 		        model_ = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
 		            std::move(model),
@@ -113,7 +113,7 @@ namespace utopia {
 	{
 		SimulationInput sim_in(*comm_);
 		auto in_ptr = open_istream(path);//"../data/contact/default.xml");
-		in_ptr->read("contact-problem", sim_in);
+		in_ptr->get("contact-problem", sim_in);
 
 		const auto &params = sim_in.params();
 		
@@ -136,7 +136,7 @@ namespace utopia {
 
 			if(amg_in_ptr) {
 				std::cout << "Using settings" << std::endl;
-				amg_in_ptr->read("amg", *ls);
+				amg_in_ptr->get("amg", *ls);
 			}
 
 			sc.set_linear_solver(ls);

@@ -100,7 +100,7 @@ namespace utopia {
 		return impl_->object_end();
 	}
 
-	void XMLInput::read(double &val)
+	void XMLInput::get(double &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -109,7 +109,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInput::read(int &val)
+	void XMLInput::get(int &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -118,7 +118,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInput::read(SizeType &val)
+	void XMLInput::get(SizeType &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -127,7 +127,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInput::read(std::string &val)
+	void XMLInput::get(std::string &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -136,7 +136,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInput::read(bool &val)
+	void XMLInput::get(bool &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 		static const std::string true_val = "true";
@@ -146,7 +146,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInput::read(Configurable &val)
+	void XMLInput::get(Configurable &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -155,56 +155,56 @@ namespace utopia {
 		}
 	}
 
-	void XMLInput::read(const std::string &key, double &val)
+	void XMLInput::get(const std::string &key, double &val)
 	{
 		impl_->object_begin(key);
-		read(val);
+		get(val);
 		impl_->object_end();
 	}
 
-	void XMLInput::read(const std::string &key, int &val)
+	void XMLInput::get(const std::string &key, int &val)
 	{
 		impl_->object_begin(key);
-		read(val);
+		get(val);
 		impl_->object_end();
 	}
 
-	void XMLInput::read(const std::string &key, SizeType &val)
+	void XMLInput::get(const std::string &key, SizeType &val)
 	{
 		impl_->object_begin(key);
-		read(val);
+		get(val);
 		impl_->object_end();
 	}
 
-	void XMLInput::read(const std::string &key, std::string &val)
+	void XMLInput::get(const std::string &key, std::string &val)
 	{
 		impl_->object_begin(key);
-		read(val);
+		get(val);
 		impl_->object_end();
 	}
 
-	void XMLInput::read(const std::string &key, bool &val)
+	void XMLInput::get(const std::string &key, bool &val)
 	{
 		impl_->object_begin(key);
-		read(val);
+		get(val);
 		impl_->object_end();
 	}
 
-	void XMLInput::read(const std::string &key, Configurable &val)
+	void XMLInput::get(const std::string &key, Configurable &val)
 	{
 		impl_->object_begin(key);
-		read(val);
+		get(val);
 		impl_->object_end();
 	}
 
-	void XMLInput::read(std::function<void(Input &)> lambda)
+	void XMLInput::get(std::function<void(Input &)> lambda)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
 		lambda(*this);
 	}
 
-	void XMLInput::read(const std::string &key, std::function<void(Input &)> lambda)
+	void XMLInput::get(const std::string &key, std::function<void(Input &)> lambda)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -266,5 +266,20 @@ namespace utopia {
 		}
 
 		impl_->object_end();
+	}
+
+	void XMLInput::get_all(std::function<void(Input &)> lambda) {
+		auto n = size();
+
+		if(n == 0) return;
+
+		array_start();
+
+		for(SizeType i = 0; i < n; ++i) {
+			lambda(*this);
+			next();
+		}
+
+		array_finish();
 	}
 }
