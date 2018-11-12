@@ -155,7 +155,7 @@ namespace utopia {
 
 		template<typename In>
 		void aux_set(const std::string &key, const In &in) {
-			values_[key] = make_unique<Convertible<In>>(in);
+            values_[key] = utopia::make_unique<Convertible<In>>(in);
 		}
 
 		void aux_describe(std::ostream &os, const int level) const
