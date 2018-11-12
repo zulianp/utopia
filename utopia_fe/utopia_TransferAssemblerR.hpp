@@ -1,0 +1,311 @@
+#ifndef UTOPIA_TRANSFER_ASSEMBLER_REV_HPP
+#define UTOPIA_TRANSFER_ASSEMBLER_REV_HPP
+
+#include "utopia_LocalAssembler.hpp"
+#include "utopia_Local2Global.hpp"
+#include "utopia_libmesh.hpp"
+#include "utopia.hpp"
+#include "utopia_Path.hpp"
+
+#include <memory>
+
+namespace utopia {
+
+	class TransferOptionsR {
+	public:
+		TransferOptionsR()
+		: from_var_num(0),from_var_num_r(0),to_var_num(0),to_var_num_r(0), n_var(1), tags({})
+		{}
+
+		int from_var_num;
+		int from_var_num_r;
+		int to_var_num;
+		int to_var_num_r;
+		int n_var;
+		std::vector< std::pair<int, int> > tags;
+	};
+
+	class TransferAssemblerR final {
+	public:
+		using FunctionSpace = utopia::LibMeshFunctionSpace;
+		using SparseMatrix  = utopia::USparseMatrix;
+		using MeshBase      = libMesh::MeshBase;
+		using DofMap        = libMesh::DofMap;
+
+		class AlgorithmR {
+		public:
+			virtual ~AlgorithmR() {}
+			// virtual bool assemble(SparseMatrix &B) = 0;
+			virtual bool assemble(std::vector<std::shared_ptr<SparseMatrix> > &B) = 0;
+		};
+
+		TransferAssemblerR(
+			const std::shared_ptr<LocalAssembler> &assembler,
+			const std::shared_ptr<Local2Global>   &local2global);
+
+		bool assemble(
+			const std::shared_ptr<MeshBase> &from_mesh,
+			const std::shared_ptr<DofMap>   &from_dofs,
+			const std::shared_ptr<DofMap>   &from_dofs_r,
+			const std::shared_ptr<MeshBase> &to_mesh,
+			const std::shared_ptr<DofMap>   &to_dofs,
+			const std::shared_ptr<DofMap>   &to_dofs_r,
+			SparseMatrix &B,
+			const TransferOptionsR &opts = TransferOptionsR()
+		);
+
+		bool assemble(
+			const std::shared_ptr<MeshBase> &from_mesh,
+			const std::shared_ptr<DofMap>   &from_dofs,
+			const std::shared_ptr<DofMap>   &from_dofs_r,
+			const std::shared_ptr<MeshBase> &to_mesh,
+			const std::shared_ptr<DofMap>   &to_dofs,
+			const std::shared_ptr<DofMap>   &to_dofs_r,
+			std::vector<std::shared_ptr<SparseMatrix> > &B,
+			const TransferOptionsR &opts = TransferOptionsR()
+		);
+
+		void set_assembler(const std::shared_ptr<LocalAssembler> &assembler)
+		{
+			assembler_ = assembler;
+		}
+
+		void set_local_2_global(const std::shared_ptr<Local2Global> &local2global)
+		{
+			local2global_ = local2global;
+		}
+
+		~TransferAssemblerR();
+
+	private:
+		std::shared_ptr<LocalAssembler> assembler_;
+		std::shared_ptr<Local2Global> local2global_;
+		std::shared_ptr<AlgorithmR> algorithm_;
+	};
+
+	class TransferOperatorR {
+	public:
+		virtual ~TransferOperatorR() {}
+		virtual void apply(const UVector &from, UVector &to) const = 0;
+		virtual void apply_transpose(const UVector &from, UVector &to) const = 0;
+		virtual void describe(std::ostream &) const {}
+		virtual bool write(const Path &) const { return false; }
+	};
+
+
+	/**
+	 * @brief constructed as (D^-1 * B) * ( . )
+	 */
+	class L2TransferOperatorR : public TransferOperatorR {
+	public:
+		inline void apply(const UVector &from, UVector &to) const override
+		{
+			UVector B_from = *B * from;
+
+			disp((*B).size().get(0));
+			disp((*B).size().get(1));
+
+			if(empty(to)) {
+				to = B_from;
+			}
+
+			linear_solver->apply(B_from, to);
+		}
+
+		void fix_mass_matrix_operator()
+		{
+			UVector d;
+
+			Size s = local_size(*D);
+			d = local_values(s.get(0), 1.);
+
+			{
+				Write<UVector> w_d(d);
+
+				each_read(*D, [&d](const SizeType i, const SizeType, const double) {
+					d.set(i, 0.);
+				});
+			}
+
+			(*D) += USparseMatrix(diag(d));
+		}
+
+		///@brief assumes that D is symmetric
+		void apply_transpose(const UVector &from, UVector &to) const override
+		{
+			UVector D_inv_from = local_zeros(local_size(*D).get(0));
+			linear_solver->apply(from, D_inv_from);
+			to = transpose(*B) * D_inv_from;
+		}
+
+		inline L2TransferOperatorR(
+			const std::shared_ptr<USparseMatrix> &B,
+			const std::shared_ptr<USparseMatrix> &D,
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
+			)
+		: B(B), D(D), linear_solver(linear_solver)
+		{
+			assert(B);
+			assert(D);
+			assert(linear_solver);
+
+			linear_solver->update(D);
+		}
+
+		inline void describe(std::ostream &os) const override
+		{
+			UVector t_from = local_values(local_size(*B).get(1), 1);
+			UVector t_to;
+			apply(t_from, t_to);
+
+			double t_max = max(t_to);
+			double t_min = min(t_to);
+
+			double sum_D = sum(*D);
+			double sum_B = sum(*B);
+
+			os << "------------------------------------------\n";
+			os << "L2TransferOperator:\n";
+			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			os << "sum(B) = " << sum_B << ", sum(D) = " << sum_D << std::endl;
+			os << "------------------------------------------\n";
+		}
+
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "B.m", *B) && utopia::write(path / "D.m", *D);
+		}
+
+	private:
+		std::shared_ptr<USparseMatrix> B;
+		std::shared_ptr<USparseMatrix> D;
+		std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
+	};
+
+	class PseudoL2TransferOperatorR : public TransferOperatorR {
+	public:
+		inline void apply(const UVector &from, UVector &to) const override
+		{
+			assert(T);
+			to = *T * from;
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const override
+		{
+			assert(T);
+			to = transpose(*T) * from;
+		}
+
+		PseudoL2TransferOperatorR() {}
+
+		inline void init_from_coupling_operator(const USparseMatrix &B)
+		{
+			T = std::make_shared<USparseMatrix>();
+			UVector d = sum(B, 1);
+
+			{
+				ReadAndWrite<UVector> rw_(d);
+				auto r = range(d);
+				for(auto k = r.begin(); k != r.end(); ++k) {
+					if(approxeq(d.get(k), 0.0, 1e-14)) {
+						d.set(k, 1.);
+					}
+				}
+			}
+
+			*T = diag(1./d) * B;
+		}
+
+		PseudoL2TransferOperatorR(const std::shared_ptr<USparseMatrix> &T)
+		: T(T)
+		{
+			assert(T);
+		}
+
+		inline void describe(std::ostream &os) const override
+		{
+			UVector t = sum(*T, 1);
+			double t_max = max(t);
+			double t_min = min(t);
+			double t_sum = sum(t);
+
+			os << "------------------------------------------\n";
+			os << "PseudoL2TransferOperator:\n";
+			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			os << "sum(T): "  << t_sum << " <= " << size(*T).get(0) << "\n";
+			os << "------------------------------------------\n";
+		}
+
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "T.m", *T);
+		}
+
+	private:
+		std::shared_ptr<USparseMatrix> T;
+	};
+
+	class InterpolatorR : public TransferOperatorR {
+	public:
+		inline void apply(const UVector &from, UVector &to) const override
+		{
+			to = *T * from;
+		}
+
+		void apply_transpose(const UVector &from, UVector &to) const override
+		{
+			assert(T);
+			to = transpose(*T) * from;
+		}
+
+		InterpolatorR(const std::shared_ptr<USparseMatrix> &T)
+		: T(T)
+		{
+			assert(T);
+		}
+
+		void normalize_rows()
+		{
+			UVector d = sum(*T, 1);
+			ReadAndWrite<UVector> rw_(d);
+			auto r = range(d);
+			for(auto k = r.begin(); k != r.end(); ++k) {
+				if(approxeq(d.get(k), 0.0, 1e-14)) {
+					d.set(k, 1.);
+				}
+			}
+
+			*T = diag(1./d) * (*T);
+		}
+
+		inline void describe(std::ostream &os) const override
+		{
+			UVector t = sum(*T, 1);
+			double t_max = max(t);
+			double t_min = min(t);
+			double t_sum = sum(t);
+
+			os << "------------------------------------------\n";
+			os << "Interpolator:\n";
+			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			os << "sum(T): " << t_sum << " <= " << size(*T).get(0) << "\n";
+			os << "------------------------------------------\n";
+		}
+
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "T.m", *T);
+		}
+
+	private:
+		std::shared_ptr<USparseMatrix> T;
+	};
+
+
+	enum TransferOperatorRType {
+		BIDIRECTIONAL_L2_PROJECTION = 0,
+		PSEUDO_BIDIRECTIONAL_L2_PROJECTION= 1
+	};
+}
+
+#endif //UTOPIA_TRANSFER_ASSEMBLER_HPP
