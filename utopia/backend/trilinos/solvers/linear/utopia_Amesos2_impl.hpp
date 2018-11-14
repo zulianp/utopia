@@ -5,8 +5,6 @@
 
 #include "utopia_make_unique.hpp"
 
-#include <Amesos2_Factory.hpp>
-#include <Amesos2_Solver.hpp>
 #include "Amesos2.hpp"
 #include "Amesos2_Meta.hpp"
 
@@ -15,26 +13,22 @@
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
-#include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
-
 
 ////
 #include <Amesos2_Factory.hpp>
 #include <Amesos2_Solver.hpp>
 #include <Amesos2_MultiVecAdapter.hpp>
-#include <Teuchos_ScalarTraits.hpp>
+#include <Amesos2_Details_LinearSolverFactory_def.hpp>
 
 #include <BelosSolverFactory.hpp>
 #include <BelosTpetraAdapter.hpp>
 #include <BelosLinearProblem.hpp>
 #include <BelosSolverManager.hpp>
 
-
+#include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
 
 #include <Kokkos_Macros.hpp>
 #include <Kokkos_DefaultNode.hpp>
@@ -47,15 +41,10 @@
 #include <Tpetra_DefaultPlatform.hpp>
 #include <Tpetra_Version.hpp>
 
-#include <Ifpack2_Preconditioner.hpp>
-
-#include <MueLu_CreateTpetraPreconditioner.hpp>
-#include <MueLu_TpetraOperator.hpp>
-#include <MueLu_Utilities.hpp>
 //////
 
 
-
+#define HAVE_AMESOS2_TPETRA
 // #ifdef HAVE_AMESOS2_TPETRA
 
 //FIXME find right macros (these packages are optional in trilinos, they should be optional also in utopia)
@@ -67,6 +56,8 @@
 #include <MueLu.hpp>
 #include <MueLu_CreateTpetraPreconditioner.hpp>
 #include <MueLu_TpetraOperator.hpp>
+#include <MueLu_TpetraOperator.hpp>
+#include <MueLu_Utilities.hpp>
 // #else
 // #warning "HAVE_AMESOS2_MUELU not defined"
 // #endif //HAVE_AMESOS2_MUELU
@@ -74,6 +65,7 @@
 
 // #ifdef HAVE_AMESOS2_IFPACK2
 #include <Ifpack2_Factory.hpp>
+#include <Ifpack2_Preconditioner.hpp>
 // #else
 // #warning "HAVE_AMESOS2_IFPACK2 not defined"
 // #endif //HAVE_AMESOS2_IFPACK
