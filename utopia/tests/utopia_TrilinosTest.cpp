@@ -1325,7 +1325,7 @@ namespace utopia {
 
 #endif //HAVE_BELOS_TPETRA
 
-#ifdef HAVE_AMESOS2_TPETRA
+#ifdef HAVE_AMESOS2_KOKKOS
 
     void trilinos_amesos2()
     {
@@ -1348,7 +1348,7 @@ namespace utopia {
         utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
     }
 
-#endif //HAVE_AMESOS2_TPETRA
+#endif //HAVE_AMESOS2_KOKKOS
 
 
 
@@ -1470,9 +1470,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_belos);
 #endif //HAVE_BELOS_TPETRA  
 
-#ifdef HAVE_AMESOS2_TPETRA
+//#ifdef HAVE_AMESOS2_TPETRA
         UTOPIA_RUN_TEST(trilinos_amesos2);
-#endif //HAVE_AMESOS2_TPETRA
+//#endif //HAVE_AMESOS2_TPETRA
 
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_transform);
