@@ -440,6 +440,12 @@ namespace utopia
 	    		subproblems[l] = tr_strategy; 
 		    }	
 
+
+		    // std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
+		    // transfers.push_back(std::make_shared<IdentityTransfer<Matrix, Vector> >());
+		    // rmtr->set_transfer_operators(transfers);
+
+
 	        rmtr->set_tr_strategies(subproblems); 
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 

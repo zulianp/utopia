@@ -30,85 +30,52 @@
 
         }
 
-
-         ~IdentityTransfer(){}
-
-
-        /*=====================================================
-                                actions
-        =====================================================*/
-        /**
-         * @brief      Interpolation of vector.
-         *             \f$  x_{new} = I * x \f$
-         *
-         * @param[in]  x      The vector x.
-         * @param      x_new  The interpoalted vector.
-         *
-         */
-         bool interpolate(const Vector &x, Vector &x_new) const override
+        virtual bool interpolate(const Vector &x, Vector &x_new) const override
         {
             x_new = x; 
-            return true;
+            return true; 
         }
 
-        /**
-         * @brief      Restriction of vector.
-         *            \f$  x_{new} = R * x  \f$
-         * @param[in]  x
-         * @param      x_new
-         *
-         */
-         bool restrict(const Vector &x, Vector &x_new) const override
+
+        virtual bool restrict(const Vector &x, Vector &x_new) const override
         {
             x_new = x; 
-            return true;
+            return true; 
         }
 
-        void handle_equality_constraints(const Vector &is_constrained) override 
+
+        virtual bool boolean_restrict_or(const Vector &x, Vector &x_new) override
         {
-            // TO BE thought about... but most likely, we do not need to do anything...
+            x_new = x; 
+            return true; 
         }
 
-        /**
-         * @brief      Restriction of matrix.
-         *
-         *             \f$  M_{new} = I^{T} * M  * I  \f$
-         * @param[in]  M
-         * @param      M_new
-         *
-         */
-        bool restrict(const Matrix &M, Matrix &M_new) const override
+
+        virtual bool restrict(const Matrix &M, Matrix &M_new) const override
         {
-            M_new =  M; 
-            return true;
+            M_new = M; 
+            return true; 
         }
 
 
-        /**
-         * @brief      Projection of vector
-         *            \f$  x_{new} = P * x  \f$
-         * @param[in]  x
-         * @param      x_new
-         *
-         */
-        bool project_down(const Vector &x, Vector &x_new) const override
+        virtual bool project_down(const Vector &x, Vector &x_new) const override
         {
-            x_new = x;
-            return true;
+            x_new = x; 
+            return true; 
         }
 
 
-        Scalar interpolation_inf_norm() const override
+        virtual  Scalar interpolation_inf_norm() const override
         {
             return 1.0; 
         }
 
-        Scalar projection_inf_norm() const override
+        virtual Scalar projection_inf_norm() const override
         {
             return 1.0; 
         }
 
-        Scalar restriction_inf_norm() const override
+        virtual Scalar restriction_inf_norm() const override
         {
             return 1.0; 
         }

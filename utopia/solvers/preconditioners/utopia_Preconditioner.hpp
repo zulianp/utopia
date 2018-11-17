@@ -48,7 +48,7 @@ namespace utopia
         MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)>
     > op(const std::shared_ptr<const Matrix> &mat)
     {
-        return make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
+        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
     }
 
     template<class Matrix>
@@ -56,7 +56,7 @@ namespace utopia
         MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)>
     > op(const std::shared_ptr<Matrix> &mat)
     {
-        return make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
+        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
     }
 
 
