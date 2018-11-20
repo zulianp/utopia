@@ -56,6 +56,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
+			UTOPIA_RUN_TEST(affine_similarity_small_test); 
 		}
 
 		void petsc_ngs_test()
@@ -706,6 +707,43 @@ namespace utopia
 				utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
 			}
 		}
+
+
+		void affine_similarity_small_test()
+		{
+			std::cout<<"----- affine_similarity_small_test ------- \n";
+			if(mpi_world_size() >1)
+				return; 
+
+			SmallSingularExample<DMatrixd, DVectord> fun; 
+			DVectord x_exact 	= values(2, 1.0);
+			DVectord x   		= values(2, 1.0);			
+			
+			{
+				Read<DVectord> r1(x_exact);
+				Read<DVectord> r2(x); 
+
+				x.set(1, 0.0); 
+				x_exact.set(0, 0.0); 
+			}
+
+			auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>("petsc");			
+			AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+
+			DMatrixd I = identity(2,2); 
+			solver.set_mass_matrix(I); 
+			solver.set_scaling_matrix(I); 
+			solver.verbose(true);
+			solver.atol(1e-9); 
+			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
+
+			solver.solve(fun, x); 
+			disp(x); 
+
+			utopia_test_assert(approxeq(x, x_exact, 1e-6));
+		}
+
+
 
 
 		PetscNonlinearSolverTest()
