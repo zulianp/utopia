@@ -46,7 +46,7 @@ namespace utopia
                                     const std::shared_ptr<TRSubproblem> &tr_subproblem_mono, 
                                     const Parameters params                                 = Parameters() ) :
                                     
-                                    NonlinearSolver(tr_subproblem_mono, params), 
+                                    NonlinearSolver(params), 
                                     _stag1_subproblem(tr_subproblem_stag1), 
                                     _stag2_subproblem(tr_subproblem_stag2),
                                     _monolithic_subproblem(tr_subproblem_mono)
@@ -100,16 +100,14 @@ namespace utopia
                 //----------------------------------------------------------------------------      
                 if(iteration_type == MONOLITHIC)
                 {
-                    if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-                        tr_subproblem->current_radius(global_delta);  
+                    _monolithic_subproblem->current_radius(global_delta);  
+                    _monolithic_subproblem->solve(H_mono, g_mono, s_mono);
 
-                    this->linear_solve(H_mono, g_mono, s_mono);
                     pred = this->get_pred(g_mono, H_mono, s_mono); 
 
                     x_trial_mono = x_mono + s_mono; 
 
                     stag1_it = 0; 
-
                     it_scaled++; 
                 }
                 else if (iteration_type == STAG_1)
@@ -126,10 +124,8 @@ namespace utopia
                     level.fun_stag1().hessian(x_stag1, H_stag1); 
                     level.fun_stag1().gradient(x_stag1, g_stag1); 
 
-                    if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-                        tr_subproblem->current_radius(global_delta);  
-
-                    this->linear_solve(H_stag1, g_stag1, s_stag1);
+                    _stag1_subproblem->current_radius(global_delta);  
+                    _stag1_subproblem->solve(H_stag1, g_stag1, s_stag1);
 
                     // local trial step 
                     Vector x_trial_stag = x_stag1 + s_stag1; 
@@ -161,10 +157,9 @@ namespace utopia
                     level.fun_stag2().hessian(x_stag2, H_stag2); 
                     level.fun_stag2().gradient(x_stag2, g_stag2); 
 
-                    if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-                        tr_subproblem->current_radius(global_delta);  
-
-                    this->linear_solve(H_stag2, g_stag2, s_stag2);
+                    
+                    _stag2_subproblem->current_radius(global_delta);  
+                    _stag2_subproblem->solve(H_stag2, g_stag2, s_stag2);
 
                     // local trial step 
                     Vector x_trial_stag = x_stag2 + s_stag2; 

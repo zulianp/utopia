@@ -157,7 +157,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
 
 
         public:
@@ -203,7 +203,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
 
 
         public:
@@ -247,7 +247,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
 
 
         public:
