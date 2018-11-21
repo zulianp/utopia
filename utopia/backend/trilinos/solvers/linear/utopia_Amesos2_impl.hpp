@@ -211,7 +211,7 @@ namespace utopia {
         using VecImplT = typename Vector::Implementation::multi_vector_type;
 
         std::string solver_type = impl_->param_list_->sublist("UTOPIA", true).get("Solver Type", "LU");
-        assert( !Amesos2::query(solver_type) ); //check if the solver type specified in the xml is available
+        assert( Amesos2::query(solver_type) ); //check if the solver type specified in the xml is available
         
         impl_->solver_ = Amesos2::create<MatImplT, VecImplT>(
           solver_type.c_str(),
@@ -369,18 +369,18 @@ namespace utopia {
     {
         if(!params.param_file_name().empty()) {
             try {
-                Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
-                Teuchos::RCP<Teuchos::ParameterList> utopia_param_list;
-                tmp_param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
-                *utopia_param_list = tmp_param_list->sublist("UTOPIA", true);
-                if( utopia_param_list->get<bool>("Direct Solver", "true") )
+                impl_->param_list_ = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
+                auto& utopia_param_list = impl_->param_list_->sublist("UTOPIA", true);
+
+                if( utopia_param_list.template get<bool>("Direct Solver", "true") )
                 {
-               //  if (verbose) std::cout << "using direct solvers " << std::endl;
-                   if( Amesos2::query( utopia_param_list->get("Solver Type", "KLU2") ) ); //Amesos2::query returns true if the solver exists TODO print error
+                 std::cout << "Using Direct Solvers " << std::endl;
+                   if( Amesos2::query( utopia_param_list.get("Solver Type", "KLU2") ) !=0 ); //Amesos2::query returns true if the solver exists TODO print error
                    {
-                    //  if (verbose) std::cout << "solver type " << utopia_param_list->get("Solver Type", "KLU2")  << std::endl;
-                    *(impl_->param_list_) = tmp_param_list->sublist("Amesos2", true);
-                    impl_->solver_->setParameters(impl_->param_list_);
+                    std::cout << "Solver Type: " << utopia_param_list.get("Solver Type", "KLU2")  << std::endl;
+                    Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
+                    tmp_param_list.reset(new Teuchos::ParameterList(impl_->param_list_->sublist("Amesos2", true))); //TODO restrict to only Amesos2 input
+                    impl_->solver_->setParameters(tmp_param_list);
                    }
                 }
                 
