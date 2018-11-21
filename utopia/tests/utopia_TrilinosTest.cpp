@@ -1304,7 +1304,7 @@ namespace utopia {
 
     void trilinos_belos()
     {
-        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
+        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_belos.xml";
         
         Parameters params;
         params.set_param_file_name(xml_file);
@@ -1329,7 +1329,7 @@ namespace utopia {
 
     void trilinos_amesos2()
     {
-        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
+        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_amesos.xml";
         
         Parameters params;
         params.set_param_file_name(xml_file);

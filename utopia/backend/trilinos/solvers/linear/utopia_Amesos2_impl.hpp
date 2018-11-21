@@ -369,9 +369,20 @@ namespace utopia {
     {
         if(!params.param_file_name().empty()) {
             try {
-                impl_->param_list_ = Teuchos::getParametersFromXmlFile(params.param_file_name());
-                impl_->solver_->setParameters(impl_->param_list_);
-                assert( !Amesos2::query( impl_->param_list_->sublist("UTOPIA", true).get("Solver Type", "LU") ) );
+                Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
+                Teuchos::RCP<Teuchos::ParameterList> utopia_param_list;
+                tmp_param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
+                *utopia_param_list = tmp_param_list->sublist("UTOPIA", true);
+                if( utopia_param_list->get<bool>("Direct Solver", "true") )
+                {
+               //  if (verbose) std::cout << "using direct solvers " << std::endl;
+                   if( Amesos2::query( utopia_param_list->get("Solver Type", "KLU2") ) ); //Amesos2::query returns true if the solver exists TODO print error
+                   {
+                    //  if (verbose) std::cout << "solver type " << utopia_param_list->get("Solver Type", "KLU2")  << std::endl;
+                    *(impl_->param_list_) = tmp_param_list->sublist("Amesos2", true);
+                    impl_->solver_->setParameters(impl_->param_list_);
+                   }
+                }
                 
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
