@@ -15,6 +15,12 @@
 
       <ParameterList name="Umfpack" />
 
+      <ParameterList name="LAPACK">
+          <Parameter name="Transpose"     type="bool" value="false" />
+          <Parameter name="Equilibrate"   type="bool" value="true" />
+          <Parameter name="IsContiguous"  type="bool" value="false" />
+      </ParameterList>
+
       <ParameterList name="Cholmod">
           <Parameter name="Trans"        type="int" value="0" />
           <Parameter name="IterRefine"   type="int" value="0" />
