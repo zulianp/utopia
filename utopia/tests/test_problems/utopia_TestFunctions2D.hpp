@@ -142,7 +142,9 @@ namespace utopia
         bool value(const Vector &x, typename Vector::Scalar &result) const override 
         {
             assert(x.size().get(0) == 2);
-            result = 0.5 * norm2(x);
+            Vector g = values(2, 0.0); 
+            gradient(x, g); 
+            result = 0.5 * norm2(g);
             return true;
         }
 
@@ -185,7 +187,6 @@ namespace utopia
             return true;
         }
     };
-
 
 }
 

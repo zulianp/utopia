@@ -155,35 +155,6 @@ namespace utopia {
         SimpleQuadraticFunction() { }
     };
 
-    // template<class Matrix, class Vector>
-    // Quadratic function class
-    // class QuadraticFunction : public Function<Matrix, Vector> {
-    // public:
-    //     DEF_UTOPIA_SCALAR(Matrix)
-
-    //     virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
-    //         Scalar val = dot(point, A * point);
-    //         Scalar val2 = dot(point, b);
-    //         result = 0.5 * val - val2;
-    //         return true;
-    //     }
-
-    //     virtual bool gradient(const Vector &point, Vector &result) const override {
-    //         result = (A * point - b);
-    //         return true;
-    //     }
-
-    //     virtual bool hessian(const Vector &point, Matrix &result) const override {
-    //         result = A;
-    //         return true;
-    //     }
-
-    //     QuadraticFunction(Vector b, Matrix H): b(b), A(H) { }
-    //     private:
-    //         Vector b; /*!< Rhs */
-    //         Matrix A; /*!< Hessian */
-    // };
-
     // Quadratic function class
     template<class Matrix, class Vector>
     class QuadraticFunctionBoundary : public Function<Matrix, Vector> {
@@ -475,6 +446,108 @@ namespace utopia {
 
         }
     };
+
+
+    template<class Matrix, class Vector>
+    class MildStiffExample : public Function<Matrix, Vector> 
+    {
+        static_assert(!utopia::is_sparse<Matrix>::value, "utopia::MildStiffExample does not support sparse matrices as Hessian is dense matrix.");
+
+    public:
+        typedef UTOPIA_SCALAR(Vector)      Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)   SizeType;
+
+        MildStiffExample(const SizeType & n): n_(n)
+        {
+            x_init_ = values(n_, 0.0);    
+
+            const SizeType n_local = local_size(x_init_).get(0); 
+            b_ = local_values(n_local, 1.0); 
+            Vector u = local_values(n_local, 1.0); 
+
+            Matrix U = outer(u, u); 
+            Scalar udot = 2./dot(u,u); 
+            Matrix I = local_identity(n_local, n_local); 
+            U = I - (udot * U); 
+
+            Matrix D = local_identity(n_local, n_local); 
+            
+            {
+                Write<Matrix> re(D); 
+                auto r = row_range(D); 
+
+                for(auto i=r.begin(); i != r.end(); ++i)
+                    D.set(i,i, i+1); 
+            }
+
+            // because some problem with petsc, when using UDU
+            UDU_ = U * D; 
+            UDU_ *= U; 
+
+        }
+
+        bool value(const Vector &x, Scalar &result) const override 
+        {
+            assert(x.size().get(0) == 2);
+            Vector g = values(2, 0.0); 
+            gradient(x, g); 
+            result = 0.5 * norm2(g);
+            return true;
+        }
+
+        bool gradient(const Vector &x, Vector &g) const override 
+        {
+            g = local_values(local_size(x).get(0), 0.0);
+
+            {
+                Write<Vector> wg(g); 
+                Read<Vector> rx(x); 
+                auto r = range(g); 
+
+                for(auto i=r.begin(); i!=r.end(); ++i)
+                    g.set(i, std::pow(x.get(i), 3.)); 
+            }
+
+            g = (UDU_* g) - b_; 
+
+            return true;
+        }
+
+        bool hessian(const Vector &x, Matrix &H) const override 
+        {
+
+            Vector c = local_values(local_size(x).get(0), 0.0);
+
+            {
+                Write<Vector> wg(c); 
+                Read<Vector> rx(x); 
+                auto r = range(c); 
+
+                for(auto i=r.begin(); i!=r.end(); ++i)
+                    c.set(i, std::pow(x.get(i), 2.)); 
+            }
+
+            Matrix C = diag(c); 
+            H = 3. * UDU_ * C; 
+
+            return true;
+        }
+
+
+        void get_initial_guess(Vector & x) const
+        {
+            x = x_init_; 
+        }
+
+        private:
+            const SizeType n_; 
+            Matrix UDU_; 
+            Vector b_; 
+            Vector x_init_; 
+
+    };
+
+
 }
 
 

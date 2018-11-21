@@ -57,6 +57,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
 			UTOPIA_RUN_TEST(affine_similarity_small_test); 
+			UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
 		}
 
 		void petsc_ngs_test()
@@ -711,7 +712,6 @@ namespace utopia
 
 		void affine_similarity_small_test()
 		{
-			std::cout<<"----- affine_similarity_small_test ------- \n";
 			if(mpi_world_size() >1)
 				return; 
 
@@ -742,6 +742,33 @@ namespace utopia
 
 			utopia_test_assert(approxeq(x, x_exact, 1e-6));
 		}
+
+
+		void affine_similarity_stiff_test()
+		{
+			const SizeType n = 20; 
+
+			MildStiffExample<DMatrixd, DVectord> fun(n); 
+			DVectord x, g; 
+			fun.get_initial_guess(x); 
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-12); 
+			linear_solver->max_it(10000);
+
+			AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+
+			DMatrixd I = identity(n,n); 
+			solver.set_mass_matrix(I); 
+			solver.set_scaling_matrix(I); 
+			solver.verbose(true);
+			solver.atol(1e-9); 
+			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
+
+			solver.solve(fun, x); 
+		}
+
+
 
 
 
