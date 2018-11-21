@@ -148,7 +148,8 @@ namespace utopia {
     Amesos2Solver<Matrix, Vector, TRILINOS>::Amesos2Solver(Parameters params)
     : impl_(make_unique<Impl>())
     {
-        set_parameters(params);
+        // TODO check parameter but do not set amesos2 parameters
+        check_parameters(params);
     }
     
     /**
@@ -220,6 +221,7 @@ namespace utopia {
           raw_type(rhs)
         );
 
+        set_parameters();
         assert(!impl_->solver_.is_null());
         
         impl_->solver_->solve();
@@ -365,7 +367,7 @@ namespace utopia {
     }
     
     template <typename Matrix, typename Vector>
-    void Amesos2Solver<Matrix, Vector, TRILINOS>::set_parameters(const Parameters params)
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters(const Parameters params)
     {
         if(!params.param_file_name().empty()) {
             try {
@@ -375,12 +377,9 @@ namespace utopia {
                 if( utopia_param_list.template get<bool>("Direct Solver", "true") )
                 {
                  std::cout << "Using Direct Solvers " << std::endl;
-                   if( Amesos2::query( utopia_param_list.get("Solver Type", "KLU2") ) !=0 ); //Amesos2::query returns true if the solver exists TODO print error
+                   if( Amesos2::query( utopia_param_list.get("Solver Type", "KLU2") ) ); //Amesos2::query returns true if the solver exists TODO print error
                    {
                     std::cout << "Solver Type: " << utopia_param_list.get("Solver Type", "KLU2")  << std::endl;
-                    Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
-                    tmp_param_list.reset(new Teuchos::ParameterList(impl_->param_list_->sublist("Amesos2", true))); //TODO restrict to only Amesos2 input
-                    impl_->solver_->setParameters(tmp_param_list);
                    }
                 }
                 
@@ -393,6 +392,22 @@ namespace utopia {
             //use default paramlist
         }
     }
+
+
+    template <typename Matrix, typename Vector>
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::set_parameters()
+    {
+           try {
+Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
+tmp_param_list.reset(new Teuchos::ParameterList(impl_->param_list_->sublist("Amesos2", true))); //TODO restrict to only Amesos2 input
+impl_->solver_->setParameters(tmp_param_list);
+            } catch(const std::exception &ex) {
+                std::cerr << ex.what() << std::endl;
+                assert(false);
+                abort();
+            }
+    }
+
     
     template <typename Matrix, typename Vector>
     Amesos2Solver<Matrix, Vector, TRILINOS> * Amesos2Solver<Matrix, Vector, TRILINOS>::clone() const

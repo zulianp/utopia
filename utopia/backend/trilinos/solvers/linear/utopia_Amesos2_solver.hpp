@@ -52,11 +52,18 @@ namespace utopia {
         bool num_factorization_done () const;
 
         /**
-         * @brief      Sets the parameters.
+         * @brief      Checks the parameters.
          *
          * @param[in]  params  The parameters
          */
-        void set_parameters(const Parameters params) override;
+        void check_parameters(const Parameters params); // override;
+
+
+         /**
+          * @brief      Sets the parameters.
+         */
+        void set_parameters(); //override;
+
         Amesos2Solver * clone() const override;
         bool smooth(const Vector &rhs, Vector &x) override;
 
