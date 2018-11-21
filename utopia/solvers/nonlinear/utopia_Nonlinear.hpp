@@ -17,6 +17,7 @@
 #include "utopia_Newton.hpp"
 #include "utopia_QuasiNewton.hpp"
 #include "utopia_AffineSimilarity.hpp"
+#include "utopia_AffineSimilarityNew.hpp"
 
 #include "utopia_ConstrainedIncludes.hpp"
 #include "utopia_TrustRegionIncludes.hpp"

@@ -738,40 +738,34 @@ namespace utopia
 			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
 
 			solver.solve(fun, x); 
-			disp(x); 
-
 			utopia_test_assert(approxeq(x, x_exact, 1e-6));
 		}
 
 
 		void affine_similarity_stiff_test()
 		{
-			const SizeType n = 20; 
+			const SizeType n = 100; 
 
 			MildStiffExample<DMatrixd, DVectord> fun(n); 
 			DVectord x, g; 
 			fun.get_initial_guess(x); 
 
 			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
-			linear_solver->atol(1e-12); 
+			linear_solver->atol(1e-14); 
 			linear_solver->max_it(10000);
 
-			AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+			AffineSimilarityNew<DMatrixd, DVectord> solver(linear_solver); 
 
 			DMatrixd I = identity(n,n); 
 			solver.set_mass_matrix(I); 
-			solver.set_scaling_matrix(I); 
+			// solver.set_scaling_matrix(I); 
 			solver.verbose(true);
 			solver.atol(1e-9); 
+			solver.stol(1e-14); 
 			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
 
 			solver.solve(fun, x); 
 		}
-
-
-
-
-
 
 		PetscNonlinearSolverTest()
 		: _n(100) { }
