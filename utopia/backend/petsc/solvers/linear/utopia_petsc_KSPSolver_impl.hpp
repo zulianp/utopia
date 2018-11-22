@@ -772,28 +772,30 @@ namespace utopia {
 	template<typename Matrix, typename Vector>
 	void KSPSolver<Matrix, Vector, PETSC>::read(Input &is)
 	{
-		//TODO add other options
+		PreconditionedSolver::read(is);
 
+		//TODO add other options
 		auto new_ksp_type = this->ksp_type();
-		auto new_pc_type  = this->pc_type();
+		auto new_pc_type = this->pc_type();
 		auto new_solver_package = this->solver_package();
-		auto new_atol = this->atol();
-		auto new_stol = this->stol();
-		auto new_rtol = this->rtol();
+
 
 		is.get("ksp_type", new_ksp_type);
 		is.get("pc_type", new_pc_type);
-		is.get("solve_package", new_solver_package);
-		is.get("atol", new_atol);
-		is.get("stol", new_stol);
-		is.get("rtol", new_rtol);
+		is.get("solver_package", new_solver_package);
 
+		this->ksp_type(new_ksp_type);
 		this->pc_type(new_pc_type);
 		this->solver_package(new_solver_package);
-		this->atol(new_atol);
-		this->stol(new_stol);
-		this->rtol(new_rtol);
-		assert(false);
+	}
+
+	template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::print_usage(std::ostream &os) const
+	{
+		os << "ksp_type : <string>\n";
+		os << "pc_type  : <string>\n";
+		os << "-------------------\n";
+		PreconditionedSolver::print_usage(os);
 	}
 }
 

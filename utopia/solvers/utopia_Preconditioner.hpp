@@ -10,6 +10,8 @@
 #include "utopia_Expression.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Input.hpp"
 
 #include <memory>
 #include <cassert>
@@ -72,12 +74,19 @@ namespace utopia {
 
 
     template<class Vector>
-    class Preconditioner /*: public Operator<Vector>*/ {
+    class Preconditioner : public Configurable  {
     public:
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
         virtual void set_parameters(const Parameters)
         {}
+
+        virtual void read(Input &) override
+        {
+            assert(false && "implement me");
+        }
+
+        // virtual void print_usage(std::ostream &os = std::cout) const;
     };
 
 

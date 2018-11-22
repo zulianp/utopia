@@ -39,8 +39,7 @@ namespace utopia {
     template<typename Matrix, typename Vector>
     class KSPSolver<Matrix, Vector, PETSC> : 
         public PreconditionedSolver<Matrix, Vector>,
-        public Smoother<Matrix, Vector>,
-        public Configurable {
+        public Smoother<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -152,6 +151,7 @@ namespace utopia {
         KSP &implementation();
 
         virtual void read(Input &is) override;
+        virtual void print_usage(std::ostream &os = std::cout) const override;
 
     protected:
         std::unique_ptr<Impl> ksp_;

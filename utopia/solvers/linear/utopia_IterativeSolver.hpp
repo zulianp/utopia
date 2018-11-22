@@ -90,6 +90,37 @@ namespace  utopia
             log_iterates_       = params.log_iterates(); 
         }
 
+        virtual void read(Input &is) override
+        {
+            //TODO add other options
+            auto new_atol = this->atol();
+            auto new_stol = this->stol();
+            auto new_rtol = this->rtol();
+            auto new_max_it = this->max_it();
+            auto new_verbose = this->verbose();
+
+            is.get("atol", new_atol);
+            is.get("stol", new_stol);
+            is.get("rtol", new_rtol);
+            is.get("max_it", new_max_it);
+            is.get("verbose", new_verbose);
+
+            this->atol(new_atol);
+            this->stol(new_stol);
+            this->rtol(new_rtol);
+            this->max_it(new_max_it);
+            this->verbose(new_verbose);
+        }
+
+        virtual void print_usage(std::ostream &os) const
+        {
+            os << "atol     : <real>\n";
+            os << "rtol     : <real>\n";
+            os << "stol     : <real>\n";
+            os << "max_it   : <int>\n";
+            os << "verbose  : <bool>\n";
+        }
+
         virtual bool apply(const Vector &rhs, Vector &sol) override
         {
             return this->solve(*this->get_operator(), rhs, sol);
