@@ -74,7 +74,7 @@ namespace utopia {
 
 
     template<class Vector>
-    class Preconditioner : public Configurable  {
+    class Preconditioner : public Configurable, public virtual Clonable {
     public:
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
@@ -85,6 +85,8 @@ namespace utopia {
         {
             assert(false && "implement me");
         }
+
+        virtual Preconditioner * clone() const override = 0;
 
         // virtual void print_usage(std::ostream &os = std::cout) const;
     };
@@ -103,6 +105,11 @@ namespace utopia {
         ExprPreconditioner(const Expr &expr)
         : expr_(expr)
         {}
+
+        virtual ExprPreconditioner * clone() const override 
+        {
+            return new ExprPreconditioner(*this);
+        }
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
@@ -132,6 +139,11 @@ namespace utopia {
         const std::shared_ptr<const Matrix> &get_matrix() const
         {
             return op_;
+        }
+
+        virtual DelegatePreconditioner * clone() const override 
+        {
+            return new DelegatePreconditioner(*this);
         }
 
     private:

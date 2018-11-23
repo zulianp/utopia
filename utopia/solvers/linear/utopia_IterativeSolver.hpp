@@ -92,33 +92,27 @@ namespace  utopia
 
         virtual void read(Input &is) override
         {
-            //TODO add other options
-            auto new_atol = this->atol();
-            auto new_stol = this->stol();
-            auto new_rtol = this->rtol();
-            auto new_max_it = this->max_it();
-            auto new_verbose = this->verbose();
+            is.get("atol", atol_);
+            is.get("rtol", rtol_);
+            is.get("stol", stol_);
 
-            is.get("atol", new_atol);
-            is.get("stol", new_stol);
-            is.get("rtol", new_rtol);
-            is.get("max_it", new_max_it);
-            is.get("verbose", new_verbose);
-
-            this->atol(new_atol);
-            this->stol(new_stol);
-            this->rtol(new_rtol);
-            this->max_it(new_max_it);
-            this->verbose(new_verbose);
+            is.get("max-it", max_it_);
+            is.get("verbose", verbose_);
+            is.get("time-statistics", time_statistics_);
+            is.get("log-system", log_system_);
+            is.get("log-iterates", log_iterates_);
         }
 
-        virtual void print_usage(std::ostream &os) const
+        virtual void print_usage(std::ostream &os) const override
         {
-            os << "atol     : <real>\n";
-            os << "rtol     : <real>\n";
-            os << "stol     : <real>\n";
-            os << "max_it   : <int>\n";
-            os << "verbose  : <bool>\n";
+            os << "atol             : <real>\n";
+            os << "rtol             : <real>\n";
+            os << "stol             : <real>\n";
+            os << "max-it           : <int>\n";
+            os << "verbose          : <bool>\n";
+            os << "time-statistics  : <bool>\n";
+            os << "log-system       : <bool>\n";
+            os << "log-iterates     : <bool>\n";
         }
 
         virtual bool apply(const Vector &rhs, Vector &sol) override
