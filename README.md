@@ -1,13 +1,11 @@
 # Utopia #
 Utopia is a C++ embedded domain specific language designed for parallel non-linear solution strategies and finite element analysis.
 
-# Contributors of utopia
+# Main contributors of utopia
 
 - Dr. Patrick Zulian (Lead developer)
 - Alena Kopanicakova (Linear and non-linear solvers, Fenics and MOOSE interoperability)
-- Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith) 
-- Dr. Teseo Schneider (Visualization tool)
-- Eric Botter (Memory pool)
+- Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith)
 
 Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
 
@@ -143,5 +141,17 @@ Join us on slack:
 https://join.slack.com/t/ics-utopia/signup
 
 
+## Citing Utopia
+If you use Utopia for your research you can use the following bibtex entry to cite us
+
+```bibtex
+@misc{utopiagit,
+	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Nestola and Andreas Fink and Nur Fadel and Victor Magri and Teseo Schneider and Eric Botter},
+	title = {{U}topia {G}it repository},
+	url = {https://bitbucket.org/zulianp/utopia},
+	howpublished = {https://bitbucket.org/zulianp/utopia},
+	year = {2016}
+}
+```
 # More details coming soon!
 
