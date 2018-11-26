@@ -162,7 +162,7 @@ namespace utopia {
 	            PC pc;
 	            ierr = KSPGetPC(ksp_, &pc);                     assert(ierr == 0);
 	            ierr = PCFactorGetMatSolverPackage(pc, &stype); assert(ierr == 0);
-	            return stype;
+	            if(stype) return stype; else return "";
 	#else
 	            static const char * ret = " ";
 	            return ret;

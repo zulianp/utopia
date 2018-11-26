@@ -384,7 +384,50 @@ namespace utopia {
 		bool ok = Intersector::intersect_convex_polyhedra(poly1, poly2, &isect);
 	}
 
-	void intesect_ray_elem_tet(libMesh::Parallel::Communicator &comm)
+	void intesect_ray_elem_quad(libMesh::Parallel::Communicator &comm)
+	{
+		libMesh::Mesh mesh(comm);
+		libMesh::MeshTools::Generation::build_square(mesh,
+			1, 1,
+			0., 1.,
+			0., 4.,
+			libMesh::QUAD8
+		);
+
+		LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
+		V.initialize();
+
+		Ray<double, 2> ray = {
+			{-0.5, 0.6 },
+			{ 1., 0. }
+		};
+
+		for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
+			const auto &e = **e_it;
+
+			auto n_sides = e.n_sides();
+
+			for(std::size_t i = 0; i < n_sides; ++i) {
+				if(i != 1 && i != 3) continue;
+
+				auto side_ptr = e.build_side_ptr(i);
+				LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0), true);
+				shape.verbose(false);
+
+				double t = 0.;
+				shape.intersect(ray, t);
+
+				if(i == 1) {
+					utopia_test_assert(approxeq(t, 1.5, 1e-8));
+				} else if(i == 3) {
+					utopia_test_assert(approxeq(t, 0.5, 1e-8));
+				}
+			}
+		}
+	}
+
+
+	void intesect_ray_elem_warped_quad(libMesh::Parallel::Communicator &comm)
 	{
 		libMesh::Mesh mesh(comm);
 		libMesh::MeshTools::Generation::build_square(mesh,
@@ -402,42 +445,37 @@ namespace utopia {
 			{ 1., 0. }
 		};
 
-		// int q = 0;
+		auto &e = **elements_begin(mesh);
+		e.node_ref(7)(0) = 0.2;
 
-		for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
-			const auto &e = **e_it;
+		auto n_sides = e.n_sides();
 
-			auto n_sides = e.n_sides();
+		for(std::size_t i = 0; i < n_sides; ++i) {
+			if(i != 1 && i != 3) continue;
 
-			for(std::size_t i = 0; i < n_sides; ++i) {
-				if(i != 1 && i != 3) continue;
+			auto side_ptr = e.build_side_ptr(i);
+			LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0), true);
+			// LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0), false);
+			// shape.verbose(true);
 
-				auto side_ptr = e.build_side_ptr(i);
-				LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0));
+			double t = 0.;
+			shape.intersect(ray, t);
 
-				// std::cout << "elem: " << i << std::endl;
-				// std::cout << "(" << side_ptr->node_ref(0)(0) << ", " << side_ptr->node_ref(0)(1) << ") ";
-				// std::cout << "(" << side_ptr->node_ref(1)(0) << ", " << side_ptr->node_ref(1)(1) << ") " << std::endl;;
-
-				double t = 0.;
-				shape.intersect(ray, t);
-
-				if(i == 1) {
-					utopia_test_assert(approxeq(t, 1.5, 1e-8));
-				} else if(i == 3) {
-					utopia_test_assert(approxeq(t, 0.5, 1e-8));
-				}
-
-				// std::cout << "intersection: " << t << std::endl;
+			if(i == 1) {
+				utopia_test_assert(approxeq(t, 1.5, 1e-8));
+			} else if(i == 3) {
+				utopia_test_assert(t < 0.7 && t > 0.6);
 			}
 		}
+
 	}
 
 	void run_intersect_test(libMesh::LibMeshInit &init)
 	{
 		UTOPIA_UNIT_TEST_BEGIN("IntersectTest");
 
-		intesect_ray_elem_tet(init.comm());
+		intesect_ray_elem_quad(init.comm());
+		intesect_ray_elem_warped_quad(init.comm());
 
 		UTOPIA_RUN_TEST(intersect_hex_with_polygon_test);
 		UTOPIA_RUN_TEST(intersect_tet_with_polygon_test_1);

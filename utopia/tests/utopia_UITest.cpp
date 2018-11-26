@@ -81,7 +81,8 @@ namespace utopia {
 		const std::string data_path = Utopia::instance().get("data_path");
 
 #ifdef WITH_PETSC
-		auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+		// auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+		auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 		Newton<DSMatrixd, DVectord> newton(cg);
 		newton.import("Newton", data_path + "/json/default.json");
 #endif //WITH_PETSC
