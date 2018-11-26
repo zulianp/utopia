@@ -152,7 +152,7 @@ namespace utopia {
     : impl_(make_unique<Impl>())
     {
         // TODO check parameter but do not set amesos2 parameters
-        check_parameters(params);
+        set_parameters(params);
     }
     
     /**
@@ -224,7 +224,7 @@ namespace utopia {
           raw_type(rhs)
         );
 
-        set_parameters();
+        check_parameters();
         assert(!impl_->solver_.is_null());
         
         impl_->solver_->solve();
@@ -370,7 +370,7 @@ namespace utopia {
     }
     
     template <typename Matrix, typename Vector>
-    void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters(const Parameters params)
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::set_parameters(const Parameters params)
     {
         if(!params.param_file_name().empty()) {
             try {
@@ -398,7 +398,7 @@ namespace utopia {
 
 
     template <typename Matrix, typename Vector>
-    void Amesos2Solver<Matrix, Vector, TRILINOS>::set_parameters()
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters()
     {
            try {
 Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;

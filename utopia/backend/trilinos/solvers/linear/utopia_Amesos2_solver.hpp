@@ -56,13 +56,13 @@ namespace utopia {
          *
          * @param[in]  params  The parameters
          */
-        void check_parameters(const Parameters params); // override;
+        void set_parameters(const Parameters params); // override;
 
 
          /**
           * @brief      Sets the parameters.
          */
-        void set_parameters(); //override;
+        void check_parameters(); //override;
 
         Amesos2Solver * clone() const override;
         bool smooth(const Vector &rhs, Vector &x) override;
