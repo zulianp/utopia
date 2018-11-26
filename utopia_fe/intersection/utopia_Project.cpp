@@ -164,13 +164,16 @@ namespace utopia {
 		std::size_t n_islands = domain_of_integration.size();
 
 		for(std::size_t k = 0; k < n_islands; ++k) {
-			n_qps += triangulations[k].size() * n_qps_rule;
+			n_qps += triangulations[k].size()/3 * n_qps_rule;
 		}
 
 		composite_q_points.resize(n_qps);
 		composite_q_weights.resize(n_qps);
 
 		Vector2 u, v;
+
+		Polygon2 triangle;
+		triangle.points.resize(3);
 
 		std::size_t qp = 0;
 		for(std::size_t k = 0; k < n_islands; ++k) {
@@ -186,10 +189,20 @@ namespace utopia {
 				u = points[tri[i3 + 1]] - o;
 				v = points[tri[i3 + 2]] - o;
 
+
+				triangle.points[0] = { 0., 0.};
+				triangle.points[1] = u;
+				triangle.points[2] = v;
+
+				auto scale = triangle.area() * weight;
+				assert(scale > 0.);
+
 				for(std::size_t j = 0; j < n_qps_rule; ++j) {
 					composite_q_points[qp] = o;
 					composite_q_points[qp] += q_points[j].x * u;
 					composite_q_points[qp] += q_points[j].y * v;
+
+					composite_q_weights[qp] = q_weights[j] * scale;
 					++qp;
 				}
 			}

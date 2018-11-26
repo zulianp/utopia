@@ -21,6 +21,8 @@ namespace utopia {
 			return points.empty();
 		}
 
+		Scalar area() const;
+
 		static bool intersect(const Polygon2 &poly1, const Polygon2 &poly2, std::vector<Polygon2> &result, const Scalar tol = DEFAULT_TOLLERANCE);
 		std::vector<Vector> points;
 	};

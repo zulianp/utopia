@@ -35,6 +35,54 @@ namespace utopia {
             }
         }
 
+        inline void ref(Vector &ref_point) const
+        {
+            Read<Vectord> r_(x_ref_);
+
+            for(int d = 0; d < Dim-1; ++d) {
+                ref_point[d] = x_ref_.get(d);
+            }
+
+            ref_point[Dim-1] = 0.;
+        }
+
+        inline bool make_quadrature(
+            const Vector &ray_dir,
+            const std::vector<Polygon3::Vector>  &composite_q_points,
+            const std::vector<Polygon3::Scalar>  &composite_q_weights,
+            QMortar &q
+        )
+        {
+            Ray<Scalar, Dim> ray;
+            ray.dir = ray_dir;
+
+            const std::size_t n_qp = composite_q_weights.size();
+            q.resize(n_qp);
+
+            Vector ref_point;
+            for(std::size_t i = 0; i < n_qp; ++i) {
+                q.get_weights()[i] = composite_q_weights[i];
+
+                ray.o = composite_q_weights[i];
+
+                Scalar t = 0.;
+
+                if(!intersect(ray, t)) {
+                    std::cerr << "[Error] now what?!" << std::endl;
+                    assert(false);
+                    return false;
+                }
+
+                ref(ref_point);
+
+                for(int d = 0; d < Dim; ++d) {
+                    q.get_points()[i](d) = ref_point[d];
+                } 
+            }
+
+            return true;
+        }
+
     private:
         const libMesh::Elem &elem_;
         libMesh::FEType type_;
@@ -283,6 +331,19 @@ namespace utopia {
                     g_.set(Dim-1, g_2);
                 }
 
+                const Scalar norm_g = norm2(g_);
+
+                if(verbose_) { std::cout << "newton: iter: " << i << " " << norm_g << std::endl; }
+                
+                if(norm_g_prev < norm_g) {
+                    std::cout << "diverged" << std::endl;
+                    return false;
+                }
+                
+                if(norm_g <= tol_) {
+                    return true;
+                }
+
                 get_hessian(r_, A_);
 
                 {
@@ -305,29 +366,29 @@ namespace utopia {
                 solver_.solve(H_, g_, h_); 
                 u_ -= h_;
 
-                if(verbose_) {
+                // if(verbose_) {
 
-                    disp("----------");
-                    disp("J:");
-                    disp(J_);
-                    disp("----------");
+                //     disp("----------");
+                //     disp("J:");
+                //     disp(J_);
+                //     disp("----------");
 
-                    disp("----------");
-                    disp("A:");
-                    disp(A_);
-                    disp("----------");
+                //     disp("----------");
+                //     disp("A:");
+                //     disp(A_);
+                //     disp("----------");
                   
-                    disp("----------");
-                    disp("H:");
-                    disp(H_);
-                    disp("----------");
-                    disp(g_);
-                    disp("----------");
-                    disp(h_);
-                    disp("----------");
-                    disp(u_);
-                    disp("----------");
-                }
+                //     disp("----------");
+                //     disp("H:");
+                //     disp(H_);
+                //     disp("----------");
+                //     disp(g_);
+                //     disp("----------");
+                //     disp(h_);
+                //     disp("----------");
+                //     disp(u_);
+                //     disp("----------");
+                // }
                 
                 {
                     //update ref coordinates
@@ -342,18 +403,7 @@ namespace utopia {
                     t = u_.get(Dim - 1);
                 }
                 
-                const Scalar norm_g = norm2(g_);
-
-                if(verbose_) { std::cout << "newton: iter: " << i << " " << norm_g << std::endl; }
-                
-                if(norm_g_prev < norm_g) {
-                    std::cout << "diverged" << std::endl;
-                    return false;
-                }
-                
-                if(norm_g <= tol_) {
-                    return true;
-                }
+             
                 
                 norm_g_prev = norm_g;
             }
