@@ -35,6 +35,9 @@ namespace utopia {
 #ifdef KOKKOS_CUDA
     typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
     typedef cuda_node NT;
+#elif defined  KOKKOS_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
+    typedef rocm_node NT;
 #elif defined KOKKOS_OPENMP
     typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
     typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;

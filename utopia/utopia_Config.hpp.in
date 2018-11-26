@@ -12,6 +12,7 @@
 #cmakedefine WITH_TRILINOS_MUELU
 #cmakedefine WITH_TRILINOS_TPETRAEXT
 #cmakedefine KOKKOS_CUDA
+#cmakedefine KOKKOS_ROCM
 #cmakedefine KOKKOS_OPENMP
 #cmakedefine WITH_CPP11
 #cmakedefine WITH_UMFPACK
