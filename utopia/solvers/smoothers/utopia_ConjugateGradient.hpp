@@ -122,7 +122,7 @@ namespace utopia
 	private:
 		bool unpreconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x)
 		{
-			Scalar it = 0;
+			SizeType it = 0;
 			Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 			
 			assert(!empty(b));
@@ -139,6 +139,8 @@ namespace utopia
 			
 			this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||" });
 			bool converged = false;
+
+			SizeType check_norm_each = 1;
 			
 			while(!converged)
 			{
@@ -167,13 +169,21 @@ namespace utopia
 				r -= alpha * q;
 				
 				rho_1 = rho;
-				it++;
-				r_norm = norm2(r);
-				
-				if(this->verbose())
-					PrintInfo::print_iter_status({it, r_norm});
-				
-				converged = this->check_convergence(it, r_norm, 1, 1);
+
+				if((it % check_norm_each) == 0) {
+					// r = 
+					A.apply(x, r);
+					r = b - r;
+					
+					r_norm = norm2(r);
+					
+					if(this->verbose()) {
+						PrintInfo::print_iter_status({ Scalar(it), r_norm });
+					}
+					
+					converged = this->check_convergence(it, r_norm, 1, 1);
+				}
+
 				it++;
 			}
 			
@@ -182,7 +192,7 @@ namespace utopia
 		
 		bool preconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x)
 		{
-			Scalar it = 0;
+			SizeType it = 0;
 			Scalar beta = 0., alpha = 1., r_norm = 9e9;
 			
 			z     = local_zeros(local_size(b));
@@ -212,9 +222,10 @@ namespace utopia
 				r_new = r - alpha * Ap;
 				
 				r_norm = norm2(r_new);
+				
 				if(r_norm < this->atol()) {
 					if(this->verbose())
-						PrintInfo::print_iter_status({it, r_norm});
+						PrintInfo::print_iter_status({Scalar(it), r_norm});
 					
 					stop = this->check_convergence(it, r_norm, 1, 1);
 					break;
@@ -227,8 +238,9 @@ namespace utopia
 				r = r_new;
 				z = z_new;
 				
-				if(this->verbose())
-					PrintInfo::print_iter_status({it, r_norm});
+				if(this->verbose()) {
+					PrintInfo::print_iter_status({Scalar(it), r_norm});
+				}
 				
 				stop = this->check_convergence(it, r_norm, 1, 1);
 				it++;

@@ -139,6 +139,7 @@ namespace utopia {
 			// 	this->external_force_fun()->eval(t_, external_force_);
 			// }
 
+			//FIXME is density_ * external_force wrong?
 			forcing_term_ = internal_mass_matrix_ * x_old_ + ((dt_ * dt_ * density_)/4.) * (2. * external_force_ - internal_force_old_);
 		}
 

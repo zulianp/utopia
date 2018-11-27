@@ -8,6 +8,7 @@
 #define UTOPIA_LS_STRATEGY_HPP
 #include "utopia_Parameters.hpp"    
 #include "utopia_FunctionNormalEq.hpp"
+#include "utopia_Input.hpp"
 
 namespace  utopia 
 {   
@@ -18,11 +19,12 @@ namespace  utopia
      * @tparam     Vector 
      */
     template<class Matrix, class Vector>
-    class LSStrategy 
+    class LSStrategy : public Configurable
     {
 
         typedef UTOPIA_SCALAR(Vector) Scalar;
     public:
+        virtual ~LSStrategy() {}
 
         LSStrategy(const Parameters  params = Parameters())  
         {
@@ -40,6 +42,11 @@ namespace  utopia
         virtual bool get_alpha(Function<Matrix, Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
         virtual bool get_alpha(LeastSquaresFunction<Matrix, Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
         virtual bool set_parameters(const Parameters /*params*/){ return true; }
+
+        virtual void read(Input &in) override
+        {
+            //TODO
+        }
     };
 }
 
