@@ -10,6 +10,7 @@
 #include "utopia_Monitor.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_ConjugateGradient.hpp"
+#include "utopia_Input.hpp"
 
 
 namespace utopia 
@@ -21,7 +22,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class NonLinearSolver : public Monitor<Matrix, Vector>
+    class NonLinearSolver : public Monitor<Matrix, Vector>, public Configurable
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -109,6 +110,35 @@ namespace utopia
             //     linear_solver_->set_parameters(params); 
         }
 
+        virtual void read(Input &in) override
+        {
+            in.get("atol", atol_);
+            in.get("rtol", rtol_);
+            in.get("stol", stol_);
+            in.get("max-it", max_it_);
+            in.get("verbose", verbose_);
+            in.get("time-statistics", time_statistics_);
+            in.get("log-iterates", log_iterates_);
+            in.get("log-system", log_system_);
+            in.get("check_diff", check_diff_);
+
+            if(linear_solver_) {
+                in.get("linear-solver", *linear_solver_);
+            }
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            os << "atol             : <real>\n";
+            os << "rtol             : <real>\n";
+            os << "stol             : <real>\n";
+            os << "max-it           : <int>\n";
+            os << "verbose          : <bool>\n";
+            os << "time-statistics  : <bool>\n";
+            os << "log-system       : <bool>\n";
+            os << "log-iterates     : <bool>\n";
+            os << "check_diff       : <bool>\n";
+        }
 
         /**
          * @brief      Changes linear solver used inside of nonlinear-solver. 

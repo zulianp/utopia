@@ -13,7 +13,7 @@ foreach(MODULE ${CORE_MODULES})
 	target_include_directories(utopia_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
 endforeach(MODULE)
 
-target_link_libraries(utopia_core utopia_utils)
+target_link_libraries(utopia_core utopia_utils utopia_ui)
 set_utopia_compiler_features(utopia_core)
 
 install(TARGETS utopia_core

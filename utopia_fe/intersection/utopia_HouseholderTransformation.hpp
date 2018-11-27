@@ -35,7 +35,7 @@ namespace utopia {
 				out[i] = 0.;
 
 				for(int j = 0; j < Dim; ++j) {
-					out[i] += trafo[i*Dim + j] * in[i];
+					out[i] += trafo[i * Dim + j] * in[j];
 				}
 			}
 		}

@@ -39,12 +39,22 @@ namespace utopia {
 			aux_get(key, val);
 		}
 
-		inline void get(const std::string &key, SizeType &val) override
+		// inline void get(const std::string &key, SizeType &val) override
+		// {
+		// 	aux_get(key, val);
+		// }
+
+		inline void get(const std::string &key, std::string &val) override
 		{
 			aux_get(key, val);
 		}
 
-		inline void get(const std::string &key, std::string &val) override
+		inline void get(const std::string &key, long &val) override
+		{
+			aux_get(key, val);
+		}
+
+		inline void get(const std::string &key, unsigned long &val) override
 		{
 			aux_get(key, val);
 		}
@@ -119,10 +129,10 @@ namespace utopia {
 			aux_set(key, val);
 		}
 
-		inline void set(const std::string &key, const SizeType &val)
-		{
-			aux_set(key, val);
-		}
+		// inline void set(const std::string &key, const SizeType &val)
+		// {
+		// 	aux_set(key, val);
+		// }
 
 		inline void set(const std::string &key, const std::string &val)
 		{

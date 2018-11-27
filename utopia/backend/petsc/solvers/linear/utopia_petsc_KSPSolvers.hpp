@@ -8,8 +8,10 @@
 namespace utopia {
     //FIXME use superclass IterativeSolver instead of KSPSolver and compose with it
     template<typename Matrix, typename Vector>
-    class BiCGStab<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
+    class BiCGStab<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> {
     public:
+        using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
+
         BiCGStab(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
         : KSPSolver<Matrix, Vector, PETSC>(params)
         {
@@ -30,6 +32,11 @@ namespace utopia {
             IterativeSolver<Matrix, Vector>::set_parameters(params_copy);
         }
 
+        void read(Input &is) override {
+            super::read(is);
+            super::ksp_type("bcgs");
+        }
+
         virtual BiCGStab * clone() const override
         {
             return new BiCGStab(*this);
@@ -39,8 +46,10 @@ namespace utopia {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename Matrix, typename Vector>
-    class MINRES<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
+    class MINRES<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> {
     public:
+        using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
+
         MINRES(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
         : KSPSolver<Matrix, Vector, PETSC>(params)
         {
@@ -55,6 +64,11 @@ namespace utopia {
             KSPSolver<Matrix, Vector, PETSC>::set_parameters(params_copy);
         }
 
+        void read(Input &is) override {
+            super::read(is);
+            super::ksp_type("minres");
+        }
+
         virtual MINRES * clone() const override
         {
             return new MINRES(*this);
@@ -64,8 +78,10 @@ namespace utopia {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename Matrix, typename Vector>
-    class SOR<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
+    class SOR<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> {
     public:
+        using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
+        
         SOR(const Parameters params = Parameters())
         : KSPSolver<Matrix, Vector, PETSC>(params)
         {
@@ -78,6 +94,12 @@ namespace utopia {
             params_copy.lin_solver_type("richardson");
             params_copy.preconditioner_type("sor");
             KSPSolver<Matrix, Vector, PETSC>::set_parameters(params_copy);
+        }
+
+        void read(Input &is) override {
+            super::read(is);
+            super::ksp_type("richardson");
+            super::pc_type("sor");
         }
 
         virtual SOR * clone() const override

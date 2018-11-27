@@ -43,6 +43,8 @@ namespace utopia {
             cg.atol(1e-6);
             cg.max_it(500);
             // cg.verbose(true);
+
+            x = *ml_problem.rhs;
             cg.update(ml_problem.matrix);
             cg.apply(*ml_problem.rhs, x);
 

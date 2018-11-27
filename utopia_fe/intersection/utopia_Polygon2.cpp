@@ -36,7 +36,7 @@ namespace utopia {
         }
 
         const double denom = std::max(max_x - min_x, max_y - min_y);
-        const double cut_off = std::min(1e16, 1./denom); //1e18 is the max represented value
+        const double cut_off = std::min(1e16, 1e16/denom); //1e18 is the max represented value
 
         Paths subj(1), clip(1), solution;
 
@@ -98,6 +98,20 @@ namespace utopia {
         result.resize(n_actual_intersection);
 
         return true;
+    }
+
+    Polygon2::Scalar Polygon2::area() const
+    {
+        const auto n = size();
+        std::vector<Scalar> arr(n * 2);
+
+        std::size_t index = 0;
+        for(std::size_t i = 0; i < n; ++i, index += 2) {
+            arr[index]     =  points[i].x;
+            arr[index + 1] =  points[i].y;
+        }
+
+        return Intersector::polygon_area_2(n, &arr[0]);
     }
 }
 

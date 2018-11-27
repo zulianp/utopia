@@ -144,6 +144,12 @@ namespace utopia {
 					auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
 					auto coarse_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
 					
+					// smoother->set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
+					// coarse_solver->set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
+					coarse_solver->verbose(true);
+					coarse_solver->max_it(2000);
+					coarse_solver->atol(1e-16);
+					
 					Multigrid<Matrix, Vector, HOMEMADE> multigrid(
 					                                    smoother,
 					                                    coarse_solver
@@ -249,7 +255,8 @@ namespace utopia {
 			if(verbose) {
 			    multigrid.describe();
 			}
-			
+				
+			x = *ml_problem.rhs;
 			multigrid.apply(*ml_problem.rhs, x);
 			
 			double diff0 = norm2(*ml_problem.matrix * x);
