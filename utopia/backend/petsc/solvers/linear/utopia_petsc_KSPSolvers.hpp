@@ -4,6 +4,7 @@
 #include "utopia_LinearSolverInterfaces.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_petsc_ConjugateGradient.hpp"
+#include "utopia_BiCGStab.hpp"
 
 namespace utopia {
     //FIXME use superclass IterativeSolver instead of KSPSolver and compose with it

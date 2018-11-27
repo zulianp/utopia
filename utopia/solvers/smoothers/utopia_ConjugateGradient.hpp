@@ -18,6 +18,8 @@
 namespace utopia 
 {
 	
+
+	//FIXME also use the PreconditionedSolver interface properly
 	/**
 	 * @brief      Conjugate Gradient solver. Works with all utopia tensor types.
 	 * @tparam     Matrix
@@ -36,10 +38,16 @@ namespace utopia
 		using IterativeSolver<Matrix, Vector>::solve;
 		
 		ConjugateGradient(const Parameters params = Parameters())
+		: reset_initial_guess_(false)
 		{
 			set_parameters(params);
 		}
 		
+		void reset_initial_guess(const bool val)
+		{
+			reset_initial_guess_ = val;
+		}
+
 		/**
 		 * @brief      Sets the parameters.
 		 *
@@ -102,8 +110,6 @@ namespace utopia
 			}
 		}
 
-
-
 		bool smooth(const Vector &rhs, Vector &x) override
 		{
 			SizeType temp = this->max_it();
@@ -132,6 +138,9 @@ namespace utopia
 				r = b;
 			} else {
 				assert(local_size(x).get(0) == local_size(b).get(0));
+				if(reset_initial_guess_) {
+					x.set(0.);
+				}
 				// r = b - A * x;
 				A.apply(x, r);
 				r = b - r;
@@ -172,8 +181,8 @@ namespace utopia
 
 				if((it % check_norm_each) == 0) {
 					// r = 
-					A.apply(x, r);
-					r = b - r;
+					// A.apply(x, r);
+					// r = b - r;
 					
 					r_norm = norm2(r);
 					
@@ -203,6 +212,11 @@ namespace utopia
 				r = b;
 			} else {
 				assert(local_size(x).get(0) == local_size(b).get(0));
+				
+				if(reset_initial_guess_) {
+					x.set(0.);
+				}
+
 				A.apply(x, r);
 				r = b - r;
 			}
@@ -218,14 +232,21 @@ namespace utopia
 				// Ap = A*p;
 				A.apply(p, Ap);
 				alpha = dot(r, z)/dot(p, Ap);
+
+				if(std::isinf(alpha) || std::isnan(alpha)) {
+					stop = this->check_convergence(it, r_norm, 1, 1);
+					break;
+				}
+				
 				x += alpha * p;
 				r_new = r - alpha * Ap;
 				
 				r_norm = norm2(r_new);
 				
 				if(r_norm < this->atol()) {
-					if(this->verbose())
+					if(this->verbose()) {
 						PrintInfo::print_iter_status({Scalar(it), r_norm});
+					}
 					
 					stop = this->check_convergence(it, r_norm, 1, 1);
 					break;
@@ -246,7 +267,31 @@ namespace utopia
 				it++;
 			}
 			
-			return r_norm <= this->atol();
+			if(r_norm <= this->atol()) {
+				//FIXME sometimes this fails for some reason
+				// assert(check_solution(A, x, b));
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		bool check_solution(const Operator<Vector> &A, const Vector &x, const Vector &b) const
+		{
+			Vector r;
+			A.apply(x, r);
+			r -= b;
+
+			const Scalar r_norm = norm2(r);
+			
+			if(r_norm > 100 * this->atol()) {
+				// write("A.m", *this->get_operator());
+				// disp(*this->get_operator());
+				assert(r_norm <= this->atol());
+				return false;
+			}
+
+			return true;
 		}
 
 		void init(const SizeType &ls)
@@ -285,6 +330,7 @@ namespace utopia
 		
 		std::shared_ptr<Preconditioner> precond_;
 		Vector r, p, q, Ap, r_new, z, z_new;
+		bool reset_initial_guess_;
 	};
 }
 

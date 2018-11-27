@@ -520,7 +520,7 @@ namespace utopia {
 		libMesh::FEType fe_type = V.dof_map().variable_type(0);
 		LibMeshShape<double, 3> left_shape(*left_side, fe_type, use_newton);
 		LibMeshShape<double, 3> right_shape(*right_side, fe_type, use_newton);
-		left_shape.verbose(true);
+		left_shape.verbose(false);
 
 		QMortar left_q(3), right_q(3);
 
@@ -530,8 +530,6 @@ namespace utopia {
 		    {1.},
 		    left_q
 		); 
-
-
 
 		ok = left_shape.make_quadrature(
 		    plane.n,
