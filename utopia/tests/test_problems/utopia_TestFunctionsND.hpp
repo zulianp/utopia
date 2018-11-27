@@ -459,7 +459,7 @@ namespace utopia {
 
         MildStiffExample(const SizeType & n): n_(n)
         {
-            x_init_ = values(n_, 1.0);    
+            x_init_ = values(n_, 0.0);    
 
             const SizeType n_local = local_size(x_init_).get(0); 
             b_ = local_values(n_local, 1.0); 

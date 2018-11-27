@@ -115,7 +115,7 @@ namespace utopia
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                         PrintInfo::print_iter_status(it_inner, {tau});
 
-                    while(!converged_inner && it_inner < 5)
+                    while(!converged_inner && it_inner < 10)
                     {
                         // here initial value for tau comes from tau_opt 
                         tau = estimate_tau(g_trial, g, s, tau, s_norm); 

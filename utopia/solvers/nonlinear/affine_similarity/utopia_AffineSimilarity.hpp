@@ -30,7 +30,10 @@ namespace utopia
                             scaling_init_(false),
                             tau_max_(1e9),
                             tau_min_(-1e9), 
-                            alpha_treshold_(1e-10)
+                            alpha_treshold_(1e-10), 
+                            max_inner_it_(5), 
+                            m_(-1.0), 
+                            use_m_(true)
                             {
                                 //set_parameters(params);
                                 verbosity_level_ = params.verbose() ? VERBOSITY_LEVEL_NORMAL : VERBOSITY_LEVEL_QUIET;  
@@ -73,6 +76,7 @@ namespace utopia
             // initialization of  tau 
             tau = 1.0/g_norm;  
 
+
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
                 this->init_solver("Affine similarity", {" it. ", "|| F ||", "|| Delta x || ", "tau", "it_inner"});
@@ -91,6 +95,7 @@ namespace utopia
                 x = D_ * x; 
 
                 hessian(fun, x, H); 
+                // tau = 1.0/norm2(H);  
 
                 //  necessary if scaling matrix changes for it to next it
                 //  so that residual monotonicity test does not compare 2 completly different things... 
@@ -140,7 +145,7 @@ namespace utopia
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                         PrintInfo::print_iter_status(it_inner, {tau});
 
-                    while(!converged_inner)
+                    while(!converged_inner && it_inner < max_inner_it_)
                     {
                         A = M_ - tau *H;
                         rhs = g; 
@@ -222,7 +227,17 @@ namespace utopia
         void set_mass_matrix(const Matrix & M)
         {
             M_ = M; 
+            
+            Vector d = diag(M_); 
+            M_inv_  = diag( 1.0/ d); 
+            c_      = max(d); 
+
             mass_init_ = true; 
+        }
+
+        void set_max_inner_it(const SizeType & max_it)
+        {
+            max_inner_it_ = max_it; 
         }
 
         void set_scaling_matrix(const Matrix & D)
@@ -231,6 +246,18 @@ namespace utopia
             D_inv_ = diag( 1.0/ diag(D_)); 
             scaling_init_ = true; 
         }
+
+        void set_m(const Scalar & m )
+        {
+            m_ = m; 
+        }
+
+
+        void use_m(const bool flg)
+        {
+            use_m_ = flg; 
+        }
+
 
 
         VerbosityLevel verbosity_level() const 
@@ -292,13 +319,34 @@ namespace utopia
         // }
 
 
+        // last, working version
+        // Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        // {   
+        //     Vector gs_diff = (g_trial - (M_ * s)); 
+        //     Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
+        //     Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
+        //     return (tau  *  std::abs(nom)/ help_denom); 
+        // }
+
+
         Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
         {   
-            Vector gs_diff = (g_trial - (M_ * s)); 
-            Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
-            Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
-            return (tau  *  std::abs(nom)/ help_denom); 
+            Scalar nom = std::abs(dot(s, M_ * s - g)) * tau;             
+            Vector gs_diff = ((M_inv_ * g_trial) - s); 
+            Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm) * c_; 
+
+
+            if(use_m_)
+            {
+                Scalar tau_new = nom/ help_denom; 
+                return (m_*tau - tau_new)/(m_-1.0); 
+            }
+            else
+            {
+                return nom/ help_denom;
+            }
         }
+
 
 
         void update_scaling_matrices(const Vector & x_old, const Vector & x_new)
@@ -367,6 +415,8 @@ namespace utopia
 
     private:
         Matrix M_;                  // mass matrix 
+        Matrix M_inv_;              // inverse of mass matrix         
+
         Matrix D_;                  // scaling matrix
         Matrix D_inv_; 
 
@@ -379,6 +429,11 @@ namespace utopia
         Scalar tau_min_;            // clamping values of tau to prevent devision by zero 
 
         Scalar alpha_treshold_;     // treshold on scaling
+
+        Scalar c_;                  // 
+        SizeType max_inner_it_; 
+        Scalar m_; 
+        bool use_m_; 
 
     };
 

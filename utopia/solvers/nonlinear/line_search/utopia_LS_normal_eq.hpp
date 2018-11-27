@@ -71,7 +71,9 @@ namespace utopia
               // this sould go away in future 
         g = J_T * r_k; 
 
-        this->ls_strategy_->get_alpha(fun, g, x_k, p_k, alpha_k); 
+        if(this->ls_strategy_)
+          this->ls_strategy_->get_alpha(fun, g, x_k, p_k, alpha_k); 
+        
         x_k += alpha_k * p_k; 
 
 
