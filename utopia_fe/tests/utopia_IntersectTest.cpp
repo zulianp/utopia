@@ -514,9 +514,39 @@ namespace utopia {
 			1.,
 			composite_q_points,
 			composite_q_weights
-		);
+		); utopia_test_assert(ok);
 
-		utopia_test_assert(ok);
+		bool use_newton = true;
+		libMesh::FEType fe_type = V.dof_map().variable_type(0);
+		LibMeshShape<double, 3> left_shape(*left_side, fe_type, use_newton);
+		LibMeshShape<double, 3> right_shape(*right_side, fe_type, use_newton);
+		left_shape.verbose(true);
+
+		QMortar left_q(3), right_q(3);
+
+		ok = left_shape.make_quadrature(
+		    plane.n,
+		    {{ 0.6, 0.5, 0.6}},
+		    {1.},
+		    left_q
+		); 
+
+
+
+		ok = left_shape.make_quadrature(
+		    plane.n,
+		    composite_q_points,
+		    composite_q_weights,
+		    left_q
+		); utopia_test_assert(ok);
+
+		ok = right_shape.make_quadrature(
+		    plane.n,
+		    composite_q_points,
+		    composite_q_weights,
+		    right_q
+		); utopia_test_assert(ok);
+
 
 		if(ok) {
 			std::cout << composite_q_points.size() << std::endl;
