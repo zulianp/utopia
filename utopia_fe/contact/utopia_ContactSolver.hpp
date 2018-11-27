@@ -354,6 +354,7 @@ namespace utopia {
 				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
 				// tao_.set_type("gpcg");
 
+				std::cout << "solving qp-problem " << std::endl;
 
 				tao_.solve(fun, inc_c);
 
@@ -394,11 +395,15 @@ namespace utopia {
 			gc_ *= -1.;
 			Hc_ = transpose(T) * H_ * T;
 
+
+			std::cout << "applying bc.... " << std::flush;
 			apply_boundary_conditions(V_->subspace(0).dof_map(), Hc_, gc_);
 
 			if(!first_) {
 				apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
 			}
+
+			std::cout << "done" << std::endl;
 
 			inc_c_ *= 0.;
 			qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)), inc_c_);

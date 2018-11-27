@@ -10,5 +10,6 @@
 #include "utopia_DirectSolver.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_ConjugateGradient.hpp"
+#include "utopia_BiCGStab.hpp"
 #include "utopia_LinearSolverFactory.hpp"
 #endif

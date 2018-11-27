@@ -48,8 +48,8 @@ namespace utopia {
 
         inline bool make_quadrature(
             const Vector &ray_dir,
-            const std::vector<Polygon3::Vector>  &composite_q_points,
-            const std::vector<Polygon3::Scalar>  &composite_q_weights,
+            const std::vector<Vector>  &composite_q_points,
+            const std::vector<Scalar>  &composite_q_weights,
             QMortar &q
         )
         {
@@ -63,7 +63,7 @@ namespace utopia {
             for(std::size_t i = 0; i < n_qp; ++i) {
                 q.get_weights()[i] = composite_q_weights[i];
 
-                ray.o = composite_q_weights[i];
+                ray.o = composite_q_points[i];
 
                 Scalar t = 0.;
 
@@ -311,6 +311,12 @@ namespace utopia {
                 //get main fe quantities
                 get_point(x_);
                 get_jacobian(J_);
+
+                if(verbose_) {
+                    disp("x:");
+                    disp(x_);
+                    disp("----------");
+                }
                 
                 JtJ_ = transpose(J_) * J_;
                 Jtn_ = transpose(J_) * n_;
@@ -366,36 +372,48 @@ namespace utopia {
                 solver_.solve(H_, g_, h_); 
                 u_ -= h_;
 
-                // if(verbose_) {
+                if(verbose_) {
 
-                //     disp("----------");
-                //     disp("J:");
-                //     disp(J_);
-                //     disp("----------");
+                    disp("----------");
+                    
+                    disp("J:");
+                    disp(J_);
+                    disp("----------");
 
-                //     disp("----------");
-                //     disp("A:");
-                //     disp(A_);
-                //     disp("----------");
+                    disp("JtJ:");
+                    disp(JtJ_);
+                    disp("----------");
+
+                    disp("A:");
+                    disp(A_);
+                    disp("----------");
                   
-                //     disp("----------");
-                //     disp("H:");
-                //     disp(H_);
-                //     disp("----------");
-                //     disp(g_);
-                //     disp("----------");
-                //     disp(h_);
-                //     disp("----------");
-                //     disp(u_);
-                //     disp("----------");
-                // }
+                    disp("H:");
+                    disp(H_);
+                    disp("----------");
+                   
+                    disp("g:");
+                    disp(g_);
+                    disp("----------");
+                   
+                    disp("h:");
+                    disp(h_);
+                    disp("----------");
+                   
+                    disp("u:");
+                    disp(u_);
+                    disp("----------");
+
+
+
+                }
                 
                 {
                     //update ref coordinates
                     Read<Vectord> r_u(u_);
                     Write<Vectord> w_x_ref(x_ref_);
                     
-                    for(int d = 0; d < Dim-1; ++d) {
+                    for(int d = 0; d < Dim - 1; ++d) {
                         x_ref_.set(d, u_.get(d));
                     }
                     
@@ -403,7 +421,11 @@ namespace utopia {
                     t = u_.get(Dim - 1);
                 }
                 
-             
+                if(verbose_) {
+                   disp("x_ref:");
+                   disp(x_ref_);
+                   disp("----------");
+                }
                 
                 norm_g_prev = norm_g;
             }
@@ -418,7 +440,7 @@ namespace utopia {
             Read<Vectord> r_(x_ref);
             
             for(int i = 0; i < Dim - 1; ++i) {
-                q_.get_points()[i] = x_ref.get(i);
+                q_.get_points()[0](i) = x_ref.get(i);
             }
             
             fe_->attach_quadrature_rule(&q_);
