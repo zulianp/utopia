@@ -174,6 +174,7 @@ namespace utopia {
 
 		Polygon2 triangle;
 		triangle.points.resize(3);
+		triangle.points[0] = { 0., 0.};
 
 		std::size_t qp = 0;
 		for(std::size_t k = 0; k < n_islands; ++k) {
@@ -190,7 +191,7 @@ namespace utopia {
 				v = points[tri[i3 + 2]] - o;
 
 
-				triangle.points[0] = { 0., 0.};
+				
 				triangle.points[1] = u;
 				triangle.points[2] = v;
 

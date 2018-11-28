@@ -483,9 +483,6 @@ namespace utopia {
 	        bool owner_;
 	};
 
-	template<typename Matrix, typename Vector>
-	using KSPImpl = typename utopia::KSPSolver<Matrix, Vector, PETSC>::Impl;
-
     template<typename Matrix, typename Vector>
 	KSPSolver<Matrix, Vector, PETSC>::KSPSolver(const Parameters params)
 	: ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD, params))
@@ -497,14 +494,14 @@ namespace utopia {
 	}
 
     template<typename Matrix, typename Vector>
-	KSPSolver<Matrix, Vector, PETSC>::KSPSolver(std::unique_ptr<KSPImpl<Matrix, Vector>> &&w)
+	KSPSolver<Matrix, Vector, PETSC>::KSPSolver(std::unique_ptr<typename utopia::KSPSolver<Matrix, Vector, PETSC>::Impl> &&w)
 	: ksp_(std::move(w))
 	{}
 
     template<typename Matrix, typename Vector>
 	void KSPSolver<Matrix, Vector, PETSC>::wrap(KSP &ksp)
 	{
-		ksp_ = utopia::make_unique<KSPImpl<Matrix, Vector>>(ksp, false);
+		ksp_ = utopia::make_unique<Impl>(ksp, false);
 	}
 
     template<typename Matrix, typename Vector>
@@ -752,13 +749,13 @@ namespace utopia {
 	}
 
     template<typename Matrix, typename Vector>
-	KSPImpl<Matrix, Vector> &KSPSolver<Matrix, Vector, PETSC>::ksp()
+	typename utopia::KSPSolver<Matrix, Vector, PETSC>::Impl &KSPSolver<Matrix, Vector, PETSC>::ksp()
 	{
 		return *ksp_;
 	}
 
     template<typename Matrix, typename Vector>
-	const KSPImpl<Matrix, Vector> &KSPSolver<Matrix, Vector, PETSC>::ksp() const
+	const typename utopia::KSPSolver<Matrix, Vector, PETSC>::Impl &KSPSolver<Matrix, Vector, PETSC>::ksp() const
 	{
 		return *ksp_;
 	}
