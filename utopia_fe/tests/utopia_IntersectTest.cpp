@@ -384,7 +384,50 @@ namespace utopia {
 		bool ok = Intersector::intersect_convex_polyhedra(poly1, poly2, &isect);
 	}
 
-	void intesect_ray_elem_tet(libMesh::Parallel::Communicator &comm)
+	void intesect_ray_elem_quad(libMesh::Parallel::Communicator &comm)
+	{
+		libMesh::Mesh mesh(comm);
+		libMesh::MeshTools::Generation::build_square(mesh,
+			1, 1,
+			0., 1.,
+			0., 4.,
+			libMesh::QUAD8
+		);
+
+		LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
+		V.initialize();
+
+		Ray<double, 2> ray = {
+			{-0.5, 0.6 },
+			{ 1., 0. }
+		};
+
+		for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
+			const auto &e = **e_it;
+
+			auto n_sides = e.n_sides();
+
+			for(std::size_t i = 0; i < n_sides; ++i) {
+				if(i != 1 && i != 3) continue;
+
+				auto side_ptr = e.build_side_ptr(i);
+				LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0), true);
+				shape.verbose(false);
+
+				double t = 0.;
+				shape.intersect(ray, t);
+
+				if(i == 1) {
+					utopia_test_assert(approxeq(t, 1.5, 1e-8));
+				} else if(i == 3) {
+					utopia_test_assert(approxeq(t, 0.5, 1e-8));
+				}
+			}
+		}
+	}
+
+
+	void intesect_ray_elem_warped_quad(libMesh::Parallel::Communicator &comm)
 	{
 		libMesh::Mesh mesh(comm);
 		libMesh::MeshTools::Generation::build_square(mesh,
@@ -402,42 +445,127 @@ namespace utopia {
 			{ 1., 0. }
 		};
 
-		// int q = 0;
+		auto &e = **elements_begin(mesh);
+		e.node_ref(7)(0) = 0.2;
 
-		for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
-			const auto &e = **e_it;
+		auto n_sides = e.n_sides();
 
-			auto n_sides = e.n_sides();
+		for(std::size_t i = 0; i < n_sides; ++i) {
+			if(i != 1 && i != 3) continue;
 
-			for(std::size_t i = 0; i < n_sides; ++i) {
-				if(i != 1 && i != 3) continue;
+			auto side_ptr = e.build_side_ptr(i);
+			LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0), true);
+			// LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0), false);
+			// shape.verbose(true);
 
-				auto side_ptr = e.build_side_ptr(i);
-				LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0));
+			double t = 0.;
+			shape.intersect(ray, t);
 
-				// std::cout << "elem: " << i << std::endl;
-				// std::cout << "(" << side_ptr->node_ref(0)(0) << ", " << side_ptr->node_ref(0)(1) << ") ";
-				// std::cout << "(" << side_ptr->node_ref(1)(0) << ", " << side_ptr->node_ref(1)(1) << ") " << std::endl;;
-
-				double t = 0.;
-				shape.intersect(ray, t);
-
-				if(i == 1) {
-					utopia_test_assert(approxeq(t, 1.5, 1e-8));
-				} else if(i == 3) {
-					utopia_test_assert(approxeq(t, 0.5, 1e-8));
-				}
-
-				// std::cout << "intersection: " << t << std::endl;
+			if(i == 1) {
+				utopia_test_assert(approxeq(t, 1.5, 1e-8));
+			} else if(i == 3) {
+				utopia_test_assert(t < 0.7 && t > 0.6);
 			}
 		}
+
+	}
+
+
+	void project_ray_elem_hex(libMesh::Parallel::Communicator &comm)
+	{
+		libMesh::Mesh mesh(comm);
+		libMesh::MeshTools::Generation::build_cube(mesh,
+			1, 1, 1,
+			0., 1.,
+			0., 1.,
+			0., 1.,
+			libMesh::HEX20
+		);
+
+		LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
+		V.initialize();
+
+		auto &e = **elements_begin(mesh);
+		auto left_side  = e.build_side_ptr(3);
+		auto right_side = e.build_side_ptr(1);
+
+		Polygon3 left_poly, right_poly;
+		make(*left_side,  left_poly);
+		make(*right_side, right_poly);
+
+		left_poly.plot("left");
+		right_poly.plot("right");
+
+		Plane3 plane = {
+			{0., 1.0, 0.},
+			{0.5, 0.5, 0.5}
+		};
+
+		std::vector<Polygon3::Vector> composite_q_points;
+		std::vector<Polygon3::Scalar> composite_q_weights;
+
+		bool ok = project_intersect_and_map_quadrature(
+			left_poly,
+			right_poly,
+			plane,
+			//ref-quad-rule
+			{{1./3., 1./3.}},
+			{1.},
+			1.,
+			composite_q_points,
+			composite_q_weights
+		); utopia_test_assert(ok);
+
+		bool use_newton = true;
+		libMesh::FEType fe_type = V.dof_map().variable_type(0);
+		LibMeshShape<double, 3> left_shape(*left_side, fe_type, use_newton);
+		LibMeshShape<double, 3> right_shape(*right_side, fe_type, use_newton);
+		left_shape.verbose(false);
+
+		QMortar left_q(3), right_q(3);
+
+		ok = left_shape.make_quadrature(
+		    plane.n,
+		    {{ 0.6, 0.5, 0.6}},
+		    {1.},
+		    left_q
+		); 
+
+		ok = left_shape.make_quadrature(
+		    plane.n,
+		    composite_q_points,
+		    composite_q_weights,
+		    left_q
+		); utopia_test_assert(ok);
+
+		ok = right_shape.make_quadrature(
+		    plane.n,
+		    composite_q_points,
+		    composite_q_weights,
+		    right_q
+		); utopia_test_assert(ok);
+
+
+		if(ok) {
+			std::cout << composite_q_points.size() << std::endl;
+			
+			for(std::size_t i = 0; i < composite_q_points.size(); ++i) {
+				auto p = composite_q_points[i];
+				std::cout << p.x << " " << p.y << " " << p.z;
+				std::cout << ", w = " << composite_q_weights[i] << std::endl;
+			}
+
+		}
+
 	}
 
 	void run_intersect_test(libMesh::LibMeshInit &init)
 	{
 		UTOPIA_UNIT_TEST_BEGIN("IntersectTest");
 
-		intesect_ray_elem_tet(init.comm());
+		intesect_ray_elem_quad(init.comm());
+		intesect_ray_elem_warped_quad(init.comm());
+		project_ray_elem_hex(init.comm());
 
 		UTOPIA_RUN_TEST(intersect_hex_with_polygon_test);
 		UTOPIA_RUN_TEST(intersect_tet_with_polygon_test_1);

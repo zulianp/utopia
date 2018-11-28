@@ -41,32 +41,18 @@ namespace utopia {
 				this->register_experiment(
 					"cg_" + std::to_string(i),
 					[n]() {
-						Matrix A = local_sparse(n, n, 3);
-						Vector b = local_values(n, 1.);
-						Vector x = local_values(n, 0.);
-
-						assemble_laplacian_1D(A, true);
-
-						auto N = size(A).get(0);
-						{
-							Range r = row_range(A);
-							Write<Vector> w_b(b);
-
-							if(r.begin() == 0) {
-								b.set(0, 0.);
-							}
-
-							if(r.end() == N) {
-								b.set(N-1, 0.);
-							}
-						}
-
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-						cg.max_it(N);
-						auto A_op = utopia::op_ref(A);
-						cg.solve(*A_op, b, x);
+						cg.max_it(n * mpi_world_size());
+						run_linear_solver(n, cg);
+					}
+				);
 
-						utopia_test_assert(approxeq(A * x, b, 1e-6));
+				this->register_experiment(
+					"bicgstab_" + std::to_string(i),
+					[n]() {
+						BiCGStab<Matrix, Vector, HOMEMADE> cg;
+						cg.max_it(n * mpi_world_size());
+						run_linear_solver(n, cg);
 					}
 				);
 
@@ -139,18 +125,26 @@ namespace utopia {
 					}
 				);
 
-				this->register_experiment("multigrid_" + std::to_string(i), [n]() {
+				//FIXME
+				// this->register_experiment("multigrid_" + std::to_string(i), [n]() {
 
-					auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
-					auto coarse_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+				// 	auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+				// 	auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector, HOMEMADE>>();
 					
-					Multigrid<Matrix, Vector, HOMEMADE> multigrid(
-					                                    smoother,
-					                                    coarse_solver
-					                                    );
+				// 	// smoother->set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
+				// 	coarse_solver->set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
+				// 	coarse_solver->verbose(true);
+				// 	coarse_solver->max_it(2000);
+				// 	// coarse_solver->reset_initial_guess(true);
+				// 	coarse_solver->atol(1e-16);
+					
+				// 	Multigrid<Matrix, Vector, HOMEMADE> multigrid(
+				// 	                                    smoother,
+				// 	                                    coarse_solver
+				// 	                                    );
 
-					run_multigrid(n, multigrid);
-				});
+				// 	run_multigrid(n, multigrid);
+				// });
 
 			}
 		}
@@ -206,6 +200,32 @@ namespace utopia {
 		    utopia_test_assert(ok);
 		}
 
+		static void run_linear_solver(const SizeType n, LinearSolver<Matrix, Vector> &solver)
+		{
+			Matrix A = local_sparse(n, n, 3);
+			Vector b = local_values(n, 1.);
+			Vector x = local_values(n, 0.);
+
+			assemble_laplacian_1D(A, true);
+
+			auto N = size(A).get(0);
+			{
+				Range r = row_range(A);
+				Write<Vector> w_b(b);
+
+				if(r.begin() == 0) {
+					b.set(0, 0.);
+				}
+
+				if(r.end() == N) {
+					b.set(N-1, 0.);
+				}
+			}
+
+			solver.solve(A, b, x);
+			utopia_test_assert(approxeq(A * x, b, 1e-6));				
+		}
+
 		template<class MultigridSolver>
 		static void run_multigrid(const SizeType n, MultigridSolver &multigrid)
 		{
@@ -214,9 +234,9 @@ namespace utopia {
 			using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
 			
 			const static bool verbose   = false;
-			const static bool use_masks = false;
+			const static bool use_masks = true;
 			
-			const SizeType n_levels = 6;
+			const SizeType n_levels = 5;
 			MultiLevelTestProblem<Matrix, Vector> ml_problem(n/pow(2, n_levels-1), n_levels, !use_masks);
 			
 			multigrid.max_it(50);
@@ -249,7 +269,8 @@ namespace utopia {
 			if(verbose) {
 			    multigrid.describe();
 			}
-			
+				
+			// x = *ml_problem.rhs;
 			multigrid.apply(*ml_problem.rhs, x);
 			
 			double diff0 = norm2(*ml_problem.matrix * x);

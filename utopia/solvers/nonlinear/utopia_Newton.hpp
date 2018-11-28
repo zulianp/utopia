@@ -30,7 +30,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Newton : public NonLinearSolver<Matrix, Vector>
+    class Newton final : public NonLinearSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -38,8 +38,8 @@ namespace utopia
         typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
 
     public:
-       Newton(  const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-                const Parameters params                       = Parameters() ):
+       Newton(const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
+              const Parameters params                       = Parameters() ):
                 NonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1)
                 {
                     set_parameters(params);
@@ -126,13 +126,22 @@ namespace utopia
             return true;
         }
 
-    virtual void set_parameters(const Parameters params) override
+    void set_parameters(const Parameters params) override
     {
         NonLinearSolver<Matrix, Vector>::set_parameters(params);
         alpha_ = params.alpha();
 
     }
 
+    void read(Input &in) override
+    {
+        NonLinearSolver<Matrix, Vector>::read(in);
+        in.get("dumping", alpha_);
+
+        if(ls_strategy_) {
+            in.get("line-search", *ls_strategy_);
+        }
+    }
 
     /**
      * @brief      Sets strategy for computing step-size. 
@@ -141,7 +150,7 @@ namespace utopia
      *
      * @return     
      */
-    virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+    bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
     {
       ls_strategy_ = strategy; 
       ls_strategy_->set_parameters(this->parameters());

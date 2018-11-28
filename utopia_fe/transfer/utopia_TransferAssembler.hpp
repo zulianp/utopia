@@ -241,6 +241,58 @@ namespace utopia {
 		std::shared_ptr<USparseMatrix> T;
 	};
 
+	// class PermutedOperator final : public TransferOperator {
+	// public:
+	// 	PermutedOperator(
+	// 		const std::shared_ptr<TransferOperator> &op,
+	// 		const std::shared_ptr<USparseMatrix> &from_permutation
+	// 		const std::shared_ptr<USparseMatrix> &to_permutation)
+	// 	: op_(op), from_permutation_(from_permutation), to_permutation_(to_permutation)
+	// 	{}
+
+	// 	inline void apply(const UVector &from, UVector &to) const
+	// 	{
+	// 		if(from_permutation_) {
+	// 			from_buffer_ = *from_permutation_ * from;
+	// 		} else {
+	// 			from_buffer_ = from;
+	// 		}
+			
+	// 		op_->apply(from_buffer_, to_buffer_);
+
+	// 		if(to_permutation_) {
+	// 			to = transpose(*to_permutation_) * to_buffer_;
+	// 		} else {
+	// 			to = to_buffer_;
+	// 		}
+	// 	}
+
+	// 	inline void apply_transpose(const UVector &to, UVector &from) const
+	// 	{
+	// 		if(to_permutation_) {
+	// 			to_buffer_ = *to_permutation_ * to;
+	// 		} else {
+	// 			to_buffer_ = to;
+	// 		}
+			
+	// 		op_->apply_transpose(to_buffer_, from_buffer);
+
+	// 		if(from_permutation_) {
+	// 			from = transpose(*from_permutation_) * from_buffer;
+	// 		} else {
+	// 			from = from_buffer_;
+	// 		}
+	// 	}
+
+
+	// 	std::shared_ptr<TransferOperator> op_;
+	// 	std::shared_ptr<USparseMatrix> from_permutation_;
+	// 	std::shared_ptr<USparseMatrix> to_permutation_;
+
+	// 	UVector from_buffer_, to_buffer_;
+
+	// };
+
 	class BidirectionalOperator final : public TransferOperator {
 	public:
 		BidirectionalOperator(

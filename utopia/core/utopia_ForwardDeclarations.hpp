@@ -157,6 +157,8 @@ namespace utopia {
 
     class SymbolicFunction;
 
+    class Input;
+
 }
 
 #endif //utopia_utopia_FORWARDDECLARATIONS_HPP

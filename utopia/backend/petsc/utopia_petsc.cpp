@@ -10,6 +10,7 @@
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_AffineSimilarity.hpp"
 #include "utopia_SaddlePoint.hpp"
+#include "utopia_BiCGStab_impl.hpp"
 
 //explicit instantiations
 namespace utopia {
@@ -22,6 +23,7 @@ namespace utopia {
 	template class ConjugateGradient<DSMatrixd, DVectord>;
 	template class GaussSeidel<DSMatrixd, DVectord>;
 	template class SPBlockConjugateGradient<DSMatrixd, DVectord>;
+	template class BiCGStab<DSMatrixd, DVectord, HOMEMADE>;
 
 	//petsc non-linear solvers
 	template class NonLinearGaussSeidel<DSMatrixd, DVectord>;

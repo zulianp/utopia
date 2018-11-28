@@ -194,6 +194,8 @@ namespace utopia {
 						c.set(j.get<int>());
 					} else if(c.is_long()) {
 						c.set(j.get<long>());
+					} else if(c.is_ulong()) {
+						c.set(j.get<unsigned long>());
 					} else if(c.is_string()) {
 						c.set(j.get<double>());
 					}
@@ -269,13 +271,25 @@ namespace utopia {
 		impl_->get(key, val);
 	}
 
-	void JSONInput::get(const std::string &key, SizeType &val)
+	// void JSONInput::get(const std::string &key, SizeType &val)
+	// {
+	// 	assert(impl_);
+	// 	impl_->get(key, val);
+	// }
+
+	void JSONInput::get(const std::string &key, std::string &val)
 	{
 		assert(impl_);
 		impl_->get(key, val);
 	}
 
-	void JSONInput::get(const std::string &key, std::string &val)
+	void JSONInput::get(const std::string &key, long &val)
+	{
+		assert(impl_);
+		impl_->get(key, val);
+	}
+
+	void JSONInput::get(const std::string &key, unsigned long &val)
 	{
 		assert(impl_);
 		impl_->get(key, val);
