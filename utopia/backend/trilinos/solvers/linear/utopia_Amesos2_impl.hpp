@@ -258,7 +258,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_nnzLU() const { 
+    inline int Amesos2Solver<Matrix, Vector, TRILINOS>::get_nnzLU() const { 
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNnzLU(); }
     
@@ -268,7 +268,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
+    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumPreOrder(); }
     
@@ -278,7 +278,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
+    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumSymbolicFact(); }
     
@@ -288,7 +288,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_numeric_fact () const {
+    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_numeric_fact () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumNumericFact(); }
     
@@ -298,7 +298,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_solve () const {
+    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_solve () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumSolve(); } 
     /**
@@ -307,7 +307,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    bool    Amesos2Solver<Matrix, Vector, TRILINOS>::preordering_done () const {
+    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::preordering_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().preOrderingDone(); }
     
@@ -317,7 +317,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    bool    Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization_done () const {
+    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().symbolicFactorizationDone(); }
     
@@ -327,7 +327,7 @@ namespace utopia {
      * \return int
      */   
     template <typename Matrix, typename Vector>
-    bool    Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization_done () const {
+    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().numericFactorizationDone(); }
     

@@ -96,7 +96,7 @@ if(TRILINOS_FOUND)
 		eval
 		solvers
 		solvers/linear
-		preconditioners
+		solvers/nonlinear
 		kokkos
 		)
 
