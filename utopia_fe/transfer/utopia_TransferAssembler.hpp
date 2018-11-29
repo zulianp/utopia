@@ -104,7 +104,7 @@ namespace utopia {
 			linear_solver->apply(B_from, to);
 		}
 
-		void fix_mass_matrix_operator()
+		void fix_mass_matrix_operator(const double tol = 1e-16)
 		{
 			UVector d;
 
@@ -114,8 +114,11 @@ namespace utopia {
 			{
 				Write<UVector> w_d(d);
 
-				each_read(*D, [&d](const SizeType i, const SizeType, const double) {
-					d.set(i, 0.);
+				each_read(*D, [&d, tol](const SizeType i, const SizeType, const double val) {
+					if(std::abs(val) > tol) {
+						d.set(i, 0.);
+					}
+
 				});
 			}
 

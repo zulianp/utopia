@@ -68,6 +68,7 @@ namespace utopia {
 		auto is_ptr = open_istream(conf_file_path);
 		InputSpace input_master(*comm_);
 		InputSpace input_slave(*comm_);
+		double tol = 1e-16;
 
 		is_ptr->get("transfer", [&](Input &is) {
 			//get spaces
@@ -88,6 +89,7 @@ namespace utopia {
 			is.get("type", type);
 			is.get("force-shell", force_shell);
 			is.get("assemble-mass-mat", assemble_mass_mat_);
+			is.get("tol", tol);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
@@ -207,7 +209,7 @@ namespace utopia {
 			} else {
 				if(mats.size() == 2) {
 					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-					l2op->fix_mass_matrix_operator();
+					l2op->fix_mass_matrix_operator(tol);
 					transfer_op_ = l2op;
 				} else {
 					auto u = trial(input_slave.space());

@@ -154,7 +154,7 @@ namespace utopia {
 				
 			} else {
 				auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-				l2_operator->fix_mass_matrix_operator();
+				l2_operator->fix_mass_matrix_operator(tol_);
 				operator_ = l2_operator;
 			}
 		}

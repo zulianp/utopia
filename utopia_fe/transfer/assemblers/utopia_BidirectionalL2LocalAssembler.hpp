@@ -78,7 +78,7 @@ namespace utopia {
 		QMortar q_trial;
 		QMortar q_test;
 
-		Matrix biorth_weights;
+		Matrix test_biorth_weights, trial_biorth_weights;
 
 		std::shared_ptr<QMortarBuilder> q_builder;
 		std::unique_ptr<libMesh::FEBase> trial_fe, test_fe;
@@ -92,7 +92,9 @@ namespace utopia {
 			const Elem &test,
 			FEType test_type);
 
-		void init_biorth(const Elem &test, FEType test_type);
+		void init_biorth(
+			const Elem &trial, FEType trial_type,
+			const Elem &test, FEType test_type);
 
 		static void assemble_biorth_weights(
 			const libMesh::Elem &el,
