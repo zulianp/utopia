@@ -375,7 +375,10 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            converged = this->local_tr_solve(level);
+            if(max_smoothing_it()!=0)
+                converged = this->local_tr_solve(level);
+            else
+                converged = false;
 
             // making sure that correction does not exceed tr radius ...
             if(converged)
@@ -543,7 +546,9 @@ namespace utopia
             //----------------------------------------------------------------------------
 
             this->reset_level(level); // TODO:: find better name for this...
-            this->local_tr_solve(level, !smoothness_flg);
+
+            if(max_smoothing_it()!=0)
+                this->local_tr_solve(level, !smoothness_flg);
 
             return true;
         }
