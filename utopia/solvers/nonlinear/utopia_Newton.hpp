@@ -76,7 +76,8 @@ namespace utopia
                 //find direction step
                 step = local_zeros(local_size(x));
 
-                if(this->has_preconditioned_solver() && fun.has_preconditioner()) {
+                if(this->has_preconditioned_solver() && fun.has_preconditioner()) 
+                {
                     fun.hessian(x, hessian, preconditioner);
                     this->linear_solve(hessian, preconditioner, -grad, step);
                 } else {
@@ -88,7 +89,6 @@ namespace utopia
                     
                     ls_strategy_->get_alpha(fun, grad, x, step, alpha_); 
                     x += alpha_ * step;
-
                 } else { 
                     //update x
                     if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
