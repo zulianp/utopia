@@ -69,6 +69,7 @@ namespace utopia {
 		InputSpace input_master(*comm_);
 		InputSpace input_slave(*comm_);
 		double tol = 1e-16;
+		bool use_clamping = false;
 
 		is_ptr->get("transfer", [&](Input &is) {
 			//get spaces
@@ -90,6 +91,7 @@ namespace utopia {
 			is.get("force-shell", force_shell);
 			is.get("assemble-mass-mat", assemble_mass_mat_);
 			is.get("tol", tol);
+			is.get("use-clamping", use_clamping);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
@@ -262,6 +264,11 @@ namespace utopia {
 		if(mpi_world_rank() == 0) {
 			std::cout << "Assembled M and fun_m" << std::endl;
 			std::cout << c << std::endl;
+		}
+
+		if(use_clamping) {
+			// transfer_op_ = std::make_shared<ClampedOperator>(transfer_op_);
+			transfer_op_ = std::make_shared<ForceZeroExtension>(transfer_op_, tol);
 		}
 
 		transfer_op_->apply(fun_master, fun_slave);

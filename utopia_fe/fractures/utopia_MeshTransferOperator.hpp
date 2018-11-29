@@ -1,5 +1,5 @@
-#ifndef UTOPIA_POUROUS_MEDIA_TO_FRACTURE_TRANSFER_HPP
-#define UTOPIA_POUROUS_MEDIA_TO_FRACTURE_TRANSFER_HPP
+#ifndef UTOPIA_MESH_TRANSFER_OPERATOR_HPP
+#define UTOPIA_MESH_TRANSFER_OPERATOR_HPP
 
 #include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
@@ -97,4 +97,4 @@ namespace utopia {
 	using PourousMediaToFractureTransfer = MeshTransferOperator;
 }
 
-#endif //UTOPIA_POUROUS_MEDIA_TO_FRACTURE_TRANSFER_HPP
+#endif //UTOPIA_MESH_TRANSFER_OPERATOR_HPP
