@@ -1,6 +1,7 @@
 list(APPEND TRANSFER_MODULES
   .
   assemblers
+  contact_assemblers
   quadrature
 )
 

@@ -1,14 +1,14 @@
 {
 	"simulation": {
-		"mesh": "../data/wear/wear_geoms_2.e",
+		"mesh" : "/Users/zulianp/Desktop/algo4u/wearsim/mesh_files/wear_geoms_normal.e",
 		"mesh-refinements": 0,
 		"model": {
 			"material": "LinearElasticity",
 			"stabilization": "L2",
 			"stabilization-mag": 0.00001,
 			"parameters": {
-				"mu": 60.0,
-				"lambda": 60.0
+				"mu": 160.0,
+				"lambda": 160.0
 			}
 		},
 		"boundary-conditions": {
@@ -44,7 +44,8 @@
 		"contact": {
 			"type": "steady",
 			"max-nl-iter": 100,
-			"radius": 1.7,
+			"radius": 1.9,
+			"step-tol" : 1e-4,
 			"pairs": [
 				{
 					"master": 1,

@@ -104,7 +104,7 @@ namespace utopia {
 			linear_solver->apply(B_from, to);
 		}
 
-		void fix_mass_matrix_operator()
+		void fix_mass_matrix_operator(const double tol = 1e-16)
 		{
 			UVector d;
 
@@ -114,8 +114,11 @@ namespace utopia {
 			{
 				Write<UVector> w_d(d);
 
-				each_read(*D, [&d](const SizeType i, const SizeType, const double) {
-					d.set(i, 0.);
+				each_read(*D, [&d, tol](const SizeType i, const SizeType, const double val) {
+					if(std::abs(val) > tol) {
+						d.set(i, 0.);
+					}
+
 				});
 			}
 
@@ -241,57 +244,145 @@ namespace utopia {
 		std::shared_ptr<USparseMatrix> T;
 	};
 
-	// class PermutedOperator final : public TransferOperator {
-	// public:
-	// 	PermutedOperator(
-	// 		const std::shared_ptr<TransferOperator> &op,
-	// 		const std::shared_ptr<USparseMatrix> &from_permutation
-	// 		const std::shared_ptr<USparseMatrix> &to_permutation)
-	// 	: op_(op), from_permutation_(from_permutation), to_permutation_(to_permutation)
-	// 	{}
+	class PermutedOperator final : public TransferOperator {
+	public:
+		PermutedOperator(
+			const std::shared_ptr<TransferOperator> &op,
+			const std::shared_ptr<USparseMatrix> &from_permutation,
+			const std::shared_ptr<USparseMatrix> &to_permutation)
+		: op_(op), from_permutation_(from_permutation), to_permutation_(to_permutation)
+		{
+			from_buffer_ = utopia::make_unique<UVector>();
+			to_buffer_   = utopia::make_unique<UVector>();
+		}
 
-	// 	inline void apply(const UVector &from, UVector &to) const
-	// 	{
-	// 		if(from_permutation_) {
-	// 			from_buffer_ = *from_permutation_ * from;
-	// 		} else {
-	// 			from_buffer_ = from;
-	// 		}
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			if(from_permutation_) {
+				*from_buffer_ = *from_permutation_ * from;
+			} else {
+				*from_buffer_ = from;
+			}
 			
-	// 		op_->apply(from_buffer_, to_buffer_);
+			op_->apply(*from_buffer_, *to_buffer_);
 
-	// 		if(to_permutation_) {
-	// 			to = transpose(*to_permutation_) * to_buffer_;
-	// 		} else {
-	// 			to = to_buffer_;
-	// 		}
-	// 	}
+			if(to_permutation_) {
+				to = transpose(*to_permutation_) * (*to_buffer_);
+			} else {
+				to = *to_buffer_;
+			}
+		}
 
-	// 	inline void apply_transpose(const UVector &to, UVector &from) const
-	// 	{
-	// 		if(to_permutation_) {
-	// 			to_buffer_ = *to_permutation_ * to;
-	// 		} else {
-	// 			to_buffer_ = to;
-	// 		}
+		inline void apply_transpose(const UVector &to, UVector &from) const
+		{
+			if(to_permutation_) {
+				*to_buffer_ = *to_permutation_ * to;
+			} else {
+				*to_buffer_ = to;
+			}
 			
-	// 		op_->apply_transpose(to_buffer_, from_buffer);
+			op_->apply_transpose(*to_buffer_, *from_buffer_);
 
-	// 		if(from_permutation_) {
-	// 			from = transpose(*from_permutation_) * from_buffer;
-	// 		} else {
-	// 			from = from_buffer_;
-	// 		}
-	// 	}
+			if(from_permutation_) {
+				from = transpose(*from_permutation_) * (*from_buffer_);
+			} else {
+				from = *from_buffer_;
+			}
+		}
+
+		std::shared_ptr<TransferOperator> op_;
+		std::shared_ptr<USparseMatrix> from_permutation_;
+		std::shared_ptr<USparseMatrix> to_permutation_;
+
+		std::unique_ptr<UVector> from_buffer_, to_buffer_;
+	};
+
+	class ClampedOperator final : public TransferOperator {
+	public:
+		using Scalar = UTOPIA_SCALAR(UVector);
+
+		ClampedOperator(const std::shared_ptr<TransferOperator> &op)
+		: op_(op)
+		{}
+
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			op_->apply(from, to);
+			clamp(from, to);
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const
+		{
+			op_->apply_transpose(from, to);
+			clamp(from, to);
+		}
+
+	private:
+
+		static void clamp(const UVector &from, UVector &to)
+		{
+			const Scalar min_val = min(from);
+			const Scalar max_val = max(from);
+
+			ReadAndWrite<UVector> rw_(to);
+
+			auto r = range(to);
+			for(auto i = r.begin(); i < r.end(); ++i) {
+				const Scalar val = to.get(i);
+				to.set(i, std::min(max_val, std::max(min_val, val)));
+			}
+		}
+
+		std::shared_ptr<TransferOperator> op_;
+	};
 
 
-	// 	std::shared_ptr<TransferOperator> op_;
-	// 	std::shared_ptr<USparseMatrix> from_permutation_;
-	// 	std::shared_ptr<USparseMatrix> to_permutation_;
+	class ForceZeroExtension final : public TransferOperator {
+	public:
+		using Scalar = UTOPIA_SCALAR(UVector);
 
-	// 	UVector from_buffer_, to_buffer_;
+		ForceZeroExtension(const std::shared_ptr<TransferOperator> &op, const double tol)
+		: op_(op), tol_(tol)
+		{}
 
-	// };
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			op_->apply(from, to);
+			clamp(from, to);
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const
+		{
+			op_->apply_transpose(from, to);
+			clamp(from, to);
+		}
+
+	private:
+
+		void clamp(const UVector &from, UVector &to) const
+		{
+			const Scalar min_val = min(from);
+			const Scalar max_val = max(from);
+
+			ReadAndWrite<UVector> rw_(to);
+
+			auto r = range(to);
+			for(auto i = r.begin(); i < r.end(); ++i) {
+				Scalar val = to.get(i);
+
+				if(val - tol_ < min_val) {
+					to.set(i, 0.);
+				} else if(val + tol_ > max_val) {
+					to.set(i, 0.);
+				} else {
+					to.set(i, val);
+				}
+			}
+		}
+
+		std::shared_ptr<TransferOperator> op_;
+		double tol_;
+	};
 
 	class BidirectionalOperator final : public TransferOperator {
 	public:

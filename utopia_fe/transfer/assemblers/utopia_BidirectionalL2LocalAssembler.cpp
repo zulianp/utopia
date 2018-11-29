@@ -94,7 +94,11 @@ namespace utopia {
             return false;
         }
 
-        init_biorth(test, test_type);
+        init_biorth(
+            trial, trial_type,
+            test,  test_type
+        );
+
         init_fe(trial, trial_type, test, test_type);
         
         trial_fe->attach_quadrature_rule(&q_trial);
@@ -109,11 +113,11 @@ namespace utopia {
 
         if(assemble_mass_mat_) {
             if(use_biorth) {
-                mortar_assemble_weighted_biorth(*trial_fe, *test_fe,   biorth_weights, mat[0]);
-                mortar_assemble_weighted_biorth(*test_fe,  *test_fe,   biorth_weights, mat[1]);
+                mortar_assemble_weighted_biorth(*trial_fe, *test_fe,   test_biorth_weights, mat[0]);
+                mortar_assemble_weighted_biorth(*test_fe,  *test_fe,   test_biorth_weights, mat[1]);
 
-                mortar_assemble_weighted_biorth(*test_fe,  *trial_fe,  biorth_weights, mat[2]);
-                mortar_assemble_weighted_biorth(*trial_fe, *trial_fe,  biorth_weights, mat[3]);
+                mortar_assemble_weighted_biorth(*test_fe,  *trial_fe,  trial_biorth_weights, mat[2]);
+                mortar_assemble_weighted_biorth(*trial_fe, *trial_fe,  trial_biorth_weights, mat[3]);
             } else {
                 mortar_assemble(*trial_fe, *test_fe,  mat[0]);
                 mortar_assemble(*test_fe,  *test_fe,  mat[1]);
@@ -124,8 +128,8 @@ namespace utopia {
 
         } else {
             if(use_biorth) {
-                mortar_assemble_weighted_biorth(*trial_fe, *test_fe,   biorth_weights, mat[0]);
-                mortar_assemble_weighted_biorth(*test_fe,  *trial_fe,  biorth_weights, mat[1]);
+                mortar_assemble_weighted_biorth(*trial_fe, *test_fe,   test_biorth_weights, mat[0]);
+                mortar_assemble_weighted_biorth(*test_fe,  *trial_fe,  trial_biorth_weights, mat[1]);
             } else {
                 mortar_assemble(*trial_fe, *test_fe,  mat[0]);
                 mortar_assemble(*test_fe,  *trial_fe, mat[1]);
@@ -147,17 +151,24 @@ namespace utopia {
         test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
     }
     
-    void BidirectionalL2LocalAssembler::init_biorth(const Elem &test, FEType test_type)
+    void BidirectionalL2LocalAssembler::init_biorth(
+        const Elem &trial, FEType trial_type,
+        const Elem &test, FEType test_type)
     {
         if(!use_biorth) return;
         if(!must_compute_biorth) return;
         
-        assemble_biorth_weights(
-                                test,
+        assemble_biorth_weights(test,
                                 test.dim(),
                                 test_type,
                                 test_type.order,
-                                biorth_weights);
+                                test_biorth_weights);
+
+        assemble_biorth_weights(trial,
+                                trial.dim(),
+                                trial_type,
+                                trial_type.order,
+                                trial_biorth_weights);
         
         must_compute_biorth = false;
     }
