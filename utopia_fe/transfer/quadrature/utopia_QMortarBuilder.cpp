@@ -509,6 +509,7 @@ namespace utopia {
 			return false;
 		}
 
+		// poly.plot("slave");
 		// isect.plot("isect");
 		
 		auto n = isect.points.size();
