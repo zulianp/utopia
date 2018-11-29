@@ -75,6 +75,9 @@ namespace utopia
             _max_smoothing_it           = params.max_smoothing_it();
             _eps_delta_termination      = params.eps_delta_termination();
             _grad_smoothess_termination = params.grad_smoothess_termination();
+
+            _check_gradient_smoothness  = true; 
+
             _eps_grad_termination       = params.eps_grad_termination();
             _hessian_update_delta       = params.hessian_update_delta();
             _hessian_update_eta         = params.hessian_update_eta();
@@ -175,6 +178,17 @@ namespace utopia
             return _max_QP_smoothing_it;
         }
 
+
+        void check_grad_smoothness(const bool flg)
+        {
+            _check_gradient_smoothness = flg;
+        }
+
+        bool check_grad_smoothness() const 
+        {
+            return _check_gradient_smoothness; 
+        }        
+
         
         void handle_equality_constraints()
         {
@@ -257,8 +271,11 @@ namespace utopia
             SizeType fine_level = this->n_levels()-1;
             Scalar r_norm, r0_norm, rel_norm, energy;
 
+
             //-------------- INITIALIZATIONS ---------------            
-            this->function(fine_level).get_eq_constrains_values(x_h);
+            if(!skip_BC_checks())
+                this->function(fine_level).get_eq_constrains_values(x_h);
+
             SizeType fine_local_size = local_size(x_h).get(0);
 
             this->status_.clear();
@@ -268,7 +285,9 @@ namespace utopia
 
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level]));
-            this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]);
+
+            if(!skip_BC_checks())
+                this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]);
 
             this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]);
             this->function(fine_level).value(memory_.x[fine_level], energy);
@@ -287,6 +306,7 @@ namespace utopia
                 PrintInfo::print_iter_status(_it_global, {r0_norm, energy});
                 std::cout << def_;
             }
+
 
             while(!converged)
             {
@@ -393,7 +413,11 @@ namespace utopia
                     this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]);
             }
 
-            smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1);
+            if(this->check_grad_smoothness())
+                smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1);
+            else
+                smoothness_flg = true; 
+
 
             if(CONSISTENCY_LEVEL != GALERKIN)
                 memory_.g_diff[level-1] -= memory_.g[level-1];
@@ -547,6 +571,7 @@ namespace utopia
 
             this->compute_s_global(level, memory_.s_working[level]);
             this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+
 
             energy_old = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
             g_norm = this->criticality_measure(level);
@@ -1038,6 +1063,7 @@ namespace utopia
         Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
 
         Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
+        bool                           _check_gradient_smoothness; 
         Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
 
         Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
