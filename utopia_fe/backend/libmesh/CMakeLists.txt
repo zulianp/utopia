@@ -18,6 +18,8 @@ if(LIBMESH_FOUND)
 	target_include_directories(utopia_fe_libmesh_backend BEFORE PUBLIC ${LIBMESH_INCLUDE_DIRS} ${LIBMESH_INCLUDE_DIR})
 	target_link_libraries(utopia_fe_libmesh_backend ${LIBMESH_LIBRARIES})
 
+	# message(STATUS "HELLO ${LIBMESH_INCLUDE_DIRS}\n")
+
 	set(LIBMESH_INCLUDE_DIR ${LIBMESH_INCLUDE_DIR} PARENT_SCOPE)
 	set(LIBMESH_LIBRARIES ${LIBMESH_LIBRARIES} PARENT_SCOPE)
 else()

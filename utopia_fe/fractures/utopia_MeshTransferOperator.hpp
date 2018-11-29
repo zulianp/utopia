@@ -1,5 +1,5 @@
-#ifndef UTOPIA_POUROUS_MEDIA_TO_FRACTURE_TRANSFER_HPP
-#define UTOPIA_POUROUS_MEDIA_TO_FRACTURE_TRANSFER_HPP
+#ifndef UTOPIA_MESH_TRANSFER_OPERATOR_HPP
+#define UTOPIA_MESH_TRANSFER_OPERATOR_HPP
 
 #include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
@@ -28,7 +28,8 @@ namespace utopia {
 		to_mesh(to_mesh),
 		to_dofs(to_dofs),
 		opts(opts),
-		normalize_rows_(true)
+		normalize_rows_(true),
+		tol_(1e-14)
 		{}
 
 		//@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION \}
@@ -74,6 +75,12 @@ namespace utopia {
 
 		}
 
+
+		void set_tol(const double val)
+		{
+			tol_ = val;
+		}
+
 	private:
 		std::shared_ptr<MeshBase> from_mesh;
 		std::shared_ptr<DofMap>   from_dofs;
@@ -83,10 +90,11 @@ namespace utopia {
 
 		std::shared_ptr<TransferOperator> operator_;
 		bool normalize_rows_;
+		double tol_;
 
 	};
 
 	using PourousMediaToFractureTransfer = MeshTransferOperator;
 }
 
-#endif //UTOPIA_POUROUS_MEDIA_TO_FRACTURE_TRANSFER_HPP
+#endif //UTOPIA_MESH_TRANSFER_OPERATOR_HPP
