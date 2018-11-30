@@ -15,11 +15,11 @@ option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" 
 #################################################################################
 #################################################################################
 set(UTOPIA_FE_DEV_FLAGS 
-	"-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder"
+	"-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
 )
 
 # More annoying
-# set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Wextra ")
+# set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Wextra -Werror=uninitialized ")
 
 # More restrictive
 # set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
