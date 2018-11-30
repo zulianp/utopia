@@ -1,0 +1,39 @@
+# ffc -l dolfin NonConvexMisfit.ufl
+
+P1 = FiniteElement("Lagrange", triangle, 1)
+ME = P1*P1
+
+
+# Define trial and test functions
+du = TrialFunction(ME)     # trial function
+v  = TestFunction(ME)      # Test function
+
+# Define functions
+u  = Coefficient(ME)      # Current solution
+c_to_map_against = Coefficient(P1)
+
+
+c,  gamma  = split(u)
+
+
+psi1 = 1./1000* gamma*gamma
+psi2 = (c - c_to_map_against)**2
+# psi3 = ((-dot(grad(c), grad(c))) - gamma*c)**2
+psi3 = (div(grad(c)) - gamma*c)**2
+
+
+Pi = psi1*dx+ psi2*dx + psi3*dx
+
+
+M = inner(du, v)*dx
+
+# Compute first variation of Pi (directional derivative about u in the direction of v)
+F = derivative(Pi, u, v)
+
+# Compute Jacobian of F
+J = derivative(F, u, du)
+
+H = J + 0.01*M
+
+
+forms = [Pi, F, J, M, H]
