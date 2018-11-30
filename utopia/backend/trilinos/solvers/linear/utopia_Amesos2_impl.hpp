@@ -178,32 +178,32 @@ namespace utopia {
     }
 
         /**
-     * preordering_done Method - If true , then pre-ordering has been performed
+     * get_preordering_done Method - If true , then pre-ordering has been performed
      * \param na
      * \return bool
      */   
     template <typename Matrix, typename Vector>
-    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::preordering_done () const {
+    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_preordering_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().preOrderingDone(); }
     
     /**
-     * sym_factorization_done Method - if true , then symbolic factorization has been performed.
+     * get_sym_factorization_done Method - if true , then symbolic factorization has been performed.
      * \param na
      * \return bool
      */   
     template <typename Matrix, typename Vector>
-    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization_done () const {
+    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_sym_factorization_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().symbolicFactorizationDone(); }
     
     /**
-     * num_factorization_done Method -    If true , then numeric factorization has been performed.
+     * get_num_factorization_done Method -    If true , then numeric factorization has been performed.
      * \param na
      * \return bool
      */   
     template <typename Matrix, typename Vector>
-    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization_done () const {
+    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_factorization_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().numericFactorizationDone(); }
     
@@ -216,7 +216,7 @@ namespace utopia {
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::preordering() 
     { assert(!impl_->solver_.is_null());
         impl_->solver_->preOrdering(); 
-        return preordering_done ();
+        return get_preordering_done ();
     }
     
     /**
@@ -228,7 +228,7 @@ namespace utopia {
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization() 
     { assert(!impl_->solver_.is_null());
         impl_->solver_->numericFactorization(); 
-        return num_factorization_done ();
+        return get_num_factorization_done ();
     }
     
     /**
@@ -240,7 +240,7 @@ namespace utopia {
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization()
     { assert(!impl_->solver_.is_null());
         impl_->solver_->symbolicFactorization(); 
-        return sym_factorization_done ();
+        return get_sym_factorization_done ();
     }
     
     /**
