@@ -50,7 +50,8 @@ namespace utopia {
 		  max_outer_loops_(20),
 		  use_ssn_(false),
 		  use_pg_(false),
-		  max_non_linear_iterations_(30)
+		  max_non_linear_iterations_(30),
+		  export_results_(false)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
@@ -128,8 +129,10 @@ namespace utopia {
 				return false;
 			}
 
-			convert(x_, *V_->subspace(0).equation_system().solution);
-			io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
+			if(export_results_) {
+				convert(x_, *V_->subspace(0).equation_system().solution);
+				io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
+			}
 
 			finalize();
 			return true;
@@ -142,9 +145,10 @@ namespace utopia {
 			n_exports = 0;
 
 
-
-			convert(x_, *V_->subspace(0).equation_system().solution);
-			io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+			if(export_results_) {
+				convert(x_, *V_->subspace(0).equation_system().solution);
+				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+			}
 
 			++n_exports;
 			for(int t = 0; t < n_time_steps; ++t) {
@@ -155,8 +159,10 @@ namespace utopia {
 				if(!solve_contact() && exit_on_contact_solve_failure_) return false;
 				next_step();
 
-				convert(x_, *V_->subspace(0).equation_system().solution);
-				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+				if(export_results_) {
+					convert(x_, *V_->subspace(0).equation_system().solution);
+					io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+				}
 
 
 
@@ -171,36 +177,45 @@ namespace utopia {
 		bool solve_contact()
 		{
 
-			Vector old_sol = x_;
+#ifdef WITH_PETSC
+			UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
+			
+			{
+				Vector old_sol = x_;
 
-			for(int i = 0; i < max_outer_loops_; ++i) {
-				contact_is_outdated_ = true;
-				solve_contact_in_current_configuration();
+				for(int i = 0; i < max_outer_loops_; ++i) {
+					contact_is_outdated_ = true;
+					solve_contact_in_current_configuration();
 
-				const double diff = norm2(old_sol - x_);
+					const double diff = norm2(old_sol - x_);
 
-				if(debug_output_) {
-					convert(x_, *V_->subspace(0).equation_system().solution);
-					io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
-				}
-
-				++n_exports;
-
-				std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
-				if(diff < tol_) {
-					std::cout << "terminated at iteration " << i << " with diff " << diff << " <  " << tol_ << std::endl;
-					break;
-				} else {
-					if(i + 1 == max_outer_loops_) {
-						std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance " << tol_ << std::endl;
-						// assert(false);
-						return false;
+					if(debug_output_) {
+						convert(x_, *V_->subspace(0).equation_system().solution);
+						io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
 					}
+
+					++n_exports;
+
+					std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
+					if(diff < tol_) {
+						std::cout << "terminated at iteration " << i << " with diff " << diff << " <  " << tol_ << std::endl;
+						break;
+					} else {
+						if(i + 1 == max_outer_loops_) {
+							std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance " << tol_ << std::endl;
+							// assert(false);
+							return false;
+						}
+					}
+
+					old_sol = x_;
 				}
-
-				old_sol = x_;
 			}
-
+			
+#ifdef WITH_PETSC
+			UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 			return true;
 		}
 
@@ -284,6 +299,11 @@ namespace utopia {
 
 		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
+#ifdef WITH_PETSC
+				std::cout << "pre qp_solve ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
+
 			if(linear_solver_ && !contact_.has_contact()) {
 				linear_solver_->solve(lhs, rhs, inc_c_);
 				return;
@@ -365,6 +385,11 @@ namespace utopia {
 				std::cout << "Solve " << c << std::endl;
 			}
 			// }
+
+#ifdef WITH_PETSC
+				std::cout << "post qp_solve ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 		}
 
 		bool step()
@@ -373,10 +398,18 @@ namespace utopia {
 			synchronize(x_);//.implementation().update_ghosts();
 
 			if(contact_is_outdated_) {
+#ifdef WITH_PETSC
+				std::cout << "pre contact ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 				update_contact(x_);
 				xc_ *= 0.;
 				lagrange_multiplier_ *= 0.;
 				contact_is_outdated_ = false;
+#ifdef WITH_PETSC
+				std::cout << "post contact ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 			}
 
 			if(!assemble_hessian_and_gradient(x_, H_, g_)) {
@@ -470,6 +503,11 @@ namespace utopia {
 		void debug_output(const bool val)
 		{
 			debug_output_ = val;
+		}
+
+		void export_results(const bool val)
+		{
+			export_results_ = val;
 		}
 
 
@@ -578,6 +616,7 @@ namespace utopia {
 		bool bypass_contact_;
 		bool exit_on_contact_solve_failure_;
 		bool sol_to_gap_on_contact_bdr_;
+		
 
 		int max_outer_loops_;
 
@@ -585,6 +624,7 @@ namespace utopia {
 		bool use_ssn_, use_pg_;
 
 		int max_non_linear_iterations_;
+		bool export_results_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

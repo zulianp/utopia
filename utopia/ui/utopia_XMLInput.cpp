@@ -66,7 +66,8 @@ namespace utopia {
 			// std::cout << "object_end: " << current_node->name() <<  std::endl;
 
 			if(n_invalid_subtrees_ == 0) {
-				return current_node = current_node->parent();
+				current_node = current_node->parent();
+				return true;
 			} else {
 				--n_invalid_subtrees_;
 			}

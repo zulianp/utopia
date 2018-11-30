@@ -621,9 +621,6 @@ namespace utopia {
         template<typename Integer>
         static void set_zero_rows(TpetraMatrix &mat, const std::vector<Integer> &index, const Scalar diag)
         {
-            typedef typename TpetraMatrix::GO GO;
-            typedef typename TpetraMatrix::Scalar Scalar;
-
             auto &impl = mat.implementation();
             auto rr = mat.row_range();
 
