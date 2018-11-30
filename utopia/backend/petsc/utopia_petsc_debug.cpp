@@ -62,7 +62,7 @@ namespace utopia {
 	{
 		PetscErrorCode ierr;
 		PetscLogDouble space;
-		ierr = PetscMallocGetCurrentUsage(&space); assert(ierr == 0);
+		ierr = PetscMemoryGetCurrentUsage(&space); assert(ierr == 0);
 		os << "[Memory Usage]  " << (space/1024) << "KB" << "\n";
 	}
 
