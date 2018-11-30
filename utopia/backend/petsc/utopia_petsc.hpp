@@ -41,7 +41,7 @@
 #include "utopia_petsc_SNES.hpp"
 #include "utopia_petsc_build_ksp.hpp"
 #include "utopia_petsc_Each.hpp"
-
+#include "utopia_petsc_debug.hpp"
 
 namespace utopia {
 	void optimize_nnz(DSMatrixd &A);
