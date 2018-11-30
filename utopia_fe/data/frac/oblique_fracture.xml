@@ -7,10 +7,10 @@
 
 		<min-x>0.</min-x>
 		<min-y>0.</min-y>
-		
+
 		<max-x>1.</max-x>
-		<max-y>1.</min-y>
-		
+		<max-y>1.</max-y>
+
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
@@ -19,7 +19,7 @@
 
 	<space>
 		<system-name>master</system-name>
-		
+
 		<variables>
 			<var>
 			<name>u</name>

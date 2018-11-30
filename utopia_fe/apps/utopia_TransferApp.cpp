@@ -68,11 +68,13 @@ namespace utopia {
 		auto is_ptr = open_istream(conf_file_path);
 		InputSpace input_master(*comm_);
 		InputSpace input_slave(*comm_);
+		double tol = 1e-16;
+		bool use_clamping = false;
 
 		is_ptr->get("transfer", [&](Input &is) {
 			//get spaces
-			is_ptr->get("master", input_master);
-			is_ptr->get("slave",  input_slave);
+			is.get("master", input_master);
+			is.get("slave",  input_slave);
 
 			//get operator props
 			std::string path;
@@ -88,6 +90,8 @@ namespace utopia {
 			is.get("type", type);
 			is.get("force-shell", force_shell);
 			is.get("assemble-mass-mat", assemble_mass_mat_);
+			is.get("tol", tol);
+			is.get("use-clamping", use_clamping);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
@@ -207,7 +211,7 @@ namespace utopia {
 			} else {
 				if(mats.size() == 2) {
 					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-					l2op->fix_mass_matrix_operator();
+					l2op->fix_mass_matrix_operator(tol);
 					transfer_op_ = l2op;
 				} else {
 					auto u = trial(input_slave.space());
@@ -260,6 +264,11 @@ namespace utopia {
 		if(mpi_world_rank() == 0) {
 			std::cout << "Assembled M and fun_m" << std::endl;
 			std::cout << c << std::endl;
+		}
+
+		if(use_clamping) {
+			// transfer_op_ = std::make_shared<ClampedOperator>(transfer_op_);
+			transfer_op_ = std::make_shared<ForceZeroExtension>(transfer_op_, tol);
 		}
 
 		transfer_op_->apply(fun_master, fun_slave);

@@ -6,6 +6,8 @@
 #include "utopia_Expression.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Input.hpp"
 
 #include <memory>
 #include <cassert>
@@ -44,29 +46,34 @@ namespace utopia
     };
 
     template<class Matrix>
-    std::unique_ptr<
-        MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)>
-    > op(const std::shared_ptr<const Matrix> &mat)
+    std::unique_ptr< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> > op(const std::shared_ptr<const Matrix> &mat)
     {
         return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
     }
 
     template<class Matrix>
-    std::unique_ptr<
-        MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)>
-    > op(const std::shared_ptr<Matrix> &mat)
+    std::unique_ptr< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> > op_ref(const Matrix &mat)
     {
-        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
+        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(make_ref(mat));
     }
 
 
     template<class Vector>
-    class Preconditioner /*: public Operator<Vector>*/ {
+    class Preconditioner : public Configurable, public virtual Clonable {
     public:
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
         virtual void set_parameters(const Parameters)
         {}
+
+        virtual void read(Input &) override
+        {
+            assert(false && "implement me");
+        }
+
+        virtual Preconditioner * clone() const override = 0;
+
+        // virtual void print_usage(std::ostream &os = std::cout) const;
     };
 
 
@@ -83,6 +90,11 @@ namespace utopia
         ExprPreconditioner(const Expr &expr)
         : expr_(expr)
         {}
+
+        virtual ExprPreconditioner * clone() const override 
+        {
+            return new ExprPreconditioner(*this);
+        }
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
@@ -112,6 +124,11 @@ namespace utopia
         const std::shared_ptr<const Matrix> &get_matrix() const
         {
             return op_;
+        }
+
+        virtual DelegatePreconditioner * clone() const override 
+        {
+            return new DelegatePreconditioner(*this);
         }
 
     private:

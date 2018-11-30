@@ -1,6 +1,7 @@
 #include "utopia_ui.hpp"
 #include "utopia_Path.hpp"
 #include "utopia_XMLInput.hpp"
+#include "utopia_JSONInput.hpp"
 #include "utopia_Convertible.hpp"
 #include "utopia_InputParameters.hpp"
 
@@ -23,6 +24,13 @@ namespace utopia {
 			
 			//portable version when compuling with nvcc
 			auto ret = new XMLInput();
+			auto ret_ptr = std::unique_ptr<Input>(ret);
+			ret->open(path);
+			return ret_ptr;
+			
+		} else if(path.extension() == "json") {
+
+			auto ret = new JSONInput();
 			auto ret_ptr = std::unique_ptr<Input>(ret);
 			ret->open(path);
 			return ret_ptr;

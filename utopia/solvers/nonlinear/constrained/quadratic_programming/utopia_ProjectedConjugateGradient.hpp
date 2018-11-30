@@ -61,7 +61,7 @@ namespace utopia
 
 				Scalar alpha = dot(uk, pk)/dot(pk, A * pk);
 				assert(alpha != 0.);
-				if(alpha == 0.) break;
+				if(alpha == 0. || std::isinf(alpha) || std::isnan(alpha)) break;
 				
 				x_half = x_old + alpha * pk;
 
@@ -97,7 +97,7 @@ namespace utopia
 
 				// END step
 
-				if(iteration % check_s_norm_each == 0) {
+				if(iteration % check_s_norm_each == 0 || std::isinf(beta) || std::isnan(beta)) {
 					const Scalar diff = norm2(x_old - x);
 
 					if(this->verbose()) {

@@ -84,6 +84,31 @@ namespace  utopia
             log_iterates_       = params.log_iterates(); 
         }
 
+        virtual void read(Input &is) override
+        {
+            is.get("atol", atol_);
+            is.get("rtol", rtol_);
+            is.get("stol", stol_);
+
+            is.get("max-it", max_it_);
+            is.get("verbose", verbose_);
+            is.get("time-statistics", time_statistics_);
+            is.get("log-system", log_system_);
+            is.get("log-iterates", log_iterates_);
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            os << "atol             : <real>\n";
+            os << "rtol             : <real>\n";
+            os << "stol             : <real>\n";
+            os << "max-it           : <int>\n";
+            os << "verbose          : <bool>\n";
+            os << "time-statistics  : <bool>\n";
+            os << "log-system       : <bool>\n";
+            os << "log-iterates     : <bool>\n";
+        }
+
         virtual bool apply(const Vector &rhs, Vector &sol) override
         {
             return this->solve(*this->get_operator(), rhs, sol);

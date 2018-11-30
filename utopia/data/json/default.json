@@ -1,0 +1,30 @@
+{
+    "ASPAMG": {
+        "ProblemLevel": 2, 
+        "SmtNstep": 5, 
+        "SmtNu": 1, 
+        "TspMethod": 1, 
+        "TspNtvecs": 5, 
+        "TspMaxit": 100, 
+        "CsnTheta": 0.5, 
+        "PrlNnzrmax": 4, 
+        "AmgMaxlvls": 10, 
+        "AmgMaxcsize": 20, 
+        "PcgRelConvTol": 1e-9, 
+        "PcgMaxIter": 10000
+    },
+
+    "Newton" : {
+        "max-it"  : 1000,
+        "dumping" : 1.0,
+        "atol"    : 1e-16,
+        "rtol"    : 1e-8,
+        "stol"    : 1e-16,
+        "linear-solver" : {
+            "atol"    : 1e-16,
+            "rtol"    : 1e-8,
+            "stol"    : 1e-16,
+            "max-it" : 1000
+        }
+    }
+}

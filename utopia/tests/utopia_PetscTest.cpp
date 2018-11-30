@@ -1170,6 +1170,12 @@ namespace utopia {
 
     }
 
+    void petsc_memcheck()
+    {
+        UTOPIA_PETSC_MEMCHECK_BEGIN();
+        UTOPIA_PETSC_MEMCHECK_END();
+    }
+
 
     void petsc_dense_mat_mult_test()
     {
@@ -1190,6 +1196,7 @@ namespace utopia {
 #ifdef WITH_PETSC
 
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
+        UTOPIA_RUN_TEST(petsc_memcheck);
         UTOPIA_RUN_TEST(petsc_line_search);
         UTOPIA_RUN_TEST(petsc_residual);
         UTOPIA_RUN_TEST(petsc_block_mat);

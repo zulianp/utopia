@@ -1,172 +1,347 @@
-// #include "utopia_JSONInput.hpp"
+#include "utopia_JSONInput.hpp"
 
-// #include <stack>
+#include "json.hpp"
+#include "utopia_make_unique.hpp"
+#include "utopia_Path.hpp"
+#include "utopia_Utils.hpp"
+#include <fstream>
 
-// #include "json.hpp"
+namespace utopia {
+	class JSONInput::Impl {
+	public:
+		Impl()
+		{}
 
-// #include "utopia_make_unique.hpp"
-// #include "utopia_Path.hpp"
+		void init(const nlohmann::json &j)
+		{
+			init(utopia::make_ref(j));
+		}
 
-// #include <fstream>
+		void init(const std::shared_ptr<const nlohmann::json> &j)
+		{
+			this->j = j;
+		}
 
-// namespace utopia {
-// 	class JSONInput::Impl {
-// 	public:
-// 		using json = nlohmann::json;
+		Impl(const std::shared_ptr<const nlohmann::json> &j)
+		: j(j)
+		{}
 
-// 		Impl(const Path &path)
-// 		: n_invalid_subtrees_(0)
-// 		{
-// 			std::ifstream file(path.c_str());
+		Impl(const Path &path)
+		{
+			std::ifstream file(path.c_str());
+			auto j_non_const = std::make_shared<nlohmann::json>();
 
-// 			if(file.good()) {
-// 				file >> j_;
-// 				current_json_ = j_;
-// 			}
+			if(file.good()) {
+				file >> (*j_non_const);
+			}
 
-// 			file.close();
-// 		}
+			j = std::move(j_non_const);
 
-// 		bool valid() const {
-// 			return !j_.empty();
-// 		}
+			file.close();
+		}
 
-// 		bool is_invalid_subtree()
-// 		{
-// 			return n_invalid_subtrees_ > 0;
-// 		}
+		const nlohmann::json &json() const
+		{
+			assert(j);
+			return *j;
+		}
 
-// 		json j_;
-// 		json current_json_;
-// 		SizeType n_invalid_subtrees_;
-// 	};
+		bool good() const {
+			return j && !j->empty();
+		}
 
-// 	bool JSONInput::open(const Path &path)
-// 	{
-// 		impl_ = make_unique<Impl>(path);
-// 		if(!impl_->valid()) {
-// 			impl_ = nullptr;
-// 			return false;
-// 		}
+	private:
+		std::shared_ptr<const nlohmann::json> j;
 
-// 		return true;
-// 	}
+		// struct UtopiaJSONType {
+		// 	/// type for (signed) integers
+		// 	using number_integer_t = long;
+		// 	/// type for unsigned integers
+		// 	using number_unsigned_t = unsigned long;
+		// 	/// type for floating-point numbers
+		// 	using number_float_t = double;
+		// 	/// type for strings
+		// 	using string_t = std::string;
+		// };
 
-// 	JSONInput::~JSONInput() {}
+		// template<typename T>
+		// class SAXJSONParser : nlohmann::json_sax<UtopiaJSONType> {
+		// public:
 
-// 	JSONInput::JSONInput() {}
+		// 	SAXJSONParser(const T &val) 
+		// 	: val_(val)
+		// 	{}
 
-// 	bool JSONInput::object_begin(const std::string &name)
-// 	{
-// 		//TODO
+		// 	// called when null is parsed
+		// 	bool null()
+		// 	{
+		// 		return true;
+		// 	}
 
 
-// 		return false;
-// 	}
+		// 	// called when a boolean is parsed; value is passed
+		// 	bool boolean(bool val)
+		// 	{
+		// 		val_.set(val);
+		// 		return true;
+		// 	}
 
-// 	bool JSONInput::object_end()
-// 	{
-// 		//TODO
-// 		return false;
-// 	}
 
-// 	void JSONInput::read(double &val)
-// 	{
-// 		if(impl_->is_invalid_subtree()) return;
+		// 	// called when a signed or unsigned integer number is parsed; value is passed
+		// 	bool number_integer(long val)
+		// 	{
+		// 		val_.set(val);
+		// 		return true;
+		// 	}
 
-// 		//TODO
-// 	}
+		// 	bool number_unsigned(unsigned long val)
+		// 	{
+		// 		val_.set(static_cast<long>(val)); //FIXME
+		// 		return true;
+		// 	}
 
-// 	void JSONInput::read(int &val)
-// 	{
-// 		if(impl_->is_invalid_subtree()) return;
-// 		//TODO
-// 	}
 
-// 	void JSONInput::read(SizeType &val)
-// 	{
-// 		if(impl_->is_invalid_subtree()) return;
+		// 	// called when a floating-point number is parsed; value and original string is passed
+		// 	bool number_float(double val, const std::string& s)
+		// 	{
+		// 		val_.set(val);
+		// 		return true;
+		// 	}
 
-// 		//TODO
-// 	}
 
-// 	void JSONInput::read(std::string &val)
-// 	{
-// 		if(impl_->is_invalid_subtree()) return;
+		// 	// called when a string is parsed; value is passed and can be safely moved away
+		// 	bool string(std::string& val)
+		// 	{
+		// 		val_.set(val);
+		// 		return true;
+		// 	}
 
-// 		//TODO
-// 	}
 
-// 	void JSONInput::read(const std::string &key, double &val)
-// 	{
-// 		object_begin(key);
-// 		read(val);
-// 		object_end();
-// 	}
+		// 	// called when an object or array begins or ends, resp. The number of elements is passed (or -1 if not known)
+		// 	bool start_object(std::size_t elements)
+		// 	{
+		// 		return true;
+		// 	}
 
-// 	void JSONInput::read(const std::string &key, int &val)
-// 	{
-// 		object_begin(key);
-// 		read(val);
-// 		object_end();
-// 	}
+		// 	bool end_object()
+		// 	{
+		// 		return true;
+		// 	}
 
-// 	void JSONInput::read(const std::string &key, SizeType &val)
-// 	{
-// 		object_begin(key);
-// 		read(val);
-// 		object_end();
-// 	}
+		// 	bool start_array(std::size_t elements)
+		// 	{
+		// 		return true;
+		// 	}
 
-// 	void JSONInput::read(const std::string &key, std::string &val)
-// 	{
-// 		object_begin(key);
-// 		read(val);
-// 		object_end();
-// 	}
+		// 	bool end_array()
+		// 	{
+		// 		return true;
+		// 	}
 
-// 	bool JSONInput::good() const
-// 	{
-// 		return impl_.get();
-// 	}
+		// 	// called when an object key is parsed; value is passed and can be safely moved away
+		// 	bool key(std::string& val)
+		// 	{
+		// 		// val_.set(val);
+		// 		return true;
+		// 	}
 
-// 	void JSONInput::start()
-// 	{
-// 		//TODO
-// 	}
 
-//  	void JSONInput::start(const std::string &name)
-//  	{
-//  	//TODO
-//  	}
+		// 	// called when a parse error occurs; byte position, the last token, and an exception is passed
+		// 	bool parse_error(std::size_t position, const std::string& last_token, const nlohmann::detail::exception& ex)
+		// 	{
+		// 		assert(false);
+		// 		return true;
+		// 	}
 
-// 	std::string JSONInput::name()
-// 	{
-// 		if(impl_->is_invalid_subtree()) return "";
+		// 	inline T get() const
+		// 	{	
+		// 		T ret;
+		// 		val_.get(ret);
+		// 		return ret;
+		// 	}
 
-// 		//TODO
-// 		return "";
-// 	}
+		// 	Convertible<T> val_;
+		// };
 
-// 	bool JSONInput::good()
-// 	{
-// 		return !(impl_->is_invalid_subtree());
-// 	}
+	public:
 
-// 	bool JSONInput::next()
-// 	{
-// 		if(impl_->is_invalid_subtree()) return false;
-// 		//TODO
-// 		return good();
-// 	}
+		template<typename T>
+		void get(const std::string &key, T &value) const
+		{
+			auto it = json().find(key);
+			if(it == json().end()) {
+				return;
+			}
 
-// 	void JSONInput::finish()
-// 	{
-// 		//TODO
-// 		if(!good()) {
-// 			impl_->n_invalid_subtrees_--;
-// 		}
+			// SAXJSONParser<T> parser(value);
+			// nlohmann::json::sax_parse(*it, &parser);
+			// value = parser.get();
 
-// 		object_end();
-// 	}
-// }
+			const auto &j = *it;
+			
+			if(!j.is_null()) {
+				Convertible<T> c(value);
+				if(j.is_boolean()) {
+					c.set(j.get<bool>());
+
+				} else if(j.is_number()) {
+					
+					if(c.is_double()) {
+						c.set(j.get<double>());
+					} else if(c.is_float()) { 
+						c.set(j.get<float>());
+					} else if(c.is_int()) {
+						c.set(j.get<int>());
+					} else if(c.is_long()) {
+						c.set(j.get<long>());
+					} else if(c.is_ulong()) {
+						c.set(j.get<unsigned long>());
+					} else if(c.is_string()) {
+						c.set(j.get<double>());
+					}
+
+				} else if(j.is_string()) {
+					c.set(j.get<std::string>());
+				} 
+
+				// else if(j.is_array()) {
+				// 	c.set(j.get<bool>());
+				// } 
+
+				// else if(j.is_object()) {
+				// 	c.set(j.get<bool>());
+				// } 
+
+				c.get(value);
+			}
+		}
+	};
+
+	JSONInput::JSONInput()
+	{}
+
+	JSONInput::~JSONInput()
+	{}
+
+	bool JSONInput::open(const Path &path)
+	{
+		impl_ = utopia::make_unique<Impl>(path);
+		return impl_->good();
+	}
+
+	SizeType JSONInput::size() const
+	{
+		return impl_->json().size();
+	}
+
+	void JSONInput::get(std::vector<std::shared_ptr<IConvertible>> &values)
+	{
+		for(auto it = impl_->json().begin(); it != impl_->json().end(); ++it) {
+			if(it->is_object()) continue; //FIXME?
+			values.push_back(std::make_shared<Convertible<std::string>>(it->get<std::string>()));
+		}
+	}
+
+	void JSONInput::get_all(std::function<void(Input &)> lambda)
+	{
+		for(auto it = impl_->json().begin(); it != impl_->json().end(); ++it) {
+			if(!it->is_object()) continue; //FIXME?
+
+			JSONInput child;
+			child.impl_ = utopia::make_unique<Impl>(make_ref(*it));
+			lambda(child);
+		}
+	}
+
+	void JSONInput::get(const std::string &key, bool &val)
+	{
+		assert(impl_);
+		impl_->get(key, val);
+	}
+
+	void JSONInput::get(const std::string &key, double &val)
+	{
+		assert(impl_);
+		impl_->get(key, val);
+	}
+
+	void JSONInput::get(const std::string &key, int &val)
+	{
+		assert(impl_);
+		impl_->get(key, val);
+	}
+
+	// void JSONInput::get(const std::string &key, SizeType &val)
+	// {
+	// 	assert(impl_);
+	// 	impl_->get(key, val);
+	// }
+
+	void JSONInput::get(const std::string &key, std::string &val)
+	{
+		assert(impl_);
+		impl_->get(key, val);
+	}
+
+	void JSONInput::get(const std::string &key, long &val)
+	{
+		assert(impl_);
+		impl_->get(key, val);
+	}
+
+	void JSONInput::get(const std::string &key, unsigned long &val)
+	{
+		assert(impl_);
+		impl_->get(key, val);
+	}
+
+	void JSONInput::get(const std::string &key, Configurable &val)
+	{
+		assert(impl_);
+		auto it = impl_->json().find(key);
+		if(it == impl_->json().end()) {
+			// std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+			return;
+		}
+
+		const auto &j = *it;
+
+		if(!j.is_null()) {
+			JSONInput child;
+			child.impl_ = utopia::make_unique<Impl>(make_ref(j));
+			val.read(child);
+		} 
+		
+		// else {
+		// 	std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+		// }
+	}
+
+	void JSONInput::get(const std::string &key, std::function<void(Input &)> lambda)
+	{
+		assert(impl_);
+		auto it = impl_->json().find(key);
+		if(it == impl_->json().end()) {
+			// std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+			return;
+		}
+
+		const auto &j = *it;
+
+		if(!j.is_null()) {
+			JSONInput child;
+			child.impl_ = utopia::make_unique<Impl>(make_ref(j));
+			lambda(child);
+		} 
+
+		// else {
+		// 	std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+		// }
+	}
+
+	bool JSONInput::good() const
+	{
+		return (impl_) && impl_->good();
+	}
+
+}

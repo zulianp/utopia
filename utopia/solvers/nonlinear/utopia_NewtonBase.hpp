@@ -61,6 +61,16 @@ namespace utopia
             return true;
         }
 
+
+        virtual void read(Input &in) override
+        {
+            NonLinearSolver<Matrix, Vector>::read(in); 
+            in.get("check_diff", check_diff_);
+
+            if(linear_solver_) {
+                in.get("linear-solver", *linear_solver_);
+            }
+        }
       
 
         /**

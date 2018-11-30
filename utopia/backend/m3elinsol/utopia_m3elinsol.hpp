@@ -16,7 +16,7 @@ namespace utopia {
 	};
 
 	template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-	class ASPAMG final : public IterativeSolver<Matrix, Vector>, public Configurable {
+	class ASPAMG final : public IterativeSolver<Matrix, Vector> {
 	public:
 		bool apply(const Vector &b, Vector &x) override;
 		

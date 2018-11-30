@@ -3,9 +3,12 @@
 #include "utopia_Tpetra_Matrix.hpp"
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_RowView.hpp"
+#include "utopia_BiCGStab_impl.hpp"
 
 namespace utopia{
 	template class Wrapper<utopia::TpetraMatrix, 2>;
 	template class Wrapper<utopia::TpetraVector, 1>;
 	template class RowView<utopia::TSMatrixd>;
+
+	template class BiCGStab<TSMatrixd, TVectord, HOMEMADE>;
 }

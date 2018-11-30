@@ -2,6 +2,7 @@
 #include "utopia_Base.hpp"
 #include "utopia.hpp"
 #include "utopia_InputParameters.hpp"
+#include "utopia_ui.hpp"
 
 namespace utopia {
 #ifndef WITH_M3ELINSOL
@@ -54,14 +55,14 @@ namespace utopia {
 		read(folder + "/lhs.txt", A);
 
 		x = local_zeros(local_size(rhs));
-
-		InputParameters in;
-		in.set("TspMaxit", 200);
-
+	
 		ASPAMG<CRSMatrixd, Vectord> amg;
-		amg.read(in);
+		if(!amg.import("ASPAMG", data_path + "/json/default.json")) {
+			InputParameters in;
+			in.set("TspMaxit", 200);
+			amg.read(in);
+		}
 
-		// amg.max_it(100);
 		amg.solve(A, rhs, x);
 		amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
 

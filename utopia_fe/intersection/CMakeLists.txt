@@ -1,5 +1,6 @@
 list(APPEND INTERSECTION_MODULES
   .
+  clipper
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR INTERSECTION_MODULES LOCAL_HEADERS LOCAL_SOURCES)
@@ -16,6 +17,7 @@ add_dependencies(utopia_fe_intersection par_moonolith)
 target_include_directories(utopia_fe_intersection BEFORE PUBLIC ${MOONOLITH_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/clipper)
 target_link_libraries(utopia_fe_intersection ${MOONOLITH_LIBRARIES})
 target_link_libraries(utopia_fe_intersection ${MOONOLITH_LIBRARIES})
+target_link_libraries(utopia_fe_intersection utopia_fe_visualization)
 set_utopia_compiler_features(utopia_fe_intersection)
 
 set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};utopia_fe_intersection" PARENT_SCOPE)

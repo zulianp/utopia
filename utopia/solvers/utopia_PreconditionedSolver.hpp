@@ -42,23 +42,34 @@ namespace utopia {
 			update(op, op);
 		}
 
-		 virtual void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec)
-		 {
-		      IterativeSolver::update(op);
+		virtual void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec)
+		{
+			IterativeSolver::update(op);
 
-		      if(precond_) {
-		         auto ls_ptr = dynamic_cast<LinearSolver *>(precond_.get());
-		         if(ls_ptr) {
-		             ls_ptr->update(prec);    
-		         } else {
-		         	auto delegate_ptr = dynamic_cast< DelegatePreconditioner<Matrix, Vector> *>(precond_.get());
-		         	if(delegate_ptr) {
-		         		delegate_ptr->update(prec);
-		         	}
-		         }
-		      }
-		  }
-	  
+			if(precond_) {
+				auto ls_ptr = dynamic_cast<LinearSolver *>(precond_.get());
+				if(ls_ptr) {
+					ls_ptr->update(prec);    
+				} else {
+					auto delegate_ptr = dynamic_cast< DelegatePreconditioner<Matrix, Vector> *>(precond_.get());
+					if(delegate_ptr) {
+						delegate_ptr->update(prec);
+					}
+				}
+			}
+		}
+
+		inline PreconditionedSolver &operator=(const PreconditionedSolver &other)
+		{
+			if(this == &other) {
+				return *this;
+			}
+
+			IterativeSolver::operator=(other);
+			this->set_preconditioner(std::shared_ptr<Preconditioner>(other.precond_->clone()));
+			return *this;
+		}
+
 
 	private:
 		std::shared_ptr<Preconditioner> precond_;

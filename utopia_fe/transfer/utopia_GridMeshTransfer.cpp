@@ -3,6 +3,4 @@
 namespace utopia {
 	template class Grid<2>;
 	template class Grid<3>;
-
-	template class GridMeshTransfer<3>;
 }

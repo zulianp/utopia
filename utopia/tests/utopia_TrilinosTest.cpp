@@ -581,19 +581,22 @@ namespace utopia {
     
     void trilinos_cg()
     {
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(100, 2);
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         TVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
         
         ConjugateGradient<TSMatrixd, TVectord> cg;
         cg.rtol(1e-6);
         cg.atol(1e-6);
-        cg.max_it(500);
+        cg.max_it(800);
         // cg.verbose(true);
         cg.update(ml_problem.matrix);
+
+        x = *ml_problem.rhs;
         cg.apply(*ml_problem.rhs, x);
         
-        utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
+        double diff = norm2(*ml_problem.rhs - *ml_problem.matrix * x);;
+        utopia_test_assert(approxeq(diff, 0., 1e-6));
     }
     
     template<class Matrix, class Vector>
@@ -606,19 +609,22 @@ namespace utopia {
         const static bool verbose   = false;
         const static bool use_masks = false;
         
-        MultiLevelTestProblem<Matrix, Vector> ml_problem(10, 2, !use_masks);
+        MultiLevelTestProblem<Matrix, Vector> ml_problem(10, 4, !use_masks);
         // ml_problem.describe();
         // ml_problem.write_matlab("./");
         
         auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
         auto coarse_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+
+        coarse_solver->set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
+        coarse_solver->max_it(1000);
         
         Multigrid<Matrix, Vector> multigrid(
                                             smoother,
                                             coarse_solver
                                             );
         
-        multigrid.max_it(6);
+        multigrid.max_it(8);
         multigrid.atol(1e-13);
         multigrid.stol(1e-13);
         multigrid.rtol(1e-9);
@@ -638,7 +644,6 @@ namespace utopia {
                 //apply transpose for restriction
                 transfers.push_back( std::make_shared<IPTransferT>(interp_ptr) );
             }
-            
             // utopia_test_assert(interp_ptr->implementation().is_valid(true));
         }
         
@@ -1316,9 +1321,10 @@ namespace utopia {
         
         double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
+        x = *ml_problem.rhs;
         solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
         
-        double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        double diff = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
         utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
     }

@@ -13,6 +13,7 @@
 #include "utopia_UIScalarSampler.hpp"
 
 #include "utopia_GridMeshTransfer.hpp"
+#include "utopia_Grid2MeshSurfaceTransferAssembler.hpp"
 
 namespace utopia {
 
@@ -27,6 +28,8 @@ namespace utopia {
 		    try {
 		        is.get("mesh", mesh_);
 		        is.get("space", space_);
+
+		        is_shell = mesh_.mesh().spatial_dimension() > mesh_.mesh().mesh_dimension();
 
 
 		    } catch(const std::exception &ex) {
@@ -53,27 +56,103 @@ namespace utopia {
 
 		UIMesh<libMesh::DistributedMesh> mesh_;
 		UIFunctionSpace<LibMeshFunctionSpace>  space_;
+		bool is_shell;
 	};
 
-	class Grid2MeshTransferApp::InputGrid : public Configurable {
+	class OwnershipRanges {
 	public:
-		InputGrid(libMesh::Parallel::Communicator &comm)
-		: comm_(comm)
+		OwnershipRanges(const int rank, const int comm_size)
+		: rank_(rank)
 		{
-			ownership_ranges.resize(comm_.size() + 1, 0);
+			ownership_ranges_.resize(comm_size + 1, 0);
 		}
+
+		void init(const std::size_t n)
+		{
+			//domain decomposition
+			std::size_t comm_size = ownership_ranges_.size() - 1;
+			std::size_t n_local = n / comm_size;
+			std::size_t n_remainder = n % comm_size;
+
+			ownership_ranges_[1] = n_local + n_remainder;
+			for(std::size_t i = 2; i <= comm_size; ++i) {
+				ownership_ranges_[i] = n_local + ownership_ranges_[i - 1];
+			}
+		}
+
+		inline long local_nodes_begin() const
+		{
+			return ownership_ranges_[rank_];
+		}
+
+		inline long local_nodes_end() const
+		{
+			return ownership_ranges_[rank_ + 1];
+		}
+
+		inline long n_local_dofs() const
+		{
+			return local_nodes_end() - local_nodes_begin();
+		}
+
+		const std::vector<long> &get()
+		{
+			return ownership_ranges_;
+		}
+
+	private:
+		int rank_;
+		std::vector<long> ownership_ranges_;
+	};
+
+	class Grid2 : public Grid<2>, public Configurable {
+	public:
+		Grid2(const int rank, const int comm_size)
+		: ownership_ranges(rank, comm_size)
+		{}
 
 		void read(Input &is) override
 		{
 		    try {
+
+		    	Vector box_min(0., 0.);
+		    	Vector box_max(1., 1.);
+
 		    	is.get("grid", [&](Input &is) {
-			    	is.get("n-x", grid.dims[0]);
-			    	is.get("n-y", grid.dims[1]);
-			    	is.get("n-z", grid.dims[2]);
+			    	is.get("n-x", this->dims[0]);
+			    	is.get("n-y", this->dims[1]);
+
+			    	is.get("min-x", box_min[0]);
+			    	is.get("min-y", box_min[1]);
+
+			    	is.get("max-x", box_max[0]);
+			    	is.get("max-y", box_max[1]);
 		    	});
 
-		    	//FIXME
-		    	ownership_ranges[1] = grid.n_nodes();
+		    	Vector box_range = box_max - box_min;
+
+		    	this->map = [=](const Vector &x) -> Vector {
+		    		//parametrization from unit-square to transformed quadrilateral
+		    		Vector y = x;
+		    		y.x *= box_range.x;
+		    		y.y *= box_range.y;
+		    		return y + box_min; 
+		    	};
+
+		    	this->inverse_map = [=](const Vector &x) -> Vector {
+		    		//inverse-parametrization from  transformed quadrilateral to unit-square
+		    		Vector y = x - box_min;
+		    		y.x /= box_range.x;
+		    		y.y /= box_range.y;
+		    		return y;
+		    	};
+
+		    	this->dof_map = [](const Integer &hash) -> Integer {
+		    		//dof-map starting from the hash (generated from x major)
+		    		return hash;
+		    	};
+
+		    	ownership_ranges.init(this->n_nodes());
 
 		    } catch(const std::exception &ex) {
 		        std::cerr << ex.what() << std::endl;
@@ -83,23 +162,144 @@ namespace utopia {
 
 		inline long local_nodes_begin() const
 		{
-			return ownership_ranges[comm_.rank()];
+			return ownership_ranges.local_nodes_begin();
 		}
-
 
 		inline long local_nodes_end() const
 		{
-			return ownership_ranges[comm_.rank() + 1];
+			return ownership_ranges.local_nodes_end();
 		}
 
 		inline long n_local_dofs() const
 		{
-			return local_nodes_end() - local_nodes_begin();
+			return ownership_ranges.n_local_dofs();
+		}
+
+		inline bool empty() const
+		{
+			return this->n_nodes() == 0;
+		}
+
+		OwnershipRanges ownership_ranges;
+	};
+
+	class Grid3 : public Grid<3>, public Configurable {
+	public:
+		Grid3(const int rank, const int comm_size)
+		: ownership_ranges(rank, comm_size)
+		{}
+
+		void read(Input &is) override
+		{
+		    try {
+
+		    	Vector box_min(0., 0., 0.);
+		    	Vector box_max(1., 1., 1.);
+
+		    	is.get("grid", [&](Input &is) {
+			    	is.get("n-x", this->dims[0]);
+			    	is.get("n-y", this->dims[1]);
+			    	is.get("n-z", this->dims[2]);
+
+			    	is.get("min-x", box_min[0]);
+			    	is.get("min-y", box_min[1]);
+			    	is.get("min-z", box_min[2]);
+
+			    	is.get("max-x", box_max[0]);
+			    	is.get("max-y", box_max[1]);
+			    	is.get("max-z", box_max[2]);
+		    	});
+
+		    	Vector box_range = box_max - box_min;
+
+		    	this->map = [=](const Vector &x) -> Vector {
+		    		//parametrization from unit-cube to transformed hexahedron
+		    		Vector y = x;
+		    		y.x *= box_range.x;
+		    		y.y *= box_range.y;
+		    		y.z *= box_range.z;
+		    		return y + box_min; 
+		    	};
+
+		    	this->inverse_map = [=](const Vector &x) -> Vector {
+		    		//inverse-parametrization from  transformed hexahedron to unit-square
+		    		Vector y = x - box_min;
+		    		y.x /= box_range.x;
+		    		y.y /= box_range.y;
+		    		y.z /= box_range.z;
+		    		return y;
+		    	};
+
+		    	this->dof_map = [](const Integer &hash) -> Integer {
+		    		//dof-map starting from the hash (generated from x major)
+		    		return hash;
+		    	};
+
+		    	ownership_ranges.init(this->n_nodes());
+
+		    } catch(const std::exception &ex) {
+		        std::cerr << ex.what() << std::endl;
+		        assert(false);
+		    }
+		}
+
+		inline long local_nodes_begin() const
+		{
+			return ownership_ranges.local_nodes_begin();
+		}
+
+		inline long local_nodes_end() const
+		{
+			return ownership_ranges.local_nodes_end();
+		}
+
+		inline long n_local_dofs() const
+		{
+			return ownership_ranges.n_local_dofs();
+		}
+
+		inline bool empty() const
+		{
+			return this->n_nodes() == 0;
+		}
+
+		OwnershipRanges ownership_ranges;
+	};
+
+	class Grid2MeshTransferApp::InputGrid : public Configurable {
+	public:
+		InputGrid(libMesh::Parallel::Communicator &comm)
+		: comm_(comm),
+		  grid2(comm.rank(), comm.size()),
+		  grid3(comm.rank(), comm.size())
+		{}
+
+		void read(Input &is) override
+		{
+		    try {
+		    	int dim = 3;
+		    	is.get("dim", dim);
+
+		    	if(dim == 3) {
+		    		is_3D = true;
+		    		grid3.read(is);
+		    	} else {
+		    		is_3D = false;
+		    		assert(dim == 2);
+		    		grid2.read(is);
+		    	}
+
+		    } catch(const std::exception &ex) {
+		        std::cerr << ex.what() << std::endl;
+		        assert(false);
+		    }
 		}
 
 		libMesh::Parallel::Communicator &comm_;
-		Grid<3> grid;
-		std::vector<long> ownership_ranges;
+
+		bool is_3D;
+		Grid2 grid2;
+		Grid3 grid3;
 	};
 
 	void Grid2MeshTransferApp::init(libMesh::LibMeshInit &init)
@@ -125,6 +325,7 @@ namespace utopia {
 		bool assemble_mass_mat_ = 0;
 		bool force_shell  = false;
 		bool biorth_basis = false;
+		bool enumerate_nodes = false;
 		std::shared_ptr<LocalAssembler> local_assembler_;
 		std::shared_ptr<Local2Global> local2global_;
 		std::shared_ptr<TransferOperator> transfer_op_;
@@ -136,7 +337,8 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
 
 		bool fun_is_constant;
-
+		bool print_info = false;
+		bool volume_to_surface = false;
 
 		auto master_mesh_dim = 3;
 		auto master_spatial_dim = 3;
@@ -146,11 +348,16 @@ namespace utopia {
 			is_ptr->get("master", input_master);
 			is_ptr->get("slave",  input_slave);
 
-		
+			if(!input_master.is_3D) {
+				master_mesh_dim = 2;
+				master_spatial_dim = 2;
+			}
 
 			is.get("write-operators-to-disk", write_operators_to_disk);
 			is.get("type", type);
 			is.get("assemble-mass-mat", assemble_mass_mat_);
+			is.get("print-info", print_info);
+			is.get("volume-to-surface", volume_to_surface);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
@@ -159,7 +366,7 @@ namespace utopia {
 				local_assembler_ = std::make_shared<L2LocalAssembler>(
 					master_mesh_dim,
 					biorth_basis,
-					assemble_mass_mat_,
+					assemble_mass_mat_ || !biorth_basis,
 					force_shell || master_mesh_dim < master_spatial_dim
 				);
 
@@ -174,7 +381,7 @@ namespace utopia {
 
 				auto apl2 = std::make_shared<ApproxL2LocalAssembler>(master_mesh_dim);
 				apl2->set_quadrature_order(quad_order);
-				local_assembler_  = apl2;
+				local_assembler_ = apl2;
 			}
 
 			if(!local_assembler_) {
@@ -184,6 +391,9 @@ namespace utopia {
 			}
 
 			local2global_ = std::make_shared<Local2Global>(is_interpolation_);
+
+			is.get("enumerate-nodes", enumerate_nodes);
+
 
 #ifdef WITH_TINY_EXPR
 			std::string expr = "x";
@@ -226,15 +436,70 @@ namespace utopia {
 		c.start();
 
 		std::vector<std::shared_ptr<USparseMatrix>> mats;
-		GridMeshTransfer<3> transfer_assembler(local_assembler_, local2global_);
-		bool ok = transfer_assembler.assemble(
-			input_master.grid,
-			input_master.ownership_ranges,
-			make_ref(input_slave.mesh()),
-			make_ref(input_slave.space().dof_map()),
-			mats,
-			opts
-		);
+		
+		
+		bool ok = false;
+
+		if(input_master.is_3D) {
+			auto &grid3 = input_master.grid3;
+
+			if(print_info) {
+				std::cout << "3D grid" << std::endl;
+				grid3.describe(std::cout);
+			}
+
+			if(volume_to_surface) {
+				Grid2MeshSurfaceTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid3,
+					grid3.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+
+			} else {
+				Grid2MeshTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid3,
+					grid3.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+			}
+		} else {
+			auto &grid2 = input_master.grid2;
+
+			if(print_info) {
+				std::cout << "2D grid" << std::endl;
+				grid2.describe(std::cout);
+			}
+
+			if(volume_to_surface) {
+				Grid2MeshSurfaceTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid2,
+					grid2.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+			} else {
+				Grid2MeshTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid2,
+					grid2.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+			}
+		}
 
 		if(!ok) {
 			std::cerr << "[Error] transfer failed" << std::endl;
@@ -291,15 +556,38 @@ namespace utopia {
 		c.start();
 
 		UVector fun_master, fun_slave;
-		fun_master = local_zeros(input_master.n_local_dofs());
+		
 
-		for(int i = input_master.local_nodes_begin(); i < input_master.local_nodes_end(); ++i) {
+		OwnershipRanges * ownr = nullptr;
+
+		if(input_master.is_3D) {
+			ownr = &input_master.grid3.ownership_ranges;
+		} else {
+			ownr = &input_master.grid2.ownership_ranges;
+		}
+
+		fun_master = local_zeros(ownr->n_local_dofs());
+
+		{
+			Write<UVector> w_(fun_master);
+
+			for(int i = ownr->local_nodes_begin(); i < ownr->local_nodes_end(); ++i) {
+				if(enumerate_nodes) {
+					fun_master.set(i, comm_->rank());
+				} else {
 #ifdef WITH_TINY_EXPR
-			auto p = input_master.grid.point(i);
-			fun_master.set(i, fun->eval(p.x, p.y, p.z));
+					if(input_master.is_3D) {
+						auto p = input_master.grid3.point(i);
+						fun_master.set(i, fun->eval(p.x, p.y, p.z));
+					} else {
+						auto p = input_master.grid2.point(i);
+						fun_master.set(i, fun->eval(p.x, p.y));
+					}
 #else
-			fun_master.set(i, fun->expr());
+					fun_master.set(i, fun->expr());
 #endif //WITH_TINY_EXPR
+				}
+			}
 		}
 
 		c.stop();

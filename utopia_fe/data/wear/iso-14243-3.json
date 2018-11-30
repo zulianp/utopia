@@ -1,0 +1,76 @@
+{
+	"simulation": {
+		"mesh" : "/Users/zulianp/Desktop/algo4u/wearsim/mesh_files/wear_geoms_normal.e",
+		"mesh-refinements": 0,
+		"model": {
+			"material": "LinearElasticity",
+			"stabilization": "L2",
+			"stabilization-mag": 0.00001,
+			"parameters": {
+				"mu": 160.0,
+				"lambda": 160.0
+			}
+		},
+		"boundary-conditions": {
+			"dirichlet":
+			[
+				{
+					"coord": 0,
+					"side": 3,
+					"value": 0.0
+				},
+				{
+					"coord": 1,
+					"side": 3,
+					"value": 0.0
+				},
+				{
+					"coord": 2,
+					"side": 3,
+					"value": 0.0
+				},
+				{
+					"coord": 0,
+					"side": 4,
+					"value": 0.0
+				},
+				{
+					"coord": 1,
+					"side": 4,
+					"value": 0.0
+				}
+			]
+		},
+		"contact": {
+			"type": "steady",
+			"max-nl-iter": 100,
+			"radius": 1.9,
+			"step-tol" : 1e-4,
+			"pairs": [
+				{
+					"master": 1,
+					"slave":  2
+				}
+			]
+		},
+		"wear": {
+			"coeff": 0.007,
+			"extrapolation": 100.0,
+			"n-cycles": 10,
+			"gait-cycle": {
+				"type": "ISO14243_3",
+				"csv": "../data/wear/iso-14243-3.csv",
+				"flexion-extension-angle-axis": "x",
+				"axial-force-side": 4,
+				"axial-force-axis": "z",
+				"ap-motion-axis": "y",
+				"tibial-rotation-axis": "z",
+				"femural-block": 1,
+				"tibial-block": 2,
+				"normalize-axial-force-by-area": 1,
+				"dt": 0.001
+			}
+		},
+		"output": "./wear_out"
+	}
+}

@@ -21,7 +21,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Vector>
-    class NonLinearSolverInterface : public Monitor<Vector>
+    class NonLinearSolverInterface : public Monitor<Vector>, public Configurable
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -58,6 +58,27 @@ namespace utopia
             max_it_             = params.max_it(); 
             verbose_            = params.verbose(); 
             time_statistics_    = params.time_statistics();  
+        }
+
+
+        virtual void read(Input &in) override
+        {
+            in.get("atol", atol_);
+            in.get("rtol", rtol_);
+            in.get("stol", stol_);
+            in.get("max-it", max_it_);
+            in.get("verbose", verbose_);
+            in.get("time-statistics", time_statistics_);
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            os << "atol             : <real>\n";
+            os << "rtol             : <real>\n";
+            os << "stol             : <real>\n";
+            os << "max-it           : <int>\n";
+            os << "verbose          : <bool>\n";
+            os << "time-statistics  : <bool>\n";
         }
 
 

@@ -87,6 +87,22 @@ namespace utopia {
 					min_coords[2], max_coords[2],
 					get_type(elem_type, order, 3)
 					);
+			} else if(mesh_type == "sphere") {
+
+				double radius = 1.;
+				int sphere_refine = 2;
+
+				is.get("radius", radius);
+				is.get("sphere-refine", sphere_refine);
+
+				libMesh::MeshTools::Generation::build_sphere(*mesh_,
+					radius,
+					sphere_refine,//const unsigned int nr = 2,
+					get_type(elem_type, order, 3)
+					//const unsigned int 	n_smooth = 2,
+					// const bool 	flat = true 
+				);
+
 			} else if(mesh_type == "aabb") {
 				libMesh::DistributedMesh temp_mesh(mesh_->comm());
 				temp_mesh.read(path);
@@ -113,6 +129,8 @@ namespace utopia {
 						);
 				}
 			}
+
+			//build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
 
 			scale_mesh(scale, *mesh_);
 

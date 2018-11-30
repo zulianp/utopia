@@ -100,8 +100,8 @@ namespace utopia {
                         std::vector<SizeType> nnz(local_size(b).get(0), 0);
                         auto rr = row_range(b);
 
-                        each_read(b, [&](const SizeType r, const SizeType c, const Scalar val) {
-                            nnz[r - rr.begin()];
+                        each_read(b, [&](const SizeType r, const SizeType &, const Scalar &) {
+                            ++nnz[r - rr.begin()];
                         });
 
 

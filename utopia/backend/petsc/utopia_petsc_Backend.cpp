@@ -971,10 +971,12 @@ namespace utopia {
 
 	void PetscBackend::triple_product_ptap(PetscMatrix & result, const PetscMatrix & A, const PetscMatrix &P)
 	{
-		if(result.implementation() != A.implementation() && result.implementation() != P.implementation()) {
+		if(result.implementation()  != A.implementation() &&
+		   result.implementation() != P.implementation()) {
 			MatDestroy(&result.implementation());
 		} else {
 			std::cerr << "[Error] not handled case in triple_product_ptap" << std::endl;
+			assert(false);
 		}
 
 		assert(A.same_type(P));

@@ -31,7 +31,7 @@ namespace utopia {
 		using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
 		using ForcingFunctionT = UIForcingFunction<ProductSpaceT, UVector>;
 
-		SimulationInput(libMesh::Parallel::Communicator &comm) : mesh_(comm), space_(make_ref(mesh_)), dt_(0.1), use_amg_(false) {}
+		SimulationInput(libMesh::Parallel::Communicator &comm) : mesh_(comm), space_(make_ref(mesh_)), dt_(0.1), use_amg_(false), use_newton(false), export_results(true) {}
 
 		void read(Input &is) override
 		{
@@ -48,6 +48,8 @@ namespace utopia {
 		        is.get("forcing-functions", *forcing_function);
 		        is.get("dt", dt_);
 		        is.get("use-amg", use_amg_);
+		        is.get("export", export_results);
+		        is.get("use-ssnewton", use_newton);
 
 		        model_ = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
 		            std::move(model),
@@ -102,6 +104,9 @@ namespace utopia {
 		std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model_;
 		double dt_;
 		bool use_amg_;
+	public:
+		bool use_newton;
+		bool export_results;
 	};
 
 	void ContactApp::init(libMesh::LibMeshInit &init)
@@ -124,8 +129,13 @@ namespace utopia {
 			params.contact_params
 		);
 
+		if(sim_in.export_results) {
+			sc.export_results(true);
+		}
+
 		sc.set_tol(1e-3);
 		sc.set_max_outer_loops(30);
+		sc.set_use_ssn(sim_in.use_newton);
 
 #ifdef WITH_M3ELINSOL
 
