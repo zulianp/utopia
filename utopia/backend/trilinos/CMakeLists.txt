@@ -67,16 +67,6 @@ if(TRILINOS_FOUND)
 
     set(WITH_TRILINOS TRUE)
 
-    if(KOKKOS_CUDA_HPP)
-        set(KOKKOS_CUDA TRUE)
-    endif()
-    if(KOKKOS_ROCM_HPP)
-        set(KOKKOS_ROCM TRUE)
-    endif()
-    if(KOKKOS_OPENMP_HPP)
-        set(KOKKOS_OPENMP TRUE)
-    endif()
-
     find_package(TpetraExt)
     if(TRILINOS_TPETRAEXT_FOUND)
  	   set(WITH_TRILINOS_TPETRAEXT TRUE PARENT_SCOPE)

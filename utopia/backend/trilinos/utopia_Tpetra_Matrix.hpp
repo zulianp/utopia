@@ -35,15 +35,14 @@ namespace utopia {
 
         //types of Kokkos Parallel Nodes
         typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-#ifdef KOKKOS_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
         typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
         typedef cuda_node NT;
-#elif defined  KOKKOS_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
+#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
         typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
         typedef rocm_node NT;
-#elif defined KOKKOS_OPENMP
+#elif defined KOKKOS_ENABLE_OPENMP
         typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-        typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
         typedef openmp_node NT;
 #else
         typedef serial_node NT;
