@@ -31,7 +31,7 @@ namespace utopia {
 		using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
 		using ForcingFunctionT = UIForcingFunction<ProductSpaceT, UVector>;
 
-		SimulationInput(libMesh::Parallel::Communicator &comm) : mesh_(comm), space_(make_ref(mesh_)), dt_(0.1), use_amg_(false), use_newton(false), export_results(false) {}
+		SimulationInput(libMesh::Parallel::Communicator &comm) : mesh_(comm), space_(make_ref(mesh_)), dt_(0.1), use_amg_(false), use_newton(false), export_results(true) {}
 
 		void read(Input &is) override
 		{
@@ -105,8 +105,8 @@ namespace utopia {
 		double dt_;
 		bool use_amg_;
 	public:
-		bool export_results;
 		bool use_newton;
+		bool export_results;
 	};
 
 	void ContactApp::init(libMesh::LibMeshInit &init)

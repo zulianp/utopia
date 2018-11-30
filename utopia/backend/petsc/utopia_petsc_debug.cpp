@@ -4,6 +4,7 @@
 #include "petscsys.h" 
 #include <stack>
 #include <iostream>
+#include <cassert>
 
 namespace utopia {
 
