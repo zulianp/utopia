@@ -78,7 +78,7 @@ namespace utopia
          *
          * @param[in]  params  The parameters
          */
-        virtual void set_parameters(const Parameters params)
+        virtual void set_parameters(const Parameters params) override
         {
             NonLinearSolver<Matrix, Vector>::set_parameters(params); 
             check_diff_         = params.differentiation_control(); 

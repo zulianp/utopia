@@ -187,7 +187,7 @@ namespace utopia
 					r_norm = norm2(r);
 					
 					if(this->verbose()) {
-						PrintInfo::print_iter_status({it, r_norm });
+						PrintInfo::print_iter_status(it, { r_norm });
 					}
 					
 					converged = this->check_convergence(it, r_norm, 1, 1);
@@ -245,7 +245,7 @@ namespace utopia
 				
 				if(r_norm < this->atol()) {
 					if(this->verbose()) {
-						PrintInfo::print_iter_status({it, r_norm});
+						PrintInfo::print_iter_status(it, {r_norm});
 					}
 					
 					stop = this->check_convergence(it, r_norm, 1, 1);
@@ -260,7 +260,7 @@ namespace utopia
 				z = z_new;
 				
 				if(this->verbose()) {
-					PrintInfo::print_iter_status({it, r_norm});
+					PrintInfo::print_iter_status(it, {r_norm});
 				}
 				
 				stop = this->check_convergence(it, r_norm, 1, 1);

@@ -86,6 +86,11 @@ namespace utopia
                 return true;
             }
 
+            FunctionPreconditioner * clone() const override
+            {
+                return new FunctionPreconditioner(*this);
+            }
+
 
         private:
             std::function< void(const Vector &, Vector &) > operator_action_; 
