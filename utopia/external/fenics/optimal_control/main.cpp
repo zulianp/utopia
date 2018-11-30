@@ -25,7 +25,7 @@ class IGuess : public Expression
 
 int main()
 {
-  auto mesh = std::make_shared<UnitSquareMesh>(5, 5);
+  auto mesh = std::make_shared<UnitSquareMesh>(50, 50);
   auto V = std::make_shared<OptimalControl::FunctionSpace>(mesh);
 
   
@@ -101,12 +101,8 @@ int main()
   // replace with wrap 
   utopia::convert(Mass_petsc, Mass_utopia); 
 
-  // TODO:: figure out if we have row sum interfaced in utopia... 
   utopia::DVectord rsum; 
-  Mass_utopia.implementation().row_sum(rsum.implementation()); 
-  Mass_utopia = utopia::diag(rsum); 
-
-
+  Mass_utopia = utopia::diag(sum(Mass_utopia, 1)); 
 
 
   // form initial guess 
@@ -123,17 +119,27 @@ int main()
   // nlsolver.atol(1e-9); 
   // nlsolver.solve(fun, x_0); 
 
-  auto subproblem = std::make_shared<utopia::SteihaugToint<utopia::DSMatrixd, utopia::DVectord> >();
-  subproblem->atol(1e-11);
-  utopia::TrustRegion<utopia::DSMatrixd, utopia::DVectord> tr_solver(subproblem);
-  tr_solver.verbose(true); 
-  tr_solver.atol(1e-9); 
-  tr_solver.solve(fun, x_0); 
+  // auto subproblem = std::make_shared<utopia::SteihaugToint<utopia::DSMatrixd, utopia::DVectord> >();
+  // subproblem->atol(1e-11);
+  // utopia::TrustRegion<utopia::DSMatrixd, utopia::DVectord> tr_solver(subproblem);
+  // tr_solver.verbose(true); 
+  // tr_solver.atol(1e-9); 
+  // tr_solver.solve(fun, x_0); 
 
 
+  auto linear_solver = std::make_shared<utopia::Factorization<utopia::DSMatrixd, utopia::DVectord> >();      
+  utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
 
-  
+  solver.set_scaling_matrix(utopia::local_identity(local_size(Mass_utopia).get(0), local_size(Mass_utopia).get(1))); 
+  solver.set_mass_matrix(Mass_utopia); 
+  solver.verbose(true);
+  solver.use_m(false); 
+  // solver.set_m(-1); 
+  solver.atol(1e-9); 
+  solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+  solver.solve(fun, x_0); 
+
 
 
   File file("op_control_u.pvd");
