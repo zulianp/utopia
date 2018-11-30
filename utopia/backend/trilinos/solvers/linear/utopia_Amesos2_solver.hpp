@@ -38,19 +38,14 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;
         
-        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
-        void set_preconditioner(const Matrix &precond);
-        int preordering();
-        int num_factorization();
-        int sym_factorization();
         inline int get_nnzLU () const;
         inline int get_num_preorder () const;
         inline int get_num_sym_fact () const;
         inline int get_num_numeric_fact () const;
         inline int get_num_solve () const;
-        bool preordering_done () const;
-        bool sym_factorization_done () const;
-        bool num_factorization_done () const;
+        inline bool get_preordering_done () const;
+        inline bool get_sym_factorization_done () const;
+        inline bool get_num_factorization_done () const;
 
         /**
          * @brief      Checks the parameters.
@@ -73,9 +68,11 @@ namespace utopia {
             class Impl;
             std::unique_ptr<Impl> impl_;
 
-            bool set_problem();
-            bool set_problem(Matrix &A);
-            void set_preconditioner();
+            // bool set_problem();
+            // bool set_problem(Matrix &A);
+            bool preordering();
+            bool num_factorization();
+            bool sym_factorization();
     };
 
 }  // namespace utopia
