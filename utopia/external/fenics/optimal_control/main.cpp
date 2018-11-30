@@ -25,7 +25,7 @@ class IGuess : public Expression
 
 int main()
 {
-  auto mesh = std::make_shared<UnitSquareMesh>(100, 100);
+  auto mesh = std::make_shared<UnitSquareMesh>(5, 5);
   auto V = std::make_shared<OptimalControl::FunctionSpace>(mesh);
 
   
@@ -37,14 +37,14 @@ int main()
   auto u = std::make_shared<Function>(V);
 
     // Set material parameters
-  auto nu  = std::make_shared<Constant>(0.005); 
+  auto nu  = std::make_shared<Constant>(10e-4); 
   auto delta = std::make_shared<Constant>(6.8); 
   auto betta = std::make_shared<Constant>(6.8);
   auto z = std::make_shared<Constant>(1.0); 
 
 
   // Create (linear) form defining (nonlinear) variational problem
-  auto F = std::make_shared<OptimalControl::ResidualForm>(V);
+  auto F = std::make_shared<OptimalControl::Form_F>(V);
   F->nu = nu; 
   F->delta = delta; 
   F->u = u;
@@ -52,7 +52,7 @@ int main()
   F->z = z;
 
   // Create Jacobian dF = F' (for use in nonlinear solver).
-  auto J = std::make_shared<OptimalControl::JacobianForm>(V, V);
+  auto J = std::make_shared<OptimalControl::Form_J>(V, V);
   J->nu = nu; 
   J->delta = delta; 
   J->u = u;
@@ -66,6 +66,7 @@ int main()
   Pi->u = u;
   Pi->betta = betta; 
   Pi->z = z;  
+
 
 
   auto ug = std::make_shared<IGuess>();
@@ -90,6 +91,24 @@ int main()
   utopia::FenicsUtopiaFunction<utopia::DSMatrixd, utopia::DVectord>  fun( u, Pi, F, J, bcs); 
   
 
+  auto Mass_form = std::make_shared<OptimalControl::Form_M>(V,V);
+
+  auto Mass_petsc_fenics = std::make_shared<PETScMatrix>();
+  assemble(*Mass_petsc_fenics, *Mass_form); 
+  Mat Mass_petsc = Mass_petsc_fenics->mat(); 
+  utopia::DSMatrixd Mass_utopia; 
+  
+  // replace with wrap 
+  utopia::convert(Mass_petsc, Mass_utopia); 
+
+  // TODO:: figure out if we have row sum interfaced in utopia... 
+  utopia::DVectord rsum; 
+  Mass_utopia.implementation().row_sum(rsum.implementation()); 
+  Mass_utopia = utopia::diag(rsum); 
+
+
+
+
   // form initial guess 
   dolfin::PETScVector uu; 
   assemble(uu, *F); 
@@ -110,6 +129,11 @@ int main()
   tr_solver.verbose(true); 
   tr_solver.atol(1e-9); 
   tr_solver.solve(fun, x_0); 
+
+
+
+
+  
 
 
   File file("op_control_u.pvd");

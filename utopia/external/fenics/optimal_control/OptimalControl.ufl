@@ -26,6 +26,9 @@ psi3 = nu/2.0 * (dot(grad(u), grad(u)) +  delta* exp(u))*(dot(grad(u), grad(u)) 
 Pi = psi1*dx + psi2*dx + psi3*dx 
 
 
+M = inner(du, v)*dx
+
+
 # Compute first variation of Pi (directional derivative about u in the direction of v)
 F = derivative(Pi, u, v)
 
@@ -33,4 +36,4 @@ F = derivative(Pi, u, v)
 J = derivative(F, u, du)
 
 
-forms = [Pi, F, J]
+forms = [Pi, F, J, M]
