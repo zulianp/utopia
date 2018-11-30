@@ -161,7 +161,7 @@ namespace utopia {
 		}
 
 		AssemblyContext()
-		: current_element(0), quadrature_order(2), block_id_(0)
+		:  quadrature_order(2), current_element(0), block_id_(0)
 		{}
 
 		inline int block_id() const

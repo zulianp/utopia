@@ -16,7 +16,7 @@ namespace utopia {
         std::vector<int> nnzxrow(n_row_local, 0);
         auto r = row_range(from);
 
-        each_read(from, [&nnzxrow,&r](const SizeType i, const SizeType j, const double val) {
+        each_read(from, [&nnzxrow,&r](const SizeType i, const SizeType &, const double &) {
             ++nnzxrow[i - r.begin()];
         });
 

@@ -31,9 +31,8 @@ namespace utopia {
 
 	void PetscDebugger::memory_check_begin()
 	{
-		PetscErrorCode ierr;
 		PetscLogDouble space;
-		ierr = PetscMallocGetCurrentUsage(&space); assert(ierr == 0);
+		PetscErrorCode ierr = PetscMallocGetCurrentUsage(&space); assert(ierr == 0); (void) ierr;
 		impl_->alloc_stack.push(space);
 	}
 
@@ -41,7 +40,7 @@ namespace utopia {
 	{
 		PetscErrorCode ierr;
 		PetscLogDouble space;
-		ierr = PetscMallocGetCurrentUsage(&space); assert(ierr == 0);
+		ierr = PetscMallocGetCurrentUsage(&space); assert(ierr == 0); (void) ierr;
 
 		PetscLogDouble previous_space = impl_->alloc_stack.top();
 
@@ -63,7 +62,7 @@ namespace utopia {
 	{
 		PetscErrorCode ierr;
 		PetscLogDouble space;
-		ierr = PetscMemoryGetCurrentUsage(&space); assert(ierr == 0);
+		ierr = PetscMemoryGetCurrentUsage(&space); assert(ierr == 0); (void) ierr;
 		os << "[Memory Usage]  " << (space/1024) << "KB" << "\n";
 	}
 
