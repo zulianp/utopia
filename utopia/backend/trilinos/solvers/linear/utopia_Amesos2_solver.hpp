@@ -40,8 +40,9 @@ namespace utopia {
         
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
         void set_preconditioner(const Matrix &precond);
-        // int num_factorization() const;
-        // int sym_factorization() const;
+        int preordering();
+        int num_factorization();
+        int sym_factorization();
         inline int get_nnzLU () const;
         inline int get_num_preorder () const;
         inline int get_num_sym_fact () const;
