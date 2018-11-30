@@ -363,8 +363,8 @@ namespace utopia {
 			first_ = true;
 		}
 
-		bool first_;
 		Eqs eqs_;
+		bool first_;
 
 		Matrix buff_mat;
 		Vector buff_vec;

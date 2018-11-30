@@ -33,10 +33,15 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 #################################################################################
 #################################################################################
 #################################################################################
-set(UTOPIA_DEV_FLAGS "-Wall ")
+set(UTOPIA_DEV_FLAGS 
+	"-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
+)
 
+# More annoying
+# set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 
-
+# More restrictive
+# set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
 if(UNIX AND NOT APPLE)
        set(LINUX TRUE)

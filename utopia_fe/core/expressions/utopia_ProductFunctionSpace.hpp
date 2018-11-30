@@ -12,7 +12,7 @@
 namespace utopia {
 
 	template<class Space>
-	class ProductFunctionSpace : public FunctionSpace<ProductFunctionSpace<Space> > {
+	class ProductFunctionSpace final : public FunctionSpace<ProductFunctionSpace<Space> > {
 	public:
 		ProductFunctionSpace() {}
 

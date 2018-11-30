@@ -14,21 +14,21 @@
 namespace utopia {
 
 	template<typename Tensor, int Order>
-	int comm_size(const Wrapper<Tensor, Order> &t)
+	int comm_size(const Wrapper<Tensor, Order> &)
 	{
 		static_assert(Traits<Wrapper<Tensor, Order>>::Backend < HOMEMADE, "implement me for your backend");
 		return 1;
 	}
 
 	template<typename Tensor, int Order>
-	int comm_rank(const Wrapper<Tensor, Order> &t)
+	int comm_rank(const Wrapper<Tensor, Order> &)
 	{
 		static_assert(Traits<Wrapper<Tensor, Order>>::Backend < HOMEMADE, "implement me for your backend");
 		return 0;
 	}
 
 	template<typename Tensor, int Order>
-	void synchronize(Wrapper<Tensor, Order> &t)
+	void synchronize(Wrapper<Tensor, Order> &)
 	{
 		static_assert(Traits<Wrapper<Tensor, Order>>::Backend < HOMEMADE, "implement me for your backend");
 	}

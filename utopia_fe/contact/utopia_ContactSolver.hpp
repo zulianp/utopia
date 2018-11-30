@@ -616,7 +616,7 @@ namespace utopia {
 		bool bypass_contact_;
 		bool exit_on_contact_solve_failure_;
 		bool sol_to_gap_on_contact_bdr_;
-		bool export_results_;
+		
 
 		int max_outer_loops_;
 
@@ -624,6 +624,7 @@ namespace utopia {
 		bool use_ssn_, use_pg_;
 
 		int max_non_linear_iterations_;
+		bool export_results_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);
