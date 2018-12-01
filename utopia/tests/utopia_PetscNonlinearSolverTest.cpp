@@ -733,18 +733,10 @@ namespace utopia
 			DMatrixd I = identity(2,2); 
 			solver.set_mass_matrix(I); 
 			solver.set_scaling_matrix(I); 
-			solver.verbose(true);
+			solver.verbose(false);
 			solver.atol(1e-9); 
 			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
-
-			// LeastSquaresNewton<DMatrixd, DVectord> solver(linear_solver); 
-			// solver.verbose(true); 
-			// auto ls_strategy = std::make_shared<Backtracking<DVectord> >(); 
-			// solver.set_line_search_strategy(ls_strategy); 
 			solver.solve(fun, x); 
-
-			// disp(x); 
-
 			utopia_test_assert(approxeq(x, x_exact, 1e-6));
 		}
 
@@ -766,13 +758,11 @@ namespace utopia
 			DMatrixd I = identity(n,n); 
 			solver.set_mass_matrix(I); 
 			solver.set_scaling_matrix(I); 
-			solver.verbose(true);
+			solver.verbose(false);
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
-
 			// solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
-
 			solver.solve(fun, x); 
 		}
 

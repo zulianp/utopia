@@ -215,7 +215,7 @@ namespace utopia
 
             } // outer solve loop while(!converged)
 
-            if (mpi_world_rank() == 0)
+            if (mpi_world_rank() == 0 && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                 std::cout<<"solves_counter: "<< solves_counter << "  \n"; 
 
             return true;

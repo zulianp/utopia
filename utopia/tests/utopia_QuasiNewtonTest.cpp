@@ -9,16 +9,26 @@ namespace utopia
 	template<class Matrix, class Vector, class ApproxType>
 	class QuasiNewtonTest 
 	{
+		static void print_backend_info()
+		{
+			if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+				std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+			}
+		}
+
+
 		public:
 		
 			void run_dense()
-			{
+			{	
+				print_backend_info();
 				UTOPIA_RUN_TEST(quasi_newton_test);
 				UTOPIA_RUN_TEST(Quasi_TR_test); 
 			}
 
 			void run_sparse()
 			{
+				print_backend_info();
 				UTOPIA_RUN_TEST(Quasi_TR_test_sparse); 
 				UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
 				UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
@@ -32,6 +42,7 @@ namespace utopia
 
 			void run_multilevel()
 			{
+				print_backend_info();
 				UTOPIA_RUN_TEST(Quasi_RMTR_test); 
 				UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test); 
 			}	
@@ -305,28 +316,25 @@ namespace utopia
 			// 	Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
 	  //   		fun.apply_bc_to_initial_guess(x);
 
-	  //   		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-	  //   		// linear_solver->pc_type("asm"); 
-	  //   		linear_solver->atol(1e-12); 
-	  //   		linear_solver->stol(1e-11); 
-	  //   		linear_solver->rtol(1e-11); 
-
-	  //   		auto hess_approx_BFGS   = std::make_shared<HessianApproximation<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
-
-			// 	QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
-
-			// 	auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-			// 	solver.set_line_search_strategy(line_search);
-			// 	solver.max_it(50); 	
-			// 	solver.stol(1e-12); 	
-			// 	solver.atol(1e-6); 		
-
-			// 	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-	  //   		solver.set_box_constraints(box);				
+			// 	auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
+		 //        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+		 //        qp_solver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx->get_apply_Hinv())); 
+			// 	QuasiNewtonBound<Vector> solver(hess_approx, qp_solver);
 
 
-	  //   		solver.verbose(true); 
-	  //   		solver.solve(fun, x);
+
+			// 	// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+			// 	// solver.set_line_search_strategy(line_search);
+			// 	// solver.max_it(50); 	
+			// 	// solver.stol(1e-12); 	
+			// 	// solver.atol(1e-6); 		
+
+			// 	// auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	  //  //  		solver.set_box_constraints(box);				
+
+
+	  //  //  		solver.verbose(true); 
+	  //  //  		solver.solve(fun, x);
 	  //   		disp(x); 	
 			// }
 
@@ -440,12 +448,6 @@ namespace utopia
 	    		subproblems[l] = tr_strategy; 
 		    }	
 
-
-		    // std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
-		    // transfers.push_back(std::make_shared<IdentityTransfer<Matrix, Vector> >());
-		    // rmtr->set_transfer_operators(transfers);
-
-
 	        rmtr->set_tr_strategies(subproblems); 
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
@@ -475,7 +477,7 @@ namespace utopia
 
 
 		QuasiNewtonTest()
-		: _n(10), _verbose(true) { }
+		: _n(10), _verbose(false) { }
 		
 	private:
 		int _n;
@@ -489,17 +491,17 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
 			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
-
+			
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
 			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
 
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
-			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
+			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
 		#endif
 
-		// #ifdef WITH_BLAS
-		// 		QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().run_dense();
-		// #endif //WITH_BLAS
+		#ifdef WITH_BLAS
+				QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().run_dense();
+		#endif //WITH_BLAS
 
 		// #ifdef WITH_TRILINOS
 		// 		QuasiNewtonTest<TSMatrixd, TVectord>().run_sparse();

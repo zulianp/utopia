@@ -29,7 +29,7 @@ namespace utopia
         typedef utopia::HessianApproximation<Vector>            HessianApproximation;
 
         typedef utopia::MatrixFreeLinearSolver<Vector>          LinSolver;
-        // typedef utopia::QPSolver<Vector>                        QPSolver;
+        // typedef utopia::QPSolver<Vector>                      QPSolver;
         
         
     public:
@@ -61,19 +61,26 @@ namespace utopia
             g_norm = g0_norm;
             
             if(this->verbose_) {
-                this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "E", "|| p_k || ", "alpha"});
+                this->init_solver("QUASI NEWTON BOUND", {" it. ", "|| g ||", "E", "|| p_k || ", "alpha"});
                 PrintInfo::print_iter_status(it, {g_norm, s_norm});
             }
             it++; 
             
-            this->hessian_approx_strategy_->initialize();
+            this->initialize_approximation(); 
 
             while(!converged)
             {
-                const auto &ub = this->get_upper_bound();
-                const auto &lb = this->get_lower_bound();
+                // if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver().get()))
+                // {
+                //     auto box = this->get_box_constraints();
+                //     auto multiplication_action = FunctionOperator<Vector>(this->get_hessian_approximation_strategy()->get_apply_H()); 
+                //     tr_subproblem->tr_constrained_solve(multiplication_action, g, s, box);             
+                // }
+                // else
+                {
+                    utopia_error("utopia::QuasiNewtonBound: MF solver which is not TR_box_subproblem is not suported at the moment... \n"); 
+                }
 
-                this->hessian_approx_strategy_->constrained_solve(x, g, lb, ub, s, 9e9);
 
                 if(this->ls_strategy_) 
                     this->ls_strategy_->get_alpha(fun, g, x, s, this->alpha_);     
@@ -90,7 +97,7 @@ namespace utopia
 
                 // diff between fresh and old grad...
                 y = g - y; 
-                this->hessian_approx_strategy_->update(s, y);
+                this->update(s, y);
 
 
                 Scalar energy; 

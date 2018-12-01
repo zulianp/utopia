@@ -11,10 +11,14 @@ namespace utopia
 {
 
 	template<class Matrix, class Vector>
-	class QPSolver : 	public IterativeSolver<Matrix, Vector>, 
+	class QPSolver : 	public IterativeSolver<Matrix, Vector>, 	
+						public MatrixFreeLinearSolver<Vector>, 
 						public VariableBoundSolverInterface<Vector> 
 	{
 		public:
+
+			using IterativeSolver<Matrix, Vector>::solve; 
+			using MatrixFreeLinearSolver<Vector>::solve; 
 	
 			QPSolver()
 			{
@@ -29,6 +33,12 @@ namespace utopia
 			virtual void set_parameters(const Parameters params) override
 			{
 				IterativeSolver<Matrix, Vector>::set_parameters(params);
+			}
+
+			virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
+			{
+				utopia_warning("missing matrix free implementation of give QP-Solver.... \n"); 
+				return false; 
 			}
 
 	};

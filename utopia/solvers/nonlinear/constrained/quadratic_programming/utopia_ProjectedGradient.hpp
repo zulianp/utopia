@@ -17,7 +17,8 @@ namespace utopia
 {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGradient : public QPSolver<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
+	class ProjectedGradient : public QPSolver<Matrix, Vector>
+	{
 	public:
 		DEF_UTOPIA_SCALAR(Matrix)
 
