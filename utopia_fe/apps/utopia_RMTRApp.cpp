@@ -364,8 +364,8 @@ namespace utopia {
 
 
         coarse_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<USparseMatrix, UVector> >());
-        // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
-        smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
+        // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
+        smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
 
 
         // auto smoother = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
