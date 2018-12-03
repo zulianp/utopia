@@ -20,21 +20,18 @@ namespace utopia {
     
     template <typename Matrix, typename Vector>
     class Amesos2Solver<Matrix, Vector, TRILINOS> final
-    : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {        
+    : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::Preconditioner<Vector> Preconditioner;
-        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-        typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
             
         Amesos2Solver();
         Amesos2Solver(const Amesos2Solver &other);
         Amesos2Solver(Parameters params);
         ~Amesos2Solver();
         
-        void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
+        //void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;
         
