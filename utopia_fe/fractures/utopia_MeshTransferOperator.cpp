@@ -47,6 +47,65 @@ namespace utopia {
 		}
 	}
 
+	inline static void assemble_mass_matrix(
+		const libMesh::MeshBase &mesh,
+		const libMesh::DofMap &dof_map, 
+		const int var,
+		const int n_tensor,
+		USparseMatrix &mat
+		)
+	{	
+		auto dim = mesh.mesh_dimension();
+		auto fe_type = dof_map.variable_type(var);
+		std::vector<libMesh::dof_id_type> indices;
+
+		SizeType nnz_x_row = 0;
+
+		if(!dof_map.get_n_nz().empty()) {
+			nnz_x_row = 
+			*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) + 
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+		}
+
+		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+
+		{
+			Write<USparseMatrix> w_m(mat, utopia::GLOBAL_ADD);
+			libMesh::DenseMatrix<libMesh::Real> el_mat;
+
+			auto fe = libMesh::FEBase::build(dim, fe_type);
+			libMesh::QGauss qrule(dim, fe_type.default_quadrature_order());
+			fe->attach_quadrature_rule(&qrule);
+			
+			auto &phi = fe->get_phi();
+			auto &JxW = fe->get_JxW();
+			
+			for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
+				fe->reinit(*it);
+				dof_map.dof_indices(*it, indices);
+
+				auto n_shape_functions = phi.size();
+				el_mat.resize(n_shape_functions, n_shape_functions);
+				el_mat.zero();
+
+				for(unsigned int qp = 0; qp < qrule.n_points(); qp++) {
+					for(unsigned int i = 0; i < n_shape_functions; i++) {
+						for(unsigned int j = 0; j < n_shape_functions; j++) {
+							auto value = JxW[qp]*phi[i][qp]*phi[j][qp];
+
+							for(unsigned int k = 0; k < dim; k++) {
+								el_mat(i + k * phi.size(), j + k * phi.size()) += value;
+							}
+						}
+					}
+				}
+
+				add_matrix(el_mat, indices, indices, mat);
+			}
+		}
+
+	}
+
 	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
 	{
 		std::shared_ptr<LocalAssembler> assembler;
@@ -89,7 +148,7 @@ namespace utopia {
 			case BIDIRECTIONAL_L2_PROJECTION:
 			{
 				std::cout << "[Status] using bi l2 projection" << std::endl;
-				assembler = std::make_shared<BidirectionalL2LocalAssembler>(from_mesh->mesh_dimension(), false, true);
+				assembler = std::make_shared<BidirectionalL2LocalAssembler>(from_mesh->mesh_dimension(), false, !bi_operator_mass_mat_outside_);
 				is_bidirectonal = true;
 				break;
 			}
@@ -119,21 +178,48 @@ namespace utopia {
 		}
 
 		if(is_bidirectonal) {
-			if(use_biorth) {
-				auto forward = std::make_shared<PseudoL2TransferOperator>();
-				forward->init_from_coupling_operator(*mats[0]);
 
-				auto backward = std::make_shared<PseudoL2TransferOperator>();
-				backward->init_from_coupling_operator(*mats[1]);
-				operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+			if(bi_operator_mass_mat_outside_) {
+				auto mass_mat_from = std::make_shared<USparseMatrix>();
+				auto mass_mat_to   = std::make_shared<USparseMatrix>();
+
+				assemble_mass_matrix(*from_mesh, *from_dofs, opts.from_var_num, opts.n_var, *mass_mat_from);
+				assemble_mass_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   opts.n_var, *mass_mat_to);
+
+				if(use_biorth) {
+					auto forward = std::make_shared<PseudoL2TransferOperator>();
+					forward->init_from_coupling_and_mass_operator(*mats[0], *mass_mat_to);
+
+					auto backward = std::make_shared<PseudoL2TransferOperator>();
+					backward->init_from_coupling_and_mass_operator(*mats[1], *mass_mat_from);
+					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+
+				} else {
+					auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, true, std::make_shared<Factorization<USparseMatrix, UVector>>());
+					forward->fix_mass_matrix_operator();
+
+					auto backward = std::make_shared<L2TransferOperator>(mats[1], mass_mat_from, true, std::make_shared<Factorization<USparseMatrix, UVector>>());
+					backward->fix_mass_matrix_operator();
+					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+				}
 
 			} else {
-				auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-				forward->fix_mass_matrix_operator();
+				if(use_biorth) {
+					auto forward = std::make_shared<PseudoL2TransferOperator>();
+					forward->init_from_coupling_operator(*mats[0]);
 
-				auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
-				backward->fix_mass_matrix_operator();
-				operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+					auto backward = std::make_shared<PseudoL2TransferOperator>();
+					backward->init_from_coupling_operator(*mats[1]);
+					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+
+				} else {
+					auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+					forward->fix_mass_matrix_operator();
+
+					auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
+					backward->fix_mass_matrix_operator();
+					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+				}
 			}
 
 		} else {
@@ -143,7 +229,7 @@ namespace utopia {
 				interpolation_operator->normalize_rows();
 				operator_ = interpolation_operator;
 			} else if(use_biorth) {
-				
+
 				if(normalize_rows_) {
 					auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
 					pseudo_l2_operator->init_from_coupling_operator(*mats[0]);
@@ -151,7 +237,7 @@ namespace utopia {
 				} else {
 					operator_ = std::make_shared<PseudoL2TransferOperator>(mats[0]);
 				}
-				
+
 			} else {
 				auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
 				l2_operator->fix_mass_matrix_operator(tol_);
