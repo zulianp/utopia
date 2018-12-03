@@ -1,5 +1,6 @@
 #include "utopia_JSONInput.hpp"
 
+#ifdef WITH_JSON
 #include "json.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_Path.hpp"
@@ -345,3 +346,6 @@ namespace utopia {
 	}
 
 }
+
+#endif //WITH_JSON
+

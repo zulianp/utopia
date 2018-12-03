@@ -127,7 +127,7 @@ namespace utopia {
 		vec = local_zeros(dof_map.n_local_dofs());
 
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
-		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+		// libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
 		{
 			Write<Wrapper<Vector, 1>> w_v(vec);

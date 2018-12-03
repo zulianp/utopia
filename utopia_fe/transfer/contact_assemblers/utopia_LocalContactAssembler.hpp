@@ -4,6 +4,7 @@
 #include "libmesh/elem.h"
 #include "libmesh/fe.h"
 #include "libmesh/dense_matrix.h"
+#include "libmesh/dense_vector.h"
 
 #include <cassert>
 
@@ -18,11 +19,12 @@ namespace utopia {
 		class Result {
 		public:
 			using Matrix = libMesh::DenseMatrix<libMesh::Real>;
+			using Vector = libMesh::DenseVector<libMesh::Real>; 
 
 			Matrix coupling_matrix;
 			Matrix mass_matrix;
 			Matrix normals;
-			Matrix gap;
+			Vector gap;
 		};
 
 		virtual ~LocalContactAssembler() {}

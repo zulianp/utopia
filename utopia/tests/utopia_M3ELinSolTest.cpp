@@ -14,7 +14,7 @@ namespace utopia {
 	{
 		DVectord  rhs, x;
 		DSMatrixd A;
-		
+
 		const bool binwrite = false;
 		const std::string data_path = Utopia::instance().get("data_path");
 		const std::string folder = data_path + "/mg";
@@ -45,19 +45,19 @@ namespace utopia {
 	{
 		Vectord rhs, x;
 		CRSMatrixd A;
-		
+
 		const bool binwrite = false;
 		const std::string data_path = Utopia::instance().get("data_path");
 		const std::string folder = data_path + "/mg_blas";
 		const std::string sysfile = "system.txt";
-		
+
 		read(folder + "/rhs.txt", rhs);
 		read(folder + "/lhs.txt", A);
 
 		x = local_zeros(local_size(rhs));
-	
+
 		ASPAMG<CRSMatrixd, Vectord> amg;
-		if(!amg.import("ASPAMG", data_path + "/json/default.json")) {
+		if(!amg.import("ASPAMG", data_path + "/xml/default.xml")) {
 			InputParameters in;
 			in.set("TspMaxit", 200);
 			amg.read(in);

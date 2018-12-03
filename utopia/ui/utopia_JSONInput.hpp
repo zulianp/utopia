@@ -1,10 +1,13 @@
 #ifndef UTOPIA_JSON_STREAM_HPP
 #define UTOPIA_JSON_STREAM_HPP
 
-#include <memory>
 #include "utopia_Base.hpp"
+
+#ifdef WITH_JSON
+
 #include "utopia_Path.hpp"
 #include "utopia_Input.hpp"
+#include <memory>
 
 namespace utopia {
 
@@ -36,4 +39,5 @@ namespace utopia {
 	};
 }
 
+#endif //WITH_JSON
 #endif //UTOPIA_JSON_STREAM_HPP

@@ -13,6 +13,7 @@
 #include "utopia_UIScalarSampler.hpp"
 
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/boundary_mesh.h"
 
 namespace utopia {
 
@@ -70,6 +71,7 @@ namespace utopia {
 		InputSpace input_slave(*comm_);
 		double tol = 1e-16;
 		bool use_clamping = false;
+		bool boundary_transfer = false;
 
 		is_ptr->get("transfer", [&](Input &is) {
 			//get spaces
@@ -92,6 +94,7 @@ namespace utopia {
 			is.get("assemble-mass-mat", assemble_mass_mat_);
 			is.get("tol", tol);
 			is.get("use-clamping", use_clamping);
+			is.get("boundary-transfer", boundary_transfer);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
@@ -168,14 +171,35 @@ namespace utopia {
 
 		std::vector<std::shared_ptr<USparseMatrix>> mats;
 		TransferAssembler transfer_assembler(local_assembler_, local2global_);
-		bool ok = transfer_assembler.assemble(
-			make_ref(input_master.mesh()),
-			make_ref(input_master.space().dof_map()),
-			make_ref(input_slave.mesh()),
-			make_ref(input_slave.space().dof_map()),
-			mats,
-			opts
-		);
+
+		bool ok = false;
+
+		if(boundary_transfer) {
+			libMesh::BoundaryMesh b_mesh_master(*comm_, input_master.mesh().mesh_dimension()-1);
+			input_master.mesh().boundary_info->sync(b_mesh_master);
+
+			libMesh::BoundaryMesh b_mesh_slave(*comm_, input_slave.mesh().mesh_dimension()-1);
+			input_slave.mesh().boundary_info->sync(b_mesh_slave);
+
+			ok = transfer_assembler.assemble(
+				make_ref(b_mesh_master),
+				make_ref(input_master.space().dof_map()),
+				make_ref(b_mesh_slave),
+				make_ref(input_slave.space().dof_map()),
+				mats,
+				opts
+			);
+
+		} else {
+			ok = transfer_assembler.assemble(
+				make_ref(input_master.mesh()),
+				make_ref(input_master.space().dof_map()),
+				make_ref(input_slave.mesh()),
+				make_ref(input_slave.space().dof_map()),
+				mats,
+				opts
+			);
+		}
 
 		if(!ok) {
 			std::cerr << "[Error] transfer failed" << std::endl;

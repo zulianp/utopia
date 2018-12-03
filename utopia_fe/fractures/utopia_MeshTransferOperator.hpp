@@ -29,7 +29,8 @@ namespace utopia {
 		to_dofs(to_dofs),
 		opts(opts),
 		normalize_rows_(true),
-		tol_(1e-14)
+		tol_(1e-14),
+		bi_operator_mass_mat_outside_(true)
 		{}
 
 		//@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION \}
@@ -91,6 +92,7 @@ namespace utopia {
 		std::shared_ptr<TransferOperator> operator_;
 		bool normalize_rows_;
 		double tol_;
+		bool bi_operator_mass_mat_outside_;
 
 	};
 
