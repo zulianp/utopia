@@ -65,8 +65,9 @@ namespace utopia
             SizeType it = 0, n_levels = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
 
-            if(this->transfers_.size() + 1 != this->level_functions_.size())
+            if(this->transfers_.size() + 1 != this->level_functions_.size()){
                 utopia_error("FAS::solve size of transfer and level functions do not match... \n"); 
+            }
 
             
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";

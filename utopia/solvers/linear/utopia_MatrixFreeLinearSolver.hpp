@@ -39,22 +39,21 @@ namespace  utopia
 
     
     template<class Vector>
-    class EmptyPrecondMatrixFreeLinearSolver: public MatrixFreeLinearSolver<Vector>
+    class EmptyPrecondMatrixFreeLinearSolver final: public MatrixFreeLinearSolver<Vector>
     {
         public:
-            virtual ~EmptyPrecondMatrixFreeLinearSolver() {}
-
             void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
             {
                 precond_ = precond;
             }
 
-            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol)
+            bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol)
             {
                 if(precond_)
                     precond_->apply(rhs, sol); 
-                else
+                else{
                     utopia_warning("EmptyPrecondMatrixFreeLinearSolver: preconditioner is missing \n"); 
+                }
                 return true; 
             }
 

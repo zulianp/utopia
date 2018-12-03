@@ -15,10 +15,10 @@ namespace utopia
 {
 
    template<class Matrix, class Vector>
-    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector>
+    class InvDiagPreconditioner final : public LinearSolver<Matrix, Vector>
     {
     public:
-        virtual bool apply(const Vector &rhs, Vector &sol) override
+        bool apply(const Vector &rhs, Vector &sol) override
         {
             sol = e_mul(d, rhs);
             return true;
@@ -26,7 +26,7 @@ namespace utopia
 
         /*! @brief if overriden the subclass has to also call this one first
          */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        void update(const std::shared_ptr<const Matrix> &op) override
         {
             LinearSolver<Matrix, Vector>::update(op);
             d = diag(*op);
@@ -34,7 +34,7 @@ namespace utopia
         }
 
 
-        virtual Vector get_d()
+        Vector get_d()
         {
             return d;
         }
@@ -49,10 +49,10 @@ namespace utopia
     };
 
     template<class Matrix, class Vector>
-    class IdentityPreconditioner : public LinearSolver<Matrix, Vector>
+    class IdentityPreconditioner final : public LinearSolver<Matrix, Vector>
     {
     public:
-        virtual bool apply(const Vector &rhs, Vector &sol) override
+        bool apply(const Vector &rhs, Vector &sol) override
         {
             sol = rhs; 
             return true;
@@ -60,7 +60,7 @@ namespace utopia
 
         /*! @brief if overriden the subclass has to also call this one first
          */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        void update(const std::shared_ptr<const Matrix> &op) override
         {
             LinearSolver<Matrix, Vector>::update(op);
         }

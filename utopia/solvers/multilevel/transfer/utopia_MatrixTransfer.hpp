@@ -72,7 +72,7 @@
          * @param[in]  I_in  The interpolation.
          *
          */
-        virtual bool I_init(const std::shared_ptr<Matrix> &I_in)
+        bool I_init(const std::shared_ptr<Matrix> &I_in)
         {
             assert(I_in);
             _I = I_in;
@@ -85,7 +85,7 @@
          * @param[in]  R_in  The restriction.
          *
          */
-        virtual bool R_init(const std::shared_ptr<Matrix> &R_in)
+        bool R_init(const std::shared_ptr<Matrix> &R_in)
         {
             assert(R_in);
             _R = R_in;
@@ -100,9 +100,7 @@
          *
          * @return
          */
-        virtual bool IR_init(
-            const std::shared_ptr<Matrix> &I_in,
-            const std::shared_ptr<Matrix> &R_in)
+        bool IR_init( const std::shared_ptr<Matrix> &I_in, const std::shared_ptr<Matrix> &R_in)
         {
             assert(I_in);
             assert(R_in);
@@ -256,7 +254,7 @@
             return norm_infty(*_Pr);
         }
 
-        protected:
+        private:
             std::shared_ptr<Matrix> _I, _R; // _P;
             std::shared_ptr<Matrix> _Pr;
     };

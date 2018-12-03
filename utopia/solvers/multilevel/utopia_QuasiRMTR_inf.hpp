@@ -120,8 +120,9 @@ namespace utopia
       
         virtual bool set_hessian_approximation_strategies(const std::vector<HessianApproxPtr> &strategies)
         {
-            if(strategies.size() != this->n_levels())
+            if(strategies.size() != this->n_levels()){
                 utopia_error("utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of strategies does not equal with levels in ML hierarchy. \n"); 
+            }
             
             hessian_approxs_ = strategies; 
 
@@ -137,8 +138,9 @@ namespace utopia
             {
                 hessian_approxs_[level] = strategy;
             }
-            else
+            else{
                 utopia_error("utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n");             
+            }
 
             return true;
         }

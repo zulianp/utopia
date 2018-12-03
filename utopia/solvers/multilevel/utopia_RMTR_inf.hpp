@@ -151,8 +151,6 @@ namespace utopia
         // since TR bounds are weak bounds...  
         virtual bool check_feasibility(const SizeType & level ) override
         {
-            bool terminate = false; 
-
             {   
                 Read<Vector> ru(constraints_memory_.tr_upper[level]); 
                 Read<Vector> rl(constraints_memory_.tr_lower[level]); 
@@ -167,11 +165,11 @@ namespace utopia
                     Scalar ui = constraints_memory_.tr_upper[level].get(i); 
 
                    if(xi < li || xi > ui)
-                        terminate = true; 
+                        return true; 
                 }
             }
 
-            return terminate; 
+            return false; 
         }
 
 

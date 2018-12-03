@@ -95,8 +95,9 @@ namespace utopia
                     else
                         s = g; 
                 }
-                else
+                else{
                     utopia_error("BFGS::apply_Hinv: Initialization needs to be done first. \n"); 
+                }
              
                 return true; 
             }
@@ -110,8 +111,9 @@ namespace utopia
                     else
                         result = v; 
                 }
-                else
+                else{
                    utopia_error("BFGS::apply_H can be used only, if H is computed. \n Please turn on update_hessian option. \n"); 
+                }
 
                 return true; 
             }

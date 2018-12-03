@@ -105,7 +105,7 @@ namespace utopia
             return true;
         }
 
-    virtual void set_parameters(const Parameters params) override
+    void set_parameters(const Parameters params) override
     {
         MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
         alpha_ = params.alpha();
@@ -113,7 +113,7 @@ namespace utopia
     }
 
 
-    virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+    bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
     {
       ls_strategy_ = strategy; 
       ls_strategy_->set_parameters(this->parameters());
@@ -121,7 +121,7 @@ namespace utopia
     }
 
 
-    virtual void set_dumping_parameter(const Scalar & alpha)
+    void set_dumping_parameter(const Scalar & alpha)
     {
         alpha_ = alpha; 
     }

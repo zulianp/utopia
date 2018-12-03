@@ -31,12 +31,12 @@ namespace utopia
             set_parameters(params); 
         }
 
-        virtual void set_parameters(const Parameters params) override
+        void set_parameters(const Parameters params) override
         {
             Smoother::set_parameters(params); 
         }
 
-        virtual bool smooth(Function & fun,  Vector &x, const Vector &rhs) override
+        bool smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {
             Vector g = local_zeros(local_size(x));
                
@@ -50,7 +50,7 @@ namespace utopia
                 Vector d = 1./diag(H); 
                 H = diag(d); 
 
-                x = x - (this->damping_parameter() * H * g); 
+                x = x - (this->relaxation_parameter() * H * g); 
             }
             
             return true; 

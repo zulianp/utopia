@@ -17,7 +17,7 @@ namespace utopia
 {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGradient : public QPSolver<Matrix, Vector>
+	class ProjectedGradient final: public QPSolver<Matrix, Vector>, public MatrixFreeQPSolver<Vector>
 	{
 	public:
 		DEF_UTOPIA_SCALAR(Matrix)
@@ -39,7 +39,7 @@ namespace utopia
 		}
 
 
-		virtual void set_parameters(const Parameters params) override
+		void set_parameters(const Parameters params) override
 		{
 			QPSolver<Matrix, Vector>::set_parameters(params);
 		}
@@ -164,7 +164,7 @@ namespace utopia
 		}
 
 
-		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		void update(const std::shared_ptr<const Matrix> &op) override
 		{
 		    QPSolver<Matrix, Vector>::update(op);
 		    // init(*op);

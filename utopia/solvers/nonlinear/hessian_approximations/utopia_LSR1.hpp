@@ -71,8 +71,9 @@ namespace utopia
 
                 if(nom/denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom))
                 {
-                    if(mpi_world_rank()==0)
+                    if(mpi_world_rank()==0){
                         utopia_warning("L-SR1: Curvature condition not satified. Skipping update. \n"); 
+                    }
 
                     return false; 
                 }
@@ -102,8 +103,9 @@ namespace utopia
 
             virtual bool apply_Hinv(const Vector & v, Vector & result) const override
             {
-                if(!this->initialized())
+                if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+                }
 
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
                 result = gamma_ * v;
@@ -122,8 +124,9 @@ namespace utopia
 
             virtual bool apply_H(const Vector & v, Vector & result) const  override
             {
-                if(!this->initialized())
+                if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+                }
 
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
                 result = theta_ * v;
@@ -154,8 +157,9 @@ namespace utopia
         private:
             void precompute_p()
             {
-                if(!this->initialized())
+                if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+                }
 
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
@@ -173,8 +177,9 @@ namespace utopia
 
             void precompute_p_inv()
             {
-                if(!this->initialized())
+                if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+                }
                                     
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 

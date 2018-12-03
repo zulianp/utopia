@@ -11,7 +11,7 @@ namespace utopia {
      * costly allocations, possible temporaries are stored as member variables.
      */
 	template<class Matrix, class Vector>
-	class PointJacobi : public Smoother<Matrix, Vector>, public IterativeSolver<Matrix, Vector> {
+	class PointJacobi final: public Smoother<Matrix, Vector>, public IterativeSolver<Matrix, Vector> {
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::IterativeSolver<Matrix, Vector> Solver;
@@ -81,7 +81,7 @@ namespace utopia {
 			return new PointJacobi(*this);
 		}
 		
-		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		void update(const std::shared_ptr<const Matrix> &op) override
 		{
 			Solver::update(op);
 			

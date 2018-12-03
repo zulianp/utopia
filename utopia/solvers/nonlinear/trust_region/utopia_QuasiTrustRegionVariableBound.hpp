@@ -61,8 +61,9 @@
       {
         using namespace utopia;
 
-        if(!hessian_approx_strategy_)
+        if(!hessian_approx_strategy_){
           utopia_error("You need to set hessian approx strategy before runing Quasi newton type of solver... \n"); 
+        }
 
         // passing solver and parameters into subproblem 
         bool converged = false; 

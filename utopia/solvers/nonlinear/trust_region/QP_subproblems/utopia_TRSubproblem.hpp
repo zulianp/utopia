@@ -1,9 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-04-07
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
 #ifndef TR_SUBPROBLEM_L2NORM_HPP
 #define TR_SUBPROBLEM_L2NORM_HPP
 #include <string>

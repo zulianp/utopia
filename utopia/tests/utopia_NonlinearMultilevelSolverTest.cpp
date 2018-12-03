@@ -132,7 +132,7 @@ namespace utopia
 
 	        // subject to change
 	        auto smoother = std::make_shared<NonLinearJacobi<DSMatrixd, DVectord> >();
-	        smoother->damping_parameter(0.3);
+	        smoother->relaxation_parameter(0.3);
 	        // auto smoother = std::make_shared<NonLinearGMRES<DSMatrixd, DVectord> >();
 
 

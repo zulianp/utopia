@@ -31,7 +31,7 @@ namespace utopia {
         virtual void set_parameters(const Parameters params) 
         {
             _sweeps = params.pre_smoothing_steps();            
-            _damping_parameter = params.omega();     
+            _relaxation_parameter = params.omega();     
         }
 
 
@@ -68,9 +68,9 @@ namespace utopia {
          *
          * @return     omega  The relaxation parameter.
          */
-        virtual Scalar damping_parameter()
+        virtual Scalar relaxation_parameter()
         {
-            return _damping_parameter; 
+            return _relaxation_parameter; 
         }
 
 
@@ -79,9 +79,9 @@ namespace utopia {
          *
          * @return     omega  The relaxation parameter.
          */
-        virtual bool damping_parameter(const Scalar & alpha)
+        virtual bool relaxation_parameter(const Scalar & alpha)
         {
-             _damping_parameter = alpha; 
+             _relaxation_parameter = alpha; 
              return true; 
         }
 
@@ -107,7 +107,7 @@ namespace utopia {
 
         private:
             SizeType     _sweeps;  
-            Scalar       _damping_parameter; 
+            Scalar       _relaxation_parameter; 
             bool         _verbose; 
 };
 

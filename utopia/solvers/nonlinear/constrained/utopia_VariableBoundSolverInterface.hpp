@@ -47,16 +47,18 @@ namespace utopia
 
         virtual const Vector & get_upper_bound() const 
         {
-          if(!constraints_.has_upper_bound())
+          if(!constraints_.has_upper_bound()){
             utopia_error("VariableBoundSolverInterface::upper bound does not exist. \n"); 
+          }
 
           return *constraints_.upper_bound(); 
         }
 
         virtual const Vector & get_lower_bound() const
         {
-          if(!constraints_.has_lower_bound())
+          if(!constraints_.has_lower_bound()){
             utopia_error("VariableBoundSolverInterface::lower bound does not exist. \n"); 
+          }
 
           return *constraints_.lower_bound(); 
         }        

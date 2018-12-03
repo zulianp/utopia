@@ -5,8 +5,6 @@
 
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_TRSubproblem.hpp"
-#include "utopia_Dogleg.hpp"
-#include "utopia_SteihaugToint.hpp"
 #include "utopia_Parameters.hpp"    
 #include "utopia_NumericalTollerance.hpp"
 
@@ -84,6 +82,20 @@ namespace utopia
     	Scalar qp_term = dot(p_k, H * p_k);
     	pred = - l_term - 0.5 * qp_term; 
 
+    }
+
+    /**
+     * @brief      Gets the prediction reduction for 
+     *
+     * @param[in]  g     gradient
+     * @param[in]  B     Hessian
+     * @param[in]  p_k    step 
+     * @param      pred  The predicted reduction. 
+     */
+    virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+    {
+      Scalar pred = -1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k);
+      return pred; 
     }
 
 
@@ -255,20 +267,6 @@ namespace utopia
 
     }
 
-
-    /**
-     * @brief      Gets the prediction reduction for 
-     *
-     * @param[in]  g     gradient
-     * @param[in]  B     Hessian
-     * @param[in]  p_k    step 
-     * @param      pred  The predicted reduction. 
-     */
-    virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
-    {
-      Scalar pred = -1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k);
-      return pred; 
-    }
 
   private: 
     Scalar delta_max_; 

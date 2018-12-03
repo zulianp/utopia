@@ -19,43 +19,43 @@ namespace utopia {
 
         }
         
-        virtual ~TRQuadraticFunction() { }
+        ~TRQuadraticFunction() { }
 
-        virtual bool value(const Vector &x, Scalar &value) const override
+        bool value(const Vector &x, Scalar &value) const override
         {
             value = 0.5 * dot(x, *H_ * x); 
             value += dot(x,  *rhs_);
             return true;
         }
 
-        virtual bool gradient(const Vector &x, Vector &result) const override
+        bool gradient(const Vector &x, Vector &result) const override
         {
             result = *H_ * x + (*rhs_);
             return true;
         }
 
-        virtual bool hessian(const Vector &x, Matrix &H) const override
+        bool hessian(const Vector &x, Matrix &H) const override
         {
             H = *H_;
             return true;
         }
 
-        virtual bool hessian(const Vector & /*x*/, Matrix &/*result*/, Matrix &/*prec*/) const override
+        bool hessian(const Vector & /*x*/, Matrix &/*result*/, Matrix &/*prec*/) const override
         {
             return false;
         }
 
-        virtual bool has_preconditioner() const override
+        bool has_preconditioner() const override
         {
             return false;
         }
 
-        virtual bool update(const Vector &/*x*/) override
+        bool update(const Vector &/*x*/) override
         {
             return true;
         }
 
-        virtual bool initialize_hessian(Matrix &H, Matrix &/*H_pre*/) const override
+        bool initialize_hessian(Matrix &H, Matrix &/*H_pre*/) const override
         {
             H = *H_;
             return true;
