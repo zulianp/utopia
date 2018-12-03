@@ -10,19 +10,18 @@
  {
     	template<class Matrix, class Vector>
      	class QuasiTrustRegionVariableBound :   public VariableBoundSolverInterface<Vector>, 
-                                              public TrustRegionBase<Matrix, Vector>, 
+                                              public TrustRegionBase<Vector>, 
                                               public NewtonBase<Matrix, Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>       TRBoxSubproblem;  
-        typedef utopia::TrustRegionBase<Matrix, Vector>       TrustRegionBase; 
-        typedef utopia::NewtonBase<Matrix, Vector>       NonLinearSolver;
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>   TRBoxSubproblem;  
+        typedef utopia::TrustRegionBase<Vector>           TrustRegionBase; 
+        typedef utopia::NewtonBase<Matrix, Vector>        NonLinearSolver;
 
-        typedef utopia::HessianApproximation<Vector>          HessianApproximation;
+        typedef utopia::HessianApproximation<Vector>      HessianApproximation;
 
-        using TrustRegionBase::get_pred; 
 
      	
      	public:                                                                      
@@ -36,6 +35,9 @@
       {
         set_parameters(params);        
       }
+
+      using utopia::TrustRegionBase<Vector>::get_pred; 
+
 
       /* @brief      Sets the parameters.
       *
@@ -190,10 +192,6 @@
 
           it++; 
         }
-
-        // some benchmarking 
-        this->print_statistics(it);      
-
           return false;
       }
 

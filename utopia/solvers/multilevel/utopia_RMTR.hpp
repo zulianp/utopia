@@ -27,7 +27,7 @@ namespace utopia
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
-                 public TrustRegionBase<Matrix, Vector>
+                 public TrustRegionBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -42,8 +42,8 @@ namespace utopia
 
     public:
 
-        using TrustRegionBase<Matrix, Vector>::delta_update;
-        using TrustRegionBase<Matrix, Vector>::get_pred; 
+        using TrustRegionBase<Vector>::delta_update;
+        using TrustRegionBase<Vector>::get_pred; 
 
        /**
         * @brief      Multigrid class
@@ -350,7 +350,7 @@ namespace utopia
             }
 
             // benchmarking
-            this->print_statistics(_it_global);
+            NonlinearMultiLevelBase<Matrix, Vector>::print_statistics(_it_global);
             x_h = memory_.x[fine_level];
             return true;
         }
@@ -715,7 +715,7 @@ namespace utopia
 
         virtual Scalar get_pred(const SizeType & level)
         {
-            return TrustRegionBase<Matrix, Vector>::get_pred(memory_.g[level], memory_.H[level], memory_.s[level]);
+            return (-1.0 * dot(memory_.g[level], memory_.s[level]) -0.5 *dot(memory_.H[level] * memory_.s[level], memory_.s[level]));
         }
 
 

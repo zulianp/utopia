@@ -25,7 +25,7 @@
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
         typedef utopia::HessianApproximation<Vector>    HessianApproximation;
 
-        using TrustRegionBase<Matrix, Vector>::get_pred; 
+        using TrustRegionBase<Vector>::get_pred; 
 
      	public:
       QuasiTrustRegion( const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >(),
@@ -193,7 +193,7 @@
               PrintInfo::print_iter_status(it, {g_norm, r_norm, E_taken, E_new, rho, delta, s_norm});
           #endif
 
-            converged = TrustRegionBase<Matrix, Vector>::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, 9e9, delta);
+            converged = TrustRegionBase<Vector>::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, 9e9, delta);
     //----------------------------------------------------------------------------
     //      tr. radius update
     //----------------------------------------------------------------------------
@@ -201,10 +201,7 @@
           it++;
 
         }
-
-        // some benchmarking
-        this->print_statistics(it);
-
+        
           return true;
       }
 

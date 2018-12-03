@@ -18,24 +18,26 @@
        *             Design of class allows to provide different TR strategies in order to solve TR subproblem.
        */
      	class TrustRegion : public NewtonBase<Matrix, Vector>,
-                          public TrustRegionBase<Matrix, Vector>
+                          public TrustRegionBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
 
-        typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase;
+        typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 
      	public:
       TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>(),
                   const Parameters params = Parameters())
-                  : NonLinearSolver(tr_subproblem, params), it_successful_(0)
+                  : NonLinearSolver(tr_subproblem, params)
       {
 
         set_parameters(params);
       }
+
+      using utopia::TrustRegionBase<Vector>::get_pred; 
 
       /* @brief      Sets the parameters.
       *
@@ -102,7 +104,7 @@
          Scalar delta, product, ared, pred, rho, E, E_k, E_k1;
 
          SizeType it = 0;
-         it_successful_ = 0;
+         SizeType it_successful = 0;
          Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
 
          bool rad_flg = false;
@@ -201,7 +203,7 @@
           }
 
           if (rho >= this->rho_tol())
-            it_successful_++;
+            it_successful++;
 
           this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
     //----------------------------------------------------------------------------
@@ -230,7 +232,7 @@
         }
 
         // some benchmarking
-        this->print_statistics(it);
+        TrustRegionBase::print_statistics(it, it_successful);      
 
           return true;
       }
@@ -252,35 +254,10 @@
 
 
     protected:
-
-        virtual void print_statistics(const SizeType & it) override
-        {
-            std::string path = "log_output_path";
-            auto non_data_path = Utopia::instance().get(path);
-
-            if(!non_data_path.empty())
-            {
-                CSVWriter writer;
-                if (mpi_world_rank() == 0)
-                {
-                    if(!writer.file_exists(non_data_path))
-                    {
-                        writer.open_file(non_data_path);
-                        writer.write_table_row<std::string>({"num_its", "it_successful", "time"});
-                    }
-                    else
-                        writer.open_file(non_data_path);
-
-                    writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful_),  this->get_time()});
-                    writer.close_file();
-                }
-            }
-        }
-
-
-  private:
-    SizeType it_successful_;
-
+      virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+      {
+        return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+      }
 
   };
 

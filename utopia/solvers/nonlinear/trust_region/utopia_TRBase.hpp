@@ -10,11 +10,11 @@
 
 namespace utopia  
 {
-  template<class Matrix, class Vector>
-      /**
-       * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
-       *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
-       */ 
+  /**
+   * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
+   *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
+   */ 
+  template<class Vector>
   class TrustRegionBase 
   {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -67,35 +67,35 @@ namespace utopia
     void eps(const Scalar & eps_in ) { eps_ = eps_in; }; 
 
   protected:
-
-    /**
-     * @brief      Calculates the predicate reduction  m_k(0) - m_k(p_k)
-     *
-     * @param[in]  g     Gradient
-     * @param[in]  H     Hessian
-     * @param[in]  p_k   current step
-     * @param      pred  predicted reduction
-     */
-    virtual void compute_pred_red( const Vector & g, const Matrix & H, const Vector & p_k, Scalar &pred)
+    virtual void print_statistics(const SizeType & it, const SizeType & it_successful)
     {
-    	Scalar l_term = dot(g, p_k);
-    	Scalar qp_term = dot(p_k, H * p_k);
-    	pred = - l_term - 0.5 * qp_term; 
+        std::string path = "log_output_path";
+        auto non_data_path = Utopia::instance().get(path);
 
+        if(!non_data_path.empty())
+        {
+            CSVWriter writer;
+            if (mpi_world_rank() == 0)
+            {
+                if(!writer.file_exists(non_data_path))
+                {
+                    writer.open_file(non_data_path);
+                    writer.write_table_row<std::string>({"num_its", "it_successful"});
+                }
+                else
+                    writer.open_file(non_data_path);
+                
+                writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful)});
+                writer.close_file();
+            }
+        }
     }
 
-    /**
-     * @brief      Gets the prediction reduction for 
-     *
-     * @param[in]  g     gradient
-     * @param[in]  B     Hessian
-     * @param[in]  p_k    step 
-     * @param      pred  The predicted reduction. 
-     */
-    virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+    virtual Scalar get_pred(const Vector &g, const Operator<Vector> &B, const Vector & p_k)
     {
-      Scalar pred = -1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k);
-      return pred; 
+      Vector Bp; 
+      B.apply(p_k, Bp); 
+      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp, p_k);
     }
 
 

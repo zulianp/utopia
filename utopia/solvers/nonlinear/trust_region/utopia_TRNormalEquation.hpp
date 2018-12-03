@@ -12,14 +12,14 @@
        *             Solution process is not very different from one in TrustRegionBase class, but it is specialized for normal eq. 
        */     
      	class LeastSquaresTrustRegion : public NonLinearLeastSquaresSolver<Matrix, Vector>,
-                                      public TrustRegionBase<Matrix, Vector> 
+                                      public TrustRegionBase<Vector> 
       {
      		typedef typename utopia::Traits<Vector>::Scalar Scalar;
      		typedef utopia::LinearSolver<Matrix, Vector> Solver;
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
         typedef utopia::NonLinearLeastSquaresSolver<Matrix, Vector> NonLinearLeastSquaresSolver;
      		typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase;
+        typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
 
 
      	public:
@@ -29,6 +29,9 @@
       {
         set_parameters(params);        
       }
+
+      using utopia::TrustRegionBase<Vector>::get_pred; 
+
 
       /*!
       \details
@@ -249,6 +252,12 @@
         }      
     }
 
+
+
+    virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+    {
+      return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+    }
 
 
 
