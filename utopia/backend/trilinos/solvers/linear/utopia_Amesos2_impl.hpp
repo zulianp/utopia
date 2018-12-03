@@ -98,8 +98,9 @@ namespace utopia {
 
         // Members
         //Teuchos::RCP<problem_type> linear_problem;
-        Teuchos::RCP<Teuchos::ParameterList> param_list_;
-        //  auto& utopiaPL;// impl_->param_list_->sublist("UTOPIA", true);
+        Teuchos::RCP<Teuchos::ParameterList> amesos_list_;
+        Teuchos::RCP<Teuchos::ParameterList> utopia_list_;// impl_->param_list_->sublist("UTOPIA", true);
+
         Teuchos::RCP<solver_type> solver_;
     };
     
@@ -136,16 +137,20 @@ namespace utopia {
     Amesos2Solver<Matrix, Vector, TRILINOS>::Amesos2Solver() : impl_(make_unique<Impl>()) {}
     
     /**
-     * update Method.
+     * update Method. - it replaces the matrix and does the preordering, symbolic and numericf actorization
      * \param op a RCP pointer to Matrix
      */
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
+        assert(!impl_->solver_.is_null());
+        std::string direct_sol_phase = impl_->utopia_list_->get("Direct Sol. Phase to use", "CLEAN");
+        impl_->solver_->setA(op,direct_sol_phase);  // possible options are CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE
+                                           // with SYMBFACT you keep the symbolic factorization
         preordering();
         sym_factorization();
-        num_factorization();   
-        PreconditionedSolver::update(op);//TODO
+        num_factorization();
+        //PreconditionedSolver::update(op);//TODO
         // set_problem(*op);
     }
     
@@ -160,20 +165,21 @@ namespace utopia {
         using MatImplT = typename Matrix::Implementation::crs_mat_type;
         using VecImplT = typename Vector::Implementation::multi_vector_type;
 
-        std::string solver_type = impl_->param_list_->sublist("UTOPIA", true).get("Solver Type", "LU");
+        std::string solver_type = impl_->utopia_list_->get("Solver Type", "LU");
         assert( Amesos2::query(solver_type) ); //check if the solver type specified in the xml is available
         
-        impl_->solver_ = Amesos2::create<MatImplT, VecImplT>(
-          solver_type.c_str(),
-          raw_type(*this->get_operator()),
-          raw_type(lhs),
-          raw_type(rhs)
-        );
-
-        check_parameters();
+        if (impl_->solver_.is_null())
+        {
+            impl_->solver_ = Amesos2::create<MatImplT, VecImplT>(
+            solver_type.c_str(),
+            raw_type(*this->get_operator()),
+            raw_type(lhs),
+            raw_type(rhs)
+            );
+        }        
         assert(!impl_->solver_.is_null());
-        
-        impl_->solver_->solve();
+        check_parameters();
+        impl_->solver_->solve();//TODO does preordering, sym_factorization, num_factorization ?
         return true;
     }
 
@@ -298,15 +304,18 @@ namespace utopia {
     {
         if(!params.param_file_name().empty()) {
             try {
-                impl_->param_list_ = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
-                auto& utopia_param_list = impl_->param_list_->sublist("UTOPIA", true);
+                Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
+                tmp_param_list_ = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
 
-                if( utopia_param_list.template get<bool>("Direct Solver", "true") )
+                impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list_->sublist("Amesos2", true)));
+                impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list_->sublist("UTOPIA", true)));
+
+                if( impl_->utopia_list_->template get<bool>("Direct Solver", "true") )
                 {
                  std::cout << "Using Direct Solvers " << std::endl;
-                   if( Amesos2::query( utopia_param_list.get("Solver Type", "KLU2") ) ); //Amesos2::query returns true if the solver exists TODO print error
+                   if( Amesos2::query( impl_->utopia_list_->get("Solver Type", "KLU2") ) ); //Amesos2::query returns true if the solver exists TODO print error
                    {
-                    std::cout << "Solver Type: " << utopia_param_list.get("Solver Type", "KLU2")  << std::endl;
+                    std::cout << "Solver Type: " << impl_->utopia_list_->get("Solver Type", "KLU2")  << std::endl;
                    }
                 }
                 
@@ -323,9 +332,7 @@ namespace utopia {
 template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters(){           
         try {
-            Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
-            tmp_param_list.reset(new Teuchos::ParameterList(impl_->param_list_->sublist("Amesos2", true)));
-            impl_->solver_->setParameters(tmp_param_list);
+            impl_->solver_->setParameters(impl_->amesos_list);
         } catch(const std::exception &ex) {                
             std::cerr << ex.what() << std::endl;                
             assert(false);                
@@ -343,28 +350,7 @@ template <typename Matrix, typename Vector>
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::smooth(const Vector &rhs, Vector &x)
     {
         return false;
-    }
-    
-    // template <typename Matrix, typename Vector>
-    // bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem()
-    // {
-    //     impl_->linear_problem->setProblem();
-    //     impl_->solver_ = impl_->amesos2_factory.create( impl_->param_list_->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list_); //to change it to have the specialization
-    //     impl_->solver_->setProblem(impl_->linear_problem);
-    //     if (this->verbose()) { impl_->solver_->getCurrentParameters()->print(); }
-    
-    //     return true;
-    // }
-    
-    // template <typename Matrix, typename Vector>
-    // bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A)
-    // {
-    //     impl_->linear_problem->setProblem();
-    //     impl_->solver_->setProblem(impl_->linear_problem);
-    //     if (this->verbose()) { impl_->solver_->getCurrentParameters()->print(); } //TODO print current parameters
-    //    return true;
-    // }
-    
+    }    
 }  // namespace utopia
 
 #endif //HAVE_AMESOS2_KOKKOS
