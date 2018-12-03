@@ -735,7 +735,7 @@ namespace utopia {
 
         SteihaugToint<Matrix, Vector, HOMEMADE> cg;
         cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
-        // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 
         cg.rtol(1e-7);
         cg.atol(1e-6);
@@ -1124,7 +1124,7 @@ namespace utopia {
         }
         
         auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
@@ -1132,8 +1132,8 @@ namespace utopia {
         auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 
         
-        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);

@@ -28,13 +28,17 @@ namespace utopia {
 			ret->open(path);
 			return ret_ptr;
 			
-		} else if(path.extension() == "json") {
+		} else 
+#ifdef WITH_JSON
+		if(path.extension() == "json") {
 
 			auto ret = new JSONInput();
 			auto ret_ptr = std::unique_ptr<Input>(ret);
 			ret->open(path);
 			return ret_ptr;
-		} else {
+		} else 
+#endif //WITH_JSON
+		{
 			std::cerr << "[Error] format not supported" << std::endl;
 			return nullptr;
 		}
