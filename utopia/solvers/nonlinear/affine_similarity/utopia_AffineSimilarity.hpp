@@ -22,6 +22,9 @@ namespace utopia
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
         typedef utopia::LSStrategy<Vector>                  LSStrategy; 
 
+        using NewtonBase<Matrix, Vector>::print_statistics; 
+
+
     public:
        AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
                             const Parameters params                       = Parameters() ):
@@ -301,15 +304,8 @@ namespace utopia
             }
         }
 
-
-        virtual void print_statistics(const SizeType & it_global) override
-        {
-            NonLinearSolver<Matrix, Vector>::print_statistics(it_global); 
-        }
     
     private: 
-
-
         // Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
         // {
         //     Vector gs_diff = (g_trial - (M_ * s)); 

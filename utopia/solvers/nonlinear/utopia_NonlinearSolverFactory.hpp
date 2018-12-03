@@ -22,7 +22,7 @@ namespace utopia {
 	class NonlinearSolverFactory {
 	public: 
 
-		typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolverT;
+		typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolverT;
 		typedef std::shared_ptr<NonLinearSolverT> NonLinearSolverPtr; 
 		typedef utopia::IFactoryMethod<NonLinearSolverT> FactoryMethodT;
 

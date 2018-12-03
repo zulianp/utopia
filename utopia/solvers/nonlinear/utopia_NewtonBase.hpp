@@ -16,18 +16,18 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class NewtonBase : public NonLinearSolver<Matrix, Vector>
+    class NewtonBase : public NonLinearSolver<Vector>
     {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> Solver;
+        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
 
-        NewtonBase(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                        const Parameters &params = Parameters()): 
-                        NonLinearSolver<Matrix, Vector>(params), 
-                        linear_solver_(linear_solver)
+        NewtonBase( const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
+                    const Parameters &params = Parameters()): 
+                    NonLinearSolver<Vector>(params), 
+                    linear_solver_(linear_solver)
         {
             set_parameters(params);        
         }
@@ -35,6 +35,17 @@ namespace utopia
         virtual ~NewtonBase() {}
 
     
+        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
+
+        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
+        {
+            fun.set_rhs(rhs); 
+            bool converged = this->solve(fun, x); 
+            fun.reset_rhs(); 
+            return converged; 
+        }
+
+
         /**
          * @brief      Enables the differentiation control.
          *
@@ -64,7 +75,7 @@ namespace utopia
 
         virtual void read(Input &in) override
         {
-            NonLinearSolver<Matrix, Vector>::read(in); 
+            NonLinearSolver<Vector>::read(in); 
             in.get("check_diff", check_diff_);
 
             if(linear_solver_) {
@@ -80,7 +91,7 @@ namespace utopia
          */
         virtual void set_parameters(const Parameters params) override
         {
-            NonLinearSolver<Matrix, Vector>::set_parameters(params); 
+            NonLinearSolver<Vector>::set_parameters(params); 
             check_diff_         = params.differentiation_control(); 
 
         }

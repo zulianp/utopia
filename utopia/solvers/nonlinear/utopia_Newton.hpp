@@ -128,14 +128,14 @@ namespace utopia
 
     void set_parameters(const Parameters params) override
     {
-        NonLinearSolver<Matrix, Vector>::set_parameters(params);
+        NewtonBase<Matrix, Vector>::set_parameters(params);
         alpha_ = params.alpha();
 
     }
 
     void read(Input &in) override
     {
-        NonLinearSolver<Matrix, Vector>::read(in);
+        NewtonBase<Matrix, Vector>::read(in);
         in.get("dumping", alpha_);
 
         if(ls_strategy_) {

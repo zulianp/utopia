@@ -21,20 +21,20 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Vector>
-    class NonLinearSolverInterface : public Monitor<Vector>, public Configurable
+    class NonLinearSolver : public Monitor<Vector>, public Configurable
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 
-        NonLinearSolverInterface(const Parameters &params = Parameters()): 
+        NonLinearSolver(const Parameters &params = Parameters()): 
                         params_(params)
         {
             set_parameters(params);        
         }
 
-        virtual ~NonLinearSolverInterface() {}
+        virtual ~NonLinearSolver() {}
 
         /**
          * @brief      Getter for parameters. 
@@ -226,38 +226,13 @@ public:
 
 
 
-    template<class Matrix, class Vector>
-    class NonLinearSolver : public NonLinearSolverInterface<Vector>
-    {
-    
-    public:
-        NonLinearSolver(const Parameters &params = Parameters()): 
-                        NonLinearSolverInterface<Vector>(params)
-        {
-
-        }
-
-        virtual ~NonLinearSolver() {}
-
-        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
-
-        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
-        {
-            fun.set_rhs(rhs); 
-            bool converged = this->solve(fun, x); 
-            fun.reset_rhs(); 
-            return converged; 
-        }
-    };
-
-
     template<class Vector>
-    class MatrixFreeNonLinearSolver : public NonLinearSolverInterface<Vector>
+    class MatrixFreeNonLinearSolver : public NonLinearSolver<Vector>
     {
     
     public:
         MatrixFreeNonLinearSolver(const Parameters &params = Parameters()):  
-                                    NonLinearSolverInterface<Vector>(params)
+                                  NonLinearSolver<Vector>(params)
         {
 
         }

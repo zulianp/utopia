@@ -1,7 +1,7 @@
 #ifndef UTOPIA_FAS_HPP
 #define UTOPIA_FAS_HPP
 #include "utopia_NonLinearSmoother.hpp"
-#include "utopia_NonLinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
@@ -21,10 +21,13 @@ namespace utopia
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
+        
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::Transfer<Matrix, Vector>   Transfer;
+
+        typedef utopia::NewtonBase<Matrix, Vector>     Solver;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
+
 
         public:
 

@@ -21,7 +21,6 @@
 #include "utopia_ConstrainedIncludes.hpp"
 #include "utopia_TrustRegionIncludes.hpp"
 #include "utopia_LineSearchIncludes.hpp"
-#include "utopia_AlternateIncludes.hpp"
 
 #include "utopia_NonlinearSolverFactory.hpp"
 #include "utopia_HessianApproximations.hpp"

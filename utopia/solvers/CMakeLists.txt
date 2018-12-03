@@ -7,7 +7,6 @@ list(APPEND SOLVERS_MODULES
 	smoothers
 	nonlinear
 	nonlinear/affine_similarity
-	nonlinear/alternate_minimization
 	nonlinear/constrained
 	nonlinear/constrained/quadratic_programming
 	nonlinear/line_search
