@@ -114,7 +114,7 @@ namespace utopia {
 
     static void Abort()
     {
-        int errorcode = -1;
+        int error_code = -1;
 #ifdef WITH_MPI
         MPI_Abort(MPI_COMM_WORLD, error_code);
 #else
