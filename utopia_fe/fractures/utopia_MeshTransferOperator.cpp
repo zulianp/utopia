@@ -22,10 +22,11 @@ namespace utopia {
 		operator_type("l2-projection"),
 		clamped(false),
 		quad_order(-1),
-		boundary_transfer(false),
 		force_shell(false),
 		write_operators_to_disk(false),
 		force_zero_extension(false),
+		from_boundary(false),
+		to_boundary(false),
 		output_path("./")
 		{}
 
@@ -35,10 +36,12 @@ namespace utopia {
 			is.get("bi-op-mass-outside", bi_operator_mass_mat_outside);
 			is.get("clamped", clamped);
 			is.get("quad-order-approx", quad_order);
-			is.get("boundary-transfer", boundary_transfer);
+			
 			is.get("force-shell", force_shell);
 			is.get("write-operators-to-disk", write_operators_to_disk);
 			is.get("force-zero-extension", force_zero_extension);
+			is.get("from-boundary", from_boundary);
+			is.get("to-boundary",   to_boundary);
 			is.get("output-path", output_path);
 		}
 
@@ -48,10 +51,11 @@ namespace utopia {
 		std::string operator_type;
 		bool clamped;
 		int quad_order;
-		bool boundary_transfer;
 		bool force_shell;
 		bool write_operators_to_disk;
 		bool force_zero_extension;
+		bool from_boundary;
+		bool to_boundary;
 		std::string output_path;
 	};
 
@@ -331,7 +335,7 @@ namespace utopia {
 			true,
 			false
 		);
-		
+
 		auto local2global = std::make_shared<Local2Global>(false);
 
 		std::vector< std::shared_ptr<SparseMatrix> > mats;
@@ -377,11 +381,13 @@ namespace utopia {
 	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
 	{
 		//apply boundary filter
-		if(params_->boundary_transfer) {
+		if(params_->from_boundary) {
 			auto b_from_mesh = std::make_shared<libMesh::BoundaryMesh>(from_mesh->comm(), from_mesh->mesh_dimension()-1);
 			from_mesh->boundary_info->sync(*b_from_mesh);
 			filtered_from_mesh = b_from_mesh;
+		}
 
+		if(params_->to_boundary) {
 			auto b_to_mesh = std::make_shared<libMesh::BoundaryMesh>(to_mesh->comm(), to_mesh->mesh_dimension()-1);
 			to_mesh->boundary_info->sync(*b_to_mesh);
 			filtered_to_mesh = b_to_mesh;
