@@ -1,14 +1,8 @@
 <transfer>
-	<!-- <type>approx-l2-projection</type> -->
-	<!-- <type>interpolation</type> -->
 	<type>l2-projection</type>
-	<biorth-basis>0</biorth-basis>
-	<function>-x</function>
+	<!-- <type>bidirectional-l2-projection</type> -->
 
-	<!-- <force-shell>true</force-shell> -->
-	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
-	<!-- <function-type>constant</function-type> -->
-	<!-- <function>1.</function> -->
+	<function>-x</function>
 
 	<!-- MASTER -->
 	<master>

@@ -5,10 +5,55 @@
 #include "utopia_InterpolationLocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
 #include "utopia_BidirectionalL2LocalAssembler.hpp"
+#include "utopia_make_unique.hpp"
+
+#include "libmesh/boundary_mesh.h"
 
 #include <map>
 
 namespace utopia {
+
+	class MeshTransferOperator::Params : public Configurable {
+	public:
+		Params()
+		: normalize_rows(true),
+		tol(1e-14),
+		bi_operator_mass_mat_outside(true),
+		operator_type("l2-projection"),
+		clamped(false),
+		quad_order(-1),
+		boundary_transfer(false),
+		force_shell(false),
+		write_operators_to_disk(false),
+		force_zero_extension(false),
+		output_path("./")
+		{}
+
+		inline void read(Input &is) override
+		{
+			is.get("type", operator_type);
+			is.get("bi-op-mass-outside", bi_operator_mass_mat_outside);
+			is.get("clamped", clamped);
+			is.get("quad-order-approx", quad_order);
+			is.get("boundary-transfer", boundary_transfer);
+			is.get("force-shell", force_shell);
+			is.get("write-operators-to-disk", write_operators_to_disk);
+			is.get("force-zero-extension", force_zero_extension);
+			is.get("output-path", output_path);
+		}
+
+		bool normalize_rows;
+		double tol;
+		bool bi_operator_mass_mat_outside;
+		std::string operator_type;
+		bool clamped;
+		int quad_order;
+		bool boundary_transfer;
+		bool force_shell;
+		bool write_operators_to_disk;
+		bool force_zero_extension;
+		std::string output_path;
+	};
 
 	static const std::map<std::string, TransferOperatorType> &get_str_to_type()
 	{
@@ -34,17 +79,44 @@ namespace utopia {
 		return types;
 	}
 
-	bool MeshTransferOperator::initialize(const std::string operator_type)
+	MeshTransferOperator::MeshTransferOperator(
+		const std::shared_ptr<MeshBase> &from_mesh,
+		const std::shared_ptr<DofMap>   &from_dofs,
+		const std::shared_ptr<MeshBase> &to_mesh,
+		const std::shared_ptr<DofMap>   &to_dofs,
+		const TransferOptions &opts
+		) : 
+	from_mesh(from_mesh),
+	from_dofs(from_dofs),
+	to_mesh(to_mesh),
+	to_dofs(to_dofs),
+	opts(opts),
+	params_(utopia::make_unique<Params>())
 	{
-		const auto &m = get_str_to_type(); 
+		assembly_strategies_[INTERPOLATION] = 
+		[this]() -> bool { return this->set_up_interpolation(); };
 
-		auto it = m.find(operator_type);
+		assembly_strategies_[L2_PROJECTION] = 
+		[this]() -> bool { return this->set_up_l2_projection(); };
 
-		if(it == m.end()) {
-			return initialize(PSEUDO_L2_PROJECTION);
-		} else {
-			return initialize(it->second);
-		}
+		assembly_strategies_[PSEUDO_L2_PROJECTION] = 
+		[this]() -> bool { return this->set_up_pseudo_l2_projection(); };
+
+		assembly_strategies_[APPROX_L2_PROJECTION] = 
+		[this]() -> bool { return this->set_up_approx_l2_projection(); };
+
+		assembly_strategies_[BIDIRECTIONAL_L2_PROJECTION] = 
+		[this]() -> bool { return this->set_up_bidirectional_transfer(); };
+
+		assembly_strategies_[BIDIRECTIONAL_PSEUDO_L2_PROJECTION] = 
+		[this]() -> bool { return this->set_up_bidirectional_pseudo_transfer(); };	
+	}
+
+	MeshTransferOperator::~MeshTransferOperator() {}
+
+	void MeshTransferOperator::read(Input &is)
+	{
+		params_->read(is);
 	}
 
 	inline static void assemble_mass_matrix(
@@ -85,15 +157,17 @@ namespace utopia {
 				dof_map.dof_indices(*it, indices);
 
 				auto n_shape_functions = phi.size();
+				auto n_qp = qrule.n_points();
+
 				el_mat.resize(n_shape_functions, n_shape_functions);
 				el_mat.zero();
 
-				for(unsigned int qp = 0; qp < qrule.n_points(); qp++) {
-					for(unsigned int i = 0; i < n_shape_functions; i++) {
-						for(unsigned int j = 0; j < n_shape_functions; j++) {
-							auto value = JxW[qp]*phi[i][qp]*phi[j][qp];
-
-							for(unsigned int k = 0; k < dim; k++) {
+				for(unsigned int i = 0; i < n_shape_functions; i++) {
+					for(unsigned int j = 0; j < n_shape_functions; j++) {
+						for(unsigned int qp = 0; qp < n_qp; qp++) {
+							auto value = JxW[qp] * phi[i][qp] * phi[j][qp];
+							
+							for(unsigned int k = 0; k < n_tensor; k++) {
 								el_mat(i + k * phi.size(), j + k * phi.size()) += value;
 							}
 						}
@@ -103,149 +177,267 @@ namespace utopia {
 				add_matrix(el_mat, indices, indices, mat);
 			}
 		}
+	}
 
+	bool MeshTransferOperator::set_up_l2_projection()
+	{
+		std::cout << "[Status] using l2 projection" << std::endl;
+		auto from = get_filtered_from_mesh();
+		bool is_shell = params_->force_shell || from->mesh_dimension() < from->spatial_dimension();
+		auto assembler = std::make_shared<L2LocalAssembler>(from->mesh_dimension(), false, true, is_shell);
+		auto local2global = std::make_shared<Local2Global>(false);
+
+		std::vector< std::shared_ptr<SparseMatrix> > mats;
+		TransferAssembler transfer_assembler(assembler, local2global);
+		if(!transfer_assembler.assemble(from, from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+			return false;
+		}
+
+		auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+		l2_operator->fix_mass_matrix_operator(params_->tol);
+		l2_operator->init();
+		operator_ = l2_operator;
+		return true;
+	}
+
+	bool MeshTransferOperator::set_up_interpolation()
+	{
+		std::cout << "[Status] using interpolation" << std::endl;
+		auto assembler = std::make_shared<InterpolationLocalAssembler>(get_filtered_from_mesh()->mesh_dimension());
+		auto local2global = std::make_shared<Local2Global>(true);
+		
+		std::vector< std::shared_ptr<SparseMatrix> > mats;
+		TransferAssembler transfer_assembler(assembler, local2global);
+		if(!transfer_assembler.assemble(get_filtered_from_mesh(), from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+			return false;
+		}
+
+		auto interpolation_operator = std::make_shared<Interpolator>(mats[0]);
+		//only necessary for non-conforming mesh in parallel
+		interpolation_operator->normalize_rows();
+		operator_ = interpolation_operator;
+		return true;
+	}
+
+	bool MeshTransferOperator::set_up_approx_l2_projection()
+	{
+		std::cout << "[Status] using approx l2 projection" << std::endl;
+		auto assembler = std::make_shared<ApproxL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension());
+		assembler->set_quadrature_order(params_->quad_order);
+		auto local2global = std::make_shared<Local2Global>(false);
+
+		std::vector< std::shared_ptr<SparseMatrix> > mats;
+		TransferAssembler transfer_assembler(assembler, local2global);
+		if(!transfer_assembler.assemble(get_filtered_from_mesh(), from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+			return false;
+		}
+
+		auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+		l2_operator->fix_mass_matrix_operator(params_->tol);
+		l2_operator->init();
+		operator_ = l2_operator;
+		return true;
+	}
+
+	bool MeshTransferOperator::set_up_pseudo_l2_projection()
+	{
+		std::cout << "[Status] using pseudo l2 projection" << std::endl;
+
+		auto from = get_filtered_from_mesh();
+		bool is_shell = params_->force_shell || from->mesh_dimension() < from->spatial_dimension();
+
+		auto assembler = std::make_shared<L2LocalAssembler>(from->mesh_dimension(), true, false);
+		auto local2global = std::make_shared<Local2Global>(false);
+
+		std::vector< std::shared_ptr<SparseMatrix> > mats;
+		TransferAssembler transfer_assembler(assembler, local2global);
+		if(!transfer_assembler.assemble(from, from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+			return false;
+		}
+
+		if(params_->normalize_rows) {
+			auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
+			pseudo_l2_operator->init_from_coupling_operator(*mats[0]);
+			operator_ = pseudo_l2_operator;
+		} else {
+			operator_ = std::make_shared<PseudoL2TransferOperator>(mats[0]);
+		}
+
+		return true;
+	}
+
+	bool MeshTransferOperator::set_up_bidirectional_transfer()
+	{
+		std::cout << "[Status] using bi l2 projection" << std::endl;
+		auto assembler = std::make_shared<BidirectionalL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension(), false, !params_->bi_operator_mass_mat_outside);
+
+		auto local2global = std::make_shared<Local2Global>(false);
+
+		std::vector< std::shared_ptr<SparseMatrix> > mats;
+		TransferAssembler transfer_assembler(assembler, local2global);
+		if(!transfer_assembler.assemble(get_filtered_from_mesh(), from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+			return false;
+		}
+
+		if(params_->bi_operator_mass_mat_outside) {
+			auto mass_mat_from = std::make_shared<USparseMatrix>();
+			auto mass_mat_to   = std::make_shared<USparseMatrix>();
+
+			assemble_mass_matrix(*get_filtered_from_mesh(), *from_dofs, opts.from_var_num, opts.n_var, *mass_mat_from);
+			assemble_mass_matrix(*get_filtered_to_mesh(),   *to_dofs,   opts.to_var_num,   opts.n_var, *mass_mat_to);
+
+			const bool restrict_mass_matrix = true;
+			auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, std::make_shared<Factorization<USparseMatrix, UVector>>());
+			
+			if(!restrict_mass_matrix) {
+				forward->fix_mass_matrix_operator(params_->tol);
+			} else {
+				// forward->restrict_mass_matrix(params_->tol);
+				forward->restrict_mass_matrix_old(params_->tol);
+			}
+
+			auto backward = std::make_shared<L2TransferOperator>(mats[1], mass_mat_from, std::make_shared<Factorization<USparseMatrix, UVector>>());
+			
+			if(!restrict_mass_matrix) {
+				backward->fix_mass_matrix_operator(params_->tol);
+			} else {
+				// backward->restrict_mass_matrix(params_->tol);
+				backward->restrict_mass_matrix_old(params_->tol);
+			}
+
+			forward->init();
+			backward->init();
+			operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+		} else {
+			auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+			forward->fix_mass_matrix_operator(params_->tol);
+
+			auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
+			backward->fix_mass_matrix_operator(params_->tol);
+
+			forward->init();
+			backward->init();
+			operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+		}
+
+		return true;
+	}
+
+	bool MeshTransferOperator::set_up_bidirectional_pseudo_transfer()
+	{
+		std::cout << "[Status] using bi pseudo l2 projection" << std::endl;
+		auto assembler = std::make_shared<BidirectionalL2LocalAssembler>(
+			get_filtered_from_mesh()->mesh_dimension(),
+			true,
+			false
+		);
+		
+		auto local2global = std::make_shared<Local2Global>(false);
+
+		std::vector< std::shared_ptr<SparseMatrix> > mats;
+		TransferAssembler transfer_assembler(assembler, local2global);
+		if(!transfer_assembler.assemble(get_filtered_from_mesh(), from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+			return false;
+		}
+
+		auto mass_mat_from = std::make_shared<USparseMatrix>();
+		auto mass_mat_to   = std::make_shared<USparseMatrix>();
+
+		assemble_mass_matrix(*get_filtered_from_mesh(), *from_dofs, opts.from_var_num, opts.n_var, *mass_mat_from);
+		assemble_mass_matrix(*get_filtered_to_mesh(),   *to_dofs,   opts.to_var_num,   opts.n_var, *mass_mat_to);
+
+		auto forward = std::make_shared<PseudoL2TransferOperator>();
+		forward->init_from_coupling_and_mass_operator(*mats[0], *mass_mat_to);
+
+		auto backward = std::make_shared<PseudoL2TransferOperator>();
+		backward->init_from_coupling_and_mass_operator(*mats[1], *mass_mat_from);
+		operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+		return true;
+	}
+
+	bool MeshTransferOperator::assemble()
+	{
+		return initialize(params_->operator_type);
+	}
+
+	bool MeshTransferOperator::initialize(const std::string operator_type)
+	{
+		const auto &m = get_str_to_type();
+		params_->operator_type = operator_type;
+
+		auto it = m.find(operator_type);
+
+		if(it == m.end()) {
+			return initialize(PSEUDO_L2_PROJECTION);
+		} else {
+			return initialize(it->second);
+		}
 	}
 
 	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
 	{
-		std::shared_ptr<LocalAssembler> assembler;
+		//apply boundary filter
+		if(params_->boundary_transfer) {
+			auto b_from_mesh = std::make_shared<libMesh::BoundaryMesh>(from_mesh->comm(), from_mesh->mesh_dimension()-1);
+			from_mesh->boundary_info->sync(*b_from_mesh);
+			filtered_from_mesh = b_from_mesh;
 
-		bool use_interpolation = false;
-		bool use_biorth        = false;
-		bool is_bidirectonal   = false;
-
-		switch(operator_type) {
-			case INTERPOLATION:
-			{
-				std::cout << "[Status] using interpolation" << std::endl;
-				assembler = std::make_shared<InterpolationLocalAssembler>(from_mesh->mesh_dimension());
-				use_interpolation = true;
-				break;
-			}
-
-			case L2_PROJECTION:
-			{	
-				std::cout << "[Status] using l2 projection" << std::endl;
-				assembler = std::make_shared<L2LocalAssembler>(from_mesh->mesh_dimension(), false, true);
-				break;
-			}
-
-			case PSEUDO_L2_PROJECTION:
-			{
-				std::cout << "[Status] using pseudo l2 projection" << std::endl;
-				assembler = std::make_shared<L2LocalAssembler>(from_mesh->mesh_dimension(), true, false);
-				use_biorth = true;
-				break;
-			}
-
-			case APPROX_L2_PROJECTION:
-			{
-				std::cout << "[Status] using approx l2 projection" << std::endl;
-				assembler = std::make_shared<ApproxL2LocalAssembler>(from_mesh->mesh_dimension());
-				break;
-			}
-
-			case BIDIRECTIONAL_L2_PROJECTION:
-			{
-				std::cout << "[Status] using bi l2 projection" << std::endl;
-				assembler = std::make_shared<BidirectionalL2LocalAssembler>(from_mesh->mesh_dimension(), false, !bi_operator_mass_mat_outside_);
-				is_bidirectonal = true;
-				break;
-			}
-
-			case BIDIRECTIONAL_PSEUDO_L2_PROJECTION:
-			{
-				std::cout << "[Status] using bi pseudo l2 projection" << std::endl;
-				assembler = std::make_shared<BidirectionalL2LocalAssembler>(from_mesh->mesh_dimension(), true, false);
-				use_biorth = true;
-				is_bidirectonal = true;
-				break;
-			}
-
-			default:
-			{
-				assert(false);
-				return false;
-			}
+			auto b_to_mesh = std::make_shared<libMesh::BoundaryMesh>(to_mesh->comm(), to_mesh->mesh_dimension()-1);
+			to_mesh->boundary_info->sync(*b_to_mesh);
+			filtered_to_mesh = b_to_mesh;
 		}
 
-		auto local2global = std::make_shared<Local2Global>(use_interpolation);
-		TransferAssembler transfer_assembler(assembler, local2global);
+		///////////////////////////////////////////////////
+		auto it = assembly_strategies_.find(operator_type);
+		
+		bool ok = false;
+		if(it == assembly_strategies_.end()) {
+			ok = assembly_strategies_.begin()->second();
+		} else {
+			ok = it->second();
+		}
+		////////////////////////////////////////////////////
 
-		std::vector< std::shared_ptr<SparseMatrix> > mats;
-		if(!transfer_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, mats, opts)) {
+		if(!ok) {
 			return false;
 		}
 
-		if(is_bidirectonal) {
+		if(params_->write_operators_to_disk) {
+			operator_->write(params_->output_path);
+		}
 
-			if(bi_operator_mass_mat_outside_) {
-				auto mass_mat_from = std::make_shared<USparseMatrix>();
-				auto mass_mat_to   = std::make_shared<USparseMatrix>();
+		if(params_->force_zero_extension) {
+			operator_ = std::make_shared<ForceZeroExtension>(operator_, params_->tol);
+		}
 
-				assemble_mass_matrix(*from_mesh, *from_dofs, opts.from_var_num, opts.n_var, *mass_mat_from);
-				assemble_mass_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   opts.n_var, *mass_mat_to);
-
-				if(use_biorth) {
-					auto forward = std::make_shared<PseudoL2TransferOperator>();
-					forward->init_from_coupling_and_mass_operator(*mats[0], *mass_mat_to);
-
-					auto backward = std::make_shared<PseudoL2TransferOperator>();
-					backward->init_from_coupling_and_mass_operator(*mats[1], *mass_mat_from);
-					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
-
-				} else {
-					auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, true, std::make_shared<Factorization<USparseMatrix, UVector>>());
-					forward->fix_mass_matrix_operator();
-
-					auto backward = std::make_shared<L2TransferOperator>(mats[1], mass_mat_from, true, std::make_shared<Factorization<USparseMatrix, UVector>>());
-					backward->fix_mass_matrix_operator();
-					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
-				}
-
-			} else {
-				if(use_biorth) {
-					auto forward = std::make_shared<PseudoL2TransferOperator>();
-					forward->init_from_coupling_operator(*mats[0]);
-
-					auto backward = std::make_shared<PseudoL2TransferOperator>();
-					backward->init_from_coupling_operator(*mats[1]);
-					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
-
-				} else {
-					auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-					forward->fix_mass_matrix_operator();
-
-					auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
-					backward->fix_mass_matrix_operator();
-					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
-				}
-			}
-
-		} else {
-			if(use_interpolation) {
-				auto interpolation_operator = std::make_shared<Interpolator>(mats[0]);
-				//only necessary for non-conforming mesh in parallel
-				interpolation_operator->normalize_rows();
-				operator_ = interpolation_operator;
-			} else if(use_biorth) {
-
-				if(normalize_rows_) {
-					auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
-					pseudo_l2_operator->init_from_coupling_operator(*mats[0]);
-					operator_ = pseudo_l2_operator;
-				} else {
-					operator_ = std::make_shared<PseudoL2TransferOperator>(mats[0]);
-				}
-
-			} else {
-				auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-				l2_operator->fix_mass_matrix_operator(tol_);
-				operator_ = l2_operator;
-			}
+		if(params_->clamped) {
+			operator_ = std::make_shared<ClampedOperator>(operator_);
 		}
 
 		operator_->describe(std::cout);
 		return true;
+	}
+
+	void MeshTransferOperator::set_tol(const double val)
+	{
+		params_->tol = val;
+	}
+
+	std::shared_ptr<libMesh::MeshBase> MeshTransferOperator::get_filtered_from_mesh()
+	{
+		if(filtered_from_mesh) {
+			return filtered_from_mesh;
+		}
+
+		return from_mesh;
+	}
+
+	std::shared_ptr<libMesh::MeshBase> MeshTransferOperator::get_filtered_to_mesh()
+	{
+		if(filtered_to_mesh) {
+			return filtered_to_mesh;
+		}
+
+		return to_mesh;
 	}
 }
