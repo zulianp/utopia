@@ -224,13 +224,29 @@ namespace utopia
 
 
 
+      virtual BoxConstraints  build_correction_constraints(const Vector & x_k) const 
+      {
+          Vector l_f, u_f; 
+
+          if(constraints_.has_upper_bound())
+              u_f =  *constraints_.upper_bound() - x_k; 
+          else
+              u_f = local_values(local_size(x_k).get(0), 9e12); 
+
+          if(constraints_.has_lower_bound())
+              l_f = *(constraints_.lower_bound()) - x_k; 
+          else
+              l_f = local_values(local_size(x_k).get(0), -9e12); 
+
+          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
+      }
+
+
     protected:
         BoxConstraints                  constraints_;
 
         
     };
-
-
 
 }
 #endif //UTOPIA_VARIABLE_BOUND_NONLINEAR_SOLVER_HPP

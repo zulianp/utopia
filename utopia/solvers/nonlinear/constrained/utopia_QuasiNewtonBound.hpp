@@ -17,9 +17,8 @@
 namespace utopia
 {
     template<class Vector>
-    class QuasiNewtonBound :    public MatrixFreeNonLinearSolver<Vector>, 
-                                public VariableBoundSolverInterface<Vector>,
-                                public QuasiNewtonBase<Vector>
+    class QuasiNewtonBound :    public QuasiNewtonBase<Vector>, 
+                                public VariableBoundSolverInterface<Vector>
 
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
@@ -28,17 +27,14 @@ namespace utopia
         typedef utopia::LSStrategy<Vector>                      LSStrategy;
         typedef utopia::HessianApproximation<Vector>            HessianApproximation;
 
-        typedef utopia::MatrixFreeLinearSolver<Vector>          LinSolver;
-        // typedef utopia::QPSolver<Vector>                      QPSolver;
+        typedef utopia::MatrixFreeQPSolver<Vector>           QPSolver;
         
         
     public:
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
-                            const std::shared_ptr <LinSolver> &linear_solver,
+                            const std::shared_ptr <QPSolver> &linear_solver,
                             const Parameters params = Parameters()):
-                            MatrixFreeNonLinearSolver<Vector>(params), 
-                            QuasiNewtonBase<Vector>(hessian_approx, linear_solver), 
-                            alpha_(1.0)
+                            QuasiNewtonBase<Vector>(hessian_approx, linear_solver)
         {
             set_parameters(params);
         }
@@ -49,8 +45,10 @@ namespace utopia
             
             Vector g, s, y; 
             
-            Scalar g_norm, g0_norm, s_norm=1;
+            Scalar g_norm, r_norm, g0_norm, s_norm=1;
             SizeType it = 0;
+
+            Scalar alpha = 1.0; 
             
             bool converged = false;
 
@@ -58,11 +56,10 @@ namespace utopia
             
             fun.gradient(x, g);
             g0_norm = norm2(g);
-            g_norm = g0_norm;
             
             if(this->verbose_) {
-                this->init_solver("QUASI NEWTON BOUND", {" it. ", "|| g ||", "E", "|| p_k || ", "alpha"});
-                PrintInfo::print_iter_status(it, {g_norm, s_norm});
+                this->init_solver("QUASI NEWTON BOUND", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
+                PrintInfo::print_iter_status(it, {g0_norm, s_norm});
             }
             it++; 
             
@@ -70,22 +67,22 @@ namespace utopia
 
             while(!converged)
             {
-                // if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver().get()))
-                // {
-                //     auto box = this->get_box_constraints();
-                //     auto multiplication_action = FunctionOperator<Vector>(this->get_hessian_approximation_strategy()->get_apply_H()); 
-                //     tr_subproblem->tr_constrained_solve(multiplication_action, g, s, box);             
-                // }
-                // else
+                s = local_zeros(local_size(x)); 
+
+                if(QPSolver * qp_solver = dynamic_cast<QPSolver*>(this->linear_solver().get()))
                 {
-                    utopia_error("utopia::QuasiNewtonBound: MF solver which is not TR_box_subproblem is not suported at the moment... \n"); 
+                    auto box = this->build_correction_constraints(x);
+                    qp_solver->set_box_constraints(box); 
+                    auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
+                    qp_solver->solve(*multiplication_action, -1.0*g, s);             
+                }
+                else
+                {
+                    utopia_error("utopia::QuasiNewtonBound: MF solver which is not QPSolver is not suported at the moment... \n"); 
                 }
 
-
-                if(this->ls_strategy_) 
-                    this->ls_strategy_->get_alpha(fun, g, x, s, this->alpha_);     
-
-                s *= this->alpha_; 
+                alpha = this->get_alpha(fun, g, x, s); 
+                s *= alpha; 
                 x+=s; 
                 
                 y = g; 
@@ -94,18 +91,15 @@ namespace utopia
                 // norms needed for convergence check
                 g_norm = this->criticality_measure_infty(x, g); 
                 s_norm = norm2(s);
+                r_norm = g_norm/g0_norm;
 
                 // diff between fresh and old grad...
                 y = g - y; 
                 this->update(s, y);
 
-
-                Scalar energy; 
-                fun.value(x, energy); 
-
                 // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, energy,  s_norm, this->alpha_});
+                    PrintInfo::print_iter_status(it, {g_norm, r_norm,  s_norm, alpha});
                 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, 9e9, s_norm);
@@ -119,29 +113,9 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
+            QuasiNewtonBase<Vector>::set_parameters(params);
         }
         
-
-        /**
-         * @brief      Sets strategy for computing step-size.
-         *
-         * @param[in]  strategy  The line-search strategy.
-         *
-         * @return
-         */
-        virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
-        {
-            ls_strategy_ = strategy;
-            ls_strategy_->set_parameters(this->parameters());
-            return true;
-        }
-
-        
-    private:
-        Scalar alpha_;                                          /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
-
     };
 
 

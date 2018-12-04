@@ -26,15 +26,15 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(Quasi_TR_test_sparse); 
-				UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
-				UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
-				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
-				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-				UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+				// UTOPIA_RUN_TEST(Quasi_TR_test_sparse); 
+				// UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
+				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+				// UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
+				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
 				
 
-				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}	
 
 			void run_multilevel()
@@ -305,42 +305,35 @@ namespace utopia
 				tr_solver.solve(fun, x);
 		    }
 
+			void QuasiNewtonBoundTest()
+			{
+				auto memory_size = 5; 
+
+				Bratu1D<Matrix, Vector> fun(_n);
+	    		Vector x = values(_n, 0.0);
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
+	    		fun.apply_bc_to_initial_guess(x);
+
+				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
+		        auto qp_solver = std::make_shared<ProjectedGradient<Matrix, Vector> >();
+		        
+				QuasiNewtonBound<Vector> solver(hess_approx, qp_solver);
+
+				auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
+				solver.set_line_search_strategy(line_search);
+				solver.max_it(50); 	
+				solver.stol(1e-12); 	
+				solver.atol(1e-6); 		
+
+				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	    		solver.set_box_constraints(box);				
+
+	    		solver.verbose(_verbose); 
+	    		solver.solve(fun, x);
+			}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-			// void QuasiNewtonBoundTest()
-			// {
-			// 	auto memory_size = 5; 
-
-			// 	Bratu1D<Matrix, Vector> fun(_n);
-	  //   		Vector x = values(_n, 0.0);
-			// 	Vector lb   = local_values(local_size(x).get(0), -0.01);
-			// 	Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
-	  //   		fun.apply_bc_to_initial_guess(x);
-
-			// 	auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
-		 //        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
-		 //        qp_solver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx->get_apply_Hinv())); 
-			// 	QuasiNewtonBound<Vector> solver(hess_approx, qp_solver);
-
-
-
-			// 	// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-			// 	// solver.set_line_search_strategy(line_search);
-			// 	// solver.max_it(50); 	
-			// 	// solver.stol(1e-12); 	
-			// 	// solver.atol(1e-6); 		
-
-			// 	// auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-	  //  //  		solver.set_box_constraints(box);				
-
-
-	  //  //  		solver.verbose(true); 
-	  //  //  		solver.solve(fun, x);
-	  //   		disp(x); 	
-			// }
-
-
 
 		    void Quasi_RMTR_test()
 		    {	
@@ -497,7 +490,7 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
 			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().print_backend_info();
-			// QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
+			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
 			
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
 			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();

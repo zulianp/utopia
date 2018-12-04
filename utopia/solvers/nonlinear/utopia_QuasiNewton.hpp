@@ -17,13 +17,11 @@ namespace utopia
 {
 
     template<class Vector>
-    class QuasiNewton : public MatrixFreeNonLinearSolver<Vector>, public QuasiNewtonBase<Vector>
+    class QuasiNewton : public QuasiNewtonBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                               Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
         
-        typedef utopia::LSStrategy<Vector>                          LSStrategy;
-
         typedef utopia::HessianApproximation<Vector>                HessianApproximation;
         typedef utopia::MatrixFreeLinearSolver<Vector>              LinSolver;
         
@@ -32,9 +30,7 @@ namespace utopia
         QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
                     const std::shared_ptr <LinSolver> &linear_solver,
                     const Parameters params = Parameters()):
-                    MatrixFreeNonLinearSolver<Vector>(params),
-                    QuasiNewtonBase<Vector>(hessian_approx, linear_solver), 
-                    alpha_(1.0)
+                    QuasiNewtonBase<Vector>(hessian_approx, linear_solver)
         {
             set_parameters(params);
         }
@@ -47,6 +43,8 @@ namespace utopia
             
             Scalar g_norm, g0_norm, r_norm=1, s_norm=1;
             SizeType it = 0;
+
+            Scalar alpha = 1.0; 
             
             bool converged = false;
             
@@ -66,10 +64,10 @@ namespace utopia
             {
                 this->linear_solve(-1.0 * g, s); 
 
-                if(ls_strategy_) 
-                    ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
+                s = local_zeros(local_size(x)); 
+                alpha = this->get_alpha(fun, g, x, s); 
 
-                s *= alpha_; 
+                s *= alpha; 
                 x+=s; 
                 
                 y = g; 
@@ -86,7 +84,7 @@ namespace utopia
 
                 // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha_});
+                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha});
                 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
@@ -100,31 +98,10 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
-            alpha_ = params.alpha();
-            
+            QuasiNewtonBase<Vector>::set_parameters(params);            
         }
         
         
-        /**
-         * @brief      Sets strategy for computing step-size.
-         *
-         * @param[in]  strategy  The line-search strategy.
-         *
-         * @return
-         */
-        virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
-        {
-            ls_strategy_ = strategy;
-            ls_strategy_->set_parameters(this->parameters());
-            return true;
-        }
-        
-        
-        
-    protected:
-        Scalar alpha_;                                          /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
         
     };
     

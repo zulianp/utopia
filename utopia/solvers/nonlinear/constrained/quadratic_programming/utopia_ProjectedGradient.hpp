@@ -66,6 +66,7 @@ namespace utopia
 			const auto &upbo = this->get_upper_bound();
 			const auto &lobo = this->get_lower_bound();
 
+
 			x_old = x;
 			A.apply(x, u);
 			u = b - u;
@@ -97,7 +98,7 @@ namespace utopia
 
 				A.apply(x, u);
 				u = b - u;
-
+	
 				// u = b - A * x;
 
 				{
@@ -114,7 +115,7 @@ namespace utopia
 						}
 					}
 				}
-
+		
 				// UTOPIA_RECORD_VALUE("p <- min_max", p);
 
 				if(iteration % check_s_norm_each == 0) {
@@ -150,8 +151,7 @@ namespace utopia
 					break;
 
 				}
-			}
-
+			}		
 			// UTOPIA_RECORD_SCOPE_END("apply");
 			return converged;
 		}
