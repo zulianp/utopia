@@ -554,11 +554,15 @@ namespace utopia {
 		void normalize_rows()
 		{
 			UVector d = sum(*T, 1);
-			ReadAndWrite<UVector> rw_(d);
+			
 			auto r = range(d);
-			for(auto k = r.begin(); k != r.end(); ++k) {
-				if(approxeq(d.get(k), 0.0, 1e-14)) {
-					d.set(k, 1.);
+		
+			{
+				ReadAndWrite<UVector> rw_(d);
+				for(auto k = r.begin(); k != r.end(); ++k) {
+					if(approxeq(d.get(k), 0.0, 1e-14)) {
+						d.set(k, 1.);
+					}
 				}
 			}
 
