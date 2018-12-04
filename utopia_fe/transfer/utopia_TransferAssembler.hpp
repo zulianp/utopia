@@ -104,27 +104,6 @@ namespace utopia {
 			linear_solver->apply(B_from, to);
 		}
 
-		void fix_mass_matrix_operator(const double tol = 1e-16)
-		{
-			UVector d;
-
-			Size s = local_size(*D);
-			d = local_values(s.get(0), 1.);
-
-			{
-				Write<UVector> w_d(d);
-
-				each_read(*D, [&d, tol](const SizeType i, const SizeType, const double val) {
-					if(std::abs(val) > tol) {
-						d.set(i, 0.);
-					}
-
-				});
-			}
-
-			(*D) += USparseMatrix(diag(d));
-		}
-
 		///@brief assumes that D is symmetric
 		void apply_transpose(const UVector &from, UVector &to) const override
 		{
@@ -133,61 +112,42 @@ namespace utopia {
 			to = transpose(*B) * D_inv_from;
 		}
 
-		inline L2TransferOperator(
+		static std::unique_ptr<L2TransferOperator> Make(
 			const std::shared_ptr<USparseMatrix> &B,
 			const std::shared_ptr<USparseMatrix> &D,
-			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
-			)
-		: B(B), D(D), linear_solver(linear_solver)
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+			const double tol = 1e-16
+		)
 		{
-			assert(B);
-			assert(D);
-			assert(linear_solver);
-
-			linear_solver->update(D);
+			auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
+			ret->init();
+			return ret;
 		}
 
-		inline L2TransferOperator(
+		static std::unique_ptr<L2TransferOperator> make_fixed(
 			const std::shared_ptr<USparseMatrix> &B,
 			const std::shared_ptr<USparseMatrix> &D,
-			const bool restrict_mass_matrix_to_intersecting_dofs,
-			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
-			)
-		: B(B), D(D), linear_solver(linear_solver)
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+			const double tol = 1e-16
+		)
 		{
-			assert(B);
-			assert(D);
-			assert(linear_solver);
+			auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
+			ret->fix_mass_matrix_operator(tol);
+			ret->init();
+			return ret;
+		}
 
-			if(restrict_mass_matrix_to_intersecting_dofs) {
-				auto rr = row_range(*B);
-
-				const SizeType n_local = rr.extent();
-
-				std::vector<bool> exists(n_local, false);
-				std::vector<USparseMatrix::SizeType> indices;
-				indices.reserve(n_local);
-
-				utopia::Write<USparseMatrix> w_B(*B);
-				utopia::each_read(*B, [&](
-					const utopia::SizeType i,
-					const utopia::SizeType j,
-					const double value) {
-
-					auto idx = i - rr.begin();
-					exists[idx] = true;
-				});
-
-				for(SizeType i = 0; i < n_local; ++i) {
-					if(!exists[i]) {
-						indices.push_back(rr.begin() + i);
-					}
-				}
-
-				set_zero_rows(*D, indices, 1.);
-			} 
-
-			linear_solver->update(D);
+		static std::unique_ptr<L2TransferOperator> make_restricted(
+			const std::shared_ptr<USparseMatrix> &B,
+			const std::shared_ptr<USparseMatrix> &D,
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+			const double tol = 1e-16
+		)
+		{
+			auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
+			ret->restrict_mass_matrix(tol);
+			ret->init();
+			return ret;
 		}
 
 		inline void describe(std::ostream &os) const override
@@ -214,10 +174,103 @@ namespace utopia {
 			return utopia::write(path / "B.m", *B) && utopia::write(path / "D.m", *D);
 		}
 
-	private:
-		std::shared_ptr<USparseMatrix> B;
-		std::shared_ptr<USparseMatrix> D;
-		std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
+		inline L2TransferOperator(
+			const std::shared_ptr<USparseMatrix> &B,
+			const std::shared_ptr<USparseMatrix> &D,
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
+		)
+		: B(B), D(D), linear_solver(linear_solver)
+		{
+			assert(B);
+			assert(D);
+			assert(linear_solver);
+		}
+
+		inline void init()
+		{
+			linear_solver->update(D);
+		}
+
+		void restrict_mass_matrix_old(const double tol = 1e-16)
+		{
+			auto rr = row_range(*B);
+
+			const SizeType n_local = rr.extent();
+
+			std::vector<bool> exists(n_local, false);
+			std::vector<USparseMatrix::SizeType> indices;
+			indices.reserve(n_local);
+
+			utopia::each_read(*B, [&](
+				const utopia::SizeType i,
+				const utopia::SizeType j,
+				const double value) {
+				
+				if(std::abs(value) > tol) {
+					auto idx = i - rr.begin();
+					exists[idx] = true;
+				}
+			});
+
+			for(SizeType i = 0; i < n_local; ++i) {
+				if(!exists[i]) {
+					indices.push_back(rr.begin() + i);
+				}
+			}
+
+			set_zero_rows(*D, indices, 1.);
+		}
+
+		void restrict_mass_matrix(const double tol = 1e-16)
+		{
+			auto rr = row_range(*B);
+
+			const SizeType n_local = rr.extent();
+
+			std::vector<bool> exists(n_local, false);
+			std::vector<USparseMatrix::SizeType> indices;
+			indices.reserve(n_local);
+
+			UVector sum_D = sum(*D, 1);
+			UVector sum_B = sum(*B, 1);
+
+			Read<UVector> r_D(sum_D), r_B(sum_B);
+
+			for(auto i = rr.begin(); i < rr.end(); ++i) {
+				if(!approxeq(sum_D.get(i), sum_B.get(i), tol)) {
+					indices.push_back(rr.begin() + i);
+				}
+			}
+
+			set_zero_rows(*D, indices, 1.);
+		}
+
+		void fix_mass_matrix_operator(const double tol = 1e-16)
+		{
+			UVector d;
+
+			Size s = local_size(*D);
+			d = local_values(s.get(0), 1.);
+
+			{
+				Write<UVector> w_d(d);
+
+				each_read(*D, [&d, tol](const SizeType i, const SizeType, const double val) {
+					if(std::abs(val) > tol) {
+						d.set(i, 0.);
+					}
+
+				});
+			}
+
+			(*D) += USparseMatrix(diag(d));
+		}
+
+		private:
+			std::shared_ptr<USparseMatrix> B;
+			std::shared_ptr<USparseMatrix> D;
+			std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
+
 	};
 
 	class PseudoL2TransferOperator final : public TransferOperator {
@@ -254,7 +307,10 @@ namespace utopia {
 			*T = diag(1./d) * B;
 		}
 
-		inline void init_from_coupling_and_mass_operator(const USparseMatrix &B, const USparseMatrix &M)
+		inline void init_from_coupling_and_mass_operator(
+			const USparseMatrix &B,
+			const USparseMatrix &M
+			)
 		{
 			T = std::make_shared<USparseMatrix>();
 			UVector d = sum(M, 1);
@@ -431,9 +487,9 @@ namespace utopia {
 			for(auto i = r.begin(); i < r.end(); ++i) {
 				Scalar val = to.get(i);
 
-				if(val - tol_ < min_val) {
+				if(val + tol_ < min_val) {
 					to.set(i, 0.);
-				} else if(val + tol_ > max_val) {
+				} else if(val - tol_ > max_val) {
 					to.set(i, 0.);
 				} else {
 					to.set(i, val);
