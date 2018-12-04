@@ -7,7 +7,6 @@
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
 #include "utopia_TRSubproblem.hpp"
-#include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 
 #include "utopia_Linear.hpp"
@@ -35,8 +34,8 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
-        // pay attention that this one in inf norm... 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>     TRSubproblem; 
+        typedef utopia::QPSolver<Matrix, Vector>            TRSubproblem;
+        typedef std::shared_ptr<TRSubproblem>               TRSubproblemPtr; 
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -102,6 +101,30 @@ namespace utopia
         virtual BoxConstraints & get_box_constraints()
         {
           return box_constraints_; 
+        }
+
+
+        bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
+
+            _tr_subproblems[0] = strategy;
+
+            return true;
+        }
+
+        bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
+
+            // starting from level 1 .... 
+            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
+                _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
+
+
+            return true;
         }
 
 
@@ -374,21 +397,25 @@ namespace utopia
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
 
-            // setting should be really parameters from outside ... 
-            this->_tr_subproblems[level]->atol(1e-16); 
+            // // setting should be really parameters from outside ... 
+            // this->_tr_subproblems[level]->atol(1e-16); 
 
-            if(flg)
-                this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it()); 
-            else
-                this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
+            // if(flg)
+            //     this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it()); 
+            // else
+            //     this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
 
 
-            if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
-                    tr_subproblem->tr_constrained_solve(this->memory_.H[level], this->memory_.g[level], this->memory_.s[level], box);            
+            _tr_subproblems[level]->set_box_constraints(box); 
+            this->_tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->memory_.g[level], this->memory_.s[level]);
 
 
             return true; 
         }
+
+
+    private:
+        std::vector<TRSubproblemPtr>        _tr_subproblems; 
 
 
     protected:   

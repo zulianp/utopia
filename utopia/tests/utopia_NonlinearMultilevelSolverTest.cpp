@@ -69,12 +69,39 @@ namespace utopia
 			params.verbose(problem.verbose);
 
 	        auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
-	        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+	        auto qp_solver =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
+	        qp_solver->atol(1e-11); 
+
 
 	        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver);
 	        tr_solver.set_box_constraints(box);
 			tr_solver.set_parameters(params);
 			tr_solver.solve(fun, x);
+
+			DVectord x2 = values(problem.n_coarse, 1.0);
+			fun.apply_bc_to_initial_guess(x2);
+			auto qp_solver2 =  std::make_shared<utopia::SemismoothNewton<DSMatrixd, DVectord> >(lsolver); 
+			qp_solver2->atol(1e-11); 
+			tr_solver.set_trust_region_strategy(qp_solver2); 
+			tr_solver.solve(fun, x2);
+
+			DVectord x3 = values(problem.n_coarse, 1.0);
+			fun.apply_bc_to_initial_guess(x3);
+			auto qp_solver3 =  std::make_shared<utopia::ProjectedGradient<DSMatrixd, DVectord> >(); 
+			qp_solver3->atol(1e-11); 
+			tr_solver.set_trust_region_strategy(qp_solver3); 
+			tr_solver.solve(fun, x3);
+
+			DVectord x4 = values(problem.n_coarse, 1.0);
+			fun.apply_bc_to_initial_guess(x4);
+			auto qp_solver4 =  std::make_shared<utopia::ProjectedConjugateGradient<DSMatrixd, DVectord> >(); 
+			qp_solver4->atol(1e-11); 
+			tr_solver.set_trust_region_strategy(qp_solver4); 
+			tr_solver.solve(fun, x4);
+
+			utopia_test_assert(approxeq(x, x2));
+			utopia_test_assert(approxeq(x3, x4));
+
 	    }
 
 	    void newton_MG_test()
@@ -204,7 +231,6 @@ namespace utopia
 	        rmtr->set_eps_grad_termination(1e-7);
 
 			rmtr->verbose(problem.verbose);
-			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 	        rmtr->set_functions(level_functions);
 
@@ -232,10 +258,10 @@ namespace utopia
 
 
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
-        	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+        	auto tr_strategy_fine =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
         	tr_strategy_fine->pc_type("jacobi");
 
-        	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+        	auto tr_strategy_coarse =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
         	tr_strategy_coarse->pc_type("lu");
 
         	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(problem.n_levels);
@@ -289,11 +315,11 @@ namespace utopia
 		    // Utopia::instance().set("log_output_path", "benchmark.csv");
 
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
-        	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+        	auto tr_strategy_fine =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
         	tr_strategy_fine->pc_type("jacobi");
         	tr_strategy_fine->verbose(false);
 
-        	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+        	auto tr_strategy_coarse =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
         	tr_strategy_coarse->pc_type("lu");
         	// tr_strategy_coarse->verbose(true);
         	tr_strategy_coarse->verbose(false);

@@ -62,9 +62,9 @@ namespace utopia
 
             while(!converged)
             {
-                this->linear_solve(-1.0 * g, s); 
-
                 s = local_zeros(local_size(x)); 
+                this->linear_solve(-1.0 * g, s);
+                 
                 alpha = this->get_alpha(fun, g, x, s); 
 
                 s *= alpha; 

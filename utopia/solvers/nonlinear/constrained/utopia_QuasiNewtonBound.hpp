@@ -49,7 +49,6 @@ namespace utopia
             SizeType it = 0;
 
             Scalar alpha = 1.0; 
-            
             bool converged = false;
 
             this->make_iterate_feasible(x); 
@@ -64,17 +63,16 @@ namespace utopia
             it++; 
             
             this->initialize_approximation(); 
+            auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
 
             while(!converged)
             {
-                s = local_zeros(local_size(x)); 
-
                 if(QPSolver * qp_solver = dynamic_cast<QPSolver*>(this->linear_solver().get()))
                 {
                     auto box = this->build_correction_constraints(x);
                     qp_solver->set_box_constraints(box); 
-                    auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
-                    qp_solver->solve(*multiplication_action, -1.0*g, s);             
+                    s = 0*x; 
+                    qp_solver->solve(*multiplication_action, -1.0*g, s);      
                 }
                 else
                 {
@@ -83,8 +81,10 @@ namespace utopia
 
                 alpha = this->get_alpha(fun, g, x, s); 
                 s *= alpha; 
-                x+=s; 
-                
+
+                x = x + s; 
+                this->make_iterate_feasible(x); 
+
                 y = g; 
                 fun.gradient(x, g);
 

@@ -102,7 +102,7 @@ namespace utopia
 
         inline Scalar get_alpha(FunctionBase<Vector> &fun, const Vector &g, const Vector &x, const Vector &s)
         {
-            if(ls_strategy_) 
+            if(ls_strategy_)
                 ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
 
             return alpha_; 

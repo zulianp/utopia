@@ -11,7 +11,7 @@ namespace utopia
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
 	template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class SteihaugToint : public TRSubproblem<Matrix, Vector>, public MatrixFreeLinearSolver<Vector>
+    class SteihaugToint : public TRSubproblem<Matrix, Vector>, public MatrixFreeTRSubproblem<Vector>
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
 

@@ -1,32 +1,26 @@
 #ifndef TR_GENERALIZED_CAUCHY_POINT_SUBPROBLEM
 #define TR_GENERALIZED_CAUCHY_POINT_SUBPROBLEM
+
 #include <string>
-#include "utopia_TRSubproblem.hpp"
 #include "utopia_BoxConstraints.hpp"
+#include "utopia_QPSolver.hpp"
 
 namespace  utopia 
 {
 
-    template<class Matrix, class Vector>
-    class GeneralizedCauchyPoint : public TRBoxSubproblem<Matrix, Vector>, 
-                                   public MatrixFreeLinearSolver<Vector>
+    template<class Vector>
+    class GeneralizedCauchyPoint final: public MatrixFreeQPSolver<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
-        typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
-
-        using IterativeSolver<Matrix, Vector>::solve;
 
         public:
-            GeneralizedCauchyPoint(  const Parameters params = Parameters()):
-                                    TRBoxSubproblem(params), 
-                                    cp_memory_(5)
+            GeneralizedCauchyPoint(): cp_memory_(5)
             {
                 
             }
             
-            virtual ~GeneralizedCauchyPoint( ){}
+            ~GeneralizedCauchyPoint( ){}
 
             GeneralizedCauchyPoint * clone() const override
             {
@@ -44,22 +38,11 @@ namespace  utopia
                 return cp_memory_;
             }
 
-            virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
-            {   
-                auto H_ptr = utopia::op(make_ref(H));
-                return aux_solve(*H_ptr, g, s, constraints); 
-            };
 
-            virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
+            bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
-                return aux_solve(H, g, s, constraints); 
-            }
-
-            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
-            {
-                utopia_error("GeneralizedCauchyPoint: solve is missing implementation.... \n"); 
-                // no box constraints... 
-                // aux_solve(A, rhs, s); 
+                auto &box = this->get_box_constraints(); 
+                return aux_solve(A, -1.0 *rhs, sol, box); 
                 return false; 
             }
 
@@ -231,7 +214,7 @@ namespace  utopia
              
 
         private:  
-            SizeType cp_memory_; // memory size
+            SizeType cp_memory_;    // memory size
         
     };
 }

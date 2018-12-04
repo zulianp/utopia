@@ -6,11 +6,51 @@
 namespace  utopia
 {
 
+
+    template<class Vector>
+    class TRSubproblemBase
+    {
+        public:
+            typedef UTOPIA_SCALAR(Vector) Scalar;
+            typedef utopia::Preconditioner<Vector> Preconditioner;
+
+            virtual ~TRSubproblemBase( ){}
+
+            TRSubproblemBase()
+            {
+                std::cout<<"TRSubproblemBase::fix me ASAP.......\n"; 
+            }
+
+            virtual void current_radius(const Scalar &radius)
+            {
+                current_radius_ = radius;
+            }
+
+            virtual Scalar current_radius()
+            {
+                return current_radius_;
+            }
+
+
+            virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
+            {
+                precond_ = precond;
+            }
+
+        protected:
+            Scalar current_radius_;    
+            std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
+    }; 
+
+
+
+
+
     /**
      * @brief      Wrapper for TR subproblems
      */
     template<class Matrix, class Vector>
-    class TRSubproblem : public IterativeSolver<Matrix, Vector>
+    class TRSubproblem : public IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
@@ -33,7 +73,7 @@ namespace  utopia
             virtual void set_parameters(const Parameters params) override
             {
                 IterativeSolver::set_parameters(params);
-                current_radius(params.delta0());
+                this->current_radius(params.delta0());
             }
 
             virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls)
@@ -41,25 +81,6 @@ namespace  utopia
                 if(this->verbose())
                     std::cout<<"current TR strategy does not need linear solver \n";
             }
-
-            /**
-             * @brief      Setter for current radius.
-             *
-             * @param[in]  radius  The radius
-             */
-            virtual void current_radius(const Scalar &radius)
-            {
-                current_radius_ = radius;
-            };
-
-            /**
-             * @brief      Getter for current radius.
-             */
-            virtual Scalar current_radius()
-            {
-                return current_radius_;
-            };
-
 
             virtual TRSubproblem * clone() const override = 0;
 
@@ -117,26 +138,10 @@ namespace  utopia
         virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
         virtual bool preconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
-        virtual bool unpreconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
-        virtual bool preconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
-
-
-        virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const Scalar & tr_radius)
-        {
-            this->current_radius(tr_radius);
-
-            if(this->precond_) 
-            {
-                return preconditioned_solve(H, g, s);
-            } else {
-                return unpreconditioned_solve(H, g, s);
-            }
-            return true;
-        };
 
         virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const Scalar & tr_radius)
         {
-            current_radius(tr_radius);
+            this->current_radius(tr_radius);
             update(make_ref(H));
             apply(g, p_k);
             return true;
@@ -152,45 +157,67 @@ namespace  utopia
          */
          virtual bool apply(const Vector &b, Vector &x) override
          {
-            if(precond_) {
+            if(this->precond_) 
+            {
                 return preconditioned_solve(*this->get_operator(), b, x);
             } else {
                 return unpreconditioned_solve(*this->get_operator(), b, x);
             }
          }
 
-         /**
-          * @brief      Sets the preconditioner.
-          *
-          * @param[in]  precond  The preconditioner.
-          */
-         virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
-         {
-            precond_ = precond;
-         }
 
          /*! @brief if overriden the subclass has to also call this one first.
           */
          virtual void update(const std::shared_ptr<const Matrix> &op) override
          {
              IterativeSolver::update(op);
-             if(precond_) {
-                auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(precond_.get());
+             if(this->precond_) {
+                auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(this->precond_.get());
                 if(ls_ptr) {
                     ls_ptr->update(op);
                 }
              }
          }
 
+    };
 
 
-    protected:
-        std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
-        Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */
+    template<class Vector>
+    class MatrixFreeTRSubproblem : public MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
+    {
+        typedef UTOPIA_SCALAR(Vector) Scalar;
+
+        public:
+            MatrixFreeTRSubproblem(const Parameters params = Parameters())
+            {
+                std::cout<<"MatrixFreeTRSubproblem::fix me .......\n"; 
+            }
+
+            virtual ~MatrixFreeTRSubproblem( ){}
+
+            virtual MatrixFreeTRSubproblem * clone() const = 0;
+
+            virtual bool unpreconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
+            virtual bool preconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
 
+            virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const Scalar & tr_radius)
+            {
+                this->current_radius(tr_radius);
+
+                if(this->precond_) 
+                {
+                    return preconditioned_solve(H, g, s);
+                } else {
+                    return unpreconditioned_solve(H, g, s);
+                }
+                return true;
+            }            
 
     };
+
+
+
 }
 
 #endif //TR_SUBPROBLEM_L2NORM_HPP

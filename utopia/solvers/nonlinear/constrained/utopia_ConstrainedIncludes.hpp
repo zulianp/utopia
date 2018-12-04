@@ -14,6 +14,7 @@
 #include "utopia_GenericSemismoothNewton.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
 #include "utopia_ProjectedGradient.hpp"
+#include "utopia_ProjectedConjugateGradient.hpp"
 
 #endif //UTOPIA_CONSTRAINTED_HPP
 

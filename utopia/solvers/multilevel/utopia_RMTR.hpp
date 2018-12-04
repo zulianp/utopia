@@ -203,7 +203,7 @@ namespace utopia
         }
   
 
-        virtual bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
             if(_tr_subproblems.size() != this->n_levels())
                 _tr_subproblems.resize(this->n_levels()); 
@@ -213,7 +213,7 @@ namespace utopia
             return true;
         }
 
-        virtual bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
             if(_tr_subproblems.size() != this->n_levels())
                 _tr_subproblems.resize(this->n_levels()); 
@@ -1051,11 +1051,12 @@ namespace utopia
         }
 
 
-    protected:
-        SizeType                            _it_global;                 /** * global iterate counter  */
+
+    private: 
         std::vector<TRSubproblemPtr>        _tr_subproblems; 
 
-
+    protected:
+        SizeType                            _it_global;                 /** * global iterate counter  */
         // ----------------------- PARAMETERS ----------------------
         Parameters                      _parameters;
         bool                            _skip_BC_checks; 

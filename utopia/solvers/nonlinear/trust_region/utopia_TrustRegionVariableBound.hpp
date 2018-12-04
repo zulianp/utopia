@@ -2,45 +2,45 @@
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 
 #include "utopia_NewtonBase.hpp"
-#include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_Parameters.hpp"    
 #include "utopia_VariableBoundSolverInterface.hpp"
+#include "utopia_QPSolver.hpp"
 
  namespace utopia 
  {
     	template<class Matrix, class Vector>
-      /**
-       * @brief      Trust region solver taking into account also bound constraints.
-       */ 
-     	class TrustRegionVariableBound :  public VariableBoundSolverInterface<Vector>, 
-                                        public TrustRegionBase<Vector>, 
-                                        public NewtonBase<Matrix, Vector>
+     	class TrustRegionVariableBound final: public VariableBoundSolverInterface<Vector>, 
+                                            public TrustRegionBase<Vector>, 
+                                            public NewtonBase<Matrix, Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>       TRBoxSubproblem; 
+        typedef utopia::QPSolver<Matrix, Vector>      QPSolver;
+
         typedef utopia::TrustRegionBase<Vector>       TrustRegionBase; 
-        typedef utopia::NewtonBase<Matrix, Vector>       NonLinearSolver;
+        typedef utopia::NewtonBase<Matrix, Vector>    NewtonBase;
      	
-     	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
-      TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,
+     	public:                                                                       
+      TrustRegionVariableBound( const std::shared_ptr<QPSolver> &tr_subproblem,
                                 const Parameters params = Parameters()) : 
-                                NonLinearSolver(tr_subproblem, params)
+                                NewtonBase(tr_subproblem, params)
       {
         set_parameters(params);        
       }
 
-      using utopia::TrustRegionBase<Vector>::get_pred; 
+
+      using TrustRegionBase::get_pred; 
+
 
       /* @brief      Sets the parameters.
       *
       * @param[in]  params  The parameters
       */
-      virtual void set_parameters(const Parameters params) override
+      void set_parameters(const Parameters params) override
       {
 
-        NonLinearSolver::set_parameters(params);
+        NewtonBase::set_parameters(params);
         TrustRegionBase::set_parameters(params);
       }
 
@@ -107,11 +107,12 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
-          if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
+          if(QPSolver * tr_subproblem = dynamic_cast<QPSolver*>(this->linear_solver_.get()))
           {
             p_k = 0 * p_k; 
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
-            tr_subproblem->tr_constrained_solve(H, g, p_k, box);
+            tr_subproblem->set_box_constraints(box); 
+            tr_subproblem->solve(H, -1.0 * g, p_k);
           }
 
 
@@ -173,19 +174,9 @@
       }
 
 
-      virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls) override
+      void set_trust_region_strategy(const std::shared_ptr<QPSolver> &tr_linear_solver)
       {
-          auto linear_solver = this->linear_solver(); 
-          if (dynamic_cast<TRBoxSubproblem *>(linear_solver.get()) != nullptr)
-          {
-              TRBoxSubproblem * tr_sub = dynamic_cast<TRBoxSubproblem *>(linear_solver.get());
-              tr_sub->set_linear_solver(ls);
-          }
-      }
-
-      virtual void set_trust_region_strategy(const std::shared_ptr<TRBoxSubproblem> &tr_linear_solver)
-      {
-        NonLinearSolver::set_linear_solver(tr_linear_solver); 
+        NewtonBase::set_linear_solver(tr_linear_solver); 
       }
 
 

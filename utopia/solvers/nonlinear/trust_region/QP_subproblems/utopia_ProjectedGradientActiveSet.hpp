@@ -1,69 +1,49 @@
 #ifndef TR_PROJECTED_GRAD_ACTIVE_SET_SUBPROBLEM
 #define TR_PROJECTED_GRAD_ACTIVE_SET_SUBPROBLEM
 #include <string>
-#include "utopia_TRSubproblem.hpp"
 #include "utopia_BoxConstraints.hpp"
+#include "utopia_QPSolver.hpp"
 
 namespace  utopia 
 {
 
-    template<class Matrix, class Vector>
-    class ProjectedGradientActiveSet :  public TRBoxSubproblem<Matrix, Vector>, 
-                                        public MatrixFreeLinearSolver<Vector>
+    template<class Vector>
+    class ProjectedGradientActiveSet final:  public MatrixFreeQPSolver<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
-        typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
-        typedef utopia::LinearSolver<Matrix, Vector>            Solver;
-
-        using IterativeSolver<Matrix, Vector>::solve;
-
-
         public:
-            ProjectedGradientActiveSet( const Parameters params = Parameters()):
-                                        TRBoxSubproblem(params)
+            ProjectedGradientActiveSet(): verbose_(false)
             {
                 
             }
             
-            virtual ~ProjectedGradientActiveSet( ){}
 
             ProjectedGradientActiveSet * clone() const override
             {
                 return new ProjectedGradientActiveSet(*this);
             }
 
-            void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override
+            void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
             {
                 precond_ = precond;
             }
-
-
-            virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
-            {   
-                init(local_size(g).get(0)); 
-                auto H_ptr = utopia::op(make_ref(H));
-                return aux_solve(*H_ptr, g, s, constraints); 
-            };
-
-            virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
-            {
-                init(local_size(g).get(0));
-                return aux_solve(H, g, s, constraints); 
-            }
-
             
-            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override 
+            bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override 
             {
-                utopia_error("ProjectedGradientActiveSet missing solve implementation.... \n"); 
-                return false; 
+                auto &box = this->get_box_constraints(); 
+                init(local_size(rhs).get(0));
+                return aux_solve(A, -1.0*rhs, sol, box); 
             }
 
-
-            virtual void set_linear_solver(const std::shared_ptr<Solver> &linear_solver) override
+            bool verbose() const 
             {
-                linear_solver_ = linear_solver; 
+                return verbose_; 
+            }
+
+            void verbose(const bool flg)
+            {
+                verbose_ = flg; 
             }
 
         private:
@@ -72,10 +52,11 @@ namespace  utopia
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
 
-                if(this->verbose())
-                    this->init_solver("ProjectedGradientActiveSet", {" "});
+                // if(this->verbose())
+                //     this->init_solver("ProjectedGradientActiveSet", {" "});
 
-                cp_.tr_constrained_solve(H, g, s, constraints); 
+                cp_.set_box_constraints(constraints); 
+                cp_.solve(H, -1.0*g, s); 
 
                 Vector feasible_set; 
                 
@@ -96,21 +77,9 @@ namespace  utopia
                 else if(size(feasible_set).get(0)==feasible_variables) // all variables are feasible, use Newton's method to solve the system
                 {
                     Vector  local_corr = local_zeros(local_size(s).get(0)); 
-                    if(const MatrixOperator<Matrix, Vector> * H_matrix = dynamic_cast<const MatrixOperator<Matrix, Vector> *>(&H))
-                    {
-                        if(linear_solver_)
-                        {
-                            auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(); 
-                            linear_solver->solve(*(H_matrix->get_matrix()), -1.0 * grad_qp_fun, local_corr); 
-                        }
-                        else if(precond_)
-                            precond_->apply(-1.0 * grad_qp_fun, local_corr);                             
-                    }
-                    else
-                    {
-                        if(precond_)
-                            precond_->apply(-1.0 * grad_qp_fun, local_corr); 
-                    }
+
+                    if(precond_)
+                        precond_->apply(-1.0 * grad_qp_fun, local_corr); 
 
                     Vector lb_new = *lb - s; 
                     Vector ub_new = *ub - s; 
@@ -150,8 +119,8 @@ namespace  utopia
                 if(d_norm< 1e-15 || !std::isfinite(d_norm))
                     return; 
 
-                if(this->verbose())
-                    this->init_solver("Projected CG - inner solver", {"it", "alpha", "alpha_max", "betta", "|| r ||"});
+                // if(this->verbose())
+                //     this->init_solver("Projected CG - inner solver", {"it", "alpha", "alpha_max", "betta", "|| r ||"});
 
 
                 // TODO:: setup params from outside 
@@ -206,7 +175,6 @@ namespace  utopia
             {
                 // simple identity preconditioner - orthogonal to the nullspace of the equality constraints 
                 Pr = e_mul(r, feasible_set); 
-
                 // TODO:: extend to other possibilities...
             }
 
@@ -257,66 +225,67 @@ namespace  utopia
 
 
 
-        // to be rechecked tomorrow 
-        Scalar compute_alpha_max(const Vector & x, const Vector & lb, const Vector & ub, const Vector & d) const
-        {
-            Vector alpha_stars = local_values(local_size(x).get(0), 1.0);  
-
+            // to be rechecked tomorrow 
+            Scalar compute_alpha_max(const Vector & x, const Vector & lb, const Vector & ub, const Vector & d) const
             {
-                Read<Vector>  rd(d); 
-                Read<Vector>  ru(ub); 
-                Read<Vector>  rlb(lb); 
-                Read<Vector>  rs(x); 
+                Vector alpha_stars = local_values(local_size(x).get(0), 1.0);  
 
-                Write<Vector> wv(alpha_stars); 
+                {
+                    Read<Vector>  rd(d); 
+                    Read<Vector>  ru(ub); 
+                    Read<Vector>  rlb(lb); 
+                    Read<Vector>  rs(x); 
 
-                auto rr = range(alpha_stars); 
+                    Write<Vector> wv(alpha_stars); 
 
-                for (SizeType i = rr.begin(); i != rr.end(); ++i)
-                {                
-                    Scalar val = 0.0; 
-                    Scalar di = d.get(i);  Scalar xi = x.get(i); Scalar li = lb.get(i);  Scalar ui = ub.get(i); 
+                    auto rr = range(alpha_stars); 
 
-                    if(di!=0.0)
-                        val = (di>0) ? (ui - xi)/di : (li - xi)/di; 
+                    for (SizeType i = rr.begin(); i != rr.end(); ++i)
+                    {                
+                        Scalar val = 0.0; 
+                        Scalar di = d.get(i);  Scalar xi = x.get(i); Scalar li = lb.get(i);  Scalar ui = ub.get(i); 
 
-                    // checks for nans and infs, also alpha needs to be positive... 
-                    if(val < 1.0 && std::isfinite(val) && val > 0.0)
-                        alpha_stars.set(i, val); 
-                }     
+                        if(di!=0.0)
+                            val = (di>0) ? (ui - xi)/di : (li - xi)/di; 
+
+                        // checks for nans and infs, also alpha needs to be positive... 
+                        if(val < 1.0 && std::isfinite(val) && val > 0.0)
+                            alpha_stars.set(i, val); 
+                    }     
+                }
+
+                return min(alpha_stars); 
             }
 
-            return min(alpha_stars); 
-        }
+            void init(const SizeType &ls)
+            {
+                auto zero_expr = local_zeros(ls);
 
-        void init(const SizeType &ls)
-        {
-            auto zero_expr = local_zeros(ls);
+                //resets all buffers in case the size has changed
+                if(!empty(r)) {
+                    r = zero_expr;
+                }
 
-            //resets all buffers in case the size has changed
-            if(!empty(r)) {
-                r = zero_expr;
+                if(!empty(q)) {
+                    q = zero_expr;
+                }
+
+                if(!empty(d)) {
+                    d = zero_expr;
+                }
+
+                if(!empty(Hd)) {
+                    Hd = zero_expr;
+                }
             }
-
-            if(!empty(q)) {
-                q = zero_expr;
-            }
-
-            if(!empty(d)) {
-                d = zero_expr;
-            }
-
-            if(!empty(Hd)) {
-                Hd = zero_expr;
-            }
-        }
 
 
         private:  
-            GeneralizedCauchyPoint<Matrix, Vector> cp_; 
+            GeneralizedCauchyPoint<Vector> cp_; 
             std::shared_ptr<Preconditioner<Vector> > precond_;
-            std::shared_ptr<Solver> linear_solver_;    
             Vector r, q, d, Hd; 
+            bool verbose_; 
+            Chrono _time;                 /*!<Timing of solver. */
         
     };
 }

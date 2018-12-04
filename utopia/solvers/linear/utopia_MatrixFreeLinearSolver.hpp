@@ -49,8 +49,9 @@ namespace  utopia
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol)
             {
-                if(precond_)
+                if(precond_){
                     precond_->apply(rhs, sol); 
+                }
                 else{
                     utopia_warning("EmptyPrecondMatrixFreeLinearSolver: preconditioner is missing \n"); 
                 }

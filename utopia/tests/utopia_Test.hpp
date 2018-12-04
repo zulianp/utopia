@@ -47,6 +47,8 @@ namespace utopia
         runQuasiNewtonTest(); 
 
         runNonlinearMultilevelSolverTest();
+
+        
         run_qp_solver_test();
 
         //only works for serial

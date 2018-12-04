@@ -7,7 +7,6 @@
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
 #include "utopia_TRSubproblem.hpp"
-#include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 
 #include "utopia_Linear.hpp"
@@ -36,7 +35,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
         // pay attention that this one in inf norm... 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>     TRSubproblem; 
+        typedef utopia::MatrixFreeQPSolver<Vector>     TRSubproblem; 
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -443,8 +442,8 @@ namespace utopia
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H(); 
 
-            if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
-                    tr_subproblem->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], box);            
+            // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
+            //         tr_subproblem->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], box);            
 
 
             return true; 

@@ -29,6 +29,9 @@ namespace utopia
 			{
 				IterativeSolver<Matrix, Vector>::set_parameters(params);
 			}
+
+	        virtual QPSolver * clone() const override = 0; 
+
 	};
 
 
@@ -46,6 +49,9 @@ namespace utopia
 	        {
 
 	        }
+
+
+	        virtual MatrixFreeQPSolver * clone() const = 0; 
 
 	};
 

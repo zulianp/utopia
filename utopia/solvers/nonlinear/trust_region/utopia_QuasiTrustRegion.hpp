@@ -12,26 +12,21 @@
 
  namespace utopia
  {
-    	template<class Matrix, class Vector>
-      /**
-       * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
-       *             Design of class allows to provide different TR strategies in order to solve TR subproblem.
-       */
-     	class QuasiTrustRegion : public TrustRegion<Matrix, Vector>
+    	template<class Vector>
+     	class QuasiTrustRegion : public TrustRegionBase<Vector>, public QuasiNewtonBase<Vector> 
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
-        typedef utopia::HessianApproximation<Vector>    HessianApproximation;
-
-        using TrustRegionBase<Vector>::get_pred; 
+        typedef utopia::MatrixFreeTRSubproblem<Vector> TRSubproblem;
+        typedef utopia::HessianApproximation<Vector> HessianApproximation;
+        typedef utopia::QuasiNewtonBase<Vector>     NonLinearSolver;
 
      	public:
-      QuasiTrustRegion( const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >(),
+      QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx, 
+                        const std::shared_ptr<TRSubproblem> &tr_subproblem,
                         const Parameters params = Parameters()) : 
-                        TrustRegion<Matrix, Vector>(tr_subproblem, params), 
-                        _has_hessian_approx_strategy(false)
+                        NonLinearSolver(hessian_approx, tr_subproblem)
       {
         set_parameters(params);
       }
@@ -42,7 +37,8 @@
       */
       virtual void set_parameters(const Parameters params) override
       {
-        TrustRegion<Matrix, Vector>::set_parameters(params);
+        NonLinearSolver::set_parameters(params);
+        TrustRegionBase<Vector>::set_parameters(params);
       }
 
 
@@ -55,7 +51,7 @@
        *
        * @return     true
        */
-      bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override
+      bool solve(FunctionBase<Vector> &fun, Vector &x_k) override
       {
          using namespace utopia;
 
@@ -66,7 +62,7 @@
          Scalar delta, product, ared, pred, rho, E_taken, E_old, E_new;// alpha;
 
          SizeType it = 0;
-         it_successful_ = 0;
+         SizeType it_successful = 0;
          Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
 
          bool rad_flg = false;
@@ -77,7 +73,7 @@
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
-        hessian_approx_strategy_->initialize();
+        this->initialize_approximation(); 
             
         fun.gradient(x_k, g);
         g0_norm = norm2(g);
@@ -103,6 +99,7 @@
         #endif
 
         it++;
+        auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
 
         // solve starts here
         while(!converged)
@@ -111,9 +108,8 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
             tr_subproblem->tr_constrained_solve(*multiplication_action, g, p_k, delta);             
           }
 
@@ -121,7 +117,7 @@
 
           // scaling correction to fit into tr radius ... 
           s_norm = norm2(p_k);
-          pred = this->get_pred(g, p_k); 
+          pred = this->get_pred(g, *multiplication_action, p_k); 
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
@@ -153,7 +149,7 @@
           }
 
           if (rho >= this->rho_tol())
-            it_successful_++;
+            it_successful++;
 
           // good reduction, accept trial point 
           if (rho >= this->rho_tol())
@@ -177,7 +173,7 @@
             E_taken = E_old;
           }
 
-          hessian_approx_strategy_->update(p_k, y);
+          this->update(p_k, y);
 
     //----------------------------------------------------------------------------
     //    convergence check
@@ -206,40 +202,11 @@
       }
 
 
-      /**
-       * @brief      Sets strategy for computing step-size.
-       *
-       * @param[in]  strategy  The line-search strategy.
-       *
-       * @return
-       */
-      virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
-      {
-          hessian_approx_strategy_      = strategy;
-          _has_hessian_approx_strategy  = true;
-          return true;
-      }
-      
-      
-      virtual bool has_hessian_approx()
-      {
-          return _has_hessian_approx_strategy;
-      }
-        
+    virtual void set_trust_region_strategy(const std::shared_ptr<TRSubproblem> &tr_linear_solver)
+    {
+      NonLinearSolver::set_linear_solver(tr_linear_solver); 
+    }
 
-      virtual Scalar get_pred(const Vector & g, const Vector & p_k)
-      {
-        // compute tr ratio... 
-        Scalar l_term = dot(g, p_k);
-        Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
-        return  (- l_term - 0.5 * qp_term); 
-      }        
-        
-
-  private:
-    SizeType it_successful_; 
-    std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
-    bool _has_hessian_approx_strategy;
 
   };
 

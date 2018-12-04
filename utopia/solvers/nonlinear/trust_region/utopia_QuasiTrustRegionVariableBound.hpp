@@ -2,41 +2,35 @@
 #define UTOPIA_QUASI_TRUST_REGION_VARIABLE_CONSTRAINT_TR_HPP
 
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_Parameters.hpp"    
 #include "utopia_VariableBoundSolverInterface.hpp"
 
  namespace utopia 
  {
-    	template<class Matrix, class Vector>
+    	template<class Vector>
      	class QuasiTrustRegionVariableBound :   public VariableBoundSolverInterface<Vector>, 
                                               public TrustRegionBase<Vector>, 
-                                              public NewtonBase<Matrix, Vector>
+                                              public QuasiNewtonBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>   TRBoxSubproblem;  
-        typedef utopia::TrustRegionBase<Vector>           TrustRegionBase; 
-        typedef utopia::NewtonBase<Matrix, Vector>        NonLinearSolver;
+        typedef utopia::MatrixFreeQPSolver<Vector>  MatrixFreeQPSolver;  
+        typedef utopia::TrustRegionBase<Vector>     TrustRegionBase; 
+        typedef utopia::QuasiNewtonBase<Vector>     NonLinearSolver;
 
         typedef utopia::HessianApproximation<Vector>      HessianApproximation;
 
-
-     	
-     	public:                                                                      
+    public:                                                                      
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx, 
-                                    const std::shared_ptr<TRBoxSubproblem> &tr_subproblem, 
+                                    const std::shared_ptr<MatrixFreeQPSolver> &tr_subproblem, 
                                     const Parameters params = Parameters()) : 
-                                    NonLinearSolver(tr_subproblem, params), 
-                                    it_successful_(0),
-                                    hessian_approx_strategy_(hessian_approx) 
+                                    NonLinearSolver(hessian_approx, tr_subproblem), 
+                                    it_successful_(0)
 
       {
         set_parameters(params);        
       }
-
-      using utopia::TrustRegionBase<Vector>::get_pred; 
 
 
       /* @brief      Sets the parameters.
@@ -59,13 +53,9 @@
        *  
        * @return     true
        */
-      bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override 
+      bool solve(FunctionBase<Vector> &fun, Vector &x_k) override 
       {
         using namespace utopia;
-
-        if(!hessian_approx_strategy_){
-          utopia_error("You need to set hessian approx strategy before runing Quasi newton type of solver... \n"); 
-        }
 
         // passing solver and parameters into subproblem 
         bool converged = false; 
@@ -89,7 +79,7 @@
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
 
-        hessian_approx_strategy_->initialize();
+        this->initialize_approximation(); 
         
         g0_norm = norm2(g);
         g_norm = g0_norm;
@@ -107,6 +97,8 @@
         fun.gradient(x_k, g);
 
 
+        auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
+
         // solve starts here 
         while(!converged)
         {
@@ -114,17 +106,15 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
-          p_k = 0 * p_k; 
-          
-          if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
+          if(MatrixFreeQPSolver * tr_subproblem = dynamic_cast<MatrixFreeQPSolver*>(this->linear_solver().get()))
           {
-            auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta); 
-            auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
-            tr_subproblem->tr_constrained_solve(*multiplication_action, g, p_k, box);             
+            p_k = 0 * p_k; 
+            auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
+            tr_subproblem->set_box_constraints(box); 
+            tr_subproblem->solve(*multiplication_action, -1.0*g, p_k);      
           }
 
-          // compute tr ratio... 
-          pred = this->get_pred(g, p_k); 
+          pred = this->get_pred(g, *multiplication_action, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           // trial point 
@@ -172,8 +162,7 @@
             y = grad_trial - g;       
           }
 
-
-          hessian_approx_strategy_->update(p_k, y);
+          this->update(p_k, y);
     //----------------------------------------------------------------------------
     //    convergence check 
     //----------------------------------------------------------------------------          
@@ -196,48 +185,15 @@
       }
 
 
-      virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls) override
-      {
-          auto linear_solver = this->linear_solver(); 
-          if (dynamic_cast<TRBoxSubproblem *>(linear_solver.get()) != nullptr)
-          {
-              TRBoxSubproblem * tr_sub = dynamic_cast<TRBoxSubproblem *>(linear_solver.get());
-              tr_sub->set_linear_solver(ls);
-          }
-      }
+    virtual void set_trust_region_strategy(const std::shared_ptr<MatrixFreeQPSolver> &tr_linear_solver)
+    {
+      NonLinearSolver::set_linear_solver(tr_linear_solver); 
+    }
 
-      virtual void set_trust_region_strategy(const std::shared_ptr<TRBoxSubproblem> &tr_linear_solver)
-      {
-        NonLinearSolver::set_linear_solver(tr_linear_solver); 
-      }
-
-
-      /**
-       * @brief      Sets strategy for computing step-size.
-       *
-       * @param[in]  strategy  The line-search strategy.
-       *
-       * @return
-       */
-      virtual void set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
-      {
-          hessian_approx_strategy_      = strategy;
-      }
-      
-
-      virtual Scalar get_pred(const Vector & g, const Vector & p_k)
-      {
-        // compute tr ratio... 
-        Scalar l_term = dot(g, p_k);
-        Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
-        return  (- l_term - 0.5 * qp_term); 
-      }      
 
 
     private:
       SizeType it_successful_; 
-      std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
-
 
   };
 

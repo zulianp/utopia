@@ -24,13 +24,13 @@ namespace utopia {
         bool value(const Vector &x, Scalar &value) const override
         {
             value = 0.5 * dot(x, *H_ * x); 
-            value += dot(x,  *rhs_);
+            value -= dot(x,  *rhs_);
             return true;
         }
 
         bool gradient(const Vector &x, Vector &result) const override
         {
-            result = *H_ * x + (*rhs_);
+            result = *H_ * x - (*rhs_);
             return true;
         }
 

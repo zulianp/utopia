@@ -1,7 +1,6 @@
 #ifndef TR_BOX_BASED_ON_TAO_SUBPROBLEM
 #define TR_BOX_BASED_ON_TAO_SUBPROBLEM
 
-#include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Traits.hpp"
@@ -10,34 +9,34 @@
 #include <string>
 #include <memory>
 
-namespace utopia {
+namespace utopia 
+{
 
     template<class Matrix, class Vector>
-    class TaoTRSubproblem : public TRBoxSubproblem<Matrix, Vector>
+    class TaoQPSolver final: public QPSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
 
         public:
-            TaoTRSubproblem(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"),
-                            const Parameters params = Parameters()):
-                            TRBoxSubproblem(params), 
-                            pc_type_("jacobi")
+            TaoQPSolver(	const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"),
+                   	const Parameters params = Parameters()):
+                    pc_type_("jacobi")
             {
               
             }
 
-            TaoTRSubproblem * clone() const override
+            TaoQPSolver * clone() const override
             {
-                return new TaoTRSubproblem(*this);
+                return new TaoQPSolver(*this);
             }
             
-            virtual ~TaoTRSubproblem( ){}
 
-            virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const BoxConstraints<Vector> & box) override
+            bool solve(const Matrix &H, const Vector &g, Vector &p_k) override
             {
+            	auto &box = this->get_box_constraints();
+
                 // TODO:: if we store and re-initialize solver, there is a lot of memory leaks comming 
                 utopia::TaoSolver<Matrix, Vector> tao_solver_(linear_solver_); 
                 tao_solver_.set_box_constraints(box);
@@ -63,12 +62,12 @@ namespace utopia {
                 return true;
             }
 
-            virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
+            void set_linear_solver(const std::shared_ptr<LinearSolver > &ls)
             {
                 linear_solver_ = ls; 
             }    
 
-            virtual void pc_type(const std::string & pc_type)
+            void pc_type(const std::string & pc_type)
             {
                 pc_type_ = pc_type; 
             }
