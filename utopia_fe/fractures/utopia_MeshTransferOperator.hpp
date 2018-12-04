@@ -100,7 +100,6 @@ namespace utopia {
 		std::shared_ptr<libMesh::MeshBase> get_filtered_to_mesh();
 	};
 
-	using PourousMediaToFractureTransfer = MeshTransferOperator;
 }
 
 #endif //UTOPIA_MESH_TRANSFER_OPERATOR_HPP
