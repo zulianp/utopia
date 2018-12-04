@@ -162,20 +162,27 @@ namespace utopia {
 			if(restrict_mass_matrix_to_intersecting_dofs) {
 				auto rr = row_range(*B);
 
-				std::vector<bool> exists(rr.extent(), false);
+				const SizeType n_local = rr.extent();
+
+				std::vector<bool> exists(n_local, false);
 				std::vector<USparseMatrix::SizeType> indices;
-				indices.reserve(rr.extent());
+				indices.reserve(n_local);
 
 				utopia::Write<USparseMatrix> w_B(*B);
-				utopia::each_read(*B, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
-					auto idx = i - rr.begin();
-					bool before = exists[idx];
+				utopia::each_read(*B, [&](
+					const utopia::SizeType i,
+					const utopia::SizeType j,
+					const double value) {
 
-					if(!before) {
-						exists[idx] = true;
-						indices.push_back(i);
-					}
+					auto idx = i - rr.begin();
+					exists[idx] = true;
 				});
+
+				for(SizeType i = 0; i < n_local; ++i) {
+					if(!exists[i]) {
+						indices.push_back(rr.begin() + i);
+					}
+				}
 
 				set_zero_rows(*D, indices, 1.);
 			} 

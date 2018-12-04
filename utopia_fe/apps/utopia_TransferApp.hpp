@@ -29,17 +29,6 @@ namespace utopia {
 	private:
 		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 
-		std::shared_ptr<LocalAssembler> local_assembler_;
-		std::shared_ptr<Local2Global> local2global_;
-		bool is_interpolation_;
-
-		std::string type;
-
-		std::shared_ptr<TransferOperator> transfer_op_;
-		int biorth_basis;
-		int assemble_mass_mat_;
-
-
 #ifdef WITH_TINY_EXPR
 		std::shared_ptr<SymbolicFunction> fun;
 #else

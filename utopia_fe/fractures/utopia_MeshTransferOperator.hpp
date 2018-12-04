@@ -4,12 +4,14 @@
 #include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_Path.hpp"
+#include "utopia_Input.hpp"
 
 
 #include <memory>
+#include <functional>
 
 namespace utopia {
-	class MeshTransferOperator final : public TransferOperator {
+	class MeshTransferOperator final : public TransferOperator, public Configurable {
 	public:
 		using SparseMatrix  = utopia::USparseMatrix;
 		using Vector 		= utopia::UVector;
@@ -22,20 +24,16 @@ namespace utopia {
 			const std::shared_ptr<MeshBase> &to_mesh,
 			const std::shared_ptr<DofMap>   &to_dofs,
 			const TransferOptions &opts = TransferOptions()
-		) : 
-		from_mesh(from_mesh),
-		from_dofs(from_dofs),
-		to_mesh(to_mesh),
-		to_dofs(to_dofs),
-		opts(opts),
-		normalize_rows_(true),
-		tol_(1e-14),
-		bi_operator_mass_mat_outside_(true)
-		{}
+		);
+
+		~MeshTransferOperator();
+
+		void read(Input &is) override;
 
 		//@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION \}
 		bool initialize(const TransferOperatorType operator_type = utopia::INTERPOLATION);
 		bool initialize(const std::string operator_type);
+		bool assemble();
 
 		inline void apply(const Vector &from, Vector &to) const override
 		{
@@ -71,29 +69,35 @@ namespace utopia {
 			return std::dynamic_pointer_cast<AlgebraicOperator>(operator_);
 		}
 
-		void set_normalize_rows(const bool val)
-		{
-
-		}
-
-
-		void set_tol(const double val)
-		{
-			tol_ = val;
-		}
+		void set_tol(const double val);
 
 	private:
 		std::shared_ptr<MeshBase> from_mesh;
+		std::shared_ptr<MeshBase> filtered_from_mesh;
 		std::shared_ptr<DofMap>   from_dofs;
 		std::shared_ptr<MeshBase> to_mesh;
+		std::shared_ptr<MeshBase> filtered_to_mesh;
 		std::shared_ptr<DofMap>   to_dofs;
 		TransferOptions opts;
 
 		std::shared_ptr<TransferOperator> operator_;
-		bool normalize_rows_;
-		double tol_;
-		bool bi_operator_mass_mat_outside_;
 
+		class Params;
+		std::unique_ptr<Params> params_;
+
+		//strategies
+		bool set_up_l2_projection();
+		bool set_up_pseudo_l2_projection();
+		bool set_up_interpolation();
+		bool set_up_approx_l2_projection();
+		bool set_up_bidirectional_transfer();
+		bool set_up_bidirectional_pseudo_transfer();
+
+		std::map<TransferOperatorType, std::function<bool()>> assembly_strategies_;
+
+		/////////////
+		std::shared_ptr<libMesh::MeshBase> get_filtered_from_mesh();
+		std::shared_ptr<libMesh::MeshBase> get_filtered_to_mesh();
 	};
 
 	using PourousMediaToFractureTransfer = MeshTransferOperator;

@@ -11,9 +11,11 @@
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
+#include "utopia_MeshTransferOperator.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/boundary_mesh.h"
+
 
 namespace utopia {
 
@@ -46,6 +48,10 @@ namespace utopia {
 			return mesh_.mesh();
 		}
 
+		inline std::shared_ptr<libMesh::MeshBase> mesh_ptr()
+		{
+			return mesh_.mesh_ptr();
+		}
 
 		inline LibMeshFunctionSpace &space()
 		{
@@ -69,66 +75,23 @@ namespace utopia {
 		auto is_ptr = open_istream(conf_file_path);
 		InputSpace input_master(*comm_);
 		InputSpace input_slave(*comm_);
-		double tol = 1e-16;
-		bool use_clamping = false;
-		bool boundary_transfer = false;
+
+		std::shared_ptr<MeshTransferOperator> transfer_operator;
 
 		is_ptr->get("transfer", [&](Input &is) {
 			//get spaces
 			is.get("master", input_master);
 			is.get("slave",  input_slave);
+			
+			transfer_operator = std::make_shared<MeshTransferOperator>(
+				input_master.mesh_ptr(),
+				make_ref(input_master.space().dof_map()),
+				input_slave.mesh_ptr(),
+				make_ref(input_slave.space().dof_map())
+			);
 
-			//get operator props
-			std::string path;
-			type = "l2-projection"; //interpolation, approx-l2-projection
-			int order = 1;
-			std::string fe_family = "LAGRANGE";
-			write_operators_to_disk = false;
-			is_interpolation_ = false;
-			assemble_mass_mat_ = 0;
-			bool force_shell = false;
-
-			is.get("write-operators-to-disk", write_operators_to_disk);
-			is.get("type", type);
-			is.get("force-shell", force_shell);
-			is.get("assemble-mass-mat", assemble_mass_mat_);
-			is.get("tol", tol);
-			is.get("use-clamping", use_clamping);
-			is.get("boundary-transfer", boundary_transfer);
-
-			if(type == "l2-projection") {
-				biorth_basis = true;
-				is.get("biorth-basis", biorth_basis);
-				
-				local_assembler_ = std::make_shared<L2LocalAssembler>(
-					input_master.mesh().mesh_dimension(),
-					biorth_basis,
-					assemble_mass_mat_,
-					force_shell || input_master.mesh().mesh_dimension() < input_master.mesh().spatial_dimension()
-				);
-
-			} else if(type == "interpolation") {
-				local_assembler_ = std::make_shared<InterpolationLocalAssembler>(input_master.mesh().mesh_dimension());
-				is_interpolation_ = true;
-			} else if(type == "approx-l2-projection") {
-				int quad_order = -1;
-
-				is.get("quad-order-approx", quad_order);
-				std::cout << "quad_order: " << quad_order << std::endl;
-
-				auto apl2 = std::make_shared<ApproxL2LocalAssembler>(input_master.mesh().mesh_dimension());
-				apl2->set_quadrature_order(quad_order);
-				local_assembler_  = apl2;
-			}
-
-			if(!local_assembler_) {
-				assert(false);
-				std::cerr << "choose type of assembler" << std::endl;
-				return;
-			}
-
-			local2global_ = std::make_shared<Local2Global>(is_interpolation_);
-
+			transfer_operator->read(is);
+	
 #ifdef WITH_TINY_EXPR
 			std::string expr = "x";
 			is.get("function", expr);
@@ -155,104 +118,18 @@ namespace utopia {
 
 		c.stop();
 
-		if(mpi_world_rank() == 0) {
-			std::cout << "set-up time: " << c << std::endl;
-		}
-
-		TransferOptions opts;
-		opts.from_var_num = 0;
-		opts.to_var_num   = 0;
-		opts.n_var        = 1;
-		opts.tags         = {};
-
-		//////////////////////////////////////////////////////
-
-		c.start();
-
-		std::vector<std::shared_ptr<USparseMatrix>> mats;
-		TransferAssembler transfer_assembler(local_assembler_, local2global_);
-
-		bool ok = false;
-
-		if(boundary_transfer) {
-			libMesh::BoundaryMesh b_mesh_master(*comm_, input_master.mesh().mesh_dimension()-1);
-			input_master.mesh().boundary_info->sync(b_mesh_master);
-
-			libMesh::BoundaryMesh b_mesh_slave(*comm_, input_slave.mesh().mesh_dimension()-1);
-			input_slave.mesh().boundary_info->sync(b_mesh_slave);
-
-			ok = transfer_assembler.assemble(
-				make_ref(b_mesh_master),
-				make_ref(input_master.space().dof_map()),
-				make_ref(b_mesh_slave),
-				make_ref(input_slave.space().dof_map()),
-				mats,
-				opts
-			);
-
-		} else {
-			ok = transfer_assembler.assemble(
-				make_ref(input_master.mesh()),
-				make_ref(input_master.space().dof_map()),
-				make_ref(input_slave.mesh()),
-				make_ref(input_slave.space().dof_map()),
-				mats,
-				opts
-			);
-		}
-
-		if(!ok) {
-			std::cerr << "[Error] transfer failed" << std::endl;
+		if(!transfer_operator) {
+			std::cout << "[Error] unable to read setting file" << std::endl;
 			return;
 		}
 
-		c.stop();
+		bool ok = transfer_operator->assemble();
 
-		if(mpi_world_rank() == 0) {
-			std::cout << "assembly time: " << c << std::endl;
+		if(!ok) {
+			std::cerr << "[Error] unable to assemble operator" << std::endl;
+			assert(false);
+			exit(-1);
 		}
-
-		int op_num = 0;
-		for(auto mat_ptr : mats) {
-			double sum_m = sum(*mat_ptr);
-			if(mpi_world_rank() == 0) {
-				std::cout << "rows x cols = " << size(*mat_ptr).get(0) << " x " << size(*mat_ptr).get(1) << std::endl;
-				std::cout << "sum(M): " << sum_m << std::endl;
-			}
-
-			if(write_operators_to_disk) {
-				write("M" + std::to_string(op_num) + ".m", *mat_ptr);
-			}
-
-			++op_num;
-		}
-
-		if(type == "l2-projection" || type == "approx-l2-projection") {
-			if(biorth_basis && type != "approx-l2-projection") {
-				auto pl2 = std::make_shared<PseudoL2TransferOperator>();
-				pl2->init_from_coupling_operator(*mats[0]);
-				transfer_op_ = pl2;
-			} else {
-				if(mats.size() == 2) {
-					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-					l2op->fix_mass_matrix_operator(tol);
-					transfer_op_ = l2op;
-				} else {
-					auto u = trial(input_slave.space());
-					auto v = test(input_slave.space());
-
-					auto D = std::make_shared<USparseMatrix>();
-
-					assemble(inner(u, v) * dX, *D);
-					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<USparseMatrix, UVector>>());
-				}
-			}
-
-		} else if(type == "interpolation") {
-			transfer_op_ = std::make_shared<Interpolator>(mats[0]);
-		}
-
-		////////////////////////////////////////////////////////////
 
 		auto u = trial(input_master.space());
 		auto v = test(input_master.space());
@@ -263,10 +140,6 @@ namespace utopia {
 
 		USparseMatrix mass_mat_master;
 		assemble(inner(u, v) * dX, mass_mat_master);
-
-		if(write_operators_to_disk) {
-			write("M_m.m", mass_mat_master);
-		}
 
 		if(!fun_is_constant) {
 			assemble(inner(*fun, v) * dX, fun_master_h);
@@ -290,20 +163,11 @@ namespace utopia {
 			std::cout << c << std::endl;
 		}
 
-		if(use_clamping) {
-			// transfer_op_ = std::make_shared<ClampedOperator>(transfer_op_);
-			transfer_op_ = std::make_shared<ForceZeroExtension>(transfer_op_, tol);
-		}
-
-		transfer_op_->apply(fun_master, fun_slave);
-		transfer_op_->apply_transpose(fun_slave, back_fun_master);
+		transfer_operator->apply(fun_master, fun_slave);
+		transfer_operator->apply_transpose(fun_slave, back_fun_master);
 
 		double sum_fun_master = sum(fun_master);
 		double sum_fun_slave  = sum(fun_slave);
-
-		transfer_op_->describe(std::cout);
-		std::cout << "f_m = " << sum_fun_master << ", f_s = " << sum_fun_slave << std::endl;
-		std::cout << "sum(M_m) = " << double(sum(mass_mat_master)) << std::endl;
 
 		////////////////////////////////////////////////////////////
 		//output

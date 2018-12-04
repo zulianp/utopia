@@ -12,6 +12,7 @@ namespace utopia {
     public:
         static void Init(int argc, char *argv[]);
         static int Finalize();
+        static void Abort();
 
         inline std::string get(const std::string &key) const
         {
