@@ -126,9 +126,8 @@ namespace utopia
             else
                 this->_tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
 
-
-            auto multiplication_action = FunctionOperator<Vector>(hessian_approxs_[level]->get_apply_H()); 
-            this->_tr_subproblems[level]->tr_constrained_solve(multiplication_action, this->memory_.g[level], this->memory_.s[level], this->memory_.delta[level]);            
+            auto multiplication_action = hessian_approxs_[level]->build_apply_H(); 
+            this->_tr_subproblems[level]->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], this->memory_.delta[level]);            
 
             return true;
         }

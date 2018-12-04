@@ -2,6 +2,7 @@
 #define UTOPIA_HESSIAN_APPROXIMATIONS_HPP
 
 #include "utopia_Core.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
 
 
 namespace utopia
@@ -76,62 +77,79 @@ public:
         return dot(u, help); 
     }
 
-    std::function< void(const Vector &, Vector &) >  get_apply_Hinv()
+
+    std::shared_ptr< FunctionOperator<Vector> > build_apply_Hinv()
     {
         std::function< void(const Vector &, Vector &) > my_func = 
         [this](const Vector &x, Vector & result)
-            {
-                this->apply_Hinv(x, result); 
-            }; 
+        {
+            this->apply_Hinv(x, result); 
+        }; 
 
-        return my_func; 
-    }
-    
-    std::function< Scalar(const Vector &, const Vector &) >  get_compute_uHinvv_dot()
-    {
-        std::function< Scalar(const Vector &, const Vector &) > my_func = 
-        [this](const Vector &x, const Vector & result)
-            {
-                return this->compute_uHinvv_dot(x, result); 
-            }; 
-
-        return my_func; 
+        return std::make_shared<FunctionOperator<Vector> >(my_func); 
     }
 
 
-    std::function< void(const Vector &, Vector &) >  get_apply_H()
+
+    std::shared_ptr< FunctionPreconditioner<Vector> > build_Hinv_precond()
     {
         std::function< void(const Vector &, Vector &) > my_func = 
         [this](const Vector &x, Vector & result)
-            {
-                this->apply_H(x, result); 
-            }; 
+        {
+            this->apply_Hinv(x, result); 
+        }; 
 
-        return my_func; 
+        return std::make_shared<FunctionPreconditioner<Vector> >(my_func); 
     }
 
-    std::function< Scalar(const Vector &, const Vector &) >  get_compute_uHv_dot()
+
+    std::shared_ptr< FunctionOperator<Vector> > build_compute_uHinvv_dot()
     {
         std::function< Scalar(const Vector &, const Vector &) > my_func = 
         [this](const Vector &x, const Vector & result)
-            {
-                return this->compute_uHv_dot(x, result); 
-            }; 
+        {
+            return this->compute_uHinvv_dot(x, result); 
+        }; 
 
-        return my_func; 
+        return std::make_shared<FunctionOperator<Vector> >(my_func); 
     }
 
 
-    std::function< Scalar(const Vector &) >  get_compute_uHu_dot()
+    std::shared_ptr< FunctionOperator<Vector> > build_apply_H()
+    {
+        std::function< void(const Vector &, Vector &) > my_func = 
+        [this](const Vector &x, Vector & result)
+        {
+            this->apply_H(x, result); 
+        }; 
+
+        return std::make_shared<FunctionOperator<Vector> >(my_func); 
+    }
+
+
+    std::shared_ptr< FunctionOperator<Vector> > build_compute_uHv_dot()
+    {
+        std::function< Scalar(const Vector &, const Vector &) > my_func = 
+        [this](const Vector &x, const Vector & result)
+        {
+            return this->compute_uHv_dot(x, result); 
+        }; 
+
+        return std::make_shared<FunctionOperator<Vector> >(my_func); 
+    }
+
+
+
+    std::shared_ptr< FunctionOperator<Vector> > build_compute_uHu_dot()
     {
         std::function< Scalar(const Vector &) > my_func = 
         [this](const Vector &x)
-            {
-                return this->compute_uHu_dot(x); 
-            }; 
+        {
+            return this->compute_uHu_dot(x); 
+        }; 
 
-        return my_func; 
-    }    
+        return std::make_shared<FunctionOperator<Vector> >(my_func); 
+    }
 
 
 private:

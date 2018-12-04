@@ -113,8 +113,8 @@
     //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
           {
-            auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
-            tr_subproblem->tr_constrained_solve(multiplication_action, g, p_k, delta);             
+            auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
+            tr_subproblem->tr_constrained_solve(*multiplication_action, g, p_k, delta);             
           }
 
           x_trial = x_k + p_k; 

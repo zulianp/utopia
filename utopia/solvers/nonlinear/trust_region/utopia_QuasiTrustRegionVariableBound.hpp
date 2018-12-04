@@ -119,8 +119,8 @@
           if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
           {
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta); 
-            auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
-            tr_subproblem->tr_constrained_solve(multiplication_action, g, p_k, box);             
+            auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
+            tr_subproblem->tr_constrained_solve(*multiplication_action, g, p_k, box);             
           }
 
           // compute tr ratio... 

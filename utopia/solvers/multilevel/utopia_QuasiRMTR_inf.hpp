@@ -441,11 +441,10 @@ namespace utopia
                 this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
 
 
-
-            auto multiplication_action = FunctionOperator<Vector>(hessian_approxs_[level]->get_apply_H()); 
+            auto multiplication_action = hessian_approxs_[level]->build_apply_H(); 
 
             if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
-                    tr_subproblem->tr_constrained_solve(multiplication_action, this->memory_.g[level], this->memory_.s[level], box);            
+                    tr_subproblem->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], box);            
 
 
             return true; 

@@ -68,8 +68,8 @@ namespace utopia
     protected:         
         inline bool linear_solve(const Vector &rhs, Vector &sol)
         {
-            auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
-            return mf_linear_solver_->solve(multiplication_action, rhs, sol);             
+            auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
+            return mf_linear_solver_->solve(*multiplication_action, rhs, sol);             
         }
 
     private:

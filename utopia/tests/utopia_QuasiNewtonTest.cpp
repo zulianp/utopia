@@ -9,26 +9,23 @@ namespace utopia
 	template<class Matrix, class Vector, class ApproxType>
 	class QuasiNewtonTest 
 	{
-		static void print_backend_info()
-		{
-			if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
-				std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
-			}
-		}
-
 
 		public:
+			static void print_backend_info()
+			{
+				if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+					std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+				}
+			}
 		
 			void run_dense()
 			{	
-				print_backend_info();
 				UTOPIA_RUN_TEST(quasi_newton_test);
 				UTOPIA_RUN_TEST(Quasi_TR_test); 
 			}
 
 			void run_sparse()
 			{
-				print_backend_info();
 				UTOPIA_RUN_TEST(Quasi_TR_test_sparse); 
 				UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
 				UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
@@ -42,7 +39,6 @@ namespace utopia
 
 			void run_multilevel()
 			{
-				print_backend_info();
 				UTOPIA_RUN_TEST(Quasi_RMTR_test); 
 				UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test); 
 			}	
@@ -59,9 +55,10 @@ namespace utopia
 				params.verbose(_verbose);
 				
 				auto hessian_approx   = std::make_shared<ApproxType >();
-
 				auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
-				lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hessian_approx->get_apply_Hinv())); 
+
+				auto precond = hessian_approx->build_Hinv_precond(); 
+		        lsolver->set_preconditioner(precond); 
 
 				QuasiNewton<Vector> nlsolver(hessian_approx, lsolver);
 				nlsolver.set_parameters(params);
@@ -163,7 +160,10 @@ namespace utopia
 				
 	    		auto hess_approx   = std::make_shared<ApproxType >(memory_size);				
 	    		auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
-	    		lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx->get_apply_Hinv())); 
+	    		
+	    		auto precond = hess_approx->build_Hinv_precond(); 
+		        lsolver->set_preconditioner(precond); 
+
 
 				QuasiNewton<Vector> nlsolver(hess_approx, lsolver);
 				nlsolver.set_parameters(params);
@@ -295,7 +295,9 @@ namespace utopia
 
 				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
 		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
-		        qp_solver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx->get_apply_Hinv())); 
+
+				auto precond = hess_approx->build_Hinv_precond(); 
+		        qp_solver->set_preconditioner(precond); 
 
 		        QuasiTrustRegionVariableBound<Matrix, Vector>  tr_solver(hess_approx, qp_solver);
 		        tr_solver.set_box_constraints(box);
@@ -375,9 +377,11 @@ namespace utopia
 		    	for(auto l=0; l < problem.n_levels; l++)
 		    	{
 		    		auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		    		tr_strategy->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approxs[l]->get_apply_Hinv()));	        
-		    		subproblems[l] = tr_strategy; 
 
+		    		auto precond = hess_approxs[l]->build_Hinv_precond(); 
+		        	tr_strategy->set_preconditioner(precond); 
+
+		    		subproblems[l] = tr_strategy; 
 			    }			 
 
 		        rmtr->set_tr_strategies(subproblems); 			     
@@ -444,7 +448,9 @@ namespace utopia
 	    	for(auto l=0; l < problem.n_levels; l++)
 	    	{
 	    		auto tr_strategy = std::make_shared<utopia::ProjectedGradientActiveSet<Matrix, Vector> >();
-	    		tr_strategy->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approxs[l]->get_apply_Hinv()));	        
+	    		auto precond = hess_approxs[l]->build_Hinv_precond(); 
+	        	tr_strategy->set_preconditioner(precond); 
+
 	    		subproblems[l] = tr_strategy; 
 		    }	
 
@@ -477,7 +483,7 @@ namespace utopia
 
 
 		QuasiNewtonTest()
-		: _n(10), _verbose(false) { }
+		: _n(10), _verbose(true) { }
 		
 	private:
 		int _n;
@@ -490,20 +496,23 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
-			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
+			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().print_backend_info();
+			// QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
 			
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
-			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
+			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
 
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
-			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
+			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
 		#endif
 
-		#ifdef WITH_BLAS
-				QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().run_dense();
-		#endif //WITH_BLAS
+		// #ifdef WITH_BLAS
+				// QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().print_backend_info();
+		// 		QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().run_dense();
+		// #endif //WITH_BLAS
 
 		// #ifdef WITH_TRILINOS
+				// QuasiNewtonTest<TSMatrixd, TVectord>().print_backend_info();
 		// 		QuasiNewtonTest<TSMatrixd, TVectord>().run_sparse();
 		// #endif //WITH_TRILINOS				
 
