@@ -27,6 +27,7 @@ namespace utopia {
 		force_zero_extension(false),
 		from_boundary(false),
 		to_boundary(false),
+		nnz_x_row(0),
 		output_path("./")
 		{}
 
@@ -42,7 +43,8 @@ namespace utopia {
 			is.get("force-zero-extension", force_zero_extension);
 			is.get("from-boundary", from_boundary);
 			is.get("to-boundary",   to_boundary);
-			is.get("output-path", output_path);
+			is.get("nnz-x-row", nnz_x_row);
+			is.get("output-path", output_path);	
 		}
 
 		bool normalize_rows;
@@ -56,6 +58,7 @@ namespace utopia {
 		bool force_zero_extension;
 		bool from_boundary;
 		bool to_boundary;
+		long nnz_x_row;
 		std::string output_path;
 	};
 
@@ -123,26 +126,39 @@ namespace utopia {
 		params_->read(is);
 	}
 
-	inline static void assemble_mass_matrix(
+	void MeshTransferOperator::assemble_mass_matrix(
 		const libMesh::MeshBase &mesh,
 		const libMesh::DofMap &dof_map, 
 		const int var,
 		const int n_tensor,
 		USparseMatrix &mat
-		)
+		) const
 	{	
+		Chrono c;
+		c.start();
+
 		auto dim = mesh.mesh_dimension();
 		auto fe_type = dof_map.variable_type(var);
 		std::vector<libMesh::dof_id_type> indices;
 
 		SizeType nnz_x_row = 0;
 
-		if(!dof_map.get_n_nz().empty()) {
+		if(params_->nnz_x_row <= 0 &&
+			!dof_map.get_n_nz().empty()) {
 			nnz_x_row = 
-			*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) + 
-			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+			*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end());
+
+			if(!dof_map.get_n_oz().empty()) {
+				nnz_x_row += *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+			}
+		} else {
+			m_utopia_warning_once("MeshTransferOperator::assemble_mass_matrix(...) using user nnz_x_row");
+			nnz_x_row = params_->nnz_x_row;
 		}
 
+		// std::cout << "nnz_x_row " << nnz_x_row << std::endl;
+
+		assert(nnz_x_row != 0 && "super innefficient");
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 
 		{
@@ -167,7 +183,7 @@ namespace utopia {
 					n_shape_functions * n_tensor,
 					n_shape_functions * n_tensor
 				);
-				
+
 				el_mat.zero();
 
 				for(unsigned int i = 0; i < n_shape_functions; i++) {
@@ -185,6 +201,9 @@ namespace utopia {
 				add_matrix(el_mat, indices, indices, mat);
 			}
 		}
+
+		c.stop();
+		std::cout << "assemble_mass_matrix (time)\n" << c << std::endl;
 	}
 
 	bool MeshTransferOperator::set_up_l2_projection()
