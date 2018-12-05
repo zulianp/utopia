@@ -118,7 +118,7 @@ namespace utopia {
 #ifdef WITH_MPI
         MPI_Abort(MPI_COMM_WORLD, error_code);
 #else
-        exit(error_code)
+        exit(error_code);
 #endif
     }
 }
