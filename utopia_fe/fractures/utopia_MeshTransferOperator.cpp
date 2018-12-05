@@ -359,7 +359,22 @@ namespace utopia {
 
 			forward->init();
 			backward->init();
-			operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+
+			if(params_->normalize) {
+				operator_ = std::make_shared<BidirectionalOperator>(
+					std::make_shared<NormalizedOperator>(
+						local_size(*forward),
+						forward
+					),
+					std::make_shared<NormalizedOperator>(
+						local_size(*backward),
+						backward
+					)
+				);
+			} else {
+				operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+			}
+
 		} else {
 			auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
 			forward->fix_mass_matrix_operator(params_->tol);
@@ -468,8 +483,8 @@ namespace utopia {
 		if(params_->normalize && !is_bidirectional(operator_type)) {
 			operator_ = std::make_shared<NormalizedOperator>(
 				Size({
-					from_dofs->n_local_dofs(),
-					to_dofs->n_local_dofs()
+						to_dofs->n_local_dofs(),
+						from_dofs->n_local_dofs()
 					}),
 				operator_
 			);

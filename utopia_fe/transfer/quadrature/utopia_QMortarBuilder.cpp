@@ -314,8 +314,8 @@ namespace utopia {
 			transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 			transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 
-			// auto master_volume = Intersector::polygon_area_2(trial_pts.m(), &trial_pts.get_values()[0]);
-			// rescale_weights(slave_volume/trial_volume, q_trial);
+			auto trial_volume = Intersector::polygon_area_2(trial_pts.m(), &trial_pts.get_values()[0]);
+			rescale_weights(slave_volume/trial_volume, q_trial);
 			return true;
 		} else {
 			return false;

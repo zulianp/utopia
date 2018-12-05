@@ -266,6 +266,11 @@ namespace utopia {
 			(*D) += USparseMatrix(diag(d));
 		}
 
+		friend Size local_size(const L2TransferOperator &op)
+		{
+			return local_size(*op.B);
+		}
+
 		private:
 			std::shared_ptr<USparseMatrix> B;
 			std::shared_ptr<USparseMatrix> D;
@@ -424,7 +429,7 @@ namespace utopia {
 			)
 		: op_(op)
 		{
-			UVector ones = local_values(op_local_size.get(0), 1.);
+			UVector ones = local_values(op_local_size.get(1), 1.);
 			op->apply(ones, rescale_);
 			inv_rescale_ = 1./rescale_;
 			temp_ = utopia::make_unique<UVector>();
@@ -440,6 +445,12 @@ namespace utopia {
 		{
 			*temp_ = e_mul(rescale_, from);
 			op_->apply_transpose(*temp_, to);
+		}
+
+		inline void describe(std::ostream &os) const 
+		{
+			os << "non normalized: \n";
+			op_->describe(os);
 		}
 
 	private:

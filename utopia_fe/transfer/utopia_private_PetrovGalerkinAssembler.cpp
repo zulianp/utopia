@@ -245,9 +245,9 @@ namespace utopia {
 
 	void PetrovGalerkinAssembler::print_stats()
 	{
-        auto l2_assembler = std::dynamic_pointer_cast<L2LocalAssembler>(assembler_);
-        if(l2_assembler) {
-            double total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
+        auto qb_assembler = std::dynamic_pointer_cast<QuadratureBasedAssembler>(assembler_);
+        if(qb_assembler) {
+            double total_intersection_volume = qb_assembler->get_q_builder().get_total_intersection_volume();
             double volumes[2] = { local_element_matrices_sum_[0], total_intersection_volume };
             long isect_stats[2] = { n_intersections_, n_false_positives_};
             comm_.all_reduce(volumes, 2, moonolith::MPISum());
