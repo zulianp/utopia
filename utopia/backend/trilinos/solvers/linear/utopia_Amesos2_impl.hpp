@@ -89,19 +89,16 @@ namespace utopia {
         typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
         typedef Tpetra::Operator<SC, LO, GO, NT> OP;
         
-        // typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
-        
         typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
         
-        //typedef Amesos2::LinearProblem<SC, MV, OP> problem_type;
         typedef Amesos2::Solver<matrix_type, multi_vector_type> solver_type;
 
         // Members
-        //Teuchos::RCP<problem_type> linear_problem;
         Teuchos::RCP<Teuchos::ParameterList> amesos_list_;
-        Teuchos::RCP<Teuchos::ParameterList> utopia_list_;// impl_->param_list_->sublist("UTOPIA", true);
+        Teuchos::RCP<Teuchos::ParameterList> utopia_list_;
 
         Teuchos::RCP<solver_type> solver_;
+        Teuchos::RCP<matrix_type> matrix_;
     };
     
     /**
@@ -143,32 +140,20 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
-        assert(!impl_->solver_.is_null());
-        //TODO: move to param class
-        Teuchos::setStringToIntegralParameter<Amesos2::EPhase>("Direct Sol. Phase to use", "CLEAN",
-                                               "Update options for Matrix A",
-                                               Teuchos::tuple<std::string>("CLEAN","PREORDERING","SYMBFACT","NUMFACT","SOLVE"),
-                                               Teuchos::tuple<std::string>("Start from scratch",
-                                                             "Keep Preordering",
-                                                             "Keep Symbolic Factorization",
-                                                             "Keep Numeric Factorization",
-                                                             "Keep Solution"),
-                                               Teuchos::tuple<Amesos2::EPhase>(Amesos2::CLEAN,
-                                                                   Amesos2::PREORDERING,
-                                                                   Amesos2::SYMBFACT,
-                                                                   Amesos2::NUMFACT,
-                                                                   Amesos2::SOLVE),
-                                               impl_->utopia_list_.getRawPtr());
+        if (!impl_->solver_.is_null())
+        {
+            Amesos2::EPhase direct_sol_phase = Amesos2::CLEAN; //TODO Teuchos::getIntegralValue<Amesos2::EPhase>(*(impl_->utopia_list_),"Direct Sol. Phase to use");
 
-        Amesos2::EPhase direct_sol_phase = impl_->utopia_list_->get("Direct Sol. Phase to use", Amesos2::CLEAN);
-
-        impl_->solver_->setA(op->implementation().implementation_ptr(),direct_sol_phase);  // possible options are CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE
-                                                     // with SYMBFACT you keep the symbolic factorization
-        preordering();
-        sym_factorization();
-        num_factorization();
-        //PreconditionedSolver::update(op);//TODO
-        // set_problem(*op);
+            impl_->solver_->setA(op->implementation().implementation_ptr(),direct_sol_phase);  // possible options are CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE 
+                                                                                               // with SYMBFACT you keep the symbolic factorization
+            preordering();
+            sym_factorization();
+            num_factorization();
+        }
+        else
+        {
+            impl_->matrix_ = op->implementation().implementation_ptr();
+        }
     }
     
     /**
@@ -189,18 +174,19 @@ namespace utopia {
         {
             impl_->solver_ = Amesos2::create<MatImplT, VecImplT>(
             solver_type.c_str(),
-            raw_type(*this->get_operator()),
+            impl_->matrix_,
             raw_type(lhs),
             raw_type(rhs)
             );
-        }        
+        }
         assert(!impl_->solver_.is_null());
         check_parameters();
+        impl_->matrix_.reset();
         impl_->solver_->solve();//TODO does preordering, sym_factorization, num_factorization ?
         return true;
     }
 
-        /**
+    /**
      * get_preordering_done Method - If true , then pre-ordering has been performed
      * \param na
      * \return bool
@@ -326,34 +312,50 @@ namespace utopia {
 
                 impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("Amesos2", true)));
                 impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("UTOPIA", true)));
-
-                if( impl_->utopia_list_->template get<bool>("Direct Solver", "true") )
-                {
-                 std::cout << "Using Direct Solvers " << std::endl;
-                   if( Amesos2::query( impl_->utopia_list_->get("Solver Type", "KLU2") ) ); //Amesos2::query returns true if the solver exists TODO print error
-                   {
-                    std::cout << "Solver Type: " << impl_->utopia_list_->get("Solver Type", "KLU2")  << std::endl;
-                   }
-                }
+                //impl_->utopia_list_->template get<bool>("Direct Solver", "true")
+                // Amesos2::query( impl_->utopia_list_->get("Solver Type", "KLU2") ) // Amesos2::query returns true if the solver exists TODO print error
                 
+        //TODO: move validation to param class
+        
+/*        Teuchos::RCP<Teuchos::ParameterList> correct_list;
+         
+        Teuchos::setStringToIntegralParameter<Amesos2::EPhase>("Direct Sol. Phase to use", "CLEAN",
+                                               "Update options for Matrix A",
+                                               Teuchos::tuple<std::string>("CLEAN","PREORDERING","SYMBFACT","NUMFACT","SOLVE"),
+                                               Teuchos::tuple<std::string>("Start from scratch",
+                                                             "Keep Preordering",
+                                                             "Keep Symbolic Factorization",
+                                                             "Keep Numeric Factorization",
+                                                             "Keep Solution"),
+                                               Teuchos::tuple<Amesos2::EPhase>(Amesos2::CLEAN,
+                                                                   Amesos2::PREORDERING,
+                                                                   Amesos2::SYMBFACT,
+                                                                   Amesos2::NUMFACT,
+                                                                   Amesos2::SOLVE),
+                                               correct_list.getRawPtr());
+
+
+        Teuchos::RCP<const Teuchos::ParameterEntryValidator> validator = correct_list->getEntry("Direct Sol. Phase to use").validator();
+        impl_->utopia_list_->getEntry("Direct Sol. Phase to use").setValidator(validator);*/
+
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
                 abort();
             }
         } else {
-            //use default paramlist
+            //TODO use default paramlist
         }
     }
 
 template <typename Matrix, typename Vector>
-    void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters(){           
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters(){
         try {
             impl_->solver_->setParameters(impl_->amesos_list_);
-        } catch(const std::exception &ex) {                
-            std::cerr << ex.what() << std::endl;                
-            assert(false);                
-            abort();            
+        } catch(const std::exception &ex) {
+            std::cerr << ex.what() << std::endl;
+            assert(false);
+            abort();
         }
     }
     
@@ -367,7 +369,7 @@ template <typename Matrix, typename Vector>
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::smooth(const Vector &rhs, Vector &x)
     {
         return false;
-    }    
+    }
 }  // namespace utopia
 
 #endif //HAVE_AMESOS2_KOKKOS
