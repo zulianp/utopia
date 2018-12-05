@@ -11,50 +11,71 @@ namespace utopia
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
 	template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class SteihaugToint : public TRSubproblem<Matrix, Vector>, public MatrixFreeTRSubproblem<Vector>
+    class SteihaugToint final: public TRSubproblem<Matrix, Vector>, public MatrixFreeTRSubproblem<Vector>
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
 
     public:
-
-    	using TRSubproblem<Matrix, Vector>::tr_constrained_solve; 
-    	using TRSubproblem<Matrix, Vector>::set_preconditioner; 
     	using TRSubproblem<Matrix, Vector>::solve; 
+
+    	typedef utopia::Preconditioner<Vector> Preconditioner;
     	
 
     	SteihaugToint(const Parameters params = Parameters()):
     				  TRSubproblem<Matrix, Vector>(params)
         {  };
 
-        virtual ~SteihaugToint(){}
 
-        virtual SteihaugToint * clone() const override
+        SteihaugToint * clone() const override
         {
         	return new SteihaugToint(*this);
         }
 
 
-        virtual bool apply(const Vector &b, Vector &x) override
+        bool apply(const Vector &b, Vector &x) override
         {
         	init(local_size(b).get(0)); 
             if(this->precond_) 
             {
             	auto A_ptr = utopia::op(this->get_operator());
-                return preconditioned_solve(*A_ptr, b, x);
+                return preconditioned_solve(*A_ptr, -1.0 *b, x);
             } else {
             	auto A_ptr = utopia::op(this->get_operator());
-                return unpreconditioned_solve(*A_ptr, b, x);
+                return unpreconditioned_solve(*A_ptr, -1.0 * b, x);
             }
         }
 
-        virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override 
+        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
         {
-            utopia_error("ProjectedGradientActiveSet missing solve implementation.... \n"); 
-            return false; 
+            precond_ = precond;
         }
 
-	public:
-        virtual bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr) override
+        bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override 
+        {
+        	if(this->precond_) 
+            {
+            	return preconditioned_solve(A, -1.0*rhs, sol);
+            }
+            else
+            {
+            	return unpreconditioned_solve(A, -1.0 * rhs, sol);
+            }
+        }
+
+         void update(const std::shared_ptr<const Matrix> &op) override
+         {
+             IterativeSolver<Matrix, Vector>::update(op);
+             if(this->precond_) 
+             {
+                auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(this->precond_.get());
+                if(ls_ptr) {
+                    ls_ptr->update(op);
+                }
+             }
+         }        
+
+	private:
+        bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr) 
         {
         	init(local_size(g).get(0)); 
 			r = -1 * g; 
@@ -113,7 +134,7 @@ namespace utopia
         }
 
 
-        virtual bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k) override
+        bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k)
         {
         	init(local_size(g).get(0)); 
         	bool converged = false;
@@ -260,8 +281,7 @@ namespace utopia
 
     private:
      	Vector v_k, r, p_k, B_p_k; 
-
-
+        std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */         
 
     };
 

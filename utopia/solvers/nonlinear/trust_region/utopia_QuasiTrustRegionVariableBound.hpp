@@ -8,9 +8,9 @@
  namespace utopia 
  {
     	template<class Vector>
-     	class QuasiTrustRegionVariableBound :   public VariableBoundSolverInterface<Vector>, 
-                                              public TrustRegionBase<Vector>, 
-                                              public QuasiNewtonBase<Vector>
+     	class QuasiTrustRegionVariableBound final:  public VariableBoundSolverInterface<Vector>, 
+                                                  public TrustRegionBase<Vector>, 
+                                                  public QuasiNewtonBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -37,7 +37,7 @@
       *
       * @param[in]  params  The parameters
       */
-      virtual void set_parameters(const Parameters params) override
+      void set_parameters(const Parameters params) override
       {
 
         NonLinearSolver::set_parameters(params);
@@ -113,6 +113,10 @@
             tr_subproblem->set_box_constraints(box); 
             tr_subproblem->solve(*multiplication_action, -1.0*g, p_k);      
           }
+          else
+          {
+            utopia_warning("QUasiTrustRegionVariableBound::Set suitable TR subproblem.... \n "); 
+          }
 
           pred = this->get_pred(g, *multiplication_action, p_k); 
     //----------------------------------------------------------------------------
@@ -185,12 +189,10 @@
       }
 
 
-    virtual void set_trust_region_strategy(const std::shared_ptr<MatrixFreeQPSolver> &tr_linear_solver)
+    void set_trust_region_strategy(const std::shared_ptr<MatrixFreeQPSolver> &tr_linear_solver)
     {
       NonLinearSolver::set_linear_solver(tr_linear_solver); 
     }
-
-
 
     private:
       SizeType it_successful_; 

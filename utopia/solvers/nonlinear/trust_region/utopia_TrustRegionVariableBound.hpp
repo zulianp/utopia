@@ -92,7 +92,6 @@
         }
 
         it++; 
-        fun.value(x_k, E_old); 
         fun.gradient(x_k, g);
 
         // solve starts here 
@@ -113,6 +112,10 @@
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->set_box_constraints(box); 
             tr_subproblem->solve(H, -1.0 * g, p_k);
+          }
+          else
+          {
+            utopia_warning("TrustRegionVariableBound::Set suitable TR subproblem.... \n "); 
           }
 
 
@@ -141,7 +144,7 @@
             rho = 0.0; 
 
 
-          this->trial_point_acceptance(rho, x_k1, x_k); 
+          accepted = this->trial_point_acceptance(rho, x_k1, x_k); 
           
           if (rho >= this->rho_tol())
             it_successful++; 
@@ -180,9 +183,8 @@
       }
 
 
-    protected: 
-
-      virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+    private: 
+      Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
       {
         return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
       }

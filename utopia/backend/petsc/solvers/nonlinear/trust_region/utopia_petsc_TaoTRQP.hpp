@@ -20,9 +20,9 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
 
         public:
-            TaoQPSolver(	const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"),
-                   	const Parameters params = Parameters()):
-                    pc_type_("jacobi")
+            TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"),
+                   	    const Parameters params = Parameters()):
+                        pc_type_("jacobi")
             {
               
             }

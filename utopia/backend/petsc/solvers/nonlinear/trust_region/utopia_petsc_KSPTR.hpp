@@ -99,8 +99,7 @@ namespace utopia
 
         virtual bool apply(const Vector &b, Vector &x) override
     	{
-    		Vector grad = -1 * b;
-    		KSPSolver::apply(grad, x);
+    		KSPSolver::apply(b, x);
     		return true;
     	}
 

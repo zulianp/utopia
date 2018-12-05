@@ -24,7 +24,7 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
 
-        NewtonBase( const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
+        NewtonBase( const std::shared_ptr<Solver> &linear_solver,
                     const Parameters &params = Parameters()): 
                     NonLinearSolver<Vector>(params), 
                     linear_solver_(linear_solver)

@@ -27,6 +27,8 @@ namespace utopia
       set_parameters(params);        
     }
 
+    virtual ~TrustRegionBase(){}
+
       /* @brief      Sets the parameters.
       *
       * @param[in]  params  The parameters
@@ -167,15 +169,15 @@ namespace utopia
       {
         x_k1 = x_k + p_k;
         E = E_k1; 
+        return true; 
       }
       // otherwise, keep old point
       else
       {
         x_k1 = x_k;
         E = E_k; 
+        return false; 
       }
-
-      return true; 
     }
 
 

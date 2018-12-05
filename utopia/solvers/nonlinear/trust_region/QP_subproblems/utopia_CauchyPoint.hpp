@@ -1,11 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
-
 #ifndef UTOPIA_TR_SUBPROBLEM_CAUCHY_POINT_HPP
 #define UTOPIA_TR_SUBPROBLEM_CAUCHY_POINT_HPP
 #include "utopia_TRSubproblem.hpp"
@@ -25,7 +17,7 @@ namespace utopia
             \end{cases}  \f$
 	 */	
 	template<class Matrix, class Vector>
-    class CauchyPoint : public TRSubproblem<Matrix, Vector>
+    class CauchyPoint final: public TRSubproblem<Matrix, Vector>
     {
     	typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -33,17 +25,18 @@ namespace utopia
 
     	CauchyPoint(const Parameters params = Parameters()): TRSubproblem<Matrix, Vector>(params) {}
 
-        virtual ~CauchyPoint(){}; 
-		
-    public: 
+        bool apply(const Vector &b, Vector &x) override
+        {
+            return aux_solve(*this->get_operator(), -1.0 * b, x);
+        }
 
-		/**
-		 * @brief      Gets new Cauchy point step. 
-		 * @param[in]  g      Gradient.
-		 * @param[in]  B      Hessian
-		 * @param      p_k    The new step.
-		 */
-        virtual bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
+        inline CauchyPoint * clone() const override
+        {
+            return new CauchyPoint();
+        }        
+
+    private:
+        bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k)
         {
 			Scalar g_norm = norm2(g);
 	    	Scalar g_B_g = dot(g, B * g); 
@@ -51,13 +44,6 @@ namespace utopia
 	    	p_k = -tau * (this->current_radius() / g_norm) * (g) ;
 	    	return true; 
         }
-
-
-        inline CauchyPoint * clone() const override
-        {
-        	return new CauchyPoint();
-        }
-
 
     };
 }

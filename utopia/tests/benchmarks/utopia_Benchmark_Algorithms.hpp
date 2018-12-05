@@ -87,7 +87,9 @@ namespace utopia {
 						Rastrigin<Matrix, Vector> fun;
 						Vector x = local_values(10 * (i+1), 1.);
 
-						TrustRegion<Matrix, Vector> trust_region;
+						auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
+
+						TrustRegion<Matrix, Vector> trust_region(st_cg);
 						trust_region.verbose(false);
 
 						double mag_x0 = -1;

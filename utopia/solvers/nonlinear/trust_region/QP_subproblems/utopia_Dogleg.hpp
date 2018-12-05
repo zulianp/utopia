@@ -9,7 +9,7 @@ namespace utopia
 {
 
 	template<class Matrix, class Vector>
-    class Dogleg : public TRSubproblem<Matrix, Vector>
+    class Dogleg final: public TRSubproblem<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
@@ -27,13 +27,26 @@ namespace utopia
                     return new Dogleg(std::shared_ptr<LinearSolver>(ls_solver_->clone()));
                 }
 
+            bool apply(const Vector &b, Vector &x) override
+            {
+                return aux_solve(*this->get_operator(), -1.0 * b, x);
+            }
+
+
         protected:
-            bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
+            bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k) 
             {
                 Vector p_N = local_zeros(local_size(p_k)), p_SD = local_zeros(local_size(p_k));
                 Scalar g_B_g = dot(g, B * g);
 
-                ls_solver_->solve(B, -1 * g, p_k);
+                if(ls_solver_)
+                {
+                    ls_solver_->solve(B, -1 * g, p_k);
+                }
+                else
+                {
+                    utopia_error("Dogleg:: linear solver is missing... \n"); 
+                }
 
                 if(norm2(p_k) <= this->current_radius())
                 {
@@ -72,7 +85,7 @@ namespace utopia
             }
 
         public:
-            virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
+            void set_linear_solver(const std::shared_ptr<LinearSolver > &ls)
             {
                 ls_solver_ = ls;
             }

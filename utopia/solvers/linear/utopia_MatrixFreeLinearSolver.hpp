@@ -47,7 +47,7 @@ namespace  utopia
                 precond_ = precond;
             }
 
-            bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol)
+            bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 if(precond_){
                     precond_->apply(rhs, sol); 

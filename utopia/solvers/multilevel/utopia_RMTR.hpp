@@ -939,7 +939,8 @@ namespace utopia
             else
                 _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
             
-            _tr_subproblems[level]->tr_constrained_solve(memory_.H[level], memory_.g[level], memory_.s[level], memory_.delta[level]);                
+            _tr_subproblems[level]->current_radius(memory_.delta[level]); 
+            _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);                
 
             return true;
         }

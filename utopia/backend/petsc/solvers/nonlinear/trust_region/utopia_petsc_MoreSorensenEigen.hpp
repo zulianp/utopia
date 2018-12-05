@@ -67,9 +67,15 @@ namespace utopia
             return new MoreSorensenEigen(std::shared_ptr<LinearSolver>(linear_solver_->clone()), std::shared_ptr<EigenSolver>(eigen_solver_->clone()));
         }
 
+        bool apply(const Vector &b, Vector &x) override
+	    {
+	    	Vector g = -1.0 *b; 
+	        return aux_solve(*this->get_operator(), g, x);
+	    }
+
 
 	protected:
-        bool unpreconditioned_solve(const Matrix &H, const Vector &g, Vector &s_k) override
+        bool aux_solve(const Matrix &H, const Vector &g, Vector &s_k) override
         {
         	Scalar lambda, s_norm; 
         	Vector eigenvector; 
@@ -148,13 +154,6 @@ namespace utopia
 		    }
 
         	return true; 
-        }
-
-
-        bool preconditioned_solve(const Matrix & /*H*/, const Vector &/*g*/, Vector &/*p_k*/) override
-        {
-        	std::cout<<"MoreSorensenEigen:: preconditioned solve not imlemented yet ... \n"; 
-        	return false; 
         }
 
 

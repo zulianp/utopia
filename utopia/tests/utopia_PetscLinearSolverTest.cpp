@@ -559,19 +559,19 @@ namespace utopia {
             cg.atol(1e-18);
             cg.rtol(1e-18);
             cg.stol(1e-18);
-            cg.tr_constrained_solve(A, -1.0 * rhs, x_0, 1e15);
+            cg.solve(A, -1.0 * rhs, x_0);
 
 
             //CG with diagonal preconditioner
             x_0 = zeros(A.size().get(0));
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
-            cg.tr_constrained_solve(A, -1.0 * rhs, x_0, 1e15);
+            cg.solve(A, -1.0 * rhs, x_0);
             
 
             //CG with multigrid preconditioner
             x_0 = zeros(A.size().get(0));
             cg.set_preconditioner(make_ref(multigrid));
-            cg.tr_constrained_solve(A, -1.0 * rhs, x_0, 1e15);
+            cg.solve(A, rhs, x_0);
 
 
             utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
