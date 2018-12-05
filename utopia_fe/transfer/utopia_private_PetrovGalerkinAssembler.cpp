@@ -31,6 +31,8 @@ namespace utopia {
 
 			for(std::size_t i = 0; i < elemmat_.size(); ++i) {	
 				auto &mat_i = elemmat_[i];
+				if(mat_i.get_values().empty()) continue;
+
 				auto partial_sum = std::accumulate(mat_i.get_values().begin(), mat_i.get_values().end(), libMesh::Real(0.0));
 
 				assert(!std::isnan(partial_sum));

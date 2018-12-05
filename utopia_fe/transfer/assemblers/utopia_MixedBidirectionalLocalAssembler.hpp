@@ -43,9 +43,14 @@ namespace utopia {
 		Type type(const int index) const override;
 
 		void print_stats(std::ostream &os = std::cout) const override;
+		void set_return_false_only_if_both_fail(const bool val) 
+		{
+			return_false_only_if_both_fail_ = val;
+		}
 	
 	private:
 		std::vector<std::shared_ptr<LocalAssembler>> assemblers_;
+		bool return_false_only_if_both_fail_;
 	};
 }
 

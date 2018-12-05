@@ -29,6 +29,7 @@ namespace utopia {
 		from_boundary(false),
 		to_boundary(false),
 		normalize(false),
+		use_interpolation(false),
 		nnz_x_row(0),
 		output_path("./")
 		{}
@@ -47,6 +48,7 @@ namespace utopia {
 			is.get("to-boundary",   to_boundary);
 			is.get("normalize", normalize);
 			is.get("use-composite-bidirectional", use_composite_bidirectional);
+			is.get("use-interpolation", use_interpolation);
 			is.get("nnz-x-row", nnz_x_row);
 			is.get("output-path", output_path);	
 		}
@@ -64,6 +66,7 @@ namespace utopia {
 		bool to_boundary;
 		bool normalize;
 		bool use_composite_bidirectional;
+		bool use_interpolation;
 		long nnz_x_row;
 		std::string output_path;
 	};
@@ -304,20 +307,32 @@ namespace utopia {
 		std::cout << "[Status] using bi l2 projection" << std::endl;
 		std::shared_ptr<LocalAssembler> assembler;
 
+		bool use_interpolation = false;
 		const bool assemble_D = 
 			!params_->bi_operator_mass_mat_outside ||
 			 params_->use_composite_bidirectional;
 
 		if(params_->use_composite_bidirectional) {
 			auto from = get_filtered_from_mesh();
-			auto ass_1 = std::make_shared<L2LocalAssembler>(from->mesh_dimension(), false, true);
-			auto ass_2 = std::make_shared<ApproxL2LocalAssembler>(from->mesh_dimension());
-			assembler = std::make_shared<MixedBidirectionalLocalAssembler>(ass_1, ass_2);
+		
+			if(params_->use_interpolation) {
+				auto ass_1 = std::make_shared<InterpolationLocalAssembler>(from->mesh_dimension());
+				auto ass_2 = std::make_shared<InterpolationLocalAssembler>(from->mesh_dimension());
+				use_interpolation = true;
+				auto ass = std::make_shared<MixedBidirectionalLocalAssembler>(ass_1, ass_2);
+				ass->set_return_false_only_if_both_fail(true);
+				assembler = ass;
+			} else {
+				auto ass_1 = std::make_shared<L2LocalAssembler>(from->mesh_dimension(), false, true);
+				auto ass_2 = std::make_shared<ApproxL2LocalAssembler>(from->mesh_dimension());
+				assembler = std::make_shared<MixedBidirectionalLocalAssembler>(ass_1, ass_2);
+			}
+
 		} else {
 			assembler = std::make_shared<BidirectionalL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension(), false, !params_->bi_operator_mass_mat_outside);
 		}
 
-		auto local2global = std::make_shared<Local2Global>(false);
+		auto local2global = std::make_shared<Local2Global>(use_interpolation);
 
 		std::vector< std::shared_ptr<SparseMatrix> > mats;
 		TransferAssembler transfer_assembler(assembler, local2global);
@@ -331,7 +346,7 @@ namespace utopia {
 			return false;
 		}
 
-		if(!assemble_D) {
+		if(!assemble_D && !use_interpolation) {
 			auto mass_mat_from = std::make_shared<USparseMatrix>();
 			auto mass_mat_to   = std::make_shared<USparseMatrix>();
 
@@ -376,15 +391,22 @@ namespace utopia {
 			}
 
 		} else {
-			auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-			forward->fix_mass_matrix_operator(params_->tol);
+			if(use_interpolation) {
+				operator_ = std::make_shared<BidirectionalOperator>(
+					std::make_shared<Interpolator>(mats[0]),
+					std::make_shared<Interpolator>(mats[1])
+				);
+			} else {
+				auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+				forward->fix_mass_matrix_operator(params_->tol);
 
-			auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
-			backward->fix_mass_matrix_operator(params_->tol);
+				auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
+				backward->fix_mass_matrix_operator(params_->tol);
 
-			forward->init();
-			backward->init();
-			operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+				forward->init();
+				backward->init();
+				operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+			}
 		}
 
 		return true;

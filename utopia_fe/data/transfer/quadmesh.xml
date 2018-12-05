@@ -6,7 +6,8 @@
 	<!-- <function>1.</function> -->
 	<!-- <normalize>true</normalize> -->
 	<!-- <bi-op-mass-outside>false</bi-op-mass-outside>  -->
-		<use-composite-bidirectional>true</use-composite-bidirectional>
+	<use-composite-bidirectional>true</use-composite-bidirectional>
+	<use-interpolation>true</use-interpolation>
 	<quad-order-approx>40</quad-order-approx>
 	<!-- MASTER -->
 	<master>
