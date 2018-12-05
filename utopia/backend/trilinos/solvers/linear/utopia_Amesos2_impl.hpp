@@ -144,9 +144,26 @@ namespace utopia {
     void Amesos2Solver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
         assert(!impl_->solver_.is_null());
-        std::string direct_sol_phase = impl_->utopia_list_->get("Direct Sol. Phase to use", "CLEAN");
-        impl_->solver_->setA(op,direct_sol_phase);  // possible options are CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE
-                                           // with SYMBFACT you keep the symbolic factorization
+        //TODO: move to param class
+        Teuchos::setStringToIntegralParameter<Amesos2::EPhase>("Direct Sol. Phase to use", "CLEAN",
+                                               "Update options for Matrix A",
+                                               Teuchos::tuple<std::string>("CLEAN","PREORDERING","SYMBFACT","NUMFACT","SOLVE"),
+                                               Teuchos::tuple<std::string>("Start from scratch",
+                                                             "Keep Preordering",
+                                                             "Keep Symbolic Factorization",
+                                                             "Keep Numeric Factorization",
+                                                             "Keep Solution"),
+                                               Teuchos::tuple<Amesos2::EPhase>(Amesos2::CLEAN,
+                                                                   Amesos2::PREORDERING,
+                                                                   Amesos2::SYMBFACT,
+                                                                   Amesos2::NUMFACT,
+                                                                   Amesos2::SOLVE),
+                                               impl_->utopia_list_.getRawPtr());
+
+        Amesos2::EPhase direct_sol_phase = impl_->utopia_list_->get("Direct Sol. Phase to use", Amesos2::CLEAN);
+
+        impl_->solver_->setA(op->implementation().implementation_ptr(),direct_sol_phase);  // possible options are CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE
+                                                     // with SYMBFACT you keep the symbolic factorization
         preordering();
         sym_factorization();
         num_factorization();
@@ -305,10 +322,10 @@ namespace utopia {
         if(!params.param_file_name().empty()) {
             try {
                 Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
-                tmp_param_list_ = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
+                tmp_param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
 
-                impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list_->sublist("Amesos2", true)));
-                impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list_->sublist("UTOPIA", true)));
+                impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("Amesos2", true)));
+                impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("UTOPIA", true)));
 
                 if( impl_->utopia_list_->template get<bool>("Direct Solver", "true") )
                 {
@@ -332,7 +349,7 @@ namespace utopia {
 template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters(){           
         try {
-            impl_->solver_->setParameters(impl_->amesos_list);
+            impl_->solver_->setParameters(impl_->amesos_list_);
         } catch(const std::exception &ex) {                
             std::cerr << ex.what() << std::endl;                
             assert(false);                
