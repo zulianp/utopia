@@ -414,6 +414,40 @@ namespace utopia {
 		std::unique_ptr<UVector> from_buffer_, to_buffer_;
 	};
 
+	class NormalizedOperator final : public TransferOperator {
+	public:
+		using Scalar = UTOPIA_SCALAR(UVector);
+
+		NormalizedOperator(
+			const Size &op_local_size,
+			const std::shared_ptr<TransferOperator> &op
+			)
+		: op_(op)
+		{
+			UVector ones = local_values(op_local_size.get(0), 1.);
+			op->apply(ones, rescale_);
+			inv_rescale_ = 1./rescale_;
+			temp_ = utopia::make_unique<UVector>();
+		}
+
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			op_->apply(from, *temp_);
+			to = e_mul(inv_rescale_, *temp_);
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const
+		{
+			*temp_ = e_mul(rescale_, from);
+			op_->apply_transpose(*temp_, to);
+		}
+
+	private:
+		std::shared_ptr<TransferOperator> op_;
+		UVector rescale_, inv_rescale_;
+		std::unique_ptr<UVector> temp_; 
+	};
+
 	class ClampedOperator final : public TransferOperator {
 	public:
 		using Scalar = UTOPIA_SCALAR(UVector);

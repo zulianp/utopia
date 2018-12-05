@@ -5,6 +5,7 @@
 #include "utopia_InterpolationLocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
 #include "utopia_BidirectionalL2LocalAssembler.hpp"
+#include "utopia_MixedBidirectionalLocalAssembler.hpp"
 #include "utopia_make_unique.hpp"
 
 #include "libmesh/boundary_mesh.h"
@@ -27,6 +28,7 @@ namespace utopia {
 		force_zero_extension(false),
 		from_boundary(false),
 		to_boundary(false),
+		normalize(false),
 		nnz_x_row(0),
 		output_path("./")
 		{}
@@ -43,6 +45,8 @@ namespace utopia {
 			is.get("force-zero-extension", force_zero_extension);
 			is.get("from-boundary", from_boundary);
 			is.get("to-boundary",   to_boundary);
+			is.get("normalize", normalize);
+			is.get("use-composite-bidirectional", use_composite_bidirectional);
 			is.get("nnz-x-row", nnz_x_row);
 			is.get("output-path", output_path);	
 		}
@@ -58,6 +62,8 @@ namespace utopia {
 		bool force_zero_extension;
 		bool from_boundary;
 		bool to_boundary;
+		bool normalize;
+		bool use_composite_bidirectional;
 		long nnz_x_row;
 		std::string output_path;
 	};
@@ -296,24 +302,43 @@ namespace utopia {
 	bool MeshTransferOperator::set_up_bidirectional_transfer()
 	{
 		std::cout << "[Status] using bi l2 projection" << std::endl;
-		auto assembler = std::make_shared<BidirectionalL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension(), false, !params_->bi_operator_mass_mat_outside);
+		std::shared_ptr<LocalAssembler> assembler;
+
+		const bool assemble_D = 
+			!params_->bi_operator_mass_mat_outside ||
+			 params_->use_composite_bidirectional;
+
+		if(params_->use_composite_bidirectional) {
+			auto from = get_filtered_from_mesh();
+			auto ass_1 = std::make_shared<L2LocalAssembler>(from->mesh_dimension(), false, true);
+			auto ass_2 = std::make_shared<ApproxL2LocalAssembler>(from->mesh_dimension());
+			assembler = std::make_shared<MixedBidirectionalLocalAssembler>(ass_1, ass_2);
+		} else {
+			assembler = std::make_shared<BidirectionalL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension(), false, !params_->bi_operator_mass_mat_outside);
+		}
 
 		auto local2global = std::make_shared<Local2Global>(false);
 
 		std::vector< std::shared_ptr<SparseMatrix> > mats;
 		TransferAssembler transfer_assembler(assembler, local2global);
-		if(!transfer_assembler.assemble(get_filtered_from_mesh(), from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+		if(!transfer_assembler.assemble(
+			get_filtered_from_mesh(),
+			from_dofs,
+			get_filtered_to_mesh(),
+			to_dofs,
+			mats,
+			opts)) {
 			return false;
 		}
 
-		if(params_->bi_operator_mass_mat_outside) {
+		if(!assemble_D) {
 			auto mass_mat_from = std::make_shared<USparseMatrix>();
 			auto mass_mat_to   = std::make_shared<USparseMatrix>();
 
 			assemble_mass_matrix(*get_filtered_from_mesh(), *from_dofs, opts.from_var_num, opts.n_var, *mass_mat_from);
 			assemble_mass_matrix(*get_filtered_to_mesh(),   *to_dofs,   opts.to_var_num,   opts.n_var, *mass_mat_to);
 
-			const bool restrict_mass_matrix = true;
+			const bool restrict_mass_matrix = !params_->use_composite_bidirectional;
 			auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, std::make_shared<Factorization<USparseMatrix, UVector>>());
 			
 			if(!restrict_mass_matrix) {
@@ -401,6 +426,11 @@ namespace utopia {
 		}
 	}
 
+	static bool is_bidirectional(const TransferOperatorType operator_type) {
+		return operator_type == BIDIRECTIONAL_L2_PROJECTION || 
+			   operator_type == BIDIRECTIONAL_L2_PROJECTION;
+	}
+
 	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
 	{
 		//apply boundary filter
@@ -434,6 +464,16 @@ namespace utopia {
 		if(params_->write_operators_to_disk) {
 			operator_->write(params_->output_path);
 		}
+
+		if(params_->normalize && !is_bidirectional(operator_type)) {
+			operator_ = std::make_shared<NormalizedOperator>(
+				Size({
+					from_dofs->n_local_dofs(),
+					to_dofs->n_local_dofs()
+					}),
+				operator_
+			);
+		} 
 
 		if(params_->force_zero_extension) {
 			operator_ = std::make_shared<ForceZeroExtension>(operator_, params_->tol);
