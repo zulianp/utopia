@@ -244,7 +244,7 @@ namespace utopia
         }
 
 
-        virtual bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
+        bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
         {
             if(strategies.size() != this->n_levels()){
                 utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n"); 

@@ -190,7 +190,6 @@ namespace  utopia
                     }  );
 
                 }
-
             }
 
             Scalar get_next_break_point(const Vector & sorted_break_points, const SizeType & index) const

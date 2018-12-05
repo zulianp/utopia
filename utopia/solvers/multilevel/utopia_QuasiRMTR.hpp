@@ -17,10 +17,13 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)      Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)   SizeType;
 
-        typedef utopia::TRSubproblem<Matrix, Vector>                TRSubproblem; 
-        typedef utopia::RMTR<Matrix, Vector, CONSISTENCY_LEVEL>     RMTR;
+        typedef utopia::RMTR<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
+        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun   Fun;
 
-        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
+
+        typedef utopia::MatrixFreeTRSubproblem<Vector>  TRSubproblem;
+        typedef std::shared_ptr<TRSubproblem>           TRSubproblemPtr; 
+
 
         typedef utopia::HessianApproximation<Vector>    HessianApproximation;
         typedef std::shared_ptr<HessianApproximation>   HessianApproxPtr; 
@@ -95,6 +98,42 @@ namespace utopia
         }
 
 
+        bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
+
+            _tr_subproblems[0] = strategy;
+
+            return true;
+        }
+
+        bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
+
+            // starting from level 1 .... 
+            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
+                _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
+
+
+            return true;
+        }        
+
+
+        bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
+        {
+            if(strategies.size() != this->n_levels()){
+                utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n"); 
+            }
+            
+            _tr_subproblems = strategies; 
+
+            return true;
+        }
+
+
     protected:
         virtual void init_memory(const SizeType & fine_local_size) override 
         {   
@@ -120,15 +159,14 @@ namespace utopia
 
         virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
-            this->_tr_subproblems[level]->atol(1e-16);
-            if(flg)
-                this->_tr_subproblems[level]->max_it(this->_max_QP_coarse_it);
-            else
-                this->_tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
+            // this->_tr_subproblems[level]->atol(1e-16);
+            // if(flg)
+            //     this->_tr_subproblems[level]->max_it(this->_max_QP_coarse_it);
+            // else
+            //     this->_tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H(); 
-            this->_tr_subproblems[level]->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], this->memory_.delta[level]);            
-
+            _tr_subproblems[level]->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], this->memory_.delta[level]);            
             return true;
         }
 
@@ -176,6 +214,10 @@ namespace utopia
 
     protected:   
         std::vector<HessianApproxPtr>  hessian_approxs_;
+
+
+    private:
+        std::vector<TRSubproblemPtr>        _tr_subproblems; 
 
 
     };

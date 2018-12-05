@@ -195,7 +195,7 @@ namespace  utopia
 
             virtual ~MatrixFreeTRSubproblem( ){}
 
-            virtual MatrixFreeTRSubproblem * clone() const = 0;
+            virtual MatrixFreeTRSubproblem * clone() const override= 0;
 
             virtual bool unpreconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
             virtual bool preconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
@@ -211,7 +211,7 @@ namespace  utopia
                 } else {
                     return unpreconditioned_solve(H, g, s);
                 }
-                return true;
+                return false;
             }            
 
     };

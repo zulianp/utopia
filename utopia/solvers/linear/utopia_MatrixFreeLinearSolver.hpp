@@ -6,15 +6,15 @@
 
 namespace  utopia
 {
-    /**
-     * @brief      The base class for matrix free linear solvers.
-     * @tparam     Vector
-     */
+
     template<class Vector>
-    class MatrixFreeLinearSolver {
-    public:
-        virtual ~MatrixFreeLinearSolver() {}
-        virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
+    class MatrixFreeLinearSolver 
+    {
+        public:
+            virtual ~MatrixFreeLinearSolver() {}
+            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
+
+            virtual MatrixFreeLinearSolver * clone() const =0; 
     };
 
 
@@ -57,6 +57,12 @@ namespace  utopia
                 }
                 return true; 
             }
+
+            
+            EmptyPrecondMatrixFreeLinearSolver * clone() const override
+            {
+                return new EmptyPrecondMatrixFreeLinearSolver(*this);
+            }       
 
         private:
             std::shared_ptr<Preconditioner<Vector> > precond_;

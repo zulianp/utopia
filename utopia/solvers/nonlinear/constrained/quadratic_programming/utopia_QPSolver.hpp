@@ -51,7 +51,7 @@ namespace utopia
 	        }
 
 
-	        virtual MatrixFreeQPSolver * clone() const = 0; 
+	        virtual MatrixFreeQPSolver * clone() const override = 0; 
 
 	};
 

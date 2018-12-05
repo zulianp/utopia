@@ -34,8 +34,8 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
-        // pay attention that this one in inf norm... 
-        typedef utopia::MatrixFreeQPSolver<Vector>     TRSubproblem; 
+        typedef utopia::MatrixFreeQPSolver<Vector>  TRSubproblem;
+        typedef std::shared_ptr<TRSubproblem>       TRSubproblemPtr; 
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -140,6 +140,43 @@ namespace utopia
             else{
                 utopia_error("utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n");             
             }
+
+            return true;
+        }
+
+
+
+        bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
+
+            _tr_subproblems[0] = strategy;
+
+            return true;
+        }
+
+        bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
+
+            // starting from level 1 .... 
+            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
+                _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
+
+
+            return true;
+        }        
+
+
+        bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
+        {
+            if(strategies.size() != this->n_levels()){
+                utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n"); 
+            }
+            
+            _tr_subproblems = strategies; 
 
             return true;
         }
@@ -431,20 +468,23 @@ namespace utopia
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
 
-            // setting should be really parameters from outside ... 
-            this->_tr_subproblems[level]->atol(1e-16); 
+            // // setting should be really parameters from outside ... 
+            // this->_tr_subproblems[level]->atol(1e-16); 
 
-            if(flg)
-                this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it()); 
-            else
-                this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
+            // if(flg)
+            //     this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it()); 
+            // else
+            //     this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
 
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H(); 
+            _tr_subproblems[level]->set_box_constraints(box); 
+
+            this->_tr_subproblems[level]->solve(*multiplication_action, -1.0 * this->memory_.g[level], this->memory_.s[level]);
+
 
             // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
             //         tr_subproblem->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], box);            
-
 
             return true; 
         }
@@ -491,6 +531,9 @@ namespace utopia
             return true; 
         }
 
+
+    private:
+        std::vector<TRSubproblemPtr>            _tr_subproblems; 
 
     protected:   
         ConstraintsLevelMemory <Vector>         constraints_memory_;
