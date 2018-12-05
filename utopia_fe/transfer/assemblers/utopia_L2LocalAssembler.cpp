@@ -62,8 +62,6 @@ namespace utopia {
 		Matrix &mat
 		)
 	{
-		auto trial_fe   = libMesh::FEBase::build(trial.dim(), trial_type);
-		auto test_fe    = libMesh::FEBase::build(test.dim(),  test_type);
 		const int order = order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order);
 
 		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
@@ -106,10 +104,6 @@ namespace utopia {
 		if(!assemble_mass_mat_) {
 			return assemble(trial, trial_type, test, test_type, mat[0]);
 		}
-
-
-		auto trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
-		auto test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
 		
 		const int order = std::max(
 			order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order), 

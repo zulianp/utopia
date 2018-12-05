@@ -105,21 +105,14 @@ namespace  utopia
         Vector d;
     };
 
-    template<class Matrix, class Vector>
-    class IdentityPreconditioner : public LinearSolver<Matrix, Vector>
+    template<class Vector>
+    class IdentityPreconditioner : public Preconditioner<Vector>
     {
     public:
         virtual bool apply(const Vector &rhs, Vector &sol) override
         {
             sol = rhs; 
             return true;
-        }
-
-        /*! @brief if overriden the subclass has to also call this one first
-         */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
-            LinearSolver<Matrix, Vector>::update(op);
         }
 
         IdentityPreconditioner * clone() const override

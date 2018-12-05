@@ -443,7 +443,7 @@ namespace utopia {
 				Vector expected_rosenbrock = values(2, 1);
 
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 				subproblem->atol(1e-10);
 
 				Vector x0 = values(2, 2.0);

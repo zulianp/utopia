@@ -1,7 +1,7 @@
 #include "utopia_ContactQMortarBuilder.hpp"
 #include "utopia_Intersect.hpp"
 #include "utopia_SurfUtils.hpp"
-
+#include "utopia_LibMeshShape.hpp"
 
 namespace utopia {
 	AffineContactQMortarBuilder3::AffineContactQMortarBuilder3(const Real search_radius)
@@ -52,7 +52,7 @@ namespace utopia {
 		const Real area_slave = Intersector::polygon_area_3(test_polygon.m(), &test_polygon.get_values()[0]);
 		const Real area   	  = Intersector::polygon_area_3(test_isect.m(),   &test_isect.get_values()[0]);
 
-		const Real relative_area = area/area_slave;
+		// const Real relative_area = area/area_slave;
 		const Real weight        = 1./area_slave;
 
 		assert(area_slave > 0);
@@ -71,6 +71,36 @@ namespace utopia {
 
 		transform_to_reference_surf(*trial_trafo, trial.type(), trial_ir, q_trial);
 		transform_to_reference_surf(*test_trafo,  test.type(),  test_ir,  q_test);
+
+		const libMesh::Point pp = trial_side->point(0);
+		const Real plane_offset = trial_n.contract(pp);
+
+
+		auto n_qps = test_ir.n_points();
+		gap_.resize(n_qps);
+		normal_.resize(n_qps);
+
+		double arr_trial_n[3] = { trial_n(0), trial_n(1), trial_n(2) };
+		double arr_test_n[3]  = { test_n(0), test_n(1), test_n(2) };
+
+		for(std::size_t qp = 0; qp < n_qps; ++qp) {
+			Real isect = 0;
+			const auto &p_temp = test_ir.get_points()[qp];
+			double p[3] = { p_temp(0), p_temp(1), p_temp(2) };
+			
+			Intersector::intersect_ray_with_plane(
+				3,
+				1,
+				p,
+				arr_test_n,
+				arr_trial_n,
+				plane_offset,
+				&isect);
+
+			gap_[qp] = isect;
+			normal_[qp] = test_n;
+		}
+
 		return true;
 	}
 
@@ -82,7 +112,7 @@ namespace utopia {
 	///////////////////////////////////////////////////////////////////
 
 	WarpedContactQMortarBuilder3::WarpedContactQMortarBuilder3(const Real search_radius)
-	: trial_ir(3), test_ir(3), trial_box(3), test_box(3), total_intersection_volume(0.), search_radius(search_radius)
+	: trial_ir(3), test_ir(3), trial_box(3), test_box(3), total_intersection_volume(0.), search_radius(search_radius), ref_quad_order_(-1)
 	{}
 
 	bool WarpedContactQMortarBuilder3::build(
@@ -120,8 +150,12 @@ namespace utopia {
 
 		//create polygons from warped surf . Options: 1) only inter nodes 2) discretized poly
 		// using option 1
-		make_polygon_3(*trial_side, trial_polygon);
-		make_polygon_3(*test_side,  test_polygon);
+
+		const int order = order_for_l2_integral(3, trial, trial_type.order, test, test_type.order);
+		init_ref_quad(order);
+
+		make(*trial_side, trial_poly3_);
+		make(*test_side, test_poly3_);
 
 		const auto &p = test_side->node_ref(0);
 
@@ -130,46 +164,84 @@ namespace utopia {
 			{test_n(0), test_n(1), test_n(2)}
 		};
 
-		// std::vector<Polygon3::Vector> composite_q_points;
-		// std::vector<Polygon3::Scalar> composite_q_weights;
-
-		// bool ok = project_intersect_and_map_quadrature(
-		// 	trial_polygon,
-		// 	test_polygon,
-		// 	plane,
-		// 	//ref-quad-rule
-		// 	{{1./3., 1./3.}},
-		// 	{1.},
-		// 	1.,
-		// 	composite_q_points,
-		// 	composite_q_weights
-		// ); utopia_test_assert(ok);
-
-
-
-		// ok = left_shape.make_quadrature(
-		//     plane.n,
-		//     composite_q_points,
-		//     composite_q_weights,
-		//     left_q
-		// ); utopia_test_assert(ok);
-
-		// ok = right_shape.make_quadrature(
-		//     plane.n,
-		//     composite_q_points,
-		//     composite_q_weights,
-		//     right_q
-		// ); utopia_test_assert(ok);
-
-
+		auto test_area = test_poly3_.area();
+		
 		//project on slave avg plane
+		if(!project_intersect_and_map_quadrature(
+			trial_poly3_,
+			test_poly3_,
+			plane,
+			tri_q_points_,
+			tri_q_weights_,
+			1./test_area,
+			composite_q_points_,
+			composite_q_weights_
+		)) {
+			return false;
+		}
+
+		const bool use_newton = true;
+		LibMeshShape<double, 3> trial_shape(*trial_side, trial_type, use_newton);
+		LibMeshShape<double, 3> test_shape(*test_side, test_type, use_newton);
+
 		//create quad points
-		return false;
+		bool ok = trial_shape.make_quadrature(
+		    plane.n,
+		    composite_q_points_,
+		    composite_q_weights_,
+		    q_trial,
+		    trial_gap_
+		); assert(ok);
+
+		if(!ok) return false;
+
+		ok = test_shape.make_quadrature(
+		    plane.n,
+		    composite_q_points_,
+		    composite_q_weights_,
+		    q_test,
+		    test_gap_
+		); assert(ok);
+		
+		if(ok) {
+			auto n_qps = test_gap_.size();
+			gap_.resize(n_qps);
+			normal_.resize(n_qps);
+
+			for(std::size_t qp = 0; qp < n_qps; ++qp) {
+				gap_[qp] = trial_gap_[qp] + test_gap_[qp];
+				normal_[qp] = test_n;
+			}
+		}
+
+		return ok;
 	}
 
 	double WarpedContactQMortarBuilder3::get_total_intersection_volume() const
 	{
 		return total_intersection_volume;
+	}
+
+	void WarpedContactQMortarBuilder3::init_ref_quad(const int order)
+	{
+		if(ref_quad_order_ != order) {
+			libMesh::QGauss ir(2, libMesh::Order(order));
+			ir.init(libMesh::TRI3);
+
+			auto n_qps = ir.n_points();
+			tri_q_points_.resize(n_qps);
+			tri_q_weights_.resize(n_qps);
+
+			for(int k = 0; k < n_qps; ++k) {
+				auto &qp = ir.get_points()[k];
+
+				for(int d = 0; d < 3; ++d) {
+					tri_q_points_[k][d] = qp(d);
+				}
+
+				tri_q_weights_[k] = ir.get_weights()[k];
+			}
+		}
 	}
 
 }

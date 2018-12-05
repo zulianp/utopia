@@ -182,7 +182,7 @@ namespace utopia
 	        tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
 	        // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
 	        
-	        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());
+	        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<DVectord> >());
 	        // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());	        
 
 

@@ -41,6 +41,7 @@
 #include "utopia_EnergyAssemblyTest.hpp"
 #include "utopia_Intrepid2Test.hpp"
 #include "utopia_IntersectTest.hpp"
+#include "utopia_FETest.hpp"
 
 #include "utopia_Grid2MeshTransferApp.hpp"
 
@@ -95,6 +96,7 @@ int main(int argc, char *argv[])
 	    runners["energy"] = run_energy_test;
 	    runners["intrepid2"] = run_intrepid2_test;
 	    runners["isect"] = run_intersect_test;
+	    runners["tests"] = run_all_tests;
 	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
