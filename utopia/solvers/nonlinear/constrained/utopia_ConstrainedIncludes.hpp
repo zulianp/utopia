@@ -15,6 +15,8 @@
 #include "utopia_ProjectedGaussSeidel.hpp"
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
+#include "utopia_GeneralizedCauchyPoint.hpp"
+#include "utopia_ProjectedGradientActiveSet.hpp"
 
 #endif //UTOPIA_CONSTRAINTED_HPP
 

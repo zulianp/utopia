@@ -7,13 +7,14 @@
 namespace  utopia 
 {
 
-    template<class Vector>
-    class ProjectedGradientActiveSet final:  public MatrixFreeQPSolver<Vector>
+    template<class Matrix, class Vector>
+    class ProjectedGradientActiveSet final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         public:
-            ProjectedGradientActiveSet(): verbose_(false)
+            ProjectedGradientActiveSet()
             {
                 
             }
@@ -36,14 +37,17 @@ namespace  utopia
                 return aux_solve(A, -1.0*rhs, sol, box); 
             }
 
-            bool verbose() const 
+            bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
-                return verbose_; 
+                auto A_op_ptr = utopia::op_ref(A);
+                auto &box = this->get_box_constraints(); 
+                return aux_solve(*A_op_ptr, -1.0 *rhs, sol, box); 
             }
 
-            void verbose(const bool flg)
+
+            void set_linear_solver(const std::shared_ptr<Solver> &linear_solver)
             {
-                verbose_ = flg; 
+                linear_solver_ = linear_solver; 
             }
 
         private:
@@ -52,8 +56,8 @@ namespace  utopia
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
 
-                // if(this->verbose())
-                //     this->init_solver("ProjectedGradientActiveSet", {" "});
+                if(this->verbose())
+                    this->init_solver("ProjectedGradientActiveSet", {" "});
 
                 cp_.set_box_constraints(constraints); 
                 cp_.solve(H, -1.0*g, s); 
@@ -77,9 +81,21 @@ namespace  utopia
                 else if(size(feasible_set).get(0)==feasible_variables) // all variables are feasible, use Newton's method to solve the system
                 {
                     Vector  local_corr = local_zeros(local_size(s).get(0)); 
-
-                    if(precond_)
-                        precond_->apply(-1.0 * grad_qp_fun, local_corr); 
+                    if(const MatrixOperator<Matrix, Vector> * H_matrix = dynamic_cast<const MatrixOperator<Matrix, Vector> *>(&H))
+                    {
+                        if(linear_solver_)
+                        {
+                            auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(); 
+                            linear_solver->solve(*(H_matrix->get_matrix()), -1.0 * grad_qp_fun, local_corr); 
+                        }
+                        else if(precond_)
+                            precond_->apply(-1.0 * grad_qp_fun, local_corr);                             
+                    }
+                    else
+                    {
+                        if(precond_)
+                            precond_->apply(-1.0 * grad_qp_fun, local_corr); 
+                    }
 
                     Vector lb_new = *lb - s; 
                     Vector ub_new = *ub - s; 
@@ -87,7 +103,7 @@ namespace  utopia
                     // alternative solution is to do full Newton step and then make iterate feasible by projecting back to the boundary
                     Scalar alpha_star = compute_alpha_max(0*s, lb_new, ub_new, local_corr); 
                     // std::cout<<"alpha_star: "<< alpha_star << " \n"; 
-                    s += alpha_star * local_corr;    
+                    s += alpha_star * local_corr;   
                     
                 }
                 else
@@ -116,15 +132,13 @@ namespace  utopia
 
                 d_norm = norm2(d); 
 
-                if(d_norm< 1e-15 || !std::isfinite(d_norm))
+                if(d_norm< this->stol()|| !std::isfinite(d_norm))
                     return; 
 
-                // if(this->verbose())
-                //     this->init_solver("Projected CG - inner solver", {"it", "alpha", "alpha_max", "betta", "|| r ||"});
+                if(this->verbose())
+                    this->init_solver("Projected CG - inner solver", {"it", "alpha", "alpha_max", "betta", "|| r ||"});
 
-
-                // TODO:: setup params from outside 
-                SizeType max_it = 200, it = 0; 
+                SizeType it = 0; 
                 bool converged = false; 
 
                 while(!converged)
@@ -158,7 +172,7 @@ namespace  utopia
                     r_norm = norm2(r); 
 
                     // following Conn, Gould, Toint... 
-                    converged = (it > max_it || r_norm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 || alpha < 1e-12 || betta < 1e-12) ? true : false; 
+                    converged = (it > this->max_it() || r_norm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 || alpha < 1e-12 || betta < 1e-12) ? true : false; 
                     // converged = (it > max_it || norm2(r) < 1e-5 )? true : false; 
 
                     it++; 
@@ -176,6 +190,12 @@ namespace  utopia
                 // simple identity preconditioner - orthogonal to the nullspace of the equality constraints 
                 Pr = e_mul(r, feasible_set); 
                 // TODO:: extend to other possibilities...
+            }
+
+
+            void set_GCP_memory(const SizeType & m)
+            {
+                cp_.set_memory_size(m); 
             }
 
 
@@ -281,11 +301,10 @@ namespace  utopia
 
 
         private:  
-            GeneralizedCauchyPoint<Vector> cp_; 
+            GeneralizedCauchyPoint<Matrix, Vector> cp_; 
             std::shared_ptr<Preconditioner<Vector> > precond_;
+            std::shared_ptr<Solver> linear_solver_;    
             Vector r, q, d, Hd; 
-            bool verbose_; 
-            Chrono _time;                 /*!<Timing of solver. */
         
     };
 }

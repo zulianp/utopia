@@ -6,9 +6,7 @@
 #include "utopia_CauchyPoint.hpp"
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
-#include "utopia_GeneralizedCauchyPoint.hpp"
 #include "utopia_TRQuadraticFunction.hpp"
-#include "utopia_ProjectedGradientActiveSet.hpp"
 
 // tr-based minimization algorithms 
 #include "utopia_TRBase.hpp"

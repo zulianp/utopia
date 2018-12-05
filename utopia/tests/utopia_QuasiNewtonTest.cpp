@@ -32,9 +32,8 @@ namespace utopia
 				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
 				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 				
-
-				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);				
+				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				UTOPIA_RUN_TEST(Gradient_projection_active_set_test);				
 			}	
 
 			void run_multilevel()
@@ -185,30 +184,30 @@ namespace utopia
 			}
 		
 
-		  //   void TR_constraint_GCP_test()
-		  //   {
-		  //   	Bratu1D<Matrix, Vector> fun(_n);
-		  //   	Vector x = values(_n, 1.0);
-		  //   	fun.apply_bc_to_initial_guess(x);
+		    void TR_constraint_GCP_test()
+		    {
+		    	Bratu1D<Matrix, Vector> fun(_n);
+		    	Vector x = values(_n, 1.0);
+		    	fun.apply_bc_to_initial_guess(x);
 
-		  //   	DVectord ub, lb;
-		  //   	fun.generate_constraints(lb, ub);
-		  //   	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+		    	DVectord ub, lb;
+		    	fun.generate_constraints(lb, ub);
+		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-		  //   	Parameters params;
-				// params.atol(1e-6);
-				// params.rtol(1e-10);
-				// params.stol(1e-10);
-				// params.max_it(1000); 
-				// params.verbose(_verbose);
+		    	Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-10);
+				params.stol(1e-10);
+				params.max_it(1000); 
+				params.verbose(_verbose);
 
-		  //       auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Vector> >();
+		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 
-		  //       TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
-		  //       tr_solver.set_box_constraints(box);
-				// tr_solver.set_parameters(params);
-				// tr_solver.solve(fun, x);
-		  //   }
+		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
+		        tr_solver.set_box_constraints(box);
+				tr_solver.set_parameters(params);
+				tr_solver.solve(fun, x);
+		    }
 
 		    void QuasiTR_constraint_GCP_test()
 		    {
@@ -230,7 +229,7 @@ namespace utopia
 				params.delta0(1);
 
 				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
-		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Vector> >();
+		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 
 		        QuasiTrustRegionVariableBound<Vector>  tr_solver(hess_approx, qp_solver);
 		        tr_solver.set_box_constraints(box);
@@ -240,33 +239,38 @@ namespace utopia
 		    }
 
 
-// 		    void Gradient_projection_active_set_test()
-// 		    {
-// 		    	Bratu1D<Matrix, Vector> fun(_n);
-// 		    	Vector x = values(_n, 0.0);
-// 		    	fun.apply_bc_to_initial_guess(x);
+		    void Gradient_projection_active_set_test()
+		    {
+		    	Bratu1D<Matrix, Vector> fun(_n);
+		    	Vector x = values(_n, 0.0);
+		    	fun.apply_bc_to_initial_guess(x);
 
-// 				Vector lb   = local_values(local_size(x).get(0), -0.01);
-// 				Vector ub   = local_values(local_size(x).get(0), 0.01);		
-// 		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		
+		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-// 		    	Parameters params;
-// 				params.atol(1e-6);
-// 				params.rtol(1e-10);
-// 				params.stol(1e-10);
-// 				params.verbose(_verbose);
-// 				params.max_it(1000);
-// 				params.delta0(1); 
+		    	Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-10);
+				params.stol(1e-10);
+				params.verbose(_verbose);
+				params.max_it(1000);
+				params.delta0(1); 
 
-// 		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
-// 		        qp_solver->verbose(false); 
+		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+		        qp_solver->verbose(false); 
+		        qp_solver->atol(1e-12); 
 
-// 		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
-// 		        tr_solver.set_box_constraints(box);
-// 				tr_solver.set_parameters(params);
-// 				tr_solver.solve(fun, x);
+		        auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
+		        qp_solver->set_linear_solver(lsolver); 
 
-// 		    }
+
+		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
+		        tr_solver.set_box_constraints(box);
+				tr_solver.set_parameters(params);
+				tr_solver.solve(fun, x);
+
+		    }
 
 
 
@@ -291,7 +295,7 @@ namespace utopia
 				params.delta0(1); 
 
 				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
-		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Vector> >();
+		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
 
 				auto precond = hess_approx->build_Hinv_precond(); 
 		        qp_solver->set_preconditioner(precond); 
@@ -313,7 +317,7 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
-		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Vector> >();
+		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
 		        
 				QuasiNewtonBound<Vector> solver(hess_approx, qp_solver);
 
@@ -328,8 +332,6 @@ namespace utopia
 
 	    		solver.verbose(_verbose); 
 	    		solver.solve(fun, x);
-
-	    		disp(x); 
 			}
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -492,7 +494,7 @@ namespace utopia
 			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
 			
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
-			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
+			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
 
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
 			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
