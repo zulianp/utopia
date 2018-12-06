@@ -8,6 +8,8 @@
 #include "utopia_For.hpp"
 #include "utopia_Size.hpp"
 
+// #define UTOPIA_DISABLE_UNROLLING
+
 namespace utopia {
 
 	template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Tensor::FILL_TYPE>
@@ -72,7 +74,9 @@ namespace utopia {
 			
 			Range r = range(in);
 			
-			out = zeros(size(in));
+			if(size(in) != size(out)) {
+				out = zeros(size(in));
+			}
 
 			Read<Tensor>  read_lock(in);
 			Write<Tensor> write_lock(out);

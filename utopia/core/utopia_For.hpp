@@ -15,29 +15,34 @@ namespace utopia {
 			const std::size_t &end, 
 			F f)
 		{	
-			const auto r = end - begin;
-			auto i = begin;
 
-			if(r < Unroll) {
-				for(; i < end; ++i) {
-					f(i);
-				}
-
-				return;
-			}
-
-			auto u_end = begin + (r/Unroll) * Unroll;
-
-			for(; i < u_end; i += Unroll) {
-				for(std::size_t k = 0; k < Unroll; ++k) {
-					auto index = i + k;
-					f(index);
-				}
-			}
-
-			for(; i < end; ++i) {
+			for(auto i = begin; i < end; ++i) {
 				f(i);
 			}
+			
+			// const auto r = end - begin;
+			// auto i = begin;
+
+			// if(r < Unroll) {
+			// 	for(; i < end; ++i) {
+			// 		f(i);
+			// 	}
+
+			// 	return;
+			// }
+
+			// auto u_end = begin + (r/Unroll) * Unroll;
+
+			// for(; i < u_end; i += Unroll) {
+			// 	for(std::size_t k = 0; k < Unroll; ++k) {
+			// 		auto idx = i + k;
+			// 		f(idx);
+			// 	}
+			// }
+
+			// for(; i < end; ++i) {
+			// 	f(i);
+			// }
 		}
 	};
 }

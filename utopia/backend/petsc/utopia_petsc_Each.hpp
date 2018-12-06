@@ -27,7 +27,8 @@ namespace utopia {
 				r_begin,
 				r.end(),
 				[&arr, &fun, r_begin](const std::size_t i) {
-					fun(r_begin + i, arr[i]);
+					auto idx = i - r_begin;
+					fun(i, arr[idx]);
 				}
 			);
 
@@ -52,7 +53,8 @@ namespace utopia {
 				r_begin,
 				r.end(),
 				[&arr, &fun, r_begin](const std::size_t i) {
-					arr[i] = fun(r_begin + i);
+					auto idx = i - r_begin;
+					arr[idx] = fun(i);
 				}
 			);
 
@@ -85,7 +87,8 @@ namespace utopia {
 					r_begin,
 					r.end(),
 					[arr, &fun, r_begin](const std::size_t i) {
-						arr[i] = fun(r_begin + i, arr[i]);
+						auto idx = i - r_begin;
+						arr[idx] = fun(i, arr[idx]);
 					}
 				);
 
@@ -102,7 +105,8 @@ namespace utopia {
 					r_begin,
 					r.end(),
 					[arr_in, arr_out, &fun, r_begin](const std::size_t i) {
-						arr_out[i] = fun(r_begin + i, arr_in[i]);
+						auto idx = i - r_begin;
+						arr_out[idx] = fun(i, arr_in[idx]);
 					}
 				);
 
