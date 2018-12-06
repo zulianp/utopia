@@ -6,7 +6,7 @@
 
 namespace utopia {
 
-	template<std::size_t Unroll = 32, int Backend = HOMEMADE>
+	template<std::size_t Unroll = 32>
 	class For {
 	public:
 		template<typename F>
@@ -26,17 +26,13 @@ namespace utopia {
 				return;
 			}
 
-			auto u_end = (end/Unroll) * Unroll;
+			auto u_end = begin + (r/Unroll) * Unroll;
 
 			for(; i < u_end; i += Unroll) {
 				for(std::size_t k = 0; k < Unroll; ++k) {
 					auto index = i + k;
 					f(index);
 				}
-			}
-
-			if(i == end) {
-				return;
 			}
 
 			for(; i < end; ++i) {

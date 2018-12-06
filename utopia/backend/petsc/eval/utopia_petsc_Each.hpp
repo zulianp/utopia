@@ -29,7 +29,7 @@ namespace utopia {
 				[&arr, &fun, r_begin](const std::size_t i) {
 					fun(r_begin + i, arr[i]);
 				}
-				);
+			);
 
 			ierr = VecRestoreArrayRead(impl, &arr); assert(ierr == 0);
 			(void) ierr;
@@ -54,7 +54,7 @@ namespace utopia {
 				[&arr, &fun, r_begin](const std::size_t i) {
 					arr[i] = fun(r_begin + i);
 				}
-				);
+			);
 
 			ierr = VecRestoreArray(impl, &arr); assert(ierr == 0);
 			(void) ierr;
@@ -87,7 +87,7 @@ namespace utopia {
 					[arr, &fun, r_begin](const std::size_t i) {
 						arr[i] = fun(r_begin + i, arr[i]);
 					}
-					);
+				);
 
 				ierr = VecRestoreArray(impl_out, &arr); assert(ierr == 0);
 
@@ -104,7 +104,7 @@ namespace utopia {
 					[arr_in, arr_out, &fun, r_begin](const std::size_t i) {
 						arr_out[i] = fun(r_begin + i, arr_in[i]);
 					}
-					);
+				);
 
 				ierr = VecRestoreArrayRead(impl_in, &arr_in); assert(ierr == 0);
 				ierr = VecRestoreArray(impl_out, &arr_out);   assert(ierr == 0);
