@@ -3,6 +3,7 @@
 #include "utopia_Benchmark_BLAS2.hpp"
 #include "utopia_Benchmark_BLAS3.hpp"
 #include "utopia_Benchmark_Algorithms.hpp"
+#include "utopia_Benchmark_Access.hpp"
 
 namespace utopia {
 
@@ -33,6 +34,10 @@ namespace utopia {
 		BenchmarkAlgorithms<Matrix, Vector> algorithms;
 		algorithms.set_verbosity_level(verbosity_level);
 		algorithms.run();
+
+		BenchmarkAccess<Matrix, Vector> access;
+		access.set_verbosity_level(verbosity_level);
+		access.run();
 	}
 
 	void run_benchmarks()
