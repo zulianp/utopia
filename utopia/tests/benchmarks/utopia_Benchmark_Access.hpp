@@ -31,10 +31,30 @@ namespace utopia {
 			for(SizeType i = 0; i < n_instances; ++i) {
 				const SizeType n = base_n * (i + 1);
 				//Vectors
+
+				this->register_experiment(
+					"vec_set_get_" + std::to_string(i),
+					[n]() {
+						Vector x = local_values(n, 1.);
+						Vector y = local_zeros(n);
+
+						auto r = range(x);
+
+						Scalar res = 0.0;
+						Read<Vector> r_(x);
+						Write<Vector> w_(y);
+						for(auto i = r.begin(); i < r.end(); ++i) {
+							res += x.get(i);
+							y.set(i, res);
+						}
+
+						utopia_test_assert(approxeq(res, size(x).get(0) * 1.));
+					}
+				);
 					
 				//measure loop time for vectors
 				this->register_experiment(
-					"vec_each" + std::to_string(i),
+					"vec_each_" + std::to_string(i),
 					[n]() {
 						Vector x = local_values(n, 1.);
 
@@ -56,13 +76,13 @@ namespace utopia {
 				);
 
 				this->register_experiment(
-					"mat_each_read" + std::to_string(i),
+					"mat_each_read_" + std::to_string(i),
 					[n]() {
 						
 						Matrix A = local_sparse(n, n, 3);
 						assemble_laplacian_1D(A);
 
-						auto N = size(A).get(0);
+						// auto N = size(A).get(0);
 
 						Scalar res = 0.0;
 						each_read(A, [&res](const SizeType i, const SizeType j, const Scalar val) {
