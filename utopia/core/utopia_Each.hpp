@@ -7,6 +7,7 @@
 #include "utopia_Range.hpp"
 #include "utopia_For.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Readable.hpp"
 
 // #define UTOPIA_DISABLE_UNROLLING
 
@@ -70,10 +71,22 @@ namespace utopia {
 		template<class Fun>
 		inline static void apply_transform(const Tensor &in, Tensor &out, Fun fun)
 		{
-			assert(&in != &out && "in and out cannot be the same object");
-			
 			Range r = range(in);
-			
+
+			if(&in == &out) {
+				ReadAndWrite<Tensor> rw(out);
+
+				For<>::apply(
+					r.begin(),
+					r.end(),
+					[&out, &fun](const std::size_t i) {
+						out.set(i, fun(i, out.get(i)));
+					}
+				);
+
+				return;
+			}
+
 			if(size(in) != size(out)) {
 				out = zeros(size(in));
 			}

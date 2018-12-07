@@ -47,6 +47,7 @@ namespace utopia {
             assert(col < size(derived()).get(1));
 
             return Backend<Scalar, Traits<Implementation>::Backend >::Instance().get(derived().implementation(), row, col);
+            // return derived().implementation().get(row, col);
         }
 
 #ifdef ENABLE_LOCK_CHECK
@@ -104,6 +105,8 @@ namespace utopia {
             assert_enabled(is_read_locked());
             assert(index < size(derived()).get(0));
             return Backend<Scalar, Traits<Implementation>::Backend >::Instance().get(derived().implementation(), index);
+            // return derived().implementation()[index];
+
         }
 
         template<typename I, typename  T>

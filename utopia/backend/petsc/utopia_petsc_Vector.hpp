@@ -278,6 +278,13 @@ namespace utopia {
 			return value;
 		}
 
+		inline PetscScalar operator[](const PetscInt index) const
+		{
+			PetscScalar value;
+			VecGetValues(implementation(), 1, &index, &value);
+			return value;
+		}
+
 		inline void get(const std::vector<PetscInt> &index,
 					    std::vector<PetscScalar> &values) const
 		{

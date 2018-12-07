@@ -31,6 +31,50 @@ namespace utopia {
 			for(SizeType i = 0; i < n_instances; ++i) {
 				const SizeType n = base_n * (i + 1);
 				//Vectors
+				this->register_experiment(
+					"vec_set" + std::to_string(i),
+					[n]() {
+						Vector x = local_values(n, 1.);
+						auto r = range(x);
+
+						SizeType K = 100;
+						for(SizeType k = 0; k < K; ++k)
+						{
+							Write<Vector> w_(x);
+							for(auto i = r.begin(); i < r.end(); ++i) {
+								x.set(i, 2.);
+							}
+						}
+
+						utopia_test_assert(
+							approxeq(sum(x), size(x).get(0) * 2.)
+						);
+					}
+				);
+
+				this->register_experiment(
+					"vec_get" + std::to_string(i),
+					[n]() {
+						Vector x = local_values(n, 1.);
+
+						auto r = range(x);
+
+						Scalar res = 0.;
+						SizeType K = 100;
+						
+						for(SizeType k = 0; k < K; ++k)
+						{
+							Read<Vector> w_(x);
+							for(auto i = r.begin(); i < r.end(); ++i) {
+								res += x.get(i)/K;
+							}
+						}
+
+						utopia_test_assert(
+							approxeq(sum(x), size(x).get(0) * 1.)
+						);
+					}
+				);
 
 				this->register_experiment(
 					"vec_set_get_" + std::to_string(i),
@@ -40,15 +84,16 @@ namespace utopia {
 
 						auto r = range(x);
 
-						Scalar res = 0.0;
-						Read<Vector> r_(x);
-						Write<Vector> w_(y);
-						for(auto i = r.begin(); i < r.end(); ++i) {
-							res += x.get(i);
-							y.set(i, res);
+						{
+							Read<Vector> r_(x);
+							Write<Vector> w_(y);
+							
+							for(auto i = r.begin(); i < r.end(); ++i) {
+								y.set(i, x.get(i));
+							}
 						}
 
-						utopia_test_assert(approxeq(res, size(x).get(0) * 1.));
+						utopia_test_assert(approxeq(sum(y), size(x).get(0) * 1.));
 					}
 				);
 					
@@ -75,6 +120,15 @@ namespace utopia {
 					}
 				);
 
+				//Matrices
+				this->register_experiment(
+					"mat_assemble_lapl_" + std::to_string(i),
+					[n]() {
+						Matrix A = local_sparse(n, n, 3);
+						assemble_laplacian_1D(A);
+					}
+				);
+
 				this->register_experiment(
 					"mat_each_read_" + std::to_string(i),
 					[n]() {
@@ -92,6 +146,7 @@ namespace utopia {
 						utopia_test_assert(approxeq(res, 0.));
 					}
 				);
+
 				
 				//...
 			}

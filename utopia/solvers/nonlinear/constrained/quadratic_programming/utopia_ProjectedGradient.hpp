@@ -95,7 +95,9 @@ namespace utopia {
 					auto r = range(x);
 
 					for(auto i = r.begin(); i != r.end(); ++i) {
-						if(approxeq(x.get(i), upbo.get(i)) || approxeq(x.get(i), lobo.get(i))) {
+						const auto x_i = x.get(i);
+						
+						if(approxeq(x_i, upbo.get(i)) || approxeq(x_i, lobo.get(i))) {
 							p.set(i, 0);
 						} else {
 							p.set(i, u.get(i));
