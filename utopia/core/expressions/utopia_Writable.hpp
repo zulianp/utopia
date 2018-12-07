@@ -47,7 +47,7 @@ namespace utopia {
             assert(row < (SizeType)size(derived()).get(0));
             assert(col < (SizeType)size(derived()).get(1));
             
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), row, col, value);
+            Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), row, col, value);
         }
 
         /**
@@ -66,7 +66,7 @@ namespace utopia {
             assert(row < (SizeType)size(derived()).get(0));
             assert(col < (SizeType)size(derived()).get(1));
 
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().add(derived().implementation(), row, col, value);
+            Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), row, col, value);
         }
 
 
@@ -83,27 +83,27 @@ namespace utopia {
         // inline void set(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
         // {
         //     assert_enabled(is_write_locked());
-        //     Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), rows, columns, values);
+        //     Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), rows, columns, values);
         // }
 
         template<typename Ordinal>
         inline void add_matrix(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
         {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().add_matrix(derived().implementation(), rows, columns, values);
+            Backend<Scalar, Traits<Implementation>::Backend>::add_matrix(derived().implementation(), rows, columns, values);
         }
 
         inline void set_matrix(const std::vector<SizeType> &rows, const std::vector<SizeType> &columns, const std::vector<Scalar> &values)
         {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set_matrix(derived().implementation(), rows, columns, values);
+            Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows, columns, values);
         }
 
         template<typename Ordinal>
         inline void set_matrix(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
         {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set_matrix(derived().implementation(), rows, columns, values);
+            Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows, columns, values);
         }
 
         template<typename RowT, typename ColT, typename ScalarT>
@@ -166,12 +166,12 @@ namespace utopia {
         {
             assert_enabled(is_write_locked());
             assert(index < (SizeType)size(derived()).get(0));
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), index, value);
+            Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), index, value);
         }
 
         inline void set(const Scalar value)
         {
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), value);
+            Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), value);
         }
 
         /**
@@ -186,7 +186,7 @@ namespace utopia {
         {
             assert_enabled(is_write_locked());
             assert(index < (SizeType)size(derived()).get(0));
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().add(derived().implementation(), index, value);
+            Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), index, value);
         }
 
 
@@ -202,7 +202,7 @@ namespace utopia {
         inline void set(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values)
         {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), indices, values);
+            Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), indices, values);
         }
 
 #ifdef ENABLE_LOCK_CHECK
@@ -259,7 +259,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_lock();
 #endif //ENABLE_LOCK_CHECK            
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_lock(_tensor.implementation(), mode_);
+            Backend<Scalar, Traits<Tensor>::Backend>::write_lock(_tensor.implementation(), mode_);
         }
 
         ~Write()
@@ -267,7 +267,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_unlock();
 #endif //ENABLE_LOCK_CHECK   
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_unlock(_tensor.implementation(), mode_);
+            Backend<Scalar, Traits<Tensor>::Backend>::write_unlock(_tensor.implementation(), mode_);
         }
 
 

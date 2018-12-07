@@ -344,12 +344,16 @@ namespace utopia {
 
 		inline void set(const PetscInt index, PetscScalar value)
 		{
-			check_error( VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES) );
+			// check_error( 
+				VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+				 // );
 		}
 
 		inline void add(const PetscInt index, PetscScalar value)
 		{
-			check_error( VecSetValues(implementation(), 1, &index, &value, ADD_VALUES) );
+			// check_error( 
+				VecSetValues(implementation(), 1, &index, &value, ADD_VALUES);
+				// );
 		}
 
 		inline bool has_ghosts() const

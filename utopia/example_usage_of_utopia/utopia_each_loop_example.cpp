@@ -1,7 +1,6 @@
 // #define UTOPIA_DISABLE_UNROLLING
 #include "utopia.hpp"
 
-
 #include <cmath>
 #include <algorithm>
 
@@ -119,15 +118,17 @@ static void run_access(const int n)
     std::cout << c << std::endl;
 }
 
-static inline double get(const Vectord &v, const SizeType i)
+static double get(const Vectord &v, const SizeType i)
 {
     return v.implementation()[i];
 }
 
 template<class Expr>
-static inline void set(Expression<Expr> &v, const SizeType i, const double val)
+static void set(Expression<Expr> &v, const SizeType i, const double val)
 {
-      v.derived().implementation()[i] = val;
+//      v.derived().implementation()[i] = val;
+    
+    Backend<double, Traits<Expr>::Backend>::set(v.derived().implementation(), i, val);
 //    v.set(i, val);
 }
 
@@ -156,6 +157,32 @@ static void run_access_blas(const int n)
     std::cout << c << std::endl;
 }
 
+static void run_access_petsc(const int n)
+{
+    std::cout << "Utopia Access Petsc" << std::endl;
+    DVectord v = local_values(n, 1.);
+    std::cout << backend(v).info().get_name() << std::endl;
+    
+    Chrono c;
+    c.start();
+    
+    {
+        PetscScalar val = 10.;
+        Write<DVectord> w_(v);
+        auto r = range(v);
+        For<>::apply(
+                     r.begin(),
+                     r.end(),
+                     [&v,val](const PetscInt i) {
+                        VecSetValues(raw_type(v), 1, &i, &val, INSERT_VALUES);
+                     }
+        );
+    }
+    
+    c.stop();
+    std::cout << c << std::endl;
+}
+
 static void run_all(const int n)
 {
 	run_raw(n);
@@ -167,6 +194,7 @@ static void run_all(const int n)
 //run with petsc types 
 	run<DVectord>(n);
     run_access<DVectord>(n);
+    run_access_petsc(n);
 #endif //WITH_PETSC 
 
 #ifdef WITH_BLAS    
