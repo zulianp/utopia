@@ -2,6 +2,7 @@
 #define UTOPIA_QUADRATURE_BASED_ASSEMBLER_HPP
 
 #include <memory>
+#include <cassert>
 
 namespace utopia {
 
