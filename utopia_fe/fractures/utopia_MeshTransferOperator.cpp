@@ -189,12 +189,16 @@ namespace utopia {
 				auto n_shape_functions = phi.size();
 				auto n_qp = qrule.n_points();
 
+				assert(n_qp > 0);
+				assert(n_shape_functions > 0);
+
 				el_mat.resize(
 					n_shape_functions * n_tensor,
 					n_shape_functions * n_tensor
 				);
 
 				el_mat.zero();
+
 
 				for(unsigned int i = 0; i < n_shape_functions; i++) {
 					for(unsigned int j = 0; j < n_shape_functions; j++) {
