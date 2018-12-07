@@ -188,13 +188,18 @@ namespace utopia {
 
 				auto n_shape_functions = phi.size();
 				auto n_qp = qrule.n_points();
+				auto n_indices = indices.size();
 
 				assert(n_qp > 0);
 				assert(n_shape_functions > 0);
 
+				if(n_shape_functions * n_tensor != n_indices) {
+					m_utopia_warning_once("dof_map not consistent with tensorization of variable")
+				}
+
 				el_mat.resize(
-					n_shape_functions * n_tensor,
-					n_shape_functions * n_tensor
+					n_indices,
+					n_indices
 				);
 
 				el_mat.zero();

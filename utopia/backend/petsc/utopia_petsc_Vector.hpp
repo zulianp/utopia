@@ -577,9 +577,17 @@ namespace utopia {
 		class ConstLocalView {
 		public:
 			const Vec v;
-			PetscInt range_begin, range_end;
 			const PetscScalar *data;
+			PetscInt range_begin, range_end;
 			PetscErrorCode ierr;
+
+			ConstLocalView(
+				const PetscScalar * data_in,
+				PetscInt range_begin_in,
+				PetscInt range_end_in
+			)
+			: v(nullptr), data(data_in), range_begin(range_begin_in), range_end(range_end_in)
+			{}
 			
 			ConstLocalView(const Vec v_in)
 			: v(v_in)
@@ -590,7 +598,9 @@ namespace utopia {
 
 			~ConstLocalView()
 			{
-				ierr = VecGetArrayRead(v, &data); assert(ierr == 0);
+				if(v) {
+					ierr = VecGetArrayRead(v, &data); assert(ierr == 0);
+				}
 			}
 		};
 
