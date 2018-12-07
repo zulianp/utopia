@@ -11,6 +11,7 @@
 #include "libmesh/boundary_mesh.h"
 
 #include <map>
+#include <cmath>
 
 namespace utopia {
 
@@ -199,6 +200,7 @@ namespace utopia {
 					for(unsigned int j = 0; j < n_shape_functions; j++) {
 						for(unsigned int qp = 0; qp < n_qp; qp++) {
 							auto value = JxW[qp] * phi[i][qp] * phi[j][qp];
+							assert(!std::isnan(value) && !std::isinf(value));
 							
 							for(unsigned int k = 0; k < n_tensor; k++) {
 								el_mat(i + k * phi.size(), j + k * phi.size()) += value;

@@ -344,6 +344,7 @@ namespace utopia {
 
 		inline void set(const PetscInt index, PetscScalar value)
 		{
+			assert(range().inside(index));
 			// check_error( 
 				VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
 				 // );
@@ -351,6 +352,7 @@ namespace utopia {
 
 		inline void add(const PetscInt index, PetscScalar value)
 		{
+			assert(range().inside(index));
 			// check_error( 
 				VecSetValues(implementation(), 1, &index, &value, ADD_VALUES);
 				// );
@@ -552,14 +554,51 @@ namespace utopia {
 		//debug
 		bool immutable_;
 
+		class LocalView {
+		public:
+			Vec v;
+			PetscInt range_begin, range_end;
+			PetscScalar *data;
+			PetscErrorCode ierr;
+			
+			LocalView(Vec v_in)
+			: v(v_in)
+			{
+				ierr = VecGetArray(v, &data); assert(ierr == 0);
+				ierr = VecGetOwnershipRange(v, &range_begin, &range_end); assert(ierr == 0);
+			}
+
+			~LocalView()
+			{
+				ierr = VecRestoreArray(v, &data); assert(ierr == 0);
+			}
+		};
+
+		class ConstLocalView {
+		public:
+			const Vec v;
+			PetscInt range_begin, range_end;
+			const PetscScalar *data;
+			PetscErrorCode ierr;
+			
+			ConstLocalView(const Vec v_in)
+			: v(v_in)
+			{
+				ierr = VecGetArrayRead(v, &data); assert(ierr == 0);
+				ierr = VecGetOwnershipRange(v, &range_begin, &range_end); assert(ierr == 0);
+			}
+
+			~ConstLocalView()
+			{
+				ierr = VecGetArrayRead(v, &data); assert(ierr == 0);
+			}
+		};
+
 		inline static bool check_error(const PetscInt err) {
 			return PetscErrorHandler::Check(err);
 		}
 
 		bool is_cuda() const;
-
-
-
 	 	bool is_root() const;
 
 	};
