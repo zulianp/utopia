@@ -33,39 +33,6 @@
       using utopia::TrustRegionBase<Vector>::get_pred; 
 
 
-      /*!
-      \details
-                Determine, wheater problem is linear, or we need nonlinear solve 
-      @note
-      \param fun          - function with evaluation routines 
-      \param H            - hessian
-      \param g            - gradient
-      \param p_N          - Newton step
-      \param x_k          - current iterate
-        */
-      virtual bool linear_solution_check(
-        
-        LeastSquaresFunction<Matrix, Vector> &fun, 
-        Vector & g, 
-        const Matrix & H, 
-        Vector & p_N, 
-        Vector & x_k)
-      {
-        this->linear_solve(H, -1 * g, p_N);
-        fun.residual(x_k + p_N, g);
-        Scalar g_norm = norm2(g);
-
-        if(g_norm < 1e-7)
-        {
-          x_k += p_N; 
-          std::cout<<"To solve linear problem, TR solver is not really needed ..."; 
-          return true; 
-        }
-
-        x_k += p_N; 
-        return false; 
-      }
-
       
       /**
        * @brief      TR solution process. 
@@ -97,7 +64,6 @@
 
 
         #define DEBUG_mode
-        //  #define LS_check
 
   			// TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
@@ -125,17 +91,6 @@
         #endif
 
 
-        // found out if there is a linear solution - or start with the newton step 
-        #ifdef LS_check
-          if(this->linear_solution_check(fun, g, H, p_N, x_k))
-          {
-            if(this->verbose_) 
-              TrustRegionBase::check_convergence(*this, tol, this->max_it(), 0, 0, 0, 0, 0); 
-            return true; 
-          }
-          x_k1 = x_k; 
-        #endif
-
         it++; 
         fun.value(x_k, E); 
         fun.residual(x_k, r_k);
@@ -156,7 +111,7 @@
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
             tr_subproblem->current_radius(delta);
 
-          this->linear_solve(J_k, r_k, p_k);
+          this->linear_solve(J_k, -1.0*r_k, p_k);
           pred = this->get_pred(g, H, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------

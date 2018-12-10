@@ -1,9 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-02-06 17:47:26
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-10 11:00:58
-*/
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
@@ -56,7 +50,6 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-
 			UTOPIA_RUN_TEST(affine_similarity_small_test); 
 			UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
 		}

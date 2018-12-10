@@ -352,10 +352,10 @@ namespace utopia {
         std::vector< std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> > functions(n_levels);
 
         auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
-        coarse_solver->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
+        // coarse_solver->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
         
         auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
-        smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
+        // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
 
 
         // coarse_solver->verbose(true); 
@@ -366,9 +366,9 @@ namespace utopia {
         // coarse_solver->pc_type("lu");
 
 
-        coarse_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<USparseMatrix, UVector> >());
+        //coarse_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<USparseMatrix, UVector> >());
         // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
-        smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
+        // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
 
 
         meshes[0] = std::make_shared<libMesh::DistributedMesh>(*comm_);
@@ -401,7 +401,7 @@ namespace utopia {
             functions[i] = get_function(in, *spaces[i]);
         }
 
-        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, GALERKIN> >(n_levels);
+        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, FIRST_ORDER> >(n_levels);
         rmtr->set_transfer_operators(transfers);
 
         

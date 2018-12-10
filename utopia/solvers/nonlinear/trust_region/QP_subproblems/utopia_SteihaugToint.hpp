@@ -87,8 +87,9 @@ namespace utopia
 	    	g_norm = norm2(g);
 	    	z = g_norm * g_norm;
 
+            if(this->verbose())
+	    	  this->init_solver(" ST-CG ", {"it. ", "||r||" });
 
-	    	this->init_solver(" ST-CG ", {"it. ", "||r||" });
             bool converged = false;
 
         	while(!converged)
@@ -236,7 +237,6 @@ namespace utopia
 	    		sMp = (betta * sMp) + (alpha * p_norm); 
 	    		p_norm = g_v_prod_new + (betta*betta * p_norm); 
 	    		s_norm = s_norm_new; 
-
 
 	    		g_norm = norm2(r);  
 

@@ -15,17 +15,17 @@ namespace  utopia
 
             virtual ~TRSubproblemBase( ){}
 
-            TRSubproblemBase(): current_radius_(1e12)
+            TRSubproblemBase(): current_radius_(1e14)
             {
 
             }
 
-            virtual void current_radius(const Scalar &radius)
+            void current_radius(const Scalar &radius)
             {
                 current_radius_ = radius;
             }
 
-            virtual Scalar current_radius()
+            Scalar current_radius()
             {
                 return current_radius_;
             }
@@ -91,7 +91,6 @@ namespace  utopia
             virtual void set_parameters(const Parameters params) override
             {
                 IterativeSolver::set_parameters(params);
-                this->current_radius(params.delta0());
             }
 
             virtual TRSubproblem * clone() const override = 0;

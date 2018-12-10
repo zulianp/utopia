@@ -462,8 +462,8 @@ namespace utopia
 	        rmtr->set_eps_grad_termination(1e-7);
 
 			rmtr->verbose(problem.verbose);
-			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
 	        rmtr->set_functions(level_functions);
 

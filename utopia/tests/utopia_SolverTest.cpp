@@ -7,17 +7,9 @@
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_MultiLevelTestProblem.hpp"
 
-namespace utopia {
-	/**
-	 * @brief      Class to test our nonlinear solvers.
-	 *
-	 * @todo       add more tests to TR, LS, ...
-	 * @todo       different strategies, different LS solve, test all params, nonlinear problems ...
-	 *
-	 * @tparam     Matrix
-	 * @tparam     Vector
-	 * @tparam     Scalar
-	 */
+namespace utopia 
+{
+
 	template<class Matrix, class Vector, class Scalar>
 	class SolverTest {
 	public:
@@ -38,8 +30,8 @@ namespace utopia {
 			UTOPIA_RUN_TEST(ls_test);
 			UTOPIA_RUN_TEST(nl_solve_test);
 			UTOPIA_RUN_TEST(dogleg_test);
-			// UTOPIA_RUN_TEST(st_cg_test); 
-			// UTOPIA_RUN_TEST(precond_st_cg_test); 
+			UTOPIA_RUN_TEST(st_cg_test); 
+			UTOPIA_RUN_TEST(precond_st_cg_test); 
 		}
 
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
