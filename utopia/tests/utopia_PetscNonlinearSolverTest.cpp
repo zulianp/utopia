@@ -56,9 +56,9 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-			
-			// UTOPIA_RUN_TEST(affine_similarity_small_test); 
-			// UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
+
+			UTOPIA_RUN_TEST(affine_similarity_small_test); 
+			UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
 		}
 
 		void petsc_ngs_test()
@@ -721,8 +721,8 @@ namespace utopia
 			DVectord x   		= values(2, 1.0);			
 			
 			{
-				Read<DVectord> r1(x_exact);
-				Read<DVectord> r2(x); 
+				Write<DVectord> r1(x_exact, LOCAL);
+				Write<DVectord> r2(x, LOCAL); 
 
 				x.set(1, 0.0); 
 				x_exact.set(0, 0.0); 

@@ -14,7 +14,7 @@
 namespace utopia
 {
     
-    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    template<class Matrix, class Vector>
     class AffineSimilarity : public NewtonBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
@@ -89,7 +89,6 @@ namespace utopia
             print_statistics(it, g_norm, tau,  it_inner); 
 
             it++;
-
             Vector x_old = x; 
 
             while(!converged)
@@ -350,16 +349,13 @@ namespace utopia
             Vector x_scaling = local_values(local_size(x_old).get(0), 1.0); 
 
             {   
-                Write<Vector>   w(x_scaling); 
                 Read<Vector>    r1(x_old), r2(x_new); 
+                auto tol = alpha_treshold_; 
+                each_write(x_scaling, [&x_old, &x_new, tol](const SizeType i) -> double 
+                { 
+                    return std::max(std::max(std::abs(x_old.get(i)), std::abs(x_new.get(i))), tol); 
+                });
 
-                Range r = range(x_scaling);
-
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                {
-                    Scalar value = std::max(std::max( std::abs(x_old.get(i)), std::abs(x_new.get(i))), alpha_treshold_);
-                    x_scaling.set(i, value); 
-                }
             }
 
             D_ = diag(x_scaling); 
