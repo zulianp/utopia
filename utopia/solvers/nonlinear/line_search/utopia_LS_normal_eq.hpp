@@ -76,15 +76,13 @@ namespace utopia
         
         x_k += alpha_k * p_k; 
 
-
         fun.residual(x_k, r_k);
 
-              // norms needed for convergence check 
-        r_norm = norm2(r_k);
-        rel_norm = r_norm/r0_norm; 
-        s_norm = norm2(p_k); 
+        // norms needed for convergence check 
+        norms2(r_k, p_k, r_norm, s_norm); 
+        rel_norm = r_norm/r0_norm;     
 
-              // print iteration status on every iteration 
+        // print iteration status on every iteration 
         if(this->verbose_)
           PrintInfo::print_iter_status(it, {r_norm, rel_norm, s_norm, alpha_k}); 
 

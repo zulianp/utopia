@@ -12,7 +12,6 @@ namespace  utopia
     {
         public:
             typedef UTOPIA_SCALAR(Vector) Scalar;
-            typedef utopia::Preconditioner<Vector> Preconditioner;
 
             virtual ~TRSubproblemBase( ){}
 
@@ -30,36 +29,6 @@ namespace  utopia
             {
                 return current_radius_;
             }
-
-        protected:
-            Scalar current_radius_;    
-    }; 
-
-
-    template<class Matrix, class Vector>
-    class TRSubproblem : public IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
-    {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
-        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
-        typedef utopia::Preconditioner<Vector> Preconditioner;
-
-        public:
-            TRSubproblem(const Parameters params = Parameters())
-            {
-                set_parameters(params);
-            };
-
-
-            virtual ~TRSubproblem( ){}
-
-            virtual void set_parameters(const Parameters params) override
-            {
-                IterativeSolver::set_parameters(params);
-                this->current_radius(params.delta0());
-            }
-
-            virtual TRSubproblem * clone() const override = 0;
-
 
         protected:
             Scalar quad_solver(const Vector &s, const Vector &p_k, const Scalar & delta,  Vector &result)
@@ -88,15 +57,44 @@ namespace  utopia
 
 
 
-        Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
-        {
-            Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c);
+            Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
+            {
+                Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c);
 
-            Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a);
-            Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a);
+                Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a);
+                Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a);
 
-            return std::max(upper, lower);
-        }
+                return std::max(upper, lower);
+            }
+
+
+        protected:
+            Scalar current_radius_;    
+    }; 
+
+
+    template<class Matrix, class Vector>
+    class TRSubproblem : public IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
+    {
+        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
+
+        public:
+            TRSubproblem(const Parameters params = Parameters())
+            {
+                set_parameters(params);
+            };
+
+
+            virtual ~TRSubproblem( ){}
+
+            virtual void set_parameters(const Parameters params) override
+            {
+                IterativeSolver::set_parameters(params);
+                this->current_radius(params.delta0());
+            }
+
+            virtual TRSubproblem * clone() const override = 0;
     };
 
 

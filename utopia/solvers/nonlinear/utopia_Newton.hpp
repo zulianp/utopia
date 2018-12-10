@@ -103,14 +103,12 @@ namespace utopia
 
                 // notify listener
                 fun.update(x);
-
-
                 fun.gradient(x, grad);
 
                 // norms needed for convergence check
-                g_norm = norm2(grad);
+                norms2(grad, step, g_norm, s_norm); 
                 r_norm = g_norm/g0_norm;
-                s_norm = norm2(step);
+
 
                 // // print iteration status on every iteration
                 if(this->verbose_)

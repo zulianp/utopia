@@ -153,9 +153,11 @@
     //    convergence check 
     //----------------------------------------------------------------------------
           if(accepted)
-            fun.gradient(x_k, g); 
+          {
+            fun.gradient(x_k, g);           
+            g_norm = this->criticality_measure_infty(x_k, g); 
+          }
           
-          g_norm = this->criticality_measure_infty(x_k, g); 
           s_norm = norm2(p_k); 
 
           if(this->verbose_)

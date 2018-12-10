@@ -74,9 +74,8 @@ namespace utopia
                 fun.gradient(x, g);
 
                 // norms needed for convergence check
-                g_norm = norm2(g);
-                r_norm = g_norm/g0_norm;
-                s_norm = norm2(s);
+                norms2(g, s, g_norm, s_norm); 
+                r_norm = g_norm/g0_norm;                
 
                 // diff between fresh and old grad...
                 y = g - y; 

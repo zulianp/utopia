@@ -19,12 +19,13 @@
 
 namespace utopia
 {
-    /**
-     * @brief      The class for Recursive multilevel trust region solver.
-     *
-     * @tparam     Matrix
-     * @tparam     Vector
-     */
+
+    enum LocalSolveType{    PRE_SMOOTHING  = 1, 
+                            POST_SMOOTHING = 2, 
+                            COARSE_SOLVE   = 0};
+
+
+
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
                  public TrustRegionBase<Vector>
@@ -141,6 +142,8 @@ namespace utopia
         }
 
 
+        // this parameter define total number of smoothing its - sucessful and unsuccessful 
+        // while pre_smooting and post_smoothing count just sucessful iterations 
         void max_smoothing_it(const SizeType & max_smoothing_it)
         {
             _max_smoothing_it = max_smoothing_it;
@@ -377,8 +380,8 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            if(max_smoothing_it()!=0)
-                converged = this->local_tr_solve(level);
+            if(this->pre_smoothing_steps()!=0)
+                converged = this->local_tr_solve(level, PRE_SMOOTHING);
             else
                 converged = false;
 
@@ -461,7 +464,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             if(level == 1 && smoothness_flg)
             {
-                this->local_tr_solve(level -1, true);
+                this->local_tr_solve(level - 1, COARSE_SOLVE);
             }
             else if(smoothness_flg)
             {
@@ -547,10 +550,11 @@ namespace utopia
             //                        postsmoothing
             //----------------------------------------------------------------------------
 
-            this->reset_level(level); // TODO:: find better name for this...
-
-            if(max_smoothing_it()!=0)
-                this->local_tr_solve(level, !smoothness_flg);
+            if(this->post_smoothing_steps()!=0)
+            {
+                auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE : POST_SMOOTHING; 
+                this->local_tr_solve(level, post_smoothing_solve_type);
+            }
 
             return true;
         }
@@ -566,16 +570,23 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool local_tr_solve(const SizeType & level, const bool & exact_solve_flg = false)
+        virtual bool local_tr_solve(const SizeType & level, const LocalSolveType & solve_type)
         {
             SizeType it_success = 0, it = 0;
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0;
             bool make_grad_updates = true, /*make_hess_updates = true,*/ converged = false, delta_converged = false;
 
+            const bool exact_solve_flg = (solve_type >0) ? true : false; 
+
+
+            this->initialize_local_solve(level, solve_type); 
+
+
             // should be neccessary just first time, we enter given level 
             if(empty(memory_.s[level]))
                  memory_.s[level] = local_zeros(local_size(memory_.x[level]));
 
+            // important, as this can be postsmoothing 
             this->compute_s_global(level, memory_.s_working[level]);
             this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
 
@@ -583,7 +594,7 @@ namespace utopia
             energy_old = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
             g_norm = this->criticality_measure(level);
 
-            converged  = this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level]);
+            converged  = this->check_local_convergence(it, it_success,  g_norm, level, memory_.delta[level], solve_type);
 
             if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
@@ -653,11 +664,10 @@ namespace utopia
                     // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
                 }
 
-
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                     PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, memory_.delta[level]});
 
-                converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level]);
+                converged  = (delta_converged  == true) ? true : this->check_local_convergence(it, it_success,  g_norm, level, memory_.delta[level], solve_type);
 
                 if(level == this->n_levels()-1)
                     converged  = (converged  == true || g_norm < this->atol()) ? true : false;
@@ -780,12 +790,11 @@ namespace utopia
         }
 
 
-
-        virtual void reset_level(const SizeType & level)
+        virtual void initialize_local_solve(const SizeType & level, const LocalSolveType & solve_type)
         {
-            // does not do anything
-        }
 
+
+        }
 
 
         /**
@@ -832,16 +841,25 @@ namespace utopia
          * @param[in]  delta       The delta
          *
          */
-        virtual bool check_local_convergence(const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta)
+        virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
         {
             // coarse one
             if(level == 0 && (it_success >= _max_coarse_it))
+            {
                 return true;
+            }
             // every other level
-            else if (level > 0 && it_success >= _max_smoothing_it)
-                return true;
-
-            if(delta < this->delta_min())
+            else if (level > 0 && solve_type == PRE_SMOOTHING)
+            {
+                if(it_success >= this->pre_smoothing_steps() || it >= this->max_smoothing_it()) 
+                    return true;
+            }
+            else if (level > 0 && solve_type == POST_SMOOTHING)
+            {
+                if(it_success >= this->post_smoothing_steps() || it >= this->max_smoothing_it()) 
+                    return true;   
+            }
+            else if(delta < this->delta_min())
                 return true;
 
             return this->criticality_measure_termination(g_norm);
@@ -890,8 +908,9 @@ namespace utopia
          */
         virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/)
         {
-            Scalar Rg_norm = norm2(g_restricted);
-            Scalar g_norm = norm2(g_coarse);
+            Scalar Rg_norm, g_norm; 
+            norms2(g_restricted, g_coarse, Rg_norm, g_norm); 
+
             return (Rg_norm >= _grad_smoothess_termination * g_norm) ? true : false;
         }
 
@@ -1050,8 +1069,6 @@ namespace utopia
                 }
             }
         }
-
-
 
     private: 
         std::vector<TRSubproblemPtr>        _tr_subproblems; 

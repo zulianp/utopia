@@ -121,9 +121,6 @@
 
 
           x_trial = x_k + p_k; 
-
-          // scaling correction to fit into tr radius ... 
-          s_norm = norm2(p_k);
           pred = this->get_pred(g, *multiplication_action, p_k); 
 
     //----------------------------------------------------------------------------
@@ -185,8 +182,8 @@
     //----------------------------------------------------------------------------
     //    convergence check
     //----------------------------------------------------------------------------
-          g_norm = norm2(g);
-          r_norm = g_norm/g0_norm;
+          norms2(g, p_k, g_norm, s_norm); 
+          r_norm = g_norm/g0_norm;                
 
           #ifdef DEBUG_mode
             if(this->verbose_)

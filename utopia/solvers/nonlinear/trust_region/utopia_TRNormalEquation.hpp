@@ -193,9 +193,8 @@
           x_k = x_k1; 
           fun.residual(x_k, r_k); 
           
-          g_norm = norm2(r_k); 
-          r_norm = g_norm/g0_norm;
-          s_norm = norm2(p_k); 
+          norms2(r_k, p_k, g_norm, s_norm); 
+          r_norm = g_norm/g0_norm;                          
 
           #ifdef DEBUG_mode
             if(this->verbose_)

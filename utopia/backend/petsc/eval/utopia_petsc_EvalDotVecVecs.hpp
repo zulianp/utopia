@@ -55,6 +55,38 @@ namespace utopia
 	        }	        
     };
 
+
+
+
+    template<class Vector>
+    class EvalNorm2s<Vector, PETSC>
+    {
+    	public:
+	        static void apply(const Wrapper<Vector, 1> &v1, const Wrapper<Vector, 1> &v2, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2) 
+	        { 
+			  	VecNormBegin(v1.implementation().implementation(), NORM_2, &result1);
+			  	VecNormBegin(v2.implementation().implementation(), NORM_2, &result2);
+			  	PetscCommSplitReductionBegin(PetscObjectComm((PetscObject)v1.implementation().implementation()));
+				VecNormEnd(v1.implementation().implementation(), NORM_2, &result1);
+				VecNormEnd(v2.implementation().implementation(), NORM_2, &result2);
+	        }     
+
+			static void apply(const Wrapper<Vector, 1> &v1, const Wrapper<Vector, 1> &v2, const Wrapper<Vector, 1> &v3,  typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2, typename utopia::Traits<Vector>::Scalar & result3) 
+	        { 
+			  	VecNormBegin(v1.implementation().implementation(), NORM_2, &result1);
+			  	VecNormBegin(v2.implementation().implementation(), NORM_2, &result2);
+			  	VecNormBegin(v3.implementation().implementation(), NORM_2, &result3);
+			  	PetscCommSplitReductionBegin(PetscObjectComm((PetscObject)v1.implementation().implementation()));
+				VecNormEnd(v1.implementation().implementation(), NORM_2, &result1);
+				VecNormEnd(v2.implementation().implementation(), NORM_2, &result2);
+				VecNormEnd(v3.implementation().implementation(), NORM_2, &result3);
+	        }     
+    };
+
+
+
+
+
 }
 
 

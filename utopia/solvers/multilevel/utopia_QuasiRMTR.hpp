@@ -141,14 +141,10 @@ namespace utopia
             hessian_approxs_[this->n_levels() - 1 ]->initialize();
         }
 
-        virtual void init_level(const SizeType & level) override
-        {
-            RMTR::init_level(level);
-
-            // maybe different strategies over here...
-            // smoothed vectors and so on...
-            hessian_approxs_[level]->initialize();
-        }
+        // virtual void init_level(const SizeType & level) override
+        // {
+        //     RMTR::init_level(level);
+        // }
 
 
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) override
@@ -195,9 +191,17 @@ namespace utopia
         }
 
 
-        virtual void reset_level(const SizeType & level) override
+        virtual void initialize_local_solve(const SizeType & level, const LocalSolveType & solve_type) override
         {
-            hessian_approxs_[level]->reset();
+            if(!(solve_type == PRE_SMOOTHING && level == this->n_levels()-1))
+            {
+                // this is interesting heuristic
+                if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
+                {
+                    hessian_approxs_[level]->reset();
+                    hessian_approxs_[level]->initialize();
+                }
+            }
         }
 
 

@@ -157,14 +157,18 @@
             fun.gradient(x_k, g);
             g_norm = norm2(g);
             r_norm = g_norm/g0_norm;
+
+            norms2(g, p_k, g_norm, s_norm); 
+            r_norm = g_norm/g0_norm;            
           }
-
-
+          else
+          {
+            s_norm = norm2(p_k);
+          }
 
     //----------------------------------------------------------------------------
     //    convergence check
     //----------------------------------------------------------------------------
-          s_norm = norm2(p_k);
 
           #ifdef DEBUG_mode
             if(this->verbose_)
