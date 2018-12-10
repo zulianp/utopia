@@ -205,6 +205,13 @@ namespace utopia {
             Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), indices, values);
         }
 
+        template<typename Ordinal>
+        inline void add(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values)
+        {
+            assert_enabled(is_write_locked());
+            Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), indices, values);
+        }
+
 #ifdef ENABLE_LOCK_CHECK
         Writeable()
         : lock_active_(false)

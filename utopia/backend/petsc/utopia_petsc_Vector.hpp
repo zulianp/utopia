@@ -6,8 +6,9 @@
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Range.hpp"
-
+#include "utopia_Writable.hpp"
 #include "petscvec.h"
+#include "utopia_make_unique.hpp"
 
 #include <map>
 #include <vector>
@@ -37,8 +38,8 @@ namespace utopia {
 			}
 
 			inline void init_index(
-								   const PetscInt n_local,
-								   const std::vector<PetscInt> &index)
+				const PetscInt n_local,
+				const std::vector<PetscInt> &index)
 			{
 				has_ghosts_ = true;
 				const PetscInt n = index.size();
@@ -125,7 +126,7 @@ namespace utopia {
 
 		bool has_type(VecType type) const;
 
-	 	bool same_type(const PetscVector &other) const;
+		bool same_type(const PetscVector &other) const;
 
 		inline PetscInt local_size() const
 		{
@@ -273,20 +274,29 @@ namespace utopia {
 
 		inline PetscScalar get(const PetscInt index) const
 		{
-			PetscScalar value;
-			VecGetValues(implementation(), 1, &index, &value);
-			return value;
+			// PetscScalar value;
+			// VecGetValues(implementation(), 1, &index, &value);
+			// return value;
+			assert(range().inside(index));
+			assert((readable_) && "use Read<Vector> r(vec) before using get. Check if you are using a copy of the vector");
+
+			return readable_->data[index - readable_->range_begin];
 		}
 
-		inline PetscScalar operator[](const PetscInt index) const
+		inline const PetscScalar &operator[](const PetscInt index) const
 		{
-			PetscScalar value;
-			VecGetValues(implementation(), 1, &index, &value);
-			return value;
+			// PetscScalar value;
+			// VecGetValues(implementation(), 1, &index, &value);
+			// return value;
+			assert(range().inside(index));
+				assert((readable_) && "use Read<Vector> r(vec) before using get. Check if you are using a copy of the vector");
+
+			return readable_->data[index - readable_->range_begin];
 		}
 
-		inline void get(const std::vector<PetscInt> &index,
-					    std::vector<PetscScalar> &values) const
+		inline void get(
+			const std::vector<PetscInt> &index,
+			std::vector<PetscScalar> &values) const
 		{
 			std::size_t n = index.size();
 
@@ -295,11 +305,11 @@ namespace utopia {
 			if(!ghost_values_.has_ghosts()) {
 
 				VecGetValues(
-							 implementation(),
-							 static_cast<PetscInt>(index.size()),
-							 &index[0],
-							 &values[0]
-							 );
+					implementation(),
+					static_cast<PetscInt>(index.size()),
+					&index[0],
+					&values[0]
+					);
 
 			} else {
 
@@ -346,7 +356,10 @@ namespace utopia {
 		{
 			assert(range().inside(index));
 			// check_error( 
-				VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+			// VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+
+			assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+			writeable_->data[index - writeable_->range_begin] = value;
 				 // );
 		}
 
@@ -354,8 +367,11 @@ namespace utopia {
 		{
 			assert(range().inside(index));
 			// check_error( 
-				VecSetValues(implementation(), 1, &index, &value, ADD_VALUES);
+			// VecSetValues(implementation(), 1, &index, &value, ADD_VALUES);
 				// );
+
+			assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+			writeable_->data[index - writeable_->range_begin] += value;
 		}
 
 		inline bool has_ghosts() const
@@ -510,17 +526,66 @@ namespace utopia {
 			scale(numerator);
 		}
 
-		inline void read_lock() {}
-		inline void read_unlock() {}
+		inline void read_lock() {
+			readable_  = utopia::make_unique<ConstLocalView>(implementation());
+		}
 
-		inline void write_lock() {}
-		inline void write_unlock()
+		inline void read_unlock()
 		{
-			VecAssemblyBegin(implementation());
-			VecAssemblyEnd(implementation());
+			readable_ = nullptr;
+		}
 
-			set_initialized(true);
-			update_ghosts();
+		inline void write_lock(WriteMode mode)
+		{
+			switch(mode) {
+				case GLOBAL_INSERT:
+				case GLOBAL_ADD:
+				{
+					//no-op
+					break;
+				}
+				case LOCAL:
+				case AUTO:
+				default:
+				{	
+					writeable_ = utopia::make_unique<LocalView>(implementation());
+					readable_  = utopia::make_unique<ConstLocalView>(*writeable_);
+					break;
+				}
+			}
+		}
+
+		inline void write_unlock(WriteMode mode)
+		{
+			switch(mode) {
+				case GLOBAL_INSERT:
+				case GLOBAL_ADD:
+				{
+					VecAssemblyBegin(implementation());
+					VecAssemblyEnd(implementation());
+
+					set_initialized(true);
+					update_ghosts();
+					break;
+				}
+				case LOCAL:
+				case AUTO:
+				default:
+				{	
+					writeable_ = nullptr;
+					readable_  = nullptr;
+
+					if(!initialized_) {
+						VecAssemblyBegin(implementation());
+						VecAssemblyEnd(implementation());
+
+						set_initialized(true);
+						update_ghosts();
+					}
+					
+					break;
+				}
+			}
 		}
 
 		bool is_nan_or_inf() const;
@@ -581,11 +646,18 @@ namespace utopia {
 			PetscInt range_begin, range_end;
 			PetscErrorCode ierr;
 
+			ConstLocalView(const LocalView &view)
+			: v(nullptr),
+			data(view.data),
+			range_begin(view.range_begin),
+			range_end(view.range_end)
+			{}
+
 			ConstLocalView(
 				const PetscScalar * data_in,
 				PetscInt range_begin_in,
 				PetscInt range_end_in
-			)
+				)
 			: v(nullptr), data(data_in), range_begin(range_begin_in), range_end(range_end_in)
 			{}
 			
@@ -604,12 +676,15 @@ namespace utopia {
 			}
 		};
 
+		std::unique_ptr<LocalView> writeable_;
+		std::unique_ptr<ConstLocalView> readable_;
+
 		inline static bool check_error(const PetscInt err) {
 			return PetscErrorHandler::Check(err);
 		}
 
 		bool is_cuda() const;
-	 	bool is_root() const;
+		bool is_root() const;
 
 	};
 

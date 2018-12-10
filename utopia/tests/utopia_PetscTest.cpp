@@ -167,14 +167,10 @@ namespace utopia {
 
         //The use of Read/Write/ReadAndWrite locks is important for universal compatibility with all (parallel) backends
         { //scoped write lock
-            Write<DVectord> writing(x);
-            //usual way
-            x.set(xb, -1);
-            x.set(xb + 9, -1);
-
+            Write<DVectord> writing(x, GLOBAL_INSERT);
             //the petsc way
-            std::vector <PetscScalar> values{10., 10., 10};
-            std::vector <PetscInt> index{xb + 2, xb + 3, xb + 4};
+            std::vector<PetscScalar> values{-1., 10., 10., 10, -1.};
+            std::vector<PetscInt> index{xb, xb + 2, xb + 3, xb + 4, xb + 9};
             x.set(index, values);
         }
 
@@ -293,8 +289,8 @@ namespace utopia {
 
     void petsc_mv()
     {
-        const PetscInt n = 10;
-        const PetscInt m = 20;
+        const SizeType n = 10;
+        const SizeType m = 20;
 
         //creates a dense matrix
         DVectord v   = values(n, 1, 1);
@@ -303,8 +299,11 @@ namespace utopia {
 
         DVectord expected = values(m, 1, 1);
         {
+            auto r = range(expected);
             Write<DVectord> w(expected);
-            for (size_t i = n; i < m; i++) {
+            SizeType e_begin = std::max(n, r.begin());
+            SizeType e_end   = std::min(m, r.end());
+            for (SizeType i = e_begin; i < e_end; i++) {
                 expected.set(i, 0);
             }
         }
@@ -906,7 +905,7 @@ namespace utopia {
 
         {
             Write<DVectord> w(sol);
-            sol.set(2, 1);
+            if(range(sol).inside(2)) { sol.set(2, 1); }
         }
 
         //FIXME
@@ -1010,9 +1009,11 @@ namespace utopia {
         auto r = range(v);
 
         {
-            Write<DVectord> w_v(v);
+            Write<DVectord> w_v(v, GLOBAL_INSERT);
             for(auto i = r.begin(); i != r.end(); ++i) {
-                v.set(i, i);
+                std::vector<PetscInt> index(1); index[0] = i;
+                std::vector<PetscScalar> values(1); values[0] = static_cast<double>(i);
+                v.set(index, values);
             }
         }
 

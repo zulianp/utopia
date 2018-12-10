@@ -13,9 +13,10 @@ namespace utopia {
         {
             Vector v = zeros(2);
             {
+                auto r = range(v);
                 Write<Vector> w(v);
-                v.set(0, 3.0);
-                v.set(1, 4.0);
+                if(r.inside(0)) { v.set(0, 3.0); }
+                if(r.inside(1)) { v.set(1, 4.0); }
             }
 
             double n = norm2(v);
@@ -50,14 +51,16 @@ namespace utopia {
         {
             Vector v1 = zeros(2), v2 = zeros(2);
             {
+                auto r = range(v1);
                 Write<Vector> w(v1);
-                v1.set(0, 0.0);
-                v1.set(1, 1.0);
+                if(r.inside(0)) v1.set(0, 0.0);
+                if(r.inside(1)) v1.set(1, 1.0);
             }
             {
+                auto r = range(v2);
                 Write<Vector> w(v2);
-                v2.set(0, 1.0);
-                v2.set(1, 0.0);
+                if(r.inside(0)) v2.set(0, 1.0);
+                if(r.inside(1)) v2.set(1, 0.0);
             }
 
             double v = dot(v1, v2 * 0.1);
@@ -68,9 +71,10 @@ namespace utopia {
         {
             Vector v = zeros(2);
             {
+                auto r = range(v);
                 Write<Vector> w(v);
-                v.set(0, 1.0);
-                v.set(1, 10.0);
+                if(r.inside(0)) v.set(0, 1.0);
+                if(r.inside(1)) v.set(1, 10.0);
             }
 
             double one = norm2(v) * norm2(v) / dot(v, v);
@@ -89,9 +93,10 @@ namespace utopia {
 
             Matrix m1 = identity(3, 3);
             {
-                Write<Matrix> w(m1);
+                Write<Matrix> w(m1, GLOBAL_INSERT);
                 m1.set(0, 1, 1);
             }
+
             Matrix m2 = values(3, 3, 2);
             Matrix m3 = m2 * transpose(m2);
             m3 = transpose(m1) * m3;
@@ -99,10 +104,11 @@ namespace utopia {
             m3 = m1 * m3;
 
             each_read(m3, [](SizeType x, SizeType y, double entry) {
-                if (x == 0)
+                if (x == 0) {
                     utopia_test_assert(entry == 192);
-                else
+                } else {
                     utopia_test_assert(entry == 96);
+                }
             });
         }
 

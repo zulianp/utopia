@@ -135,7 +135,7 @@ namespace utopia
               Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
               Write<Vector> wv(Pc); 
 
-              each_write(Pc, [ub, lb, x](const SizeType i) -> double { 
+              each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double { 
                           Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
                           if(li >= xi)
                             return li; 
@@ -158,8 +158,9 @@ namespace utopia
                   Read<Vector> rv(u); 
                   Write<Vector> wv(u_f); 
 
-                  each_write(u_f, [radius, u](const SizeType i) -> double { 
-                      return  (u.get(i) <= radius)  ? u.get(i) : radius; }   );
+                  each_write(u_f, [radius, &u](const SizeType i) -> double { 
+                      const auto val = u.get(i);
+                      return  (val <= radius) ? val : radius; }   );
               }
           }
           else
@@ -174,7 +175,7 @@ namespace utopia
                   Read<Vector> rv(l); 
                   Write<Vector> wv(l_f); 
 
-                  each_write(l_f, [radius, l](const SizeType i) -> double { 
+                  each_write(l_f, [radius, &l](const SizeType i) -> double { 
                       return  (l.get(i) >= -1*radius)  ? l.get(i) : -1 * radius;  }   );
               }
           }
