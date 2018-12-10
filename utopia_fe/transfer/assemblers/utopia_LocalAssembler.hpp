@@ -31,7 +31,7 @@ namespace utopia {
 			const Elem &slave,
 			FEType slave_type,
 			Matrix &mat
-			) = 0;
+		) = 0;
 
 		virtual bool assemble(
 			const Elem &master,
@@ -41,23 +41,14 @@ namespace utopia {
 			std::vector<Matrix> &mat
 			) 
 		{
-			assert(mat.size() == std::size_t(1));
+			assert(n_forms() == int(1));
+
+			if(mat.empty()) {
+				mat.resize(1);
+			}
+			
 			return assemble(master, master_type, slave, slave_type, mat[0]);
 		}
-
-		// virtual bool volume_to_side_assemble(
-		// 	const Elem &master,
-		// 	FEType master_type,
-		// 	const Elem &slave,
-		// 	FEType slave_type,
-		// 	const int slave_side_num,
-		// 	std::vector<Matrix> &mat
-		// 	) 
-		// {
-		// 	//TODO
-		// 	assert(false && "implement me");
-		// 	return false;
-		// }
 
 		virtual int n_forms() const
 		{

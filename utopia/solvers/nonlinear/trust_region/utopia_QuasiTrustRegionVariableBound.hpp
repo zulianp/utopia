@@ -102,7 +102,6 @@
         // solve starts here 
         while(!converged)
         {
-
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
@@ -118,7 +117,7 @@
             utopia_warning("QUasiTrustRegionVariableBound::Set suitable TR subproblem.... \n "); 
           }
 
-          pred = this->get_pred(g, *multiplication_action, p_k); 
+          pred = this->get_pred(g, *multiplication_action, p_k);    
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           // trial point 
@@ -132,7 +131,7 @@
           ared = E_old - E_new;           // reduction observed on objective function
           pred = std::abs(pred); 
           rho = ared/ pred;               // decrease ratio         
-
+  
     //----------------------------------------------------------------------------
     //     acceptance of trial point
     //----------------------------------------------------------------------------

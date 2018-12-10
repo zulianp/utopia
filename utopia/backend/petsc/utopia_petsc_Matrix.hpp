@@ -205,11 +205,15 @@ namespace utopia {
 		}
 		
 		inline void set(const PetscInt row, const PetscInt col, PetscScalar value) {
-			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
+            assert(row_range().inside(row));
+			// check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
+            check_error( MatSetValue(implementation(), row, col, value, INSERT_VALUES) );
 		}
 
 		inline void add(const PetscInt row, const PetscInt col, PetscScalar value) {
-			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
+            assert(row_range().inside(row));
+			// check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
+            check_error( MatSetValue(implementation(), row, col, value, ADD_VALUES) );
 		}
 		
 		void add_matrix(const std::vector<PetscInt> &rows,

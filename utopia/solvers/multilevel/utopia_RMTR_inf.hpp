@@ -366,7 +366,7 @@ namespace utopia
                 Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
                 Write<Vector> wv(Pc); 
 
-                each_write(Pc, [ub, lb, x](const SizeType i) -> double { 
+                each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double { 
                           Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
                           if(li >= xi)
                             return li; 
@@ -392,18 +392,17 @@ namespace utopia
 
             // first we need to prepare box of intersection of level constraints with tr. constraints
             Vector l = constraints_memory_.active_lower[level] - this->memory_.x[level]; 
-            {   
-                ReadAndWrite<Vector> rv(l); 
-                each_write(l, [radius, l](const SizeType i) -> double { 
-                    return  (l.get(i) >= -1*radius)  ? l.get(i) : -1 * radius;  }   );
-            }
+            each_transform(l, l, [radius](const SizeType i, const Scalar val) -> Scalar { 
+                return (val >= -1*radius)  ? val : -1 * radius;  }
+            );
+
 
             Vector u =  constraints_memory_.active_upper[level] - this->memory_.x[level]; 
-            {   
-                ReadAndWrite<Vector> rv(u); 
-                  each_write(u, [radius, u](const SizeType i) -> double { 
-                      return  (u.get(i) <= radius)  ? u.get(i) : radius; }   );
-            }
+            each_transform(u, u, [radius](const SizeType i, const Scalar val) -> Scalar { 
+              return (val <= radius)  ? val : radius; }   
+            );
+
+
 
             // generating constraints to go for QP solve 
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));

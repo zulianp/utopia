@@ -119,7 +119,7 @@ namespace utopia
               Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
               Write<Vector> wv(Pc); 
 
-              each_write(Pc, [ub, lb, x](const SizeType i) -> double { 
+              each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double { 
                           Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
                           if(li >= xi)
                             return li; 
@@ -146,7 +146,7 @@ namespace utopia
               Read<Vector> r_ub(ub), r_lb(lb), r_x(x_old);
               Write<Vector> wv(x); 
 
-              each_write(x, [ub, lb, x_old](const SizeType i) -> double { 
+              each_write(x, [&ub, &lb, &x_old](const SizeType i) -> double { 
                           Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);  
                           if(li >= xi)
                             return li; 
@@ -162,7 +162,7 @@ namespace utopia
               Read<Vector> r_ub(ub), r_x(x_old);
               Write<Vector> wv(x); 
 
-              each_write(x, [ub, x_old](const SizeType i) -> double { 
+              each_write(x, [&ub, &x_old](const SizeType i) -> double { 
                           Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);  
                             return (ui <= xi) ? ui : xi; }   );
             }
@@ -175,7 +175,7 @@ namespace utopia
               Read<Vector> r_lb(lb), r_x(x_old);
               Write<Vector> wv(x); 
 
-              each_write(x, [lb, x_old](const SizeType i) -> double { 
+              each_write(x, [&lb, &x_old](const SizeType i) -> double { 
                           Scalar li =  lb.get(i); Scalar xi =  x_old.get(i);  
                           return (li >= xi) ? li : xi; }   );
             }
@@ -196,9 +196,11 @@ namespace utopia
                   Read<Vector> rv(u); 
                   Write<Vector> wv(u_f); 
 
-                  each_write(u_f, [ub_uniform, u](const SizeType i) -> double { 
-                      return  (u.get(i) <= ub_uniform)  ? u.get(i) : ub_uniform; }   );
-              }
+                  each_write(u_f, [ub_uniform, &u](const SizeType i) -> double 
+                  { 
+                    auto val = u.get(i); 
+                    return  (val <= ub_uniform)  ? val : ub_uniform; }   );
+                  }
           }
           else
               u_f = local_values(local_size(x_k).get(0), ub_uniform); ; 
@@ -212,8 +214,11 @@ namespace utopia
                   Read<Vector> rv(l); 
                   Write<Vector> wv(l_f); 
 
-                  each_write(l_f, [lb_uniform, l](const SizeType i) -> double { 
-                      return  (l.get(i) >= lb_uniform)  ? l.get(i) : lb_uniform;  }   );
+                  each_write(l_f, [lb_uniform, &l](const SizeType i) -> double 
+                  { 
+                    auto val = l.get(i); 
+                    return  (val >= lb_uniform)  ? val : lb_uniform;  
+                  }   );
               }
           }
           else

@@ -1,9 +1,14 @@
 <transfer>
-	<type>l2-projection</type>
-	<!-- <type>bidirectional-l2-projection</type> -->
+	<!-- <type>l2-projection</type> -->
+	<type>bidirectional-l2-projection</type>
 
-	<function>-x</function>
-
+	<function>x</function>
+	<!-- <function>1.</function> -->
+	<!-- <normalize>true</normalize> -->
+	<!-- <bi-op-mass-outside>false</bi-op-mass-outside>  -->
+	<use-composite-bidirectional>true</use-composite-bidirectional>
+	<use-interpolation>true</use-interpolation>
+	<quad-order-approx>40</quad-order-approx>
 	<!-- MASTER -->
 	<master>
 		<mesh>
@@ -16,6 +21,8 @@
 			
 			<max-x>1.</max-x>
 			<max-y>1.</min-y>
+	<!-- 		<max-x>0.5</max-x>
+			<max-y>0.5</min-y> -->
 			
 			<n-x>20</n-x>
 			<n-y>20</n-y>
@@ -33,11 +40,14 @@
 			<min-x>0.</min-x>
 			<min-y>0.</min-y>
 			
-			<max-x>1.</max-x>
-			<max-y>1.</min-y>
+			<max-x>0.5</max-x>
+			<max-y>0.5</min-y>
+
+	<!-- 		<max-x>1</max-x>
+			<max-y>1</min-y> -->
 			
-			<n-x>11</n-x>
-			<n-y>11</n-y>
+			<n-x>31</n-x>
+			<n-y>31</n-y>
 		</mesh>
 		<space></space>
 	</slave>

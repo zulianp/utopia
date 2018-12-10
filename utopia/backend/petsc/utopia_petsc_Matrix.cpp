@@ -979,7 +979,7 @@ namespace utopia {
 
         MatGetOwnershipRange(mat.implementation(), &r_begin, &r_end);
 
-        result.write_lock();
+        result.write_lock(utopia::LOCAL);
 
         for(PetscInt row = r_begin; row < r_end; ++row) {
             MatGetRow(mat.implementation(), row, &n_values, &cols, &values);
@@ -997,7 +997,7 @@ namespace utopia {
             VecSetValues(result.implementation(), 1, &row, &x, INSERT_VALUES);
         }
 
-        result.write_unlock();
+        result.write_unlock(utopia::LOCAL);
     }
 
     void PetscMatrix::row_sum(PetscVector &col) const

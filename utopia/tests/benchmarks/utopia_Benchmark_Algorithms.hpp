@@ -43,6 +43,7 @@ namespace utopia {
 					[n]() {
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 						cg.max_it(n * mpi_world_size());
+						cg.set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
 						run_linear_solver(n, cg);
 					}
 				);
@@ -204,9 +205,9 @@ namespace utopia {
 
 		static void run_linear_solver(const SizeType n, LinearSolver<Matrix, Vector> &solver)
 		{
-			Matrix A = local_sparse(n, n, 3);
-			Vector b = local_values(n, 1.);
-			Vector x = local_values(n, 0.);
+			Matrix A = sparse(n, n, 3);
+			Vector b = values(n, 1.);
+			Vector x = values(n, 0.);
 
 			assemble_laplacian_1D(A, true);
 

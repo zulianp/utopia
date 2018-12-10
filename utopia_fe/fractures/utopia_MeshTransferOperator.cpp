@@ -5,11 +5,13 @@
 #include "utopia_InterpolationLocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
 #include "utopia_BidirectionalL2LocalAssembler.hpp"
+#include "utopia_MixedBidirectionalLocalAssembler.hpp"
 #include "utopia_make_unique.hpp"
 
 #include "libmesh/boundary_mesh.h"
 
 #include <map>
+#include <cmath>
 
 namespace utopia {
 
@@ -27,6 +29,9 @@ namespace utopia {
 		force_zero_extension(false),
 		from_boundary(false),
 		to_boundary(false),
+		normalize(false),
+		use_interpolation(false),
+		nnz_x_row(0),
 		output_path("./")
 		{}
 
@@ -42,7 +47,11 @@ namespace utopia {
 			is.get("force-zero-extension", force_zero_extension);
 			is.get("from-boundary", from_boundary);
 			is.get("to-boundary",   to_boundary);
-			is.get("output-path", output_path);
+			is.get("normalize", normalize);
+			is.get("use-composite-bidirectional", use_composite_bidirectional);
+			is.get("use-interpolation", use_interpolation);
+			is.get("nnz-x-row", nnz_x_row);
+			is.get("output-path", output_path);	
 		}
 
 		bool normalize_rows;
@@ -56,6 +65,10 @@ namespace utopia {
 		bool force_zero_extension;
 		bool from_boundary;
 		bool to_boundary;
+		bool normalize;
+		bool use_composite_bidirectional;
+		bool use_interpolation;
+		long nnz_x_row;
 		std::string output_path;
 	};
 
@@ -123,26 +136,39 @@ namespace utopia {
 		params_->read(is);
 	}
 
-	inline static void assemble_mass_matrix(
+	void MeshTransferOperator::assemble_mass_matrix(
 		const libMesh::MeshBase &mesh,
 		const libMesh::DofMap &dof_map, 
 		const int var,
 		const int n_tensor,
 		USparseMatrix &mat
-		)
+		) const
 	{	
+		Chrono c;
+		c.start();
+
 		auto dim = mesh.mesh_dimension();
 		auto fe_type = dof_map.variable_type(var);
 		std::vector<libMesh::dof_id_type> indices;
 
 		SizeType nnz_x_row = 0;
 
-		if(!dof_map.get_n_nz().empty()) {
+		if(params_->nnz_x_row <= 0 &&
+			!dof_map.get_n_nz().empty()) {
 			nnz_x_row = 
-			*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) + 
-			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+			*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end());
+
+			if(!dof_map.get_n_oz().empty()) {
+				nnz_x_row += *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+			}
+		} else {
+			m_utopia_warning_once("MeshTransferOperator::assemble_mass_matrix(...) using user nnz_x_row");
+			nnz_x_row = params_->nnz_x_row;
 		}
 
+		// std::cout << "nnz_x_row " << nnz_x_row << std::endl;
+
+		assert(nnz_x_row != 0 && "super innefficient");
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 
 		{
@@ -162,14 +188,28 @@ namespace utopia {
 
 				auto n_shape_functions = phi.size();
 				auto n_qp = qrule.n_points();
+				auto n_indices = indices.size();
 
-				el_mat.resize(n_shape_functions, n_shape_functions);
+				assert(n_qp > 0);
+				assert(n_shape_functions > 0);
+
+				if(n_shape_functions * n_tensor != n_indices) {
+					m_utopia_warning_once("dof_map not consistent with tensorization of variable")
+				}
+
+				el_mat.resize(
+					n_indices,
+					n_indices
+				);
+
 				el_mat.zero();
+
 
 				for(unsigned int i = 0; i < n_shape_functions; i++) {
 					for(unsigned int j = 0; j < n_shape_functions; j++) {
 						for(unsigned int qp = 0; qp < n_qp; qp++) {
 							auto value = JxW[qp] * phi[i][qp] * phi[j][qp];
+							assert(!std::isnan(value) && !std::isinf(value));
 							
 							for(unsigned int k = 0; k < n_tensor; k++) {
 								el_mat(i + k * phi.size(), j + k * phi.size()) += value;
@@ -181,6 +221,9 @@ namespace utopia {
 				add_matrix(el_mat, indices, indices, mat);
 			}
 		}
+
+		c.stop();
+		std::cout << "assemble_mass_matrix (time)\n" << c << std::endl;
 	}
 
 	bool MeshTransferOperator::set_up_l2_projection()
@@ -273,24 +316,55 @@ namespace utopia {
 	bool MeshTransferOperator::set_up_bidirectional_transfer()
 	{
 		std::cout << "[Status] using bi l2 projection" << std::endl;
-		auto assembler = std::make_shared<BidirectionalL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension(), false, !params_->bi_operator_mass_mat_outside);
+		std::shared_ptr<LocalAssembler> assembler;
 
-		auto local2global = std::make_shared<Local2Global>(false);
+		bool use_interpolation = false;
+		const bool assemble_D = 
+			!params_->bi_operator_mass_mat_outside ||
+			 params_->use_composite_bidirectional;
+
+		if(params_->use_composite_bidirectional) {
+			auto from = get_filtered_from_mesh();
+		
+			if(params_->use_interpolation) {
+				auto ass_1 = std::make_shared<InterpolationLocalAssembler>(from->mesh_dimension());
+				auto ass_2 = std::make_shared<InterpolationLocalAssembler>(from->mesh_dimension());
+				use_interpolation = true;
+				auto ass = std::make_shared<MixedBidirectionalLocalAssembler>(ass_1, ass_2);
+				ass->set_return_false_only_if_both_fail(true);
+				assembler = ass;
+			} else {
+				auto ass_1 = std::make_shared<L2LocalAssembler>(from->mesh_dimension(), false, true);
+				auto ass_2 = std::make_shared<ApproxL2LocalAssembler>(from->mesh_dimension());
+				assembler = std::make_shared<MixedBidirectionalLocalAssembler>(ass_1, ass_2);
+			}
+
+		} else {
+			assembler = std::make_shared<BidirectionalL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension(), false, !params_->bi_operator_mass_mat_outside);
+		}
+
+		auto local2global = std::make_shared<Local2Global>(use_interpolation);
 
 		std::vector< std::shared_ptr<SparseMatrix> > mats;
 		TransferAssembler transfer_assembler(assembler, local2global);
-		if(!transfer_assembler.assemble(get_filtered_from_mesh(), from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
+		if(!transfer_assembler.assemble(
+			get_filtered_from_mesh(),
+			from_dofs,
+			get_filtered_to_mesh(),
+			to_dofs,
+			mats,
+			opts)) {
 			return false;
 		}
 
-		if(params_->bi_operator_mass_mat_outside) {
+		if(!assemble_D && !use_interpolation) {
 			auto mass_mat_from = std::make_shared<USparseMatrix>();
 			auto mass_mat_to   = std::make_shared<USparseMatrix>();
 
 			assemble_mass_matrix(*get_filtered_from_mesh(), *from_dofs, opts.from_var_num, opts.n_var, *mass_mat_from);
 			assemble_mass_matrix(*get_filtered_to_mesh(),   *to_dofs,   opts.to_var_num,   opts.n_var, *mass_mat_to);
 
-			const bool restrict_mass_matrix = true;
+			const bool restrict_mass_matrix = !params_->use_composite_bidirectional;
 			auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, std::make_shared<Factorization<USparseMatrix, UVector>>());
 			
 			if(!restrict_mass_matrix) {
@@ -311,17 +385,39 @@ namespace utopia {
 
 			forward->init();
 			backward->init();
-			operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+
+			if(params_->normalize) {
+				operator_ = std::make_shared<BidirectionalOperator>(
+					std::make_shared<NormalizedOperator>(
+						local_size(*forward),
+						forward
+					),
+					std::make_shared<NormalizedOperator>(
+						local_size(*backward),
+						backward
+					)
+				);
+			} else {
+				operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+			}
+
 		} else {
-			auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
-			forward->fix_mass_matrix_operator(params_->tol);
+			if(use_interpolation) {
+				operator_ = std::make_shared<BidirectionalOperator>(
+					std::make_shared<Interpolator>(mats[0]),
+					std::make_shared<Interpolator>(mats[1])
+				);
+			} else {
+				auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+				forward->fix_mass_matrix_operator(params_->tol);
 
-			auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
-			backward->fix_mass_matrix_operator(params_->tol);
+				auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
+				backward->fix_mass_matrix_operator(params_->tol);
 
-			forward->init();
-			backward->init();
-			operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+				forward->init();
+				backward->init();
+				operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+			}
 		}
 
 		return true;
@@ -378,6 +474,11 @@ namespace utopia {
 		}
 	}
 
+	static bool is_bidirectional(const TransferOperatorType operator_type) {
+		return operator_type == BIDIRECTIONAL_L2_PROJECTION || 
+			   operator_type == BIDIRECTIONAL_L2_PROJECTION;
+	}
+
 	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
 	{
 		//apply boundary filter
@@ -411,6 +512,16 @@ namespace utopia {
 		if(params_->write_operators_to_disk) {
 			operator_->write(params_->output_path);
 		}
+
+		if(params_->normalize && !is_bidirectional(operator_type)) {
+			operator_ = std::make_shared<NormalizedOperator>(
+				Size({
+						to_dofs->n_local_dofs(),
+						from_dofs->n_local_dofs()
+					}),
+				operator_
+			);
+		} 
 
 		if(params_->force_zero_extension) {
 			operator_ = std::make_shared<ForceZeroExtension>(operator_, params_->tol);

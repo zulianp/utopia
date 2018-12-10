@@ -59,7 +59,6 @@ namespace  utopia
 
             bool aux_solve(const Operator<Vector> &H,  const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints)
             {
-
                 Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff;
                 Vector break_points, sorted_break_points, active_set, e, Hd; 
 
@@ -67,7 +66,6 @@ namespace  utopia
                 const auto &lb = constraints.lower_bound();
 
                 bool converged = false; 
-
                 SizeType num_uniq_break_points, it=0; 
 
                 Vector d = -1.0 * g; 
@@ -76,16 +74,12 @@ namespace  utopia
                 this->get_breakpoints(d, *lb, *ub, break_points); 
                 vec_unique_sort_serial(break_points, sorted_break_points, this->get_memory_size()); 
                 num_uniq_break_points = this->get_number_of_sorted_break_points(sorted_break_points); 
-
                 t_current = 0.0; 
                 this->get_breakpoint_active_set(break_points, t_current, active_set); 
                 e = e_mul(active_set, d); 
-
                 d = d - e; 
                 gd = dot(g, d); 
-
                 H.apply(d, Hd);
-
 
                 while(it < num_uniq_break_points && !converged)
                 {
@@ -110,14 +104,13 @@ namespace  utopia
                         converged = true; 
                     }
 
-
                     if(converged ==true)
                         return true; 
 
                     t_current = t_next; 
                     this->get_breakpoint_active_set(break_points, t_current, active_set); 
                     e = e_mul(active_set, d); 
-
+               
                     s = s + delta_diff * d; 
                     d = d - e; 
 
@@ -153,6 +146,7 @@ namespace  utopia
 
             void get_breakpoints(const Vector & d, const Vector & lb, const Vector & ub, Vector &break_points) const
             {
+
                 if(empty(break_points) || local_size(break_points)!=local_size(d))
                     break_points = local_values(local_size(d).get(0), 0);
 
@@ -160,9 +154,9 @@ namespace  utopia
                   Read<Vector> r_ub(ub), r_lb(lb), r_d(d);
                   Write<Vector> wt(break_points); 
 
-                  each_write(break_points, [ub, lb, d](const SizeType i) -> double { 
+                  each_write(break_points, [&ub, &lb, &d](const SizeType i) -> double { 
                         Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar di =  d.get(i);  
-                        if(di > 0)
+                        if(di > 0.0)
                             return ui/di; 
                         else if(di < 0)
                             return li/di; 
@@ -182,7 +176,7 @@ namespace  utopia
                 {
                     Read<Vector> ab(break_points); 
 
-                    each_write(active_set, [break_points, t_break](const SizeType i) -> double 
+                    each_write(active_set, [&break_points, t_break](const SizeType i) -> double 
                     { 
                         Scalar t =  break_points.get(i);
                         return (approxeq(t, t_break)) ? 1.0 : 0.0; 

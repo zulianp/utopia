@@ -204,11 +204,12 @@ namespace  utopia
             SizeType get_local_size_feasible_set(const Vector & feasible_set) const
             {
                 SizeType local_feasible_set = 0; 
-                each_read(feasible_set, [&local_feasible_set](const SizeType i, const Scalar value) 
-                {
-                    if(approxeq(value, 1.0)) 
-                        local_feasible_set++; 
-                });
+
+                    each_read(feasible_set, [&local_feasible_set](const SizeType i, const Scalar value) 
+                    {
+                        if(approxeq(value, 1.0)) 
+                            local_feasible_set++; 
+                    });
 
                 return local_feasible_set; 
             }
@@ -219,13 +220,15 @@ namespace  utopia
                 if(empty(feasible_set) || local_size(feasible_set)!=local_size(x))
                     feasible_set = local_zeros(local_size(x)); 
 
-                Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-                each_write(feasible_set, [ub, lb, x](const SizeType i) -> double { 
-                            Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
-                            if(li < xi && xi < ui)
-                                return 1.0; 
-                            else
-                                return 0.0; }   );
+                {
+                    Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+                    each_write(feasible_set, [&ub, &lb, &x](const SizeType i) -> double { 
+                                Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+                                if(li < xi && xi < ui)
+                                    return 1.0; 
+                                else
+                                    return 0.0; }   );
+                }
             }
 
 
@@ -233,14 +236,15 @@ namespace  utopia
             { 
                 if(empty(active_set) || local_size(active_set)!=local_size(x))
                     active_set = local_zeros(local_size(x)); 
-
-                Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-                each_write(active_set, [ub, lb, x](const SizeType i) -> double { 
-                            Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
-                            if(li < xi && xi < ui)
-                                return 0.0; 
-                            else
-                                return 1.0; }   );
+                {
+                    Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+                    each_write(active_set, [&ub, &lb, &x](const SizeType i) -> double { 
+                                Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+                                if(li < xi && xi < ui)
+                                    return 0.0; 
+                                else
+                                    return 1.0; }   );
+                }
             }
 
 

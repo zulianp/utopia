@@ -56,8 +56,9 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-			UTOPIA_RUN_TEST(affine_similarity_small_test); 
-			UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
+			
+			// UTOPIA_RUN_TEST(affine_similarity_small_test); 
+			// UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
 		}
 
 		void petsc_ngs_test()

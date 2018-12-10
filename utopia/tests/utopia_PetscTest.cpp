@@ -45,19 +45,23 @@ namespace utopia {
     void petsc_reciprocal() {
         // test also  diag
         DSMatrixd A = values(4, 4, 1.0);
+        auto rr = row_range(A);
+
         {
             Write<DSMatrixd> w(A);
-            A.set(1, 1, 99);
-            A.set(2, 2, 77);
+            
+            if(rr.inside(1)) { A.set(1, 1, 99); }
+            if(rr.inside(2)) { A.set(2, 2, 77); }
         }
 
         DVectord diag_A = diag(A);
         DVectord v_expected = values(4, 1.0);
         {
             Write<DVectord> w(v_expected);
-            v_expected.set(1, 99);
-            v_expected.set(2, 77);
+            if(rr.inside(1)) { v_expected.set(1, 99); }
+            if(rr.inside(2)) { v_expected.set(2, 77); }
         }
+
         utopia_test_assert(approxeq(v_expected, diag_A));
 
         A = diag(diag_A);
@@ -73,7 +77,7 @@ namespace utopia {
             Write<DVectord> w(v_expected_test);
             Range rr=range(v_expected_test);
             for (auto ii=rr.begin(); ii<rr.end(); ++ii){
-                 v_expected_test.set(ii,2*ii);
+                 v_expected_test.set(ii, 2 * ii);
         }
 
         }
@@ -163,14 +167,10 @@ namespace utopia {
 
         //The use of Read/Write/ReadAndWrite locks is important for universal compatibility with all (parallel) backends
         { //scoped write lock
-            Write<DVectord> writing(x);
-            //usual way
-            x.set(xb, -1);
-            x.set(xb + 9, -1);
-
+            Write<DVectord> writing(x, GLOBAL_INSERT);
             //the petsc way
-            std::vector <PetscScalar> values{10., 10., 10};
-            std::vector <PetscInt> index{xb + 2, xb + 3, xb + 4};
+            std::vector<PetscScalar> values{-1., 10., 10., 10, -1.};
+            std::vector<PetscInt> index{xb, xb + 2, xb + 3, xb + 4, xb + 9};
             x.set(index, values);
         }
 
@@ -289,8 +289,8 @@ namespace utopia {
 
     void petsc_mv()
     {
-        const PetscInt n = 10;
-        const PetscInt m = 20;
+        const SizeType n = 10;
+        const SizeType m = 20;
 
         //creates a dense matrix
         DVectord v   = values(n, 1, 1);
@@ -299,8 +299,11 @@ namespace utopia {
 
         DVectord expected = values(m, 1, 1);
         {
+            auto r = range(expected);
             Write<DVectord> w(expected);
-            for (size_t i = n; i < m; i++) {
+            SizeType e_begin = std::max(n, r.begin());
+            SizeType e_end   = std::min(m, r.end());
+            for (SizeType i = e_begin; i < e_end; i++) {
                 expected.set(i, 0);
             }
         }
@@ -462,14 +465,7 @@ namespace utopia {
 
         utopia_test_assert(approxeq(x, y));
 
-        DSMatrixd m = sparse(3, 3, 2);
-        {
-            Write<DSMatrixd> w(m);
-            m.set(0, 0, 1);
-            m.set(0, 1, 2);
-            m.set(1, 1, 3);
-            m.set(2, 2, 4);
-        }
+        DSMatrixd m = identity(3, 3);
 
         DSMatrixd w;
         // Write matrix to disk
@@ -596,14 +592,14 @@ namespace utopia {
 
             Write<DSMatrixd> w(m);
             for(auto i = r.begin(); i < r.end(); ++i) {
-                if(i == 0 || i == n - 1) {
-                    m.set(1, 1, 1.0);
+                if(i == n - 1 || i == 0) {
+                    m.set(i, i, 1.);
                     continue;
                 }
 
-                m.set(i, i, 2.);
-                m.set(i, i-1, -1.);
-                m.set(i, i+1, -1.);
+                m.set(i, i,  2.);
+                m.set(i, i - 1, -1.);
+                m.set(i, i + 1, -1.);
             }
         }
 
@@ -909,7 +905,7 @@ namespace utopia {
 
         {
             Write<DVectord> w(sol);
-            sol.set(2, 1);
+            if(range(sol).inside(2)) { sol.set(2, 1); }
         }
 
         //FIXME
@@ -1013,9 +1009,11 @@ namespace utopia {
         auto r = range(v);
 
         {
-            Write<DVectord> w_v(v);
+            Write<DVectord> w_v(v, GLOBAL_INSERT);
             for(auto i = r.begin(); i != r.end(); ++i) {
-                v.set(i, i);
+                std::vector<PetscInt> index(1); index[0] = i;
+                std::vector<PetscScalar> values(1); values[0] = static_cast<double>(i);
+                v.set(index, values);
             }
         }
 
@@ -1033,13 +1031,7 @@ namespace utopia {
     void petsc_block_mat()
     {
         const SizeType n = mpi_world_size() * 2;
-        DSMatrixd mat = sparse(n, n, 3);
-        {
-            Write<DSMatrixd> w_m(mat);
-            mat.set(0, 0, 1.);
-            mat.set(1, 1, 1.);
-        }
-
+        DSMatrixd mat = identity(n, n);
         mat.implementation().convert_to_mat_baij(2);
     }
 

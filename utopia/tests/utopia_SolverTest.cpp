@@ -38,8 +38,8 @@ namespace utopia {
 			UTOPIA_RUN_TEST(ls_test);
 			UTOPIA_RUN_TEST(nl_solve_test);
 			UTOPIA_RUN_TEST(dogleg_test);
-			UTOPIA_RUN_TEST(st_cg_test); 
-			UTOPIA_RUN_TEST(precond_st_cg_test); 
+			// UTOPIA_RUN_TEST(st_cg_test); 
+			// UTOPIA_RUN_TEST(precond_st_cg_test); 
 		}
 
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -49,8 +49,6 @@ namespace utopia {
 			bool value(const Vector &, Scalar &val) const { return true; }
 			bool update(const Vector &) { return true; }
 		};
-
-
 
 		void ls_normal_eq()
 		{
@@ -77,18 +75,17 @@ namespace utopia {
 			Vector rhs = values(_n, 975.9);
 
             {
+            	auto r = range(rhs);
             	Write<Vector> w(rhs);
-            	rhs.set(0, 0.0); 
-            	rhs.set(_n-1, 0.0); 
+            	if(r.inside(0)) rhs.set(0, 0.0); 
+            	if(r.inside(_n - 1)) rhs.set(_n-1, 0.0); 
             }			
 
             Vector x = zeros(size(rhs));
 
             cg.solve(A, rhs, x);
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
-
         }
-
 
 		void precond_st_cg_test()
         {
@@ -107,9 +104,10 @@ namespace utopia {
 			Vector rhs = values(_n, 975.9);
 
             {
+            	auto r = range(rhs);
             	Write<Vector> w(rhs);
-            	rhs.set(0, 0.0); 
-            	rhs.set(_n-1, 0.0); 
+            	if(r.inside(0)) rhs.set(0, 0.0); 
+            	if(r.inside(_n-1)) rhs.set(_n-1, 0.0); 
             }			
 
             Vector x = zeros(size(rhs));
@@ -117,8 +115,6 @@ namespace utopia {
             cg.solve(A, rhs, x);
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
         }
-
-
 
 		void nl_solve_test()
 		{

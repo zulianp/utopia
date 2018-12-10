@@ -7,6 +7,7 @@
 #include "utopia_Input.hpp"
 #include "utopia_Path.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_InputParameters.hpp"
 
 namespace utopia {
 
