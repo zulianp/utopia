@@ -536,6 +536,7 @@ namespace utopia {
 				if(mats.size() == 2) {
 					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
 					l2op->fix_mass_matrix_operator();
+					l2op->init();
 					transfer_op_ = l2op;
 				} else {
 					auto u = trial(input_slave.space());
@@ -544,7 +545,9 @@ namespace utopia {
 					auto D = std::make_shared<USparseMatrix>();
 
 					assemble(inner(u, v) * dX, *D);
-					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<USparseMatrix, UVector>>());
+					auto l2op = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<USparseMatrix, UVector>>());
+					l2op->init();
+					transfer_op_ = l2op;
 				}
 			}
 

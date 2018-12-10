@@ -31,15 +31,15 @@ namespace utopia {
 		void run()
 		{
 			print_backend_info();
-			// UTOPIA_RUN_TEST(newton_cg_test);
-			// UTOPIA_RUN_TEST(grad_descent_test); 
-			// UTOPIA_RUN_TEST(solver_from_params_test);
-			// UTOPIA_RUN_TEST(tr_test);
-			// UTOPIA_RUN_TEST(ls_test);
-			// UTOPIA_RUN_TEST(nl_solve_test);
+			UTOPIA_RUN_TEST(newton_cg_test);
+			UTOPIA_RUN_TEST(grad_descent_test); 
+			UTOPIA_RUN_TEST(solver_from_params_test);
+			UTOPIA_RUN_TEST(tr_test);
+			UTOPIA_RUN_TEST(ls_test);
+			UTOPIA_RUN_TEST(nl_solve_test);
 			UTOPIA_RUN_TEST(dogleg_test);
-			// UTOPIA_RUN_TEST(st_cg_test); 
-			// UTOPIA_RUN_TEST(precond_st_cg_test); 
+			UTOPIA_RUN_TEST(st_cg_test); 
+			UTOPIA_RUN_TEST(precond_st_cg_test); 
 		}
 
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -67,7 +67,7 @@ namespace utopia {
         {
             SteihaugToint<Matrix, Vector, HOMEMADE> cg;
             cg.rtol(1e-7);
-            cg.atol(1e-6);
+            cg.atol(1e-7);
             cg.max_it(_n);
             cg.verbose(false);
 
@@ -94,7 +94,7 @@ namespace utopia {
         {
             SteihaugToint<Matrix, Vector, HOMEMADE> cg;
             cg.rtol(1e-7);
-            cg.atol(1e-6);
+            cg.atol(1e-7);
             cg.max_it(_n);
             cg.verbose(false);
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());

@@ -38,7 +38,7 @@ namespace utopia
 
 			void run_multilevel()
 			{
-				// UTOPIA_RUN_TEST(Quasi_RMTR_test); 
+				UTOPIA_RUN_TEST(Quasi_RMTR_test); 
 				UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test); 
 			}	
 
@@ -99,7 +99,7 @@ namespace utopia
 					Vector expected_rosenbrock = values(2, 1);
 
 					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
-					subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+					subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 					subproblem->atol(1e-10);
 
 					Vector x0 = values(2, 2.0);
@@ -130,7 +130,7 @@ namespace utopia
 
 				auto hess_approx = std::make_shared<ApproxType >(memory_size);
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
-				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 				// subproblem->verbose(true);
 
 				QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
