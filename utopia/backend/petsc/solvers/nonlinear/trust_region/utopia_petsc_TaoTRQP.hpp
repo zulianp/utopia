@@ -21,10 +21,9 @@ namespace utopia
 
         public:
             TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"),
-                   	    const Parameters params = Parameters()):
-                        pc_type_("jacobi")
+                   	    const Parameters params = Parameters())
             {
-              
+              tao_solver_ = TaoSolver<Matrix, Vector>(linear_solver); 
             }
 
             TaoQPSolver * clone() const override
@@ -35,15 +34,30 @@ namespace utopia
 
             bool solve(const Matrix &H, const Vector &g, Vector &p_k) override
             {
-            	auto &box = this->get_box_constraints();
-
-                // TODO:: if we store and re-initialize solver, there is a lot of memory leaks comming 
-                utopia::TaoSolver<Matrix, Vector> tao_solver_(linear_solver_); 
-                tao_solver_.set_box_constraints(box);
-
                 TRQuadraticFunction<Matrix, Vector, Traits<Vector>::Backend> fun(make_ref(H) , make_ref(g));
                 
-                //  TODO:: investigate suitable options for constrained QPs 
+                configure_tao(); 
+
+                tao_solver_.smooth(fun, p_k);
+                
+                return true;
+            }
+
+            void set_linear_solver(const std::shared_ptr<LinearSolver > &ls)
+            {
+                tao_solver_->set_linear_solver(ls); 
+            }    
+
+            void pc_type(const std::string & pc_type)
+            {
+                tao_solver_.set_pc_type(pc_type); 
+            }
+
+
+        private:
+            void configure_tao()
+            {
+                // TODO:: investigate reasonable options... 
                 tao_solver_.set_type("gpcg");
                 
                 // default in tao is hudge overshooot.... 
@@ -53,29 +67,17 @@ namespace utopia
 
                 // counts + 1 ... 
                 tao_solver_.max_it(this->max_it());
-
-                tao_solver_.set_pc_type(pc_type_); 
                 tao_solver_.verbose(this->verbose());
 
-                tao_solver_.smooth(fun, p_k);
-                
-                return true;
+
+                auto &box = this->get_box_constraints();
+                tao_solver_.set_box_constraints(box);                
             }
 
-            void set_linear_solver(const std::shared_ptr<LinearSolver > &ls)
-            {
-                linear_solver_ = ls; 
-            }    
-
-            void pc_type(const std::string & pc_type)
-            {
-                pc_type_ = pc_type; 
-            }
 
 
         protected: 
-            std::shared_ptr<LinearSolver> linear_solver_; 
-            std::string pc_type_; 
+            TaoSolver<Matrix, Vector> tao_solver_; 
 
     };
 }
