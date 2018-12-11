@@ -38,7 +38,7 @@ namespace utopia
             if(this->precond_) 
             {
             	auto A_ptr = utopia::op(this->get_operator());
-                return preconditioned_solve(*A_ptr, -1.0 *b, x);
+                return preconditioned_solve(*A_ptr, -1.0 * b, x);
             } else {
             	auto A_ptr = utopia::op(this->get_operator());
                 return unpreconditioned_solve(*A_ptr, -1.0 * b, x);
@@ -78,7 +78,7 @@ namespace utopia
         bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr) 
         {
         	init(local_size(g).get(0)); 
-			r = -1 * g; 
+			r = -1.0 * g; 
 			v_k = r; 
 	    	Scalar alpha, g_norm, d_B_d, z, z1;
 	    	SizeType it = 1;
@@ -97,7 +97,7 @@ namespace utopia
         		B.apply(v_k, B_p_k); 
 	    		d_B_d = dot(v_k, B_p_k);
 
-	    		if(d_B_d <= 0)
+	    		if(d_B_d <= 0.0)
 	    		{
 	    			Vector s = corr;
 	    			this->quad_solver(s, v_k, this->current_radius(),  corr);
@@ -151,6 +151,7 @@ namespace utopia
                 PrintInfo::print_iter_status(it, {g_norm});
             it++; 
 
+            v_k = local_zeros(local_size(g)); 
 			this->precond_->apply(r, v_k);
 
 			p_k = -1.0 * v_k; 
@@ -163,7 +164,8 @@ namespace utopia
             Scalar p_norm = dot(r, v_k); 
 
 			// if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step 
-			if(!std::isfinite(p_norm) || p_norm < 0.0)
+			// if(!std::isfinite(p_norm) || p_norm < 0.0)
+            if(!std::isfinite(p_norm))
 	    	{
 	    		Scalar alpha_termination; 
 	    		if(r2 >= g_norm)
@@ -173,6 +175,11 @@ namespace utopia
 
 	    		if(std::isfinite(alpha_termination))
 	    			s_k -= alpha_termination * r;  
+
+                if(this->verbose() && mpi_world_rank()==0)
+                    std::cout<<"termination due to p_norm being nans/infs... \n"; 
+
+                this->check_convergence(it, g_norm, 1, 1e-15);
 
 	    		return true; 
 	    	}   
@@ -192,6 +199,11 @@ namespace utopia
 		    		if(std::isfinite(tau))
 		    			s_k += tau * p_k; 
 
+                    if(this->verbose() && mpi_world_rank()==0)
+                        std::cout<<"termination due to indefinite direction... \n"; 
+
+                    this->check_convergence(it, g_norm, 1, 1e-15);
+
 	    			return true;
 	    		}
 
@@ -208,6 +220,11 @@ namespace utopia
 
 		    		if(std::isfinite(tau))
 		    			s_k += tau * p_k; 
+
+                    if(this->verbose() && mpi_world_rank()==0)
+                        std::cout<<"termination due to correction exceeding TR radius... \n"; 
+
+                    this->check_convergence(it, g_norm, 1, 1e-15);                    
 
 	    			return true;
 	    		}
