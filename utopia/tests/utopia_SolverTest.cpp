@@ -6,6 +6,7 @@
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_MultiLevelTestProblem.hpp"
+#include "utopia_MSSolver.hpp"
 
 namespace utopia 
 {
@@ -23,6 +24,7 @@ namespace utopia
 		void run()
 		{
 			print_backend_info();
+			UTOPIA_RUN_TEST(ms_solver);
 			UTOPIA_RUN_TEST(newton_cg_test);
 			UTOPIA_RUN_TEST(grad_descent_test); 
 			UTOPIA_RUN_TEST(solver_from_params_test);
@@ -41,6 +43,26 @@ namespace utopia
 			bool value(const Vector &, Scalar &val) const { return true; }
 			bool update(const Vector &) { return true; }
 		};
+
+
+		void ms_solver()
+		{
+			// int n = 2;
+			// Rosenbrock<Matrix, Vector> fun;
+			// // TestFunctionND_1<Matrix, Vector> fun(n);
+
+
+			// // SimpleQuadraticFunction<Matrix, Vector> fun;
+			// // Rastrigin<Matrix, Vector> fun;
+			// // Woods<Matrix, Vector> fun;
+
+			// Vector x = values(n, 2.0);
+
+			// MSSolver<Matrix, Vector> solver(std::make_shared<ConjugateGradient<Matrix, Vector>>());
+			// solver.verbose(true);
+			// solver.solve(fun, x);
+			// disp(x);
+		}
 
 		void ls_normal_eq()
 		{

@@ -123,7 +123,7 @@ namespace utopia {
 		{
 			bool is_non_negative = true;
 			each_read(lambda, [&is_non_negative, verbose](const SizeType i, const Scalar value) {
-				if(value < -1e-8) {
+				if(value < -1e-5) {
 					is_non_negative = false;
 					if(verbose) {
 						std::cerr << "[Warning] negative value at: " << i << " " << value << std::endl;

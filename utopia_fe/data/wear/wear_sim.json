@@ -3,6 +3,8 @@
         "mesh": "../data/wear_2_far.e",
         "model": {
             "material": "LinearElasticity",
+            "stabilization": "L2",
+            "stabilization-mag": 0.00001,
             "parameters": {
                 "mu": "600.",
                 "lambda": "600."

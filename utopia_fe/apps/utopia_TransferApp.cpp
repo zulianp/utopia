@@ -75,6 +75,10 @@ namespace utopia {
 		auto is_ptr = open_istream(conf_file_path);
 		InputSpace input_master(*comm_);
 		InputSpace input_slave(*comm_);
+		bool master_boundary = false, slave_boundary = false;
+
+		std::shared_ptr<libMesh::MeshBase> master_actual_mesh, slave_actual_mesh;
+		std::shared_ptr<LibMeshFunctionSpace> master_actual_space, slave_actual_space;
 
 		std::shared_ptr<MeshTransferOperator> transfer_operator;
 
@@ -82,12 +86,37 @@ namespace utopia {
 			//get spaces
 			is.get("master", input_master);
 			is.get("slave",  input_slave);
+
+			is.get("master-boundary", master_boundary);
+			is.get("slave-boundary",  slave_boundary);
+
+			if(master_boundary) {
+				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(*comm_, input_master.mesh().mesh_dimension()-1);
+				input_master.mesh().boundary_info->sync(*b_mesh);
+				master_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
+				master_actual_space->initialize();
+				master_actual_mesh = b_mesh;
+			} else {
+				master_actual_mesh = input_master.mesh_ptr();
+				master_actual_space = make_ref(input_master.space());
+			}
+
+			if(slave_boundary) {
+				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(*comm_, input_slave.mesh().mesh_dimension()-1);
+				input_slave.mesh().boundary_info->sync(*b_mesh);
+				slave_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
+				slave_actual_space->initialize();
+				slave_actual_mesh = b_mesh;
+			} else {
+				slave_actual_mesh = input_slave.mesh_ptr();
+				slave_actual_space = make_ref(input_slave.space());
+			}
 			
 			transfer_operator = std::make_shared<MeshTransferOperator>(
-				input_master.mesh_ptr(),
-				make_ref(input_master.space().dof_map()),
-				input_slave.mesh_ptr(),
-				make_ref(input_slave.space().dof_map())
+				master_actual_mesh,
+				make_ref(master_actual_space->dof_map()),
+				slave_actual_mesh,
+				make_ref(slave_actual_space->dof_map())
 			);
 
 			transfer_operator->read(is);
