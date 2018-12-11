@@ -45,8 +45,8 @@ namespace utopia {
 			is.get("force-shell", force_shell);
 			is.get("write-operators-to-disk", write_operators_to_disk);
 			is.get("force-zero-extension", force_zero_extension);
-			is.get("from-boundary", from_boundary);
-			is.get("to-boundary",   to_boundary);
+			// is.get("from-boundary", from_boundary);
+			// is.get("to-boundary",   to_boundary);
 			is.get("normalize", normalize);
 			is.get("use-composite-bidirectional", use_composite_bidirectional);
 			is.get("use-interpolation", use_interpolation);

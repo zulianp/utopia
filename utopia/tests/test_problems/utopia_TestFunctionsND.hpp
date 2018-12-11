@@ -120,14 +120,12 @@ namespace utopia {
             return true;
         }
 
-
     private:
         const SizeType N;
         const Vector b;
         const Matrix A;
         const Scalar a;
     };
-
 
     template<class Matrix, class Vector>
     class SimpleQuadraticFunction : public Function<Matrix, Vector> {
