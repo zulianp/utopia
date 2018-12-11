@@ -1133,6 +1133,39 @@ namespace utopia {
         utopia_test_assert(approxeq(pred, pred_sum));  
     }
 
+
+    void petsc_norm_test()
+    {
+        auto n = 10; 
+
+        DVectord x1 = values(n, 1.);
+        DVectord x2 = values(n, 2.);
+        DVectord x3 = values(n, 3.);
+
+        PetscScalar x1_norm_original = norm2(x1);
+        PetscScalar x2_norm_original = norm2(x2);
+        PetscScalar x3_norm_original = norm2(x3);
+
+        PetscScalar r1, r2; 
+        PetscScalar r11, r12, r13; 
+
+        norms2(x1, x2, r1, r2); 
+
+        utopia_test_assert(approxeq(x1_norm_original, r1));  
+        utopia_test_assert(approxeq(x2_norm_original, r2));  
+
+        norms2(x1, x2, x3, r11, r12, r13); 
+
+        utopia_test_assert(approxeq(x1_norm_original, r11));  
+        utopia_test_assert(approxeq(x2_norm_original, r12));  
+        utopia_test_assert(approxeq(x3_norm_original, r13));          
+
+    }
+
+
+
+
+
     void petsc_get_col_test()
     {
         auto n = 10; 
@@ -1166,6 +1199,19 @@ namespace utopia {
     {
         UTOPIA_PETSC_MEMCHECK_BEGIN();
         UTOPIA_PETSC_MEMCHECK_END();
+    }
+
+
+    void petsc_dense_mat_mult_test()
+    {
+        if(mpi_world_size()>5)
+            return; 
+
+        DMatrixd A = values(5, 5, 2.0); 
+        DMatrixd B = values(5, 5, 10.0); 
+        DMatrixd C = A*B; 
+
+        utopia_test_assert(approxeq(norm_infty(C), 500));  
     }
 
 
@@ -1215,6 +1261,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_dot_test); 
         UTOPIA_RUN_TEST(petsc_transform);
         UTOPIA_RUN_TEST(petsc_get_col_test); 
+        UTOPIA_RUN_TEST(petsc_dense_mat_mult_test); 
+        UTOPIA_RUN_TEST(petsc_norm_test); 
+
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS

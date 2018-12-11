@@ -10,7 +10,6 @@
 #include "utopia_Monitor.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_ConjugateGradient.hpp"
-#include "utopia_Input.hpp"
 
 
 namespace utopia 
@@ -21,63 +20,21 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector>
-    class NonLinearSolver : public Monitor<Matrix, Vector>, public Configurable
+    template<class Vector>
+    class NonLinearSolver : public Monitor<Vector>, public Configurable
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                        const Parameters &params = Parameters()): 
-                        linear_solver_(linear_solver),
+        NonLinearSolver(const Parameters &params = Parameters()): 
                         params_(params)
         {
             set_parameters(params);        
         }
 
         virtual ~NonLinearSolver() {}
-
-        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
-
-
-        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
-        {
-            fun.set_rhs(rhs); 
-            bool converged = this->solve(fun, x); 
-            fun.reset_rhs(); 
-            return converged; 
-        }
-
-
-
-        /**
-         * @brief      Enables the differentiation control.
-         *
-         * @param[in]  checkDiff  Option, if eanable diff_control or no. 
-         */
-        void enable_differentiation_control(bool checkDiff) 
-        {
-            check_diff_ = checkDiff; 
-        }
-
-        inline bool differentiation_control_enabled() const 
-        {
-            return check_diff_; 
-        }
-
-        bool check_values(const SizeType iterations, const Function<Matrix, Vector> &fun, const Vector &x, const Vector &gradient, const Matrix &hessian)
-        {
-            if (check_diff_ && !controller_.check(fun, x, gradient, hessian)) 
-            {
-                exit_solver(iterations, norm2(gradient), ConvergenceReason::DIVERGED_INNER); 
-                return false;
-            }
-
-            return true;
-        }
 
         /**
          * @brief      Getter for parameters. 
@@ -101,14 +58,8 @@ namespace utopia
             max_it_             = params.max_it(); 
             verbose_            = params.verbose(); 
             time_statistics_    = params.time_statistics();  
-
-            log_iterates_       = params.log_iterates(); 
-            log_system_         = params.log_system(); 
-            check_diff_         = params.differentiation_control(); 
-
-            // if(linear_solver_)
-            //     linear_solver_->set_parameters(params); 
         }
+
 
         virtual void read(Input &in) override
         {
@@ -118,13 +69,6 @@ namespace utopia
             in.get("max-it", max_it_);
             in.get("verbose", verbose_);
             in.get("time-statistics", time_statistics_);
-            in.get("log-iterates", log_iterates_);
-            in.get("log-system", log_system_);
-            in.get("check_diff", check_diff_);
-
-            if(linear_solver_) {
-                in.get("linear-solver", *linear_solver_);
-            }
         }
 
         virtual void print_usage(std::ostream &os) const override
@@ -135,42 +79,10 @@ namespace utopia
             os << "max-it           : <int>\n";
             os << "verbose          : <bool>\n";
             os << "time-statistics  : <bool>\n";
-            os << "log-system       : <bool>\n";
-            os << "log-iterates     : <bool>\n";
-            os << "check_diff       : <bool>\n";
         }
 
-        /**
-         * @brief      Changes linear solver used inside of nonlinear-solver. 
-         *
-         * @param[in]  linear_solver  The linear solver
-         */
-        virtual void set_linear_solver(const std::shared_ptr<Solver> &linear_solver)
-        {
-            linear_solver_ = linear_solver; 
-        }
-
-        inline DiffController &controller() { return controller_; }
 
 protected:
-        /**
-         * @brief      Monitors(creating matlab script) iterate, hessian on given iterate.
-         */
-        virtual bool solver_monitor(const SizeType& it, Vector & x, Matrix & H) override
-        {
-            if(log_iterates_)
-            {
-                monitor(it, x);
-            }
-            if(log_system_)
-            {
-                monitor(it, H); 
-            }
-
-            return true; 
-        }
-
-
         virtual void print_statistics(const SizeType & it_global)
         {
             std::string path = "log_output_path";
@@ -284,8 +196,6 @@ public:
         SizeType    max_it()  const            { return max_it_; } 
         bool        verbose() const                     { return verbose_; } 
         bool        time_statistics() const       { return time_statistics_; } 
-        bool        log_iterates() const          {return log_iterates_; }
-        bool        log_system() const          {return log_system_; }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         void atol(const Scalar & atol_in ) { atol_ = atol_in; }; 
@@ -294,40 +204,12 @@ public:
         void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
         void verbose(const bool & verbose_in ) { verbose_ = verbose_in; }; 
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
-        void log_iterates(const bool & log_iterates) { log_iterates_  = log_iterates; }; 
-        void log_system(const bool & log_system) { log_system_  = log_system; }; 
-
 
         Scalar get_time() { return _time.get_seconds();  }
 
-        inline std::shared_ptr<Solver> linear_solver() const
-        {
-            return linear_solver_;
-        }
 
     protected:
-        inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
-        {
-            linear_solver_->update(make_ref(mat));
-            return linear_solver_->apply(rhs, sol);
-        }
-
-        inline bool has_preconditioned_solver()
-        {
-            return dynamic_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get());
-        }
-
-
-        inline bool linear_solve(const Matrix &mat, const Matrix &prec, const Vector &rhs, Vector &sol)
-        {
-            static_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())->update(make_ref(mat), make_ref(prec));
-            return linear_solver_->apply(rhs, sol);
-        }
-
-
-        std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */  
         Parameters params_;                         /*!< Solver parameters. */  
-        DiffController controller_;
 
         // ... GENERAL SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */  
@@ -338,14 +220,30 @@ public:
         bool verbose_;              /*!< Verobse enable? . */  
         SizeType time_statistics_;      /*!< Perform time stats or not? */  
 
-        bool log_iterates_;             /*!< Monitoring of iterate. */  
-        bool log_system_;               /*!< Monitoring of hessian/jacobian. */  
-        bool check_diff_;               /*!< Enable differentiation control. */  
-
-
         Chrono _time;                 /*!<Timing of solver. */
 
     };
+
+
+
+    template<class Vector>
+    class MatrixFreeNonLinearSolver : public NonLinearSolver<Vector>
+    {
+    
+    public:
+        MatrixFreeNonLinearSolver(const Parameters &params = Parameters()):  
+                                  NonLinearSolver<Vector>(params)
+        {
+
+        }
+
+        virtual ~MatrixFreeNonLinearSolver() {}
+
+        virtual bool solve(FunctionBase<Vector> &fun, Vector &x) = 0;
+
+    };
+
+
 }
 
 #endif //UTOPIA_UTOPIA_NONLINEARSOLVER_HPP

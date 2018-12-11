@@ -13,6 +13,17 @@ namespace utopia
                                 SECOND_ORDER = 2, 
                                 GALERKIN     = 0};
 
+    template <MultiLevelCoherence T>
+    struct is_first_order 
+    {
+      static const bool value = false;
+    };
+
+    template <>
+    struct is_first_order<FIRST_ORDER> {
+      static const bool value = true;
+    };                                
+
 //  --------------------------------------------- Hessians ---------------------------------------------------------------------------
 
     template<typename Matrix, typename Vector, MultiLevelCoherence MC>  

@@ -354,7 +354,6 @@ namespace utopia {
         auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
         auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
 
-
         // coarse_solver->verbose(true); 
         // smoother->verbose(true); 
         // auto coarse_solver = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
@@ -362,16 +361,6 @@ namespace utopia {
         // coarse_solver->rtol(1e-12);
         // coarse_solver->pc_type("lu");
 
-
-        coarse_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<USparseMatrix, UVector> >());
-        // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
-        smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<UVector> >());
-
-
-        // auto smoother = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-        // smoother->atol(1e-15);
-        // smoother->rtol(1e-15);
-        // smoother->pc_type("asm");
 
 
         meshes[0] = std::make_shared<libMesh::DistributedMesh>(*comm_);
@@ -404,12 +393,16 @@ namespace utopia {
             functions[i] = get_function(in, *spaces[i]);
         }
 
-        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, GALERKIN> >(coarse_solver, smoother);
+        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, FIRST_ORDER> >(n_levels);
         rmtr->set_transfer_operators(transfers);
 
-        rmtr->max_it(1000);
-        rmtr->max_coarse_it(1);
-        rmtr->max_smoothing_it(1);
+        
+        rmtr->set_coarse_tr_strategy(coarse_solver); 
+        rmtr->set_fine_tr_strategy(smoother); 
+
+        rmtr->max_it(30);
+        rmtr->max_coarse_it(3);
+        rmtr->max_smoothing_it(3);
         rmtr->delta0(1000);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);

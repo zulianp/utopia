@@ -1,23 +1,18 @@
 #ifndef UTOPIA_UTOPIA_MONITOR_HPP_HPP
 #define UTOPIA_UTOPIA_MONITOR_HPP_HPP
 
-namespace utopia {
+namespace utopia 
+{
 
-    template<class Matrix, class Vector>
+    template<class Vector>
     class Monitor {
     public:
-        typedef UTOPIA_SCALAR(Matrix)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Matrix) SizeType;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~Monitor() {}
 
     public:
-
-        /**
-        * @brief      Monitors(creating matlab script) iterate, hessian on given iterate.
-        */
-        //FIXME move Matrix before Vector
-        virtual bool solver_monitor(const SizeType &it, Vector &rhs, Matrix &system) = 0;
 
         /**
          * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve process.

@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
-*/
-
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 
@@ -12,18 +5,16 @@
 
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_TRSubproblem.hpp"
-#include "utopia_Dogleg.hpp"
-#include "utopia_SteihaugToint.hpp"
 #include "utopia_Parameters.hpp"    
 #include "utopia_NumericalTollerance.hpp"
 
 namespace utopia  
 {
-  template<class Matrix, class Vector>
-      /**
-       * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
-       *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
-       */ 
+  /**
+   * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
+   *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
+   */ 
+  template<class Vector>
   class TrustRegionBase 
   {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -35,6 +26,8 @@ namespace utopia
 
       set_parameters(params);        
     }
+
+    virtual ~TrustRegionBase(){}
 
       /* @brief      Sets the parameters.
       *
@@ -76,26 +69,40 @@ namespace utopia
     void eps(const Scalar & eps_in ) { eps_ = eps_in; }; 
 
   protected:
-
-    /**
-     * @brief      Calculates the predicate reduction  m_k(0) - m_k(p_k)
-     *
-     * @param[in]  g     Gradient
-     * @param[in]  H     Hessian
-     * @param[in]  p_k   current step
-     * @param      pred  predicted reduction
-     */
-    virtual void compute_pred_red( const Vector & g, const Matrix & H, const Vector & p_k, Scalar &pred)
+    virtual void print_statistics(const SizeType & it, const SizeType & it_successful)
     {
-    	Scalar l_term = dot(g, p_k);
-    	Scalar qp_term = dot(p_k, H * p_k);
-    	pred = - l_term - 0.5 * qp_term; 
+        std::string path = "log_output_path";
+        auto non_data_path = Utopia::instance().get(path);
 
+        if(!non_data_path.empty())
+        {
+            CSVWriter writer;
+            if (mpi_world_rank() == 0)
+            {
+                if(!writer.file_exists(non_data_path))
+                {
+                    writer.open_file(non_data_path);
+                    writer.write_table_row<std::string>({"num_its", "it_successful"});
+                }
+                else
+                    writer.open_file(non_data_path);
+                
+                writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful)});
+                writer.close_file();
+            }
+        }
+    }
+
+    virtual Scalar get_pred(const Vector &g, const Operator<Vector> &B, const Vector & p_k)
+    {
+      Vector Bp; 
+      B.apply(p_k, Bp); 
+      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp, p_k);
     }
 
 
     virtual bool check_convergence(
-      Monitor<Matrix, Vector> &monitor,
+      Monitor<Vector> &monitor,
       const NumericalTollerance<Scalar> &tol,
       const SizeType max_it,
       const SizeType &it, 
@@ -162,15 +169,15 @@ namespace utopia
       {
         x_k1 = x_k + p_k;
         E = E_k1; 
+        return true; 
       }
       // otherwise, keep old point
       else
       {
         x_k1 = x_k;
         E = E_k; 
+        return false; 
       }
-
-      return true; 
     }
 
 
@@ -208,19 +215,36 @@ namespace utopia
     \param radius          - tr. radius
     \param p_k            - iterate step
       */
-    virtual bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius)
+    virtual void delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius, const bool inf_flg = false)
     {
-      if(rho < eta1_)
+      if(inf_flg==false)
       {
-        radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_); 
+        if(rho < eta1_)
+        {
+          radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_); 
+        }
+        else if (rho > eta2_ )
+        {
+          Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius); 
+          radius = std::min(intermediate, delta_max_); 
+        }      
       }
-      else if (rho > eta2_ )
+      else // computing update for L_inf norm
       {
-        Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius); 
-        radius = std::min(intermediate, delta_max_); 
-      }      
-      return true; 
+        if(rho < this->eta1())
+        {
+          radius = radius * gamma1_; 
+        }
+        else if (rho > this->eta2() )
+        {
+          // Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius); 
+
+          Scalar intermediate = this->gamma2() * radius; 
+          radius = std::min(intermediate, this->delta_max()); 
+        }      
+      }
     }
+
 
     /*!
     \details
@@ -245,20 +269,6 @@ namespace utopia
 
     }
 
-
-    /**
-     * @brief      Gets the prediction reduction for 
-     *
-     * @param[in]  g     gradient
-     * @param[in]  B     Hessian
-     * @param[in]  p_k    step 
-     * @param      pred  The predicted reduction. 
-     */
-    virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred)
-    {
-      pred = -1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k);
-      return true; 
-    }
 
   private: 
     Scalar delta_max_; 

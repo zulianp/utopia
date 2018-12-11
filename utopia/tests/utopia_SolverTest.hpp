@@ -9,6 +9,7 @@ namespace utopia
     void runPetscSlepcSolversTest(); 
     void runSolversTest(); 
     void runNonlinearMultilevelSolverTest(); 
+    void runQuasiNewtonTest(); 
 
 }
 

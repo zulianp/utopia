@@ -1,17 +1,7 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-18
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
 #define UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
-#include "utopia_Dogleg.hpp"
-#include "utopia_SteihaugToint.hpp"
 #include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
-#include "utopia_CauchyPoint.hpp"
 #include "utopia_NonlinearLeastSquaresSolver.hpp"
 
      namespace utopia 
@@ -22,14 +12,14 @@
        *             Solution process is not very different from one in TrustRegionBase class, but it is specialized for normal eq. 
        */     
      	class LeastSquaresTrustRegion : public NonLinearLeastSquaresSolver<Matrix, Vector>,
-                                      public TrustRegionBase<Matrix, Vector> 
+                                      public TrustRegionBase<Vector> 
       {
      		typedef typename utopia::Traits<Vector>::Scalar Scalar;
      		typedef utopia::LinearSolver<Matrix, Vector> Solver;
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
         typedef utopia::NonLinearLeastSquaresSolver<Matrix, Vector> NonLinearLeastSquaresSolver;
      		typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase;
+        typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
 
 
      	public:
@@ -40,38 +30,8 @@
         set_parameters(params);        
       }
 
-      /*!
-      \details
-                Determine, wheater problem is linear, or we need nonlinear solve 
-      @note
-      \param fun          - function with evaluation routines 
-      \param H            - hessian
-      \param g            - gradient
-      \param p_N          - Newton step
-      \param x_k          - current iterate
-        */
-      virtual bool linear_solution_check(
-        
-        LeastSquaresFunction<Matrix, Vector> &fun, 
-        Vector & g, 
-        const Matrix & H, 
-        Vector & p_N, 
-        Vector & x_k)
-      {
-        this->linear_solve(H, -1 * g, p_N);
-        fun.residual(x_k + p_N, g);
-        Scalar g_norm = norm2(g);
+      using utopia::TrustRegionBase<Vector>::get_pred; 
 
-        if(g_norm < 1e-7)
-        {
-          x_k += p_N; 
-          std::cout<<"To solve linear problem, TR solver is not really needed ..."; 
-          return true; 
-        }
-
-        x_k += p_N; 
-        return false; 
-      }
 
       
       /**
@@ -104,7 +64,6 @@
 
 
         #define DEBUG_mode
-        //  #define LS_check
 
   			// TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
@@ -132,17 +91,6 @@
         #endif
 
 
-        // found out if there is a linear solution - or start with the newton step 
-        #ifdef LS_check
-          if(this->linear_solution_check(fun, g, H, p_N, x_k))
-          {
-            if(this->verbose_) 
-              TrustRegionBase::check_convergence(*this, tol, this->max_it(), 0, 0, 0, 0, 0); 
-            return true; 
-          }
-          x_k1 = x_k; 
-        #endif
-
         it++; 
         fun.value(x_k, E); 
         fun.residual(x_k, r_k);
@@ -163,8 +111,8 @@
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
             tr_subproblem->current_radius(delta);
 
-          this->linear_solve(J_k, r_k, p_k);
-          this->get_pred(g, H, p_k, pred); 
+          this->linear_solve(J_k, -1.0*r_k, p_k);
+          pred = this->get_pred(g, H, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           if(it == 1 && rad_flg)
@@ -200,9 +148,8 @@
           x_k = x_k1; 
           fun.residual(x_k, r_k); 
           
-          g_norm = norm2(r_k); 
-          r_norm = g_norm/g0_norm;
-          s_norm = norm2(p_k); 
+          norms2(r_k, p_k, g_norm, s_norm); 
+          r_norm = g_norm/g0_norm;                          
 
           #ifdef DEBUG_mode
             if(this->verbose_)
@@ -235,12 +182,8 @@
       }
 
 
-
-  private:
-    Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
-    std::shared_ptr<TRSubproblem> tr_subproblem;
-      
-     /**
+  protected: 
+      /**
       * @brief      update of tr radius, specialized for solution in L2 norm. 
       *             In case u need to solve eq in || \cdot ||_{L_{\infty}}, there is need to change the 1st if statement.
       *
@@ -250,7 +193,7 @@
       *
       * @return    
       */
-    bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &delta) override
+    virtual void delta_update(const Scalar &rho, const Vector &p_k, Scalar &delta, const bool flg=false) override
     {
         if(rho < this->eta1())
         {
@@ -261,9 +204,21 @@
         {
           delta = std::min(this->gamma2() * delta, this->delta_max()); 
         }      
-        return true; 
     }
 
+
+
+    virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+    {
+      return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+    }
+
+
+
+  private:
+    Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
+    std::shared_ptr<TRSubproblem> tr_subproblem;
+      
 
   };
 

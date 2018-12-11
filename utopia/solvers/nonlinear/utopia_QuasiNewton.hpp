@@ -7,6 +7,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
+#include "utopia_QuasiNewtonBase.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -14,33 +15,27 @@
 
 namespace utopia
 {
-    /**
-     * @brief      The Quasi Newton solver.
-     * @tparam     Matrix
-     * @tparam     Vector
-     */
-    template<class Matrix, class Vector>
-    class QuasiNewton : public NonLinearSolver<Matrix, Vector>
+
+    template<class Vector>
+    class QuasiNewton : public QuasiNewtonBase<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+        typedef UTOPIA_SCALAR(Vector)                               Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
         
-        typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy;
-        typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
-        typedef utopia::IterativeSolver<Matrix, Vector>         Solver;
-        
+        typedef utopia::HessianApproximation<Vector>                HessianApproximation;
+        typedef utopia::MatrixFreeLinearSolver<Vector>              LinSolver;
         
     public:
+
         QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
-                    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                    const Parameters params                                         = Parameters()):
-        NonLinearSolver<Matrix, Vector>(linear_solver, params),alpha_(1.0),
-        hessian_approx_strategy_(hessian_approx)
+                    const std::shared_ptr <LinSolver> &linear_solver,
+                    const Parameters params = Parameters()):
+                    QuasiNewtonBase<Vector>(hessian_approx, linear_solver)
         {
             set_parameters(params);
         }
         
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+        bool solve(FunctionBase<Vector> &fun, Vector &x) override
         {
             using namespace utopia;
             
@@ -48,6 +43,8 @@ namespace utopia
             
             Scalar g_norm, g0_norm, r_norm=1, s_norm=1;
             SizeType it = 0;
+
+            Scalar alpha = 1.0; 
             
             bool converged = false;
             
@@ -61,33 +58,32 @@ namespace utopia
             }
             it++; 
             
-            hessian_approx_strategy_->initialize(fun, x);
-            
+            this->initialize_approximation(); 
+
             while(!converged)
             {
-                hessian_approx_strategy_->apply_Hinv(-1.0 * g, s); 
-                
-                if(ls_strategy_) 
-                    ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
+                s = local_zeros(local_size(x)); 
+                this->linear_solve(-1.0 * g, s);
+                 
+                alpha = this->get_alpha(fun, g, x, s); 
 
-                s *= alpha_; 
+                s *= alpha; 
                 x+=s; 
                 
                 y = g; 
                 fun.gradient(x, g);
 
                 // norms needed for convergence check
-                g_norm = norm2(g);
-                r_norm = g_norm/g0_norm;
-                s_norm = norm2(s);
+                norms2(g, s, g_norm, s_norm); 
+                r_norm = g_norm/g0_norm;                
 
                 // diff between fresh and old grad...
                 y = g - y; 
-                hessian_approx_strategy_->update(s, y);
+                this->update(s, y);
 
                 // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha_});
+                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha});
                 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
@@ -101,47 +97,10 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            NonLinearSolver<Matrix, Vector>::set_parameters(params);
-            alpha_ = params.alpha();
-            
+            QuasiNewtonBase<Vector>::set_parameters(params);            
         }
         
         
-        /**
-         * @brief      Sets strategy for computing step-size.
-         *
-         * @param[in]  strategy  The line-search strategy.
-         *
-         * @return
-         */
-        virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
-        {
-            ls_strategy_ = strategy;
-            ls_strategy_->set_parameters(this->parameters());
-            return true;
-        }
-        
-        
-        
-        /**
-         * @brief      Sets strategy for computing step-size.
-         *
-         * @param[in]  strategy  The line-search strategy.
-         *
-         * @return
-         */
-        virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
-        {
-            hessian_approx_strategy_      = strategy;
-            return true;
-        }
-        
-        
-    private:
-        Scalar alpha_;                                          /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
-        
-        std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
         
     };
     

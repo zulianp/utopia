@@ -1,9 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-02-06 17:47:26
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-10 11:00:58
-*/
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
@@ -56,7 +50,8 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-		//	UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+			UTOPIA_RUN_TEST(affine_similarity_small_test); 
+			UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
 		}
 
 		void petsc_ngs_test()
@@ -709,44 +704,61 @@ namespace utopia
 		}
 
 
+		void affine_similarity_small_test()
+		{
+			if(mpi_world_size() >1)
+				return; 
 
-		// void lbfgs_quasi_newton_test()
-		// {
-		// 	// because dense matrices can not be sum-up in parallel
-		// 	// if(mpi_world_size() > 1) return;
-
-		// 	std::cout<<"lbfgs_quasi_newton_test  \n"; 
+			SmallSingularExample<DMatrixd, DVectord> fun; 
+			DVectord x_exact 	= values(2, 1.0);
+			DVectord x   		= values(2, 1.0);			
 			
-		// 	SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
+			{
+				Write<DVectord> r1(x_exact, LOCAL);
+				Write<DVectord> r2(x, LOCAL); 
 
-		// 	Parameters params;
-		// 	params.atol(1e-9);
-		// 	params.rtol(1e-15);
-		// 	params.stol(1e-15);
-		// 	params.verbose(true);
+				x.set(1, 0.0); 
+				x_exact.set(0, 0.0); 
+			}
 
-		// 	const auto m = 3; 
-			
-		// 	auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>("petsc");			
+			AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
 
-		// 	auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(m, linear_solver);
-
-
-	 //  		auto k = 15;
-
-
-
-	 //        DVectord v = values(k, 999); 
-	 //        DVectord y = values(k, 55); 
-	 //        DVectord s = values(k, 1); 
-
-	 //        hess_approx_BFGS->initialize(fun, v); 
-	 //        hess_approx_BFGS->update(s, y); 
+			DMatrixd I = identity(2,2); 
+			solver.set_mass_matrix(I); 
+			solver.set_scaling_matrix(I); 
+			solver.verbose(false);
+			solver.atol(1e-9); 
+			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
+			solver.solve(fun, x); 
+			utopia_test_assert(approxeq(x, x_exact, 1e-6));
+		}
 
 
-		// 	utopia_warning("Put new expressions to all backends.... ");
-				
-		// }
+		void affine_similarity_stiff_test()
+		{
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun(n); 
+			DVectord x, g; 
+			fun.get_initial_guess(x); 
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+
+			AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+
+			DMatrixd I = identity(n,n); 
+			solver.set_mass_matrix(I); 
+			solver.set_scaling_matrix(I); 
+			solver.verbose(false);
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			// solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
+			solver.solve(fun, x); 
+		}
 
 		PetscNonlinearSolverTest()
 		: _n(100) { }

@@ -66,7 +66,7 @@ namespace utopia {
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 						cg.max_it(size(x).get(0));
 
-						auto backtracking = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+						auto backtracking = std::make_shared<utopia::Backtracking<Vector> >();
 
 						Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
 						newton.set_line_search_strategy(backtracking);
@@ -88,7 +88,9 @@ namespace utopia {
 						Rastrigin<Matrix, Vector> fun;
 						Vector x = local_values(10 * (i+1), 1.);
 
-						TrustRegion<Matrix, Vector> trust_region;
+						auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
+
+						TrustRegion<Matrix, Vector> trust_region(st_cg);
 						trust_region.verbose(false);
 
 						double mag_x0 = -1;

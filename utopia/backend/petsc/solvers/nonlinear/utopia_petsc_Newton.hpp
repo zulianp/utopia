@@ -17,12 +17,12 @@ namespace utopia
     template<class Matrix, class Vector>
     class Newton<Matrix, Vector, PETSC_EXPERIMENTAL> : public SNESSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
-        typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
-        typedef utopia::LSStrategy<Matrix, Vector>                  LSStrategy; 
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+        typedef utopia::SNESSolver<Matrix, Vector>      SNESSolver;
+        typedef utopia::LSStrategy<Vector>              LSStrategy; 
+        typedef utopia::LinearSolver<Matrix, Vector>    LinearSolver;
 
 
         public:

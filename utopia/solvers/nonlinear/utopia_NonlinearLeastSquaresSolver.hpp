@@ -16,7 +16,7 @@ namespace utopia
      * @tparam     Vector  
      */
 	template<class Matrix, class Vector>
-	class NonLinearLeastSquaresSolver : public Monitor<Matrix, Vector>
+	class NonLinearLeastSquaresSolver : public Monitor<Vector>
 	{
 	public:
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -78,23 +78,6 @@ namespace utopia
 
 	protected:
       
-        /**
-         * @brief      Monitors(creating matlab script) iterate, hessian on given iterate.
-         */
-		virtual bool solver_monitor(const SizeType& it, Vector & x, Matrix & H) override
-		{
-
-			if(log_iterates_)
-			{
-				monitor(it, x);
-			}
-			if(log_system_)
-			{
-				monitor(it, H); 
-			}
-			return true; 
-		}
-
 
         /**
          * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve process. 

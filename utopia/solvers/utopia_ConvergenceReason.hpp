@@ -1,10 +1,3 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2016-07-31
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-01-31
-*/
-
 #ifndef UTOPIA_SOLVER_CONVERGENCE_REASON
 #define UTOPIA_SOLVER_CONVERGENCE_REASON
 
