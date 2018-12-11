@@ -163,11 +163,14 @@ namespace utopia
 
 		bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector>>> &transfers)
 		{
-			if(num_levels_ <= 0)
-				num_levels_ = transfers_.size() + 1; 
+			if(num_levels_ <= 0) {
+				num_levels_ = transfers.size() + 1; 
+			}
 
-			if(num_levels_ != transfers.size() + 1)
+			if(num_levels_ != transfers.size() + 1) {
 				utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n"); 
+				std::cout << num_levels_ << " != " << (transfers.size() + 1);
+			}
 
 			transfers_ = transfers;
 			return true;

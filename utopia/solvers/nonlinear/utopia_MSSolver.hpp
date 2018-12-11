@@ -16,11 +16,10 @@
 namespace utopia
 {
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class MSSolver final : public NonLinearSolver<Matrix, Vector>
+    class MSSolver final : public NonLinearSolver<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver Solver;
         using LinearSolverT = LinearSolver<Matrix, Vector>;
         
     public:
@@ -150,8 +149,8 @@ namespace utopia
             Vector temp;
         };
         
-        MSSolver(const std::shared_ptr <Solver> &linear_solver):
-        NonLinearSolver<Matrix, Vector>(linear_solver),
+        MSSolver(const std::shared_ptr<LinearSolverT> &linear_solver):
+        NonLinearSolver<Vector>(linear_solver),
         delta_(0.3),
         delta_prime_(0.35),
         epsilon0_(1.),
@@ -378,7 +377,7 @@ namespace utopia
         
         void read(Input &in) override
         {
-            NonLinearSolver<Matrix, Vector>::read(in);
+            NonLinearSolver<Vector>::read(in);
             // in.get("dumping", delta_);
         }
         
