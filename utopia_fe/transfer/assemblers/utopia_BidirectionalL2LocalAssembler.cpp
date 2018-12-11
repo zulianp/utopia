@@ -39,34 +39,6 @@ namespace utopia {
         
         assert(false);
         return false;
-
-        // auto trial_fe   = libMesh::FEBase::build(trial.dim(), trial_type);
-        // auto test_fe    = libMesh::FEBase::build(test.dim(),  test_type);
-        // const int order = order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order);
-        
-        // if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
-        //     return false;
-        // }
-        
-        // init_biorth(test, test_type);
-        // init_fe(trial, trial_type, test, test_type);
-        
-        // trial_fe->attach_quadrature_rule(&q_trial);
-        // trial_fe->get_phi();
-        // trial_fe->reinit(&trial);
-        
-        // test_fe->attach_quadrature_rule(&q_test);
-        // test_fe->get_phi();
-        // test_fe->get_JxW();
-        // test_fe->reinit(&test);
-        
-        // if(use_biorth) {
-        //     mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat);
-        // } else {
-        //     mortar_assemble(*trial_fe, *test_fe, mat);
-        // }
-        
-        // return true;
     }
     
     bool BidirectionalL2LocalAssembler::assemble(
@@ -187,5 +159,10 @@ namespace utopia {
         biorth_elem->attach_quadrature_rule(&qg);
         biorth_elem->reinit(&el);
         mortar_assemble_weights(*biorth_elem, weights);
+    }
+
+    void BidirectionalL2LocalAssembler::print_stats(std::ostream &os) const
+    {
+
     }
 }

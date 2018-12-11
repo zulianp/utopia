@@ -6,7 +6,6 @@
 #include "utopia_petsc_ConvergedReason.hpp"
 
 #include "utopia_petsc_KSPTR.hpp"
-
 #include "utopia_petsc_ConjugateGradient.hpp"
 #include "utopia_petsc_GaussSeidel.hpp"
 

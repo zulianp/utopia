@@ -5,6 +5,21 @@
 
 namespace utopia 
 {
+    template<class Vector>
+    class LeastSquaresFunctionBase 
+    {
+        public:
+            DEF_UTOPIA_SCALAR(Vector)
+
+            virtual ~LeastSquaresFunctionBase() { }
+
+            // abstraction for normal equations
+            virtual bool residual(const Vector &/*point*/, Vector &/*result*/) const = 0;
+            virtual bool value(const Vector &, Scalar &val) const = 0;
+            virtual bool update(const Vector &) { return true; }
+    };
+
+
     /**
      * @brief      Nonlinear Function for normal equation problems. 
      *             Additionally routines from Function class, one should supply also residual and jacobian.  
@@ -14,17 +29,16 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class LeastSquaresFunction {
-    public:
-        DEF_UTOPIA_SCALAR(Matrix)
+    class LeastSquaresFunction  : public LeastSquaresFunctionBase<Vector>
+    {
+        public:
+            DEF_UTOPIA_SCALAR(Matrix)
 
-        virtual ~LeastSquaresFunction() { }
+            virtual ~LeastSquaresFunction() { }
 
-        // abstraction for normal equations
-        virtual bool residual(const Vector &/*point*/, Vector &/*result*/) const = 0;
-        virtual bool jacobian(const Vector &/*x*/, Matrix &/*hessian*/) const = 0;
-        virtual bool value(const Vector &, Scalar &val) const = 0;
-        virtual bool update(const Vector &) { return true; }
+            // abstraction for normal equations
+            virtual bool jacobian(const Vector &/*x*/, Matrix &/*hessian*/) const = 0;
+
     };
 }
 #endif //UTOPIA_SOLVER_NORMAL_EQ_FUNCTION_HPP

@@ -34,7 +34,7 @@ namespace utopia
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const override = 0;
 
 
-        bool gradient(const Vector & x, Vector & gradient) const final
+        bool gradient(const Vector & x, Vector & gradient) const override final
         {
             this->gradient_no_rhs(x, gradient);
 

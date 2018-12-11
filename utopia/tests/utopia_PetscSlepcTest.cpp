@@ -40,7 +40,6 @@ namespace utopia
 		{
 			UTOPIA_RUN_TEST(petsc_slepc_generalized_eigen_test); 
 			UTOPIA_RUN_TEST(petsc_slepc_eigen_test); 
-			// UTOPIA_RUN_TEST(nested_mat_test); 
 			UTOPIA_RUN_TEST(tr_more_sorensen_eigen_test); 
 		}
 
@@ -94,56 +93,6 @@ namespace utopia
 			slepc.get_real_eigenpair(1, iegr, vr); 
 		}
 
-
-	    // void nested_mat_test()
-	    // {
-	    //     DSMatrixd merged_mat; 
-	    //     DVectord merged_vec; 
-
-	    //     DSMatrixd M00 = local_identity(20, 20);
-	    //     DSMatrixd M01 = 2* local_identity(20, 30);
-	    //     DSMatrixd M10 = 3* local_identity(30, 20);
-	    //     DSMatrixd M11 = 4 *local_identity(30, 30);
-
-	    //     Mat matrices[4]; 
-	    //     matrices[0] = raw_type(M00); 
-	    //     matrices[1] = raw_type(M01); 
-	    //     matrices[2] = raw_type(M10); 
-	    //     matrices[3] = raw_type(M11); 
-
-	    //     MatDestroy(&raw_type(merged_mat)); 
-	    //    	MatCreateNest(PETSC_COMM_WORLD, 2, NULL, 2, NULL, matrices, &raw_type(merged_mat));
-
-	    //     Vec x[2]; 
-
-	    //     DVectord x1 = local_values(20, 3.0); 
-	    //     DVectord x2 = local_values(30, 10.0); 
-
-	    //     x[0] = raw_type(x1); 
-	    //     x[1] = raw_type(x2); 
-	        
-	    //     VecCreateNest(PETSC_COMM_WORLD, 2, NULL, x, & raw_type(merged_vec)); 
-	    //     DVectord result = merged_mat * merged_vec; 
-
-	    //     bool verbose = false; 
-	    //     EigenValueSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
-
-	    //     slepc.portion_of_spectrum("smallest_real"); 
-	    //     slepc.number_of_eigenvalues(1); 
-	    //     slepc.solver_type("arnoldi"); 
-
-	    //     slepc.verbose(verbose); 
-	    //     slepc.tol(1e-12); 
-	    //     slepc.solve(merged_mat); 
-	    //     slepc.print_eigenpairs(); 
-
-
-	    //     VecDestroy(& raw_type(merged_vec)); 
-	    //     MatDestroy(& raw_type(merged_mat)); 
-	    // }
-
-
-
 	    void tr_more_sorensen_eigen_test()
 	    {
 	    	if(mpi_world_size() != 1)
@@ -165,8 +114,8 @@ namespace utopia
 					
 			auto subproblem = std::make_shared<utopia::KSP_TR<DMatrixd, DVectord> >();
 			subproblem->ksp_type("gltr"); 
-			subproblem->atol(1e-14); 
-			subproblem->rtol(1e-14); 
+			subproblem->atol(1e-10); 
+			subproblem->rtol(1e-10); 
 
 			TrustRegion<DMatrixd, DVectord> tr_solver(subproblem);
 			tr_solver.verbose(verbose);

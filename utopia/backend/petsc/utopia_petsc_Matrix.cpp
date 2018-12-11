@@ -580,7 +580,6 @@ namespace utopia {
             
             check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &temp) );
             check_error( MatConvert(temp, type_override(), MAT_INITIAL_MATRIX, &implementation()) );
-
             check_error(  MatDestroy(&temp) );
         }
     }
@@ -696,7 +695,9 @@ namespace utopia {
       PetscScalar scale_factor)
     {
         if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+        {
             dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+        }
 
         check_error( MatZeroEntries(implementation()) );
 
@@ -978,7 +979,7 @@ namespace utopia {
 
         MatGetOwnershipRange(mat.implementation(), &r_begin, &r_end);
 
-        result.write_lock();
+        result.write_lock(utopia::LOCAL);
 
         for(PetscInt row = r_begin; row < r_end; ++row) {
             MatGetRow(mat.implementation(), row, &n_values, &cols, &values);
@@ -996,7 +997,7 @@ namespace utopia {
             VecSetValues(result.implementation(), 1, &row, &x, INSERT_VALUES);
         }
 
-        result.write_unlock();
+        result.write_unlock(utopia::LOCAL);
     }
 
     void PetscMatrix::row_sum(PetscVector &col) const
@@ -1138,15 +1139,43 @@ namespace utopia {
 
     void PetscMatrix::mult(const PetscMatrix &mat, PetscMatrix &result) const
     {
-        if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
-            result.destroy();
-            MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
-        } else {
-            PetscMatrix temp;
-            temp.destroy();
+        PetscBool      flg;
+        // this is very unefficient hack, but still better than fail... 
+        PetscObjectTypeCompareAny((PetscObject)mat.implementation(),&flg,MATMPIDENSE,NULL);
+        if (flg)
+        {
+            if(mat.implementation() != result.implementation() && implementation() != result.implementation())
+            {
+                result.destroy();
+                Mat temp; 
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+                MatDestroy(&temp); 
+            }
+            else 
+            {
+                PetscMatrix temp2; 
+                temp2.destroy(); 
 
-            MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
-            result = std::move(temp);
+                Mat temp; 
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp2.implementation());
+                MatDestroy(&temp); 
+                result = std::move(temp2);
+            }                
+        }
+        else
+        {
+            if(mat.implementation() != result.implementation() && implementation() != result.implementation()) 
+            {
+                result.destroy();
+                MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+            } else {
+                PetscMatrix temp;
+                temp.destroy();
+                MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
+                result = std::move(temp);
+            }
         }
     }
 

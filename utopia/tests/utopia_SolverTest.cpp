@@ -7,17 +7,9 @@
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_MultiLevelTestProblem.hpp"
 
-namespace utopia {
-	/**
-	 * @brief      Class to test our nonlinear solvers.
-	 *
-	 * @todo       add more tests to TR, LS, ...
-	 * @todo       different strategies, different LS solve, test all params, nonlinear problems ...
-	 *
-	 * @tparam     Matrix
-	 * @tparam     Vector
-	 * @tparam     Scalar
-	 */
+namespace utopia 
+{
+
 	template<class Matrix, class Vector, class Scalar>
 	class SolverTest {
 	public:
@@ -32,6 +24,7 @@ namespace utopia {
 		{
 			print_backend_info();
 			UTOPIA_RUN_TEST(newton_cg_test);
+			UTOPIA_RUN_TEST(grad_descent_test); 
 			UTOPIA_RUN_TEST(solver_from_params_test);
 			UTOPIA_RUN_TEST(tr_test);
 			UTOPIA_RUN_TEST(ls_test);
@@ -39,8 +32,6 @@ namespace utopia {
 			UTOPIA_RUN_TEST(dogleg_test);
 			UTOPIA_RUN_TEST(st_cg_test); 
 			UTOPIA_RUN_TEST(precond_st_cg_test); 
-			UTOPIA_RUN_TEST(quasi_newton_test);
-			UTOPIA_RUN_TEST(Quasi_TR_test); 
 		}
 
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -51,12 +42,10 @@ namespace utopia {
 			bool update(const Vector &) { return true; }
 		};
 
-
-
 		void ls_normal_eq()
 		{
 			LeastSquaresNewton<Matrix, Vector> newton(std::make_shared<ConjugateGradient<Matrix, Vector>>());
-			auto ls_strat  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+			auto ls_strat  = std::make_shared<utopia::Backtracking<Vector> >();
 			newton.set_line_search_strategy(ls_strat);
 
 			EmptyLSFun fun;
@@ -68,7 +57,7 @@ namespace utopia {
         {
             SteihaugToint<Matrix, Vector, HOMEMADE> cg;
             cg.rtol(1e-7);
-            cg.atol(1e-6);
+            cg.atol(1e-7);
             cg.max_it(_n);
             cg.verbose(false);
 
@@ -78,24 +67,23 @@ namespace utopia {
 			Vector rhs = values(_n, 975.9);
 
             {
+            	auto r = range(rhs);
             	Write<Vector> w(rhs);
-            	rhs.set(0, 0.0); 
-            	rhs.set(_n-1, 0.0); 
+            	if(r.inside(0)) rhs.set(0, 0.0); 
+            	if(r.inside(_n - 1)) rhs.set(_n-1, 0.0); 
             }			
 
             Vector x = zeros(size(rhs));
 
-            cg.tr_constrained_solve(A, -1.0 * rhs, x, 1e15);
+            cg.solve(A, rhs, x);
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
-
         }
-
 
 		void precond_st_cg_test()
         {
             SteihaugToint<Matrix, Vector, HOMEMADE> cg;
             cg.rtol(1e-7);
-            cg.atol(1e-6);
+            cg.atol(1e-7);
             cg.max_it(_n);
             cg.verbose(false);
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
@@ -108,18 +96,17 @@ namespace utopia {
 			Vector rhs = values(_n, 975.9);
 
             {
+            	auto r = range(rhs);
             	Write<Vector> w(rhs);
-            	rhs.set(0, 0.0); 
-            	rhs.set(_n-1, 0.0); 
+            	if(r.inside(0)) rhs.set(0, 0.0); 
+            	if(r.inside(_n-1)) rhs.set(_n-1, 0.0); 
             }			
 
             Vector x = zeros(size(rhs));
 
-            cg.tr_constrained_solve(A, -1.0 * rhs, x, 1e15);
+            cg.solve(A, rhs, x);
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
         }
-
-
 
 		void nl_solve_test()
 		{
@@ -138,6 +125,23 @@ namespace utopia {
 			utopia_test_assert(approxeq(expected, actual));
 			//! [NL solve example]
 		}
+
+		void grad_descent_test()
+		{
+			//set-up problem
+			int n = 10;
+			Vector actual = values(n, 1.0);
+			TestFunctionND_1<Matrix, Vector> fun(n);
+
+			auto solver = GradientDescent<Vector>();  
+			solver.set_dumping_parameter(0.05); 
+			solver.solve(fun, actual); 
+
+			//test outcome...
+			Vector expected = values(n, 0.468919);
+			utopia_test_assert(approxeq(expected, actual));
+		}
+
 
 		void newton_cg_test()
 		{
@@ -296,8 +300,8 @@ namespace utopia {
 				Newton<Matrix, Vector> nlsolver2(lsolver);
 
 
-				auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >();
-				auto strategy_bc  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector> >();
+				auto strategy_bc  = std::make_shared<utopia::Backtracking<Vector> >();
 
 				strategy_sbc->set_parameters(params);
 				strategy_bc->set_parameters(params);
@@ -373,93 +377,14 @@ namespace utopia {
 				Rosenbrock<Matrix, Vector> rosenbrock;
 				Vector expected_rosenbrock = values(2, 1);
 
-				auto dogleg = std::make_shared<Dogleg<Matrix, Vector> >();
+				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
+				auto dogleg = std::make_shared<Dogleg<Matrix, Vector> >(cg);
 
 				Vector x0 = values(2, 2.0);
 
 				TrustRegion<Matrix, Vector> tr_solver(dogleg);
 				tr_solver.verbose(false);
-				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
-				tr_solver.set_linear_solver(cg);				
-				tr_solver.solve(rosenbrock, x0);
-
-				utopia_test_assert(approxeq(expected_rosenbrock, x0));
-			}
-		}
-
-		void quasi_newton_test()
-		{
-			// because dense matrices can not be sum-up in parallel
-			if(mpi_world_size() > 1) return;
-			
-			Parameters params;
-			params.atol(1e-9);
-			params.rtol(1e-15);
-			params.stol(1e-15);
-			params.verbose(false);
-			
-			auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector> >();
-			auto hess_approx_BFGS   = std::make_shared<BFGS<Matrix, Vector> >();
-
-
-			QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, lsolver);
-			nlsolver.set_parameters(params);
-
-			auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-			nlsolver.set_line_search_strategy(line_search);
-			
-			
-			SimpleQuadraticFunction<Matrix, Vector> fun;
-			
-			Vector x = values(_n, 2.);
-			Vector expected_1 = zeros(x.size());
-			
-
-			nlsolver.solve(fun, x);
-			utopia_test_assert(approxeq(expected_1, x));
-			
-			TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
-			x = values(_n, 2.0);
-			Vector expected_2 = values(x.size().get(0), 0.468919);
-
-			nlsolver.solve(fun2, x);
-			utopia_test_assert(approxeq(expected_2, x));
-
-			Rosenbrock<Matrix, Vector> rosenbrock;
-			Vector x0 = values(2, 0.5);
-			nlsolver.solve(rosenbrock, x0);
-			Vector expected_rosenbrock = values(2, 1.0);
-
-			utopia_test_assert(approxeq(x0, expected_rosenbrock));
-		}
-
-
-		void Quasi_TR_test()
-		{
-			// rosenbrock test
-			if(mpi_world_size() == 1)
-			{
-				Rosenbrock<Matrix, Vector> rosenbrock;
-				Vector expected_rosenbrock = values(2, 1);
-
-				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-				subproblem->atol(1e-10);
-
-				Vector x0 = values(2, 2.0);
-
-				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-				tr_solver.atol(1e-6); 
-				tr_solver.rtol(1e-9);
-
-				auto hes_approx   = std::make_shared<BFGS<Matrix, Vector> >();
-				hes_approx->set_update_hessian(true); 
-
-				tr_solver.set_hessian_approximation_strategy(hes_approx);
-
 				tr_solver.max_it(100); 
-				tr_solver.verbose(false);
-				tr_solver.delta0(1); 
 				tr_solver.solve(rosenbrock, x0);
 
 				utopia_test_assert(approxeq(expected_rosenbrock, x0));

@@ -98,6 +98,15 @@ namespace utopia {
 		/////////////
 		std::shared_ptr<libMesh::MeshBase> get_filtered_from_mesh();
 		std::shared_ptr<libMesh::MeshBase> get_filtered_to_mesh();
+
+
+		void assemble_mass_matrix(
+			const libMesh::MeshBase &mesh,
+			const libMesh::DofMap &dof_map, 
+			const int var,
+			const int n_tensor,
+			USparseMatrix &mat
+			) const;
 	};
 
 }

@@ -18,10 +18,11 @@ namespace  utopia
      * @tparam     Matrix 
      * @tparam     Vector 
      */
-    template<class Matrix, class Vector>
-    class LSStrategy : public Configurable
-    {
 
+    template<class Vector>
+    class LSStrategy : public Configurable
+
+    {
         typedef UTOPIA_SCALAR(Vector) Scalar;
     public:
         virtual ~LSStrategy() {}
@@ -39,8 +40,8 @@ namespace  utopia
          *
          * @return     The alpha.
          */
-        virtual bool get_alpha(Function<Matrix, Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
-        virtual bool get_alpha(LeastSquaresFunction<Matrix, Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
+        virtual bool get_alpha(FunctionBase<Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
+        virtual bool get_alpha(LeastSquaresFunctionBase<Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
         virtual bool set_parameters(const Parameters /*params*/){ return true; }
 
         virtual void read(Input &in) override

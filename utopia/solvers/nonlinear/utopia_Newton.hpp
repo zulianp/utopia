@@ -30,20 +30,20 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Newton final : public NonLinearSolver<Matrix, Vector>
+    class Newton final: public NewtonBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver Solver;
-        typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
+        typedef utopia::LSStrategy<Vector>                  LSStrategy; 
 
     public:
-       Newton(const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-              const Parameters params                       = Parameters() ):
-                NonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1)
-                {
-                    set_parameters(params);
-                }
+        Newton(const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
+               const Parameters params                       = Parameters() ):
+               NewtonBase<Matrix, Vector>(linear_solver, params), alpha_(1)
+        {
+            set_parameters(params);
+        }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
@@ -76,7 +76,8 @@ namespace utopia
                 //find direction step
                 step = local_zeros(local_size(x));
 
-                if(this->has_preconditioned_solver() && fun.has_preconditioner()) {
+                if(this->has_preconditioned_solver() && fun.has_preconditioner()) 
+                {
                     fun.hessian(x, hessian, preconditioner);
                     this->linear_solve(hessian, preconditioner, -grad, step);
                 } else {
@@ -88,7 +89,6 @@ namespace utopia
                     
                     ls_strategy_->get_alpha(fun, grad, x, step, alpha_); 
                     x += alpha_ * step;
-
                 } else { 
                     //update x
                     if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
@@ -103,14 +103,12 @@ namespace utopia
 
                 // notify listener
                 fun.update(x);
-
-
                 fun.gradient(x, grad);
 
                 // norms needed for convergence check
-                g_norm = norm2(grad);
+                norms2(grad, step, g_norm, s_norm); 
                 r_norm = g_norm/g0_norm;
-                s_norm = norm2(step);
+
 
                 // // print iteration status on every iteration
                 if(this->verbose_)
@@ -128,14 +126,14 @@ namespace utopia
 
     void set_parameters(const Parameters params) override
     {
-        NonLinearSolver<Matrix, Vector>::set_parameters(params);
+        NewtonBase<Matrix, Vector>::set_parameters(params);
         alpha_ = params.alpha();
 
     }
 
     void read(Input &in) override
     {
-        NonLinearSolver<Matrix, Vector>::read(in);
+        NewtonBase<Matrix, Vector>::read(in);
         in.get("dumping", alpha_);
 
         if(ls_strategy_) {

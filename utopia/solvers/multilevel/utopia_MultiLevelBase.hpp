@@ -2,11 +2,13 @@
 #define UTOPIA_ML_BASE_HPP
 #include "utopia_Transfer.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_Parameters.hpp"
 
 #include <algorithm>
 #include <vector>
 
-namespace utopia {
+namespace utopia 
+{
 	/**
 	 * @brief      Base class for all multilevel solvers. \n
 	 *             Takes care of inializing multilevel hierarchy. \n
@@ -17,16 +19,17 @@ namespace utopia {
 	 * @tparam     Vector
 	 */
 	template<class Matrix, class Vector>
-	class MultiLevelBase {
-		typedef UTOPIA_SCALAR(Vector)    Scalar;
-		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-		typedef utopia::Level<Matrix, Vector> Level;
-		typedef utopia::Transfer<Matrix, Vector> Transfer;
-		typedef std::shared_ptr<Transfer> TransferPtr;
+	class MultiLevelBase 
+	{
+		typedef UTOPIA_SCALAR(Vector)    			Scalar;
+		typedef UTOPIA_SIZE_TYPE(Vector) 			SizeType;
+		typedef utopia::Level<Matrix, Vector> 		Level;
+		typedef utopia::Transfer<Matrix, Vector> 	Transfer;
+		typedef std::shared_ptr<Transfer> 			TransferPtr;
 
 	public:
 
-		MultiLevelBase(const Parameters params = Parameters())
+		MultiLevelBase(const Parameters params = Parameters()): num_levels_(-99)
 		{
 			set_parameters(params);
 		}
@@ -46,10 +49,16 @@ namespace utopia {
 		/**
 		 * @brief Returns number of levels in hierarchy.
 		 */
-		inline SizeType n_levels()
+		inline SizeType n_levels() const 
 		{
-			return transfers_.size() + 1;
+			return num_levels_; 
 		}
+
+		inline void n_levels(const SizeType & n_lev)
+		{
+			num_levels_ = n_lev; 
+		}
+
 
 		/**
 		 * @brief      Function sets type of cycle
@@ -154,24 +163,31 @@ namespace utopia {
 
 		bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector>>> &transfers)
 		{
+			if(num_levels_ <= 0)
+				num_levels_ = transfers_.size() + 1; 
+
+			if(num_levels_ != transfers.size() + 1)
+				utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n"); 
+
 			transfers_ = transfers;
 			return true;
 		}
 
 
 	protected:
-		std::vector<TransferPtr>               transfers_;   /*!< vector of transfer operators  */
+		std::vector<TransferPtr> 	transfers_;   /*!< vector of transfer operators  */
 
-		Parameters                          parameters_;
+		Parameters      			parameters_;
 
-		SizeType                            pre_smoothing_steps_;
-		SizeType                            post_smoothing_steps_;
-		SizeType                            mg_type_;
+		SizeType        			pre_smoothing_steps_;
+		SizeType        			post_smoothing_steps_;
+		SizeType        			mg_type_;
 
-		int                                 cycle_type_;
-		SizeType                            v_cycle_repetition_;
+		int         				cycle_type_;
+		SizeType    				v_cycle_repetition_;
 
-		bool fix_semidefinite_operators_;
+		bool 						fix_semidefinite_operators_;
+		SizeType 					num_levels_; 
 	};
 
 }

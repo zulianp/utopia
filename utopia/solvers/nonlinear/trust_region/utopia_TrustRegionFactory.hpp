@@ -1,10 +1,3 @@
-// /*
-// * @Author: alenakopanicakova
-// * @Date:   2016-06-10
-// * @Last Modified by:   Alena Kopanicakova
-// * @Last Modified time: 2017-07-03
-// */
-
 #ifndef UTOPIA_TR_STRATEGY_FACTORY_HPP
 #define UTOPIA_TR_STRATEGY_FACTORY_HPP
 

@@ -208,7 +208,7 @@ namespace utopia {
 		}
 
 
-		static void set(Vector &v, Scalar value)
+		inline static void set(Vector &v, Scalar value)
 		{
 			std::fill(v.begin(), v.end(), value);
 		}
@@ -227,7 +227,7 @@ namespace utopia {
 		// }
 
 		template<typename Ordinal>
-		void set_matrix(Matrix &m,
+		inline static void set_matrix(Matrix &m,
 							   const std::vector<Ordinal> &rows,
 							   const std::vector<Ordinal> &cols,
 							   const std::vector<Scalar> &values)

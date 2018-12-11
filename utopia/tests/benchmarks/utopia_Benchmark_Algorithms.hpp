@@ -43,6 +43,7 @@ namespace utopia {
 					[n]() {
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 						cg.max_it(n * mpi_world_size());
+						cg.set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
 						run_linear_solver(n, cg);
 					}
 				);
@@ -65,7 +66,7 @@ namespace utopia {
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 						cg.max_it(size(x).get(0));
 
-						auto backtracking = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+						auto backtracking = std::make_shared<utopia::Backtracking<Vector> >();
 
 						Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
 						newton.set_line_search_strategy(backtracking);
@@ -87,7 +88,9 @@ namespace utopia {
 						Rastrigin<Matrix, Vector> fun;
 						Vector x = local_values(10 * (i+1), 1.);
 
-						TrustRegion<Matrix, Vector> trust_region;
+						auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
+
+						TrustRegion<Matrix, Vector> trust_region(st_cg);
 						trust_region.verbose(false);
 
 						double mag_x0 = -1;
@@ -202,9 +205,9 @@ namespace utopia {
 
 		static void run_linear_solver(const SizeType n, LinearSolver<Matrix, Vector> &solver)
 		{
-			Matrix A = local_sparse(n, n, 3);
-			Vector b = local_values(n, 1.);
-			Vector x = local_values(n, 0.);
+			Matrix A = sparse(n, n, 3);
+			Vector b = values(n, 1.);
+			Vector x = values(n, 0.);
 
 			assemble_laplacian_1D(A, true);
 

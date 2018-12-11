@@ -3,14 +3,15 @@ list(APPEND SOLVERS_MODULES
 	domain_decomposition
 	linear 
 	multilevel
+	multilevel/transfer
 	smoothers
 	nonlinear
 	nonlinear/affine_similarity
-	nonlinear/alternate_minimization
 	nonlinear/constrained
 	nonlinear/constrained/quadratic_programming
 	nonlinear/line_search
 	nonlinear/trust_region
+	nonlinear/trust_region/QP_subproblems
 	nonlinear/hessian_approximations
 	preconditioners
 	saddlepoint

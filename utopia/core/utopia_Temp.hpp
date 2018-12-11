@@ -23,8 +23,8 @@
 #include <type_traits>
 
 
-
-namespace utopia  {
+namespace utopia  
+{
 
 
     template<class Tensor>
@@ -58,6 +58,25 @@ namespace utopia  {
 
         set_zero_rows(w, index, diag);
     }
+
+
+    template<class Vector, int Backend = Traits<Vector>::Backend>
+    class EvalVecUniqueSortSerial
+    {
+        public:
+            static void apply(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)  
+            { 
+                static_assert(Traits<Vector>::Backend==PETSC, "EvalVecUniqueSortSerial implemented just for petsc backend."); 
+            }
+    };
+
+
+    template<class Vector>
+    void vec_unique_sort_serial(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)  
+    {
+        EvalVecUniqueSortSerial<Vector>::apply(x, sorted, used_values);        
+    }
+
 
 }
 

@@ -12,7 +12,8 @@ namespace utopia
 {
 
 	template<class Matrix, class Vector>
-	class MultiLevelMask final {
+	class MultiLevelMask final 
+	{
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::Transfer<Matrix, Vector> Transfer;

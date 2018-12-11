@@ -1,0 +1,39 @@
+# ffc -l dolfin OptimalControl.ufl
+
+P1 = FiniteElement("Lagrange", triangle, 1)
+
+
+# Define trial and test functions
+du = TrialFunction(P1)     # trial function
+v  = TestFunction(P1)      # Test function
+
+# Coefficient
+u = Coefficient(P1)        # Displacement from previous iteration
+
+
+nu 	= Constant(triangle)
+delta = Constant(triangle)
+betta = Constant(triangle)
+z = Constant(triangle)
+
+
+
+psi1 = (u-z)*(u-z)
+psi2 = betta/2.0 * (exp(u) - exp(z))*(exp(u) - exp(z))
+psi3 = nu/2.0 * (dot(grad(u), grad(u)) +  delta* exp(u))*(dot(grad(u), grad(u)) +  delta* exp(u))
+
+
+Pi = psi1*dx + psi2*dx + psi3*dx 
+
+
+M = inner(du, v)*dx
+
+
+# Compute first variation of Pi (directional derivative about u in the direction of v)
+F = derivative(Pi, u, v)
+
+# Compute Jacobian of F
+J = derivative(F, u, du)
+
+
+forms = [Pi, F, J, M]

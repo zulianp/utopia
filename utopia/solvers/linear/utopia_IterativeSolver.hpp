@@ -1,9 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-08-10
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-12
-*/
 #ifndef UTOPIA_Linear_SOLVER_H
 #define UTOPIA_Linear_SOLVER_H
 
@@ -27,7 +21,7 @@ namespace  utopia
      */
     template<class Matrix, class Vector>
     class IterativeSolver : public LinearSolver<Matrix, Vector>,
-                            public Monitor<Matrix, Vector>
+                            public Monitor<Vector>
     {
     
     public:
@@ -123,21 +117,6 @@ namespace  utopia
         Scalar get_time() { return _time.get_seconds();  }
 
     protected:
-
-        /**
-         * @brief      Monitors(creating matlab script) iterate, hessian on given iterate.
-         */
-        virtual bool solver_monitor(const SizeType &it, Vector &x, Matrix &H) override
-        {
-            if(log_iterates_)
-                monitor(it, x);
-            
-            if(log_system_)
-                monitor(it, H); 
-
-            return true; 
-        }
-
 
         /**
          * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve process. 
