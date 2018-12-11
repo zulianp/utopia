@@ -57,7 +57,7 @@ namespace utopia
         	return lambda_eps_; 
         }
 
-        virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
+        virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls)
         {
             linear_solver_ = ls; 
         }   
@@ -74,8 +74,8 @@ namespace utopia
 	    }
 
 
-	protected:
-        bool aux_solve(const Matrix &H, const Vector &g, Vector &s_k) override
+	private:
+        bool aux_solve(const Matrix &H, const Vector &g, Vector &s_k)
         {
         	Scalar lambda, s_norm; 
         	Vector eigenvector; 
