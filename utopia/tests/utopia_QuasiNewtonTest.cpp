@@ -190,7 +190,7 @@ namespace utopia
 		    	Vector x = values(_n, 1.0);
 		    	fun.apply_bc_to_initial_guess(x);
 
-		    	DVectord ub, lb;
+		    	Vector ub, lb;
 		    	fun.generate_constraints(lb, ub);
 		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 

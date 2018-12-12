@@ -47,7 +47,7 @@ namespace utopia
 
 		void ms_solver()
 		{
-			const int n = 200;
+			const int n = 2000;
 			// Rosenbrock<Matrix, Vector> fun;
 			TestFunctionND_1<Matrix, Vector> fun(n);
 
