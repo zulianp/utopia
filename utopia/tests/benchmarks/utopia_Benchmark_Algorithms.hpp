@@ -13,6 +13,7 @@
 #include "utopia_ProjectedGaussSeidel.hpp"
 #include "utopia_MultiLevelTestProblem.hpp"
 #include "utopia_IPTransfer.hpp"
+#include "utopia_BiCGStab.hpp"
 
 #include <string>
 #include <cassert>
