@@ -9,6 +9,9 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Config.hpp"
 
+#include <vector>
+#include <initializer_list>
+
 namespace utopia {
     template<class Implementation, class Derived, int Order>
     class Writeable;
@@ -113,7 +116,7 @@ namespace utopia {
 
             using std::copy;
             std::vector<SizeType> vrows(rows.size()), vcols(cols.size());
-            std::vector<Scalar> vvalues(values.size());
+            std::vector<ScalarT> vvalues(values.size());
             copy(rows.begin(), rows.end(), vrows.begin());
             copy(cols.begin(), cols.end(), vcols.begin());
             copy(values.begin(), values.end(), vvalues.begin());
