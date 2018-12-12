@@ -10,7 +10,7 @@
 #include "utopia_Monitor.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_ConjugateGradient.hpp"
-
+#include "utopia_NonLinearSolver.hpp"
 
 namespace utopia 
 {

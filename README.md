@@ -153,5 +153,10 @@ If you use Utopia for your research you can use the following bibtex entry to ci
 	year = {2016}
 }
 ```
+
+## Docker containers
+A docker container based on Alpine-Linux can be be found at https://hub.docker.com/r/zulianp/utopia/ and downloaded with `docker pull zulianp/utopia`. For the moment only `utopia-petsc` is supported for this container.
+
+
 # More details coming soon!
 

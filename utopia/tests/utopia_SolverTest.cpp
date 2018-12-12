@@ -47,20 +47,22 @@ namespace utopia
 
 		void ms_solver()
 		{
-			// int n = 2;
+			const int n = 20;
 			// Rosenbrock<Matrix, Vector> fun;
-			// // TestFunctionND_1<Matrix, Vector> fun(n);
+			TestFunctionND_1<Matrix, Vector> fun(n);
 
 
-			// // SimpleQuadraticFunction<Matrix, Vector> fun;
-			// // Rastrigin<Matrix, Vector> fun;
-			// // Woods<Matrix, Vector> fun;
+			// SimpleQuadraticFunction<Matrix, Vector> fun;
+			// Rastrigin<Matrix, Vector> fun;
+			// Woods<Matrix, Vector> fun;
 
-			// Vector x = values(n, 2.0);
+			Vector x = values(n, 2.0);
 
-			// MSSolver<Matrix, Vector> solver(std::make_shared<ConjugateGradient<Matrix, Vector>>());
+			MSSolver<Matrix, Vector> solver(std::make_shared<ConjugateGradient<Matrix, Vector>>());
+			solver.set_norm_type(MSSolver<Matrix, Vector>::A_SQUARED_NORM);
+			// solver.set_norm_type(MSSolver<Matrix, Vector>::A_NORM);
 			// solver.verbose(true);
-			// solver.solve(fun, x);
+			solver.solve(fun, x);
 			// disp(x);
 		}
 
