@@ -21,7 +21,7 @@ namespace utopia
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
 		typedef utopia::LinearSolver<Matrix, Vector> 		LinearSolver;
-		typedef utopia::EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL> 	EigenSolver;
+		typedef utopia::EigenSolver<Matrix, Vector> 		EigenSolver;
 
 
     public:
@@ -64,7 +64,8 @@ namespace utopia
 
         MoreSorensenEigen * clone() const override
         {
-            return new MoreSorensenEigen(std::shared_ptr<LinearSolver>(linear_solver_->clone()), std::shared_ptr<EigenSolver>(eigen_solver_->clone()));
+            // return new MoreSorensenEigen(std::shared_ptr<LinearSolver>(linear_solver_->clone()), std::shared_ptr<EigenSolver>(eigen_solver_->clone()));
+            return new MoreSorensenEigen(*this);
         }
 
         bool apply(const Vector &b, Vector &x) override
@@ -83,7 +84,7 @@ namespace utopia
         	s_k = 0.0 * g; 
 
         	// ---------------------- initialization  of lambda_0 ------------------------
-        	eigen_solver_->portion_of_spectrum("smallest_real"); 
+        	// eigen_solver_->portion_of_spectrum("smallest_real"); 
 	        eigen_solver_->number_of_eigenvalues(1); 
 	        eigen_solver_->solve(H); 
 

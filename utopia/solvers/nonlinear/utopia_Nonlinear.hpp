@@ -26,5 +26,9 @@
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_GradientDescent.hpp"
 
+#include "utopia_EigenSolver.hpp"
+
+
+
 #endif //UTOPIA_NON_LINEAR_HPP
 

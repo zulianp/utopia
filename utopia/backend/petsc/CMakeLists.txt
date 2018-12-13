@@ -67,7 +67,7 @@ if(PETSC_FOUND)
 		.
 		eval
 		solvers 
-		solvers/eigenvalue
+		solvers/eigensolvers
 		solvers/linear
 		solvers/multilevel
 		solvers/nonlinear
