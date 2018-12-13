@@ -1,8 +1,11 @@
-#First with try with clang compile
+#First with try with clang compile or else
 FIND_LIBRARY(MPI_CLANG_LIBRARY  
-	NAMES mpi_cxx
+	NAMES mpi_cxx 
+		  mpicxx
 		  mpicxx-mpich-clang
-	PATHS /opt/local/lib/openmpi-mp/
+	PATHS ${MPI_DIR}/lib
+		  $ENV{MPI_DIR}/lib
+		  /opt/local/lib/openmpi-mp/
 		  /opt/local/lib/mpich-mp/
 		  /opt/local/lib/mpich-clang/
 		  /opt/local/lib
@@ -17,39 +20,46 @@ IF(MPI_CLANG_LIBRARY)
 	GET_FILENAME_COMPONENT(MPI_LIB_DIR ${MPI_CLANG_LIBRARY} PATH)
 	
 	FIND_PATH(MPI_CLANG_HEADERS mpi.h
-		HINTS ${MPI_LIB_DIR}/../../include
+		HINTS ${MPI_DIR}/include
+			  $ENV{MPI_DIR}/include
+			  ${MPI_LIB_DIR}/../../include
 			  ${MPI_LIB_DIR}/../include
-				 /opt/local/include/openmpi-mp/
-				 ${MPI_LIB_DIR}/../../include/openmpi-mp/
-			 	 ${MPI_LIB_DIR}/../../include/mpich-clang
-				 ${MPI_LIB_DIR}/../include/mpich-clang
-				 /opt/local/include/mpich-clang
+			   /opt/local/include/openmpi-mp/
+			  ${MPI_LIB_DIR}/../../include/openmpi-mp/
+			  ${MPI_LIB_DIR}/../../include/mpich-clang
+			  ${MPI_LIB_DIR}/../include/mpich-clang
+			  /opt/local/include/mpich-clang
 		DOC "The MPI_CLANG_HEADERS path"
 	)	
 
 	IF(MPI_CLANG_HEADERS)
 		find_file(MPI_CXX_COMPILER 
-			NAMES mpicxx-openmpi-mp 
+			NAMES mpic++
+			      mpicxx
+			      mpicxx-openmpi-mp 
 				  mpicxx-mpich-clang
-			HINTS ${MPI_CLANG_HEADERS}/../bin
+			HINTS ${MPI_DIR}/bin
+			      $ENV{MPI_DIR}/bin
+			      ${MPI_CLANG_HEADERS}/../bin
 			 	  ${MPI_CLANG_HEADERS}/../../bin
 				  ${MPI_LIB_DIR}/../bin
 				  ${MPI_LIB_DIR}/../../bin
 				  /opt/local/bin/
-			DOC "the MPI_COMPILER_PATH dir"
-
+			DOC "the MPI_CXX_COMPILER path"
 		)
 
 		find_file(MPI_C_COMPILER 
 			NAMES mpicc-openmpi-mp
 				  mpicc-mpich-clang
-			HINTS ${MPI_CLANG_HEADERS}/../bin
+				  mpicc
+			HINTS ${MPI_DIR}/bin
+			      $ENV{MPI_DIR}/bin
+			      ${MPI_CLANG_HEADERS}/../bin
 			 	  ${MPI_CLANG_HEADERS}/../../bin
 				  ${MPI_LIB_DIR}/../bin
 				  ${MPI_LIB_DIR}/../../bin
 				  /opt/local/bin/
-			DOC "the MPI_COMPILER_PATH dir"
-
+			DOC "the MPI_C_COMPILER path"
 		)
 
 		IF(MPI_CXX_COMPILER AND MPI_C_COMPILER)

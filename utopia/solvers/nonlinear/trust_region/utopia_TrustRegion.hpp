@@ -57,7 +57,9 @@
 
          SizeType it = 0;
          SizeType it_successful = 0;
-         Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+         
+         static const auto infty = std::numeric_limits<Scalar>::infinity();
+         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
 
          bool rad_flg = false;
 
