@@ -41,6 +41,8 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_slepc_generalized_eigen_test); 
 			UTOPIA_RUN_TEST(petsc_slepc_eigen_test); 
 			UTOPIA_RUN_TEST(tr_more_sorensen_eigen_test); 
+			UTOPIA_RUN_TEST(pseudo_tr_test); 
+			UTOPIA_RUN_TEST(pseudo_tr_stiff_test); 
 		}
 
 
@@ -151,6 +153,58 @@ namespace utopia
 			tr_solver2.stol(1e-15); 
 			tr_solver2.solve(fun_woods, x_w1);				
 	    }
+
+		void pseudo_tr_test()
+		{
+			DVectord x  = values(4, 10);
+			DVectord expected_woods = values(4, 1);
+			Woods<DMatrixd, DVectord> fun;
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			eigen_solver->solver_type("arpack");			
+
+			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(true); 
+
+			solver.solve(fun, x); 
+			utopia_test_assert(approxeq(x, expected_woods, 1e-8));
+		}
+
+
+		void pseudo_tr_stiff_test()
+		{
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun(n); 
+			DVectord x; 
+			fun.get_initial_guess(x); 
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			eigen_solver->solver_type("arpack");			
+
+			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(true); 
+
+			solver.solve(fun, x); 
+		}
+
+
 
 
 		SlepcsSolverTest()

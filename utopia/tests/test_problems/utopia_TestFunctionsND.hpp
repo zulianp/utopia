@@ -489,7 +489,7 @@ namespace utopia {
             assert(x.size().get(0) == 2);
             Vector g = values(2, 0.0); 
             gradient(x, g); 
-            result = 0.5 * norm2(g);
+            result = 0.5 * norm2(g)*norm2(g);
             return true;
         }
 
