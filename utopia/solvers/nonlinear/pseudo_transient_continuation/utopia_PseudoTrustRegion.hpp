@@ -13,9 +13,12 @@
 
 namespace utopia
 {
-    
+    /**
+     * @brief This algorithm is implementation of the following paper: 
+     * Trust region algorithms and timestep selection by D.J. Higham
+     */   
     template<class Matrix, class Vector>
-    class PseudoTrustRegion : public NewtonBase<Matrix, Vector>
+    class PseudoTrustRegion final: public NewtonBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -28,14 +31,13 @@ namespace utopia
 
     public:
        PseudoTrustRegion(   const std::shared_ptr <Solver> &linear_solver,
-                            const std::shared_ptr<EigenSolver> & eigen_solver,  
-                            const Parameters params                       = Parameters() ):
-                            NewtonBase<Matrix, Vector>(linear_solver, params), 
+                            const std::shared_ptr<EigenSolver> & eigen_solver):
+                            NewtonBase<Matrix, Vector>(linear_solver), 
                             eigen_solver_(eigen_solver), 
                             eps_(1e-12)
-                            {
+        {
 
-                            }
+        }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
@@ -51,41 +53,41 @@ namespace utopia
             Scalar ared, pred, rho; 
 
             Vector g = local_zeros(local_size(x)), eigenvector_min, s, x_trial; 
-            Matrix H, H_dumped; 
-
-            Matrix I = local_identity(local_size(x).get(0), local_size(x).get(0)); 
+            Matrix H, H_damped; 
 
             fun.gradient(x, g); 
             g_norm = norm2(g); 
 
             Scalar energy_old, energy_new, energy; 
-            fun.value(x, energy_new);
+            fun.value(x, energy_old);
+            fun.hessian(x, H); 
 
-            tau = 1; 
-        
+            Matrix I = local_identity(local_size(H)); 
+
+            tau = 1.0/g_norm; 
+
+            if(this->verbose())
+                PrintInfo::print_iter_status(it, {g_norm, energy_old, 0.0, tau, 0.0});
+
             while(!converged)
             {
-                fun.hessian(x, H); 
-                fun.gradient(x, g); 
-
-                H_dumped = H + 1./tau * I; 
+                H_damped = H + 1./tau * I; 
 
                 eigen_solver_->portion_of_spectrum("smallest_real"); 
                 eigen_solver_->number_of_eigenvalues(1); 
-                eigen_solver_->solve(H_dumped); 
+                eigen_solver_->solve(H_damped); 
                 eigen_solver_->get_real_eigenpair(0, lambda_min, eigenvector_min); 
 
                 if(lambda_min >= eps_)
                 {
                     s = 0 * x; 
-                    this->linear_solve(H_dumped, -1.0 * g, s);
+                    this->linear_solve(H_damped, -1.0 * g, s);
                     x_trial = x + s; 
 
-                    fun.value(x, energy_old); 
                     fun.value(x_trial, energy_new); 
                     ared = energy_old - energy_new; 
 
-                    pred = (-1.0 * dot(g, s) -0.5 *dot(H* s, s));
+                    pred = -1.0 * dot(g, s) -0.5 *dot(H* s, s);
                     rho = ared/pred; 
 
                     if(rho < 1./4.)
@@ -103,12 +105,18 @@ namespace utopia
                 if(rho > 0.0)
                 {
                     x = x_trial; 
-                }
+                    fun.gradient(x, g); 
 
-                fun.gradient(x, g); 
-                g_norm = norm2(g); 
-                s_norm = norm2(s); 
-                fun.value(x, energy); 
+                    energy_old = energy_new; 
+                    energy = energy_new; 
+
+                    norms2(g, s, g_norm, s_norm); 
+                }
+                else
+                {
+                    s_norm = norm2(s); 
+                    energy = energy_old; 
+                }
 
                 it++; 
 
@@ -117,6 +125,9 @@ namespace utopia
 
                 converged = this->check_convergence(it, g_norm, 9e9, s_norm);
 
+                if(!converged && rho >0.0)
+                    fun.hessian(x, H); 
+
 
             } // outer solve loop while(!converged)
 
@@ -124,6 +135,14 @@ namespace utopia
             return true;
         }
     
+
+    void read(Input &in) override
+    {
+        NewtonBase<Matrix, Vector>::read(in);
+        in.get("eps", eps_);
+    }
+
+
     private: 
         std::shared_ptr<EigenSolver> eigen_solver_;     
         Scalar eps_; 

@@ -40,7 +40,7 @@ namespace utopia
     public:
         Newton(const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
                const Parameters params                       = Parameters() ):
-               NewtonBase<Matrix, Vector>(linear_solver, params), alpha_(1)
+               NewtonBase<Matrix, Vector>(linear_solver, params), alpha_(1.0)
         {
             set_parameters(params);
         }

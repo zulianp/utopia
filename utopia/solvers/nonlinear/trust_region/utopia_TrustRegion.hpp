@@ -14,7 +14,7 @@
  {
     	template<class Matrix, class Vector>
      	class TrustRegion final: public NewtonBase<Matrix, Vector>,
-                          public TrustRegionBase<Vector>
+                               public TrustRegionBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;

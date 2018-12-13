@@ -43,6 +43,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(tr_more_sorensen_eigen_test); 
 			UTOPIA_RUN_TEST(pseudo_tr_test); 
 			UTOPIA_RUN_TEST(pseudo_tr_stiff_test); 
+			UTOPIA_RUN_TEST(pseudo_cont_test); 
 		}
 
 
@@ -205,6 +206,35 @@ namespace utopia
 		}
 
 
+		void pseudo_cont_test()
+		{
+			DVectord x  = values(4, 10);
+			DVectord expected_woods = values(4, 1);
+			Woods<DMatrixd, DVectord> fun;
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+
+			PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
+
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(true); 
+
+			solver.solve(fun, x); 
+			utopia_test_assert(approxeq(x, expected_woods, 1e-8));
+
+
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun_stiff(n); 
+			DVectord x_stiff; 
+			fun_stiff.get_initial_guess(x_stiff); 
+			solver.solve(fun_stiff, x_stiff); 
+
+		}
 
 
 		SlepcsSolverTest()

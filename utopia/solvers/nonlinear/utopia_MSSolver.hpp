@@ -325,7 +325,7 @@ namespace utopia
             fun.value(x, f_x);
             fun.value(x_new, f_x_new);
 
-            const Scalar f_x_old = f_x;
+            //const Scalar f_x_old = f_x;
 
             SizeType n_alpha = 0;
             while(f_x_new < f_x) {
@@ -343,7 +343,7 @@ namespace utopia
                 return false;
             }
 
-            assert(f_x <= f_x_old);
+            //assert(f_x <= f_x_old);
             return true;
         }
         

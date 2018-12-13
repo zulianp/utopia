@@ -752,11 +752,11 @@ namespace utopia
 			DMatrixd I = identity(n,n); 
 			solver.set_mass_matrix(I); 
 			solver.set_scaling_matrix(I); 
-			solver.verbose(false);
+			solver.verbose(true);
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
-			// solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
+			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
 			solver.solve(fun, x); 
 		}
 
