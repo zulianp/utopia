@@ -217,5 +217,10 @@
 
 }
 
+//clean-up macros
+#ifdef DEBUG_mode
+#undef DEBUG_mode
+#endif
+
 #endif //UTOPIA_SOLVER_TRUSTREGION_HPP
 
