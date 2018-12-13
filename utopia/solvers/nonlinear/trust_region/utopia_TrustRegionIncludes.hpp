@@ -7,6 +7,7 @@
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
 #include "utopia_TRQuadraticFunction.hpp"
+#include "utopia_MoreSorensen.hpp"
 
 // tr-based minimization algorithms 
 #include "utopia_TRBase.hpp"

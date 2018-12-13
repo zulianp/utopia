@@ -20,6 +20,7 @@ namespace utopia
 
         EigenSolver(    const Parameters params = Parameters() ): 
                         number_of_eigenvalues_(1),
+                        portion_of_spectrum_("smallest_real"),
                         max_it_(1000), 
                         tol_(1e-12)
 
@@ -27,12 +28,10 @@ namespace utopia
             verbose_                = params.verbose();
         }   
 
-
         virtual ~EigenSolver()
         { 
 
         }
-
 
         virtual void number_of_eigenvalues(const SizeType & number_of_eigenvalues)
         {
@@ -76,6 +75,12 @@ namespace utopia
             verbose_ = verbose; 
         }
 
+        virtual const std::string &  portion_of_spectrum() const 
+        {
+          return portion_of_spectrum_; 
+        }
+
+        virtual void portion_of_spectrum(const std::string & type) = 0; 
 
         virtual bool solve(const Matrix & A) = 0; 
         virtual bool solve(const Matrix & A, const Matrix & B) = 0; 
@@ -84,18 +89,15 @@ namespace utopia
         virtual void get_eigenpairs(const SizeType & i, Scalar & iegr, Scalar & eigi, Vector & vr, Vector & vi) = 0; 
         virtual void get_real_eigenpair(const SizeType & i, Scalar & iegr, Vector & vr) = 0; 
 
-        // virtual EigenSolver<Matrix, Vector> * clone() =0; 
-
+        virtual EigenSolver * clone() const = 0; 
 
     private: 
         SizeType number_of_eigenvalues_; 
+        std::string portion_of_spectrum_;
 
         SizeType max_it_; 
         Scalar tol_; 
-
         bool verbose_; 
-
-
     };
     
 }

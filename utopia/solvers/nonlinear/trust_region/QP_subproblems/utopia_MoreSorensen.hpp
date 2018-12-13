@@ -1,14 +1,12 @@
-#ifndef UTOPIA_TR_MORE_SORENSEN_EIGEN_HPP
-#define UTOPIA_TR_MORE_SORENSEN_EIGEN_HPP
+#ifndef UTOPIA_MORE_SORENSEN_EIGEN_QP_SUBPROBLEM_HPP
+#define UTOPIA_MORE_SORENSEN_EIGEN_QP_SUBPROBLEM_HPP
+
 #include "utopia_TRSubproblem.hpp"
+#include "utopia_EigenSolver.hpp"
 
 
 namespace utopia 
 {
-
-	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-    class MoreSorensenEigen {};
-
 	/**
 	 * @brief      Class for More Sorensen minimization algorithm, where initialization of lambda_0 is based on eigen sol. 
 	 * 
@@ -17,9 +15,10 @@ namespace utopia
 	 * 			   				but ok as this is just proof of concept solver
 	 */
 	template<class Matrix, class Vector>
-    class MoreSorensenEigen<Matrix, Vector, PETSC> : public TRSubproblem<Matrix, Vector>
+    class MoreSorensenEigen: public TRSubproblem<Matrix, Vector>
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
+
 		typedef utopia::LinearSolver<Matrix, Vector> 		LinearSolver;
 		typedef utopia::EigenSolver<Matrix, Vector> 		EigenSolver;
 
@@ -64,7 +63,6 @@ namespace utopia
 
         MoreSorensenEigen * clone() const override
         {
-            // return new MoreSorensenEigen(std::shared_ptr<LinearSolver>(linear_solver_->clone()), std::shared_ptr<EigenSolver>(eigen_solver_->clone()));
             return new MoreSorensenEigen(*this);
         }
 
@@ -84,7 +82,7 @@ namespace utopia
         	s_k = 0.0 * g; 
 
         	// ---------------------- initialization  of lambda_0 ------------------------
-        	// eigen_solver_->portion_of_spectrum("smallest_real"); 
+        	eigen_solver_->portion_of_spectrum("smallest_real"); 
 	        eigen_solver_->number_of_eigenvalues(1); 
 	        eigen_solver_->solve(H); 
 
@@ -171,4 +169,4 @@ namespace utopia
 
 }
 
-#endif //UTOPIA_TR_MORE_SORENSEN_EIGEN_HPP
+#endif //UTOPIA_MORE_SORENSEN_EIGEN_QP_SUBPROBLEM_HPP

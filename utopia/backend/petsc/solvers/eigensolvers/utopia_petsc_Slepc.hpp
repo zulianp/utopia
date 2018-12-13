@@ -75,15 +75,9 @@ namespace utopia
         }        
 
 
-        virtual void portion_of_spectrum(const std::string & type)
+        virtual void portion_of_spectrum(const std::string & type) override
         {
           portion_of_spectrum_ = in_array(type, portions_of_spectrum_) ? type : portions_of_spectrum_.at(0);
-        }
-
-
-        virtual const std::string &  portion_of_spectrum() const 
-        {
-          return portion_of_spectrum_; 
         }
 
         virtual bool solve(const Matrix & A) override
