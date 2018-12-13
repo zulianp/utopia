@@ -4,10 +4,7 @@
 #include "utopia_Preconditioner.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_Smoother.hpp"
-
 #include "utopia_Core.hpp"
-
-#include <slepceps.h>
 
 namespace utopia 
 {
