@@ -75,7 +75,8 @@ namespace utopia
             fun.hessian(x, H); 
             Matrix I = local_identity(local_size(H)); 
 
-            tau = 1.0/g_norm; 
+            // tau = 1.0/g_norm; 
+            tau = g_norm; 
 
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm, tau, 0.0});

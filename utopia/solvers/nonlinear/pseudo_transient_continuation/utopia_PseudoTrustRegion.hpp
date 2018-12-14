@@ -64,7 +64,8 @@ namespace utopia
 
             Matrix I = local_identity(local_size(H)); 
 
-            tau = 1.0/g_norm; 
+            // tau = 1.0/g_norm; 
+            tau = g_norm; 
 
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm, energy_old, 0.0, tau, 0.0});
