@@ -68,7 +68,7 @@ namespace utopia {
 
 			iterative_solver->atol(1e-18);
 			iterative_solver->stol(1e-17);
-			iterative_solver->rtol(1e-8);
+			iterative_solver->rtol(1e-6);
 			iterative_solver->max_it(4000);
 			linear_solver_ = iterative_solver;
 

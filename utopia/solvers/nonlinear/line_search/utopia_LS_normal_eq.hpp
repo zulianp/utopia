@@ -21,7 +21,7 @@ namespace utopia
   class LeastSquaresNewton : public NonLinearLeastSquaresSolver<Matrix, Vector> 
   {
     typedef typename NonLinearLeastSquaresSolver<Matrix, Vector>::Solver Solver;
-    typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
+    typedef utopia::LSStrategy<Vector> LSStrategy; 
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
@@ -71,18 +71,18 @@ namespace utopia
               // this sould go away in future 
         g = J_T * r_k; 
 
-        this->ls_strategy_->get_alpha(fun, g, x_k, p_k, alpha_k); 
+        if(this->ls_strategy_)
+          this->ls_strategy_->get_alpha(fun, g, x_k, p_k, alpha_k); 
+        
         x_k += alpha_k * p_k; 
-
 
         fun.residual(x_k, r_k);
 
-              // norms needed for convergence check 
-        r_norm = norm2(r_k);
-        rel_norm = r_norm/r0_norm; 
-        s_norm = norm2(p_k); 
+        // norms needed for convergence check 
+        norms2(r_k, p_k, r_norm, s_norm); 
+        rel_norm = r_norm/r0_norm;     
 
-              // print iteration status on every iteration 
+        // print iteration status on every iteration 
         if(this->verbose_)
           PrintInfo::print_iter_status(it, {r_norm, rel_norm, s_norm, alpha_k}); 
 

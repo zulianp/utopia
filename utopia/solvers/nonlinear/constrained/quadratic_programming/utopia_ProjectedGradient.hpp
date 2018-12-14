@@ -13,26 +13,35 @@
 #include <cmath>
 #include <cassert>
 
-namespace utopia {
+namespace utopia 
+{
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGradient : public IterativeSolver<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
+	class ProjectedGradient final: public QPSolver<Matrix, Vector>, public MatrixFreeQPSolver<Vector>
+	{
 	public:
-		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
 		DEF_UTOPIA_SCALAR(Matrix)
 
-		using IterativeSolver<Matrix, Vector>::solve;
+		using QPSolver<Matrix, Vector>::solve;
 
-		virtual bool set_box_constraints(const BoxConstraints & box)
+		ProjectedGradient()
 		{
-			constraints_ = box;
-			constraints_.fill_empty_bounds();
-			return true;
 		}
 
-		virtual void set_parameters(const Parameters params) override
+		ProjectedGradient(const ProjectedGradient &) = default;
+
+		inline ProjectedGradient * clone() const override
 		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
+			auto ptr = new ProjectedGradient(*this);
+			ptr->set_box_constraints(this->get_box_constraints());
+
+			return ptr; 
+		}
+
+
+		void set_parameters(const Parameters params) override
+		{
+			QPSolver<Matrix, Vector>::set_parameters(params);
 		}
 
 
@@ -50,9 +59,13 @@ namespace utopia {
 				this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
 			init(local_size(b).get(0));
+
+			// ideally, we have two separate implementations, or cases
+			this->fill_empty_bounds(); 
 			
-			const auto &upbo = *constraints_.upper_bound();
-			const auto &lobo = *constraints_.lower_bound();
+			const auto &upbo = this->get_upper_bound();
+			const auto &lobo = this->get_lower_bound();
+
 
 			x_old = x;
 			A.apply(x, u);
@@ -85,7 +98,7 @@ namespace utopia {
 
 				A.apply(x, u);
 				u = b - u;
-
+	
 				// u = b - A * x;
 
 				{
@@ -95,14 +108,16 @@ namespace utopia {
 					auto r = range(x);
 
 					for(auto i = r.begin(); i != r.end(); ++i) {
-						if(approxeq(x.get(i), upbo.get(i)) || approxeq(x.get(i), lobo.get(i))) {
+						const auto x_i = x.get(i);
+						
+						if(approxeq(x_i, upbo.get(i)) || approxeq(x_i, lobo.get(i))) {
 							p.set(i, 0);
 						} else {
 							p.set(i, u.get(i));
 						}
 					}
 				}
-
+		
 				// UTOPIA_RECORD_VALUE("p <- min_max", p);
 
 				if(iteration % check_s_norm_each == 0) {
@@ -138,8 +153,7 @@ namespace utopia {
 					break;
 
 				}
-			}
-
+			}		
 			// UTOPIA_RECORD_SCOPE_END("apply");
 			return converged;
 		}
@@ -152,26 +166,13 @@ namespace utopia {
 		}
 
 
-		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		void update(const std::shared_ptr<const Matrix> &op) override
 		{
-		    IterativeSolver<Matrix, Vector>::update(op);
+		    QPSolver<Matrix, Vector>::update(op);
 		    // init(*op);
 		}
 
-		ProjectedGradient()
-		{
-		}
-
-		ProjectedGradient(const ProjectedGradient &) = default;
-
-		inline ProjectedGradient * clone() const override
-		{
-			return new ProjectedGradient(*this);
-		}
-
 	private:
-		BoxConstraints constraints_;
-
 		//buffers
 		Vector x_old, x_half, p, u, Ap;
 	};

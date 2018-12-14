@@ -3,13 +3,14 @@
 
 #include "utopia_LocalAssembler.hpp"
 #include "MortarAssemble.hpp"
+#include "utopia_QuadratureBasedAssembler.hpp"
 
 #include <vector>
 
 namespace utopia {
 	class QMortarBuilder;
 
-	class L2LocalAssembler final : public LocalAssembler {
+	class L2LocalAssembler final : public LocalAssembler, public QuadratureBasedAssembler {
 	public:
 		using Matrix = LocalAssembler::Matrix;
 
@@ -82,7 +83,7 @@ namespace utopia {
 
 		Matrix biorth_weights;
 
-		std::shared_ptr<QMortarBuilder> q_builder;
+		// std::shared_ptr<QMortarBuilder> q_builder;
 		std::unique_ptr<libMesh::FEBase> trial_fe, test_fe;
 
 		bool assemble_mass_mat_;

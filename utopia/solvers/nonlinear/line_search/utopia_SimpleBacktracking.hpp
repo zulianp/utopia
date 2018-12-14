@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-10
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-15
-*/
-
 #ifndef UTOPIA_BACKTRACKING_HPP
 #define UTOPIA_BACKTRACKING_HPP
 #include "utopia_LS_Strategy.hpp"
@@ -22,17 +15,16 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector>
-    class SimpleBacktracking final : public LSStrategy<Matrix, Vector>
+    template<class Vector>
+    class SimpleBacktracking final : public LSStrategy<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
     public:
 
 
-        SimpleBacktracking(const Parameters params = Parameters())
-
-                        : LSStrategy<Matrix, Vector>(params)
+        SimpleBacktracking( const Parameters params = Parameters()): 
+                            LSStrategy<Vector>(params)
 
         {
             set_parameters(params); 
@@ -50,13 +42,13 @@ namespace utopia
          * @return     
          */
 
-        bool get_alpha(LeastSquaresFunction<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override 
+        bool get_alpha(LeastSquaresFunctionBase<Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override 
         {
             return get_alpha_aux(fun, g, x, d, alpha);
         }
 
 
-        bool get_alpha(Function<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
+        bool get_alpha(FunctionBase<Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
         {
             return get_alpha_aux(fun, g, x, d, alpha);
         }
@@ -193,4 +185,3 @@ namespace utopia
 
 
 #endif //UTOPIA_BACKTRACKING_HPP
-

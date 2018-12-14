@@ -49,7 +49,7 @@ namespace utopia
             if(mpi_world_rank() == 0)
             {
                 for(auto item =  status_variables.begin(); item!= status_variables.end(); item++ )
-                    std::cout << std::setw(17) <<  std::right << *item; 
+                    std::cout << std::setw(27) <<  std::right << *item; 
                 std::cout << std::endl; 
             }
         }     

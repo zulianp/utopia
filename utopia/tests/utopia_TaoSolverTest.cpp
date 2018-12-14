@@ -120,7 +120,7 @@ namespace utopia {
 
 		auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
 		// auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
-        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+        auto qp_solver = std::make_shared<TaoQPSolver<DSMatrixd, DVectord> >(lsolver);
 
         // lsolver->atol(1e-16);
 

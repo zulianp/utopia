@@ -80,9 +80,8 @@ namespace utopia
 
 	public:
 	    virtual void atol(const Scalar & atol_in)  override {  KSPSolver::atol(atol_in); };
-        virtual void rtol(const Scalar & rtol_in)  override {  KSPSolver::rtol(rtol_in); };
-        virtual void stol(const Scalar & stol_in)  override {  KSPSolver::stol(stol_in); };
-
+        virtual void rtol(const Scalar & rtol_in)   override {  KSPSolver::rtol(rtol_in); };
+        virtual void stol(const Scalar & stol_in)   override {  KSPSolver::stol(stol_in); };
 
         virtual Scalar      atol() const  override             	{ return KSPSolver::atol(); }
         virtual Scalar      rtol()  const   override           	{ return KSPSolver::rtol(); }
@@ -99,8 +98,7 @@ namespace utopia
 
         virtual bool apply(const Vector &b, Vector &x) override
     	{
-    		Vector grad = -1 * b;
-    		KSPSolver::apply(grad, x);
+    		KSPSolver::apply(b, x);
     		return true;
     	}
 

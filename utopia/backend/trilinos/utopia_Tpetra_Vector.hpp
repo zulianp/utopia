@@ -147,6 +147,12 @@ namespace utopia {
 
         }
 
+        inline Scalar operator[](const GO i) const
+        {
+            assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
+            return read_only_data_[local_index(i)];
+        }
+
         inline LO local_index(const GO i) const
         {
             if(has_ghosts()) {

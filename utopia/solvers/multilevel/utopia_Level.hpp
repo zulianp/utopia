@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-03-29
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_ONE_LEVEL_HPP
 #define UTOPIA_ONE_LEVEL_HPP
 #include "utopia_Core.hpp"

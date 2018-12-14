@@ -29,7 +29,8 @@ namespace utopia {
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Matrix, Vector> {
+    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Vector> 
+    {
 
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -41,8 +42,9 @@ namespace utopia {
 
         using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
-        NonlinearMultiLevelBase(const Parameters params = Parameters())
+        NonlinearMultiLevelBase(const SizeType & n_levels, const Parameters params = Parameters())
         {
+            this->n_levels(n_levels); 
             set_parameters(params);
         }
 
@@ -88,6 +90,11 @@ namespace utopia {
         virtual bool set_functions(const std::vector<FunPtr> &level_functions)
         {
             level_functions_.clear();
+
+            if(this->n_levels() != level_functions.size()){
+                utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and level_functions do not match. \n"); 
+            }
+
             level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
             return true;
         }
@@ -103,6 +110,14 @@ namespace utopia {
         virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &projection_operators)
         {
+            if(interpolation_operators.size()!=projection_operators.size()){
+                utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n"); 
+            }
+
+            if(this->n_levels() != interpolation_operators.size() + 1){
+                utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n"); 
+            }
+
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && P != projection_operators.end(); ++I, ++P )
                 this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *P));
@@ -122,6 +137,15 @@ namespace utopia {
                                             const std::vector<std::shared_ptr<Matrix>> &restriction_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &projection_operators)
         {
+
+            if(interpolation_operators.size()!=restriction_operators.size() || interpolation_operators.size()!=projection_operators.size()){
+                utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n"); 
+            }
+
+            if(this->n_levels() != interpolation_operators.size() + 1){
+                utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n"); 
+            }
+
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), R = restriction_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && R != restriction_operators.end() &&  P != projection_operators.end(); ++I, ++R, ++P )
                 this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *R, *P));
@@ -193,13 +217,6 @@ namespace utopia {
             }
         }
 
-
-        virtual bool solver_monitor(const SizeType& /*it*/, Vector & /*x*/, Matrix & /*H*/) override
-        {
-            std::cout<<"utopia::NonlinearMultilevelBase:: WE ARE NOT SUPPORTING this function at the moment... \n";
-            return true;
-        }
-
         /**
          * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of gradient
          *             and lenght of the step size.
@@ -259,7 +276,7 @@ namespace utopia {
             fun.get_eq_constrains_flg(bc_ids);
 
             if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
-                std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n";
+                std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: Local sizes do not match. \n";
             }
 
             {

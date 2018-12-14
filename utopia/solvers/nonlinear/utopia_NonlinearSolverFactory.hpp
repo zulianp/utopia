@@ -22,7 +22,7 @@ namespace utopia {
 	class NonlinearSolverFactory {
 	public: 
 
-		typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolverT;
+		typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolverT;
 		typedef std::shared_ptr<NonLinearSolverT> NonLinearSolverPtr; 
 		typedef utopia::IFactoryMethod<NonLinearSolverT> FactoryMethodT;
 
@@ -60,7 +60,7 @@ namespace utopia {
 		void init()
 		{
 			nl_solvers_[NEWTON_TAG] 	  = std::make_shared< NLSolverFactoryMethod<Newton<Matrix, Vector>> >();   
-			nl_solvers_[TRUST_REGION_TAG] = std::make_shared< NLSolverFactoryMethod<TrustRegionBase<Matrix, Vector>> >();  
+			nl_solvers_[TRUST_REGION_TAG] = std::make_shared< NLSolverFactoryMethod<TrustRegion<Matrix, Vector>> >();  
 		}
 	};
 
