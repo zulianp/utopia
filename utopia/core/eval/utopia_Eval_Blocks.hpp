@@ -59,6 +59,8 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
+            utopia_test_assert(mpi_world_size() == 1 && "can only be used in serial");
+
             auto &l = expr.left();
             const auto &r = expr.right();
 
@@ -78,10 +80,12 @@ namespace utopia {
                 }
             }
 
+            SizeType local_cols = 0;
             for(SizeType j = 0; j < r.cols(); ++j) {
                 for(SizeType i = 0; i < r.rows(); ++i) {
                     if(!r.block_is_null(i, j)) {
-                        cols += local_size(r.block(i, j)).get(1);
+                        local_cols += local_size(r.block(i, j)).get(1);
+                        cols += size(r.block(i, j)).get(1);
                         col_offset[j+1] = cols;
                         break;
                     }
@@ -100,29 +104,40 @@ namespace utopia {
                         std::vector<SizeType> nnz(local_size(b).get(0), 0);
                         auto rr = row_range(b);
 
-                        each_read(b, [&](const SizeType r, const SizeType c, const Scalar val) {
-                            nnz[r - rr.begin()];
+                        each_read(b, [&](const SizeType r, const SizeType &, const Scalar &) {
+                            ++nnz[r - rr.begin()];
                         });
 
 
-                        block_row_nnz += *std::max_element(std::begin(nnz), std::end(nnz));
+                        if(!nnz.empty()) {
+                            block_row_nnz += *std::max_element(std::begin(nnz), std::end(nnz));
+                        }
                     }
                 }
 
                 max_nnz = std::max(max_nnz, block_row_nnz);
             }
 
-            l = local_sparse(rows, cols, max_nnz);
+            l = local_sparse(rows, local_cols, max_nnz);
 
             {
                 Write<Tensor> w_(l);
+                auto l_rr = row_range(l);
 
                 for(SizeType i = 0; i < r.rows(); ++i) {
                     for(SizeType j = 0; j < r.cols(); ++j) {
                         if(!r.block_is_null(i, j)) {
+                            const auto &b = r.block(i, j);
+                            const auto b_rr = row_range(b);
 
-                            each_read(r.block(i, j), [&](const SizeType r, const SizeType c, const Scalar val) {
-                                l.set(row_offset[i] + r, col_offset[j] + c, val);
+                            const auto global_row_offset = l_rr.begin() - b_rr.begin() + row_offset[i];
+
+                            each_read(b, [&](const SizeType r, const SizeType c, const Scalar val) {
+                                l.set(
+                                    global_row_offset + r,
+                                    col_offset[j] + c, //BUG (the columns should be staggered to reflect the parallel decomposition)
+                                    val
+                                );
                             });
                         }
                     }

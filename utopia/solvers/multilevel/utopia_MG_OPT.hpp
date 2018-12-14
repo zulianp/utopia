@@ -1,7 +1,7 @@
 #ifndef UTOPIA_MG_OPT_HPP
 #define UTOPIA_MG_OPT_HPP
 #include "utopia_NonLinearSmoother.hpp"
-#include "utopia_NonLinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_LS_Strategy.hpp"
@@ -20,9 +20,11 @@ namespace utopia
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
-        typedef utopia::LSStrategy<Matrix, Vector>          LSStrategy; 
+        
+        typedef utopia::LSStrategy<Vector>                  LSStrategy; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
+        
+        typedef utopia::NewtonBase<Matrix, Vector>    Solver;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
     
@@ -35,10 +37,12 @@ namespace utopia
             return false; 
         }
 
-        MG_OPT( const std::shared_ptr<Solver> &smoother, const std::shared_ptr<Solver> &coarse_solver,
-                const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >(),
+        MG_OPT( const SizeType & n_levels,
+                const std::shared_ptr<Solver> &smoother, 
+                const std::shared_ptr<Solver> &coarse_solver,
+                const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Vector> >(),
                 const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector>(params), 
+                NonlinearMultiLevelBase<Matrix,Vector>(n_levels, params), 
                 _smoother(smoother), 
                 _coarse_solver(coarse_solver), 
                 _ls_strategy(ls_strategy) 

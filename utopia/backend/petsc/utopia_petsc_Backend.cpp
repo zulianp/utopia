@@ -554,44 +554,14 @@ namespace utopia {
 		apply_args(opts, v);
 	}
 
-	void PetscBackend::add(PetscVector &v, const PetscInt index, Scalar value)
-	{
-		v.add(index, value);
-	}
-
-	void PetscBackend::add(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
-	{
-		m.add(row, col, value);
-	}
-
-	void PetscBackend::set(PetscVector &v, const PetscInt index, Scalar value)
-	{
-		v.set(index, value);
-	}
-
-	void PetscBackend::set(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values)
-	{
-		v.set(indices, values);
-	}
-
-	void PetscBackend::set(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
-	{
-		m.set(row, col, value);
-	}
-
-	void PetscBackend::set(PetscSparseMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
-	{
-		m.set(row, col, value);
-	}
-
 	void PetscBackend::write_lock(PetscVector &vec, WriteMode mode)
 	{
-		vec.write_lock();
+		vec.write_lock(mode);
 	}
 
 	void PetscBackend::write_unlock(PetscVector &vec, WriteMode mode)
 	{
-		vec.write_unlock();
+		vec.write_unlock(mode);
 	}
 
 	void PetscBackend::write_lock(PetscMatrix &mat, WriteMode mode)
@@ -637,18 +607,7 @@ namespace utopia {
 		m.set_matrix(rows, cols, values);
 	}
 
-	Scalar PetscBackend::get(const PetscVector &v, const PetscInt index) {
-		return v.get(index);
-	}
 
-	Scalar PetscBackend::get(const PetscMatrix &m, const PetscInt row, const PetscInt col) {
-		return m.get(row, col);
-	}
-
-	void PetscBackend::get(const PetscVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values)
-	{
-		v.get(index, values);
-	}
 
 	void PetscBackend::mat_get_col(const PetscMatrix &m, PetscVector &v, const PetscScalar col_id)
 	{
@@ -971,10 +930,12 @@ namespace utopia {
 
 	void PetscBackend::triple_product_ptap(PetscMatrix & result, const PetscMatrix & A, const PetscMatrix &P)
 	{
-		if(result.implementation() != A.implementation() && result.implementation() != P.implementation()) {
+		if(result.implementation()  != A.implementation() &&
+		   result.implementation() != P.implementation()) {
 			MatDestroy(&result.implementation());
 		} else {
 			std::cerr << "[Error] not handled case in triple_product_ptap" << std::endl;
+			assert(false);
 		}
 
 		assert(A.same_type(P));

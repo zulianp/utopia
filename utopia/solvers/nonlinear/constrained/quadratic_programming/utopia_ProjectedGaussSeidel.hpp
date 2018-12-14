@@ -11,20 +11,30 @@
 namespace utopia {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGaussSeidel : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
+	class ProjectedGaussSeidel : public QPSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
 	public:
-		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
+
 		DEF_UTOPIA_SCALAR(Matrix)
 
-		virtual bool set_box_constraints(const BoxConstraints & box)
+		ProjectedGaussSeidel()
+		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
 		{
-			constraints_ = box;
-			return true;
 		}
+
+		ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
+
+		inline ProjectedGaussSeidel * clone() const override
+		{
+			auto ptr = new ProjectedGaussSeidel(*this);
+			ptr->set_box_constraints(this->get_box_constraints());
+			return ptr;
+		}
+
 
 		virtual void set_parameters(const Parameters params) override
 		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
+			QPSolver<Matrix, Vector>::set_parameters(params);
+			Smoother<Matrix, Vector>::set_parameters(params);
 		}
 
 		virtual bool smooth(const Vector &b, Vector &x) override
@@ -34,7 +44,7 @@ namespace utopia {
 			// init(A);
 			SizeType it = 0;
 			SizeType n_sweeps = this->sweeps();
-			if(constraints_.has_bound()) {
+			if(this->has_bound()) {
 				while(step(A, b, x) && it++ < n_sweeps) {}
 			} else {
 				while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
@@ -50,7 +60,7 @@ namespace utopia {
 			const Matrix &A = *this->get_operator();
 
 			//TODO generic version
-			assert(!constraints_.has_lower_bound() );
+			assert(!this->has_lower_bound() );
 			// init(A);
 
 			x_old = x;
@@ -59,7 +69,7 @@ namespace utopia {
 
 			int iteration = 0;
 			while(!converged) {
-				if(constraints_.has_bound()) {
+				if(this->has_bound()) {
 					step(A, b, x);
 				} else {
 					unconstrained_step(A, b, x);
@@ -88,7 +98,7 @@ namespace utopia {
 		void non_linear_jacobi_step(const Matrix &A, const Vector &b, Vector &x)
 		{
 			r = b - A * x;
-			x = min(x + e_mul(d_inv, r), *constraints_.upper_bound());
+			x = min(x + e_mul(d_inv, r), this->get_upper_bound());
 		}
 
 		bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x)
@@ -174,7 +184,7 @@ namespace utopia {
 		{
 			r = b - A * x;
 			//localize gap function for correction
-			g = *constraints_.upper_bound() - x;
+			g = this->get_upper_bound() - x;
 			c *= 0.;
 
 			Range rr = row_range(A);
@@ -288,12 +298,6 @@ namespace utopia {
 		    init(*op);
 		}
 
-		ProjectedGaussSeidel()
-		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
-		{
-		}
-
-		ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
 
 		void set_use_line_search(const bool val)
 		{
@@ -315,17 +319,11 @@ namespace utopia {
 			use_symmetric_sweep_ = use_symmetric_sweep;
 		}
 
-		inline ProjectedGaussSeidel * clone() const override
-		{
-			return new ProjectedGaussSeidel(*this);
-		}
 
 	private:
 		bool use_line_search_;
 		bool use_symmetric_sweep_;
 		SizeType n_local_sweeps_;
-
-		BoxConstraints constraints_;
 
 		Vector r, d, g, c, d_inv, x_old, descent_dir;
 		Vector inactive_set_;

@@ -32,12 +32,11 @@ namespace utopia {
     //types of Kokkos Parallel Nodes
     typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
 
-#ifdef KOKKOS_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
     typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
     typedef cuda_node NT;
-#elif defined KOKKOS_OPENMP
+#elif defined KOKKOS_ENABLE_OPENMP
     typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-    typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
     typedef openmp_node NT;
 #else
     typedef serial_node NT;
@@ -142,6 +141,12 @@ namespace utopia {
             assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
             return read_only_data_[local_index(i)];
 
+        }
+
+        inline Scalar operator[](const GO i) const
+        {
+            assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
+            return read_only_data_[local_index(i)];
         }
 
         inline LO local_index(const GO i) const

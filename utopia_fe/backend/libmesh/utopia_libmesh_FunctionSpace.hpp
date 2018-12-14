@@ -15,7 +15,7 @@
 
 namespace utopia {
 
-	class LibMeshFunctionSpace : public FunctionSpace<LibMeshFunctionSpace> {
+	class LibMeshFunctionSpace final : public FunctionSpace<LibMeshFunctionSpace> {
 	public:
 		inline explicit LibMeshFunctionSpace(
 		libMesh::System &equation_system,

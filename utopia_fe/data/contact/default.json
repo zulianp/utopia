@@ -1,6 +1,7 @@
 {
 	"contact-problem": {
-		"use-amg": true, 
+		"use-amg": false, 
+		"use-ssnewton": false, 
 		"dt": 0.2, 
 		"mesh": {
 			"type": "file", 
@@ -49,9 +50,9 @@
 			}
 		], 
 		"contact": {
-			"n-transient-steps": 100, 
+			"n-transient-steps": 30, 
 			"max-nl-iter": 100, 
-			"radius": 0.1, 
+			"radius": 0.2, 
 			"pairs": [
 				{
 					"master": 2, 

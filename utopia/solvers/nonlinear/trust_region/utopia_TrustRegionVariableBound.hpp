@@ -1,42 +1,46 @@
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
-#include "utopia_NonLinearSolver.hpp"
-#include "utopia_TRBoxBase.hpp"
-#include "utopia_TRBoxSubproblem.hpp"
+
+#include "utopia_NewtonBase.hpp"
 #include "utopia_Parameters.hpp"    
+#include "utopia_VariableBoundSolverInterface.hpp"
+#include "utopia_QPSolver.hpp"
 
  namespace utopia 
  {
     	template<class Matrix, class Vector>
-      /**
-       * @brief      Trust region solver taking into account also bound constrains.
-       */ 
-     	class TrustRegionVariableBound :  public NonLinearSolver<Matrix, Vector>, 
-                                        public TrustRegionBoxBase<Matrix, Vector> 
+     	class TrustRegionVariableBound final: public VariableBoundSolverInterface<Vector>, 
+                                            public TrustRegionBase<Vector>, 
+                                            public NewtonBase<Matrix, Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector> TRBoxSubproblem; 
-        typedef utopia::TrustRegionBoxBase<Matrix, Vector> TrustRegionBase; 
-        typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
+        typedef utopia::QPSolver<Matrix, Vector>      QPSolver;
+
+        typedef utopia::TrustRegionBase<Vector>       TrustRegionBase; 
+        typedef utopia::NewtonBase<Matrix, Vector>    NewtonBase;
      	
-     	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
-      TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,
+     	public:                                                                       
+      TrustRegionVariableBound( const std::shared_ptr<QPSolver> &tr_subproblem,
                                 const Parameters params = Parameters()) : 
-                                NonLinearSolver(tr_subproblem, params), it_successful_(0)  
+                                NewtonBase(tr_subproblem, params)
       {
         set_parameters(params);        
       }
+
+
+      using TrustRegionBase::get_pred; 
+
 
       /* @brief      Sets the parameters.
       *
       * @param[in]  params  The parameters
       */
-      virtual void set_parameters(const Parameters params) override
+      void set_parameters(const Parameters params) override
       {
 
-        NonLinearSolver::set_parameters(params);
+        NewtonBase::set_parameters(params);
         TrustRegionBase::set_parameters(params);
       }
 
@@ -60,7 +64,7 @@
         Scalar delta, ared, pred, rho, E_old, E_new; 
 
         SizeType it = 0;
-        it_successful_ = 0; 
+        SizeType it_successful = 0; 
         const Scalar infty = std::numeric_limits<Scalar>::infinity();
         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
         bool rad_flg = false; 
@@ -69,6 +73,8 @@
         Matrix H; 
 
         fun.gradient(x_k, g);
+
+        this->make_iterate_feasible(x_k); 
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
@@ -86,7 +92,6 @@
         }
 
         it++; 
-        fun.value(x_k, E_old); 
         fun.gradient(x_k, g);
 
         // solve starts here 
@@ -101,19 +106,26 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
-          if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
+          if(QPSolver * tr_subproblem = dynamic_cast<QPSolver*>(this->linear_solver_.get()))
           {
             p_k = 0 * p_k; 
-            auto box = this->merge_tr_with_pointwise_constrains(x_k, delta); 
-            tr_subproblem->tr_constrained_solve(H, g, p_k, box);
+            auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
+            tr_subproblem->set_box_constraints(box); 
+            tr_subproblem->solve(H, -1.0 * g, p_k);
+          }
+          else
+          {
+            utopia_warning("TrustRegionVariableBound::Set suitable TR subproblem.... \n "); 
           }
 
 
-          this->get_pred(g, H, p_k, pred); 
+          pred = this->get_pred(g, H, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           // trial point 
           x_k1 = x_k + p_k; 
+          // this->make_iterate_feasible(x_k1); 
+
 
           // value of the objective function with correction 
           fun.value(x_k1, E_new);
@@ -132,18 +144,20 @@
             rho = 0.0; 
 
 
-          this->trial_point_acceptance(rho, x_k1, x_k); 
+          accepted = this->trial_point_acceptance(rho, x_k1, x_k); 
           
           if (rho >= this->rho_tol())
-            it_successful_++; 
+            it_successful++; 
 
     //----------------------------------------------------------------------------
     //    convergence check 
     //----------------------------------------------------------------------------
           if(accepted)
-            fun.gradient(x_k, g); 
+          {
+            fun.gradient(x_k, g);           
+            g_norm = this->criticality_measure_infty(x_k, g); 
+          }
           
-          g_norm = this->criticality_measure_infty(x_k, g); 
           s_norm = norm2(p_k); 
 
           if(this->verbose_)
@@ -154,63 +168,28 @@
     //----------------------------------------------------------------------------
     //      tr. radius update 
     //----------------------------------------------------------------------------
-          this->delta_update(rho, p_k, delta); 
+          this->delta_update(rho, p_k, delta, true); 
           it++; 
         }
 
         // some benchmarking 
-        this->print_statistics(it);      
+        TrustRegionBase::print_statistics(it, it_successful);      
 
           return false;
       }
 
 
-      virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls) override
+      void set_trust_region_strategy(const std::shared_ptr<QPSolver> &tr_linear_solver)
       {
-          auto linear_solver = this->linear_solver(); 
-          if (dynamic_cast<TRBoxSubproblem *>(linear_solver.get()) != nullptr)
-          {
-              TRBoxSubproblem * tr_sub = dynamic_cast<TRBoxSubproblem *>(linear_solver.get());
-              tr_sub->set_linear_solver(ls);
-          }
-      }
-
-      virtual void set_trust_region_strategy(const std::shared_ptr<TRBoxSubproblem> &tr_linear_solver)
-      {
-        NonLinearSolver::set_linear_solver(tr_linear_solver); 
+        NewtonBase::set_linear_solver(tr_linear_solver); 
       }
 
 
-    protected: 
-
-        virtual void print_statistics(const SizeType & it) override
-        {
-            std::string path = "log_output_path";
-            auto non_data_path = Utopia::instance().get(path);
-
-            if(!non_data_path.empty())
-            {
-                CSVWriter writer;
-                if (mpi_world_rank() == 0)
-                {
-                    if(!writer.file_exists(non_data_path))
-                    {
-                        writer.open_file(non_data_path);
-                        writer.write_table_row<std::string>({"num_its", "it_successful", "time"});
-                    }
-                    else
-                        writer.open_file(non_data_path);
-                    
-                    writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful_),  this->get_time()});
-                    writer.close_file();
-                }
-            }
-        }
-
-
-    private:
-      SizeType it_successful_; 
-
+    private: 
+      Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+      {
+        return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+      }
 
   };
 

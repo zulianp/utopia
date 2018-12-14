@@ -48,8 +48,8 @@ namespace utopia {
 		virtual bool good() const = 0;
 
 	private:
-		Input(const Input &other) {}
-		Input &operator=(const Input &other) {
+		Input(const Input &) {}
+		Input &operator=(const Input &) {
 			return *this;
 		}
 	};

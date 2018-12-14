@@ -9,7 +9,7 @@
 		
 		<entry>
 			<side>0</side>
-			<value>1</value>
+			<value>0</value>
 		</entry>
 
 		<entry>
@@ -33,6 +33,6 @@
 	<n-levels>2</n-levels>
 	<order>1</order>
 	<verbose>true</verbose>
-	<use-newton>true</use-newton>
+	<!-- <use-newton>true</use-newton> -->
 
 </rmtr-app>

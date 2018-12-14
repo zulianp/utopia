@@ -3,13 +3,14 @@
 
 #include "utopia_LocalAssembler.hpp"
 #include "MortarAssemble.hpp"
+#include "utopia_QuadratureBasedAssembler.hpp"
 
 #include <vector>
 
 namespace utopia {
 	class QMortarBuilder;
 
-	class BidirectionalL2LocalAssembler final : public LocalAssembler {
+	class BidirectionalL2LocalAssembler final : public LocalAssembler, public QuadratureBasedAssembler {
 	public:
 		using Matrix = LocalAssembler::Matrix;
 
@@ -70,6 +71,8 @@ namespace utopia {
 		    }
 		}
 
+		void print_stats(std::ostream &os = std::cout) const override;
+
 	private:
 		int dim;
 		bool use_biorth;
@@ -78,9 +81,9 @@ namespace utopia {
 		QMortar q_trial;
 		QMortar q_test;
 
-		Matrix biorth_weights;
+		Matrix test_biorth_weights, trial_biorth_weights;
 
-		std::shared_ptr<QMortarBuilder> q_builder;
+		// std::shared_ptr<QMortarBuilder> q_builder;
 		std::unique_ptr<libMesh::FEBase> trial_fe, test_fe;
 
 		bool assemble_mass_mat_;
@@ -92,7 +95,9 @@ namespace utopia {
 			const Elem &test,
 			FEType test_type);
 
-		void init_biorth(const Elem &test, FEType test_type);
+		void init_biorth(
+			const Elem &trial, FEType trial_type,
+			const Elem &test, FEType test_type);
 
 		static void assemble_biorth_weights(
 			const libMesh::Elem &el,

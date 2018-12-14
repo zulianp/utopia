@@ -89,12 +89,18 @@ namespace utopia {
 		mat.add_matrix(row_dofs, col_dofs, block.get_values());
 	}
 
-	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, UVector &vec)
+	inline static void add_vector(
+		const libMesh::DenseVector<libMesh::Real> &block, 
+		const std::vector<libMesh::dof_id_type> &dofs,
+		UVector &vec)
 	{
 		assert(block.size() == dofs.size());
-		for(uint i = 0; i < dofs.size(); ++i) {
-			vec.add(dofs[i], block(i));
-		}
+		// for(uint i = 0; i < dofs.size(); ++i) {
+		// 	vec.add(dofs[i], block(i));
+		// }
+		std::vector<UVector::SizeType> index;
+		index.insert(index.begin(), dofs.begin(), dofs.end());
+		vec.add(index, block.get_values());
 	}
 
 	template<typename Scalar>

@@ -104,24 +104,6 @@ namespace utopia {
 			linear_solver->apply(B_from, to);
 		}
 
-		void fix_mass_matrix_operator()
-		{
-			UVector d;
-
-			Size s = local_size(*D);
-			d = local_values(s.get(0), 1.);
-
-			{
-				Write<UVector> w_d(d);
-
-				each_read(*D, [&d](const SizeType i, const SizeType, const double) {
-					d.set(i, 0.);
-				});
-			}
-
-			(*D) += USparseMatrix(diag(d));
-		}
-
 		///@brief assumes that D is symmetric
 		void apply_transpose(const UVector &from, UVector &to) const override
 		{
@@ -130,18 +112,42 @@ namespace utopia {
 			to = transpose(*B) * D_inv_from;
 		}
 
-		inline L2TransferOperator(
+		static std::unique_ptr<L2TransferOperator> Make(
 			const std::shared_ptr<USparseMatrix> &B,
 			const std::shared_ptr<USparseMatrix> &D,
-			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
-			)
-		: B(B), D(D), linear_solver(linear_solver)
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+			const double tol = 1e-16
+		)
 		{
-			assert(B);
-			assert(D);
-			assert(linear_solver);
+			auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
+			ret->init();
+			return ret;
+		}
 
-			linear_solver->update(D);
+		static std::unique_ptr<L2TransferOperator> make_fixed(
+			const std::shared_ptr<USparseMatrix> &B,
+			const std::shared_ptr<USparseMatrix> &D,
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+			const double tol = 1e-16
+		)
+		{
+			auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
+			ret->fix_mass_matrix_operator(tol);
+			ret->init();
+			return ret;
+		}
+
+		static std::unique_ptr<L2TransferOperator> make_restricted(
+			const std::shared_ptr<USparseMatrix> &B,
+			const std::shared_ptr<USparseMatrix> &D,
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+			const double tol = 1e-16
+		)
+		{
+			auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
+			ret->restrict_mass_matrix(tol);
+			ret->init();
+			return ret;
 		}
 
 		inline void describe(std::ostream &os) const override
@@ -168,10 +174,108 @@ namespace utopia {
 			return utopia::write(path / "B.m", *B) && utopia::write(path / "D.m", *D);
 		}
 
-	private:
-		std::shared_ptr<USparseMatrix> B;
-		std::shared_ptr<USparseMatrix> D;
-		std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
+		inline L2TransferOperator(
+			const std::shared_ptr<USparseMatrix> &B,
+			const std::shared_ptr<USparseMatrix> &D,
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
+		)
+		: B(B), D(D), linear_solver(linear_solver)
+		{
+			assert(B);
+			assert(D);
+			assert(linear_solver);
+		}
+
+		inline void init()
+		{
+			linear_solver->update(D);
+		}
+
+		void restrict_mass_matrix_old(const double tol = 1e-16)
+		{
+			auto rr = row_range(*B);
+
+			const SizeType n_local = rr.extent();
+
+			std::vector<bool> exists(n_local, false);
+			std::vector<USparseMatrix::SizeType> indices;
+			indices.reserve(n_local);
+
+			utopia::each_read(*B, [&](
+				const utopia::SizeType i,
+				const utopia::SizeType j,
+				const double value) {
+				
+				if(std::abs(value) > tol) {
+					auto idx = i - rr.begin();
+					exists[idx] = true;
+				}
+			});
+
+			for(SizeType i = 0; i < n_local; ++i) {
+				if(!exists[i]) {
+					indices.push_back(rr.begin() + i);
+				}
+			}
+
+			set_zero_rows(*D, indices, 1.);
+		}
+
+		void restrict_mass_matrix(const double tol = 1e-16)
+		{
+			auto rr = row_range(*B);
+
+			const SizeType n_local = rr.extent();
+
+			std::vector<bool> exists(n_local, false);
+			std::vector<USparseMatrix::SizeType> indices;
+			indices.reserve(n_local);
+
+			UVector sum_D = sum(*D, 1);
+			UVector sum_B = sum(*B, 1);
+
+			Read<UVector> r_D(sum_D), r_B(sum_B);
+
+			for(auto i = rr.begin(); i < rr.end(); ++i) {
+				if(!approxeq(sum_D.get(i), sum_B.get(i), tol)) {
+					indices.push_back(rr.begin() + i);
+				}
+			}
+
+			set_zero_rows(*D, indices, 1.);
+		}
+
+		void fix_mass_matrix_operator(const double tol = 1e-16)
+		{
+			UVector d;
+
+			Size s = local_size(*D);
+			d = local_values(s.get(0), 1.);
+
+			{
+				Write<UVector> w_d(d);
+
+				each_read(*D, [&d, tol](const SizeType i, const SizeType, const double val) {
+					if(std::abs(val) > tol) {
+						d.set(i, 0.);
+					}
+
+				});
+			}
+
+			(*D) += USparseMatrix(diag(d));
+		}
+
+		friend Size local_size(const L2TransferOperator &op)
+		{
+			return local_size(*op.B);
+		}
+
+		private:
+			std::shared_ptr<USparseMatrix> B;
+			std::shared_ptr<USparseMatrix> D;
+			std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
+
 	};
 
 	class PseudoL2TransferOperator final : public TransferOperator {
@@ -194,6 +298,27 @@ namespace utopia {
 		{
 			T = std::make_shared<USparseMatrix>();
 			UVector d = sum(B, 1);
+
+			{
+				ReadAndWrite<UVector> rw_(d);
+				auto r = range(d);
+				for(auto k = r.begin(); k != r.end(); ++k) {
+					if(approxeq(d.get(k), 0.0, 1e-14)) {
+						d.set(k, 1.);
+					}
+				}
+			}
+
+			*T = diag(1./d) * B;
+		}
+
+		inline void init_from_coupling_and_mass_operator(
+			const USparseMatrix &B,
+			const USparseMatrix &M
+			)
+		{
+			T = std::make_shared<USparseMatrix>();
+			UVector d = sum(M, 1);
 
 			{
 				ReadAndWrite<UVector> rw_(d);
@@ -241,57 +366,185 @@ namespace utopia {
 		std::shared_ptr<USparseMatrix> T;
 	};
 
-	// class PermutedOperator final : public TransferOperator {
-	// public:
-	// 	PermutedOperator(
-	// 		const std::shared_ptr<TransferOperator> &op,
-	// 		const std::shared_ptr<USparseMatrix> &from_permutation
-	// 		const std::shared_ptr<USparseMatrix> &to_permutation)
-	// 	: op_(op), from_permutation_(from_permutation), to_permutation_(to_permutation)
-	// 	{}
+	class PermutedOperator final : public TransferOperator {
+	public:
+		PermutedOperator(
+			const std::shared_ptr<TransferOperator> &op,
+			const std::shared_ptr<USparseMatrix> &from_permutation,
+			const std::shared_ptr<USparseMatrix> &to_permutation)
+		: op_(op), from_permutation_(from_permutation), to_permutation_(to_permutation)
+		{
+			from_buffer_ = utopia::make_unique<UVector>();
+			to_buffer_   = utopia::make_unique<UVector>();
+		}
 
-	// 	inline void apply(const UVector &from, UVector &to) const
-	// 	{
-	// 		if(from_permutation_) {
-	// 			from_buffer_ = *from_permutation_ * from;
-	// 		} else {
-	// 			from_buffer_ = from;
-	// 		}
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			if(from_permutation_) {
+				*from_buffer_ = *from_permutation_ * from;
+			} else {
+				*from_buffer_ = from;
+			}
 			
-	// 		op_->apply(from_buffer_, to_buffer_);
+			op_->apply(*from_buffer_, *to_buffer_);
 
-	// 		if(to_permutation_) {
-	// 			to = transpose(*to_permutation_) * to_buffer_;
-	// 		} else {
-	// 			to = to_buffer_;
-	// 		}
-	// 	}
+			if(to_permutation_) {
+				to = transpose(*to_permutation_) * (*to_buffer_);
+			} else {
+				to = *to_buffer_;
+			}
+		}
 
-	// 	inline void apply_transpose(const UVector &to, UVector &from) const
-	// 	{
-	// 		if(to_permutation_) {
-	// 			to_buffer_ = *to_permutation_ * to;
-	// 		} else {
-	// 			to_buffer_ = to;
-	// 		}
+		inline void apply_transpose(const UVector &to, UVector &from) const
+		{
+			if(to_permutation_) {
+				*to_buffer_ = *to_permutation_ * to;
+			} else {
+				*to_buffer_ = to;
+			}
 			
-	// 		op_->apply_transpose(to_buffer_, from_buffer);
+			op_->apply_transpose(*to_buffer_, *from_buffer_);
 
-	// 		if(from_permutation_) {
-	// 			from = transpose(*from_permutation_) * from_buffer;
-	// 		} else {
-	// 			from = from_buffer_;
-	// 		}
-	// 	}
+			if(from_permutation_) {
+				from = transpose(*from_permutation_) * (*from_buffer_);
+			} else {
+				from = *from_buffer_;
+			}
+		}
+
+		std::shared_ptr<TransferOperator> op_;
+		std::shared_ptr<USparseMatrix> from_permutation_;
+		std::shared_ptr<USparseMatrix> to_permutation_;
+
+		std::unique_ptr<UVector> from_buffer_, to_buffer_;
+	};
+
+	class NormalizedOperator final : public TransferOperator {
+	public:
+		using Scalar = UTOPIA_SCALAR(UVector);
+
+		NormalizedOperator(
+			const Size &op_local_size,
+			const std::shared_ptr<TransferOperator> &op
+			)
+		: op_(op)
+		{
+			UVector ones = local_values(op_local_size.get(1), 1.);
+			op->apply(ones, rescale_);
+			inv_rescale_ = 1./rescale_;
+			temp_ = utopia::make_unique<UVector>();
+		}
+
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			op_->apply(from, *temp_);
+			to = e_mul(inv_rescale_, *temp_);
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const
+		{
+			*temp_ = e_mul(rescale_, from);
+			op_->apply_transpose(*temp_, to);
+		}
+
+		inline void describe(std::ostream &os) const 
+		{
+			os << "non normalized: \n";
+			op_->describe(os);
+		}
+
+	private:
+		std::shared_ptr<TransferOperator> op_;
+		UVector rescale_, inv_rescale_;
+		std::unique_ptr<UVector> temp_; 
+	};
+
+	class ClampedOperator final : public TransferOperator {
+	public:
+		using Scalar = UTOPIA_SCALAR(UVector);
+
+		ClampedOperator(const std::shared_ptr<TransferOperator> &op)
+		: op_(op)
+		{}
+
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			op_->apply(from, to);
+			clamp(from, to);
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const
+		{
+			op_->apply_transpose(from, to);
+			clamp(from, to);
+		}
+
+	private:
+
+		static void clamp(const UVector &from, UVector &to)
+		{
+			const Scalar min_val = min(from);
+			const Scalar max_val = max(from);
+
+			ReadAndWrite<UVector> rw_(to);
+
+			auto r = range(to);
+			for(auto i = r.begin(); i < r.end(); ++i) {
+				const Scalar val = to.get(i);
+				to.set(i, std::min(max_val, std::max(min_val, val)));
+			}
+		}
+
+		std::shared_ptr<TransferOperator> op_;
+	};
 
 
-	// 	std::shared_ptr<TransferOperator> op_;
-	// 	std::shared_ptr<USparseMatrix> from_permutation_;
-	// 	std::shared_ptr<USparseMatrix> to_permutation_;
+	class ForceZeroExtension final : public TransferOperator {
+	public:
+		using Scalar = UTOPIA_SCALAR(UVector);
 
-	// 	UVector from_buffer_, to_buffer_;
+		ForceZeroExtension(const std::shared_ptr<TransferOperator> &op, const double tol)
+		: op_(op), tol_(tol)
+		{}
 
-	// };
+		inline void apply(const UVector &from, UVector &to) const
+		{
+			op_->apply(from, to);
+			clamp(from, to);
+		}
+
+		inline void apply_transpose(const UVector &from, UVector &to) const
+		{
+			op_->apply_transpose(from, to);
+			clamp(from, to);
+		}
+
+	private:
+
+		void clamp(const UVector &from, UVector &to) const
+		{
+			const Scalar min_val = min(from);
+			const Scalar max_val = max(from);
+
+			ReadAndWrite<UVector> rw_(to);
+
+			auto r = range(to);
+			for(auto i = r.begin(); i < r.end(); ++i) {
+				Scalar val = to.get(i);
+
+				if(val + tol_ < min_val) {
+					to.set(i, 0.);
+				} else if(val - tol_ > max_val) {
+					to.set(i, 0.);
+				} else {
+					to.set(i, val);
+				}
+			}
+		}
+
+		std::shared_ptr<TransferOperator> op_;
+		double tol_;
+	};
 
 	class BidirectionalOperator final : public TransferOperator {
 	public:
@@ -346,11 +599,15 @@ namespace utopia {
 		void normalize_rows()
 		{
 			UVector d = sum(*T, 1);
-			ReadAndWrite<UVector> rw_(d);
+			
 			auto r = range(d);
-			for(auto k = r.begin(); k != r.end(); ++k) {
-				if(approxeq(d.get(k), 0.0, 1e-14)) {
-					d.set(k, 1.);
+		
+			{
+				ReadAndWrite<UVector> rw_(d);
+				for(auto k = r.begin(); k != r.end(); ++k) {
+					if(approxeq(d.get(k), 0.0, 1e-14)) {
+						d.set(k, 1.);
+					}
 				}
 			}
 

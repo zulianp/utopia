@@ -526,7 +526,7 @@ namespace utopia {
 
 		ok = left_shape.make_quadrature(
 		    plane.n,
-		    {{ 0.6, 0.5, 0.6}},
+		    {{ 0.6, 0.5, 0.6 }},
 		    {1.},
 		    left_q
 		); 
@@ -554,7 +554,6 @@ namespace utopia {
 				std::cout << p.x << " " << p.y << " " << p.z;
 				std::cout << ", w = " << composite_q_weights[i] << std::endl;
 			}
-
 		}
 
 	}

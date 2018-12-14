@@ -46,6 +46,7 @@ namespace utopia {
             ref_point[Dim-1] = 0.;
         }
 
+
         inline bool make_quadrature(
             const Vector &ray_dir,
             const std::vector<Vector>  &composite_q_points,
@@ -53,11 +54,29 @@ namespace utopia {
             QMortar &q
         )
         {
+            std::vector<Scalar> gap;
+            return make_quadrature(
+                ray_dir,
+                composite_q_points,
+                composite_q_weights,
+                q,
+                gap);
+        }
+
+        inline bool make_quadrature(
+            const Vector &ray_dir,
+            const std::vector<Vector>  &composite_q_points,
+            const std::vector<Scalar>  &composite_q_weights,
+            QMortar &q,
+            std::vector<Scalar> &gap
+        )
+        {
             Ray<Scalar, Dim> ray;
             ray.dir = ray_dir;
 
             const std::size_t n_qp = composite_q_weights.size();
             q.resize(n_qp);
+            gap.resize(n_qp);
 
             Vector ref_point;
             for(std::size_t i = 0; i < n_qp; ++i) {
@@ -72,6 +91,8 @@ namespace utopia {
                     assert(false);
                     return false;
                 }
+
+                gap[i] = t;
 
                 ref(ref_point);
 

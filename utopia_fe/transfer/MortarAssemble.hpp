@@ -465,6 +465,19 @@ namespace utopia {
 														libMesh::DenseMatrix<libMesh::Real> &normals,
 														libMesh::DenseVector<libMesh::Real> &gap,
 														const bool visdebug = false);
+
+	void integrate_scalar_function(
+		const libMesh::FEBase &test_fe,
+		const std::vector<double> &fun,
+		libMesh::DenseVector<libMesh::Real> &result
+	);
+
+	void integrate_point_function(
+		const int dim,
+		const libMesh::FEBase &test_fe,
+		const std::vector<libMesh::Point> &fun,
+		libMesh::DenseMatrix<libMesh::Real> &result
+	);
 }
 
 #endif //UTOPIA_MORTAR_ASSEMBLE_HPP

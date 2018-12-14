@@ -128,7 +128,7 @@ namespace utopia {
 
 			repurpose(comm, type_override(), ls, gs);
 
-			write_lock();
+			write_lock(LOCAL);
 
 			auto r = range();
 
@@ -145,7 +145,7 @@ namespace utopia {
 				VecRestoreArrayRead(x[i], &a);
 			}
 
-			write_unlock();
+			write_unlock(LOCAL);
 		}
 	}	
 
@@ -319,14 +319,14 @@ namespace utopia {
 			rr.extent()
 			);
 
-		result.write_lock();
+		result.write_lock(LOCAL);
 
 		for(PetscInt r_this = rr.begin(); r_this < rr.end(); ++r_this) {
 			const PetscInt r_selection = r_this - global_range.begin();
 			result.set(r_selection, get(r_this));
 		}
 
-		result.write_unlock();
+		result.write_unlock(LOCAL);
 	}
 
 	//testing VECSEQCUDA,VECMPICUDA

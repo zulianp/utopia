@@ -1,0 +1,120 @@
+#ifndef UTOPIA_QUASI_NEWTON_BASE_HPP
+#define UTOPIA_QUASI_NEWTON_BASE_HPP
+
+#include "utopia_Core.hpp"
+#include "utopia_LinearSolver.hpp"
+#include "utopia_Function.hpp"
+#include "utopia_NonLinearSolver.hpp"
+#include "utopia_LS_Strategy.hpp"
+#include "utopia_HessianApproximations.hpp"
+
+#include <iomanip>
+#include <limits>
+
+
+namespace utopia
+{
+
+    template<class Vector>
+    class QuasiNewtonBase : public MatrixFreeNonLinearSolver<Vector>
+    {
+        typedef UTOPIA_SCALAR(Vector)                               Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
+        
+        typedef utopia::HessianApproximation<Vector>                HessianApproximation;
+        typedef utopia::MatrixFreeLinearSolver<Vector>              MFSolver;
+
+        typedef utopia::LSStrategy<Vector>                          LSStrategy;
+        
+    public:
+
+        QuasiNewtonBase(    const std::shared_ptr <HessianApproximation> &hessian_approx, 
+                            const std::shared_ptr <MFSolver> &solver): 
+                            hessian_approx_strategy_(hessian_approx), 
+                            mf_linear_solver_(solver), alpha_(1.0)
+        {
+
+        }
+        
+
+        virtual ~QuasiNewtonBase() {}
+
+
+        virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
+        {
+            hessian_approx_strategy_      = strategy;
+            return true;
+        }
+
+        virtual void set_linear_solver(const std::shared_ptr<MFSolver> &linear_solver)
+        {
+            mf_linear_solver_ = linear_solver; 
+        }
+        
+        inline virtual std::shared_ptr<MFSolver> linear_solver() const
+        {
+            return mf_linear_solver_;
+        }
+
+        virtual void update(const Vector & s, const Vector & y)
+        {
+            hessian_approx_strategy_->update(s, y);
+        }
+
+
+        virtual void initialize_approximation()
+        {
+            return hessian_approx_strategy_->initialize(); 
+        }        
+
+
+        virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+        {
+            ls_strategy_ = strategy;
+            ls_strategy_->set_parameters(this->parameters());
+            return true;
+        }
+        
+        
+        virtual void set_parameters(const Parameters params) override
+        {
+            MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
+            alpha_ = params.alpha();
+            
+        }
+
+        virtual void dumping_parameter(const Scalar & alpha)
+        {
+            alpha_ = alpha; 
+        }
+
+        virtual Scalar dumping_parameter()
+        {
+            return alpha_; 
+        }        
+
+    protected:         
+        inline bool linear_solve(const Vector &rhs, Vector &sol)
+        {
+            auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
+            return mf_linear_solver_->solve(*multiplication_action, rhs, sol);             
+        }
+
+        inline Scalar get_alpha(FunctionBase<Vector> &fun, const Vector &g, const Vector &x, const Vector &s)
+        {
+            if(ls_strategy_)
+                ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
+
+            return alpha_; 
+        }        
+
+    protected:
+        std::shared_ptr<HessianApproximation>   hessian_approx_strategy_;    
+        std::shared_ptr<MFSolver>               mf_linear_solver_;   
+        Scalar alpha_;                                          /*!< Dumping parameter. */
+        std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */                
+
+    };
+    
+}
+#endif //UTOPIA_QUASI_NEWTON_BASE_HPP

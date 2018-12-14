@@ -735,7 +735,7 @@ namespace utopia {
 
         SteihaugToint<Matrix, Vector, HOMEMADE> cg;
         cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
-        // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 
         cg.rtol(1e-7);
         cg.atol(1e-6);
@@ -756,8 +756,7 @@ namespace utopia {
         }           
 
         Vector x = zeros(size(rhs));
-
-        cg.tr_constrained_solve(A, -1.0 * rhs, x, 1e15);
+        cg.solve(A, rhs, x);
         utopia_test_assert(approxeq(rhs, A * x, 1e-5));
 
     }
@@ -1124,22 +1123,23 @@ namespace utopia {
         }
         
         auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
         
         auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 
-        
-        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
         
-        // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(tr_strategy_coarse, tr_strategy_fine);
+        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(problem.n_levels);
+        rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+        rmtr->set_fine_tr_strategy(tr_strategy_fine);
+
         std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
         for(std::size_t i = 0; i < problem.prolongations.size(); ++i) {
             transfers.push_back( std::make_shared<IPTransferT>( problem.prolongations[i], 0.5) );
@@ -1160,8 +1160,6 @@ namespace utopia {
         // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
         rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
         rmtr->set_functions(level_functions);
-        
-        
         rmtr->handle_equality_constraints();
         bool ok = rmtr->solve(x);
         

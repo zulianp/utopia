@@ -1,7 +1,7 @@
 #ifndef UTOPIA_FAS_HPP
 #define UTOPIA_FAS_HPP
 #include "utopia_NonLinearSmoother.hpp"
-#include "utopia_NonLinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
@@ -21,15 +21,21 @@ namespace utopia
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
+        
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::Transfer<Matrix, Vector>   Transfer;
+
+        typedef utopia::NewtonBase<Matrix, Vector>     Solver;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
+
 
         public:
 
-            FAS( const std::shared_ptr<Smoother> &smoother, const std::shared_ptr<Solver> &coarse_solver, const Parameters params = Parameters()): 
-                    NonlinearMultiLevelBase<Matrix,Vector>(params),
+            FAS(    const SizeType & n_levels,
+                    const std::shared_ptr<Smoother> &smoother, 
+                    const std::shared_ptr<Solver> &coarse_solver, 
+                    const Parameters params = Parameters()): 
+                    NonlinearMultiLevelBase<Matrix,Vector>(n_levels, params),
                     smoother_(smoother), 
                     coarse_solver_(coarse_solver) 
             {
@@ -62,8 +68,9 @@ namespace utopia
             SizeType it = 0, n_levels = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
 
-            if(this->transfers_.size() + 1 != this->level_functions_.size())
+            if(this->transfers_.size() + 1 != this->level_functions_.size()){
                 utopia_error("FAS::solve size of transfer and level functions do not match... \n"); 
+            }
 
             
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";

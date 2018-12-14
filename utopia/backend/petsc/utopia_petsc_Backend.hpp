@@ -173,25 +173,73 @@ namespace utopia {
 		// static void build_from_structure(PetscMatrix &lhs, const PetscMatrix &rhs);
 
 
-		static void set(PetscVector &v, const PetscInt index, Scalar value);
-		static void add(PetscVector &v, const PetscInt index, Scalar value);
+		// static void set(PetscVector &v, const PetscInt index, Scalar value);
+		// static void add(PetscVector &v, const PetscInt index, Scalar value);
 		static void set(PetscVector &v, Scalar value)
 		{
 			v.set(value);
 		}
 
-		static void set(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values);
-		static void set(PetscMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
-		static void set(PetscSparseMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
-		static void add(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value);
+		// static void set(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values);
+		// static void set(PetscMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
+		// static void set(PetscSparseMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
+		// static void add(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value);
+
+		inline static void add(PetscVector &v, const PetscInt index, Scalar value)
+		{
+			v.add(index, value);
+		}
+
+		inline static void add(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
+		{
+			m.add(row, col, value);
+		}
+
+		inline static void set(PetscVector &v, const PetscInt index, Scalar value)
+		{
+			v.set(index, value);
+		}
+
+		inline static void set(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values)
+		{
+			v.set(indices, values);
+		}
+
+		inline static void add(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values)
+		{
+			v.add_vector(indices, values);
+		}
+
+		inline static void set(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
+		{
+			m.set(row, col, value);
+		}
+
+		inline static void set(PetscSparseMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
+		{
+			m.set(row, col, value);
+		}
+
+		inline static Scalar get(const PetscVector &v, const PetscInt index) {
+			return v.get(index);
+		}
+
+		inline static Scalar get(const PetscMatrix &m, const PetscInt row, const PetscInt col) {
+			return m.get(row, col);
+		}
+
+		inline static void get(const PetscVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values)
+		{
+			v.get(index, values);
+		}
 
 
 		//[host/device locks]
 		template<class Tensor>
-		static void read_lock(const Tensor &) {}
+		static void read_lock(const Tensor &t) { const_cast<Tensor &>(t).read_lock(); }
 
 		template<class Tensor>
-		static void read_unlock(const Tensor &) {}
+		static void read_unlock(const Tensor &t) { const_cast<Tensor &>(t).read_unlock(); }
 
 		static void write_lock(PetscVector &vec, WriteMode mode);
 		static void write_unlock(PetscVector &vec, WriteMode mode);
@@ -223,9 +271,9 @@ namespace utopia {
 
 		static void set_matrix(PetscMatrix &m, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
 
-		static Scalar get(const PetscVector &v, const PetscInt index);
-		static Scalar get(const PetscMatrix &v, const PetscInt row, const PetscInt col);
-		static void get(const PetscVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values);
+		// static Scalar get(const PetscVector &v, const PetscInt index);
+		// static Scalar get(const PetscMatrix &v, const PetscInt row, const PetscInt col);
+		// static void get(const PetscVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values);
 
 		static void mat_get_col(const PetscMatrix &m, PetscVector &v, const PetscScalar value);
 

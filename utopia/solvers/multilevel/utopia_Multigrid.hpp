@@ -36,7 +36,7 @@ namespace utopia
         typedef utopia::Smoother<Matrix, Vector>            Smoother;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
-        typedef std::shared_ptr<Smoother> SmootherPtr;
+        typedef std::shared_ptr<Smoother>                   SmootherPtr;
 
         typedef struct
         {

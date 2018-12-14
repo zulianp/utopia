@@ -111,4 +111,14 @@ namespace utopia {
     {
         return get("verbose") == "true";
     }
+
+    void Utopia::Abort()
+    {
+        int error_code = -1;
+#ifdef WITH_MPI
+        MPI_Abort(MPI_COMM_WORLD, error_code);
+#else
+        exit(error_code);
+#endif
+    }
 }
