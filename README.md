@@ -146,7 +146,7 @@ If you use Utopia for your research you can use the following bibtex entry to ci
 
 ```bibtex
 @misc{utopiagit,
-	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Victor Magri and Teseo Schneider and Eric Botter},
+	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau},
 	title = {{U}topia: {A} {C}++ embedded domain specific language for scientific computing. {G}it repository},
 	url = {https://bitbucket.org/zulianp/utopia},
 	howpublished = {https://bitbucket.org/zulianp/utopia},
@@ -155,7 +155,10 @@ If you use Utopia for your research you can use the following bibtex entry to ci
 ```
 
 ## Docker containers
-A docker container based on Alpine-Linux can be be found at https://hub.docker.com/r/zulianp/utopia/ and downloaded with `docker pull zulianp/utopia`. For the moment only `utopia-petsc` is supported for this container.
+A docker container based on Alpine-Linux can be be found at https://hub.docker.com/r/utopiadev/utopia and downloaded with `docker pull utopiadev/utopia`. For the moment only `utopia-petsc` is supported for this container. 
+You can use `docker image ls` to find the image and run it with `docker run -it <image_hash>`
+
+Download docker at https://www.docker.com/products/docker-desktop
 
 
 # More details coming soon!

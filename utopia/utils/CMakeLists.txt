@@ -8,7 +8,7 @@ add_library(utopia_utils STATIC ${LOCAL_SOURCES})
 target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-find_package(MPI)
+find_package(MPIExtended)
 
 
 if(TRY_WITH_MPI)
