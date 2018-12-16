@@ -447,7 +447,7 @@ namespace utopia {
 
 
     template<class Matrix, class Vector>
-    class MildStiffExample : public Function<Matrix, Vector> 
+    class MildStiffExample : public virtual Function<Matrix, Vector> , public virtual LeastSquaresFunction<Matrix, Vector> 
     {
         static_assert(!utopia::is_sparse<Matrix>::value, "utopia::MildStiffExample does not support sparse matrices as Hessian is dense matrix.");
 
@@ -457,7 +457,7 @@ namespace utopia {
 
         MildStiffExample(const SizeType & n): n_(n)
         {
-            x_init_ = values(n_, 0.0);    
+            x_init_ = values(n_, 1.0);    
 
             const SizeType n_local = local_size(x_init_).get(0); 
             b_ = local_values(n_local, 1.0); 
@@ -486,16 +486,17 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &result) const override 
         {
-            assert(x.size().get(0) == 2);
-            Vector g = values(2, 0.0); 
+            assert(x.size().get(0) == n_);
+            Vector g = values(n_, 0.0); 
             gradient(x, g); 
-            result = 0.5 * norm2(g)*norm2(g);
+            result = 0.5 * dot(g, g);
             return true;
         }
 
         bool gradient(const Vector &x, Vector &g) const override 
         {
-            g = local_values(local_size(x).get(0), 0.0);
+            assert(x.size().get(0) == n_);
+            g = local_values(n_, 0.0);
 
             {
                 Write<Vector> wg(g); 
@@ -509,6 +510,16 @@ namespace utopia {
             g = (UDU_* g) - b_; 
 
             return true;
+        }
+
+        bool residual(const Vector &x, Vector &g) const override 
+        {
+            return gradient(x, g); 
+        }
+
+        bool jacobian(const Vector &x, Matrix &H) const override 
+        {
+            return hessian(x, H); 
         }
 
         bool hessian(const Vector &x, Matrix &H) const override 

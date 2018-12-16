@@ -85,7 +85,7 @@
         #else
           if(this->verbose_)
           {
-            this->nonlinear_solve_init("TRUST_NORMAL_EQ", {" it. ", "|| g ||", "r_norm", "J_k", "J_{k+1}", "rho", "delta_k", "|| p_k ||"}); 
+            this->init_solver("TRUST_NORMAL_EQ", {" it. ", "|| g ||", "r_norm", "J_k", "J_{k+1}", "rho", "delta_k", "|| p_k ||"}); 
             PrintInfo::print_iter_status({it, g_norm}); 
           }
         #endif

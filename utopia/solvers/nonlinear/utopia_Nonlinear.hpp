@@ -17,21 +17,14 @@
 #include "utopia_Newton.hpp"
 #include "utopia_QuasiNewton.hpp"
 
-
-#include "utopia_AffineSimilarity.hpp"
-#include "utopia_PseudoTrustRegion.hpp"
-#include "utopia_PseudoContinuation.hpp"
-
-
 #include "utopia_ConstrainedIncludes.hpp"
 #include "utopia_TrustRegionIncludes.hpp"
 #include "utopia_LineSearchIncludes.hpp"
+#include "utopia_PseudoContinuationIncludes.hpp"
 
 #include "utopia_NonlinearSolverFactory.hpp"
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_GradientDescent.hpp"
-
-
 
 #endif //UTOPIA_NON_LINEAR_HPP
 
