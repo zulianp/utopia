@@ -21,6 +21,7 @@ namespace utopia {
 		virtual ~Configurable() {}
 		virtual void read(Input &is) = 0;
 		virtual void print_usage(std::ostream &os = std::cout) const;
+		virtual void print_param_usage(std::ostream &os, const std::string & name, const std::string & type, const std::string & description, const std::string & default_settings) const;
 		virtual bool import(const Path &path);
 		virtual bool import(
 			const std::string &key,

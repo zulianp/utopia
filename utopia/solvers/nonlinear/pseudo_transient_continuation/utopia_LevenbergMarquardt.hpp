@@ -47,7 +47,7 @@
 
 
     
-      virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) override
+      bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) override
       {
         using namespace utopia;
         bool converged = false; 
@@ -85,6 +85,7 @@
         {
             // this line can be done more efficiently 
             H = J_T * J_k;
+            I = diag(diag(H)); 
             H += tau * I;  
 
             p_k = 0 * x_k; 
@@ -153,19 +154,40 @@
         return false;
       }
 
-    // TODO:: params, replace I with D, move tests from Slepc test...
-    // void read(Input &in) override
-    // {
-    //     NewtonBase<Matrix, Vector>::read(in);
-    //     in.get("tau_max", tau_max_);
-    // }
 
-
-private:
-    Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+    void read(Input &in) override
     {
-        return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+        NonLinearLeastSquaresSolver::read(in);
+
+        in.get("tau0", tau0_);
+        in.get("mu_high", mu_high_);
+        in.get("mu_low", mu_low_);
+        in.get("mu0", mu0_);
+        in.get("omega_down", omega_down_);
+        in.get("omega_up", omega_up_);
     }
+
+
+    void print_usage(std::ostream &os) const override
+    {
+        NonLinearLeastSquaresSolver::print_usage(os); 
+
+        this->print_param_usage(os, "tau0", "real", "Initial value of pseudo-time-step.", "0.001"); 
+
+        this->print_param_usage(os, "mu_high", "real", "Treshold for shrinking tau.", "0.75"); 
+        this->print_param_usage(os, "mu_low", "real", "Treshold for enlarging tau.", "0.25"); 
+        this->print_param_usage(os, "mu0", "real", "Treshold for accepting trial point.", "0.0"); 
+
+        this->print_param_usage(os, "omega_down", "real", "Factor by which we shrink tau.", "0.25"); 
+        this->print_param_usage(os, "omega_up", "real", "Factor by which we enlarge tau.", "2.00"); 
+    }
+
+
+    private:
+        Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+        {
+            return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+        }
 
 
 

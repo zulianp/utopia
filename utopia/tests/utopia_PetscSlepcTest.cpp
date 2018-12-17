@@ -1,6 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "utopia_InputParameters.hpp"
 
 namespace utopia
 {
@@ -248,7 +249,6 @@ namespace utopia
 			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
 			linear_solver->atol(1e-14); 
 			linear_solver->max_it(10000);
-			linear_solver->verbose(true);
 			LevenbergMarquardt<DMatrixd, DVectord> solver(linear_solver); 
 
 			solver.atol(1e-9); 
@@ -256,6 +256,18 @@ namespace utopia
 			solver.max_it(500);
 			solver.verbose(true); 
 
+			auto params_ls = std::make_shared<InputParameters>(); 
+			params_ls->set("atol", 1e-12); 
+			auto params_ls_cast = std::static_pointer_cast<Input>(params_ls); 
+
+			InputParameters in;
+			in.set("tau0", 1);
+			in.set("linear-solver", params_ls_cast);
+
+
+
+			solver.read(in);
+			solver.print_usage(std::cout); 
 			solver.solve(fun_stiff, x_stiff); 
 
 		}

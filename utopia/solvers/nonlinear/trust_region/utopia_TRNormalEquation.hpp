@@ -24,7 +24,7 @@
 
      	public:
       LeastSquaresTrustRegion(const std::shared_ptr<TRSubproblem> &linear_solver, const Parameters params = Parameters())
-                              : NonLinearLeastSquaresSolver(linear_solver, params), 
+                              : NonLinearLeastSquaresSolver(linear_solver), 
                                 TrustRegionBase(params)
       {
         set_parameters(params);        
