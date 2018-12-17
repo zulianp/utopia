@@ -5,6 +5,10 @@
 
      namespace utopia 
      {
+        /**
+         * @details Implementation of LevenbergMarquardt algorithm chapter 3 of C.T.Kelley, Iterative methods for optimization
+         *  Damping is performed as described in: An algorithm for least-squares estimation of nonlinear parameters, Marquardt
+         */
         template<class Matrix, class Vector>
         class LevenbergMarquardt final: public NonLinearLeastSquaresSolver<Matrix, Vector>
         {
@@ -24,7 +28,8 @@
                             mu0_(0.0), 
                             mu_low_(0.25), 
                             mu_high_(0.75), 
-                            tau0_(0.001)
+                            tau0_(0.001), 
+                            use_diag_scaling_(true)
           {
 
           }
@@ -36,6 +41,7 @@
         void mu_low(const Scalar & mu) { mu_low_ = mu; }
         void mu_high(const Scalar & mu) { mu_high_ = mu; }
         void tau0(const Scalar & tau) { tau0_ = tau;  }
+        void use_diag_scaling(const bool use_diag_scaling) {use_diag_scaling_ = use_diag_scaling; }
 
 
         Scalar omega_up()   const  { return omega_up_; }
@@ -44,6 +50,7 @@
         Scalar mu_low()     const  { return mu_low_; }
         Scalar mu_high()    const  { return mu_high_; }
         Scalar tau0()       const  { return tau0_; }
+        bool use_diag_scaling() const {return use_diag_scaling_; }
 
 
     
@@ -85,7 +92,10 @@
         {
             // this line can be done more efficiently 
             H = J_T * J_k;
-            I = diag(diag(H)); 
+            
+            if(use_diag_scaling_)
+                I = diag(diag(H)); 
+
             H += tau * I;  
 
             p_k = 0 * x_k; 
@@ -165,6 +175,7 @@
         in.get("mu0", mu0_);
         in.get("omega_down", omega_down_);
         in.get("omega_up", omega_up_);
+        in.get("use_diag_scaling", use_diag_scaling_); 
     }
 
 
@@ -180,6 +191,8 @@
 
         this->print_param_usage(os, "omega_down", "real", "Factor by which we shrink tau.", "0.25"); 
         this->print_param_usage(os, "omega_up", "real", "Factor by which we enlarge tau.", "2.00"); 
+
+        this->print_param_usage(os, "use_diag_scaling", "bool", "Use diag(J^T J) to scale Hessian. If false, I is used.", "true"); 
     }
 
 
@@ -193,6 +206,7 @@
 
   private:
     Scalar omega_up_, omega_down_, mu0_, mu_low_, mu_high_, tau0_; 
+    bool use_diag_scaling_; 
       
 
   };

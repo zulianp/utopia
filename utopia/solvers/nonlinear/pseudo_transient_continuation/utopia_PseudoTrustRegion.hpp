@@ -141,6 +141,17 @@ namespace utopia
     {
         NewtonBase<Matrix, Vector>::read(in);
         in.get("eps", eps_);
+
+        if(eigen_solver_) {
+            in.get("eigen-solver", *eigen_solver_);
+        }
+
+    }
+
+    void print_usage(std::ostream &os) const override
+    {
+        NewtonBase<Matrix, Vector>::print_usage(os); 
+        this->print_param_usage(os, "eps", "real", "Tolerance for checking if smallest eigenvalue.", "1e-12"); 
     }
 
 

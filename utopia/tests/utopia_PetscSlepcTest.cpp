@@ -202,7 +202,7 @@ namespace utopia
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
-			solver.verbose(false); 
+			solver.verbose(true); 
 
 			solver.solve(fun, x); 
 		}
@@ -254,7 +254,7 @@ namespace utopia
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
-			solver.verbose(true); 
+			solver.verbose(false); 
 
 			auto params_ls = std::make_shared<InputParameters>(); 
 			params_ls->set("atol", 1e-12); 
@@ -265,9 +265,8 @@ namespace utopia
 			in.set("linear-solver", params_ls_cast);
 
 
-
 			solver.read(in);
-			solver.print_usage(std::cout); 
+			// solver.print_usage(std::cout); 
 			solver.solve(fun_stiff, x_stiff); 
 
 		}

@@ -53,6 +53,12 @@ namespace utopia
             in.get("tau_max", tau_max_);
         }
 
+        void print_usage(std::ostream &os) const override
+        {
+            NewtonBase<Matrix, Vector>::print_usage(os); 
+            this->print_param_usage(os, "tau_max", "real", "Upper bound for tau.", "1e14"); 
+        }
+
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {

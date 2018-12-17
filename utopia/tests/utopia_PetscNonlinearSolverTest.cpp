@@ -752,7 +752,7 @@ namespace utopia
 			DMatrixd I = identity(n,n); 
 			solver.set_mass_matrix(I); 
 			solver.set_scaling_matrix(I); 
-			solver.verbose(true);
+			solver.verbose(false);
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
