@@ -4,7 +4,7 @@
     <Parameter name="Direct Solver" type="bool" value="true" />
     <Parameter name="Ifpack2 Preconditioner" type="string" value="CHEBYSHEV"/> <!-- https://trilinos.org/wordpress/wp-content/uploads/2014/08/ifpack2guide.pdf -->
     <Parameter name="Direct Preconditioner" type="bool" value="true" />
-    <Parameter name="Solver Type" type="string" value="MUMPS" />
+    <Parameter name="Solver Type" type="string" value="KLU2" />
     <Parameter name="Direct Sol. Phase to use" type="string" value="SYMBFACT" /> <!-- possible options:CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE -->
   </ParameterList>
 

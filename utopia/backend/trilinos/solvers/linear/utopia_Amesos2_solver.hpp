@@ -7,7 +7,7 @@
 
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_trilinos_LinearSolverFactory.hpp"
-#include "utopia_Smoother.hpp"
+#include "utopia_DirectSolver.hpp"
 
 namespace utopia {
     /**@ingroup     Linear
@@ -19,8 +19,7 @@ namespace utopia {
     class Amesos2Solver {};
     
     template <typename Matrix, typename Vector>
-    class Amesos2Solver<Matrix, Vector, TRILINOS> final
-    : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
+    class Amesos2Solver<Matrix, Vector, TRILINOS> final : public DirectSolver<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -31,25 +30,28 @@ namespace utopia {
         Amesos2Solver(Parameters params);
         ~Amesos2Solver();
         
-        //void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;
+
+        void read(Input &is) override;
+        void print_usage(std::ostream &os) const override;
+          
         
-        inline int get_nnzLU () const;
-        inline int get_num_preorder () const;
-        inline int get_num_sym_fact () const;
-        inline int get_num_numeric_fact () const;
-        inline int get_num_solve () const;
-        inline bool get_preordering_done () const;
-        inline bool get_sym_factorization_done () const;
-        inline bool get_num_factorization_done () const;
+        int get_nnzLU () const;
+        int get_num_preorder () const;
+        int get_num_sym_fact () const;
+        int get_num_numeric_fact () const;
+        int get_num_solve () const;
+        bool get_preordering_done () const;
+        bool get_sym_factorization_done () const;
+        bool get_num_factorization_done () const;
 
         /**
          * @brief      Checks the parameters.
          *
          * @param[in]  params  The parameters
          */
-        void set_parameters(const Parameters params); // override;
+        void set_parameters(const Parameters params) override;
 
 
          /**
@@ -58,7 +60,6 @@ namespace utopia {
         void check_parameters(); //override;
 
         Amesos2Solver * clone() const override;
-        bool smooth(const Vector &rhs, Vector &x) override;
 
         private:
             
