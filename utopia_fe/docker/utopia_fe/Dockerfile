@@ -9,6 +9,7 @@ ENV LDFLAGS -L/opt/petsc/lib
 ENV CPATH opt/petsc/include:/opt/slepc/include
 
 RUN ls $MPI_DIR/bin | grep mpi
+RUN export PATH=$PATH:$MPI_DIR/bin
 
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
 
