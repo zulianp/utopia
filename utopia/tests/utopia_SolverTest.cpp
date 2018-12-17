@@ -477,7 +477,7 @@ namespace utopia
 			
 			GlobalVector x = values(n, 2.0);
 
-			MSSolver<GlobalMatrix, GlobalVector> solver(std::make_shared<BiCGStab<GlobalMatrix, GlobalVector>>());
+			MSSolver<GlobalMatrix, GlobalVector> solver(std::make_shared<ConjugateGradient<GlobalMatrix, GlobalVector>>());
 			// solver.set_norm_type(MSSolver<GlobalMatrix, GlobalVector>::A_SQUARED_NORM);
 			// solver.set_norm_type(MSSolver<GlobalMatrix, GlobalVector>::A_NORM);
 
@@ -498,7 +498,7 @@ namespace utopia
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
 
 #ifdef WITH_BLAS
-		// MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run(); 
+		MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run(); 
 #endif //WITH_BLAS
 #endif
 
