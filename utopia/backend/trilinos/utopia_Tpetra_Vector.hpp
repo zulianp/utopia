@@ -35,6 +35,9 @@ namespace utopia {
 #ifdef KOKKOS_ENABLE_CUDA
     typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
     typedef cuda_node NT;
+#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
+    typedef rocm_node NT;
 #elif defined KOKKOS_ENABLE_OPENMP
     typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
     typedef openmp_node NT;
@@ -46,6 +49,7 @@ namespace utopia {
 
     typedef Tpetra::Map<LO, GO, NT>                   map_type;
     typedef Tpetra::Vector<SC, LO, GO, NT>            vector_type;
+    typedef Tpetra::MultiVector<SC, LO, GO, NT>       multi_vector_type;
     typedef Teuchos::RCP<vector_type>                 rcpvector_type;
     typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
     typedef Teuchos::RCP<const map_type>              rcp_map_type;
