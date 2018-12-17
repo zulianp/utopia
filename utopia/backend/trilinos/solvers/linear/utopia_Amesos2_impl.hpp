@@ -55,14 +55,14 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     class Amesos2Solver<Matrix, Vector, TRILINOS>::Impl {
     public:
-
-      //FIXME change all these typedefs by accessing inner definitions of matrix and vector
+        
+        //FIXME change all these typedefs by accessing inner definitions of matrix and vector
         //example
         using vec_impl          = typename Vector::Implementation;
         using multi_vector_type = typename vec_impl::multi_vector_type;
-
+        
         //....
-
+        
         typedef double ST;
         
         typedef Tpetra::Operator<>::scalar_type SC;
@@ -92,13 +92,19 @@ namespace utopia {
         typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
         
         typedef Amesos2::Solver<matrix_type, multi_vector_type> solver_type;
-
+        
         // Members
         Teuchos::RCP<Teuchos::ParameterList> amesos_list_;
         Teuchos::RCP<Teuchos::ParameterList> utopia_list_;
-
+        
         Teuchos::RCP<solver_type> solver_;
-        Teuchos::RCP<matrix_type> matrix_;
+        // Teuchos::RCP<matrix_type> matrix_;
+        
+        bool keep_symbolic_factorization;
+        
+        Impl()
+        : keep_symbolic_factorization(false)
+        {}
     };
     
     /**
@@ -140,20 +146,44 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
-        if (!impl_->solver_.is_null())
-        {
-            Amesos2::EPhase direct_sol_phase = Amesos2::CLEAN; //TODO Teuchos::getIntegralValue<Amesos2::EPhase>(*(impl_->utopia_list_),"Direct Sol. Phase to use");
-
-            impl_->solver_->setA(op->implementation().implementation_ptr(),direct_sol_phase);  // possible options are CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE 
-                                                                                               // with SYMBFACT you keep the symbolic factorization
+        using MatImplT = typename Matrix::Implementation::crs_mat_type;
+        using VecImplT = typename Vector::Implementation::multi_vector_type;
+        
+        DirectSolver<Matrix, Vector>::update(op);
+        
+        std::string solver_type = impl_->utopia_list_->get("Solver Type", "LU");
+        assert( Amesos2::query(solver_type) ); //check if the solver type specified in the xml is available
+        
+        //CHECK IF SOLVER HAS CHANGED
+        
+        bool first = false;
+        if(impl_->solver_.is_null()) {
+            // impl_->matrix_ = raw_type(*op);
+            impl_->solver_ = Amesos2::create<MatImplT, VecImplT>(solver_type,
+                                                                 raw_type(*op)
+                                                                 );
+            first = true;
+        }
+        
+        // possible options are CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE
+        impl_->solver_->setA(
+            raw_type(*op),
+            (
+              impl_->keep_symbolic_factorization ?
+              Amesos2::SYMBFACT :
+              Amesos2::CLEAN
+              )
+            );
+        
+        // with SYMBFACT you keep the symbolic factorization
+        
+        if(!impl_->keep_symbolic_factorization || first) {
             preordering();
             sym_factorization();
-            num_factorization();
         }
-        else
-        {
-            impl_->matrix_ = op->implementation().implementation_ptr();
-        }
+        
+        
+        num_factorization();
     }
     
     /**
@@ -161,38 +191,32 @@ namespace utopia {
      * \param rhs, the right hand side vector
      * \param lhs, the left hand side vector
      * \return true
-     */    
+     */
     template <typename Matrix, typename Vector>
-    bool Amesos2Solver<Matrix, Vector, TRILINOS>::apply (const Vector &rhs, Vector &lhs) {
-        using MatImplT = typename Matrix::Implementation::crs_mat_type;
-        using VecImplT = typename Vector::Implementation::multi_vector_type;
-
-        std::string solver_type = impl_->utopia_list_->get("Solver Type", "LU");
-        assert( Amesos2::query(solver_type) ); //check if the solver type specified in the xml is available
-        
-        if (impl_->solver_.is_null())
-        {
-            impl_->solver_ = Amesos2::create<MatImplT, VecImplT>(
-            solver_type.c_str(),
-            impl_->matrix_,
-            raw_type(lhs),
-            raw_type(rhs)
-            );
-        }
+    bool Amesos2Solver<Matrix, Vector, TRILINOS>::apply(const Vector &rhs, Vector &lhs) {        
         assert(!impl_->solver_.is_null());
+        
+        if(impl_->solver_.is_null()) {
+            utopia_error("solver not initialized. Call update first");
+            return false;
+        }
+        
+        impl_->solver_->setX(raw_type(lhs));
+        impl_->solver_->setB(raw_type(rhs));
+        
         check_parameters();
-        impl_->matrix_.reset();
+        // impl_->matrix_.reset();
         impl_->solver_->solve();//TODO does preordering, sym_factorization, num_factorization ?
         return true;
     }
-
+    
     /**
      * get_preordering_done Method - If true , then pre-ordering has been performed
      * \param na
      * \return bool
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_preordering_done () const {
+    bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_preordering_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().preOrderingDone(); }
     
@@ -200,9 +224,9 @@ namespace utopia {
      * get_sym_factorization_done Method - if true , then symbolic factorization has been performed.
      * \param na
      * \return bool
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_sym_factorization_done () const {
+    bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_sym_factorization_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().symbolicFactorizationDone(); }
     
@@ -210,9 +234,9 @@ namespace utopia {
      * get_num_factorization_done Method -    If true , then numeric factorization has been performed.
      * \param na
      * \return bool
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_factorization_done () const {
+    bool    Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_factorization_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().numericFactorizationDone(); }
     
@@ -220,11 +244,11 @@ namespace utopia {
      * preordering Method - does the preordering of the matrix entries
      * \param na
      * \return bool
-     */   
+     */
     template <typename Matrix, typename Vector>
-    bool Amesos2Solver<Matrix, Vector, TRILINOS>::preordering() 
+    bool Amesos2Solver<Matrix, Vector, TRILINOS>::preordering()
     { assert(!impl_->solver_.is_null());
-        impl_->solver_->preOrdering(); 
+        impl_->solver_->preOrdering();
         return get_preordering_done ();
     }
     
@@ -232,11 +256,11 @@ namespace utopia {
      * num_factorization Method - does the numeric factorization
      * \param na
      * \return bool
-     */   
+     */
     template <typename Matrix, typename Vector>
-    bool Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization() 
+    bool Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization()
     { assert(!impl_->solver_.is_null());
-        impl_->solver_->numericFactorization(); 
+        impl_->solver_->numericFactorization();
         return get_num_factorization_done ();
     }
     
@@ -244,11 +268,11 @@ namespace utopia {
      * sym_factorization Method - does the numeric factorization
      * \param na
      * \return bool
-     */   
+     */
     template <typename Matrix, typename Vector>
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization()
     { assert(!impl_->solver_.is_null());
-        impl_->solver_->symbolicFactorization(); 
+        impl_->solver_->symbolicFactorization();
         return get_sym_factorization_done ();
     }
     
@@ -256,9 +280,9 @@ namespace utopia {
      * get_nnzLU Method.
      * \param na
      * \return int
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline int Amesos2Solver<Matrix, Vector, TRILINOS>::get_nnzLU() const { 
+    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_nnzLU() const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNnzLU(); }
     
@@ -266,9 +290,9 @@ namespace utopia {
      * get_num_preorder Method - Returns the number of pre-orderings performed by the owning solver.
      * \param na
      * \return int
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
+    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumPreOrder(); }
     
@@ -276,9 +300,9 @@ namespace utopia {
      * get_num_sym_fact Method - Returns the number of symbolic factorizations performed by the owning solver.
      * \param na
      * \return int
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
+    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumSymbolicFact(); }
     
@@ -286,9 +310,9 @@ namespace utopia {
      * get_num_numeric_fact Method - Returns the number of numeric factorizations performed by the owning solver.
      * \param na
      * \return int
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_numeric_fact () const {
+    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_numeric_fact () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumNumericFact(); }
     
@@ -296,12 +320,25 @@ namespace utopia {
      * get_num_solve Method - Returns the number of solves performed by the owning solver.
      * \param na
      * \return int
-     */   
+     */
     template <typename Matrix, typename Vector>
-    inline int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_solve () const {
+    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_solve () const {
         assert(!impl_->solver_.is_null());
-        return impl_->solver_->getStatus().getNumSolve(); }
-
+        return impl_->solver_->getStatus().getNumSolve();
+    }
+    
+    template <typename Matrix, typename Vector>
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &is)
+    {
+        is.get("keep-symbolic-factorization", impl_->keep_symbolic_factorization);
+    }
+    
+    template <typename Matrix, typename Vector>
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const
+    {
+        
+    }
+    
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::set_parameters(const Parameters params)
     {
@@ -309,46 +346,46 @@ namespace utopia {
             try {
                 Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
                 tmp_param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
-
+                
                 impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("Amesos2", true)));
                 impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("UTOPIA", true)));
                 //impl_->utopia_list_->template get<bool>("Direct Solver", "true")
                 // Amesos2::query( impl_->utopia_list_->get("Solver Type", "KLU2") ) // Amesos2::query returns true if the solver exists TODO print error
                 
-        //TODO: move validation to param class
-        
-/*        Teuchos::RCP<Teuchos::ParameterList> correct_list;
-         
-        Teuchos::setStringToIntegralParameter<Amesos2::EPhase>("Direct Sol. Phase to use", "CLEAN",
-                                               "Update options for Matrix A",
-                                               Teuchos::tuple<std::string>("CLEAN","PREORDERING","SYMBFACT","NUMFACT","SOLVE"),
-                                               Teuchos::tuple<std::string>("Start from scratch",
-                                                             "Keep Preordering",
-                                                             "Keep Symbolic Factorization",
-                                                             "Keep Numeric Factorization",
-                                                             "Keep Solution"),
-                                               Teuchos::tuple<Amesos2::EPhase>(Amesos2::CLEAN,
-                                                                   Amesos2::PREORDERING,
-                                                                   Amesos2::SYMBFACT,
-                                                                   Amesos2::NUMFACT,
-                                                                   Amesos2::SOLVE),
-                                               correct_list.getRawPtr());
-
-
-        Teuchos::RCP<const Teuchos::ParameterEntryValidator> validator = correct_list->getEntry("Direct Sol. Phase to use").validator();
-        impl_->utopia_list_->getEntry("Direct Sol. Phase to use").setValidator(validator);*/
-
+                //TODO: move validation to param class
+                
+                /*        Teuchos::RCP<Teuchos::ParameterList> correct_list;
+                 
+                 Teuchos::setStringToIntegralParameter<Amesos2::EPhase>("Direct Sol. Phase to use", "CLEAN",
+                 "Update options for Matrix A",
+                 Teuchos::tuple<std::string>("CLEAN","PREORDERING","SYMBFACT","NUMFACT","SOLVE"),
+                 Teuchos::tuple<std::string>("Start from scratch",
+                 "Keep Preordering",
+                 "Keep Symbolic Factorization",
+                 "Keep Numeric Factorization",
+                 "Keep Solution"),
+                 Teuchos::tuple<Amesos2::EPhase>(Amesos2::CLEAN,
+                 Amesos2::PREORDERING,
+                 Amesos2::SYMBFACT,
+                 Amesos2::NUMFACT,
+                 Amesos2::SOLVE),
+                 correct_list.getRawPtr());
+                 
+                 
+                 Teuchos::RCP<const Teuchos::ParameterEntryValidator> validator = correct_list->getEntry("Direct Sol. Phase to use").validator();
+                 impl_->utopia_list_->getEntry("Direct Sol. Phase to use").setValidator(validator);*/
+                
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
-                abort();
+                Utopia::Abort();
             }
         } else {
             //TODO use default paramlist
         }
     }
-
-template <typename Matrix, typename Vector>
+    
+    template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::check_parameters(){
         try {
             impl_->solver_->setParameters(impl_->amesos_list_);
@@ -365,11 +402,6 @@ template <typename Matrix, typename Vector>
         return new Amesos2Solver(*this);
     }
     
-    template <typename Matrix, typename Vector>
-    bool Amesos2Solver<Matrix, Vector, TRILINOS>::smooth(const Vector &rhs, Vector &x)
-    {
-        return false;
-    }
 }  // namespace utopia
 
 #endif //HAVE_AMESOS2_KOKKOS

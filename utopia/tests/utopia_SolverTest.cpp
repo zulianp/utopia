@@ -498,7 +498,7 @@ namespace utopia
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
 
 #ifdef WITH_BLAS
-		MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run(); 
+		// MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run(); 
 #endif //WITH_BLAS
 #endif
 
