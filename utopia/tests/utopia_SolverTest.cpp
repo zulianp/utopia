@@ -430,11 +430,11 @@ namespace utopia
 
 		void run()
 		{
-			UTOPIA_UNIT_TEST_BEGIN("MSSolversTest");
+			UTOPIA_UNIT_TEST_BEGIN("MSSolverTest");
 			UTOPIA_RUN_TEST(convex_hull_2);
 			UTOPIA_RUN_TEST(convex_hull_4);
 			UTOPIA_RUN_TEST(convex_hull_8);
-			UTOPIA_UNIT_TEST_END("MSSolversTest");
+			UTOPIA_UNIT_TEST_END("MSSolverTest");
 		}
 
 		void convex_hull(const int convex_hull_n_gradients)
@@ -442,11 +442,13 @@ namespace utopia
 			Rastrigin<GlobalMatrix, GlobalVector> fun1;
 			aux_convex_hull(20, fun1, convex_hull_n_gradients);
 
-			Rosenbrock<GlobalMatrix, GlobalVector> fun2; 
-			aux_convex_hull(2, fun2, convex_hull_n_gradients);
+			if(mpi_world_size() == 1) {
+				Rosenbrock<GlobalMatrix, GlobalVector> fun2; 
+				aux_convex_hull(2, fun2, convex_hull_n_gradients);
 
-			Woods<GlobalMatrix, GlobalVector> fun3;
-			aux_convex_hull(4, fun3, convex_hull_n_gradients);
+				Woods<GlobalMatrix, GlobalVector> fun3;
+				aux_convex_hull(4, fun3, convex_hull_n_gradients);
+			}
 
 			int n = 20;
 			TestFunctionND_1<GlobalMatrix, GlobalVector> fun4(n);
@@ -484,7 +486,7 @@ namespace utopia
 			solver.set_convex_hull_n_gradients(convex_hull_n_gradients);
 			solver.set_convex_hull_solver(std::make_shared<ConvexHullSolver>());
 	
-			solver.verbose(true);
+			// solver.verbose(true);
 			// solver.atol(1e-10);
 			solver.solve(fun, x);
 		}
@@ -498,13 +500,13 @@ namespace utopia
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
 
 #ifdef WITH_BLAS
-		// MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run(); 
+		MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run(); 
 #endif //WITH_BLAS
 #endif
 
 #ifdef WITH_BLAS
 		SolverTest<Matrixd, Vectord, double>().run();
-		// MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run(); 
+		MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run(); 
 #endif //WITH_BLAS
 
 		UTOPIA_UNIT_TEST_END("SolversTest");
