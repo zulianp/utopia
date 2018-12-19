@@ -1,5 +1,5 @@
 #First with try with clang compile or else
-FIND_LIBRARY(MPI_CLANG_LIBRARY  
+find_library(MPI_CLANG_LIBRARY  
 	NAMES mpi_cxx 
 		  mpicxx
 		  mpicxx-mpich-clang
@@ -13,13 +13,12 @@ FIND_LIBRARY(MPI_CLANG_LIBRARY
 	DOC "The MPI_CLANG_LIBRARY library to link against"
 ) 
 
-
 IF(MPI_CLANG_LIBRARY)
 	SET(MPI_CXX_LIBRARIES ${MPI_CLANG_LIBRARY})
 
-	GET_FILENAME_COMPONENT(MPI_LIB_DIR ${MPI_CLANG_LIBRARY} PATH)
+	get_filename_component(MPI_LIB_DIR ${MPI_CLANG_LIBRARY} PATH)
 	
-	FIND_PATH(MPI_CLANG_HEADERS mpi.h
+	find_path(MPI_CLANG_HEADERS mpi.h
 		HINTS ${MPI_DIR}/include
 			  $ENV{MPI_DIR}/include
 			  ${MPI_LIB_DIR}/../../include
@@ -75,5 +74,5 @@ ENDIF()
 
 
 IF(NOT MPI_FOUND)
-FIND_PACKAGE(MPI)
+find_package(MPI)
 ENDIF()
