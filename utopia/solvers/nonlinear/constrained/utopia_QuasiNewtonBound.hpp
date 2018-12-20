@@ -32,11 +32,10 @@ namespace utopia
         
     public:
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
-                            const std::shared_ptr <QPSolver> &linear_solver,
-                            const Parameters params = Parameters()):
+                            const std::shared_ptr <QPSolver> &linear_solver):
                             QuasiNewtonBase<Vector>(hessian_approx, linear_solver)
         {
-            set_parameters(params);
+            
         }
         
         bool solve(FunctionBase<Vector> &fun, Vector &x) override
@@ -110,12 +109,7 @@ namespace utopia
             this->print_statistics(it); 
             return true;
         }
-        
-        virtual void set_parameters(const Parameters params) override
-        {
-            QuasiNewtonBase<Vector>::set_parameters(params);
-        }
-        
+
     };
 
 

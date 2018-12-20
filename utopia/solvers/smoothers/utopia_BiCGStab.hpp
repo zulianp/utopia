@@ -42,6 +42,22 @@ namespace utopia {
 		//for chosing the preconditioned solver one
 		void update(const std::shared_ptr<const Matrix> &op) override;
 
+
+		void read(Input &in) override
+        {
+            MatrixFreeLinearSolver<Vector>::read(in);
+            // Smoother<Matrix, Vector>::read(in); 
+            // PreconditionedSolver<Matrix, Vector>::read(in); 
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            MatrixFreeLinearSolver<Vector>::print_usage(os);
+            // Smoother<Matrix, Vector>::print_usage(os);
+            // PreconditionedSolver<Matrix, Vector>::print_usage(os);
+        }
+
 	private:
 		void init(const Size &ls);
 		bool solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);

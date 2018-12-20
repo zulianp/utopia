@@ -24,12 +24,11 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
 
-        NewtonBase( const std::shared_ptr<Solver> &linear_solver,
-                    const Parameters &params = Parameters()): 
-                    NonLinearSolver<Vector>(params), 
+        NewtonBase( const std::shared_ptr<Solver> &linear_solver): 
+                    NonLinearSolver<Vector>(), 
                     linear_solver_(linear_solver)
         {
-            set_parameters(params);        
+              
         }
 
         virtual ~NewtonBase() {}
@@ -83,20 +82,6 @@ namespace utopia
             }
         }
       
-
-        /**
-         * @brief      Settter the parameters.
-         *
-         * @param[in]  params  The parameters
-         */
-        virtual void set_parameters(const Parameters params) override
-        {
-            NonLinearSolver<Vector>::set_parameters(params); 
-            check_diff_         = params.differentiation_control(); 
-
-        }
-
-
         /**
          * @brief      Changes linear solver used inside of nonlinear-solver. 
          *

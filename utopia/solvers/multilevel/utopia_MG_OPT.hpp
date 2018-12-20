@@ -60,8 +60,8 @@ namespace utopia
         void set_parameters(const Parameters params) override
         {
             NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
-            _smoother->set_parameters(params); 
-            _coarse_solver->set_parameters(params); 
+            // _smoother->set_parameters(params); 
+            // _coarse_solver->set_parameters(params); 
             _parameters = params; 
         }
 
@@ -249,7 +249,7 @@ namespace utopia
         bool set_coarse_solver(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>())
         {
             _coarse_solver = nonlinear_solver; 
-            _coarse_solver->set_parameters(_parameters); 
+            // _coarse_solver->set_parameters(_parameters); 
             return true; 
         }
 
@@ -263,7 +263,7 @@ namespace utopia
         bool set_smoother(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>())
         {
             _smoother = nonlinear_solver; 
-            _smoother->set_parameters(_parameters); 
+            // _smoother->set_parameters(_parameters); 
             return true; 
         }
 

@@ -348,10 +348,7 @@ namespace utopia
 			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
 			Newton<DMatrixd, DVectord> nlsolver(lsolver);
 			
-			Parameters params;
-			params.verbose(false);
-			params.linear_solver_verbose(false);
-			nlsolver.set_parameters(params);
+			nlsolver.verbose(false);
 			
 			DVectord x = values(10, 2);
 			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
@@ -368,11 +365,7 @@ namespace utopia
 			auto lsolver = std::make_shared< BiCGStab<DSMatrixd, DVectord> >();
 			Newton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
-			
-			Parameters params;
-			params.verbose(false);
-			params.linear_solver_verbose(false);
-			nlsolver.set_parameters(params);
+			nlsolver.verbose(false);
 			
 			SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
 			
@@ -390,13 +383,7 @@ namespace utopia
 			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
 			Newton<DMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
-			
-			Parameters params;
-			params.atol(1e-15);
-			params.rtol(1e-15);
-			params.stol(1e-15);
-			params.verbose(false);
-			nlsolver.set_parameters(params);
+			nlsolver.verbose(false);
 			
 			SimpleQuadraticFunction<DMatrixd, DVectord> fun;
 			
@@ -419,13 +406,10 @@ namespace utopia
 			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
 			Newton<DMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
-			
-			Parameters params;
-			params.rtol(1e-15);
-			params.stol(1e-15);
-			params.atol(1e-15);
-			params.verbose(false);
-			nlsolver.set_parameters(params);
+			nlsolver.rtol(1e-15);
+			nlsolver.stol(1e-15);
+			nlsolver.atol(1e-15);
+			nlsolver.verbose(false);
 			
 			DVectord expected_rosenbrock;
 			DVectord x0;
@@ -518,9 +502,7 @@ namespace utopia
 			
 			NonlinSemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
-			Parameters params;
-			params.verbose(false);
-			nlsolver.set_parameters(params);
+			nlsolver.verbose(false);
 			
 			DSMatrixd A, B;
 			DVectord upbo;
@@ -553,12 +535,7 @@ namespace utopia
 #endif //PETSC_HAVE_MUMPS
 			
 			Newton<DSMatrixd, DVectord> nlsolver(lsolver);
-			nlsolver.enable_differentiation_control(false);
-			
-			Parameters params;
-			params.verbose(false);
-			params.linear_solver_verbose(false);
-			nlsolver.set_parameters(params);
+			nlsolver.verbose(false);
 			
 			SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
 			
@@ -666,11 +643,7 @@ namespace utopia
 			
 			auto lsolver = std::make_shared< BiCGStab<DSMatrixd, DVectord> >();
 			Newton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver);
-			
-			Parameters params;
-			params.verbose(false);
-			params.linear_solver_verbose(false);
-			nlsolver.set_parameters(params);
+			nlsolver.verbose(false);
 			
 			SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
 			

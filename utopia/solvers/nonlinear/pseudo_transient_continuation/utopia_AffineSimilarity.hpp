@@ -26,9 +26,8 @@ namespace utopia
 
 
     public:
-       AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-                            const Parameters params                       = Parameters() ):
-                            NewtonBase<Matrix, Vector>(linear_solver, params), 
+       AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
+                            NewtonBase<Matrix, Vector>(linear_solver), 
                             mass_init_(false), 
                             scaling_init_(false),
                             tau_max_(1e9),
@@ -38,8 +37,7 @@ namespace utopia
                             m_(-1.0), 
                             use_m_(true)
                             {
-                                //set_parameters(params);
-                                verbosity_level_ = params.verbose() ? VERBOSITY_LEVEL_NORMAL : VERBOSITY_LEVEL_QUIET;  
+                                verbosity_level_ =  VERBOSITY_LEVEL_NORMAL; 
                             }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override

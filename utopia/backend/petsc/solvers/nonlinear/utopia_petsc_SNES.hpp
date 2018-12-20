@@ -38,7 +38,7 @@ namespace utopia
         SNESSolver( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
                    const Parameters params = Parameters(),
                    const std::vector<std::string> snes_types    = {"newtonls", "newtontr", "nrichardson", "ksponly", "vinewtonrsls", "vinewtonssls", "ngmres", "qn", "shell", "ngs", "ncg", "fas", "ms", "anderson"}):
-        NonLinearSolver(linear_solver, params),
+        NonLinearSolver(linear_solver),
         SNES_types(snes_types)
         {
             SNES_type_       = SNES_types.at(0);
@@ -54,8 +54,8 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            NonLinearSolver::set_parameters(params);
-            Smoother::set_parameters(params);
+            // NonLinearSolver::set_parameters(params);
+            // Smoother::set_parameters(params);
         }
         
         

@@ -38,6 +38,18 @@ namespace utopia
 			return ptr; 
 		}
 
+		void read(Input &in) override
+        {
+            MatrixFreeQPSolver<Vector>::read(in);
+            QPSolver<Matrix, Vector>::read(in);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            MatrixFreeQPSolver<Vector>::print_usage(os);
+            QPSolver<Matrix, Vector>::print_usage(os);
+        }
 
 		void set_parameters(const Parameters params) override
 		{

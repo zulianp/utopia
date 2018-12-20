@@ -8,13 +8,25 @@ namespace  utopia
 {
 
     template<class Vector>
-    class MatrixFreeLinearSolver 
+    class MatrixFreeLinearSolver : virtual public Configurable
     {
         public:
             virtual ~MatrixFreeLinearSolver() {}
             virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
             virtual MatrixFreeLinearSolver * clone() const =0; 
+
+        void read(Input &in) override
+        {
+            std::cout<<"MatrixFreeLinearSolver::to be fixed...\n"; 
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            std::cout<<"MatrixFreeLinearSolver::to be fixed...\n"; 
+        }
+
     };
 
 

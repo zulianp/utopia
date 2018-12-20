@@ -9,7 +9,7 @@ namespace utopia
 {
 
 template<class Vector>
-class HessianApproximation : public virtual Clonable 
+class HessianApproximation : public virtual Clonable, public virtual Configurable
 {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -34,6 +34,18 @@ public:
     virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
     virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0; 
     
+
+    virtual void read(Input &in) override
+    {
+        std::cout<<"HessianApproximation::to be fixed...\n"; 
+    }
+
+
+    virtual  void print_usage(std::ostream &os) const override
+    {
+        std::cout<<"HessianApproximation::to be fixed...\n"; 
+    }
+
 
     Scalar num_tol()const 
     {

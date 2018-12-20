@@ -162,7 +162,7 @@ namespace utopia
 			TestFunctionND_1<Matrix, Vector> fun(n);
 
 			auto solver = GradientDescent<Vector>();  
-			solver.set_dumping_parameter(0.05); 
+			solver.dumping_parameter(0.05); 
 			solver.solve(fun, actual); 
 
 			//test outcome...
