@@ -14,13 +14,24 @@
    <PcgMaxIter>10000</PcgMaxIter>
 </ASPAMG>
 
+<Amesos2>
+   <file>UTOPIA_amesos.xml</file>
+   <lapack>
+      <transpose>true</transpose>
+      <equilibrate>true</equilibrate>
+      <is-contiguos>false</is-contiguos>
+   </lapack>
+</Amesos2>
+
 <Newton>   
    <max-it>1000</max-it>
    <dumping>1.0</dumping>
    <atol>1e-16</atol>
    <rtol>1e-8</rtol>
    <stol>1e-16</stol>
-   <!-- <linear-solver></linear-solver> -->
+<!--    <linear-solver>
+      <atol>1e-10</atol>
+   </linear-solver> -->
    <atol>1e-16</atol>
    <rtol>1e-8</rtol>
    <stol>1e-16</stol>

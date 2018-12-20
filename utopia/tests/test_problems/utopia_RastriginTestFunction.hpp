@@ -2,7 +2,9 @@
 #define UTOPIA_SOLVER_RASTRIGIN_TESTFUNCTION_HPP
 
 #include <vector>
-#include <assert.h>
+#include <cassert>
+#include <cmath>
+
 #include "utopia_Function.hpp"
 
 
@@ -27,58 +29,56 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
-            result = 10 * point.size().get(0); 
-            {
-                const Read<Vector> read(point);
-                Range rr = range(point);
-                for (SizeType i = rr.begin(); i != rr.end(); i++)
-                {
-                    Scalar x = point.get(i); 
-                    result += x * x - 10 * cos(2 * pi * x); 
-                } 
-            }
-            
+            result = 10. * point.size().get(0) + sum(pow2(point) - 10. * cos((2. * pi) * point));
             return true;
         }
 
         bool gradient(const Vector &point, Vector &gradient) const override 
         {
-            gradient = zeros(point.size().get(0)); 
-            {
-                const Read<Vector> read(point);
-                const Write<Vector> write(gradient);
-                Range rr = range(point);
-                for (SizeType i = rr.begin(); i != rr.end(); i++)
-                {
-                    Scalar x = point.get(i); 
-                    gradient.set(i,  2 * x + 20 * pi * sin(2 * pi *x)); 
-                } 
+            using std::sin;
+
+            if(empty(gradient)) {
+                gradient = zeros(point.size().get(0)); 
             }
+            
+            const Read<Vector> read(point);
+            const Write<Vector> write(gradient);
+            const Range rr = range(point);
+            
+            for(SizeType i = rr.begin(); i != rr.end(); i++) {
+                const auto x = point.get(i); 
+                gradient.set(i, 2. * x + 20. * pi * sin(2. * pi * x)); 
+            } 
 
             return true;
         }
 
         bool hessian(const Vector &point, Matrix &hessian) const override 
         {
-            Scalar n = point.size().get(0); 
+            using std::cos;
+
+            const auto n = point.size().get(0); 
           
-            if(is_sparse<Matrix>::value) {
-                hessian = sparse(n, n, 1);
-            } else {
-                hessian = zeros(n, n); 
+            if(empty(hessian)) {
+
+                if(is_sparse<Matrix>::value) {
+                    hessian = sparse(n, n, 1);
+                } else {
+                    hessian = zeros(n, n); 
+                }
+
             }
 
-            {
-                const Read<Vector> read(point);
-                const Write<Matrix> write(hessian);
-                Range rr = range(point);
-                for (SizeType i = rr.begin(); i != rr.end(); i++)
-                {
-                    Scalar x = point.get(i); 
-                    hessian.set(i, i,  40 * pi * pi * cos(2 * pi * x) + 2 ); 
-                } 
-            }
+            const Read<Vector> read(point);
+            const Write<Matrix> write(hessian);
             
+            Range rr = range(point);
+           
+            for(SizeType i = rr.begin(); i != rr.end(); i++) {
+                const auto x = point.get(i); 
+                hessian.set(i, i,  40 * pi * pi * cos(2. * pi * x) + 2 ); 
+            } 
+
             return true;
         }
 

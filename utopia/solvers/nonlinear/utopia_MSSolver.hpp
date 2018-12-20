@@ -16,66 +16,175 @@
 
 namespace utopia
 {
-    // template<class Matrix, class Vector>
-    // class MSConvexHullSolver {
-    // public:
-    //     using Scalar = UTOPIA_SCALAR(Vector);
 
-    //     static inline Scalar fischer_burmeister(const Scalar x, const Scalar y)
-    //     {
-    //         return x + y - std::sqrt(x*x + y*y);
-    //     }
+    template<class Matrix, class Vector>
+    class Normed {
+    public:
+        using Scalar = UTOPIA_SCALAR(Vector);
 
-    //     void residual(const Matrix &C, const Vector &u, Vector &r)
-    //     {
+        virtual ~Normed() {}
+        virtual void gradient(Function<Matrix, Vector> &function, const Vector &x, Vector &gradient) = 0;
+        virtual Scalar norm(const Vector &x) const = 0;
+        virtual Scalar dot(const Vector &left, const Vector &right) const = 0;
+        virtual void update(const std::shared_ptr<Matrix> &mat) {}
+        virtual void transform_gradient(Vector &in, Vector &out) = 0;
+        virtual bool needs_hessian() const { return true; }
+    };
 
-    //     }
+    template<class GlobalMatrix, class GlobalVector>
+    class IMSConvexHullSolver {
+    public:
+        using Scalar = UTOPIA_SCALAR(GlobalVector);
+        virtual ~IMSConvexHullSolver() {}
 
-    //     void jacobian(const Matrix &C, const Vector &u, Matrix &J)
-    //     {
+        virtual void solve(Normed<GlobalMatrix, GlobalVector> &normed,
+                   const Scalar a_norm2,
+                   std::vector<GlobalVector> &gradients,
+                   GlobalVector &in_out_b_g) = 0;
+    };
 
-    //     }
+    template<class GlobalMatrix, class GlobalVector, class Matrix, class Vector>
+    class MSConvexHullSolver final : public IMSConvexHullSolver<GlobalMatrix, GlobalVector> {
+    public:
+        using Scalar = UTOPIA_SCALAR(Vector);
+        
+        void solve(Normed<GlobalMatrix, GlobalVector> &normed,
+                   const Scalar a_norm2,
+                   std::vector<GlobalVector> &gradients,
+                   GlobalVector &in_out_b_g) override
+        {
+            const std::size_t n_gradients = gradients.size();
+            const std::size_t n_gp1 = n_gradients + 1;
+            const std::size_t n_gp2 = n_gradients + 2;
+            const std::size_t n_2gp2 = 2 * n_gradients + 2;
+            const auto m_g = n_gradients * 2 + 3;
+            
+            //Create Matrix (A e Id// e^T 0 0// 0 0 0), where the symmetric matrix A= (A_ij )is defined by A_ij = <gradients[i],gradients[j]> with gradients[n_gradients]:= b_g, Id is the Identity and e^T=(1,...,1)
+            Matrix C = sparse(m_g , m_g , m_g); // C well be an element of the generalized gradient \partial F (\lambda). Note that the first n+2 rows are fixed.
+            Scalar valb_gb_g = normed.dot(in_out_b_g, in_out_b_g);
+            C.set(n_gradients, n_gradients, valb_gb_g/a_norm2);
+            C.set(n_gp1,n_gradients, 1);
+            C.set(n_gradients, n_gp1, 1);
+            C.set(n_gradients, n_2gp2,-1);
+            
+            for(std::size_t i = 0; i < n_gradients; ++i) {
+                Scalar valii    = normed.dot(gradients[i], gradients[i]);
+                Scalar vali_b_g = normed.dot(gradients[i], in_out_b_g);
+                C.set(i,i,valii/a_norm2);
+                C.set(i, n_gradients, vali_b_g/a_norm2);
+                C.set(n_gradients, i, vali_b_g/a_norm2);
+                C.set(n_gp1,i, 1);
+                C.set(i,n_gp1, 1);
+                C.set(i,n_gp2 + i,-1);
+                
+                for(std::size_t j = i+1; j < n_gradients; ++j) {
+                    Scalar valij = normed.dot(gradients[i], gradients[j]);
+                    C.set(i, j, valij/a_norm2);
+                    C.set(j, i, valij/a_norm2);
+                }
+            }
+            
+            auto lb = std::make_shared<Vector>(zeros(m_g));
+            
+            Vector lambda = zeros(m_g),
+            r_k = zeros(m_g),
+            p_k = zeros(m_g),
+            Cp_k = zeros(m_g),
+            val_newton_func = zeros(m_g),
+            desc_dir = zeros(m_g);
+            
+            // compute a useful initial lambda. This lambda represents the smallest element of conv{b_g , gradients[0] }.
+            lambda.set(n_gradients-1 , std::min(1.,std:: max(0.,  (C.get(n_gradients,n_gradients)-C.get(n_gradients-1,n_gradients))/( C.get(n_gradients-1,n_gradients-1)-2*C.get(n_gradients-1,n_gradients)+C.get(n_gradients,n_gradients)))));
+            //if (lambda.get(0)<0)  {lambda.set(0, 0);}// xx is wrong in the alternative!!!!!
+            //if (lambda.get(0)>1)  {lambda.set(0, 1);}// xx is wrong in the alternative!!!!!
+            lambda.set(n_gradients, 1-lambda.get(n_gradients-1) ); // xx is wrong in the alternative!!!!!
+            
+            //compute the value of the function F(lambda)=val_newton_func and actualize the gradient C of this function
+            
+            val_newton_func.set(n_gp1,-1);
+            for (std::size_t i=0; i< n_gp1; i++){
+                val_newton_func.set(i, lambda.get(n_gp1)-lambda.get(n_gp2+i) );
+                val_newton_func.set(n_gp1, lambda.get(i) + val_newton_func.get(n_gp1) ); //xx better?
+                for(std::size_t j=0; j< n_gp1; j++){
+                    val_newton_func.set(i, C.get(i,j)*lambda.get(j) + val_newton_func.get(i) ); //xx better?
+                }
+                val_newton_func.set(i+n_gp2, lambda.get(i)-std:: max(0.,lambda.get(i)-lambda.get(i+n_gp2)));
+                if(lambda.get(i) > lambda.get(i+n_gp2)){
+                    C.set(i+n_gp2, i, 0);
+                    C.set(i+n_gp2, i+n_gp2, 1);
+                }
+                else{
+                    C.set(i+n_gp2, i, 1);
+                    C.set(i+n_gp2, i+n_gp2, 0);
+                }
+            }
+            
+            int counter1=0;
+            while( dot(val_newton_func,val_newton_func) > .000000000001 && counter1 < 500 ){ //Begin Semismooth Newton Method to solve F(lambda)=0
+                
+                //solve C desc_dir=val_newton_func by solving C^TC desc_dir= C^T val_newton_func, since C is not symmetric and might not be regular.
+                
+                int counter2=0;
+                Scalar be_k,al_k,res_k;
+                desc_dir.set(0.);
+                r_k= transpose(C) *val_newton_func;
+                p_k=r_k;
+                res_k=dot(r_k,r_k);
+                while (res_k>.000000000001 && counter2<500)     //Begin loop of the CG-method xx
+                {
+                    counter2++;
+                    Cp_k=transpose(C)*C*p_k;
+                    al_k=res_k/dot(p_k,Cp_k);
+                    desc_dir+=al_k*p_k;
+                    r_k-=al_k*Cp_k;
+                    be_k=1/res_k;
+                    res_k=dot(r_k,r_k);
+                    be_k*=res_k;
+                    p_k=r_k+be_k*p_k;
+                }                                                      //Ende CG-loop. Equation is solved.
+                
+                //make a Newton step
+                
+                lambda-= desc_dir;
+                
+                //compute the value of the function F(lambda)=val_newton_func and actualize the gradient C of this function
+                
+                val_newton_func.set(n_gp1,-1);
+                for (std::size_t i=0; i< n_gp1; i++){
+                    val_newton_func.set(i, lambda.get(n_gp1) - lambda.get(n_gp2+i) );
+                    val_newton_func.set(n_gp1, lambda.get(i) + val_newton_func.get(n_gp1) ); //xx better?
+                    for(std::size_t j=0; j< n_gradients+1; j++){
+                        val_newton_func.set(i, C.get(i,j)*lambda.get(j) + val_newton_func.get(i) ); //xx better?
+                    }
+                    val_newton_func.set(i+n_gp2, lambda.get(i)-std:: max(0.,lambda.get(i)-lambda.get(i+n_gp2)));
+                    if(lambda.get(i) > lambda.get(i+n_gp2)){
+                        C.set(i+n_gp2, i, 0);
+                        C.set(i+n_gp2, i+n_gp2, 1);
+                    }
+                    else{
+                        C.set(i+n_gp2, i, 1);
+                        C.set(i+n_gp2, i+n_gp2, 0);
+                    }
+                }
+                
+                counter1++;
+            }// End Semismooth Newton Method
+            // b_g is no longer needed and can be used as temporary variable
+            in_out_b_g *= lambda.get(n_gradients);
+            for (std::size_t i = 0; i < n_gradients; i++) {
+                in_out_b_g += lambda.get(i) * gradients[i];
+            }
 
-    //     void solve(
-    //         const std::vector<Vector> &gradients,
-    //         const Vector &b_g,
-    //         Vector &min_gradient)
-    //     {
-    //         std::size_t n_gradients = gradients.size();
-
-    //         Matrix C = zeros(
-    //             n_gradients + 1, 
-    //             n_gradients + 1);
-
-    //         for(std::size_t i = 0; i < n_gradients; ++i) {
-    //             const Scalar valii = dot(gradients[i], gradients[i]);
-    //             const Scalar vali_b_g = dot(gradients[i], b_g);
-    //             C.set(i, n_gradients, vali_b_g);
-    //             C.set(n_gradients, i, vali_b_g);
-
-    //             for(std::size_t j = i+1; j < n_gradients; ++j) {
-    //                 const Scalar valij = dot(gradients[i], gradients[j]);
-    //                 C.set(i, j, valij);
-    //                 C.set(j, i, valij);
-    //             }
-    //         }
-
-    //         Vector u = zeros(n_gradients * 2 + 3);
-
-
-    //         // auto lb = std::make_shared<Vector>(zeros(n_gradients + 1));
-
-    //         // Vector lambda, rhs;
-    //         // BoxConstraints<Vector> box(lb, nullptr);
-    //         // qp_solver_->set_box_constraints(box);
-    //         // qp_solver->solve(C, rhs, lambda);
-    //     }
-
-    // public:
-    // };
-
+            gradients.push_back(in_out_b_g);
+            //  xx                               if (n_gradients > max_gradients)
+            //  xx                                   del oldest gradient
+        }
+        
+    public:
+    };
+    
     /**
-     * @brief 
+     * @brief
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class MSSolver final : public NewtonBase<Matrix, Vector>
@@ -93,16 +202,7 @@ namespace utopia
             N_NORM_TYPES
         };
         
-        class Normed {
-        public:
-            virtual ~Normed() {}
-            virtual void gradient(Function<Matrix, Vector> &function, const Vector &x, Vector &gradient) = 0;
-            virtual Scalar norm(const Vector &x) const = 0;
-            virtual Scalar dot(const Vector &left, const Vector &right) const = 0;
-            virtual void update(const std::shared_ptr<Matrix> &mat) {}
-            virtual void transform_gradient(Vector &in, Vector &out) = 0;
-            virtual bool needs_hessian() const { return true; }
-        };
+        using Normed = utopia::Normed<Matrix, Vector>;
         
         class L2Normed final : public Normed {
         public:
@@ -183,7 +283,7 @@ namespace utopia
                 }
                 
                 assert(M2);
-
+                
                 *M2 = transpose(*M) * (*M);
                 M_inv->update(M2);
             }
@@ -231,7 +331,7 @@ namespace utopia
             normed_[A_NORM]  = std::make_shared<ANormed>(std::shared_ptr<LinearSolverT>(linear_solver->clone()));
             normed_[A_SQUARED_NORM] = std::make_shared<ASquaredNormed>(std::shared_ptr<LinearSolverT>(linear_solver->clone()));
         }
-
+        
         void set_convex_hull_n_gradients(const SizeType n)
         {
             convex_hull_n_gradients_ = n;
@@ -241,7 +341,7 @@ namespace utopia
         {
             norm_type_ = norm_type;
         }
-
+        
         // bool convex_hull_minmia
         
         bool B(Function<Matrix, Vector> &fun,
@@ -263,7 +363,7 @@ namespace utopia
             
             
             // std::cout << "step_size: " << step_size << std::endl;
-
+            
             //we compute the directional derivative
             
             fun.gradient(midpoint, g_buff);
@@ -285,7 +385,7 @@ namespace utopia
                     auto right_diff = val_right - f_val;
                     
                     // std::cout << left_diff << "<=" << right_diff << std::endl;
-
+                    
                     if(left_diff <= right_diff) {
                         leftpoint = midpoint;
                         midpoint = 0.5 * (midpoint + rightpoint);
@@ -299,7 +399,7 @@ namespace utopia
                 
                 fun.gradient(midpoint, g_buff);
                 d = dot(g_buff, dir);
-               
+                
                 ++it;
                 
                 if(it > 100) {
@@ -312,11 +412,10 @@ namespace utopia
             return success;
         }
         
-        bool line_search(
-            Function<Matrix, Vector> &fun,
-            const Vector &x,
-            const Vector &dir,
-            Scalar &alpha)
+        bool line_search(Function<Matrix, Vector> &fun,
+                         const Vector &x,
+                         const Vector &dir,
+                         Scalar &alpha)
         {
             x_new = x + alpha * dir;
             Scalar f_x = 0.;
@@ -325,24 +424,26 @@ namespace utopia
             fun.value(x, f_x);
             fun.value(x_new, f_x_new);
 
+#ifndef NDEBUG  
             const Scalar f_x_old = f_x;
-
+#endif //NDEBUG
+            
             SizeType n_alpha = 0;
             while(f_x_new < f_x) {
                 f_x = f_x_new;
                 ++n_alpha;
-
+                
                 x_new += alpha * dir;
                 fun.value(x_new, f_x_new);
             }
-
+            
             alpha *= n_alpha;
-
+            
             if(!n_alpha) {
                 assert(false && "maybe use std line-search");
                 return false;
             }
-
+            
             assert(f_x <= f_x_old);
             return true;
         }
@@ -378,7 +479,7 @@ namespace utopia
                 radiusk = G_(g_norm, radiusk);
                 
                 // // print iteration status on every iteration
-               
+                
                 // // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, 1, 1);
                 
@@ -388,8 +489,8 @@ namespace utopia
                 
                 Scalar val_x = 0.;
                 fun.value(x, val_x);
-
-
+                
+                
                 if(this->verbose_) {
                     PrintInfo::print_iter_status(it, { g_norm, val_x });
                 }
@@ -440,11 +541,12 @@ namespace utopia
                                   val_y, //val_right
                                   b_g
                                   )) {
-                                assert(false);
+
+                                assert(false && "handle case?!");
                                 return false;
                             }
                             
-                            if(convex_hull_n_gradients_ == 2) {
+                            if(!convex_hull_solver_ || convex_hull_n_gradients_ == 2) {
                                 //case with only 2 vectors
                                 //compute smallest element of the set of gradients
                                 const auto &first_g = gradients_.back();
@@ -452,38 +554,21 @@ namespace utopia
                                 const auto n_bg2 = n_bg * n_bg;
                                 const auto dot_bg_fg = normed->dot(b_g, first_g);
                                 
+
+                                //Seems harmful for convergence
+                                // const auto lambda = std::min(1., std::max(0., (n_bg2 - dot_bg_fg)/(n_bg2 + a_norm2 - 2. * dot_bg_fg)));
+
+                                //Seems harmful for B(x)
                                 const auto lambda = (n_bg2 - dot_bg_fg)/(n_bg2 + a_norm2 - 2. * dot_bg_fg);
                                 
                                 //add small elements to list
                                 gradients_.back() = (lambda * first_g + (1.-lambda) * b_g);
                             } else {
-                                assert(false);
-                                //case with more here:
-                                //....
-                                // sdt::size_t n_gradients = gradients_.size();
+                                convex_hull_solver_->solve(*normed, a_norm2, gradients_, b_g);
 
-                                // Matrix C = sparse(n_gradients + 1 + 1, n_gradients + 1 + 1, n_gradients + 1);
-
-                                // for(std::size_t i = 0; i < n_gradients; ++i) {
-                                //     Scalar valii = dot(gradients_[i], gradients_[i]);
-                                //     Scalar vali_b_g = dot(gradients_[i], b_g);
-                                //     C.set(i, n_gradients, vali_b_g);
-                                //     C.set(n_gradients, i, vali_b_g);
-
-                                //     for(std::size_t j = i+1; j < n_gradients; ++j) {
-                                //         Scalar valij = dot(gradients_[i], gradients_[j]);
-                                //         C.set(i, j, valij);
-                                //         C.set(j, i, valij);
-                                //     }
-                                // }
-
-                                // auto lb = std::make_shared<Vector>(zeros(n_gradients + 1));
-
-                                // Vector lambda, rhs;
-                                // BoxConstraints<Vector> box(lb, nullptr);
-                                // qp_solver_->set_box_constraints(box);
-                                // qp_solver->solve(C, rhs, lambda);
-                                //handle the max number of grads convex_hull_n_gradients_
+                                if(gradients_.size() >= convex_hull_n_gradients_) {
+                                    gradients_.erase(gradients_.begin());
+                                }
                             }
                             
                             a_norm = normed->norm(gradients_.back());
@@ -515,6 +600,11 @@ namespace utopia
             NonLinearSolver<Vector>::read(in);
             // in.get("dumping", delta_);
         }
+
+        void set_convex_hull_solver(const std::shared_ptr<IMSConvexHullSolver<Matrix, Vector>> &solver)
+        {
+            convex_hull_solver_ = solver;
+        }
         
     private:
         Scalar delta_, delta_prime_, radius0_;   /*!< Dumping parameter. */
@@ -526,12 +616,14 @@ namespace utopia
         std::vector<std::shared_ptr<Normed>> normed_;
         std::vector<Vector> gradients_;
         SizeType convex_hull_n_gradients_;
-
+        
         Vector x_new;
         Vector leftpoint;
         Vector midpoint;
         Vector rightpoint;
         Vector g_buff;
+
+        std::shared_ptr<IMSConvexHullSolver<Matrix, Vector>> convex_hull_solver_;
     };
     
 }

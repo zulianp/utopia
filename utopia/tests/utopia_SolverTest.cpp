@@ -424,15 +424,89 @@ namespace utopia
 
 	};
 
+	template<class GlobalMatrix, class GlobalVector, class LocalMatrix, class LocalVector>
+	class MSSolverTest {
+	public:
+
+		void run()
+		{
+			UTOPIA_UNIT_TEST_BEGIN("MSSolverTest");
+			UTOPIA_RUN_TEST(convex_hull_2);
+			UTOPIA_RUN_TEST(convex_hull_4);
+			UTOPIA_RUN_TEST(convex_hull_8);
+			UTOPIA_UNIT_TEST_END("MSSolverTest");
+		}
+
+		void convex_hull(const int convex_hull_n_gradients)
+		{
+			Rastrigin<GlobalMatrix, GlobalVector> fun1;
+			aux_convex_hull(20, fun1, convex_hull_n_gradients);
+
+			if(mpi_world_size() == 1) {
+				Rosenbrock<GlobalMatrix, GlobalVector> fun2; 
+				aux_convex_hull(2, fun2, convex_hull_n_gradients);
+
+				Woods<GlobalMatrix, GlobalVector> fun3;
+				aux_convex_hull(4, fun3, convex_hull_n_gradients);
+			}
+
+			int n = 20;
+			TestFunctionND_1<GlobalMatrix, GlobalVector> fun4(n);
+			aux_convex_hull(n, fun4, convex_hull_n_gradients);	
+		}
+
+		void convex_hull_2()
+		{
+			convex_hull(2);
+		}
+
+		void convex_hull_4()
+		{
+			convex_hull(4);
+		}
+
+		void convex_hull_8()
+		{
+			convex_hull(8);
+		}
+
+		void aux_convex_hull(
+			const int n,
+			Function<GlobalMatrix, GlobalVector> &fun,
+			const int convex_hull_n_gradients)
+		{
+			using ConvexHullSolver = utopia::MSConvexHullSolver<GlobalMatrix, GlobalVector, LocalMatrix, LocalVector>;
+			
+			GlobalVector x = values(n, 2.0);
+
+			MSSolver<GlobalMatrix, GlobalVector> solver(std::make_shared<ConjugateGradient<GlobalMatrix, GlobalVector>>());
+			// solver.set_norm_type(MSSolver<GlobalMatrix, GlobalVector>::A_SQUARED_NORM);
+			// solver.set_norm_type(MSSolver<GlobalMatrix, GlobalVector>::A_NORM);
+
+			solver.set_convex_hull_n_gradients(convex_hull_n_gradients);
+			solver.set_convex_hull_solver(std::make_shared<ConvexHullSolver>());
+	
+			// solver.verbose(true);
+			// solver.atol(1e-10);
+			solver.solve(fun, x);
+		}
+
+	};
+
 	void runGenericSolversTest()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("SolversTest");
 #ifdef WITH_PETSC
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
+
+#ifdef WITH_BLAS
+		MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run(); 
+#endif //WITH_BLAS
 #endif
 
 #ifdef WITH_BLAS
 		SolverTest<Matrixd, Vectord, double>().run();
+		MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run(); 
 #endif //WITH_BLAS
 
 		UTOPIA_UNIT_TEST_END("SolversTest");

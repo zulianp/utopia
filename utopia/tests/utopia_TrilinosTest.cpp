@@ -751,8 +751,8 @@ namespace utopia {
             auto r = range(rhs);
 
             Write<Vector> w(rhs);
-            if(r.begin() == 0)  rhs.set(0, 0.0); 
-            if(r.end()   == _n) rhs.set(_n-1, 0.0); 
+            if(r.inside(0))    rhs.set(0, 0.0); 
+            if(r.inside(_n-1)) rhs.set(_n-1, 0.0); 
         }           
 
         Vector x = zeros(size(rhs));
@@ -1307,7 +1307,7 @@ namespace utopia {
 
     void trilinos_belos()
     {
-        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
+        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_belos.xml";
         
         Parameters params;
         params.set_param_file_name(xml_file);
@@ -1328,6 +1328,33 @@ namespace utopia {
     }
 
 #endif //HAVE_BELOS_TPETRA
+
+#ifdef HAVE_AMESOS2_KOKKOS
+
+    void trilinos_amesos2()
+    {
+        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_amesos.xml";
+        
+        Parameters params;
+        params.set_param_file_name(xml_file);
+        Amesos2Solver<TSMatrixd, TVectord> solver(params);
+
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
+        TVectord x = zeros(size(*ml_problem.rhs));
+        (*ml_problem.rhs) *= 0.0001;
+        
+        double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+
+        solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+        
+        double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+
+        utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
+    }
+
+#endif //HAVE_AMESOS2_KOKKOS
+
+
 
 #ifdef WITH_PETSC
     void trilinos_transform()
@@ -1446,7 +1473,10 @@ namespace utopia {
 #ifdef HAVE_BELOS_TPETRA
         UTOPIA_RUN_TEST(trilinos_belos);
 #endif //HAVE_BELOS_TPETRA  
-        
+
+//#ifdef HAVE_AMESOS2_TPETRA
+        UTOPIA_RUN_TEST(trilinos_amesos2);
+//#endif //HAVE_AMESOS2_TPETRA
 
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_transform);

@@ -5,10 +5,6 @@
 
 #include "utopia_make_unique.hpp"
 
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp> //TODO remove from here
-
-
 #include <BelosLinearProblem.hpp>
 #include <BelosTpetraAdapter.hpp>
 
@@ -54,6 +50,9 @@ namespace utopia {
 #ifdef  KOKKOS_ENABLE_CUDA
         typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
         typedef cuda_node NT;
+#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
+        typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
+        typedef rocm_node NT;
 #elif defined   KOKKOS_ENABLE_OPENMP
         typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
         typedef openmp_node NT;
@@ -134,9 +133,9 @@ namespace utopia {
 
         impl_->linear_problem = Teuchos::rcp(
                                              new typename Impl::problem_type(
-                                                                             this->get_operator()->implementation().implementation_ptr(),
-                                                                             lhs.implementation().implementation_ptr(),
-                                                                             rhs.implementation().implementation_ptr()
+                                                                             raw_type(*this->get_operator()),
+                                                                             raw_type(lhs),
+                                                                             raw_type(rhs)
                                                                              )
                                              );
 

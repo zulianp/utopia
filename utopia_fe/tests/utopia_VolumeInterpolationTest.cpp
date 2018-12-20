@@ -9,6 +9,7 @@
 #include "libmesh/nemesis_io.h"
 #include "libmesh/mesh_refinement.h"
 #include <algorithm>
+#include <cmath>
 
 typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
@@ -156,6 +157,8 @@ namespace utopia {
 			UVector v_m = local_values(V_m.dof_map().n_local_dofs(), 1.);
 
 			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
+				using std::sin;
+
 				const auto &pts = ctx.fe()[0]->get_xyz();
 
 				const auto n = pts.size();

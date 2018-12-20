@@ -63,7 +63,7 @@ namespace utopia
                 Vec sorted_zero; 
                 MPI_Comm comm = PetscObjectComm((PetscObject) V_to_zero);
                 VecCreate(comm, &sorted_zero); 
-                VecSetSizes(sorted_zero, size, PETSC_DECIDE);
+                VecSetSizes(sorted_zero, size, PETSC_DETERMINE);
 
                 VecType type; 
                 VecGetType(V_to_zero, &type); 

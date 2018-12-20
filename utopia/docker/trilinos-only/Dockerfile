@@ -24,8 +24,10 @@ RUN cd trilinos_cloned && mkdir build && cd build && \
       -DMPI_BASE_DIR=/opt/mpich \
       -DTrilinos_ENABLE_Tpetra=ON \
       -DTrilinos_ENABLE_Belos=ON \
-      -DTrilinos_ENABLE_Amesos=ON \
-      -DTrilinos_ENABLE_Ifpack2=ON
+      -DTrilinos_ENABLE_Amesos2=ON \
+      -DTrilinos_ENABLE_Ifpack2=ON \
+      -DTrilinos_ENABLE_MueLu=ON \
+      -DTrilinos_ENABLE_NOX=ON
       
 RUN cd trilinos_cloned && cd build && make && make install
 
