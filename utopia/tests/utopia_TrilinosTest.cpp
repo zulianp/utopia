@@ -751,8 +751,8 @@ namespace utopia {
             auto r = range(rhs);
 
             Write<Vector> w(rhs);
-            if(r.begin() == 0)  rhs.set(0, 0.0); 
-            if(r.end()   == _n) rhs.set(_n-1, 0.0); 
+            if(r.inside(0))    rhs.set(0, 0.0); 
+            if(r.inside(_n-1)) rhs.set(_n-1, 0.0); 
         }           
 
         Vector x = zeros(size(rhs));

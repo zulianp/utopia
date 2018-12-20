@@ -5,6 +5,7 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Smoother.hpp"
+#include "utopia_QPSolver.hpp"
 
 #include <cmath>
 

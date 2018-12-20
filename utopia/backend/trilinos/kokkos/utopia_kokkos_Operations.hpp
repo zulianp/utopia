@@ -123,6 +123,26 @@ namespace utopia {
 			return Kokkos::Details::ArithTraits<Scalar>::log(value); 
 		}
 	};
+
+	template<class Scalar>
+	class KokkosOp<Scalar, Sin> {
+	public:
+		KokkosOp(const Sin &) {}
+
+		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+			return Kokkos::Details::ArithTraits<Scalar>::sin(value); 
+		}
+	};
+
+	template<class Scalar>
+	class KokkosOp<Scalar, Cos> {
+	public:
+		KokkosOp(const Cos &) {}
+
+		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+			return Kokkos::Details::ArithTraits<Scalar>::cos(value); 
+		}
+	};
 }
 
 #endif 
