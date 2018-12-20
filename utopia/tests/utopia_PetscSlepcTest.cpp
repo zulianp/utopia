@@ -292,7 +292,7 @@ namespace utopia
 			solver.atol(1e-12); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
-			solver.verbose(true); 
+			solver.verbose(false); 
 
 			solver.solve(fun_stiff, x_stiff); 
 

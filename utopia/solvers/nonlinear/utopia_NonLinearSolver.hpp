@@ -21,7 +21,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Vector>
-    class NonLinearSolver : public Monitor<Vector>, public Configurable
+    class NonLinearSolver : public Monitor<Vector>, virtual public Configurable
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;

@@ -25,25 +25,25 @@
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 
      	public:
-      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem,
-                  const Parameters params = Parameters()) : NonLinearSolver(tr_subproblem, params)
+      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem): 
+                  NonLinearSolver(tr_subproblem)
       {
-        set_parameters(params);
+        
       }
 
       using utopia::TrustRegionBase<Vector>::get_pred; 
 
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      void set_parameters(const Parameters params) override
+      void read(Input &in) override
       {
-        NonLinearSolver::set_parameters(params);
-        TrustRegionBase::set_parameters(params);
+        TrustRegionBase::read(in);
+        NonLinearSolver::read(in); 
       }
 
-
+      void print_usage(std::ostream &os) const override
+      {
+        TrustRegionBase::print_usage(os);
+        NonLinearSolver::print_usage(os); 
+      }
 
       bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override
       {

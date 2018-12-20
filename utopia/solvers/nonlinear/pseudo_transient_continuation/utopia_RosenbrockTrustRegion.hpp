@@ -40,6 +40,28 @@ namespace utopia
 
         }
 
+        Scalar eps() const
+        {
+            return eps_; 
+        }
+
+        Scalar tau() const
+        {
+            return tau_; 
+        }
+
+
+        void tau(const Scalar & tau)
+        {
+            tau_ = tau; 
+        }
+
+        void eps(const Scalar & eps)
+        {
+            eps_ = eps; 
+        }
+
+
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
            using namespace utopia;
@@ -50,13 +72,13 @@ namespace utopia
             bool converged = false; 
             SizeType it = 0; 
 
-            Scalar g_norm, s_norm=9e9, lambda, lambda_min;
+            Scalar g_norm, s_norm=9e9, H_norm, lambda, lambda_min;
             Scalar ared, pred, rho, expected_reduction; 
 
             Scalar scaling_factor_mat = 1.0 - std::sqrt(2.0)/2.0; 
             Scalar scaling_factor_vec = (std::sqrt(2.0)-1.0)/2.0; 
 
-            Vector g = local_zeros(local_size(x)), eigenvector_min, s, x_trial, d; 
+            Vector g = local_zeros(local_size(x)), eigenvector_min, s, x_trial; 
             Matrix H, H_damped; 
 
             fun.gradient(x, g); 
@@ -64,7 +86,9 @@ namespace utopia
 
             Scalar energy_old, energy_new, energy; 
             fun.value(x, energy_old);
+            
             fun.hessian(x, H); 
+            H_norm = norm2(H); 
 
             Matrix I = local_identity(local_size(H)); 
 
@@ -87,29 +111,29 @@ namespace utopia
                 if(lambda_min >= eps_)
                 {
                     // Rosenbrock step 
+                    // one could do factorization ones and apply just substitution twice...
+                    // but that would assume direct solver but default, which is not really HPC solution... 
+                    // so for now, we assume cost of one TR iteration is 2 linear solves 
                     s = 0 * x; 
-                    d = 0 * x; 
-                    this->linear_solve(H_damped, -1.0 * g, d);
-                    Vector x_temp = x + scaling_factor_vec * d; 
-                    Vector g_temp = 0 *g; 
+                    this->linear_solve(H_damped, -1.0 * g, s);
+                    Vector x_temp = x + scaling_factor_vec * s; 
+                    Vector g_temp = local_zeros(local_size(g)); 
                     fun.gradient(x_temp, g_temp); 
+                    s = 0 * x; 
                     this->linear_solve(H_damped, -1.0 * g_temp, s);
 
-
+                    // building trial point
                     x_trial = x + s; 
 
-                    pred = -1.0 * dot(g, s) -0.5 *dot(H* s, s);
+                    pred = -1.0 * dot(g, s) - 0.5 *dot(H* s, s);
 
-                    norms2(g, s, g_norm, s_norm); 
-                    Scalar H_norm = norm2(H); 
+                    s_norm = norm2(s); 
                     expected_reduction = tau_ * g_norm * std::min(s_norm, g_norm/H_norm); 
 
                     if(pred >= expected_reduction)
                     {
                         fun.value(x_trial, energy_new); 
                         ared = energy_old - energy_new; 
-
-                        pred = -1.0 * dot(g, s) -0.5 *dot(H* s, s);
                         rho = ared/pred; 
                     }
                     else
@@ -122,31 +146,27 @@ namespace utopia
                     rho = -1.0; 
                 }
 
-
                 if(rho > 0.0)
                 {
                     x = x_trial; 
                     fun.gradient(x, g); 
+                    g_norm = norm2(g); 
 
                     energy_old = energy_new; 
                     energy = energy_new; 
-
-                    norms2(g, s, g_norm, s_norm); 
                 }
                 else
                 {
-                    s_norm = norm2(s); 
                     energy = energy_old; 
                 }
 
-                // adjusting lambda multiplier according to rho
+                // adjusting lambda according to rho
                 if(rho < 0.0)
                     lambda *=10.0; 
                 else if(rho < this->eta1())
                     lambda *= this->gamma2(); 
                 else if(rho > this->eta2())
                     lambda *= this->gamma1(); 
-
 
                 it++; 
 
@@ -155,12 +175,13 @@ namespace utopia
 
                 converged = NewtonBase<Matrix, Vector>::check_convergence(it, g_norm, 9e9, s_norm);
 
-                if(!converged && rho >0.0)
+                if(!converged && rho > 0.0)
+                {
                     fun.hessian(x, H); 
-
+                    H_norm = norm2(H); 
+                }
 
             } // outer solve loop while(!converged)
-
 
             return true;
         }
@@ -168,7 +189,10 @@ namespace utopia
     void read(Input &in) override
     {
         NewtonBase<Matrix, Vector>::read(in);
+        TrustRegionBase<Vector>::read(in); 
+
         in.get("eps", eps_);
+        in.get("tau", tau_); 
 
         if(eigen_solver_) {
             in.get("eigen-solver", *eigen_solver_);
@@ -179,7 +203,10 @@ namespace utopia
     void print_usage(std::ostream &os) const override
     {
         NewtonBase<Matrix, Vector>::print_usage(os); 
+        TrustRegionBase<Vector>::print_usage(os); 
+
         this->print_param_usage(os, "eps", "real", "Tolerance for checking if smallest eigenvalue.", "1e-12"); 
+        this->print_param_usage(os, "tau", "real", "Constant defining lower bound on predicted reduction.", "1e-12"); 
     }
 
 

@@ -316,33 +316,27 @@ namespace utopia
 				TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
 				DVectord expected = values(x.size().get(0), 0.468919);
 				
-				Parameters params;
-				params.atol(1e-10);
-				params.rtol(1e-10);
-				params.stol(1e-10);
-				params.verbose(false);
+				InputParameters in;
+				in.set("atol", 1e-10);
+				in.set("rtol", 1e-10);
+				in.set("stol", 1e-10);
 				
 				auto subproblem = std::make_shared<utopia::SteihaugToint<DMatrixd, DVectord> >();
 				TrustRegion<DMatrixd, DVectord> tr_solver(subproblem);
-				tr_solver.set_parameters(params);
+				tr_solver.read(in);
 				tr_solver.solve(fun2, x);
 				
-				params.trust_region_alg(STEIHAUG_TOINT_TAG);
 				x = values(10, 2);
-				trust_region_solve(fun2, x, params);
+				trust_region_solve(fun2, x, STEIHAUG_TOINT_TAG, in);
 				
-				params.trust_region_alg(NASH_TAG);
 				x = values(10, 2);
-				trust_region_solve(fun2, x, params);
+				trust_region_solve(fun2, x, NASH_TAG, in);
 				
-				params.trust_region_alg(LANCZOS_TAG);
 				x = values(10, 2);
-				trust_region_solve(fun2, x, params);
+				trust_region_solve(fun2, x, LANCZOS_TAG, in);
 				
-				params.trust_region_alg(CGNE_TAG);
 				x = values(10, 2);
-				trust_region_solve(fun2, x, params);
-				
+				trust_region_solve(fun2, x, CGNE_TAG, in);
 			}
 		}
 

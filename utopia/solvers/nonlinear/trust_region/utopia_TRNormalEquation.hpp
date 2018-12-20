@@ -23,17 +23,27 @@
 
 
      	public:
-      LeastSquaresTrustRegion(const std::shared_ptr<TRSubproblem> &linear_solver, const Parameters params = Parameters())
-                              : NonLinearLeastSquaresSolver(linear_solver), 
-                                TrustRegionBase(params)
+      LeastSquaresTrustRegion(const std::shared_ptr<TRSubproblem> &linear_solver): 
+                              NonLinearLeastSquaresSolver(linear_solver), 
+                              TrustRegionBase()
       {
-        set_parameters(params);        
+          
       }
 
       using utopia::TrustRegionBase<Vector>::get_pred; 
 
+      void read(Input &in) override
+      {
+        TrustRegionBase::read(in); 
+        NonLinearLeastSquaresSolver::read(in); 
+      }
 
-      
+      void print_usage(std::ostream &os) const override
+      {
+        TrustRegionBase::print_usage(os); 
+        NonLinearLeastSquaresSolver::print_usage(os); 
+      }
+
       /**
        * @brief      TR solution process. 
        *
@@ -170,18 +180,6 @@
         return false;
       }
 
-
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      virtual void set_parameters(const Parameters params) override
-      {
-        NonLinearLeastSquaresSolver::set_parameters(params);
-        TrustRegionBase::set_parameters(params);
-      }
-
-
   protected: 
       /**
       * @brief      update of tr radius, specialized for solution in L2 norm. 
@@ -212,7 +210,6 @@
     {
       return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
     }
-
 
 
   private:

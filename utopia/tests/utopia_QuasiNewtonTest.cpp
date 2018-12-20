@@ -46,12 +46,7 @@ namespace utopia
 			{
 				// because dense matrices can not be sum-up in parallel
 				if(mpi_world_size() > 1) return;
-				
-				Parameters params;
-				params.atol(1e-5);
-				params.rtol(1e-15);
-				params.stol(1e-15);
-				params.verbose(_verbose);
+			
 				
 				auto hessian_approx   = std::make_shared<ApproxType >();
 				auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
@@ -60,7 +55,10 @@ namespace utopia
 		        lsolver->set_preconditioner(precond); 
 
 				QuasiNewton<Vector> nlsolver(hessian_approx, lsolver);
-				nlsolver.set_parameters(params);
+				nlsolver.atol(1e-5);
+				nlsolver.rtol(1e-15);
+				nlsolver.stol(1e-15);
+				nlsolver.verbose(_verbose);
 
 				auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
 				nlsolver.set_line_search_strategy(line_search);
@@ -146,13 +144,6 @@ namespace utopia
 			void quasi_newton_test_sparse()
 			{	
 				SizeType memory_size = 5; 			
-
-				Parameters params;
-				params.atol(1e-6);
-				params.rtol(1e-15);
-				params.stol(1e-15);
-				params.max_it(1000); 
-				params.verbose(_verbose);
 				
 	    		auto hess_approx   = std::make_shared<ApproxType >(memory_size);				
 	    		auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
@@ -162,7 +153,11 @@ namespace utopia
 
 
 				QuasiNewton<Vector> nlsolver(hess_approx, lsolver);
-				nlsolver.set_parameters(params);
+				nlsolver.atol(1e-6);
+				nlsolver.rtol(1e-15);
+				nlsolver.stol(1e-15);
+				nlsolver.max_it(1000); 
+				nlsolver.verbose(_verbose);
 
 				auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
 				nlsolver.set_line_search_strategy(line_search);
@@ -193,19 +188,15 @@ namespace utopia
 		    	Vector ub, lb;
 		    	fun.generate_constraints(lb, ub);
 		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-
-		    	Parameters params;
-				params.atol(1e-6);
-				params.rtol(1e-10);
-				params.stol(1e-10);
-				params.max_it(1000); 
-				params.verbose(_verbose);
-
 		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 
 		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
 		        tr_solver.set_box_constraints(box);
-				tr_solver.set_parameters(params);
+				tr_solver.atol(1e-6);
+				tr_solver.rtol(1e-10);
+				tr_solver.stol(1e-10);
+				tr_solver.max_it(1000); 
+				tr_solver.verbose(_verbose);
 				tr_solver.solve(fun, x);
 		    }
 
@@ -220,21 +211,18 @@ namespace utopia
 		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
 		    	SizeType memory_size = 5; 
-		    	Parameters params;
-				params.atol(1e-6);
-				params.rtol(1e-10);
-				params.stol(1e-10);
-				params.verbose(_verbose);
-				params.max_it(1000);
-				params.delta0(1);
-
 				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
 		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 		        qp_solver->set_memory_size(10); 
 
 		        QuasiTrustRegionVariableBound<Vector>  tr_solver(hess_approx, qp_solver);
 		        tr_solver.set_box_constraints(box);
-				tr_solver.set_parameters(params);
+				tr_solver.atol(1e-6);
+				tr_solver.rtol(1e-10);
+				tr_solver.stol(1e-10);
+				tr_solver.verbose(_verbose);
+				tr_solver.max_it(1000);
+				tr_solver.delta0(1);		        
 				tr_solver.solve(fun, x);
 
 		    }
@@ -250,14 +238,6 @@ namespace utopia
 				Vector ub   = local_values(local_size(x).get(0), 0.01);		
 		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-		    	Parameters params;
-				params.atol(1e-6);
-				params.rtol(1e-10);
-				params.stol(1e-10);
-				params.verbose(_verbose);
-				params.max_it(1000);
-				params.delta0(1); 
-
 		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
 		        qp_solver->verbose(false); 
 		        qp_solver->atol(1e-12); 
@@ -268,7 +248,12 @@ namespace utopia
 
 		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
 		        tr_solver.set_box_constraints(box);
-				tr_solver.set_parameters(params);
+				tr_solver.atol(1e-6);
+				tr_solver.rtol(1e-10);
+				tr_solver.stol(1e-10);
+				tr_solver.verbose(_verbose);
+				tr_solver.max_it(1000);
+				tr_solver.delta0(1);		
 				tr_solver.solve(fun, x);
 
 		    }
@@ -287,14 +272,6 @@ namespace utopia
 				Vector ub   = local_values(local_size(x).get(0), 0.01);		
 		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-		    	Parameters params;
-				params.atol(1e-6);
-				params.rtol(1e-10);
-				params.stol(1e-10);
-				params.verbose(_verbose);
-				params.max_it(20); 
-				params.delta0(1); 
-
 				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
 		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
 
@@ -303,7 +280,12 @@ namespace utopia
 
 		        QuasiTrustRegionVariableBound<Vector>  tr_solver(hess_approx, qp_solver);
 		        tr_solver.set_box_constraints(box);
-				tr_solver.set_parameters(params);
+				tr_solver.atol(1e-6);
+				tr_solver.rtol(1e-10);
+				tr_solver.stol(1e-10);
+				tr_solver.verbose(_verbose);
+				tr_solver.max_it(1000);
+				tr_solver.delta0(1);		
 				tr_solver.solve(fun, x);
 		    }
 

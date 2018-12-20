@@ -141,8 +141,12 @@ namespace utopia
 			Vector actual = values(n, 2.);
 			TestFunctionND_1<Matrix, Vector> fun(n);
 
+			InputParameters in; 
+			in.set("atol", 1e-11); 
+
+
 			//solve problem
-			solve(fun, actual);
+			line_search_solve(fun, actual, BACKTRACKING_TAG, in);
 
 			//test outcome...
 			Vector expected = values(n, 0.468919);
@@ -236,63 +240,32 @@ namespace utopia
 					x_w1.set(3, -1);
 				}
 
-
-				Parameters params;
-				params.atol(1e-10);
-				params.rtol(1e-10);
-				params.stol(1e-10);
-				params.solver_type(TRUST_REGION_TAG);
-				params.lin_solver_type(BICGSTAB_TAG);
-				params.trust_region_alg(DOGLEG_TAG);
-				params.verbose(false);
-
-				// trust_region_solve(fun2, x, params);
-				// trust_region_solve(fun_woods, x_w1, params);
-				// utopia_test_assert(approxeq(expected, x));
-
+				InputParameters in;
+				in.set("atol", 1e-10);
+				in.set("rtol", 1e-10); 
+				in.set("stol", 1e-10); 
+				in.set("verbose", false); 
 
 				x = values(10, 2);
-				params.trust_region_alg(STEIHAUG_TOINT_TAG);
-				trust_region_solve(fun2, x, params);
-				utopia_test_assert(approxeq(expected, x));
-
-
-				// x = values(10, 2);
-				// params.trust_region_alg(STEIHAUG_TOINT_TAG);
-
-				// auto strategy_tr = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-				// auto precond = std::make_shared< InvDiagPreconditioner<Matrix, Vector> >();
-				// strategy_tr->set_preconditioner(precond);
-				// strategy_tr->verbose(true);
-				// TrustRegion<Matrix, Vector> tr_solver(strategy_tr);
-
-				// tr_solver.verbose(true);
-				// tr_solver.solve(fun2, x);
-				// utopia_test_assert(approxeq(expected, x));
-
-
-
-				x = values(10, 2);
-				params.trust_region_alg(CAUCHYPOINT_TAG);
-				trust_region_solve(fun2, x, params);
+				trust_region_solve(fun2, x, STEIHAUG_TOINT_TAG, in);
 				utopia_test_assert(approxeq(expected, x));
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, params);
+				trust_region_solve(fun2, x, DOGLEG_TAG, in);
 				utopia_test_assert(approxeq(expected, x));
 
+				x = values(10, 2);
+				trust_region_solve(fun2, x, CAUCHYPOINT_TAG, in);
+				utopia_test_assert(approxeq(expected, x));
 
 				Vector expected_rosenbrock = values(2, 1);
-
 				Rosenbrock<Matrix, Vector> rosenbrock;
 				Vector x0 = values(2, 2.0);
 
 				x0 = values(2, 2.0);
-				params.trust_region_alg(STEIHAUG_TOINT_TAG);
-				params.verbose(false);
-				params.atol(1e-13);
-				params.rtol(1e-17);
-				trust_region_solve(rosenbrock, x0, params);
+				in.set("atol", 1e-13);
+				in.set("rtol", 1e-17); 
+				trust_region_solve(rosenbrock, x0, STEIHAUG_TOINT_TAG, in);
 
 				auto diff_norm = norm2(expected_rosenbrock - x0);
 
@@ -311,13 +284,12 @@ namespace utopia
 
 				Vector expected = values(x1.size().get(0), 0.468919);
 
-				Parameters params ;
-				params.atol(1e-11);
-				params.rtol(1e-11);
-				params.stol(1e-11);
-				params.verbose(false);
-				params.linear_solver_verbose(false);
-				params.line_search_inner_verbose(false);
+				InputParameters params; 
+				params.set("atol", 1e-11); 
+				params.set("rtol", 1e-11); 
+				params.set("stol", 1e-11); 
+				params.set("verbose", false); 
+
 
 				auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector, HOMEMADE> >();
 				Newton<Matrix, Vector> nlsolver1(lsolver);
@@ -327,14 +299,12 @@ namespace utopia
 				auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector> >();
 				auto strategy_bc  = std::make_shared<utopia::Backtracking<Vector> >();
 
-				strategy_sbc->set_parameters(params);
-				strategy_bc->set_parameters(params);
 
 				nlsolver1.set_line_search_strategy(strategy_sbc);
 				nlsolver2.set_line_search_strategy(strategy_bc);
 
-				nlsolver1.set_parameters(params);
-				nlsolver2.set_parameters(params);
+				nlsolver1.read(params);
+				nlsolver2.read(params);
 
 
 				nlsolver1.solve(fun2, x1);
@@ -384,11 +354,6 @@ namespace utopia
 				nlsolver2.solve(rosenbrock_fun, x02);
 				utopia_test_assert(approxeq(expected_rosenbrock, x01));
 				utopia_test_assert(approxeq(expected_rosenbrock, x02));
-
-				x01 = values(2, 2.0);
-				params.verbose(false);
-				params.linear_solver_verbose(false);
-				line_search_solve(rosenbrock_fun, x01, params);
 			}
 		}
 
