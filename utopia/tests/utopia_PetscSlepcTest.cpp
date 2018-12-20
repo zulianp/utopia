@@ -46,6 +46,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(pseudo_tr_stiff_test); 
 			UTOPIA_RUN_TEST(pseudo_cont_test); 
 			UTOPIA_RUN_TEST(lm_test); 
+			UTOPIA_RUN_TEST(rosenbrock_test); 
 		}
 
 
@@ -202,7 +203,7 @@ namespace utopia
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
-			solver.verbose(true); 
+			solver.verbose(false); 
 
 			solver.solve(fun, x); 
 		}
@@ -268,6 +269,38 @@ namespace utopia
 			solver.read(in);
 			// solver.print_usage(std::cout); 
 			solver.solve(fun_stiff, x_stiff); 
+
+		}
+
+		void rosenbrock_test()
+		{
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun_stiff(n); 
+			DVectord x_stiff; 
+			fun_stiff.get_initial_guess(x_stiff); 
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+			
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			eigen_solver->solver_type("arpack");			
+
+			RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+			solver.atol(1e-12); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(true); 
+
+			solver.solve(fun_stiff, x_stiff); 
+
+			DVectord x  = values(4, 10);
+			DVectord expected_woods = values(4, 1);
+			Woods<DMatrixd, DVectord> fun;
+
+			solver.solve(fun, x); 
 
 		}
 
