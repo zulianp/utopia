@@ -81,7 +81,6 @@ namespace utopia  {
 	bool solve(const Matrix A, const Vector rhs, Vector &x, const Parameters params = Parameters ())
 	{
 		auto solver = linear_solver<Matrix, Vector>(params.lin_solver_type()); 
-		solver->set_parameters(params); 
 		solver->solve(A, rhs, x); 
 
 		return true; 

@@ -13,24 +13,11 @@ namespace utopia {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
-        BiCGStab(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSPSolver<Matrix, Vector, PETSC>(params)
+        BiCGStab(const std::string &preconditioner = "jacobi")
+        : KSPSolver<Matrix, Vector, PETSC>()
         {
             this->pc_type(preconditioner);
             this->ksp_type("bcgs");
-        }
-
-        void get_parameters(Parameters &params) const override {
-            IterativeSolver<Matrix, Vector>::get_parameters(params);
-            params.lin_solver_type("bcgs");
-            params.preconditioner_type(this->pc_type().c_str());
-        }
-
-        void set_parameters(const Parameters params) override {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("bcgs");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            IterativeSolver<Matrix, Vector>::set_parameters(params_copy);
         }
 
         void read(Input &is) override {
@@ -51,18 +38,11 @@ namespace utopia {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
-        MINRES(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSPSolver<Matrix, Vector, PETSC>(params)
+        MINRES(const std::string &preconditioner = "jacobi")
+        : KSPSolver<Matrix, Vector, PETSC>()
         {
             this->pc_type(preconditioner);
             this->ksp_type("minres");
-        }
-
-        void set_parameters(const Parameters params) override {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("minres");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSPSolver<Matrix, Vector, PETSC>::set_parameters(params_copy);
         }
 
         void read(Input &is) override {
@@ -83,18 +63,11 @@ namespace utopia {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
         
-        SOR(const Parameters params = Parameters())
-        : KSPSolver<Matrix, Vector, PETSC>(params)
+        SOR()
+        : KSPSolver<Matrix, Vector, PETSC>()
         {
             this->pc_type("sor");
             this->ksp_type("richardson");
-        }
-
-        void set_parameters(const Parameters params) override {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("richardson");
-            params_copy.preconditioner_type("sor");
-            KSPSolver<Matrix, Vector, PETSC>::set_parameters(params_copy);
         }
 
         void read(Input &is) override {

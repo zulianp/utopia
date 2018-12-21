@@ -16,9 +16,8 @@ namespace utopia
 
         public:
 
-        Dogleg( const std::shared_ptr <LinearSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                const Parameters & params = Parameters()) :
-                TRSubproblem<Matrix, Vector>(params),
+        Dogleg( const std::shared_ptr <LinearSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()) :
+                TRSubproblem<Matrix, Vector>(),
                 ls_solver_(linear_solver)
                 { }
 

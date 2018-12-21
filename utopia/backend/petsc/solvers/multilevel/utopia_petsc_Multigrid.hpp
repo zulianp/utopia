@@ -64,17 +64,10 @@ namespace utopia {
 		}
 
 		Multigrid(const std::shared_ptr<Smoother> &smoother    = nullptr,
-		          const std::shared_ptr<Solver> &linear_solver = nullptr,
-		          const Parameters params = Parameters())
+		          const std::shared_ptr<Solver> &linear_solver = nullptr)
 		: smoother_(smoother), linear_solver_(linear_solver), default_ksp_type_(KSPRICHARDSON), default_pc_type_(PCSOR), block_size_(1)
 		{
-		    set_parameters(params);
-		}
-
-		void set_parameters(const Parameters params) override
-		{
-		    IterativeSolver::set_parameters(params);
-		    LinearMultiLevel<Matrix, Vector>::set_parameters(params);
+		    
 		}
 
 		inline void set_default_ksp_type(const KSPType &ksp_type)

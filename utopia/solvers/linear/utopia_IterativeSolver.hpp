@@ -28,62 +28,13 @@ namespace  utopia
         typedef UTOPIA_SCALAR(Matrix)           Scalar;
         typedef UTOPIA_SIZE_TYPE(Matrix)        SizeType;
 
-        IterativeSolver(const Parameters params = Parameters())
+        IterativeSolver()
         {
-            set_parameters(params); 
+            
         }
         
         virtual ~IterativeSolver( ){}
         
-        /**
-         * @brief      Solve routine. Needs to be provided by each solver.
-         *
-         * @param[in]  A     
-         * @param[in]  b     
-         * @param      x0    
-         *
-         * @return    
-         */
-        // virtual bool solve(const Matrix &A, const Vector &b, Vector &x0) = 0;
-
-        inline void copy_parameters_from(const IterativeSolver &other) 
-        {
-            Parameters params;
-            other.get_parameters(params);
-            set_parameters(params);
-        }
-
-        virtual void get_parameters(Parameters &params) const
-        {
-            params.ksp_atol(atol_);
-            params.ksp_rtol(rtol_);
-            params.ksp_dtol(stol_);
-
-            params.ksp_max_it(max_it_);
-            params.linear_solver_verbose(verbose_);
-            params.time_statistics(time_statistics_);
-            params.linear_solver_time_statistics(time_statistics_);
-
-            params.log_system(log_system_);
-            params.log_iterates(log_iterates_);
-        }
-
-
-        virtual void set_parameters(const Parameters params) override
-        {
-            atol_               = params.ksp_atol();            
-            rtol_               = params.ksp_rtol(); 
-            stol_               = params.ksp_dtol(); 
-
-            max_it_             = params.ksp_max_it(); 
-            verbose_            = params.linear_solver_verbose(); 
-            time_statistics_    = params.time_statistics();  
-            time_statistics_    = params.linear_solver_time_statistics(); 
-
-            log_system_         = params.log_system();
-            log_iterates_       = params.log_iterates(); 
-        }
-
         virtual void read(Input &is) override
         {
             is.get("atol", atol_);

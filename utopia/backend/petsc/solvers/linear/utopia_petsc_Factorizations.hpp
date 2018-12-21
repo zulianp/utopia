@@ -31,13 +31,6 @@ namespace utopia {
 	template<typename Matrix, typename Vector> 
 	class LUDecomposition<Matrix, Vector, PETSC> : public Factorization<Matrix, Vector, PETSC> {
 	public:   
-
-		inline void set_parameters(const Parameters params) override
-		{
-		    Factorization<Matrix, Vector, PETSC>::set_parameters(params);
-		    // this->set_parameters(params); // this line is causing seq. faults in passo.. 
-		} 
-
 		void set_library_type(const DirectSolverLib & TAG)
 		{
 			this->set_type(TAG, LU_DECOMPOSITION_TAG); 

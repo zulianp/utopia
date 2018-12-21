@@ -63,17 +63,18 @@ namespace utopia
     public:
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
-        virtual void set_parameters(const Parameters)
-        {}
 
-        virtual void read(Input &) override
+        virtual void read(Input &in) override
         {
-            assert(false && "implement me");
+
         }
 
-        virtual Preconditioner * clone() const override = 0;
+        virtual void print_usage(std::ostream &os) const override
+        {
 
-        // virtual void print_usage(std::ostream &os = std::cout) const;
+        }   
+
+        virtual Preconditioner * clone() const override = 0;
     };
 
 

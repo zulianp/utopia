@@ -37,18 +37,10 @@ namespace utopia
 
 
         public:
-        NonLinearGaussSeidel(   const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                                const Parameters params = Parameters()) 
-                                : SNESSolver(linear_solver, params)
+        NonLinearGaussSeidel(   const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) 
+                                : SNESSolver(linear_solver)
         { 
-            set_parameters(params); 
             this->set_snes_type("ngs"); 
-
-        }
-
-        virtual void set_parameters(const Parameters params) override
-        {
-            SNESSolver::set_parameters(params); 
         }
 
     protected: 

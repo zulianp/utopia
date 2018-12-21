@@ -80,18 +80,13 @@ namespace  utopia
         typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
 
         public:
-            TRSubproblem(const Parameters params = Parameters())
+            TRSubproblem()
             {
-                set_parameters(params);
+
             };
 
 
             virtual ~TRSubproblem( ){}
-
-            virtual void set_parameters(const Parameters params) override
-            {
-                IterativeSolver::set_parameters(params);
-            }
 
             virtual TRSubproblem * clone() const override = 0;
     };

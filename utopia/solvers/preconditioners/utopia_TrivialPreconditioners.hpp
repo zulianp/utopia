@@ -62,6 +62,7 @@ namespace utopia
         {
             return new IdentityPreconditioner(*this);
         }
+     
     };
 
     template<class Vector>
@@ -82,7 +83,6 @@ namespace utopia
             {
                 return new FunctionPreconditioner(*this);
             }
-
 
         private:
             std::function< void(const Vector &, Vector &) > operator_action_; 

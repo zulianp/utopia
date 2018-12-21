@@ -25,9 +25,8 @@ namespace utopia
 
     public:
     	MoreSorensenEigen(	const std::shared_ptr<LinearSolver> &linear_solver,  
-    						const std::shared_ptr<EigenSolver> & eigen_solver, 
-    						const Parameters params = Parameters()): 
-    						TRSubproblem<Matrix, Vector>(params), 
+    						const std::shared_ptr<EigenSolver> & eigen_solver): 
+    						TRSubproblem<Matrix, Vector>(), 
     						linear_solver_(linear_solver), 
     						eigen_solver_(eigen_solver), 
     						kappa_easy_(1e-10), 

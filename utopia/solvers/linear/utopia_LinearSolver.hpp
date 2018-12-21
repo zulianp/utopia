@@ -27,7 +27,6 @@ namespace  utopia
 
         virtual bool apply(const Vector &rhs, Vector &sol) override = 0;
 
-        virtual void set_parameters(const Parameters /*params*/) override { }
 
         /**
          * @brief      Solve routine.

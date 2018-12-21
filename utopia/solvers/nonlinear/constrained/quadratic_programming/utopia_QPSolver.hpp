@@ -25,13 +25,7 @@ namespace utopia
 
 	        }
 
-			virtual void set_parameters(const Parameters params) override
-			{
-				IterativeSolver<Matrix, Vector>::set_parameters(params);
-			}
-
 	        virtual QPSolver * clone() const override = 0; 
-
 	};
 
 

@@ -659,8 +659,8 @@ namespace utopia
 				DVectord expected_rosenbrock = values(2, 1.0);
 				DVectord x0_ros   			 = values(2, 1.5);
 
-				nlsolver.set_line_search_type("cp"); 
-				nlsolver.set_line_search_order(3); 
+				nlsolver.line_search_type("cp"); 
+				nlsolver.line_search_order(3); 
 				nlsolver.max_it(1000); 
 				nlsolver.solve(rosenbrock, x0_ros); 
 

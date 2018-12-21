@@ -122,14 +122,6 @@ namespace utopia {
         }
         
         
-        void set_parameters(const Parameters params) override
-        {
-            // Smoother::set_parameters(params);
-            // Solver::set_parameters(params);
-        }
-        
-        
-        
         /**
          * @brief      Nonlinear smoothing. First it calls GS smoother and then it project constrains.
          * !!!! THIS DOES NOT GIVE CORRECT RESULTS IN A SIMULATION THE PROJECTION CANNOT HAPPEN OUTSIDE A GS STEP

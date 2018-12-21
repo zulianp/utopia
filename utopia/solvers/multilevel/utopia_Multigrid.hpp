@@ -73,28 +73,17 @@ namespace utopia
          * @param[in]  coarse_solver  The direct solver for coarse level.
          */
         Multigrid(const std::shared_ptr<Smoother> &smoother,
-                  const std::shared_ptr<Solver>   &coarse_solver,
-                  const Parameters params = Parameters())
+                  const std::shared_ptr<Solver>   &coarse_solver)
         : smoother_cloneable_(smoother),
           coarse_solver_(coarse_solver),
           perform_galerkin_assembly_(true),
           use_line_search_(false),
           block_size_(1)
         {
-            set_parameters(params);
             this->must_generate_masks(true);
         }
 
         virtual ~Multigrid(){}
-
-        void set_parameters(const Parameters params) override
-        {
-            IterativeSolver::set_parameters(params);
-            LinearMultiLevel<Matrix, Vector>::set_parameters(params);
-
-            // this should not be necessary
-            // smoother_cloneable_->set_parameters(params);
-        }
 
         /*! @brief if overriden the subclass has to also call this one first
          */

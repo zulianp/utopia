@@ -23,7 +23,7 @@ namespace utopia {
 						 const Parameters params = Parameters() ) :
 		linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
 		{
-			set_parameters(params);
+			
 		}
 
 		SemismoothNewton * clone() const override
@@ -66,11 +66,6 @@ namespace utopia {
 			}
 
 			return true;
-		}
-
-		virtual void set_parameters(const Parameters params) override
-		{
-			QPSolver<Matrix, Vector>::set_parameters(params);
 		}
 
 

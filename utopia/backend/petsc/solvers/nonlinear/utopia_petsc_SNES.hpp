@@ -36,13 +36,11 @@ namespace utopia
         
         
         SNESSolver( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
-                   const Parameters params = Parameters(),
-                   const std::vector<std::string> snes_types    = {"newtonls", "newtontr", "nrichardson", "ksponly", "vinewtonrsls", "vinewtonssls", "ngmres", "qn", "shell", "ngs", "ncg", "fas", "ms", "anderson"}):
+                    const std::vector<std::string> snes_types    = {"newtonls", "newtontr", "nrichardson", "ksponly", "vinewtonrsls", "vinewtonssls", "ngmres", "qn", "shell", "ngs", "ncg", "fas", "ms", "anderson"}):
         NonLinearSolver(linear_solver),
         SNES_types(snes_types)
         {
             SNES_type_       = SNES_types.at(0);
-            set_parameters(params);
         }
         
         
@@ -50,31 +48,28 @@ namespace utopia
         {
             
         }
-        
-        
-        virtual void set_parameters(const Parameters params) override
+
+        virtual void read(Input &in) override
         {
-            // NonLinearSolver::set_parameters(params);
-            // Smoother::set_parameters(params);
+            NonLinearSolver::read(in); 
+            Smoother::read(in); 
+
+            in.get("SNES_type", SNES_type_);
         }
+
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            NonLinearSolver::print_usage(os); 
+            Smoother::print_usage(os); 
+
+            this->print_param_usage(os, "SNES_type", "string", "Type of Snes solver.", "newtonls"); 
+        }        
         
         
         virtual void set_snes_type(const std::string & type)
         {
             SNES_type_ = in_array(type, SNES_types) ? type : SNES_types.at(0);
-        }
-        
-        
-        virtual bool verbose() override
-        {
-            return NonLinearSolver::verbose();
-        }
-        
-        
-        virtual void verbose(const bool & verbose) override
-        {
-            NonLinearSolver::verbose(verbose);
-            Smoother::verbose(verbose);
         }
         
         

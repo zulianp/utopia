@@ -490,7 +490,6 @@ namespace utopia {
 		ksp_type("bcgs");
 		pc_type("jacobi");
 		ksp_->set_initial_guess_non_zero(true);
-		set_parameters(params);
 	}
 
     template<typename Matrix, typename Vector>
@@ -507,12 +506,6 @@ namespace utopia {
     template<typename Matrix, typename Vector>
 	KSPSolver<Matrix, Vector, PETSC>::~KSPSolver() {}
 
-    template<typename Matrix, typename Vector>
-	void KSPSolver<Matrix, Vector, PETSC>::set_parameters(const Parameters params)
-	{
-		PreconditionedSolver::set_parameters(params);
-		ksp_->set_parameters(params);
-	}
 
 	template<typename Matrix, typename Vector>
 	void KSPSolver<Matrix, Vector, PETSC>::set_initial_guess_non_zero(const bool val)

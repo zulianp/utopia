@@ -11,7 +11,7 @@
 namespace utopia {
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class BiCGStab : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
+	class BiCGStab final: public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
 	public:
 		typedef UTOPIA_SCALAR(Vector) 	 Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -46,16 +46,15 @@ namespace utopia {
 		void read(Input &in) override
         {
             MatrixFreeLinearSolver<Vector>::read(in);
-            // Smoother<Matrix, Vector>::read(in); 
-            // PreconditionedSolver<Matrix, Vector>::read(in); 
+            Smoother<Matrix, Vector>::read(in); 
+            PreconditionedSolver<Matrix, Vector>::read(in); 
         }
-
 
         void print_usage(std::ostream &os) const override
         {
             MatrixFreeLinearSolver<Vector>::print_usage(os);
-            // Smoother<Matrix, Vector>::print_usage(os);
-            // PreconditionedSolver<Matrix, Vector>::print_usage(os);
+            Smoother<Matrix, Vector>::print_usage(os);
+            PreconditionedSolver<Matrix, Vector>::print_usage(os);
         }
 
 	private:

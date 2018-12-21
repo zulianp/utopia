@@ -51,12 +51,6 @@ namespace utopia
             QPSolver<Matrix, Vector>::print_usage(os);
         }
 
-		void set_parameters(const Parameters params) override
-		{
-			QPSolver<Matrix, Vector>::set_parameters(params);
-		}
-
-
 		bool apply(const Vector &b, Vector &x) override
 		{
 			auto A_ptr = utopia::op(this->get_operator());
