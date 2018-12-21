@@ -31,6 +31,21 @@ namespace utopia
                 return aux_solve(*this->get_operator(), -1.0 * b, x);
             }
 
+            void read(Input &in) override
+            {
+                TRSubproblem<Matrix, Vector>::read(in);
+                
+                if(ls_solver_){
+                    in.get("linear-solver", *ls_solver_); 
+                }
+            }
+
+
+            void print_usage(std::ostream &os) const override
+            {
+                TRSubproblem<Matrix, Vector>::print_usage(os);
+                this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+            }
 
         protected:
             bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k) 

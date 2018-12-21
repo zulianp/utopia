@@ -40,6 +40,28 @@ namespace utopia
                                 verbosity_level_ =  VERBOSITY_LEVEL_NORMAL; 
                             }
 
+
+
+        void read(Input &in) override
+        {
+            NewtonBase<Matrix, Vector>::read(in);
+            in.get("mass_init", mass_init_);
+            in.get("scaling_init_", scaling_init_);
+            in.get("tau_max", tau_max_);
+            in.get("tau_min", tau_min_);
+            in.get("alpha_treshold", alpha_treshold_);
+            in.get("max_inner_it", max_inner_it_);
+            in.get("m", m_);
+            in.get("use_m", use_m_);
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            NewtonBase<Matrix, Vector>::print_usage(os); 
+            
+        }
+
+
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
            using namespace utopia;

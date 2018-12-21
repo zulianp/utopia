@@ -25,8 +25,7 @@ namespace utopia
 		typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-		NonLinearLeastSquaresSolver(const std::shared_ptr<Solver> &linear_solver)   : 
-									linear_solver_(linear_solver)
+		NonLinearLeastSquaresSolver(const std::shared_ptr<Solver> &linear_solver): linear_solver_(linear_solver)
 		{
 
 		}
@@ -49,6 +48,12 @@ namespace utopia
                 in.get("linear-solver", *linear_solver_);
             }
         }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            NonLinearSolver<Vector>::print_usage(os);
+            this->print_param_usage(os, "linear-solver", "LinearSolver", "Linear solver to detrmine Newton step.", "-"); 
+        }        
 
 
 	protected:

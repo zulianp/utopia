@@ -28,7 +28,8 @@ namespace  utopia
         typedef UTOPIA_SCALAR(Matrix)           Scalar;
         typedef UTOPIA_SIZE_TYPE(Matrix)        SizeType;
 
-        IterativeSolver()
+        IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false), 
+                            time_statistics_(true), log_iterates_(false), log_system_(false)
         {
             
         }
@@ -189,7 +190,6 @@ namespace  utopia
 
         virtual SizeType    max_it()  const            { return max_it_; } 
 
-        virtual bool      precondition() const          { return precondition_; } 
         virtual bool      time_statistics() const       { return time_statistics_; } 
 
         virtual bool log_iterates() const                { return log_iterates_; } 
@@ -203,7 +203,6 @@ namespace  utopia
         virtual void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
         virtual void verbose(const bool & verbose_in ) {verbose_ = verbose_in; }; 
         
-        virtual void precondition(const bool & precondition_in ) { precondition_ = precondition_in; }; 
         virtual void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
         virtual void log_iterates(const bool & log_iterates_in ) { log_iterates_ = log_iterates_in; }; 
         virtual void log_system(const bool & log_system_in ) { log_system_ = log_system_in; }; 
@@ -223,8 +222,6 @@ namespace  utopia
         bool verbose_;                  /*!< Verobse enable? . */  
 
         bool time_statistics_;          /*!< Perform time stats or not? */  
-        bool precondition_;             // todo
-
 
         bool log_iterates_;
         bool log_system_; 

@@ -26,7 +26,7 @@ namespace utopia
 
         NewtonBase( const std::shared_ptr<Solver> &linear_solver): 
                     NonLinearSolver<Vector>(), 
-                    linear_solver_(linear_solver)
+                    linear_solver_(linear_solver), check_diff_(false)
         {
               
         }
@@ -81,6 +81,13 @@ namespace utopia
                 in.get("linear-solver", *linear_solver_);
             }
         }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            NonLinearSolver<Vector>::print_usage(os);
+            this->print_param_usage(os, "check_diff", "bool", "Enables finite difference controller", "false"); 
+            this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+        }        
       
         /**
          * @brief      Changes linear solver used inside of nonlinear-solver. 

@@ -15,7 +15,7 @@ namespace utopia
 	 * 			   				but ok as this is just proof of concept solver
 	 */
 	template<class Matrix, class Vector>
-    class MoreSorensenEigen: public TRSubproblem<Matrix, Vector>
+    class MoreSorensenEigen final: public TRSubproblem<Matrix, Vector>
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -30,11 +30,9 @@ namespace utopia
     						linear_solver_(linear_solver), 
     						eigen_solver_(eigen_solver), 
     						kappa_easy_(1e-10), 
-    						max_it_(1000), 
     						lambda_eps_(1e-5)
         {  };
 
-        virtual ~MoreSorensenEigen(){}
 
         void kappa_easy(const Scalar & kappa)
         {
@@ -71,6 +69,31 @@ namespace utopia
 	    	Vector g = -1.0 *b; 
 	        return aux_solve(*this->get_operator(), g, x);
 	    }
+
+        void read(Input &in) override
+        {
+        	TRSubproblem<Matrix, Vector>::read(in); 
+            in.get("kappa_easy", kappa_easy_);
+            in.get("lambda_eps", lambda_eps_);
+            
+            if(linear_solver_){
+                in.get("linear-solver", *linear_solver_); 
+            }
+            if(eigen_solver_){
+                in.get("eigen-solver", *eigen_solver_); 
+            }                        
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+        	TRSubproblem<Matrix, Vector>::print_usage(os); 
+
+            this->print_param_usage(os, "kappa_easy", "double", "Treshold for kappa estimation.", "1e-10"); 
+            this->print_param_usage(os, "lambda_eps", "double", "Treshold for min. eigenvalue.", "1e-5");
+             
+            this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+            this->print_param_usage(os, "eigen-solver", "EigenSolver", "Input parameters for eigen solver.", "-"); 
+        }
 
 
 	private:
@@ -121,7 +144,7 @@ namespace utopia
 	        	}
 	        }
 
-	        for(auto it = 0; it < max_it_; it++)
+	        for(auto it = 0; it < this->max_it(); it++)
 	        {
 		        if( std::abs(s_norm - this->current_radius()) <= kappa_easy_ *  this->current_radius())
 		        	return true; 
@@ -161,7 +184,6 @@ namespace utopia
      	std::shared_ptr<EigenSolver> eigen_solver_;     
 
      	Scalar kappa_easy_; 
-     	SizeType max_it_; 
      	Scalar lambda_eps_; 
 
     };
