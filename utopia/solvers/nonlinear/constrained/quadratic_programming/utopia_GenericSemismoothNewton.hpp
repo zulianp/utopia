@@ -29,6 +29,22 @@ namespace utopia {
 		{
 			return new GenericSemismoothNewton(constraint_, std::shared_ptr<Solver>(linear_solver_->clone()));
 		}
+        
+        void read(Input &in) override
+        {
+            IterativeSolver<Matrix, Vector>::read(in);
+
+            if(linear_solver_){
+                in.get("linear-solver", *linear_solver_); 
+            }
+
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            IterativeSolver<<atrix, Vector>::print_usage(os);
+            this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+        }
 
 		bool solve(const Matrix &A, const Vector &b, Vector &x_new) override
 		{			

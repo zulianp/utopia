@@ -60,7 +60,7 @@ namespace utopia
         virtual void print_usage(std::ostream &os) const override
         {
             MatrixFreeNonLinearSolver<Vector>::print_usage(os);
-            this->print_param_usage(os, "dumping", "real", "Default step size.", "1.0"); 
+            this->print_param_usage(os, "dumping", "double", "Default step size.", "1.0"); 
             this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-"); 
             this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
             this->print_param_usage(os, "hessian-approx-strategy", "HessianApproxStrategy", "Input parameters for hessian-approximation strategy.", "-"); 

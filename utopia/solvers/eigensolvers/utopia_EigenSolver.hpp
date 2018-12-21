@@ -81,7 +81,7 @@ namespace utopia
         }
 
 
-        void read(Input &in) override
+        virtual void read(Input &in) override
         {
             in.get("max_it", max_it_);
             in.get("tol", tol_);
@@ -92,7 +92,7 @@ namespace utopia
         }
 
 
-        void print_usage(std::ostream &os) const override
+        virtual void print_usage(std::ostream &os) const override
         {
             this->print_param_usage(os, "max_it", "int", "Maximum number of iterations.", "1000"); 
             this->print_param_usage(os, "tol", "real", "Absolute tolerance.", "0.25"); 

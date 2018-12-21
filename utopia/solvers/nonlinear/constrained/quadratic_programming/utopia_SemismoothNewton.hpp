@@ -19,8 +19,7 @@ namespace utopia {
 
 	public:
 
-		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver,
-						 const Parameters params = Parameters() ) :
+		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver) :
 		linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
 		{
 			
@@ -53,6 +52,23 @@ namespace utopia {
         {
             linear_solver_ = ls;
         }
+
+        void read(Input &in) override
+        {
+            QPSolver<Matrix, Vector>::read(in);
+            in.get("active_set_tol", active_set_tol_);
+            in.get("linear_solve_zero_initial_guess", linear_solve_zero_initial_guess_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            QPSolver<Matrix, Vector>::print_usage(os);
+            this->print_param_usage(os, "active_set_tol", "double", "Numerical tolerance.", "1e-15"); 
+            this->print_param_usage(os, "linear_solve_zero_initial_guess", "bool", "Flag to reset initial guess for each linear solve.", "true"); 
+        }
+
+
 
 
 		bool solve(const Matrix &A, const Vector &b, Vector &x)  override

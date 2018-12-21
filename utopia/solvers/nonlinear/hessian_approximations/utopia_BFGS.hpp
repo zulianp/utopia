@@ -27,7 +27,7 @@ namespace utopia
                 return new BFGS<Matrix, Vector>(*this);
             }
 
-            virtual void initialize() override
+            void initialize() override
             {
                 current_it_ = 0; 
                 this->initialized(true); 
@@ -36,7 +36,7 @@ namespace utopia
                 H_prev_inv_ = Matrix(); 
             }                
 
-            virtual void reset() override
+            void reset() override
             {
                 if(!empty(H_prev_))
                     H_prev_ = local_identity(local_size(H_prev_)); 
@@ -45,7 +45,7 @@ namespace utopia
                     H_prev_inv_ = local_identity(local_size(H_prev_inv_));                 
             }
 
-            virtual bool update(const Vector & s_in, const Vector & y_in ) override
+            bool update(const Vector & s_in, const Vector & y_in ) override
             {
                 if(!this->initialized())
                 {
@@ -81,12 +81,12 @@ namespace utopia
                 return true; 
             }
 
-            virtual Matrix & get_Hessian() 
+            Matrix & get_Hessian() 
             {
                 return H_prev_; 
             }
 
-            virtual bool apply_Hinv(const Vector & g , Vector & s) const override
+            bool apply_Hinv(const Vector & g , Vector & s) const override
             {
                 if(this->initialized())
                 {
@@ -102,7 +102,7 @@ namespace utopia
                 return true; 
             }
 
-            virtual bool apply_H(const Vector & v, Vector & result) const override
+            bool apply_H(const Vector & v, Vector & result) const override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -118,7 +118,7 @@ namespace utopia
                 return true; 
             }
 
-            virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const override
+            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const override
             {
                 if(this->initialized())
                 {
@@ -133,7 +133,7 @@ namespace utopia
                 }
             }
 
-            virtual Scalar compute_uHv_dot(const Vector & u, const Vector & v) const override
+            Scalar compute_uHv_dot(const Vector & u, const Vector & v) const override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -149,7 +149,7 @@ namespace utopia
                 }
             }
 
-            virtual Scalar compute_uHu_dot(const Vector & u) const override
+            Scalar compute_uHu_dot(const Vector & u) const override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -165,19 +165,31 @@ namespace utopia
                 }
             }
 
-            void set_update_hessian(const bool flg)
+            void update_hessian(const bool flg)
             {
                 update_hessian_ = flg; 
             }
             
-            bool get_update_hessian() const
+            bool update_hessian() const
             {
                 return update_hessian_; 
             }
 
+            void read(Input &in) override
+            {
+                HessianApproximation<Vector>::read(in);
+                in.get("update_hessian", update_hessian_);
+            }
+
+            void print_usage(std::ostream &os) const override
+            {
+                HessianApproximation<Vector>::print_usage(os);
+                this->print_param_usage(os, "update_hessian", "bool", "Default step size.", "false"); 
+            }            
+
 
         private:
-            virtual void update_Hessian_inverse()
+            void update_Hessian_inverse()
             {
                 Scalar s_y =  dot(s_, y_); 
                 Scalar yHy = dot(y_, H_prev_inv_ * y_);
@@ -201,7 +213,7 @@ namespace utopia
             }
 
 
-            virtual void update_Hessian()
+            void update_Hessian()
             {
                 Scalar y_s = dot(y_, s_);
 

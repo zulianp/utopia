@@ -37,13 +37,13 @@ public:
 
     virtual void read(Input &in) override
     {
-        std::cout<<"HessianApproximation::to be fixed...\n"; 
+        in.get("num_tol", num_tol_);
     }
 
 
     virtual  void print_usage(std::ostream &os) const override
     {
-        std::cout<<"HessianApproximation::to be fixed...\n"; 
+        this->print_param_usage(os, "num_tol", "double", "Numerical tolerance.", "1e-12"); 
     }
 
 

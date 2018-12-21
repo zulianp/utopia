@@ -103,7 +103,7 @@ namespace utopia
 					Vector x0 = values(2, 2.0);
 
 					auto hes_approx   = std::make_shared<ApproxType >();
-					hes_approx->set_update_hessian(true); 					
+					hes_approx->update_hessian(true); 					
 
 					QuasiTrustRegion<Vector> tr_solver(hes_approx, subproblem);
 					tr_solver.atol(1e-6); 
