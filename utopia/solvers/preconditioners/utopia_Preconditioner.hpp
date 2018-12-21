@@ -59,7 +59,7 @@ namespace utopia
 
 
     template<class Vector>
-    class Preconditioner : public Configurable, public virtual Clonable {
+    class Preconditioner : public virtual Configurable, public virtual Clonable {
     public:
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;

@@ -213,7 +213,7 @@ namespace utopia
 		    	SizeType memory_size = 5; 
 				auto hess_approx   = std::make_shared<ApproxType >(memory_size);	
 		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
-		        qp_solver->set_memory_size(10); 
+		        qp_solver->memory_size(10); 
 
 		        QuasiTrustRegionVariableBound<Vector>  tr_solver(hess_approx, qp_solver);
 		        tr_solver.set_box_constraints(box);

@@ -37,10 +37,10 @@ namespace utopia
 
 		using IterativeSolver<Matrix, Vector>::solve;
 		
-		ConjugateGradient(const Parameters params = Parameters())
+		ConjugateGradient()
 		: reset_initial_guess_(false)
 		{
-			set_parameters(params);
+
 		}
 		
 		void reset_initial_guess(const bool val)
@@ -48,15 +48,28 @@ namespace utopia
 			reset_initial_guess_ = val;
 		}
 
-		/**
-		 * @brief      Sets the parameters.
-		 *
-		 * @param[in]  params  The parameters
-		 */
-		void set_parameters(const Parameters params) override
-		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
-		}
+
+        void read(Input &in) override
+        {
+            IterativeSolver<Matrix, Vector>::read(in); 
+            Smoother<Matrix, Vector>::read(in); 
+
+            in.get("reset_initial_guess", reset_initial_guess_);
+
+            if(precond_) {
+                in.get("precond", *precond_);
+            }
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            IterativeSolver<Matrix, Vector>::print_usage(os); 
+            Smoother<Matrix, Vector>::print_usage(os); 
+
+            this->print_param_usage(os, "reset_initial_guess", "bool", "Flag, which decides if initial guess should be reseted.", "false"); 
+            this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner", "-"); 
+        }
+
 		
 		/**
 		 * @brief      Solution routine for CG.
@@ -96,7 +109,7 @@ namespace utopia
 		
 		/*! @brief if overriden the subclass has to also call this one first
 		 */
-		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		void update(const std::shared_ptr<const Matrix> &op) override
 		{
 			IterativeSolver<Matrix, Vector>::update(op);
 

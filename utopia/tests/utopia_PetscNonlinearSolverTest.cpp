@@ -104,7 +104,7 @@ namespace utopia
 			ProjectedGaussSeidel<DSMatrixd, DVectord, -1> pgs;
 			pgs.max_it(max_it);
 			pgs.verbose(verbose);
-			pgs.set_use_line_search(use_line_search);
+			pgs.use_line_search(use_line_search);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
 			Chrono c;
@@ -119,9 +119,9 @@ namespace utopia
 			DVectord solution_u = zeros(n);
 			ProjectedGaussSeidel<DSMatrixd, DVectord, -1> pgs_u;
 			pgs_u.verbose(verbose);
-			pgs_u.set_n_local_sweeps(n_local_sweeps);
-			pgs_u.set_use_line_search(use_line_search);
-			pgs_u.set_use_symmetric_sweep(true);
+			pgs_u.n_local_sweeps(n_local_sweeps);
+			pgs_u.use_line_search(use_line_search);
+			pgs_u.use_symmetric_sweep(true);
 			pgs_u.max_it(max_it);
 
 			pgs_u.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));

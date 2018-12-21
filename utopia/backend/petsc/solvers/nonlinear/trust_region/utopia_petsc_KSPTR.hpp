@@ -35,18 +35,14 @@ namespace utopia
 
     public:
 
-    	KSP_TR(const Parameters params = Parameters()): TRSubproblem(params), KSPSolver(params)//,{"stcg", "nash", "cgne", "gltr", "qcg"})
+    	KSP_TR(): TRSubproblem(), KSPSolver()//,{"stcg", "nash", "cgne", "gltr", "qcg"})
         {
-        	set_parameters(params);
         	this->ksp_type("stcg");
         	this->pc_type("jacobi");
         }
 
-        KSP_TR(const std::string type, const Parameters params = Parameters()):
-    															TRSubproblem(params),
-    															KSPSolver(params)
+        KSP_TR(const std::string type): TRSubproblem(), KSPSolver()
         {
-        	set_parameters(params);
         	this->pc_type("jacobi");
         	this->ksp_type(type);
         }
@@ -54,18 +50,31 @@ namespace utopia
 
         virtual ~KSP_TR(){}
 
-	    /**
-	     * @brief      Sets the parameters.
-	     *
-	     * @param[in]  params  The parameters
-	     */
-	    virtual void set_parameters(const Parameters params) override
-	    {
-	    	Parameters params_copy = params;
-	    	params_copy.preconditioner_type(this->pc_type().c_str());
-	        KSPSolver::set_parameters(params_copy);
-	        TRSubproblem::set_parameters(params_copy);
-	    }
+        void read(Input &in) override
+        {
+            TRSubproblem::read(in);
+            KSPSolver::read(in);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            TRSubproblem::print_usage(os);
+            KSPSolver::print_usage(os);
+        }
+
+	    // /**
+	    //  * @brief      Sets the parameters.
+	    //  *
+	    //  * @param[in]  params  The parameters
+	    //  */
+	    // virtual void set_parameters(const Parameters params) override
+	    // {
+	    // 	Parameters params_copy = params;
+	    // 	params_copy.preconditioner_type(this->pc_type().c_str());
+	    //     KSPSolver::set_parameters(params_copy);
+	    //     TRSubproblem::set_parameters(params_copy);
+	    // }
 
 	   /**
 	   * @brief      Sets the preconditioner.
@@ -159,20 +168,20 @@ namespace utopia
     	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
-        SteihaugToint(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
+        SteihaugToint(const std::string &preconditioner = "jacobi")
+        : KSP_TR<Matrix, Vector, PETSC>()
         {
             this->pc_type(preconditioner);
             this->ksp_type("stcg");
         }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("stcg");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+        // inline void set_parameters(const Parameters params) override
+        // {
+        //     Parameters params_copy = params;
+        //     params_copy.lin_solver_type("stcg");
+        //     params_copy.preconditioner_type(this->pc_type().c_str());
+        //     KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+        // }
 
         virtual SteihaugToint<Matrix, Vector, PETSC>* clone() const override {
         	return new SteihaugToint<Matrix, Vector, PETSC>(*this);
@@ -189,20 +198,20 @@ namespace utopia
     	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
-        Nash(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
+        Nash(const std::string &preconditioner = "jacobi")
+        : KSP_TR<Matrix, Vector, PETSC>()
         {
             this->pc_type(preconditioner);
             this->ksp_type("nash");
         }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("nash");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+        // inline void set_parameters(const Parameters params) override
+        // {
+        //     Parameters params_copy = params;
+        //     params_copy.lin_solver_type("nash");
+        //     params_copy.preconditioner_type(this->pc_type().c_str());
+        //     KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+        // }
 
         virtual Nash<Matrix, Vector, PETSC>* clone() const override {
         	return new Nash<Matrix, Vector, PETSC>(*this);
@@ -219,20 +228,20 @@ namespace utopia
     	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
     
     public:
-        Lanczos(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
+        Lanczos(const std::string &preconditioner = "jacobi")
+        : KSP_TR<Matrix, Vector, PETSC>()
         {
             this->pc_type(preconditioner);
             this->ksp_type("nash");
         }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("gltr");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+        // inline void set_parameters(const Parameters params) override
+        // {
+        //     Parameters params_copy = params;
+        //     params_copy.lin_solver_type("gltr");
+        //     params_copy.preconditioner_type(this->pc_type().c_str());
+        //     KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+        // }
 
         virtual Lanczos<Matrix, Vector, PETSC>* clone() const override {
         	return new Lanczos<Matrix, Vector, PETSC>(*this);
@@ -250,20 +259,20 @@ namespace utopia
     	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
     
     public:
-        CGNE(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
+        CGNE(const std::string &preconditioner = "jacobi")
+        : KSP_TR<Matrix, Vector, PETSC>()
         {
             this->pc_type(preconditioner);
             this->ksp_type("cgne");
         }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("cgne");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+        // inline void set_parameters(const Parameters params) override
+        // {
+        //     Parameters params_copy = params;
+        //     params_copy.lin_solver_type("cgne");
+        //     params_copy.preconditioner_type(this->pc_type().c_str());
+        //     KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+        // }
 
         virtual CGNE<Matrix, Vector, PETSC>* clone() const override {
         	return new CGNE<Matrix, Vector, PETSC>(*this);
