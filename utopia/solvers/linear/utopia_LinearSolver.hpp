@@ -28,6 +28,16 @@ namespace  utopia
         virtual bool apply(const Vector &rhs, Vector &sol) override = 0;
 
 
+        virtual void read(Input &in) override
+        {
+            Preconditioner<Vector>::read(in); 
+        }
+        
+        virtual void print_usage(std::ostream &os) const override
+        { 
+            Preconditioner<Vector>::print_usage(os); 
+        }
+
         /**
          * @brief      Solve routine.
          * @param[in]  A

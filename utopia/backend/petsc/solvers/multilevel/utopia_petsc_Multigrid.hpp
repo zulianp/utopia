@@ -98,6 +98,33 @@ namespace utopia {
 			return new Multigrid();
 		}
 
+
+        void read(Input &in) override
+        {
+          LinearMultiLevel<Matrix, Vector>::read(in); 
+          IterativeSolver::read(in); 
+
+          in.get("block_size", block_size_);
+
+          if(smoother_) {
+              in.get("smoother", *smoother_);
+          }
+          if(linear_solver_) {
+              in.get("coarse_solver", *linear_solver_);
+          }          
+
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+          LinearMultiLevel<Matrix, Vector>::print_usage(os); 
+          IterativeSolver::print_usage(os); 
+          
+          this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1"); 
+          this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-"); 
+          this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-"); 
+        }
+
 	private:
 		std::shared_ptr<Smoother> smoother_;
 		std::shared_ptr<Solver>   linear_solver_;

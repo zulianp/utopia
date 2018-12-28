@@ -2,7 +2,6 @@
 #define UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
 
 namespace utopia

@@ -27,7 +27,6 @@ namespace utopia
 			UTOPIA_RUN_TEST(ms_solver);
 			UTOPIA_RUN_TEST(newton_cg_test);
 			UTOPIA_RUN_TEST(grad_descent_test); 
-			UTOPIA_RUN_TEST(solver_from_params_test);
 			UTOPIA_RUN_TEST(tr_test);
 			UTOPIA_RUN_TEST(ls_test);
 			UTOPIA_RUN_TEST(nl_solve_test);
@@ -195,29 +194,6 @@ namespace utopia
 			//Check if the result is what we expected
 			utopia_test_assert(approxeq(expected, actual));
 			//! [Newton CG example]
-		}
-
-		void solver_from_params_test()
-		{
-			Vector x = values(10, 2.0);
-			Vector expected = values(x.size().get(0), 0.468919);
-			TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
-
-			Parameters params;
-			params.tol(1e-7);
-			params.solver_type(TRUST_REGION_TAG);
-			params.lin_solver_type(BICGSTAB_TAG);
-			params.linear_solver_verbose(false);
-			params.verbose(false);
-
-			// solve(fun2, x, params);
-
-			// monitor test
-			// Matrix H = identity(2,2);
-			// int i = 0;
-			// monitor(i, H);
-			// Matrixd blas_mat  = identity(3,3);
-			// monitor(i, blas_mat);
 		}
 
 		void tr_test()

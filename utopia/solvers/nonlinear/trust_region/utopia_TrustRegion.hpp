@@ -6,8 +6,6 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
-#include "utopia_Parameters.hpp"
-#include "utopia_SteihaugToint.hpp"
 
 
  namespace utopia

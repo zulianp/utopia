@@ -1,7 +1,6 @@
 #ifndef UTOPIA_SMOOTHER_HPP
 #define UTOPIA_SMOOTHER_HPP
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_Clonable.hpp"
 #include "utopia_Input.hpp"
 

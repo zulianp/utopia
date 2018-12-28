@@ -1,7 +1,6 @@
 #ifndef UTOPIA_UTOPIA_PRECONDITIONER_HPP
 #define UTOPIA_UTOPIA_PRECONDITIONER_HPP
 
-#include "utopia_Parameters.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Expression.hpp"
 #include "utopia_make_unique.hpp"

@@ -16,6 +16,11 @@ namespace utopia {
 	class Path;
 	class Input;
 
+    enum VerbosityLevel  {  VERBOSITY_LEVEL_QUIET         =-1,
+                            VERBOSITY_LEVEL_NORMAL        = 0,
+                            VERBOSITY_LEVEL_VERY_VERBOSE  = 1,
+                            VERBOSITY_LEVEL_DEBUG         = 2 };
+
 	class Configurable {
 	public:
 		virtual ~Configurable() {}

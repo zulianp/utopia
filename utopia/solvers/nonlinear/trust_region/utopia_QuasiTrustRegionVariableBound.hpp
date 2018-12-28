@@ -2,7 +2,6 @@
 #define UTOPIA_QUASI_TRUST_REGION_VARIABLE_CONSTRAINT_TR_HPP
 
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_Parameters.hpp"    
 #include "utopia_VariableBoundSolverInterface.hpp"
 
  namespace utopia 

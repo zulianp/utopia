@@ -16,17 +16,8 @@ namespace  utopia
 
             virtual MatrixFreeLinearSolver * clone() const =0; 
 
-        void read(Input &in) override
-        {
-            std::cout<<"MatrixFreeLinearSolver::to be fixed...\n"; 
-        }
-
-
-        void print_usage(std::ostream &os) const override
-        {
-            std::cout<<"MatrixFreeLinearSolver::to be fixed...\n"; 
-        }
-
+            virtual void read(Input &in) override{ }
+            virtual void print_usage(std::ostream &os) const override{ }
     };
 
 
@@ -43,7 +34,6 @@ namespace  utopia
                 operator_action_(rhs, ret); 
                 return true;
             }
-
 
         private:
             std::function< void(const Vector &, Vector &) > operator_action_; 
@@ -74,7 +64,22 @@ namespace  utopia
             EmptyPrecondMatrixFreeLinearSolver * clone() const override
             {
                 return new EmptyPrecondMatrixFreeLinearSolver(*this);
-            }       
+            }     
+
+            void read(Input &in) override
+            {
+                MatrixFreeLinearSolver<Vector>::read(in);
+                if(precond_){
+                    in.get("precond", *precond_); 
+                }
+            }
+
+
+            void print_usage(std::ostream &os) const override
+            {
+                MatrixFreeLinearSolver<Vector>::print_usage(os);
+                this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-"); 
+            }              
 
         private:
             std::shared_ptr<Preconditioner<Vector> > precond_;

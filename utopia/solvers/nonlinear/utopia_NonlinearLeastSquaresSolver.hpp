@@ -2,7 +2,6 @@
 #define UTOPIA_NON_LINEAR_LEAST_SQUARES_SOLVER_HPP 
 
 #include "utopia_Function.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Monitor.hpp"

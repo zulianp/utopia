@@ -42,7 +42,7 @@ namespace utopia {
 
         void print_usage(std::ostream &os) const override
         {
-            IterativeSolver<<atrix, Vector>::print_usage(os);
+            IterativeSolver<Matrix, Vector>::print_usage(os);
             this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
         }
 

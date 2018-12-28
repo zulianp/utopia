@@ -1,6 +1,5 @@
 #ifndef UTOPIA_LS_STRATEGY_HPP
 #define UTOPIA_LS_STRATEGY_HPP
-#include "utopia_Parameters.hpp"    
 #include "utopia_FunctionNormalEq.hpp"
 #include "utopia_Input.hpp"
 

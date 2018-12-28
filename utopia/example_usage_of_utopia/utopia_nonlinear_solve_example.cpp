@@ -80,15 +80,15 @@ int main(int argc, char** argv)
         DVectord x = values(2, 2); 
 
         // setting up parameters of solver 
-        Parameters params; 
-        params.tol(1e-9); 
-        params.solver_type("TRUST_REGION"); 
-        params.lin_solver_type(BICGSTAB_TAG); 
-        params.trust_region_alg(DOGLEG_TAG);
-        params.verbose(true);  
+        // Parameters params; 
+        // params.tol(1e-9); 
+        // params.solver_type("TRUST_REGION"); 
+        // params.lin_solver_type(BICGSTAB_TAG); 
+        // params.trust_region_alg(DOGLEG_TAG);
+        // params.verbose(true);  
 
         // nonlinear solve 
-        solve(rosenbrock_fun, x, params); 
+        solve(rosenbrock_fun, x); 
 
         // comparing obtained solution with exact one 
         std::cout << "Correct solution: " <<  (approxeq(x, rosenbrock_exact)? "true." : "false." ) << std::endl;

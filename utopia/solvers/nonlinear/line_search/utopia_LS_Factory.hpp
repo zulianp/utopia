@@ -7,7 +7,6 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "utopia_Parameters.hpp"
 
 namespace utopia {
 

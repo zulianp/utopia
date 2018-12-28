@@ -9,7 +9,6 @@
 
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_Smoother.hpp"
 

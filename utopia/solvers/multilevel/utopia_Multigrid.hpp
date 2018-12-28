@@ -25,8 +25,8 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Multigrid : public LinearMultiLevel<Matrix, Vector>,
-                      public IterativeSolver<Matrix, Vector>
+    class Multigrid final:  public LinearMultiLevel<Matrix, Vector>,
+                            public IterativeSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -83,11 +83,43 @@ namespace utopia
             this->must_generate_masks(true);
         }
 
-        virtual ~Multigrid(){}
+        ~Multigrid(){}
+
+        void read(Input &in) override
+        {
+          LinearMultiLevel<Matrix, Vector>::read(in); 
+          IterativeSolver::read(in); 
+
+          in.get("perform_galerkin_assembly", perform_galerkin_assembly_);
+          in.get("use_line_search", use_line_search_);
+          in.get("block_size", block_size_);
+
+          if(smoother_cloneable_) {
+              in.get("smoother", *smoother_cloneable_);
+          }
+          if(coarse_solver_) {
+              in.get("coarse_solver", *coarse_solver_);
+          }          
+
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+          LinearMultiLevel<Matrix, Vector>::print_usage(os); 
+          IterativeSolver::print_usage(os); 
+
+          this->print_param_usage(os, "perform_galerkin_assembly", "bool", "Flag turning on/off galerkin assembly.", "true"); 
+          this->print_param_usage(os, "use_line_search", "bool", "Flag turning on/off line-search after coarse grid correction.", "false"); 
+          this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1"); 
+          this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-"); 
+          this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-"); 
+        }
+
+
 
         /*! @brief if overriden the subclass has to also call this one first
          */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        void update(const std::shared_ptr<const Matrix> &op) override
         {
             IterativeSolver::update(op);
 
@@ -101,7 +133,7 @@ namespace utopia
         /*! @brief if no galerkin assembly is used but instead set_linear_operators is used.
                    One can call this update instead of the other one.
          */
-        virtual void update()
+        void update()
         {
             smoothers_.resize(this->n_levels());
             smoothers_[0] = nullptr;
@@ -122,7 +154,7 @@ namespace utopia
          * @param      x   The initial guess.
          *
          */
-        virtual bool apply(const Vector &rhs, Vector &x) override
+        bool apply(const Vector &rhs, Vector &x) override
         {
 
             // UTOPIA_RECORD_SCOPE_BEGIN("apply");
@@ -218,7 +250,7 @@ namespace utopia
          * @param[in] l The level.
          *
          */
-        virtual bool standard_cycle(const SizeType &l)
+        bool standard_cycle(const SizeType &l)
         {
             // UTOPIA_RECORD_SCOPE_BEGIN("standard_cycle(" + std::to_string(l) + ")");
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
@@ -334,7 +366,7 @@ namespace utopia
          * @param      x   The current iterate.
          *
          */
-        virtual bool full_cycle(const SizeType &l)
+        bool full_cycle(const SizeType &l)
         {
             Vector &r   = memory.r[l];
             // Vector &c   = memory.c[l];
@@ -445,15 +477,25 @@ namespace utopia
             perform_galerkin_assembly_ = val;
         }
 
-        void set_use_line_search(const bool val)
+        void use_line_search(const bool val)
         {
             use_line_search_ = val;
         }
 
-        inline void block_size(const int size)
+        bool use_line_search() const 
+        {
+            return use_line_search_; 
+        }        
+
+        inline void block_size(const SizeType size)
         {
             block_size_ = size;
         }
+
+        inline SizeType block_size() const 
+        {
+          return block_size_; 
+        }        
 
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;
@@ -463,7 +505,7 @@ namespace utopia
     private:
         bool perform_galerkin_assembly_;
         bool use_line_search_;
-        int block_size_;
+        SizeType block_size_;
 
     };
 

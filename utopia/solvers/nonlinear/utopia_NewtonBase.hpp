@@ -3,8 +3,6 @@
 
 #include "utopia_Function.hpp"
 #include "utopia_ExtendedFunction.hpp"
-
-#include "utopia_Parameters.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Monitor.hpp"

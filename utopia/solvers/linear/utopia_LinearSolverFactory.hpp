@@ -3,7 +3,6 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"
 
 namespace utopia  {
 
@@ -78,9 +77,9 @@ namespace utopia  {
 	 * @return    
 	 */
 	template<class Matrix, class Vector>
-	bool solve(const Matrix A, const Vector rhs, Vector &x, const Parameters params = Parameters ())
+	bool solve(const Matrix A, const Vector rhs, Vector &x, const SolverTag &tag= AUTO_TAG)
 	{
-		auto solver = linear_solver<Matrix, Vector>(params.lin_solver_type()); 
+		auto solver = linear_solver<Matrix, Vector>(tag); 
 		solver->solve(A, rhs, x); 
 
 		return true; 

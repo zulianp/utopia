@@ -36,29 +36,31 @@ namespace  utopia
         
         virtual ~IterativeSolver( ){}
         
-        virtual void read(Input &is) override
+        virtual void read(Input &in) override
         {
-            is.get("atol", atol_);
-            is.get("rtol", rtol_);
-            is.get("stol", stol_);
+            LinearSolver<Matrix, Vector>::read(in);
 
-            is.get("max-it", max_it_);
-            is.get("verbose", verbose_);
-            is.get("time-statistics", time_statistics_);
-            is.get("log-system", log_system_);
-            is.get("log-iterates", log_iterates_);
+            in.get("atol", atol_);
+            in.get("rtol", rtol_);
+            in.get("stol", stol_);
+            in.get("max-it", max_it_);
+            in.get("verbose", verbose_);
+            in.get("time-statistics", time_statistics_);
+            in.get("log-system", log_system_);
+            in.get("log-iterates", log_iterates_);
         }
 
         virtual void print_usage(std::ostream &os) const override
         {
-            os << "atol             : <real>\n";
-            os << "rtol             : <real>\n";
-            os << "stol             : <real>\n";
-            os << "max-it           : <int>\n";
-            os << "verbose          : <bool>\n";
-            os << "time-statistics  : <bool>\n";
-            os << "log-system       : <bool>\n";
-            os << "log-iterates     : <bool>\n";
+            LinearSolver<Matrix, Vector>::print_usage(os);
+            this->print_param_usage(os, "atol", "real", "Absolute tolerance.", "1e-9"); 
+            this->print_param_usage(os, "rtol", "real", "Relative tolerance.", "1e-9"); 
+            this->print_param_usage(os, "stol", "real", "Minimum step-size.", "1e-11"); 
+            this->print_param_usage(os, "max-it", "int", "Maximum number of iterations.", "300"); 
+            this->print_param_usage(os, "verbose", "bool", "Turn on/off verbose.", "false"); 
+            this->print_param_usage(os, "time-statistics", "bool", "Allows measuring time.", "true"); 
+            this->print_param_usage(os, "log-system", "bool", "Turn on/off logging of systems.", "false"); 
+            this->print_param_usage(os, "log-iterates", "bool", "Turn on/off logging of iterates.", "false"); 
         }
 
         virtual bool apply(const Vector &rhs, Vector &sol) override

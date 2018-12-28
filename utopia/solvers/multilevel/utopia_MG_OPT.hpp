@@ -16,7 +16,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class MG_OPT : public NonlinearMultiLevelBase<Matrix, Vector>
+    class MG_OPT final: public NonlinearMultiLevelBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -31,7 +31,7 @@ namespace utopia
 
     public:
 
-        virtual bool solve(Vector & x_h) override
+        bool solve(Vector & x_h) override
         {
             utopia_error("MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) instead .... \n"); 
             return false; 
@@ -40,40 +40,57 @@ namespace utopia
         MG_OPT( const SizeType & n_levels,
                 const std::shared_ptr<Solver> &smoother, 
                 const std::shared_ptr<Solver> &coarse_solver,
-                const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Vector> >(),
-                const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector>(n_levels, params), 
+                const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Vector> >()): 
+                NonlinearMultiLevelBase<Matrix,Vector>(n_levels), 
                 _smoother(smoother), 
                 _coarse_solver(coarse_solver), 
                 _ls_strategy(ls_strategy) 
         {
-            set_parameters(params); 
+            
         }
-
-        virtual ~MG_OPT(){} 
         
-        virtual std::string name() override
+        std::string name() override
         {
             return "MG_OPT"; 
         }
 
-        void set_parameters(const Parameters params) override
-        {
-            NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
-            // _smoother->set_parameters(params); 
-            // _coarse_solver->set_parameters(params); 
-            _parameters = params; 
-        }
 
-
-        virtual void init_memory(const SizeType & fine_local_size) override 
+        void init_memory(const SizeType & fine_local_size) override 
         {
             std::cout<<"-------- to be done \n"; 
         }
 
 
+        void read(Input &in) override
+        {
+            NonlinearMultiLevelBase<Matrix, Vector>::read(in);
 
-        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs)
+            if(_smoother) 
+            {
+                in.get("smoother", *_smoother);
+            }
+            if(_coarse_solver) 
+            {
+                in.get("coarse_solver", *_coarse_solver);
+            }     
+            if(_ls_strategy) 
+            {
+                in.get("ls_strategy", *_ls_strategy);
+            }                        
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
+
+            this->print_param_usage(os, "coarse_solver", "NewtonBase", "Input parameters for coarse level QP solvers.", "-"); 
+            this->print_param_usage(os, "smoother", "NewtonBase", "Input parameters for fine level QP solver.", "-"); 
+            this->print_param_usage(os, "ls_strategy", "LSStrategy", "Input parameters for line-search strategy.", "-"); 
+        }  
+
+
+
+        bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs)
         {
             
             bool converged = false;
@@ -84,8 +101,6 @@ namespace utopia
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
             
-            this->status_.clear();
-
             this->init_memory(local_size(x_h).get(0)); 
             
             Vector g = local_zeros(local_size(x_h));
@@ -283,9 +298,6 @@ namespace utopia
         std::shared_ptr<Solver>             _coarse_solver;     /*  optimization method for coarse level */
         std::shared_ptr<LSStrategy>         _ls_strategy;       /*  LS used to determine step size inside of MG */
 
-
-    private:
-        Parameters                          _parameters; 
 
 
     };
