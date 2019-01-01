@@ -92,42 +92,63 @@ namespace utopia
       const Scalar & s_norm, 
       const Scalar & delta) const
     {   
+      bool converged = false; 
+
+      SolutionStatus sol_status; 
+
         // termination because norm of grad is down
       if(g_norm < tol.absolute_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_FNORM_ABS; 
+        converged = true; 
       }
 
         // step size so small that we rather exit than wait for nan's
       if(s_norm < tol.step_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE; 
+        converged = true; 
       }
 
         // step size so small that we rather exit than wait for nan's
       if(r_norm < tol.relative_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE; 
+        converged = true; 
       }
 
         // check number of iterations
       if( it > max_it)
       {
         monitor.exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-        return true; 
+        sol_status.reason = ConvergenceReason::DIVERGED_MAX_IT; 
+        converged = true; 
       }
 
         // do not hard code this 
       if(delta < delta_min_)
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_TR_DELTA; 
+        converged = true; 
       }
 
-      return false; 
+      if(converged)
+      {
+        sol_status.iterates = it; 
+        sol_status.gradient_norm = g_norm; 
+        sol_status.relative_gradient_norm = r_norm; 
+        sol_status.step_norm = s_norm;   
+
+        auto SS_monnitor = monitor.solution_status(); 
+        sol_status.execution_time = SS_monnitor.execution_time; 
+        monitor.solution_status(sol_status); 
+      }      
+
+      return converged; 
     }
 
 

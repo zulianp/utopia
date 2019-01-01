@@ -116,6 +116,7 @@ namespace utopia
         inline bool linear_solve(const Vector &rhs, Vector &sol)
         {
             auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
+            this->solution_status_.num_linear_solves++; 
             return mf_linear_solver_->solve(*multiplication_action, rhs, sol);             
         }
 

@@ -113,6 +113,7 @@
             p_k *= 0; 
             tr_subproblem->current_radius(delta); 
             tr_subproblem->solve(*multiplication_action, -1.0 * g, p_k);   
+            this->solution_status_.num_linear_solves++; 
           }
           else
           {

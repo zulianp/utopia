@@ -110,6 +110,7 @@ namespace utopia
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
         {
             linear_solver_->update(make_ref(mat));
+            this->solution_status_.num_linear_solves++; 
             return linear_solver_->apply(rhs, sol);
         }
 
@@ -122,6 +123,7 @@ namespace utopia
         inline bool linear_solve(const Matrix &mat, const Matrix &prec, const Vector &rhs, Vector &sol)
         {
             static_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())->update(make_ref(mat), make_ref(prec));
+            this->solution_status_.num_linear_solves++; 
             return linear_solver_->apply(rhs, sol);
         }
 

@@ -7,7 +7,7 @@
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Monitor.hpp"
 #include "utopia_PreconditionedSolver.hpp"
-#include "utopia_ConjugateGradient.hpp"
+#include "utopia_SolutionStatus.hpp"
 
 
 namespace utopia 
@@ -92,6 +92,7 @@ protected:
             if(mpi_world_rank() == 0 && verbose_)
                 PrintInfo::print_init(method, status_variables); 
             
+            this->solution_status_.clear(); 
             _time.start();
         }     
 
@@ -106,17 +107,14 @@ protected:
          {            
             _time.stop();
 
-            // params_.convergence_reason(convergence_reason);
-            // params_.num_it(num_it);
-
-            std::cout<<"Nonlinear Solver - create solver output... \n"; 
-
             if(mpi_world_rank() == 0 && verbose_)
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
                 std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
-                    
+                
+                this->solution_status_.execution_time = _time.get_seconds();                     
             }
+
          }
 
 
@@ -132,35 +130,49 @@ protected:
           */
         virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm) override
         {   
+            bool converged = false; 
+
             // termination because norm of grad is down
             if(g_norm < atol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS; 
+                converged = true; 
             }
 
             // step size so small that we rather exit than wait for nan's
-            if(s_norm < stol_)
+            else if(s_norm < stol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE; 
+                converged =  true; 
             }
 
             // step size so small that we rather exit than wait for nan's
-            if(r_norm < rtol_)
+            else if(r_norm < rtol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE; 
+                converged =  true; 
             }
 
             // check number of iterations
-            if( it > max_it_)
+            else if( it > max_it_)
             {
                 exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::DIVERGED_MAX_IT; 
+                converged =  true; 
             }
 
-            return false; 
+            if(converged)
+            {
+                this->solution_status_.iterates = it; 
+                this->solution_status_.gradient_norm = g_norm; 
+                this->solution_status_.relative_gradient_norm = r_norm; 
+                this->solution_status_.step_norm = s_norm;    
+            }
+
+            return converged; 
         }
 
 
@@ -183,17 +195,17 @@ public:
 
         Scalar get_time() { return _time.get_seconds();  }
 
-
     protected:
         Scalar atol_;                   /*!< Absolute tolerance. */  
         Scalar rtol_;                   /*!< Relative tolerance. */  
         Scalar stol_;                   /*!< Step tolerance. */  
 
         SizeType max_it_;               /*!< Maximum number of iterations. */  
-        bool verbose_;              /*!< Verobse enable? . */  
+        bool verbose_;                  /*!< Verobse enable? . */  
         SizeType time_statistics_;      /*!< Perform time stats or not? */  
 
         Chrono _time;                 /*!<Timing of solver. */
+
     };
 
 

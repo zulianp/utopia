@@ -59,6 +59,7 @@ namespace utopia
 		inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
 		{
 			linear_solver_->update(make_ref(mat));
+			this->solution_status_.num_linear_solves++; 
 			return linear_solver_->apply(rhs, sol);
 		}
 

@@ -28,8 +28,7 @@ namespace  utopia
         typedef UTOPIA_SCALAR(Matrix)           Scalar;
         typedef UTOPIA_SIZE_TYPE(Matrix)        SizeType;
 
-        IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false), 
-                            time_statistics_(true), log_iterates_(false), log_system_(false)
+        IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false)
         {
             
         }
@@ -45,9 +44,6 @@ namespace  utopia
             in.get("stol", stol_);
             in.get("max-it", max_it_);
             in.get("verbose", verbose_);
-            in.get("time-statistics", time_statistics_);
-            in.get("log-system", log_system_);
-            in.get("log-iterates", log_iterates_);
         }
 
         virtual void print_usage(std::ostream &os) const override
@@ -58,9 +54,6 @@ namespace  utopia
             this->print_param_usage(os, "stol", "real", "Minimum step-size.", "1e-11"); 
             this->print_param_usage(os, "max-it", "int", "Maximum number of iterations.", "300"); 
             this->print_param_usage(os, "verbose", "bool", "Turn on/off verbose.", "false"); 
-            this->print_param_usage(os, "time-statistics", "bool", "Allows measuring time.", "true"); 
-            this->print_param_usage(os, "log-system", "bool", "Turn on/off logging of systems.", "false"); 
-            this->print_param_usage(os, "log-iterates", "bool", "Turn on/off logging of iterates.", "false"); 
         }
 
         virtual bool apply(const Vector &rhs, Vector &sol) override
@@ -84,6 +77,8 @@ namespace  utopia
             {
                 PrintInfo::print_init(method, status_variables); 
             }
+
+            this->solution_status_.clear();
             _time.start();
         }     
 
@@ -127,9 +122,6 @@ namespace  utopia
         virtual void exit_solver(const SizeType &num_it, const Scalar & convergence_reason) override
          {            
             _time.stop();
-            
-            num_it_ = num_it; 
-            conv_reason_ = convergence_reason; 
 
             if(verbose_ && mpi_world_rank() == 0)
             {
@@ -137,6 +129,8 @@ namespace  utopia
               if(mpi_world_rank() == 0)
                 std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
             }
+
+            this->solution_status_.execution_time = _time.get_seconds();                     
          }
 
 
@@ -152,36 +146,48 @@ namespace  utopia
           */
         virtual bool check_convergence(const SizeType &it, const Scalar &g_norm, const Scalar & r_norm, const Scalar &s_norm) override
         {   
-
+            bool converged = false; 
             // termination because norm of grad is down
             if(g_norm < atol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS; 
+                converged = true; 
             }
 
             // step size so small that we rather exit than wait for nan's
             if(s_norm < stol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE; 
+                converged = true; 
             }
 
             // step size so small that we rather exit than wait for nan's
             if(r_norm < rtol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE; 
+                converged = true; 
             }
 
             // check number of iterations
             if( it >= max_it_)
             {
                 exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::DIVERGED_MAX_IT; 
+                converged = true; 
             }
 
-            return false; 
+            if(converged)
+            {
+                this->solution_status_.iterates = it; 
+                this->solution_status_.gradient_norm = g_norm; 
+                this->solution_status_.relative_gradient_norm = r_norm; 
+                this->solution_status_.step_norm = s_norm;    
+            }
+
+            return converged; 
         }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,12 +197,8 @@ namespace  utopia
         virtual Scalar      stol()  const              { return stol_; } 
 
         virtual SizeType    max_it()  const            { return max_it_; } 
-
-        virtual bool      time_statistics() const       { return time_statistics_; } 
-
-        virtual bool log_iterates() const                { return log_iterates_; } 
-        virtual bool log_system() const                  { return log_system_; } 
         virtual bool verbose() const                     { return verbose_; } 
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual void atol(const Scalar & atol_in ) { atol_ = atol_in; }; 
@@ -205,13 +207,6 @@ namespace  utopia
         virtual void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
         virtual void verbose(const bool & verbose_in ) {verbose_ = verbose_in; }; 
         
-        virtual void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
-        virtual void log_iterates(const bool & log_iterates_in ) { log_iterates_ = log_iterates_in; }; 
-        virtual void log_system(const bool & log_system_in ) { log_system_ = log_system_in; }; 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
-        virtual SizeType get_convergence_reason(){ return conv_reason_;  }
-        virtual SizeType get_num_it() { return num_it_;  }
 
     private:
         
@@ -222,16 +217,6 @@ namespace  utopia
 
         SizeType max_it_;               /*!< Maximum number of iterations. */  
         bool verbose_;                  /*!< Verobse enable? . */  
-
-        bool time_statistics_;          /*!< Perform time stats or not? */  
-
-        bool log_iterates_;
-        bool log_system_; 
-
-        // to be passed out 
-        SizeType num_it_; 
-        SizeType  conv_reason_; 
-
 
         Chrono _time;                 /*!<Timing of solver. */
     };

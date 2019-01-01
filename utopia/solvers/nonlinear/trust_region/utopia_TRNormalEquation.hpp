@@ -122,6 +122,7 @@
             tr_subproblem->current_radius(delta);
 
           this->linear_solve(J_k, -1.0*r_k, p_k);
+          this->solution_status_.num_linear_solves++; 
           pred = this->get_pred(g, H, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------

@@ -29,7 +29,6 @@ namespace utopia
 	{
 		typedef UTOPIA_SCALAR(Vector)    			Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) 			SizeType;
-		typedef utopia::Level<Matrix, Vector> 		Level;
 		typedef utopia::Transfer<Matrix, Vector> 	Transfer;
 		typedef std::shared_ptr<Transfer> 			TransferPtr;
 
@@ -198,7 +197,7 @@ namespace utopia
 			return fix_semidefinite_operators_; 
 		}
 
-		bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector>>> &transfers)
+		bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector> > > &transfers)
 		{
 			if(num_levels_ <= 0) {
 				num_levels_ = transfers.size() + 1; 

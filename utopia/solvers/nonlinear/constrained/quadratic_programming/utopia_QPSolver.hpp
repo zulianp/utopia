@@ -4,6 +4,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_VariableBoundSolverInterface.hpp"
+#include "utopia_MatrixFreeLinearSolver.hpp"
 
 #include <cmath>
 
