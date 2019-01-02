@@ -7,7 +7,7 @@
 
 namespace utopia {
 	template<typename Matrix, typename Vector> 
-	class GMRES<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
+	class GMRES<Matrix, Vector, PETSC>  final: public KSPSolver<Matrix, Vector, PETSC> {
 	public:
 		GMRES(const std::string &preconditioner = "jacobi")
 		: KSPSolver<Matrix, Vector, PETSC>()
@@ -16,7 +16,7 @@ namespace utopia {
 			this->ksp_type("gmres");
 		}
 
-		virtual GMRES * clone() const override 
+		GMRES * clone() const override 
 		{
 		    return new GMRES(*this);
 		}

@@ -33,7 +33,7 @@
 
       void read(Input &in) override
       {
-        TrustRegionBase::read(in);
+        TrustRegionBase::read(in); 
         NonLinearSolver::read(in); 
       }
 

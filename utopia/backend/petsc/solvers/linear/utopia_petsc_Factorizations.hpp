@@ -7,7 +7,7 @@
 namespace utopia {
 
 	template<typename Matrix, typename Vector> 
-	class CholeskyDecomposition<Matrix, Vector, PETSC> : public Factorization<Matrix, Vector, PETSC> {
+	class CholeskyDecomposition<Matrix, Vector, PETSC> final: public Factorization<Matrix, Vector, PETSC> {
 	public:
 
 		void set_library_type(const DirectSolverLib & TAG)
@@ -29,7 +29,7 @@ namespace utopia {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template<typename Matrix, typename Vector> 
-	class LUDecomposition<Matrix, Vector, PETSC> : public Factorization<Matrix, Vector, PETSC> {
+	class LUDecomposition<Matrix, Vector, PETSC> final: public Factorization<Matrix, Vector, PETSC> {
 	public:   
 		void set_library_type(const DirectSolverLib & TAG)
 		{

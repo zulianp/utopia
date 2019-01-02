@@ -21,8 +21,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 
-        SlepcSolver(    const Parameters params = Parameters(), 
-                        const std::vector<std::string> problem_types    = {"hermitian", "non_hermitian", "generalized_hermitian", "generalized_non_hermitian", "generalized_hermitian_SPD_B", "generalized_hermitian_indefinite"}, 
+        SlepcSolver(    const std::vector<std::string> problem_types    = {"hermitian", "non_hermitian", "generalized_hermitian", "generalized_non_hermitian", "generalized_hermitian_SPD_B", "generalized_hermitian_indefinite"}, 
                         const std::vector<std::string> portions_of_spectrum    = {"largest_magnitude", "smallest_magnitude", "largest_real", "smallest_real", "largest_imaginary", "smallest_imaginary", "closest_to_target", "closest_to_target_real", "closest_to_target_imaginary", "all_in_region"},
                         const std::vector<std::string> solver_types    = {"krylovschur", "power", "subspace", "arnoldi", "lanczos", "gd", "jd", "rqcg", "lobpcg", "ciss", "lapack", "arpack", "blzpack", "trlan", "blopex", "primme", "feast"}): 
                         initialized_(false), 

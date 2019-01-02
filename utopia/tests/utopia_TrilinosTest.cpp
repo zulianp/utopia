@@ -1309,9 +1309,9 @@ namespace utopia {
     {
         std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
         
-        Parameters params;
-        params.set_param_file_name(xml_file);
-        BelosSolver<TSMatrixd, TVectord> solver(params);
+        // Parameters params;
+        // params.set_param_file_name(xml_file);
+        BelosSolver<TSMatrixd, TVectord> solver();
 
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         TVectord x = zeros(size(*ml_problem.rhs));

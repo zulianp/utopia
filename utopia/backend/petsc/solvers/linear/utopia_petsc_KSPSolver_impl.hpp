@@ -63,8 +63,7 @@ namespace utopia {
 	template<typename Matrix, typename Vector>
 	class KSPSolver<Matrix, Vector, PETSC>::Impl{
 	public:
-	        Impl(MPI_Comm comm,
-	             const Parameters &params = Parameters())
+	        Impl(MPI_Comm comm)
 	        : ksp_(nullptr), owner_(true)
 	        {
 	            init(comm);
@@ -76,7 +75,9 @@ namespace utopia {
 
 	        Impl(KSP &ksp, const bool owner = false)
 	        : ksp_(ksp), owner_(owner)
-	        {}
+	        {
+	        	set_command_line_parameters(); 
+	        }
 
 	        /* @brief      Sets the choice of direct solver.
 	         *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings.
@@ -423,14 +424,8 @@ namespace utopia {
 	            status.gradient_norm = rnorm;
 	        }
 
-	        void set_parameters(const Parameters params)
+	        void set_command_line_parameters()
 	        {
-	            // our param options - useful for passing from passo
-	            ksp_type(params.lin_solver_type());
-	            pc_type(params.preconditioner_type());
-	            solver_package(params.preconditioner_factor_mat_solver_package());
-	            set_tolerances(params.rtol(), params.atol(), PETSC_DEFAULT, params.max_it());
-
 	            // petsc command line options
 	            char           name_[1024];
 	            PetscBool      flg;
@@ -484,8 +479,8 @@ namespace utopia {
 	};
 
     template<typename Matrix, typename Vector>
-	KSPSolver<Matrix, Vector, PETSC>::KSPSolver(const Parameters params)
-	: ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD, params))
+	KSPSolver<Matrix, Vector, PETSC>::KSPSolver()
+	: ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD))
 	{
 		ksp_type("bcgs");
 		pc_type("jacobi");
@@ -782,10 +777,10 @@ namespace utopia {
 	template<typename Matrix, typename Vector>
 	void KSPSolver<Matrix, Vector, PETSC>::print_usage(std::ostream &os) const
 	{
-		os << "ksp_type : <string>\n";
-		os << "pc_type  : <string>\n";
-		os << "-------------------\n";
 		PreconditionedSolver::print_usage(os);
+		this->print_param_usage(os, "ksp_type", "string", "Type of KSP solver.", "bcgs"); 
+		this->print_param_usage(os, "pc_type", "string", "Type of preconditoner.", "jacobi"); 
+		this->print_param_usage(os, "solver_package", "string", "Type of solver package.", " "); 
 	}
 }
 

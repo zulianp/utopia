@@ -52,7 +52,7 @@ namespace utopia {
 
         class Impl;
 
-        KSPSolver(const Parameters params = Parameters());
+        KSPSolver();
 
 
         KSPSolver(std::unique_ptr<Impl> &&w);

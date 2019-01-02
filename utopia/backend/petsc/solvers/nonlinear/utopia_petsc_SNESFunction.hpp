@@ -1,9 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-06-07
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
 #ifndef PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
 #define PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
 

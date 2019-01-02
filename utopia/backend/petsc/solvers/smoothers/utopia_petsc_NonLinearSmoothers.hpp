@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-04-17
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_PETSC_NONLINEAR_SMOOTHER_HPP
 #define UTOPIA_PETSC_NONLINEAR_SMOOTHER_HPP
 
@@ -27,7 +20,7 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class NonLinearGaussSeidel<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    class NonLinearGaussSeidel<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)             SizeType;
@@ -43,8 +36,8 @@ namespace utopia
             this->set_snes_type("ngs"); 
         }
 
-    protected: 
-        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+    private: 
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
                                                     const Scalar & rtol     = SNESSolver::rtol(), 
                                                     const Scalar & stol     = SNESSolver::stol(), 
                                                     const SizeType & max_it = SNESSolver::max_it()) override 
@@ -69,7 +62,7 @@ namespace utopia
 
 
     template<class Matrix, class Vector>
-    class NonLinearConjugateGradient<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    class NonLinearConjugateGradient<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
@@ -80,35 +73,46 @@ namespace utopia
 
         public:
         NonLinearConjugateGradient( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                                    const Parameters params = Parameters(), 
                                     const std::vector<std::string> update_types    = {"FR", "PRP", "HS", "DY", "CD"}) 
-                                    :   SNESSolver(linear_solver, params), 
+                                    :   SNESSolver(linear_solver), 
                                         update_types(update_types)
         { 
-            set_parameters(params); 
             this->set_snes_type("ncg"); 
             update_type_ = update_types.at(0); 
         }
 
-        virtual void set_parameters(const Parameters params) override
-        {
-            SNESSolver::set_parameters(params); 
-        }
-
-
-        void set_update_type(const std::string & update_type )
+        void update_type(const std::string & update_type )
         {
             update_type_ = in_array(update_type, update_types) ? update_type : update_types.at(0);
         }
 
-        std::string & get_update_type()
+        std::string & update_type()
         {
             return update_type_; 
         }
 
+        void read(Input &in) override
+        {
+            SNESSolver::read(in);
 
-    protected: 
-        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+            std::string update_type_aux; 
+            in.get("update_type", update_type_aux);
+
+            // validation check 
+            this->update_type(update_type_aux); 
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            SNESSolver::print_usage(os);
+            this->print_param_usage(os, "update_type", "string", "Choice of update type.", "FR"); 
+        }
+
+
+
+    private: 
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
                                                     const Scalar & rtol     = SNESSolver::rtol(), 
                                                     const Scalar & stol     = SNESSolver::stol(), 
                                                     const SizeType & max_it = SNESSolver::max_it()) override 
@@ -143,7 +147,7 @@ namespace utopia
 
     // TODO:: put more options 
     template<class Matrix, class Vector>
-    class NonLinearGMRES<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    class NonLinearGMRES<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)             SizeType;
@@ -153,25 +157,18 @@ namespace utopia
 
 
         public:
-        NonLinearGMRES( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                                    const Parameters params = Parameters()) 
-                                    :   SNESSolver(linear_solver, params)
+        NonLinearGMRES( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) :   
+                        SNESSolver(linear_solver)
         { 
-            set_parameters(params); 
             this->set_snes_type("ngmres"); 
         }
 
-        virtual void set_parameters(const Parameters params) override
-        {
-            SNESSolver::set_parameters(params); 
-        }
 
-
-    protected: 
-        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                                    const Scalar & rtol     = SNESSolver::rtol(), 
-                                                    const Scalar & stol     = SNESSolver::stol(), 
-                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+    private:
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+                                            const Scalar & rtol     = SNESSolver::rtol(), 
+                                            const Scalar & stol     = SNESSolver::stol(), 
+                                            const SizeType & max_it = SNESSolver::max_it()) override 
         {
             SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
 
@@ -189,7 +186,7 @@ namespace utopia
 
     // TODO:: put more options 
     template<class Matrix, class Vector>
-    class NonLinearAnderson<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    class NonLinearAnderson<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)             SizeType;
@@ -199,25 +196,18 @@ namespace utopia
 
 
         public:
-        NonLinearAnderson( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                                    const Parameters params = Parameters()) 
-                                    :   SNESSolver(linear_solver, params)
+        NonLinearAnderson(  const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) :   
+                            SNESSolver(linear_solver)
         { 
-            set_parameters(params); 
             this->set_snes_type("anderson"); 
         }
 
-        virtual void set_parameters(const Parameters params) override
-        {
-            SNESSolver::set_parameters(params); 
-        }
 
-
-    protected: 
-        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                                    const Scalar & rtol     = SNESSolver::rtol(), 
-                                                    const Scalar & stol     = SNESSolver::stol(), 
-                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+    private: 
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+                                            const Scalar & rtol     = SNESSolver::rtol(), 
+                                            const Scalar & stol     = SNESSolver::stol(), 
+                                            const SizeType & max_it = SNESSolver::max_it()) override 
         {
             SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
 
@@ -233,7 +223,7 @@ namespace utopia
 
     // TODO:: put more options 
     template<class Matrix, class Vector>
-    class NonLinearRichardson<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    class NonLinearRichardson<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
@@ -244,32 +234,40 @@ namespace utopia
 
         public:
         NonLinearRichardson(const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                            const Parameters params = Parameters(), const Scalar & alpha = 1.0) :   
-                            SNESSolver(linear_solver, params), alpha_(alpha)
+                            const Scalar & alpha = 1.0) :   
+                            SNESSolver(linear_solver), alpha_(alpha)
         { 
-            set_parameters(params); 
             this->set_snes_type("nrichardson"); 
         }
 
-        virtual void set_parameters(const Parameters params) override
-        {
-            SNESSolver::set_parameters(params); 
-        }
-
-
-        virtual void set_dumping_parameter(const Scalar & alpha)
+        void dumping_parameter(const Scalar & alpha)
         {
             alpha_ = alpha; 
         }
 
-        Scalar get_dumping_parameter()
+        Scalar dumping_parameter()
         {
             return alpha_; 
         }
 
+        void read(Input &in) override
+        {
+            SNESSolver::read(in); 
 
-    protected: 
-        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+            std::string SNES_type_aux_; 
+            in.get("dumping_parameter", alpha_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            SNESSolver::print_usage(os); 
+            this->print_param_usage(os, "dumping_parameter", "real", "Dumping parameter used to dump step direction.", "1.0"); 
+        }        
+        
+
+    private: 
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
                                                     const Scalar & rtol     = SNESSolver::rtol(), 
                                                     const Scalar & stol     = SNESSolver::stol(), 
                                                     const SizeType & max_it = SNESSolver::max_it()) override 

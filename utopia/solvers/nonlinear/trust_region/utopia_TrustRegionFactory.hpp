@@ -2,7 +2,6 @@
 #define UTOPIA_TR_STRATEGY_FACTORY_HPP
 
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_FunctionNormalEq.hpp"
 #include "utopia_TRNormalEquation.hpp"

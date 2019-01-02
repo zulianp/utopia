@@ -3,7 +3,6 @@
 
 #include <string>
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"    
 #include "utopia_Traits.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"

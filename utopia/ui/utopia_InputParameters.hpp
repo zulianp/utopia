@@ -110,7 +110,8 @@ namespace utopia {
 				return it->second;
 			}
 
-			assert(false);
+			// IS this assert necessary???
+			//assert(false);
 			return nullptr;
 		}
 

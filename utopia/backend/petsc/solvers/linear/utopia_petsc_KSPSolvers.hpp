@@ -25,7 +25,7 @@ namespace utopia {
             super::ksp_type("bcgs");
         }
 
-        virtual BiCGStab * clone() const override
+        BiCGStab * clone() const override
         {
             return new BiCGStab(*this);
         }
@@ -50,7 +50,7 @@ namespace utopia {
             super::ksp_type("minres");
         }
 
-        virtual MINRES * clone() const override
+        MINRES * clone() const override
         {
             return new MINRES(*this);
         }
@@ -76,7 +76,7 @@ namespace utopia {
             super::pc_type("sor");
         }
 
-        virtual SOR * clone() const override
+        SOR * clone() const override
         {
             return new SOR(*this);
         }

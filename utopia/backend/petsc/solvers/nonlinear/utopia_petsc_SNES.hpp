@@ -54,7 +54,11 @@ namespace utopia
             NonLinearSolver::read(in); 
             Smoother::read(in); 
 
-            in.get("SNES_type", SNES_type_);
+            std::string SNES_type_aux_; 
+            in.get("SNES_type", SNES_type_aux_);
+
+            // checks if type is valid
+            this->set_snes_type(SNES_type_aux_); 
         }
 
 

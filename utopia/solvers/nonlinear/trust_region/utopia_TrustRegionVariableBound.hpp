@@ -1,8 +1,7 @@
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 
-#include "utopia_NewtonBase.hpp"
-#include "utopia_Parameters.hpp"    
+#include "utopia_NewtonBase.hpp"    
 #include "utopia_VariableBoundSolverInterface.hpp"
 #include "utopia_QPSolver.hpp"
 
