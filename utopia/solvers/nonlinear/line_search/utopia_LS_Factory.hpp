@@ -84,7 +84,7 @@ namespace utopia {
 	 *     		alpha_min() = 1e-7; \n
 	 */
 	template<typename Matrix, typename Vector>
-	const void line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const LSStrategyTag &tag, Input & params)
+	const SolutionStatus & line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const LSStrategyTag &tag, Input & params)
 	{
 		// auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
 		auto lin_solver = std::make_shared<ConjugateGradient<Matrix, Vector> > ();
@@ -94,6 +94,7 @@ namespace utopia {
         ls_solver.set_line_search_strategy(strategy);
         ls_solver.read(params);
         ls_solver.solve(fun, x);  
+        return ls_solver.solution_status(); 
 	}
 }
 

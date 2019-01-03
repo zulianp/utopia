@@ -62,7 +62,7 @@ namespace utopia
 	 * 	 
 	 */
 	template<typename Matrix, typename Vector>
-	void trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type, Input & in)
+	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type, Input & in)
 	{
 		// TODO:: check options proper options for normal eq. 
 		if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))
@@ -71,6 +71,7 @@ namespace utopia
 			LeastSquaresTrustRegion<Matrix, Vector> tr_solver(subproblem);
 			tr_solver.read(in);  
         	tr_solver.solve(*fun_ne_ptr, x);  
+        	return tr_solver.solution_status(); 
 		}
 		else
 		{
@@ -78,11 +79,12 @@ namespace utopia
 			TrustRegion<Matrix, Vector> tr_solver(subproblem);
 			tr_solver.read(in);  
         	tr_solver.solve(fun, x);  
+        	return tr_solver.solution_status(); 
 		}
 	}
 
 	template<typename Matrix, typename Vector>
-	void trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type = AUTO_TR_TAG)
+	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type = AUTO_TR_TAG)
 	{
 		// TODO:: check options proper options for normal eq. 
 		if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))
@@ -90,12 +92,14 @@ namespace utopia
 			auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type); 
 			LeastSquaresTrustRegion<Matrix, Vector> tr_solver(subproblem);
         	tr_solver.solve(*fun_ne_ptr, x);  
+        	return tr_solver.solution_status(); 
 		}
 		else
 		{
 			auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type); 
 			TrustRegion<Matrix, Vector> tr_solver(subproblem);
         	tr_solver.solve(fun, x);  
+        	return tr_solver.solution_status(); 
 		}
 
 	}

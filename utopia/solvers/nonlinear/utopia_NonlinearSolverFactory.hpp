@@ -71,19 +71,18 @@ namespace utopia {
 	 * @param      fun     The fun
 	 * @param      x       The initial guess
 	 * @param[in]  params  The parameters
+	 * @param[in]  params  Linear solver
 	 *
 	 * @return     Parameters containing convergence history.
 	 */
 	template<class Matrix, class Vector>
-	const void newton_solve(Function<Matrix, Vector> &fun, Vector &x, Input & params)
+	const SolutionStatus & newton_solve(Function<Matrix, Vector> &fun, Vector &x, Input & params, const std::shared_ptr <LinearSolver<Matrix, Vector> > &lin_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >())
 	{
-		auto lin_solver = ConjugateGradient<Matrix, Vector>(); 
 		Newton<Matrix, Vector> nlsolver(lin_solver);
-		
 		nlsolver.read(params);  
 		nlsolver.solve(fun, x);  
+		return nlsolver.solution_status(); 
 	}
-
 
 
 }
