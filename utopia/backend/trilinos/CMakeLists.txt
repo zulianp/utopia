@@ -1,4 +1,3 @@
-
 # find dependencies
 find_package(Trilinos)
 
@@ -87,7 +86,7 @@ if(TRILINOS_FOUND)
 		eval
 		solvers
 		solvers/linear
-		preconditioners
+		solvers/nonlinear
 		kokkos
 		)
 

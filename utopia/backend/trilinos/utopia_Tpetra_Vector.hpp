@@ -3,6 +3,7 @@
 #define UTOPIA_TPETRA_VECTOR_HPP
 
 #include "utopia_Range.hpp"
+#include "utopia_make_unique.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Writable.hpp"
@@ -35,6 +36,9 @@ namespace utopia {
 #ifdef KOKKOS_ENABLE_CUDA
     typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
     typedef cuda_node NT;
+#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
+    typedef rocm_node NT;
 #elif defined KOKKOS_ENABLE_OPENMP
     typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
     typedef openmp_node NT;
@@ -46,6 +50,7 @@ namespace utopia {
 
     typedef Tpetra::Map<LO, GO, NT>                   map_type;
     typedef Tpetra::Vector<SC, LO, GO, NT>            vector_type;
+    typedef Tpetra::MultiVector<SC, LO, GO, NT>       multi_vector_type;
     typedef Teuchos::RCP<vector_type>                 rcpvector_type;
     typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
     typedef Teuchos::RCP<const map_type>              rcp_map_type;
@@ -138,15 +143,17 @@ namespace utopia {
 
         inline Scalar get(const GO i) const
         {
-            assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
-            return read_only_data_[local_index(i)];
+            // assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
+            // return read_only_data_[local_index(i)];
 
+            auto local_index = view_ptr_->map.getLocalElement(i);
+            return view_ptr_->view(local_index, 0);
         }
 
         inline Scalar operator[](const GO i) const
         {
-            assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
-            return read_only_data_[local_index(i)];
+            // assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
+            return get(i);
         }
 
         inline LO local_index(const GO i) const
@@ -161,20 +168,30 @@ namespace utopia {
 
         inline void set(const GO i, const Scalar value)
         {
-            if(!write_data_.is_null()) {
-                write_data_[i - implementation().getMap()->getMinGlobalIndex()] = value;
-            } else {
-                implementation().replaceGlobalValue(i, value);
-            }
+            assert(view_ptr_);
+            auto local_index = view_ptr_->map.getLocalElement(i);
+
+            view_ptr_->view(local_index, 0) = value;
+            // if(!write_data_.is_null()) {
+            //     write_data_[i - implementation().getMap()->getMinGlobalIndex()] = value;
+            // } else {
+            //     implementation().replaceGlobalValue(i, value);
+            // }
         }
 
         inline void add(const GO i, const Scalar value)
         {
-            if(!ghosted_vec_.is_null()) {
-                ghosted_vec_->sumIntoGlobalValue(i, value);
-            } else {
-                implementation().sumIntoGlobalValue(i, value);
-            }
+            assert(view_ptr_);
+
+            auto local_index = view_ptr_->map.getLocalElement(i);
+
+            view_ptr_->view(local_index, 0) += value;
+
+            // if(!ghosted_vec_.is_null()) {
+            //     ghosted_vec_->sumIntoGlobalValue(i, value);
+            // } else {
+            //     implementation().sumIntoGlobalValue(i, value);
+            // }
         }
 
         inline void set(const Scalar value)
@@ -277,32 +294,38 @@ namespace utopia {
 
         inline void read_lock()
         {
-            read_only_data_ = get_read_only_data();
-
+            // read_only_data_ = get_read_only_data();
+            make_view();
         }
 
         inline void read_unlock()
         {
-            read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
+            // read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
+            free_view();
         }
 
         inline void write_lock(WriteMode mode)
         {
-            //TODO?
+            if(mode != GLOBAL_ADD || mode == GLOBAL_INSERT) {
+                make_view();
+            }
         }
 
         void write_unlock(WriteMode mode);
 
         inline void read_and_write_lock()
         {
-            write_data_ = implementation().getDataNonConst();
-            read_only_data_ = write_data_;
+            // write_data_ = implementation().getDataNonConst();
+            // read_only_data_ = write_data_;
+            make_view();
         }
 
         inline void read_and_write_unlock()
         {
-            write_data_ = Teuchos::ArrayRCP<Scalar>();
-            read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
+            // write_data_ = Teuchos::ArrayRCP<Scalar>();
+            // read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
+
+            free_view();
         }
 
         inline Range range() const
@@ -440,8 +463,47 @@ namespace utopia {
     private:
         rcpvector_type vec_;
         rcpvector_type ghosted_vec_;
-        Teuchos::ArrayRCP<const Scalar> read_only_data_;
-        Teuchos::ArrayRCP<Scalar> write_data_;
+        // Teuchos::ArrayRCP<const Scalar> read_only_data_;
+        // Teuchos::ArrayRCP<Scalar> write_data_;
+
+        class View {
+        public:
+            using DualViewType = vector_type::dual_view_type;
+            using HostViewType = DualViewType::t_host;
+            using LocalMapType = vector_type::map_type::local_map_type;
+
+            HostViewType view;
+            LocalMapType map;
+
+            View(HostViewType &&view, LocalMapType &&map)
+            : view(std::move(view)), map(std::move(map)) {}
+        };
+
+        std::unique_ptr<View> view_ptr_;
+
+        inline void make_view()
+        {
+            if(!view_ptr_) {
+
+                if(has_ghosts()) {
+                    view_ptr_ = utopia::make_unique<View>(
+                        ghosted_vec_->getLocalView<Kokkos::HostSpace>(),
+                        ghosted_vec_->getMap()->getLocalMap()
+                    );
+
+                } else {
+                    view_ptr_ = utopia::make_unique<View>(
+                        vec_->getLocalView<Kokkos::HostSpace>(),
+                        vec_->getMap()->getLocalMap()
+                    );
+                }
+            }
+        }
+
+        inline void free_view()
+        {
+            view_ptr_ = nullptr;
+        }
     };
 }
 

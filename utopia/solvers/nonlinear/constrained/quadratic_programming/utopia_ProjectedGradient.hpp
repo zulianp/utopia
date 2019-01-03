@@ -9,6 +9,7 @@
 #include "utopia_Operations.hpp"
 #include "utopia_Recorder.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
+#include "utopia_QPSolver.hpp"
 
 #include <cmath>
 #include <cassert>

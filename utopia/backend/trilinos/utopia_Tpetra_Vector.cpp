@@ -23,7 +23,13 @@ namespace utopia {
 		assert(n == indices.size());
 
 		for(std::size_t i = 0; i < n; ++i) {
-			add(indices[i], values[i]);
+			// add(indices[i], values[i]);
+			if(!ghosted_vec_.is_null()) {
+			    ghosted_vec_->sumIntoGlobalValue(indices[i], values[i]);
+			} else {
+			    implementation().sumIntoGlobalValue(indices[i], values[i]);
+			}
+
 		}
 	}
 
@@ -35,7 +41,13 @@ namespace utopia {
 		assert(n == indices.size());
 
 		for(std::size_t i = 0; i < n; ++i) {
-			set(indices[i], values[i]);
+			// set(indices[i], values[i]);
+
+			// if(!write_data_.is_null()) {
+			//     write_data_[indices[i] - implementation().getMap()->getMinGlobalIndex()] = values[i];
+			// } else {
+			    implementation().replaceGlobalValue(indices[i], values[i]);
+			// }
 		}
 	}
 
@@ -251,7 +263,8 @@ namespace utopia {
 	        }
 	    }
 
-	    write_data_ = Teuchos::ArrayRCP<Scalar>();
+	    // write_data_ = Teuchos::ArrayRCP<Scalar>();
+	    free_view();
 	}
 
 }

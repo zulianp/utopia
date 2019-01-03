@@ -166,12 +166,12 @@ namespace utopia {
 		    {
 		        Range r = row_range(m);
 		        Write<Matrix> w(m);
-		        if(r.begin() == 0) {
+		        if(r.inside(0)) {
 		            m.set(0, 0, 1.);
 		            m.set(0, 1, 0);
 		        }
 
-		        if(r.end() == N) {
+		        if(r.inside(N)) {
 		            m.set(N-1, N-1, 1.);
 		            m.set(N-1, N-2, 0);
 		        }
@@ -183,11 +183,11 @@ namespace utopia {
 		        Range r = range(rhs);
 		        Write<Vector> w(rhs);
 
-		        if(r.begin() == 0) {
+		        if(r.inside(0)) {
 		            rhs.set(0, 0);
 		        }
 
-		        if(r.end() == N) {
+		        if(r.inside(N-1)) {
 		            rhs.set(N-1, 0.);
 		        }
 		    }
@@ -217,11 +217,11 @@ namespace utopia {
 				Range r = row_range(A);
 				Write<Vector> w_b(b);
 
-				if(r.begin() == 0) {
+				if(r.inside(0)) {
 					b.set(0, 0.);
 				}
 
-				if(r.end() == N) {
+				if(r.inside(N-1)) {
 					b.set(N-1, 0.);
 				}
 			}

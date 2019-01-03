@@ -1,10 +1,11 @@
 <ParameterList name="test_params">
 
   <ParameterList name="UTOPIA">
-    <Parameter name="Direct Solver" type="bool" value="false" />
+    <Parameter name="Direct Solver" type="bool" value="true" />
     <Parameter name="Ifpack2 Preconditioner" type="string" value="CHEBYSHEV"/> <!-- https://trilinos.org/wordpress/wp-content/uploads/2014/08/ifpack2guide.pdf -->
     <Parameter name="Direct Preconditioner" type="bool" value="true" />
-    <Parameter name="Solver Type" type="string" value="CG" />
+    <Parameter name="Solver Type" type="string" value="KLU2" />
+    <Parameter name="Direct Sol. Phase to use" type="string" value="SYMBFACT" /> <!-- possible options:CLEAN, PREORDERING, SYMBFACT, NUMFACT, SOLVE -->
   </ParameterList>
 
   <ParameterList name="Amesos2">
@@ -79,7 +80,6 @@
       </ParameterList>
 
   </ParameterList>
-
 
   <ParameterList name="CG">
     <!-- See e.g. https://trilinos.org/docs/dev/packages/belos/doc/html/classBelos_1_1BlockCGSolMgr_3_01ScalarType_00_01MV_00_01OP_00_01true_01_4.html#a1611b785191230bd2456050a5459ea53
