@@ -185,7 +185,7 @@ namespace utopia {
 
 		bool is_second_order = dof_map.variable_type(0).order == 2;
 
-		mg.set_fix_semidefinite_operators(true);
+		mg.fix_semidefinite_operators(true);
 
 		generate_coarse_meshes(mesh, n_levels, dof_map.variable_type(0).order);
 
