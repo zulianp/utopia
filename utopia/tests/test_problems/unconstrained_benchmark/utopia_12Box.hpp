@@ -1,5 +1,5 @@
-#ifndef UTOPIA_GAUSSIAN_09
-#define UTOPIA_GAUSSIAN_09
+#ifndef UTOPIA_BOX_12
+#define UTOPIA_BOX_12
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
@@ -9,12 +9,12 @@
 namespace utopia
 {   
     template<class Matrix, class Vector>
-    class Gaussian09 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class Box12 final: public UnconstrainedTestFunction<Matrix, Vector> 
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
 
-        Gaussian09() 
+        Box12() 
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
@@ -24,13 +24,19 @@ namespace utopia
             const Write<Vector> write1(x_init_);
             const Write<Vector> write2(x_exact_);
             {
-                x_init_.set(0, 0.4);
-                x_init_.set(1, 1.0);
-                x_init_.set(2, 0.0);
+                // trust region does not converge to global sol, starting here...
+                // x_init_.set(0, 1.0);
+                // x_init_.set(1, 10.0);
+                // x_init_.set(2, 20.0);
 
-                x_exact_.set(0, 0.398956);
-                x_exact_.set(1, 1.00002);                
-                x_exact_.set(2, 0.0);                                
+                x_init_.set(0, 1.0);
+                x_init_.set(1, 9.5);
+                x_init_.set(2, 1.0);                
+
+                x_exact_.set(0, 1.0);
+                x_exact_.set(1, 10.0);                
+                x_exact_.set(2, 1.0);           
+                // also {10, 1, -1} or {x1, x1, 0}                     
             }
 
         }
@@ -46,10 +52,10 @@ namespace utopia
             const Scalar z = point.get(2);
 
             result = 0.0; 
-            for(SizeType i = 1; i <=15; i++)
+            for(SizeType i = 1; i <=10; i++)
             {   
-                Scalar a = ( 3.5 - (0.5 * ( i - 1.0 )) - z );
-                Scalar b = (x* std::exp(- 0.5 * y * a*a )) - p(i);
+                Scalar c = -i*0.1; 
+                Scalar b = std::exp(c*x) - std::exp(c*y) - (z*( std::exp(c)- std::exp(10.0 * c)));
                 result += b*b;
             }
     
@@ -72,16 +78,18 @@ namespace utopia
             Scalar b = 0.0; 
             Scalar c = 0.0; 
 
-            for(SizeType i =1; i <=15; i++)
+            for(SizeType i =1; i <=10; i++)
             {   
-                Scalar d1 = 0.5 * ( i - 1.);
-                Scalar d2 = 3.5 - d1 - z;
-                Scalar arg = - 0.5 * y * d2 * d2;
-                Scalar t = x * std::exp(arg) - p(i);
+                Scalar c = -i*0.1; 
+                Scalar fi = std::exp(c*x) - std::exp(c*y) - (z * (std::exp(c)- std::exp(10.0*c)));
 
-                a += 2.0 * std::exp(arg) * t;
-                b -= x * std::exp(arg) * t * d2 * d2;
-                c += 2.0 * x * y * std::exp(arg) * t * d2;
+                Scalar  dfidx1 = c*std::exp(c*x);
+                Scalar  dfidx2 = -c*std::exp(c*y);
+                Scalar  dfidx3 = -(std::exp(c)-std::exp(10.0*c));
+
+                a += 2.0 * fi * dfidx1;
+                b += 2.0 * fi * dfidx2;
+                c += 2.0 * fi * dfidx3;
             }
 
             g.set(0, a);
@@ -110,28 +118,24 @@ namespace utopia
             Scalar term31 = 0.0; 
             Scalar term32 = 0.0; 
 
-            for(SizeType i =1; i <=15; i++)
+            for(SizeType i =1; i <=10; i++)
             {   
-                Scalar d1 = 0.5 * ( i - 1.0);
-                Scalar d2 = 3.5 - d1 - z;
-                Scalar arg = 0.5 * y * d2 * d2;
-                Scalar r = std::exp ( - arg );
-                Scalar t = (x * r) - p(i);
-                Scalar t1 = (2.0 * x * r) - p(i);
+                Scalar c = -i*0.1; 
+                Scalar fi = std::exp(c*x) - std::exp(c*y) - (z * (std::exp(c)- std::exp(10.0*c)));
 
-                term11 += r * r;
-                term22 += r * t1 * d2*d2*d2*d2;
-                term33 += r * ((y * t1 * d2 * d2) - t);
-                term21 -= r * t1 * d2 * d2;
-                term31 += d2 * r * t1;
-                term32 += d2 * r * ( t - (arg * t1));
+                Scalar  dfidx1      = c * std::exp(c*x);
+                Scalar  d2fidx11    = c * c * std::exp(c*x);
+                Scalar  dfidx2      = - c * std::exp(c*y);
+                Scalar  d2fidx22    = - c * c * std::exp(c*y);
+                Scalar  dfidx3      = - ( std::exp(c) - std::exp(10.0*c));
+
+                term11 += (2.0 * dfidx1 * dfidx1) + (2.0 * fi * d2fidx11);
+                term22 += (2.0 * dfidx2 * dfidx2) + (2.0 * fi * d2fidx22);
+                term33 += 2.0 * dfidx3 * dfidx3;
+                term21 += 2.0 * dfidx1 * dfidx2;
+                term31 += 2.0 * dfidx1 * dfidx3;
+                term32 += 2.0 * dfidx3 * dfidx2;
             }
-
-            term11 *= 2.0;
-            term22 *= 0.5 * x; 
-            term33 *= 2.0 * x * y; 
-            term31 *= 2.0 * y;
-            term32 *= 2.0 * x;
 
             result.set(0, 0, term11);
             result.set(0, 1, term21);
@@ -160,35 +164,8 @@ namespace utopia
 
         Scalar min_function_value() const override
         {
-            return 1.12793e-8; 
+            return 0.0; 
         }
-
-
-        private:
-            Scalar p(const SizeType & i) const
-            {
-                if(i==1 || i ==15)
-                    return 0.0009; 
-                else if(i==2 || i == 14)
-                    return 0.0044;
-                else if(i==3 || i == 13)
-                    return 0.0175;
-                else if(i==4 || i == 12)
-                    return 0.0540;
-                else if(i==5 || i == 11)
-                    return 0.1295;
-                else if(i==6 || i == 10)
-                    return 0.2420;     
-                else if(i==7 || i == 9)
-                    return 0.3521;     
-                else if(i==8)
-                    return 0.3989; 
-                else
-                {
-                    utopia_error("Gaussian09::p():: we should never reach here... \n"); 
-                    return 0; 
-                }
-            }
 
     private: 
         Vector x_init_; 
@@ -197,4 +174,4 @@ namespace utopia
     };
 }
 
-#endif //UTOPIA_GAUSSIAN_09
+#endif //UTOPIA_BOX_12

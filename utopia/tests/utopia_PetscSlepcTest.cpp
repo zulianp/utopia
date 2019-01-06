@@ -326,14 +326,14 @@ namespace utopia
 			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
 			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
 			subproblem->atol(1e-12);
-			subproblem->stol(1e-14);
-			subproblem->rtol(1e-14);
+			subproblem->stol(1e-15);
+			subproblem->rtol(1e-15);
 
 			TrustRegion<DMatrixd, DVectord> solver(subproblem);
 			solver.verbose(true);
-			solver.max_it(100); 
+			solver.max_it(300); 
 			solver.atol(1e-10); 
-			solver.rtol(1e-11); 
+			solver.rtol(1e-12); 
 			solver.stol(1e-13); 
 
 
@@ -347,10 +347,14 @@ namespace utopia
 	    	test_functions[5] = std::make_shared<Woods14<DMatrixd, DVectord> >();
 	    	test_functions[6] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(3);
 	    	test_functions[7] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();
+	    	test_functions[8] = std::make_shared<Box12<DMatrixd, DVectord> >();
+	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();
+	    	
 
 
 
-	    	for(auto i =0; i < 8; i++)
+
+	    	for(auto i =0; i < 10; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
