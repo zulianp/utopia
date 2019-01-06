@@ -107,7 +107,7 @@ namespace utopia
 
 	       	DVectord x_w1  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
-			Woods<DMatrixd, DVectord> fun_woods;
+			Woods14<DMatrixd, DVectord> fun_woods;
 
 			bool verbose = false; 
 
@@ -163,7 +163,7 @@ namespace utopia
 		{
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
-			Woods<DMatrixd, DVectord> fun;
+			Woods14<DMatrixd, DVectord> fun;
 
 			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
 			linear_solver->atol(1e-14); 
@@ -214,7 +214,7 @@ namespace utopia
 		{
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
-			Woods<DMatrixd, DVectord> fun;
+			Woods14<DMatrixd, DVectord> fun;
 
 			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
 			linear_solver->atol(1e-14); 
@@ -299,7 +299,7 @@ namespace utopia
 
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
-			Woods<DMatrixd, DVectord> fun;
+			Woods14<DMatrixd, DVectord> fun;
 
 			solver.solve(fun, x); 
 
@@ -323,28 +323,34 @@ namespace utopia
 			// solver.max_it(500);
 			// solver.verbose(true); 
 
-			auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
+			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
+			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
 			subproblem->atol(1e-12);
 			subproblem->stol(1e-14);
 			subproblem->rtol(1e-14);
 
 			TrustRegion<DMatrixd, DVectord> solver(subproblem);
-			solver.verbose(false);
-			solver.max_it(500); 
-			solver.atol(1e-9); 
+			solver.verbose(true);
+			solver.max_it(100); 
+			solver.atol(1e-10); 
 			solver.rtol(1e-11); 
+			solver.stol(1e-13); 
 
 
 			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
 
-	    	test_functions[0] = std::make_shared<Rosenbrock<DMatrixd, DVectord> >();;
+	    	test_functions[0] = std::make_shared<Rosenbrock01<DMatrixd, DVectord> >();;
 	    	test_functions[1] = std::make_shared<Powell03<DMatrixd, DVectord> >(); // known to diverge also with tr solvers
 	    	test_functions[2] = std::make_shared<Brown04<DMatrixd, DVectord> >();
 	    	test_functions[3] = std::make_shared<Beale05<DMatrixd, DVectord> >();
 	    	test_functions[4] = std::make_shared<Hellical07<DMatrixd, DVectord> >();
+	    	test_functions[5] = std::make_shared<Woods14<DMatrixd, DVectord> >();
+	    	test_functions[6] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(3);
+	    	test_functions[7] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();
 
 
-	    	for(auto i =0; i < 5; i++)
+
+	    	for(auto i =0; i < 8; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
@@ -352,9 +358,8 @@ namespace utopia
 				// auto sol_status = solver.solution_status(); 
 				// sol_status.describe(std::cout); 
 
-				// // disp(x_init);
-
-				// utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol()));
+				disp(x_init);
+				utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol()));
 			}
 
 

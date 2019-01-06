@@ -360,7 +360,7 @@ namespace utopia {
         //     utopia_test_assert(approxeq(expected, x));
         
         
-        //     Rosenbrock<CRSMatrixd, Vectord> rosenbrock;
+        //     Rosenbrock01<CRSMatrixd, Vectord> rosenbrock;
         //     Vectord x2({-2, -2});
         //     nlsolver.solve(rosenbrock, x2);
         

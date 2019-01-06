@@ -47,13 +47,13 @@ namespace utopia
 		void ms_solver()
 		{
 			const int n = 20;
-			// Rosenbrock<Matrix, Vector> fun;
+			// Rosenbrock01<Matrix, Vector> fun;
 			TestFunctionND_1<Matrix, Vector> fun(n);
 
 
 			// SimpleQuadraticFunction<Matrix, Vector> fun;
 			// Rastrigin<Matrix, Vector> fun;
-			// Woods<Matrix, Vector> fun;
+			// Woods14<Matrix, Vector> fun;
 
 			Vector x = values(n, 2.0);
 
@@ -207,7 +207,7 @@ namespace utopia
 
 				Vector x_w1  = values(4, 10);
 				Vector expected_woods = values(4, 1);
-				Woods<Matrix, Vector> fun_woods;
+				Woods14<Matrix, Vector> fun_woods;
 				{
 					Write<Vector> w1(x_w1);
 					x_w1.set(0, -3);
@@ -235,7 +235,7 @@ namespace utopia
 				utopia_test_assert(approxeq(expected, x));
 
 				Vector expected_rosenbrock = values(2, 1);
-				Rosenbrock<Matrix, Vector> rosenbrock;
+				Rosenbrock01<Matrix, Vector> rosenbrock;
 				Vector x0 = values(2, 2.0);
 
 				x0 = values(2, 2.0);
@@ -299,7 +299,7 @@ namespace utopia
 					x_w1.set(3, -1);    x_w2.set(3, -1);
 				}
 
-				Woods<Matrix, Vector> fun_woods;
+				Woods14<Matrix, Vector> fun_woods;
 				nlsolver1.solve(fun_woods, x_w1);
 				nlsolver2.solve(fun_woods, x_w2);
 
@@ -323,7 +323,7 @@ namespace utopia
 				// rosenbrock test
 
 				Vector expected_rosenbrock = values(2, 1);
-				Rosenbrock<Matrix, Vector> rosenbrock_fun;
+				Rosenbrock01<Matrix, Vector> rosenbrock_fun;
 
 				Vector x01 = values(2, 2.0), x02 = values(2, 2.0);
 				nlsolver1.solve(rosenbrock_fun, x01);
@@ -339,7 +339,7 @@ namespace utopia
 			// rosenbrock test
 			if(mpi_world_size() == 1)
 			{
-				Rosenbrock<Matrix, Vector> rosenbrock;
+				Rosenbrock01<Matrix, Vector> rosenbrock;
 				Vector expected_rosenbrock = values(2, 1);
 
 				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
@@ -384,10 +384,10 @@ namespace utopia
 			aux_convex_hull(20, fun1, convex_hull_n_gradients);
 
 			if(mpi_world_size() == 1) {
-				Rosenbrock<GlobalMatrix, GlobalVector> fun2; 
+				Rosenbrock01<GlobalMatrix, GlobalVector> fun2; 
 				aux_convex_hull(2, fun2, convex_hull_n_gradients);
 
-				Woods<GlobalMatrix, GlobalVector> fun3;
+				Woods14<GlobalMatrix, GlobalVector> fun3;
 				aux_convex_hull(4, fun3, convex_hull_n_gradients);
 			}
 

@@ -80,7 +80,7 @@ namespace utopia
 				nlsolver.solve(fun2, x);
 				utopia_test_assert(approxeq(expected_2, x));
 
-				Rosenbrock<Matrix, Vector> rosenbrock;
+				Rosenbrock01<Matrix, Vector> rosenbrock;
 				Vector x0 = values(2, 0.5);
 				nlsolver.solve(rosenbrock, x0);
 				Vector expected_rosenbrock = values(2, 1.0);
@@ -93,7 +93,7 @@ namespace utopia
 				// rosenbrock test
 				if(mpi_world_size() == 1)
 				{
-					Rosenbrock<Matrix, Vector> rosenbrock;
+					Rosenbrock01<Matrix, Vector> rosenbrock;
 					Vector expected_rosenbrock = values(2, 1);
 
 					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();

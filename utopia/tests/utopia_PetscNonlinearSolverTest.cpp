@@ -415,24 +415,24 @@ namespace utopia
 			DVectord x0;
 			
 			if(mpi_world_size() <= 2) {
-				RosenbrockGeneric<DMatrixd, DVectord> r_generic_2d;
 				expected_rosenbrock = values(2, 1.0);
+				ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_2d(local_size(expected_rosenbrock).get(0));
 				x0 = values(2, 2.0);
 				nlsolver.solve(r_generic_2d, x0);
 				utopia_test_assert(approxeq(expected_rosenbrock, x0));
 			}
 			
 			if(mpi_world_size() <= 3) {
-				RosenbrockGeneric<DMatrixd, DVectord> r_generic_3d;
 				expected_rosenbrock = values(3, 1.0);
+				ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_3d(local_size(expected_rosenbrock).get(0));
 				x0 = values(3, -2.0);
 				nlsolver.solve(r_generic_3d, x0);
 				utopia_test_assert(approxeq(expected_rosenbrock, x0));
 			}
 			
 			if(mpi_world_size() <= 6) {
-				RosenbrockGeneric<DMatrixd, DVectord> r_generic_6d;
 				expected_rosenbrock = values(6, 1.0);
+				ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_6d(local_size(expected_rosenbrock).get(0));
 				x0 = values(6, 2.0);
 				nlsolver.solve(r_generic_6d, x0);
 				utopia_test_assert(approxeq(expected_rosenbrock, x0));
@@ -595,7 +595,7 @@ namespace utopia
 
 			if(mpi_world_size() == 1)
 			{
-				Rosenbrock<DMatrixd, DVectord> rosenbrock;
+				Rosenbrock01<DMatrixd, DVectord> rosenbrock;
 				DVectord expected_rosenbrock = values(2, 1.0);
 				DVectord x0_ros   			 = values(2, 1.5);
 
@@ -655,7 +655,7 @@ namespace utopia
 
 			if(mpi_world_size() == 1)
 			{
-				Rosenbrock<DSMatrixd, DVectord> rosenbrock;
+				Rosenbrock01<DSMatrixd, DVectord> rosenbrock;
 				DVectord expected_rosenbrock = values(2, 1.0);
 				DVectord x0_ros   			 = values(2, 1.5);
 
