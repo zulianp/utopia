@@ -47,6 +47,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(pseudo_cont_test); 
 			UTOPIA_RUN_TEST(lm_test); 
 			UTOPIA_RUN_TEST(rosenbrock_test); 
+			UTOPIA_RUN_TEST(benchmark_test_tr); 
 		}
 
 
@@ -303,6 +304,67 @@ namespace utopia
 			solver.solve(fun, x); 
 
 		}
+
+
+
+		void benchmark_test_tr()
+		{
+			// auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			// linear_solver->atol(1e-14); 
+			// linear_solver->max_it(10000);
+			
+			// auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			// eigen_solver->solver_type("arpack");			
+
+			// RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+			// solver.atol(1e-10); 
+			// solver.stol(1e-14); 
+			// solver.max_it(500);
+			// solver.verbose(true); 
+
+			auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
+			subproblem->atol(1e-12);
+			subproblem->stol(1e-14);
+			subproblem->rtol(1e-14);
+
+			TrustRegion<DMatrixd, DVectord> solver(subproblem);
+			solver.verbose(false);
+			solver.max_it(500); 
+			solver.atol(1e-9); 
+			solver.rtol(1e-11); 
+
+
+			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
+
+	    	test_functions[0] = std::make_shared<Rosenbrock<DMatrixd, DVectord> >();;
+	    	test_functions[1] = std::make_shared<Powell03<DMatrixd, DVectord> >(); // known to diverge also with tr solvers
+	    	test_functions[2] = std::make_shared<Brown04<DMatrixd, DVectord> >();
+	    	test_functions[3] = std::make_shared<Beale05<DMatrixd, DVectord> >();
+	    	test_functions[4] = std::make_shared<Hellical07<DMatrixd, DVectord> >();
+
+
+	    	for(auto i =0; i < 5; i++)
+	    	{
+				DVectord x_init = test_functions[i]->initial_guess(); 
+				solver.solve(*test_functions[i], x_init); 
+
+				// auto sol_status = solver.solution_status(); 
+				// sol_status.describe(std::cout); 
+
+				// // disp(x_init);
+
+				// utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol()));
+			}
+
+
+		}
+
+
+
+
+
+
 
 
 

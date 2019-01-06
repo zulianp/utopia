@@ -105,7 +105,7 @@ namespace utopia
       }
 
         // step size so small that we rather exit than wait for nan's
-      if(s_norm < tol.step_tollerance())
+      else if(s_norm < tol.step_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
         sol_status.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE; 
@@ -113,7 +113,7 @@ namespace utopia
       }
 
         // step size so small that we rather exit than wait for nan's
-      if(r_norm < tol.relative_tollerance())
+      else if(r_norm < tol.relative_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
         sol_status.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE; 
@@ -121,7 +121,7 @@ namespace utopia
       }
 
         // check number of iterations
-      if( it > max_it)
+      else if( it > max_it)
       {
         monitor.exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
         sol_status.reason = ConvergenceReason::DIVERGED_MAX_IT; 
@@ -129,7 +129,7 @@ namespace utopia
       }
 
         // do not hard code this 
-      if(delta < delta_min_)
+      else if(delta < delta_min_)
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
         sol_status.reason = ConvergenceReason::CONVERGED_TR_DELTA; 
