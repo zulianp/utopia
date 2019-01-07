@@ -32,7 +32,7 @@ namespace utopia {
 				const SizeType n = base_n * (i + 1);
 				//Vectors
 				this->register_experiment(
-					"vec_set" + std::to_string(i),
+					"vec_set_" + std::to_string(i),
 					[n]() {
 						Vector x = local_values(n, 1.);
 						auto r = range(x);
@@ -53,7 +53,7 @@ namespace utopia {
 				);
 
 				this->register_experiment(
-					"vec_get" + std::to_string(i),
+					"vec_get_" + std::to_string(i),
 					[n]() {
 						Vector x = local_values(n, 1.);
 
