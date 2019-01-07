@@ -31,6 +31,17 @@ namespace utopia
             x_exact_ = local_values(n_loc_, 1.0); 
         }
 
+        std::string name() const override
+        {
+            return "Extended Rosenbrock"; 
+        }
+
+        SizeType dim() const override
+        {
+            return n_loc_; 
+        }
+
+
         bool update(const Vector &point) override
         {
             init_perm(point);

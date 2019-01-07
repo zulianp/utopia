@@ -13,6 +13,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Gaussian09() 
         {
@@ -34,6 +35,17 @@ namespace utopia
             }
 
         }
+
+        std::string name() const override
+        {
+            return "Gaussaian"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 3; 
+        }
+
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {

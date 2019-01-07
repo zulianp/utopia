@@ -14,6 +14,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Powell03() 
         {
@@ -33,6 +34,17 @@ namespace utopia
             }
 
         }
+
+        std::string name() const override
+        {
+            return "Powell badly scaled"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 2.0; 
+        }
+
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {

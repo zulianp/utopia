@@ -14,6 +14,7 @@
     #include "utopia_14Woods.hpp"
     #include "utopia_16BrownDennis.hpp"
     #include "utopia_18Biggs.hpp"
+    #include "utopia_20Watson.hpp"
     #include "utopia_21ExtendedRosenbrock.hpp"
 
 #endif //UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES

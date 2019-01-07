@@ -20,6 +20,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Rosenbrock01() 
         {
@@ -102,6 +103,16 @@ namespace utopia
         Scalar min_function_value() const override
         {
             return 0; 
+        }
+
+        std::string name() const override
+        {
+            return "Rosenbrock"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 2.0; 
         }
 
 

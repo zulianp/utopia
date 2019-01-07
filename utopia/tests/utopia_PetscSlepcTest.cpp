@@ -326,7 +326,7 @@ namespace utopia
 
 			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >(); // seems to have problems ?? why??? 
 			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
-			subproblem->atol(1e-12);
+			subproblem->atol(1e-9);
 			subproblem->stol(1e-15);
 			subproblem->rtol(1e-15);
 
@@ -352,15 +352,18 @@ namespace utopia
 	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();
 	    	test_functions[10] = std::make_shared<Biggs18<DMatrixd, DVectord> >();
 	    	test_functions[11] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); // known to go to few local minimums
+	    	test_functions[12] = std::make_shared<Watson20<DMatrixd, DVectord> >(); 
+	    		
 
-	    	
-	    	// const int fun_id = 11; 
+
+	    	// const int fun_id = 12; 
 
 	    	// auto x_test = test_functions[fun_id]->initial_guess(); 
 	    	// DVectord g; 
 	    	// DMatrixd H; 
 	    	// double v; 
 
+	    	// std::cout<<"---------------- " << test_functions[fun_id]->name() << "  ----------------  \n"; 
 	    	// test_functions[fun_id]->value(x_test, v); 
 	    	// test_functions[fun_id]->gradient(x_test, g); 
 	    	// test_functions[fun_id]->hessian(x_test, H); 
@@ -374,16 +377,18 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 12; i++)
+	    	for(auto i =0; i < 13; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
+
+				std::cout<<"---------------- " << test_functions[i]->name() << "  ----------------  \n"; 
 				solver.solve(*test_functions[i], x_init); 
 
 				// auto sol_status = solver.solution_status(); 
 				// sol_status.describe(std::cout); 
 
 				disp(x_init);
-				utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol()));
+				utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol(), 1e-5));
 			}
 
 

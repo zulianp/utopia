@@ -15,12 +15,16 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~UnconstrainedTestFunction() { }
 
         virtual Vector initial_guess() const = 0;
         virtual const Vector & exact_sol() const = 0;
         virtual Scalar min_function_value() const = 0;
+        
+        virtual std::string name() const = 0;
+        virtual SizeType dim() const = 0;
     };
 }
 #endif //UTOPIA_UNCONSTRAINED_TEST_FUNCTIONS

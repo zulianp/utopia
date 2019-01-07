@@ -14,6 +14,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Biggs18() 
         {
@@ -48,6 +49,17 @@ namespace utopia
             }
 
         }
+
+        std::string name() const override
+        {
+            return "Biggs Exp6"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 6.0; 
+        }
+
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {

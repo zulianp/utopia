@@ -13,6 +13,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Beale05() 
         {
@@ -32,6 +33,17 @@ namespace utopia
             }
 
         }
+
+        std::string name() const override
+        {
+            return "Beale"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 2.0; 
+        }
+
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
