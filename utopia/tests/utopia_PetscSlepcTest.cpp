@@ -323,15 +323,15 @@ namespace utopia
 			// solver.max_it(500);
 			// solver.verbose(true); 
 
-			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
-			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
+			auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
+			// auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
 			subproblem->atol(1e-12);
 			subproblem->stol(1e-15);
 			subproblem->rtol(1e-15);
 
 			TrustRegion<DMatrixd, DVectord> solver(subproblem);
 			solver.verbose(true);
-			solver.max_it(300); 
+			solver.max_it(600); 
 			solver.atol(1e-10); 
 			solver.rtol(1e-12); 
 			solver.stol(1e-13); 
@@ -349,15 +349,17 @@ namespace utopia
 	    	test_functions[7] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();
 	    	test_functions[8] = std::make_shared<Box12<DMatrixd, DVectord> >();
 	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();
+	    	test_functions[10] = std::make_shared<Biggs18<DMatrixd, DVectord> >();
 	    	
-	    	// auto x_test = test_functions[9]->initial_guess(); 
+
+	    	// auto x_test = test_functions[10]->initial_guess(); 
 	    	// DVectord g; 
 	    	// DMatrixd H; 
 	    	// double v; 
 
-	    	// test_functions[9]->value(x_test, v); 
-	    	// test_functions[9]->gradient(x_test, g); 
-	    	// test_functions[9]->hessian(x_test, H); 
+	    	// test_functions[10]->value(x_test, v); 
+	    	// test_functions[10]->gradient(x_test, g); 
+	    	// test_functions[10]->hessian(x_test, H); 
 
 	    	// disp(x_test); 
 
@@ -368,7 +370,7 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 10; i++)
+	    	for(auto i =0; i < 11; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
