@@ -240,7 +240,7 @@ namespace utopia {
 
 		ISCreateGeneral(comm, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
 
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,11,0) || (UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,10,0) && defined(PETSC_VERSION_GIT))
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,11,0) || (UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,10,4) && defined(PETSC_VERSION_GIT))
 		VecScatterCreateWithData(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
 #else
 		VecScatterCreate(implementation(), is_in, result.implementation(), nullptr, &scatter_context);

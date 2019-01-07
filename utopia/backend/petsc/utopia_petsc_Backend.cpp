@@ -993,7 +993,7 @@ namespace utopia {
 			VecGetOwnershipRange(x_to.implementation() ,&st, &ed);
 			ISCreateStride(PETSC_COMM_SELF, (ed - st), st, 1, &is);
 
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,11,0) || (UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,10,0) && defined(PETSC_VERSION_GIT))
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,11,0) || (UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,10,4) && defined(PETSC_VERSION_GIT))
 			VecScatterCreateWithData(x_from.implementation(), is, x_to.implementation(), is, &newctx);
 #else
 			VecScatterCreate(x_from.implementation(), is, x_to.implementation(), is, &newctx);
