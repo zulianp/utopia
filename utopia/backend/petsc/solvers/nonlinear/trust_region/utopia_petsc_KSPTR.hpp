@@ -136,11 +136,11 @@ namespace utopia
 	        }
 
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)
-			if(this->ksp_type() == "qcg")
+			if(this->ksp_.ksp_type() == "qcg")
 				ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius());
-		    else if(this->ksp_type() == "gltr")
+		    else if(this->ksp_.ksp_type() == "gltr")
 		        ierr = KSPGLTRSetRadius(ksp, this->current_radius());
-			else if(this->ksp_type() == "nash")
+			else if(this->ksp_.ksp_type() == "nash")
 		        ierr = KSPNASHSetRadius(ksp, this->current_radius());
 			else
 		        ierr = KSPSTCGSetRadius(ksp, this->current_radius());
