@@ -1,9 +1,3 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2016-08-01
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2016-08-01
-*/
 #ifndef UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP
 #define UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP
 
@@ -27,14 +21,31 @@ namespace utopia
      *               Good intial guess for testing: F(-3, -1, -3, -1) = 19192. \n
      */
     template<class Matrix, class Vector>
-    class Woods : public Function<Matrix, Vector> 
+    class Woods14 final: public UnconstrainedTestFunction<Matrix, Vector> 
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
 
-        Woods() 
+        Woods14() 
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
+
+            x_init_ = zeros(4);
+            x_exact_ = zeros(4);
+
+            const Write<Vector> write1(x_init_);
+            const Write<Vector> write2(x_exact_);
+            {
+                x_init_.set(0, -3.0);
+                x_init_.set(1, -1.0);
+                x_init_.set(2, -3.0);
+                x_init_.set(3, -1.0);                
+
+                x_exact_.set(0, 1.0);
+                x_exact_.set(1, 1.0);     
+                x_exact_.set(2, 1.0);
+                x_exact_.set(3, 1.0);     
+            }
 
         }
 
@@ -112,7 +123,32 @@ namespace utopia
             
             return true;
         }
+        
+        Vector initial_guess() const override
+        {
+            return x_init_; 
+        }
+
+        const Vector & exact_sol() const override
+        {
+            return x_exact_; 
+        }
+
+        Scalar min_function_value() const override
+        {
+            return 0; 
+        }
+
+
+    private: 
+        Vector x_init_; 
+        Vector x_exact_; 
+
+
     };
+
+    
+    
 }
 
 #endif //UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP

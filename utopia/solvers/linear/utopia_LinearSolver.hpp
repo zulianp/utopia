@@ -3,7 +3,6 @@
 
 #include <string>
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
@@ -27,7 +26,16 @@ namespace  utopia
 
         virtual bool apply(const Vector &rhs, Vector &sol) override = 0;
 
-        virtual void set_parameters(const Parameters /*params*/) override { }
+
+        virtual void read(Input &in) override
+        {
+            Preconditioner<Vector>::read(in); 
+        }
+        
+        virtual void print_usage(std::ostream &os) const override
+        { 
+            Preconditioner<Vector>::print_usage(os); 
+        }
 
         /**
          * @brief      Solve routine.

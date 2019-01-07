@@ -26,9 +26,8 @@ namespace utopia
 
 
     public:
-       AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-                            const Parameters params                       = Parameters() ):
-                            NewtonBase<Matrix, Vector>(linear_solver, params), 
+       AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
+                            NewtonBase<Matrix, Vector>(linear_solver), 
                             mass_init_(false), 
                             scaling_init_(false),
                             tau_max_(1e9),
@@ -38,9 +37,30 @@ namespace utopia
                             m_(-1.0), 
                             use_m_(true)
                             {
-                                //set_parameters(params);
-                                verbosity_level_ = params.verbose() ? VERBOSITY_LEVEL_NORMAL : VERBOSITY_LEVEL_QUIET;  
+                                verbosity_level_ =  VERBOSITY_LEVEL_NORMAL; 
                             }
+
+
+
+        void read(Input &in) override
+        {
+            NewtonBase<Matrix, Vector>::read(in);
+            in.get("mass_init", mass_init_);
+            in.get("scaling_init_", scaling_init_);
+            in.get("tau_max", tau_max_);
+            in.get("tau_min", tau_min_);
+            in.get("alpha_treshold", alpha_treshold_);
+            in.get("max_inner_it", max_inner_it_);
+            in.get("m", m_);
+            in.get("use_m", use_m_);
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            NewtonBase<Matrix, Vector>::print_usage(os); 
+            
+        }
+
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {

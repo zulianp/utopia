@@ -40,6 +40,33 @@ namespace utopia
         virtual ~QuasiNewtonBase() {}
 
 
+        virtual void read(Input &in) override
+        {
+            MatrixFreeNonLinearSolver<Vector>::read(in);
+            in.get("dumping", alpha_);
+
+            if(ls_strategy_) {
+                in.get("line-search", *ls_strategy_);
+            }
+            if(mf_linear_solver_){
+                in.get("linear-solver", *mf_linear_solver_); 
+            }
+            if(hessian_approx_strategy_){
+                in.get("hessian-approx-strategy", *hessian_approx_strategy_); 
+            }
+        }
+
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            MatrixFreeNonLinearSolver<Vector>::print_usage(os);
+            this->print_param_usage(os, "dumping", "double", "Default step size.", "1.0"); 
+            this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-"); 
+            this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+            this->print_param_usage(os, "hessian-approx-strategy", "HessianApproxStrategy", "Input parameters for hessian-approximation strategy.", "-"); 
+        }
+
+
         virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
         {
             hessian_approx_strategy_      = strategy;
@@ -68,21 +95,12 @@ namespace utopia
         }        
 
 
-        virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+        virtual void set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
         {
             ls_strategy_ = strategy;
-            ls_strategy_->set_parameters(this->parameters());
-            return true;
         }
         
         
-        virtual void set_parameters(const Parameters params) override
-        {
-            MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
-            alpha_ = params.alpha();
-            
-        }
-
         virtual void dumping_parameter(const Scalar & alpha)
         {
             alpha_ = alpha; 
@@ -93,10 +111,12 @@ namespace utopia
             return alpha_; 
         }        
 
+
     protected:         
         inline bool linear_solve(const Vector &rhs, Vector &sol)
         {
             auto multiplication_action = hessian_approx_strategy_->build_apply_H(); 
+            this->solution_status_.num_linear_solves++; 
             return mf_linear_solver_->solve(*multiplication_action, rhs, sol);             
         }
 

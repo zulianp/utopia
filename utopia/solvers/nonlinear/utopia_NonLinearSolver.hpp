@@ -3,13 +3,11 @@
 
 #include "utopia_Function.hpp"
 #include "utopia_ExtendedFunction.hpp"
-
-#include "utopia_Parameters.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Monitor.hpp"
 #include "utopia_PreconditionedSolver.hpp"
-#include "utopia_ConjugateGradient.hpp"
+#include "utopia_SolutionStatus.hpp"
 
 
 namespace utopia 
@@ -21,51 +19,26 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Vector>
-    class NonLinearSolver : public Monitor<Vector>, public Configurable
+    class NonLinearSolver : public Monitor<Vector>, virtual public Configurable
     {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 
-        NonLinearSolver(const Parameters &params = Parameters()): 
-                        params_(params)
+        NonLinearSolver(): atol_(1e-7), rtol_(1e-8), stol_(1e-9), max_it_(300), verbose_(false), time_statistics_(true)
         {
-            set_parameters(params);        
+            
         }
 
         virtual ~NonLinearSolver() {}
-
-        /**
-         * @brief      Getter for parameters. 
-         */
-        Parameters parameters()
-        {
-            return params_;
-        }
-
-        /**
-         * @brief      Settter the parameters.
-         *
-         * @param[in]  params  The parameters
-         */
-        virtual void set_parameters(const Parameters params)
-        {
-            atol_               = params.atol();            
-            rtol_               = params.rtol(); 
-            stol_               = params.stol(); 
-
-            max_it_             = params.max_it(); 
-            verbose_            = params.verbose(); 
-            time_statistics_    = params.time_statistics();  
-        }
-
 
         virtual void read(Input &in) override
         {
             in.get("atol", atol_);
             in.get("rtol", rtol_);
             in.get("stol", stol_);
+
             in.get("max-it", max_it_);
             in.get("verbose", verbose_);
             in.get("time-statistics", time_statistics_);
@@ -73,12 +46,13 @@ namespace utopia
 
         virtual void print_usage(std::ostream &os) const override
         {
-            os << "atol             : <real>\n";
-            os << "rtol             : <real>\n";
-            os << "stol             : <real>\n";
-            os << "max-it           : <int>\n";
-            os << "verbose          : <bool>\n";
-            os << "time-statistics  : <bool>\n";
+            this->print_param_usage(os, "atol", "real", "Absolute tolerance.", "1e-7"); 
+            this->print_param_usage(os, "rtol", "real", "Relative tolerance.", "1e-8"); 
+            this->print_param_usage(os, "stol", "real", "Step size tolerance.", "1e-9"); 
+
+            this->print_param_usage(os, "max-it", "int", "Maximum number of iterations.", "300"); 
+            this->print_param_usage(os, "verbose", "bool", "Turn on/off output.", "false"); 
+            this->print_param_usage(os, "time-statistics", "bool", "Collect time-statistics.", "true"); 
         }
 
 
@@ -118,6 +92,7 @@ protected:
             if(mpi_world_rank() == 0 && verbose_)
                 PrintInfo::print_init(method, status_variables); 
             
+            this->solution_status_.clear(); 
             _time.start();
         }     
 
@@ -132,15 +107,14 @@ protected:
          {            
             _time.stop();
 
-            params_.convergence_reason(convergence_reason);
-            params_.num_it(num_it);
-
             if(mpi_world_rank() == 0 && verbose_)
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
                 std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
-                    
+                
+                this->solution_status_.execution_time = _time.get_seconds();                     
             }
+
          }
 
 
@@ -156,35 +130,49 @@ protected:
           */
         virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm) override
         {   
+            bool converged = false; 
+
             // termination because norm of grad is down
             if(g_norm < atol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS; 
+                converged = true; 
             }
 
             // step size so small that we rather exit than wait for nan's
-            if(s_norm < stol_)
+            else if(s_norm < stol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE; 
+                converged =  true; 
             }
 
             // step size so small that we rather exit than wait for nan's
-            if(r_norm < rtol_)
+            else if(r_norm < rtol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE; 
+                converged =  true; 
             }
 
             // check number of iterations
-            if( it > max_it_)
+            else if( it > max_it_)
             {
                 exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-                return true; 
+                this->solution_status_.reason = ConvergenceReason::DIVERGED_MAX_IT; 
+                converged =  true; 
             }
 
-            return false; 
+            if(converged)
+            {
+                this->solution_status_.iterates = it; 
+                this->solution_status_.gradient_norm = g_norm; 
+                this->solution_status_.relative_gradient_norm = r_norm; 
+                this->solution_status_.step_norm = s_norm;    
+            }
+
+            return converged; 
         }
 
 
@@ -207,17 +195,13 @@ public:
 
         Scalar get_time() { return _time.get_seconds();  }
 
-
     protected:
-        Parameters params_;                         /*!< Solver parameters. */  
-
-        // ... GENERAL SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */  
         Scalar rtol_;                   /*!< Relative tolerance. */  
         Scalar stol_;                   /*!< Step tolerance. */  
 
         SizeType max_it_;               /*!< Maximum number of iterations. */  
-        bool verbose_;              /*!< Verobse enable? . */  
+        bool verbose_;                  /*!< Verobse enable? . */  
         SizeType time_statistics_;      /*!< Perform time stats or not? */  
 
         Chrono _time;                 /*!<Timing of solver. */
@@ -231,8 +215,7 @@ public:
     {
     
     public:
-        MatrixFreeNonLinearSolver(const Parameters &params = Parameters()):  
-                                  NonLinearSolver<Vector>(params)
+        MatrixFreeNonLinearSolver(): NonLinearSolver<Vector>()
         {
 
         }
@@ -240,7 +223,6 @@ public:
         virtual ~MatrixFreeNonLinearSolver() {}
 
         virtual bool solve(FunctionBase<Vector> &fun, Vector &x) = 0;
-
     };
 
 

@@ -23,17 +23,27 @@
 
 
      	public:
-      LeastSquaresTrustRegion(const std::shared_ptr<TRSubproblem> &linear_solver, const Parameters params = Parameters())
-                              : NonLinearLeastSquaresSolver(linear_solver, params), 
-                                TrustRegionBase(params)
+      LeastSquaresTrustRegion(const std::shared_ptr<TRSubproblem> &linear_solver): 
+                              NonLinearLeastSquaresSolver(linear_solver), 
+                              TrustRegionBase()
       {
-        set_parameters(params);        
+          
       }
 
       using utopia::TrustRegionBase<Vector>::get_pred; 
 
+      void read(Input &in) override
+      {
+        TrustRegionBase::read(in); 
+        NonLinearLeastSquaresSolver::read(in); 
+      }
 
-      
+      void print_usage(std::ostream &os) const override
+      {
+        TrustRegionBase::print_usage(os); 
+        NonLinearLeastSquaresSolver::print_usage(os); 
+      }
+
       /**
        * @brief      TR solution process. 
        *
@@ -85,7 +95,7 @@
         #else
           if(this->verbose_)
           {
-            this->nonlinear_solve_init("TRUST_NORMAL_EQ", {" it. ", "|| g ||", "r_norm", "J_k", "J_{k+1}", "rho", "delta_k", "|| p_k ||"}); 
+            this->init_solver("TRUST_NORMAL_EQ", {" it. ", "|| g ||", "r_norm", "J_k", "J_{k+1}", "rho", "delta_k", "|| p_k ||"}); 
             PrintInfo::print_iter_status({it, g_norm}); 
           }
         #endif
@@ -112,6 +122,7 @@
             tr_subproblem->current_radius(delta);
 
           this->linear_solve(J_k, -1.0*r_k, p_k);
+          this->solution_status_.num_linear_solves++; 
           pred = this->get_pred(g, H, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
@@ -170,18 +181,6 @@
         return false;
       }
 
-
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      virtual void set_parameters(const Parameters params) override
-      {
-        NonLinearLeastSquaresSolver::set_parameters(params);
-        TrustRegionBase::set_parameters(params);
-      }
-
-
   protected: 
       /**
       * @brief      update of tr radius, specialized for solution in L2 norm. 
@@ -212,7 +211,6 @@
     {
       return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
     }
-
 
 
   private:

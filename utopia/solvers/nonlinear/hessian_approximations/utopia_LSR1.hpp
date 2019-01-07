@@ -22,7 +22,7 @@ namespace utopia
             
             }
 
-            virtual void initialize() override
+            void initialize() override
             {
                 theta_ = 1.0; 
                 gamma_ = 1.0; 
@@ -38,7 +38,7 @@ namespace utopia
                 this->initialized(true); 
             }   
 
-            virtual void reset() override
+            void reset() override
             {
                 Y_.clear(); 
                 S_.clear(); 
@@ -54,7 +54,7 @@ namespace utopia
                 return new LSR1<Vector>(*this);
             }
 
-            virtual bool update(const Vector &  s, const Vector &  y ) override
+            bool update(const Vector &  s, const Vector &  y ) override
             {
                 
                 if(!this->initialized())
@@ -101,7 +101,7 @@ namespace utopia
                 return true; 
             }
 
-            virtual bool apply_Hinv(const Vector & v, Vector & result) const override
+            bool apply_Hinv(const Vector & v, Vector & result) const override
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
@@ -122,7 +122,7 @@ namespace utopia
                 return true; 
             }
 
-            virtual bool apply_H(const Vector & v, Vector & result) const  override
+            bool apply_H(const Vector & v, Vector & result) const  override
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
@@ -153,6 +153,17 @@ namespace utopia
                 return m_; 
             }
 
+            void read(Input &in) override
+            {
+                HessianApproximation<Vector>::read(in);
+                in.get("memory_size", m_);
+            }
+
+            void print_usage(std::ostream &os) const override
+            {
+                HessianApproximation<Vector>::print_usage(os);
+                this->print_param_usage(os, "memory_size", "int", "History/Memory size.", "5"); 
+            }     
 
         private:
             void precompute_p()

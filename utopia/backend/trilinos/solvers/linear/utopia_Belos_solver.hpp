@@ -33,7 +33,6 @@ namespace utopia {
 
         BelosSolver();
         BelosSolver(const BelosSolver &other);
-        BelosSolver(Parameters params);
         ~BelosSolver();
 
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
@@ -51,7 +50,6 @@ namespace utopia {
          *
          * @param[in]  params  The parameters
          */
-        void set_parameters(const Parameters params) override;
         BelosSolver * clone() const override;
         bool smooth(const Vector &rhs, Vector &x) override;
 

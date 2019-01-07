@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-10
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-14
-*/
-
 #ifndef UTOPIA_LEAST_SQUARES_NEWTON_HPP
 #define UTOPIA_LEAST_SQUARES_NEWTON_HPP
 
@@ -18,7 +11,7 @@ namespace utopia
        *
        */
   template<class Matrix, class Vector>
-  class LeastSquaresNewton : public NonLinearLeastSquaresSolver<Matrix, Vector> 
+  class LeastSquaresNewton final: public NonLinearLeastSquaresSolver<Matrix, Vector> 
   {
     typedef typename NonLinearLeastSquaresSolver<Matrix, Vector>::Solver Solver;
     typedef utopia::LSStrategy<Vector> LSStrategy; 
@@ -27,14 +20,13 @@ namespace utopia
 
   public:
 
-    LeastSquaresNewton( const std::shared_ptr<Solver> &linear_solver= std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-                        const Parameters params               = Parameters()): 
-                        NonLinearLeastSquaresSolver<Matrix, Vector>(linear_solver, params) 
+    LeastSquaresNewton( const std::shared_ptr<Solver> &linear_solver= std::make_shared<ConjugateGradient<Matrix, Vector> >()): 
+                        NonLinearLeastSquaresSolver<Matrix, Vector>(linear_solver) 
     {
 
     }
 
-    virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) 
+    bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) 
     {
 
       if(!this->ls_strategy_)
@@ -95,11 +87,24 @@ namespace utopia
     }
 
 
-    virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+    void set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
     {
       ls_strategy_ = strategy; 
-      ls_strategy_->set_parameters(this->parameters());
-      return true; 
+    }
+
+    void read(Input &in) override
+    {
+        NonLinearLeastSquaresSolver<Matrix, Vector>::read(in);
+        if(ls_strategy_) {
+            in.get("line-search", *ls_strategy_);
+        }
+    }
+
+
+    void print_usage(std::ostream &os) const override
+    {
+        NonLinearLeastSquaresSolver<Matrix, Vector>::print_usage(os);
+        this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-"); 
     }
 
   private:

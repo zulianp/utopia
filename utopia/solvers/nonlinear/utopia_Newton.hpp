@@ -38,11 +38,10 @@ namespace utopia
         typedef utopia::LSStrategy<Vector>                  LSStrategy; 
 
     public:
-        Newton(const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-               const Parameters params                       = Parameters() ):
-               NewtonBase<Matrix, Vector>(linear_solver, params), alpha_(1)
+        Newton(const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
+               NewtonBase<Matrix, Vector>(linear_solver), alpha_(1.0)
         {
-            set_parameters(params);
+
         }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
@@ -124,13 +123,6 @@ namespace utopia
             return true;
         }
 
-    void set_parameters(const Parameters params) override
-    {
-        NewtonBase<Matrix, Vector>::set_parameters(params);
-        alpha_ = params.alpha();
-
-    }
-
     void read(Input &in) override
     {
         NewtonBase<Matrix, Vector>::read(in);
@@ -141,6 +133,16 @@ namespace utopia
         }
     }
 
+    void print_usage(std::ostream &os) const override
+    {
+        NewtonBase<Matrix, Vector>::print_usage(os);
+
+        this->print_param_usage(os, "dumping", "real", "Default step size.", "1.0"); 
+        this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-"); 
+    }
+
+
+
     /**
      * @brief      Sets strategy for computing step-size. 
      *
@@ -148,11 +150,9 @@ namespace utopia
      *
      * @return     
      */
-    bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+    void set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
     {
       ls_strategy_ = strategy; 
-      ls_strategy_->set_parameters(this->parameters());
-      return true; 
     }
 
 

@@ -12,7 +12,8 @@
 namespace utopia {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGaussSeidel : public QPSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
+	class ProjectedGaussSeidel : public QPSolver<Matrix, Vector>, public Smoother<Matrix, Vector> 
+	{
 	public:
 
 		DEF_UTOPIA_SCALAR(Matrix)
@@ -20,6 +21,7 @@ namespace utopia {
 		ProjectedGaussSeidel()
 		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
 		{
+
 		}
 
 		ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
@@ -32,11 +34,26 @@ namespace utopia {
 		}
 
 
-		virtual void set_parameters(const Parameters params) override
-		{
-			QPSolver<Matrix, Vector>::set_parameters(params);
-			Smoother<Matrix, Vector>::set_parameters(params);
-		}
+        void read(Input &in) override
+        {
+            QPSolver<Matrix, Vector>::read(in);
+            Smoother<Matrix, Vector>::read(in);
+
+            in.get("use_line_search", use_line_search_);
+            in.get("use_symmetric_sweep", use_symmetric_sweep_);
+            in.get("n_local_sweeps", n_local_sweeps_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            QPSolver<Matrix, Vector>::print_usage(os);
+            Smoother<Matrix, Vector>::print_usage(os);
+
+            this->print_param_usage(os, "use_line_search", "bool", "Determines if line-search should be used.", "true"); 
+            this->print_param_usage(os, "use_symmetric_sweep", "bool", "Determines if symmetric local should be used.", "true"); 
+            this->print_param_usage(os, "n_local_sweeps", "int", "Number of local sweeps.", "3"); 
+        }
 
 		virtual bool smooth(const Vector &b, Vector &x) override
 		{
@@ -300,7 +317,7 @@ namespace utopia {
 		}
 
 
-		void set_use_line_search(const bool val)
+		void use_line_search(const bool val)
 		{
 			use_line_search_ = val;
 		}
@@ -310,12 +327,12 @@ namespace utopia {
 			return n_local_sweeps_;
 		}
 
-		inline void set_n_local_sweeps(const SizeType n_local_sweeps)
+		inline void n_local_sweeps(const SizeType n_local_sweeps)
 		{
 			n_local_sweeps_ = n_local_sweeps;
 		}
 
-		inline void set_use_symmetric_sweep(const bool use_symmetric_sweep)
+		inline void use_symmetric_sweep(const bool use_symmetric_sweep)
 		{
 			use_symmetric_sweep_ = use_symmetric_sweep;
 		}

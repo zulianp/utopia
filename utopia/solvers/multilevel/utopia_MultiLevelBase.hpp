@@ -2,13 +2,19 @@
 #define UTOPIA_ML_BASE_HPP
 #include "utopia_Transfer.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"
+#include "utopia_Input.hpp"
 
 #include <algorithm>
 #include <vector>
 
 namespace utopia 
 {
+	// type of cycles used in Multilevel stuff 
+	static const int MULTIPLICATIVE_CYCLE = 1;
+	static const int ADDITIVE_CYCLE       = 2;
+	static const int FULL_CYCLE           = 3;
+	static const int NESTED_ITERATION     = 4;
+
 	/**
 	 * @brief      Base class for all multilevel solvers. \n
 	 *             Takes care of inializing multilevel hierarchy. \n
@@ -19,32 +25,52 @@ namespace utopia
 	 * @tparam     Vector
 	 */
 	template<class Matrix, class Vector>
-	class MultiLevelBase 
+	class MultiLevelBase : virtual public Configurable
 	{
 		typedef UTOPIA_SCALAR(Vector)    			Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) 			SizeType;
-		typedef utopia::Level<Matrix, Vector> 		Level;
 		typedef utopia::Transfer<Matrix, Vector> 	Transfer;
 		typedef std::shared_ptr<Transfer> 			TransferPtr;
 
 	public:
 
-		MultiLevelBase(const Parameters params = Parameters()): num_levels_(-99)
+		MultiLevelBase(): 	pre_smoothing_steps_(3),
+							post_smoothing_steps_(3),
+							mg_type_(1), 
+							cycle_type_(MULTIPLICATIVE_CYCLE), 
+							v_cycle_repetition_(10),
+							fix_semidefinite_operators_(false),
+							num_levels_(-99)
 		{
-			set_parameters(params);
+
 		}
 
 		virtual ~MultiLevelBase(){}
 
-		virtual void set_parameters(const Parameters params)
-		{
-			parameters_ = params;
-			pre_smoothing_steps_ = params.pre_smoothing_steps();
-			post_smoothing_steps_ = params.post_smoothing_steps();
-			mg_type_ = params.mg_type();
-			cycle_type_ = params.cycle_type();
-			v_cycle_repetition_ = 1;  // TODO:: create option in params for this
-		}
+
+		virtual void read(Input &in) override
+        {
+            in.get("pre_smoothing_steps", pre_smoothing_steps_);
+            in.get("post_smoothing_steps", post_smoothing_steps_);
+            in.get("mg_type", mg_type_);
+            in.get("cycle_type", cycle_type_);
+            in.get("v_cycle_repetition", v_cycle_repetition_);
+            in.get("fix_semidefinite_operators", fix_semidefinite_operators_);
+            in.get("num_levels", num_levels_);
+        }
+
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            this->print_param_usage(os, "pre_smoothing_steps", "int", "Number of pre-smoothing steps.", "3"); 
+            this->print_param_usage(os, "post_smoothing_steps", "int", "Number of post-smoothing steps.", "3"); 
+            this->print_param_usage(os, "mg_type", "int", "Multigrid type.", "1"); 
+            this->print_param_usage(os, "cycle_type", "int", "Type of cycle used inside of multigrid method.", "MULTIPLICATIVE_CYCLE"); 
+            this->print_param_usage(os, "v_cycle_repetition", "int", "Number of v-cycles used after one F-cycle.", "10"); 
+            this->print_param_usage(os, "fix_semidefinite_operators", "bool", "Flag to fix semidefinite operators", "false"); 
+            this->print_param_usage(os, "num_levels", "int", "Number of levels in ML hierarchy.", "-"); 
+        }
+
 
 		/**
 		 * @brief Returns number of levels in hierarchy.
@@ -161,7 +187,17 @@ namespace utopia
 			(void) os;
 		}
 
-		bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector>>> &transfers)
+		inline void fix_semidefinite_operators(const bool val)
+		{
+			fix_semidefinite_operators_ = val;
+		}
+
+		inline bool fix_semidefinite_operators() const
+		{
+			return fix_semidefinite_operators_; 
+		}
+
+		bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector> > > &transfers)
 		{
 			if(num_levels_ <= 0) {
 				num_levels_ = transfers.size() + 1; 
@@ -180,13 +216,11 @@ namespace utopia
 	protected:
 		std::vector<TransferPtr> 	transfers_;   /*!< vector of transfer operators  */
 
-		Parameters      			parameters_;
-
 		SizeType        			pre_smoothing_steps_;
 		SizeType        			post_smoothing_steps_;
 		SizeType        			mg_type_;
 
-		int         				cycle_type_;
+		SizeType         			cycle_type_;
 		SizeType    				v_cycle_repetition_;
 
 		bool 						fix_semidefinite_operators_;

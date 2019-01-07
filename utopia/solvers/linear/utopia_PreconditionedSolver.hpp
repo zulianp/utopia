@@ -71,6 +71,21 @@ namespace utopia {
 		}
 
 
+        virtual void read(Input &in) override
+        {
+            IterativeSolver::read(in);
+            if(precond_) {
+                in.get("precond", *precond_);
+            }
+        }
+
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            IterativeSolver::print_usage(os);
+            this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-"); 
+        }
+
 	private:
 		std::shared_ptr<Preconditioner> precond_;
 	};

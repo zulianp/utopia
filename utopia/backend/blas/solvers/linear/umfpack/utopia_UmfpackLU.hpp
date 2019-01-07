@@ -18,6 +18,18 @@ namespace utopia {
 
         ~UmfpackLU();
 
+        void read(Input &in) override
+        {
+            DirectSolver<CRSMatrixd, Vectord>::read(in); 
+            DirectSolver<CCSMatrixd, Vectord> ::read(in); 
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            DirectSolver<CRSMatrixd, Vectord>::print_usage(os); 
+            DirectSolver<CCSMatrixd, Vectord> ::print_usage(os); 
+        }        
+
         bool solve(const CCSMatrixd &mat, const Vectord &rhs, Vectord &solution) override;
         bool solve(const CRSMatrixd &matrix, const Vectord &rhs, Vectord &solution) override;
 
