@@ -25,13 +25,13 @@ namespace utopia
             const Write<Vector> write2(x_exact_);
             {
                 // trust region does not converge to global sol, starting here...
-                // x_init_.set(0, 1.0);
-                // x_init_.set(1, 10.0);
-                // x_init_.set(2, 20.0);
-
                 x_init_.set(0, 1.0);
-                x_init_.set(1, 9.5);
-                x_init_.set(2, 1.0);                
+                x_init_.set(1, 10.0);
+                x_init_.set(2, 5.0);
+
+                // x_init_.set(0, 1.0);
+                // x_init_.set(1, 9.5);
+                // x_init_.set(2, 1.0);                
 
                 x_exact_.set(0, 1.0);
                 x_exact_.set(1, 10.0);                
@@ -74,9 +74,9 @@ namespace utopia
             const Scalar y = point.get(1);
             const Scalar z = point.get(2);
 
-            Scalar a = 0.0; 
-            Scalar b = 0.0; 
-            Scalar c = 0.0; 
+            Scalar g1 = 0.0; 
+            Scalar g2 = 0.0; 
+            Scalar g3 = 0.0; 
 
             for(SizeType i =1; i <=10; i++)
             {   
@@ -87,14 +87,14 @@ namespace utopia
                 Scalar  dfidx2 = -c*std::exp(c*y);
                 Scalar  dfidx3 = -(std::exp(c)-std::exp(10.0*c));
 
-                a += 2.0 * fi * dfidx1;
-                b += 2.0 * fi * dfidx2;
-                c += 2.0 * fi * dfidx3;
+                g1 += 2.0 * fi * dfidx1;
+                g2 += 2.0 * fi * dfidx2;
+                g3 += 2.0 * fi * dfidx3;
             }
 
-            g.set(0, a);
-            g.set(1, b);
-            g.set(2, c);
+            g.set(0, g1);
+            g.set(1, g2);
+            g.set(2, g3);
 
             return true;
         }

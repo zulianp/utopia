@@ -350,8 +350,22 @@ namespace utopia
 	    	test_functions[8] = std::make_shared<Box12<DMatrixd, DVectord> >();
 	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();
 	    	
+	    	// auto x_test = test_functions[9]->initial_guess(); 
+	    	// DVectord g; 
+	    	// DMatrixd H; 
+	    	// double v; 
 
+	    	// test_functions[9]->value(x_test, v); 
+	    	// test_functions[9]->gradient(x_test, g); 
+	    	// test_functions[9]->hessian(x_test, H); 
 
+	    	// disp(x_test); 
+
+	    	// std::cout<<"v: "<< v << "   \n"; 
+	    	// disp(g); 
+	    	// disp(H); 
+
+	    	// exit(0); 
 
 
 	    	for(auto i =0; i < 10; i++)
