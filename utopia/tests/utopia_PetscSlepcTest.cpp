@@ -355,10 +355,10 @@ namespace utopia
 	    	test_functions[12] = std::make_shared<Watson20<DMatrixd, DVectord> >(); 
 			
 			test_functions[13] = std::make_shared<PenaltyI23<DMatrixd, DVectord> >(10); 	    // works also in parallel 		
+			test_functions[14] = std::make_shared<VariablyDim25<DMatrixd, DVectord> >(5); 	    // works also in parallel 		
 
 
-
-	    	// const int fun_id = 13; 
+	    	// const int fun_id = 14; 
 
 	    	// auto x_test = test_functions[fun_id]->initial_guess(); 
 	    	// DVectord g; 
@@ -379,7 +379,7 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 14; i++)
+	    	for(auto i =0; i < 15; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 

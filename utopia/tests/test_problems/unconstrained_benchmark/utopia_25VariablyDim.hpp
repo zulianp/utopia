@@ -1,5 +1,5 @@
-#ifndef UTOPIA_SOLVER_PENALTY1_23
-#define UTOPIA_SOLVER_PENALTY1_23
+#ifndef UTOPIA_SOLVER_VARIABLY_DIMENSIONED_25
+#define UTOPIA_SOLVER_VARIABLY_DIMENSIONED_25
 
 #include <vector>
 #include <assert.h>
@@ -9,30 +9,39 @@
 namespace utopia 
 {
     template<class Matrix, class Vector>
-    class PenaltyI23 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class VariablyDim25 final: public UnconstrainedTestFunction<Matrix, Vector> 
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        PenaltyI23(const SizeType & n_loc): n_loc_(n_loc) 
+        VariablyDim25(const SizeType & n_loc): n_loc_(n_loc) 
         {
             x_init_ = local_zeros(n_loc_);
-            x_exact_ = local_values(n_loc_, 0.15812); // depends on size.. this is valid for n=10
+            x_exact_ = local_values(n_loc_, 1.0); 
+            x_inc_ = local_values(n_loc_, 1.0); 
+
+            SizeType n_global = size(x_exact_).get(0); 
             
             {
                 const Write<Vector> write1(x_init_);
-                each_write(x_init_, [](const SizeType i) -> double 
+                const Write<Vector> write2(x_inc_);
+
+                each_write(x_init_, [n_global](const SizeType i) -> double 
                 { 
-                    return i+1; 
+                    return (n_global - i - 1.)/Scalar(n_global);
                 }   );
-                 
+
+                each_write(x_inc_, [](const SizeType i) -> double 
+                { 
+                    return i+1;
+                }   );                
             }
         }
 
         std::string name() const override
         {
-            return "Penalty I"; 
+            return "Variably dimensioned"; 
         }
 
         SizeType dim() const override
@@ -45,13 +54,13 @@ namespace utopia
         {
             assert(local_size(x).get(0) == this->dim());
             
-            Scalar alpha = 0.00001;
-            Scalar t1 = -0.25 + dot(x,x); 
-
             Vector help = x - local_values(local_size(x).get(0), 1.0); 
-            Scalar t2 = dot(help, help); 
 
-            result = (alpha * t2) + (t1*t1); 
+            Scalar f1 = dot(x_inc_, help); 
+            Scalar f11 = f1*f1; 
+            Scalar f2 = dot(help, help); 
+
+            result = f11 * (1.0 + f11) + f2; 
 
             return true;
         }
@@ -60,12 +69,11 @@ namespace utopia
         {
             assert(local_size(x).get(0) == this->dim());
             
-            Scalar alpha = 0.00001;
-            Scalar t1 = -0.25 + dot(x,x); 
             Vector help = x - local_values(local_size(x).get(0), 1.0); 
+            Scalar f1 = dot(x_inc_, help); 
 
-            g = 2.0* alpha * help; 
-            g += 4.0 * t1 * x; 
+            g = ((2.0 * f1) + (4.0*f1*f1*f1)) * x_inc_; 
+            g  = g + (2.0 * help); 
 
             return true;
         }
@@ -74,21 +82,21 @@ namespace utopia
         {
             assert(local_size(x).get(0) == this->dim());
             
-            H = outer(x,x); 
-            H *= 8.0; 
+            Vector help = x - local_values(local_size(x).get(0), 1.0); 
+            Scalar f1 = dot(x_inc_, help); 
 
+            H = outer(x_inc_, x_inc_); 
+            H *= 2.0 + (12.0 * f1 * f1);  
+
+            Vector d = diag(H); 
             {
-                const Read<Vector> read(x);
+                const Read<Vector> read(d);
                 const Write<Matrix> write(H);
-
-                Scalar alpha = 0.00001;
-                Scalar t1 = -0.25 + dot(x,x); 
-                Scalar d = (2.0 * alpha) + (4.0  *t1); 
 
                 auto r = row_range(H); 
                 for(auto i = r.begin(); i != r.end(); ++i)
                 {
-                    H.set(i,i, d + 8.0 * x.get(i) * x.get(i)); 
+                    H.set(i,i, d.get(i) + 2.0); 
                 }                
             }
 
@@ -107,16 +115,17 @@ namespace utopia
 
         Scalar min_function_value() const override
         {
-            return 7.08765e-5; // if n=10
+            return 0; 
         }
 
     private: 
         SizeType n_loc_; 
         Vector x_init_; 
         Vector x_exact_; 
+        Vector x_inc_; 
 
     };    
     
 }
 
-#endif //UTOPIA_SOLVER_PENALTY1_23
+#endif //UTOPIA_SOLVER_VARIABLY_DIMENSIONED_25
