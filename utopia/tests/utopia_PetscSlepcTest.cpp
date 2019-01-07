@@ -323,8 +323,9 @@ namespace utopia
 			// solver.max_it(500);
 			// solver.verbose(true); 
 
-			auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
-			// auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
+
+			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >(); // seems to have problems ?? why??? 
+			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
 			subproblem->atol(1e-12);
 			subproblem->stol(1e-15);
 			subproblem->rtol(1e-15);
@@ -350,16 +351,19 @@ namespace utopia
 	    	test_functions[8] = std::make_shared<Box12<DMatrixd, DVectord> >();
 	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();
 	    	test_functions[10] = std::make_shared<Biggs18<DMatrixd, DVectord> >();
-	    	
+	    	test_functions[11] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); // known to go to few local minimums
 
-	    	// auto x_test = test_functions[10]->initial_guess(); 
+	    	
+	    	// const int fun_id = 11; 
+
+	    	// auto x_test = test_functions[fun_id]->initial_guess(); 
 	    	// DVectord g; 
 	    	// DMatrixd H; 
 	    	// double v; 
 
-	    	// test_functions[10]->value(x_test, v); 
-	    	// test_functions[10]->gradient(x_test, g); 
-	    	// test_functions[10]->hessian(x_test, H); 
+	    	// test_functions[fun_id]->value(x_test, v); 
+	    	// test_functions[fun_id]->gradient(x_test, g); 
+	    	// test_functions[fun_id]->hessian(x_test, H); 
 
 	    	// disp(x_test); 
 
@@ -370,7 +374,7 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 11; i++)
+	    	for(auto i =0; i < 12; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
