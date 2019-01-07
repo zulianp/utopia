@@ -704,6 +704,10 @@ namespace utopia
 
 		void affine_similarity_stiff_test()
 		{
+			if(mpi_world_size() >1)
+				return; 
+
+
 			const SizeType n = 100; 
 
 			MildStiffExample<DMatrixd, DVectord> fun(n); 
