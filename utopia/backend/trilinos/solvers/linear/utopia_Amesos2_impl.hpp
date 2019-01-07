@@ -108,18 +108,6 @@ namespace utopia {
     };
     
     /**
-     * Constructor that sets the solver's parameters.
-     * \param params an object Parameters
-     */
-    template <typename Matrix, typename Vector>
-    Amesos2Solver<Matrix, Vector, TRILINOS>::Amesos2Solver(Parameters params)
-    : impl_(make_unique<Impl>())
-    {
-        // TODO check parameter but do not set Amesos2 parameters
-        set_parameters(params);
-    }
-    
-    /**
      * Copy Constructor.
      * \param other an object Amesos2Solver
      */
@@ -340,12 +328,12 @@ namespace utopia {
     }
     
     template <typename Matrix, typename Vector>
-    void Amesos2Solver<Matrix, Vector, TRILINOS>::set_parameters(const Parameters params)
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::read_xml(const std::string &path)
     {
-        if(!params.param_file_name().empty()) {
+        if(!path.empty()) {
             try {
                 Teuchos::RCP<Teuchos::ParameterList> tmp_param_list;
-                tmp_param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());  //TODO this call should go in Param class for Trilinos together with the full param list
+                tmp_param_list = Teuchos::getParametersFromXmlFile(path);  //TODO this call should go in Param class for Trilinos together with the full param list
                 
                 impl_->amesos_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("Amesos2", true)));
                 impl_->utopia_list_.reset(new Teuchos::ParameterList(tmp_param_list->sublist("UTOPIA", true)));
