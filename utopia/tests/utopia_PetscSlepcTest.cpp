@@ -326,14 +326,14 @@ namespace utopia
 
 			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >(); // seems to have problems ?? why??? 
 			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
-			subproblem->atol(1e-9);
+			subproblem->atol(1e-12);
 			subproblem->stol(1e-15);
 			subproblem->rtol(1e-15);
 
 			TrustRegion<DMatrixd, DVectord> solver(subproblem);
 			solver.verbose(true);
 			solver.max_it(600); 
-			solver.atol(1e-10); 
+			solver.atol(1e-9); 
 			solver.rtol(1e-12); 
 			solver.stol(1e-13); 
 
@@ -356,9 +356,10 @@ namespace utopia
 			
 			test_functions[13] = std::make_shared<PenaltyI23<DMatrixd, DVectord> >(10); 	    // works also in parallel 		
 			test_functions[14] = std::make_shared<VariablyDim25<DMatrixd, DVectord> >(5); 	    // works also in parallel 		
+			test_functions[15] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(10);  	// could also work in parallel - but it does not
 
 
-	    	// const int fun_id = 14; 
+	    	// const int fun_id = 15; 
 
 	    	// auto x_test = test_functions[fun_id]->initial_guess(); 
 	    	// DVectord g; 
@@ -379,7 +380,7 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 15; i++)
+	    	for(auto i =0; i < 16; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 
