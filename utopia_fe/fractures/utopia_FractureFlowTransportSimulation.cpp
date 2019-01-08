@@ -89,7 +89,14 @@ namespace utopia {
 
 		velocity = local_zeros(local_size(M_x_v));
 
-		utopia::solve(mass_matrix, M_x_v, velocity);
+		bool lump_matrix = true;
+
+		if(lump_matrix) {
+			UVector lumped = sum(mass_matrix, 1);
+			velocity = e_mul(M_x_v, 1./lumped);
+		} else {
+			utopia::solve(mass_matrix, M_x_v, velocity);
+		}
 
 		copy_values(P, pressure_w, P, velocity);
 	}

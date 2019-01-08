@@ -3,7 +3,7 @@
 	<mesh>
 		<type>square</type>
 		<elem-type>quad</elem-type>
-		<order>1</order>
+		<order>2</order>
 
 		<min-x>0.</min-x>
 		<min-y>0.</min-y>
