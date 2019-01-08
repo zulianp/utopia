@@ -309,6 +309,8 @@ namespace utopia
 
 		void benchmark_test_tr()
 		{
+			std::cout<<"REMEMBER:: utopia_warning put back in ksp impl... \n"; 
+
 			// auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
 			// linear_solver->atol(1e-14); 
 			// linear_solver->max_it(10000);
@@ -331,32 +333,32 @@ namespace utopia
 			subproblem->rtol(1e-15);
 
 			TrustRegion<DMatrixd, DVectord> solver(subproblem);
-			solver.verbose(true);
+			solver.verbose(false);
 			solver.max_it(600); 
 			solver.atol(1e-9); 
-			solver.rtol(1e-12); 
+			solver.rtol(1e-9); 
 			solver.stol(1e-13); 
+
+			const auto n = 10; 
 
 
 			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
 
-	    	test_functions[0] = std::make_shared<Rosenbrock01<DMatrixd, DVectord> >();;
-	    	test_functions[1] = std::make_shared<Powell03<DMatrixd, DVectord> >(); // known to diverge also with tr solvers
-	    	test_functions[2] = std::make_shared<Brown04<DMatrixd, DVectord> >();
-	    	test_functions[3] = std::make_shared<Beale05<DMatrixd, DVectord> >();
-	    	test_functions[4] = std::make_shared<Hellical07<DMatrixd, DVectord> >();
-	    	test_functions[5] = std::make_shared<Woods14<DMatrixd, DVectord> >();
-	    	test_functions[6] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(3);
-	    	test_functions[7] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();
-	    	test_functions[8] = std::make_shared<Box12<DMatrixd, DVectord> >();
-	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();
-	    	test_functions[10] = std::make_shared<Biggs18<DMatrixd, DVectord> >();
-	    	test_functions[11] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); // known to go to few local minimums
-	    	test_functions[12] = std::make_shared<Watson20<DMatrixd, DVectord> >(); 
-			
-			test_functions[13] = std::make_shared<PenaltyI23<DMatrixd, DVectord> >(10); 	    // works also in parallel 		
-			test_functions[14] = std::make_shared<VariablyDim25<DMatrixd, DVectord> >(5); 	    // works also in parallel 		
-			test_functions[15] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(10);  	// could also work in parallel - but it does not
+			test_functions[0] = std::make_shared<Hellical07<DMatrixd, DVectord> >();
+	    	test_functions[1] = std::make_shared<Biggs18<DMatrixd, DVectord> >();	
+			test_functions[2] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();	    			
+	    	test_functions[3] = std::make_shared<Powell03<DMatrixd, DVectord> >(); 
+	    	test_functions[4] = std::make_shared<Box12<DMatrixd, DVectord> >();	  
+			test_functions[5] = std::make_shared<VariablyDim25<DMatrixd, DVectord> >(n); 	    // works also in parallel 		
+	    	test_functions[6] = std::make_shared<Watson20<DMatrixd, DVectord> >(); 		
+			test_functions[7] = std::make_shared<PenaltyI23<DMatrixd, DVectord> >(n); 	    // works also in parallel 		    			    	  	
+	    	test_functions[8] = std::make_shared<Brown04<DMatrixd, DVectord> >();
+	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();	
+	    	test_functions[10] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); // known to go to few local minimums	
+			test_functions[11] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(n);  	// could also work in parallel - but it does not	    					    	    	
+	    	test_functions[12] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(n);
+	    	test_functions[13] = std::make_shared<Beale05<DMatrixd, DVectord> >();
+	    	test_functions[14] = std::make_shared<Woods14<DMatrixd, DVectord> >();
 
 
 	    	// const int fun_id = 15; 
@@ -380,18 +382,19 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 16; i++)
+	    	for(auto i =0; i < 15; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 
-				std::cout<<"---------------- " << test_functions[i]->name() << "  ----------------  \n"; 
+				std::cout<<"-------------------------------- " << test_functions[i]->name() << "  --------------------------------  \n"; 
 				solver.solve(*test_functions[i], x_init); 
 
-				// auto sol_status = solver.solution_status(); 
-				// sol_status.describe(std::cout); 
+				auto sol_status = solver.solution_status(); 
+				//sol_status.describe(std::cout); 
+				std::cout<<"iterates: "<< sol_status.iterates << " \n"; 
 
-				disp(x_init);
-				utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol(), 1e-4));
+				// disp(x_init);
+				// utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol(), 1e-4));
 			}
 
 

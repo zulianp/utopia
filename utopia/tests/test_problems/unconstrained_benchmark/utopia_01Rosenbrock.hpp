@@ -102,7 +102,7 @@ namespace utopia
 
         Scalar min_function_value() const override
         {
-            return 0; 
+            return 1; 
         }
 
         std::string name() const override
