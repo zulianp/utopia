@@ -7,7 +7,8 @@
 namespace utopia {
 
 	FractureFlowTransportSimulation::FractureFlowTransportSimulation(libMesh::Parallel::Communicator &comm)
-	: steady_flow_(comm) {}
+	: steady_flow_(comm)
+	{}
 
 	void FractureFlowTransportSimulation::read(utopia::Input &in)
 	{
@@ -15,6 +16,12 @@ namespace utopia {
 
 		auto &V_s = steady_flow_.matrix->space.subspace(0);
 		auto &V_f = steady_flow_.fracture_newtork->space.subspace(0);
+
+		velocity_m_.lump_mass_matrix = false;
+		velocity_f_.lump_mass_matrix = false;
+
+		in.get("lump-mass-matrix", velocity_m_.lump_mass_matrix);
+		in.get("lump-mass-matrix", velocity_f_.lump_mass_matrix);
 	}
 
 	void FractureFlowTransportSimulation::compute_velocity()
@@ -78,20 +85,22 @@ namespace utopia {
 
 		auto ph = interpolate(pressure_w, p);
 
-		auto l_form = -inner(flow.diffusion_tensor * grad(ph), ctx_fun(flow.sampler) * v) * dX;
+		//FIXME tomorrow
+		// auto l_form = -inner(flow.diffusion_tensor * grad(ph), ctx_fun(flow.sampler) * v) * dX;
+		auto l_form = inner(flow.diffusion_tensor * grad(ph), ctx_fun(flow.sampler) * v) * dX;
 		auto b_form = inner(trial(*space), test(*space)) * dX;
 
 		UVector M_x_v;
 		utopia::assemble(l_form, M_x_v);
+
+		M_x_v *= -1.;
 
 		USparseMatrix mass_matrix;
 		utopia::assemble(b_form, mass_matrix);
 
 		velocity = local_zeros(local_size(M_x_v));
 
-		bool lump_matrix = true;
-
-		if(lump_matrix) {
+		if(lump_mass_matrix) {
 			UVector lumped = sum(mass_matrix, 1);
 			velocity = e_mul(M_x_v, 1./lumped);
 		} else {

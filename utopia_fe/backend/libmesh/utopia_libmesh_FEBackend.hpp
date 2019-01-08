@@ -1518,7 +1518,7 @@ namespace utopia {
 			assert(!fe_object.empty());
 			const auto &sub_0 = space[0];
 			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
-			const uint dim = space[0].mesh().mesh_dimension();
+			const uint dim = space[0].mesh().spatial_dimension();
 
 			uint n_shape_functions = 0;
 			space.each([&fe_object, &n_shape_functions](const int, const LibMeshFunctionSpace &subspace) {
@@ -1597,7 +1597,7 @@ namespace utopia {
 
 			assert(!fe_object.empty());
 			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
-			const uint dim = space[0].mesh().mesh_dimension();
+			const uint dim = space[0].mesh().spatial_dimension();
 
 
 			uint n_shape_functions = 0;
@@ -1694,7 +1694,7 @@ namespace utopia {
 
 			const std::size_t n_subspaces = space.n_subspaces();
 			const std::size_t n_quad_points = grads[0].size();
-			const std::size_t dim = sub_0.mesh().mesh_dimension();
+			const std::size_t dim = sub_0.mesh().spatial_dimension();
 
 			ret.resize(n_shape_functions);
 			for(auto &r : ret) {
@@ -1892,10 +1892,7 @@ namespace utopia {
 			// auto &c   = interp.coefficient();
 			// auto &f   = interp.fun();
 			auto space_ptr = f.space_ptr();
-
-			auto &&g  = grad(f, ctx);
-
-
+			auto &&g = grad(f, ctx);
 
 			Vector element_values;
 			gather_interp_values(c, f, element_values, ctx);
@@ -1903,7 +1900,6 @@ namespace utopia {
 			const SizeType rows = space_ptr->n_subspaces();
 			const SizeType cols = space_ptr->subspace(0).mesh().spatial_dimension();
 			Size s{rows, cols};
-
 
 			const std::size_t n_shape_functions = g.size();
 			const std::size_t n_quad_points = g[0].size();

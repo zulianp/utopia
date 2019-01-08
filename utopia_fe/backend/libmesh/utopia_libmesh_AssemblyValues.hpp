@@ -375,7 +375,7 @@ namespace utopia {
 
 				if(!ctx.vector_fe()[s_id]) {
 					ctx.vector_fe()[s_id] = std::make_shared<VectorElement>();
-					ctx.vector_fe()[s_id]->dim = s.subspace(0).mesh().mesh_dimension();
+					ctx.vector_fe()[s_id]->dim = s.subspace(0).mesh().spatial_dimension();
 					ctx.vector_fe()[s_id]->n_vars = s.n_subspaces();
 					ctx.vector_fe()[s_id]->start_var = s_id;
 				}

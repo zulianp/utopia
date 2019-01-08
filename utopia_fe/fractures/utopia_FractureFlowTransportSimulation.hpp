@@ -22,6 +22,7 @@ namespace utopia {
 
 			std::unique_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space;
 			UVector velocity;
+			bool lump_mass_matrix;
 		};
 
 		SteadyFractureFlowSimulation steady_flow_;
@@ -29,6 +30,8 @@ namespace utopia {
 
 		Velocity velocity_m_;
 		Velocity velocity_f_;
+
+
 	};
 
 }
