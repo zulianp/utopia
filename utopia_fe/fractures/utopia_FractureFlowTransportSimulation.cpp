@@ -85,15 +85,20 @@ namespace utopia {
 
 		auto ph = interpolate(pressure_w, p);
 
-		//FIXME tomorrow
-		// auto l_form = -inner(flow.diffusion_tensor * grad(ph), ctx_fun(flow.sampler) * v) * dX;
-		auto l_form = inner(flow.diffusion_tensor * grad(ph), ctx_fun(flow.sampler) * v) * dX;
+		//FIXME If do not put paranthesis it gives priority to the minus instead of multiplication
+		//and there is a bug with the - dot(a, b) apparently
+		auto l_form = -(
+			 	inner(
+			 		flow.diffusion_tensor * grad(ph),
+			 		ctx_fun(flow.sampler) * v
+			 	) * dX
+		);
+
+		// auto l_form = inner(flow.diffusion_tensor * grad(ph), ctx_fun(flow.sampler) * v) * dX;
 		auto b_form = inner(trial(*space), test(*space)) * dX;
 
 		UVector M_x_v;
 		utopia::assemble(l_form, M_x_v);
-
-		M_x_v *= -1.;
 
 		USparseMatrix mass_matrix;
 		utopia::assemble(b_form, mass_matrix);
