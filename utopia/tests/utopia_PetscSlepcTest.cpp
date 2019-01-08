@@ -311,37 +311,46 @@ namespace utopia
 		{
 			std::cout<<"REMEMBER:: utopia_warning put back in ksp impl... \n"; 
 
-			// auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
-			// linear_solver->atol(1e-14); 
-			// linear_solver->max_it(10000);
-			
-			// auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			// eigen_solver->solver_type("arpack");			
+			// ------------------------------------ Test 1 --------------------------
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
 
-			// RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+			// PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
 
-			// solver.atol(1e-10); 
+
+			// // ------------------------------------ Test 2 --------------------------
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			eigen_solver->solver_type("arpack");			
+
+			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+
+			// ------------------------------------ Test 3 --------------------------
+			// auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>("petsc");			
+			// AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+
+			// solver.atol(1e-7); 
 			// solver.stol(1e-14); 
 			// solver.max_it(500);
-			// solver.verbose(true); 
+			// solver.verbose(false); 
+
 
 
 			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >(); // seems to have problems ?? why??? 
-			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
-			subproblem->atol(1e-12);
-			subproblem->stol(1e-15);
-			subproblem->rtol(1e-15);
+			// auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
+			// subproblem->atol(1e-12);
+			// subproblem->stol(1e-15);
+			// subproblem->rtol(1e-15);
 
-			TrustRegion<DMatrixd, DVectord> solver(subproblem);
-			solver.verbose(false);
-			solver.max_it(600); 
-			solver.atol(1e-9); 
-			solver.rtol(1e-9); 
-			solver.stol(1e-13); 
+			// TrustRegion<DMatrixd, DVectord> solver(subproblem);
+			// solver.verbose(false);
+			// solver.max_it(600); 
+			// solver.atol(1e-9); 
+			// solver.rtol(1e-9); 
+			// solver.stol(1e-13); 
 
 			const auto n = 10; 
-
-
 			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
 
 			test_functions[0] = std::make_shared<Hellical07<DMatrixd, DVectord> >();
@@ -349,11 +358,13 @@ namespace utopia
 			test_functions[2] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();	    			
 	    	test_functions[3] = std::make_shared<Powell03<DMatrixd, DVectord> >(); 
 	    	test_functions[4] = std::make_shared<Box12<DMatrixd, DVectord> >();	  
+			
 			test_functions[5] = std::make_shared<VariablyDim25<DMatrixd, DVectord> >(n); 	    // works also in parallel 		
 	    	test_functions[6] = std::make_shared<Watson20<DMatrixd, DVectord> >(); 		
 			test_functions[7] = std::make_shared<PenaltyI23<DMatrixd, DVectord> >(n); 	    // works also in parallel 		    			    	  	
 	    	test_functions[8] = std::make_shared<Brown04<DMatrixd, DVectord> >();
 	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();	
+	    	
 	    	test_functions[10] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); // known to go to few local minimums	
 			test_functions[11] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(n);  	// could also work in parallel - but it does not	    					    	    	
 	    	test_functions[12] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(n);
@@ -382,11 +393,17 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 15; i++)
+	    	for(auto i =0; i < 2; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 
-				std::cout<<"-------------------------------- " << test_functions[i]->name() << "  --------------------------------  \n"; 
+				std::cout<<"-------------------------------- " << test_functions[i]->name() << ",  dim: " << test_functions[i]->dim() << "  --------------------------------  \n"; 
+
+				// for AF testing 
+				// DMatrixd I = identity(test_functions[i]->dim(), test_functions[i]->dim()); 
+				// solver.set_mass_matrix(I); 
+				// solver.set_scaling_matrix(I); 
+
 				solver.solve(*test_functions[i], x_init); 
 
 				auto sol_status = solver.solution_status(); 

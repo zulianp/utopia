@@ -26,9 +26,9 @@ namespace utopia
             const Write<Vector> write2(x_exact_);
             {
                 // trust region does not converge to global sol, starting here...
-                x_init_.set(0, 1.0);
+                x_init_.set(0, 0.0);
                 x_init_.set(1, 10.0);
-                x_init_.set(2, 5.0);
+                x_init_.set(2, 20.0);
 
                 // x_init_.set(0, 1.0);
                 // x_init_.set(1, 9.5);

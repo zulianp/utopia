@@ -26,19 +26,19 @@ namespace utopia
             const Write<Vector> write1(x_init_);
             const Write<Vector> write2(x_exact_);
             {
-                // x_init_.set(0, 1.0);
-                // x_init_.set(1, 2.0);
-                // x_init_.set(2, 1.0);
-                // x_init_.set(3, 1.0);       
-                // x_init_.set(4, 1.0);
-                // x_init_.set(5, 1.0);       
-
                 x_init_.set(0, 1.0);
-                x_init_.set(1, 9.0);
+                x_init_.set(1, 2.0);
                 x_init_.set(2, 1.0);
-                x_init_.set(3, 4.0);       
-                x_init_.set(4, 3.0);
-                x_init_.set(5, 3.0);                                                
+                x_init_.set(3, 1.0);       
+                x_init_.set(4, 1.0);
+                x_init_.set(5, 1.0);       
+
+                // x_init_.set(0, 1.0);
+                // x_init_.set(1, 9.0);
+                // x_init_.set(2, 1.0);
+                // x_init_.set(3, 4.0);       
+                // x_init_.set(4, 3.0);
+                // x_init_.set(5, 3.0);                                                
 
                 x_exact_.set(0, 1.0);
                 x_exact_.set(1, 10.0);     

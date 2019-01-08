@@ -52,7 +52,8 @@ namespace utopia
             Scalar g_norm, s_norm=9e9, tau, lambda_min;
             Scalar ared, pred, rho; 
 
-            Vector g = local_zeros(local_size(x)), eigenvector_min, s, x_trial; 
+            Vector g = local_zeros(local_size(x)), eigenvector_min, x_trial; 
+            Vector s = 0 * x; 
             Matrix H, H_damped; 
 
             fun.gradient(x, g); 
@@ -91,6 +92,7 @@ namespace utopia
                     pred = -1.0 * dot(g, s) -0.5 *dot(H* s, s);
                     rho = ared/pred; 
 
+
                     if(rho < 1./4.)
                         tau *=0.5; 
                     else if(rho > 3./4.)
@@ -102,19 +104,17 @@ namespace utopia
                     tau  *= 0.5; 
                 }
 
-
                 if(rho > 0.0)
                 {
                     x = x_trial; 
                     fun.gradient(x, g); 
-
                     energy_old = energy_new; 
                     energy = energy_new; 
 
                     norms2(g, s, g_norm, s_norm); 
                 }
                 else
-                {
+                {          
                     s_norm = norm2(s); 
                     energy = energy_old; 
                 }
@@ -122,12 +122,17 @@ namespace utopia
                 it++; 
 
                 if(this->verbose())
+                {   
+                    // we can not use s_norm as sometimes is zero, if we do not go for solve... 
                     PrintInfo::print_iter_status(it, {g_norm, energy,  rho, tau, s_norm});
+                }
 
-                converged = this->check_convergence(it, g_norm, 9e9, s_norm);
+                // we can not use s_norm as sometimes is zero, if we do not go for solve... 
+                converged = this->check_convergence(it, g_norm, 9e9, 9e9);
 
-                if(!converged && rho >0.0)
+                if(!converged && rho >0.0){
                     fun.hessian(x, H); 
+                }
 
 
             } // outer solve loop while(!converged)

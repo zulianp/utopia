@@ -57,10 +57,11 @@ namespace utopia
             const Scalar y = point.get(1);
             const Scalar z = point.get(2);
 
-            Scalar a = 10.0 * (z - 10.0 * theta(x,y));
-            Scalar b = 10.0 * ( std::sqrt(x*x + y*y) - 1.0); 
-
-            result = a*a + b*b + z*z; 
+            Scalar th = theta(x,y); 
+            Scalar a = z - (10.0 * th); 
+            Scalar b = std::sqrt((x*x) + (y*y)) - 1.0; 
+            
+            result = (100.0 * a*a) + (100.0 * b*b) + (z*z);
             return true;
         }
 
@@ -79,12 +80,12 @@ namespace utopia
             const Scalar xx = x * x;
             const Scalar yy = y * y; 
             const Scalar r = std::sqrt(xx + yy); 
-            const Scalar t =  z - 10.0 * theta(x,y); 
+            const Scalar t =  z - (10.0 * theta(x,y)); 
             const Scalar s1 = 5.0 * t / ( pi() * r * r );
 
-            const Scalar a = 200.0 * ( x - (x / r) + y * s1 );
-            const Scalar b = 200.0 * ( y - (y / r) - x * s1 );
-            const Scalar c = 2.0 * ( 100.0 * t + z);
+            const Scalar a = 200.0 * ( x - (x / r) + (y * s1));
+            const Scalar b = 200.0 * ( y - (y / r) - (x * s1));
+            const Scalar c = 2.0 * ((100.0 * t) + z);
 
             result.set(0, a);
             result.set(1, b);
@@ -118,7 +119,7 @@ namespace utopia
             Scalar h1 = pi() * (xxyy);     
             Scalar h2 = h1 * (xxyy);     
 
-            Scalar  term11 = 200.0 - 200.0 * yy * ( 1.0 / xxyy32 - 25.0 / ( h1 *h1 ));
+            Scalar  term11 = 200.0 - (200.0 * yy * ( 1.0 / xxyy32 - 25.0 / ( h1 *h1 )));
                     term11 -= 2000.0 * xy * ( z - 10.0 * th )/h2;
 
             const Scalar mixed23 = - 1000.0 * x / pixy;
@@ -127,11 +128,11 @@ namespace utopia
 
             Scalar  term12 = 200.0 * xy / xxyy32;
                     term12 += 1000.0 /h2; 
-                    term12 *= ( ( z - 10.0 * th ) * ( xx - yy ) - 5.0 * xy / pi() );
+                    term12 *= ( ( z - (10.0 * th)) * ( xx - yy ) - (5.0 * xy / pi()) );
 
 
-            Scalar  term22 = 200.0 - 200.0 * xx * ( 1.0 / xxyy32 - 25.0 / (h1*h1));
-                    term22 += 2000.0 * xy * ( z - 10.0 * th )/h2;
+            Scalar  term22 = 200.0 - (200.0 * xx * ( 1.0 / xxyy32 - 25.0 / (h1*h1)));
+                    term22 += 2000.0 * xy * ( z - (10.0 * th))/h2;
 
 
             result.set(0, 0, term11);
@@ -172,7 +173,7 @@ namespace utopia
               if ( 0.0 < x1 )
                 return 0.5 * std::atan ( x2 / x1 ) / pi();
               else if ( x1 < 0.0 )
-                return 0.5 * std::atan ( x2 / x1 ) / pi() + 0.5;
+                return (0.5 * std::atan ( x2 / x1 ) / pi()) + 0.5;
               else if ( 0.0 < x2 )
                 return 0.25;
               else if ( x2 < 0.0 )
