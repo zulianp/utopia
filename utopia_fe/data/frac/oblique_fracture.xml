@@ -3,7 +3,7 @@
 	<mesh>
 		<type>square</type>
 		<elem-type>quad</elem-type>
-		<order>2</order>
+		<order>1</order>
 
 		<min-x>0.</min-x>
 		<min-y>0.</min-y>
@@ -14,7 +14,7 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<!-- <refinements>2</refinements> -->
+		<refinements>2</refinements>
 	</mesh>
 
 	<space>
@@ -23,7 +23,7 @@
 		<variables>
 			<var>
 			<name>u</name>
-			<order>2</order>
+			<order>1</order>
 			</var>
 		</variables>
 
@@ -96,4 +96,5 @@
 <use-mg>true</use-mg>
 <mg-sweeps>1</mg-sweeps>
 <mg-levels>4</mg-levels>
+<flow-type>transient</flow-type>
 

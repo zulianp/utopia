@@ -1846,7 +1846,8 @@ namespace utopia {
 
 			std::vector<Vector> ret(n_quad_points);
 
-			const uint dim = f.space_ptr()->mesh().mesh_dimension();
+			// const uint dim = f.space_ptr()->mesh().mesh_dimension();
+			const uint dim = f.space_ptr()->mesh().spatial_dimension();
 
 			for(auto &r : ret) {
 				r = zeros(dim);
@@ -1900,7 +1901,7 @@ namespace utopia {
 			gather_interp_values(c, f, element_values, ctx);
 
 			const SizeType rows = space_ptr->n_subspaces();
-			const SizeType cols = space_ptr->subspace(0).mesh().mesh_dimension();
+			const SizeType cols = space_ptr->subspace(0).mesh().spatial_dimension();
 			Size s{rows, cols};
 
 
@@ -2275,6 +2276,24 @@ namespace utopia {
 			}
 
 			return std::move(g);
+		}
+
+		template<typename C>
+		inline static auto multiply(
+			const LMDenseMatrix &mat,
+			const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+		{
+			auto &&g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+			auto ret = g;
+
+			std::size_t n_quad_points = g.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				multiply(mat, g[qp].implementation(), ret[qp].implementation());
+			}
+
+			return std::move(ret);
 		}
 
 		template<typename T>
@@ -2870,6 +2889,24 @@ namespace utopia {
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				for(std::size_t i = 0; i < n_functions; ++i) {
 					ret[i][qp] = left * ret[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
+
+		template<class Space>
+		inline static auto multiply(const QValues<double> &left, const TestFunction<Space> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type
+		{
+			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] *= left[qp];
 				}
 			}
 

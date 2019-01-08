@@ -70,6 +70,20 @@ namespace utopia {
 			return spaces_[index];
 		}
 
+
+		inline ProductFunctionSpace subspace(const std::size_t range_begin, const std::size_t range_end)
+		{
+			assert(range_begin >= 0);
+			assert(range_end <= spaces_.size());
+			ProductFunctionSpace ret;
+
+			for(std::size_t i = range_begin; i < range_end; ++i) {
+				ret.add_subspace(spaces_[i]);
+			}
+
+			return ret;
+		}
+
 		inline std::size_t n_subspaces() const
 		{
 			return spaces_.size();
