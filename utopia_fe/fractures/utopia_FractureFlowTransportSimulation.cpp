@@ -43,8 +43,35 @@ namespace utopia {
 
 		//compute upwind matrix
 		transport_f_.assemble_system();
-		transport_f_.assemble_system();
+		transport_m_.assemble_system();
 
+		UVector xkp1 = transport_m_.velocity;
+		UVector Mxk;
+		
+		auto &V_m = transport_m_.space->subspace(0);
+
+		libMesh::Nemesis_IO io_m(V_m.mesh());
+
+		utopia::convert(xkp1, *V_m.equation_system().solution);
+		V_m.equation_system().solution->close();
+		io_m.write_timestep("transient.e", V_m.equation_systems(), 1, 0);
+
+		Factorization<USparseMatrix, UVector> solver;
+		solver.update(make_ref(transport_m_.system_matrix));
+
+		write("A.m", transport_m_.system_matrix);
+
+		int n_timesteps = 1;
+		for(double t = transport_m_.dt; t < simulation_time_; t += transport_m_.dt) {
+			
+			transport_m_.add_mass(xkp1, Mxk);
+			solver.apply(Mxk, xkp1);
+
+			utopia::convert(xkp1, *V_m.equation_system().solution);
+			V_m.equation_system().solution->close();
+
+			io_m.write_timestep("transient.e", V_m.equation_systems(), ++n_timesteps, t);
+		}
 
 	}
 
@@ -86,7 +113,7 @@ namespace utopia {
 			(*space) *= LibMeshFunctionSpace(aux, aux.add_variable("vel_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 		}
 
-		(*space) *= LibMeshFunctionSpace(aux, aux.add_variable("p", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+		(*space) *= LibMeshFunctionSpace(aux, aux.add_variable("c", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 
 		space->subspace(0).initialize();
 
@@ -145,13 +172,33 @@ namespace utopia {
 
 		auto uh = interpolate(velocity, v);
 
-		//FIXME This bugs because the ranges are found from uh instead of c
+		//FIXME This bugs because the var ranges are found from uh instead of c
 		// auto b_form = inner(c * uh, grad(q)) * dX;	
-		
+
 		auto b_form = inner(c * uh, grad(q)) * dX;
 		utopia::assemble(b_form, gradient_matrix);
 
-		system_matrix = mass_matrix + dt * gradient_matrix;
+		if(lump_mass_matrix) {
+			system_matrix = dt * gradient_matrix;
+			system_matrix += USparseMatrix(diag(mass_vector));
+		} else {
+			system_matrix = mass_matrix - dt * gradient_matrix;
+		}
+
+		auto IV = boxed_fun({0.9, 0.9}, {1.0, 1.0},
+			[](const std::vector<double> &x) -> double {
+				return 10.;
+			}
+		);
+
+		auto l_form = inner(ctx_fun(IV), q) * dX;
+
+		UVector M_x_c0, c0;
+		utopia::assemble(l_form, M_x_c0);
+		remove_mass(M_x_c0, c0);
+
+		copy_values(C, c0, C, velocity);
+
 	}
 
 	void FractureFlowTransportSimulation::Transport::update_output()
@@ -160,6 +207,32 @@ namespace utopia {
 		auto &sys = V.equation_system();
 		utopia::convert(velocity, *sys.solution);
 		sys.solution->close();
+	}
+
+	void FractureFlowTransportSimulation::Transport::remove_mass(const UVector &in, UVector &out) const
+	{
+		if(empty(out)) {
+			out = local_zeros(local_size(in));
+		}
+
+		if(lump_mass_matrix) {
+			out = e_mul(in, 1./mass_vector);
+		} else {
+			const bool ok = utopia::solve(mass_matrix, in, out); assert(ok); (void) ok;
+		}
+	}
+
+	void FractureFlowTransportSimulation::Transport::add_mass(const UVector &in, UVector &out) const
+	{
+		if(empty(out)) {
+			out = local_zeros(local_size(in));
+		}
+
+		if(lump_mass_matrix) {
+			out = e_mul(in, mass_vector);
+		} else {
+			out = mass_matrix * in;
+		}
 	}
 
 }

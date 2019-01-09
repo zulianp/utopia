@@ -14,7 +14,7 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<!-- <refinements>2</refinements> -->
+		<refinements>3</refinements>
 	</mesh>
 
 	<space>
@@ -105,4 +105,6 @@
 <mg-levels>4</mg-levels>
 <flow-type>transient</flow-type>
 <!-- <lump-mass-matrix>true</lump-mass-matrix> -->
+<dt>0.002</dt>
+<simulation-time>0.5</simulation-time>
 

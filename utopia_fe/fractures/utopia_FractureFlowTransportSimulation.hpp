@@ -20,6 +20,8 @@ namespace utopia {
 			void init(const UVector &pressure, FractureFlow &flow);
 			void update_output();
 			void assemble_system();
+			void remove_mass(const UVector &in, UVector &out) const;
+			void add_mass(const UVector &in, UVector &out) const;
 
 			std::unique_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space;
 			UVector velocity;
