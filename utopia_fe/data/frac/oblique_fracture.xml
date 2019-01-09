@@ -52,6 +52,13 @@
 
 	<space>
 		<system-name>slave</system-name>
+		<variables>
+			<var>
+			<name>u</name>
+			<order>1</order>
+			<fe-family>LAGRANGE</fe-family>
+			</var>
+		</variables>
 
 		<boundary-conditions>
 			<entry>
@@ -97,5 +104,5 @@
 <mg-sweeps>1</mg-sweeps>
 <mg-levels>4</mg-levels>
 <flow-type>transient</flow-type>
-<lump-mass-matrix>true</lump-mass-matrix>
+<!-- <lump-mass-matrix>true</lump-mass-matrix> -->
 

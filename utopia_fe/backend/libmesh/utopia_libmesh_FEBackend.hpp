@@ -1216,6 +1216,59 @@ namespace utopia {
 
 		template<typename T>
 		static auto multiply(
+			const QValues<T> &left,
+			const FQValues<double> &right,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
+		{
+			FQValues<T> ret;
+			std::size_t n_quad_points = left.size();
+			std::size_t n_funs = right.size();
+
+			assert(n_quad_points == right[0].size());
+
+			ret.resize(n_funs);
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				ret[i].resize(n_quad_points);
+
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = left[qp];
+					ret[i][qp] *= right[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
+		template<typename T>
+		static auto multiply(
+			const FQValues<double> &left,
+			const QValues<T> &right,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
+		{
+			FQValues<T> ret;
+			std::size_t n_quad_points = right.size();
+			std::size_t n_funs = left.size();
+
+			assert(n_quad_points == left[0].size());
+
+			ret.resize(n_funs);
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				ret[i].resize(n_quad_points);
+
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = right[qp];
+					ret[i][qp] *= left[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
+
+		template<typename T>
+		static auto multiply(
 			const double val,
 			const std::vector<T> &vals,
 			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T>
@@ -1790,6 +1843,15 @@ namespace utopia {
 
 			return ret;
 		}
+
+		template<class C>
+		static auto fun(
+			const Interpolate<C, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>> &f,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<DenseVectorT>
+		{
+			return fun(f.coefficient(), f.fun(), ctx);
+		}
+		
 
 		template<class Tensor, class Space>
 		static std::vector<DenseVectorT> fun(
