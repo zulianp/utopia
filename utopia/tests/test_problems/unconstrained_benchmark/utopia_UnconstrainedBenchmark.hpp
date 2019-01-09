@@ -19,5 +19,6 @@
     #include "utopia_23Penalty1.hpp"
     #include "utopia_25VariablyDim.hpp"
     #include "utopia_26Trigonometric.hpp"
+    #include "utopia_35Chebyquad.hpp"
 
 #endif //UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES

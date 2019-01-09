@@ -17,7 +17,6 @@ namespace utopia
 
         Trigonometric26(const SizeType & n_loc): n_loc_(n_loc) 
         {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
             x_exact_ = local_values(n_loc_, 0.0); 
             SizeType n_global = size(x_exact_).get(0); 
@@ -122,13 +121,9 @@ namespace utopia
         {
             assert(local_size(x).get(0) == this->dim());
             
-            H = local_values(local_size(x).get(0), local_size(x).get(0), 0.0); 
-
-            if( mpi_world_size() > 1)
-            {
-                utopia_error("Trigonometric26:: hessian implementation is incorrect in parallel ... \n"); 
+            if(empty(H)){
+                H = local_values(local_size(x).get(0), local_size(x).get(0), 0.0); 
             }
-
 
             SizeType n_global = size(x).get(0); 
             Vector xcos = x;
@@ -164,39 +159,30 @@ namespace utopia
                 const Read<Vector> read3(t);
                 const Write<Matrix> write(H);
 
-                auto r = row_range(H); 
-                auto c = col_range(H); 
-                for(auto j = r.begin(); j != r.end(); ++j)
-                {
-                    Scalar th =  xcos.get(j) ; 
-                    Scalar xsj = xsin.get(j);
+                each_write(H, [&xsin, &xcos, &t, s2, n_global](const SizeType i, const SizeType j) -> double 
+                { 
+                    Scalar val; 
 
-                    for(auto k = c.begin(); k != c.end(); ++k)
+                    if(i==j)
                     {
-                        Scalar val = xsin.get(k) * ((( n_global + (j+1) + (k+1) ) * xsj) - th); 
-                        val -= (xsj * xcos.get(k)); 
-                        val *= 2.0; 
-                        H.set(j,k, val); 
+                        val = ( ((i+1) * ( (i+1) + 2. )) + n_global ) * xsin.get(i) *xsin.get(i); 
+                        val += xcos.get(i) *( xcos.get(i) -  ( (2. * (i+1.)) + 2. ) * xsin.get(i)); 
+                        val +=  t.get(i) * ( ((i+1.) * xcos.get(i)) + xsin.get(i));
+                        val = 2.0 * ( val + (xcos.get(i) * s2));
                     }
-                }                
-            }
+                    else
+                    {
+                        Scalar th =  xcos.get(i);
+                        Scalar xsj = xsin.get(i);
+                        val = xsin.get(j) * ((( n_global + (i+1) + (j+1) ) * xsj) - th); 
+                        val -= (xsj * xcos.get(j)); 
+                        val *= 2.0; 
+                    }
 
+                    return val; 
 
-            {
-                const Read<Vector> read(xsin);
-                const Read<Vector> read2(xcos);
-                const Read<Vector> read3(t);
-                const Write<Matrix> write(H);
+                }   );
 
-                auto r = row_range(H); 
-                for(auto i = r.begin(); i != r.end(); ++i)
-                {
-                    Scalar val = ( ((i+1) * ( (i+1) + 2. )) + n_global ) * xsin.get(i) *xsin.get(i); 
-                    val += xcos.get(i) *( xcos.get(i) -  ( (2. * (i+1.)) + 2. ) * xsin.get(i)); 
-                    val +=  t.get(i) * ( ((i+1.) * xcos.get(i)) + xsin.get(i));
-                    val = 2.0 * ( val + (xcos.get(i) * s2));
-                    H.set(i,i, val); 
-                }                
             }
 
             return true;

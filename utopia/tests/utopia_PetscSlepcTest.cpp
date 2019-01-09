@@ -316,14 +316,14 @@ namespace utopia
 			linear_solver->atol(1e-14); 
 			linear_solver->max_it(10000);
 
-			// PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
+			//PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
 
 
 			// // ------------------------------------ Test 2 --------------------------
-			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");			
+			// auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			// eigen_solver->solver_type("arpack");			
 
-			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+			// PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
 
 
 			// ------------------------------------ Test 3 --------------------------
@@ -333,22 +333,21 @@ namespace utopia
 			// solver.atol(1e-7); 
 			// solver.stol(1e-14); 
 			// solver.max_it(500);
-			// solver.verbose(false); 
+			// solver.verbose(true); 
 
 
 
 			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >(); // seems to have problems ?? why??? 
-			// auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
-			// subproblem->atol(1e-12);
-			// subproblem->stol(1e-15);
-			// subproblem->rtol(1e-15);
+			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
+			subproblem->atol(1e-12);
+			subproblem->stol(1e-15);
+			subproblem->rtol(1e-15);
 
-			// TrustRegion<DMatrixd, DVectord> solver(subproblem);
-			// solver.verbose(false);
-			// solver.max_it(600); 
-			// solver.atol(1e-9); 
-			// solver.rtol(1e-9); 
-			// solver.stol(1e-13); 
+			TrustRegion<DMatrixd, DVectord> solver(subproblem);
+			solver.atol(1e-7); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(true); 
 
 			const auto n = 10; 
 			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
@@ -367,9 +366,11 @@ namespace utopia
 	    	
 	    	test_functions[10] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); // known to go to few local minimums	
 			test_functions[11] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(n);  	// could also work in parallel - but it does not	    					    	    	
-	    	test_functions[12] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(n);
+	    	test_functions[12] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(n); // works also in parallel 		    			    	  	
 	    	test_functions[13] = std::make_shared<Beale05<DMatrixd, DVectord> >();
 	    	test_functions[14] = std::make_shared<Woods14<DMatrixd, DVectord> >();
+
+	    	test_functions[15] = std::make_shared<Chebyquad35<DMatrixd, DVectord> >();
 
 
 	    	// const int fun_id = 15; 
@@ -380,6 +381,7 @@ namespace utopia
 	    	// double v; 
 
 	    	// std::cout<<"---------------- " << test_functions[fun_id]->name() << "  ----------------  \n"; 
+
 	    	// test_functions[fun_id]->value(x_test, v); 
 	    	// test_functions[fun_id]->gradient(x_test, g); 
 	    	// test_functions[fun_id]->hessian(x_test, H); 
@@ -393,7 +395,7 @@ namespace utopia
 	    	// exit(0); 
 
 
-	    	for(auto i =0; i < 2; i++)
+	    	for(auto i =15; i < 16; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 
@@ -410,7 +412,7 @@ namespace utopia
 				//sol_status.describe(std::cout); 
 				std::cout<<"iterates: "<< sol_status.iterates << " \n"; 
 
-				// disp(x_init);
+				disp(x_init);
 				// utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol(), 1e-4));
 			}
 
