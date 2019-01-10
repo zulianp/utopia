@@ -129,7 +129,7 @@ namespace utopia
       }
 
         // do not hard code this 
-      else if(delta < delta_min_)
+      else if(delta <= delta_min_)
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
         sol_status.reason = ConvergenceReason::CONVERGED_TR_DELTA; 

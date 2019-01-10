@@ -48,9 +48,19 @@ namespace utopia
             return 9.0; 
         }
 
+        bool exact_sol_known() const override
+        {
+            return false;  // just because we can not fit into precision
+        }
+
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(x.size().get(0) == this->dim());
             {
                 const Read<Vector> read(x);
@@ -87,6 +97,11 @@ namespace utopia
 
         bool gradient(const Vector &x, Vector &g) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(x.size().get(0) == this->dim());
             g = zeros(this->dim());
 
@@ -143,6 +158,11 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+                        
             assert(x.size().get(0) == this->dim());
             H = zeros(this->dim(), this->dim());
             

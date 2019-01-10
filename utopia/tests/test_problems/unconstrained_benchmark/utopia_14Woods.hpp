@@ -8,18 +8,6 @@
 
 namespace utopia 
 {
-
-    /**
-     * @brief       Wood's test function widely used for testing nonlinear optimization problems. \n
-     *              It is a fourth-degree polynomial which is reasonably well-behaved near the minimum,
-     *               but in order to get there one must cross a rather flat, four-dimensional ‘plateau’
-     *               which often causes minimization algorithm to get ‘stuck’ far from the minimum. As
-     *               such it is a particularly good test of convergence criteria and simulates quite well a
-     *               feature of many physical problems in many variables where no good starting approximation
-     *               is known. \n
-     *               Exact solution is at F(1, 1, 1, 1) = 0. \n
-     *               Good intial guess for testing: F(-3, -1, -3, -1) = 19192. \n
-     */
     template<class Matrix, class Vector>
     class Woods14 final: public UnconstrainedTestFunction<Matrix, Vector> 
     {
@@ -64,6 +52,11 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 4);
 
             {
@@ -81,6 +74,11 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 4);
             result = zeros(4);
 
@@ -103,6 +101,11 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 4);
             result = zeros(4, 4);
 

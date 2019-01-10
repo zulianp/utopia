@@ -20,6 +20,7 @@
 #include "utopia_M3ELinSolTest.hpp"
 #include "utopia_QPSolverTest.hpp"
 #include "utopia_trilinos_KokkosTest.hpp"
+#include "utopia_TRTest.hpp"
 
 namespace utopia
 {
@@ -124,6 +125,8 @@ namespace utopia
                     run_m3e_lin_sol_test();
                 } else if(token == "qp") {
                     run_qp_solver_test();
+                }else if(token == "uncon_bench") {
+                    run_unconstrained_optimization_benchmark();
                 }
             }
         }

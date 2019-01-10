@@ -47,7 +47,7 @@ namespace utopia
 
         bool exact_sol_known() const override
         {
-            return true; 
+            return false; 
         }
 
 

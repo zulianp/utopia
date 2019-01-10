@@ -39,15 +39,14 @@ namespace utopia
 		
 		void run()
 		{
-			// UTOPIA_RUN_TEST(petsc_slepc_generalized_eigen_test); 
-			// UTOPIA_RUN_TEST(petsc_slepc_eigen_test); 
-			// UTOPIA_RUN_TEST(tr_more_sorensen_eigen_test); 
-			// UTOPIA_RUN_TEST(pseudo_tr_test); 
-			// UTOPIA_RUN_TEST(pseudo_tr_stiff_test); 
-			// UTOPIA_RUN_TEST(pseudo_cont_test); 
-			// UTOPIA_RUN_TEST(lm_test); 
-			// UTOPIA_RUN_TEST(rosenbrock_test); 
-			UTOPIA_RUN_TEST(benchmark_test_tr); 
+			UTOPIA_RUN_TEST(petsc_slepc_generalized_eigen_test); 
+			UTOPIA_RUN_TEST(petsc_slepc_eigen_test); 
+			UTOPIA_RUN_TEST(tr_more_sorensen_eigen_test); 
+			UTOPIA_RUN_TEST(pseudo_tr_test); 
+			UTOPIA_RUN_TEST(pseudo_tr_stiff_test); 
+			UTOPIA_RUN_TEST(pseudo_cont_test); 
+			UTOPIA_RUN_TEST(lm_test); 
+			UTOPIA_RUN_TEST(rosenbrock_test); 
 		}
 
 
@@ -304,105 +303,6 @@ namespace utopia
 			solver.solve(fun, x); 
 
 		}
-
-
-
-		void benchmark_test_tr()
-		{
-			std::cout<<"REMEMBER:: utopia_warning put back in ksp impl... \n"; 
-
-			// ------------------------------------ Test 1 --------------------------
-			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
-			linear_solver->atol(1e-14); 
-			linear_solver->max_it(10000);
-
-			//PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
-
-
-			// // ------------------------------------ Test 2 --------------------------
-			// auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			// eigen_solver->solver_type("arpack");			
-
-			// PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
-
-
-			// ------------------------------------ Test 3 --------------------------
-			// auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>("petsc");			
-			// AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
-
-			// solver.atol(1e-7); 
-			// solver.stol(1e-14); 
-			// solver.max_it(500);
-			// solver.verbose(true); 
-
-
-
-			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >(); // seems to have problems ?? why??? 
-			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
-			subproblem->atol(1e-12);
-			subproblem->stol(1e-15);
-			subproblem->rtol(1e-15);
-
-			TrustRegion<DMatrixd, DVectord> solver(subproblem);
-			solver.atol(1e-6); 
-			solver.rtol(1e-11); 
-			solver.stol(1e-14); 
-			solver.max_it(550);
-			solver.verbose(false); 
-
-			const auto n = 10; 
-			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
-
-			test_functions[0] = std::make_shared<Hellical07<DMatrixd, DVectord> >();
-	    	test_functions[1] = std::make_shared<Biggs18<DMatrixd, DVectord> >();	
-			test_functions[2] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();	    			
-	    	test_functions[3] = std::make_shared<Powell03<DMatrixd, DVectord> >(); 
-	    	test_functions[4] = std::make_shared<Box12<DMatrixd, DVectord> >();	  
-			
-			test_functions[5] = std::make_shared<VariablyDim25<DMatrixd, DVectord> >(n); 	    // works also in parallel 		
-	    	test_functions[6] = std::make_shared<Watson20<DMatrixd, DVectord> >(); 		
-			test_functions[7] = std::make_shared<PenaltyI23<DMatrixd, DVectord> >(n); 	    // works also in parallel 		    			    	  	
-	    	test_functions[8] = std::make_shared<Brown04<DMatrixd, DVectord> >();
-	    	test_functions[9] = std::make_shared<PenaltyII24<DMatrixd, DVectord> >();
-
-	    	test_functions[10] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();	
-	    	test_functions[11] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); 
-			test_functions[12] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(n);  	
-	    	test_functions[13] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(n); // works also in parallel 		    			    	  	
-	    	test_functions[14] = std::make_shared<Beale05<DMatrixd, DVectord> >();
-
-	    	test_functions[15] = std::make_shared<Woods14<DMatrixd, DVectord> >();
-	    	test_functions[16] = std::make_shared<ExtendedPowell22<DMatrixd, DVectord> >(12);
-	    	test_functions[17] = std::make_shared<Chebyquad35<DMatrixd, DVectord> >();
-	    	
-
-
-	    	for(auto i =0; i < 18; i++)
-	    	{
-				DVectord x_init = test_functions[i]->initial_guess(); 
-
-				std::cout<<"-------------------------------- " << test_functions[i]->name() << ",  dim: " << test_functions[i]->dim() << "  --------------------------------  \n"; 
-
-				solver.solve(*test_functions[i], x_init); 
-
-				auto sol_status = solver.solution_status(); 
-				//sol_status.describe(std::cout); 
-				std::cout<<"iterates: "<< sol_status.iterates << " \n"; 
-
-				// disp(x_init);
-				// utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol(), 1e-4));
-			}
-
-
-		}
-
-
-
-
-
-
-
-
 
 		SlepcsSolverTest()
 		: _n(10) { }

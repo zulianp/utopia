@@ -54,8 +54,6 @@ namespace utopia
             return true; 
         }
 
-
-
         bool value(const Vector &x, Scalar &result) const override 
         {
             assert(local_size(x).get(0) == this->dim());

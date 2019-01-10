@@ -49,6 +49,11 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 2);
 
             const Read<Vector> read(point);
@@ -65,6 +70,11 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+            
             assert(point.size().get(0) == 2);
             result = zeros(2);
 
@@ -93,6 +103,11 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 2);
 
             result = zeros(2, 2);
