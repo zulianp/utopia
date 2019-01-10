@@ -2,6 +2,7 @@
 #define UTOPIA_FRACTURE_FLOW_TRANSPORT_SIMULATION_HPP
 
 #include "utopia_SteadyFractureFlowSimulation.hpp"
+#include "utopia_UIForcingFunction.hpp"
 
 namespace utopia {
 
@@ -15,22 +16,43 @@ namespace utopia {
 		void write_output();
 
 	private:
-		class Transport {
+		class Transport : public Configurable {
 		public:
+			inline void set_steady_state_function_space(UIFunctionSpace<LibMeshFunctionSpace> &V)
+			{
+				steady_state_function_space = make_ref(V);
+				space = utopia::make_unique<UIFunctionSpace<LibMeshFunctionSpace>>(V.mesh(), V.subspace(0).equation_systems_ptr());
+			}
+
+			Transport();
+
 			void init(const UVector &pressure, FractureFlow &flow);
 			void update_output();
 			void assemble_system();
-			void remove_mass(const UVector &in, UVector &out) const;
+			void remove_mass(const UVector &in, UVector &out);
 			void add_mass(const UVector &in, UVector &out) const;
+			void read(Input &in) override;
+			void constrain_concentration(UVector &vec);
 
-			std::unique_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space;
+			std::shared_ptr<UIFunctionSpace<LibMeshFunctionSpace>> steady_state_function_space;
+			std::unique_ptr<UIFunctionSpace<LibMeshFunctionSpace>> space;
+			std::unique_ptr<UIForcingFunction<LibMeshFunctionSpace, UVector>> forcing_function;
+			
 			UVector velocity;
 			bool lump_mass_matrix;
+			bool h1_regularization;
+			double regularization_parameter;
 			USparseMatrix mass_matrix;
 			USparseMatrix gradient_matrix;
 			USparseMatrix system_matrix;
 			UVector mass_vector;
+			UVector f;
+
+			Factorization<USparseMatrix, UVector> mass_matrix_inverse;
 			double dt;
+			double simulation_time;
+
+			std::vector<double> box_min, box_max;
 		};
 
 		SteadyFractureFlowSimulation steady_flow_;
@@ -38,7 +60,8 @@ namespace utopia {
 
 		Transport transport_m_;
 		Transport transport_f_;
-		double simulation_time_;
+		
+		bool preset_velocity_field_;
 
 	};
 

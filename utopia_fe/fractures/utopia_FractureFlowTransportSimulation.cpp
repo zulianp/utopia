@@ -7,7 +7,7 @@
 namespace utopia {
 
 	FractureFlowTransportSimulation::FractureFlowTransportSimulation(libMesh::Parallel::Communicator &comm)
-	: steady_flow_(comm)
+	: steady_flow_(comm), preset_velocity_field_(false)
 	{}
 
 	void FractureFlowTransportSimulation::read(utopia::Input &in)
@@ -17,23 +17,18 @@ namespace utopia {
 		auto &V_s = steady_flow_.matrix->space.subspace(0);
 		auto &V_f = steady_flow_.fracture_newtork->space.subspace(0);
 
-		transport_m_.lump_mass_matrix = false;
-		transport_f_.lump_mass_matrix = false;
+		transport_m_.set_steady_state_function_space(steady_flow_.matrix->space);
+		transport_f_.set_steady_state_function_space(steady_flow_.fracture_newtork->space);
 
-		in.get("lump-mass-matrix", transport_m_.lump_mass_matrix);
-		in.get("lump-mass-matrix", transport_f_.lump_mass_matrix);
+		in.get("transport", transport_m_);
+		in.get("transport", transport_f_);
 
+		//specialized input for matrix
+		in.get("transport", [this](Input &in) {
+			in.get("matrix", transport_m_);
+		});
 
-		simulation_time_ = 1.;
-		in.get("simulation-time", simulation_time_);
-
-		transport_f_.dt = 0.1;
-		transport_m_.dt = 0.1;
-
-		in.get("dt", transport_f_.dt);
-		in.get("dt", transport_m_.dt);
-
-
+		in.get("preset-velocity-field", preset_velocity_field_);
 	}
 
 	void FractureFlowTransportSimulation::compute_transport()
@@ -41,31 +36,60 @@ namespace utopia {
 		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_newtork);
 		transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
 
+		if(preset_velocity_field_) {
+
+			const SizeType dim = transport_m_.space->subspace(0).mesh().spatial_dimension();
+
+			each_write(transport_m_.velocity, [dim](const SizeType i) -> double {
+				const SizeType local_idx = i % (dim + 1);
+
+				if(local_idx == 0) {
+					return -10;
+				}
+
+				// if(local_idx < dim) {
+				// 	return 0.;
+				// }
+				return 0.;
+			});
+		}
+
 		//compute upwind matrix
 		transport_f_.assemble_system();
 		transport_m_.assemble_system();
 
-		UVector xkp1 = transport_m_.velocity;
-		UVector Mxk;
-		
-		auto &V_m = transport_m_.space->subspace(0);
+		auto &V_m = transport_m_.space->space().last_subspace();
 
+		UVector xkp1 = transport_m_.velocity;
+		UVector rhs = local_zeros(local_size(xkp1));
+
+		apply_boundary_conditions(V_m.dof_map(), transport_m_.system_matrix, xkp1);
+		
+		
 		libMesh::Nemesis_IO io_m(V_m.mesh());
 
 		utopia::convert(xkp1, *V_m.equation_system().solution);
+
 		V_m.equation_system().solution->close();
 		io_m.write_timestep("transient.e", V_m.equation_systems(), 1, 0);
 
-		Factorization<USparseMatrix, UVector> solver;
-		solver.update(make_ref(transport_m_.system_matrix));
+		Factorization<USparseMatrix, UVector> solver_m, solver_f;
+		solver_m.update(make_ref(transport_m_.system_matrix));
+		// solver_f.update(make_ref(transport_f_.system_matrix));
 
-		write("A.m", transport_m_.system_matrix);
+		// write("A.m", transport_m_.system_matrix);
+
+		assert(!empty(transport_m_.f));
 
 		int n_timesteps = 1;
-		for(double t = transport_m_.dt; t < simulation_time_; t += transport_m_.dt) {
+		for(double t = transport_m_.dt; t < transport_m_.simulation_time; t += transport_m_.dt) {
 			
-			transport_m_.add_mass(xkp1, Mxk);
-			solver.apply(Mxk, xkp1);
+			transport_m_.add_mass(xkp1, rhs);
+			rhs += transport_m_.dt * transport_m_.f;
+
+			transport_m_.constrain_concentration(rhs);
+
+			solver_m.apply(rhs, xkp1);
 
 			utopia::convert(xkp1, *V_m.equation_system().solution);
 			V_m.equation_system().solution->close();
@@ -91,7 +115,6 @@ namespace utopia {
 		steady_flow_.init_coupling();
 
 		if(steady_flow_.solve()) {
-
 			compute_transport();
 			write_output();
 		}
@@ -103,22 +126,27 @@ namespace utopia {
 	void FractureFlowTransportSimulation::Transport::init(const UVector &pressure, FractureFlow &flow)
 	{
 		auto &V = flow.space.subspace(0);
-		auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("velocity");
-
-		space = utopia::make_unique<ProductFunctionSpace<LibMeshFunctionSpace>>();
-
 		const int dim = V.mesh().spatial_dimension();
 
-		for(int i = 0; i < dim; ++i) {
-			(*space) *= LibMeshFunctionSpace(aux, aux.add_variable("vel_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
-		}
+		assert(space);
 
-		(*space) *= LibMeshFunctionSpace(aux, aux.add_variable("c", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+		if(!space->initialized()) {
 
-		space->subspace(0).initialize();
+			space->set_space( utopia::make_unique<ProductFunctionSpace<LibMeshFunctionSpace>>() );
+			auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("velocity");
 
-		auto W  = space->subspace(0, dim);
-		auto &P = space->subspace(dim);
+			for(int i = 0; i < dim; ++i) {
+				space->space() *= LibMeshFunctionSpace(aux, aux.add_variable("vel_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+			}
+
+			space->space() *= LibMeshFunctionSpace(aux, aux.add_variable("c", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+			space->subspace(0).initialize();
+		} 
+
+		assert(dim + 1 == int(space->space().n_subspaces()));
+	
+		auto W  = space->space().subspace(0, dim);
+		auto &P = space->space().subspace(dim);
 
 		auto p = trial(P);
 
@@ -139,19 +167,22 @@ namespace utopia {
 			 	) * dX
 		);
 
-		auto b_form = inner(trial(*space), test(*space)) * dX;
+		auto b_form = inner(trial(space->space()), test(space->space())) * dX;
 
 		UVector M_x_v;
 		utopia::assemble(l_form, M_x_v);
 		utopia::assemble(b_form, mass_matrix);
 
+		mass_matrix_inverse.update(make_ref(mass_matrix));
+
 		velocity = local_zeros(local_size(M_x_v));
 
-		if(lump_mass_matrix) {
-			mass_vector = sum(mass_matrix, 1);
+		mass_vector = sum(mass_matrix, 1);
+
+		if(lump_mass_matrix) {	
 			velocity = e_mul(M_x_v, 1./mass_vector);
 		} else {
-			utopia::solve(mass_matrix, M_x_v, velocity);
+			mass_matrix_inverse.apply(M_x_v, velocity);
 		}
 
 		copy_values(P, pressure_w, P, velocity);
@@ -161,8 +192,8 @@ namespace utopia {
 	{
 		const int dim = space->subspace(0).mesh().spatial_dimension();
 
-		auto W  = space->subspace(0, dim);
-		auto &C = space->subspace(dim);
+		auto W  = space->space().subspace(0, dim);
+		auto &C = space->space().subspace(dim);
 
 		std::cout << C.dof_map().n_variables() << std::endl;
 
@@ -179,26 +210,50 @@ namespace utopia {
 		utopia::assemble(b_form, gradient_matrix);
 
 		if(lump_mass_matrix) {
-			system_matrix = dt * gradient_matrix;
+			system_matrix = -dt * gradient_matrix;
 			system_matrix += USparseMatrix(diag(mass_vector));
 		} else {
 			system_matrix = mass_matrix - dt * gradient_matrix;
 		}
 
-		auto IV = boxed_fun({0.9, 0.9}, {1.0, 1.0},
-			[](const std::vector<double> &x) -> double {
-				return 10.;
-			}
-		);
+		if(h1_regularization) {
+			auto lapl = inner(grad(c), grad(q)) * dX;
 
-		auto l_form = inner(ctx_fun(IV), q) * dX;
+			USparseMatrix lapl_matrix;
+			utopia::assemble(lapl, lapl_matrix);
 
-		UVector M_x_c0, c0;
-		utopia::assemble(l_form, M_x_c0);
-		remove_mass(M_x_c0, c0);
+			system_matrix -= (regularization_parameter * dt) * lapl_matrix;
+		}
+
+		UVector c0;
+		if(!box_min.empty() && !box_max.empty()) {
+			auto IV = boxed_fun(box_min, box_max,
+				[](const std::vector<double> &x) -> double {
+					return 10.;
+				}
+			);
+
+			auto l_form = inner(ctx_fun(IV), q) * dX;
+
+			UVector M_x_c0;
+			utopia::assemble(l_form, M_x_c0);
+			// remove_mass(M_x_c0, c0);
+			c0 = e_mul(M_x_c0, 1./mass_vector);
+		} else {
+			c0 = local_zeros(C.dof_map().n_local_dofs());
+		}
+
 
 		copy_values(C, c0, C, velocity);
 
+
+		if(forcing_function) {
+			forcing_function->eval(velocity, f);
+			double norm_f = norm2(f);
+			std::cout << "norm_f " << norm_f << std::endl;
+		} else {
+			f = local_zeros(local_size(velocity));
+		}
 	}
 
 	void FractureFlowTransportSimulation::Transport::update_output()
@@ -209,7 +264,7 @@ namespace utopia {
 		sys.solution->close();
 	}
 
-	void FractureFlowTransportSimulation::Transport::remove_mass(const UVector &in, UVector &out) const
+	void FractureFlowTransportSimulation::Transport::remove_mass(const UVector &in, UVector &out)
 	{
 		if(empty(out)) {
 			out = local_zeros(local_size(in));
@@ -218,7 +273,7 @@ namespace utopia {
 		if(lump_mass_matrix) {
 			out = e_mul(in, 1./mass_vector);
 		} else {
-			const bool ok = utopia::solve(mass_matrix, in, out); assert(ok); (void) ok;
+			const bool ok = mass_matrix_inverse.apply(in, out); assert(ok); (void) ok;
 		}
 	}
 
@@ -233,6 +288,78 @@ namespace utopia {
 		} else {
 			out = mass_matrix * in;
 		}
+	}
+
+	FractureFlowTransportSimulation::Transport::Transport() :
+	lump_mass_matrix(false),
+	simulation_time(1.),
+	h1_regularization(false),
+	regularization_parameter(1e-4),
+	dt(0.1)
+	{}
+
+	void FractureFlowTransportSimulation::Transport::read(Input &in)
+	{
+		in.get("lump-mass-matrix", lump_mass_matrix);
+		in.get("dt", dt);
+		in.get("simulation-time", simulation_time);
+		in.get("h1-regularization", h1_regularization);
+		in.get("regularization-parameter", regularization_parameter);
+
+		in.get("box", [this](Input &in) {
+			box_min.resize(3, -std::numeric_limits<double>::max());
+			box_max.resize(3,  std::numeric_limits<double>::max());
+
+			in.get("x-min", box_min[0]);
+			in.get("y-min", box_min[1]);
+			in.get("z-min", box_min[2]);
+
+			in.get("x-max", box_max[0]);
+			in.get("y-max", box_max[1]);
+			in.get("z-max", box_max[2]);
+		});
+
+		in.get("space", *space);
+
+		if(space->initialized()) {
+			forcing_function = utopia::make_unique< UIForcingFunction<LibMeshFunctionSpace, UVector> >(space->space().last_subspace());
+			in.get("forcing-function", *forcing_function);
+		} else {
+			std::cerr << "[Warning] no space and forcing-function applied for simulation" << std::endl;
+		}
+	}
+
+
+	void FractureFlowTransportSimulation::Transport::constrain_concentration(UVector &vec)
+	{	
+		auto &V = space->space().last_subspace();
+		auto &dof_map = V.dof_map();
+
+		const int dim = V.mesh().spatial_dimension();
+
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+		const libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+		{
+			Write<UVector> w_v(vec);
+
+			if(has_constaints) {
+				Range r = range(vec);
+				for(SizeType i = r.begin(); i < r.end(); ++i) {
+					
+					if(dof_map.is_constrained_dof(i)) {
+
+						auto valpos = rhs_values.find(i);
+
+						// if(valpos != rhs_values.end()) {
+						vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+						// }
+					}
+				}
+			}
+		}
+
 	}
 
 }

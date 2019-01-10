@@ -60,6 +60,16 @@ namespace utopia {
 			return *spaces_[index];
 		}
 
+		inline const Space &last_subspace() const
+		{
+			return *spaces_.back();
+		}
+
+		inline Space &last_subspace()
+		{
+			return *spaces_.back();
+		}
+
 		inline const Space &operator[](const int index) const
 		{
 			return *spaces_[index];
