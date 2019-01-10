@@ -29,6 +29,13 @@ namespace utopia {
 		LibMeshFunctionSpace &space,
 		libMesh::Nemesis_IO &io);
 
+	void transform_values(
+		const LibMeshFunctionSpace &from,
+		const UVector &from_vector,
+		const LibMeshFunctionSpace &to, 
+		UVector &to_vector,
+		std::function<double(const double &)> fun);
+
 	void copy_values(
 		const LibMeshFunctionSpace &from,
 		const UVector &from_vector,

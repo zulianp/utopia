@@ -33,10 +33,12 @@ namespace utopia {
 			void add_mass(const UVector &in, UVector &out) const;
 			void read(Input &in) override;
 			void constrain_concentration(UVector &vec);
+			void compute_upwind_operator();
 
 			std::shared_ptr<UIFunctionSpace<LibMeshFunctionSpace>> steady_state_function_space;
 			std::unique_ptr<UIFunctionSpace<LibMeshFunctionSpace>> space;
 			std::unique_ptr<UIForcingFunction<LibMeshFunctionSpace, UVector>> forcing_function;
+			ProductFunctionSpace<LibMeshFunctionSpace> aux_space;
 			
 			UVector velocity;
 			bool lump_mass_matrix;
@@ -47,6 +49,8 @@ namespace utopia {
 			USparseMatrix system_matrix;
 			UVector mass_vector;
 			UVector f;
+
+			UVector upwind_vector;
 
 			Factorization<USparseMatrix, UVector> mass_matrix_inverse;
 			double dt;

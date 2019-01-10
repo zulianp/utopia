@@ -130,11 +130,12 @@ namespace utopia {
 		io.write_timestep(name, space.equation_systems(), time_step, t);
 	}
 
-	void copy_values(
+	void transform_values(
 		const LibMeshFunctionSpace &from,
 		const UVector &from_vector,
 		const LibMeshFunctionSpace &to, 
-		UVector &to_vector)
+		UVector &to_vector,
+		std::function<double(const double &)> fun)
 	{
 		using libMesh::dof_id_type;
 
@@ -162,9 +163,49 @@ namespace utopia {
 			auto n = from_dofs.size();
 
 			for(std::size_t i = 0; i < n; ++i) {
-				to_vector.set(to_dofs[i], from_vector.get(from_dofs[i]));
+				to_vector.set(to_dofs[i], fun(from_vector.get(from_dofs[i])));
 			}
 		}
+	}
+
+
+	void copy_values(
+		const LibMeshFunctionSpace &from,
+		const UVector &from_vector,
+		const LibMeshFunctionSpace &to, 
+		UVector &to_vector)
+	{
+
+		transform_values(from, from_vector, to, to_vector, [](const double &value) -> double { return value; });
+		// using libMesh::dof_id_type;
+
+
+		// if(empty(to_vector)) {
+		// 	to_vector = local_zeros(to.dof_map().n_local_dofs());
+		// }
+
+		// const auto &m = from.mesh();
+		// assert(&m == &to.mesh());
+
+		// std::vector<dof_id_type> from_dofs, to_dofs;
+		
+		// Read<UVector> r_(from_vector);
+		// Write<UVector> w_(to_vector);
+
+		// for(auto e_it = elements_begin(m); e_it != elements_end(m); ++e_it) {
+		// 	const auto &e = *e_it;
+
+		// 	from.dof_map().dof_indices(e, from_dofs, from.subspace_id());
+		// 	to.dof_map().dof_indices(e, to_dofs, to.subspace_id());
+
+		// 	assert(from_dofs.size() == to_dofs.size());
+
+		// 	auto n = from_dofs.size();
+
+		// 	for(std::size_t i = 0; i < n; ++i) {
+		// 		to_vector.set(to_dofs[i], from_vector.get(from_dofs[i]));
+		// 	}
+		// }
 	}
 
 }

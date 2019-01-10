@@ -57,6 +57,7 @@ namespace utopia {
 		//compute upwind matrix
 		transport_f_.assemble_system();
 		transport_m_.assemble_system();
+		transport_m_.compute_upwind_operator();
 
 		auto &V_m = transport_m_.space->space().last_subspace();
 
@@ -133,15 +134,22 @@ namespace utopia {
 		if(!space->initialized()) {
 
 			space->set_space( utopia::make_unique<ProductFunctionSpace<LibMeshFunctionSpace>>() );
-			auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("velocity");
+			auto &transport_system = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("velocity");
 
 			for(int i = 0; i < dim; ++i) {
-				space->space() *= LibMeshFunctionSpace(aux, aux.add_variable("vel_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+				space->space() *= LibMeshFunctionSpace(transport_system, transport_system.add_variable("vel_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 			}
 
-			space->space() *= LibMeshFunctionSpace(aux, aux.add_variable("c", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+			space->space() *= LibMeshFunctionSpace(transport_system, transport_system.add_variable("c", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 			space->subspace(0).initialize();
 		} 
+
+		{
+			auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("aux_2");
+			aux_space *= LibMeshFunctionSpace(aux, aux.add_variable("R_a", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+			aux_space *= LibMeshFunctionSpace(aux, aux.add_variable("upwind", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+			aux_space.subspace(0).initialize();
+		}
 
 		assert(dim + 1 == int(space->space().n_subspaces()));
 	
@@ -327,6 +335,38 @@ namespace utopia {
 		} else {
 			std::cerr << "[Warning] no space and forcing-function applied for simulation" << std::endl;
 		}
+	}
+
+	void FractureFlowTransportSimulation::Transport::compute_upwind_operator()
+	{
+		const int dim = space->subspace(0).mesh().spatial_dimension();
+
+		auto W  = space->space().subspace(0, dim);
+		auto &C = space->space().subspace(dim);
+
+		std::cout << C.dof_map().n_variables() << std::endl;
+
+		auto c = trial(C);
+		auto q = test(C);
+		auto v = trial(W);
+
+		auto uh = interpolate(velocity, v);
+		auto l_form = inner(uh, grad(q)) * dX;
+
+		UVector R_a;
+		utopia::assemble(l_form, R_a);
+
+		transform_values(C, R_a, C, upwind_vector, [](const double &val) -> double {
+			return (val >= 0)? 1. : -1.;
+		});
+
+		UVector R_aux;
+		copy_values(C, R_a, aux_space.subspace(0), R_aux);
+		copy_values(C, upwind_vector, aux_space.subspace(1), R_aux);
+
+
+		utopia::convert(R_aux, *aux_space.subspace(0).equation_system().solution);
+		aux_space.subspace(0).equation_system().solution->close();
 	}
 
 
