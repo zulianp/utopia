@@ -20,7 +20,7 @@
 #include "utopia_M3ELinSolTest.hpp"
 #include "utopia_QPSolverTest.hpp"
 #include "utopia_trilinos_KokkosTest.hpp"
-#include "utopia_TRTest.hpp"
+#include "utopia_UnconstrainedOptBench.hpp"
 
 namespace utopia
 {
