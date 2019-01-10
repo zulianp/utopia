@@ -17,6 +17,9 @@ namespace utopia
 
         Chebyquad35()
         {
+
+            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
+            
             x_exact_ = values(8, 0.0); 
             x_init_ = values(8, 0.0); 
             SizeType n_global = 8.0; 
@@ -273,7 +276,6 @@ namespace utopia
             }
 
     private: 
-        SizeType n_loc_; 
         Vector x_init_; 
         Vector x_exact_; 
 

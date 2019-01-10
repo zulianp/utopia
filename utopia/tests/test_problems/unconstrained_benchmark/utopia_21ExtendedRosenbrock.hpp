@@ -41,6 +41,11 @@ namespace utopia
             return n_loc_; 
         }
 
+        bool parallel() const override
+        {
+            return true; 
+        }
+
 
         bool update(const Vector &point) override
         {

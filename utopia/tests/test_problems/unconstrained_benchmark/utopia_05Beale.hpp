@@ -19,14 +19,12 @@ namespace utopia
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
-            x_init_ = zeros(2);
+            x_init_ = values(2, 1.0);
             x_exact_ = zeros(2);
 
-            const Write<Vector> write1(x_init_);
-            const Write<Vector> write2(x_exact_);
+            
             {
-                x_init_.set(0, 1.0);
-                x_init_.set(1, 1.0);
+                const Write<Vector> write2(x_exact_);
 
                 x_exact_.set(0, 3.0);
                 x_exact_.set(1, 0.5);                
@@ -43,7 +41,6 @@ namespace utopia
         {
             return 2.0; 
         }
-
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {

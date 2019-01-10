@@ -344,10 +344,11 @@ namespace utopia
 			subproblem->rtol(1e-15);
 
 			TrustRegion<DMatrixd, DVectord> solver(subproblem);
-			solver.atol(1e-7); 
+			solver.atol(1e-6); 
+			solver.rtol(1e-11); 
 			solver.stol(1e-14); 
-			solver.max_it(500);
-			solver.verbose(true); 
+			solver.max_it(550);
+			solver.verbose(false); 
 
 			const auto n = 10; 
 			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
@@ -362,49 +363,25 @@ namespace utopia
 	    	test_functions[6] = std::make_shared<Watson20<DMatrixd, DVectord> >(); 		
 			test_functions[7] = std::make_shared<PenaltyI23<DMatrixd, DVectord> >(n); 	    // works also in parallel 		    			    	  	
 	    	test_functions[8] = std::make_shared<Brown04<DMatrixd, DVectord> >();
-	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();	
+	    	test_functions[9] = std::make_shared<PenaltyII24<DMatrixd, DVectord> >();
+
+	    	test_functions[10] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();	
+	    	test_functions[11] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); 
+			test_functions[12] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(n);  	
+	    	test_functions[13] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(n); // works also in parallel 		    			    	  	
+	    	test_functions[14] = std::make_shared<Beale05<DMatrixd, DVectord> >();
+
+	    	test_functions[15] = std::make_shared<Woods14<DMatrixd, DVectord> >();
+	    	test_functions[16] = std::make_shared<ExtendedPowell22<DMatrixd, DVectord> >(12);
+	    	test_functions[17] = std::make_shared<Chebyquad35<DMatrixd, DVectord> >();
 	    	
-	    	test_functions[10] = std::make_shared<Gulf11<DMatrixd, DVectord> >(); // known to go to few local minimums	
-			test_functions[11] = std::make_shared<Trigonometric26<DMatrixd, DVectord> >(n);  	// could also work in parallel - but it does not	    					    	    	
-	    	test_functions[12] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(n); // works also in parallel 		    			    	  	
-	    	test_functions[13] = std::make_shared<Beale05<DMatrixd, DVectord> >();
-	    	test_functions[14] = std::make_shared<Woods14<DMatrixd, DVectord> >();
-
-	    	test_functions[15] = std::make_shared<Chebyquad35<DMatrixd, DVectord> >();
 
 
-	    	// const int fun_id = 15; 
-
-	    	// auto x_test = test_functions[fun_id]->initial_guess(); 
-	    	// DVectord g; 
-	    	// DMatrixd H; 
-	    	// double v; 
-
-	    	// std::cout<<"---------------- " << test_functions[fun_id]->name() << "  ----------------  \n"; 
-
-	    	// test_functions[fun_id]->value(x_test, v); 
-	    	// test_functions[fun_id]->gradient(x_test, g); 
-	    	// test_functions[fun_id]->hessian(x_test, H); 
-
-	    	// disp(x_test); 
-
-	    	// std::cout<<"v: "<< v << "   \n"; 
-	    	// disp(g); 
-	    	// disp(H); 
-
-	    	// exit(0); 
-
-
-	    	for(auto i =15; i < 16; i++)
+	    	for(auto i =0; i < 18; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 
 				std::cout<<"-------------------------------- " << test_functions[i]->name() << ",  dim: " << test_functions[i]->dim() << "  --------------------------------  \n"; 
-
-				// for AF testing 
-				// DMatrixd I = identity(test_functions[i]->dim(), test_functions[i]->dim()); 
-				// solver.set_mass_matrix(I); 
-				// solver.set_scaling_matrix(I); 
 
 				solver.solve(*test_functions[i], x_init); 
 
@@ -412,7 +389,7 @@ namespace utopia
 				//sol_status.describe(std::cout); 
 				std::cout<<"iterates: "<< sol_status.iterates << " \n"; 
 
-				disp(x_init);
+				// disp(x_init);
 				// utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol(), 1e-4));
 			}
 

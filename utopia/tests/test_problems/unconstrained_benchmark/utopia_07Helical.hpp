@@ -22,9 +22,10 @@ namespace utopia
             x_init_ = zeros(3);
             x_exact_ = zeros(3);
 
-            const Write<Vector> write1(x_init_);
-            const Write<Vector> write2(x_exact_);
             {
+                const Write<Vector> write1(x_init_);
+                const Write<Vector> write2(x_exact_);
+                                
                 x_init_.set(0, -1.0);
                 x_init_.set(1, 0.0);
                 x_init_.set(2, 0.0);

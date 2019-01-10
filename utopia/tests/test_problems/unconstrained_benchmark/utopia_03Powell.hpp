@@ -23,9 +23,10 @@ namespace utopia
             x_init_ = zeros(2);
             x_exact_ = zeros(2);
 
-            const Write<Vector> write1(x_init_);
-            const Write<Vector> write2(x_exact_);
             {
+                const Write<Vector> write1(x_init_);
+                const Write<Vector> write2(x_exact_);
+                
                 x_init_.set(0, 0.0);
                 x_init_.set(1, 1.0);
 
@@ -34,7 +35,7 @@ namespace utopia
             }
 
         }
-
+        
         std::string name() const override
         {
             return "Powell badly scaled"; 

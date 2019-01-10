@@ -44,6 +44,12 @@ namespace utopia
             return n_loc_; 
         }
 
+        bool exact_sol_known() const override
+        {
+            return false; 
+        }
+
+
         bool value(const Vector &x, Scalar &result) const override 
         {
             assert(local_size(x).get(0) == this->dim());

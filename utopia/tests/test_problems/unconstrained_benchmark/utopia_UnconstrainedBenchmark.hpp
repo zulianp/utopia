@@ -3,6 +3,8 @@
 
     #include "utopia_UnconstrainedTestFunction.hpp"
     
+    // Ordering of function follows paper:
+    // More, Garbow, Hillstrom - Testing unconstrained optimization software - Unconstrained minimization section
     #include "utopia_01Rosenbrock.hpp"
     #include "utopia_03Powell.hpp"
     #include "utopia_04Brown.hpp"
@@ -16,7 +18,9 @@
     #include "utopia_18Biggs.hpp"
     #include "utopia_20Watson.hpp"
     #include "utopia_21ExtendedRosenbrock.hpp"
+    #include "utopia_22ExtendedPowellSingular.hpp"
     #include "utopia_23Penalty1.hpp"
+    #include "utopia_24Penalty2.hpp"
     #include "utopia_25VariablyDim.hpp"
     #include "utopia_26Trigonometric.hpp"
     #include "utopia_35Chebyquad.hpp"

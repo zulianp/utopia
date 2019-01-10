@@ -40,6 +40,16 @@ namespace utopia
             return n_loc_; 
         }
 
+        bool parallel() const override
+        {
+            return true; 
+        }
+
+        bool exact_sol_known() const override
+        {
+            return true; 
+        }
+
 
         bool value(const Vector &x, Scalar &result) const override 
         {
