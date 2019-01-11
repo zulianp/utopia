@@ -93,7 +93,9 @@ namespace utopia
             Matrix I = local_identity(local_size(H)); 
 
             // tau = 1.0/g_norm; 
-            lambda = g_norm; 
+            // lambda = g_norm; 
+            Scalar tau = std::min(g_norm, 10.0); 
+            lambda = 1./tau; 
 
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm, energy_old, 0.0, lambda, 0.0});
@@ -146,6 +148,10 @@ namespace utopia
                     rho = -1.0; 
                 }
 
+                if(!std::isfinite(rho)){
+                    rho = 0.0; 
+                }
+
                 if(rho > 0.0)
                 {
                     x = x_trial; 
@@ -161,12 +167,15 @@ namespace utopia
                 }
 
                 // adjusting lambda according to rho
-                if(rho < 0.0)
+                if(rho < 0.0){
                     lambda *=10.0; 
-                else if(rho < this->eta1())
+                }
+                else if(rho < this->eta1()){
                     lambda *= this->gamma2(); 
-                else if(rho > this->eta2())
+                }
+                else if(rho > this->eta2()){
                     lambda *= this->gamma1(); 
+                }
 
                 it++; 
 
@@ -197,7 +206,6 @@ namespace utopia
         if(eigen_solver_) {
             in.get("eigen-solver", *eigen_solver_);
         }
-
     }
 
     void print_usage(std::ostream &os) const override

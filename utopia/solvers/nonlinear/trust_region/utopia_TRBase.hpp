@@ -291,11 +291,11 @@ namespace utopia
       this->print_param_usage(os, "delta_min", "real", "Minimum value of tr. radius.", "1e-14"); 
       this->print_param_usage(os, "delta0", "real", "Initial value of tr. radius.", "1.0"); 
 
-      this->print_param_usage(os, "gamma1", "real", "Factor use to shrink tr. radius.", "0.2"); 
+      this->print_param_usage(os, "gamma1", "real", "Factor use to shrink tr. radius.", "0.5"); 
       this->print_param_usage(os, "gamma2", "real", "Factor use to enlarge tr. radius.", "2.0"); 
 
-      this->print_param_usage(os, "eta1", "real", "Threshold for rho to shrink tr. radius.", "0.1"); 
-      this->print_param_usage(os, "eta2", "real", "Threshold for rho to enlarge tr. radius.", "0.85"); 
+      this->print_param_usage(os, "eta1", "real", "Threshold for rho to shrink tr. radius.", "0.25"); 
+      this->print_param_usage(os, "eta2", "real", "Threshold for rho to enlarge tr. radius.", "0.75"); 
 
       this->print_param_usage(os, "rho_tol", "real", "Threshold for rho to take trial point.", "0.005"); 
       this->print_param_usage(os, "eps", "real", "Numerical tolerance.", "1e-14"); 

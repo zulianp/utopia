@@ -37,17 +37,17 @@ namespace utopia
 			test_functions_[5] = std::make_shared<VariablyDim25<Matrix, Vector> >(n_); 	 // works also in parallel 		
 	    	test_functions_[6] = std::make_shared<Watson20<Matrix, Vector> >(); 		
 			test_functions_[7] = std::make_shared<PenaltyI23<Matrix, Vector> >(n_); 	    // works also in parallel 		    			    	  	
-	    	test_functions_[8] = std::make_shared<Brown04<Matrix, Vector> >();
-	    	test_functions_[9] = std::make_shared<PenaltyII24<Matrix, Vector> >();
+	    	test_functions_[8] = std::make_shared<PenaltyII24<Matrix, Vector> >();
+	    	test_functions_[9] = std::make_shared<Brown04<Matrix, Vector> >();
 
 	    	test_functions_[10] = std::make_shared<BrownDennis16<Matrix, Vector> >();	
 	    	test_functions_[11] = std::make_shared<Gulf11<Matrix, Vector> >(); 
 			test_functions_[12] = std::make_shared<Trigonometric26<Matrix, Vector> >(n_);  	
-	    	test_functions_[13] = std::make_shared<ExtendedRosenbrock21<Matrix, Vector> >(n_); // works also in parallel 		    			    	  	
+	    	test_functions_[13] = std::make_shared<ExtendedRosenbrock21<Matrix, Vector> >(50); // works also in parallel 		    			    	  	
 	    	test_functions_[14] = std::make_shared<Beale05<Matrix, Vector> >();
 
 	    	test_functions_[15] = std::make_shared<Woods14<Matrix, Vector> >();
-	    	test_functions_[16] = std::make_shared<ExtendedPowell22<Matrix, Vector> >(12);
+	    	test_functions_[16] = std::make_shared<ExtendedPowell22<Matrix, Vector> >(64);
 	    	test_functions_[17] = std::make_shared<Chebyquad35<Matrix, Vector> >();			
 		}
 
@@ -112,6 +112,56 @@ namespace utopia
 			// );						
 
 
+
+			// this->register_experiment("PseudoTransientContinuation",
+			// 	[this]() {
+			// 		auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			// 		linear_solver->atol(1e-14); 
+			// 		linear_solver->max_it(10000);
+
+			// 		PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
+			// 		run_tr(this->test_functions_, solver, "PseudoTransientContinuation", this->verbose_);
+			// 	}
+			// );		
+
+
+			// add slepcs checks 
+			// this->register_experiment("PseudoTR",
+			// 	[this]() {
+			// 		auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			// 		linear_solver->atol(1e-14); 
+			// 		linear_solver->max_it(10000);
+
+			// 		auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			// 		eigen_solver->solver_type("arpack");			
+
+			// 		PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+			// 		run_tr(this->test_functions_, solver, "PseudoTR", this->verbose_);
+			// 	}
+			// );		
+
+			// add slepcs checks 
+			// this->register_experiment("RosenbrockTR",
+			// 	[this]() {
+			// 		auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			// 		linear_solver->atol(1e-14); 
+			// 		linear_solver->max_it(10000);
+					
+			// 		auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			// 		eigen_solver->solver_type("arpack");			
+
+			// 		RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+			// 		run_tr(this->test_functions_, solver, "RosenbrockTR", this->verbose_);
+			// 	}
+			// );		
+
+
+
+
+
+
+
+
 		}
 
 	private:
@@ -149,6 +199,7 @@ namespace utopia
 			}
 
 	    	for(auto i =0; i < test_functions.size(); i++)
+	    	// for(auto i =6; i < 11; i++)
 	    	{
 				DVectord x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
@@ -158,10 +209,16 @@ namespace utopia
 				
 				const auto dim = test_functions[i]->dim(); 
 				const auto num_its = sol_status.iterates; 
+				const auto conv_reason = sol_status.reason; 
 
 				if(exp_verbose)
 				{
-					std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_functions[i]->name() <<"_" << dim <<  std::right <<  std::setw(40-std::to_string(dim).size() - test_functions[i]->name().size())  << std::right << "its:  " << num_its << "  \n"; 
+					std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_functions[i]->name() <<"_" << dim <<  std::right <<  std::setw(40-std::to_string(dim).size() - test_functions[i]->name().size())  << std::right << "its:  " << num_its << std::setw(5-std::to_string(num_its).size())<<  "  \n"; 
+					
+					if(conv_reason< 0)
+					{
+						sol_status.describe(std::cout); 
+					}
 				}
 
 				if(test_functions[i]->exact_sol_known())
