@@ -107,11 +107,11 @@
 <!-- <preset-velocity-field>true</preset-velocity-field> -->
 
 <transport>
-	<dt>0.001</dt>
-	<simulation-time>1.</simulation-time>
+	<dt>0.005</dt>
+	<simulation-time>10.</simulation-time>
 	<lump-mass-matrix>false</lump-mass-matrix>
-	<h1-regularization>false</h1-regularization>
-	<regularization-parameter>0.</regularization-parameter>
+	<h1-regularization>true</h1-regularization>
+	<regularization-parameter>1e-5.</regularization-parameter>
 	
 <!-- 	<box>
 		<x-min>0.7</x-min>
@@ -156,7 +156,7 @@
 				</entry>
 				<entry>
 					<side>3</side>
-					<value>1</value>
+					<value>0</value>
 					<var>2</var>
 				</entry>
 			</boundary-conditions>
