@@ -9,7 +9,7 @@
 namespace utopia {
 
 	template<typename T, int Order_>
-	class ConstantCoefficient : public Expression< ConstantCoefficient<T, Order_> > {
+	class ConstantCoefficient final : public Expression< ConstantCoefficient<T, Order_> > {
 	public:
 		static const int Order = Order_;
 

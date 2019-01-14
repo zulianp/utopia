@@ -28,6 +28,7 @@ IF(MPI_CLANG_LIBRARY)
 			  ${MPI_LIB_DIR}/../../include/mpich-clang
 			  ${MPI_LIB_DIR}/../include/mpich-clang
 			  /opt/local/include/mpich-clang
+			  /opt/local/include/mpich-mp
 		DOC "The MPI_CLANG_HEADERS path"
 	)	
 
@@ -37,6 +38,7 @@ IF(MPI_CLANG_LIBRARY)
 			      mpicxx
 			      mpicxx-openmpi-mp 
 				  mpicxx-mpich-clang
+				  mpic++-mpich-mp
 			HINTS ${MPI_DIR}/bin
 			      $ENV{MPI_DIR}/bin
 			      ${MPI_CLANG_HEADERS}/../bin
@@ -50,6 +52,7 @@ IF(MPI_CLANG_LIBRARY)
 		find_file(MPI_C_COMPILER 
 			NAMES mpicc-openmpi-mp
 				  mpicc-mpich-clang
+				  mpicc-mpich-mp
 				  mpicc
 			HINTS ${MPI_DIR}/bin
 			      $ENV{MPI_DIR}/bin
@@ -66,11 +69,12 @@ IF(MPI_CLANG_LIBRARY)
 			SET(MPI_FOUND TRUE)
 			SET(MPI_CXX_LIBRARIES ${MPI_CLANG_LIBRARY})
 			SET(MPI_CXX_INCLUDE_PATH ${MPI_CLANG_HEADERS})
+			message(STATUS "EHRE")
 		ENDIF()
 	ENDIF()
 ENDIF()
 
-# MESSAGE(STATUS "${MPI_CLANG_LIBRARY} ${MPI_CLANG_HEADERS} ${MPI_CXX_COMPILER}")
+MESSAGE(STATUS "${MPI_CLANG_LIBRARY} ${MPI_CLANG_HEADERS} ${MPI_CXX_COMPILER}")
 
 
 IF(NOT MPI_FOUND)

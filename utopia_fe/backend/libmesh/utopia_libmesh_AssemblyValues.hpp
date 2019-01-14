@@ -265,7 +265,12 @@ namespace utopia {
 		void set_up_quadrature(const int dim, const int quadrature_order)
 		{
 			if(reset_quadrature_) {
-				quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));
+				if(quadrature_order == 1) {
+					quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(2));
+				} else {
+					quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));
+				}
+				
 				quad_trial_ = quad_test_;
 				reset_quadrature_ = false;
 			} else {
@@ -375,7 +380,7 @@ namespace utopia {
 
 				if(!ctx.vector_fe()[s_id]) {
 					ctx.vector_fe()[s_id] = std::make_shared<VectorElement>();
-					ctx.vector_fe()[s_id]->dim = s.subspace(0).mesh().mesh_dimension();
+					ctx.vector_fe()[s_id]->dim = s.subspace(0).mesh().spatial_dimension();
 					ctx.vector_fe()[s_id]->n_vars = s.n_subspaces();
 					ctx.vector_fe()[s_id]->start_var = s_id;
 				}

@@ -184,7 +184,17 @@ namespace utopia
 				
 				// q = A * p;
 				A.apply(p, q);
-				alpha = rho / dot(p, q);
+
+				Scalar dot_pq = dot(p, q);
+				
+				if(dot_pq == 0.) {
+					//TODO handle properly
+					utopia_warning("prevented division by zero");
+					converged = true;
+					break;
+				}
+
+				alpha = rho / dot_pq;
 				
 				x += alpha * p;
 				r -= alpha * q;
