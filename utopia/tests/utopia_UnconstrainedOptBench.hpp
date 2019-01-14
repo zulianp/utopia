@@ -68,32 +68,32 @@ namespace utopia
 				}
 			);
 
-			this->register_experiment("TR_Lanczos",
-				[this]() {
-					auto subproblem = std::make_shared<Lanczos<Matrix, Vector> >();
-					TrustRegion<Matrix, Vector> solver(subproblem);
-					run_tr(this->test_functions_, solver, "TR_Lanczos", this->verbose_);
-				}
-			);			
+			// this->register_experiment("TR_Lanczos",
+			// 	[this]() {
+			// 		auto subproblem = std::make_shared<Lanczos<Matrix, Vector> >();
+			// 		TrustRegion<Matrix, Vector> solver(subproblem);
+			// 		run_tr(this->test_functions_, solver, "TR_Lanczos", this->verbose_);
+			// 	}
+			// );			
 
-			this->register_experiment("TR_Nash",
-				[this]() {
-					auto subproblem = std::make_shared<Nash<Matrix, Vector> >();
-					TrustRegion<Matrix, Vector> solver(subproblem);
-					run_tr(this->test_functions_, solver, "TR_Nash", this->verbose_);
-				}
-			);		
+			// this->register_experiment("TR_Nash",
+			// 	[this]() {
+			// 		auto subproblem = std::make_shared<Nash<Matrix, Vector> >();
+			// 		TrustRegion<Matrix, Vector> solver(subproblem);
+			// 		run_tr(this->test_functions_, solver, "TR_Nash", this->verbose_);
+			// 	}
+			// );		
 
-			this->register_experiment("TR_Dogleg",
-				[this]() {
-					auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
-					linear_solver->atol(1e-14); 
-					linear_solver->max_it(10000);
-					auto subproblem = std::make_shared<Dogleg<Matrix, Vector> >(linear_solver); 
-					TrustRegion<Matrix, Vector> solver(subproblem);
-					run_tr(this->test_functions_, solver, "TR_Dogleg", this->verbose_);
-				}
-			);			
+			// this->register_experiment("TR_Dogleg",
+			// 	[this]() {
+			// 		auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
+			// 		linear_solver->atol(1e-14); 
+			// 		linear_solver->max_it(10000);
+			// 		auto subproblem = std::make_shared<Dogleg<Matrix, Vector> >(linear_solver); 
+			// 		TrustRegion<Matrix, Vector> solver(subproblem);
+			// 		run_tr(this->test_functions_, solver, "TR_Dogleg", this->verbose_);
+			// 	}
+			// );			
 
 			// // TODO:: add check for slepcs
 			// this->register_experiment("TR_MS",
@@ -105,37 +105,36 @@ namespace utopia
 			// 		auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
 			// 		linear_solver->set_library_type(PETSC_TAG); 
 
-			// 		auto subproblem = std::make_shared<utopia::MoreSorensenEigen<DMatrixd, Vector> >(linear_solver, eigen_solver);
+			// 		auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
 			// 		TrustRegion<Matrix, Vector> solver(subproblem);
 			// 		run_tr(this->test_functions_, solver, "TR_MS", this->verbose_);
 			// 	}
 			// );						
 
 
+			this->register_experiment("PseudoTransientContinuation",
+				[this]() {
+					auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
+					linear_solver->atol(1e-14); 
+					linear_solver->max_it(10000);
 
-			// this->register_experiment("PseudoTransientContinuation",
-			// 	[this]() {
-			// 		auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
-			// 		linear_solver->atol(1e-14); 
-			// 		linear_solver->max_it(10000);
-
-			// 		PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
-			// 		run_tr(this->test_functions_, solver, "PseudoTransientContinuation", this->verbose_);
-			// 	}
-			// );		
+					PseudoContinuation<Matrix, Vector> solver(linear_solver); 
+					run_tr(this->test_functions_, solver, "PseudoTransientContinuation", this->verbose_);
+				}
+			);		
 
 
 			// add slepcs checks 
 			// this->register_experiment("PseudoTR",
 			// 	[this]() {
-			// 		auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			// 		auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
 			// 		linear_solver->atol(1e-14); 
 			// 		linear_solver->max_it(10000);
 
-			// 		auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			// 		auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
 			// 		eigen_solver->solver_type("arpack");			
 
-			// 		PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+			// 		PseudoTrustRegion<Matrix, Vector> solver(linear_solver, eigen_solver); 
 			// 		run_tr(this->test_functions_, solver, "PseudoTR", this->verbose_);
 			// 	}
 			// );		
@@ -143,23 +142,27 @@ namespace utopia
 			// add slepcs checks 
 			// this->register_experiment("RosenbrockTR",
 			// 	[this]() {
-			// 		auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			// 		auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
 			// 		linear_solver->atol(1e-14); 
 			// 		linear_solver->max_it(10000);
 					
-			// 		auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			// 		auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
 			// 		eigen_solver->solver_type("arpack");			
 
-			// 		RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+			// 		RosenbrockTrustRegion<Matrix, Vector> solver(linear_solver, eigen_solver); 
 			// 		run_tr(this->test_functions_, solver, "RosenbrockTR", this->verbose_);
 			// 	}
 			// );		
 
 
-
-
-
-
+			// does not converge for most of the test cases ....		
+			// this->register_experiment("AffineSimilarity",
+			// 	[this]() {
+			// 		auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>("petsc");			
+			// 		AffineSimilarity<Matrix, Vector> solver(linear_solver); 
+			// 		run_tr(this->test_functions_, solver, "AffineSimilarity", this->verbose_);
+			// 	}
+			// );		
 
 
 		}
@@ -179,8 +182,8 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max_it", 300); 
-			in.set("verbose", false); 
+			in.set("max-it", 30); 
+			in.set("verbose", true); 
 
 			auto params_qp = std::make_shared<InputParameters>(); 
 			params_qp->set("atol", 1e-14); 
@@ -199,9 +202,9 @@ namespace utopia
 			}
 
 	    	for(auto i =0; i < test_functions.size(); i++)
-	    	// for(auto i =6; i < 11; i++)
+	    	// for(auto i =0; i < 10; i++)
 	    	{
-				DVectord x_init = test_functions[i]->initial_guess(); 
+				Vector x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
 
 				auto sol_status = solver.solution_status(); 

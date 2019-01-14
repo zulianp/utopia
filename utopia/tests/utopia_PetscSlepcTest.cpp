@@ -132,7 +132,10 @@ namespace utopia
 			tr_solver.solve(fun_woods, x_w1);				
 
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif
 			
 			auto linear_solver = std::make_shared<LUDecomposition<DMatrixd, DVectord> >();
 			linear_solver->set_library_type(PETSC_TAG); 
@@ -160,6 +163,9 @@ namespace utopia
 
 		void pseudo_tr_test()
 		{
+	    	if(mpi_world_size() != 1)
+	    		return; 
+
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
 			Woods14<DMatrixd, DVectord> fun;
@@ -169,7 +175,10 @@ namespace utopia
 			linear_solver->max_it(10000);
 
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");			
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif		
 
 			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
 
@@ -196,13 +205,16 @@ namespace utopia
 			linear_solver->max_it(10000);
 
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");			
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif		
 
 			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
 
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
-			solver.max_it(500);
+			solver.max_it(1);
 			solver.verbose(false); 
 
 			solver.solve(fun, x); 
@@ -211,6 +223,9 @@ namespace utopia
 
 		void pseudo_cont_test()
 		{
+			if(mpi_world_size() != 1)
+	    		return; 
+
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
 			Woods14<DMatrixd, DVectord> fun;
@@ -285,22 +300,30 @@ namespace utopia
 			linear_solver->max_it(10000);
 			
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");			
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif
 
 			RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
 
 			solver.atol(1e-12); 
 			solver.stol(1e-14); 
-			solver.max_it(500);
+			solver.max_it(100);
 			solver.verbose(false); 
 
 			solver.solve(fun_stiff, x_stiff); 
+
+			if(mpi_world_size() != 1)
+	  		  		return; 
 
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
 			Woods14<DMatrixd, DVectord> fun;
 
 			solver.solve(fun, x); 
+
+			exit(0);
 
 		}
 

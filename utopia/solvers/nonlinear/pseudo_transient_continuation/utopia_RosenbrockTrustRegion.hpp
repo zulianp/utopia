@@ -90,7 +90,7 @@ namespace utopia
             fun.hessian(x, H); 
             H_norm = norm2(H); 
 
-            Matrix I = local_identity(local_size(H)); 
+            Matrix I = local_identity(local_size(H).get(0), local_size(H).get(1)); 
 
             // tau = 1.0/g_norm; 
             // lambda = g_norm; 
@@ -119,7 +119,7 @@ namespace utopia
                     s = 0 * x; 
                     this->linear_solve(H_damped, -1.0 * g, s);
                     Vector x_temp = x + scaling_factor_vec * s; 
-                    Vector g_temp = local_zeros(local_size(g)); 
+                    Vector g_temp = local_zeros(local_size(g).get(0)); 
                     fun.gradient(x_temp, g_temp); 
                     s = 0 * x; 
                     this->linear_solve(H_damped, -1.0 * g_temp, s);

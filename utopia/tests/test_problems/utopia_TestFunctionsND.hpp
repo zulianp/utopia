@@ -276,7 +276,7 @@ namespace utopia {
         bool value(const Vector &x, Scalar &result) const override 
         {
             assert(x.size().get(0) == n_);
-            Vector g = values(n_, 0.0); 
+            Vector g = 0*x; 
             gradient(x, g); 
             result = 0.5 * dot(g, g);
             return true;
@@ -285,7 +285,10 @@ namespace utopia {
         bool gradient(const Vector &x, Vector &g) const override 
         {
             assert(x.size().get(0) == n_);
-            g = local_values(n_, 0.0);
+            
+            if(empty(g)){
+                g = 0*x; 
+            }
 
             {
                 Write<Vector> wg(g); 
@@ -314,7 +317,7 @@ namespace utopia {
         bool hessian(const Vector &x, Matrix &H) const override 
         {
 
-            Vector c = local_values(local_size(x).get(0), 0.0);
+            Vector c = 0*x; 
 
             {
                 Write<Vector> wg(c); 

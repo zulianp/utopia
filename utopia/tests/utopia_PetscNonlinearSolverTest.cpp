@@ -50,8 +50,8 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-			UTOPIA_RUN_TEST(affine_similarity_small_test); 
-			UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
+			// UTOPIA_RUN_TEST(affine_similarity_small_test); 
+			// UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
 		}
 
 		void petsc_ngs_test()
@@ -671,65 +671,65 @@ namespace utopia
 		}
 
 
-		void affine_similarity_small_test()
-		{
-			if(mpi_world_size() >1)
-				return; 
+		// void affine_similarity_small_test()
+		// {
+		// 	if(mpi_world_size() >1)
+		// 		return; 
 
-			SmallSingularExample<DMatrixd, DVectord> fun; 
-			DVectord x_exact 	= values(2, 1.0);
-			DVectord x   		= values(2, 1.0);			
+		// 	SmallSingularExample<DMatrixd, DVectord> fun; 
+		// 	DVectord x_exact 	= values(2, 1.0);
+		// 	DVectord x   		= values(2, 1.0);			
 			
-			{
-				Write<DVectord> r1(x_exact, LOCAL);
-				Write<DVectord> r2(x, LOCAL); 
+		// 	{
+		// 		Write<DVectord> r1(x_exact, LOCAL);
+		// 		Write<DVectord> r2(x, LOCAL); 
 
-				x.set(1, 0.0); 
-				x_exact.set(0, 0.0); 
-			}
+		// 		x.set(1, 0.0); 
+		// 		x_exact.set(0, 0.0); 
+		// 	}
 
-			auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>("petsc");			
-			AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+		// 	auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>("petsc");			
+		// 	AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
 
-			DMatrixd I = identity(2,2); 
-			solver.set_mass_matrix(I); 
-			solver.set_scaling_matrix(I); 
-			solver.verbose(false);
-			solver.atol(1e-9); 
-			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
-			solver.solve(fun, x); 
-			utopia_test_assert(approxeq(x, x_exact, 1e-6));
-		}
-
-
-		void affine_similarity_stiff_test()
-		{
-			if(mpi_world_size() >1)
-				return; 
+		// 	DMatrixd I = identity(2,2); 
+		// 	solver.set_mass_matrix(I); 
+		// 	solver.set_scaling_matrix(I); 
+		// 	solver.verbose(false);
+		// 	solver.atol(1e-9); 
+		// 	solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
+		// 	solver.solve(fun, x); 
+		// 	utopia_test_assert(approxeq(x, x_exact, 1e-6));
+		// }
 
 
-			const SizeType n = 100; 
+		// void affine_similarity_stiff_test()
+		// {
+		// 	if(mpi_world_size() >1)
+		// 		return; 
 
-			MildStiffExample<DMatrixd, DVectord> fun(n); 
-			DVectord x, g; 
-			fun.get_initial_guess(x); 
 
-			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
-			linear_solver->atol(1e-14); 
-			linear_solver->max_it(10000);
+		// 	const SizeType n = 100; 
 
-			AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+		// 	MildStiffExample<DMatrixd, DVectord> fun(n); 
+		// 	DVectord x, g; 
+		// 	fun.get_initial_guess(x); 
 
-			DMatrixd I = identity(n,n); 
-			solver.set_mass_matrix(I); 
-			solver.set_scaling_matrix(I); 
-			solver.verbose(false);
-			solver.atol(1e-9); 
-			solver.stol(1e-14); 
-			solver.max_it(500);
-			solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
-			solver.solve(fun, x); 
-		}
+		// 	auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+		// 	linear_solver->atol(1e-14); 
+		// 	linear_solver->max_it(10000);
+
+		// 	AffineSimilarity<DMatrixd, DVectord> solver(linear_solver); 
+
+		// 	DMatrixd I = identity(n,n); 
+		// 	solver.set_mass_matrix(I); 
+		// 	solver.set_scaling_matrix(I); 
+		// 	solver.verbose(false);
+		// 	solver.atol(1e-9); 
+		// 	solver.stol(1e-14); 
+		// 	solver.max_it(500);
+		// 	solver.verbosity_level(VERBOSITY_LEVEL_NORMAL); 
+		// 	solver.solve(fun, x); 
+		// }
 
 		PetscNonlinearSolverTest()
 		: _n(100) { }
