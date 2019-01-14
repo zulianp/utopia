@@ -155,6 +155,8 @@ namespace utopia {
 
 		if(solve_strategy == "staggered") {
  			ok = solve_cg_dual();
+		} else if(solve_strategy == "separate") {
+			ok = solve_separate();
 		} else {
 			ok = solve_monolithic();
 		}
@@ -230,7 +232,11 @@ namespace utopia {
 	    Factorization<USparseMatrix, UVector> op_m;
 	    op_m.update(make_ref(A_m));
 
-	    L2TransferOperator t(make_ref(D), make_ref(D));
+
+	    assert(!empty(B));
+	    assert(!empty(D));
+
+	    L2TransferOperator t(make_ref(B), make_ref(D));
 
 	    if(empty(x_f)) {
 	        x_f = local_zeros(local_size(rhs_f));
@@ -280,17 +286,17 @@ namespace utopia {
 
 	bool SteadyFractureFlowSimulation::solve_separate()
 	{
-	    Factorization<USparseMatrix, UVector> op_m;
-	    op_m.update(make_ref(A_m));
+		using SolverT = Factorization<USparseMatrix, UVector>;
 
-	    Factorization<USparseMatrix, UVector> op_s;
-	    op_s.update(make_ref(A_f));
+	    SolverT().solve(A_m, rhs_m, x_m);
+	    SolverT().solve(A_f, rhs_f, x_f);
 
-	    op_m.apply(rhs_m, x_m);
-	    op_s.apply(rhs_f, x_f);
+	    assert(!empty(B));
+	    assert(!empty(D));
 
-	    UVector sol_transfered;
-	    L2TransferOperator(make_ref(D), make_ref(D)).apply(x_m, sol_transfered);
+
+	    UVector sol_transfered = local_zeros(local_size(D).get(0));
+	    L2TransferOperator(make_ref(B), make_ref(D)).apply(x_m, sol_transfered);
 	    lagr = sol_transfered - x_f;
 	    return true;
 	}

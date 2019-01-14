@@ -55,8 +55,8 @@ namespace utopia {
 		}
 
 		//compute upwind matrix
-		transport_f_.assemble_system();
-		transport_m_.assemble_system();
+		transport_f_.assemble_system(*steady_flow_.fracture_newtork);
+		transport_m_.assemble_system(*steady_flow_.matrix);
 		transport_m_.compute_upwind_operator();
 
 		auto &V_m = transport_m_.space->space().last_subspace();
@@ -161,7 +161,7 @@ namespace utopia {
 		auto u = trial(W);
 		auto v = test(W);
 
-		UVector pressure_w;
+
 		copy_values(V, pressure, P, pressure_w);
 
 		auto ph = interpolate(pressure_w, p);
@@ -196,73 +196,7 @@ namespace utopia {
 		copy_values(P, pressure_w, P, velocity);
 	}
 
-	void FractureFlowTransportSimulation::Transport::assemble_system()
-	{
-		const int dim = space->subspace(0).mesh().spatial_dimension();
-
-		auto W  = space->space().subspace(0, dim);
-		auto &C = space->space().subspace(dim);
-
-		std::cout << C.dof_map().n_variables() << std::endl;
-
-		auto c = trial(C);
-		auto q = test(C);
-		auto v = trial(W);
-
-		auto uh = interpolate(velocity, v);
-
-		//FIXME This bugs because the var ranges are found from uh instead of c
-		// auto b_form = inner(c * uh, grad(q)) * dX;	
-
-		auto b_form = inner(c * uh, grad(q)) * dX;
-		utopia::assemble(b_form, gradient_matrix);
-
-		if(lump_mass_matrix) {
-			system_matrix = -dt * gradient_matrix;
-			system_matrix += USparseMatrix(diag(mass_vector));
-		} else {
-			system_matrix = mass_matrix - dt * gradient_matrix;
-		}
-
-		if(h1_regularization) {
-			auto lapl = inner(grad(c), grad(q)) * dX;
-
-			USparseMatrix lapl_matrix;
-			utopia::assemble(lapl, lapl_matrix);
-
-			system_matrix -= (regularization_parameter * dt) * lapl_matrix;
-		}
-
-		UVector c0;
-		if(!box_min.empty() && !box_max.empty()) {
-			auto IV = boxed_fun(box_min, box_max,
-				[](const std::vector<double> &x) -> double {
-					return 10.;
-				}
-			);
-
-			auto l_form = inner(ctx_fun(IV), q) * dX;
-
-			UVector M_x_c0;
-			utopia::assemble(l_form, M_x_c0);
-			// remove_mass(M_x_c0, c0);
-			c0 = e_mul(M_x_c0, 1./mass_vector);
-		} else {
-			c0 = local_zeros(C.dof_map().n_local_dofs());
-		}
-
-
-		copy_values(C, c0, C, velocity);
-
-
-		if(forcing_function) {
-			forcing_function->eval(velocity, f);
-			double norm_f = norm2(f);
-			std::cout << "norm_f " << norm_f << std::endl;
-		} else {
-			f = local_zeros(local_size(velocity));
-		}
-	}
+	
 
 	void FractureFlowTransportSimulation::Transport::update_output()
 	{
@@ -367,6 +301,127 @@ namespace utopia {
 
 		utopia::convert(R_aux, *aux_space.subspace(0).equation_system().solution);
 		aux_space.subspace(0).equation_system().solution->close();
+	}
+
+	void FractureFlowTransportSimulation::Transport::assemble_system(FractureFlow &flow)
+	{
+		const int dim = space->subspace(0).mesh().spatial_dimension();
+
+		auto W  = space->space().subspace(0, dim);
+		auto &C = space->space().subspace(dim);
+		auto &mesh = C.mesh();
+		auto &dof_map = C.dof_map();
+
+		std::cout << C.dof_map().n_variables() << std::endl;
+
+		auto c = trial(C);
+		auto q = test(C);
+		auto v = trial(W);
+
+		auto uh = interpolate(velocity, v);
+		auto ph = interpolate(pressure_w, c);
+
+		auto sampler_fun = ctx_fun(flow.sampler);
+
+
+		//FIXME This bugs because the var ranges are found from uh instead of c
+		// auto b_form = inner(c * uh, grad(q)) * dX;	
+
+		auto b_form = inner(c * (flow.diffusion_tensor * grad(ph)), sampler_fun * grad(q)) * dX;
+		auto R_a    = inner(flow.diffusion_tensor * grad(ph), 		sampler_fun * grad(q)) * dX;
+
+		bool use_upwinding = true;
+
+
+		if(!use_upwinding) {
+
+			utopia::assemble(b_form, gradient_matrix);
+
+		} else {
+
+			auto n_local_dofs = dof_map.n_local_dofs();
+			gradient_matrix = local_sparse(n_local_dofs, n_local_dofs, max_nnz_x_row(C));
+
+			Write<USparseMatrix> w_(gradient_matrix);
+
+			std::vector<libMesh::dof_id_type> dofs;
+			AssemblyContext<LIBMESH_TAG> ctx;
+			for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
+				ctx.set_current_element((*e_it)->id());
+				ctx.set_has_assembled(false);
+				ctx.init( R_a + b_form );
+
+				dof_map.dof_indices(*e_it, dofs);
+
+				auto eval_b_form = eval(b_form, ctx);
+
+
+				//upwinding begin
+				auto eval_R_a   = eval(R_a,    ctx);
+				auto n = dofs.size();
+
+				for(std::size_t i = 0; i < n; ++i) {
+					for(std::size_t j = 0;  j < n; ++j) {
+						// auto sign = eval_R_a.get(i) >= 0. ? 1. : -1.;
+						// eval_b_form.set(i, j, -eval_b_form.get(i, j) * sign);
+						eval_b_form.set(i, j, -eval_b_form.get(i, j));
+					}
+				}
+
+				//upwinding end
+
+				// if(ctx.has_assembled()) {
+					add_matrix(utopia::raw_type(eval_b_form), dofs, dofs, gradient_matrix);
+				// }
+			}
+
+		}
+
+		if(lump_mass_matrix) {
+			system_matrix = -dt * gradient_matrix;
+			system_matrix += USparseMatrix(diag(mass_vector));
+		} else {
+			system_matrix = mass_matrix - dt * gradient_matrix;
+		}
+
+		if(h1_regularization) {
+			auto lapl = inner(grad(c), grad(q)) * dX;
+
+			USparseMatrix lapl_matrix;
+			utopia::assemble(lapl, lapl_matrix);
+
+			system_matrix -= (regularization_parameter * dt) * lapl_matrix;
+		}
+
+		UVector c0;
+		if(!box_min.empty() && !box_max.empty()) {
+			auto IV = boxed_fun(box_min, box_max,
+				[](const std::vector<double> &x) -> double {
+					return 10.;
+				}
+			);
+
+			auto l_form = inner(ctx_fun(IV), q) * dX;
+
+			UVector M_x_c0;
+			utopia::assemble(l_form, M_x_c0);
+			// remove_mass(M_x_c0, c0);
+			c0 = e_mul(M_x_c0, 1./mass_vector);
+		} else {
+			c0 = local_zeros(C.dof_map().n_local_dofs());
+		}
+
+
+		copy_values(C, c0, C, velocity);
+
+
+		if(forcing_function) {
+			forcing_function->eval(velocity, f);
+			double norm_f = norm2(f);
+			std::cout << "norm_f " << norm_f << std::endl;
+		} else {
+			f = local_zeros(local_size(velocity));
+		}
 	}
 
 

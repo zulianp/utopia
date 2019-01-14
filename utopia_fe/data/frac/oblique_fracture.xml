@@ -100,6 +100,7 @@
 <!-- <solve-strategy>monolithic</solve-strategy> -->
 
 <solve-strategy>staggered</solve-strategy>
+<!-- <solve-strategy>separate</solve-strategy> -->
 <use-mg>true</use-mg>
 <mg-sweeps>1</mg-sweeps>
 <mg-levels>4</mg-levels>
@@ -107,19 +108,19 @@
 <!-- <preset-velocity-field>true</preset-velocity-field> -->
 
 <transport>
-	<dt>0.005</dt>
-	<simulation-time>10.</simulation-time>
+	<dt>0.001</dt>
+	<simulation-time>0.5</simulation-time>
 	<lump-mass-matrix>false</lump-mass-matrix>
-	<h1-regularization>true</h1-regularization>
+	<h1-regularization>false</h1-regularization>
 	<regularization-parameter>1e-5.</regularization-parameter>
 	
-<!-- 	<box>
+	<box>
 		<x-min>0.7</x-min>
 		<x-max>0.9</x-max>
 
 		<y-min>0.7</y-min>
 		<y-max>0.9</y-max>
-	</box> -->
+	</box>
 
 	<matrix>
 		<space>
@@ -127,18 +128,18 @@
 			<variables>
 				<var>
 					<name>vel_0</name>
-					<!-- <order>1</order>
-					<fe-family>LAGRANGE</fe-family> -->
-					<order>0</order>
-					<fe-family>MONOMIAL</fe-family>
+					<order>1</order>
+					<fe-family>LAGRANGE</fe-family>
+				<!-- 	<order>0</order>
+					<fe-family>MONOMIAL</fe-family> -->
 
 				</var>
 				<var>
 					<name>vel_1</name>
-					<!-- <order>1</order>
-					<fe-family>LAGRANGE</fe-family> -->
-					<order>0</order>
-					<fe-family>MONOMIAL</fe-family>
+					<order>1</order>
+					<fe-family>LAGRANGE</fe-family>
+				<!-- 	<order>0</order>
+					<fe-family>MONOMIAL</fe-family> -->
 
 				</var>
 				<var>
@@ -147,7 +148,7 @@
 					<fe-family>LAGRANGE</fe-family>
 				</var>
 			</variables>
-
+<!-- 
 			<boundary-conditions>
 				<entry>
 					<side>1</side>
@@ -159,7 +160,7 @@
 					<value>0</value>
 					<var>2</var>
 				</entry>
-			</boundary-conditions>
+			</boundary-conditions> -->
 
 		</space>
 	</matrix>
