@@ -64,17 +64,10 @@ namespace utopia {
 		}
 
 		Multigrid(const std::shared_ptr<Smoother> &smoother    = nullptr,
-		          const std::shared_ptr<Solver> &linear_solver = nullptr,
-		          const Parameters params = Parameters())
+		          const std::shared_ptr<Solver> &linear_solver = nullptr)
 		: smoother_(smoother), linear_solver_(linear_solver), default_ksp_type_(KSPRICHARDSON), default_pc_type_(PCSOR), block_size_(1)
 		{
-		    set_parameters(params);
-		}
-
-		void set_parameters(const Parameters params) override
-		{
-		    IterativeSolver::set_parameters(params);
-		    LinearMultiLevel<Matrix, Vector>::set_parameters(params);
+		    
 		}
 
 		inline void set_default_ksp_type(const KSPType &ksp_type)
@@ -104,6 +97,33 @@ namespace utopia {
 		{
 			return new Multigrid();
 		}
+
+
+        void read(Input &in) override
+        {
+          LinearMultiLevel<Matrix, Vector>::read(in); 
+          IterativeSolver::read(in); 
+
+          in.get("block_size", block_size_);
+
+          if(smoother_) {
+              in.get("smoother", *smoother_);
+          }
+          if(linear_solver_) {
+              in.get("coarse_solver", *linear_solver_);
+          }          
+
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+          LinearMultiLevel<Matrix, Vector>::print_usage(os); 
+          IterativeSolver::print_usage(os); 
+          
+          this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1"); 
+          this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-"); 
+          this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-"); 
+        }
 
 	private:
 		std::shared_ptr<Smoother> smoother_;

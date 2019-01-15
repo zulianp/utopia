@@ -94,12 +94,6 @@ namespace utopia {
 
     };
 
-    template <typename Matrix, typename Vector>
-    BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(Parameters params)
-    : impl_(utopia::make_unique<Impl>())
-    {
-        set_parameters(params);
-    }
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
@@ -204,11 +198,11 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_parameters(const Parameters params)
+    void BelosSolver<Matrix, Vector, TRILINOS>::read_xml(const std::string &path)
     {
-        if(!params.param_file_name().empty()) {
+        if(!path.empty()) {
             try {
-                impl_->param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());
+                impl_->param_list = Teuchos::getParametersFromXmlFile(path);
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);

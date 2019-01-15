@@ -39,4 +39,8 @@ namespace utopia {
 	}
 
 	void Configurable::print_usage(std::ostream &) const {}
+	void Configurable::print_param_usage(std::ostream &os, const std::string & name, const std::string & type, const std::string & description, const std::string & default_settings) const
+	{
+		os<< name <<std::setw(25-name.size()) <<" : <"<< type <<">" << std::setw(10-type.size())  << std::right << " | " << description << std::setw(50-description.size())  << std::right << " | " << default_settings << " \n"; 
+	}
 }

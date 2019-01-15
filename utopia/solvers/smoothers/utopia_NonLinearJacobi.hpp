@@ -26,14 +26,9 @@ namespace utopia
             typedef utopia::Function<Matrix, Vector>                Function;
 
         public:
-        NonLinearJacobi(const Parameters params = Parameters()) 
+        NonLinearJacobi() 
         { 
-            set_parameters(params); 
-        }
-
-        void set_parameters(const Parameters params) override
-        {
-            Smoother::set_parameters(params); 
+            
         }
 
         bool smooth(Function & fun,  Vector &x, const Vector &rhs) override

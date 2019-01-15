@@ -29,46 +29,40 @@ namespace utopia {
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Vector> 
+    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public NonLinearSolver<Vector>
     {
 
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
         typedef utopia::Transfer<Matrix, Vector> Transfer;
+        typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
+
         typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
         typedef std::shared_ptr<Fun> FunPtr;
-        typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
 
         using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
-        NonlinearMultiLevelBase(const SizeType & n_levels, const Parameters params = Parameters())
+        NonlinearMultiLevelBase(const SizeType & n_levels)
         {
             this->n_levels(n_levels); 
-            set_parameters(params);
         }
 
         virtual ~NonlinearMultiLevelBase(){}
 
 
-        /**
-         * @brief      Sets the parameters.
-         *
-         * @param[in]  params  The parameters
-         */
-        virtual void set_parameters(const Parameters params) override
+        virtual void read(Input &in) override
         {
-            MultiLevelBase<Matrix, Vector>::set_parameters(params);
-
-            atol_               = params.atol();
-            rtol_               = params.rtol();
-            stol_               = params.stol();
-
-            max_it_             = params.max_it();
-            verbose_            = params.verbose();
-            time_statistics_    = params.time_statistics();
+          MultiLevelBase<Matrix, Vector>::read(in); 
+          NonLinearSolver<Vector>::read(in);        
         }
 
+        virtual void print_usage(std::ostream &os) const override
+        {
+          MultiLevelBase<Matrix, Vector>::print_usage(os); 
+          NonLinearSolver<Vector>::print_usage(os);        
+        }        
 
 
         /**
@@ -153,112 +147,7 @@ namespace utopia {
             return true;
         }
 
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        Scalar      atol() const               { return atol_; }
-        Scalar      rtol()  const              { return rtol_; }
-        Scalar      stol()  const              { return stol_; }
-        SizeType    max_it()  const            { return max_it_; }
-        bool        verbose() const            { return verbose_; }
-        bool        time_statistics() const    { return time_statistics_; }
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        void atol(const Scalar & atol_in ) { atol_ = atol_in; };
-        void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; };
-        void stol(const Scalar & stol_in ) { stol_ = stol_in; };
-        void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; };
-        void verbose(const bool & verbose_in ) { verbose_ = verbose_in; };
-        void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; };
-
-
-        Scalar get_time() { return _time.get_seconds();  }
-
     protected:
-        /**
-         * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve process.
-         *
-         * @param[in]  method            The method.
-         * @param[in]  status_variables  The status variables.
-         */
-        virtual void init_solver(const std::string &method, const std::vector<std::string> status_variables) override
-        {
-            if(mpi_world_rank() == 0 && verbose_)
-                PrintInfo::print_init(method, status_variables);
-
-            _time.start();
-        }
-
-
-        virtual void print_init_message(const std::string &method, const std::vector<std::string> status_variables)
-        {
-            if(mpi_world_rank() == 0 && verbose_)
-                PrintInfo::print_init(method, status_variables);
-        }
-
-
-        /**
-         * @brief      Exit of solver.
-         *
-         * @param[in]  num_it              The number iterator
-         * @param[in]  convergence_reason  The convergence reason
-         */
-        virtual void exit_solver(const SizeType &num_it, const Scalar & convergence_reason) override
-        {
-            _time.stop();
-
-            status_.reason = convergence_reason;
-            status_.iterates = num_it;
-
-            if(verbose_)
-            {
-                ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
-                if(mpi_world_rank() == 0)
-                    std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
-            }
-        }
-
-        /**
-         * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of gradient
-         *             and lenght of the step size.
-         *
-         * @param[in]  g_norm  The norm of the gradient.
-         * @param[in]  r_norm  The relative norm of the gradient.
-         * @param[in]  s_norm  The size of step.
-         * @param[in]  it      The number of iterations.
-         */
-        virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm) override
-        {
-            // termination because norm of grad is down
-            if(g_norm < atol_)
-            {
-                exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-                return true;
-            }
-
-            // step size so small that we rather exit than wait for nan's
-            if(s_norm < stol_)
-            {
-                exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-                return true;
-            }
-
-            // step size so small that we rather exit than wait for nan's
-            if(r_norm < rtol_)
-            {
-                exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-                return true;
-            }
-
-            // check number of iterations
-            if( it > max_it_)
-            {
-                exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-                return true;
-            }
-
-            return false;
-        }
-
 
         /**
          * @brief      Function looks up for ids, where we should apply Dirichlet BC and set value to required one
@@ -406,7 +295,7 @@ namespace utopia {
          *
          * @param[in]  it_global  The iterator global
          */
-        virtual void print_statistics(const SizeType & it_global)
+        virtual void print_statistics(const SizeType & it_global) override
         {
             std::string path = "log_output_path";
             auto non_data_path = Utopia::instance().get(path);
@@ -434,20 +323,6 @@ namespace utopia {
 
     protected:
         std::vector<FunPtr>                      level_functions_;
-
-        // ... GENERAL SOLVER PARAMETERS ...
-        Scalar atol_;                   /*!< Absolute tolerance. */
-        Scalar rtol_;                   /*!< Relative tolerance. */
-        Scalar stol_;                   /*!< Step tolerance. */
-
-        SizeType max_it_;               /*!< Maximum number of iterations. */
-        SizeType verbose_;              /*!< Verobse enable? . */
-        SizeType time_statistics_;      /*!< Perform time stats or not? */
-
-
-        Chrono _time;                 /*!<Timing of solver. */
-
-        SolutionStatus status_;
 
     };
 

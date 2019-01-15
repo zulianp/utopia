@@ -16,11 +16,11 @@
 
 #include "utopia_Newton.hpp"
 #include "utopia_QuasiNewton.hpp"
-#include "utopia_AffineSimilarity.hpp"
 
 #include "utopia_ConstrainedIncludes.hpp"
 #include "utopia_TrustRegionIncludes.hpp"
 #include "utopia_LineSearchIncludes.hpp"
+#include "utopia_PseudoContinuationIncludes.hpp"
 
 #include "utopia_NonlinearSolverFactory.hpp"
 #include "utopia_HessianApproximations.hpp"

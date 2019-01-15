@@ -1,12 +1,8 @@
 #ifndef UTOPIA_PETSC_SLEPC_H
 #define UTOPIA_PETSC_SLEPC_H
 
-#include "utopia_Preconditioner.hpp"
-#include "utopia_PreconditionedSolver.hpp"
-#include "utopia_Smoother.hpp"
-
 #include "utopia_Core.hpp"
-
+#include "utopia_EigenSolver.hpp"
 #include <slepceps.h>
 
 namespace utopia 
@@ -14,10 +10,10 @@ namespace utopia
 
 
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-    class EigenSolver; 
+    class SlepcSolver; 
 
     template<typename Matrix, typename Vector>
-    class EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL> : public virtual Clonable 
+    class SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> : public virtual Clonable, public EigenSolver<Matrix, Vector>
     {
 
     public:
@@ -25,39 +21,32 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 
-        EigenSolver(    const Parameters params = Parameters(), 
-                                    const std::vector<std::string> problem_types    = {"hermitian", "non_hermitian", "generalized_hermitian", "generalized_non_hermitian", "generalized_hermitian_SPD_B", "generalized_hermitian_indefinite"}, 
-                                    const std::vector<std::string> portions_of_spectrum    = {"largest_magnitude", "smallest_magnitude", "largest_real", "smallest_real", "largest_imaginary", "smallest_imaginary", "closest_to_target", "closest_to_target_real", "closest_to_target_imaginary", "all_in_region"},
-                                    const std::vector<std::string> solver_types    = {"krylovschur", "power", "subspace", "arnoldi", "lanczos", "gd", "jd", "rqcg", "lobpcg", "ciss", "lapack", "arpack", "blzpack", "trlan", "blopex", "primme", "feast"}): 
-                                    initialized_(false), 
-                                    solved_(false), 
-                                    number_of_eigenvalues_(1),
-                                    problem_types_(problem_types), 
-                                    portions_of_spectrum_(portions_of_spectrum), 
-                                    solver_types_(solver_types), 
-                                    max_it_(1000), 
-                                    tol_(1e-12)
+        SlepcSolver(    const std::vector<std::string> problem_types    = {"hermitian", "non_hermitian", "generalized_hermitian", "generalized_non_hermitian", "generalized_hermitian_SPD_B", "generalized_hermitian_indefinite"}, 
+                        const std::vector<std::string> portions_of_spectrum    = {"largest_magnitude", "smallest_magnitude", "largest_real", "smallest_real", "largest_imaginary", "smallest_imaginary", "closest_to_target", "closest_to_target_real", "closest_to_target_imaginary", "all_in_region"},
+                        const std::vector<std::string> solver_types    = {"krylovschur", "power", "subspace", "arnoldi", "lanczos", "gd", "jd", "rqcg", "lobpcg", "ciss", "lapack", "arpack", "blzpack", "trlan", "blopex", "primme", "feast"}): 
+                        initialized_(false), 
+                        solved_(false), 
+                        problem_types_(problem_types), 
+                        portions_of_spectrum_(portions_of_spectrum), 
+                        solver_types_(solver_types)
 
         {
             problem_type_           = problem_types_.at(0); 
             portion_of_spectrum_    = portions_of_spectrum_.at(0);
             solver_type_            = solver_types_.at(0); 
-
-
-            verbose_                = params.verbose();
         }   
 
 
-        virtual ~EigenSolver()
+        virtual ~SlepcSolver()
         { 
             if (initialized_)
                 EPSDestroy(&eps_);
         }
 
 
-        virtual EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL> * clone() const 
+        virtual SlepcSolver * clone() const  override
         {
-            return new EigenSolver(*this);
+            return new SlepcSolver(*this);
         }
 
 
@@ -85,62 +74,12 @@ namespace utopia
         }        
 
 
-        virtual void portion_of_spectrum(const std::string & type)
+        virtual void portion_of_spectrum(const std::string & type) override
         {
           portion_of_spectrum_ = in_array(type, portions_of_spectrum_) ? type : portions_of_spectrum_.at(0);
         }
 
-
-        virtual const std::string &  portion_of_spectrum() const 
-        {
-          return portion_of_spectrum_; 
-        }
-
-
-        virtual void number_of_eigenvalues(const SizeType & number_of_eigenvalues)
-        {
-            number_of_eigenvalues_ = number_of_eigenvalues; 
-        }
-
-        virtual const SizeType & number_of_eigenvalues() const 
-        {
-            return number_of_eigenvalues_; 
-        }
-
-        virtual void max_it(const SizeType & max_it)
-        {
-            max_it_ = max_it; 
-        }
-
-        virtual const SizeType & max_it() const 
-        {
-            return max_it_; 
-        }
-
-        virtual void tol(const Scalar & tol)
-        {
-            tol_ = tol; 
-        }
-
-        virtual const Scalar & tol() const 
-        {
-            return tol_; 
-        }
-
-
-        virtual const bool & verbose() const 
-        {
-            return verbose_; 
-        }
-
-
-        virtual void verbose(const bool & verbose)  
-        {
-            verbose_ = verbose; 
-        }
-
-
-        virtual bool solve(const Matrix & A)
+        virtual bool solve(const Matrix & A) override
         {
             MPI_Comm            comm; 
             PetscObjectGetComm((PetscObject)raw_type(A), &comm);
@@ -174,7 +113,7 @@ namespace utopia
 
 
 
-        virtual bool solve(const Matrix & A, const Matrix & B)
+        virtual bool solve(const Matrix & A, const Matrix & B) override
         {
             MPI_Comm            comm; 
             PetscObjectGetComm((PetscObject)raw_type(A), &comm);
@@ -210,10 +149,10 @@ namespace utopia
 
 
 
-        virtual bool print_eigenpairs()
+        virtual bool print_eigenpairs() override
         {
 
-            if(!verbose())
+            if(!this->verbose())
                 return false; 
 
             if(!solved_)
@@ -253,7 +192,7 @@ namespace utopia
         }
 
 
-        virtual void get_eigenpairs(const SizeType & i, Scalar & iegr, Scalar & eigi, Vector & vr, Vector & vi)
+        virtual void get_eigenpairs(const SizeType & i, Scalar & iegr, Scalar & eigi, Vector & vr, Vector & vi) override
         {
             if(!solved_)
             {
@@ -288,7 +227,7 @@ namespace utopia
 
 
 
-        virtual void get_real_eigenpair(const SizeType & i, Scalar & iegr, Vector & vr)
+        virtual void get_real_eigenpair(const SizeType & i, Scalar & iegr, Vector & vr) override
         {
             if(!solved_)
             {
@@ -361,10 +300,10 @@ namespace utopia
 
 
             EPSSetType(eps_, solver_type_.c_str()); 
-            EPSSetTolerances(eps_, tol_, max_it_); 
+            EPSSetTolerances(eps_, this->tol(), this->max_it()); 
 
             // could be done more sophisticated... 
-            EPSSetDimensions(eps_, number_of_eigenvalues_, PETSC_DEFAULT,  PETSC_DEFAULT); 
+            EPSSetDimensions(eps_, this->number_of_eigenvalues(), PETSC_DEFAULT,  PETSC_DEFAULT); 
 
 
             EPSSetFromOptions(eps_);
@@ -386,23 +325,14 @@ namespace utopia
         bool initialized_; 
         bool solved_; 
 
-        SizeType number_of_eigenvalues_; 
         const std::vector<std::string> problem_types_; 
         const std::vector<std::string> portions_of_spectrum_; 
         const std::vector<std::string> solver_types_; 
-
 
         std::string portion_of_spectrum_;
         std::string eps_type_; 
         std::string problem_type_; 
         std::string solver_type_; 
-
-
-        SizeType max_it_; 
-        Scalar tol_; 
-
-        bool verbose_; 
-
 
     };
     

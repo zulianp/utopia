@@ -1,15 +1,16 @@
 # UTOPIA_INSTALLATION_PATH=$(MOONOLITH_ROOT)/utopia/build
-UTOPIA_INSTALLATION_PATH=/Users/alenakopanicakova/MOOSE/moonolith/utopia_installation
+# UTOPIA_INSTALLATION_PATH=/Users/alenakopanicakova/MOOSE/moonolith/utopia_installation
 
-include $(UTOPIA_INSTALLATION_PATH)/config/utopia-config.makefile
+include $(UTOPIA_DIR)/config/utopia-config.makefile
 
-INCLUDES:=-I $(UTOPIA_INSTALLATION_PATH)/include $(UTOPIA_INCLUDES)
-LIBS:=-L$(UTOPIA_INSTALLATION_PATH)/lib -lutopia $(UTOPIA_LIBRARIES)
+INCLUDES:=-I $(UTOPIA_DIR)/include $(UTOPIA_INCLUDES)
+LIBS:=-L$(UTOPIA_DIR)/lib -lutopia $(UTOPIA_LIBRARIES)
 DEFS:=$(UTOPIA_DEFS)	
 CXX:=$(UTOPIA_CXX_COMPILER)	
 CC:=$(UTOPIA_C_COMPILER)	
 CXX_FLAGS:=$(UTOPIA_CXX_FLAGS) $(CXX_FLAGS)	
-LIB_UTOPIA:=$(UTOPIA_INSTALLATION_PATH)/lib/libutopia.a
+CXX_FLAGS += "-std=c++14"
+LIB_UTOPIA:=$(UTOPIA_DIR)/lib/libutopia.a
 
 all: nonlinear_ex  
 

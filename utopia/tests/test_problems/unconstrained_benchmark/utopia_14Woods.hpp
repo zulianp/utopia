@@ -1,9 +1,3 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2016-08-01
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2016-08-01
-*/
 #ifndef UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP
 #define UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP
 
@@ -14,32 +8,55 @@
 
 namespace utopia 
 {
-
-    /**
-     * @brief       Wood's test function widely used for testing nonlinear optimization problems. \n
-     *              It is a fourth-degree polynomial which is reasonably well-behaved near the minimum,
-     *               but in order to get there one must cross a rather flat, four-dimensional ‘plateau’
-     *               which often causes minimization algorithm to get ‘stuck’ far from the minimum. As
-     *               such it is a particularly good test of convergence criteria and simulates quite well a
-     *               feature of many physical problems in many variables where no good starting approximation
-     *               is known. \n
-     *               Exact solution is at F(1, 1, 1, 1) = 0. \n
-     *               Good intial guess for testing: F(-3, -1, -3, -1) = 19192. \n
-     */
     template<class Matrix, class Vector>
-    class Woods : public Function<Matrix, Vector> 
+    class Woods14 final: public UnconstrainedTestFunction<Matrix, Vector> 
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        Woods() 
+        Woods14() 
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
+            x_init_ = zeros(4);
+            x_exact_ = zeros(4);
+
+            {
+                const Write<Vector> write1(x_init_);
+                const Write<Vector> write2(x_exact_);
+                
+                x_init_.set(0, -3.0);
+                x_init_.set(1, -1.0);
+                x_init_.set(2, -3.0);
+                x_init_.set(3, -1.0);                
+
+                x_exact_.set(0, 1.0);
+                x_exact_.set(1, 1.0);     
+                x_exact_.set(2, 1.0);
+                x_exact_.set(3, 1.0);     
+            }
+
         }
+
+        std::string name() const override
+        {
+            return "Wood"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 4; 
+        }
+
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 4);
 
             {
@@ -57,6 +74,11 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 4);
             result = zeros(4);
 
@@ -79,6 +101,11 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 4);
             result = zeros(4, 4);
 
@@ -112,7 +139,32 @@ namespace utopia
             
             return true;
         }
+        
+        Vector initial_guess() const override
+        {
+            return x_init_; 
+        }
+
+        const Vector & exact_sol() const override
+        {
+            return x_exact_; 
+        }
+
+        Scalar min_function_value() const override
+        {
+            return 0; 
+        }
+
+
+    private: 
+        Vector x_init_; 
+        Vector x_exact_; 
+
+
     };
+
+    
+    
 }
 
 #endif //UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP

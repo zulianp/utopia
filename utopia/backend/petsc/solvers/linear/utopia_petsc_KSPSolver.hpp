@@ -52,7 +52,7 @@ namespace utopia {
 
         class Impl;
 
-        KSPSolver(const Parameters params = Parameters());
+        KSPSolver();
 
 
         KSPSolver(std::unique_ptr<Impl> &&w);
@@ -60,13 +60,6 @@ namespace utopia {
         void wrap(KSP &ksp);
 
         virtual ~KSPSolver();
-
-        /**
-         * @brief      Sets the parameters.
-         *
-         * @param[in]  params  The parameters
-         */
-        virtual void set_parameters(const Parameters params) override;
 
         /* @brief      Sets the choice of direct solver.
          *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings.

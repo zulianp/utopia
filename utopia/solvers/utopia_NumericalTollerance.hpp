@@ -45,12 +45,6 @@ namespace utopia {
 			step_tollerance_ = value;
 		}
 
-		virtual void set_parameters(const Parameters params)
-		{
-			absolute_tollerance_ = params.atol();            
-			relative_tollerance_ = params.rtol(); 
-			step_tollerance_     = params.stol(); 
-		}
 
 	private:
 		Scalar absolute_tollerance_;

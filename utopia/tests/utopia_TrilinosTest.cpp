@@ -630,7 +630,7 @@ namespace utopia {
         multigrid.rtol(1e-9);
         multigrid.pre_smoothing_steps(3);
         multigrid.post_smoothing_steps(3);
-        multigrid.set_fix_semidefinite_operators(true);
+        multigrid.fix_semidefinite_operators(true);
         multigrid.must_generate_masks(use_masks);;
         multigrid.verbose(verbose);
         
@@ -835,7 +835,7 @@ namespace utopia {
         multigrid.stol(1e-15);
         multigrid.rtol(1e-15);
         // multigrid.verbose(true);
-        multigrid.set_fix_semidefinite_operators(true);
+        multigrid.fix_semidefinite_operators(true);
         multigrid.must_generate_masks(true);
         VectorT x = local_zeros(local_size(rhs));
         
@@ -1309,9 +1309,8 @@ namespace utopia {
     {
         std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_belos.xml";
         
-        Parameters params;
-        params.set_param_file_name(xml_file);
-        BelosSolver<TSMatrixd, TVectord> solver(params);
+        BelosSolver<TSMatrixd, TVectord> solver;
+        solver.read_xml(xml_file);
 
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         TVectord x = zeros(size(*ml_problem.rhs));
@@ -1335,9 +1334,8 @@ namespace utopia {
     {
         std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_amesos.xml";
         
-        Parameters params;
-        params.set_param_file_name(xml_file);
-        Amesos2Solver<TSMatrixd, TVectord> solver(params);
+        Amesos2Solver<TSMatrixd, TVectord> solver;
+        solver.read_xml(xml_file);
 
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         TVectord x = zeros(size(*ml_problem.rhs));

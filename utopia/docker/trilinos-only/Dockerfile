@@ -23,11 +23,25 @@ RUN cd trilinos_cloned && mkdir build && cd build && \
       -DTPL_ENABLE_MPI=ON \
       -DMPI_BASE_DIR=/opt/mpich \
       -DTrilinos_ENABLE_Tpetra=ON \
+      -DTrilinos_ENABLE_TpetraCore=ON \
       -DTrilinos_ENABLE_Belos=ON \
       -DTrilinos_ENABLE_Amesos2=ON \
       -DTrilinos_ENABLE_Ifpack2=ON \
       -DTrilinos_ENABLE_MueLu=ON \
-      -DTrilinos_ENABLE_NOX=ON
+      -DTrilinos_ENABLE_NOX=ON  \
+      -DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DKOKKOS_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DMueLu_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DRTOp_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DStratimikos_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DTeuchos_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DThyra_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DTpetraCore_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON 
+
       
 RUN cd trilinos_cloned && cd build && make && make install
 

@@ -21,7 +21,6 @@ namespace utopia {
 		}
 
 	private:
-		class SimulationInput;
 		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 	};
 }

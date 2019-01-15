@@ -1,7 +1,6 @@
 #ifndef UTOPIA_TRIVIAL_PRECONDITIONERS_HPP
 #define UTOPIA_TRIVIAL_PRECONDITIONERS_HPP
 
-#include "utopia_Parameters.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_Traits.hpp"
@@ -62,6 +61,7 @@ namespace utopia
         {
             return new IdentityPreconditioner(*this);
         }
+     
     };
 
     template<class Vector>
@@ -82,7 +82,6 @@ namespace utopia
             {
                 return new FunctionPreconditioner(*this);
             }
-
 
         private:
             std::function< void(const Vector &, Vector &) > operator_action_; 

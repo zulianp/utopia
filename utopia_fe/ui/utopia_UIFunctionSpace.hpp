@@ -27,8 +27,10 @@ namespace utopia {
 	template<>
 	class UIFunctionSpace<LibMeshFunctionSpace> final : public Configurable {
 	public:
-		UIFunctionSpace(const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh)
-		: mesh_(mesh)
+		UIFunctionSpace(
+			const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh,
+			const std::shared_ptr<libMesh::EquationSystems> equation_systems = nullptr)
+		: mesh_(mesh), equation_systems_(equation_systems)
 		{}
 
 		void read(Input &is) override {
@@ -68,17 +70,20 @@ namespace utopia {
 
 			is.get("system-name", system_name);
 
-			auto equation_systems = std::make_shared<libMesh::EquationSystems>(mesh_->mesh());
-			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>(system_name);
+			if(!equation_systems_) {
+				equation_systems_ = std::make_shared<libMesh::EquationSystems>(mesh_->mesh());
+			}
 
+			auto &sys = equation_systems_->add_system<libMesh::LinearImplicitSystem>(system_name);
 			space_ = std::make_shared<ProductFunctionSpace<LibMeshFunctionSpace>>();
 
 			for(int i = 0; i < n_vars; ++i) {
 				auto ss = std::make_shared<LibMeshFunctionSpace>(
-					equation_systems,
+					equation_systems_,
 					libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_families[i]),
 					libMesh::Order(var_orders[i]),
-					var_names[i]
+					var_names[i],
+					sys.number()
 				);
 				
 				space_->add_subspace(ss);
@@ -119,6 +124,11 @@ namespace utopia {
 			return *space_;
 		}
 
+		inline void set_space(const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace> > &space)
+		{
+			space_ = space;
+		}
+
 		inline LibMeshFunctionSpace &subspace(int index)
 		{
 			return space_->subspace(index);
@@ -129,8 +139,19 @@ namespace utopia {
 			return space_->subspace_ptr(index);
 		}
 
+		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh() 
+		{
+			return mesh_;
+		}
+
+		inline bool initialized() const
+		{
+			return static_cast<bool>(space_);
+		}
+
 	private:
 		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh_;
+		std::shared_ptr<libMesh::EquationSystems> equation_systems_;
 		std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space_;
 	};
 }

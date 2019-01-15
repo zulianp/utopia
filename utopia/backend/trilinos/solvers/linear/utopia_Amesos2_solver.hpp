@@ -27,7 +27,6 @@ namespace utopia {
             
         Amesos2Solver();
         Amesos2Solver(const Amesos2Solver &other);
-        Amesos2Solver(Parameters params);
         ~Amesos2Solver();
         
         void update(const std::shared_ptr<const Matrix> &op) override;
@@ -47,11 +46,11 @@ namespace utopia {
         bool get_num_factorization_done () const;
 
         /**
-         * @brief      Checks the parameters.
+         * @brief      Reads the xml file based on different layout than read
          *
-         * @param[in]  params  The parameters
+         * @param[in]  path  location of the xml file
          */
-        void set_parameters(const Parameters params) override;
+        void read_xml(const std::string &path);
 
 
          /**

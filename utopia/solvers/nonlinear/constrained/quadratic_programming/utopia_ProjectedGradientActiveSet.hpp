@@ -19,6 +19,33 @@ namespace  utopia
                 
             }
             
+            void read(Input &in) override
+            {
+                MatrixFreeQPSolver<Vector>::read(in);
+                QPSolver<Matrix, Vector>::read(in);
+
+                in.get("Cauchy-point", cp_);
+
+                if(precond_) {
+                    in.get("precond", *precond_);
+                }
+                if(linear_solver_) {
+                    in.get("linear-solver", *linear_solver_);
+                }                                                
+            }
+
+
+            void print_usage(std::ostream &os) const override
+            {
+                MatrixFreeQPSolver<Vector>::print_usage(os);
+                QPSolver<Matrix, Vector>::print_usage(os);
+
+                this->print_param_usage(os, "Cauchy-point", "GeneralizedCauchyPoint", "Input parameters for Generalized Cauchy point solver.", "-"); 
+                this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for Preconditioner.", "-"); 
+                this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for LinearSolver.", "-"); 
+            }
+
+
 
             ProjectedGradientActiveSet * clone() const override
             {
@@ -308,6 +335,7 @@ namespace  utopia
             GeneralizedCauchyPoint<Matrix, Vector> cp_; 
             std::shared_ptr<Preconditioner<Vector> > precond_;
             std::shared_ptr<Solver> linear_solver_;    
+
             Vector r, q, d, Hd; 
         
     };

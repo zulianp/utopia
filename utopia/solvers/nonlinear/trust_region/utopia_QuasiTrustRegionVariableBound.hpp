@@ -2,7 +2,6 @@
 #define UTOPIA_QUASI_TRUST_REGION_VARIABLE_CONSTRAINT_TR_HPP
 
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_Parameters.hpp"    
 #include "utopia_VariableBoundSolverInterface.hpp"
 
  namespace utopia 
@@ -23,25 +22,24 @@
 
     public:                                                                      
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx, 
-                                    const std::shared_ptr<MatrixFreeQPSolver> &tr_subproblem, 
-                                    const Parameters params = Parameters()) : 
+                                    const std::shared_ptr<MatrixFreeQPSolver> &tr_subproblem) : 
                                     NonLinearSolver(hessian_approx, tr_subproblem), 
                                     it_successful_(0)
 
       {
-        set_parameters(params);        
+        
       }
 
-
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      void set_parameters(const Parameters params) override
+      void read(Input &in) override
       {
+        TrustRegionBase::read(in); 
+        NonLinearSolver::read(in); 
+      }
 
-        NonLinearSolver::set_parameters(params);
-        TrustRegionBase::set_parameters(params);
+      void print_usage(std::ostream &os) const override
+      {
+        TrustRegionBase::print_usage(os); 
+        NonLinearSolver::print_usage(os); 
       }
 
       /**
@@ -110,7 +108,8 @@
             p_k = 0 * p_k; 
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->set_box_constraints(box); 
-            tr_subproblem->solve(*multiplication_action, -1.0*g, p_k);      
+            tr_subproblem->solve(*multiplication_action, -1.0*g, p_k);     
+            this->solution_status_.num_linear_solves++;  
           }
           else
           {
@@ -135,13 +134,13 @@
     //----------------------------------------------------------------------------
     //     acceptance of trial point
     //----------------------------------------------------------------------------
-          if(ared < 0 || pred < 0)
+          if(ared < 0.0 || pred < 0.0)
           {
-            rho = 0;
+            rho = 0.0;
           }
           else if(ared == pred)
           {
-            rho = 1;
+            rho = 1.0;
           }
 
           if (rho >= this->rho_tol())
@@ -176,7 +175,6 @@
             PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm}); 
 
           converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta); 
-
     //----------------------------------------------------------------------------
     //      tr. radius update 
     //----------------------------------------------------------------------------
@@ -192,6 +190,7 @@
     {
       NonLinearSolver::set_linear_solver(tr_linear_solver); 
     }
+
 
     private:
       SizeType it_successful_; 
