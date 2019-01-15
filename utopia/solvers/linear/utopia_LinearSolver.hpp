@@ -3,7 +3,6 @@
 
 #include <string>
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
@@ -19,7 +18,7 @@ namespace  utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class LinearSolver : public Preconditioner<Vector>, public virtual Clonable {
+    class LinearSolver : public Preconditioner<Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector)           Scalar;
 
@@ -27,8 +26,16 @@ namespace  utopia
 
         virtual bool apply(const Vector &rhs, Vector &sol) override = 0;
 
-        virtual void set_parameters(const Parameters /*params*/) override { }
 
+        virtual void read(Input &in) override
+        {
+            Preconditioner<Vector>::read(in); 
+        }
+        
+        virtual void print_usage(std::ostream &os) const override
+        { 
+            Preconditioner<Vector>::print_usage(os); 
+        }
 
         /**
          * @brief      Solve routine.
@@ -43,7 +50,6 @@ namespace  utopia
             update(make_ref(A));
             return apply(b, x0);
         }
-
 
 
         /*! @brief if overriden the subclass has to also call this one first
@@ -69,41 +75,6 @@ namespace  utopia
         std::shared_ptr<const Matrix> op_;
     };
 
-
-
-    template<class Matrix, class Vector>
-    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector>
-    {
-    public:
-        virtual bool apply(const Vector &rhs, Vector &sol) override
-        {
-            sol = e_mul(d, rhs);
-            return true;
-        }
-
-        /*! @brief if overriden the subclass has to also call this one first
-         */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
-            LinearSolver<Matrix, Vector>::update(op);
-            d = diag(*op);
-            d  = 1 / d;
-        }
-
-
-        virtual Vector get_d()
-        {
-            return d;
-        }
-
-        InvDiagPreconditioner * clone() const override
-        {
-            return new InvDiagPreconditioner(*this);
-        }
-
-    private:
-        Vector d;
-    };
 }
 
 #endif //UTOPIA_SOLVER_SOLVER_H

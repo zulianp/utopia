@@ -40,24 +40,24 @@ namespace utopia {
 		inline static void read_unlock(const Tensor &) {}
 
 		template<class Tensor>
-		inline static void write_lock(const Tensor &) {}
+		inline static void write_lock(const Tensor &, WriteMode) {}
 
 		template<class Tensor>
-		inline static void write_unlock(const Tensor &) {}
+		inline static void write_unlock(const Tensor &, WriteMode) {}
 
-		inline static void write_lock(CRSMatrix<Scalar> &mat) {
+		inline static void write_lock(CRSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_begin();
 		}
 
-		inline static void write_unlock(CRSMatrix<Scalar> &mat) {
+		inline static void write_unlock(CRSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_end();
 		}
 
-		inline static void write_lock(CCSMatrix<Scalar> &mat) {
+		inline static void write_lock(CCSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_begin();
 		}
 
-		inline static void write_unlock(CCSMatrix<Scalar> &mat) {
+		inline static void write_unlock(CCSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_end();
 		}
 
@@ -110,7 +110,9 @@ namespace utopia {
 		}
 
 		static void build(Matrix &m, const Size &size, const Identity &);
+		static void build(Matrix &m, const Size &size, const LocalIdentity &);
 		static void build(CRSMatrix<Scalar> &m, const Size &size, const Identity &);
+		static void build(CRSMatrix<Scalar> &m, const Size &size, const LocalIdentity &);
 		static void build(CRSMatrix<Scalar> &m, const Size &size, const NNZ<int> &nnz);
 		static void build(CCSMatrix<Scalar> &m, const Size &size, const NNZ<int> &nnz);
 		static void build(CRSMatrix<Scalar> &m, const Size &size, const Zeros & /*values*/);
@@ -119,6 +121,14 @@ namespace utopia {
 		static void build(Vector &m, const Size &size, const Zeros & /*values*/);
 		static void build(Vector &m, const Size &size, const LocalZeros & /*values*/);
 		static void build(Vector &v, const Size &size, const Values<Scalar> &values);
+
+		// template<class Tensor>
+		// static void build_from_structure(Tensor &lhs, const Tensor &rhs)
+		// {
+		// 	//TODO
+		// }
+
+		static void build_from_structure(Vector &lhs, const Vector &rhs);
 
 
 		///For compatiblity parallel expressions are treated as serial ones:
@@ -198,7 +208,7 @@ namespace utopia {
 		}
 
 
-		static void set(Vector &v, Scalar value)
+		inline static void set(Vector &v, Scalar value)
 		{
 			std::fill(v.begin(), v.end(), value);
 		}
@@ -217,7 +227,7 @@ namespace utopia {
 		// }
 
 		template<typename Ordinal>
-		void set_matrix(Matrix &m,
+		inline static void set_matrix(Matrix &m,
 							   const std::vector<Ordinal> &rows,
 							   const std::vector<Ordinal> &cols,
 							   const std::vector<Scalar> &values)
@@ -595,6 +605,7 @@ namespace utopia {
 		}
 
 		static void disp(const Vector &vec);
+		static void disp(const Matrix &mat);
 		// static void disp(const CRSMatrix<Scalar> &mat);
 
 

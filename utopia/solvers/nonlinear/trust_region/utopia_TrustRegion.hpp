@@ -1,95 +1,48 @@
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_HPP
-#include "utopia_NonLinearSolver.hpp"
+
+#include "utopia_NewtonBase.hpp"
 #include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Dogleg.hpp"
-#include "utopia_SteihaugToint.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_SteihaugToint.hpp"
 
 
  namespace utopia
  {
     	template<class Matrix, class Vector>
-      /**
-       * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
-       *             Design of class allows to provide different TR strategies in order to solve TR subproblem.
-       */
-     	class TrustRegion : public NonLinearSolver<Matrix, Vector>,
-                          public TrustRegionBase<Matrix, Vector>
+     	class TrustRegion final: public NewtonBase<Matrix, Vector>,
+                               public TrustRegionBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
 
-        typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase;
-        typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
+        typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
+        typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 
      	public:
-      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>(),
-                  const Parameters params = Parameters())
-                  : NonLinearSolver(tr_subproblem, params), it_successful_(0)
+      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem): 
+                  NonLinearSolver(tr_subproblem)
       {
-
-        set_parameters(params);
+        
       }
 
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      virtual void set_parameters(const Parameters params) override
-      {
+      using utopia::TrustRegionBase<Vector>::get_pred; 
 
-        NonLinearSolver::set_parameters(params);
-        TrustRegionBase::set_parameters(params);
+      void read(Input &in) override
+      {
+        TrustRegionBase::read(in); 
+        NonLinearSolver::read(in); 
       }
 
-      /*!
-      \details
-                Determine, wheater problem is linear, or we need nonlinear solve
-      @note
-      \param fun          - function with evaluation routines
-      \param H            - hessian
-      \param g            - gradient
-      \param p_N          - Newton step
-      \param x_k          - current iterate
-        */
-      virtual bool linear_solution_check(
-
-        Function<Matrix, Vector> &fun,
-        Vector & g,
-        const Matrix & H,
-        Vector & p_N,
-        Vector & x_k)
+      void print_usage(std::ostream &os) const override
       {
-        this->linear_solve(H, -1 * g, p_N);
-        fun.gradient(x_k + p_N, g);
-        Scalar g_norm = norm2(g);
-
-        if(g_norm < 1e-7)
-        {
-          x_k += p_N;
-          std::cout<<"To solve linear problem, TR solver is not really needed ...";
-          return true;
-        }
-
-        x_k += p_N;
-        return false;
+        TrustRegionBase::print_usage(os);
+        NonLinearSolver::print_usage(os); 
       }
 
-
-      /**
-       * @brief      Trust region solve.
-       *
-       * @param      fun   The nonlinear solve function.
-       * @param      x_k   Initial gues/ solution
-       *
-       *
-       * @return     true
-       */
       bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override
       {
          using namespace utopia;
@@ -101,26 +54,25 @@
          Scalar delta, product, ared, pred, rho, E, E_k, E_k1;
 
          SizeType it = 0;
-         it_successful_ = 0;
-         Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+         SizeType it_successful = 0;
+         
+         static const auto infty = std::numeric_limits<Scalar>::infinity();
+         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
 
          bool rad_flg = false;
 
-         Vector g, p_CP = x_k, p_N = x_k, p_k = x_k, x_k1 = x_k;
+         Vector g, p_k = x_k, x_k1 = x_k;
          Matrix H;
 
-         fun.hessian(x_k, H);
+
          fun.gradient(x_k, g);
+          g0_norm = norm2(g);
+          g_norm = g0_norm;
 
           #define DEBUG_mode
-          //  #define LS_check
 
-        // TR delta initialization
-        delta =  this->delta_init(x_k , this->delta0(), rad_flg);
-
-
-        g0_norm = norm2(g);
-        g_norm = g0_norm;
+          // TR delta initialization
+          delta =  this->delta_init(x_k , this->delta0(), rad_flg);
 
         // print out - just to have idea how we are starting
         #ifdef DEBUG_mode
@@ -140,35 +92,31 @@
           }
         #endif
 
-
-        // found out if there is a linear solution - or start with the newton step
-        #ifdef LS_check
-          if(linear_solution_check(fun, g, H, p_N, x_k))
-          {
-            if(this->verbose_) {
-              TrustRegionBase::check_convergence(*this, tol, this->max_it(), 0, 0, 0, 0, 0);
-            }
-            return true;
-          }
-          x_k1 = x_k;
-        #endif
-
-        it++;
-        fun.value(x_k, E);
-        fun.gradient(x_k, g);
+        bool accepted = true; 
 
         // solve starts here
         while(!converged)
         {
           fun.value(x_k, E_k);
-          fun.hessian(x_k, H);
+          
+          if(accepted)
+            fun.hessian(x_k, H);
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-            tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
+          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
+          {
+            p_k *= 0; 
+            tr_subproblem->current_radius(delta); 
+            tr_subproblem->solve(H, -1.0 * g, p_k);      
+            this->solution_status_.num_linear_solves++;  
+          }
+          else
+          {
+            utopia_warning("TrustRegion::Set suitable TR subproblem.... \n "); 
+          }
 
-          this->get_pred(g, H, p_k, pred);
+          pred = this->get_pred(g, H, p_k);
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 
@@ -200,17 +148,28 @@
           }
 
           if (rho >= this->rho_tol())
-            it_successful_++;
+            it_successful++;
 
-          this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
+          accepted = this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
+
+          if(accepted)
+          {
+            x_k = x_k1;
+            fun.gradient(x_k, g);
+            g_norm = norm2(g);
+            r_norm = g_norm/g0_norm;
+
+            norms2(g, p_k, g_norm, s_norm); 
+            r_norm = g_norm/g0_norm;            
+          }
+          else
+          {
+            s_norm = norm2(p_k);
+          }
+
     //----------------------------------------------------------------------------
     //    convergence check
     //----------------------------------------------------------------------------
-          x_k = x_k1;
-          fun.gradient(x_k, g);
-          g_norm = norm2(g);
-          r_norm = g_norm/g0_norm;
-          s_norm = norm2(p_k);
 
           #ifdef DEBUG_mode
             if(this->verbose_)
@@ -229,61 +188,38 @@
         }
 
         // some benchmarking
-        this->print_statistics(it);
+        TrustRegionBase::print_statistics(it, it_successful);      
 
           return true;
       }
 
-      virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls) override
-      {
-          auto linear_solver = this->linear_solver();
-          if (dynamic_cast<TRSubproblem *>(linear_solver.get()) != nullptr)
-          {
-              TRSubproblem * tr_sub = dynamic_cast<TRSubproblem *>(linear_solver.get());
-              tr_sub->set_linear_solver(ls);
-          }
-      }
 
-      virtual void set_trust_region_strategy(const std::shared_ptr<TRSubproblem> &tr_linear_solver)
+      void set_trust_region_strategy(const std::shared_ptr<TRSubproblem> &tr_linear_solver)
       {
         NonLinearSolver::set_linear_solver(tr_linear_solver);
       }
 
 
-    protected:
-
-        virtual void print_statistics(const SizeType & it) override
-        {
-            std::string path = "log_output_path";
-            auto non_data_path = Utopia::instance().get(path);
-
-            if(!non_data_path.empty())
-            {
-                CSVWriter writer;
-                if (mpi_world_rank() == 0)
-                {
-                    if(!writer.file_exists(non_data_path))
-                    {
-                        writer.open_file(non_data_path);
-                        writer.write_table_row<std::string>({"num_its", "it_successful", "time"});
-                    }
-                    else
-                        writer.open_file(non_data_path);
-
-                    writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful_),  this->get_time()});
-                    writer.close_file();
-                }
-            }
-        }
+      void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &linear_solver) override
+      {
+          utopia_error("TrustRegion:: do not use set_linear solver. Use set_trust_region_strateg... \n"); 
+      }
 
 
-  private:
-    SizeType it_successful_;
-
+    private:
+      Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+      {
+        return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+      }
 
   };
 
 }
+
+//clean-up macros
+#ifdef DEBUG_mode
+#undef DEBUG_mode
+#endif
 
 #endif //UTOPIA_SOLVER_TRUSTREGION_HPP
 

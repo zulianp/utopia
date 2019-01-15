@@ -1,6 +1,8 @@
 #include "utopia_M3ELinSolTest.hpp"
 #include "utopia_Base.hpp"
 #include "utopia.hpp"
+#include "utopia_InputParameters.hpp"
+#include "utopia_ui.hpp"
 
 namespace utopia {
 #ifndef WITH_M3ELINSOL
@@ -12,7 +14,7 @@ namespace utopia {
 	{
 		DVectord  rhs, x;
 		DSMatrixd A;
-		
+
 		const bool binwrite = false;
 		const std::string data_path = Utopia::instance().get("data_path");
 		const std::string folder = data_path + "/mg";
@@ -27,9 +29,8 @@ namespace utopia {
 		x = local_zeros(local_size(rhs));
 
 		ASPAMG<DSMatrixd, DVectord> amg;
-		amg.update(make_ref(A));
-		amg.apply(rhs, x);
-		amg.printSystem(binwrite,sysfile); // Example on how to print a linear system to file in M3E's format
+		amg.solve(A, rhs, x);
+		amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
 
 		double res_norm = norm2(rhs - A * x);
 		utopia_test_assert(res_norm < 1e-8);
@@ -44,21 +45,26 @@ namespace utopia {
 	{
 		Vectord rhs, x;
 		CRSMatrixd A;
-		
+
 		const bool binwrite = false;
 		const std::string data_path = Utopia::instance().get("data_path");
 		const std::string folder = data_path + "/mg_blas";
 		const std::string sysfile = "system.txt";
-		
+
 		read(folder + "/rhs.txt", rhs);
 		read(folder + "/lhs.txt", A);
 
 		x = local_zeros(local_size(rhs));
 
 		ASPAMG<CRSMatrixd, Vectord> amg;
-		amg.update(make_ref(A));
-		amg.apply(rhs, x);
-		amg.printSystem(binwrite,sysfile); // Example on how to print a linear system to file in M3E's format
+		if(!amg.import("ASPAMG", data_path + "/xml/default.xml")) {
+			InputParameters in;
+			in.set("TspMaxit", 200);
+			amg.read(in);
+		}
+
+		amg.solve(A, rhs, x);
+		amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
 
 		double res_norm = norm2(rhs - A * x);
 		utopia_test_assert(res_norm < 1e-8);

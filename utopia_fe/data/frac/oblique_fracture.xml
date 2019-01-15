@@ -1,0 +1,183 @@
+<!-- MASTER STUFF -->
+<master>
+	<mesh>
+		<type>square</type>
+		<elem-type>quad</elem-type>
+		<order>1</order>
+
+		<min-x>0.</min-x>
+		<min-y>0.</min-y>
+
+		<max-x>1.</max-x>
+		<max-y>1.</max-y>
+
+		<n-x>20</n-x>
+		<n-y>20</n-y>
+
+		<refinements>1</refinements>
+	</mesh>
+
+	<space>
+		<system-name>master</system-name>
+
+		<variables>
+			<var>
+			<name>u</name>
+			<order>1</order>
+			</var>
+		</variables>
+
+		<boundary-conditions>
+			<entry>
+				<side>3</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>1</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<diffusivity>1.</diffusivity>
+</master>
+
+<!-- SLAVE STUFF -->
+<slave>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/line.e</path>
+		<!-- <refinements>4</refinements> -->
+	</mesh>
+
+	<space>
+		<system-name>slave</system-name>
+		<variables>
+			<var>
+			<name>u</name>
+			<order>1</order>
+			<fe-family>LAGRANGE</fe-family>
+			</var>
+		</variables>
+
+		<boundary-conditions>
+			<entry>
+				<side>1</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>2</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<forcing-function></forcing-function>
+
+	<diffusivity>1000.</diffusivity>
+</slave>
+
+<!-- MULTIPLIER STUFF -->
+<multiplier>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/line.e</path>
+		<!-- <refinements>2</refinements> -->
+	</mesh>
+
+	<space>
+		<system-name>multiplier</system-name>
+		<variables>
+			<var1>
+				<name>lagr</name>
+				<order>0</order>
+				<fe-family>MONOMIAL</fe-family>
+			</var1>
+		</variables>
+	</space>
+</multiplier>
+
+<!-- <solve-strategy>monolithic</solve-strategy> -->
+
+<solve-strategy>staggered</solve-strategy>
+<!-- <solve-strategy>separate</solve-strategy> -->
+<use-mg>true</use-mg>
+<mg-sweeps>1</mg-sweeps>
+<mg-levels>4</mg-levels>
+<flow-type>transient</flow-type>
+<!-- <preset-velocity-field>true</preset-velocity-field> -->
+
+<transport>
+	<dt>0.001</dt>
+	<simulation-time>0.5</simulation-time>
+	<lump-mass-matrix>false</lump-mass-matrix>
+	<h1-regularization>false</h1-regularization>
+	<regularization-parameter>1e-5.</regularization-parameter>
+	
+	<box>
+		<x-min>0.7</x-min>
+		<x-max>0.9</x-max>
+
+		<y-min>0.7</y-min>
+		<y-max>0.9</y-max>
+	</box>
+
+	<matrix>
+		<space>
+			<system-name>transport</system-name>
+			<variables>
+				<var>
+					<name>vel_0</name>
+					<order>1</order>
+					<fe-family>LAGRANGE</fe-family>
+				<!-- 	<order>0</order>
+					<fe-family>MONOMIAL</fe-family> -->
+
+				</var>
+				<var>
+					<name>vel_1</name>
+					<order>1</order>
+					<fe-family>LAGRANGE</fe-family>
+				<!-- 	<order>0</order>
+					<fe-family>MONOMIAL</fe-family> -->
+
+				</var>
+				<var>
+					<name>c</name>
+					<order>1</order>
+					<fe-family>LAGRANGE</fe-family>
+				</var>
+			</variables>
+<!-- 
+			<boundary-conditions>
+				<entry>
+					<side>1</side>
+					<value>1</value>
+					<var>2</var>
+				</entry>
+				<entry>
+					<side>3</side>
+					<value>0</value>
+					<var>2</var>
+				</entry>
+			</boundary-conditions> -->
+
+		</space>
+	</matrix>
+
+	<!-- <forcing-function> -->
+	<!-- 	<fun>
+			<side>1</side>
+			<value>1.</value>
+		</fun> -->
+		<!-- <fun>
+			<side>4</side>
+			<value>-1.</value>
+		</fun> -->
+	<!-- 	<fun>
+			<value>1.</value>
+		</fun> -->
+	<!-- </forcing-function> -->
+
+</transport>
+

@@ -6,87 +6,18 @@
 #include "utopia_ui.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_SymbolicFunction.hpp"
+#include "utopia_InputParameters.hpp"
 
 namespace utopia {
 
-	class SolveDesc : public Serializable {
-	public:
-
-		void read(InputStream &is) override {
-			is.read("type", type);
-			is.read("operator", op);
-			is.read("rhs", rhs);
-
-			//instead of creating another serializable use lambdas
-			is.read("solver", [this](InputStream &sub_is) {
-				sub_is.read("algorithm", algorithm);
-				sub_is.read("max_iter", max_iter);
-			});
-
-
-
-			is.read("array", [this](InputStream &sub_is) {
-				sub_is.read_all([this](InputStream &sub_is) {
-					std::string v;
-					sub_is.read(v);
-					array.push_back(v);
-				});
-			});
-
-			is.read("tol", tol);
-			is.read("values", values);
-		}
-
-		std::string type, op, rhs;
-		std::string algorithm;
-		int max_iter;
-		double tol = 1e-16;
-		std::vector<double> values;
-		std::vector<std::string> array;
-	};
-
-	void generic_stream(InputStream &is)
+	void generic_stream(Input &is)
 	{
 		utopia_test_assert(is.good());
-
-		SolveDesc desc;
-		is.read("solve", desc);
-
-		utopia_test_assert( desc.type == "linear" );
-		utopia_test_assert( desc.op == "../data/mg/A.bin" );
-		utopia_test_assert( desc.algorithm == "CG" );
-		utopia_test_assert( desc.max_iter == 10 );
-		utopia_test_assert( desc.tol == 1e-16 );
-
-		utopia_test_assert( desc.values.size() == 3 );
-		utopia_test_assert( desc.values[0] == 1. );
-		utopia_test_assert( desc.values[1] == 2. );
-		utopia_test_assert( desc.values[2] == 3. );
+		//TODO
 	}
 
 	void xml_stream()
 	{
-		/** XML file
-			<solve>
-				<type>linear</type>
-				<operator>../data/mg/A.bin</operator>
-				<rhs>../data/mg/rhs.bin</rhs>
-				<solver>
-					<algorithm>CG</algorithm>
-					<max_iter>10</max_iter>
-				</solver>
-				<values>
-					<value>1</value>
-					<value>2</value>
-					<value>3</value>
-				</values>
-				<array>
-					<entry>first</entry>
-					<entry>last</entry>
-				</array>
-			</solve>
-		*/
-
 		Path path = Utopia::instance().get("data_path") + "/xmlsamples/xml_test.xml";
 
 		auto is_ptr = open_istream(path);
@@ -119,10 +50,56 @@ namespace utopia {
 
 #endif //WITH_TINY_EXPR
 
+
+	void input_parameters()
+	{
+		InputParameters in;
+		in.set("string-key", std::string("value"));
+		in.set("double-key", 1.);
+		in.set("int-key", 20);
+
+		double d_value = 2.;
+		int i_value = 10;
+		std::string s_value = "blah";
+
+		in.get("string-key", s_value);
+		in.get("double-key", d_value);
+		in.get("int-key", i_value);
+
+		utopia_test_assert(s_value == "value");
+		utopia_test_assert(d_value == 1.);
+		utopia_test_assert(i_value == 20);
+
+		int inexistent_key = -6;
+		in.get("inexistent-key", inexistent_key);
+		utopia_test_assert(inexistent_key == -6);
+
+	}
+
+	void newton_ui()
+	{
+		const std::string data_path = Utopia::instance().get("data_path");
+
+#ifdef WITH_PETSC
+
+		// auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+		auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+		Newton<DSMatrixd, DVectord> newton(cg);
+
+#ifdef WITH_JSON
+		newton.import("Newton", data_path + "/json/default.json");
+#endif //WITH_JSON
+
+		newton.import("Newton", data_path + "/xml/default.xml");
+#endif //WITH_PETSC
+	}
+
 	void run_ui_test()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("UITest");
 		UTOPIA_RUN_TEST(xml_stream);
+		UTOPIA_RUN_TEST(input_parameters);
+		UTOPIA_RUN_TEST(newton_ui);
 #ifdef WITH_TINY_EXPR
 		UTOPIA_RUN_TEST(symbolic_expr);
 #endif //WITH_TINY_EXPR

@@ -3,6 +3,7 @@
 
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_LinearSolverInterfaces.hpp"
 
 
 #include <petscpc.h>
@@ -16,12 +17,7 @@
 
 
 namespace utopia {
-    template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class GaussSeidel {};
-    
-    
-    
-    
+ 
     /**
      * @brief      Wrapper for PETSC implementation of SOR.
      *             Be aware, that this function doesn't run in parallel.
@@ -30,8 +26,7 @@ namespace utopia {
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class GaussSeidel<Matrix, Vector, PETSC> : public IterativeSolver<Matrix, Vector>,
-    public Smoother<Matrix, Vector>
+    class GaussSeidel<Matrix, Vector, PETSC> : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
@@ -39,11 +34,24 @@ namespace utopia {
         typedef utopia::Smoother<Matrix, Vector>        Smoother;
         
     public:
-        GaussSeidel(const Parameters params = Parameters())
+        GaussSeidel()
         {
-            set_parameters(params);
+            
         }
         
+        void read(Input &in) override
+        {
+            Solver::read(in); 
+            Smoother::read(in); 
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            Solver::print_usage(os); 
+            Smoother::print_usage(os); 
+        }
+
+
         /**
          * @brief      Smoothing of GS from Petsc. Currently we are using symmetric block GS (builds block jacobi and on blocks calls GS).
          *
@@ -112,14 +120,6 @@ namespace utopia {
             
             return true;
         }
-        
-        
-        void set_parameters(const Parameters params) override
-        {
-            Smoother::set_parameters(params);
-            Solver::set_parameters(params);
-        }
-        
         
         
         /**

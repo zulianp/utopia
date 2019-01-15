@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
 #include "utopia.hpp"
 #include "moonolith_communicator.hpp"
@@ -7,6 +8,7 @@
 
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
+#include "utopia_SemiGeometricMultigrid.hpp"
 
 using namespace libMesh;
 
@@ -62,8 +64,8 @@ namespace utopia {
         init_constraints(constr);
         equation_systems->init();
 
-        DSMatrixd stiffness_mat;
-        DVectord rhs;
+        USparseMatrix stiffness_mat;
+        UVector rhs;
         assemble(elast_op, stiffness_mat);
         assemble(f, rhs);
         apply_boundary_conditions(Vx.dof_map(), stiffness_mat, rhs);
@@ -71,13 +73,13 @@ namespace utopia {
         std::cout << "assembly complete" << std::endl;
 
 
-        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-        // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-        auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-        // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
-        // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+        // auto linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector>>();
+        auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        auto smoother      = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
+        // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
+        // auto smoother = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
         // linear_solver->verbose(true);
         SemiGeometricMultigrid mg(smoother, linear_solver);
         // mg.algebraic().rtol(1e-16);
@@ -86,10 +88,10 @@ namespace utopia {
 
         // mg.convert_to_block_solver();
         mg.verbose(true);
-        mg.init(*equation_systems, 4);
+        mg.init(sys, 4);
         // mg.max_it(1);
 
-        DVectord sol = local_zeros(local_size(rhs));
+        UVector sol = local_zeros(local_size(rhs));
 
         Chrono c;
         c.start();
@@ -102,8 +104,8 @@ namespace utopia {
 
 
         //CG with multigrid preconditioner
-        // ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg;
-        // BiCGStab<DSMatrixd, DVectord> cg;
+        // ConjugateGradient<USparseMatrix, UVector, HOMEMADE> cg;
+        // BiCGStab<USparseMatrix, UVector> cg;
         // cg.verbose(true);
         // cg.set_preconditioner(make_ref(mg));
         // cg.solve(stiffness_mat, rhs, sol);
@@ -143,8 +145,8 @@ namespace utopia {
             boundary_conditions(u == coeff(0.0), {2})
             );
 
-        DSMatrixd lapl_mat;
-        DVectord rhs;
+        USparseMatrix lapl_mat;
+        UVector rhs;
 
         init_constraints(constr);
         equation_systems->init();
@@ -154,11 +156,11 @@ namespace utopia {
 
         apply_boundary_conditions(V.dof_map(), lapl_mat, rhs);
 
-         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-        // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE>>();
+         // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+        auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<USparseMatrix, UVector>>();
+        auto smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
+        // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector, HOMEMADE>>();
         // smoother->set_n_local_sweeps(3);
         smoother->sweeps(3);
 
@@ -166,12 +168,12 @@ namespace utopia {
 
         // linear_solver->verbose(true);
         SemiGeometricMultigrid mg(smoother, linear_solver);
-        mg.set_use_interpolation(true);
+        // mg.set_use_interpolation(true);
         mg.verbose(true);
         mg.init(V, 4);
         mg.update(make_ref(lapl_mat));
 
-        DVectord sol = local_zeros(local_size(rhs));
+        UVector sol = local_zeros(local_size(rhs));
 
         Chrono c;
         c.start();

@@ -1,18 +1,20 @@
 list(APPEND SOLVERS_MODULES
 	.
-	domain_decomposition
+	eigensolvers
 	linear 
 	multilevel
+	multilevel/transfer
 	smoothers
 	nonlinear
-	nonlinear/affine_similarity
-	nonlinear/alternate_minimization
+	nonlinear/pseudo_transient_continuation
 	nonlinear/constrained
 	nonlinear/constrained/quadratic_programming
 	nonlinear/line_search
 	nonlinear/trust_region
+	nonlinear/trust_region/QP_subproblems
 	nonlinear/hessian_approximations
 	preconditioners
+	saddlepoint
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR SOLVERS_MODULES LOCAL_HEADERS LOCAL_SOURCES)

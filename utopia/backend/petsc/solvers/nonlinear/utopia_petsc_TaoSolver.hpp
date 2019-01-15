@@ -28,6 +28,7 @@ namespace utopia {
 
 		bool set_bounds(const PetscVector &lb, const PetscVector &ub);
 		bool solve(PetscVector &x);
+		bool smooth(PetscVector &x);
 
 		void set_function(Function<DMatrixd, DVectord> &fun);
 		void set_function(Function<DSMatrixd, DVectord> &fun);
@@ -48,12 +49,12 @@ namespace utopia {
 
 
 	template<class Matrix, class Vector>
-	class TaoSolver final : public NonLinearSolver<Matrix, Vector> {
+	class TaoSolver final : public NewtonBase<Matrix, Vector> {
 	public:
 		typedef utopia::BoxConstraints<Vector> BoxConstraints;
 
 		TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver)
-		: NonLinearSolver<Matrix, Vector>(linear_solver)
+		: NewtonBase<Matrix, Vector>(linear_solver)
 		{
 			this->atol(1e-19);
 			this->rtol(1e-12); 
@@ -61,7 +62,7 @@ namespace utopia {
 		}
 
 		TaoSolver()
-		: NonLinearSolver<Matrix, Vector>(nullptr)
+		: NewtonBase<Matrix, Vector>(nullptr)
 		{
 			this->atol(1e-19);
 			this->rtol(1e-12); 
@@ -72,6 +73,19 @@ namespace utopia {
 		{
 			type_ = type;
 		}
+
+        void read(Input &in) override
+        {
+            NewtonBase<Matrix, Vector>::read(in);
+            in.get("type", type_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            NewtonBase<Matrix, Vector>::print_usage(os);
+            this->print_param_usage(os, "type", "string", "Type of tao solver.", "-"); 
+        }		
 
 		inline void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package)
 		{
@@ -84,8 +98,21 @@ namespace utopia {
 		}
 
 
-		bool solve(Function<Matrix, Vector> &fun, Vector &x)
+		bool solve(Function<Matrix, Vector> &fun, Vector &x) override
 		{	
+			setup_solve(fun, x); 
+			return impl_.solve(x.implementation());
+		}
+
+		bool smooth(Function<Matrix, Vector> &fun, Vector &x)
+		{	
+			setup_solve(fun, x); 
+			return impl_.smooth(x.implementation());
+		}
+
+
+		void setup_solve(Function<Matrix, Vector> &fun,Vector & x)
+		{
 			bool linear_solver_is_set = false;
 			auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
 
@@ -130,10 +157,9 @@ namespace utopia {
 					box_constraints_.upper_bound()->implementation()
 				);
 			}
-
 			impl_.set_function(fun);
-			return impl_.solve(x.implementation());
 		}
+
 
 		bool set_box_constraints(const BoxConstraints &box_constraints)
 		{

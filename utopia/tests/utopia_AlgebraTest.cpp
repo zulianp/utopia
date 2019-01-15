@@ -13,9 +13,10 @@ namespace utopia {
         {
             Vector v = zeros(2);
             {
+                auto r = range(v);
                 Write<Vector> w(v);
-                v.set(0, 3.0);
-                v.set(1, 4.0);
+                if(r.inside(0)) { v.set(0, 3.0); }
+                if(r.inside(1)) { v.set(1, 4.0); }
             }
 
             double n = norm2(v);
@@ -50,14 +51,16 @@ namespace utopia {
         {
             Vector v1 = zeros(2), v2 = zeros(2);
             {
+                auto r = range(v1);
                 Write<Vector> w(v1);
-                v1.set(0, 0.0);
-                v1.set(1, 1.0);
+                if(r.inside(0)) v1.set(0, 0.0);
+                if(r.inside(1)) v1.set(1, 1.0);
             }
             {
+                auto r = range(v2);
                 Write<Vector> w(v2);
-                v2.set(0, 1.0);
-                v2.set(1, 0.0);
+                if(r.inside(0)) v2.set(0, 1.0);
+                if(r.inside(1)) v2.set(1, 0.0);
             }
 
             double v = dot(v1, v2 * 0.1);
@@ -68,9 +71,10 @@ namespace utopia {
         {
             Vector v = zeros(2);
             {
+                auto r = range(v);
                 Write<Vector> w(v);
-                v.set(0, 1.0);
-                v.set(1, 10.0);
+                if(r.inside(0)) v.set(0, 1.0);
+                if(r.inside(1)) v.set(1, 10.0);
             }
 
             double one = norm2(v) * norm2(v) / dot(v, v);
@@ -89,9 +93,10 @@ namespace utopia {
 
             Matrix m1 = identity(3, 3);
             {
-                Write<Matrix> w(m1);
+                Write<Matrix> w(m1, GLOBAL_INSERT);
                 m1.set(0, 1, 1);
             }
+
             Matrix m2 = values(3, 3, 2);
             Matrix m3 = m2 * transpose(m2);
             m3 = transpose(m1) * m3;
@@ -99,10 +104,11 @@ namespace utopia {
             m3 = m1 * m3;
 
             each_read(m3, [](SizeType x, SizeType y, double entry) {
-                if (x == 0)
+                if (x == 0) {
                     utopia_test_assert(entry == 192);
-                else
+                } else {
                     utopia_test_assert(entry == 96);
+                }
             });
         }
 
@@ -162,6 +168,20 @@ namespace utopia {
             utopia_test_assert(approxeq(two, actual_max));
         }
 
+
+        void local_values_test()
+        {
+            auto k = 15;
+            auto m = 4;
+
+            Matrix A = local_values(k, m, 1.);
+            Vector x = local_values(k, 1.0);
+            Vector x_result = transpose(A)*x; 
+            Scalar x_norm = norm2(x_result); 
+
+            utopia_test_assert(x_norm!=0.0);
+        }
+
         void is_subtree()
         {
             Vector v;
@@ -195,6 +215,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(size_test);
             UTOPIA_RUN_TEST(binary_min_max);
             UTOPIA_RUN_TEST(quadratic_form);
+            UTOPIA_RUN_TEST(local_values_test);
         }
     };
 
@@ -202,9 +223,9 @@ namespace utopia {
     {
         UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
-#ifdef WITH_BLAS
-        AlgebraTest<Matrixd, Vectord>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+//         AlgebraTest<Matrixd, Vectord>().run();
+// #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
         AlgebraTest<DMatrixd, DVectord>().run();

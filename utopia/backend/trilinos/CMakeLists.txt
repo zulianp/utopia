@@ -1,21 +1,45 @@
-
 # find dependencies
 find_package(Trilinos)
 
 if(TRILINOS_FOUND)
-	list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
-	# list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
-	list(APPEND UTOPIA_LIBRARIES ${Trilinos_TPL_LIBRARIES})
+    foreach(LIB ${Trilinos_LIBRARY_DIRS})
+        list(APPEND UTOPIA_LIBRARIES -L${LIB})
+    endforeach(LIB)
 
+    list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
+    # list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
+    list(APPEND Trilinos_all_libs ${Trilinos_TPL_LIBRARIES})
+    list(APPEND Trilinos_all_libs ${Trilinos_LIBRARIES})
+    list(REMOVE_DUPLICATES Trilinos_all_libs)
+    foreach(LIB ${Trilinos_all_libs})
+        if(EXISTS ${LIB})
+            list(APPEND UTOPIA_LIBRARIES ${LIB})
+        else()
+            list(APPEND UTOPIA_LIBRARIES -l${LIB})
+        endif()
+    endforeach()
+    list(APPEND Trilinos_TPL_INCLUDE_DIRS ${Trilinos_additional_headers})
+    list(APPEND UTOPIA_INCLUDES ${Trilinos_TPL_INCLUDE_DIRS})
+    #####
+    message(STATUS "Trilinos_additional_headers ${Trilinos_additional_headers}")
+    message(STATUS "Trilinos_TPL_INCLUDE_DIRS ${Trilinos_TPL_INCLUDE_DIRS}")
 
-	foreach(LIB ${Trilinos_LIBRARIES})
-		list(APPEND UTOPIA_LIBRARIES -l${LIB})
-	endforeach(LIB)
-
-	foreach(LIB ${Trilinos_LIBRARY_DIRS})
-		list(APPEND UTOPIA_LIBRARIES -L${LIB})
-	endforeach(LIB)
-
+    list(FIND Trilinos_PACKAGE_LIST "Amesos2" AMESOS2_FOUND)
+    if (NOT AMESOS2_FOUND EQUAL -1)
+      set(WITH_TRILINOS_AMESOS2 TRUE PARENT_SCOPE)
+    endif()
+    list(FIND Trilinos_PACKAGE_LIST "Belos" BELOS_FOUND)
+    if (NOT BELOS_FOUND EQUAL -1)
+      set(WITH_TRILINOS_BELOS TRUE PARENT_SCOPE)
+    endif()
+    list(FIND Trilinos_PACKAGE_LIST "Ifpack2" IFPACK2_FOUND)
+    if (NOT IFPACK2_FOUND EQUAL -1)
+      set(WITH_TRILINOS_IFPACK2 TRUE PARENT_SCOPE)
+    endif()
+    list(FIND Trilinos_PACKAGE_LIST "MueLu" MUELUE_FOUND)
+    if (NOT MUELUE_FOUND EQUAL -1)
+      set(WITH_TRILINOS_MUELU TRUE PARENT_SCOPE)
+    endif()
 
     # set(CMAKE_C_COMPILER ${TRILINOS_COMPILER})
 
@@ -42,6 +66,11 @@ if(TRILINOS_FOUND)
 	endif()
 
     set(WITH_TRILINOS TRUE)
+
+    find_package(TpetraExt)
+    if(TRILINOS_TPETRAEXT_FOUND)
+ 	   set(WITH_TRILINOS_TPETRAEXT TRUE PARENT_SCOPE)
+    endif()
 else()
     message(WARNING "[Warning] Trilinos not found")
     set(WITH_TRILINOS FALSE)
@@ -54,9 +83,11 @@ if(TRILINOS_FOUND)
 
 	list(APPEND TRILINOS_MODULES
 		.
+		eval
 		solvers
 		solvers/linear
-		preconditioners
+		solvers/nonlinear
+		kokkos
 		)
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR TRILINOS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
@@ -67,7 +98,7 @@ if(TRILINOS_FOUND)
 	endforeach(MODULE)
 
 	target_include_directories(utopia_trilinos PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
-	target_include_directories(utopia_trilinos PUBLIC ${Trilinos_INCLUDE_DIRS})
+	target_include_directories(utopia_trilinos PUBLIC ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
 
 	target_link_libraries(utopia_trilinos utopia_core utopia_utils utopia_solvers)
 	target_link_libraries(utopia_trilinos ${Trilinos_LIBRARIES})
@@ -77,9 +108,9 @@ if(TRILINOS_FOUND)
 
 
 	install(TARGETS utopia_trilinos
-		RUNTIME DESTINATION bin 
-		LIBRARY DESTINATION lib 
-		ARCHIVE DESTINATION lib 
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
 		)
 
 	install(FILES ${LOCAL_HEADERS} DESTINATION include)

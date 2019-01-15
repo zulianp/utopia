@@ -58,15 +58,9 @@ int main(int argc, char** argv)
 
         // constructing rhs
         const DVectord rhs   = A * u_exact;
-
-        // setting up parameters of solver 
-        Parameters params; 
-        params.tol(1e-9); 
-        params.lin_solver_type("UTOPIA_CG"); 
-        params.linear_solver_verbose(true); 
         
         // solve 
-        solve(A, rhs, u, params); 
+        solve(A, rhs, u); 
 
         // display solution 
         // disp(u); 

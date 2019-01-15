@@ -17,6 +17,7 @@
 #include "utopia_Ranged.hpp"
 #include "utopia_Select.hpp"
 #include "utopia_BackendInfo.hpp"
+// #include "utopia_ConditionalType.hpp"
 
 
 #include <iostream>
@@ -560,7 +561,7 @@ namespace utopia {
     {
         static_assert(Order >= 1, "Does not work for scalars");
         auto s = size(w); 
-        return s.get(0) == INVALID_INDEX;
+        return s.get(0) <= 0;
     }
 
     /**

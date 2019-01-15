@@ -31,6 +31,7 @@ http://www.amazon.com/exec/obidos/ASIN/0387001638/thealgorithmrepo/
 #include <math.h>
 #include <stdio.h>
 #include <vector>
+#include "utopia_triangulate.hpp"
 
 #define PI  3.1415926 /* ratio of circumference to diameter */
 #define EPSILON 1e-10  /* a quantity small enough to be zero */
@@ -250,7 +251,7 @@ void triangulate_polygon(const int n_vertices, const double *in_polygon, std::ve
     p.p[i][Y] = in_polygon[i*2+1];
   }
 
-  triangulate(&p,&t);
+  triangulate(&p, &t);
   result.clear();
   result.reserve(t.n * 3);
 
@@ -259,4 +260,29 @@ void triangulate_polygon(const int n_vertices, const double *in_polygon, std::ve
       result.push_back(t.t[i][j]);
     }
   }
+}
+
+void triangulate_polygon(const utopia::Polygon2 &in_polygon, std::vector<int> &result)
+{
+  polygon p;  
+  triangulation t; 
+
+  int n_vertices = in_polygon.size();
+
+  p.n = n_vertices;
+  for(int i = 0; i < n_vertices; ++i) {
+    p.p[i][X] = in_polygon.points[i].x;
+    p.p[i][Y] = in_polygon.points[i].y;
+  }
+
+  triangulate(&p, &t);
+  result.clear();
+  result.reserve(t.n * 3);
+
+  for (int i=0; i< t.n; i++) {
+    for (int j=0; j<3; j++) {
+      result.push_back(t.t[i][j]);
+    }
+  }
+
 }

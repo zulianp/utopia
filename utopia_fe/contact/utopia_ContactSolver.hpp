@@ -1,12 +1,19 @@
 #ifndef UTOPIA_STEADY_CONTACTHPP
 #define UTOPIA_STEADY_CONTACTHPP
 
+
+#include "utopia_libmesh_Types.hpp"
+#include "utopia_fe_config.hpp"
+
+#ifndef WITH_TRILINOS_ALGEBRA
+
 #include "utopia.hpp"
 #include "utopia_materials.hpp"
 #include "utopia_Contact.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
+#include "utopia_ProjectedGradient.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -38,8 +45,13 @@ namespace utopia {
 		  debug_output_(false),
 		  force_direct_solver_(false),
 		  bypass_contact_(false),
+		  exit_on_contact_solve_failure_(true),
+		  sol_to_gap_on_contact_bdr_(false),
 		  max_outer_loops_(20),
-		  use_ssn_(false)
+		  use_ssn_(false),
+		  use_pg_(false),
+		  max_non_linear_iterations_(30),
+		  export_results_(false)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
@@ -56,11 +68,14 @@ namespace utopia {
 
 			iterative_solver->atol(1e-18);
 			iterative_solver->stol(1e-17);
-			iterative_solver->rtol(1e-8);
+			iterative_solver->rtol(1e-6);
 			iterative_solver->max_it(4000);
 			linear_solver_ = iterative_solver;
 
 			n_exports = 0;
+ 
+			tao_.set_type("tron");
+			tao_.set_ksp_types("bcgs", "jacobi", " ");
 		}
 
 		void set_tol(const Scalar tol)
@@ -114,8 +129,10 @@ namespace utopia {
 				return false;
 			}
 
-			convert(x_, *V_->subspace(0).equation_system().solution);
-			io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
+			if(export_results_) {
+				convert(x_, *V_->subspace(0).equation_system().solution);
+				io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
+			}
 
 			finalize();
 			return true;
@@ -128,9 +145,10 @@ namespace utopia {
 			n_exports = 0;
 
 
-
-			convert(x_, *V_->subspace(0).equation_system().solution);
-			io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+			if(export_results_) {
+				convert(x_, *V_->subspace(0).equation_system().solution);
+				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+			}
 
 			++n_exports;
 			for(int t = 0; t < n_time_steps; ++t) {
@@ -138,11 +156,13 @@ namespace utopia {
 				std::cout << "time_step: " << t << std::endl;
 
 				first_ = true;
-				if(!solve_contact()) return false;
+				if(!solve_contact() && exit_on_contact_solve_failure_) return false;
 				next_step();
 
-				convert(x_, *V_->subspace(0).equation_system().solution);
-				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+				if(export_results_) {
+					convert(x_, *V_->subspace(0).equation_system().solution);
+					io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+				}
 
 
 
@@ -157,36 +177,45 @@ namespace utopia {
 		bool solve_contact()
 		{
 
-			Vector old_sol = x_;
+#ifdef WITH_PETSC
+			UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
+			
+			{
+				Vector old_sol = x_;
 
-			for(int i = 0; i < max_outer_loops_; ++i) {
-				contact_is_outdated_ = true;
-				solve_contact_in_current_configuration();
+				for(int i = 0; i < max_outer_loops_; ++i) {
+					contact_is_outdated_ = true;
+					solve_contact_in_current_configuration();
 
-				const double diff = norm2(old_sol - x_);
+					const double diff = norm2(old_sol - x_);
 
-				if(debug_output_) {
-					convert(x_, *V_->subspace(0).equation_system().solution);
-					io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
-				}
-
-				++n_exports;
-
-				std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
-				if(diff < 1e-6) {
-					std::cout << "terminated at iteration " << i << " with diff " << diff << " < 1e-6" << std::endl;
-					break;
-				} else {
-					if(i + 1 == max_outer_loops_) {
-						std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance 1e-6" << std::endl;
-						// assert(false);
-						return false;
+					if(debug_output_) {
+						convert(x_, *V_->subspace(0).equation_system().solution);
+						io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
 					}
+
+					++n_exports;
+
+					std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
+					if(diff < tol_) {
+						std::cout << "terminated at iteration " << i << " with diff " << diff << " <  " << tol_ << std::endl;
+						break;
+					} else {
+						if(i + 1 == max_outer_loops_) {
+							std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance " << tol_ << std::endl;
+							// assert(false);
+							return false;
+						}
+					}
+
+					old_sol = x_;
 				}
-
-				old_sol = x_;
 			}
-
+			
+#ifdef WITH_PETSC
+			UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 			return true;
 		}
 
@@ -194,10 +223,11 @@ namespace utopia {
 		{
 			bool converged = false;
 			int iteration = 0;
-			int max_iteration = 100;
+
 			while(!converged) {
 
 				if(!step()) return false;
+				// if(material_->is_linear()) { break; }
 
 				const double norm_inc = norm2(inc_c_);
 				converged = norm_inc < tol_;
@@ -205,7 +235,7 @@ namespace utopia {
 				std::cout << "iteration: " << iteration << " norm_inc: " << norm_inc << std::endl;
 				++iteration;
 
-				if(max_iteration <= iteration) {
+				if(max_non_linear_iterations_ <= iteration) {
 					std::cerr << "[Error] solver did not converge" << std::endl;
 					return false;
 				}
@@ -220,60 +250,67 @@ namespace utopia {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
-		bool write_text(const std::string &path, const Matrix &mat)
-		{
-			auto comm = mat.implementation().communicator();
-			int comm_size, comm_rank;
-			MPI_Comm_rank(comm, &comm_rank);
-			MPI_Comm_size(comm, &comm_size);
+		// bool write_text(const std::string &path, const Matrix &mat)
+		// {
+		// 	int size = utopia::comm_size(mat);
+		// 	int rank = utopia::comm_rank(mat);
 
-			int nnz = 0;
-			for(SizeType r = 0; r < comm_size; ++r) {
-				if(r == 0) {
-					nnz = 0;
-					each_read(mat, [&nnz](const SizeType, const SizeType, const Scalar) {
-						++nnz;
-					});
+		// 	int nnz = 0;
+		// 	for(SizeType r = 0; r < size; ++r) {
+		// 		if(r == 0) {
+		// 			nnz = 0;
+		// 			each_read(mat, [&nnz](const SizeType, const SizeType, const Scalar) {
+		// 				++nnz;
+		// 			});
 
-					MPI_Allreduce( MPI_IN_PLACE, &nnz, 1, MPI_INT, MPI_SUM, comm );
-				}
+		// 			MPI_Allreduce( MPI_IN_PLACE, &nnz, 1, MPI_INT, MPI_SUM, comm );
+		// 		}
 
-				if(r == comm_rank) {
-					std::ofstream os;
+		// 		if(r == rank) {
+		// 			std::ofstream os;
 
-					if(r == 0) {
-						os.open(path);
-						Size s = size(mat);
-						os << s.get(0) << " " << nnz << "\n";
-					} else {
-						os.open(path, std::ofstream::out | std::ofstream::app);
-					}
+		// 			if(r == 0) {
+		// 				os.open(path);
+		// 				Size s = size(mat);
+		// 				os << s.get(0) << " " << nnz << "\n";
+		// 			} else {
+		// 				os.open(path, std::ofstream::out | std::ofstream::app);
+		// 			}
 
-					if(!os.good()) {
-						std::cerr << "invalid path: " << path << std::endl;
-						continue;
-					}
+		// 			if(!os.good()) {
+		// 				std::cerr << "invalid path: " << path << std::endl;
+		// 				continue;
+		// 			}
 
-					each_read(mat, [&os](const SizeType i, const SizeType j, const Scalar value) {
-						os << i << " " << j << " " << value << "\n";
-					});
+		// 			each_read(mat, [&os](const SizeType i, const SizeType j, const Scalar value) {
+		// 				os << i << " " << j << " " << value << "\n";
+		// 			});
 
-					os.flush();
-					os.close();
-				}
+		// 			os.flush();
+		// 			os.close();
+		// 		}
 
-				MPI_Barrier(comm);
-			}
+		// 		MPI_Barrier(comm);
+		// 	}
 
-			return true;
-		}
+		// 	return true;
+		// }
 
 
 		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
+#ifdef WITH_PETSC
+				std::cout << "pre qp_solve ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
+
 			if(linear_solver_ && !contact_.has_contact()) {
 				linear_solver_->solve(lhs, rhs, inc_c_);
 				return;
+			}
+
+			if(sol_to_gap_on_contact_bdr_) {
+				inc_c = e_mul(contact_.is_contact_node, *box_c.upper_bound());
 			}
 
 			// auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
@@ -286,16 +323,35 @@ namespace utopia {
 			// 	newton.set_box_constraints(box_c);
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
-				// SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
+				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
+#ifdef WITH_M3ELINSOL
+				SemismoothNewton<Matrix, Vector> ssn(linear_solver_); 
+#else
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_); 
+#endif //WITH_M3ELINSOL
+				
 				// ssn.verbose(true);
 				ssn.max_it(40);
 				ssn.atol(1e-14);
 				ssn.rtol(1e-8);
 				ssn.stol(1e-8);
 
+
 				ssn.set_box_constraints(box_c);
 				ssn.solve(lhs, rhs, inc_c);
+			} else if(use_pg_) {
+
+				ProjectedGradient<Matrix, Vector> pg;
+				// SemismoothNewton<Matrix, Vector> pg(linear_solver_);
+				// pg.verbose(true);
+				pg.max_it(size(inc_c).get(0) * 20);
+				pg.atol(1e-14);
+				pg.rtol(1e-8);
+				pg.stol(1e-8);
+
+				pg.set_box_constraints(box_c);
+				pg.solve(lhs, rhs, inc_c);
+
 			} else {
 				Chrono c;
 				c.start();
@@ -315,11 +371,10 @@ namespace utopia {
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
 				//(linear_solver_);
 				tao_.set_box_constraints(box_c);
-				tao_.set_type("tron");
-				tao_.set_ksp_types("bcgs", "jacobi", " ");
 				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
 				// tao_.set_type("gpcg");
 
+				std::cout << "solving qp-problem " << std::endl;
 
 				tao_.solve(fun, inc_c);
 
@@ -330,24 +385,40 @@ namespace utopia {
 				std::cout << "Solve " << c << std::endl;
 			}
 			// }
+
+#ifdef WITH_PETSC
+				std::cout << "post qp_solve ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 		}
 
 		bool step()
 		{
 			assert(x_.implementation().has_ghosts());
-			x_.implementation().update_ghosts();
+			synchronize(x_);//.implementation().update_ghosts();
 
 			if(contact_is_outdated_) {
+#ifdef WITH_PETSC
+				std::cout << "pre contact ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 				update_contact(x_);
 				xc_ *= 0.;
 				lagrange_multiplier_ *= 0.;
 				contact_is_outdated_ = false;
+#ifdef WITH_PETSC
+				std::cout << "post contact ";
+				UTOPIA_PETSC_MEMUSAGE();
+#endif //WITH_PETSC
 			}
 
 			if(!assemble_hessian_and_gradient(x_, H_, g_)) {
 				assert(false);
 				return false;
 			}
+
+			double norm_g = norm2(g_);
+			std::cout << "norm_g: " << norm_g << std::endl;
 
 			//handle transformations
 			const auto &T = contact_.complete_transformation;
@@ -357,11 +428,15 @@ namespace utopia {
 			gc_ *= -1.;
 			Hc_ = transpose(T) * H_ * T;
 
+
+			std::cout << "applying bc.... " << std::flush;
 			apply_boundary_conditions(V_->subspace(0).dof_map(), Hc_, gc_);
 
 			if(!first_) {
 				apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
 			}
+
+			std::cout << "done" << std::endl;
 
 			inc_c_ *= 0.;
 			qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)), inc_c_);
@@ -430,6 +505,11 @@ namespace utopia {
 			debug_output_ = val;
 		}
 
+		void export_results(const bool val)
+		{
+			export_results_ = val;
+		}
+
 
 		virtual void next_step()
 		{
@@ -461,15 +541,33 @@ namespace utopia {
 			max_outer_loops_ = val;
 		}
 
+		void set_max_non_linear_iterations(const int val)
+		{
+			max_non_linear_iterations_ = val;
+		}
+
 		void set_use_ssn(const bool val)
 		{
 			use_ssn_ = val;
 		}
 
-		TaoSolver<Matrix, Vector> &tao()
-		{
-			return tao_;
+		void set_use_pg(const bool val) {
+			use_pg_ = val;
 		}
+
+		void set_exit_on_contact_solve_failure(const bool val)
+		{
+			exit_on_contact_solve_failure_ = val;
+		}
+
+		void set_sol_to_gap_on_contact_bdr(const bool val) {
+			sol_to_gap_on_contact_bdr_ = val;
+		}
+
+		TaoSolver<Matrix, Vector> &tao()
+		{								
+			return tao_;				
+		}							
 
 		virtual bool stress(const Vector &x, Vector &result) {
 			return material_->stress(x, result);
@@ -502,12 +600,12 @@ namespace utopia {
 
 		Vector inactive_set_;
 		Vector active_set_;
-		DSMatrixd A_, I_;
+		USparseMatrix A_, I_;
 
 		Vector lagrange_multiplier_;
 
 		//additional vectors
-		// DSMatrixd internal_mass_matrix_;
+		// USparseMatrix internal_mass_matrix_;
 
 		std::shared_ptr<Exporter> io_;
 		int n_exports;
@@ -516,16 +614,22 @@ namespace utopia {
 		bool debug_output_;
 		bool force_direct_solver_;
 		bool bypass_contact_;
+		bool exit_on_contact_solve_failure_;
+		bool sol_to_gap_on_contact_bdr_;
+		
 
 		int max_outer_loops_;
 
 		TaoSolver<Matrix, Vector> tao_;
-		bool use_ssn_;
+		bool use_ssn_, use_pg_;
+
+		int max_non_linear_iterations_;
+		bool export_results_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);
 
 }
 
-
+#endif //WITH_TRILINOS_ALGEBRA
 #endif //UTOPIA_STEADY_CONTACTHPP

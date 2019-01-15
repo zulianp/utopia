@@ -8,7 +8,7 @@
 #define UTOPIA_CONJUGATE_GRAD_H
 
 #include "utopia_IterativeSolver.hpp"
-#include "utopia_Parameters.hpp"
+#include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_Smoother.hpp"
 
@@ -17,35 +17,58 @@
 namespace utopia 
 {
 	
+
+	//FIXME also use the PreconditionedSolver interface properly
 	/**
 	 * @brief      Conjugate Gradient solver. Works with all utopia tensor types.
 	 * @tparam     Matrix
 	 * @tparam     Vector
 	 */
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ConjugateGradient : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
+	class ConjugateGradient : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector>
 	{
 		typedef UTOPIA_SCALAR(Vector) 	 Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::LinearSolver<Matrix, Vector> Solver;
 		typedef utopia::Preconditioner<Vector> Preconditioner;
-		
+
 	public:
+
+		using IterativeSolver<Matrix, Vector>::solve;
 		
-		ConjugateGradient(const Parameters params = Parameters())
+		ConjugateGradient()
+		: reset_initial_guess_(false)
 		{
-			set_parameters(params);
+
 		}
 		
-		/**
-		 * @brief      Sets the parameters.
-		 *
-		 * @param[in]  params  The parameters
-		 */
-		void set_parameters(const Parameters params) override
+		void reset_initial_guess(const bool val)
 		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
+			reset_initial_guess_ = val;
 		}
+
+
+        void read(Input &in) override
+        {
+            IterativeSolver<Matrix, Vector>::read(in); 
+            Smoother<Matrix, Vector>::read(in); 
+
+            in.get("reset_initial_guess", reset_initial_guess_);
+
+            if(precond_) {
+                in.get("precond", *precond_);
+            }
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            IterativeSolver<Matrix, Vector>::print_usage(os); 
+            Smoother<Matrix, Vector>::print_usage(os); 
+
+            this->print_param_usage(os, "reset_initial_guess", "bool", "Flag, which decides if initial guess should be reseted.", "false"); 
+            this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner", "-"); 
+        }
+
 		
 		/**
 		 * @brief      Solution routine for CG.
@@ -57,13 +80,22 @@ namespace utopia
 		 */
 		bool apply(const Vector &b, Vector &x) override
 		{
+			auto A_ptr = utopia::op(this->get_operator());
+			return solve(*A_ptr, b, x);
+		}
+
+		
+		bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
+		{
+			init(local_size(b).get(0));
+
 			if(precond_) {
-				return preconditioned_solve(*this->get_operator(), b, x);
+				return preconditioned_solve(A, b, x);
 			} else {
-				return unpreconditioned_solve(*this->get_operator(), b, x);
+				return unpreconditioned_solve(A, b, x);
 			}
 		}
-		
+
 		/**
 		 * @brief      Sets the preconditioner.
 		 *
@@ -76,11 +108,11 @@ namespace utopia
 		
 		/*! @brief if overriden the subclass has to also call this one first
 		 */
-		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		void update(const std::shared_ptr<const Matrix> &op) override
 		{
 			IterativeSolver<Matrix, Vector>::update(op);
 
-			init(*op);
+			init(local_size(*op).get(0));
 			
 			if(precond_) {
 				auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(precond_.get());
@@ -89,12 +121,13 @@ namespace utopia
 				}
 			}
 		}
-		
+
 		bool smooth(const Vector &rhs, Vector &x) override
 		{
 			SizeType temp = this->max_it();
 			this->max_it(this->sweeps());
-			unpreconditioned_solve(*this->get_operator(), rhs, x);
+			auto A_ptr = utopia::op(this->get_operator());
+			unpreconditioned_solve(*A_ptr, rhs, x);
 			this->max_it(temp);
 			return true;
 		}
@@ -105,9 +138,9 @@ namespace utopia
 		}
 		
 	private:
-		bool unpreconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
+		bool unpreconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x)
 		{
-			Scalar it = 0;
+			SizeType it = 0;
 			Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 			
 			assert(!empty(b));
@@ -117,11 +150,18 @@ namespace utopia
 				r = b;
 			} else {
 				assert(local_size(x).get(0) == local_size(b).get(0));
-				r = b - A * x;
+				if(reset_initial_guess_) {
+					x.set(0.);
+				}
+				// r = b - A * x;
+				A.apply(x, r);
+				r = b - r;
 			}
 			
 			this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||" });
 			bool converged = false;
+
+			SizeType check_norm_each = 1;
 			
 			while(!converged)
 			{
@@ -142,29 +182,48 @@ namespace utopia
 					p = r;
 				}
 				
-				q = A * p;
-				alpha = rho / dot(p, q);
+				// q = A * p;
+				A.apply(p, q);
+
+				Scalar dot_pq = dot(p, q);
+				
+				if(dot_pq == 0.) {
+					//TODO handle properly
+					utopia_warning("prevented division by zero");
+					converged = true;
+					break;
+				}
+
+				alpha = rho / dot_pq;
 				
 				x += alpha * p;
 				r -= alpha * q;
 				
 				rho_1 = rho;
-				it++;
-				r_norm = norm2(r);
-				
-				if(this->verbose())
-					PrintInfo::print_iter_status({it, r_norm});
-				
-				converged = this->check_convergence(it, r_norm, 1, 1);
+
+				if((it % check_norm_each) == 0) {
+					// r = 
+					// A.apply(x, r);
+					// r = b - r;
+					
+					r_norm = norm2(r);
+					
+					if(this->verbose()) {
+						PrintInfo::print_iter_status(it, { r_norm });
+					}
+					
+					converged = this->check_convergence(it, r_norm, 1, 1);
+				}
+
 				it++;
 			}
 			
 			return converged;
 		}
 		
-		bool preconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
+		bool preconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x)
 		{
-			Scalar it = 0;
+			SizeType it = 0;
 			Scalar beta = 0., alpha = 1., r_norm = 9e9;
 			
 			z     = local_zeros(local_size(b));
@@ -175,7 +234,13 @@ namespace utopia
 				r = b;
 			} else {
 				assert(local_size(x).get(0) == local_size(b).get(0));
-				r = b - A * x;
+				
+				if(reset_initial_guess_) {
+					x.set(0.);
+				}
+
+				A.apply(x, r);
+				r = b - r;
 			}
 			
 			precond_->apply(r, z);
@@ -186,15 +251,24 @@ namespace utopia
 			
 			while(!stop)
 			{
-				Ap = A*p;
+				// Ap = A*p;
+				A.apply(p, Ap);
 				alpha = dot(r, z)/dot(p, Ap);
+
+				if(std::isinf(alpha) || std::isnan(alpha)) {
+					stop = this->check_convergence(it, r_norm, 1, 1);
+					break;
+				}
+				
 				x += alpha * p;
 				r_new = r - alpha * Ap;
 				
 				r_norm = norm2(r_new);
+				
 				if(r_norm < this->atol()) {
-					if(this->verbose())
-						PrintInfo::print_iter_status({it, r_norm});
+					if(this->verbose()) {
+						PrintInfo::print_iter_status(it, {r_norm});
+					}
 					
 					stop = this->check_convergence(it, r_norm, 1, 1);
 					break;
@@ -207,19 +281,44 @@ namespace utopia
 				r = r_new;
 				z = z_new;
 				
-				if(this->verbose())
-					PrintInfo::print_iter_status({it, r_norm});
+				if(this->verbose()) {
+					PrintInfo::print_iter_status(it, {r_norm});
+				}
 				
 				stop = this->check_convergence(it, r_norm, 1, 1);
 				it++;
 			}
 			
-			return r_norm <= this->atol();
+			if(r_norm <= this->atol()) {
+				//FIXME sometimes this fails for some reason
+				// assert(check_solution(A, x, b));
+				return true;
+			} else {
+				return false;
+			}
 		}
 
-		void init(const Matrix &A)
+		bool check_solution(const Operator<Vector> &A, const Vector &x, const Vector &b) const
 		{
-			auto zero_expr = local_zeros(local_size(A).get(0));
+			Vector r;
+			A.apply(x, r);
+			r -= b;
+
+			const Scalar r_norm = norm2(r);
+			
+			if(r_norm > 100 * this->atol()) {
+				// write("A.m", *this->get_operator());
+				// disp(*this->get_operator());
+				assert(r_norm <= this->atol());
+				return false;
+			}
+
+			return true;
+		}
+
+		void init(const SizeType &ls)
+		{
+			auto zero_expr = local_zeros(ls);
 
 			//resets all buffers in case the size has changed
 			if(!empty(r)) {
@@ -253,6 +352,7 @@ namespace utopia
 		
 		std::shared_ptr<Preconditioner> precond_;
 		Vector r, p, q, Ap, r_new, z, z_new;
+		bool reset_initial_guess_;
 	};
 }
 

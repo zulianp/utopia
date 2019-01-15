@@ -1,6 +1,8 @@
 #ifndef UTOPIA_LIB_MESH_BACKEND_HPP
 #define UTOPIA_LIB_MESH_BACKEND_HPP
 
+#include "utopia_fe_kokkos_fix.hpp"
+
 #include "utopia_LibMeshLambdaAssembly.hpp"
 #include "utopia_fe_core.hpp"
 
@@ -16,6 +18,8 @@
 #include "libmesh/petsc_vector.h"
 #include "libmesh/petsc_matrix.h"
 #include "libmesh/auto_ptr.h"
+#include "libmesh/mesh_tools.h"
+#include "libmesh/libmesh_version.h"
 
 // Define the Finite Element object.
 #include "libmesh/fe.h"
@@ -59,29 +63,27 @@ namespace utopia {
 	template<class Matrix, class Vector>
 	void apply_boundary_conditions(libMesh::DofMap &dof_map, Matrix &mat, Vector &vec)
 	{
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		// std::cout << dof_map.n_constrained_dofs() << std::endl;
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		using SizeType = UTOPIA_SIZE_TYPE(Vector);
 
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
-		if(!has_constaints) {
-			// std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
-			// return;
-		}
-
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
+		Size ls = local_size(mat);
 		Size s = size(mat);
-		Matrix temp = mat;
 
-		{
-			Write<Matrix> w_t(mat);
-			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
-				if(has_constaints && dof_map.is_constrained_dof(i)) {
-					mat.set(i, j, i == j);
+		std::vector<SizeType> index;
+
+		Range rr = range(vec);
+
+		if(has_constaints) {
+			for(SizeType i = rr.begin(); i < rr.end(); ++i) {
+				if( dof_map.is_constrained_dof(i) ) {
+					index.push_back(i);
 				}
-			});
+			}
 		}
+
+		set_zero_rows(mat, index, 1.);
 
 		{
 			Write<Vector> w_v(vec);
@@ -91,6 +93,55 @@ namespace utopia {
 				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					auto valpos = rhs_values.find(i);
 					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+				}
+			}
+		}
+		
+	}
+
+
+
+	template<class Vector>
+	void apply_boundary_conditions(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
+	{
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+		{
+			Write<Wrapper<Vector, 1>> w_v(vec);
+
+			if(has_constaints) {
+				Range r = range(vec);
+				for(SizeType i = r.begin(); i < r.end(); ++i) {
+					if(dof_map.is_constrained_dof(i)) {
+						auto valpos = rhs_values.find(i);
+
+						// if(valpos != rhs_values.end()) {
+						vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+						// }
+					}
+				}
+			}
+		}
+	}
+
+	template<class Vector>
+	void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
+	{
+		vec = local_zeros(dof_map.n_local_dofs());
+
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+		// libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+		{
+			Write<Wrapper<Vector, 1>> w_v(vec);
+
+			Range r = range(vec);
+			for(SizeType i = r.begin(); i < r.end(); ++i) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					auto value = 1.;
+					vec.set(i, value);
 				}
 			}
 		}
@@ -108,7 +159,6 @@ namespace utopia {
 	{
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
 		}
 
@@ -127,8 +177,32 @@ namespace utopia {
 	void set_identity_at_constraint_rows(DofMap &dof_map, Matrix &mat)
 	{
 		bool has_constaints = true;
+		if(dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
+			has_constaints = false;
+		}
+
+		using SizeT = UTOPIA_SIZE_TYPE(Matrix);
+
+		std::vector<SizeT> rows;
+		rows.reserve(local_size(mat).get(0));
+
+		auto rr = row_range(mat);
+
+		if(has_constaints) {
+			for(auto i = rr.begin(); i < rr.end(); ++i) {
+				dof_map.is_constrained_dof(i);
+				rows.push_back(i);
+			}
+		}
+
+		set_zero_rows(mat, rows, 1.);
+	}
+
+	template<class DofMap, class Matrix>
+	void set_zero_at_constraint_rows(DofMap &dof_map, Matrix &mat)
+	{
+		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
 		}
 
@@ -140,7 +214,7 @@ namespace utopia {
 
 			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
 				if(has_constaints && dof_map.is_constrained_dof(i)) {
-					mat.set(i, j, i == j);
+					mat.set(i, j, 0.0);
 				}
 			});
 		}
@@ -153,6 +227,8 @@ namespace utopia {
 		utopia::convert(p_vec, utopia_vec);
 	}
 
+
+
 	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, DSMatrixd &utopia_mat) {
 		using namespace libMesh;
 
@@ -160,7 +236,31 @@ namespace utopia {
 		utopia::convert(p_mat, utopia_mat);
 	}
 
-	inline void convert(DSMatrixd &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
+#ifdef WITH_TRILINOS
+	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TVectord &utopia_vec)
+	{
+		//FIXME inefficient
+		DVectord temp;
+		utopia::convert(lm_vec, temp);
+		utopia::backend_convert(temp, utopia_vec);
+	}
+
+
+	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TSMatrixd &utopia_mat) {
+		using namespace libMesh;
+
+		Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
+
+		//FIXME inefficient
+		DSMatrixd temp;
+		utopia::convert(p_mat, temp);
+		backend_convert_sparse(temp, utopia_mat);
+	}
+	
+#endif //WITH_TRILINOS
+
+
+	inline void convert(USparseMatrix &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
 		using namespace libMesh;
 		using namespace utopia;
 
@@ -174,10 +274,10 @@ namespace utopia {
 		});
 	}
 
-	inline void convert(DVectord &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
+	inline void convert(UVector &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
 	{
 		{
-			Read<DVectord> w_s(utopia_vec);
+			Read<UVector> w_s(utopia_vec);
 			Range r = range(utopia_vec);
 			for(long i = r.begin() ; i < r.end(); ++i) {
 				lm_vec.set(i, utopia_vec.get(i) );
@@ -253,6 +353,16 @@ namespace utopia {
 		}
 
 		return true;
+	}
+
+	inline libMesh::MeshTools::BoundingBox bounding_box(const libMesh::MeshBase &mesh) {
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(mesh);
+#else
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
+#endif
+
+	    return bb;
 	}
 }
 

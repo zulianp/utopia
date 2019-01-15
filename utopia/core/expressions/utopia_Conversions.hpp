@@ -16,7 +16,7 @@ namespace utopia {
         std::vector<int> nnzxrow(n_row_local, 0);
         auto r = row_range(from);
 
-        each_read(from, [&nnzxrow,&r](const SizeType i, const SizeType j, const double val) {
+        each_read(from, [&nnzxrow,&r](const SizeType i, const SizeType &, const double &) {
             ++nnzxrow[i - r.begin()];
         });
 
@@ -26,11 +26,16 @@ namespace utopia {
         //FIXME use nnzxrow instead
         to = local_sparse(ls.get(0), ls.get(1), nnz);
 
+        {
+            Write<Wrapper<TensorTo, 2>> w_t(to);
+            each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
+                to.set(i, j, val);
+            });
+        }
 
-        Write<Wrapper<TensorTo, 2>> w_t(to);
-        each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
-            to.set(i, j, val);
-        });
+
+        assert(size(from) == size(to));
+        assert(local_size(from) == local_size(to));
     }
 
     template<class TensorFrom, class TensorTo>
@@ -43,6 +48,9 @@ namespace utopia {
         each_read(from, [&to](const SizeType i, const double val) {
             to.set(i, val);
         });
+
+        assert(size(from) == size(to));
+        assert(local_size(from) == local_size(to));
     }
 
 //    template<class Vector, class Matrix>
@@ -69,6 +77,22 @@ namespace utopia {
 //            }
 //        }
 //    }
+
+    template<class T1, class T2>
+    bool cross_backend_approxeq(const Wrapper<T1, 1> &l, const Wrapper<T2, 1> &r)
+    {
+        Wrapper<T1, 1> r_copy;
+        backend_convert(r, r_copy);
+        return approxeq(l, r_copy, 1e-10);
+    }
+
+    template<class T1, class T2>
+    bool cross_backend_approxeq(const Wrapper<T1, 2> &l, const Wrapper<T2, 2> &r)
+    {
+        Wrapper<T1, 2> r_copy;
+        backend_convert_sparse(r, r_copy);
+        return approxeq(l, r_copy, 1e-10);
+    }
 }
 
 #endif //UTOPIA_UTOPIA_CONVERSIONS_HPP

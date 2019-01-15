@@ -20,11 +20,10 @@ namespace utopia {
 
 	public:
 
-		SemismoothNewton(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>(),
-						 const Parameters params = Parameters() ) :
+		SemismoothNewton(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>()) :
 		linear_solver_(linear_solver), line_search_type_(SNESLINESEARCHBASIC)
 		{
-			set_parameters(params);
+
 		}
 
 		SemismoothNewton * clone() const override {
@@ -109,6 +108,9 @@ namespace utopia {
 					has_linear_solver = true;
 
 					KSPSetTolerances(ksp, 0, 0, PETSC_DEFAULT, 1);
+				} else if(linear_solver_) {
+					build_ksp(linear_solver_, ksp);
+					has_linear_solver = true;
 				}
 			}
 
@@ -171,11 +173,6 @@ namespace utopia {
 
 			SNESDestroy(&snes);
 			return true;
-		}
-
-		virtual void set_parameters(const Parameters params) override
-		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
 		}
 
 		virtual bool set_box_constraints(const BoxConstraints & box)

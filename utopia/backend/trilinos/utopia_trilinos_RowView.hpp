@@ -2,24 +2,29 @@
 #define UTOPIA_TPETRA_ROW_VIEW_HPP
 #include <Teuchos_ArrayViewDecl.hpp>
 
+#include "utopia_Traits.hpp"
+#include "utopia_RowView.hpp"
+
+#include <cassert>
+
 namespace utopia {
 
 	template<class Tensor, int FILL_TYPE>
 	class RowView<Tensor, 2, FILL_TYPE, utopia::TRILINOS> {
 	public:
-		typedef typename Tensor::Implementation::global_ordinal_type global_ordinal_type;
+		typedef typename Tensor::Implementation::GO GO;
 		typedef typename Tensor::Implementation::Scalar Scalar;
+		using MapPtrT = typename Tensor::Implementation::rcp_map_type;
 
-		inline RowView(const Tensor &t, const global_ordinal_type row)
+		inline RowView(const Tensor &t, const GO row, const bool force_local_view = true)
 		: t_(t), offset_(0)
 		{
-			if(t_.implementation().implementation().isGloballyIndexed()) {
-				t_.implementation().implementation().getGlobalRowView(row, cols_, values_);
-			} else {
-				assert(t_.implementation().implementation().isLocallyIndexed());
-				t_.implementation().implementation().getLocalRowView(row, cols_, values_);
-				offset_ = t_.implementation().implementation().getColMap()->getMinGlobalIndex();
-			}
+			auto impl = raw_type(t_);
+			assert(impl->isLocallyIndexed());
+			auto rr = row_range(t);
+			impl->getLocalRowView(row - rr.begin(), cols_, values_);
+			offset_  = impl->getDomainMap()->getMinGlobalIndex();
+			col_map_ = impl->getColMap();
 		}
 
 		inline ~RowView()
@@ -30,10 +35,13 @@ namespace utopia {
 			return cols_.size();
 		}
 
-		inline global_ordinal_type col(const int index) const
+		inline GO col(const int index) const
 		{
 			assert(index < n_values());
-			return cols_[index] + offset_;
+
+			auto ret = col_map_->getGlobalElement(cols_[index]);
+			assert(ret < size(t_).get(1));
+			return ret;
 		}
 
 		inline Scalar get(const int index) const
@@ -44,9 +52,10 @@ namespace utopia {
 
 	private:
 		const Tensor &t_;
-		global_ordinal_type offset_;
-		Teuchos::ArrayView<const global_ordinal_type> cols_;
+		GO offset_;
+		Teuchos::ArrayView<const GO> cols_;
 		Teuchos::ArrayView<const Scalar> values_;
+		MapPtrT col_map_;
 	};
 }
 

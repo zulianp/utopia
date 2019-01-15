@@ -16,8 +16,12 @@
 #include "utopia_petsc_Eval_Inverse.hpp"
 #include "utopia_petsc_Eval_Factory.hpp"
 #include "utopia_petsc_Eval_Residual.hpp"
-#include "utopia_petsc_Eval_DotDivDot.hpp"
+#include "utopia_petsc_Eval_DotOpDot.hpp"
+#include "utopia_petsc_Eval_Blocks.hpp"
 #include "utopia_petsc_RowView.hpp"
+#include "utopia_petsc_EvalDotVecVecs.hpp"
+#include "utopia_petsc_EvalMatGetCol.hpp"
+#include "utopia_petsc_Eval_VecUniqueSortSerial.hpp"
 
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"
@@ -30,14 +34,14 @@
 
 #ifdef WITH_SLEPC
 	#include "utopia_petsc_Slepc.hpp"
-	#include "utopia_petsc_MoreSorensenEigen.hpp"
 #endif
 
 
 // very much experimental files for the moment 
 #include "utopia_petsc_SNES.hpp"
 #include "utopia_petsc_build_ksp.hpp"
-
+#include "utopia_petsc_Each.hpp"
+#include "utopia_petsc_debug.hpp"
 
 namespace utopia {
 	void optimize_nnz(DSMatrixd &A);

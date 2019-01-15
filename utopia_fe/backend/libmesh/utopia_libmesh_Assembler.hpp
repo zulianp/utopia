@@ -6,8 +6,71 @@
 namespace utopia {
 	class LibMeshAssembler {
 	public:
-		typedef utopia::DSMatrixd GlobalMatrix;
-		typedef utopia::DVectord GlobalVector;
+		typedef utopia::USparseMatrix GlobalMatrix;
+		typedef utopia::UVector GlobalVector;
+		typedef UTOPIA_SCALAR(GlobalVector) Scalar;
+
+		LibMeshAssembler()
+		: verbose_(Utopia::instance().verbose())
+		{}
+
+		//FIXME put in utopia
+		template<class T>
+		static bool is_ghosted(const Wrapper<T, 1> &vec)
+		{
+			return vec.implementation().has_ghosts();
+		}
+
+		template<class Expr>
+		bool assemble(const Expr &expr, Scalar &val)
+		{
+			//perf
+			Chrono c;
+			c.start();
+
+			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
+			typedef typename TraitsT::Matrix ElementMatrix;
+			typedef typename TraitsT::Vector ElementVector;
+
+			static const int Backend = TraitsT::Backend;
+
+			const auto &space = find_space<LibMeshFunctionSpace>(expr);
+			const auto &dof_map = space.dof_map();
+			auto &m = space.mesh();
+
+
+			val = 0.;
+
+			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+				init_context_on(expr, (*elements_begin(m))->id());
+
+				if(it != elements_begin(m)) {
+					reinit_context_on(expr, (*it)->id());
+				}
+
+				Number<Scalar> el_val = 0.;
+
+				FormEvaluator<LIBMESH_TAG> eval;
+				eval.eval(expr, el_val, ctx_);
+
+				if(ctx_.has_assembled()) {
+					val += el_val;
+				}
+			}
+
+			m.comm().sum(val);
+
+			//perf
+			c.stop();
+
+			if(verbose_) {
+				std::cout << "assemble: value" << std::endl;
+				std::cout << c << std::endl;
+			}
+
+			return false;
+		}
+
 
 		template<class Expr>
 		bool assemble(const Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)
@@ -28,7 +91,8 @@ namespace utopia {
 
 			auto s_m = size(mat);
 
-			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+			//FIXME trilinos backend is buggy
+			if(GlobalMatrix::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
 				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
 					*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
@@ -37,15 +101,19 @@ namespace utopia {
 				mat *= 0.;
 			}
 
-			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs()) {
-				vec = local_zeros(dof_map.n_local_dofs());
-			} else {
-				vec.set(0.);
-			}
+
+			GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
+			// if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
+				// vec = local_zeros(dof_map.n_local_dofs());
+				
+			// } 
+			// else {
+			// 	vec.set(0.);
+			// }
 
 			{
-				Write<GlobalMatrix> w_m(mat);
-				Write<GlobalVector> w_v(vec);
+				Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
+				Write<GlobalVector> w_v(temp_vec, utopia::GLOBAL_ADD);
 
 				ElementMatrix el_mat;
 				ElementVector el_vec;
@@ -72,15 +140,24 @@ namespace utopia {
 						}
 
 						add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-						add_vector(el_vec.implementation(), dof_indices, vec);
+						add_vector(el_vec.implementation(), dof_indices, temp_vec);
 					}
 				}
 			}
 
+			if(GlobalVector::Backend == utopia::TRILINOS) {
+				vec = 1. * temp_vec; //avoid copying
+			} else {
+				vec = std::move(temp_vec);
+			}
+
 			//perf
 			c.stop();
-			std::cout << "assemble: lhs == rhs" << std::endl;
-			std::cout << c << std::endl;
+			if(verbose_) {
+				std::cout << "assemble: lhs == rhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -103,12 +180,16 @@ namespace utopia {
 
 			auto s_m = size(mat);
 
-
-			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+			//FIXME trilinos backend is buggy
+			if(GlobalMatrix::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
 				SizeType nnz_x_row = 0;
 				if(!dof_map.get_n_nz().empty()) {
-					nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-						*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+					// nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+					// 	*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
+					nnz_x_row = 
+						*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) + 
+						*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
 				}
 
 				mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
@@ -117,7 +198,7 @@ namespace utopia {
 			}
 
 			{
-				Write<GlobalMatrix> w_m(mat);
+				Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
 
 				if(elements_begin(m) != elements_end(m)) {
 
@@ -146,8 +227,12 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: lhs" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: lhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -169,14 +254,17 @@ namespace utopia {
 			const auto &dof_map = space.dof_map();
 			auto &m = space.mesh();
 
-			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs()) {
-				vec = local_zeros(dof_map.n_local_dofs());
-			} else {
-				vec *= 0.;
-			}
+			GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
+
+			// if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
+			// 	// vec = local_zeros(dof_map.n_local_dofs());
+			// 	vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
+			// } else {
+			// 	vec *= 0.;
+			// }
 
 			{
-				Write<GlobalVector> w_v(vec);
+				Write<GlobalVector> w_v(temp_vec, utopia::GLOBAL_ADD);
 				ElementVector el_vec;
 
 				if(elements_begin(m) != elements_end(m)) {
@@ -196,17 +284,26 @@ namespace utopia {
 						dof_map.dof_indices(*it, dof_indices);
 
 						if(ctx_.has_assembled()) {
-							add_vector(el_vec.implementation(), dof_indices, vec);
+							add_vector(el_vec.implementation(), dof_indices, temp_vec);
 						}
 					}
 				}
 			}
 
+			if(GlobalVector::Backend == utopia::TRILINOS) {
+				vec = 1. * temp_vec;
+			} else {
+				vec = std::move(temp_vec);
+			}
 
 			//perf
 			c.stop();
-			std::cout << "assemble: rhs" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: rhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -228,6 +325,7 @@ namespace utopia {
 
 	private:
 		AssemblyContext<LIBMESH_TAG> ctx_;
+		bool verbose_;
 	};
 }
 

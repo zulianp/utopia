@@ -442,6 +442,17 @@ namespace utopia {
 			return c[i];
 		}
 
+		template<typename T, int Order>
+		inline static Wrapper<T, Order> get(Wrapper<T, Order> &&c, const std::size_t qp, const std::size_t i)
+		{
+			return std::move(c);
+		}
+
+		inline static const double get(const double &c, const std::size_t qp, const std::size_t i)
+		{
+			return c;
+		}
+
 		template<typename T>
 		inline static void add(Matrix &mat, const int i, const int j, const T value)
 		{
@@ -454,6 +465,8 @@ namespace utopia {
 			assert(j == 0);
 			vec.add(i, value);
 		}
+
+
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 		static inline unsigned int offset(const LibMeshFunctionSpace &space, const AssemblyContext<LIBMESH_TAG> &ctx)
@@ -728,6 +741,76 @@ namespace utopia {
 			return std::move(mats);
 		}
 
+		static auto apply_binary(
+			const double factor,
+			QValues<double> &&vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			for(auto &v : vals) {
+				v *= factor;
+			}
+
+			return std::move(vals);
+		}
+
+		template<typename T>
+		static auto apply_binary(
+			const ConstantCoefficient<T, 0> &factor,
+			QValues<double> &&vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			for(auto &v : vals) {
+				v *= factor.expr();
+			}
+
+			return std::move(vals);
+		}
+
+
+		static auto apply_binary(
+			QValues<double> &&left,
+			const QValues<double> &right,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			std::size_t n = left.size();
+
+			for(std::size_t i = 0; i < n; ++i) {
+				left[i] *= right[i];
+			}
+
+			return std::move(left);
+		}
+
+		static auto apply_binary(
+			const double factor,
+			const QValues<double> &vals_in,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			QValues<double> vals;
+			for(auto &v : vals) {
+				v *= factor;
+			}
+
+			return vals;
+		}
+
+
+		template<class T, int Order>
+		static auto apply_binary(
+			const double factor,
+			Wrapper<T, Order> &&v,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> Wrapper<T, Order> 
+		{
+			v.implementation() *= factor;
+			return std::move(v);
+		}
+
+
 		template<typename T>
 		static auto apply_binary(
 			const Wrapper<T, 2> &mat,
@@ -851,9 +934,12 @@ namespace utopia {
 			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T>
 		{
 			std::size_t n = left.size();
+			std::size_t n_quad_points = left[0].size();
 
 			for(std::size_t i = 0; i != n; ++i) {
-				left[i] = apply_binary(left[i], right[i], op, ctx);
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					left[i][qp] /= right[i][qp];
+				}
 			}
 
 			return std::move(left);
@@ -1130,6 +1216,59 @@ namespace utopia {
 
 		template<typename T>
 		static auto multiply(
+			const QValues<T> &left,
+			const FQValues<double> &right,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
+		{
+			FQValues<T> ret;
+			std::size_t n_quad_points = left.size();
+			std::size_t n_funs = right.size();
+
+			assert(n_quad_points == right[0].size());
+
+			ret.resize(n_funs);
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				ret[i].resize(n_quad_points);
+
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = left[qp];
+					ret[i][qp] *= right[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
+		template<typename T>
+		static auto multiply(
+			const FQValues<double> &left,
+			const QValues<T> &right,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
+		{
+			FQValues<T> ret;
+			std::size_t n_quad_points = right.size();
+			std::size_t n_funs = left.size();
+
+			assert(n_quad_points == left[0].size());
+
+			ret.resize(n_funs);
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				ret[i].resize(n_quad_points);
+
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = right[qp];
+					ret[i][qp] *= left[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
+
+		template<typename T>
+		static auto multiply(
 			const double val,
 			const std::vector<T> &vals,
 			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T>
@@ -1250,13 +1389,97 @@ namespace utopia {
 		}
 
 		static auto apply_unary(
-			std::vector<std::vector<TensorValueT>> &&vals,
+			FQValues<TensorValueT> &&vals,
 			const Minus &op,
-			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<std::vector<TensorValueT>>
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<TensorValueT>
 		{
 			for(auto &v : vals) {
 				for(auto &vv : v) {
 				 	vv *= -1.;
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<double> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<double>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	vv = op.apply(vv);
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<VectorValueT> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<VectorValueT>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+				 		vv(i) = op.apply(vv(i));
+				 	}
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<Wrapper<DenseVectorT, 1>> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<Wrapper<DenseVectorT, 1>>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+				 		vv.implementation()(i) = op.apply(vv.implementation()(i));
+				 	}
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+
+		template<class Op>
+		static auto apply_unary(
+			Wrapper<DenseVectorT, 1> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> Wrapper<DenseVectorT, 1>
+		{
+
+		 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+		 		vals.implementation()(i) = op.apply(vals.implementation()(i));
+		 	}
+
+			return std::move(vals);
+		}
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<TensorValueT> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<TensorValueT>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+				 		for(int j = 0; j < LIBMESH_DIM; ++j) {
+				 			vv(i, j) = op.apply(vv(i, j));
+				 		}
+				 	}
 				 }
 			}
 
@@ -1348,7 +1571,7 @@ namespace utopia {
 			assert(!fe_object.empty());
 			const auto &sub_0 = space[0];
 			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
-			const uint dim = space[0].mesh().mesh_dimension();
+			const uint dim = space[0].mesh().spatial_dimension();
 
 			uint n_shape_functions = 0;
 			space.each([&fe_object, &n_shape_functions](const int, const LibMeshFunctionSpace &subspace) {
@@ -1427,7 +1650,7 @@ namespace utopia {
 
 			assert(!fe_object.empty());
 			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
-			const uint dim = space[0].mesh().mesh_dimension();
+			const uint dim = space[0].mesh().spatial_dimension();
 
 
 			uint n_shape_functions = 0;
@@ -1524,7 +1747,7 @@ namespace utopia {
 
 			const std::size_t n_subspaces = space.n_subspaces();
 			const std::size_t n_quad_points = grads[0].size();
-			const std::size_t dim = sub_0.mesh().mesh_dimension();
+			const std::size_t dim = sub_0.mesh().spatial_dimension();
 
 			ret.resize(n_shape_functions);
 			for(auto &r : ret) {
@@ -1621,6 +1844,15 @@ namespace utopia {
 			return ret;
 		}
 
+		template<class C>
+		static auto fun(
+			const Interpolate<C, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>> &f,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<DenseVectorT>
+		{
+			return fun(f.coefficient(), f.fun(), ctx);
+		}
+		
+
 		template<class Tensor, class Space>
 		static std::vector<DenseVectorT> fun(
 			const Wrapper<Tensor, 1> &c,
@@ -1676,7 +1908,8 @@ namespace utopia {
 
 			std::vector<Vector> ret(n_quad_points);
 
-			const uint dim = f.space_ptr()->mesh().mesh_dimension();
+			// const uint dim = f.space_ptr()->mesh().mesh_dimension();
+			const uint dim = f.space_ptr()->mesh().spatial_dimension();
 
 			for(auto &r : ret) {
 				r = zeros(dim);
@@ -1721,18 +1954,14 @@ namespace utopia {
 			// auto &c   = interp.coefficient();
 			// auto &f   = interp.fun();
 			auto space_ptr = f.space_ptr();
-
-			auto &&g  = grad(f, ctx);
-
-
+			auto &&g = grad(f, ctx);
 
 			Vector element_values;
 			gather_interp_values(c, f, element_values, ctx);
 
 			const SizeType rows = space_ptr->n_subspaces();
-			const SizeType cols = space_ptr->subspace(0).mesh().mesh_dimension();
+			const SizeType cols = space_ptr->subspace(0).mesh().spatial_dimension();
 			Size s{rows, cols};
-
 
 			const std::size_t n_shape_functions = g.size();
 			const std::size_t n_quad_points = g[0].size();
@@ -1821,6 +2050,71 @@ namespace utopia {
 			}
 
 			return ret;
+		}
+
+		template<typename T, typename C>
+		inline static auto inner(
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			const ConstantCoefficient<T, 0> &left,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
+		{
+			return apply_binary(left, right, Multiplies(), ctx);
+		}
+
+
+		template<typename T, typename C>
+		inline static auto inner(
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
+		{
+			auto f_left    = fun(left.coefficient(), left.fun(), ctx);
+			auto &&f_right = fun(right.coefficient(), right.fun(), ctx);
+
+
+			std::size_t n = f_left.size();
+
+			for(std::size_t i = 0; i < n; ++i) {
+				f_left[i] *= f_right[i];
+			}
+
+			return f_left;
+		}
+
+
+		template<typename T>
+		inline static auto inner(
+			QValues<double> &&left,
+			const ConstantCoefficient<T, 0> &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			for(auto &l : left) {
+				l *= right.expr();
+			}
+
+			return std::move(left);
+		}
+
+		template<typename T>
+		inline static auto inner(
+			const ConstantCoefficient<T, 0> &left,
+			QValues<double> &&right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			for(auto &r : right) {
+				r *= left.expr();
+			}
+
+			return std::move(right);
+		}
+
+		template<typename T, typename C>
+		inline static auto inner(
+			const ConstantCoefficient<T, 0> &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			return apply_binary(left, right, Multiplies(), ctx);
 		}
 
 
@@ -1919,6 +2213,77 @@ namespace utopia {
 			return std::move(f);
 		}
 
+		template<typename T>
+		inline static auto apply_binary(
+			QValues<T> &&left,
+			const QValues<T> &right,
+			const Divides &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T>
+		{
+			auto n = right.size();
+			assert(n == left.size());
+
+			for(std::size_t i = 0; i < n; ++i) {
+				left[i] /= right[i];
+			}
+
+			return std::move(left);
+		}
+
+		template<typename T, int Order>
+		inline static auto apply_binary(
+			Wrapper<T, Order> &&left,
+			const Wrapper<T, Order> &right,
+			const Divides &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> Wrapper<T, Order> 
+		{
+			assert(false);
+			return std::move(left);
+		}
+
+
+		template<typename T>
+		inline static auto apply_binary(
+			FQValues<T> &&left,
+			const FQValues<T> &right,
+			const Divides &op,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T>
+		{
+			auto n = right.size();
+			auto n_quad_points = right[0].size();
+
+			assert(n == left.size());
+			assert(n_quad_points == left[0].size());
+
+			for(std::size_t i = 0; i < n; ++i) {
+				for(std::size_t qp = 0; i < n_quad_points; ++i) {
+					// left[i][qp] = apply_binary(left[i][qp], right[i][qp], op, ctx);
+					left[i][qp] /= right[i][qp];
+				}
+			}
+
+			return std::move(left);
+		}
+
+
+		// template<typename T>
+		// inline static auto apply_binary(
+		// 	QValues<T> &&left,
+		// 	const QValues<double> &right,
+		// 	const Divides &op,
+		// 	AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T>
+		// {
+		// 	auto n = right.size();
+
+		// 	assert(n == left.size());
+
+		// 	for(std::size_t i = 0; i < n; ++i) {
+		// 		left[i] /= right[i];
+		// 	}
+
+		// 	return std::move(left);
+		// }
+
 		//alpha * (grad_t + grad)
 		template<class Left, class Right>
 		inline static JacobianType grad_t_plus_grad(const double scaling, const Left &left, const Right &right, AssemblyContext<LIBMESH_TAG> &ctx)
@@ -1952,6 +2317,41 @@ namespace utopia {
 			}
 
 			return std::move(g);
+		}
+
+		template<typename T, typename C>
+		inline static auto multiply(
+			const ConstantCoefficient<T, 0> &left,
+			const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+		{
+			auto &&g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+
+			std::size_t n_quad_points = g.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				g[qp].implementation() *= left.expr();
+			}
+
+			return std::move(g);
+		}
+
+		template<typename C>
+		inline static auto multiply(
+			const LMDenseMatrix &mat,
+			const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+		{
+			auto &&g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+			auto ret = g;
+
+			std::size_t n_quad_points = g.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				multiply(mat, g[qp].implementation(), ret[qp].implementation());
+			}
+
+			return std::move(ret);
 		}
 
 		template<typename T>
@@ -2419,6 +2819,27 @@ namespace utopia {
 		}
 
 		template<class Space>
+		inline static auto multiply(
+			const std::vector<double> &left,
+			const Gradient<TestFunction<Space> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type
+		{
+			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] *= left[qp];
+
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Space>
 		inline static auto multiply(const std::vector<double> &left, const TrialFunction<Space> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type
 		{
 			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
@@ -2532,6 +2953,24 @@ namespace utopia {
 			return ret;
 		}
 
+
+		template<class Space>
+		inline static auto multiply(const QValues<double> &left, const TestFunction<Space> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type
+		{
+			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] *= left[qp];
+				}
+			}
+
+			return ret;
+		}
+
 		template<class Space>
 		inline static auto multiply(const Matrix &left, const TestFunction<ProductFunctionSpace<Space>> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> VectorFunctionType
 		{
@@ -2616,7 +3055,7 @@ namespace utopia {
 		}
 
 		template<class Left, class Right>
-		static auto inner(const std::vector<Left> &left, const std::vector<std::vector<Right>> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<std::vector<double>>
+		static auto inner(const QValues<Left> &left, const FQValues<Right> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<double>
 		{
 			assert(left.size() == right[0].size());
 
@@ -2670,6 +3109,51 @@ namespace utopia {
 			}
 
 			return ret;
+		}
+
+		static Matrix integrate(Matrix &&mat, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			return std::move(mat);
+		}
+
+		static Vector integrate(Vector &&mat, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			return std::move(mat);
+		}
+
+
+		static double integrate(const double val, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			assert(false);
+			return val;
+		}
+
+		static Scalar integrate(const QValues<double> &vals, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			auto && dx = ctx.dx();
+			uint n_quad_points = dx.size();
+
+			assert( vals.size() == dx.size() );
+
+			Scalar ret = 0.;
+			for (uint qp = 0; qp < n_quad_points; qp++) {
+				ret += vals[qp] * dx[qp];
+			}
+
+			return ret;
+		}
+
+		static Scalar integrate(const ConstantCoefficient<double, 0> &val, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			auto && dx = ctx.dx();
+			uint n_quad_points = dx.size();
+
+			Scalar ret = 0.;
+			for (uint qp = 0; qp < n_quad_points; qp++) {
+				ret += dx[qp];
+			}
+
+			return ret * val.expr();
 		}
 
 		// template<class Left, class Right>

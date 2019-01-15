@@ -26,6 +26,9 @@ namespace utopia {
 				n_dofs[i] = (n_dofs[i-1] - 1) * 2 + 1;
 			}
 
+			// Scalar h = 1.;//1./(n_dofs[n_levels -1]);
+			Scalar h = 1./(n_dofs[n_levels -1] - 1);
+
 			interpolators.resize(n_levels - 1);
 
 			for(SizeType i = 0; i < n_levels - 1; ++i) {
@@ -34,25 +37,43 @@ namespace utopia {
 				interpolators[i] = std::make_shared<Matrix>(sparse(n_fine, n_coarse, 2));
 				auto &I = *interpolators[i];
 
-				Write<Matrix> w_(I);
+				Write<Matrix> w_(I, utopia::GLOBAL_INSERT);
 				auto r = row_range(I);
 
-				SizeType j = r.begin()/2;
-				for(auto k = r.begin(); k < r.end(); k += 2, ++j) {
-					I.set(k, j, 1.);
+				SizeType j = std::floor(r.begin()/2.);
+
+				SizeType reminder = r.begin() % 2;
+				SizeType r_begin  = r.begin() + reminder;
+
+				if(reminder) {
+					
+					if(j + 1 < n_coarse) {
+						I.set(r.begin(), j, 0.5/h);
+						I.set(r.begin(), j + 1, 0.5/h);
+					}
+
+					++j;
+				}
+
+				for(auto k = r_begin; k < r.end(); k += 2, ++j) {
+					I.set(k, j, 1./h);
 
 					if(j + 1 < n_coarse) {
-						I.set(k + 1, j, 0.5);
-						I.set(k + 1, j + 1, 0.5);
+						auto kp1 = k + 1;
+
+						if(r.inside(kp1)) {
+							I.set(kp1, j, 0.5/h);
+							I.set(kp1, j + 1, 0.5/h);
+						}
 					}
 				}
 			}
 
-			auto n_finest = n_dofs.back();
+			SizeType n_finest = n_dofs.back();
 			matrix = std::make_shared<Matrix>(sparse(n_finest, n_finest, 3));
 			assemble_laplacian_1D(*matrix, true);
 
-			rhs = std::make_shared<Vector>(values(n_finest, 1000.));
+			rhs = std::make_shared<Vector>(values(n_finest, h*10.));
 
 
 			Write<Vector> w_(*rhs);
@@ -63,7 +84,7 @@ namespace utopia {
 			}
 
 			if(r.end() == n_finest) {
-				rhs->set(n_finest -1, -1.);
+				rhs->set(n_finest - 1, -1.);
 			}
 
 			if(remove_bc_dofs_from_interp) {
@@ -84,6 +105,15 @@ namespace utopia {
 			}
 		}
 
+		void describe() const
+		{
+			disp("----------------------------------");
+			for(auto I_ptr : interpolators) {
+				disp(*I_ptr);
+			}
+			disp("----------------------------------");
+		}
+
 		void write_matlab(const std::string &folder)
 		{
 			SizeType i = 0;
@@ -96,10 +126,10 @@ namespace utopia {
 
 			//REMOVE ME
 			// rhs->implementation().set_name("r");
-			
+
 			//REMOVE ME
 			// matrix->implementation().set_name("A");
-			
+
 			write("vec_r.m", *rhs);
 			write("mat_A.m", *matrix);
 		}

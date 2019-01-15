@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_FormEvalTest.hpp"
 #include "utopia_FormEvaluator.hpp"
 #include "utopia_fe_core.hpp"
@@ -6,7 +7,6 @@
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_MixedFunctionSpace.hpp"
 
-#include "utopia_libmesh.hpp"
 #include "libmesh/parallel_mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/linear_implicit_system.h"
@@ -218,7 +218,7 @@ namespace utopia {
 			auto u = trial(V);
 			auto v = test(V);
 
-			DVectord sol = zeros(27);
+			UVector sol = zeros(27);
 			each_write(sol, [](const SizeType i) -> double {
 				return 0.1 + i/27.;
 			});
@@ -544,7 +544,7 @@ namespace utopia {
 			auto v = test(V);
 
 
-			DVectord sol;
+			UVector sol;
 			auto uk = interpolate(sol, u);
 			auto alpha = coeff(0.5);
 			auto R = u * alpha * (coeff(1.) - uk) * (uk - alpha);
@@ -575,8 +575,8 @@ namespace utopia {
 			// auto linear_form   = integral(inner(coeff(1.), v));
 			// auto eq = bilinear_form == linear_form;
 
-			// DSMatrixd mat;
-			// DVectord vec;
+			// USparseMatrix mat;
+			// UVector vec;
 			// assemble_expression_v<FunctionSpaceT>(eq, mat, vec);
 		}
 	};
@@ -722,7 +722,7 @@ namespace utopia {
 
 		// 	auto u = trial(V);
 		// 	auto v = test(V);
-		// 	DVectord sol;
+		// 	UVector sol;
 		// 	const bool success = solve(
 		// 		equations(
 		// 			inner(grad(u), grad(v)) * dX == inner(coeff(0.), v) * dX
@@ -767,7 +767,7 @@ namespace utopia {
 
 		// 	LMDenseVector z = zeros(2);
 
-		// 	DVectord sol;
+		// 	UVector sol;
 		// 	const bool success = solve(
 		// 		equations(
 		// 			((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX == inner(coeff(z), v) * dX
@@ -801,7 +801,7 @@ namespace utopia {
 		// 	auto u = trial(V);
 		// 	auto v = test(V);
 
-		// 	DVectord sol;
+		// 	UVector sol;
 		// 	auto uk = interpolate(sol, u);
 
 		// 	if(nl_solve(
@@ -854,8 +854,8 @@ namespace utopia {
 		// 	const double dt = 0.01;
 		// 	const std::size_t n_ts = 10;
 
-		// 	DVectord sol;
-		// 	DVectord sol_old;
+		// 	UVector sol;
+		// 	UVector sol_old;
 
 
 		// 	auto uk = interpolate(sol, u);
@@ -913,8 +913,8 @@ namespace utopia {
 			const double dt = 0.01;
 			const std::size_t n_ts = 40;
 
-			DVectord sol;
-			DVectord sol_old;
+			UVector sol;
+			UVector sol_old;
 
 			//if_else(cond, val_if, val_else)
 
@@ -984,7 +984,7 @@ namespace utopia {
 
 		// 	auto u = trial(V);
 		// 	auto v = test(V);
-		// 	DVectord sol;
+		// 	UVector sol;
 		// 	const bool success = solve(
 		// 		equations(
 		// 			bilinear_kernel<double>(
@@ -1041,8 +1041,8 @@ namespace utopia {
 		// 	const double dt = 0.005;
 		// 	const std::size_t n_ts = 40;
 
-		// 	DVectord sol;
-		// 	DVectord sol_old;
+		// 	UVector sol;
+		// 	UVector sol_old;
 
 
 		// 	auto uk 	= interpolate(sol, u);

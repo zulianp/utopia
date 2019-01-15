@@ -205,11 +205,15 @@ namespace utopia {
 		}
 		
 		inline void set(const PetscInt row, const PetscInt col, PetscScalar value) {
-			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
+            assert(row_range().inside(row));
+			// check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
+            check_error( MatSetValue(implementation(), row, col, value, INSERT_VALUES) );
 		}
 
 		inline void add(const PetscInt row, const PetscInt col, PetscScalar value) {
-			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
+            assert(row_range().inside(row));
+			// check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
+            check_error( MatSetValue(implementation(), row, col, value, ADD_VALUES) );
 		}
 		
 		void add_matrix(const std::vector<PetscInt> &rows,
@@ -299,6 +303,8 @@ namespace utopia {
         void row_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
+        void col_sum(PetscVector &col) const;
+
         inline PetscReal norm2() const
         {
         	PetscReal val;
@@ -334,6 +340,8 @@ namespace utopia {
         //petsc says that it is correct only for square matrices
         void get_diag(PetscVector &result) const;
         void get_diag(PetscMatrix &result) const;
+
+        void get_col(PetscVector &result, const PetscInt id) const;
 
         inline void diag_shift(const PetscScalar factor)
         {
@@ -431,6 +439,16 @@ namespace utopia {
         	PetscInt o_nnz,
         	PetscInt block_size
         );
+
+         void nest(
+            MPI_Comm comm,
+            PetscInt nr,
+            const IS is_row[],
+            PetscInt nc,
+            const IS is_col[],
+            const Mat a[],
+            const bool use_mat_nest_type = false
+         );
 
         // void mat_aij_cusparse_init(
         //  	MPI_Comm comm,

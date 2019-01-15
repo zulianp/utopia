@@ -5,6 +5,7 @@
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_Input.hpp"
 
 
 #include <algorithm>
@@ -19,6 +20,7 @@ namespace utopia {
 
     PetscErrorCode UtopiaPCApplyShell(PC pc, Vec x, Vec y);
     PetscErrorCode MyKSPMonitor(KSP,PetscInt,PetscReal,void*);
+    std::string converged_str(KSPConvergedReason reason);
 
     /**@ingroup     Linear
      * @brief       Class provides interface to Petsc KSP solvers \n
@@ -35,7 +37,9 @@ namespace utopia {
     class KSPSolver {};
 
     template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
+    class KSPSolver<Matrix, Vector, PETSC> : 
+        public PreconditionedSolver<Matrix, Vector>,
+        public Smoother<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -46,21 +50,16 @@ namespace utopia {
 
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "only works with petsc types");
 
-        KSPSolver(const Parameters params = Parameters());
+        class Impl;
+
+        KSPSolver();
 
 
-        KSPSolver(const std::shared_ptr<KSPWrapper<Matrix, Vector>> &w);
+        KSPSolver(std::unique_ptr<Impl> &&w);
 
         void wrap(KSP &ksp);
 
         virtual ~KSPSolver();
-
-        /**
-         * @brief      Sets the parameters.
-         *
-         * @param[in]  params  The parameters
-         */
-        virtual void set_parameters(const Parameters params) override;
 
         /* @brief      Sets the choice of direct solver.
          *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings.
@@ -101,10 +100,11 @@ namespace utopia {
          *              It is also compatible with our own Utopia preconditioners.
          */
         bool apply(const Vector &b, Vector &x) override;
-
+        
         bool smooth(const Vector &rhs, Vector &x) override;
 
         bool must_compute_cond_number() const;
+
 
         /**
          * @brief      Sets the default options for PETSC KSP solver. \n
@@ -136,16 +136,19 @@ namespace utopia {
 
         virtual KSPSolver * clone() const override;
 
-        KSPWrapper<Matrix, Vector> &ksp();
+        Impl &ksp();
 
-        const KSPWrapper<Matrix, Vector> &ksp() const;
+        const Impl &ksp() const;
 
         void set_initial_guess_non_zero(const bool val);
 
         KSP &implementation();
 
+        virtual void read(Input &is) override;
+        virtual void print_usage(std::ostream &os = std::cout) const override;
+
     protected:
-        std::shared_ptr<KSPWrapper<Matrix, Vector>> ksp_;
+        std::unique_ptr<Impl> ksp_;
     };
 
 }

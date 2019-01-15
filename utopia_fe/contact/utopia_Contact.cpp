@@ -57,12 +57,12 @@ namespace utopia {
 
 		if(use_biorthogonal_basis) {
 
-			DVectord d = sum(coupling, 1);
+			UVector d = sum(coupling, 1);
 
 			inv_mass_vector = local_zeros(local_size(d));
 
 			{
-				Write<DVectord> w_(inv_mass_vector);
+				Write<UVector> w_(inv_mass_vector);
 
 				each_read(d, [this](const SizeType i, const double value) {
 					if(value < -1e-8) {
@@ -139,7 +139,7 @@ namespace utopia {
 		// static bool is_first = true;
 
 		// if(is_first) {
-		// 	DVectord t = sum(transfer_operator, 1);
+		// 	UVector t = sum(transfer_operator, 1);
 		// 	write("t.m", t);
 		// 	is_first = false;
 		// }

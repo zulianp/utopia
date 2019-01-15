@@ -1,0 +1,98 @@
+<simulation>
+	<mesh>../data/wear/wear_geoms_2.e</mesh>
+    <!-- <mesh>/Users/zulianp/Desktop/algo4u/wearsim/mesh_files/wear_geoms.e</mesh> -->
+    <mesh-refinements>0</mesh-refinements>
+	<model>
+        <material>LinearElasticity</material>
+        <stabilization>L2</stabilization>
+        <stabilization-mag>0.00001</stabilization-mag>
+		<parameters>
+            <mu>60.</mu>
+            <lambda>60.</lambda>
+		</parameters>
+	</model>
+	<boundary-conditions>
+		<dirichlet type="array">
+            <!-- Upper boundary -->
+			
+            <entry>
+                <coord>0</coord>
+                <side>3</side>
+                <value>0.</value>
+            </entry>
+            <entry>
+                <coord>1</coord>
+                <side>3</side>
+                <value>0.</value>
+            </entry>
+            <entry>
+                <coord>2</coord>
+                <side>3</side>
+                <value>0.</value>
+            </entry>
+
+            <!-- Lower boundary -->
+            <entry>
+                <coord>0</coord>
+                <side>4</side>
+                <value>0.0</value>
+            </entry>
+            <entry>
+                <coord>1</coord>
+                <side>4</side>
+                <value>0.0</value>
+            </entry>
+
+            <!-- Free Z coordinate -->
+
+		</dirichlet>
+	</boundary-conditions>
+
+    <!-- No global forcing functions -->
+    
+<!--     <forcing-functions type="array">
+        <entry>
+            <block>2</block>
+            <coord>1</coord>
+            <value>0.</value>
+        </entry>
+    </forcing-functions> -->
+   
+    <contact>
+        <type>steady</type>
+        <max-nl-iter>100</max-nl-iter>
+        <radius>1.7</radius>
+        <pairs type="array">
+            <entry>
+                <master>1</master>
+                <slave>2</slave>
+            </entry>
+        </pairs>
+    </contact>
+
+    <wear>
+        <coeff>0.007</coeff>
+        <extrapolation>100.0</extrapolation>
+        <n-cycles>10</n-cycles>
+        <gait-cycle>
+            <type>ISO14243_3</type>
+            <csv>../data/wear/iso-14243-3.csv</csv>
+            
+            <flexion-extension-angle-axis>x</flexion-extension-angle-axis>
+           
+            <axial-force-side>4</axial-force-side>
+            <axial-force-axis>z</axial-force-axis>
+            
+            <ap-motion-axis>y</ap-motion-axis>
+            <tibial-rotation-axis>z</tibial-rotation-axis>
+            
+            <femural-block>1</femural-block>
+            <tibial-block>2</tibial-block>
+            
+            <normalize-axial-force-by-area>1</normalize-axial-force-by-area>
+            
+            <dt>0.001</dt>
+        </gait-cycle>
+    </wear>
+	<output>./wear_out</output>
+</simulation>

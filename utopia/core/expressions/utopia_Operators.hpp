@@ -196,6 +196,29 @@ namespace utopia {
         }
     };
 
+    class Cos {
+    public:
+        std::string getClass() const { return "Cos"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            using std::cos;
+            return cos(x);
+        }
+    };
+
+
+    class Sin {
+    public:
+        std::string getClass() const { return "Sin"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            using std::sin;
+            return sin(x);
+        }
+    };
+
     class Transpose {
     public:
         std::string getClass() const { return "Transpose"; }
@@ -263,6 +286,17 @@ namespace utopia {
             return max(left, right);
         }
     };
+
+    class IsNaNOrInf {
+    public:
+        std::string getClass() const { return "IsNaNOrInf"; }
+        template<typename T>
+        inline static T apply(const T &value) {
+            return std::isnan(value) || std::isinf(value);
+        }
+    };
+
+    
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP

@@ -53,26 +53,26 @@ namespace utopia {
 			} else {
 				PetscInt old_n_global;
 				check_error( VecGetSize(vec_, &old_n_global) );
-				
+
 				if(old_n_global == n_global) {
 					PetscInt old_n_local;
 					check_error( VecGetLocalSize(vec_, &old_n_local) );
-					
+
 					assert(old_n_local == n_local && "We do not handle the local consistency. Explicitly set local sizes in the initialization.");
-					
+
 					return;
 				}
 			}
 		}
 
 		check_error( VecSetFromOptions(vec_) );
-		
+
 		check_error( VecSetType(vec_, type_copy.c_str()) );
 
 		check_error( VecSetSizes(vec_, n_local, n_global) );
-		
+
 		ghost_values_.clear();
-		
+
 		assert(vec_ != nullptr);
 		initialized_ = true;
 
@@ -82,26 +82,73 @@ namespace utopia {
 
 		assert(is_consistent());
 	}
-	
+
 	void PetscVector::init(MPI_Comm comm,
 		VecType type,
 		PetscInt n_local,
 		PetscInt n_global)
 	{
 		assert(vec_ == nullptr);
-		
+
 		check_error( VecCreate(comm, &vec_) );
 		check_error( VecSetFromOptions(vec_) );
 		check_error( VecSetType(vec_, type) );
 
 		check_error( VecSetSizes(vec_, n_local, n_global) );
-		
+
 		assert(vec_ != nullptr);
 		initialized_ = true;
 
 		assert(is_consistent());
 	}
-	
+
+	void PetscVector::nest(
+		MPI_Comm comm,
+		PetscInt nb,
+		IS is[],
+		Vec x[],
+		const bool use_vec_nest_type)
+	{
+		if(use_vec_nest_type) {
+			destroy();
+			VecCreateNest(comm, nb, is, x, &vec_);
+		} else {
+
+			PetscInt ls = 0, gs = 0;
+			PetscInt ls_i = 0, gs_i = 0;
+
+
+			for(PetscInt i = 0; i < nb; ++i) {
+				VecGetLocalSize(x[i], &ls_i);
+				ls += ls_i;
+
+				VecGetSize(x[i], &gs_i);
+				gs += gs_i;
+			}
+
+			repurpose(comm, type_override(), ls, gs);
+
+			write_lock(LOCAL);
+
+			auto r = range();
+
+			const PetscScalar *a;
+			PetscInt local_index = 0;
+			for(PetscInt i = 0; i < nb; ++i) {
+				VecGetLocalSize(x[i], &ls_i);
+				VecGetArrayRead(x[i], &a);
+
+				for(PetscInt k = 0; k < ls_i; ++k) {
+					VecSetValue(implementation(), r.begin() + local_index++, a[k], INSERT_VALUES);
+				}
+
+				VecRestoreArrayRead(x[i], &a);
+			}
+
+			write_unlock(LOCAL);
+		}
+	}	
+
 	void PetscVector::ghosted(MPI_Comm comm,
 		PetscInt local_size,
 		PetscInt global_size,
@@ -111,7 +158,7 @@ namespace utopia {
 		assert(!immutable_);
 
 		destroy();
-		
+
 		check_error(
 			VecCreateGhost(
 				comm,
@@ -124,10 +171,10 @@ namespace utopia {
 
 		//FIXME will this work???
 		check_error( VecSetFromOptions(vec_) );
-		
+
 		init_ghost_index(index);
 		check_error( VecZeroEntries(vec_) );
-		
+
 		assert(vec_ != nullptr);
 		initialized_ = true;
 	}
@@ -142,15 +189,15 @@ namespace utopia {
 
 	bool PetscVector::is_nan_or_inf() const
 	{
-		PetscInt m; 
+		PetscInt m;
 		const PetscScalar *x;
 		VecGetLocalSize(implementation(), &m);
 		VecGetArrayRead(implementation(), &x);
 
-		int has_nan = 0; 
+		int has_nan = 0;
 
 		for (PetscInt i = 0; i < m; i++) {
-			has_nan = PetscIsInfOrNanScalar(x[i]); 
+			has_nan = PetscIsInfOrNanScalar(x[i]);
 			if(has_nan == 1)
 				break;
 		}
@@ -162,7 +209,7 @@ namespace utopia {
 			MPI_Allreduce(MPI_IN_PLACE, &has_nan, 1, MPI_INT, MPI_MAX, comm);
 		}
 
-		return has_nan > 0; 
+		return has_nan > 0;
 	}
 
 	void PetscVector::resize(PetscInt local_size, PetscInt global_size)
@@ -192,11 +239,16 @@ namespace utopia {
 		result.repurpose(comm, this->type(), index.size(), PETSC_DETERMINE);
 
 		ISCreateGeneral(comm, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,11,0) || (UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,10,0) && PETSC_VERSION_RELEASE == 0)
+		VecScatterCreateWithData(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
+#else
 		VecScatterCreate(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
+#endif
 
 		VecScatterBegin(scatter_context, implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(scatter_context,   implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
-		
+
 		ISDestroy(&is_in);
 		VecScatterDestroy(&scatter_context);
 	}
@@ -218,9 +270,9 @@ namespace utopia {
 		destroy();
 
 		PetscViewer fd;
-		
+
 		bool err = check_error( PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd) );
-		
+
 		err = err && check_error( VecCreate(comm, &implementation()) );
 		err = err && check_error( VecSetType(implementation(), type_override()) );
 		err = err && check_error( VecLoad(implementation(), fd));
@@ -235,9 +287,9 @@ namespace utopia {
 	{
 		PetscViewer fd;
 		bool err = check_error( PetscViewerBinaryOpen(communicator(), path.c_str(), FILE_MODE_WRITE, &fd) );
-		
+
 		err = err && check_error( VecView(implementation(), fd) );
-		
+
 		PetscViewerDestroy(&fd);
 		return err;
 	}
@@ -246,10 +298,10 @@ namespace utopia {
 	{
 		PetscViewer fd;
 		bool err = check_error( PetscViewerASCIIOpen(communicator(), path.c_str(), &fd) );
-		
+
 		err = err && check_error( PetscViewerPushFormat(fd, PETSC_VIEWER_ASCII_MATLAB) );
 		err = err && check_error( VecView(implementation(), fd) );
-		
+
 		PetscViewerDestroy(&fd);
 		return err;
 	}
@@ -257,9 +309,9 @@ namespace utopia {
 	void PetscVector::select(const Range &global_range, PetscVector &result) const
 	{
 		assert(!global_range.empty());
-		
+
 		Range rr = range().intersect(global_range);
-		
+
 		result.repurpose(
 			communicator(),
 			type(),
@@ -267,16 +319,16 @@ namespace utopia {
 			rr.extent()
 			);
 
-		result.write_lock();
-		
+		result.write_lock(LOCAL);
+
 		for(PetscInt r_this = rr.begin(); r_this < rr.end(); ++r_this) {
 			const PetscInt r_selection = r_this - global_range.begin();
 			result.set(r_selection, get(r_this));
 		}
-		
-		result.write_unlock();
+
+		result.write_unlock(LOCAL);
 	}
-	
+
 	//testing VECSEQCUDA,VECMPICUDA
 	bool PetscVector::is_cuda() const
 	{

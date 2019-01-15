@@ -9,11 +9,12 @@ ENV LDFLAGS -L/opt/petsc/lib
 ENV CPATH opt/petsc/include:/opt/slepc/include
 
 RUN ls $MPI_DIR/bin | grep mpi
+RUN export PATH=$PATH:$MPI_DIR/bin
 
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
 
 RUN git clone https://zulianp@bitbucket.org/zulianp/utopia.git utopia_cloned
-RUN cd /utopia_cloned && git checkout development && git pull
+RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
 
 # compile utopia
 

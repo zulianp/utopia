@@ -22,27 +22,25 @@ namespace utopia
     
     
     template<typename Matrix, typename Vector>
-    class SNESSolver<Matrix, Vector, PETSC> : public NonLinearSolver<Matrix, Vector>, public NonLinearSmoother<Matrix, Vector>
+    class SNESSolver<Matrix, Vector, PETSC> : public NewtonBase<Matrix, Vector>, public NonLinearSmoother<Matrix, Vector>
     {
         
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver  LinearSolver;
+        typedef typename NewtonBase<Matrix, Vector>::Solver  LinearSolver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>         Smoother;
-        typedef utopia::NonLinearSolver<Matrix, Vector>           NonLinearSolver;
+        typedef utopia::NewtonBase<Matrix, Vector>           NonLinearSolver;
         typedef utopia::Function<Matrix, Vector>                  Function;
         
         
         SNESSolver( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
-                   const Parameters params = Parameters(),
-                   const std::vector<std::string> snes_types    = {"newtonls", "newtontr", "nrichardson", "ksponly", "vinewtonrsls", "vinewtonssls", "ngmres", "qn", "shell", "ngs", "ncg", "fas", "ms", "anderson"}):
-        NonLinearSolver(linear_solver, params),
+                    const std::vector<std::string> snes_types    = {"newtonls", "newtontr", "nrichardson", "ksponly", "vinewtonrsls", "vinewtonssls", "ngmres", "qn", "shell", "ngs", "ncg", "fas", "ms", "anderson"}):
+        NonLinearSolver(linear_solver),
         SNES_types(snes_types)
         {
             SNES_type_       = SNES_types.at(0);
-            set_parameters(params);
         }
         
         
@@ -50,31 +48,32 @@ namespace utopia
         {
             
         }
-        
-        
-        virtual void set_parameters(const Parameters params) override
+
+        virtual void read(Input &in) override
         {
-            NonLinearSolver::set_parameters(params);
-            Smoother::set_parameters(params);
+            NonLinearSolver::read(in); 
+            Smoother::read(in); 
+
+            std::string SNES_type_aux_; 
+            in.get("SNES_type", SNES_type_aux_);
+
+            // checks if type is valid
+            this->set_snes_type(SNES_type_aux_); 
         }
+
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            NonLinearSolver::print_usage(os); 
+            Smoother::print_usage(os); 
+
+            this->print_param_usage(os, "SNES_type", "string", "Type of Snes solver.", "newtonls"); 
+        }        
         
         
         virtual void set_snes_type(const std::string & type)
         {
             SNES_type_ = in_array(type, SNES_types) ? type : SNES_types.at(0);
-        }
-        
-        
-        virtual bool verbose() override
-        {
-            return NonLinearSolver::verbose();
-        }
-        
-        
-        virtual void verbose(const bool & verbose) override
-        {
-            NonLinearSolver::verbose(verbose);
-            Smoother::verbose(verbose);
         }
         
         
@@ -120,7 +119,7 @@ namespace utopia
         
         
         
-        virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
+        virtual bool smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {
             using namespace utopia;
             

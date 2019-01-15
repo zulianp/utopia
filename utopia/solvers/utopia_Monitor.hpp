@@ -1,23 +1,20 @@
 #ifndef UTOPIA_UTOPIA_MONITOR_HPP_HPP
 #define UTOPIA_UTOPIA_MONITOR_HPP_HPP
 
-namespace utopia {
+#include "utopia_SolutionStatus.hpp"
 
-    template<class Matrix, class Vector>
+namespace utopia 
+{
+
+    template<class Vector>
     class Monitor {
     public:
-        typedef UTOPIA_SCALAR(Matrix)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Matrix) SizeType;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~Monitor() {}
 
     public:
-
-        /**
-        * @brief      Monitors(creating matlab script) iterate, hessian on given iterate.
-        */
-        //FIXME move Matrix before Vector
-        virtual bool solver_monitor(const SizeType &it, Vector &rhs, Matrix &system) = 0;
 
         /**
          * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve process.
@@ -45,6 +42,32 @@ namespace utopia {
          * @param[in]  it      The number of iterations.
          */
         virtual bool check_convergence(const SizeType &it, const Scalar & norm_grad, const Scalar &rel_norm_grad, const Scalar &norm_step) = 0;
+
+
+        const SolutionStatus & solution_status() const
+        { 
+            return solution_status_;
+        } 
+
+        void solution_status(const SolutionStatus & sol)
+        { 
+            solution_status_ = sol;
+        }         
+
+        SizeType get_num_it() const 
+        {
+            return solution_status_.iterates;
+        }
+
+        SizeType get_convergence_reason() const 
+        {
+            return solution_status_.reason;
+        }        
+
+
+    protected: 
+        SolutionStatus solution_status_; 
+
     };
 }
 

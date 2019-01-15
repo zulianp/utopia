@@ -18,6 +18,9 @@
 #include "utopia_SelectionTest.hpp"
 #include "utopia_UITest.hpp"
 #include "utopia_M3ELinSolTest.hpp"
+#include "utopia_QPSolverTest.hpp"
+#include "utopia_trilinos_KokkosTest.hpp"
+#include "utopia_UnconstrainedOptBench.hpp"
 
 namespace utopia
 {
@@ -30,22 +33,28 @@ namespace utopia
         runPetscTest();
         runBLASTest();
         runMiscTest();
+        run_kokkos_test();
         run_trilinos_test();
         run_tao_solver_test();
         run_petsc_cuda_test();
         run_selection_test();
         run_ui_test();
 
+
         runGenericSolversTest();
         runPetscNonlinearSolversTest();
         runPetscLinearSolversTest();
         runPetscSlepcSolversTest();
+        runQuasiNewtonTest(); 
 
         runNonlinearMultilevelSolverTest();
 
+        
+        run_qp_solver_test();
+
         //only works for serial
         if(mpi_world_size() == 1) {
-            run_performance_test();
+            // run_performance_test();
             run_m3e_lin_sol_test();
         }
     }
@@ -86,8 +95,10 @@ namespace utopia
                    runPetscSlepcSolversTest();
                 else if(token == "nonlinear_multilevel")
                     runNonlinearMultilevelSolverTest();
-                else if (token == "performance")
-                    run_performance_test();
+                else if(token =="quasi_newton")
+                    runQuasiNewtonTest(); 
+                // else if (token == "performance")
+                    // run_performance_test();
                 else if (token == "algebra")
                     runAlgebraTest();
                 else if (token == "utilities")
@@ -98,6 +109,8 @@ namespace utopia
                     runBLASTest();
                 else if (token == "misc")
                     runMiscTest();
+                else if (token == "kokkos")
+                    run_kokkos_test();
                 else if (token == "trilinos")
                     run_trilinos_test();
                 else if(token == "tao") {
@@ -110,6 +123,10 @@ namespace utopia
                     run_ui_test();
                 } else if(token == "m3e") {
                     run_m3e_lin_sol_test();
+                } else if(token == "qp") {
+                    run_qp_solver_test();
+                }else if(token == "uncon_bench") {
+                    run_unconstrained_optimization_benchmark();
                 }
             }
         }

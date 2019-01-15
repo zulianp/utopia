@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-10
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-14
-*/
-
 #ifndef UTOPIA_LEAST_SQUARES_NEWTON_HPP
 #define UTOPIA_LEAST_SQUARES_NEWTON_HPP
 
@@ -18,23 +11,22 @@ namespace utopia
        *
        */
   template<class Matrix, class Vector>
-  class LeastSquaresNewton : public NonLinearLeastSquaresSolver<Matrix, Vector> 
+  class LeastSquaresNewton final: public NonLinearLeastSquaresSolver<Matrix, Vector> 
   {
     typedef typename NonLinearLeastSquaresSolver<Matrix, Vector>::Solver Solver;
-    typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
+    typedef utopia::LSStrategy<Vector> LSStrategy; 
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
   public:
 
-    LeastSquaresNewton( const std::shared_ptr<Solver> &linear_solver= std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
-                        const Parameters params               = Parameters()): 
-                        NonLinearLeastSquaresSolver<Matrix, Vector>(linear_solver, params) 
+    LeastSquaresNewton( const std::shared_ptr<Solver> &linear_solver= std::make_shared<ConjugateGradient<Matrix, Vector> >()): 
+                        NonLinearLeastSquaresSolver<Matrix, Vector>(linear_solver) 
     {
 
     }
 
-    virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) 
+    bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) 
     {
 
       if(!this->ls_strategy_)
@@ -71,18 +63,18 @@ namespace utopia
               // this sould go away in future 
         g = J_T * r_k; 
 
-        this->ls_strategy_->get_alpha(fun, g, x_k, p_k, alpha_k); 
+        if(this->ls_strategy_)
+          this->ls_strategy_->get_alpha(fun, g, x_k, p_k, alpha_k); 
+        
         x_k += alpha_k * p_k; 
-
 
         fun.residual(x_k, r_k);
 
-              // norms needed for convergence check 
-        r_norm = norm2(r_k);
-        rel_norm = r_norm/r0_norm; 
-        s_norm = norm2(p_k); 
+        // norms needed for convergence check 
+        norms2(r_k, p_k, r_norm, s_norm); 
+        rel_norm = r_norm/r0_norm;     
 
-              // print iteration status on every iteration 
+        // print iteration status on every iteration 
         if(this->verbose_)
           PrintInfo::print_iter_status(it, {r_norm, rel_norm, s_norm, alpha_k}); 
 
@@ -95,11 +87,24 @@ namespace utopia
     }
 
 
-    virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+    void set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
     {
       ls_strategy_ = strategy; 
-      ls_strategy_->set_parameters(this->parameters());
-      return true; 
+    }
+
+    void read(Input &in) override
+    {
+        NonLinearLeastSquaresSolver<Matrix, Vector>::read(in);
+        if(ls_strategy_) {
+            in.get("line-search", *ls_strategy_);
+        }
+    }
+
+
+    void print_usage(std::ostream &os) const override
+    {
+        NonLinearLeastSquaresSolver<Matrix, Vector>::print_usage(os);
+        this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-"); 
     }
 
   private:

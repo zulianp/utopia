@@ -159,7 +159,10 @@ namespace utopia {
 	{
 		auto tao = (Tao *) &data_;
 		PetscErrorCode ierr = 0;
-		ierr = TaoCreate(comm, tao);   U_CHECKERR(ierr);
+
+		if(!data_) {
+			ierr = TaoCreate(comm, tao);   U_CHECKERR(ierr);
+		}
 		
 		if(type.empty()) {
 			ierr = TaoSetType(*tao, TAOTRON); U_CHECKERR(ierr);
@@ -187,6 +190,7 @@ namespace utopia {
 			m_utopia_warning_once("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
 #endif 
 			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
+			ierr = KSPSetFromOptions(ksp);  U_CHECKERR(ierr);
 		} else {
 			utopia_error("Tao does not have a ksp");
 			assert(false);
@@ -278,6 +282,19 @@ namespace utopia {
 
 		return reason >= 0;
 	}
+
+	bool TaoSolverWrapper::smooth(PetscVector &x)
+	{
+		auto tao = static_cast<Tao>(data_);
+
+		PetscErrorCode ierr = 0; 
+		TaoSetInitialVector(tao, x.implementation());
+		ierr = TaoSolve(tao); U_CHECKERR(ierr);
+
+		return true;
+	}
+
+
 }
 
 #undef U_CHECKERR

@@ -1,8 +1,9 @@
 #ifndef UTOPIA_CONTACT_SYSTEM_HPP
 #define UTOPIA_CONTACT_SYSTEM_HPP 
 
-#include "utopia_Mechanics.hpp"
+#include "utopia_libmesh_Types.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_Mechanics.hpp"
 #include "utopia.hpp"
 
 #include <memory>
@@ -39,7 +40,7 @@ namespace utopia {
 		int main_system_num_;
 
 		//additional quantities
-		DVectord wear_;
+		UVector wear_;
 		double wear_coefficient_;
 		std::vector<double> total_wear_;
 
@@ -47,9 +48,9 @@ namespace utopia {
 		static void update_wear(
 			const double dt,
 			const double wear_coefficient,
-			const DVectord &sliding_distance,
-			const DVectord &normal_stress,
-			DVectord &wear
+			const UVector &sliding_distance,
+			const UVector &normal_stress,
+			UVector &wear
 			);
 	};
 }

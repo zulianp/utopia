@@ -5,8 +5,10 @@
 #include <utility>
 #include <memory>
 
-#include "utopia.hpp"
+#include "utopia_fe_kokkos_fix.hpp"
 #include "libmesh/libmesh_common.h"
+#include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 
 //forward decl
 namespace moonolith {
@@ -28,9 +30,9 @@ namespace utopia {
       const std::shared_ptr<libMesh::DofMap> &dof_slave,
       const unsigned int &from_var_num,
       const unsigned int &to_var_num,
-      bool use_biorth, 
+      bool use_biorth,
       int n_var,
-      DSMatrixd &B,
+      USparseMatrix &B,
       const std::vector< std::pair<int, int> > &tags = std::vector< std::pair<int, int> >(),
       const bool use_interpolation = false);
 }

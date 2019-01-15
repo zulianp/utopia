@@ -89,7 +89,7 @@ namespace utopia {
 		template<class Expr>
 		void init_fe_from(const Expr &expr)
 		{
-			auto space_ptr = find_any_space(expr);
+			auto space_ptr = find_any_space(expr); assert(bool(space_ptr));
 			space_ptr->initialize();
 			quadrature_order_ = functional_order(expr, *this);
 			const int dim = space_ptr->mesh().mesh_dimension();
@@ -138,6 +138,8 @@ namespace utopia {
 			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
 			block_id_ = elem->subdomain_id();
 
+			on_boundary_ = elem->on_boundary();
+
 			const auto &eq_sys = space_ptr->equation_system();
 			const std::size_t n_vars = eq_sys.n_vars();
 
@@ -151,6 +153,11 @@ namespace utopia {
 					v_fe_ptr->reinit(fe_);
 				}
 			}
+		}
+
+		inline bool on_boundary() const
+		{
+			return on_boundary_;
 		}
 
 		template<class Expr>
@@ -258,7 +265,12 @@ namespace utopia {
 		void set_up_quadrature(const int dim, const int quadrature_order)
 		{
 			if(reset_quadrature_) {
-				quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));
+				if(quadrature_order == 1) {
+					quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(2));
+				} else {
+					quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));
+				}
+				
 				quad_trial_ = quad_test_;
 				reset_quadrature_ = false;
 			} else {
@@ -268,7 +280,7 @@ namespace utopia {
 		}
 
 		LibMeshAssemblyValues()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
+		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), on_boundary_(false)
 		{}
 
 
@@ -277,6 +289,8 @@ namespace utopia {
 		long quadrature_order_;
 		int block_id_;
 		bool reset_quadrature_;
+		bool on_boundary_;
+
 
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
@@ -366,12 +380,19 @@ namespace utopia {
 
 				if(!ctx.vector_fe()[s_id]) {
 					ctx.vector_fe()[s_id] = std::make_shared<VectorElement>();
-					ctx.vector_fe()[s_id]->dim = s.subspace(0).mesh().mesh_dimension();
+					ctx.vector_fe()[s_id]->dim = s.subspace(0).mesh().spatial_dimension();
 					ctx.vector_fe()[s_id]->n_vars = s.n_subspaces();
 					ctx.vector_fe()[s_id]->start_var = s_id;
 				}
 
 				ctx.vector_fe()[s_id]->grad_flag = true;
+			}
+
+			template<class Expr>
+			inline int visit(const Integral<Expr> &expr)
+			{
+				ctx.fe()[0]->get_JxW();
+				return TRAVERSE_CONTINUE;
 			}
 
 			//Gradient

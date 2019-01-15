@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-06-01
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-22
-*/
-
 #ifndef UTOPIA_QUAD_CUB_BACKTRACKING_HPP
 #define UTOPIA_QUAD_CUB_BACKTRACKING_HPP
 
@@ -23,22 +16,43 @@ namespace utopia {
         reprinte by SIAM (1996), Section 6.3.2.
         @todo check params naming properly...
      */
-    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Backtracking : public LSStrategy<Matrix, Vector>
+    template<class Vector, int Backend = Traits<Vector>::Backend>
+    class Backtracking final : public LSStrategy<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
 
 
     public:
-
-
-        Backtracking(const Parameters params = Parameters() )
-        : LSStrategy<Matrix, Vector>(params)
+        Backtracking(): LSStrategy<Vector>(), c2_(1e-8)
 
         {
-            set_parameters(params);
+        
         }
+        
+        void read(Input &in) override
+        {   
+            LSStrategy<Vector>::read(in); 
+            in.get("c2", c2_);
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            LSStrategy<Vector>::print_usage(os); 
+            this->print_param_usage(os, "c2", "double", "Constant used for Wolfe conditions.", "1e-8"); 
+        }
+
+        void c2(const Scalar  & c)
+        {
+            c2_ = c; 
+        }
+
+
+        Scalar c2() const
+        {
+            return c2_; 
+        } 
+
 
         /**
          * @brief      Get the alpha_k on given iterate. We are using quadratic and qubic interpolation as part of backtracking.
@@ -53,13 +67,13 @@ namespace utopia {
          * @return
          */
 
-        bool get_alpha(LeastSquaresFunction<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
+        bool get_alpha(LeastSquaresFunctionBase<Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
         {
             return get_alpha_aux_home_made(fun, g, x, d, alpha);
         }
 
 
-        bool get_alpha(Function<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
+        bool get_alpha(FunctionBase<Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
         {
             return get_alpha_aux_home_made(fun, g, x, d, alpha);
         }
@@ -70,11 +84,11 @@ namespace utopia {
             Vector x_0 = x, x_k = x;
             Scalar alpha_c, alpha_p, dg = dot(d,g);
             Scalar f, f0, fc, fp, t1, t2, t3, a, b, disc;
-            alpha = 1;
+            alpha = 1.0;
 
-            if(dg >= 0)
+            if(dg >= 0.0)
             {
-                if(mpi_rank == 0) {
+                if(mpi_world_rank() == 0) {
                     std::cerr<< "utopia::LS::backtracking:: d is not descent direction \n";
                     assert(false);
                 }
@@ -90,16 +104,16 @@ namespace utopia {
 
             Scalar it = 0;
 
-            if(verbose_)
+            if(this->verbose())
                 PrintInfo::print_init("BACKTRACKING_LS_INNER_ITERATIONS", {" it. ", "|| alpha ||"});
 
-            while(alpha > c2_ && it < max_it_)
+            while(alpha > c2_ && it < this->max_it())
             {
                 x_k = x_0 + alpha * d;
                 fun.value(x_k, f);
 
                 // check decrease condition (wolfe condition)
-                if(f < f0 + c1_ * alpha * dg )
+                if(f < f0 + this->c1() * alpha * dg )
                 {
 
                     return true;
@@ -150,7 +164,7 @@ namespace utopia {
                     alpha = alpha_c/10;
                 }
                 it++;
-                if(verbose_)
+                if(this->verbose())
                     PrintInfo::print_iter_status({it, alpha});
             }
 
@@ -158,28 +172,8 @@ namespace utopia {
         }
 
 
-        bool set_parameters(const Parameters params) override
-        {
-            verbose_    = params.line_search_inner_verbose();
-            c1_         = params.c1();
-            c2_         = params.c2();
-            max_it_     = params.n_line_search_iters();
-            rho_        = params.ls_rho();
-            alpha_min_   = params.alpha_min();
-
-            return true;
-        }
-
     private:
-        SizeType mpi_size = mpi_world_size();
-        SizeType mpi_rank = mpi_world_rank();
-
-        bool verbose_;      /*!< Verbose inside of LS strategy.  */
-        Scalar c1_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
         Scalar c2_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
-        Scalar max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */
-        Scalar rho_;        /*!< Contraction factor.   */
-        Scalar alpha_min_;  /*!< Minimum allowed step-size.   */
 
     };
 }

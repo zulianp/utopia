@@ -9,6 +9,7 @@
 #include "libmesh/nemesis_io.h"
 #include "libmesh/mesh_refinement.h"
 #include <algorithm>
+#include <cmath>
 
 typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
@@ -114,7 +115,7 @@ namespace utopia {
 
 		Chrono c;
 		c.start();
-		DSMatrixd B;
+		USparseMatrix B;
 		moonolith::Communicator comm(init.comm().get());
 
 		const bool use_interpolation = true;
@@ -136,10 +137,10 @@ namespace utopia {
 			c.stop();
 			std::cout << c << std::endl;
 
-			DSMatrixd T;
+			USparseMatrix T;
 			if(use_interpolation) {
 				T = B;
-				DVectord t = sum(T, 1);
+				UVector t = sum(T, 1);
 				double t_max = max(t);
 				double t_min = min(t);
 
@@ -149,13 +150,15 @@ namespace utopia {
 				Interpolator(make_ref(T)).describe(std::cout);
 
 			} else {
-				DSMatrixd D_inv = diag(1./sum(B, 1));
+				USparseMatrix D_inv = diag(1./sum(B, 1));
 				T = D_inv * B;
 			}
 
-			DVectord v_m = local_values(V_m.dof_map().n_local_dofs(), 1.);
+			UVector v_m = local_values(V_m.dof_map().n_local_dofs(), 1.);
 
 			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
+				using std::sin;
+
 				const auto &pts = ctx.fe()[0]->get_xyz();
 
 				const auto n = pts.size();
@@ -176,8 +179,8 @@ namespace utopia {
 			auto p_form = inner(f_rhs, v) * dX;
 			auto m_form = inner(u, v) * dX;
 
-			DVectord scaled_sol;
-			DSMatrixd mass_mat;
+			UVector scaled_sol;
+			USparseMatrix mass_mat;
 
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
@@ -185,12 +188,12 @@ namespace utopia {
 			if(elem_order_master == libMesh::FIRST) {
 				v_m = e_mul(1./sum(mass_mat, 1), scaled_sol);
 			} else {
-				Factorization<DSMatrixd, DVectord>().solve(mass_mat, scaled_sol, v_m);
+				Factorization<USparseMatrix, UVector>().solve(mass_mat, scaled_sol, v_m);
 			}
 
 			// v_m.set(1.);
 
-			DVectord v_s = T * v_m;
+			UVector v_s = T * v_m;
 
 			convert(v_s, *slave_sys.solution);
 			slave_sys.solution->close();

@@ -32,13 +32,16 @@
 #include "utopia_MatrixPtAPProduct.hpp"
 #include "utopia_Equality.hpp"
 #include "utopia_Determinant.hpp"
-
+#include "utopia_Blocks.hpp"
 
 #include "utopia_Readable.hpp"
 #include "utopia_Writable.hpp"
 
 #include "utopia_TensorReduce.hpp"
 #include "utopia_Inverse.hpp"
+
+#include "utopia_DotVecVecs.hpp"
+#include "utopia_MatGetCol.hpp"
 
 /** @defgroup 	algebra Algebra
  *  @brief      Expressions to perform specialized algebraic operations. 

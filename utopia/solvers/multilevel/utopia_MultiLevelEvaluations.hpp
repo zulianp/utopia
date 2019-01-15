@@ -13,6 +13,17 @@ namespace utopia
                                 SECOND_ORDER = 2, 
                                 GALERKIN     = 0};
 
+    template <MultiLevelCoherence T>
+    struct is_first_order 
+    {
+      static const bool value = false;
+    };
+
+    template <>
+    struct is_first_order<FIRST_ORDER> {
+      static const bool value = true;
+    };                                
+
 //  --------------------------------------------- Hessians ---------------------------------------------------------------------------
 
     template<typename Matrix, typename Vector, MultiLevelCoherence MC>  
@@ -108,7 +119,7 @@ namespace utopia
         public:
             inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
             {
-                return (dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global)); 
+                return (dot(g_diff, s_global) + 0.5 * dot(H_diff * s_global, s_global)); 
             }
     }; 
 
@@ -121,7 +132,7 @@ namespace utopia
             {
                 typename Traits<Vector>::Scalar energy = 0.0; 
                 fun.value(x, energy); 
-                energy += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                energy += dot(g_diff, s_global) + 0.5 * dot(H_diff * s_global, s_global); 
                 return energy; 
             }
     }; 

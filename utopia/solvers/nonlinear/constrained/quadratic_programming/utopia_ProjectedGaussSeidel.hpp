@@ -1,40 +1,68 @@
 #ifndef UTOPIA_PROJECTED_GAUSS_SEIDEL_HPP
-#define UTOPIA_PROJECTED_GAUSS_SEIDEL_HPP 
+#define UTOPIA_PROJECTED_GAUSS_SEIDEL_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Smoother.hpp"
+#include "utopia_QPSolver.hpp"
 
 #include <cmath>
 
 namespace utopia {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGaussSeidel : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
+	class ProjectedGaussSeidel : public QPSolver<Matrix, Vector>, public Smoother<Matrix, Vector> 
+	{
 	public:
-		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
+
 		DEF_UTOPIA_SCALAR(Matrix)
 
-		virtual bool set_box_constraints(const BoxConstraints & box)
+		ProjectedGaussSeidel()
+		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
 		{
-			constraints_ = box;
-			return true;
+
 		}
 
-		virtual void set_parameters(const Parameters params) override
+		ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
+
+		inline ProjectedGaussSeidel * clone() const override
 		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
+			auto ptr = new ProjectedGaussSeidel(*this);
+			ptr->set_box_constraints(this->get_box_constraints());
+			return ptr;
 		}
+
+
+        void read(Input &in) override
+        {
+            QPSolver<Matrix, Vector>::read(in);
+            Smoother<Matrix, Vector>::read(in);
+
+            in.get("use_line_search", use_line_search_);
+            in.get("use_symmetric_sweep", use_symmetric_sweep_);
+            in.get("n_local_sweeps", n_local_sweeps_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            QPSolver<Matrix, Vector>::print_usage(os);
+            Smoother<Matrix, Vector>::print_usage(os);
+
+            this->print_param_usage(os, "use_line_search", "bool", "Determines if line-search should be used.", "true"); 
+            this->print_param_usage(os, "use_symmetric_sweep", "bool", "Determines if symmetric local should be used.", "true"); 
+            this->print_param_usage(os, "n_local_sweeps", "int", "Number of local sweeps.", "3"); 
+        }
 
 		virtual bool smooth(const Vector &b, Vector &x) override
 		{
 			const Matrix &A = *this->get_operator();
-			
+
 			// init(A);
 			SizeType it = 0;
 			SizeType n_sweeps = this->sweeps();
-			if(constraints_.has_bound()) {
+			if(this->has_bound()) {
 				while(step(A, b, x) && it++ < n_sweeps) {}
 			} else {
 				while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
@@ -43,14 +71,14 @@ namespace utopia {
 		}
 
 		bool apply(const Vector &b, Vector &x) override
-		{ 
+		{
 			if(this->verbose())
 				this->init_solver("utopia ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
 
 			const Matrix &A = *this->get_operator();
 
 			//TODO generic version
-			assert(!constraints_.has_lower_bound() );
+			assert(!this->has_lower_bound() );
 			// init(A);
 
 			x_old = x;
@@ -59,7 +87,7 @@ namespace utopia {
 
 			int iteration = 0;
 			while(!converged) {
-				if(constraints_.has_bound()) {
+				if(this->has_bound()) {
 					step(A, b, x);
 				} else {
 					unconstrained_step(A, b, x);
@@ -69,7 +97,7 @@ namespace utopia {
 					const Scalar diff = norm2(x_old - x);
 
 					if(this->verbose()) {
-					    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff}); 
+					    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
 					}
 
 					converged = this->check_convergence(iteration, 1, 1, diff);
@@ -88,14 +116,14 @@ namespace utopia {
 		void non_linear_jacobi_step(const Matrix &A, const Vector &b, Vector &x)
 		{
 			r = b - A * x;
-			x = min(x + e_mul(d_inv, r), *constraints_.upper_bound());
+			x = min(x + e_mul(d_inv, r), this->get_upper_bound());
 		}
 
 		bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x)
 		{
 			r = b - A * x;
 			c *= 0.;
-			
+
 			Range rr = row_range(A);
 			{
 				ReadAndWrite<Vector> rw_c(c);
@@ -174,9 +202,9 @@ namespace utopia {
 		{
 			r = b - A * x;
 			//localize gap function for correction
-			g = *constraints_.upper_bound() - x;
+			g = this->get_upper_bound() - x;
 			c *= 0.;
-			
+
 			Range rr = row_range(A);
 			{
 				ReadAndWrite<Vector> rw_c(c);
@@ -203,7 +231,7 @@ namespace utopia {
 						//update correction
 						c.set(i, std::min( d_inv.get(i) * s, g.get(i)) );
 					}
-				
+
 					if(use_symmetric_sweep_) {
 						for(auto i = rr.end()-1; i >= rr.begin(); --i) {
 							RowView<const Matrix> row_view(A, i);
@@ -226,7 +254,7 @@ namespace utopia {
 					}
 				}
 			}
-			
+
 			if(use_line_search_) {
 				inactive_set_ *= 0.;
 
@@ -244,7 +272,7 @@ namespace utopia {
 				is_c_ = e_mul(c, inactive_set_);
 
 				Scalar alpha = dot(is_c_, r)/dot(A * is_c_, is_c_);
-				
+
 				if(std::isinf(alpha)) {
 					return true;
 				}
@@ -254,7 +282,7 @@ namespace utopia {
 				}
 
 				assert(alpha > 0);
-				
+
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
 					alpha = 1.;
@@ -288,14 +316,8 @@ namespace utopia {
 		    init(*op);
 		}
 
-		ProjectedGaussSeidel()
-		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
-		{
-		}
 
-		ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
-
-		void set_use_line_search(const bool val) 
+		void use_line_search(const bool val)
 		{
 			use_line_search_ = val;
 		}
@@ -305,27 +327,21 @@ namespace utopia {
 			return n_local_sweeps_;
 		}
 
-		inline void set_n_local_sweeps(const SizeType n_local_sweeps)
+		inline void n_local_sweeps(const SizeType n_local_sweeps)
 		{
 			n_local_sweeps_ = n_local_sweeps;
 		}
 
-		inline void set_use_symmetric_sweep(const bool use_symmetric_sweep)
+		inline void use_symmetric_sweep(const bool use_symmetric_sweep)
 		{
 			use_symmetric_sweep_ = use_symmetric_sweep;
 		}
 
-		inline ProjectedGaussSeidel * clone() const override
-		{
-			return new ProjectedGaussSeidel(*this);
-		}
 
 	private:
 		bool use_line_search_;
 		bool use_symmetric_sweep_;
 		SizeType n_local_sweeps_;
-
-		BoxConstraints constraints_;	
 
 		Vector r, d, g, c, d_inv, x_old, descent_dir;
 		Vector inactive_set_;

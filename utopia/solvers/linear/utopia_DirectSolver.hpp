@@ -1,9 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-10-03
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-14
-*/
 #ifndef UTOPIA_DIRECT_SOLVER_HPP
 #define UTOPIA_DIRECT_SOLVER_HPP 
 
@@ -25,6 +19,16 @@ namespace utopia
             assert(false && "override this method");
             return this->solve(*this->get_operator(), rhs, sol);
         }
+
+        virtual void read(Input &in) override
+        {
+
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+
+        }        
     };
 
 }

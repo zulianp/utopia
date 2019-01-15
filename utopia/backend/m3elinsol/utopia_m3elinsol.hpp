@@ -3,6 +3,7 @@
 
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_Input.hpp"
 
 namespace utopia {
 	class M3ELinSol {
@@ -15,7 +16,7 @@ namespace utopia {
 	};
 
 	template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-	class ASPAMG : public IterativeSolver<Matrix, Vector> {
+	class ASPAMG final : public IterativeSolver<Matrix, Vector> {
 	public:
 		bool apply(const Vector &b, Vector &x) override;
 		
@@ -23,13 +24,16 @@ namespace utopia {
 		 */
 		virtual void update(const std::shared_ptr<const Matrix> &op) override;
 
-		void printSystem(const bool binwrite, const std::string systemfile);
+		void print_system(const bool binwrite, const std::string systemfile);
 
 		ASPAMG * clone() const override
 		{
 			//FIXME
 			return new ASPAMG();
 		}
+
+		void read(Input &in) override;
+
 
 		ASPAMG()
 		{}

@@ -1,15 +1,19 @@
 # Utopia #
 Utopia is a C++ embedded domain specific language designed for parallel non-linear solution strategies and finite element analysis.
 
-# Contributors of utopia
+# Main contributors of utopia
 
 - Dr. Patrick Zulian (Lead developer)
 - Alena Kopanicakova (Linear and non-linear solvers, Fenics and MOOSE interoperability)
-- Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith) 
-- Dr. Teseo Schneider (Visualization tool)
-- Eric Botter (Memory pool)
+- Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith)
 
 Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
+
+# License
+The software is realized with NO WARRANTY and it is licenzed under BSD 3-Clause license (https://opensource.org/licenses/BSD-3-Clause)
+
+# Copyright
+Copyright (c) 2015 Institute of Computational Science - USI Università della Svizzera Italiana, ETH-Z Eidgenössische Technische Hochschule Zürich
 
 # Dependencies
 - PETSc (https://www.mcs.anl.gov/petsc/), must be compiled with MUMPS enabled
@@ -43,7 +47,10 @@ Go to the folder utopia/utopia:
 
 
 ## Compiling utopia_fe
-After compiling utopia
+After compiling utopia.
+
+Define the utopia\_fe path (you can also add it to your .bash_profile)
+export UTOPIA\_FE\_DIR=<The absolute path of where you want to install utopia\_fe>
 
 You need a limesh installation. Define the libmesh install directory
 export LIBMESH\_DIR=<The aboslute path of where you installed libmesh>
@@ -52,7 +59,7 @@ Go to the folder utopia/utopia\_fe:
 
 - mkdir bin
 - cd bin
-- cmake .. -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR -DMOONOLITH\_INSTALL\_PREFIX=$UTOPIA_DIR
+- cmake .. -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_FE_DIR -DMOONOLITH\_INSTALL\_PREFIX=$UTOPIA_FE_DIR
 - make 
 - make install
 
@@ -67,7 +74,7 @@ Setting MOONOLITH\_INSTALL\_PREFIX is optional. But if you want to delete the co
 
 ## Compiling your code with utopia and Makefile
 
-If you are using utopia with 'make' you can use the utopia_config.makefile in the $UTOPIA\_DIR/config folder as shown
+If you are using utopia with 'make' you can use the utopia-config.makefile in the $UTOPIA\_DIR/config folder as shown
 in the example in the file utopia/utopia/example\_usage\_of\_utopia/Makefile
 
 If you are using utopia\_fe with 'make' you can use the utopia_fe_config.makefile in the $UTOPIA\_DIR/config folder as shown
@@ -112,6 +119,18 @@ Follow the steps above (Compiling utopia) to compile utopia itself.
 
 The API documentation of Utopia can be generated through Doxygen by using the command *make docs* from the bin folder after calling cmake ... The API documentation is generated in the *utopia/doc/api* folder in both HTML (see html/index.html) and LateX (see refman.tex) formats.
 
+
+## GPU with Trilinos TPetra
+Following flags need to be set before lauching your code with Trilinos on GPU
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+export CUDA_LAUNCH_BLOCKING=1
+
+## Multinode GPU jobs
+Multinode GPU can be launched by exporting following flag
+export CRAY_CUDA_MPS=1
+
+
 ## CMake users
 
 a FindUtopia.cmake  and a FindUtopiaFE.cmake are available in the utopia/utopia_fe/cmake folder. Define UTOPIA_DIR in your shell environment and the use the cmake find_package.
@@ -120,6 +139,26 @@ a FindUtopia.cmake  and a FindUtopiaFE.cmake are available in the utopia/utopia_
 
 Join us on slack:
 https://join.slack.com/t/ics-utopia/signup
+
+
+## Citing Utopia
+If you use Utopia for your research you can use the following bibtex entry to cite us
+
+```bibtex
+@misc{utopiagit,
+	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau},
+	title = {{U}topia: {A} {C}++ embedded domain specific language for scientific computing. {G}it repository},
+	url = {https://bitbucket.org/zulianp/utopia},
+	howpublished = {https://bitbucket.org/zulianp/utopia},
+	year = {2016}
+}
+```
+
+## Docker containers
+A docker container based on Alpine-Linux can be be found at https://hub.docker.com/r/utopiadev/utopia and downloaded with `docker pull utopiadev/utopia`. For the moment only `utopia-petsc` is supported for this container. 
+You can use `docker image ls` to find the image and run it with `docker run -v <host_file_directory>:<image_file_directory> -it <image_hash>`, for instance  `docker run -v ~Desktop/my_mesh_files:/my_mesh_files -it <image_hash>`
+
+Download docker at https://www.docker.com/products/docker-desktop
 
 
 # More details coming soon!

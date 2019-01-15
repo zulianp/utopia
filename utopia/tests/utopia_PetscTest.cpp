@@ -32,7 +32,7 @@ namespace utopia {
 	            }
 	        }
 
-	        
+
 	       DVectord vec;
 	       std::string path = Utopia::instance().get("data_path");
 	       read(path + "/RHS_10x10x10_hexa_3D", vec, sub_comm, str("my_vec"));
@@ -45,19 +45,23 @@ namespace utopia {
     void petsc_reciprocal() {
         // test also  diag
         DSMatrixd A = values(4, 4, 1.0);
+        auto rr = row_range(A);
+
         {
             Write<DSMatrixd> w(A);
-            A.set(1, 1, 99);
-            A.set(2, 2, 77);
+            
+            if(rr.inside(1)) { A.set(1, 1, 99); }
+            if(rr.inside(2)) { A.set(2, 2, 77); }
         }
 
         DVectord diag_A = diag(A);
         DVectord v_expected = values(4, 1.0);
         {
             Write<DVectord> w(v_expected);
-            v_expected.set(1, 99);
-            v_expected.set(2, 77);
+            if(rr.inside(1)) { v_expected.set(1, 99); }
+            if(rr.inside(2)) { v_expected.set(2, 77); }
         }
+
         utopia_test_assert(approxeq(v_expected, diag_A));
 
         A = diag(diag_A);
@@ -73,11 +77,11 @@ namespace utopia {
             Write<DVectord> w(v_expected_test);
             Range rr=range(v_expected_test);
             for (auto ii=rr.begin(); ii<rr.end(); ++ii){
-                 v_expected_test.set(ii,2*ii);
+                 v_expected_test.set(ii, 2 * ii);
         }
-           
+
         }
-    
+
         DVectord p = power(v_expected_test, 3.0);
     }
 
@@ -110,7 +114,7 @@ namespace utopia {
             utopia_test_assert(approxeq(810., actual));
         }
 
-        ///////////////////////////////////   
+        ///////////////////////////////////
 
         {
             const int m = mpi_world_size() * 3;
@@ -163,14 +167,10 @@ namespace utopia {
 
         //The use of Read/Write/ReadAndWrite locks is important for universal compatibility with all (parallel) backends
         { //scoped write lock
-            Write<DVectord> writing(x);
-            //usual way
-            x.set(xb, -1);
-            x.set(xb + 9, -1);
-
+            Write<DVectord> writing(x, GLOBAL_INSERT);
             //the petsc way
-            std::vector <PetscScalar> values{10., 10., 10};
-            std::vector <PetscInt> index{xb + 2, xb + 3, xb + 4};
+            std::vector<PetscScalar> values{-1., 10., 10., 10, -1.};
+            std::vector<PetscInt> index{xb, xb + 2, xb + 3, xb + 4, xb + 9};
             x.set(index, values);
         }
 
@@ -289,8 +289,8 @@ namespace utopia {
 
     void petsc_mv()
     {
-        const PetscInt n = 10;
-        const PetscInt m = 20;
+        const SizeType n = 10;
+        const SizeType m = 20;
 
         //creates a dense matrix
         DVectord v   = values(n, 1, 1);
@@ -299,8 +299,11 @@ namespace utopia {
 
         DVectord expected = values(m, 1, 1);
         {
+            auto r = range(expected);
             Write<DVectord> w(expected);
-            for (size_t i = n; i < m; i++) {
+            SizeType e_begin = std::max(n, r.begin());
+            SizeType e_end   = std::min(m, r.end());
+            for (SizeType i = e_begin; i < e_end; i++) {
                 expected.set(i, 0);
             }
         }
@@ -406,7 +409,7 @@ namespace utopia {
         const PetscInt m = offset + 10;
         DSMatrixd m1 = identity(m, n);
         DSMatrixd m2 = m1.range(
-            1, offset + 6, 
+            1, offset + 6,
             0, offset + 5);
 
 
@@ -462,14 +465,7 @@ namespace utopia {
 
         utopia_test_assert(approxeq(x, y));
 
-        DSMatrixd m = sparse(3, 3, 2);
-        {
-            Write<DSMatrixd> w(m);
-            m.set(0, 0, 1);
-            m.set(0, 1, 2);
-            m.set(1, 1, 3);
-            m.set(2, 2, 4);
-        }
+        DSMatrixd m = identity(3, 3);
 
         DSMatrixd w;
         // Write matrix to disk
@@ -596,14 +592,14 @@ namespace utopia {
 
             Write<DSMatrixd> w(m);
             for(auto i = r.begin(); i < r.end(); ++i) {
-                if(i == 0 || i == n - 1) {
-                    m.set(1, 1, 1.0);
+                if(i == n - 1 || i == 0) {
+                    m.set(i, i, 1.);
                     continue;
-                } 
+                }
 
-                m.set(i, i, 2.);
-                m.set(i, i-1, -1.);
-                m.set(i, i+1, -1.);
+                m.set(i, i,  2.);
+                m.set(i, i - 1, -1.);
+                m.set(i, i + 1, -1.);
             }
         }
 
@@ -721,7 +717,7 @@ namespace utopia {
         DSMatrixd m = identity(n, n);
         DVectord v = values(n, 2.);
         auto expr = abs(transpose(0.1 * (m * m) - m) * (m) * v);
-        
+
         DVectord res = expr;
         DVectord expected = values(n, 0.9 * 2.);
         utopia_test_assert(approxeq(expected, res));
@@ -824,7 +820,7 @@ namespace utopia {
             DMatrixd expected = identity(3, 3);
 
             utopia_test_assert( approxeq(actual, expected) );
-        }   
+        }
     }
 
     void petsc_hardcoded_cg()
@@ -837,7 +833,7 @@ namespace utopia {
         DVectord b  = values(n, 1.0);
         DSMatrixd A = identity(n, n);
         DSMatrixd M = diag(diag(A));
-        
+
         /////////////////////
         DVectord r = zeros(n), d = zeros(n), q = zeros(n), s = zeros(n);
         double delta_new = 0, delta_0 = 0, delta_old = 0, alpha = 0, beta = 0;
@@ -899,17 +895,17 @@ namespace utopia {
 
     void petsc_is_nan_or_inf()
     {
-        const int n     = 10; 
+        const int n     = 10;
         if(mpi_world_size() > n) return;
 
         DVectord denom  = zeros(n);
         DVectord nom    = values(n, 1.0);
 
-        DVectord sol    = nom/denom; 
-        
+        DVectord sol    = nom/denom;
+
         {
             Write<DVectord> w(sol);
-            sol.set(2, 1); 
+            if(range(sol).inside(2)) { sol.set(2, 1); }
         }
 
         //FIXME
@@ -991,7 +987,7 @@ namespace utopia {
 
         DVectord actual_min = min(one, two);
         DVectord actual_max = max(one, two);
-        
+
         utopia_test_assert(approxeq(one, actual_min));
         utopia_test_assert(approxeq(two, actual_max));
 
@@ -1013,9 +1009,11 @@ namespace utopia {
         auto r = range(v);
 
         {
-            Write<DVectord> w_v(v);
+            Write<DVectord> w_v(v, GLOBAL_INSERT);
             for(auto i = r.begin(); i != r.end(); ++i) {
-                v.set(i, i);
+                std::vector<PetscInt> index(1); index[0] = i;
+                std::vector<PetscScalar> values(1); values[0] = static_cast<double>(i);
+                v.set(index, values);
             }
         }
 
@@ -1033,13 +1031,7 @@ namespace utopia {
     void petsc_block_mat()
     {
         const SizeType n = mpi_world_size() * 2;
-        DSMatrixd mat = sparse(n, n, 3);
-        {
-            Write<DSMatrixd> w_m(mat);
-            mat.set(0, 0, 1.);
-            mat.set(1, 1, 1.);
-        }
-
+        DSMatrixd mat = identity(n, n);
         mat.implementation().convert_to_mat_baij(2);
     }
 
@@ -1063,13 +1055,164 @@ namespace utopia {
         DVectord x = local_values(n, 1.);
         DSMatrixd A = local_identity(n, n);
         DVectord  b = local_values(n, 2.);
-       
+
         DVectord res = b - A * x;
         // disp(res);
         double s = sum(res);
         utopia_test_assert(approxeq(n * mpi_world_size(), s));
     }
 
+    void petsc_transform()
+    {
+        DSMatrixd P;
+
+        const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+        bool ok = read(folder + "/I_2", P); utopia_test_assert(ok);
+
+
+        double sum_P = sum(P);
+        P = transpose(P);
+     
+        each_apply(P, [](const double value) -> double {
+            return value * 2.;
+        });
+
+        double sum_P_2 = sum(P);
+
+        utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
+    }        
+
+    void petsc_dot_test()
+    {
+        auto n = 10; 
+
+        DVectord x1 = values(n, 1.);
+        DVectord x2 = values(n, 2.);
+        DVectord x3 = values(n, 3.);
+        DVectord x4 = values(n, 4.);
+
+        std::vector<std::shared_ptr<DVectord> > vectors_x; 
+        std::vector<PetscScalar> result_x; 
+
+        vectors_x.push_back(make_ref(x2)); 
+        vectors_x.push_back(make_ref(x3)); 
+        vectors_x.push_back(make_ref(x4)); 
+
+        dots(x1, vectors_x, result_x); 
+
+        utopia_test_assert(approxeq(result_x[0], 2.*n));
+        utopia_test_assert(approxeq(result_x[1], 3.*n));
+        utopia_test_assert(approxeq(result_x[2], 4.*n));
+
+        PetscScalar r1 = dot(x1, x2); 
+        PetscScalar r2 = dot(x1, x3); 
+
+        PetscScalar result_sum1 = r1 + r2; 
+        PetscScalar result_sum2 = dot(x1, x2) + dot(x1, x3); 
+        utopia_test_assert(approxeq(result_sum1, result_sum2));
+
+        PetscScalar result_div1 = r1/r2; 
+        PetscScalar result_div2 = dot(x1, x2)/dot(x1, x3);  
+        utopia_test_assert(approxeq(result_div1, result_div2));
+
+        PetscScalar result_mul1 = r1*r2; 
+        PetscScalar result_multv2 = dot(x1, x2)*dot(x1, x3);         
+        utopia_test_assert(approxeq(result_mul1, result_multv2));
+
+        PetscScalar result_min1 = r1-r2; 
+        PetscScalar result_min2 = dot(x1, x2)-dot(x1, x3);         
+        utopia_test_assert(approxeq(result_min1, result_min2));        
+
+
+        DSMatrixd B = diag(DVectord(values(n,1.0)));
+        PetscScalar pred = -1.0 * dot(x1, x2) - 0.5 * dot(B * x3, x4);
+
+        PetscScalar pred1 = dot(x1, x2); 
+        PetscScalar pred2 = dot(B * x3, x4);
+        PetscScalar pred_sum = -1.0 * pred1 - 0.5 * pred2; 
+        utopia_test_assert(approxeq(pred, pred_sum));  
+    }
+
+
+    void petsc_norm_test()
+    {
+        auto n = 10; 
+
+        DVectord x1 = values(n, 1.);
+        DVectord x2 = values(n, 2.);
+        DVectord x3 = values(n, 3.);
+
+        PetscScalar x1_norm_original = norm2(x1);
+        PetscScalar x2_norm_original = norm2(x2);
+        PetscScalar x3_norm_original = norm2(x3);
+
+        PetscScalar r1, r2; 
+        PetscScalar r11, r12, r13; 
+
+        norms2(x1, x2, r1, r2); 
+
+        utopia_test_assert(approxeq(x1_norm_original, r1));  
+        utopia_test_assert(approxeq(x2_norm_original, r2));  
+
+        norms2(x1, x2, x3, r11, r12, r13); 
+
+        utopia_test_assert(approxeq(x1_norm_original, r11));  
+        utopia_test_assert(approxeq(x2_norm_original, r12));  
+        utopia_test_assert(approxeq(x3_norm_original, r13));          
+
+    }
+
+
+
+
+
+    void petsc_get_col_test()
+    {
+        auto n = 10; 
+        auto m = 5; 
+        auto col_id = 2; 
+
+        DMatrixd M = values(n, m, 0.0); 
+        {
+            Write<DMatrixd> w_m(M);
+            auto r = row_range(M);
+            auto c = col_range(M);
+
+            for(auto i = r.begin(); i != r.end(); ++i) 
+            {
+                for(auto j = c.begin(); j != c.end(); ++j) 
+                {
+                    M.set(i, j, j);
+                }
+            }
+        }
+
+        DVectord col_result = zeros(n); 
+        mat_get_col(M, col_result, col_id); 
+        
+        DVectord col_expected = local_values(local_size(col_result).get(0), col_id); 
+        utopia_test_assert(approxeq(col_result, col_expected));  
+
+    }
+
+    void petsc_memcheck()
+    {
+        UTOPIA_PETSC_MEMCHECK_BEGIN();
+        UTOPIA_PETSC_MEMCHECK_END();
+    }
+
+
+    void petsc_dense_mat_mult_test()
+    {
+        if(mpi_world_size()>5)
+            return; 
+
+        DMatrixd A = values(5, 5, 2.0); 
+        DMatrixd B = values(5, 5, 10.0); 
+        DMatrixd C = A*B; 
+
+        utopia_test_assert(approxeq(norm_infty(C), 500));  
+    }
 
 
     #endif //WITH_PETSC;
@@ -1078,12 +1221,15 @@ namespace utopia {
 #ifdef WITH_PETSC
 
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
+        UTOPIA_RUN_TEST(petsc_memcheck);
         UTOPIA_RUN_TEST(petsc_line_search);
         UTOPIA_RUN_TEST(petsc_residual);
         UTOPIA_RUN_TEST(petsc_block_mat);
         UTOPIA_RUN_TEST(petsc_ghosted);
-        UTOPIA_RUN_TEST(petc_optional);
-        UTOPIA_RUN_TEST(petsc_view);                
+
+        // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
+        
+        UTOPIA_RUN_TEST(petsc_view);
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
         UTOPIA_RUN_TEST(petsc_hardcoded_cg);
         UTOPIA_RUN_TEST(petsc_reciprocal);
@@ -1100,7 +1246,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_vec_tests);
         UTOPIA_RUN_TEST(petsc_read_and_write);
         UTOPIA_RUN_TEST(petsc_to_blas);
-        UTOPIA_RUN_TEST(petsc_is_nan_or_inf); 
+        UTOPIA_RUN_TEST(petsc_is_nan_or_inf);
         UTOPIA_RUN_TEST(petsc_mat_mul_add);
         UTOPIA_RUN_TEST(petsc_min);
         UTOPIA_RUN_TEST(petsc_max);
@@ -1112,19 +1258,25 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_tensor_reduction);
         UTOPIA_RUN_TEST(petsc_precond);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
-    
+        UTOPIA_RUN_TEST(petsc_dot_test); 
+        UTOPIA_RUN_TEST(petsc_transform);
+        UTOPIA_RUN_TEST(petsc_get_col_test); 
+        UTOPIA_RUN_TEST(petsc_dense_mat_mult_test); 
+        UTOPIA_RUN_TEST(petsc_norm_test); 
+
+
         //serial tests
 #ifdef PETSC_HAVE_MUMPS
         UTOPIA_RUN_TEST(petsc_inverse);
 #endif //PETSC_HAVE_MUMPS
 
         // petsc_sparse_matrix_accessors();  // TODO:: here something doesnt work in parallel !
-        
+
         // // petsc_local_entities(); //FIXME does not work
         //  petsc_conversion();
         //  maria();
         //  //local_diag_block();              // TODO:: utopia_test_assert fails in parallel
-        
+
         UTOPIA_UNIT_TEST_END("PetscTest");
         #endif // WITH_PETSC
     }

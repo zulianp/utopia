@@ -1,0 +1,31 @@
+<transfer>
+	<!-- <type>approx-l2-projection</type> -->
+	<!-- <type>interpolation</type> -->
+	<type>l2-projection</type>
+	<biorth-basis>0</biorth-basis>
+<!-- 	<function>-x</function> -->
+
+	<!-- <force-shell>true</force-shell> -->
+	<assemble-mass-mat>1</assemble-mass-mat>
+	<function-type>constant</function-type>
+	<function>1.</function>
+
+	<!-- MASTER -->
+	<master>
+		<mesh>
+			<type>file</type>
+			<path>../data/transfer/solid_coarse.e</path>			
+		</mesh>
+		<space></space>
+	</master>
+
+	<!-- SLAVE -->
+	<slave>
+		<mesh>
+			<type>file</type>
+			<path>../data/transfer/fluid.e</path>
+		</mesh>
+		<space></space>
+	</slave>
+	
+</transfer>

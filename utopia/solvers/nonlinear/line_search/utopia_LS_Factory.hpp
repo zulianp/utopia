@@ -1,10 +1,3 @@
-// /*
-// * @Author: alenakopanicakova
-// * @Date:   2016-06-10
-// * @Last Modified by:   alenakopanicakova
-// * @Last Modified time: 2016-10-11
-// */
-
 #ifndef UTOPIA_LS_STRATEGY_FACTORY_HPP
 #define UTOPIA_LS_STRATEGY_FACTORY_HPP
 
@@ -14,7 +7,6 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "utopia_Parameters.hpp"
 
 namespace utopia {
 
@@ -27,14 +19,13 @@ namespace utopia {
 	/**
 	 * @brief      Front-end to create ls strategy objects.
 	 *
-	 * @tparam     Matrix  
 	 * @tparam     Vector  
 	 */
-	template<typename Matrix, typename Vector>
+	template<typename Vector>
 	class LSStrategyFactory
 	{
 		public: 
-			typedef std::shared_ptr< LSStrategy<Matrix, Vector> > StrategyPtr;
+			typedef std::shared_ptr< LSStrategy<Vector> > StrategyPtr;
 			std::map<std::string, StrategyPtr> strategies_;
 
 			inline static StrategyPtr new_line_search_strategy(const LSStrategyTag &tag)
@@ -43,7 +34,7 @@ namespace utopia {
 				if(it == instance().strategies_.end()) 
 				{
 					std::cout<<"Strategy not available, solving with Backtracking.  \n";  
-					return std::make_shared<utopia::Backtracking<Matrix, Vector> >(); 
+					return std::make_shared<utopia::Backtracking<Vector> >(); 
 				} 
 				else 
 				{
@@ -62,16 +53,16 @@ namespace utopia {
 
 			void init()
 			{
-					strategies_[SIMPLE_BACKTRACKING_TAG] 		= std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >(); 
-					strategies_[BACKTRACKING_TAG] 				= std::make_shared<utopia::Backtracking<Matrix, Vector> >(); 
+					strategies_[SIMPLE_BACKTRACKING_TAG] 		= std::make_shared<utopia::SimpleBacktracking<Vector> >(); 
+					strategies_[BACKTRACKING_TAG] 				= std::make_shared<utopia::Backtracking<Vector> >(); 
 			}
 	};
 
 
-	template<class Matrix, class Vector>
-	typename LSStrategyFactory<Matrix, Vector>::StrategyPtr line_search_strategy(const LSStrategyTag &tag = AUTO_TAG)
+	template<class Vector>
+	typename LSStrategyFactory<Vector>::StrategyPtr line_search_strategy(const LSStrategyTag &tag = AUTO_TAG)
 	{
-	 	return LSStrategyFactory<Matrix, Vector>::new_line_search_strategy(tag);
+	 	return LSStrategyFactory<Vector>::new_line_search_strategy(tag);
 	}
 
 
@@ -93,18 +84,17 @@ namespace utopia {
 	 *     		alpha_min() = 1e-7; \n
 	 */
 	template<typename Matrix, typename Vector>
-	const Parameters line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const Parameters params = Parameters())
+	const SolutionStatus & line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const LSStrategyTag &tag, Input & params)
 	{
-		auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
+		// auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
+		auto lin_solver = std::make_shared<ConjugateGradient<Matrix, Vector> > ();
 		Newton<Matrix, Vector> ls_solver(lin_solver);
-		
-		auto strategy = line_search_strategy<Matrix, Vector>(params.line_search_alg()); 
-		strategy->set_parameters(params);
+		auto strategy = line_search_strategy<Vector>(tag); 
 			
         ls_solver.set_line_search_strategy(strategy);
-        ls_solver.set_parameters(params);
+        ls_solver.read(params);
         ls_solver.solve(fun, x);  
-        return ls_solver.parameters(); 
+        return ls_solver.solution_status(); 
 	}
 }
 

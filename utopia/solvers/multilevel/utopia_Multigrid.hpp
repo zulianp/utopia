@@ -9,9 +9,12 @@
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
-#include <ctime>
+
 
 #include "utopia_Recorder.hpp"
+
+#include <ctime>
+#include <cassert>
 
 namespace utopia
 {
@@ -22,8 +25,8 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Multigrid : public LinearMultiLevel<Matrix, Vector>,
-                      public IterativeSolver<Matrix, Vector>
+    class Multigrid final:  public LinearMultiLevel<Matrix, Vector>,
+                            public IterativeSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -33,7 +36,7 @@ namespace utopia
         typedef utopia::Smoother<Matrix, Vector>            Smoother;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
-        typedef std::shared_ptr<Smoother> SmootherPtr;
+        typedef std::shared_ptr<Smoother>                   SmootherPtr;
 
         typedef struct
         {
@@ -70,32 +73,53 @@ namespace utopia
          * @param[in]  coarse_solver  The direct solver for coarse level.
          */
         Multigrid(const std::shared_ptr<Smoother> &smoother,
-                  const std::shared_ptr<Solver>   &coarse_solver,
-                  const Parameters params = Parameters())
+                  const std::shared_ptr<Solver>   &coarse_solver)
         : smoother_cloneable_(smoother),
           coarse_solver_(coarse_solver),
           perform_galerkin_assembly_(true),
           use_line_search_(false),
           block_size_(1)
         {
-            set_parameters(params);
             this->must_generate_masks(true);
         }
 
-        virtual ~Multigrid(){}
+        ~Multigrid(){}
 
-        void set_parameters(const Parameters params) override
+        void read(Input &in) override
         {
-            IterativeSolver::set_parameters(params);
-            LinearMultiLevel<Matrix, Vector>::set_parameters(params);
+          LinearMultiLevel<Matrix, Vector>::read(in); 
+          IterativeSolver::read(in); 
 
-            // this should not be necessary
-            // smoother_cloneable_->set_parameters(params);
+          in.get("perform_galerkin_assembly", perform_galerkin_assembly_);
+          in.get("use_line_search", use_line_search_);
+          in.get("block_size", block_size_);
+
+          if(smoother_cloneable_) {
+              in.get("smoother", *smoother_cloneable_);
+          }
+          if(coarse_solver_) {
+              in.get("coarse_solver", *coarse_solver_);
+          }          
+
         }
+
+        void print_usage(std::ostream &os) const override
+        {
+          LinearMultiLevel<Matrix, Vector>::print_usage(os); 
+          IterativeSolver::print_usage(os); 
+
+          this->print_param_usage(os, "perform_galerkin_assembly", "bool", "Flag turning on/off galerkin assembly.", "true"); 
+          this->print_param_usage(os, "use_line_search", "bool", "Flag turning on/off line-search after coarse grid correction.", "false"); 
+          this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1"); 
+          this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-"); 
+          this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-"); 
+        }
+
+
 
         /*! @brief if overriden the subclass has to also call this one first
          */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        void update(const std::shared_ptr<const Matrix> &op) override
         {
             IterativeSolver::update(op);
 
@@ -103,6 +127,14 @@ namespace utopia
                 this->galerkin_assembly(op);
             }
 
+            update();
+        }
+
+        /*! @brief if no galerkin assembly is used but instead set_linear_operators is used.
+                   One can call this update instead of the other one.
+         */
+        void update()
+        {
             smoothers_.resize(this->n_levels());
             smoothers_[0] = nullptr;
 
@@ -122,7 +154,7 @@ namespace utopia
          * @param      x   The initial guess.
          *
          */
-        virtual bool apply(const Vector &rhs, Vector &x) override
+        bool apply(const Vector &rhs, Vector &x) override
         {
 
             // UTOPIA_RECORD_SCOPE_BEGIN("apply");
@@ -218,7 +250,7 @@ namespace utopia
          * @param[in] l The level.
          *
          */
-        virtual bool standard_cycle(const SizeType &l)
+        bool standard_cycle(const SizeType &l)
         {
             // UTOPIA_RECORD_SCOPE_BEGIN("standard_cycle(" + std::to_string(l) + ")");
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
@@ -228,7 +260,7 @@ namespace utopia
             Vector &c_I = memory.c_I[l];
             Vector &r_R = memory.r_R[l];
 
-            if(empty(c)) {
+            if(empty(c) || size(c) != size(r)) {
                 c = local_zeros(local_size(r).get(0));
             } else {
                 c.set(0.);
@@ -256,7 +288,7 @@ namespace utopia
             for(SizeType k = 0; k < this->mg_type(); k++) {
                 // presmoothing
                 smoothing(l, r, c, this->pre_smoothing_steps());
-                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
+                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
 
 
                 r_R = r - level(l).A() * c;
@@ -266,13 +298,17 @@ namespace utopia
                 // residual transfer
                 this->transfer(l-1).restrict(r_R, memory.r[l-1]);
 
+                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
+
                 //NEW
-                if(this->must_generate_masks())
+                if(this->must_generate_masks()) {
                   this->apply_mask(l-1, memory.r[l-1]);
+                  // UTOPIA_RECORD_VALUE("this->apply_mask(l-1, memory.r[l-1]);", memory.r[l-1]);
+                }
 
                 assert(!empty(memory.r[l-1]));
 
-                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
+                
 
 
                 standard_cycle(l-1);
@@ -310,7 +346,7 @@ namespace utopia
                 const Scalar new_err = norm2(r - level(l).A() * c);
                 // assert(new_err < err)
                 if(new_err > err) {
-                  m_utopia_error("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
+                  m_utopia_error_once("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
                 }
 #endif
             }
@@ -330,7 +366,7 @@ namespace utopia
          * @param      x   The current iterate.
          *
          */
-        virtual bool full_cycle(const SizeType &l)
+        bool full_cycle(const SizeType &l)
         {
             Vector &r   = memory.r[l];
             // Vector &c   = memory.c[l];
@@ -441,15 +477,25 @@ namespace utopia
             perform_galerkin_assembly_ = val;
         }
 
-        void set_use_line_search(const bool val)
+        void use_line_search(const bool val)
         {
             use_line_search_ = val;
         }
 
-        inline void block_size(const int size)
+        bool use_line_search() const 
+        {
+            return use_line_search_; 
+        }        
+
+        inline void block_size(const SizeType size)
         {
             block_size_ = size;
         }
+
+        inline SizeType block_size() const 
+        {
+          return block_size_; 
+        }        
 
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;
@@ -459,7 +505,7 @@ namespace utopia
     private:
         bool perform_galerkin_assembly_;
         bool use_line_search_;
-        int block_size_;
+        SizeType block_size_;
 
     };
 

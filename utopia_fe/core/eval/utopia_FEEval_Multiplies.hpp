@@ -72,25 +72,26 @@ namespace utopia {
 	    } 
 	};
 
-	template<class Left, class Right, class Op, class Traits, int Backend, int IsQuadData>
-	class MultipliesDelegate<
-				Number<Left>,
-				Reduce<Right, Op>,
-				Traits,
-				Backend,
-				IsQuadData
-			> {
-	public:
-	    inline static auto apply(
-	    	const Number<Left> &left,
-	    	const Reduce<Right, Op> &right,
-	    	AssemblyContext<Backend> &ctx) -> decltype( 
-	    	    		FEEval<Reduce<Right, Op>, Traits, Backend, IsQuadData>::apply(right, ctx)
-	    	    	)
-	    {
-	    	return static_cast<Left>(left) * FEEval<Reduce<Right, Op>, Traits, Backend, IsQuadData>::apply(right, ctx);
-	    } 
-	};
+	// template<class Left, class Right, class Op, class Traits, int Backend, int IsQuadData>
+	// class MultipliesDelegate<
+	// 			Number<Left>,
+	// 			Reduce<Right, Op>,
+	// 			Traits,
+	// 			Backend,
+	// 			IsQuadData
+	// 		> {
+	// public:
+	//     inline static auto apply(
+	//     	const Number<Left> &left,
+	//     	const Reduce<Right, Op> &right,
+	//     	AssemblyContext<Backend> &ctx) -> decltype( 
+	//     	    		FEEval<Reduce<Right, Op>, Traits, Backend, IsQuadData>::apply(right, ctx)
+	//     	    	)
+	//     {
+	//     	return static_cast<Left>(left) * FEEval<Reduce<Right, Op>, Traits, Backend, IsQuadData>::apply(right, ctx);
+	//     } 
+	// };
+
 
 	template<class Left, class Right, class Traits, int Backend, int IsQuadData>
 	class MultipliesDelegate<

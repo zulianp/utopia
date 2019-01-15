@@ -23,29 +23,41 @@ namespace utopia {
 	template<class Vector>
 	class ConstantForcingFunction : public ForcingFunction<Vector> {
 	public:
-		bool eval(const Vector &x, Vector &result) override {
-			result = value;
+		bool eval(const Vector &, Vector &result) override {
+			result = value_;
 			return true;
 		}
 
 		template<class LinearForm>
 		void init(const LinearForm &linear_form)
 		{
-			utopia::assemble(linear_form, value);
+			utopia::assemble(linear_form, value_);
 		}
 
 		void set(const Vector &value)
 		{
-			this->value = value;
+			this->value_ = value;
+		}
+
+		Vector &value()
+		{
+			return value_;
+		}
+
+		inline const Vector &value() const
+		{
+			return value_;
 		}
 
 	private:
-		Vector value;
+		Vector value_;
 	};
 
 	template<class Vector>
 	class CompositeForcingFunction : public ForcingFunction<Vector> {
 	public:
+		virtual ~CompositeForcingFunction() {}
+		
 		bool eval(const Vector &x, Vector &result) override {
 			result = x;
 			result.set(0.);
@@ -106,12 +118,20 @@ namespace utopia {
 			}
 
 			if(!force_->eval(x, force_vec_)) {
+				assert(false);
 				return false;
 			}
 
 			result -= force_vec_;
 			return true;
 		}
+
+		bool is_linear() const override { return material_->is_linear(); }
+
+		void clear() override {
+			material_->clear();
+		}
+
 
 	private:
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;

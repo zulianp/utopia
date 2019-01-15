@@ -4,13 +4,13 @@
 #include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
-	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class BiCGStab {
-	public:
-		BiCGStab() {
-			static_assert(Backend < HOMEMADE, "BiCGStab not implemented for this backend");
-		}	
-	};
+	// template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
+	// class BiCGStab {
+	// public:
+	// 	BiCGStab() {
+	// 		static_assert(Backend < HOMEMADE, "BiCGStab not implemented for this backend");
+	// 	}	
+	// };
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
 	class GMRES {
@@ -36,6 +36,14 @@ namespace utopia {
 		}	
 	};
 
+	template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
+	class GaussSeidel {
+	public:
+		GaussSeidel() {
+			static_assert(Backend < HOMEMADE, "GaussSeidel not implemented for this backend");
+		}
+	};
+	
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Vector>::Backend>
 	class Factorization {

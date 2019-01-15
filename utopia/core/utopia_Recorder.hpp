@@ -33,18 +33,24 @@ namespace utopia {
 		void scope_begin(const std::string &name)
 		{
 			++n_nested_scopes_;
-			os_  << std::setfill(' ');
-			os_ << std::setw(n_nested_scopes_*10) << " " <<  "%----------------------------------------------------------------\n";
-			os_ << std::setw(n_nested_scopes_*10) << " " <<  "%begin: " << name << std::endl;
+
+			if(mpi_world_rank() == 0) {
+				os_  << std::setfill(' ');
+				os_ << std::setw(n_nested_scopes_*10) << " " <<  "%----------------------------------------------------------------\n";
+				os_ << std::setw(n_nested_scopes_*10) << " " <<  "%begin: " << name << std::endl;
+			}
 		}
 
 
 		void scope_end(const std::string &name)
 		{
-			os_ << std::setfill(' ');
-			os_ << std::setw(n_nested_scopes_*10) << " " << "%end: " << name << std::endl;
-			os_ << std::setw(n_nested_scopes_*10) << " " << "%----------------------------------------------------------------\n";
-			--n_nested_scopes_;
+			if(mpi_world_rank() == 0) {
+				os_ << std::setfill(' ');
+				os_ << std::setw(n_nested_scopes_*10) << " " << "%end: " << name << std::endl;
+				os_ << std::setw(n_nested_scopes_*10) << " " << "%----------------------------------------------------------------\n";
+			}
+				--n_nested_scopes_;
+
 		}
 
 		template<class T>
@@ -53,17 +59,42 @@ namespace utopia {
 			typedef utopia::Wrapper<T, 1> Vector;
 			DEF_UTOPIA_SCALAR(Vector);
 
-			os_ << std::setfill(' ');
-			os_ << std::endl;
-			os_ << std::setw(n_nested_scopes_*10) << " " << "% " << name << "\n";
-			os_ << std::setw(n_nested_scopes_*10) << " " << "v_" << expr_num_++ << " = [";
+			mpi_world_barrier();
 
-			each_read(v, [this](const SizeType i, const Scalar val) {
-				os_ << val << " ";
-			});
+			if(mpi_world_rank() == 0) {
+				os_ << std::setfill(' ');
+				os_ << std::endl;
+				os_ << std::setw(n_nested_scopes_*10) << " " << "% " << name << "\n";
+				os_ << std::setw(n_nested_scopes_*10) << " " << "v_" << expr_num_++ << " = [";
+			}
 
-			os_ << "]';";
-			os_ << std::endl;
+			mpi_world_barrier();
+
+			for(int i = 0; i < mpi_world_size(); ++i) {
+				mpi_world_barrier();
+
+				if(i == mpi_world_rank()) {
+					os_ << std::flush;
+
+					each_read(v, [this](const SizeType i, const Scalar val) {
+						os_ << val << " ";
+					});
+
+					os_ << std::flush;
+				}
+			}
+
+			mpi_world_barrier();
+
+			os_ << std::flush;
+			if(mpi_world_rank() == 0) {
+				os_ << "]';";
+				os_ << std::endl;
+			}
+
+			os_ << std::flush;
+
+			mpi_world_barrier();
 		}
 
 		static Recorder &instance()

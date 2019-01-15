@@ -118,19 +118,22 @@ namespace utopia {
 		auto box = make_upper_bound_constraints(make_ref(upper_bound));
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
 
-		// auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
-		auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
-        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
-        qp_solver->atol(1e-18);
-        qp_solver->stol(1e-18);
-        qp_solver->max_it(300);
+		auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
+		// auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
+        auto qp_solver = std::make_shared<TaoQPSolver<DSMatrixd, DVectord> >(lsolver);
+
+        // lsolver->atol(1e-16);
+
+        qp_solver->atol(1e-15);
+        qp_solver->stol(1e-15);
+        qp_solver->max_it(10000);
 
         TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver);
         tr_solver.set_box_constraints(box);
         tr_solver.verbose(false);
-        tr_solver.atol(1e-17);
-        tr_solver.stol(1e-20);
-        tr_solver.rtol(1e-20);
+        tr_solver.atol(1e-15);
+        tr_solver.stol(1e-15);
+        tr_solver.rtol(1e-15);
         tr_solver.solve(fun, x);
 
 		x *= 1./scale_factor;
@@ -138,14 +141,14 @@ namespace utopia {
 		DVectord xssn = zeros(n);
 		SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> ssnewton(std::make_shared<Factorization<DSMatrixd, DVectord>>());
 		ssnewton.set_box_constraints(box);
-		ssnewton.stol(1e-18);
-		ssnewton.atol(1e-18);
-		ssnewton.rtol(1e-18);
+		ssnewton.stol(1e-17);
+		ssnewton.atol(1e-17);
+		ssnewton.rtol(1e-17);
 		ssnewton.solve(m, rhs, xssn);
 		xssn *= 1./scale_factor;
 
 		double n_diff = norm2(xssn - x);
-		utopia_test_assert(n_diff < 1e-10);
+		utopia_test_assert(n_diff < 1e-7);
 
 	}
 

@@ -6,9 +6,16 @@
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
 #include <MatrixMarket_Tpetra.hpp>
 
+#include <iterator>
+
+
+//FIXME
+// - crs matrix has problematic behaviour when adding to off-procs entries once assembled in finite element assembly routines
+
+
 namespace utopia {
 
-	void TpetraMatrix::set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	void TpetraMatrix::set(const GO &row, const GO &col, const Scalar &value)
 	{
 	    m_utopia_status_once(
 	    	"> TpetraMatrix::set does what is supposed to do with respect to the edsl. "
@@ -20,7 +27,7 @@ namespace utopia {
 	    }
 	}
 
-	void TpetraMatrix::add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	void TpetraMatrix::add(const GO &row, const GO &col, const Scalar &value)
 	{
 		m_utopia_status_once(
 			"> TpetraMatrix::add does what is supposed to do with respect to the edsl. "
@@ -30,6 +37,37 @@ namespace utopia {
 	    if(implementation().sumIntoGlobalValues(row, 1, &value, &col, false) != 1) {
 	        implementation().insertGlobalValues(row, 1, &value, &col);
 	    }
+	}
+
+
+
+
+	//FIXME make faster version by storing view?
+	TpetraMatrix::Scalar TpetraMatrix::get(const GO &row, const GO &col) const
+	{
+		Teuchos::ArrayView<const GO> cols;
+		Teuchos::ArrayView<const Scalar> values;
+
+		assert(implementation().isLocallyIndexed());
+
+		auto local_col = col - implementation().getDomainMap()->getMinGlobalIndex();
+
+		auto rr = row_range();
+		implementation().getLocalRowView(row - rr.begin(), cols, values);
+
+		auto it = std::lower_bound(std::begin(cols), std::end(cols), local_col);
+
+		if(it == std::end(cols)) {
+			return 0.;
+		}
+
+		assert(it != std::end(cols));
+
+		std::size_t index = std::distance(std::begin(cols), it);
+
+		assert(cols[index] == local_col);
+
+		return values[index];
 	}
 
 	void TpetraMatrix::mult(const TpetraVector &vec, TpetraVector &result) const
@@ -43,6 +81,25 @@ namespace utopia {
 		}
 		try {
 			mat_->apply(vec.implementation(), result.implementation());
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			assert(false);
+		}
+	}
+
+	void TpetraMatrix::mult_t(const TpetraVector &vec, TpetraVector &result) const
+	{
+		assert(mat_->hasTransposeApply());
+
+		if(result.is_null()) {
+			result.init(mat_->getDomainMap());
+			// result.owner_ = true;
+		} else if(!result.implementation().getMap()->isSameAs(*mat_->getDomainMap())) {
+			result.init(mat_->getDomainMap());
+			// result.owner_ = true;
+		}
+		try {
+			mat_->apply(vec.implementation(), result.implementation(), Teuchos::TRANS);
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -66,14 +123,35 @@ namespace utopia {
 		//IMPROVEME
 		result.mat_.reset();
 
-		if(result.is_null()) {
-			if(transpose_this) {
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
-			} else {
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
-			}
-			result.owner_ = true;
+		assert(!transpose_right);
+
+		assert(transpose_this  || (this->local_size().get(1) == right.local_size().get(0) && this->size().get(1) == right.size().get(0) ) );
+		assert(!transpose_this || (this->local_size().get(0) == right.local_size().get(0) && this->size().get(0) == right.size().get(0) ) );
+
+		// if(result.is_null()) {
+
+		// auto col_map = Teuchos::rcp(new map_type(right.size().get(1), 0, communicator(), Tpetra::LocallyReplicated));
+
+		if(transpose_this) {
+
+			assert(!right.implementation().getDomainMap().is_null());
+			result.mat_ = Teuchos::rcp(
+				new crs_mat_type(
+					implementation().getDomainMap(),
+					// col_map,
+					0, Tpetra::DynamicProfile));
+
+		} else {
+
+			result.mat_ = Teuchos::rcp(
+				new crs_mat_type(
+					implementation().getRowMap(),
+					// col_map,
+					0, Tpetra::DynamicProfile));
 		}
+
+		result.owner_ = true;
+		// }
 
 		try {
 				//C = op(A)*op(B),
@@ -82,8 +160,37 @@ namespace utopia {
 					transpose_this,
 					right.implementation(),
 					transpose_right,
-					result.implementation()
+					result.implementation(),
+					false
 				);
+
+
+			auto dm = this->implementation().getDomainMap();
+			auto rm = this->implementation().getRangeMap();
+
+			result.init_ = std::make_shared<InitStructs>();
+			result.init_->domain_map = right.implementation().getDomainMap();
+			result.init_->range_map  = (transpose_this ? dm : rm);
+
+			result.implementation().fillComplete(
+				result.init_->domain_map,
+				result.init_->range_map
+			);
+
+			// std::cout << ("---------------------------") << std::endl;
+			// std::cout << transpose_this << std::endl;
+			// disp(this->size());
+			// disp(right.size());
+			// disp(result.size());
+			// std::cout << ("---------------------------") << std::endl;
+			// disp(this->local_size());
+			// disp(right.local_size());
+			// disp(result.local_size());
+			// std::cout << ("---------------------------") << std::endl;
+
+			assert(transpose_this  || (this->local_size().get(0) == result.local_size().get(0) && this->size().get(0) == result.size().get(0) ) );
+			assert(!transpose_this || (this->local_size().get(1) == result.local_size().get(0) && this->size().get(1) == result.size().get(0) ) );
+			assert(transpose_right || (right.local_size().get(1) == result.local_size().get(1) && right.size().get(1) == result.size().get(1) ) );
 
 
 		} catch(const std::exception &ex) {
@@ -96,9 +203,11 @@ namespace utopia {
 	{
 		//FIXME this does not work as it should
 		try {
-			Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
-			mat.mat_ = transposer.createTranspose();
-			mat.owner_ = true;
+			Tpetra::RowMatrixTransposer<Scalar, LO, GO, NT> transposer(mat_);
+
+			auto temp = transposer.createTranspose();
+
+
 
 
 			//None of this creat a valid matrix for getGlobalRowView
@@ -107,8 +216,18 @@ namespace utopia {
 			// mat.mat_->replaceColMap(col_map);
 
 			//2)
-			// mat.implementation().resumeFill();
-			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
+			// temp->resumeFill();
+			// temp->fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
+
+			// assert(this->local_size().get(0) == mat.local_size().get(1));
+			// assert(this->local_size().get(1) == mat.local_size().get(0));
+
+			// assert(this->size().get(0) == mat.size().get(1));
+			// assert(this->size().get(1) == mat.size().get(0));
+
+			mat.mat_ = temp;
+			mat.owner_ = true;
+			assert(is_valid(true));
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -118,7 +237,7 @@ namespace utopia {
 	void TpetraMatrix::axpy(const Scalar alpha, const TpetraMatrix &x)
 	{
 		try {
-			Tpetra::MatrixMatrix::add(
+			mat_ = Tpetra::MatrixMatrix::add(
 				alpha,
 				false,
 				x.implementation(),
@@ -126,6 +245,8 @@ namespace utopia {
 				false,
 				implementation()
 			);
+
+			owner_ = true;
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -136,11 +257,19 @@ namespace utopia {
     {
     	try {
 	    	if(init_) {
+
+	    		assert(!init_->domain_map.is_null());
+	    		assert(!init_->range_map.is_null());
+
 	    		implementation().fillComplete(init_->domain_map, init_->range_map);
-	    		init_.reset();
+	    		// init_.reset();
 	    	} else {
-	        	implementation().fillComplete();
+	    		// assert(false);
+	        	implementation().fillComplete(implementation().getDomainMap(), implementation().getRangeMap());
 	        }
+
+	        // implementation().fillComplete();
+
         } catch(const std::exception &ex) {
         	std::cout << ex.what() << std::endl;
         	assert(false);
@@ -159,11 +288,12 @@ namespace utopia {
 		//a column operator structure as petsc
 
 		rcp_map_type row_map;
+		const int index_base = 0;
 
 		if(rows_local == INVALID_INDEX) {
-			row_map = Teuchos::rcp(new map_type(rows_global, 0, comm));
+			row_map.reset(new map_type(rows_global, index_base, comm));
 		} else {
-			row_map = Teuchos::rcp(new map_type(rows_global, rows_local, 0, comm));
+			row_map.reset(new map_type(rows_global, rows_local, index_base, comm));
 		}
 
 		if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
@@ -172,19 +302,59 @@ namespace utopia {
 			Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
 		}
 
-	    auto col_map = Teuchos::rcp(new map_type(cols_global, 0, comm, Tpetra::LocallyReplicated));
-	    mat_ = Teuchos::rcp(new crs_matrix_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+	    // auto col_map = Teuchos::rcp(new map_type(cols_global, index_base, comm, Tpetra::LocallyReplicated));
+	    // mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+	    mat_.reset(new crs_mat_type(row_map, nnz_x_row, Tpetra::DynamicProfile));
 	    owner_ = true;
 
 	    init_ = std::make_shared<InitStructs>();
 	    if(cols_local == INVALID_INDEX) {
-	    	init_->domain_map = Teuchos::rcp(new map_type(cols_global, 0, comm));
+	    	init_->domain_map.reset(new map_type(cols_global, index_base, comm));
 	    } else {
-	    	init_->domain_map = Teuchos::rcp(new map_type(cols_global, cols_local, 0, comm));
+	    	init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
 	    }
 
 	    init_->range_map = row_map;
 	}
+
+  void TpetraMatrix::crs_init(const rcp_comm_type &comm,
+            std::size_t rows_local,
+            std::size_t cols_local,
+            Tpetra::global_size_t rows_global,
+            Tpetra::global_size_t cols_global,
+            const Teuchos::ArrayRCP<size_t> &rowPtr,
+            const Teuchos::ArrayRCP<LO> &cols,
+            const Teuchos::ArrayRCP<Scalar> &values)
+  {
+      rcp_map_type row_map;
+      rcp_map_type col_map;
+      const int index_base = 0;
+      if (rows_local == INVALID_INDEX) {
+          row_map.reset(new map_type(rows_global, index_base, comm));
+          assert(cols_local == INVALID_INDEX);
+          col_map.reset(new map_type(cols_global, index_base, comm));
+          //~ Kokkos::View<LO*> colInds("Column Map", cols_global);
+          //~ Kokkos::parallel_for(cols_global, KOKKOS_LAMBDA(size_t i) { colInds(i) = i; });
+          //~ col_map.reset(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), Kokkos::Compat::getConstArrayView(colInds), index_base, comm));
+      } else {
+          // see for a distributed example https://github.com/trilinos/Trilinos/blob/master/packages/tpetra/core/example/Lesson07-Kokkos-Fill/04_tpetra.cpp
+          assert(false && "Sparse distributed matrix assembly with CRS structures is not implemented yet.");
+      }
+
+      mat_.reset(new crs_mat_type(row_map, col_map, rowPtr, cols, values));
+      owner_ = true;
+
+      init_ = std::make_shared<InitStructs>();
+      if(cols_local == INVALID_INDEX) {
+        init_->domain_map.reset(new map_type(cols_global, index_base, comm));
+      } else {
+        init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
+      }
+      init_->range_map = row_map;
+
+      finalize();
+  }
+
 
 	void TpetraMatrix::crs_identity(const rcp_comm_type &comm,
 	              std::size_t rows_local,
@@ -199,11 +369,14 @@ namespace utopia {
 
 		Range r = row_range();
 
+		auto cols = init_->domain_map->getGlobalNumElements();
+
 		for(auto i = r.begin(); i < r.end(); ++i) {
-			if(i >= cols_global) break;
-
-			set(i, i, factor);
-
+			if(i < cols) {
+				set(i, i, factor);
+			} else {
+				break;
+			}
 		}
 
 		write_unlock();
@@ -211,9 +384,17 @@ namespace utopia {
 
 	void TpetraMatrix::get_diag(TpetraVector &d) const
 	{
-		if(d.is_null()) {
+		const bool is_row_min = this->size().get(0) <= this->size().get(1);
+		GO n = (is_row_min)? this->size().get(0) : this->size().get(1);
+
+		if(d.is_null() || d.size().get(0) != n) {
 			m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
-			d.init(implementation().getRowMap());
+
+			if(is_row_min) {
+				d.init(implementation().getRowMap());
+			} else {
+				d.init(implementation().getDomainMap());
+			}
 		}
 
 		implementation().getLocalDiagCopy(d.implementation());
@@ -221,9 +402,6 @@ namespace utopia {
 
 	void TpetraMatrix::init_diag(const TpetraVector &d)
 	{
-		//FIXME maybe there is a better and more efficent way to do this
-		//also without const_cast
-
 		auto ls = d.local_size().get(0);
 		auto gs = d.size().get(0);
 
@@ -236,19 +414,22 @@ namespace utopia {
 
 
 		auto r = d.range();
+		auto data = d.implementation().getData();
 
-		const_cast<TpetraVector &>(d).read_lock();
+		assert(!data.is_null());
+
 		write_lock();
 
+		LO index = 0;
+
 		for(auto i = r.begin(); i < r.end(); ++i) {
-			set(i, i, d.get(i));
+			set(i, i, data[index++]);
 		}
 
-		const_cast<TpetraVector &>(d).read_unlock();
 		write_unlock();
 	}
 
-	bool TpetraMatrix::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
+	bool TpetraMatrix::read(const Teuchos::RCP< const Teuchos::Comm<int> > &comm, const std::string &path)
 	{
 		std::ifstream is;
 		is.open(path.c_str());
@@ -259,7 +440,7 @@ namespace utopia {
 
 		try {
 			//https://people.sc.fsu.edu/~jburkardt/data/mm/mm.html
-			mat_ = Tpetra::MatrixMarket::Reader<crs_matrix_type>::readSparse(is, comm);
+			mat_ = Tpetra::MatrixMarket::Reader<crs_mat_type>::readSparse(is, comm);
 		} catch(std::exception &ex) {
 			is.close();
 			std::cout << ex.what() << std::endl;
@@ -275,7 +456,7 @@ namespace utopia {
 		if(mat_.is_null()) return false;
 
 		try {
-			Tpetra::MatrixMarket::Writer<crs_matrix_type>::writeSparseFile(path, mat_, "mat", "", false);
+			Tpetra::MatrixMarket::Writer<crs_mat_type>::writeSparseFile(path, mat_, "mat", "", false);
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			return false;
@@ -283,4 +464,44 @@ namespace utopia {
 
 		return true;
 	}
+
+	bool TpetraMatrix::is_valid(const bool verbose) const
+	{
+		if(mat_.is_null()) {
+			if(verbose) { std::cerr << "is_null" << std::endl; }
+			return false;
+		}
+
+		auto comm = communicator();
+
+		if(comm->getSize() == 1) {
+
+			if(local_size() != size()) {
+
+				if(verbose) {
+					std::cerr << "local_size() != size()" << std::endl;
+					std::cerr << local_size() << " != " << size() << std::endl;
+					std::cerr << "this indicates inconsistent domain_map with respect to the col_map" << std::endl;
+				}
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	TpetraMatrix::Scalar TpetraMatrix::norm2() const
+	{
+		return implementation().getFrobeniusNorm();
+	}
+
+	TpetraMatrix::Scalar TpetraMatrix::sum() const
+	{
+		TpetraVector vec, row_sum;
+		vec.values(this->communicator(), this->local_size().get(1), this->size().get(1), 1.);
+		this->mult(vec, row_sum);
+		return row_sum.sum();
+	}
+
 }

@@ -3,7 +3,10 @@
 
 #include "utopia_MultiLevelBase.hpp"
 #include "utopia_Recorder.hpp"
+#include "utopia_MatrixTransfer.hpp"
+#include "utopia_MultiLevelMask.hpp"
 
+#include <iostream>
 
 
 
@@ -25,13 +28,29 @@ namespace utopia
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::Level<Matrix, Vector> Level;
 		typedef utopia::Transfer<Matrix, Vector> Transfer;
+		typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
 	public:
 
-		LinearMultiLevel(const Parameters params = Parameters())
-		: MultiLevelBase<Matrix, Vector>(params),
-		  fix_semidefinite_operators_(false),
-		  must_generate_masks_(false)
+		using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
+
+		LinearMultiLevel(): MultiLevelBase<Matrix, Vector>()
 		{ }
+
+		virtual void read(Input &in) override
+        {
+        	MultiLevelBase<Matrix, Vector>::read(in); 
+
+        	bool flg_masks; 
+            in.get("must_generate_masks", flg_masks);
+            mask_.active(flg_masks);
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+        	MultiLevelBase<Matrix, Vector>::print_usage(os); 
+            this->print_param_usage(os, "must_generate_masks", "bool", "Flag deciding if masks should be generated.", "-"); 
+        }
+
 
 		virtual ~LinearMultiLevel(){}
 
@@ -45,9 +64,16 @@ namespace utopia
 		 */
 		virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators)
 		{
+			if(this->n_levels() <= 0){
+				this->n_levels(interpolation_operators.size() + 1); 
+			}
+			else if(this->n_levels() != interpolation_operators.size() + 1){
+				utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n"); 
+			}
+
 			this->transfers_.clear();
 			for(auto I = interpolation_operators.begin(); I != interpolation_operators.end() ; ++I )
-				this->transfers_.push_back(Transfer(*I));
+				this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I));
 
 			return true;
 		}
@@ -55,12 +81,12 @@ namespace utopia
 
 		bool must_generate_masks()
 		{
-			return must_generate_masks_;
+			return mask_.active();
 		}
 
 		void must_generate_masks(const bool must_generate_masks)
 		{
-			must_generate_masks_ = must_generate_masks;
+			mask_.active(must_generate_masks);
 		}
 
 		void add_level(Level &&level)
@@ -101,24 +127,16 @@ namespace utopia
 		 */
 		inline bool set_linear_operators(const std::vector<std::shared_ptr<const Matrix>> &A)
 		{
+			if(this->n_levels() <= 0 ){
+				this->n_levels(A.size()); 
+			}
+			else if(this->n_levels() != A.size()){
+				utopia_error("utopia::MultilevelBase:: number of levels and linear operators do not match ... \n"); 
+			}
+
 			levels_.clear();
 			levels_.insert(levels_.begin(), A.begin(), A.end());
 			return true;
-		}
-
-		inline void set_fix_semidefinite_operators(const bool val)
-		{
-			fix_semidefinite_operators_ = val;
-		}
-
-		inline Transfer &transfer(const SizeType level)
-		{
-			return this->transfers_[level];
-		}
-
-		inline const Transfer &transfer(const SizeType level) const
-		{
-			return this->transfers_[level];
 		}
 
 		inline const Level &level(const SizeType l) const
@@ -128,6 +146,10 @@ namespace utopia
 
 		virtual void describe(std::ostream &os = std::cout) const override
 		{
+			if(levels_.empty()) {
+				return;
+			}
+
 			SizeType i = 0;
 			for(const auto &l : levels_) {
 				const auto &A = l.A();
@@ -137,21 +159,15 @@ namespace utopia
 			}
 		}
 
-		virtual void update_transfer(const SizeType level, Transfer &&t)
-		{
-			this->transfers_[level] = std::move(t);
-		}
-
-		virtual void update_transfer(const SizeType level, const Transfer &t)
+		virtual void update_transfer(const SizeType level, const std::shared_ptr<Transfer> &t)
 		{
 			this->transfers_[level] = t;
 		}
 
+
 	protected:
 		std::vector<Level>                  levels_;      /*!< vector of level operators     */
-		std::vector<Vector>					masks_;
-		bool fix_semidefinite_operators_;
-		bool must_generate_masks_;
+		MultiLevelMask<Matrix, Vector> mask_;
 
 		/**
 		 * @brief
@@ -175,17 +191,16 @@ namespace utopia
 
 			auto L = this->n_levels();
 
-			if(must_generate_masks_) {
-				this->generate_masks(*A);
-			}
+			mask_.generate_masks(*A, this->transfers_);
+
 
 			for(SizeType i = 1; i < L; i++)
 			{
 				// J_{i-1} = R * J_{i} * I
 				std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();
-				this->transfers_[t_s - i].restrict(levels_[i - 1].A(), *J_h);
+				this->transfer(t_s - i).restrict(levels_[i - 1].A(), *J_h);
 
-				if(fix_semidefinite_operators_) {
+				if(this->fix_semidefinite_operators()) {
 					fix_semidefinite_operator(*J_h);
 				}
 
@@ -198,55 +213,9 @@ namespace utopia
 
 		virtual void apply_mask(const SizeType l, Vector &v) const
 		{
-			if(masks_.empty()) return;
-
-			v = e_mul(masks_[l], v);
+			mask_.apply(l, v);
 		}
 
-	private:
-		static void generate_mask_from_matrix(const Matrix &A, Vector &mask, const Scalar on_value, const Scalar off_value)
-		{
-			const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
-
-			auto ls = local_size(A);
-			mask = local_values(ls.get(0), off_value);
-
-			{
-				Write<Vector> w_(mask);
-
-				each_read(A, [&](const SizeType i, const SizeType j, const Scalar value) {
-					if(i == j) return;
-
-					if(std::abs(value) > off_diag_tol) {
-						mask.set(i, on_value);
-					}
-				});
-			}
-		}
-
-		virtual void generate_masks(const Matrix &A)
-		{
-			// const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
-
-			const auto L = this->n_levels();
-			masks_.resize(L);
-			auto &mask = masks_[L - 1];
-
-			generate_mask_from_matrix(A, mask, 0., 1.);
-			// UTOPIA_RECORD_VALUE("r_mask", mask);
-
-			for(SizeType l = L - 1; l > 0; --l) {
-				auto &mask_l = masks_[l - 1];
-				this->transfer(l-1).boolean_restrict_or(masks_[l], mask_l);
-
-				// UTOPIA_RECORD_VALUE("r_mask", mask_l);
-			}
-
-			for(auto &m : masks_) {
-				m = local_values(local_size(m).get(0), 1.) - m;
-				// UTOPIA_RECORD_VALUE("mask", m);
-			}
-		}
 	};
 
 }

@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "utopia_libmesh.hpp"
 #include "par_moonolith.hpp"
 #include "utopia.hpp"
 
@@ -28,12 +29,21 @@
 #include "utopia_NonLinearElasticityTest.hpp"
 #include "utopia_FEEvalTest.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
-#include "utopia_ContactSolver.hpp"
+#include "utopia_ContactApp.hpp"
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_EikonalEquationTest.hpp"
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
 #include "utopia_VolumeInterpolationTest.hpp"
 #include "utopia_WearSimulation.hpp"
+#include "utopia_TransferApp.hpp"
+#include "utopia_FractureFlowApp.hpp"
+#include "utopia_RMTRApp.hpp"
+#include "utopia_EnergyAssemblyTest.hpp"
+#include "utopia_Intrepid2Test.hpp"
+#include "utopia_IntersectTest.hpp"
+#include "utopia_FETest.hpp"
+
+#include "utopia_Grid2MeshTransferApp.hpp"
 
 #include <functional>
 
@@ -44,8 +54,11 @@ using namespace std;
 using namespace libMesh;
 
 
-int main(const int argc, char *argv[])
+int main(int argc, char *argv[])
 {
+	//For debugginh with ddt
+	MPI_Init(&argc, &argv);
+	PETSC_COMM_WORLD = MPI_COMM_WORLD;
 
 	Utopia::Init(argc, argv);
 	MOONOLITH_PROFILING_BEGIN();
@@ -74,12 +87,17 @@ int main(const int argc, char *argv[])
 	    runners["test_msh_reader"] = test_msh_reader;
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
-	    runners["contact_steady"] = run_steady_contact;
+
 	    // runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    runners["interp"] = run_volume_interpolation_test;
+	    runners["energy"] = run_energy_test;
+	    runners["intrepid2"] = run_intrepid2_test;
+	    runners["isect"] = run_intersect_test;
+	    runners["tests"] = run_all_tests;
+	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    // runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
@@ -90,6 +108,11 @@ int main(const int argc, char *argv[])
 
 		for(int i = 1; i < argc; ++i) {
 			const int ip1 = i+1;
+
+			if(argv[i] == std::string("-verbose")) {
+				Utopia::instance().set("verbose", "true");
+				continue;
+			}
 
 			if(argv[i] == std::string("-r")) {
 				if(ip1 < argc) {
@@ -130,6 +153,36 @@ int main(const int argc, char *argv[])
 				//passing wear xml path to
 				WearSimulation ws;
 				ws.run(init, argv[ip1]);
+			} else if(argv[i] == TransferApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				TransferApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == FractureFlowApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				FractureFlowApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == RMTRApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				RMTRApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == ContactApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				ContactApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == Grid2MeshTransferApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				Grid2MeshTransferApp app;
+				app.init(init);
+				app.run(argv[ip1]);
 			}
 
 		}
@@ -138,3 +191,5 @@ int main(const int argc, char *argv[])
 	MOONOLITH_PROFILING_END();
     return Utopia::Finalize();
 }
+
+

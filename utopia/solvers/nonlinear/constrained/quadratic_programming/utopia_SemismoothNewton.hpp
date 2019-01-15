@@ -2,12 +2,8 @@
 #define UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP
 
 
-#include "utopia_Function.hpp"
-#include "utopia_NonLinearSolver.hpp"
-#include "utopia_BoxConstraints.hpp"
-
-#include "utopia_Wrapper.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_QPSolver.hpp"
 
 #include <vector>
 #include <memory>
@@ -15,25 +11,24 @@
 namespace utopia {
 
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class SemismoothNewton : public IterativeSolver<Matrix, Vector> {
+	class SemismoothNewton : public QPSolver<Matrix, Vector> 
+	{
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::LinearSolver<Matrix, Vector> Solver;
-		typedef utopia::BoxConstraints<Vector>      BoxConstraints;
 
 	public:
 
-		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver,
-						 const Parameters params                         = Parameters() ) :
+		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver) :
 		linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
 		{
-			set_parameters(params);
+			
 		}
 
 		SemismoothNewton * clone() const override
 		{
 			auto ptr = new SemismoothNewton(std::shared_ptr <Solver>(linear_solver_->clone()));
-			ptr->constraints_ = constraints_;
+			ptr->set_box_constraints(this->get_box_constraints());
 			return ptr;
 		}
 
@@ -58,12 +53,29 @@ namespace utopia {
             linear_solver_ = ls;
         }
 
+        void read(Input &in) override
+        {
+            QPSolver<Matrix, Vector>::read(in);
+            in.get("active_set_tol", active_set_tol_);
+            in.get("linear_solve_zero_initial_guess", linear_solve_zero_initial_guess_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            QPSolver<Matrix, Vector>::print_usage(os);
+            this->print_param_usage(os, "active_set_tol", "double", "Numerical tolerance.", "1e-15"); 
+            this->print_param_usage(os, "linear_solve_zero_initial_guess", "bool", "Flag to reset initial guess for each linear solve.", "true"); 
+        }
+
+
+
 
 		bool solve(const Matrix &A, const Vector &b, Vector &x)  override
 		{
-			if( constraints_.has_upper_bound() && constraints_.has_lower_bound()) {
+			if( this->has_upper_bound() && this->has_lower_bound()) {
 				box_solve(A, b, x);
-			} else if((constraints_.has_upper_bound() && !constraints_.has_lower_bound()) || (!constraints_.has_upper_bound() && constraints_.has_lower_bound())) {
+			} else if((this->has_upper_bound() && !this->has_lower_bound()) || (!this->has_upper_bound() && this->has_lower_bound())) {
 				single_bound_solve(A, b, x);
 			} else {
 				std::cout<<"if you do not have constraints, use something else..... \n";
@@ -72,22 +84,6 @@ namespace utopia {
 			return true;
 		}
 
-		virtual void set_parameters(const Parameters params) override
-		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
-		}
-
-		virtual bool set_box_constraints(const BoxConstraints & box)
-		{
-			constraints_ = box;
-			return true;
-		}
-
-		virtual bool  get_box_constraints(BoxConstraints & box)
-		{
-			box = constraints_;
-			return true;
-		}
 
 		inline void set_linear_solve_zero_initial_guess(const bool val)
 		{
@@ -103,8 +99,8 @@ namespace utopia {
 		bool check_constraints(const Vector &x, const bool verbose) const
 		{
 			bool constrain_violated = false;
-			if(constraints_.has_upper_bound()) {
-				const auto &upper_bound = *constraints_.upper_bound();
+			if(this->has_upper_bound()) {
+				const auto &upper_bound = this->get_upper_bound();
 				Read<Vector> r_u(upper_bound);
 				each_read(x, [&upper_bound, &constrain_violated, verbose](const SizeType i, const Scalar value) {
 					const Scalar upbo = upper_bound.get(i);
@@ -117,8 +113,8 @@ namespace utopia {
 				});
 			}
 
-			if(constraints_.has_lower_bound()) {
-				const auto &lower_bound = *constraints_.lower_bound();
+			if(this->has_lower_bound()) {
+				const auto &lower_bound = this->get_lower_bound();
 				Read<Vector> r_u(lower_bound);
 				each_read(x, [&lower_bound, &constrain_violated, verbose](const SizeType i, const Scalar value) {
 					const Scalar lobo = lower_bound.get(i);
@@ -138,7 +134,7 @@ namespace utopia {
 		{
 			bool is_non_negative = true;
 			each_read(lambda, [&is_non_negative, verbose](const SizeType i, const Scalar value) {
-				if(value < -1e-8) {
+				if(value < -1e-5) {
 					is_non_negative = false;
 					if(verbose) {
 						std::cerr << "[Warning] negative value at: " << i << " " << value << std::endl;
@@ -179,13 +175,13 @@ namespace utopia {
 		// We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
 		bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
 		{
-			bool is_upper_bound = constraints_.has_upper_bound();
+			bool is_upper_bound = this->has_upper_bound();
 
 			Vector g;
 			if(is_upper_bound) {
-				g = *constraints_.upper_bound();
+				g = this->get_upper_bound();
 			} else {
-				g = *constraints_.lower_bound();
+				g = this->get_lower_bound();
 			}
 
 			const SizeType local_N = local_size(x_new).get(0);
@@ -347,8 +343,8 @@ namespace utopia {
 			SizeType it = 0;
 			bool converged = false;
 
-			const Vector &lb = *constraints_.lower_bound();
-			const Vector &ub = *constraints_.upper_bound();
+			const Vector &lb = this->get_lower_bound();
+			const Vector &ub = this->get_upper_bound();
 
 			Vector lambda_p = local_zeros(n);
 			Vector lambda_m = local_zeros(n);
@@ -472,7 +468,6 @@ namespace utopia {
 		}
 
 		std::shared_ptr <Solver>        linear_solver_;
-		BoxConstraints                  constraints_;
 		Scalar active_set_tol_;
 		bool linear_solve_zero_initial_guess_;
 	};

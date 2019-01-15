@@ -8,15 +8,8 @@
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>
+#include <cmath>
 #include <TpetraExt_MatrixMatrix_def.hpp>
-
-//TODO find the configuration for having this
-// #include "TpetraExt_TripleMatrixMultiply_def.hpp"
-
-
-//useful links:
-//https://trilinos.org/docs/dev/packages/tpetra/doc/html/namespaceTpetra_1_1TripleMatrixMultiply.html
-//see MultiplyRAP
 
 namespace utopia {
     class TrilinosBackend : public ScalarBackend<TpetraVector::Scalar> {
@@ -35,11 +28,24 @@ namespace utopia {
         {
             left = std::forward<LorRValueMatrix>(right);
         }
-        
+
         template<class LorRValueVector>
         static void assign(TpetraVector &left, LorRValueVector &&right)
         {
             left = std::forward<LorRValueVector>(right);
+        }
+
+
+        template<class T>
+        auto raw_type(T &t) -> decltype(t.implementation_ptr())
+        {
+            return t.implementation_ptr();
+        }
+
+        template<class T>
+        auto raw_type(const T &t) -> decltype(t.implementation_ptr())
+        {
+            return t.implementation_ptr();
         }
 
         static Range range(const TpetraVector &v)
@@ -50,6 +56,11 @@ namespace utopia {
         static Range row_range(const TpetraMatrix &m)
         {
             return m.row_range();
+        }
+
+        static Range col_range(const TpetraMatrix &m)
+        {
+            return m.col_range();
         }
 
         // static Range col_range(const TpetraMatrix &m)
@@ -124,6 +135,11 @@ namespace utopia {
             v.values(default_communicator(), INVALID_INDEX, size.get(0), 0.);
         }
 
+        static void build(TpetraMatrix &m, const Size &size, const LocalZeros &)
+        {
+            assert(false && "implement me");
+        }
+
         static void build(TpetraSparseMatrix &m, const Size &size, const LocalNNZ<std::size_t> &nnz)
         {
             m.crs_init(default_communicator(),
@@ -134,7 +150,6 @@ namespace utopia {
               nnz.nnz());
         }
 
-
         static void build(TpetraSparseMatrix &m, const Size &size, const LocalIdentity &)
         {
             m.crs_identity(default_communicator(),
@@ -142,6 +157,16 @@ namespace utopia {
               size.get(1),
               Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
               Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()
+            );
+        }
+
+        static void build(TpetraSparseMatrix &m, const Size &size, const Identity &)
+        {
+            m.crs_identity(default_communicator(),
+              INVALID_INDEX,
+              INVALID_INDEX,
+              size.get(0),
+              size.get(1)
             );
         }
 
@@ -155,10 +180,50 @@ namespace utopia {
               nnz.nnz());
         }
 
+        static void build(TpetraSparseMatrix &m, const Size &size, const CRS<Teuchos::ArrayRCP<size_t>, Teuchos::ArrayRCP<Matrix::LO>, Teuchos::ArrayRCP<Scalar>> &crs) {
+            m.crs_init(default_communicator(),
+              INVALID_INDEX,
+              INVALID_INDEX,
+              size.get(0),
+              size.get(1),
+              crs.rowPtr(),
+              crs.cols(),
+              crs.values());
+        }
+
         inline static void build(TpetraSparseMatrix &, const Size &, const Zeros &)
         {
             m_utopia_error("> Build zeros is using build values");
             assert(false);
+        }
+
+        template<class Integer>
+        void build_ghosts(
+            const TpetraVector::GO &local_size,
+            const TpetraVector::GO &global_size,
+            const std::vector<Integer> &index,
+            TpetraVector &vec)
+        {
+            // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
+            // vec.values(default_communicator(), local_size, global_size, 0.);
+
+            std::vector<TpetraVector::GO> tpetra_index;
+
+            tpetra_index.insert(tpetra_index.end(), index.begin(), index.end());
+            vec.ghosted(default_communicator(), local_size, global_size, tpetra_index);
+        }
+
+
+        void build_ghosts(
+            const TpetraVector::GO &local_size,
+            const TpetraVector::GO &global_size,
+            const std::vector<TpetraVector::GO> &index,
+            TpetraVector &vec)
+        {
+            // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
+            // vec.values(default_communicator(), local_size, global_size, 0.);
+
+            vec.ghosted(default_communicator(), local_size, global_size, index);
         }
 
         inline static void build_from_structure(TpetraSparseMatrix &lhs, const TpetraSparseMatrix &rhs)
@@ -167,27 +232,51 @@ namespace utopia {
             lhs = rhs;
         }
 
-        static Scalar get(const TpetraVector &v, const TpetraVector::global_ordinal_type &index)
+        template<class Expr>
+        static void build_blocks(TpetraMatrix &left, const Blocks<Expr> &blocks)
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+
+        template<class Expr>
+        static void build_blocks(TpetraVector &left, const Blocks<Expr> &blocks)
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+        inline static Scalar get(const TpetraVector &v, const TpetraVector::GO &index)
         {
             return v.get(index);
         }
 
-        inline static void set(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
+        template<typename Integer>
+       	inline static void get(const TpetraVector &v, const std::vector<Integer> &index, std::vector<Scalar> &values)
+       	{
+       		v.get(index, values);
+       	}
+
+        inline static void set(TpetraVector &v, const TpetraVector::GO &index, Scalar value)
         {
             v.set(index, value);
         }
 
-        inline static void add(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
+        inline static void add(TpetraVector &v, const TpetraVector::GO &index, Scalar value)
         {
             v.add(index, value);
         }
 
-        inline static void set(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        inline static void set(TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col, const Scalar &value)
         {
             m.set(row, col, value);
         }
 
-        inline static void add(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        static Scalar get(const TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col)
+        {
+            return m.get(row, col);
+        }
+
+        inline static void add(TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col, const Scalar &value)
         {
             m.add(row, col, value);
         }
@@ -196,6 +285,36 @@ namespace utopia {
         inline static void set(Tensor &t, const Scalar value)
         {
             t.set(value);
+        }
+
+        template<typename Integer>
+        inline static void add(
+            TpetraVector &v,
+            const std::vector<Integer> &index,
+            const std::vector<Scalar> &values)
+        {
+            v.add_vector(index, values);
+        }
+
+
+        template<typename Integer>
+        inline static void add_matrix(
+            TpetraMatrix &m,
+            const std::vector<Integer> &rows,
+            const std::vector<Integer> &cols,
+            const std::vector<Scalar> &values)
+        {
+            m.add_matrix(rows, cols, values);
+        }
+
+        template<typename Integer>
+       inline static void set_matrix(
+            TpetraMatrix &m,
+            const std::vector<Integer> &rows,
+            const std::vector<Integer> &cols,
+            const std::vector<Scalar> &values)
+        {
+            m.set_matrix(rows, cols, values);
         }
 
         //[host/device locks]
@@ -209,22 +328,22 @@ namespace utopia {
             const_cast<Tensor &>(t).read_unlock();
         }
 
-        static void write_lock(TpetraVector &vec)
+        static void write_lock(TpetraVector &vec, WriteMode mode)
         {
-            vec.write_lock();
+            vec.write_lock(mode);
         }
 
-        static void write_unlock(TpetraVector &vec)
+        static void write_unlock(TpetraVector &vec, WriteMode mode)
         {
-            vec.write_unlock();
+            vec.write_unlock(mode);
         }
 
-        static void write_lock(TpetraMatrix &mat)
+        static void write_lock(TpetraMatrix &mat, WriteMode mode)
         {
             mat.write_lock();
         }
 
-        static void write_unlock(TpetraMatrix &mat)
+        static void write_unlock(TpetraMatrix &mat, WriteMode mode)
         {
             mat.write_unlock();
         }
@@ -256,8 +375,63 @@ namespace utopia {
             return v.norm_infty();
         }
 
+
+        // reductions
+        // static Scalar norm2(const TpetraMatrix &m);
+        inline static Scalar norm2(const TpetraMatrix &m)
+        {
+            return m.norm2();
+        }
+
+        inline static Scalar norm1(const TpetraMatrix &v)
+        {
+            assert(false && "IMPLEMENT ME");
+            return 0.;
+            // return v.norm1();
+        }
+
+        static bool is_nan_or_inf(const TpetraMatrix &m)
+        {
+            assert(false && "IMPLEMENT ME");
+            return true;
+        }
+
+        inline static Scalar norm_infty(const TpetraMatrix &v)
+        {
+            assert(false && "IMPLEMENT ME");
+            return 0.;
+            // return v.norm_infty();
+        }
+
+        Scalar reduce(const TpetraMatrix &mat, const Plus &) {
+            return mat.sum();
+        }
+
         Scalar reduce(const TpetraVector &vec, const Plus &) {
             return vec.sum();
+        }
+
+
+        Scalar reduce(const TpetraVector &vec, const Max &op) {
+            return vec.max();
+        }
+
+
+        Scalar reduce(const TpetraVector &vec, const Min &op) {
+            return vec.min();
+        }
+
+        void apply_tensor_reduce(TpetraVector &result, const TpetraMatrix &mat, const Plus &, const int dim)
+        {
+        	if(dim == 1) {
+        		TpetraVector vec;
+        		vec.values(mat.communicator(), mat.local_size().get(1), mat.size().get(1), 1.);
+        		mat.mult(vec, result);
+        	} else {
+        		TpetraVector vec;
+        		vec.values(mat.communicator(), mat.local_size().get(0), mat.size().get(0), 1.);
+        		mat.mult_t(vec, result);
+        	}
         }
 
         //blas 1
@@ -288,6 +462,13 @@ namespace utopia {
             result.scale(-1.);
         }
 
+        template<class Op>
+        inline static void apply_unary(TpetraVector &result, const Op &op, const TpetraVector &v)
+        {
+            result = v;
+            result.apply(op);
+        }
+
         inline static Scalar dot(const TpetraVector &x, const TpetraVector &y)
         {
             return x.dot(y);
@@ -303,10 +484,14 @@ namespace utopia {
             const Vector &right)
         {
             assert(!transpose_right);
-            assert(!transpose_left);
+            // assert(!transpose_left);
             //TODO implement transpoe left
 
-            left.mult(right, result);
+            if(transpose_left) {
+                left.mult_t(right, result);
+            } else {
+                left.mult(right, result);
+            }
         }
 
         inline static void apply_binary(TpetraVector &result, const TpetraMatrix &left, const Multiplies &, const TpetraVector &right)
@@ -366,6 +551,21 @@ namespace utopia {
             left.e_mul(right, result);
         }
 
+        template<class Op>
+        static void apply_binary(TpetraVector &result, const TpetraVector &left, const Op &op, const TpetraVector &right)
+        {
+            left.apply_binary(op, right, result);
+        }
+
+        static void apply_binary(TpetraVector &result, const Reciprocal<Scalar> &reciprocal, const TpetraVector &vec)
+        {
+            vec.reciprocal(result);
+
+            if(reciprocal.numerator() != 1.) {
+                result.scale(reciprocal.numerator());
+            }
+        }
+
         // Ac = R*A*P,
         // static void triple_product(
         //     TpetraMatrix &Ac,
@@ -373,7 +573,7 @@ namespace utopia {
         //     const TpetraMatrix &A,
         //     const TpetraMatrix &P)
         // {
-        //     Tpetra::TripleMatrixMultiply::MultiplyRAP( 
+        //     Tpetra::TripleMatrixMultiply::MultiplyRAP(
         //         R,
         //         false, //transposeR
         //         A,
@@ -382,8 +582,14 @@ namespace utopia {
         //         false, //transposeP
         //         Ac,
         //         true  //call_FillComplete_on_result
-        //     );   
+        //     );
         // }
+
+        void diag_scale_left(TpetraMatrix &result, const TpetraVector &diag, const TpetraMatrix &m)
+        {
+        	result = m;
+        	result.implementation().leftScale(diag.implementation());
+        }
 
         static void multiply(
             TpetraMatrix &result,
@@ -404,7 +610,7 @@ namespace utopia {
         {
             in.get_diag(out);
         }
-        
+
         static void diag(TpetraMatrix &out, const TpetraVector &in)
         {
            out.init_diag(in);
@@ -416,7 +622,68 @@ namespace utopia {
             diag(d, in);
             diag(out, d);
         }
-        
+
+        static bool is_nan_or_inf(const TpetraVector &v)
+        {
+            return v.is_nan_or_inf();
+        }
+
+        template<typename Integer>
+        static void set_zero_rows(TpetraMatrix &mat, const std::vector<Integer> &index, const Scalar diag)
+        {
+            auto &impl = mat.implementation();
+            auto rr = mat.row_range();
+
+            auto col_map = impl.getColMap()->getLocalMap();
+            auto row_map = impl.getRowMap()->getLocalMap();
+            auto local_mat = impl.getLocalMatrix();
+
+            for(auto i_global : index)
+            {
+                if(!rr.inside(i_global)) {
+                    std::cerr << "[Error] index out of range " << i_global << " not in " << rr << std::endl;
+                    assert(rr.inside(i_global));
+                    continue;
+                }
+
+                auto i = i_global - rr.begin();
+                auto row = local_mat.row(i);
+                auto n_values = row.length;
+
+                for(decltype(n_values) k = 0; k < n_values; ++k)
+                {
+                    auto &val = row.value(k);
+                    const auto col = row.colidx(k);
+
+                    if(row_map.getGlobalElement(i) == col_map.getGlobalElement(col)) {
+                        val = diag;
+                    } else {
+                        val = 0.;
+                    }
+                }
+            }
+        }
+
+        template<typename Integer>
+        void select(
+            TpetraVector &left,
+            const TpetraVector &right,
+            const std::vector<Integer> &index)
+        {
+            right.select(index, left);
+        }
+
+
+        static void read_and_write_lock(TpetraMatrix &t) {
+            //IMPLEMENTME
+            write_lock(t, LOCAL);
+        }
+
+        static void read_and_write_unlock(TpetraMatrix &t){
+            //IMPLEMENTME
+            write_unlock(t, LOCAL);
+        }
+
         // monitoring functions for iterative solvers (Cyrill)
         // UTOPIA_DEPRECATED_MSG("Remove me")
         template<class Tensor>
@@ -427,9 +694,9 @@ namespace utopia {
 
     private:
 
-        inline static auto default_communicator() -> decltype( Tpetra::DefaultPlatform::getDefaultPlatform().getComm() )
+        inline static auto default_communicator() -> decltype( Tpetra::getDefaultComm() )
         {
-            return Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+            return Tpetra::getDefaultComm();
         }
     };
 

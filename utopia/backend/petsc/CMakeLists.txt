@@ -67,7 +67,7 @@ if(PETSC_FOUND)
 		.
 		eval
 		solvers 
-		solvers/eigenvalue
+		solvers/eigensolvers
 		solvers/linear
 		solvers/multilevel
 		solvers/nonlinear
@@ -94,7 +94,7 @@ if(PETSC_FOUND)
 	target_include_directories(utopia_petsc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
 	target_include_directories(utopia_petsc PUBLIC ${PETSC_INCLUDES})
 
-	target_link_libraries(utopia_petsc utopia_core utopia_utils utopia_solvers)
+	target_link_libraries(utopia_petsc utopia_core utopia_utils utopia_solvers utopia_ui)
 	target_link_libraries(utopia_petsc ${PETSC_LIBRARIES})
 	add_definitions(${PETSC_DEFINITIONS})
 

@@ -72,6 +72,8 @@ namespace utopia {
         check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
     }
 
+
+
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path)
     {
         destroy();
@@ -134,7 +136,18 @@ namespace utopia {
     void PetscMatrix::transpose(PetscMatrix &result) const
     {
         if(implementation() == result.implementation()) {
-            result.transpose();
+            auto s = size();
+            
+            if(s.get(0) == s.get(1)) {
+                result.transpose();
+            } else {
+                PetscMatrix temp;
+                temp.destroy();
+
+                check_error( MatTranspose(implementation(), MAT_INITIAL_MATRIX, &temp.implementation()) );
+                result = std::move(temp);
+            }
+
             return;
         }
 
@@ -390,6 +403,8 @@ namespace utopia {
         return res;
     }
 
+
+
     template<class Operation>
     inline static PetscScalar generic_local_reduce(const PetscMatrix &m, const PetscScalar &init_value, const Operation &op)
     {
@@ -492,6 +507,18 @@ namespace utopia {
         result.set_initialized(true);
     }
 
+    void PetscMatrix::get_col(PetscVector &result, const PetscInt id) const
+    {        
+        auto gs = size();
+
+        result.destroy();
+        MatCreateVecs(implementation(), nullptr, &result.implementation());
+
+        check_error( MatGetColumnVector(implementation(), result.implementation(), id) );
+        result.set_initialized(true);
+    }
+
+
     void PetscMatrix::dense_init_diag(MatType dense_type, const PetscVector &diag)
     {
         MPI_Comm comm = diag.communicator();
@@ -532,6 +559,29 @@ namespace utopia {
 
         check_error( MatZeroEntries(implementation()) );
         check_error( MatDiagonalSet( implementation(), diag.implementation(), INSERT_VALUES) );
+    }
+
+    void PetscMatrix::nest(
+       MPI_Comm comm,
+       PetscInt nr,
+       const IS is_row[],
+       PetscInt nc,
+       const IS is_col[],
+       const Mat a[],
+       const bool use_mat_nest_type
+    )
+    {
+        destroy();
+
+        if(use_mat_nest_type) {
+            check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &implementation()) );
+        } else {
+            Mat temp = nullptr;
+            
+            check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &temp) );
+            check_error( MatConvert(temp, type_override(), MAT_INITIAL_MATRIX, &implementation()) );
+            check_error(  MatDestroy(&temp) );
+        }
     }
 
     void PetscMatrix::get_diag(PetscMatrix &result) const
@@ -615,15 +665,18 @@ namespace utopia {
         PetscScalar value
         )
     {
-        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols)) {
             dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+        }
 
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
         const PetscInt r_end   = r.end();
 
+        const PetscInt computed_global_cols = (global_cols <= 0) ? size().get(1) : global_cols;
+
         for (PetscInt i = r_begin; i < r_end; ++i) {
-            for (PetscInt j = 0; j < global_cols; ++j) {
+            for (PetscInt j = 0; j < computed_global_cols; ++j) {
                 MatSetValue(implementation(), i, j, value, INSERT_VALUES);
             }
         }
@@ -642,7 +695,9 @@ namespace utopia {
       PetscScalar scale_factor)
     {
         if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+        {
             dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+        }
 
         check_error( MatZeroEntries(implementation()) );
 
@@ -650,7 +705,10 @@ namespace utopia {
 
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
-        const PetscInt r_end = PetscMin(r.end(), global_cols);
+
+        // otherwise global_cols gives -1, as it should be determined... 
+        MatGetSize(implementation(), &global_rows, &global_cols); 
+        const PetscInt r_end = PetscMin(r.end(), global_cols); 
 
         for(PetscInt i = r_begin; i < r_end; ++i) {
             set(i, i, scale_factor);
@@ -921,7 +979,7 @@ namespace utopia {
 
         MatGetOwnershipRange(mat.implementation(), &r_begin, &r_end);
 
-        result.write_lock();
+        result.write_lock(utopia::LOCAL);
 
         for(PetscInt row = r_begin; row < r_end; ++row) {
             MatGetRow(mat.implementation(), row, &n_values, &cols, &values);
@@ -939,7 +997,7 @@ namespace utopia {
             VecSetValues(result.implementation(), 1, &row, &x, INSERT_VALUES);
         }
 
-        result.write_unlock();
+        result.write_unlock(utopia::LOCAL);
     }
 
     void PetscMatrix::row_sum(PetscVector &col) const
@@ -1015,6 +1073,13 @@ namespace utopia {
         }
     }
 
+    void PetscMatrix::col_sum(PetscVector &col) const
+    {
+        PetscVector temp;
+        temp.values(communicator(), col.type(), local_size().get(0), size().get(0), 1.);
+        this->mult_t(temp, col);
+    }
+
     void PetscMatrix::mult(const PetscVector &vec, PetscVector &result) const
     {
         if(vec.implementation() == result.implementation()) {
@@ -1074,15 +1139,43 @@ namespace utopia {
 
     void PetscMatrix::mult(const PetscMatrix &mat, PetscMatrix &result) const
     {
-        if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
-            result.destroy();
-            MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
-        } else {
-            PetscMatrix temp;
-            temp.destroy();
+        PetscBool      flg;
+        // this is very unefficient hack, but still better than fail... 
+        PetscObjectTypeCompareAny((PetscObject)mat.implementation(),&flg,MATMPIDENSE,NULL);
+        if (flg)
+        {
+            if(mat.implementation() != result.implementation() && implementation() != result.implementation())
+            {
+                result.destroy();
+                Mat temp; 
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+                MatDestroy(&temp); 
+            }
+            else 
+            {
+                PetscMatrix temp2; 
+                temp2.destroy(); 
 
-            MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
-            result = std::move(temp);
+                Mat temp; 
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp2.implementation());
+                MatDestroy(&temp); 
+                result = std::move(temp2);
+            }                
+        }
+        else
+        {
+            if(mat.implementation() != result.implementation() && implementation() != result.implementation()) 
+            {
+                result.destroy();
+                MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+            } else {
+                PetscMatrix temp;
+                temp.destroy();
+                MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
+                result = std::move(temp);
+            }
         }
     }
 
@@ -1126,6 +1219,8 @@ namespace utopia {
 
     void PetscMatrix::mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const
     {
+        m_utopia_warning("> FIXME MatMatTransposeMult does not work in parallel, prepare work around");
+
         if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
             result.destroy();
             check_error( MatMatTransposeMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );

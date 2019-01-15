@@ -4,6 +4,12 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_RowView.hpp"
+#include "utopia_Range.hpp"
+#include "utopia_For.hpp"
+#include "utopia_Size.hpp"
+#include "utopia_Readable.hpp"
+
+// #define UTOPIA_DISABLE_UNROLLING
 
 namespace utopia {
 
@@ -16,39 +22,91 @@ namespace utopia {
 		template<class Fun>
 		inline static void apply_read(const Tensor &v, Fun fun)
 		{
-			Range r = range(v);
-			Read<Tensor> read_lock(v);
+			const Range r = range(v);
 
+#ifdef UTOPIA_DISABLE_UNROLLING
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				fun(i, v.get(i));
 			}
+#else			
+
+			Read<Tensor> read_lock(v);
+			For<>::apply(
+				r.begin(),
+				r.end(),
+				[&v, &fun](const std::size_t i) {
+					fun(i, v.get(i));
+				}
+			);
+#endif //UTOPIA_DISABLE_UNROLLING
+
 		}
 
 		template<class Fun>
 		inline static void apply_write(Tensor &v, Fun fun)
 		{
 			Range r = range(v);
+
 			Write<Tensor> write_lock(v);
+
+#ifdef UTOPIA_DISABLE_UNROLLING
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				v.set(i, fun(i));
 			}
+
+#else
+
+			For<>::apply(
+				r.begin(),
+				r.end(),
+				[&v, &fun](const std::size_t i) {
+					v.set(i, fun(i));
+				}
+			);
+
+#endif //UTOPIA_DISABLE_UNROLLING
 		}
 
 		template<class Fun>
 		inline static void apply_transform(const Tensor &in, Tensor &out, Fun fun)
 		{
-			assert(&in != &out && "in and out cannot be the same object");
-			
 			Range r = range(in);
-			out = zeros(size(in));
+
+			if(&in == &out) {
+				ReadAndWrite<Tensor> rw(out);
+
+				For<>::apply(
+					r.begin(),
+					r.end(),
+					[&out, &fun](const std::size_t i) {
+						out.set(i, fun(i, out.get(i)));
+					}
+				);
+
+				return;
+			}
+
+			if(size(in) != size(out)) {
+				out = zeros(size(in));
+			}
 
 			Read<Tensor>  read_lock(in);
 			Write<Tensor> write_lock(out);
 
+#ifdef UTOPIA_DISABLE_UNROLLING
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				out.set(i, fun(i, in.get(i)));
 			}
+#else
+			For<>::apply(
+				r.begin(),
+				r.end(),
+				[&in, &out, &fun](const std::size_t i) {
+					out.set(i, fun(i, in.get(i)));
+				}
+			);
+#endif //UTOPIA_DISABLE_UNROLLING
 		}
 	};	
 
@@ -59,8 +117,8 @@ namespace utopia {
 		inline static void apply_read(const Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
-			Size s = size(m);
 
+			Size s = size(m);
 			Read<Tensor> read_lock(m);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
@@ -74,8 +132,8 @@ namespace utopia {
 		inline static void apply_write(Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
+			
 			Size s = size(m);
-
 			Write<Tensor> write_lock(m);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
@@ -93,6 +151,11 @@ namespace utopia {
 		inline static void apply_read(const Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
+			
+			// if(r.empty()) {
+			// 	return;
+			// }
+
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				RowView<const Tensor> row_view(m, i);
 				auto n_values = row_view.n_values();

@@ -1,7 +1,7 @@
 #ifndef UTOPIA_FAS_HPP
 #define UTOPIA_FAS_HPP
 #include "utopia_NonLinearSmoother.hpp"
-#include "utopia_NonLinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
@@ -17,59 +17,71 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class FAS : public NonlinearMultiLevelBase<Matrix, Vector>
+    class FAS final: public NonlinearMultiLevelBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
+        
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::Transfer<Matrix, Vector>   Transfer;
+
+        typedef utopia::NewtonBase<Matrix, Vector>     Solver;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
+
 
         public:
 
-            FAS( const std::shared_ptr<Smoother> &smoother, const std::shared_ptr<Solver> &coarse_solver, const Parameters params = Parameters()): 
-                    NonlinearMultiLevelBase<Matrix,Vector>(params),
-                    smoother_(smoother), 
-                    coarse_solver_(coarse_solver) 
-            {
-                set_parameters(params); 
-            }
-
-            virtual ~FAS(){} 
+        FAS(    const SizeType & n_levels,
+                const std::shared_ptr<Smoother> &smoother, 
+                const std::shared_ptr<Solver> &coarse_solver): 
+                NonlinearMultiLevelBase<Matrix,Vector>(n_levels),
+                smoother_(smoother), 
+                coarse_solver_(coarse_solver) 
+        {
+            
+        }
         
 
-            void set_parameters(const Parameters params) override
-            {
-                NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
-                
-                // smoother_->set_parameters(params); 
-                // coarse_solver_->set_parameters(params); 
-                
-                parameters_ = params; 
-            }
+        std::string name() override
+        {
+            return "FAS"; 
+        }
 
+        void read(Input &in) override
+        {
+            NonlinearMultiLevelBase<Matrix, Vector>::read(in);
 
-            virtual std::string name() override
+            if(smoother_) 
             {
-                return "FAS"; 
+                in.get("smoother", *smoother_);
             }
+            if(coarse_solver_) 
+            {
+                in.get("coarse_solver", *coarse_solver_);
+            }            
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
+
+            this->print_param_usage(os, "coarse_solver", "NewtonBase", "Input parameters for coarse level QP solvers.", "-"); 
+            this->print_param_usage(os, "smoother", "NonLinearSmoother", "Input parameters for fine level QP solver.", "-"); 
+        }              
 
     
-        virtual bool solve(Vector & x_h) override
+        bool solve(Vector & x_h) override
         {
             bool converged = false;
             SizeType it = 0, n_levels = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
 
-            if(this->transfers_.size() + 1 != this->level_functions_.size())
+            if(this->transfers_.size() + 1 != this->level_functions_.size()){
                 utopia_error("FAS::solve size of transfer and level functions do not match... \n"); 
+            }
 
-            
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
-            
-            this->status_.clear();
 
             SizeType loc_size = local_size(x_h).get(0);
             this->init_memory(loc_size); 
@@ -132,7 +144,7 @@ namespace utopia
 
     protected: 
 
-        virtual void init_memory(const SizeType & fine_local_size) override 
+        void init_memory(const SizeType & fine_local_size) override 
         {
             memory_.init(this->n_levels()); 
             memory_.g_diff[this->n_levels()-1] = local_zeros(fine_local_size); 
@@ -182,7 +194,7 @@ namespace utopia
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
             smoother_->sweeps(nu); 
-            smoother_->nonlinear_smooth(fun, x, f); 
+            smoother_->smooth(fun, x, f); 
             return true; 
         }
 
@@ -207,7 +219,6 @@ namespace utopia
         std::shared_ptr<Solver>             coarse_solver_;  
 
     private:
-        Parameters                          parameters_; 
         FASLevelMemory <Matrix, Vector>         memory_;
 
 

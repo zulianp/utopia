@@ -77,7 +77,7 @@ namespace utopia {
 
 		if(use_set_instead_of_add) {
 			// assert(check_valid_matrix(global_mat));
-			
+
 			redist.apply(range_slave, global_mat, moonolith::Assign<double>());
 
 			// assert(check_valid_matrix(global_mat));

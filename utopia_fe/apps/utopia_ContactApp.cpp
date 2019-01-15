@@ -1,157 +1,181 @@
 #include "utopia_ContactApp.hpp"
-#include "utopia_libmesh.hpp"
+
+
+#include "utopia_ContactSolver.hpp"
+
+#ifndef WITH_TRILINOS_ALGEBRA
+
+#include "utopia_libmesh_NonLinearFEFunction.hpp"
+#include "utopia_Newmark.hpp"
+#include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStabilizedNewmark.hpp"
+#include "utopia_ui.hpp"
+#include "utopia_UIFunctionSpace.hpp"
+#include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIMesh.hpp"
+#include "utopia_UIContactParams.hpp"
+#include "utopia_UIMaterial.hpp"
+#include "utopia_UIScalarSampler.hpp"
+#include "utopia_InputParameters.hpp"
+
+#include "libmesh/mesh_refinement.h"
 
 namespace utopia {
 
+	typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> ContactSolverT;
+
+
+	class SimulationInput : public Configurable {
+	public:
+		using ProductSpaceT    = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
+		using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
+		using ForcingFunctionT = UIForcingFunction<ProductSpaceT, UVector>;
+
+		SimulationInput(libMesh::Parallel::Communicator &comm) : mesh_(comm), space_(make_ref(mesh_)), dt_(0.1), use_amg_(false), use_newton(false), export_results(true) {}
+
+		void read(Input &is) override
+		{
+		    try {
+
+		        is.get("mesh", mesh_);
+		        is.get("space", space_);
+		        is.get("contact", params_);
+
+		        auto model            = make_unique<MaterialT>(space_.space());
+		        auto forcing_function = make_unique<ForcingFunctionT>(space_.space());
+
+		        is.get("model", *model);
+		        is.get("forcing-functions", *forcing_function);
+		        is.get("dt", dt_);
+		        is.get("use-amg", use_amg_);
+		        is.get("export", export_results);
+		        is.get("use-ssnewton", use_newton);
+
+		        model_ = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
+		            std::move(model),
+		            std::move(forcing_function)
+		        );
+
+		    } catch(const std::exception &ex) {
+		        std::cerr << ex.what() << std::endl;
+		        assert(false);
+		    }
+		}
+
+		inline bool empty() const
+		{
+		    return mesh_.empty();
+		}
+
+		inline libMesh::MeshBase &mesh()
+		{
+			return mesh_.mesh();
+		}
+
+		inline ProductSpaceT &space()
+		{
+			return space_.space();
+		}
+
+		inline const UIContactParams &params() const
+		{
+			return params_;
+		}
+
+		std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model() 
+		{
+			return model_;
+		}
+
+		double dt() const
+		{
+			return dt_;
+		}
+
+		inline bool use_amg() const
+		{
+			return use_amg_;
+		}
+
+	private:
+		UIMesh<libMesh::DistributedMesh> mesh_;
+		UIFunctionSpace<LibMeshFunctionSpace> space_;
+		UIContactParams params_;
+		std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model_;
+		double dt_;
+		bool use_amg_;
+	public:
+		bool use_newton;
+		bool export_results;
+	};
+
+	void ContactApp::init(libMesh::LibMeshInit &init)
+	{
+	    comm_ = make_ref(init.comm());
+	}
+
 	void ContactApp::run(const std::string &path)
 	{
-		// template class ContactSolver<DSMatrixd, DVectord>;
-		// typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> VectorFunctionSpace;
+		SimulationInput sim_in(*comm_);
+		auto in_ptr = open_istream(path);//"../data/contact/default.xml");
+		in_ptr->get("contact-problem", sim_in);
 
-		// // typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
-		// // typedef utopia::Newmark<DSMatrixd, DVectord> ContactSolverT;
-		// typedef utopia::ContactStabilizedNewmark<DSMatrixd, DVectord> ContactSolverT;
+		const auto &params = sim_in.params();
+		
+		ContactSolverT sc(
+			make_ref(sim_in.space()),
+			sim_in.model(),
+			sim_in.dt(),
+			params.contact_params
+		);
 
-		// const auto dim = mesh->mesh_dimension();
+		if(sim_in.export_results) {
+			sc.export_results(true);
+		}
 
-		// // if(dim == 2)
-		// // {
-		// 	// libMesh::MeshRefinement mesh_refinement(*mesh);
-		// 	// mesh_refinement.make_flags_parallel_consistent();
-		// 	// mesh_refinement.uniformly_refine(2);
-		// // }
+		sc.set_tol(1e-3);
+		sc.set_max_outer_loops(30);
+		sc.set_use_ssn(sim_in.use_newton);
 
-		// auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
-		// auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("dynamic-contact");
+#ifdef WITH_M3ELINSOL
 
-		// double dt = 0.05;
-		// if(dim == 3) {
-		// 	dt = 0.0001;
-		// }
+		if(sim_in.use_amg()) {
+			auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
+			ls->verbose(true);
+			auto amg_in_ptr = open_istream("../data/contact/amg_settings.xml");
 
-		// double mu = 20., lambda = 20.;
-		// if(dim == 3) {
-		// 	mu = 300.;
-		// 	lambda = 600.;
-		// }
+			if(amg_in_ptr) {
+				std::cout << "Using settings" << std::endl;
+				amg_in_ptr->get("amg", *ls);
+			}
 
-		// LameeParameters lamee_params(mu, lambda);
+			sc.set_linear_solver(ls);
+			sc.set_use_ssn(true);
+		}
 
-		// auto elem_order = libMesh::FIRST;
+#endif //WITH_M3ELINSOL
 
-		// ////////////////////////////////////////////
+		sc.initial_condition(1.);
+		sc.solve_dynamic(params.n_transient_steps);
 
-		// auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
-		// auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
-		// auto V = Vx * Vy;
-
-		// // auto W = VectorFunctionSpace(dim, equation_systems, libMesh::LAGRANGE, elem_order);
-
-		// if(dim == 3) {
-		// 	V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
-		// }
-
-		// auto u = trial(V);
-		// auto ux = u[0];
-		// auto uy = u[1];
-
-		// auto constr = constraints(
-		// 	boundary_conditions(ux == coeff(0.), {4}),
-		// 	boundary_conditions(uy == coeff(0.), {4})
-		// );
-
-		// if(dim == 3) {
-		// 	auto uz = u[2];
-		// 	auto constr3 = constr + boundary_conditions(uz == coeff(0.), {4});
-		// 	init_constraints(constr3);
-		// } else {
-		// 	init_constraints(constr);
-		// }
-
-		// Vx.initialize();
-
-		// std::cout << "n_dofs: " << Vx.dof_map().n_dofs() << std::endl;
-
-		// auto ef = std::make_shared<ConstantExternalForce>();
-
-		// auto vx = test(Vx);
-		// auto vy = test(Vy);
-
-		// // ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
-
-		// if(dim == 3) {
-		// 	ef->init(integral(inner(coeff(7000.), vx)));
-		// } else {
-		// 	ef->init(integral(inner(coeff(-.2), vy)));
-		// }
-
-		// // auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// // auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// // auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-
-		// ContactParams contact_params;
-		// // contact_params.contact_pair_tags = {{2, 1}};
-		// contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
-
-		// if(dim == 3) {
-		// 	contact_params.search_radius = 0.0001;
-		// } else {
-		// 	contact_params.search_radius = 0.03;
-		// }
-
-
-		// // auto stabilized_material = std::make_shared<StabilizedMaterial<decltype(V), DSMatrixd, DVectord> >(V, 1e-2, material);
-		// // ContactSolverT sc(make_ref(V), stabilized_material, dt, contact_params);
-
-		// ContactSolverT sc(make_ref(V), material, dt, contact_params);
-		// sc.set_tol(5e-6);
-
-		// // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// // auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-		// // ls->atol(1e-15);
-		// // ls->rtol(1e-15);
-		// // ls->stol(1e-15);
-		// // ls->max_it(1000);
-		// // // ls->verbose(true);
-		// // sc.set_linear_solver(ls);
-		// // sc.set_bypass_contact(true);
-		// sc.set_max_outer_loops(10);
-
-		// // begin: multigrid
-
-		// // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-		// // auto smoother = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// // prec->max_it(1);
-		// // smoother->set_preconditioner(prec);
-
-		// // auto smoother = std::make_shared<SOR<DSMatrixd, DVectord> >();
-		// // // auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
-
-		// // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// // // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// // // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
-		// // auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
-		// // mg->verbose(true);
-		// // mg->set_use_interpolation(true);
-		// // mg->init(Vx, 4);
-
-
-		// // mg->algebraic().atol(1e-18);
-		// // mg->algebraic().rtol(1e-8);
-		// // mg->algebraic().stol(1e-16);
-		// // // mg->algebraic().set_use_line_search(true);
-
-		// // sc.set_linear_solver(mg);
-
-		// // mg->set_separate_subdomains(true);
-		// // end: multigrid
-
-		// sc.set_external_force_fun(ef);
-		// sc.initial_condition(2.);
-		// sc.solve_dynamic(400);
 	}
 }
+
+#else
+
+namespace utopia {
+
+	void ContactApp::init(libMesh::LibMeshInit &init)
+	{
+	    comm_ = make_ref(init.comm());
+	}
+
+	void ContactApp::run(const std::string &path)
+	{
+		std::cerr << "DOING nothing for trilinos algebra" << std::endl;
+	}
+}
+
+
+#endif //WITH_TRILINOS_ALGEBRA
 

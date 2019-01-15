@@ -1,0 +1,62 @@
+<transfer>
+	<!-- <type>approx-l2-projection</type> -->
+	<!-- <type>interpolation</type> -->
+	<type>l2-projection</type>
+	<biorth-basis>0</biorth-basis>
+	<function>x*x + y*y + z*z </function>
+	<!-- <enumerate-nodes>true</enumerate-nodes> -->
+
+	<!-- <force-shell>true</force-shell> -->
+	<assemble-mass-mat>1</assemble-mass-mat>
+	<!-- <function-type>constant</function-type> -->
+	<!-- <function>1.</function> -->
+	<volume-to-surface>true</volume-to-surface>
+
+	<!-- MASTER -->
+	<master>
+		<grid>		
+			<n-x>100</n-x>
+			<n-y>100</n-y>
+			<n-z>100</n-z>
+
+			<min-x>-1.</min-x>
+			<min-y>-1.</min-y>
+			<min-z>-1.</min-z>
+			
+			<max-x>1.</max-x>
+			<max-y>1.</min-y>
+			<max-z>1.</min-z>
+			
+		</grid>
+		<!-- <ownership> -->
+		<!-- </ownership> -->
+		<space></space>
+	</master>
+
+	<!-- SLAVE -->
+	<slave>
+		<mesh>
+		<!-- 	<type>sphere</type>
+			<radius>1.</radius>
+			<sphere-refine>5</sphere-refine> -->
+
+			<type>cube</type>
+			<elem-type>hex</elem-type>
+			<order>1</order>			
+			
+			<n-x>100</n-x>
+			<n-y>100</n-y>
+			<n-z>100</n-z>
+
+			<min-x>0</min-x>
+			<min-y>0</min-y>
+			<min-z>0</min-z>
+			
+			<max-x>1.</max-x>
+			<max-y>1.</min-y>
+			<max-z>1.</min-z>
+		</mesh>
+		<space></space>
+	</slave>
+	
+</transfer>

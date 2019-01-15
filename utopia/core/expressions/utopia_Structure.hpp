@@ -37,6 +37,12 @@ namespace utopia {
     {
     	return Structure<Wrapper<Tensor, 2>>(mat);
     }
+
+    template<class Tensor>
+    Structure<Wrapper<Tensor, 1>> structure(const Wrapper<Tensor, 1> &mat)
+    {
+        return Structure<Wrapper<Tensor, 1>>(mat);
+    }
 }
 
 #endif //UTOPIA_STRUCTURE_HPP

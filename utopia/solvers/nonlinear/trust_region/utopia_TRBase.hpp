@@ -1,58 +1,32 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
-*/
-
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 
 #include <algorithm>
-
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_TRSubproblem.hpp"
-#include "utopia_Dogleg.hpp"
-#include "utopia_SteihaugToint.hpp"
-#include "utopia_Parameters.hpp"    
 #include "utopia_NumericalTollerance.hpp"
 
 namespace utopia  
 {
-  template<class Matrix, class Vector>
-      /**
-       * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
-       *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
-       */ 
-  class TrustRegionBase 
+  /**
+   * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
+   *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
+   */ 
+  template<class Vector>
+  class TrustRegionBase : public virtual Configurable
   {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
   public:
-    TrustRegionBase(const Parameters params = Parameters())
+    TrustRegionBase(): 
+    delta_max_(1e14), delta_min_(1e-14), delta0_(1.0), gamma1_(0.2), gamma2_(2.0), 
+    eta1_(0.1), eta2_(0.85), rho_tol_(0.005), eps_(1e-14)
     {
 
-      set_parameters(params);        
     }
 
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-    virtual void set_parameters(const Parameters params) 
-    {
-      delta_max_  = params.delta_max();
-      delta0_     = params.delta0();
-      gamma1_     = params.gamma1();
-      gamma2_     = params.gamma2();
-      eta1_       = params.eta1();
-      eta2_       = params.eta2();
-      rho_tol_    = params.rho_tol();
-      eps_        = params.eps();
-      delta_min_  = params.delta_min(); 
-
-    }
+    virtual ~TrustRegionBase(){}
 
     Scalar delta_max()  const  { return delta_max_; } 
     Scalar delta_min()  const  { return delta_min_; } 
@@ -76,26 +50,40 @@ namespace utopia
     void eps(const Scalar & eps_in ) { eps_ = eps_in; }; 
 
   protected:
-
-    /**
-     * @brief      Calculates the predicate reduction  m_k(0) - m_k(p_k)
-     *
-     * @param[in]  g     Gradient
-     * @param[in]  H     Hessian
-     * @param[in]  p_k   current step
-     * @param      pred  predicted reduction
-     */
-    virtual void compute_pred_red( const Vector & g, const Matrix & H, const Vector & p_k, Scalar &pred)
+    virtual void print_statistics(const SizeType & it, const SizeType & it_successful)
     {
-    	Scalar l_term = dot(g, p_k);
-    	Scalar qp_term = dot(p_k, H * p_k);
-    	pred = - l_term - 0.5 * qp_term; 
+        std::string path = "log_output_path";
+        auto non_data_path = Utopia::instance().get(path);
 
+        if(!non_data_path.empty())
+        {
+            CSVWriter writer;
+            if (mpi_world_rank() == 0)
+            {
+                if(!writer.file_exists(non_data_path))
+                {
+                    writer.open_file(non_data_path);
+                    writer.write_table_row<std::string>({"num_its", "it_successful"});
+                }
+                else
+                    writer.open_file(non_data_path);
+                
+                writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful)});
+                writer.close_file();
+            }
+        }
+    }
+
+    virtual Scalar get_pred(const Vector &g, const Operator<Vector> &B, const Vector & p_k)
+    {
+      Vector Bp; 
+      B.apply(p_k, Bp); 
+      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp, p_k);
     }
 
 
     virtual bool check_convergence(
-      Monitor<Matrix, Vector> &monitor,
+      Monitor<Vector> &monitor,
       const NumericalTollerance<Scalar> &tol,
       const SizeType max_it,
       const SizeType &it, 
@@ -104,42 +92,63 @@ namespace utopia
       const Scalar & s_norm, 
       const Scalar & delta) const
     {   
+      bool converged = false; 
+
+      SolutionStatus sol_status; 
+
         // termination because norm of grad is down
       if(g_norm < tol.absolute_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_FNORM_ABS; 
+        converged = true; 
       }
 
         // step size so small that we rather exit than wait for nan's
-      if(s_norm < tol.step_tollerance())
+      else if(s_norm < tol.step_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE; 
+        converged = true; 
       }
 
         // step size so small that we rather exit than wait for nan's
-      if(r_norm < tol.relative_tollerance())
+      else if(r_norm < tol.relative_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE; 
+        converged = true; 
       }
 
         // check number of iterations
-      if( it > max_it)
+      else if( it > max_it)
       {
         monitor.exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-        return true; 
+        sol_status.reason = ConvergenceReason::DIVERGED_MAX_IT; 
+        converged = true; 
       }
 
         // do not hard code this 
-      if(delta < delta_min_)
+      else if(delta <= delta_min_)
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_TR_DELTA; 
+        converged = true; 
       }
 
-      return false; 
+      if(converged)
+      {
+        sol_status.iterates = it; 
+        sol_status.gradient_norm = g_norm; 
+        sol_status.relative_gradient_norm = r_norm; 
+        sol_status.step_norm = s_norm;   
+
+        auto SS_monnitor = monitor.solution_status(); 
+        sol_status.execution_time = SS_monnitor.execution_time; 
+        monitor.solution_status(sol_status); 
+      }      
+
+      return converged; 
     }
 
 
@@ -162,15 +171,15 @@ namespace utopia
       {
         x_k1 = x_k + p_k;
         E = E_k1; 
+        return true; 
       }
       // otherwise, keep old point
       else
       {
         x_k1 = x_k;
         E = E_k; 
+        return false; 
       }
-
-      return true; 
     }
 
 
@@ -208,19 +217,36 @@ namespace utopia
     \param radius          - tr. radius
     \param p_k            - iterate step
       */
-    virtual bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius)
+    virtual void delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius, const bool inf_flg = false)
     {
-      if(rho < eta1_)
+      if(inf_flg==false)
       {
-        radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_); 
+        if(rho < eta1_)
+        {
+          radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_); 
+        }
+        else if (rho > eta2_ )
+        {
+          Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius); 
+          radius = std::min(intermediate, delta_max_); 
+        }      
       }
-      else if (rho > eta2_ )
+      else // computing update for L_inf norm
       {
-        Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius); 
-        radius = std::min(intermediate, delta_max_); 
-      }      
-      return true; 
+        if(rho < this->eta1())
+        {
+          radius = radius * gamma1_; 
+        }
+        else if (rho > this->eta2() )
+        {
+          // Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius); 
+
+          Scalar intermediate = this->gamma2() * radius; 
+          radius = std::min(intermediate, this->delta_max()); 
+        }      
+      }
     }
+
 
     /*!
     \details
@@ -246,21 +272,36 @@ namespace utopia
     }
 
 
-    /**
-     * @brief      Gets the prediction reduction for 
-     *
-     * @param[in]  g     gradient
-     * @param[in]  B     Hessian
-     * @param[in]  p_k    step 
-     * @param      pred  The predicted reduction. 
-     */
-    virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred)
+    void read(Input &in) override
     {
-      Scalar l_term = dot(g, p_k);
-      Scalar qp_term = dot(p_k, B * p_k);
-      pred = - l_term - 0.5 * qp_term; 
-      return true; 
+      in.get("delta_max", delta_max_); 
+      in.get("delta_min", delta_min_); 
+      in.get("delta0", delta0_); 
+      in.get("gamma1", gamma1_);
+      in.get("gamma2", gamma2_);
+      in.get("eta1", eta1_);
+      in.get("eta2", eta2_);
+      in.get("rho_tol", rho_tol_);
+      in.get("eps", eps_); 
     }
+
+    void print_usage(std::ostream &os) const override
+    {
+      this->print_param_usage(os, "delta_max", "real", "Maximum value of tr. radius.", "1e14"); 
+      this->print_param_usage(os, "delta_min", "real", "Minimum value of tr. radius.", "1e-14"); 
+      this->print_param_usage(os, "delta0", "real", "Initial value of tr. radius.", "1.0"); 
+
+      this->print_param_usage(os, "gamma1", "real", "Factor use to shrink tr. radius.", "0.5"); 
+      this->print_param_usage(os, "gamma2", "real", "Factor use to enlarge tr. radius.", "2.0"); 
+
+      this->print_param_usage(os, "eta1", "real", "Threshold for rho to shrink tr. radius.", "0.25"); 
+      this->print_param_usage(os, "eta2", "real", "Threshold for rho to enlarge tr. radius.", "0.75"); 
+
+      this->print_param_usage(os, "rho_tol", "real", "Threshold for rho to take trial point.", "0.005"); 
+      this->print_param_usage(os, "eps", "real", "Numerical tolerance.", "1e-14"); 
+    }
+
+
 
   private: 
     Scalar delta_max_; 

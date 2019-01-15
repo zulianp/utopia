@@ -4,6 +4,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_Input.hpp"
 
 
 
@@ -16,26 +17,34 @@ namespace utopia {
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class NonLinearSmoother 
+    class NonLinearSmoother : virtual public Configurable
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
         public:
-        NonLinearSmoother(const Parameters params = Parameters()) 
+        NonLinearSmoother(): _sweeps(1), _relaxation_parameter(1.0)
         { 
-            set_parameters(params); 
+            
         }
 
 
-        virtual void set_parameters(const Parameters params) 
+        virtual void read(Input &in) override
         {
-            _sweeps = params.pre_smoothing_steps();            
-            _damping_parameter = params.omega();     
+            in.get("relaxation_parameter", _relaxation_parameter);
+            in.get("sweeps", _sweeps);
+
         }
 
 
-        virtual bool nonlinear_smooth(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs) = 0; 
+        virtual void print_usage(std::ostream &os) const override
+        {
+            this->print_param_usage(os, "relaxation_parameter", "double", "Relaxation parameter.", "1"); 
+            this->print_param_usage(os, "sweeps", "int", "Number of smoothing steps.", "1"); 
+        }        
+
+
+        virtual bool smooth(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs) = 0; 
 
 
         /**
@@ -68,9 +77,9 @@ namespace utopia {
          *
          * @return     omega  The relaxation parameter.
          */
-        virtual Scalar damping_parameter()
+        virtual Scalar relaxation_parameter()
         {
-            return _damping_parameter; 
+            return _relaxation_parameter; 
         }
 
 
@@ -79,36 +88,16 @@ namespace utopia {
          *
          * @return     omega  The relaxation parameter.
          */
-        virtual bool damping_parameter(const Scalar & alpha)
+        virtual bool relaxation_parameter(const Scalar & alpha)
         {
-             _damping_parameter = alpha; 
+             _relaxation_parameter = alpha; 
              return true; 
-        }
-
-
-        /**
-         * @brief      verbose
-         *
-         */
-        virtual void verbose(const bool & verbose)
-        {
-            _verbose = verbose;
-        }
-
-        /**
-         * @brief      Verbose
-         *
-         */
-        virtual bool verbose()
-        {
-            return _verbose; 
         }
 
 
         private:
             SizeType     _sweeps;  
-            Scalar       _damping_parameter; 
-            bool         _verbose; 
+            Scalar       _relaxation_parameter; 
 };
 
 }

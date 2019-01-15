@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
 
 #include "utopia_FormEvaluator.hpp"
@@ -7,7 +8,6 @@
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_MixedFunctionSpace.hpp"
 
-#include "utopia_libmesh.hpp"
 #include "libmesh/parallel_mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/linear_implicit_system.h"
@@ -83,7 +83,7 @@ namespace utopia {
 		auto b_form = b_11 + b_12 + b_21 + b_22;
 		auto l_form = l_1 + l_2;
 
-		DVectord sol;
+		UVector sol;
 		if(!solve(
 			equations(
 				b_form == l_form

@@ -9,7 +9,7 @@ install(FILES ${LOCAL_HEADERS} DESTINATION include)
 
 set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};utopia_fe_core" PARENT_SCOPE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${MOONOLITH_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${MOONOLITH_DEV_FLAGS} ${UTOPIA_FE_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 
@@ -28,13 +28,19 @@ target_link_libraries(
 	utopia_fe_wear
 )
 
-target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations) 
+if(TARGET utopia_fe_intrepid2)
+	message(STATUS "compiling intrepid 2 tests")
+	target_link_libraries(utopia_fe_tests utopia_fe_intrepid2)
+
+endif()
+
+target_include_directories(utopia_fe_tests BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations)
 set_utopia_compiler_features(utopia_fe_tests)
 
 install(TARGETS utopia_fe_tests
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)

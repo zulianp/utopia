@@ -2,6 +2,7 @@
 #define UTOPIA_FUNCTION_SPACE_HPP 
 
 #include "utopia_Base.hpp"
+#include "utopia_Traits.hpp"
 
 namespace utopia {
 
