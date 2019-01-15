@@ -90,10 +90,12 @@ namespace utopia
             fun.hessian(x, H); 
             H_norm = norm2(H); 
 
-            Matrix I = local_identity(local_size(H)); 
+            Matrix I = local_identity(local_size(H).get(0), local_size(H).get(1)); 
 
             // tau = 1.0/g_norm; 
-            lambda = g_norm; 
+            // lambda = g_norm; 
+            Scalar tau = std::min(g_norm, 10.0); 
+            lambda = 1./tau; 
 
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm, energy_old, 0.0, lambda, 0.0});
@@ -117,7 +119,7 @@ namespace utopia
                     s = 0 * x; 
                     this->linear_solve(H_damped, -1.0 * g, s);
                     Vector x_temp = x + scaling_factor_vec * s; 
-                    Vector g_temp = local_zeros(local_size(g)); 
+                    Vector g_temp = local_zeros(local_size(g).get(0)); 
                     fun.gradient(x_temp, g_temp); 
                     s = 0 * x; 
                     this->linear_solve(H_damped, -1.0 * g_temp, s);
@@ -146,6 +148,10 @@ namespace utopia
                     rho = -1.0; 
                 }
 
+                if(!std::isfinite(rho)){
+                    rho = 0.0; 
+                }
+
                 if(rho > 0.0)
                 {
                     x = x_trial; 
@@ -161,12 +167,15 @@ namespace utopia
                 }
 
                 // adjusting lambda according to rho
-                if(rho < 0.0)
+                if(rho < 0.0){
                     lambda *=10.0; 
-                else if(rho < this->eta1())
+                }
+                else if(rho < this->eta1()){
                     lambda *= this->gamma2(); 
-                else if(rho > this->eta2())
+                }
+                else if(rho > this->eta2()){
                     lambda *= this->gamma1(); 
+                }
 
                 it++; 
 
@@ -197,7 +206,6 @@ namespace utopia
         if(eigen_solver_) {
             in.get("eigen-solver", *eigen_solver_);
         }
-
     }
 
     void print_usage(std::ostream &os) const override

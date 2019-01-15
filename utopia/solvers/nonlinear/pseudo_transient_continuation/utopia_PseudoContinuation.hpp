@@ -82,7 +82,10 @@ namespace utopia
             Matrix I = local_identity(local_size(H)); 
 
             // tau = 1.0/g_norm; 
-            tau = g_norm; 
+
+            // follows paper Combining TR methods and Rosenbrock Methods for Gradient systems
+            tau = std::min(g_norm, 10.0); 
+            
 
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm, tau, 0.0});
@@ -99,12 +102,17 @@ namespace utopia
 
                 g_old = g_norm; 
                 norms2(g, s, g_norm, s_norm); 
-                tau = std::min(tau * g_old/g_norm, tau_max_); 
+                
+                if(g_norm > 1e-11)
+                    tau = std::min(tau * g_old/g_norm, tau_max_); 
+                else
+                    tau = tau_max_; 
 
                 it++; 
 
-                if(this->verbose())
+                if(this->verbose()){
                     PrintInfo::print_iter_status(it, {g_norm, tau, s_norm});
+                }
 
                 converged = this->check_convergence(it, g_norm, 9e9, s_norm);
 

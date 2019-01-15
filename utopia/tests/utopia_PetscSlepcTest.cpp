@@ -47,7 +47,6 @@ namespace utopia
 			UTOPIA_RUN_TEST(pseudo_cont_test); 
 			UTOPIA_RUN_TEST(lm_test); 
 			UTOPIA_RUN_TEST(rosenbrock_test); 
-			UTOPIA_RUN_TEST(benchmark_test_tr); 
 		}
 
 
@@ -133,7 +132,10 @@ namespace utopia
 			tr_solver.solve(fun_woods, x_w1);				
 
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif
 			
 			auto linear_solver = std::make_shared<LUDecomposition<DMatrixd, DVectord> >();
 			linear_solver->set_library_type(PETSC_TAG); 
@@ -161,6 +163,9 @@ namespace utopia
 
 		void pseudo_tr_test()
 		{
+	    	if(mpi_world_size() != 1)
+	    		return; 
+
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
 			Woods14<DMatrixd, DVectord> fun;
@@ -170,7 +175,10 @@ namespace utopia
 			linear_solver->max_it(10000);
 
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");			
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif		
 
 			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
 
@@ -197,13 +205,16 @@ namespace utopia
 			linear_solver->max_it(10000);
 
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");			
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif		
 
 			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
 
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
-			solver.max_it(500);
+			solver.max_it(1);
 			solver.verbose(false); 
 
 			solver.solve(fun, x); 
@@ -212,6 +223,9 @@ namespace utopia
 
 		void pseudo_cont_test()
 		{
+			if(mpi_world_size() != 1)
+	    		return; 
+
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
 			Woods14<DMatrixd, DVectord> fun;
@@ -286,16 +300,22 @@ namespace utopia
 			linear_solver->max_it(10000);
 			
 			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");			
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif
 
 			RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
 
 			solver.atol(1e-12); 
 			solver.stol(1e-14); 
-			solver.max_it(500);
+			solver.max_it(100);
 			solver.verbose(false); 
 
 			solver.solve(fun_stiff, x_stiff); 
+
+			if(mpi_world_size() != 1)
+	  		  		return; 
 
 			DVectord x  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
@@ -303,79 +323,9 @@ namespace utopia
 
 			solver.solve(fun, x); 
 
-		}
-
-
-
-		void benchmark_test_tr()
-		{
-			// auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
-			// linear_solver->atol(1e-14); 
-			// linear_solver->max_it(10000);
-			
-			// auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			// eigen_solver->solver_type("arpack");			
-
-			// RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
-
-			// solver.atol(1e-10); 
-			// solver.stol(1e-14); 
-			// solver.max_it(500);
-			// solver.verbose(true); 
-
-			// auto subproblem = std::make_shared<Lanczos<DMatrixd, DVectord> >();
-			auto subproblem = std::make_shared<SteihaugToint<DMatrixd, DVectord> >();
-			subproblem->atol(1e-12);
-			subproblem->stol(1e-15);
-			subproblem->rtol(1e-15);
-
-			TrustRegion<DMatrixd, DVectord> solver(subproblem);
-			solver.verbose(true);
-			solver.max_it(300); 
-			solver.atol(1e-10); 
-			solver.rtol(1e-12); 
-			solver.stol(1e-13); 
-
-
-			std::vector<std::shared_ptr<UnconstrainedTestFunction<DMatrixd, DVectord> > >  test_functions(18);
-
-	    	test_functions[0] = std::make_shared<Rosenbrock01<DMatrixd, DVectord> >();;
-	    	test_functions[1] = std::make_shared<Powell03<DMatrixd, DVectord> >(); // known to diverge also with tr solvers
-	    	test_functions[2] = std::make_shared<Brown04<DMatrixd, DVectord> >();
-	    	test_functions[3] = std::make_shared<Beale05<DMatrixd, DVectord> >();
-	    	test_functions[4] = std::make_shared<Hellical07<DMatrixd, DVectord> >();
-	    	test_functions[5] = std::make_shared<Woods14<DMatrixd, DVectord> >();
-	    	test_functions[6] = std::make_shared<ExtendedRosenbrock21<DMatrixd, DVectord> >(3);
-	    	test_functions[7] = std::make_shared<Gaussian09<DMatrixd, DVectord> >();
-	    	test_functions[8] = std::make_shared<Box12<DMatrixd, DVectord> >();
-	    	test_functions[9] = std::make_shared<BrownDennis16<DMatrixd, DVectord> >();
-	    	
-
-
-
-
-	    	for(auto i =0; i < 10; i++)
-	    	{
-				DVectord x_init = test_functions[i]->initial_guess(); 
-				solver.solve(*test_functions[i], x_init); 
-
-				// auto sol_status = solver.solution_status(); 
-				// sol_status.describe(std::cout); 
-
-				disp(x_init);
-				utopia_test_assert(approxeq(x_init, test_functions[i]->exact_sol()));
-			}
-
+			exit(0);
 
 		}
-
-
-
-
-
-
-
-
 
 		SlepcsSolverTest()
 		: _n(10) { }

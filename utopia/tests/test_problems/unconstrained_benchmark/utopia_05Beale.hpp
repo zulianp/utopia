@@ -13,19 +13,18 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Beale05() 
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
-            x_init_ = zeros(2);
+            x_init_ = values(2, 1.0);
             x_exact_ = zeros(2);
 
-            const Write<Vector> write1(x_init_);
-            const Write<Vector> write2(x_exact_);
+            
             {
-                x_init_.set(0, 1.0);
-                x_init_.set(1, 1.0);
+                const Write<Vector> write2(x_exact_);
 
                 x_exact_.set(0, 3.0);
                 x_exact_.set(1, 0.5);                
@@ -33,8 +32,23 @@ namespace utopia
 
         }
 
+        std::string name() const override
+        {
+            return "Beale"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 2.0; 
+        }
+
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 2);
 
             const Read<Vector> read(point);
@@ -52,6 +66,10 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }            
             assert(point.size().get(0) == 2);
             result = zeros(2);
 
@@ -77,6 +95,10 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }            
             assert(point.size().get(0) == 2);
 
             result = zeros(2, 2);

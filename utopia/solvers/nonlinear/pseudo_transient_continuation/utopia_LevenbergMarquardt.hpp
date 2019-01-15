@@ -146,10 +146,12 @@
     //    convergence check 
     //----------------------------------------------------------------------------
             it++; 
-            if(this->verbose_)
+            if(this->verbose())
+            {
               PrintInfo::print_iter_status({it, g_norm, E, rho, tau, s_norm}); 
-              converged = this->check_convergence(it, g_norm, 9e9, s_norm); 
+            }
 
+            converged = this->check_convergence(it, g_norm, 9e9, s_norm); 
 
             if(!converged && rho >mu0_)
             { 

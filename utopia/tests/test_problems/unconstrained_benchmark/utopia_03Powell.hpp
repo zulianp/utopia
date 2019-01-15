@@ -14,6 +14,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Powell03() 
         {
@@ -22,9 +23,10 @@ namespace utopia
             x_init_ = zeros(2);
             x_exact_ = zeros(2);
 
-            const Write<Vector> write1(x_init_);
-            const Write<Vector> write2(x_exact_);
             {
+                const Write<Vector> write1(x_init_);
+                const Write<Vector> write2(x_exact_);
+                
                 x_init_.set(0, 0.0);
                 x_init_.set(1, 1.0);
 
@@ -33,9 +35,25 @@ namespace utopia
             }
 
         }
+        
+        std::string name() const override
+        {
+            return "Powell badly scaled"; 
+        }
+
+        SizeType dim() const override
+        {
+            return 2.0; 
+        }
+
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 2);
 
             const Read<Vector> read(point);
@@ -43,7 +61,7 @@ namespace utopia
             const Scalar x = point.get(0);
             const Scalar y = point.get(1);
 
-            Scalar a = (10e4 * x * y -1.0); 
+            Scalar a = ((10000.0 * x * y) -1.0); 
             Scalar b = std::exp(-x) + std::exp(-y) - 1.0001; 
 
             result = a*a + b*b; 
@@ -52,6 +70,11 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+            
             assert(point.size().get(0) == 2);
             result = zeros(2);
 
@@ -61,17 +84,30 @@ namespace utopia
             const Scalar x = point.get(0);
             const Scalar y = point.get(1);
 
-            Scalar a = 20000*(10000 *x * y -1.0); 
-            Scalar b = std::exp(-x) + std::exp(-y) - 1.0001; 
+            Scalar f1 = (10000.0 * x * y) - 1.0;
+            Scalar df1dx1 = 10000.0 * y;
+            Scalar df1dx2 = 10000.0 * x;
 
-            result.set(0, (y * a) - (2.0 * std::exp(-x) * b));
-            result.set(1, (x * a) - (2.0 * std::exp(-y) * b));
+            Scalar f2 = std::exp(-x) + std::exp(-y) - 1.0001;
+            Scalar df2dx1 = -std::exp(-x);
+            Scalar df2dx2 = -std::exp(-y);            
+
+            Scalar a = (2.0 * f1 * df1dx1) + (2.0 * f2 * df2dx1);
+            Scalar b = (2.0 * f1 * df1dx2) + (2.0 * f2 * df2dx2);
+
+            result.set(0, a);
+            result.set(1, b);
 
             return true;
         }
 
         bool hessian(const Vector &point, Matrix &result) const override 
         {
+            if( mpi_world_size() > 1){
+                utopia_error("Function is not supported in parallel... \n"); 
+                return false; 
+            }
+
             assert(point.size().get(0) == 2);
 
             result = zeros(2, 2);
@@ -82,9 +118,21 @@ namespace utopia
             const Scalar x = point.get(0);
             const Scalar y = point.get(1);
 
-            const Scalar mixed = 20000 * (20000*x * y - 1.0) + 2.*std::exp(-x -y); 
-            const Scalar a = 2.*std::exp(-x-y) + 4.* std::exp(-2.0*x) - 2.0002*std::exp(-x) + 200000000*y*y; 
-            const Scalar b = 200000000*x*x + 2.*std::exp(-x-y) + 4.* std::exp(-2.0*y) - 2.0002*std::exp(-y); 
+            const Scalar f1 = (10000.0 * x * y) - 1.0;
+            const Scalar df1dx1 = 10000.0 * y;
+            const Scalar df1dx2 = 10000.0 * x;
+            const Scalar d2f1dx21 = 10000.0;
+
+            const Scalar f2 = std::exp(-x) + std::exp(-y) - 1.0001;
+            const Scalar df2dx1 = -std::exp(-x);
+            const Scalar df2dx2 = -std::exp(-y);            
+
+            const Scalar d2f2dx11 = std::exp(-x);
+            const Scalar d2f2dx22 = std::exp(-y);
+
+            const Scalar mixed = (2.0 * f1 * d2f1dx21) + (2.0 * df1dx2 * df1dx1) + (2.0 * df2dx2 * df2dx1);
+            const Scalar a = (2.0 * df1dx1 * df1dx1) + (2.0 * f2 * d2f2dx11) + (2.0 * df2dx1 * df2dx1);
+            const Scalar b = (2.0 * df1dx2 * df1dx2) + (2.0 * f2 * d2f2dx22) + (2.0 * df2dx2 * df2dx2);
 
             result.set(0, 0, a);
             result.set(0, 1, mixed);

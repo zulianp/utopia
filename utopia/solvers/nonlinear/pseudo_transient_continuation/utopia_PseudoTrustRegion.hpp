@@ -18,7 +18,7 @@ namespace utopia
      * Trust region algorithms and timestep selection by D.J. Higham
      */   
     template<class Matrix, class Vector>
-    class PseudoTrustRegion final: public NewtonBase<Matrix, Vector>
+    class PseudoTrustRegion final: public NewtonBase<Matrix, Vector>, public TrustRegionBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -52,7 +52,8 @@ namespace utopia
             Scalar g_norm, s_norm=9e9, tau, lambda_min;
             Scalar ared, pred, rho; 
 
-            Vector g = local_zeros(local_size(x)), eigenvector_min, s, x_trial; 
+            Vector g = local_zeros(local_size(x)), eigenvector_min, x_trial; 
+            Vector s = 0 * x; 
             Matrix H, H_damped; 
 
             fun.gradient(x, g); 
@@ -64,8 +65,9 @@ namespace utopia
 
             Matrix I = local_identity(local_size(H)); 
 
-            // tau = 1.0/g_norm; 
-            tau = g_norm; 
+            //tau = 1.0/g_norm; 
+            tau = std::min(g_norm, 10.0); 
+            // tau = g_norm; 
 
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm, energy_old, 0.0, tau, 0.0});
@@ -91,30 +93,29 @@ namespace utopia
                     pred = -1.0 * dot(g, s) -0.5 *dot(H* s, s);
                     rho = ared/pred; 
 
-                    if(rho < 1./4.)
-                        tau *=0.5; 
-                    else if(rho > 3./4.)
-                        tau *=2.0;
+
+                    if(rho < this->eta1())
+                        tau *= this->gamma1(); 
+                    else if(rho > this->eta2())
+                        tau *= this->gamma2();
                 }
                 else
                 {
                     rho = -1.0; 
-                    tau  *= 0.5; 
+                    tau  *= this->gamma1(); 
                 }
-
 
                 if(rho > 0.0)
                 {
                     x = x_trial; 
                     fun.gradient(x, g); 
-
                     energy_old = energy_new; 
                     energy = energy_new; 
 
                     norms2(g, s, g_norm, s_norm); 
                 }
                 else
-                {
+                {          
                     s_norm = norm2(s); 
                     energy = energy_old; 
                 }
@@ -122,16 +123,19 @@ namespace utopia
                 it++; 
 
                 if(this->verbose())
+                {   
+                    // we can not use s_norm as sometimes is zero, if we do not go for solve... 
                     PrintInfo::print_iter_status(it, {g_norm, energy,  rho, tau, s_norm});
+                }
 
-                converged = this->check_convergence(it, g_norm, 9e9, s_norm);
+                // we can not use s_norm as sometimes is zero, if we do not go for solve... 
+                converged = NewtonBase<Matrix, Vector>::check_convergence(it, g_norm, 9e9, 9e9);
 
-                if(!converged && rho >0.0)
+                if(!converged && rho >0.0){
                     fun.hessian(x, H); 
-
+                }
 
             } // outer solve loop while(!converged)
-
 
             return true;
         }
