@@ -323,8 +323,6 @@ namespace utopia
 
 			solver.solve(fun, x); 
 
-			exit(0);
-
 		}
 
 		SlepcsSolverTest()
