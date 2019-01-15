@@ -237,7 +237,8 @@ namespace utopia {
 	simulation_time(1.),
 	h1_regularization(false),
 	regularization_parameter(1e-4),
-	dt(0.1)
+	dt(0.1),
+	use_upwinding(true)
 	{}
 
 	void FractureFlowTransportSimulation::Transport::read(Input &in)
@@ -247,6 +248,7 @@ namespace utopia {
 		in.get("simulation-time", simulation_time);
 		in.get("h1-regularization", h1_regularization);
 		in.get("regularization-parameter", regularization_parameter);
+		in.get("use-upwinding", use_upwinding);
 
 		in.get("box", [this](Input &in) {
 			box_min.resize(3, -std::numeric_limits<double>::max());
@@ -330,13 +332,8 @@ namespace utopia {
 		auto b_form = inner(c * (flow.diffusion_tensor * grad(ph)), sampler_fun * grad(q)) * dX;
 		auto R_a    = inner(flow.diffusion_tensor * grad(ph), 		sampler_fun * grad(q)) * dX;
 
-		bool use_upwinding = true;
-
-
 		if(!use_upwinding) {
-
 			utopia::assemble(b_form, gradient_matrix);
-
 		} else {
 
 			auto n_local_dofs = dof_map.n_local_dofs();
@@ -362,9 +359,9 @@ namespace utopia {
 
 				for(std::size_t i = 0; i < n; ++i) {
 					for(std::size_t j = 0;  j < n; ++j) {
-						// auto sign = eval_R_a.get(i) >= 0. ? 1. : -1.;
-						// eval_b_form.set(i, j, -eval_b_form.get(i, j) * sign);
-						eval_b_form.set(i, j, -eval_b_form.get(i, j));
+						auto sign = eval_R_a.get(i) >= 0. ? 1. : -1.;
+						eval_b_form.set(i, j, -eval_b_form.get(i, j) * sign);
+						// eval_b_form.set(i, j, -eval_b_form.get(i, j));
 					}
 				}
 

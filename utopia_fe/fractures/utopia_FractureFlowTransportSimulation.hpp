@@ -43,6 +43,7 @@ namespace utopia {
 			UVector velocity;
 			bool lump_mass_matrix;
 			bool h1_regularization;
+			bool use_upwinding;
 			double regularization_parameter;
 			USparseMatrix mass_matrix;
 			USparseMatrix gradient_matrix;
