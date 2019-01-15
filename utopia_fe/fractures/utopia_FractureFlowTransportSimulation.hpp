@@ -28,7 +28,7 @@ namespace utopia {
 
 			void init(const UVector &pressure, FractureFlow &flow);
 			void update_output();
-			void assemble_system();
+			void assemble_system(FractureFlow &flow);
 			void remove_mass(const UVector &in, UVector &out);
 			void add_mass(const UVector &in, UVector &out) const;
 			void read(Input &in) override;
@@ -47,6 +47,7 @@ namespace utopia {
 			USparseMatrix mass_matrix;
 			USparseMatrix gradient_matrix;
 			USparseMatrix system_matrix;
+			UVector pressure_w;
 			UVector mass_vector;
 			UVector f;
 
