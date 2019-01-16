@@ -294,9 +294,10 @@ namespace utopia {
 	    assert(!empty(B));
 	    assert(!empty(D));
 
-
 	    UVector sol_transfered = local_zeros(local_size(D).get(0));
-	    L2TransferOperator(make_ref(B), make_ref(D)).apply(x_m, sol_transfered);
+	    L2TransferOperator t_op(make_ref(B), make_ref(D));
+	    t_op.init();
+	    t_op.apply(x_m, sol_transfered);
 	    lagr = sol_transfered - x_f;
 	    return true;
 	}

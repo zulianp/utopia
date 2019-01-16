@@ -354,13 +354,13 @@ namespace utopia {
 
 
 				//upwinding begin
-				auto eval_R_a   = eval(R_a,    ctx);
+				auto eval_R_a   = eval(R_a, ctx);
 				auto n = dofs.size();
 
 				for(std::size_t i = 0; i < n; ++i) {
 					for(std::size_t j = 0;  j < n; ++j) {
 						auto sign = eval_R_a.get(i) >= 0. ? 1. : -1.;
-						eval_b_form.set(i, j, -eval_b_form.get(i, j) * sign);
+						eval_b_form.set(i, j, eval_b_form.get(i, j) * sign);
 						// eval_b_form.set(i, j, -eval_b_form.get(i, j));
 					}
 				}
@@ -375,10 +375,10 @@ namespace utopia {
 		}
 
 		if(lump_mass_matrix) {
-			system_matrix = -dt * gradient_matrix;
+			system_matrix = dt * gradient_matrix;
 			system_matrix += USparseMatrix(diag(mass_vector));
 		} else {
-			system_matrix = mass_matrix - dt * gradient_matrix;
+			system_matrix = mass_matrix + dt * gradient_matrix;
 		}
 
 		if(h1_regularization) {
