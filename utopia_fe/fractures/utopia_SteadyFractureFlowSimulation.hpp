@@ -39,6 +39,9 @@ namespace utopia {
 		bool solve_monolithic();
 		bool solve_separate();
 		bool solve_staggered();
+
+		template<class IO>
+		void write_output_generic();
 	};
 }
 

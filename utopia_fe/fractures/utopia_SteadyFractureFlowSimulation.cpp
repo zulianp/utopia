@@ -302,17 +302,14 @@ namespace utopia {
 	    return true;
 	}
 
-	void SteadyFractureFlowSimulation::write_output()
+	template<class IO>
+	void SteadyFractureFlowSimulation::write_output_generic()
 	{
 		auto &V_m = matrix->space.subspace(0);
 		auto &V_f = fracture_newtork->space.subspace(0);
 
-		// libMesh::Nemesis_IO io_m(matrix->mesh.mesh());
-		// libMesh::Nemesis_IO io_f(fracture_newtork->mesh.mesh());
-
-
-		libMesh::ExodusII_IO io_m(matrix->mesh.mesh());
-		libMesh::ExodusII_IO io_f(fracture_newtork->mesh.mesh());
+		IO io_m(matrix->mesh.mesh());
+		IO io_f(fracture_newtork->mesh.mesh());
 
 		utopia::convert(x_m, *V_m.equation_system().solution);
 		V_m.equation_system().solution->close();
@@ -323,11 +320,23 @@ namespace utopia {
 		io_f.write_equation_systems(V_f.equation_system().name() + ".e", V_f.equation_systems());
 
 		if(!lagrange_multiplier->empty()) {
-		    libMesh::Nemesis_IO io_multiplier(lagrange_multiplier->mesh.mesh());
+		    IO io_multiplier(lagrange_multiplier->mesh.mesh());
 		    auto &L = lagrange_multiplier->space.subspace(0);
 		    utopia::convert(lagr, *L.equation_system().solution);
 		    L.equation_system().solution->close();
 		    io_multiplier.write_equation_systems(L.equation_system().name() + ".e", L.equation_systems());
+		}
+	}
+
+	void SteadyFractureFlowSimulation::write_output()
+	{
+		auto &V_m = matrix->space.subspace(0);
+		auto &V_f = fracture_newtork->space.subspace(0);
+
+		if(V_m.mesh().comm().size() == 1) {
+			write_output_generic<libMesh::ExodusII_IO>();
+		} else {
+			write_output_generic<libMesh::Nemesis_IO>();
 		}
 	}
 

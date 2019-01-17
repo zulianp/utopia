@@ -3077,6 +3077,26 @@ namespace utopia {
 			return ret;
 		}
 
+		inline static auto multiply(const QValues<VectorValueT> &left, const TestFunction<LibMeshFunctionSpace> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<VectorValueT>
+		{
+			auto f = fun(right, ctx);
+
+
+			const std::size_t n_functions = f.size();
+			const std::size_t n_quad_points = f[0].size();
+
+			FQValues<VectorValueT> ret(n_functions);
+	
+			for(std::size_t i = 0; i < n_functions; ++i) {
+				ret[i].resize(n_quad_points);
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[i][qp] = left[qp] * f[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
 		template<class Space>
 		inline static auto multiply(const Matrix &left, const TestFunction<ProductFunctionSpace<Space>> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> VectorFunctionType
 		{

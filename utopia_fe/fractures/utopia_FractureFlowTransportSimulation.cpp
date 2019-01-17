@@ -437,6 +437,14 @@ namespace utopia {
 
 		}
 
+//		for(auto tag : in_out_flow) {
+//			auto l_form = surface_integral(inner(vel * c, normal() * q), tag);
+//
+//			USparseMatrix boundary_matrix;
+//			utopia::assemble(l_form, boundary_matrix);
+//			gradient_matrix += boundary_matrix;
+//		}
+
 		if(lump_mass_matrix) {
 			system_matrix = dt * gradient_matrix;
 			system_matrix += USparseMatrix(diag(mass_vector));
@@ -475,14 +483,19 @@ namespace utopia {
 		copy_values(C, c0, C, velocity);
 
 		f = local_zeros(local_size(velocity));
+		
+		UVector ff;
 
+		// in_out_flow.push_back(1);
 		for(auto tag : in_out_flow) {
-			auto l_form = surface_integral(inner(vel * c, normal() * q), tag);
-
+			// auto c_in_out = 1.;
+			auto l_form = surface_integral(inner(vel, normal() * q), tag);
+			utopia::assemble(l_form, ff);
+			f += ff;
 		}
 
 		if(forcing_function) {
-			UVector ff;
+			
 			forcing_function->eval(velocity, ff);
 			f += ff;
 			double norm_f = norm2(f);

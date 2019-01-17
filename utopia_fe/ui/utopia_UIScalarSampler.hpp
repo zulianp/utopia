@@ -9,6 +9,8 @@
 #include <cassert>
 #include <cstdio>
 
+#include <libmesh/exact_solution.h>
+
 namespace utopia {
 
 	template<typename Scalar>
@@ -273,7 +275,13 @@ namespace utopia {
 
 
 	template<typename Scalar_>
-	class ContextFunction<std::vector<Scalar_>, Normal<Scalar_>> final : public Expression< ContextFunction<std::vector<Scalar_>, Normal<Scalar_>> >{
+	class ContextFunction<
+		std::vector<libMesh::VectorValue<Scalar_>>,
+		Normal<Scalar_>
+		> final : 
+		public Expression< 
+				ContextFunction<std::vector<libMesh::VectorValue<Scalar_>>, Normal<Scalar_>>
+				>{
 	public:
 		static const int Order = 1;
 		typedef Scalar_ Scalar;
@@ -282,16 +290,26 @@ namespace utopia {
 		{}
 
 		template<int Backend>
-		auto eval(const AssemblyContext<Backend> &ctx) const -> decltype(ctx.fe()[0]->get_normals())
+		auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<libMesh::VectorValue<Scalar_>>
 		{
-			return ctx.fe()[0]->get_normals();
+			const auto &n = ctx.fe()[0]->get_normals();
+			auto nn = n.size();
+
+			std::vector<libMesh::VectorValue<Scalar_>> normals(nn);
+			for(std::size_t i = 0; i < nn; ++i) {
+				for(int d = 0; d < LIBMESH_DIM; ++d) {
+					normals[i](d) = n[i](d);
+				}
+			}
+
+			return normals;
 		}
 
 	};
 
-	inline ContextFunction<std::vector<double>, Normal<double>> normal()
+	inline ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>> normal()
 	{
-		return ContextFunction<std::vector<double>, Normal<double>>();
+		return ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>>();
 	}
 
 

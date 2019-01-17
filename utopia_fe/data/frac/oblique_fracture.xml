@@ -11,10 +11,10 @@
 		<max-x>1.</max-x>
 		<max-y>1.</max-y>
 
-		<n-x>100</n-x>
-		<n-y>100</n-y>
+		<n-x>50</n-x>
+		<n-y>50</n-y>
 
-		<refinements>1</refinements>
+		<refinements>0</refinements>
 	</mesh>
 
 	<space>
