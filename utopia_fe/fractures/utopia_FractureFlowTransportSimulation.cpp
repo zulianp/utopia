@@ -325,13 +325,18 @@ namespace utopia {
 
 		auto sampler_fun = ctx_fun(flow.sampler);
 
+		static const int NONE = 0, FULL = 1, ARTIFICIAL_DIFFUSION = 2, SUPG = 3;
+		const int upwind_type = SUPG;
+
 
 		//FIXME This bugs because the var ranges are found from uh instead of c
 		// auto b_form = inner(c * uh, grad(q)) * dX;	
 
-		auto b_form = inner(c * (flow.diffusion_tensor * grad(ph)), sampler_fun * grad(q)) * dX;
-		auto R_a    = inner(flow.diffusion_tensor * grad(ph), 		sampler_fun * grad(q)) * dX;
-
+		// auto vel = sampler_fun * flow.diffusion_tensor * grad(ph);
+		auto vel = sampler_fun * grad(ph);
+		auto b_form = inner(c * vel,  grad(q)) * dX;
+		
+		
 		if(!use_upwinding) {
 			utopia::assemble(b_form, gradient_matrix);
 		} else {
@@ -346,30 +351,88 @@ namespace utopia {
 			for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
 				ctx.set_current_element((*e_it)->id());
 				ctx.set_has_assembled(false);
-				ctx.init( R_a + b_form );
+				ctx.init( b_form );
 
 				dof_map.dof_indices(*e_it, dofs);
 
 				auto eval_b_form = eval(b_form, ctx);
 
-
 				//upwinding begin
-				auto eval_R_a   = eval(R_a, ctx);
+				
 				auto n = dofs.size();
 
-				for(std::size_t i = 0; i < n; ++i) {
-					for(std::size_t j = 0;  j < n; ++j) {
-						auto sign = eval_R_a.get(i) >= 0. ? 1. : -1.;
-						eval_b_form.set(i, j, eval_b_form.get(i, j) * sign);
-						// eval_b_form.set(i, j, -eval_b_form.get(i, j));
+				switch(upwind_type) {
+					case SUPG:
+					{	
+						auto C = regularization_parameter/norm2(vel);
+
+						auto supg = 
+						(
+							inner(
+								inner(vel, grad(c)),
+								inner(vel, grad(q)) * C
+								) 
+						) * dX;
+
+						//auto hmin = (*e_it)->hmin();
+						auto hmax = (*e_it)->hmax();
+						auto eval_supg = eval(supg, ctx);
+						
+						eval_supg *= hmax;
+						eval_b_form += eval_supg;
+						break;
 					}
-				}
+					case ARTIFICIAL_DIFFUSION:
+					{
+						auto artificial_diffusion = inner(-0.01 * grad(c), grad(q)) * dX;
+						auto eval_diff = eval(artificial_diffusion, ctx);
+						eval_b_form += eval_diff;
+						break;
+					}
+
+					case FULL:
+					{	
+						auto R_a    = inner(flow.diffusion_tensor * grad(ph), 		sampler_fun * grad(q)) * dX;
+						auto eval_R_a  = eval(R_a, ctx);
+
+						//DOES not work
+						std::vector<bool> upwind_node(n, false);
+						std::vector<double> d_total_out(n, 0.);
+
+						double total_in = 0., total_out = 0.;
+
+						for(std::size_t i = 0; i < n; ++i) {
+							upwind_node[i] = eval_R_a.get(i) >= 0.;
+
+							if(upwind_node[i]) {
+								eval_b_form.set(i, i, eval_b_form.get(i, i) + eval_R_a.get(i));
+								total_out += eval_R_a.get(i);
+								d_total_out[i] += eval_R_a.get(i);
+							} else {
+								total_in -= eval_R_a.get(i);
+							}
+						}
+
+						for(std::size_t i = 0; i < n; ++i) {
+							if(!upwind_node[i]) {
+								auto val = eval_b_form.get(i, i);
+								eval_b_form.set(i, i, val * d_total_out[i]/total_in);
+							}	
+
+						}
+
+						break;
+					}
+
+					default:
+					{
+						assert(false);
+						break;
+					}
+				}	
 
 				//upwinding end
-
-				// if(ctx.has_assembled()) {
-					add_matrix(utopia::raw_type(eval_b_form), dofs, dofs, gradient_matrix);
-				// }
+				add_matrix(utopia::raw_type(eval_b_form), dofs, dofs, gradient_matrix);
 			}
 
 		}
@@ -387,7 +450,7 @@ namespace utopia {
 			USparseMatrix lapl_matrix;
 			utopia::assemble(lapl, lapl_matrix);
 
-			system_matrix -= (regularization_parameter * dt) * lapl_matrix;
+			system_matrix += (regularization_parameter * dt) * lapl_matrix;
 		}
 
 		UVector c0;
