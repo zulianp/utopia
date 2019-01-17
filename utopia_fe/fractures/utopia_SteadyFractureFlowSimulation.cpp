@@ -307,23 +307,27 @@ namespace utopia {
 		auto &V_m = matrix->space.subspace(0);
 		auto &V_f = fracture_newtork->space.subspace(0);
 
-		libMesh::Nemesis_IO io_m(matrix->mesh.mesh());
-		libMesh::Nemesis_IO io_f(fracture_newtork->mesh.mesh());
+		// libMesh::Nemesis_IO io_m(matrix->mesh.mesh());
+		// libMesh::Nemesis_IO io_f(fracture_newtork->mesh.mesh());
+
+
+		libMesh::ExodusII_IO io_m(matrix->mesh.mesh());
+		libMesh::ExodusII_IO io_f(fracture_newtork->mesh.mesh());
 
 		utopia::convert(x_m, *V_m.equation_system().solution);
 		V_m.equation_system().solution->close();
-		io_m.write_timestep(V_m.equation_system().name() + ".e", V_m.equation_systems(), 1, 0);
+		io_m.write_equation_systems(V_m.equation_system().name() + ".e", V_m.equation_systems());
 
 		utopia::convert(x_f, *V_f.equation_system().solution);
 		V_f.equation_system().solution->close();
-		io_f.write_timestep(V_f.equation_system().name() + ".e", V_f.equation_systems(), 1, 0);
+		io_f.write_equation_systems(V_f.equation_system().name() + ".e", V_f.equation_systems());
 
 		if(!lagrange_multiplier->empty()) {
 		    libMesh::Nemesis_IO io_multiplier(lagrange_multiplier->mesh.mesh());
 		    auto &L = lagrange_multiplier->space.subspace(0);
 		    utopia::convert(lagr, *L.equation_system().solution);
 		    L.equation_system().solution->close();
-		    io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);
+		    io_multiplier.write_equation_systems(L.equation_system().name() + ".e", L.equation_systems());
 		}
 	}
 

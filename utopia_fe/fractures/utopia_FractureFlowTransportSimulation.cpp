@@ -474,13 +474,19 @@ namespace utopia {
 
 		copy_values(C, c0, C, velocity);
 
+		f = local_zeros(local_size(velocity));
+
+		for(auto tag : in_out_flow) {
+			auto l_form = surface_integral(inner(vel * c, normal() * q), tag);
+
+		}
 
 		if(forcing_function) {
-			forcing_function->eval(velocity, f);
+			UVector ff;
+			forcing_function->eval(velocity, ff);
+			f += ff;
 			double norm_f = norm2(f);
 			std::cout << "norm_f " << norm_f << std::endl;
-		} else {
-			f = local_zeros(local_size(velocity));
 		}
 	}
 

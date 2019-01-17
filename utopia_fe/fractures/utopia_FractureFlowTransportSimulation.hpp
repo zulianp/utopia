@@ -59,6 +59,7 @@ namespace utopia {
 			double simulation_time;
 
 			std::vector<double> box_min, box_max;
+			std::vector<int> in_out_flow;
 		};
 
 		SteadyFractureFlowSimulation steady_flow_;

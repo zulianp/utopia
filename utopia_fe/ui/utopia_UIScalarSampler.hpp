@@ -105,7 +105,6 @@ namespace utopia {
 	) {	
 		return std::make_shared<UIBoxedFunction<double>>(lowbo, upbo, lambda_fun(fun));
 	}
-
 	
 
 	template<typename Scalar_>
@@ -268,6 +267,33 @@ namespace utopia {
 		std::vector<Scalar> values_;
 
 	};
+
+	template<typename Scalar>
+	class Normal final {};
+
+
+	template<typename Scalar_>
+	class ContextFunction<std::vector<Scalar_>, Normal<Scalar_>> final : public Expression< ContextFunction<std::vector<Scalar_>, Normal<Scalar_>> >{
+	public:
+		static const int Order = 1;
+		typedef Scalar_ Scalar;
+
+		ContextFunction()
+		{}
+
+		template<int Backend>
+		auto eval(const AssemblyContext<Backend> &ctx) const -> decltype(ctx.fe()[0]->get_normals())
+		{
+			return ctx.fe()[0]->get_normals();
+		}
+
+	};
+
+	inline ContextFunction<std::vector<double>, Normal<double>> normal()
+	{
+		return ContextFunction<std::vector<double>, Normal<double>>();
+	}
+
 
 }
 

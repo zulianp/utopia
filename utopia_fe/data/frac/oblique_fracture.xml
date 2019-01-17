@@ -107,7 +107,7 @@
 <!-- <preset-velocity-field>true</preset-velocity-field> -->
 
 <transport>
-	<dt>0.001</dt>
+	<dt>0.1</dt>
 	<simulation-time>1.</simulation-time>
 	<lump-mass-matrix>false</lump-mass-matrix>
 	<!-- <h1-regularization>false</h1-regularization> -->
