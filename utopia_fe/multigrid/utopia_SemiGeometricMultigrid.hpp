@@ -43,7 +43,7 @@ namespace utopia {
 			return mg.max_it();
 		}
 
-		inline void atol(const double tol) {
+		inline void atol(const double &tol) override {
 			algebraic().atol(tol);
 		}
 

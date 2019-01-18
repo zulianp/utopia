@@ -11,8 +11,8 @@
 		<max-x>1.</max-x>
 		<max-y>1.</max-y>
 
-		<n-x>50</n-x>
-		<n-y>50</n-y>
+		<n-x>20</n-x>
+		<n-y>20</n-y>
 
 		<refinements>0</refinements>
 	</mesh>
@@ -163,24 +163,26 @@
 			</boundary-conditions>
 
 		</space>
+
+		<forcing-function>
+		<!-- 	<fun>
+				<side>1</side>
+				<value>1.</value>
+			</fun> -->
+			<!-- <fun>
+				<side>4</side>
+				<value>-1.</value>
+			</fun> -->
+			<fun>
+				<type>surface</type>
+				<value>-1.</value>
+				<block>3</block>
+				<coord>2</coord>
+			</fun>
+		</forcing-function>
 	</matrix>
 
-	<forcing-function>
-	<!-- 	<fun>
-			<side>1</side>
-			<value>1.</value>
-		</fun> -->
-		<!-- <fun>
-			<side>4</side>
-			<value>-1.</value>
-		</fun> -->
-		<!-- <fun>
-			<type>surface</type>
-			<value>1.</value>
-			<block>3</block>
-			<coord>2</coord>
-		</fun> -->
-	</forcing-function>
+
 
 </transport>
 

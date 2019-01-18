@@ -384,7 +384,7 @@ namespace utopia {
 					}
 					case ARTIFICIAL_DIFFUSION:
 					{
-						auto artificial_diffusion = inner(-0.01 * grad(c), grad(q)) * dX;
+						auto artificial_diffusion = inner(regularization_parameter * grad(c), grad(q)) * dX;
 						auto eval_diff = eval(artificial_diffusion, ctx);
 						eval_b_form += eval_diff;
 						break;
