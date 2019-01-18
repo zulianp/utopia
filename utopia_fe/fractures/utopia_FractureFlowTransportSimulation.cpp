@@ -450,11 +450,11 @@ namespace utopia {
 		}
 
 		for(auto tag : in_out_flow) {
-			auto l_form = surface_integral(inner(vel * c, normal() * q), tag);
+			auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
 
-			USparseMatrix boundary_matrix;
-			utopia::assemble(l_form, boundary_matrix);
-			gradient_matrix += boundary_matrix;
+			USparseMatrix boundary_flow_matrix;
+			utopia::assemble(flow_form, boundary_flow_matrix);
+			gradient_matrix -= boundary_flow_matrix;
 
 			std::cout << "boundary flow at " << tag << std::endl;
 		}
@@ -501,12 +501,12 @@ namespace utopia {
 		UVector ff;
 
 		// in_out_flow.push_back(1);
-		for(auto tag : in_out_flow) {
-			// auto c_in_out = 1.;
-			auto l_form = surface_integral(inner(vel, normal() * q), tag);
-			utopia::assemble(l_form, ff);
-			f += ff;
-		}
+		// for(auto tag : in_out_flow) {
+		// 	// auto c_in_out = 1.;
+		// 	auto l_form = surface_integral(inner(vel, normal() * q), tag);
+		// 	utopia::assemble(l_form, ff);
+		// 	f += ff;
+		// }
 
 		if(forcing_function) {
 			
@@ -517,6 +517,21 @@ namespace utopia {
 		}
 	}
 
+	void FractureFlowTransportSimulation::Transport::post_process_time_step(FractureFlow &flow)
+	{
+		auto &C = space->space().last_subspace();
+		auto &dof_map = C.dof_map();
+
+		auto c = trial(C);
+		auto ch = interpolate(velocity, c);
+		auto form = inner(ch, ctx_fun(flow.sampler)) * dX;
+
+		double value = 0.;
+		utopia::assemble(form, value);
+
+		disp(value);
+
+	}
 
 	void FractureFlowTransportSimulation::Transport::constrain_concentration(UVector &vec)
 	{	

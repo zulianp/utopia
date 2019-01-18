@@ -34,6 +34,7 @@ namespace utopia {
 			void read(Input &in) override;
 			void constrain_concentration(UVector &vec);
 			void compute_upwind_operator();
+			void post_process_time_step(FractureFlow &flow);
 
 			std::shared_ptr<UIFunctionSpace<LibMeshFunctionSpace>> steady_state_function_space;
 			std::unique_ptr<UIFunctionSpace<LibMeshFunctionSpace>> space;
