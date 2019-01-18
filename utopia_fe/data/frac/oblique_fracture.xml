@@ -14,7 +14,7 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<refinements>0</refinements>
+		<refinements>2</refinements>
 	</mesh>
 
 	<space>
@@ -107,8 +107,8 @@
 <!-- <preset-velocity-field>true</preset-velocity-field> -->
 
 <transport>
-	<dt>0.1</dt>
-	<simulation-time>1.</simulation-time>
+	<dt>0.01</dt>
+	<simulation-time>2.</simulation-time>
 	<lump-mass-matrix>false</lump-mass-matrix>
 	<!-- <h1-regularization>false</h1-regularization> -->
 	<regularization-parameter>0.5</regularization-parameter>
@@ -175,11 +175,13 @@
 			</fun> -->
 			<fun>
 				<type>surface</type>
-				<value>-1.</value>
+				<value>1.</value>
 				<block>3</block>
 				<coord>2</coord>
 			</fun>
 		</forcing-function>
+
+		<outflow>3</outflow>
 	</matrix>
 
 

@@ -250,6 +250,18 @@ namespace utopia {
 		in.get("regularization-parameter", regularization_parameter);
 		in.get("use-upwinding", use_upwinding);
 
+		int outflow = -1, inflow = -1;
+		in.get("inflow", inflow);
+		in.get("outflow", outflow);
+
+		if(inflow != -1) {
+			in_out_flow.push_back(inflow);
+		}
+
+		if(outflow != -1) {
+			in_out_flow.push_back(outflow);
+		}
+
 		in.get("box", [this](Input &in) {
 			box_min.resize(3, -std::numeric_limits<double>::max());
 			box_max.resize(3,  std::numeric_limits<double>::max());
@@ -437,13 +449,15 @@ namespace utopia {
 
 		}
 
-//		for(auto tag : in_out_flow) {
-//			auto l_form = surface_integral(inner(vel * c, normal() * q), tag);
-//
-//			USparseMatrix boundary_matrix;
-//			utopia::assemble(l_form, boundary_matrix);
-//			gradient_matrix += boundary_matrix;
-//		}
+		for(auto tag : in_out_flow) {
+			auto l_form = surface_integral(inner(vel * c, normal() * q), tag);
+
+			USparseMatrix boundary_matrix;
+			utopia::assemble(l_form, boundary_matrix);
+			gradient_matrix += boundary_matrix;
+
+			std::cout << "boundary flow at " << tag << std::endl;
+		}
 
 		if(lump_mass_matrix) {
 			system_matrix = dt * gradient_matrix;
