@@ -127,22 +127,6 @@
 			<system-name>transport</system-name>
 			<variables>
 				<var>
-					<name>vel_0</name>
-					<order>1</order>
-					<fe-family>LAGRANGE</fe-family>
-				<!-- 	<order>0</order>
-					<fe-family>MONOMIAL</fe-family> -->
-
-				</var>
-				<var>
-					<name>vel_1</name>
-					<order>1</order>
-					<fe-family>LAGRANGE</fe-family>
-				<!-- 	<order>0</order>
-					<fe-family>MONOMIAL</fe-family> -->
-
-				</var>
-				<var>
 					<name>c</name>
 					<order>1</order>
 					<fe-family>LAGRANGE</fe-family>

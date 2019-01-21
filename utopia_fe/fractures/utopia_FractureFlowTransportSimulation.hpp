@@ -14,6 +14,7 @@ namespace utopia {
 		void compute_transport();
 		void append_aux_systems();
 		void write_output();
+		void compute_upwind_operator();
 
 	private:
 		class Transport : public Configurable {
@@ -33,7 +34,8 @@ namespace utopia {
 			void add_mass(const UVector &in, UVector &out) const;
 			void read(Input &in) override;
 			void constrain_concentration(UVector &vec);
-			void compute_upwind_operator();
+			void assemble_aux_quantities(FractureFlow &flow);
+			
 			void post_process_time_step(FractureFlow &flow);
 
 			std::shared_ptr<UIFunctionSpace<LibMeshFunctionSpace>> steady_state_function_space;
@@ -41,7 +43,7 @@ namespace utopia {
 			std::unique_ptr<UIForcingFunction<LibMeshFunctionSpace, UVector>> forcing_function;
 			ProductFunctionSpace<LibMeshFunctionSpace> aux_space;
 			
-			UVector velocity;
+			UVector concentration;
 			bool lump_mass_matrix;
 			bool h1_regularization;
 			bool use_upwinding;
