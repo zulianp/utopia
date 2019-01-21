@@ -33,10 +33,24 @@ namespace utopia
 
 		using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
-		LinearMultiLevel(const Parameters params = Parameters())
-		: MultiLevelBase<Matrix, Vector>(params),
-		fix_semidefinite_operators_(false)
+		LinearMultiLevel(): MultiLevelBase<Matrix, Vector>()
 		{ }
+
+		virtual void read(Input &in) override
+        {
+        	MultiLevelBase<Matrix, Vector>::read(in); 
+
+        	bool flg_masks; 
+            in.get("must_generate_masks", flg_masks);
+            mask_.active(flg_masks);
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+        	MultiLevelBase<Matrix, Vector>::print_usage(os); 
+            this->print_param_usage(os, "must_generate_masks", "bool", "Flag deciding if masks should be generated.", "-"); 
+        }
+
 
 		virtual ~LinearMultiLevel(){}
 
@@ -125,12 +139,6 @@ namespace utopia
 			return true;
 		}
 
-		inline void set_fix_semidefinite_operators(const bool val)
-		{
-			fix_semidefinite_operators_ = val;
-		}
-
-
 		inline const Level &level(const SizeType l) const
 		{
 			return levels_[l];
@@ -160,8 +168,6 @@ namespace utopia
 	protected:
 		std::vector<Level>                  levels_;      /*!< vector of level operators     */
 		MultiLevelMask<Matrix, Vector> mask_;
-		bool fix_semidefinite_operators_;
-		bool must_generate_masks_;
 
 		/**
 		 * @brief
@@ -194,7 +200,7 @@ namespace utopia
 				std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();
 				this->transfer(t_s - i).restrict(levels_[i - 1].A(), *J_h);
 
-				if(fix_semidefinite_operators_) {
+				if(this->fix_semidefinite_operators()) {
 					fix_semidefinite_operator(*J_h);
 				}
 

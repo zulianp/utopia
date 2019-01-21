@@ -9,7 +9,7 @@
 namespace utopia {
 
 	template<typename T, int Order_>
-	class ConstantCoefficient : public Expression< ConstantCoefficient<T, Order_> > {
+	class ConstantCoefficient final : public Expression< ConstantCoefficient<T, Order_> > {
 	public:
 		static const int Order = Order_;
 
@@ -52,7 +52,7 @@ namespace utopia {
 	};
 
 	template<typename T>
-	class ConstantCoefficient<T, 0> : public Expression< ConstantCoefficient<T, 0> > {
+	class ConstantCoefficient<T, 0> final : public Expression< ConstantCoefficient<T, 0> > {
 	public:
 
 		enum {
@@ -166,7 +166,7 @@ namespace utopia {
 
 
 	template<class Fun, typename T, int Order_>
-	class FunctionCoefficient : public Expression< FunctionCoefficient<Fun, T, Order_> > {
+	class FunctionCoefficient final : public Expression< FunctionCoefficient<Fun, T, Order_> > {
 	public:
 			enum {
 				Order = Order_
@@ -204,7 +204,7 @@ namespace utopia {
 	};
 
 	template<class Fun, typename T>
-	class FunctionCoefficient<Fun, T, 0>  : public Expression< FunctionCoefficient<Fun, T, 0> > {
+	class FunctionCoefficient<Fun, T, 0> final : public Expression< FunctionCoefficient<Fun, T, 0> > {
 	public:
 			enum {
 				Order = 0

@@ -30,11 +30,6 @@ namespace utopia {
 			return new SemiGeometricMultigrid();
 		}
 
-		virtual void set_parameters(const Parameters params) override
-		{
-			mg.set_parameters(params);
-		}
-
 		inline void verbose(const bool &val) override
 		{
 			mg.verbose(val);

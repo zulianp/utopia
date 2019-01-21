@@ -111,11 +111,16 @@ namespace utopia {
 		{
 			Write<Wrapper<Vector, 1>> w_v(vec);
 
-			Range r = range(vec);
-			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(has_constaints && dof_map.is_constrained_dof(i)) {
-					auto valpos = rhs_values.find(i);
-					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+			if(has_constaints) {
+				Range r = range(vec);
+				for(SizeType i = r.begin(); i < r.end(); ++i) {
+					if(dof_map.is_constrained_dof(i)) {
+						auto valpos = rhs_values.find(i);
+
+						// if(valpos != rhs_values.end()) {
+						vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+						// }
+					}
 				}
 			}
 		}

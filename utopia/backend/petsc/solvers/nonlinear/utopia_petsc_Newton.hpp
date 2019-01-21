@@ -15,7 +15,7 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class Newton<Matrix, Vector, PETSC_EXPERIMENTAL> : public SNESSolver<Matrix, Vector>
+    class Newton<Matrix, Vector, PETSC_EXPERIMENTAL> final: public SNESSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
@@ -27,42 +27,60 @@ namespace utopia
 
         public:
         Newton( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                const Parameters params = Parameters(), 
                 const Scalar & alpha = 1.0, 
                 const SizeType & order = 3, 
                 const std::vector<std::string> ls_types    = {"basic", "bt", "l2", "cp", "nleqerr"}) :   
                     
-                    SNESSolver(linear_solver, params), alpha_(alpha), line_search_types_(ls_types)
+                    SNESSolver(linear_solver), alpha_(alpha), line_search_types_(ls_types)
         { 
             line_search_type_ = line_search_types_.at(0); 
-            set_parameters(params); 
             this->set_snes_type("newtonls"); 
 
             line_search_order_ = (order < 4 && order > 0) ?  order : 3; 
         }
 
-        virtual void set_parameters(const Parameters params) override
-        {
-            SNESSolver::set_parameters(params); 
-        }
-
-
-        virtual void set_line_search_type(const std::string & ls_type)
+        void line_search_type(const std::string & ls_type)
         {
             line_search_type_ = in_array(ls_type, line_search_types_) ? ls_type : line_search_types_.at(0);; 
         }
 
-        virtual void set_line_search_order(const SizeType & order)
+        void line_search_order(const SizeType & order)
         {
             line_search_order_ = (order < 4 && order > 0) ?  order : 3; 
         }
 
+        void damping_parameter(const Scalar & alpha)
+        {
+            alpha_ = alpha; 
+        }
+
+
+        void read(Input &in) override
+        {
+            SNESSolver::read(in); 
+
+            in.get("damping_parameter", alpha_);
+            in.get("line_search_order", line_search_order_);
+            in.get("line_search_type", line_search_type_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            SNESSolver::print_usage(os); 
+
+            this->print_param_usage(os, "damping_parameter", "double", "Constant damping parameter.", "1"); 
+            this->print_param_usage(os, "line_search_order", "int", "Interpolation order used inside of linea-search-strategy.", "3"); 
+            this->print_param_usage(os, "line_search_type", "string", "Type of line-search to be used.", "basic"); 
+        }        
+
+
 
     protected: 
-        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                                    const Scalar & rtol     = SNESSolver::rtol(), 
-                                                    const Scalar & stol     = SNESSolver::stol(), 
-                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+                                            const Scalar & rtol     = SNESSolver::rtol(), 
+                                            const Scalar & stol     = SNESSolver::stol(), 
+                                            const SizeType & max_it = SNESSolver::max_it()) override 
         {
             SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
             

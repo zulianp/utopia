@@ -3,6 +3,7 @@
 
 #include <array>
 #include <algorithm>
+#include <cmath>
 
 namespace utopia {
 	class AffineTransform {
@@ -168,6 +169,9 @@ namespace utopia {
 
 		static void make_rotation_3(const double angle, const char axis, std::array<double, 9> &result)
 		{
+			using std::cos;
+			using std::sin;
+
 			set(0, 0, 1., result);
 			set(1, 1, 1., result);
 			set(2, 2, 1., result);
@@ -196,6 +200,9 @@ namespace utopia {
 
 		static void make_rotation_2(const double angle, std::array<double, 9> &result)
 		{
+			using std::cos;
+			using std::sin;
+
 			set(0, 0, cos(angle),  result);
 			set(0, 1, -sin(angle), result);
 			set(1, 0, sin(angle),  result);

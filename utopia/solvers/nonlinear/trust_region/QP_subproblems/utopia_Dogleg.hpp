@@ -2,7 +2,6 @@
 #define UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
 
 namespace utopia
@@ -16,9 +15,8 @@ namespace utopia
 
         public:
 
-        Dogleg( const std::shared_ptr <LinearSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                const Parameters & params = Parameters()) :
-                TRSubproblem<Matrix, Vector>(params),
+        Dogleg( const std::shared_ptr <LinearSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()) :
+                TRSubproblem<Matrix, Vector>(),
                 ls_solver_(linear_solver)
                 { }
 
@@ -32,6 +30,21 @@ namespace utopia
                 return aux_solve(*this->get_operator(), -1.0 * b, x);
             }
 
+            void read(Input &in) override
+            {
+                TRSubproblem<Matrix, Vector>::read(in);
+                
+                if(ls_solver_){
+                    in.get("linear-solver", *ls_solver_); 
+                }
+            }
+
+
+            void print_usage(std::ostream &os) const override
+            {
+                TRSubproblem<Matrix, Vector>::print_usage(os);
+                this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+            }
 
         protected:
             bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k) 

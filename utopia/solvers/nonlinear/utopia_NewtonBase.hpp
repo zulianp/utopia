@@ -3,8 +3,6 @@
 
 #include "utopia_Function.hpp"
 #include "utopia_ExtendedFunction.hpp"
-
-#include "utopia_Parameters.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Monitor.hpp"
@@ -24,12 +22,11 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
 
-        NewtonBase( const std::shared_ptr<Solver> &linear_solver,
-                    const Parameters &params = Parameters()): 
-                    NonLinearSolver<Vector>(params), 
-                    linear_solver_(linear_solver)
+        NewtonBase( const std::shared_ptr<Solver> &linear_solver): 
+                    NonLinearSolver<Vector>(), 
+                    linear_solver_(linear_solver), check_diff_(false)
         {
-            set_parameters(params);        
+              
         }
 
         virtual ~NewtonBase() {}
@@ -82,21 +79,14 @@ namespace utopia
                 in.get("linear-solver", *linear_solver_);
             }
         }
-      
 
-        /**
-         * @brief      Settter the parameters.
-         *
-         * @param[in]  params  The parameters
-         */
-        virtual void set_parameters(const Parameters params) override
+        virtual void print_usage(std::ostream &os) const override
         {
-            NonLinearSolver<Vector>::set_parameters(params); 
-            check_diff_         = params.differentiation_control(); 
-
-        }
-
-
+            NonLinearSolver<Vector>::print_usage(os);
+            this->print_param_usage(os, "check_diff", "bool", "Enables finite difference controller", "false"); 
+            this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+        }        
+      
         /**
          * @brief      Changes linear solver used inside of nonlinear-solver. 
          *
@@ -120,6 +110,7 @@ namespace utopia
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
         {
             linear_solver_->update(make_ref(mat));
+            this->solution_status_.num_linear_solves++; 
             return linear_solver_->apply(rhs, sol);
         }
 
@@ -132,6 +123,7 @@ namespace utopia
         inline bool linear_solve(const Matrix &mat, const Matrix &prec, const Vector &rhs, Vector &sol)
         {
             static_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())->update(make_ref(mat), make_ref(prec));
+            this->solution_status_.num_linear_solves++; 
             return linear_solver_->apply(rhs, sol);
         }
 

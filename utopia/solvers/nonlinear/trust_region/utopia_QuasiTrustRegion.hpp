@@ -6,8 +6,6 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
-#include "utopia_Parameters.hpp"
-#include "utopia_SteihaugToint.hpp"
 
 
  namespace utopia
@@ -24,26 +22,28 @@
 
      	public:
       QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx, 
-                        const std::shared_ptr<TRSubproblem> &tr_subproblem,
-                        const Parameters params = Parameters()) : 
+                        const std::shared_ptr<TRSubproblem> &tr_subproblem): 
                         NonLinearSolver(hessian_approx, tr_subproblem)
       {
-        set_parameters(params);
+        
       }
 
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      void set_parameters(const Parameters params) override
+      void read(Input &in) override
       {
-        NonLinearSolver::set_parameters(params);
-        TrustRegionBase<Vector>::set_parameters(params);
+        TrustRegionBase<Vector>::read(in); 
+        QuasiNewtonBase<Vector>::read(in); 
       }
+
+      void print_usage(std::ostream &os) const override
+      {
+        TrustRegionBase<Vector>::print_usage(os); 
+        QuasiNewtonBase<Vector>::print_usage(os); 
+      }
+
 
 
       /**
-       * @brief      Trust region solve.
+       * @brief      QUasi trust region solve.
        *
        * @param      fun   The nonlinear solve function.
        * @param      x_k   Initial gues/ solution
@@ -113,6 +113,7 @@
             p_k *= 0; 
             tr_subproblem->current_radius(delta); 
             tr_subproblem->solve(*multiplication_action, -1.0 * g, p_k);   
+            this->solution_status_.num_linear_solves++; 
           }
           else
           {

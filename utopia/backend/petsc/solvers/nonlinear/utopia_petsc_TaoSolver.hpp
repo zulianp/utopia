@@ -74,6 +74,19 @@ namespace utopia {
 			type_ = type;
 		}
 
+        void read(Input &in) override
+        {
+            NewtonBase<Matrix, Vector>::read(in);
+            in.get("type", type_);
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            NewtonBase<Matrix, Vector>::print_usage(os);
+            this->print_param_usage(os, "type", "string", "Type of tao solver.", "-"); 
+        }		
+
 		inline void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package)
 		{
 			impl_.set_ksp_types(ksp, pc, solver_package);
@@ -85,7 +98,7 @@ namespace utopia {
 		}
 
 
-		bool solve(Function<Matrix, Vector> &fun, Vector &x)
+		bool solve(Function<Matrix, Vector> &fun, Vector &x) override
 		{	
 			setup_solve(fun, x); 
 			return impl_.solve(x.implementation());

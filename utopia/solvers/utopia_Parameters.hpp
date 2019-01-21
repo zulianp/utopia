@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-22
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_UTOPIA_PARAMETERS_HPP
 #define UTOPIA_UTOPIA_PARAMETERS_HPP
 
@@ -19,19 +12,19 @@ namespace utopia
 {
 
 
-      // type of cycles used in Multilevel stuff 
-      static const int MULTIPLICATIVE_CYCLE = 1;
-      static const int ADDITIVE_CYCLE       = 2;
-      static const int FULL_CYCLE           = 3;
-      static const int NESTED_ITERATION     = 4;
+      // // type of cycles used in Multilevel stuff 
+      // static const int MULTIPLICATIVE_CYCLE = 1;
+      // static const int ADDITIVE_CYCLE       = 2;
+      // static const int FULL_CYCLE           = 3;
+      // static const int NESTED_ITERATION     = 4;
 
 
 
 
-    enum VerbosityLevel  {  VERBOSITY_LEVEL_QUIET         =-1,
-                            VERBOSITY_LEVEL_NORMAL        = 0,
-                            VERBOSITY_LEVEL_VERY_VERBOSE  = 1,
-                            VERBOSITY_LEVEL_DEBUG         = 2 };
+    // enum VerbosityLevel  {  VERBOSITY_LEVEL_QUIET         =-1,
+    //                         VERBOSITY_LEVEL_NORMAL        = 0,
+    //                         VERBOSITY_LEVEL_VERY_VERBOSE  = 1,
+    //                         VERBOSITY_LEVEL_DEBUG         = 2 };
 
 
 
@@ -102,7 +95,7 @@ namespace utopia
           post_smoothing_steps_ = 3; 
           omega_ = 0.3; 
           static_time_step_ = true; 
-          cycle_type_      = MULTIPLICATIVE_CYCLE; 
+          cycle_type_      = 1; 
           sigma_            = 1; 
 
         /*----------  LS  ----------*/
@@ -133,7 +126,7 @@ namespace utopia
           log_iterates_       = false; 
           log_system_         = false; 
           log_norms_          = false; 
-          verbosity_level_    = VERBOSITY_LEVEL_NORMAL; 
+          // verbosity_level_    = VERBOSITY_LEVEL_NORMAL; 
 
 
         /* ---------- stag. scheme -------------- */
@@ -241,7 +234,7 @@ namespace utopia
     SizeType    num_alternate_steps() const          { return num_alternate_steps_; } 
     Scalar      energy_slope_tol() const             { return energy_slope_tol_; }
 
-    VerbosityLevel verbosity_level() const            {return verbosity_level_; }
+    // VerbosityLevel verbosity_level() const            {return verbosity_level_; }
 
     // -------------------------------------------------------------------------------//
     /* --------------------------------  SETTERS  ------------------------------------*/
@@ -338,7 +331,7 @@ namespace utopia
     void    num_alternate_steps(const SizeType & num_alternate_steps)           {   num_alternate_steps_ = num_alternate_steps; } 
     void    energy_slope_tol(const Scalar & energy_slope_tol)                   {   energy_slope_tol_ = energy_slope_tol; }
 
-    void    verbosity_level(const VerbosityLevel & verbosity_level)             {verbosity_level_ = verbosity_level; }
+    // void    verbosity_level(const VerbosityLevel & verbosity_level)             {verbosity_level_ = verbosity_level; }
 
 
     protected: 
@@ -407,7 +400,7 @@ namespace utopia
           bool log_system_; 
           bool log_norms_;
 
-          VerbosityLevel verbosity_level_; 
+          // VerbosityLevel verbosity_level_; 
 
 
           // RMTR parameters

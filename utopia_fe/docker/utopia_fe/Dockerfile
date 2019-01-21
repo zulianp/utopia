@@ -13,7 +13,7 @@ RUN export PATH=$PATH:$MPI_DIR/bin
 
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
 
-RUN git clone https://zulianp@bitbucket.org/zulianp/utopia.git utopia_cloned
+RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
 RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
 
 # compile utopia

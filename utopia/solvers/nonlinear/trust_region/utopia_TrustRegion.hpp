@@ -6,15 +6,13 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
-#include "utopia_Parameters.hpp"
-#include "utopia_SteihaugToint.hpp"
 
 
  namespace utopia
  {
     	template<class Matrix, class Vector>
      	class TrustRegion final: public NewtonBase<Matrix, Vector>,
-                          public TrustRegionBase<Vector>
+                               public TrustRegionBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -25,25 +23,25 @@
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 
      	public:
-      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem,
-                  const Parameters params = Parameters()) : NonLinearSolver(tr_subproblem, params)
+      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem): 
+                  NonLinearSolver(tr_subproblem)
       {
-        set_parameters(params);
+        
       }
 
       using utopia::TrustRegionBase<Vector>::get_pred; 
 
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      void set_parameters(const Parameters params) override
+      void read(Input &in) override
       {
-        NonLinearSolver::set_parameters(params);
-        TrustRegionBase::set_parameters(params);
+        TrustRegionBase::read(in); 
+        NonLinearSolver::read(in); 
       }
 
-
+      void print_usage(std::ostream &os) const override
+      {
+        TrustRegionBase::print_usage(os);
+        NonLinearSolver::print_usage(os); 
+      }
 
       bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override
       {
@@ -110,7 +108,8 @@
           {
             p_k *= 0; 
             tr_subproblem->current_radius(delta); 
-            tr_subproblem->solve(H, -1.0 * g, p_k);       
+            tr_subproblem->solve(H, -1.0 * g, p_k);      
+            this->solution_status_.num_linear_solves++;  
           }
           else
           {

@@ -36,15 +36,14 @@ namespace utopia {
 				m.set(i, i + 1, -1.0);
 			}
 
-			if(i == 0 || i == n-1) {
+			if(i == 0 || i == n - 1) {
 				m.set(i, i, 1.);
 			} else {
 				m.set(i, i, 2.0);
 			}
 		}
+
 	}
-
-
 
 	template<class Matrix>
 	void assemble_symmetric_laplacian_1D(Matrix &m, const bool bc = false)
@@ -64,7 +63,7 @@ namespace utopia {
 				m.set(i, i + 1, -1.0);
 			}
 
-			if(i == 0 || i == n-1) {
+			if(i == 0 || i == n - 1) {
 				m.set(i, i, 1.);
 			} else {
 				m.set(i, i, 2.0);
@@ -73,26 +72,25 @@ namespace utopia {
 
 		if(bc) 
 		{
-			for(SizeType i = r.begin(); i != r.end(); ++i) 
-			{
-				if(i == 0) {
-					m.set(0, 0, 1.);
-					m.set(1, 0, 0.);
-					m.set(0, 1, 0.);
-					continue;
-				}
+			if(r.inside(0)) {
+				m.set(0, 0, 1.);
+				m.set(0, 1, 0.);
+			}
 
-				if(i == n-1) {
-					m.set(n-1, n-1, 1.);
-					m.set(n-2, n-1, 0.);
-					m.set(n-1, n-2, 0.);
-					continue;
-				}
+			if(r.inside(1)) {
+				m.set(1, 0, 0.);
+			}
+
+			if(r.inside(n-1)) {
+				m.set(n-1, n-1, 1.);
+				m.set(n-1, n-2, 0.);
+			}
+
+			if(r.inside(n-2)) {
+				m.set(n-2, n-1, 0.);
 			}
 		}
 	}
-
-
 
 }
 

@@ -109,6 +109,17 @@ namespace utopia {
         return transform(expr, Exp());
     }
 
+    template<class Derived>
+    auto cos(const Expression<Derived> &expr) -> decltype(transform(expr, Cos())) {
+        return transform(expr, Cos());
+    }
+
+    template<class Derived>
+    auto sin(const Expression<Derived> &expr) -> decltype(transform(expr, Sin())) {
+        return transform(expr, Sin());
+    }
+
+
     /**
      * @ingroup transforms
      * @brief   \f$ | x_i |  \f$.

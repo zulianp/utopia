@@ -99,6 +99,14 @@ namespace utopia {
 			return new CrossBackendLinearSolverAndSmoother();
 		}
 
+		void read(Input &in) override { 
+		 	solver_.read(in); 
+		}
+
+		void print_usage(std::ostream &os = std::cout) const override {
+		  	solver_.print_usage(os);
+		}
+
 	private:
 		Solver solver_;
 		std::shared_ptr<WantedMatrix> mat_buff_;

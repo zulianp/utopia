@@ -1,10 +1,3 @@
-// /*
-// * @Author: alenakopanicakova
-// * @Date:   2016-06-10
-// * @Last Modified by:   alenakopanicakova
-// * @Last Modified time: 2016-10-11
-// */
-
 #ifndef UTOPIA_LS_STRATEGY_FACTORY_HPP
 #define UTOPIA_LS_STRATEGY_FACTORY_HPP
 
@@ -14,7 +7,6 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "utopia_Parameters.hpp"
 
 namespace utopia {
 
@@ -92,18 +84,17 @@ namespace utopia {
 	 *     		alpha_min() = 1e-7; \n
 	 */
 	template<typename Matrix, typename Vector>
-	const Parameters line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const Parameters params = Parameters())
+	const SolutionStatus & line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const LSStrategyTag &tag, Input & params)
 	{
-		auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
+		// auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
+		auto lin_solver = std::make_shared<ConjugateGradient<Matrix, Vector> > ();
 		Newton<Matrix, Vector> ls_solver(lin_solver);
-		
-		auto strategy = line_search_strategy<Vector>(params.line_search_alg()); 
-		strategy->set_parameters(params);
+		auto strategy = line_search_strategy<Vector>(tag); 
 			
         ls_solver.set_line_search_strategy(strategy);
-        ls_solver.set_parameters(params);
+        ls_solver.read(params);
         ls_solver.solve(fun, x);  
-        return ls_solver.parameters(); 
+        return ls_solver.solution_status(); 
 	}
 }
 

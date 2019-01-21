@@ -19,10 +19,15 @@ if(TRY_WITH_MPI)
 		target_include_directories(utopia_utils PUBLIC ${MPI_CXX_INCLUDE_PATH})
 		# target_link_libraries(utopia_utils utopia_core ${MPI_CXX_LIBRARIES} )
 		target_link_libraries(utopia_utils ${MPI_CXX_LIBRARIES})
+
+
+		message(STATUS "WHAT: ${MPI_CXX_INCLUDE_PATH} ${MPI_CXX_LIBRARIES}")
 		
 		set(WITH_MPI TRUE PARENT_SCOPE)
 	endif()
 endif()
+
+
 
 set_utopia_compiler_features(utopia_utils)
 

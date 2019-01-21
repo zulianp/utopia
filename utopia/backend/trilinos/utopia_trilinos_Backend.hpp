@@ -245,13 +245,13 @@ namespace utopia {
             assert(false && "IMPLEMENT ME");
         }
 
-        static Scalar get(const TpetraVector &v, const TpetraVector::GO &index)
+        inline static Scalar get(const TpetraVector &v, const TpetraVector::GO &index)
         {
             return v.get(index);
         }
 
         template<typename Integer>
-       	static void get(const TpetraVector &v, const std::vector<Integer> &index, std::vector<Scalar> &values)
+       	inline static void get(const TpetraVector &v, const std::vector<Integer> &index, std::vector<Scalar> &values)
        	{
        		v.get(index, values);
        	}
@@ -288,7 +288,17 @@ namespace utopia {
         }
 
         template<typename Integer>
-        void add_matrix(
+        inline static void add(
+            TpetraVector &v,
+            const std::vector<Integer> &index,
+            const std::vector<Scalar> &values)
+        {
+            v.add_vector(index, values);
+        }
+
+
+        template<typename Integer>
+        inline static void add_matrix(
             TpetraMatrix &m,
             const std::vector<Integer> &rows,
             const std::vector<Integer> &cols,
@@ -298,7 +308,7 @@ namespace utopia {
         }
 
         template<typename Integer>
-        void set_matrix(
+       inline static void set_matrix(
             TpetraMatrix &m,
             const std::vector<Integer> &rows,
             const std::vector<Integer> &cols,

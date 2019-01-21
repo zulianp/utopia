@@ -165,6 +165,11 @@ namespace utopia {
 
 namespace utopia {
 
+	void ContactApp::init(libMesh::LibMeshInit &init)
+	{
+	    comm_ = make_ref(init.comm());
+	}
+
 	void ContactApp::run(const std::string &path)
 	{
 		std::cerr << "DOING nothing for trilinos algebra" << std::endl;

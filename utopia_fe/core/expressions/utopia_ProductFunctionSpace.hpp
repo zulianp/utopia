@@ -60,6 +60,16 @@ namespace utopia {
 			return *spaces_[index];
 		}
 
+		inline const Space &last_subspace() const
+		{
+			return *spaces_.back();
+		}
+
+		inline Space &last_subspace()
+		{
+			return *spaces_.back();
+		}
+
 		inline const Space &operator[](const int index) const
 		{
 			return *spaces_[index];
@@ -68,6 +78,20 @@ namespace utopia {
 		inline std::shared_ptr<Space> &subspace_ptr(const int index)
 		{
 			return spaces_[index];
+		}
+
+
+		inline ProductFunctionSpace subspace(const std::size_t range_begin, const std::size_t range_end)
+		{
+			assert(range_begin >= 0);
+			assert(range_end <= spaces_.size());
+			ProductFunctionSpace ret;
+
+			for(std::size_t i = range_begin; i < range_end; ++i) {
+				ret.add_subspace(spaces_[i]);
+			}
+
+			return ret;
 		}
 
 		inline std::size_t n_subspaces() const

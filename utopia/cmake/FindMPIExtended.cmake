@@ -1,5 +1,20 @@
 #First with try with clang compile or else
-find_library(MPI_CLANG_LIBRARY  
+
+
+find_library(MPI_CLANG_C_LIBRARY
+	NAMES mpi
+	      mpi-mpich-clang
+	PATHS ${MPI_DIR}/lib
+	      $ENV{MPI_DIR}/lib
+		 /opt/local/lib/openmpi-mp/
+                  /opt/local/lib/mpich-mp/
+                  /opt/local/lib/mpich-clang/
+                  /opt/local/lib
+	        DOC "The MPI_CLANG_C_LIBRARY library to link against"
+)
+
+
+find_library(MPI_CLANG_CXX_LIBRARY  
 	NAMES mpi_cxx 
 		  mpicxx
 		  mpicxx-mpich-clang
@@ -10,14 +25,18 @@ find_library(MPI_CLANG_LIBRARY
 		  /opt/local/lib/mpich-clang/
 		  /opt/local/lib
 
-	DOC "The MPI_CLANG_LIBRARY library to link against"
+	DOC "The MPI_CLANG_CXX_LIBRARY library to link against"
 ) 
 
-IF(MPI_CLANG_LIBRARY)
-	SET(MPI_CXX_LIBRARIES ${MPI_CLANG_LIBRARY})
+IF(MPI_CLANG_CXX_LIBRARY)
+	SET(MPI_CXX_LIBRARIES ${MPI_CLANG_CXX_LIBRARY})	
 
-	get_filename_component(MPI_LIB_DIR ${MPI_CLANG_LIBRARY} PATH)
+	get_filename_component(MPI_LIB_DIR ${MPI_CLANG_CXX_LIBRARY} PATH)
 	
+	if(MPI_CLANG_C_LIBRARY)
+		list(APPEND MPI_CXX_LIBRARIES ${MPI_CLANG_C_LIBRARY})
+	endif()
+
 	find_path(MPI_CLANG_HEADERS mpi.h
 		HINTS ${MPI_DIR}/include
 			  $ENV{MPI_DIR}/include
@@ -28,6 +47,7 @@ IF(MPI_CLANG_LIBRARY)
 			  ${MPI_LIB_DIR}/../../include/mpich-clang
 			  ${MPI_LIB_DIR}/../include/mpich-clang
 			  /opt/local/include/mpich-clang
+			  /opt/local/include/mpich-mp
 		DOC "The MPI_CLANG_HEADERS path"
 	)	
 
@@ -37,6 +57,7 @@ IF(MPI_CLANG_LIBRARY)
 			      mpicxx
 			      mpicxx-openmpi-mp 
 				  mpicxx-mpich-clang
+				  mpic++-mpich-mp
 			HINTS ${MPI_DIR}/bin
 			      $ENV{MPI_DIR}/bin
 			      ${MPI_CLANG_HEADERS}/../bin
@@ -50,6 +71,7 @@ IF(MPI_CLANG_LIBRARY)
 		find_file(MPI_C_COMPILER 
 			NAMES mpicc-openmpi-mp
 				  mpicc-mpich-clang
+				  mpicc-mpich-mp
 				  mpicc
 			HINTS ${MPI_DIR}/bin
 			      $ENV{MPI_DIR}/bin
@@ -62,17 +84,15 @@ IF(MPI_CLANG_LIBRARY)
 		)
 
 		IF(MPI_CXX_COMPILER AND MPI_C_COMPILER)
-			#set variables
 			SET(MPI_FOUND TRUE)
-			SET(MPI_CXX_LIBRARIES ${MPI_CLANG_LIBRARY})
 			SET(MPI_CXX_INCLUDE_PATH ${MPI_CLANG_HEADERS})
 		ENDIF()
 	ENDIF()
 ENDIF()
 
-# MESSAGE(STATUS "${MPI_CLANG_LIBRARY} ${MPI_CLANG_HEADERS} ${MPI_CXX_COMPILER}")
+MESSAGE(STATUS "MPI: ${MPI_CXX_LIBRARIES} ${MPI_CLANG_HEADERS} ${MPI_CXX_COMPILER}")
 
 
 IF(NOT MPI_FOUND)
-find_package(MPI)
+	find_package(MPI)
 ENDIF()

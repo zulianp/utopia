@@ -1,5 +1,3 @@
-
-
 #ifndef UTOPIA_SOLVER_PRINT_Info_HPP
 #define UTOPIA_SOLVER_PRINT_Info_HPP
 
@@ -9,7 +7,6 @@
 #include <chrono>   
 #include "utopia_Utils.hpp"
 #include "utopia_Traits.hpp"
-#include "utopia_Parameters.hpp"    
     
 namespace utopia 
 {

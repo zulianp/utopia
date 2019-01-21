@@ -4,6 +4,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_Input.hpp"
 
 
 
@@ -16,23 +17,31 @@ namespace utopia {
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class NonLinearSmoother 
+    class NonLinearSmoother : virtual public Configurable
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
         public:
-        NonLinearSmoother(const Parameters params = Parameters()) 
+        NonLinearSmoother(): _sweeps(1), _relaxation_parameter(1.0)
         { 
-            set_parameters(params); 
+            
         }
 
 
-        virtual void set_parameters(const Parameters params) 
+        virtual void read(Input &in) override
         {
-            _sweeps = params.pre_smoothing_steps();            
-            _relaxation_parameter = params.omega();     
+            in.get("relaxation_parameter", _relaxation_parameter);
+            in.get("sweeps", _sweeps);
+
         }
+
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            this->print_param_usage(os, "relaxation_parameter", "double", "Relaxation parameter.", "1"); 
+            this->print_param_usage(os, "sweeps", "int", "Number of smoothing steps.", "1"); 
+        }        
 
 
         virtual bool smooth(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs) = 0; 
@@ -86,29 +95,9 @@ namespace utopia {
         }
 
 
-        /**
-         * @brief      verbose
-         *
-         */
-        virtual void verbose(const bool & verbose)
-        {
-            _verbose = verbose;
-        }
-
-        /**
-         * @brief      Verbose
-         *
-         */
-        virtual bool verbose()
-        {
-            return _verbose; 
-        }
-
-
         private:
             SizeType     _sweeps;  
             Scalar       _relaxation_parameter; 
-            bool         _verbose; 
 };
 
 }

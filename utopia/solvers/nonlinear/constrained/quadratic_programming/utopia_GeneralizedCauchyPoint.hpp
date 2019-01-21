@@ -28,12 +28,30 @@ namespace  utopia
             }
 
 
-            void set_memory_size(const SizeType & m)
+            void read(Input &in) override
+            {
+                MatrixFreeQPSolver<Vector>::read(in);
+                QPSolver<Matrix, Vector>::read(in);
+
+                in.get("memory_size", cp_memory_);
+            }
+
+
+            void print_usage(std::ostream &os) const override
+            {
+                MatrixFreeQPSolver<Vector>::print_usage(os);
+                QPSolver<Matrix, Vector>::print_usage(os);
+
+                this->print_param_usage(os, "memory_size", "int", "Memory (in terms of breakpoints) used during computation.", "5.0"); 
+            }
+
+
+            void memory_size(const SizeType & m)
             {
                 cp_memory_ = m;
             }
 
-            SizeType get_memory_size() const 
+            SizeType memory_size() const 
             {
                 return cp_memory_;
             }
@@ -72,7 +90,7 @@ namespace  utopia
                 s = 0 * d; 
 
                 this->get_breakpoints(d, *lb, *ub, break_points); 
-                vec_unique_sort_serial(break_points, sorted_break_points, this->get_memory_size()); 
+                vec_unique_sort_serial(break_points, sorted_break_points, this->memory_size()); 
                 num_uniq_break_points = this->get_number_of_sorted_break_points(sorted_break_points); 
                 t_current = 0.0; 
                 this->get_breakpoint_active_set(break_points, t_current, active_set); 
