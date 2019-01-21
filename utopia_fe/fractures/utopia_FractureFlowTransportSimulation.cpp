@@ -26,12 +26,14 @@ namespace utopia {
 		//specialized input for matrix
 		in.get("transport", [this](Input &in) {
 			in.get("matrix", transport_m_);
+			in.get("fracture-newtork", transport_f_);
 		});
 
 		in.get("preset-velocity-field", preset_velocity_field_);
 	}
 
-	void FractureFlowTransportSimulation::compute_transport()
+
+	void FractureFlowTransportSimulation::compute_transport_separate()
 	{
 		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_newtork);
 		transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
@@ -76,7 +78,99 @@ namespace utopia {
 
 			io_m.write_timestep("transient.e", V_m.equation_systems(), ++n_timesteps, t);
 		}
+	}
 
+	void FractureFlowTransportSimulation::compute_transport_monolithic()
+	{
+		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_newtork);
+		transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
+
+		transport_f_.assemble_system(*steady_flow_.fracture_newtork);
+		transport_m_.assemble_system(*steady_flow_.matrix);
+
+		auto &V_m = transport_m_.space->space().last_subspace();
+		auto &V_f = transport_f_.space->space().last_subspace();
+
+		UVector x_m = transport_m_.concentration;
+		UVector x_f = transport_f_.concentration;
+
+		UVector rhs_m = local_zeros(local_size(x_m));
+		UVector rhs_f = local_zeros(local_size(x_f));
+
+		USparseMatrix &A_m = transport_m_.system_matrix;
+		USparseMatrix &A_f = transport_f_.system_matrix;
+
+		apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
+		apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
+
+		USparseMatrix A = Blocks<USparseMatrix>(3, 3,
+		{
+		    make_ref(A_m),			  nullptr, 					make_ref(steady_flow_.B_t),
+		    nullptr, 				  make_ref(A_f), 			make_ref(steady_flow_.D_t),
+		    make_ref(steady_flow_.B), make_ref(steady_flow_.D), nullptr
+		});
+
+		write("A.m", A);
+
+		//lagrange mult
+		UVector z = local_zeros(local_size(steady_flow_.B).get(0));
+		UVector lagr = local_zeros(local_size(z));
+	
+		libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+		utopia::convert(x_m, *V_m.equation_system().solution);
+		
+		V_m.equation_system().solution->close();
+		io_m.write_timestep("transient.e", V_m.equation_systems(), 1, 0);
+
+		utopia::convert(x_f, *V_f.equation_system().solution);
+		V_f.equation_system().solution->close();
+		io_f.write_timestep("transient_f.e", V_f.equation_systems(), 1, 0);
+
+		UVector x = blocks(x_m, x_f, lagr);
+
+
+		GMRES<USparseMatrix, UVector> op("bjacobi");
+		op.verbose(true);
+		op.update(make_ref(A));
+
+		int n_timesteps = 1;
+		const double dt = transport_m_.dt;
+		const double simulation_time = transport_m_.simulation_time;
+
+		for(double t = dt; t < simulation_time; t += dt) {
+			transport_m_.add_mass(x_m, rhs_m);
+			transport_f_.add_mass(x_f, rhs_f);
+
+			rhs_m += transport_m_.dt * transport_m_.f;
+			rhs_f += transport_f_.dt * transport_f_.f;
+
+			transport_m_.constrain_concentration(rhs_m);
+			transport_f_.constrain_concentration(rhs_f);
+
+			UVector rhs = blocks(rhs_m, rhs_f, z);
+			
+			op.apply(rhs, x);
+
+			undo_blocks(x, x_m, x_f, lagr);
+
+			utopia::convert(x_m, *V_m.equation_system().solution);
+			V_m.equation_system().solution->close();
+
+			utopia::convert(x_f, *V_f.equation_system().solution);
+			V_f.equation_system().solution->close();
+
+			io_m.write_timestep("transient.e",   V_m.equation_systems(), ++n_timesteps, t);
+			io_f.write_timestep("transient_f.e", V_f.equation_systems(), ++n_timesteps, t);
+		}
+
+
+
+	}
+
+
+	void FractureFlowTransportSimulation::compute_transport()
+	{
+		compute_transport_monolithic();
 	}
 
 	void FractureFlowTransportSimulation::write_output()
@@ -308,7 +402,6 @@ namespace utopia {
 		// auto b_form = inner(c * uh, grad(q)) * dX;	
 
 		auto vel = sampler_fun * flow.diffusion_tensor * grad(ph);
-		// auto vel = sampler_fun * grad(ph);
 		auto b_form = inner(c * vel,  grad(q)) * dX;
 		
 		
@@ -367,7 +460,7 @@ namespace utopia {
 
 					case FULL:
 					{	
-						auto R_a    = inner(flow.diffusion_tensor * grad(ph), 		sampler_fun * grad(q)) * dX;
+						auto R_a       = inner(flow.diffusion_tensor * grad(ph), sampler_fun * grad(q)) * dX;
 						auto eval_R_a  = eval(R_a, ctx);
 
 						//DOES not work

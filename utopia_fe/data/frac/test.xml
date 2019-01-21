@@ -11,8 +11,8 @@
 		<max-x>1.</max-x>
 		<max-y>1.</max-y>
 
-		<n-x>100</n-x>
-		<n-y>100</n-y>
+		<n-x>50</n-x>
+		<n-y>50</n-y>
 		<!-- <refinements>2</refinements> -->
 	</mesh>
 
@@ -75,8 +75,9 @@
 	<diffusivity>1000.</diffusivity>
 </slave>
 
-<!-- <solve-strategy>staggered</solve-strategy> -->
-<solve-strategy>separate</solve-strategy>
+<solve-strategy>staggered</solve-strategy>
+<!-- <solve-strategy>separate</solve-strategy> -->
+<!-- <solve-strategy>monolithic</solve-strategy> -->
 <use-mg>true</use-mg>
 <mg-sweeps>1</mg-sweeps>
 <mg-levels>4</mg-levels>
@@ -104,7 +105,7 @@
 				<entry>
 					<side>3</side>
 					<value>1</value>
-					<var>2</var>
+					<var>0</var>
 				</entry>
 			</boundary-conditions>
 
