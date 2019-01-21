@@ -15,10 +15,10 @@ namespace utopia {
 		steady_flow_.read(in);
 
 		auto &V_s = steady_flow_.matrix->space.subspace(0);
-		auto &V_f = steady_flow_.fracture_newtork->space.subspace(0);
+		auto &V_f = steady_flow_.fracture_network->space.subspace(0);
 
 		transport_m_.set_steady_state_function_space(steady_flow_.matrix->space);
-		transport_f_.set_steady_state_function_space(steady_flow_.fracture_newtork->space);
+		transport_f_.set_steady_state_function_space(steady_flow_.fracture_network->space);
 
 		in.get("transport", transport_m_);
 		in.get("transport", transport_f_);
@@ -26,19 +26,20 @@ namespace utopia {
 		//specialized input for matrix
 		in.get("transport", [this](Input &in) {
 			in.get("matrix", transport_m_);
-			in.get("fracture-newtork", transport_f_);
+			in.get("fracture-network", transport_f_);
 		});
 
 		in.get("preset-velocity-field", preset_velocity_field_);
+		in.get("transient-solve-strategy", transient_solve_strategy);
 	}
 
 
 	void FractureFlowTransportSimulation::compute_transport_separate()
 	{
-		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_newtork);
+		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_network);
 		transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
 
-		transport_f_.assemble_system(*steady_flow_.fracture_newtork);
+		transport_f_.assemble_system(*steady_flow_.fracture_network);
 		transport_m_.assemble_system(*steady_flow_.matrix);
 
 		auto &V_m = transport_m_.space->space().last_subspace();
@@ -82,10 +83,10 @@ namespace utopia {
 
 	void FractureFlowTransportSimulation::compute_transport_monolithic()
 	{
-		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_newtork);
+		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_network);
 		transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
 
-		transport_f_.assemble_system(*steady_flow_.fracture_newtork);
+		transport_f_.assemble_system(*steady_flow_.fracture_network);
 		transport_m_.assemble_system(*steady_flow_.matrix);
 
 		auto &V_m = transport_m_.space->space().last_subspace();
@@ -110,7 +111,7 @@ namespace utopia {
 		    make_ref(steady_flow_.B), make_ref(steady_flow_.D), nullptr
 		});
 
-		write("A.m", A);
+		// write("A.m", A);
 
 		//lagrange mult
 		UVector z = local_zeros(local_size(steady_flow_.B).get(0));
@@ -129,9 +130,16 @@ namespace utopia {
 		UVector x = blocks(x_m, x_f, lagr);
 
 
-		GMRES<USparseMatrix, UVector> op("bjacobi");
-		op.verbose(true);
+		KSPSolver<USparseMatrix, UVector> op;
+		op.set_initial_guess_non_zero(false);
+		op.ksp_type(KSPPREONLY);
+		op.pc_type(PCLU);
+		op.solver_package(MATSOLVERSUPERLU_DIST);
+
+		std::cout << op.solver_package() << std::endl;
+		
 		op.update(make_ref(A));
+		
 
 		int n_timesteps = 1;
 		const double dt = transport_m_.dt;
@@ -163,14 +171,17 @@ namespace utopia {
 			io_f.write_timestep("transient_f.e", V_f.equation_systems(), ++n_timesteps, t);
 		}
 
-
-
 	}
 
 
 	void FractureFlowTransportSimulation::compute_transport()
 	{
-		compute_transport_monolithic();
+
+		if(steady_flow_.solve_strategy == "separate" || transient_solve_strategy == "separate") {
+			compute_transport_separate();
+		} else {
+			compute_transport_monolithic();
+		}
 	}
 
 	void FractureFlowTransportSimulation::write_output()
@@ -323,7 +334,7 @@ namespace utopia {
 	lump_mass_matrix(false),
 	simulation_time(1.),
 	h1_regularization(false),
-	regularization_parameter(1e-4),
+	regularization_parameter(0.5),
 	dt(0.1),
 	use_upwinding(true)
 	{}

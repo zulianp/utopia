@@ -65,8 +65,11 @@ namespace utopia {
 #endif //PETSC_HAVE_MUMPS
 			if(pct=="cholesky") {
 				set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
-			}
-			else {
+			} else {
+				if(sp == "mumps") {
+					m_utopia_warning_once("[Warning] Tried to use mumps. Falling back to petsc LU");
+				}
+
 				set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
 			}
 		}

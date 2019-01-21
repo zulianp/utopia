@@ -119,8 +119,10 @@ namespace utopia {
 	#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 	                ierr = PCFactorSetMatSolverPackage(pc, package.c_str()); assert(ierr == 0);
 	#else
-	                ierr =  PCFactorSetMatSolverType(pc, package.c_str()); assert(ierr == 0);
+	                ierr = PCFactorSetMatSolverType(pc, package.c_str());    assert(ierr == 0);
 	#endif
+	            } else {
+	            	std::cerr << "Invalid solver package " << package << std::endl;
 	            }
 	        }
 
@@ -159,17 +161,25 @@ namespace utopia {
 	         */
 	        inline std::string solver_package() const
 	        {
-	#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
+	
 	            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
-	            const MatSolverPackage stype;
+	            
 	            PC pc;
 	            ierr = KSPGetPC(ksp_, &pc);                     assert(ierr == 0);
+
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
+	            const MatSolverPackage stype;
 	            ierr = PCFactorGetMatSolverPackage(pc, &stype); assert(ierr == 0);
 	            if(stype) return stype; else return "";
-	#else
-	            static const char * ret = " ";
-	            return ret;
-	#endif
+#else
+	            MatSolverType stype;
+	            ierr = PCFactorGetMatSolverType(pc, &stype); assert(ierr == 0);
+	            if(stype) return stype; else return "";
+#endif
+	            
+	            // static const char * ret = " ";
+	            // return ret;
+	
 	        }
 
 	        inline  bool is_null() const
@@ -451,6 +461,7 @@ namespace utopia {
 	            if(flg) {
 	                solver_package(name_);
 	            }
+	        
 	#else
 	            PetscOptionsGetString(nullptr, nullptr, "-ksp_type", name_, 1024, &flg);
 	            if(flg) {
@@ -466,6 +477,11 @@ namespace utopia {
 	            if(flg) {
 	                solver_package(name_);
 	            }
+	            
+	          	PetscOptionsGetString(nullptr, nullptr, "-pc_factor_mat_solver_type", name_, 1024, &flg);
+	          	if(flg) {
+	             	 solver_package(name_);
+	          	}
 	#endif
 	        }
 

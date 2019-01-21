@@ -82,10 +82,11 @@
 <mg-sweeps>1</mg-sweeps>
 <mg-levels>4</mg-levels>
 <flow-type>transient</flow-type>
+<transient-solve-strategy>separate</transient-solve-strategy>
 
 <transport>
 	<dt>0.1</dt>
-	<simulation-time>4.</simulation-time>
+	<simulation-time>60.</simulation-time>
 	<lump-mass-matrix>true</lump-mass-matrix>
 	<regularization-parameter>0.5</regularization-parameter>
 	<use-upwinding>true</use-upwinding>

@@ -13,7 +13,7 @@ namespace utopia {
 	SteadyFractureFlowSimulation::SteadyFractureFlowSimulation(libMesh::Parallel::Communicator &comm)
 	{
 		matrix 				= utopia::make_unique<FractureFlow>(comm);
-		fracture_newtork 	= utopia::make_unique<FractureFlow>(comm);
+		fracture_network 	= utopia::make_unique<FractureFlow>(comm);
 		lagrange_multiplier = utopia::make_unique<FractureFlow>(comm);
 
 		solve_strategy = "monolithic";
@@ -30,7 +30,7 @@ namespace utopia {
 		c.start();
 
 		is.get("master", 	 *matrix);
-		is.get("slave",  	 *fracture_newtork);
+		is.get("slave",  	 *fracture_network);
 		is.get("multiplier", *lagrange_multiplier);
 
 		is.get("solve-strategy", solve_strategy);
@@ -44,7 +44,7 @@ namespace utopia {
 		}
 
 		matrix->describe();
-		fracture_newtork->describe();
+		fracture_network->describe();
 		lagrange_multiplier->describe();
 
 		std::cout << "solve-strategy: "  << solve_strategy << std::endl;
@@ -55,13 +55,13 @@ namespace utopia {
 		}
 
 		auto &V_m = matrix->space.subspace(0);
-		auto &V_f = fracture_newtork->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
 
 		auto aux_matrix = utopia::make_unique<FractureFlowAuxSystem>(V_m);
 		aux_matrix->sample(matrix->sampler);
 
-		auto aux_fracture_newtork = utopia::make_unique<FractureFlowAuxSystem>(V_f);
-		aux_fracture_newtork->sample(fracture_newtork->sampler);
+		auto aux_fracture_network = utopia::make_unique<FractureFlowAuxSystem>(V_f);
+		aux_fracture_network->sample(fracture_network->sampler);
 
 		std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_f.dof_map().n_dofs() << " + ";
 		
@@ -85,7 +85,7 @@ namespace utopia {
 		c.start();
 
 		auto &V_m = matrix->space.subspace(0);
-		auto &V_f = fracture_newtork->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
 
 		auto u_m = trial(V_m);
 		auto v_m = test(V_m);
@@ -94,7 +94,7 @@ namespace utopia {
 		auto v_f = test(V_f);
 
 		auto eq_m = inner(matrix->diffusion_tensor * grad(u_m), ctx_fun(matrix->sampler) * grad(v_m)) * dX;
-		auto eq_f = inner(fracture_newtork->diffusion_tensor  * grad(u_s), ctx_fun(fracture_newtork->sampler)  * grad(v_f)) * dX;
+		auto eq_f = inner(fracture_network->diffusion_tensor  * grad(u_s), ctx_fun(fracture_network->sampler)  * grad(v_f)) * dX;
 
 		utopia::assemble(eq_m, A_m);
 		utopia::assemble(eq_f, A_f);
@@ -103,7 +103,7 @@ namespace utopia {
 		x_f = local_zeros(V_f.dof_map().n_local_dofs());
 
 		matrix->forcing_function->eval(x_m, rhs_m);
-		fracture_newtork->forcing_function->eval(x_f, rhs_f);
+		fracture_network->forcing_function->eval(x_f, rhs_f);
 
 		apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
@@ -124,7 +124,7 @@ namespace utopia {
 		c.start();
 
 		auto &V_m = matrix->space.subspace(0);
-		auto &V_f = fracture_newtork->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
 
 		if(lagrange_multiplier->empty()) {
 			assemble_projection(V_m, V_f, B, D);
@@ -169,7 +169,7 @@ namespace utopia {
 	bool SteadyFractureFlowSimulation::solve_cg_dual()
 	{
 		auto &V_m = matrix->space.subspace(0);
-		auto &V_f = fracture_newtork->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
 
 		SPBlockConjugateGradient<USparseMatrix, UVector> solver;
 		solver.verbose(true);
@@ -227,7 +227,7 @@ namespace utopia {
 	bool SteadyFractureFlowSimulation::solve_staggered()
 	{
 		auto &V_m = matrix->space.subspace(0);
-		auto &V_f = fracture_newtork->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
 
 	    Factorization<USparseMatrix, UVector> op_m;
 	    op_m.update(make_ref(A_m));
@@ -306,10 +306,10 @@ namespace utopia {
 	void SteadyFractureFlowSimulation::write_output_generic()
 	{
 		auto &V_m = matrix->space.subspace(0);
-		auto &V_f = fracture_newtork->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
 
 		IO io_m(matrix->mesh.mesh());
-		IO io_f(fracture_newtork->mesh.mesh());
+		IO io_f(fracture_network->mesh.mesh());
 
 		utopia::convert(x_m, *V_m.equation_system().solution);
 		V_m.equation_system().solution->close();
@@ -331,7 +331,7 @@ namespace utopia {
 	void SteadyFractureFlowSimulation::write_output()
 	{
 		auto &V_m = matrix->space.subspace(0);
-		auto &V_f = fracture_newtork->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
 
 		if(V_m.mesh().comm().size() == 1) {
 			write_output_generic<libMesh::ExodusII_IO>();

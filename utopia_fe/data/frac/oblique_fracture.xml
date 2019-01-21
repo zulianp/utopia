@@ -11,10 +11,10 @@
 		<max-x>1.</max-x>
 		<max-y>1.</max-y>
 
-		<n-x>50</n-x>
-		<n-y>50</n-y>
+		<n-x>60</n-x>
+		<n-y>60</n-y>
 
-		<refinements>0</refinements>
+		<refinements>1</refinements>
 	</mesh>
 
 	<space>
@@ -47,7 +47,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<refinements>1</refinements>
+		<refinements>2</refinements>
 	</mesh>
 
 	<space>
@@ -97,9 +97,11 @@
 </multiplier> -->
 
 <!-- <solve-strategy>monolithic</solve-strategy> -->
-
 <solve-strategy>staggered</solve-strategy>
 <!-- <solve-strategy>separate</solve-strategy> -->
+<transient-solve-strategy>separate</transient-solve-strategy>
+
+
 <use-mg>true</use-mg>
 <mg-sweeps>1</mg-sweeps>
 <mg-levels>4</mg-levels>
@@ -140,7 +142,7 @@
 	</matrix>
 
 
-	<fracture-newtork>
+	<fracture-network>
 		<space>
 			<system-name>transport</system-name>
 			
@@ -154,7 +156,7 @@
 		</space>
 
 		<outflow>1</outflow>
-	</fracture-newtork>
+	</fracture-network>
 
 	
 
