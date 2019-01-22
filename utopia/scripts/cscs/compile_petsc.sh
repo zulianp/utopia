@@ -38,7 +38,7 @@ python2 ./configure \
 --prefix=$PETSC_DIR \
 --download-hypre=1 \
 --with-ssl=0 \
---with-debugging=no \
+--with-debugging=0 \
 --with-pic=1 \
 --with-shared-libraries=1 \
 --with-cc=cc \

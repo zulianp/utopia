@@ -27,12 +27,6 @@ namespace utopia
 			return ptr;
 		}
 
-		virtual void set_parameters(const Parameters params) override
-		{
-			QPSolver<Matrix, Vector>::set_parameters(params);
-		}
-
-
 		virtual bool apply(const Vector &b, Vector &x) override
 		{
 			if(this->verbose()) {

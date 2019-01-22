@@ -1,7 +1,6 @@
 #ifndef UTOPIA_UTOPIA_PRECONDITIONER_HPP
 #define UTOPIA_UTOPIA_PRECONDITIONER_HPP
 
-#include "utopia_Parameters.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Expression.hpp"
 #include "utopia_make_unique.hpp"
@@ -59,21 +58,22 @@ namespace utopia
 
 
     template<class Vector>
-    class Preconditioner : public Configurable, public virtual Clonable {
+    class Preconditioner : public virtual Configurable, public virtual Clonable {
     public:
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
-        virtual void set_parameters(const Parameters)
-        {}
 
-        virtual void read(Input &) override
+        virtual void read(Input &in) override
         {
-            assert(false && "implement me");
+
         }
 
-        virtual Preconditioner * clone() const override = 0;
+        virtual void print_usage(std::ostream &os) const override
+        {
 
-        // virtual void print_usage(std::ostream &os = std::cout) const;
+        }   
+
+        virtual Preconditioner * clone() const override = 0;
     };
 
 

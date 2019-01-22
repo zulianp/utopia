@@ -169,10 +169,6 @@ namespace utopia {
 
             DVectord x_0 = zeros(A.size().get(0));
 
-            Parameters params;
-            params.linear_solver_verbose(false);
-            multigrid.set_parameters(params);
-
             // multigrid.verbose(true);
             multigrid.apply(rhs, x_0);
 
@@ -255,7 +251,7 @@ namespace utopia {
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
             multigrid.verbose(verbose);
-            multigrid.set_fix_semidefinite_operators(true);
+            multigrid.fix_semidefinite_operators(true);
 
             DVectord x = zeros(A.size().get(0));
 
@@ -325,7 +321,7 @@ namespace utopia {
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
             multigrid.set_transfer_operators(std::move(interpolation_operators));
-            multigrid.set_fix_semidefinite_operators(true);
+            multigrid.fix_semidefinite_operators(true);
             multigrid.must_generate_masks(true);
             multigrid.max_it(1);
             multigrid.mg_type(1);

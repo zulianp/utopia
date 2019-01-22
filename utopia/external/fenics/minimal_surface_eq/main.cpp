@@ -252,14 +252,14 @@ int main()
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-  utopia::Parameters params; 
-  params.tol(1e-7); 
-  params.solver_type("TRUST_REGION"); 
-  params.verbose(true);  // something is wrong with verbose => TODO: check it out 
+  // utopia::Parameters params; 
+  // params.tol(1e-7); 
+  // params.solver_type("TRUST_REGION"); 
+  // params.verbose(true);  // something is wrong with verbose => TODO: check it out 
   
   utopia::FenicsUtopiaFunction<utopia::DSMatrixd, utopia::DVectord>  fun( u, Pi, F, J, bcs); 
   // utopia::solve(fun, x_0, "trust_region"); 
-  utopia::solve(fun, x_0, params); 
+  utopia::solve(fun, x_0); 
 
 
  //Save solution in VTK format

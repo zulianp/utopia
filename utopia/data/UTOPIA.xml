@@ -7,6 +7,80 @@
     <Parameter name="Solver Type" type="string" value="CG" />
   </ParameterList>
 
+  <ParameterList name="Amesos2">
+      <ParameterList name="KLU2">
+          <Parameter name="Trans"         type="int" value="0" />
+          <Parameter name="IsContiguous"  type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="Umfpack" />
+
+      <ParameterList name="LAPACK">
+          <Parameter name="Transpose"     type="bool" value="false" />
+          <Parameter name="Equilibrate"   type="bool" value="true" />
+          <Parameter name="IsContiguous"  type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="Cholmod">
+          <Parameter name="Trans"        type="int" value="0" />
+          <Parameter name="IterRefine"   type="int" value="0" />
+          <Parameter name="ColPerm"      type="int" value="0" />
+          <Parameter name="IsContiguous" type="bool" value="false" />
+          <Parameter name="dbound"       type="double" value="0." />
+          <Parameter name="PreferUpper"  type="bool" value="true" />
+          <Parameter name="print"        type="int" value="3" />
+          <Parameter name="nmethods"     type="int" value="0" />
+      </ParameterList>
+
+      <ParameterList name="MUMPS">
+            <Parameter name="ICNTL(1)"     type="int" value="-1" />
+            <Parameter name="ICNTL(2)"     type="int" value="-1" />
+            <Parameter name="ICNTL(3)"     type="int" value="1" />
+            <Parameter name="ICNTL(4)"     type="int" value="0" />
+            <Parameter name="ICNTL(6)"     type="int" value="7" />
+            <Parameter name="ICNTL(9)"     type="int" value="0" />
+            <Parameter name="ICNTL(11)"    type="int" value="0" />
+            <Parameter name="IsContiguous" type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="SuperLU">
+          <Parameter name="ILU_Flag"        type="bool" value="false" />
+          <Parameter name="Trans"           type="string" value="TRANS" />
+          <Parameter name="IterRefine"      type="string" value="NOREFINE" />
+          <Parameter name="ColPerm"         type="string" value="NATURAL" />
+          <Parameter name="DiagPivotThresh" type="double" value="1." />
+          <Parameter name="Equil"           type="bool" value="true" />
+          <Parameter name="SymmetricMode"   type="bool" value="false" />
+          <Parameter name="RowPerm"         type="string" value="LargeDiag" />
+          <Parameter name="ILU_Norm"        type="string" value="INF_NORM" />
+          <Parameter name="ILU_MILU "       type="string" value="SILU" />
+          <Parameter name="IsContiguous"    type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="SuperLU_MT">
+          <Parameter name="nprocs"            type="int" value="1" />
+          <Parameter name="trans"             type="string" value="TRANS" />
+          <Parameter name="panel_size"        type="int" value="1" />
+          <Parameter name="relax"             type="int" value="2" />
+          <Parameter name="Equil"             type="bool" value="true" />
+          <Parameter name="SymmetricMode"     type="bool" value="false" />
+          <Parameter name="PrintStat"         type="bool" value="false" />
+          <Parameter name="diag_pivot_thresh" type="double" value="1." />
+          <Parameter name="ColPerm"           type="string" value="NATURAL" />
+          <Parameter name="IsContiguous"      type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="SuperLU_DIST">
+          <Parameter name="npcol"             type="int" value="1" />
+          <Parameter name="nprow"             type="int" value="1" />
+          <Parameter name="ColPerm"           type="string" value="PARMETIS" />
+          <Parameter name="ReplaceTinyPivot"  type="bool" value="true" />
+          <Parameter name="IsContiguous"      type="bool" value="false" />
+      </ParameterList>
+
+  </ParameterList>
+
+
   <ParameterList name="CG">
     <!-- See e.g. https://trilinos.org/docs/dev/packages/belos/doc/html/classBelos_1_1BlockCGSolMgr_3_01ScalarType_00_01MV_00_01OP_00_01true_01_4.html#a1611b785191230bd2456050a5459ea53
          for a list of possible Belos parameters. Note that every solver type has different parameters -->

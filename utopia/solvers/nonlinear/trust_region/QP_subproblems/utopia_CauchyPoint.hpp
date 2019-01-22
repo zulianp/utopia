@@ -23,7 +23,7 @@ namespace utopia
 
     public:
 
-    	CauchyPoint(const Parameters params = Parameters()): TRSubproblem<Matrix, Vector>(params) {}
+    	CauchyPoint(): TRSubproblem<Matrix, Vector>() {}
 
         bool apply(const Vector &b, Vector &x) override
         {

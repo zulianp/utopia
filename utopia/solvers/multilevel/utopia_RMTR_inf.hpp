@@ -40,9 +40,7 @@ namespace utopia
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
-
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
-
 
         typedef utopia::BoxConstraints<Vector>                          BoxConstraints;
         typedef utopia::RMTR<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
@@ -56,25 +54,38 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR_inf(   const SizeType & n_levels, 
-                    const Parameters params = Parameters()): 
-                    RMTR(n_levels, params), 
-                    has_box_constraints_(false)
+        RMTR_inf(   const SizeType & n_levels): RMTR(n_levels), 
+                                                has_box_constraints_(false) // not optional parameter
         {
-            set_parameters(params); 
+            
         }
+
+        virtual void read(Input &in) override
+        {
+            RMTR::read(in);
+
+            if(_tr_subproblems.size() > 0) 
+            {
+                in.get("coarse-QPSolver", *_tr_subproblems[0]);
+
+                for(auto i=1; i < _tr_subproblems.size(); i++)
+                    in.get("fine-QPSolver", *_tr_subproblems[i]);
+            }
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            RMTR::print_usage(os);
+            
+            this->print_param_usage(os, "coarse-QPSolver", "QPSolver", "Input parameters for fine level QP solvers.", "-"); 
+            this->print_param_usage(os, "fine-QPSolver", "QPSolver", "Input parameters for coarse level QP solver.", "-"); 
+        }          
 
         virtual ~RMTR_inf()
         {
             // do we need to destroy some memory or no??? 
         } 
         
-
-        void set_parameters(const Parameters params) override
-        {
-            RMTR::set_parameters(params);    
-        }
-
 
         virtual std::string name() override 
         { 

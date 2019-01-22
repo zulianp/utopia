@@ -34,7 +34,6 @@
 
 #ifdef WITH_SLEPC
 	#include "utopia_petsc_Slepc.hpp"
-	#include "utopia_petsc_MoreSorensenEigen.hpp"
 #endif
 
 

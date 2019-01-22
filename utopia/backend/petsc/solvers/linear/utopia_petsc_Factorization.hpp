@@ -51,8 +51,8 @@ namespace utopia {
 		typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
 
 	public:
-		Factorization(const std::string sp = "mumps", const std::string pct = "lu", const Parameters params = Parameters()):
-		strategy_(params) //{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"},
+		Factorization(const std::string sp = "mumps", const std::string pct = "lu")
+		 //{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"},
 			//{"mumps", "superlu", "superlu_dist", "petsc", "cusparse"}
 		{
 			strategy_.ksp_type(KSPPREONLY);
@@ -87,11 +87,6 @@ namespace utopia {
 			strategy_.update(op);
 		}
 
-		inline void set_parameters(const Parameters params) override
-		{
-			LinearSolver<Matrix, Vector>::set_parameters(params);
-			// strategy_.set_parameters(params);
-		}
 
 		Factorization * clone() const override
 		{

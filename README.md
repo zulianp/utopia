@@ -156,7 +156,7 @@ If you use Utopia for your research you can use the following bibtex entry to ci
 
 ## Docker containers
 A docker container based on Alpine-Linux can be be found at https://hub.docker.com/r/utopiadev/utopia and downloaded with `docker pull utopiadev/utopia`. For the moment only `utopia-petsc` is supported for this container. 
-You can use `docker image ls` to find the image and run it with `docker run -it <image_hash>`
+You can use `docker image ls` to find the image and run it with `docker run -v <host_file_directory>:<image_file_directory> -it <image_hash>`, for instance  `docker run -v ~Desktop/my_mesh_files:/my_mesh_files -it <image_hash>`
 
 Download docker at https://www.docker.com/products/docker-desktop
 

@@ -33,7 +33,6 @@ namespace utopia {
 
         BelosSolver();
         BelosSolver(const BelosSolver &other);
-        BelosSolver(Parameters params);
         ~BelosSolver();
 
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
@@ -47,11 +46,32 @@ namespace utopia {
         double achieved_tol() const;
 
         /**
+         * @brief      Reads the xml file based on different layout than read
+         *
+         * @param[in]  path  location of the xml file
+         */
+        void read_xml(const std::string &path);
+
+        void read(Input &in) override { 
+          Smoother<Matrix, Vector>::read(in); 
+          PreconditionedSolver::read(in);
+          //TODO
+          m_utopia_warning_once("not implemented");
+        }
+
+        void print_usage(std::ostream &os = std::cout) const override
+        {
+          Smoother<Matrix, Vector>::print_usage(os); 
+          PreconditionedSolver::print_usage(os);
+          //TODO
+          m_utopia_warning_once("not implemented");
+
+        }
+        /**
          * @brief      Sets the parameters.
          *
          * @param[in]  params  The parameters
          */
-        void set_parameters(const Parameters params) override;
         BelosSolver * clone() const override;
         bool smooth(const Vector &rhs, Vector &x) override;
 

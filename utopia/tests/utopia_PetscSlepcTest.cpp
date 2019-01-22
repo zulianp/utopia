@@ -1,6 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "utopia_InputParameters.hpp"
 
 namespace utopia
 {
@@ -41,6 +42,11 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_slepc_generalized_eigen_test); 
 			UTOPIA_RUN_TEST(petsc_slepc_eigen_test); 
 			UTOPIA_RUN_TEST(tr_more_sorensen_eigen_test); 
+			UTOPIA_RUN_TEST(pseudo_tr_test); 
+			UTOPIA_RUN_TEST(pseudo_tr_stiff_test); 
+			UTOPIA_RUN_TEST(pseudo_cont_test); 
+			UTOPIA_RUN_TEST(lm_test); 
+			UTOPIA_RUN_TEST(rosenbrock_test); 
 		}
 
 
@@ -53,7 +59,7 @@ namespace utopia
 
 			bool verbose = false; 
 
-			EigenSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+			SlepcSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
 
 			slepc.portion_of_spectrum("smallest_real"); 
 			slepc.verbose(verbose); 
@@ -77,7 +83,7 @@ namespace utopia
 			DSMatrixd B = 99 * local_identity(local_size(A)); 
 			bool verbose = false; 
 
-			EigenSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+			SlepcSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
 
 			slepc.portion_of_spectrum("largest_real"); 
 			slepc.verbose(verbose); 
@@ -100,7 +106,7 @@ namespace utopia
 
 	       	DVectord x_w1  = values(4, 10);
 			DVectord expected_woods = values(4, 1);
-			Woods<DMatrixd, DVectord> fun_woods;
+			Woods14<DMatrixd, DVectord> fun_woods;
 
 			bool verbose = false; 
 
@@ -125,8 +131,11 @@ namespace utopia
 			tr_solver.stol(1e-12); 
 			tr_solver.solve(fun_woods, x_w1);				
 
-			auto eigen_solver = std::make_shared<EigenSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
-			eigen_solver->solver_type("arpack");
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif
 			
 			auto linear_solver = std::make_shared<LUDecomposition<DMatrixd, DVectord> >();
 			linear_solver->set_library_type(PETSC_TAG); 
@@ -152,6 +161,169 @@ namespace utopia
 			tr_solver2.solve(fun_woods, x_w1);				
 	    }
 
+		void pseudo_tr_test()
+		{
+	    	if(mpi_world_size() != 1)
+	    		return; 
+
+			DVectord x  = values(4, 10);
+			DVectord expected_woods = values(4, 1);
+			Woods14<DMatrixd, DVectord> fun;
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif		
+
+			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(false); 
+
+			solver.solve(fun, x); 
+			utopia_test_assert(approxeq(x, expected_woods, 1e-8));
+		}
+
+
+		void pseudo_tr_stiff_test()
+		{
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun(n); 
+			DVectord x; 
+			fun.get_initial_guess(x); 
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif		
+
+			PseudoTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(1);
+			solver.verbose(false); 
+
+			solver.solve(fun, x); 
+		}
+
+
+		void pseudo_cont_test()
+		{
+			if(mpi_world_size() != 1)
+	    		return; 
+
+			DVectord x  = values(4, 10);
+			DVectord expected_woods = values(4, 1);
+			Woods14<DMatrixd, DVectord> fun;
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+
+			PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
+
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(false); 
+
+			solver.solve(fun, x); 
+			utopia_test_assert(approxeq(x, expected_woods, 1e-8));
+
+
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun_stiff(n); 
+			DVectord x_stiff; 
+			fun_stiff.get_initial_guess(x_stiff); 
+			solver.solve(fun_stiff, x_stiff); 
+
+		}
+
+		void lm_test()
+		{
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun_stiff(n); 
+			DVectord x_stiff; 
+			fun_stiff.get_initial_guess(x_stiff); 
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+			LevenbergMarquardt<DMatrixd, DVectord> solver(linear_solver); 
+
+			solver.atol(1e-9); 
+			solver.stol(1e-14); 
+			solver.max_it(500);
+			solver.verbose(false); 
+
+			auto params_ls = std::make_shared<InputParameters>(); 
+			params_ls->set("atol", 1e-12); 
+			auto params_ls_cast = std::static_pointer_cast<Input>(params_ls); 
+
+			InputParameters in;
+			in.set("tau0", 1);
+			in.set("linear-solver", params_ls_cast);
+
+
+			solver.read(in);
+			// solver.print_usage(std::cout); 
+			solver.solve(fun_stiff, x_stiff); 
+
+		}
+
+		void rosenbrock_test()
+		{
+			const SizeType n = 100; 
+
+			MildStiffExample<DMatrixd, DVectord> fun_stiff(n); 
+			DVectord x_stiff; 
+			fun_stiff.get_initial_guess(x_stiff); 
+
+			auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();	
+			linear_solver->atol(1e-14); 
+			linear_solver->max_it(10000);
+			
+			auto eigen_solver = std::make_shared<SlepcSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			
+			#ifdef SLEPC_HAVE_ARPACK
+				eigen_solver->solver_type("arpack");			
+			#endif
+
+			RosenbrockTrustRegion<DMatrixd, DVectord> solver(linear_solver, eigen_solver); 
+
+			solver.atol(1e-12); 
+			solver.stol(1e-14); 
+			solver.max_it(100);
+			solver.verbose(false); 
+
+			solver.solve(fun_stiff, x_stiff); 
+
+			if(mpi_world_size() != 1)
+	  		  		return; 
+
+			DVectord x  = values(4, 10);
+			DVectord expected_woods = values(4, 1);
+			Woods14<DMatrixd, DVectord> fun;
+
+			solver.solve(fun, x); 
+
+		}
 
 		SlepcsSolverTest()
 		: _n(10) { }

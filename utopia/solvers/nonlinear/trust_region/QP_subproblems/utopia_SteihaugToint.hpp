@@ -21,9 +21,27 @@ namespace utopia
     	typedef utopia::Preconditioner<Vector> Preconditioner;
     	
 
-    	SteihaugToint(const Parameters params = Parameters()):
-    				  TRSubproblem<Matrix, Vector>(params)
-        {  };
+    	SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>()
+        {  }
+
+        void read(Input &in) override
+        {
+            TRSubproblem<Matrix, Vector>::read(in);
+            MatrixFreeTRSubproblem<Vector>::read(in);
+
+            if(precond_) {
+                in.get("precond", *precond_);
+            }
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            TRSubproblem<Matrix, Vector>::print_usage(os);
+            MatrixFreeTRSubproblem<Vector>::print_usage(os);
+
+            this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-"); 
+        }
 
 
         SteihaugToint * clone() const override

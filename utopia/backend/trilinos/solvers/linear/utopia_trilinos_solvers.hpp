@@ -8,6 +8,8 @@
 #include "utopia_Belos_solver.hpp"
 #endif
 
+#include "utopia_Amesos2_solver.hpp"
+
 #include "utopia_trilinos_ConjugateGradient.hpp"
 
 #endif  // UTOPIA_TRILINOS_SOLVERS_HPP

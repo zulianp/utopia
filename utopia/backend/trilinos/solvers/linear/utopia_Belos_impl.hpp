@@ -5,10 +5,6 @@
 
 #include "utopia_make_unique.hpp"
 
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp> //TODO remove from here
-
-
 #include <BelosLinearProblem.hpp>
 #include <BelosTpetraAdapter.hpp>
 
@@ -54,6 +50,9 @@ namespace utopia {
 #ifdef  KOKKOS_ENABLE_CUDA
         typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
         typedef cuda_node NT;
+#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
+        typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
+        typedef rocm_node NT;
 #elif defined   KOKKOS_ENABLE_OPENMP
         typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
         typedef openmp_node NT;
@@ -95,12 +94,6 @@ namespace utopia {
 
     };
 
-    template <typename Matrix, typename Vector>
-    BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(Parameters params)
-    : impl_(utopia::make_unique<Impl>())
-    {
-        set_parameters(params);
-    }
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
@@ -134,9 +127,9 @@ namespace utopia {
 
         impl_->linear_problem = Teuchos::rcp(
                                              new typename Impl::problem_type(
-                                                                             this->get_operator()->implementation().implementation_ptr(),
-                                                                             lhs.implementation().implementation_ptr(),
-                                                                             rhs.implementation().implementation_ptr()
+                                                                             raw_type(*this->get_operator()),
+                                                                             raw_type(lhs),
+                                                                             raw_type(rhs)
                                                                              )
                                              );
 
@@ -205,11 +198,11 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_parameters(const Parameters params)
+    void BelosSolver<Matrix, Vector, TRILINOS>::read_xml(const std::string &path)
     {
-        if(!params.param_file_name().empty()) {
+        if(!path.empty()) {
             try {
-                impl_->param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());
+                impl_->param_list = Teuchos::getParametersFromXmlFile(path);
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);

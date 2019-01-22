@@ -2,11 +2,11 @@
 #define UTOPIA_TR_STRATEGY_FACTORY_HPP
 
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_FunctionNormalEq.hpp"
 #include "utopia_TRNormalEquation.hpp"
 #include "utopia_TrustRegion.hpp"
+#include "utopia_InputParameters.hpp"
 
 namespace utopia 
 {
@@ -62,26 +62,44 @@ namespace utopia
 	 * 	 
 	 */
 	template<typename Matrix, typename Vector>
-	const Parameters trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const Parameters params = Parameters())
+	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type, Input & in)
 	{
 		// TODO:: check options proper options for normal eq. 
 		if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))
 		{
-			auto subproblem = trust_region_strategy<Matrix, Vector>(params.trust_region_alg()); 
+			auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type); 
 			LeastSquaresTrustRegion<Matrix, Vector> tr_solver(subproblem);
-			
-			tr_solver.set_parameters(params);  
+			tr_solver.read(in);  
         	tr_solver.solve(*fun_ne_ptr, x);  
-        	return tr_solver.parameters(); 
+        	return tr_solver.solution_status(); 
 		}
 		else
 		{
-			auto subproblem = trust_region_strategy<Matrix, Vector>(params.trust_region_alg()); 
+			auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type); 
 			TrustRegion<Matrix, Vector> tr_solver(subproblem);
-			
-			tr_solver.set_parameters(params);  
+			tr_solver.read(in);  
         	tr_solver.solve(fun, x);  
-        	return tr_solver.parameters(); 
+        	return tr_solver.solution_status(); 
+		}
+	}
+
+	template<typename Matrix, typename Vector>
+	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type = AUTO_TR_TAG)
+	{
+		// TODO:: check options proper options for normal eq. 
+		if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))
+		{
+			auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type); 
+			LeastSquaresTrustRegion<Matrix, Vector> tr_solver(subproblem);
+        	tr_solver.solve(*fun_ne_ptr, x);  
+        	return tr_solver.solution_status(); 
+		}
+		else
+		{
+			auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type); 
+			TrustRegion<Matrix, Vector> tr_solver(subproblem);
+        	tr_solver.solve(fun, x);  
+        	return tr_solver.solution_status(); 
 		}
 
 	}

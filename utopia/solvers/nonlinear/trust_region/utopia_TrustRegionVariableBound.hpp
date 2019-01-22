@@ -1,8 +1,7 @@
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 
-#include "utopia_NewtonBase.hpp"
-#include "utopia_Parameters.hpp"    
+#include "utopia_NewtonBase.hpp"    
 #include "utopia_VariableBoundSolverInterface.hpp"
 #include "utopia_QPSolver.hpp"
 
@@ -22,26 +21,24 @@
         typedef utopia::NewtonBase<Matrix, Vector>    NewtonBase;
      	
      	public:                                                                       
-      TrustRegionVariableBound( const std::shared_ptr<QPSolver> &tr_subproblem,
-                                const Parameters params = Parameters()) : 
-                                NewtonBase(tr_subproblem, params)
+      TrustRegionVariableBound( const std::shared_ptr<QPSolver> &tr_subproblem) : 
+                                NewtonBase(tr_subproblem)
       {
-        set_parameters(params);        
+            
       }
-
 
       using TrustRegionBase::get_pred; 
 
-
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-      void set_parameters(const Parameters params) override
+      void read(Input &in) override
       {
+        TrustRegionBase::read(in);
+        NewtonBase::read(in); 
+      }
 
-        NewtonBase::set_parameters(params);
-        TrustRegionBase::set_parameters(params);
+      void print_usage(std::ostream &os) const override
+      {
+        TrustRegionBase::print_usage(os);
+        NewtonBase::print_usage(os); 
       }
 
       /**
@@ -112,6 +109,7 @@
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->set_box_constraints(box); 
             tr_subproblem->solve(H, -1.0 * g, p_k);
+            this->solution_status_.num_linear_solves++; 
           }
           else
           {
@@ -183,7 +181,6 @@
       {
         NewtonBase::set_linear_solver(tr_linear_solver); 
       }
-
 
     private: 
       Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)

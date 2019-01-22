@@ -41,6 +41,73 @@ namespace utopia {
 		Scalar val_;
 	};
 
+	template<typename Scalar>
+	class UIBoxedFunction final : public UIFunction<Scalar> {
+	public:
+
+		UIBoxedFunction(
+			const std::vector<Scalar> &lowbo,
+			const std::vector<Scalar> &upbo,
+			const std::shared_ptr<UIFunction<Scalar>> &fun
+			)
+		: lowbo_(lowbo), upbo_(upbo), fun_(fun)
+		{}
+
+		inline Scalar eval(const std::vector<Scalar> &x) const override
+		{
+			const auto n = std::min(x.size(), lowbo_.size());
+			for(std::size_t i = 0; i < n; ++i) {
+				if(lowbo_[i] > x[i] || upbo_[i] < x[i]) {
+					return 0.;
+				}
+			}
+
+			auto value = fun_->eval(x);
+			return value;
+		}
+
+	private:
+		std::vector<Scalar> lowbo_;
+		std::vector<Scalar> upbo_;
+		std::shared_ptr<UIFunction<Scalar>> fun_;
+	};
+
+	template<typename Scalar>
+	class UILambdaFunction final : public UIFunction<Scalar> {
+	public:
+		using F = std::function<Scalar(const std::vector<Scalar> &)>;
+
+		UILambdaFunction(F fun)
+		: fun_(fun)
+		{}
+
+		inline Scalar eval(const std::vector<Scalar> &x) const override
+		{
+			return fun_(x);
+		}
+
+	private:
+		F fun_;
+	};
+
+	template<typename F>
+	std::shared_ptr<UIFunction<double>> lambda_fun(
+		F fun
+	) {	
+		return std::make_shared<UILambdaFunction<double>>(fun);
+	}
+
+	template<typename F>
+	std::shared_ptr<UIFunction<double>> boxed_fun(
+		const std::vector<double> &lowbo,
+		const std::vector<double> &upbo,
+		F fun
+	) {	
+		return std::make_shared<UIBoxedFunction<double>>(lowbo, upbo, lambda_fun(fun));
+	}
+
+	
+
 	template<typename Scalar_>
 	class ContextFunction<std::vector<Scalar_>, UIFunction<Scalar_>> : public Expression< ContextFunction<std::vector<Scalar_>, UIFunction<Scalar_>> >{
 	public:

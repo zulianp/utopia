@@ -2,10 +2,8 @@
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 
 #include <algorithm>
-
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_TRSubproblem.hpp"
-#include "utopia_Parameters.hpp"    
 #include "utopia_NumericalTollerance.hpp"
 
 namespace utopia  
@@ -15,37 +13,20 @@ namespace utopia
    *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
    */ 
   template<class Vector>
-  class TrustRegionBase 
+  class TrustRegionBase : public virtual Configurable
   {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
   public:
-    TrustRegionBase(const Parameters params = Parameters())
+    TrustRegionBase(): 
+    delta_max_(1e14), delta_min_(1e-14), delta0_(1.0), gamma1_(0.2), gamma2_(2.0), 
+    eta1_(0.1), eta2_(0.85), rho_tol_(0.005), eps_(1e-14)
     {
 
-      set_parameters(params);        
     }
 
     virtual ~TrustRegionBase(){}
-
-      /* @brief      Sets the parameters.
-      *
-      * @param[in]  params  The parameters
-      */
-    virtual void set_parameters(const Parameters params) 
-    {
-      delta_max_  = params.delta_max();
-      delta0_     = params.delta0();
-      gamma1_     = params.gamma1();
-      gamma2_     = params.gamma2();
-      eta1_       = params.eta1();
-      eta2_       = params.eta2();
-      rho_tol_    = params.rho_tol();
-      eps_        = params.eps();
-      delta_min_  = params.delta_min(); 
-
-    }
 
     Scalar delta_max()  const  { return delta_max_; } 
     Scalar delta_min()  const  { return delta_min_; } 
@@ -111,42 +92,63 @@ namespace utopia
       const Scalar & s_norm, 
       const Scalar & delta) const
     {   
+      bool converged = false; 
+
+      SolutionStatus sol_status; 
+
         // termination because norm of grad is down
       if(g_norm < tol.absolute_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_FNORM_ABS; 
+        converged = true; 
       }
 
         // step size so small that we rather exit than wait for nan's
-      if(s_norm < tol.step_tollerance())
+      else if(s_norm < tol.step_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE; 
+        converged = true; 
       }
 
         // step size so small that we rather exit than wait for nan's
-      if(r_norm < tol.relative_tollerance())
+      else if(r_norm < tol.relative_tollerance())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE; 
+        converged = true; 
       }
 
         // check number of iterations
-      if( it > max_it)
+      else if( it > max_it)
       {
         monitor.exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-        return true; 
+        sol_status.reason = ConvergenceReason::DIVERGED_MAX_IT; 
+        converged = true; 
       }
 
         // do not hard code this 
-      if(delta < delta_min_)
+      else if(delta <= delta_min_)
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
-        return true; 
+        sol_status.reason = ConvergenceReason::CONVERGED_TR_DELTA; 
+        converged = true; 
       }
 
-      return false; 
+      if(converged)
+      {
+        sol_status.iterates = it; 
+        sol_status.gradient_norm = g_norm; 
+        sol_status.relative_gradient_norm = r_norm; 
+        sol_status.step_norm = s_norm;   
+
+        auto SS_monnitor = monitor.solution_status(); 
+        sol_status.execution_time = SS_monnitor.execution_time; 
+        monitor.solution_status(sol_status); 
+      }      
+
+      return converged; 
     }
 
 
@@ -268,6 +270,37 @@ namespace utopia
       }
 
     }
+
+
+    void read(Input &in) override
+    {
+      in.get("delta_max", delta_max_); 
+      in.get("delta_min", delta_min_); 
+      in.get("delta0", delta0_); 
+      in.get("gamma1", gamma1_);
+      in.get("gamma2", gamma2_);
+      in.get("eta1", eta1_);
+      in.get("eta2", eta2_);
+      in.get("rho_tol", rho_tol_);
+      in.get("eps", eps_); 
+    }
+
+    void print_usage(std::ostream &os) const override
+    {
+      this->print_param_usage(os, "delta_max", "real", "Maximum value of tr. radius.", "1e14"); 
+      this->print_param_usage(os, "delta_min", "real", "Minimum value of tr. radius.", "1e-14"); 
+      this->print_param_usage(os, "delta0", "real", "Initial value of tr. radius.", "1.0"); 
+
+      this->print_param_usage(os, "gamma1", "real", "Factor use to shrink tr. radius.", "0.5"); 
+      this->print_param_usage(os, "gamma2", "real", "Factor use to enlarge tr. radius.", "2.0"); 
+
+      this->print_param_usage(os, "eta1", "real", "Threshold for rho to shrink tr. radius.", "0.25"); 
+      this->print_param_usage(os, "eta2", "real", "Threshold for rho to enlarge tr. radius.", "0.75"); 
+
+      this->print_param_usage(os, "rho_tol", "real", "Threshold for rho to take trial point.", "0.005"); 
+      this->print_param_usage(os, "eps", "real", "Numerical tolerance.", "1e-14"); 
+    }
+
 
 
   private: 

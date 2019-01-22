@@ -3,6 +3,8 @@
 #include <Teuchos_ArrayViewDecl.hpp>
 
 #include "utopia_Traits.hpp"
+#include "utopia_RowView.hpp"
+
 #include <cassert>
 
 namespace utopia {
@@ -12,14 +14,17 @@ namespace utopia {
 	public:
 		typedef typename Tensor::Implementation::GO GO;
 		typedef typename Tensor::Implementation::Scalar Scalar;
+		using MapPtrT = typename Tensor::Implementation::rcp_map_type;
 
 		inline RowView(const Tensor &t, const GO row, const bool force_local_view = true)
 		: t_(t), offset_(0)
 		{
-			assert(t_.implementation().implementation().isLocallyIndexed());
+			auto impl = raw_type(t_);
+			assert(impl->isLocallyIndexed());
 			auto rr = row_range(t);
-			t_.implementation().implementation().getLocalRowView(row - rr.begin(), cols_, values_);
-			offset_ = t_.implementation().implementation().getDomainMap()->getMinGlobalIndex();
+			impl->getLocalRowView(row - rr.begin(), cols_, values_);
+			offset_  = impl->getDomainMap()->getMinGlobalIndex();
+			col_map_ = impl->getColMap();
 		}
 
 		inline ~RowView()
@@ -34,7 +39,7 @@ namespace utopia {
 		{
 			assert(index < n_values());
 
-			auto ret = t_.implementation().implementation().getColMap()->getGlobalElement(cols_[index]);
+			auto ret = col_map_->getGlobalElement(cols_[index]);
 			assert(ret < size(t_).get(1));
 			return ret;
 		}
@@ -50,6 +55,7 @@ namespace utopia {
 		GO offset_;
 		Teuchos::ArrayView<const GO> cols_;
 		Teuchos::ArrayView<const Scalar> values_;
+		MapPtrT col_map_;
 	};
 }
 

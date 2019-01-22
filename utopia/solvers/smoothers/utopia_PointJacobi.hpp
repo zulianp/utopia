@@ -23,10 +23,23 @@ namespace utopia {
 		 *
 		 * @param[in]  omega  The relaxation parameter (unused atm).
 		 */
-		PointJacobi(const Parameters params = Parameters())
+		PointJacobi()
 		{
-			set_parameters(params);
+
 		}
+
+        void read(Input &in) override
+        {
+            Solver::read(in); 
+            Smoother::read(in); 
+        }
+
+        void print_usage(std::ostream &os) const override
+        {
+            Solver::print_usage(os); 
+            Smoother::print_usage(os); 
+        }
+
 		
 		bool apply(const Vector &rhs, Vector &x) override
 		{
@@ -68,12 +81,6 @@ namespace utopia {
 			}
 			
 			return true;
-		}
-		
-		void set_parameters(const Parameters params) override
-		{
-			Smoother::set_parameters(params);
-			Solver::set_parameters(params);
 		}
 		
 		inline PointJacobi * clone() const override

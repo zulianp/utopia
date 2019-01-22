@@ -40,15 +40,12 @@ namespace utopia
 	    	DVectord x = values(problem.n_coarse, 1.0);
 	    	fun.apply_bc_to_initial_guess(x);
 
-	    	Parameters params;
-			params.atol(1e-10);
-			params.rtol(1e-10);
-			params.stol(1e-10);
-			params.verbose(problem.verbose);
-
 			auto subproblem = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord> >();
 			TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
-			tr_solver.set_parameters(params);
+			tr_solver.atol(1e-10);
+			tr_solver.rtol(1e-10);
+			tr_solver.stol(1e-10);
+			tr_solver.verbose(problem.verbose);			
 			tr_solver.solve(fun, x);
 	    }
 
@@ -62,12 +59,6 @@ namespace utopia
 	    	fun.generate_constraints(lb, ub);
 	    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-	    	Parameters params;
-			params.atol(1e-6);
-			params.rtol(1e-10);
-			params.stol(1e-10);
-			params.verbose(problem.verbose);
-
 	        auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
 	        auto qp_solver =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
 	        qp_solver->atol(1e-11); 
@@ -75,7 +66,12 @@ namespace utopia
 
 	        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver);
 	        tr_solver.set_box_constraints(box);
-			tr_solver.set_parameters(params);
+			tr_solver.atol(1e-6);
+			tr_solver.rtol(1e-10);
+			tr_solver.stol(1e-10);
+			tr_solver.verbose(problem.verbose);
+
+
 			tr_solver.solve(fun, x);
 
 			DVectord x2 = values(problem.n_coarse, 1.0);
@@ -119,7 +115,7 @@ namespace utopia
 
             multigrid->set_transfer_operators(problem.prolongations);
             multigrid->must_generate_masks(false);
-            multigrid->set_fix_semidefinite_operators(true);
+            multigrid->fix_semidefinite_operators(true);
             multigrid->verbose(false);
             multigrid->atol(1e-11);
 
