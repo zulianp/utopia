@@ -23,7 +23,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_block_mg_exp);
             UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_mg_exp);
-            UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
+            UTOPIA_RUN_TEST(petsc_superlu_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
             UTOPIA_RUN_TEST(petsc_st_cg_mg); 
@@ -394,7 +394,7 @@ namespace utopia {
             utopia_test_assert( approxeq(A*x, rhs, 1e-6) );
         }
 
-        void petsc_superlu_cg_mg()
+        void petsc_superlu_mg()
         {
             const bool verbose = false;
             DVectord rhs;
@@ -421,10 +421,12 @@ namespace utopia {
             interpolation_operators.push_back(make_ref(I_3));
 
             //  init
-            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+            
 #ifdef PETSC_HAVE_SUPERLU_DIST
-            direct_solver->set_type(SUPERLU_DIST_TAG, LU_DECOMPOSITION_TAG);
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >(MATSOLVERSUPERLU_DIST, PCLU);
 #else
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+           
             if(mpi_world_size() > 1) {
                 if(mpi_world_rank() == 0) {
                     std::cerr << "[Error] Direct solver does not work in parallel compile with SuperLU" << std::endl;
@@ -432,6 +434,8 @@ namespace utopia {
                 return;
             }
 #endif //PETSC_HAVE_SUPERLU_DIST
+
+            // direct_solver->describe(std::cout);
 
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
@@ -471,7 +475,7 @@ namespace utopia {
             double diff = norm2(rhs - A * x_0);
 
             if(diff > 1e-6) {
-                utopia_error("petsc_superlu_cg_mg fails. Known problem that needs to be fixed!");
+                utopia_error("petsc_superlu_mg fails. Known problem that needs to be fixed!");
             }
             // utopia_test_assert( diff < 1e-6 );
         }

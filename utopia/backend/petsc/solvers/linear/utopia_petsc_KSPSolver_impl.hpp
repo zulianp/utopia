@@ -777,6 +777,15 @@ namespace utopia {
 	}
 
 	template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::describe(std::ostream &os) const
+	{
+		os << "KSPSolver: \n";
+		os << "ksp_type:       " << ksp_type() 		 << "\n";
+		os << "pc_type:        " << pc_type() 		 << "\n";
+		os << "solver_package: " << solver_package() << "\n";
+	}
+
+	template<typename Matrix, typename Vector>
 	void KSPSolver<Matrix, Vector, PETSC>::read(Input &is)
 	{
 		PreconditionedSolver::read(is);

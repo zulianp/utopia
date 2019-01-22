@@ -99,7 +99,7 @@
 <!-- <solve-strategy>monolithic</solve-strategy> -->
 <solve-strategy>staggered</solve-strategy>
 <!-- <solve-strategy>separate</solve-strategy> -->
-<transient-solve-strategy>separate</transient-solve-strategy>
+<!-- <transient-solve-strategy>separate</transient-solve-strategy> -->
 
 
 <use-mg>true</use-mg>
@@ -155,7 +155,7 @@
 			</variables>
 		</space>
 
-		<outflow>1</outflow>
+		<!-- <outflow>1</outflow> -->
 	</fracture-network>
 
 	

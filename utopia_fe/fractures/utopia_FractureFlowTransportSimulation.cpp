@@ -130,13 +130,15 @@ namespace utopia {
 		UVector x = blocks(x_m, x_f, lagr);
 
 
-		KSPSolver<USparseMatrix, UVector> op;
-		op.set_initial_guess_non_zero(false);
-		op.ksp_type(KSPPREONLY);
-		op.pc_type(PCLU);
-		op.solver_package(MATSOLVERSUPERLU_DIST);
+		// KSPSolver<USparseMatrix, UVector> op;
+		// op.set_initial_guess_non_zero(false);
+		// op.ksp_type(KSPPREONLY);
+		// op.pc_type(PCLU);
+		// op.solver_package(MATSOLVERSUPERLU_DIST);
 
-		std::cout << op.solver_package() << std::endl;
+		Factorization<USparseMatrix, UVector> op;
+		op.describe(std::cout);
+		
 		
 		op.update(make_ref(A));
 		

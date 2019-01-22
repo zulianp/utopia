@@ -207,12 +207,12 @@ namespace utopia {
 		    make_ref(B), make_ref(D), nullptr
 		});
 
-		UVector z = local_zeros(local_size(rhs_f));
+		UVector z = local_zeros(local_size(B).get(0));
 		UVector rhs = blocks(rhs_m, rhs_f, z);
 
-		x_m = local_zeros(local_size(rhs_m));
-		x_f = local_zeros(local_size(rhs_f));
-		lagr  = local_zeros(local_size(rhs_f));
+		x_m  = local_zeros(local_size(rhs_m));
+		x_f  = local_zeros(local_size(rhs_f));
+		lagr = local_zeros(local_size(z));
 
 		UVector sol = blocks(x_m, x_f, lagr);
 
