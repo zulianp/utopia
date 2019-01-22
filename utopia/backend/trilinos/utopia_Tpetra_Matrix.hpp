@@ -5,7 +5,6 @@
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Logger.hpp"
-
 #include "utopia_Tpetra_Vector.hpp"
 
 #include <Tpetra_CrsMatrix_decl.hpp>
@@ -14,7 +13,7 @@
 
 #include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
+
 
 #include <iostream>
 #include <memory>

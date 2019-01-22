@@ -9,7 +9,6 @@
 #include "Amesos2_Meta.hpp"
 
 //TODO remove from here
-#include <Kokkos_DefaultNode.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
@@ -18,11 +17,6 @@
 #include <Amesos2_Factory.hpp>
 #include <Amesos2_Solver.hpp>
 #include <Amesos2_MultiVecAdapter.hpp>
-
-#include <BelosSolverFactory.hpp>
-#include <BelosTpetraAdapter.hpp>
-#include <BelosLinearProblem.hpp>
-#include <BelosSolverManager.hpp>
 
 #include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
@@ -37,7 +31,6 @@
 #include <Tpetra_Map.hpp>
 #include <Tpetra_Operator.hpp>
 #include <Tpetra_Vector.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
 #include <Tpetra_Version.hpp>
 
 //////

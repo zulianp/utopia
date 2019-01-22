@@ -4,7 +4,6 @@
 #include "utopia_trilinos_Traits.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Factory.hpp"
-//#include "utopia_Base.hpp"
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>

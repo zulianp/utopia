@@ -4,10 +4,8 @@
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
-// #include <mpi.h>
 #include <Teuchos_DefaultMpiComm.hpp>
 #include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
 #include <Tpetra_Map.hpp>
 #include <Tpetra_MultiVector.hpp>
 #include <Tpetra_Vector.hpp>
@@ -22,10 +20,6 @@
 #ifdef WITH_TRILINOS_BELOS
 #include <BelosTpetraAdapter.hpp>
 #include <BelosSolverFactory.hpp>
-#endif
-
-#ifdef WITH_TRILINOS_IFPACK2
-#include <Ifpack2_Factory.hpp>
 #endif
 
 #include "utopia_trilinos_ForwardDeclaration.hpp"

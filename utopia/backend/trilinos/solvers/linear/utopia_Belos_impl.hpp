@@ -15,8 +15,6 @@
 #include <Teuchos_StandardCatchMacros.hpp>
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
-
 
 #ifdef WITH_TRILINOS_MUELU
 #include <MueLu.hpp>
