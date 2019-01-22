@@ -105,6 +105,8 @@ namespace utopia {
 
         bool must_compute_cond_number() const;
 
+        void describe(std::ostream &os) const;
+
 
         /**
          * @brief      Sets the default options for PETSC KSP solver. \n

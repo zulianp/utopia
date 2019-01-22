@@ -210,6 +210,19 @@ namespace utopia {
 			left = std::forward<R>(right);
 		}
 
+		
+		template<class Tensor>
+		inline static double norm2(const Tensor &)
+		{
+			assert(false);
+			return 1.;
+		}
+
+		inline static double norm2(const libMesh::DenseVector<libMesh::Real> &vec)
+		{
+			return vec.l2_norm();
+		}
+
 	private:
 		Backend() {}
 
@@ -256,6 +269,12 @@ namespace utopia {
 		{
 			size.set_dims(1);
 			size.set(0, t.implementation().size());
+		}
+
+		template<class Tensor>
+		inline static libMesh::Real eval(const Norm<Wrapper<Tensor, 1>,2> &t)
+		{
+			return Backend<libMesh::Real, LIBMESH_TAG>::norm2(t.expr().implementation());
 		}
 	};
 

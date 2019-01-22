@@ -9,6 +9,8 @@
 #include <cassert>
 #include <cstdio>
 
+#include <libmesh/exact_solution.h>
+
 namespace utopia {
 
 	template<typename Scalar>
@@ -105,7 +107,6 @@ namespace utopia {
 	) {	
 		return std::make_shared<UIBoxedFunction<double>>(lowbo, upbo, lambda_fun(fun));
 	}
-
 	
 
 	template<typename Scalar_>
@@ -268,6 +269,49 @@ namespace utopia {
 		std::vector<Scalar> values_;
 
 	};
+
+	template<typename Scalar>
+	class Normal final {};
+
+
+	template<typename Scalar_>
+	class ContextFunction<
+		std::vector<libMesh::VectorValue<Scalar_>>,
+		Normal<Scalar_>
+		> final : 
+		public Expression< 
+				ContextFunction<std::vector<libMesh::VectorValue<Scalar_>>, Normal<Scalar_>>
+				>{
+	public:
+		static const int Order = 1;
+		typedef Scalar_ Scalar;
+
+		ContextFunction()
+		{}
+
+		template<int Backend>
+		auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<libMesh::VectorValue<Scalar_>>
+		{
+			const auto &n = ctx.fe()[0]->get_normals();
+			auto nn = n.size();
+
+			std::vector<libMesh::VectorValue<Scalar_>> normals(nn);
+			for(std::size_t i = 0; i < nn; ++i) {
+				for(int d = 0; d < LIBMESH_DIM; ++d) {
+					normals[i](d) = n[i](d);
+				}
+			}
+
+			return normals;
+		}
+
+	};
+
+	inline ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>> normal()
+	{
+		return ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>>();
+	}
+
 
 }
 
