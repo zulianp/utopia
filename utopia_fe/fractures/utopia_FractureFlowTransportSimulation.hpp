@@ -27,9 +27,10 @@ namespace utopia {
 				space = utopia::make_unique<UIFunctionSpace<LibMeshFunctionSpace>>(V.mesh(), V.subspace(0).equation_systems_ptr());
 			}
 
-			Transport();
+			Transport(const std::string &name);
 
 			void init(const UVector &pressure, FractureFlow &flow);
+			void finalize();
 			void update_output();
 			void assemble_system(FractureFlow &flow);
 			void remove_mass(const UVector &in, UVector &out);
@@ -40,10 +41,14 @@ namespace utopia {
 			
 			void post_process_time_step(FractureFlow &flow);
 
+
+			std::string name;
+
 			std::shared_ptr<UIFunctionSpace<LibMeshFunctionSpace>> steady_state_function_space;
 			std::unique_ptr<UIFunctionSpace<LibMeshFunctionSpace>> space;
 			std::unique_ptr<UIForcingFunction<LibMeshFunctionSpace, UVector>> forcing_function;
 			ProductFunctionSpace<LibMeshFunctionSpace> aux_space;
+			std::shared_ptr<UIFunction<double>> porosity;
 			
 			UVector concentration;
 			bool lump_mass_matrix;
@@ -53,6 +58,7 @@ namespace utopia {
 			USparseMatrix mass_matrix;
 			USparseMatrix gradient_matrix;
 			USparseMatrix system_matrix;
+			USparseMatrix boundary_flow_matrix;
 			UVector pressure_w;
 			UVector mass_vector;
 			UVector f;
@@ -65,6 +71,9 @@ namespace utopia {
 
 			std::vector<double> box_min, box_max;
 			std::vector<int> in_out_flow;
+
+			CSVWriter csv;
+
 		};
 
 		SteadyFractureFlowSimulation steady_flow_;

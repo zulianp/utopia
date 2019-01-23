@@ -7,7 +7,7 @@
 namespace utopia {
 
 	FractureFlowTransportSimulation::FractureFlowTransportSimulation(libMesh::Parallel::Communicator &comm)
-	: steady_flow_(comm), preset_velocity_field_(false)
+	: steady_flow_(comm), preset_velocity_field_(false), transport_m_("matrix"), transport_f_("fracture_network")
 	{}
 
 	void FractureFlowTransportSimulation::read(utopia::Input &in)
@@ -92,8 +92,8 @@ namespace utopia {
 		auto &V_m = transport_m_.space->space().last_subspace();
 		auto &V_f = transport_f_.space->space().last_subspace();
 
-		UVector x_m = transport_m_.concentration;
-		UVector x_f = transport_f_.concentration;
+		UVector &x_m = transport_m_.concentration;
+		UVector &x_f = transport_f_.concentration;
 
 		UVector rhs_m = local_zeros(local_size(x_m));
 		UVector rhs_f = local_zeros(local_size(x_f));
@@ -163,6 +163,10 @@ namespace utopia {
 
 			undo_blocks(x, x_m, x_f, lagr);
 
+
+			transport_f_.post_process_time_step(*steady_flow_.fracture_network);
+			transport_m_.post_process_time_step(*steady_flow_.matrix);
+
 			utopia::convert(x_m, *V_m.equation_system().solution);
 			V_m.equation_system().solution->close();
 
@@ -206,6 +210,9 @@ namespace utopia {
 			write_output();
 		}
 
+		transport_f_.finalize();
+		transport_m_.finalize();
+
 		c.stop();
 		std::cout << "Overall time: " << c << std::endl;
 	}
@@ -224,8 +231,9 @@ namespace utopia {
 		auto u = trial(W);
 		auto v = test(W);
 
-		UVector aux_pressure;
+		UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list()); 
 		copy_values(C, pressure_w, P, aux_pressure);
+		synchronize(aux_pressure);
 
 		auto ph = interpolate(aux_pressure, p);
 
@@ -245,16 +253,27 @@ namespace utopia {
 		utopia::assemble(l_form, M_x_v);
 		utopia::assemble(b_form, aux_mass_matrix);
 
-		UVector recovered_velocity = local_zeros(local_size(M_x_v));
+		UVector aux_values = local_zeros(local_size(M_x_v));
+
+		//this mass vector contains also the porosity
+		copy_values(C, mass_vector, aux_space.subspace(dim + 1), M_x_v);
 
 		if(lump_mass_matrix) {	
 			UVector aux_mass_vector = sum(aux_mass_matrix, 1);
-			recovered_velocity = e_mul(M_x_v, 1./aux_mass_vector);
+			aux_values = e_mul(M_x_v, 1./aux_mass_vector);
 		} else {
-			Factorization<USparseMatrix, UVector>().solve(aux_mass_matrix, M_x_v, recovered_velocity);
+			Factorization<USparseMatrix, UVector>().solve(aux_mass_matrix, M_x_v, aux_values);
 		}
 
-		utopia::convert(recovered_velocity, *P.equation_system().solution);
+		copy_values(C, pressure_w, P, aux_values);
+
+		utopia::convert(aux_values, *P.equation_system().solution);
+		P.equation_system().solution->close();
+	}
+
+	void FractureFlowTransportSimulation::Transport::finalize()
+	{
+		csv.close_file();
 	}
 
 	void FractureFlowTransportSimulation::Transport::init(const UVector &pressure, FractureFlow &flow)
@@ -264,6 +283,12 @@ namespace utopia {
 
 		assert(space);
 
+		{
+			csv.open_file(name + ".csv");
+			std::vector<std::string> vals = { "outflow" };
+			csv.write_table_row(vals);
+		}
+
 		if(!space->initialized()) {
 			space->set_space( utopia::make_unique<ProductFunctionSpace<LibMeshFunctionSpace>>() );
 			auto &transport_system = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("concentration");
@@ -272,7 +297,14 @@ namespace utopia {
 		} 
 
 		auto &C = space->space().subspace(0);
+
+		pressure_w = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), C.dof_map().get_send_list()); 
+		concentration = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), C.dof_map().get_send_list()); 
+
 		copy_values(V, pressure, C, pressure_w);
+
+
+		synchronize(pressure_w);
 
 		{
 			auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("aux_2");
@@ -282,17 +314,23 @@ namespace utopia {
 				aux_space *= LibMeshFunctionSpace(aux, aux.add_variable("vel_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 			}
 
+			aux_space *= LibMeshFunctionSpace(aux, aux.add_variable("porosity", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+
 			aux_space.subspace(0).initialize();
 		}
 
 		assert(1 == int(space->space().n_subspaces()));
 			
-		auto b_form = inner(trial(space->space()), test(space->space())) * dX;
+		auto b_form = inner(ctx_fun(porosity) * trial(space->space()), test(space->space())) * dX;
+		// auto b_form = inner(trial(space->space()), test(space->space())) * dX;
 
 		utopia::assemble(b_form, mass_matrix);
 
 		mass_vector = sum(mass_matrix, 1);
 		mass_matrix_inverse.update(make_ref(mass_matrix));
+
+		double vol_x_porsity = sum(mass_vector);
+		std::cout << "vol_x_porsity: " << vol_x_porsity << std::endl;
 
 		assemble_aux_quantities(flow);
 	}
@@ -332,7 +370,8 @@ namespace utopia {
 		}
 	}
 
-	FractureFlowTransportSimulation::Transport::Transport() :
+	FractureFlowTransportSimulation::Transport::Transport(const std::string &name) :
+	name(name),
 	lump_mass_matrix(false),
 	simulation_time(1.),
 	h1_regularization(false),
@@ -350,17 +389,30 @@ namespace utopia {
 		in.get("regularization-parameter", regularization_parameter);
 		in.get("use-upwinding", use_upwinding);
 
-		int outflow = -1, inflow = -1;
-		in.get("inflow", inflow);
-		in.get("outflow", outflow);
 
-		if(inflow != -1) {
-			in_out_flow.push_back(inflow);
-		}
+		in.get("outflow", 
+			[this](Input &in) {
+				in.get_all([this](Input &in) {
+					int side = -1;
+					in.get("side", side);
 
-		if(outflow != -1) {
-			in_out_flow.push_back(outflow);
-		}
+					if(side >= 0) {
+						in_out_flow.push_back(side);
+					}
+				});
+		});
+
+		in.get("inflow", 
+			[this](Input &in) {
+				in.get_all([this](Input &in) {
+					int side = -1;
+					in.get("side", side);
+
+					if(side >= 0) {
+						in_out_flow.push_back(side);
+					}
+				});
+		});
 
 		in.get("box", [this](Input &in) {
 			box_min.resize(3, -std::numeric_limits<double>::max());
@@ -382,6 +434,29 @@ namespace utopia {
 			in.get("forcing-function", *forcing_function);
 		} else {
 			std::cerr << "[Warning] no space and forcing-function applied for simulation" << std::endl;
+		}
+
+		in.get("porosity", [this](Input &in) {
+			auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
+			subdomain_fun->read(in);
+			
+			if(subdomain_fun->good()) {
+				
+				if(!subdomain_fun->has_default()) {
+					subdomain_fun->set_default(utopia::make_unique<UIConstantFunction<double>>(1.));
+				}
+
+				porosity = std::move(subdomain_fun);
+			} else {
+				std::cerr << "[Error] improper porosity format" << std::endl;
+			}
+
+
+
+		});
+
+		if(!porosity) {
+			porosity = utopia::make_unique<UIConstantFunction<double>>(1.);
 		}
 	}
 
@@ -518,15 +593,21 @@ namespace utopia {
 
 		}
 
+		USparseMatrix temp_boundary_flow_matrix;
 		for(auto tag : in_out_flow) {
 			auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
 
-			USparseMatrix boundary_flow_matrix;
-			utopia::assemble(flow_form, boundary_flow_matrix);
-			gradient_matrix -= boundary_flow_matrix;
+			if(empty(boundary_flow_matrix)) {
+				utopia::assemble(flow_form, boundary_flow_matrix);
+			} else {
+				utopia::assemble(flow_form, temp_boundary_flow_matrix);
+				boundary_flow_matrix += temp_boundary_flow_matrix;
+			}
 
 			std::cout << "boundary flow at " << tag << std::endl;
 		}
+
+		gradient_matrix -= boundary_flow_matrix;
 
 		if(lump_mass_matrix) {
 			system_matrix = dt * gradient_matrix;
@@ -563,6 +644,7 @@ namespace utopia {
 		}
 
 		copy_values(C, c0, C, concentration);
+		synchronize(concentration);
 
 		f = local_zeros(local_size(concentration));
 		
@@ -578,17 +660,23 @@ namespace utopia {
 
 	void FractureFlowTransportSimulation::Transport::post_process_time_step(FractureFlow &flow)
 	{
-		auto &C = space->space().last_subspace();
-		auto &dof_map = C.dof_map();
+		// auto &C = space->space().last_subspace();
+		// auto &dof_map = C.dof_map();
 
-		auto c = trial(C);
-		auto ch = interpolate(concentration, c);
-		auto form = inner(ch, ctx_fun(flow.sampler)) * dX;
+		// auto c = trial(C);
 
-		double value = 0.;
-		utopia::assemble(form, value);
+		// synchronize(concentration);
+		// auto ch = interpolate(concentration, c);
+		// auto form = inner(ch, ctx_fun(flow.sampler)) * dX;
 
-		disp(value);
+		// double value = 0.;
+		// utopia::assemble(form, value);
+
+		double outflow_val = sum(boundary_flow_matrix * concentration);
+		disp(outflow_val);
+
+		std::vector<double> vals = { outflow_val };
+		csv.write_table_row(vals);
 	}
 
 	void FractureFlowTransportSimulation::Transport::constrain_concentration(UVector &vec)
@@ -620,6 +708,8 @@ namespace utopia {
 				}
 			}
 		}
+
+		synchronize(vec);
 
 	}
 
