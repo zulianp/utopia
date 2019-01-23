@@ -44,6 +44,7 @@ namespace utopia {
 			std::unique_ptr<UIFunctionSpace<LibMeshFunctionSpace>> space;
 			std::unique_ptr<UIForcingFunction<LibMeshFunctionSpace, UVector>> forcing_function;
 			ProductFunctionSpace<LibMeshFunctionSpace> aux_space;
+			std::shared_ptr<UIFunction<double>> porosity;
 			
 			UVector concentration;
 			bool lump_mass_matrix;

@@ -150,6 +150,12 @@
 			</entry>
 
 		</outflow>
+		<porosity>
+			<entry>
+				<value>2.</value>
+				<block>-1</block>
+			</entry>
+		</porosity>
 	</matrix>
 
 
@@ -166,7 +172,7 @@
 			</variables>
 		</space>
 
-			<outflow>
+		<outflow>
 			<entry>
 				<side>1</side>
 			</entry>

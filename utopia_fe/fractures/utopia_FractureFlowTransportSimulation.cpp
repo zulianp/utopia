@@ -247,6 +247,7 @@ namespace utopia {
 		utopia::assemble(b_form, aux_mass_matrix);
 
 		UVector recovered_velocity = local_zeros(local_size(M_x_v));
+		copy_values(C, mass_vector, aux_space.subspace(dim + 1), recovered_velocity);
 
 		if(lump_mass_matrix) {	
 			UVector aux_mass_vector = sum(aux_mass_matrix, 1);
@@ -256,6 +257,8 @@ namespace utopia {
 		}
 
 		utopia::convert(recovered_velocity, *P.equation_system().solution);
+
+
 	}
 
 	void FractureFlowTransportSimulation::Transport::init(const UVector &pressure, FractureFlow &flow)
@@ -290,17 +293,23 @@ namespace utopia {
 				aux_space *= LibMeshFunctionSpace(aux, aux.add_variable("vel_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 			}
 
+			aux_space *= LibMeshFunctionSpace(aux, aux.add_variable("porosity", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+
 			aux_space.subspace(0).initialize();
 		}
 
 		assert(1 == int(space->space().n_subspaces()));
 			
-		auto b_form = inner(trial(space->space()), test(space->space())) * dX;
+		auto b_form = inner(ctx_fun(porosity) * trial(space->space()), test(space->space())) * dX;
+		// auto b_form = inner(trial(space->space()), test(space->space())) * dX;
 
 		utopia::assemble(b_form, mass_matrix);
 
 		mass_vector = sum(mass_matrix, 1);
 		mass_matrix_inverse.update(make_ref(mass_matrix));
+
+		double vol_x_porsity = sum(mass_vector);
+		std::cout << "vol_x_porsity: " << vol_x_porsity << std::endl;
 
 		assemble_aux_quantities(flow);
 	}
@@ -403,6 +412,21 @@ namespace utopia {
 			in.get("forcing-function", *forcing_function);
 		} else {
 			std::cerr << "[Warning] no space and forcing-function applied for simulation" << std::endl;
+		}
+
+		in.get("porosity", [this](Input &in) {
+			auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
+			subdomain_fun->read(in);
+			if(subdomain_fun->good()) {
+				porosity = std::move(subdomain_fun);
+			} else {
+				std::cerr << "[Error] improper porosity format" << std::endl;
+			}
+
+		});
+
+		if(!porosity) {
+			porosity = utopia::make_unique<UIConstantFunction<double>>(1.);
 		}
 	}
 
