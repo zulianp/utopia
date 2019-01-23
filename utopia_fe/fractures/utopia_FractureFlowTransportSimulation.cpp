@@ -253,19 +253,22 @@ namespace utopia {
 		utopia::assemble(l_form, M_x_v);
 		utopia::assemble(b_form, aux_mass_matrix);
 
-		UVector recovered_velocity = local_zeros(local_size(M_x_v));
-		copy_values(C, mass_vector, aux_space.subspace(dim + 1), recovered_velocity);
+		UVector aux_values = local_zeros(local_size(M_x_v));
+
+		//this mass vector contains also the porosity
+		copy_values(C, mass_vector, aux_space.subspace(dim + 1), M_x_v);
 
 		if(lump_mass_matrix) {	
 			UVector aux_mass_vector = sum(aux_mass_matrix, 1);
-			recovered_velocity = e_mul(M_x_v, 1./aux_mass_vector);
+			aux_values = e_mul(M_x_v, 1./aux_mass_vector);
 		} else {
-			Factorization<USparseMatrix, UVector>().solve(aux_mass_matrix, M_x_v, recovered_velocity);
+			Factorization<USparseMatrix, UVector>().solve(aux_mass_matrix, M_x_v, aux_values);
 		}
 
-		utopia::convert(recovered_velocity, *P.equation_system().solution);
+		copy_values(C, pressure_w, P, aux_values);
 
-
+		utopia::convert(aux_values, *P.equation_system().solution);
+		P.equation_system().solution->close();
 	}
 
 	void FractureFlowTransportSimulation::Transport::finalize()
