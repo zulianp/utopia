@@ -417,11 +417,19 @@ namespace utopia {
 		in.get("porosity", [this](Input &in) {
 			auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
 			subdomain_fun->read(in);
+			
 			if(subdomain_fun->good()) {
+				
+				if(!subdomain_fun->has_default()) {
+					subdomain_fun->set_default(utopia::make_unique<UIConstantFunction<double>>(1.));
+				}
+
 				porosity = std::move(subdomain_fun);
 			} else {
 				std::cerr << "[Error] improper porosity format" << std::endl;
 			}
+
+
 
 		});
 

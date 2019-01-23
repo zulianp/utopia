@@ -85,6 +85,16 @@ namespace utopia {
 		UISubdomainFunction()
 		{}
 
+		inline bool has_default() const
+		{
+			return static_cast<bool>(default_fun_);
+		}
+
+		void set_default(const std::shared_ptr<UIFunction<Scalar>> &fun)
+		{
+			default_fun_ = fun;
+		}
+
 		void read(Input &in) override
 		{
 			in.get_all([this](Input &sub_is) {
