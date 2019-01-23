@@ -38,7 +38,7 @@ namespace utopia {
 
 //////////////////////////////////////////////////////////
 
-	static const char * SOLVER_LIBS [N_SOLVER_LIBS] = { "petsc", "mumps", "superlu", "superlu_dist"};
+	static const char * SOLVER_LIBS[N_SOLVER_LIBS] = { "petsc", "mumps", "superlu", "superlu_dist"};
 	static const char * SOLVER_TYPES[N_SOLVER_TYPES]   = {"lu", "cholesky" };
 
 

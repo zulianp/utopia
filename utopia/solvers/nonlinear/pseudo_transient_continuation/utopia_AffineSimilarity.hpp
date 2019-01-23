@@ -157,7 +157,7 @@ namespace utopia
 
                 tau = estimate_tau(g_new, g, s, tau, s_norm); 
 
-                if(norm2(g_new) < norm2(g))
+                if(norm_l2(g_new) < norm_l2(g))
                 {
                     x = x_trial; 
                     g = g_new; 
@@ -264,6 +264,11 @@ namespace utopia
             return dot(s, I_*s); 
         }
 
+        Scalar norm_l2(const Vector & s)
+        {   
+            return std::sqrt(norm_l2_2(s)); 
+        }
+
 
         bool clamp_tau(Scalar & tau)
         {
@@ -290,7 +295,7 @@ namespace utopia
 
         bool residual_monotonicity_test(const Vector & g_trial, const Vector & g_old)
         {
-            return (norm2(g_trial) < norm2(g_old)) ? true : false; 
+            return (norm_l2(g_trial) < norm_l2(g_old)) ? true : false; 
         }
 
 
