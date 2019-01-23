@@ -224,8 +224,9 @@ namespace utopia {
 		auto u = trial(W);
 		auto v = test(W);
 
-		UVector aux_pressure;
+		UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list()); 
 		copy_values(C, pressure_w, P, aux_pressure);
+		synchronize(aux_pressure);
 
 		auto ph = interpolate(aux_pressure, p);
 
@@ -272,7 +273,14 @@ namespace utopia {
 		} 
 
 		auto &C = space->space().subspace(0);
+
+		pressure_w = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), C.dof_map().get_send_list()); 
+		concentration = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), C.dof_map().get_send_list()); 
+
 		copy_values(V, pressure, C, pressure_w);
+
+
+		synchronize(pressure_w);
 
 		{
 			auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("aux_2");
@@ -350,17 +358,30 @@ namespace utopia {
 		in.get("regularization-parameter", regularization_parameter);
 		in.get("use-upwinding", use_upwinding);
 
-		int outflow = -1, inflow = -1;
-		in.get("inflow", inflow);
-		in.get("outflow", outflow);
 
-		if(inflow != -1) {
-			in_out_flow.push_back(inflow);
-		}
+		in.get("outflow", 
+			[this](Input &in) {
+				in.get_all([this](Input &in) {
+					int side = -1;
+					in.get("side", side);
 
-		if(outflow != -1) {
-			in_out_flow.push_back(outflow);
-		}
+					if(side >= 0) {
+						in_out_flow.push_back(side);
+					}
+				});
+		});
+
+		in.get("inflow", 
+			[this](Input &in) {
+				in.get_all([this](Input &in) {
+					int side = -1;
+					in.get("side", side);
+
+					if(side >= 0) {
+						in_out_flow.push_back(side);
+					}
+				});
+		});
 
 		in.get("box", [this](Input &in) {
 			box_min.resize(3, -std::numeric_limits<double>::max());
@@ -563,6 +584,7 @@ namespace utopia {
 		}
 
 		copy_values(C, c0, C, concentration);
+		synchronize(concentration);
 
 		f = local_zeros(local_size(concentration));
 		
@@ -582,6 +604,8 @@ namespace utopia {
 		auto &dof_map = C.dof_map();
 
 		auto c = trial(C);
+
+		synchronize(concentration);
 		auto ch = interpolate(concentration, c);
 		auto form = inner(ch, ctx_fun(flow.sampler)) * dX;
 
@@ -620,6 +644,8 @@ namespace utopia {
 				}
 			}
 		}
+
+		synchronize(vec);
 
 	}
 
