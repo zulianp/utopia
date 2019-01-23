@@ -14,7 +14,7 @@
 		<n-x>60</n-x>
 		<n-y>60</n-y>
 
-		<refinements>1</refinements>
+		<refinements>0</refinements>
 	</mesh>
 
 	<space>
@@ -47,7 +47,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<refinements>2</refinements>
+		<refinements>0</refinements>
 	</mesh>
 
 	<space>
@@ -138,7 +138,18 @@
 
 		</space>
 
-		<outflow>3</outflow>
+		<outflow>
+			<entry>
+				<side>0</side>
+			</entry>
+			<entry>
+				<side>2</side>
+			</entry>
+			<entry>
+				<side>3</side>
+			</entry>
+
+		</outflow>
 	</matrix>
 
 
@@ -155,7 +166,11 @@
 			</variables>
 		</space>
 
-		<!-- <outflow>1</outflow> -->
+			<outflow>
+			<entry>
+				<side>1</side>
+			</entry>
+		</outflow>
 	</fracture-network>
 
 	

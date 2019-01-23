@@ -358,17 +358,30 @@ namespace utopia {
 		in.get("regularization-parameter", regularization_parameter);
 		in.get("use-upwinding", use_upwinding);
 
-		int outflow = -1, inflow = -1;
-		in.get("inflow", inflow);
-		in.get("outflow", outflow);
 
-		if(inflow != -1) {
-			in_out_flow.push_back(inflow);
-		}
+		in.get("outflow", 
+			[this](Input &in) {
+				in.get_all([this](Input &in) {
+					int side = -1;
+					in.get("side", side);
 
-		if(outflow != -1) {
-			in_out_flow.push_back(outflow);
-		}
+					if(side >= 0) {
+						in_out_flow.push_back(side);
+					}
+				});
+		});
+
+		in.get("inflow", 
+			[this](Input &in) {
+				in.get_all([this](Input &in) {
+					int side = -1;
+					in.get("side", side);
+
+					if(side >= 0) {
+						in_out_flow.push_back(side);
+					}
+				});
+		});
 
 		in.get("box", [this](Input &in) {
 			box_min.resize(3, -std::numeric_limits<double>::max());
