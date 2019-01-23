@@ -40,6 +40,12 @@
 	</space>
 
 	<diffusivity>1.</diffusivity>
+	<diffusivity-blocks>
+		<entry>
+			<value>2.</value>
+			<block>-1</block>
+		</entry>
+	</diffusivity-blocks>
 </master>
 
 <!-- SLAVE STUFF -->
