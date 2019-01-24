@@ -9,6 +9,15 @@ namespace utopia {
     private:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
 
+        void nnz_test()
+        {
+            long n = 100;
+            Matrix I = identity(n, n);
+            long nnz_I = utopia::nnz(I, 0.);
+            utopia_test_assert(nnz_I == n);
+        }
+
+
         void norm_test()
         {
             Vector v = zeros(2);
@@ -216,6 +225,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(binary_min_max);
             UTOPIA_RUN_TEST(quadratic_form);
             UTOPIA_RUN_TEST(local_values_test);
+            UTOPIA_RUN_TEST(nnz_test);
         }
     };
 

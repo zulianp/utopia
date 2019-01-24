@@ -17,6 +17,7 @@ namespace utopia {
 		void append_aux_systems();
 		void write_output();
 		void compute_upwind_operator();
+		void write_result_csv(const USparseMatrix &A);
 
 	private:
 		class Transport : public Configurable {
@@ -39,7 +40,7 @@ namespace utopia {
 			void constrain_concentration(UVector &vec);
 			void assemble_aux_quantities(FractureFlow &flow);
 			
-			void post_process_time_step(FractureFlow &flow);
+			void post_process_time_step(const double t, FractureFlow &flow);
 
 
 			std::string name;
@@ -85,6 +86,7 @@ namespace utopia {
 		bool preset_velocity_field_;
 
 		std::string transient_solve_strategy;
+
 
 	};
 

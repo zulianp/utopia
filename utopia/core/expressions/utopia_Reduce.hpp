@@ -105,6 +105,13 @@ namespace utopia {
     }
 
 
+
+    template<class Derived, typename  T>
+    inline Reduce<Derived, PlusIsNonZero<T>> nnz(const Expression<Derived> &expr, const T tol) {
+        return Reduce<Derived, PlusIsNonZero<T>>(expr.derived(), PlusIsNonZero<T>(tol));
+    }
+
+
 //    template<class Derived>
 //    inline Reduce<Derived, AbsPlus> norm1(const Expression<Derived> &expr) {
 //

@@ -34,8 +34,29 @@ namespace utopia {
 	}
 
 
+	void FractureFlowTransportSimulation::write_result_csv(const USparseMatrix &A)
+	{
+		auto &V_m = transport_m_.space->space().last_subspace();
+		auto &V_f = transport_f_.space->space().last_subspace();
+
+		std::vector<int> stats(4 + 2, 0);
+
+
+		stats[2] = V_f.mesh().n_active_elem();
+		stats[3] = V_m.mesh().n_active_elem();
+
+		stats[4] = size(A).get(0);
+		stats[5] = utopia::nnz(A, 0.);
+
+		CSVWriter csv;
+		csv.open_file("result.csv");
+		csv.write_table_row(stats);
+		csv.close_file();
+	}
+
 	void FractureFlowTransportSimulation::compute_transport_separate()
 	{
+
 		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_network);
 		transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
 
@@ -147,6 +168,11 @@ namespace utopia {
 		const double dt = transport_m_.dt;
 		const double simulation_time = transport_m_.simulation_time;
 
+
+
+		transport_f_.post_process_time_step(0., *steady_flow_.fracture_network);
+		transport_m_.post_process_time_step(0., *steady_flow_.matrix);
+
 		for(double t = dt; t < simulation_time; t += dt) {
 			transport_m_.add_mass(x_m, rhs_m);
 			transport_f_.add_mass(x_f, rhs_f);
@@ -164,8 +190,8 @@ namespace utopia {
 			undo_blocks(x, x_m, x_f, lagr);
 
 
-			transport_f_.post_process_time_step(*steady_flow_.fracture_network);
-			transport_m_.post_process_time_step(*steady_flow_.matrix);
+			transport_f_.post_process_time_step(t, *steady_flow_.fracture_network);
+			transport_m_.post_process_time_step(t, *steady_flow_.matrix);
 
 			utopia::convert(x_m, *V_m.equation_system().solution);
 			V_m.equation_system().solution->close();
@@ -177,6 +203,7 @@ namespace utopia {
 			io_f.write_timestep("transient_f.e", V_f.equation_systems(), ++n_timesteps, t);
 		}
 
+		write_result_csv(A);
 	}
 
 
@@ -285,8 +312,8 @@ namespace utopia {
 
 		{
 			csv.open_file(name + ".csv");
-			std::vector<std::string> vals = { "outflow" };
-			csv.write_table_row(vals);
+			// std::vector<std::string> vals = { "t", "outflow" };
+			// csv.write_table_row(vals);
 		}
 
 		if(!space->initialized()) {
@@ -658,7 +685,7 @@ namespace utopia {
 		}
 	}
 
-	void FractureFlowTransportSimulation::Transport::post_process_time_step(FractureFlow &flow)
+	void FractureFlowTransportSimulation::Transport::post_process_time_step(const double t, FractureFlow &flow)
 	{
 		// auto &C = space->space().last_subspace();
 		// auto &dof_map = C.dof_map();
@@ -675,7 +702,7 @@ namespace utopia {
 		double outflow_val = sum(boundary_flow_matrix * concentration);
 		disp(outflow_val);
 
-		std::vector<double> vals = { outflow_val };
+		std::vector<double> vals = { t, outflow_val };
 		csv.write_table_row(vals);
 	}
 

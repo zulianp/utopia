@@ -6,6 +6,8 @@
 #define UTOPIA_UTOPIA_EVAL_REDUCE_HPP
 
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_Each.hpp"
+#include "utopia_Operators.hpp"
 
 namespace utopia {
 
@@ -152,6 +154,33 @@ namespace utopia {
             result = UTOPIA_BACKEND(Traits).trace(
                     Eval<Expr, Traits>::apply(expr.expr())
             );
+
+            UTOPIA_TRACE_END(expr);
+            return result;
+        }
+    };
+
+
+    template<class Tensor, typename T, class Traits, int Backend>
+    class Eval<Reduce<Wrapper<Tensor, 2>, PlusIsNonZero<T>>, Traits, Backend> {
+    public:
+        using Expr = utopia::Reduce<Wrapper<Tensor, 2>, PlusIsNonZero<T>>;
+        typedef typename Traits::Scalar Scalar;
+        typedef typename Traits::SizeType SizeType;
+
+        inline static SizeType apply(const Expr &expr)
+        {
+            const auto &op = expr.operation().is_non_zero();
+            SizeType result = 0;
+            UTOPIA_TRACE_BEGIN(expr);
+
+            each_read(expr.expr(), [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
+                result += op.apply(value);
+            });
+
+
+            Wrapper<typename Traits::Vector, 1> v = local_values(1, result);
+            result = sum(v);
 
             UTOPIA_TRACE_END(expr);
             return result;

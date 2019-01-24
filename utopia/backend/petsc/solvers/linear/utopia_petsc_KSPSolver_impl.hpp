@@ -122,7 +122,7 @@ namespace utopia {
 	                ierr = PCFactorSetMatSolverType(pc, package.c_str());    assert(ierr == 0);
 	#endif
 	            } else {
-	            	std::cerr << "Invalid solver package " << package << std::endl;
+	            	std::cerr << "Invalid solver package \"" << package << "\"" << std::endl;
 	            }
 	        }
 
