@@ -312,8 +312,13 @@ namespace utopia {
 
 		{
 			csv.open_file(name + ".csv");
-			// std::vector<std::string> vals = { "t", "outflow" };
-			// csv.write_table_row(vals);
+			std::vector<std::string> vals = { "t" };
+
+			for(auto io : in_out_flow) {
+				vals.push_back("in/out-flow" + std::to_string(io));
+			}
+
+			csv.write_table_row(vals);
 		}
 
 		if(!space->initialized()) {
@@ -621,14 +626,18 @@ namespace utopia {
 		}
 
 		USparseMatrix temp_boundary_flow_matrix;
+
 		for(auto tag : in_out_flow) {
 			auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
 
+			auto temp_boundary_flow_matrix = std::make_shared<USparseMatrix>();
+			partial_boundary_flow_matrix.push_back(temp_boundary_flow_matrix);
+
+			utopia::assemble(flow_form, *temp_boundary_flow_matrix);
 			if(empty(boundary_flow_matrix)) {
-				utopia::assemble(flow_form, boundary_flow_matrix);
+				boundary_flow_matrix = *temp_boundary_flow_matrix;
 			} else {
-				utopia::assemble(flow_form, temp_boundary_flow_matrix);
-				boundary_flow_matrix += temp_boundary_flow_matrix;
+				boundary_flow_matrix += *temp_boundary_flow_matrix;
 			}
 
 			std::cout << "boundary flow at " << tag << std::endl;
@@ -687,22 +696,12 @@ namespace utopia {
 
 	void FractureFlowTransportSimulation::Transport::post_process_time_step(const double t, FractureFlow &flow)
 	{
-		// auto &C = space->space().last_subspace();
-		// auto &dof_map = C.dof_map();
+		std::vector<double> vals = { t };
+		for(auto pbfm : partial_boundary_flow_matrix) {
+			double outflow_val = sum(*pbfm * concentration);
+			vals.push_back(outflow_val);
+		}
 
-		// auto c = trial(C);
-
-		// synchronize(concentration);
-		// auto ch = interpolate(concentration, c);
-		// auto form = inner(ch, ctx_fun(flow.sampler)) * dX;
-
-		// double value = 0.;
-		// utopia::assemble(form, value);
-
-		double outflow_val = sum(boundary_flow_matrix * concentration);
-		disp(outflow_val);
-
-		std::vector<double> vals = { t, outflow_val };
 		csv.write_table_row(vals);
 	}
 

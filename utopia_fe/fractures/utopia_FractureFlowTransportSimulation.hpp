@@ -60,6 +60,7 @@ namespace utopia {
 			USparseMatrix gradient_matrix;
 			USparseMatrix system_matrix;
 			USparseMatrix boundary_flow_matrix;
+			std::vector<std::shared_ptr<USparseMatrix>> partial_boundary_flow_matrix;
 			UVector pressure_w;
 			UVector mass_vector;
 			UVector f;
