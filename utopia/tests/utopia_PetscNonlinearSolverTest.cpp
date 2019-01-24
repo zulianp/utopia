@@ -36,20 +36,20 @@ namespace utopia
 		
 		void run()
 		{
-			UTOPIA_RUN_TEST(petsc_ngs_test);
-			UTOPIA_RUN_TEST(petsc_gss_newton_test);
+			//UTOPIA_RUN_TEST(petsc_ngs_test);
+//			UTOPIA_RUN_TEST(petsc_gss_newton_test);
 			UTOPIA_RUN_TEST(petsc_newton_test);
-			UTOPIA_RUN_TEST(petsc_newton_rosenbrock_test);
-			UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test);
-			UTOPIA_RUN_TEST(petsc_sparse_nonlinear_semismooth_newton_test);
-			UTOPIA_RUN_TEST(petsc_direct_solver_newton_test);
-			UTOPIA_RUN_TEST(petsc_newton_test_out_info);
-			UTOPIA_RUN_TEST(petsc_sparse_newton_test);
-			UTOPIA_RUN_TEST(petsc_newton_petsc_cg_test);
-			UTOPIA_RUN_TEST(petsc_tr_rr_test);
-			UTOPIA_RUN_TEST(petsc_mprgp_test);
-			UTOPIA_RUN_TEST(petsc_snes_test); 
-			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
+//			UTOPIA_RUN_TEST(petsc_newton_rosenbrock_test);
+//			UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test);
+//			UTOPIA_RUN_TEST(petsc_sparse_nonlinear_semismooth_newton_test);
+//			UTOPIA_RUN_TEST(petsc_direct_solver_newton_test);
+//			UTOPIA_RUN_TEST(petsc_newton_test_out_info);
+//			UTOPIA_RUN_TEST(petsc_sparse_newton_test);
+//			UTOPIA_RUN_TEST(petsc_newton_petsc_cg_test);
+//			UTOPIA_RUN_TEST(petsc_tr_rr_test);
+//			UTOPIA_RUN_TEST(petsc_mprgp_test);
+//			UTOPIA_RUN_TEST(petsc_snes_test); 
+//			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
 			// UTOPIA_RUN_TEST(affine_similarity_small_test); 
 			// UTOPIA_RUN_TEST(affine_similarity_stiff_test); 
 		}
@@ -378,22 +378,23 @@ namespace utopia
 		
 		void petsc_newton_test()
 		{
-			if(mpi_world_size() > 10) return;
+		//	if(mpi_world_size() > 10) return;
 			
 			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
 			Newton<DMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
-			nlsolver.verbose(false);
-			
+			nlsolver.verbose(true);
+			nlsolver.atol(1e-9);
+
 			SimpleQuadraticFunction<DMatrixd, DVectord> fun;
 			
-			DVectord x = values(10, 2.);
+			DVectord x = values(50000, 2.);
 			DVectord expected = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
 			utopia_test_assert(approxeq(expected, x));
 			
-			x = values(10, 2.0);
+			x = values(50000, 2.0);
 			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
 			
 			expected = values(x.size().get(0), 0.468919);

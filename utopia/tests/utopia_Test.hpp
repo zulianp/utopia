@@ -26,37 +26,37 @@ namespace utopia
 {
     inline static void runAllTests()
     {
-        runWrapperTest();
-        run_autodiff_test();
-        runAlgebraTest();
-        runUtilitiesTest();
-        runPetscTest();
-        runBLASTest();
-        runMiscTest();
-        run_kokkos_test();
-        run_trilinos_test();
-        run_tao_solver_test();
-        run_petsc_cuda_test();
-        run_selection_test();
-        run_ui_test();
+//        runWrapperTest();
+//        run_autodiff_test();
+//        runAlgebraTest();
+//        runUtilitiesTest();
+//        runPetscTest();
+//        runBLASTest();
+//        runMiscTest();
+//        run_kokkos_test();
+//        run_trilinos_test();
+//        run_tao_solver_test();
+//        run_petsc_cuda_test();
+//        run_selection_test();
+//        run_ui_test();
+//
 
-
-        runGenericSolversTest();
+//        runGenericSolversTest();
         runPetscNonlinearSolversTest();
-        runPetscLinearSolversTest();
-        runPetscSlepcSolversTest();
-        runQuasiNewtonTest(); 
+//        runPetscLinearSolversTest();
+ //       runPetscSlepcSolversTest();
+  //      runQuasiNewtonTest(); 
 
-        runNonlinearMultilevelSolverTest();
+    //    runNonlinearMultilevelSolverTest();
 
         
-        run_qp_solver_test();
+      //  run_qp_solver_test();
 
         //only works for serial
-        if(mpi_world_size() == 1) {
+        //if(mpi_world_size() == 1) {
             // run_performance_test();
-            run_m3e_lin_sol_test();
-        }
+          //  run_m3e_lin_sol_test();
+       // }
     }
 
     inline static void runTests(const std::string& tests)
