@@ -73,6 +73,7 @@ namespace utopia {
 
 			std::vector<double> box_min, box_max;
 			std::vector<int> in_out_flow;
+			std::vector<double> total_in_out_flow;
 
 			CSVWriter csv;
 

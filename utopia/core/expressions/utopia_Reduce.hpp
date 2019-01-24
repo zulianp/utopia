@@ -106,8 +106,8 @@ namespace utopia {
 
 
 
-    template<class Derived, typename  T>
-    inline Reduce<Derived, PlusIsNonZero<T>> nnz(const Expression<Derived> &expr, const T tol) {
+    template<class Derived, typename T = typename Traits<Derived>::Scalar>
+    inline Reduce<Derived, PlusIsNonZero<T>> nnz(const Expression<Derived> &expr, const T tol = 0.) {
         return Reduce<Derived, PlusIsNonZero<T>>(expr.derived(), PlusIsNonZero<T>(tol));
     }
 

@@ -39,7 +39,17 @@ namespace utopia {
 		auto &V_m = transport_m_.space->space().last_subspace();
 		auto &V_f = transport_f_.space->space().last_subspace();
 
-		std::vector<int> stats(4 + 2, 0);
+
+		std::vector<std::string> header(4 + 2);
+
+		header[0] = "n_cells(Omega_0)";
+		header[1] = "n_cells(Omega_1)";
+		header[2] = "n_cells(Omega_2)";
+		header[3] = "n_cells(Omega_3)";
+		header[4] = "n_dofs";
+		header[5] = "n_nz";
+
+		std::vector<double> stats(4 + 2, 0.);
 
 
 		stats[2] = V_f.mesh().n_active_elem();
@@ -48,10 +58,31 @@ namespace utopia {
 		stats[4] = size(A).get(0);
 		stats[5] = utopia::nnz(A, 0.);
 
+
+		std::cout << "nnz: " << stats[5] << std::endl;
+		assert(stats[5] > 0);
+
+	
+		const std::size_t n_flows_m = transport_m_.total_in_out_flow.size();
+		const std::size_t n_flows_f = transport_f_.total_in_out_flow.size();
+
+
+		for(std::size_t i = 0; i < n_flows_f; ++i) {
+			header.push_back("flow(Omega_f)_" + std::to_string(transport_f_.in_out_flow[i]));
+			stats.push_back(transport_f_.total_in_out_flow[i]);
+		}
+
+		for(std::size_t i = 0; i < n_flows_m; ++i) {
+			header.push_back("flow(Omega_m)_" + std::to_string(transport_m_.in_out_flow[i]));
+			stats.push_back(transport_m_.total_in_out_flow[i]);
+		}
+
 		CSVWriter csv;
 		csv.open_file("result.csv");
+		csv.write_table_row(header);
 		csv.write_table_row(stats);
 		csv.close_file();
+
 	}
 
 	void FractureFlowTransportSimulation::compute_transport_separate()
@@ -697,9 +728,17 @@ namespace utopia {
 	void FractureFlowTransportSimulation::Transport::post_process_time_step(const double t, FractureFlow &flow)
 	{
 		std::vector<double> vals = { t };
+
+		if(total_in_out_flow.empty()){
+			total_in_out_flow.resize(partial_boundary_flow_matrix.size(), 0.);
+		}
+
+		std::size_t idx = 0;
 		for(auto pbfm : partial_boundary_flow_matrix) {
 			double outflow_val = sum(*pbfm * concentration);
 			vals.push_back(outflow_val);
+
+			total_in_out_flow[idx++] += outflow_val;
 		}
 
 		csv.write_table_row(vals);
