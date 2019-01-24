@@ -144,7 +144,7 @@
 
 		</space>
 
-		<outflow>
+	<!-- 	<outflow>
 			<entry>
 				<side>0</side>
 			</entry>
@@ -155,7 +155,7 @@
 				<side>3</side>
 			</entry>
 
-		</outflow>
+		</outflow> -->
 		<porosity>
 			<entry>
 				<value>2.</value>
@@ -178,11 +178,11 @@
 			</variables>
 		</space>
 
-		<outflow>
+		<!-- <outflow>
 			<entry>
 				<side>1</side>
 			</entry>
-		</outflow>
+		</outflow> -->
 	</fracture-network>
 
 	

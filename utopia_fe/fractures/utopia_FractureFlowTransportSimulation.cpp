@@ -656,7 +656,6 @@ namespace utopia {
 
 		}
 
-		USparseMatrix temp_boundary_flow_matrix;
 
 		for(auto tag : in_out_flow) {
 			auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
@@ -674,7 +673,9 @@ namespace utopia {
 			std::cout << "boundary flow at " << tag << std::endl;
 		}
 
-		gradient_matrix -= boundary_flow_matrix;
+		if(!empty(boundary_flow_matrix)) {
+			gradient_matrix -= boundary_flow_matrix;
+		}
 
 		if(lump_mass_matrix) {
 			system_matrix = dt * gradient_matrix;
