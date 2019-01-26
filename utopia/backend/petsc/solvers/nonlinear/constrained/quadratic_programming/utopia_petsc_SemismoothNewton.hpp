@@ -36,7 +36,7 @@ namespace utopia {
 
 		bool solve(const Matrix &A, const Vector &b, Vector &x) override
 		{
-			// PetscErrorCode ierr;
+			PetscErrorCode ierr;
 			
 			Vector f = local_zeros(local_size(b));
 			Matrix J = A;
