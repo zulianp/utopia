@@ -220,6 +220,13 @@ namespace utopia {
             DVectord sol = zeros(_n);
 
             GMRES<DMatrixd, DVectord> gmres;
+            gmres.pc_type(PCBJACOBI); 
+
+            gmres.number_of_subdomains(mpi_world_size()); 
+            gmres.update(std::make_shared<DMatrixd>(mat)); 
+            gmres.sub_ksp_pc_type(KSPPREONLY, PCILU); 
+
+            gmres.verbose(false); 
             gmres.solve(mat, rhs, sol);
 
             DVectord expected = zeros(_n);

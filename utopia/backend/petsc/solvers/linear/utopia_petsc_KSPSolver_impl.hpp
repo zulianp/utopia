@@ -16,6 +16,7 @@
 #include <petscpc.h>
 #include <petscksp.h>
 #include <petscsys.h>
+#include <petsc/private/kspimpl.h>
 
 namespace utopia {
 
@@ -390,6 +391,257 @@ namespace utopia {
 	            ierr = KSPSetTolerances(ksp_, rtol, atol, dtol, max_it); assert(ierr == 0);
 	        }
 
+	        void number_of_subdomains(const PetscInt &n_blocks)
+	        {
+	        	PetscErrorCode ierr;
+	        	PC pc;
+	            PCType pc_type;
+
+	            ierr = KSPGetPC(ksp_, &pc);    assert(ierr == 0);
+	            ierr = PCGetType(pc, &pc_type);   assert(ierr == 0);
+
+	            PetscBool flg_bjacobi=PETSC_FALSE, flg_asm=PETSC_FALSE; 
+	            PetscObjectTypeCompare((PetscObject)pc,PCBJACOBI,&flg_bjacobi);
+
+	            if(!flg_bjacobi){
+	            	PetscObjectTypeCompare((PetscObject)pc,PCASM,&flg_asm);
+	            }
+
+	            if(flg_bjacobi)
+	            {
+	            	PCBJacobiSetTotalBlocks(pc, n_blocks, nullptr); 
+	            }
+	            else if(flg_asm)
+	            {
+	            	PCGASMSetTotalSubdomains(pc, n_blocks); 
+	            }
+	            else
+	            {
+	            	utopia_error("Number of subdomain can be set only for PCBJACOBI or PCASM."); 
+	            }
+	        }
+
+	        void overlap(const PetscInt &n_overlap)
+	        {
+	        	PetscErrorCode ierr;
+	        	PC pc;
+	            PCType pc_type;
+
+	            ierr = KSPGetPC(ksp_, &pc);    assert(ierr == 0);
+	            ierr = PCGetType(pc, &pc_type);   assert(ierr == 0);
+
+	            PetscBool flg_asm=PETSC_FALSE; 
+	            PetscObjectTypeCompare((PetscObject)pc,PCASM,&flg_asm);
+	            
+				if(flg_asm)
+	            {
+	            	PCGASMSetOverlap(pc, n_overlap); 
+	            }
+	            else
+	            {
+	            	utopia_error("Overlap can be set only for PCASM"); 
+	            	return; 
+	            }	
+	        }
+
+
+	        void sub_ksp_pc_type(const std::string sub_ksp_type, const std::string sub_pc_type)
+	        {
+	        	if(!ksp_->setupstage)
+	        	{
+	        		utopia_error("sub_ksp_pc_type can be only called after update(). "); 
+	        		return; 
+	        	}
+
+	        	PetscErrorCode ierr;
+	        	PC pc;
+	            PCType pc_type;
+
+	            ierr = KSPGetPC(ksp_, &pc);    assert(ierr == 0);
+	            ierr = PCGetType(pc, &pc_type);   assert(ierr == 0);
+
+	            PetscBool flg_bjacobi=PETSC_FALSE, flg_asm=PETSC_FALSE; 
+	            PetscObjectTypeCompare((PetscObject)pc,PCBJACOBI,&flg_bjacobi);
+
+
+	            PetscInt first, nlocal; 
+	            KSP *subksp; 
+
+	            if(!flg_bjacobi){
+	            	PetscObjectTypeCompare((PetscObject)pc,PCASM,&flg_asm);
+	            }
+
+	            if(flg_bjacobi)
+	            {
+	            	PCBJacobiGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else if(flg_asm)
+	            {
+	            	PCASMGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else
+	            {
+	            	utopia_error("Sub_ksp_pc_type can be set only for PCBJACOBI and PCASM"); 
+	            	return; 
+	            }
+
+				for (auto i=0; i<nlocal; i++) 
+			  	{
+			  		KSPSetType(subksp[i], sub_ksp_type.c_str());
+			  		PC subpc; 
+			  	  	KSPGetPC(subksp[i],&subpc);
+			  	    PCSetType(subpc, sub_pc_type.c_str());
+			  	}
+	        }
+
+
+	        void sub_ksp_type(const std::string sub_ksp_type)
+	        {
+	        	if(!ksp_->setupstage)
+	        	{
+	        		utopia_error("sub_ksp_type can be only called after update(). "); 
+	        		return; 
+	        	}
+
+	        	PetscErrorCode ierr;
+	        	PC pc;
+	            PCType pc_type;
+
+	            ierr = KSPGetPC(ksp_, &pc);    assert(ierr == 0);
+	            ierr = PCGetType(pc, &pc_type);   assert(ierr == 0);
+
+	            PetscBool flg_bjacobi=PETSC_FALSE, flg_asm=PETSC_FALSE; 
+	            PetscObjectTypeCompare((PetscObject)pc,PCBJACOBI,&flg_bjacobi);
+
+
+	            PetscInt first, nlocal; 
+	            KSP *subksp; 
+
+	            if(!flg_bjacobi){
+	            	PetscObjectTypeCompare((PetscObject)pc,PCASM,&flg_asm);
+	            }
+
+	            if(flg_bjacobi)
+	            {
+	            	PCBJacobiGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else if(flg_asm)
+	            {
+	            	PCASMGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else
+	            {
+	            	utopia_error("Sub_ksp_pc_type can be set only for PCBJACOBI and PCASM"); 
+	            	return; 
+	            }
+
+            	for (auto i=0; i<nlocal; i++) 
+			  	{
+			  		KSPSetType(subksp[i], sub_ksp_type.c_str());
+			  	}	            
+	        }
+
+	        void sub_pc_type(const std::string sub_pc_type)
+	        {
+	        	if(!ksp_->setupstage)
+	        	{
+	        		utopia_error("sub_ksp_pc_type can be only called after update(). "); 
+	        		return; 
+	        	}
+
+	        	PetscErrorCode ierr;
+	        	PC pc;
+	            PCType pc_type;
+
+	            ierr = KSPGetPC(ksp_, &pc);    assert(ierr == 0);
+	            ierr = PCGetType(pc, &pc_type);   assert(ierr == 0);
+
+	            PetscBool flg_bjacobi=PETSC_FALSE, flg_asm=PETSC_FALSE; 
+	            PetscObjectTypeCompare((PetscObject)pc,PCBJACOBI,&flg_bjacobi);
+
+
+	            PetscInt first, nlocal; 
+	            KSP *subksp; 
+
+	            if(!flg_bjacobi){
+	            	PetscObjectTypeCompare((PetscObject)pc,PCASM,&flg_asm);
+	            }
+
+	            if(flg_bjacobi)
+	            {
+	            	PCBJacobiGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else if(flg_asm)
+	            {
+	            	PCASMGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else
+	            {
+	            	utopia_error("Sub_ksp_pc_type can be set only for PCBJACOBI and PCASM"); 
+	            	return; 
+	            }
+
+				for (auto i=0; i<nlocal; i++) 
+			  	{
+			  		PC subpc; 
+			  	  	KSPGetPC(subksp[i],&subpc);
+			  	    PCSetType(subpc, sub_pc_type.c_str());
+			  	}
+	        }	        
+
+
+	        void sub_solver_package(const std::string sub_pc_type)
+	        {
+	        	if(!ksp_->setupstage)
+	        	{
+	        		utopia_error("sub_ksp_pc_type can be only called after update(). "); 
+	        		return; 
+	        	}
+
+	        	PetscErrorCode ierr;
+	        	PC pc;
+	            PCType pc_type;
+
+	            ierr = KSPGetPC(ksp_, &pc);    assert(ierr == 0);
+	            ierr = PCGetType(pc, &pc_type);   assert(ierr == 0);
+
+	            PetscBool flg_bjacobi=PETSC_FALSE, flg_asm=PETSC_FALSE; 
+	            PetscObjectTypeCompare((PetscObject)pc,PCBJACOBI,&flg_bjacobi);
+
+
+	            PetscInt first, nlocal; 
+	            KSP *subksp; 
+
+	            if(!flg_bjacobi){
+	            	PetscObjectTypeCompare((PetscObject)pc,PCASM,&flg_asm);
+	            }
+
+	            if(flg_bjacobi)
+	            {
+	            	PCBJacobiGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else if(flg_asm)
+	            {
+	            	PCASMGetSubKSP(pc, &nlocal, &first, &subksp);
+	            }
+	            else
+	            {
+	            	utopia_error("Sub_ksp_pc_type can be set only for PCBJACOBI and PCASM"); 
+	            	return; 
+	            }
+
+				for (auto i=0; i<nlocal; i++) 
+			  	{
+			  		PC subpc; 
+			  	  	KSPGetPC(subksp[i],&subpc);
+			  	    #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
+	                	PCFactorSetMatSolverPackage(subpc, sub_pc_type.c_str()); 
+					#else
+	                	PCFactorSetMatSolverType(subpc, sub_pc_type.c_str());  
+					#endif
+			  	}
+	        }	        
+
 	        void set_monitor(
 	            PetscErrorCode (*monitor)(KSP,PetscInt,PetscReal,void *),
 	            void *mctx,
@@ -500,6 +752,9 @@ namespace utopia {
 	        bool owner_;
 	};
 
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+
     template<typename Matrix, typename Vector>
 	KSPSolver<Matrix, Vector, PETSC>::KSPSolver()
 	: ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD))
@@ -547,6 +802,43 @@ namespace utopia {
 	{
 		ksp_->solver_package(package);
 	}
+
+
+    template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::number_of_subdomains(const SizeType & n)
+	{
+		return this->ksp_->number_of_subdomains(n);
+	}
+
+    template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::overlap(const SizeType & n)
+	{
+		return this->ksp_->overlap(n);
+	}
+
+    template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::sub_ksp_pc_type(const std::string ksp_type, const std::string pc_type)
+	{
+		return this->ksp_->sub_ksp_pc_type(ksp_type, pc_type); 
+	}
+        
+    template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::sub_ksp_type(const std::string type)
+	{
+		return this->ksp_->sub_ksp_type(type); 
+	} 
+
+    template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::sub_pc_type(const std::string type)
+	{
+		return this->ksp_->sub_pc_type(type); 
+	}
+
+    template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::sub_solver_package(const std::string type)
+	{
+		return this->ksp_->sub_solver_package(type); 
+	} 
 
     template<typename Matrix, typename Vector>
 	std::string KSPSolver<Matrix, Vector, PETSC>::pc_type() const { return this->ksp_->pc_type();}

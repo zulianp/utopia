@@ -126,7 +126,7 @@ namespace utopia {
 
 				//FIXME assuming MUMPS is available
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
-				PCFactorSetMatSolverPackage(pc, "mumps");
+				ierr =  PCFactorSetMatSolverPackage(pc, "mumps"); assert(ierr == 0);
 #else
 				ierr =  PCFactorSetMatSolverType(pc, "mumps"); assert(ierr == 0);
 #endif
