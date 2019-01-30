@@ -152,6 +152,8 @@ namespace utopia {
 		Read<UVector> r_(from_vector);
 		Write<UVector> w_(to_vector);
 
+		auto r = range(to_vector);
+
 		for(auto e_it = elements_begin(m); e_it != elements_end(m); ++e_it) {
 			const auto &e = *e_it;
 
@@ -163,7 +165,9 @@ namespace utopia {
 			auto n = from_dofs.size();
 
 			for(std::size_t i = 0; i < n; ++i) {
-				to_vector.set(to_dofs[i], fun(from_vector.get(from_dofs[i])));
+				if(r.inside(to_dofs[i])) {
+					to_vector.set(to_dofs[i], fun(from_vector.get(from_dofs[i])));
+				}
 			}
 		}
 	}
