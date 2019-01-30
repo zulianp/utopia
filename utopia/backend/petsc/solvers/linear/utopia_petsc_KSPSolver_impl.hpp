@@ -419,7 +419,7 @@ namespace utopia {
 
 	            if(reason < 0) {
 
-	                utopia_warning("ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) + " ksp_type=" + ksp_type() + " pc_type=" + pc_type() );
+	                utopia_warning("ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) + " ksp_type=" + ksp_type() + " pc_type=" + pc_type() + " solver_package: " + solver_package());
 	            }
 
 	            return reason >= 0;
