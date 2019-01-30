@@ -91,6 +91,38 @@ namespace utopia {
         std::string ksp_type() const;
 
         /**
+         * @brief      Setter for number of global subdomains
+         */
+        void number_of_subdomains(const SizeType & n); 
+
+        /**
+         * @brief      Setter for overlap used inside of Additive Schwarz method
+         */
+        void overlap(const SizeType & n); 
+
+        /**
+         * @brief      Sets ksp and pc type for all sub_ksp and all sub_pc
+         */
+        void sub_ksp_pc_type(const std::string ksp_type, const std::string pc_type); 
+
+        /**
+         * @brief      Sets ksp type for all sub_ksp
+         */
+        void sub_ksp_type(const std::string type); 
+
+        /**
+         * @brief      Sets pc type for all sub_ksp
+         */
+        void sub_pc_type(const std::string type); 
+
+
+        /**
+         * @brief      Sets solver package type for all sub_ksp
+         */
+        void sub_solver_package(const std::string type); 
+
+
+        /**
          * @brief      Returns type of solver package.
          */
         std::string solver_package() const;
