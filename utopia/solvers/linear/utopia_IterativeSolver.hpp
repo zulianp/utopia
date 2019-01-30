@@ -48,7 +48,7 @@ namespace  utopia
         virtual void print_usage(std::ostream &os) const override
         {
             LinearSolver<Matrix, Vector>::print_usage(os);
-            this->print_param_usage(os, "atol", "real", "Absolute tolerance.", "1e-9"); 
+            this->print_param_usage(os, "atol", "real", "Absolute tolerance.", std::to_string(atol_)); 
             this->print_param_usage(os, "rtol", "real", "Relative tolerance.", "1e-9"); 
             this->print_param_usage(os, "stol", "real", "Minimum step-size.", "1e-11"); 
             this->print_param_usage(os, "max-it", "int", "Maximum number of iterations.", "300"); 

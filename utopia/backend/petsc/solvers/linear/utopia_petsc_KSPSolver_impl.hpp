@@ -418,7 +418,8 @@ namespace utopia {
 	            ierr = KSPGetConvergedReason(ksp_, &reason);     assert(ierr == 0);
 
 	            if(reason < 0) {
-	                utopia_warning("ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) );
+
+	                utopia_warning("ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) + " ksp_type=" + ksp_type() + " pc_type=" + pc_type() );
 	            }
 
 	            return reason >= 0;
