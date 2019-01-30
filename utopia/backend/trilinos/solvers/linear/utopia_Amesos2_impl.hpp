@@ -309,9 +309,11 @@ namespace utopia {
     }
     
     template <typename Matrix, typename Vector>
-    void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &is)
+    void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &in)
     {
-        is.get("keep-symbolic-factorization", impl_->keep_symbolic_factorization);
+        DirectSolver<Matrix, Vector>::read(in);
+
+        in.get("keep-symbolic-factorization", impl_->keep_symbolic_factorization);
     }
     
     template <typename Matrix, typename Vector>

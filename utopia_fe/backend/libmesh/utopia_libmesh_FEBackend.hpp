@@ -1019,6 +1019,43 @@ namespace utopia {
 			return ret;
 		}
 
+
+		template<typename T, class Op>
+		static auto apply_binary(
+			const double &left,
+			FQValues<T> &&right,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T>
+		{
+			std::size_t n_funs = right.size();
+			std::size_t n_quad_points = right[0].size();
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					right[i][qp] = apply_binary(left, right[i][qp], op, ctx);
+				}
+			}
+
+			return std::move(right);
+		}
+
+
+		template<typename T, class Op>
+		static auto apply_binary(
+			const double &left,
+			QValues<T> &&right,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T>
+		{
+			std::size_t n_quad_points = right.size();
+
+			for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+				right[qp] = apply_binary(left, right[qp], op, ctx);
+			}
+
+			return std::move(right);
+		}
+
 		template<typename T>
 		static auto apply_binary(
 			const FQValues<Wrapper<T, 2>> &left,
@@ -1359,6 +1396,21 @@ namespace utopia {
 			}
 
 			return std::move(vals);
+		}
+
+		template<class T, int Order>
+		static auto norm2(
+			const std::vector<Wrapper<T, Order>> &vals,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<double>
+		{
+			auto n = vals.size();
+			std::vector<double> ret(n);
+
+			for(std::size_t i = 0; i < n; ++i) {
+				ret[i] = utopia::norm2(vals[i]);
+			}
+
+			return ret;
 		}
 
 
@@ -2319,6 +2371,24 @@ namespace utopia {
 			return std::move(g);
 		}
 
+		template<typename T, int Order, typename C>
+		inline static auto multiply(
+			const QValues<Wrapper<T, Order>> &left,
+			const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+		{
+			auto g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+			auto ret = g;
+
+			std::size_t n_quad_points = g.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				multiply(left[qp].implementation(), g[qp].implementation(), ret[qp].implementation());
+			}
+
+			return std::move(ret);
+		}
+
 		template<typename T, typename C>
 		inline static auto multiply(
 			const ConstantCoefficient<T, 0> &left,
@@ -2402,6 +2472,25 @@ namespace utopia {
 				for(std::size_t qp = 0; qp < right.size(); ++qp) {
 					ret[i][qp] = left[i][qp] * right[qp];
 				}
+			}
+
+			return ret;
+		}
+
+
+		template<class Tensor, int Order>
+		inline static auto multiply(
+			const QValues<double> &left,
+			const Wrapper<Tensor, Order> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> QValues<Wrapper<Tensor, Order>>
+		{
+			QValues<Wrapper<Tensor, Order>> ret(left.size());
+
+			auto n_qp = left.size();
+
+			for(std::size_t qp = 0; qp < n_qp; ++qp) {
+				ret[qp] = left[qp] * right;
 			}
 
 			return ret;
@@ -2626,6 +2715,23 @@ namespace utopia {
 					}
 				}
 			}
+		}
+
+		inline static void multiply(const LMDenseMatrix &left, const double &right, LMDenseMatrix &out)
+		{
+			out = right * left;
+		}
+
+		inline static void multiply(LMDenseMatrix &&left, const double &right, LMDenseMatrix &out)
+		{
+			out = std::move(left);
+			out *= right;
+		}
+
+		inline static LMDenseMatrix multiply(LMDenseMatrix &&left, const double &right, AssemblyContext<LIBMESH_TAG> &)
+		{
+			left *= right;
+			return left;
 		}
 
 		inline static void multiply(const LMDenseMatrix &left, const TensorValueT &right, LMDenseMatrix &out)
@@ -2965,6 +3071,26 @@ namespace utopia {
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				for(std::size_t i = 0; i < n_functions; ++i) {
 					ret[i][qp] *= left[qp];
+				}
+			}
+
+			return ret;
+		}
+
+		inline static auto multiply(const QValues<VectorValueT> &left, const TestFunction<LibMeshFunctionSpace> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<VectorValueT>
+		{
+			auto f = fun(right, ctx);
+
+
+			const std::size_t n_functions = f.size();
+			const std::size_t n_quad_points = f[0].size();
+
+			FQValues<VectorValueT> ret(n_functions);
+	
+			for(std::size_t i = 0; i < n_functions; ++i) {
+				ret[i].resize(n_quad_points);
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[i][qp] = left[qp] * f[i][qp];
 				}
 			}
 

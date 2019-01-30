@@ -18,7 +18,7 @@ namespace utopia {
 		bool run();
 
 		std::unique_ptr<FractureFlow> matrix;
-		std::unique_ptr<FractureFlow> fracture_newtork;
+		std::unique_ptr<FractureFlow> fracture_network;
 		std::unique_ptr<FractureFlow> lagrange_multiplier;
 
 		USparseMatrix A_m, A_f;
@@ -39,6 +39,9 @@ namespace utopia {
 		bool solve_monolithic();
 		bool solve_separate();
 		bool solve_staggered();
+
+		template<class IO>
+		void write_output_generic();
 	};
 }
 
