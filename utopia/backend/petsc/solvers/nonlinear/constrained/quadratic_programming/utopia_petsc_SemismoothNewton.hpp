@@ -36,6 +36,8 @@ namespace utopia {
 
 		bool solve(const Matrix &A, const Vector &b, Vector &x) override
 		{
+			PetscErrorCode ierr;
+			
 			Vector f = local_zeros(local_size(b));
 			Matrix J = A;
 
@@ -121,10 +123,12 @@ namespace utopia {
 
 				KSPSetType(ksp, KSPPREONLY);
 				PCSetType(pc, "lu");
+
+				//FIXME assuming MUMPS is available
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 				PCFactorSetMatSolverPackage(pc, "mumps");
 #else
-				m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
+				ierr =  PCFactorSetMatSolverType(pc, "mumps"); assert(ierr == 0);
 #endif
 				KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
 				KSPSetTolerances(ksp, 0, 0, PETSC_DEFAULT, 1);

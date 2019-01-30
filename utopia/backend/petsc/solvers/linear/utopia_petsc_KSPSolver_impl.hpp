@@ -111,14 +111,18 @@ namespace utopia {
 	        inline void solver_package(const std::string &package)
 	        {
 	            if(KSPTypes::instance().is_solver_package_valid(package)) {
+
+	            	PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+	            	PC pc;
+	            	ierr = KSPGetPC(ksp_, &pc);  assert(ierr == 0);
+
 	#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
-	                PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
-	                PC pc;
-	                ierr = KSPGetPC(ksp_, &pc);  assert(ierr == 0);
 	                ierr = PCFactorSetMatSolverPackage(pc, package.c_str()); assert(ierr == 0);
 	#else
-	                m_utopia_warning_once("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent?");
+	                ierr = PCFactorSetMatSolverType(pc, package.c_str());    assert(ierr == 0);
 	#endif
+	            } else {
+	            	std::cerr << "Invalid solver package \"" << package << "\"" << std::endl;
 	            }
 	        }
 
@@ -157,17 +161,25 @@ namespace utopia {
 	         */
 	        inline std::string solver_package() const
 	        {
-	#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
+	
 	            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
-	            const MatSolverPackage stype;
+	            
 	            PC pc;
 	            ierr = KSPGetPC(ksp_, &pc);                     assert(ierr == 0);
+
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
+	            const MatSolverPackage stype;
 	            ierr = PCFactorGetMatSolverPackage(pc, &stype); assert(ierr == 0);
 	            if(stype) return stype; else return "";
-	#else
-	            static const char * ret = " ";
-	            return ret;
-	#endif
+#else
+	            MatSolverType stype;
+	            ierr = PCFactorGetMatSolverType(pc, &stype); assert(ierr == 0);
+	            if(stype) return stype; else return "";
+#endif
+	            
+	            // static const char * ret = " ";
+	            // return ret;
+	
 	        }
 
 	        inline  bool is_null() const
@@ -240,11 +252,15 @@ namespace utopia {
 	            ierr = PCGetType(this_pc, &type);   assert(ierr == 0);
 	            ierr = PCSetType(other_pc, type);   assert(ierr == 0);
 
-	#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 	            const MatSolverPackage stype;
 	            ierr = PCFactorGetMatSolverPackage(this_pc, &stype); assert(ierr == 0);
 	            ierr = PCFactorSetMatSolverPackage(other_pc, stype); assert(ierr == 0);
-	#endif
+#else	
+	            MatSolverType stype;
+	            ierr =  PCFactorGetMatSolverType(this_pc, &stype); assert(ierr == 0);
+	            ierr =  PCFactorSetMatSolverType(other_pc, stype); assert(ierr == 0);
+#endif
 	        }
 
 	        void copy_settings_from(const Impl &other)
@@ -445,6 +461,7 @@ namespace utopia {
 	            if(flg) {
 	                solver_package(name_);
 	            }
+	        
 	#else
 	            PetscOptionsGetString(nullptr, nullptr, "-ksp_type", name_, 1024, &flg);
 	            if(flg) {
@@ -460,6 +477,11 @@ namespace utopia {
 	            if(flg) {
 	                solver_package(name_);
 	            }
+	            
+	          	PetscOptionsGetString(nullptr, nullptr, "-pc_factor_mat_solver_type", name_, 1024, &flg);
+	          	if(flg) {
+	             	 solver_package(name_);
+	          	}
 	#endif
 	        }
 
@@ -752,6 +774,15 @@ namespace utopia {
 	KSP &KSPSolver<Matrix, Vector, PETSC>::implementation()
 	{
 		return ksp().implementation();
+	}
+
+	template<typename Matrix, typename Vector>
+	void KSPSolver<Matrix, Vector, PETSC>::describe(std::ostream &os) const
+	{
+		os << "KSPSolver: \n";
+		os << "ksp_type:       " << ksp_type() 		 << "\n";
+		os << "pc_type:        " << pc_type() 		 << "\n";
+		os << "solver_package: " << solver_package() << "\n";
 	}
 
 	template<typename Matrix, typename Vector>

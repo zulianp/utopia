@@ -51,24 +51,34 @@ namespace utopia {
 		typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
 
 	public:
-		Factorization(const std::string sp = "mumps", const std::string pct = "lu")
-		 //{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"},
-			//{"mumps", "superlu", "superlu_dist", "petsc", "cusparse"}
+		Factorization()
 		{
 			strategy_.ksp_type(KSPPREONLY);
 			strategy_.set_initial_guess_non_zero(false);
+			strategy_.pc_type(PCLU);
 
 #ifdef PETSC_HAVE_MUMPS
-			if(pct=="lu" && sp == "mumps") {
-				set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
-			} else
+			strategy_.solver_package(MATSOLVERMUMPS);
+#else //PETSC_HAVE_MUMPS
+#ifdef PETSC_HAVE_SUPERLU_DIST
+			strategy_.solver_package(MATSOLVERSUPERLU_DIST);
+#else //PETSC_HAVE_SUPERLU_DIST	
+#ifdef PETSC_HAVE_SUPERLU
+			strategy_.solver_package(MATSOLVERSUPERLU);
+#else //PETSC_HAVE_SUPERLU
+			strategy_.solver_package(MATSOLVERPETSC);
+#endif //PETSC_HAVE_SUPERLU
+#endif //PETSC_HAVE_SUPERLU_DIST
 #endif //PETSC_HAVE_MUMPS
-			if(pct=="cholesky") {
-				set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
-			}
-			else {
-				set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
-			}
+
+		}
+
+		Factorization(const std::string &sp, const std::string &pct)
+		{
+			strategy_.ksp_type(KSPPREONLY);
+			strategy_.set_initial_guess_non_zero(false);
+			strategy_.pc_type(pct);
+			strategy_.solver_package(sp);
 		}
 
 		void set_type(DirectSolverLib lib, DirectSolverType type)
@@ -91,6 +101,11 @@ namespace utopia {
 		Factorization * clone() const override
 		{
 			return new Factorization(*this);
+		}
+
+		void describe(std::ostream &os) const
+		{
+			strategy_.describe(os);
 		}
 
 	private:

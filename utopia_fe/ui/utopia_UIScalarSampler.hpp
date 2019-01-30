@@ -8,6 +8,10 @@
 #include <fstream>
 #include <cassert>
 #include <cstdio>
+#include <map>
+#include <iostream>
+
+#include <libmesh/exact_solution.h>
 
 namespace utopia {
 
@@ -16,6 +20,7 @@ namespace utopia {
 	public:
 		virtual ~UIFunction() {}
 		virtual Scalar eval(const std::vector<Scalar> &x) const = 0;
+		virtual bool set_current_block(const int subdomain_id) { UTOPIA_UNUSED(subdomain_id); return true; }
 	};
 
 	template<typename Scalar>
@@ -72,6 +77,103 @@ namespace utopia {
 		std::shared_ptr<UIFunction<Scalar>> fun_;
 	};
 
+
+	template<typename Scalar>
+	class UISubdomainFunction final : public UIFunction<Scalar>, public Configurable {
+	public:
+
+		UISubdomainFunction()
+		{}
+
+		inline bool has_default() const
+		{
+			return static_cast<bool>(default_fun_);
+		}
+
+		void set_default(const std::shared_ptr<UIFunction<Scalar>> &fun)
+		{
+			default_fun_ = fun;
+		}
+
+		void read(Input &in) override
+		{
+			in.get_all([this](Input &sub_is) {
+				std::string type = "constant";
+				std::string expr = "0.";
+				int block_id = -1;
+
+				sub_is.get("value",  expr);
+				sub_is.get("type",  type);
+				sub_is.get("block", block_id);
+
+				bool fun_is_constant = true;
+
+#ifdef WITH_TINY_EXPR
+				fun_is_constant = type == "constant" || type.empty();
+				
+				if(!fun_is_constant) {
+					std::cerr << "Not supported yet" << std::endl;
+					// std::string expr = "x";
+					// is.get("function", expr);
+					// fun = std::make_shared<SymbolicFunction>(expr);
+					// double expr = 1.;
+					// is.get("function", expr);
+					// fun_is_constant = true;
+					// fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
+				}
+#else
+				assert(fun_is_constant);
+#endif //WITH_TINY_EXPR
+
+				if(fun_is_constant) {
+					if(block_id == -1) {
+						default_fun_ = std::make_shared<UIConstantFunction<Scalar>>(atof(expr.c_str()));
+					} else {
+						fun_[block_id] = std::make_shared<UIConstantFunction<Scalar>>(atof(expr.c_str()));
+					}
+				}
+
+
+				std::cout << "value: " << expr << " type " << type << " block " << block_id << std::endl;
+
+			});
+		}
+
+		inline Scalar eval(const std::vector<Scalar> &x) const override
+		{
+			assert(active_fun_);
+			auto value = active_fun_->eval(x);
+			return value;
+		}
+
+		bool set_current_block(const int subdomain_id) override
+		{
+			auto it = fun_.find(subdomain_id);	
+			if(it == fun_.end()) {
+				active_fun_ = default_fun_;
+				return false;
+			} else {
+				active_fun_ = it->second;
+				return true;
+			}
+		}
+
+		inline bool has_active_function() const
+		{
+			return static_cast<bool>(active_fun_);
+		}
+
+		inline bool good() const
+		{
+			return static_cast<bool>(default_fun_) || !fun_.empty();
+		}
+
+	private:
+		std::shared_ptr<UIFunction<Scalar>> default_fun_;
+		std::shared_ptr<UIFunction<Scalar>> active_fun_;
+		std::map<int, std::shared_ptr<UIFunction<Scalar>> > fun_;
+	};
+
 	template<typename Scalar>
 	class UILambdaFunction final : public UIFunction<Scalar> {
 	public:
@@ -105,7 +207,6 @@ namespace utopia {
 	) {	
 		return std::make_shared<UIBoxedFunction<double>>(lowbo, upbo, lambda_fun(fun));
 	}
-
 	
 
 	template<typename Scalar_>
@@ -121,6 +222,8 @@ namespace utopia {
 		template<int Backend>
 		auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<Scalar>
 		{
+			fun_->set_current_block(ctx.block_id());
+
 			const auto &pts = ctx.fe()[0]->get_xyz();
 
 			const auto n = pts.size();
@@ -268,6 +371,49 @@ namespace utopia {
 		std::vector<Scalar> values_;
 
 	};
+
+	template<typename Scalar>
+	class Normal final {};
+
+
+	template<typename Scalar_>
+	class ContextFunction<
+		std::vector<libMesh::VectorValue<Scalar_>>,
+		Normal<Scalar_>
+		> final : 
+		public Expression< 
+				ContextFunction<std::vector<libMesh::VectorValue<Scalar_>>, Normal<Scalar_>>
+				>{
+	public:
+		static const int Order = 1;
+		typedef Scalar_ Scalar;
+
+		ContextFunction()
+		{}
+
+		template<int Backend>
+		auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<libMesh::VectorValue<Scalar_>>
+		{
+			const auto &n = ctx.fe()[0]->get_normals();
+			auto nn = n.size();
+
+			std::vector<libMesh::VectorValue<Scalar_>> normals(nn);
+			for(std::size_t i = 0; i < nn; ++i) {
+				for(int d = 0; d < LIBMESH_DIM; ++d) {
+					normals[i](d) = n[i](d);
+				}
+			}
+
+			return normals;
+		}
+
+	};
+
+	inline ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>> normal()
+	{
+		return ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>>();
+	}
+
 
 }
 

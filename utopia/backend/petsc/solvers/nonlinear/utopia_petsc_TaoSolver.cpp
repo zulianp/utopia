@@ -187,7 +187,7 @@ namespace utopia {
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 			ierr = PCFactorSetMatSolverPackage(pc, solver_package_.c_str()); U_CHECKERR(ierr);
 #else
-			m_utopia_warning_once("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
+			ierr =  PCFactorSetMatSolverType(pc, solver_package_.c_str()); assert(ierr == 0);
 #endif 
 			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
 			ierr = KSPSetFromOptions(ksp);  U_CHECKERR(ierr);

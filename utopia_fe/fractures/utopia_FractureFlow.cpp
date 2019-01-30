@@ -15,10 +15,24 @@ namespace utopia {
 			auto grid_sampler = std::make_shared<UIScalarSampler<double>>();
 			is.get("sampler", *grid_sampler);
 
+
 			if(!grid_sampler->empty()) {
 				sampler = grid_sampler;
 			} else {
-				sampler = std::make_shared<UIConstantFunction<double>>(1.);
+				auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
+
+				is.get("diffusivity-blocks", *subdomain_fun);
+
+				if(!subdomain_fun->good()) {
+					sampler = std::make_shared<UIConstantFunction<double>>(1.);
+				} else {
+
+					if(!subdomain_fun->has_default()) {
+						subdomain_fun->set_default(utopia::make_unique<UIConstantFunction<double>>(1.));
+					}
+
+					sampler = std::move(subdomain_fun);
+				}
 			}
 
 			forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
