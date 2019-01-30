@@ -190,7 +190,10 @@ namespace utopia {
 		if(mpi_world_rank() == 0) {
 			std::cout << "Assembled M and fun_m" << std::endl;
 			std::cout << c << std::endl;
+			std::cout << std::flush;
 		}
+
+		mpi_world_barrier();
 
 		transfer_operator->apply(fun_master, fun_slave);
 		transfer_operator->apply_transpose(fun_slave, back_fun_master);

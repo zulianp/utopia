@@ -3,7 +3,8 @@
 	<!-- <type>interpolation</type> -->
 	<type>l2-projection</type>
 	<biorth-basis>0</biorth-basis>
-	<function>-z</function>
+	<function>10.</function>
+	<function-type>constant</function-type>
 	<!-- <enumerate-nodes>true</enumerate-nodes> -->
 
 	<!-- <force-shell>true</force-shell> -->
@@ -18,8 +19,8 @@
 			<elem-type>hex</elem-type>
 			<order>1</order>			
 			<n-x>16</n-x>
-			<n-y>80</n-y>
-			<n-z>180</n-z>
+			<n-y>40</n-y>
+			<n-z>40</n-z>
 
 			<min-x>0.</min-x>
 			<min-y>0.</min-y>
@@ -39,8 +40,8 @@
 			<elem-type>hex</elem-type>
 			<order>1</order>			
 			<n-x>16</n-x>
-			<n-y>80</n-y>
-			<n-z>180</n-z>
+			<n-y>40</n-y>
+			<n-z>40</n-z>
 
 			<min-x>0.</min-x>
 			<min-y>0.</min-y>

@@ -216,8 +216,10 @@ namespace utopia {
 
 		UVector sol = blocks(x_m, x_f, lagr);
 
-		Factorization<USparseMatrix, UVector> op;
+		Factorization<USparseMatrix, UVector> op("superlu_dist", "lu"); //("mumps", "lu")
 		op.update(make_ref(A));
+		op.describe(std::cout);
+
 		bool ok = op.apply(rhs, sol);
 
 		undo_blocks(sol, x_m, x_f, lagr);

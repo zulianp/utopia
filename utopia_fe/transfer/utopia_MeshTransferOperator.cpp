@@ -240,7 +240,7 @@ namespace utopia {
 			return false;
 		}
 
-		auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+		auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], new_solver());
 		l2_operator->fix_mass_matrix_operator(params_->tol);
 		l2_operator->init();
 		operator_ = l2_operator;
@@ -279,7 +279,7 @@ namespace utopia {
 			return false;
 		}
 
-		auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+		auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], new_solver());
 		l2_operator->fix_mass_matrix_operator(params_->tol);
 		l2_operator->init();
 		operator_ = l2_operator;
@@ -365,7 +365,7 @@ namespace utopia {
 			assemble_mass_matrix(*get_filtered_to_mesh(),   *to_dofs,   opts.to_var_num,   opts.n_var, *mass_mat_to);
 
 			const bool restrict_mass_matrix = !params_->use_composite_bidirectional;
-			auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, std::make_shared<Factorization<USparseMatrix, UVector>>());
+			auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, new_solver());
 			
 			if(!restrict_mass_matrix) {
 				forward->fix_mass_matrix_operator(params_->tol);
@@ -374,7 +374,7 @@ namespace utopia {
 				forward->restrict_mass_matrix_old(params_->tol);
 			}
 
-			auto backward = std::make_shared<L2TransferOperator>(mats[1], mass_mat_from, std::make_shared<Factorization<USparseMatrix, UVector>>());
+			auto backward = std::make_shared<L2TransferOperator>(mats[1], mass_mat_from, new_solver());
 			
 			if(!restrict_mass_matrix) {
 				backward->fix_mass_matrix_operator(params_->tol);
@@ -408,10 +408,10 @@ namespace utopia {
 					std::make_shared<Interpolator>(mats[1])
 				);
 			} else {
-				auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
+				auto forward = std::make_shared<L2TransferOperator>(mats[0], mats[1], new_solver());
 				forward->fix_mass_matrix_operator(params_->tol);
 
-				auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], std::make_shared<Factorization<USparseMatrix, UVector>>());
+				auto backward = std::make_shared<L2TransferOperator>(mats[2], mats[3], new_solver());
 				backward->fix_mass_matrix_operator(params_->tol);
 
 				forward->init();
@@ -506,6 +506,7 @@ namespace utopia {
 		////////////////////////////////////////////////////
 
 		if(!ok) {
+			std::cerr << "[Error] assembly failed" << std::endl;
 			return false;
 		}
 
@@ -556,5 +557,10 @@ namespace utopia {
 		}
 
 		return to_mesh;
+	}
+
+	std::unique_ptr<LinearSolver<USparseMatrix, UVector> > MeshTransferOperator::new_solver() { 
+		return utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi"); 
+		// return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu"); 
 	}
 }

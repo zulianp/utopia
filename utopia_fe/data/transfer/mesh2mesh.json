@@ -2,7 +2,8 @@
 	"transfer": {
 		"type": "l2-projection",
 		"biorth-basis": false,
-		"function": "-z",
+		"function": "1",
+		"function-type" : "constant",
 		"master": {
 			"mesh": {
 				"type": "cube",
