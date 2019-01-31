@@ -312,16 +312,20 @@ namespace utopia {
     void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &in)
     {
         DirectSolver<Matrix, Vector>::read(in);
-
         in.get("keep-symbolic-factorization", impl_->keep_symbolic_factorization);
+      //  in.get("exotic", exotic); //exotic = "";
+      //  if(!exotic.empty()) {
+      //  }
     }
     
+    // available parameters
+    // TODO print setted parameters??
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const
     {
-        
+        DirectSolver::print_usage(os);
     }
-    
+        
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::read_xml(const std::string &path)
     {
