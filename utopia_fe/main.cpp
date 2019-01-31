@@ -97,13 +97,11 @@ int main(int argc, char *argv[])
 	    runners["intrepid2"] = run_intrepid2_test;
 	    runners["isect"] = run_intersect_test;
 	    runners["tests"] = run_all_tests;
+
 	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    // runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
-
-
-
 
 
 		for(int i = 1; i < argc; ++i) {
