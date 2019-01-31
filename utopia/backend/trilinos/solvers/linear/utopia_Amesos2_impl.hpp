@@ -323,7 +323,7 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const
     {
-        DirectSolver::print_usage(os);
+        DirectSolver<Matrix, Vector>::print_usage(os);
     }
         
     template <typename Matrix, typename Vector>
