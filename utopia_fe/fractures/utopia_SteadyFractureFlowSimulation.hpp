@@ -26,6 +26,7 @@ namespace utopia {
 		UVector x_m, x_f, lagr;
 
 		USparseMatrix D, B, D_t, B_t;
+		USparseMatrix kappa_D, kappa_B, kappa_D_t, kappa_B_t;
 
 		std::string solve_strategy;
 		bool use_mg;
@@ -33,6 +34,7 @@ namespace utopia {
 		int mg_levels;
 		bool plot_matrix;
 		bool write_operators_to_disk;
+		double normal_hydraulic_conductivity;
 
 	private:
 		bool solve_cg_dual();

@@ -22,6 +22,7 @@ namespace utopia {
 		mg_levels = 5;
 		plot_matrix = false;
 		write_operators_to_disk = false;
+		normal_hydraulic_conductivity = 1.;
 	}
 
 	void SteadyFractureFlowSimulation::read(Input &is)
@@ -38,6 +39,7 @@ namespace utopia {
 		is.get("mg-sweeps", mg_sweeps);
 		is.get("mg-levels", mg_levels);
 		is.get("plot-matrix", plot_matrix);
+		is.get("normal-hydraulic-conductivity", normal_hydraulic_conductivity);
 
 		if(plot_matrix) {
 		    plot_mesh(matrix->mesh.mesh(), "matrix");
@@ -53,6 +55,8 @@ namespace utopia {
 		    std::cout << "mg-sweeps:      "  << mg_sweeps      << std::endl;
 		    std::cout << "mg-levels:      "  << mg_levels      << std::endl;
 		}
+
+		std::cout << "normal-hydraulic-conductivity " << normal_hydraulic_conductivity << std::endl;
 
 		auto &V_m = matrix->space.subspace(0);
 		auto &V_f = fracture_network->space.subspace(0);
@@ -142,6 +146,18 @@ namespace utopia {
 		set_zero_at_constraint_rows(V_m.dof_map(), B_t);
 		set_zero_at_constraint_rows(V_f.dof_map(), D_t);
 
+
+		kappa_B   = B;
+		kappa_D   = D;
+		kappa_B_t = B_t;
+		kappa_D_t = D_t;
+
+
+		// kappa_B   *= normal_hydraulic_conductivity;
+		kappa_D   *= normal_hydraulic_conductivity;
+		// kappa_B_t *= normal_hydraulic_conductivity;
+		kappa_D_t *= normal_hydraulic_conductivity;
+
 		c.stop();
 		std::cout << "transfer assemly time: " << c << std::endl;
 	}
@@ -166,6 +182,13 @@ namespace utopia {
 		return ok;
 	}
 
+	/*
+		A_m 0   B_t
+		0	A_f kappa * D_t
+		B   kappa * D   0 
+
+	*/
+
 	bool SteadyFractureFlowSimulation::solve_cg_dual()
 	{
 		auto &V_m = matrix->space.subspace(0);
@@ -189,10 +212,10 @@ namespace utopia {
 		solver.update(
 		    make_ref(A_m),
 		    make_ref(A_f),
-		    make_ref(B),
-		    make_ref(D),
-		    make_ref(B_t),
-		    make_ref(D_t)
+		    make_ref(kappa_B),
+		    make_ref(kappa_D),
+		    make_ref(kappa_B_t),
+		    make_ref(kappa_D_t)
 		);
 
 		return solver.apply(rhs_m, rhs_f, x_m, x_f, lagr);
@@ -202,9 +225,9 @@ namespace utopia {
 	{
 		USparseMatrix A = Blocks<USparseMatrix>(3, 3,
 		{
-		    make_ref(A_m), nullptr, make_ref(B_t),
-		    nullptr, make_ref(A_f), make_ref(D_t),
-		    make_ref(B), make_ref(D), nullptr
+		    make_ref(A_m), nullptr, make_ref(kappa_B_t),
+		    nullptr, make_ref(A_f), make_ref(kappa_D_t),
+		    make_ref(kappa_B), make_ref(kappa_D), nullptr
 		});
 
 		UVector z = local_zeros(local_size(B).get(0));
