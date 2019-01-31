@@ -464,7 +464,7 @@ namespace utopia {
 	regularization_parameter(0.5),
 	dt(0.1),
 	use_upwinding(true),
-	boundary_factor(1.)
+	boundary_factor(0.)
 	{}
 
 	void FractureFlowTransportSimulation::Transport::read(Input &in)

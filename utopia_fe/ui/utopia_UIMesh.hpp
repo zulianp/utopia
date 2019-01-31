@@ -37,6 +37,7 @@ namespace utopia {
 			int n[3] = {5, 5, 5};
 
 			double scale = 1.;
+			double shift[LIBMESH_DIM] = {0. , 0., 0.};
 
 			std::string elem_type = "quad";
 
@@ -64,6 +65,9 @@ namespace utopia {
 			is.get("n-z", n[2]);
 
 			is.get("scale", scale);
+			is.get("shift-x", shift[0]);
+			is.get("shift-y", shift[1]);
+			is.get("shift-z", shift[2]);
 
 
 			if(mesh_type == "file") {
@@ -133,6 +137,7 @@ namespace utopia {
 			//build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
 
 			scale_mesh(scale, *mesh_);
+			shift_mesh(shift, *mesh_);
 
 			refine(refinements, *mesh_);
 
@@ -251,11 +256,21 @@ namespace utopia {
 			if(scale_factor == 1.) return;
 			assert(scale_factor > 0.);
 
-			// for(auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
 			for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
 
 				for(int i = 0; i < LIBMESH_DIM; ++i) {
 					(**it)(i) *= scale_factor;
+				}
+			}
+		}
+
+		static void shift_mesh(const double t[LIBMESH_DIM], libMesh::MeshBase &mesh)
+		{
+			if(0. == t[0] && 0. == t[1] && 0. == t[2]) return;
+
+			for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
+				for(int i = 0; i < LIBMESH_DIM; ++i) {
+					(**it)(i) += t[i];
 				}
 			}
 		}
