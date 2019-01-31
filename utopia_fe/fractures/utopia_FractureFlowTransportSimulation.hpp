@@ -56,6 +56,7 @@ namespace utopia {
 			bool h1_regularization;
 			bool use_upwinding;
 			double regularization_parameter;
+			double boundary_factor;
 			USparseMatrix mass_matrix;
 			USparseMatrix gradient_matrix;
 			USparseMatrix system_matrix;

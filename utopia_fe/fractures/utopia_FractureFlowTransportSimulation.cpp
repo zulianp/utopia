@@ -70,11 +70,15 @@ namespace utopia {
 		for(std::size_t i = 0; i < n_flows_f; ++i) {
 			header.push_back("flow(Omega_f)_" + std::to_string(transport_f_.in_out_flow[i]));
 			stats.push_back(transport_f_.total_in_out_flow[i]);
+
+			std::cout << ("flow(Omega_f)_" + std::to_string(transport_f_.in_out_flow[i])) << " " << transport_f_.total_in_out_flow[i] << std::endl;
 		}
 
 		for(std::size_t i = 0; i < n_flows_m; ++i) {
 			header.push_back("flow(Omega_m)_" + std::to_string(transport_m_.in_out_flow[i]));
 			stats.push_back(transport_m_.total_in_out_flow[i]);
+
+			std::cout << ("flow(Omega_m)_" + std::to_string(transport_m_.in_out_flow[i])) << " " << transport_m_.total_in_out_flow[i] << std::endl;
 		}
 
 		CSVWriter csv;
@@ -96,7 +100,7 @@ namespace utopia {
 
 		auto &V_m = transport_m_.space->space().last_subspace();
 
-		UVector xkp1 = transport_m_.concentration;
+		UVector &xkp1 = transport_m_.concentration;
 		UVector rhs = local_zeros(local_size(xkp1));
 
 		apply_boundary_conditions(V_m.dof_map(), transport_m_.system_matrix, xkp1);
@@ -116,6 +120,10 @@ namespace utopia {
 
 		assert(!empty(transport_m_.f));
 
+
+		transport_m_.post_process_time_step(0., *steady_flow_.matrix);
+
+
 		int n_timesteps = 1;
 		for(double t = transport_m_.dt; t < transport_m_.simulation_time; t += transport_m_.dt) {
 			
@@ -126,11 +134,17 @@ namespace utopia {
 
 			solver_m.apply(rhs, xkp1);
 
+
+			transport_m_.post_process_time_step(t, *steady_flow_.matrix);
+
+
 			utopia::convert(xkp1, *V_m.equation_system().solution);
 			V_m.equation_system().solution->close();
 
 			io_m.write_timestep("transient.e", V_m.equation_systems(), ++n_timesteps, t);
 		}
+
+		// write_result_csv*
 	}
 
 	void FractureFlowTransportSimulation::compute_transport_monolithic()
@@ -279,6 +293,9 @@ namespace utopia {
 	{
 		//gradient recovery using the standard L2-projection
 
+		m_utopia_status("FractureFlowTransportSimulation::Transport::assemble_aux_quantities begin");
+		Chrono chrono; chrono.start();
+
 		auto &C = space->subspace(0);
 		const int dim = C.mesh().spatial_dimension();
 
@@ -320,13 +337,19 @@ namespace utopia {
 			UVector aux_mass_vector = sum(aux_mass_matrix, 1);
 			aux_values = e_mul(M_x_v, 1./aux_mass_vector);
 		} else {
-			Factorization<USparseMatrix, UVector>().solve(aux_mass_matrix, M_x_v, aux_values);
+			GMRES<USparseMatrix, UVector>("bjacobi").solve(aux_mass_matrix, M_x_v, aux_values);
 		}
 
 		copy_values(C, pressure_w, P, aux_values);
 
 		utopia::convert(aux_values, *P.equation_system().solution);
 		P.equation_system().solution->close();
+
+
+		m_utopia_status("FractureFlowTransportSimulation::Transport::assemble_aux_quantities end");
+		chrono.stop();
+
+		std::cout << chrono << std::endl;
 	}
 
 	void FractureFlowTransportSimulation::Transport::finalize()
@@ -440,7 +463,8 @@ namespace utopia {
 	h1_regularization(false),
 	regularization_parameter(0.5),
 	dt(0.1),
-	use_upwinding(true)
+	use_upwinding(true),
+	boundary_factor(1.)
 	{}
 
 	void FractureFlowTransportSimulation::Transport::read(Input &in)
@@ -451,6 +475,7 @@ namespace utopia {
 		in.get("h1-regularization", h1_regularization);
 		in.get("regularization-parameter", regularization_parameter);
 		in.get("use-upwinding", use_upwinding);
+		in.get("boundary-factor", boundary_factor);
 
 
 		in.get("outflow", 
@@ -553,7 +578,8 @@ namespace utopia {
 		// auto b_form = inner(c * uh, grad(q)) * dX;	
 
 		auto vel = sampler_fun * flow.diffusion_tensor * grad(ph);
-		auto b_form = inner(c * vel,  grad(q)) * dX;
+		// auto b_form = inner(c * vel,  grad(q)) * dX;
+		auto b_form = (inner(inner(-grad(c), vel), q) * dX);
 		
 		
 		if(!use_upwinding) {
@@ -674,7 +700,7 @@ namespace utopia {
 		}
 
 		if(!empty(boundary_flow_matrix)) {
-			gradient_matrix -= boundary_flow_matrix;
+			gradient_matrix -= boundary_factor * boundary_flow_matrix;
 		}
 
 		if(lump_mass_matrix) {
@@ -740,6 +766,8 @@ namespace utopia {
 			vals.push_back(outflow_val);
 
 			total_in_out_flow[idx++] += outflow_val;
+
+			std::cout << outflow_val << std::endl;
 		}
 
 		csv.write_table_row(vals);
