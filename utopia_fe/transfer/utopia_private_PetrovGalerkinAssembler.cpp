@@ -29,7 +29,7 @@ namespace utopia {
 
 			++n_intersections_;
 
-			for(std::size_t i = 0; i < elemmat_.size(); ++i) {	
+			for(std::size_t i = 0; i < elemmat_.size(); ++i) {
 				auto &mat_i = elemmat_[i];
 				if(mat_i.get_values().empty()) continue;
 
@@ -38,9 +38,11 @@ namespace utopia {
 				assert(!std::isnan(partial_sum));
 				local_element_matrices_sum_[i] += partial_sum;
 
+				assert(static_cast<bool>(mat_buffer_[i]));
+
 				switch(assembler_->type(i)) {
 
-					case LocalAssembler::MASTER_X_SLAVE: 
+					case LocalAssembler::MASTER_X_SLAVE:
 					{
 						local2global_->apply(master_dofs_, slave_dofs_, elemmat_[i], *mat_buffer_[i]);
 						break;
@@ -58,7 +60,7 @@ namespace utopia {
 						break;
 					}
 
-					case LocalAssembler::SLAVE_X_MASTER: 
+					case LocalAssembler::SLAVE_X_MASTER:
 					{
 						local2global_->apply(slave_dofs_, master_dofs_, elemmat_[i], *mat_buffer_[i]);
 						break;
@@ -70,7 +72,7 @@ namespace utopia {
 						break;
 					}
 				}
-			}  
+			}
 
 			return true;
 		} else {
@@ -121,10 +123,28 @@ namespace utopia {
 		}
 	}
 
+	bool PetrovGalerkinAssembler::check_n_forms(const int n_forms)
+	{
+		int n_forms_max = n_forms;
+		comm_.all_reduce(&n_forms_max, 1, moonolith::MPIMax());
+		bool ok = n_forms == n_forms_max;
+
+		if(!ok) {
+			std::cerr << comm_ << n_forms << " != " << n_forms_max << std::endl;
+		}
+
+		assert(ok);
+		return ok;
+	}
+
 
 	void PetrovGalerkinAssembler::init_buffers() {
+		assert(assembler_);
+
 		auto n_forms = assembler_->n_forms();
 		assert(n_forms > 0);
+
+		assert(check_n_forms(n_forms));
 
 		mat_buffer_.resize(n_forms);
 		elemmat_.resize(n_forms);
@@ -136,7 +156,7 @@ namespace utopia {
 
 			switch(assembler_->type(i)) {
 
-				case LocalAssembler::MASTER_X_SLAVE: 
+				case LocalAssembler::MASTER_X_SLAVE:
 				{
 					mat_buffer_[i]->set_size(to_n_dofs_, from_n_dofs_);
 					break;
@@ -154,7 +174,7 @@ namespace utopia {
 					break;
 				}
 
-				case LocalAssembler::SLAVE_X_MASTER: 
+				case LocalAssembler::SLAVE_X_MASTER:
 				{
 					mat_buffer_[i]->set_size(from_n_dofs_, to_n_dofs_);
 					break;
@@ -174,12 +194,15 @@ namespace utopia {
 		PetrovGalerkinAssembler::SparseMatrix &mat
 		)
 	{
+
+		assert(buffer_num < mat_buffer_.size());
+
 		libMesh::dof_id_type n_dofs_on_proc_trial = 0;
 		libMesh::dof_id_type n_dofs_on_proc_test  = 0;
 
 		switch(assembler_->type(buffer_num)) {
 
-			case LocalAssembler::MASTER_X_SLAVE: 
+			case LocalAssembler::MASTER_X_SLAVE:
 			{
 				n_dofs_on_proc_trial = from_n_local_dofs_;
 				n_dofs_on_proc_test  = to_n_local_dofs_;
@@ -200,7 +223,7 @@ namespace utopia {
 				break;
 			}
 
-			case LocalAssembler::SLAVE_X_MASTER: 
+			case LocalAssembler::SLAVE_X_MASTER:
 			{
 				n_dofs_on_proc_trial = to_n_local_dofs_;
 				n_dofs_on_proc_test  = from_n_local_dofs_;
@@ -256,16 +279,16 @@ namespace utopia {
             comm_.all_reduce(isect_stats, 2, moonolith::MPISum());
 
             if(comm_.is_root()) {
-                std::cout << "sum(B): " 
-                          << volumes[0] 
-                          << ", vol(I): " 
+                std::cout << "sum(B): "
+                          << volumes[0]
+                          << ", vol(I): "
                           << volumes[1]
                           << "\nn_candidates: "
                           << (isect_stats[0] + isect_stats[1])
                           << ", n_intersections: "
                           << isect_stats[0]
                           << ", n_false_positives: "
-                          << isect_stats[1] 
+                          << isect_stats[1]
                           << std::endl;
             }
 

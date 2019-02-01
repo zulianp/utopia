@@ -38,7 +38,7 @@ namespace utopia {
 		void get(unsigned long &) const override {}
 		void get(bool &) const override {}
 		void get(std::string &) const override {}
-		
+
 		NullConvertible * clone() const override
 		{
 			return new NullConvertible();
@@ -48,7 +48,7 @@ namespace utopia {
 	template<typename In, typename Out>
 	class Convert {
 	public:
-		static void apply(const In &in, Out &out) 
+		static void apply(const In &in, Out &out)
 		{
 			out = static_cast<Out>(in);
 		}
@@ -57,7 +57,7 @@ namespace utopia {
 	template<typename InOut>
 	class Convert<InOut, InOut> {
 	public:
-		static void apply(const InOut &in, InOut &out) 
+		static void apply(const InOut &in, InOut &out)
 		{
 			out = in;
 		}
@@ -66,7 +66,7 @@ namespace utopia {
 	template<typename In>
 	class Convert<In, std::string> {
 	public:
-		static void apply(const In &in, std::string &out) 
+		static void apply(const In &in, std::string &out)
 		{
 			out = std::to_string(in);
 		}
@@ -75,7 +75,7 @@ namespace utopia {
 	template<>
 	class Convert<std::string, std::string> {
 	public:
-		static void apply(const std::string &in, std::string &out) 
+		static void apply(const std::string &in, std::string &out)
 		{
 			out = in;
 		}
@@ -84,7 +84,7 @@ namespace utopia {
 	template<>
 	class Convert<std::string, bool> {
 	public:
-		static void apply(const std::string &in, bool &out) 
+		static void apply(const std::string &in, bool &out)
 		{
 			out = in == "1" || in == "true" || in == "yes";
 		}
@@ -93,7 +93,7 @@ namespace utopia {
 	template<>
 	class Convert<std::string, double> {
 	public:
-		static void apply(const std::string &in, double &out) 
+		static void apply(const std::string &in, double &out)
 		{
 			out = atof(in.c_str());
 		}
@@ -102,7 +102,7 @@ namespace utopia {
 	template<>
 	class Convert<std::string, float> {
 	public:
-		static void apply(const std::string &in, float &out) 
+		static void apply(const std::string &in, float &out)
 		{
 			out = atof(in.c_str());
 		}
@@ -111,7 +111,7 @@ namespace utopia {
 	template<>
 	class Convert<std::string, int> {
 	public:
-		static void apply(const std::string &in, int &out) 
+		static void apply(const std::string &in, int &out)
 		{
 			out = atoi(in.c_str());
 		}
@@ -120,7 +120,7 @@ namespace utopia {
 	template<>
 	class Convert<std::string, long> {
 	public:
-		static void apply(const std::string &in, long &out) 
+		static void apply(const std::string &in, long &out)
 		{
 			out = atol(in.c_str());
 		}
@@ -129,7 +129,7 @@ namespace utopia {
 	template<>
 	class Convert<std::string, unsigned long> {
 	public:
-		static void apply(const std::string &in, unsigned long &out) 
+		static void apply(const std::string &in, unsigned long &out)
 		{
 			//FIXME
 			out = atol(in.c_str());
@@ -139,7 +139,7 @@ namespace utopia {
 	template<typename T>
 	class Convertible final : public IConvertible {
 	public:
-		Convertible(const T &value) : value_(value) {}	
+		Convertible(const T &value) : value_(value) {}
 
 		inline void get(double &in_out) const override
 		{
@@ -177,7 +177,7 @@ namespace utopia {
 		}
 
 		////////////////////////////////////////
-		
+
 		inline void set(const double &in)
 		{
 			Convert<double, T>::apply(in, value_);
@@ -216,12 +216,12 @@ namespace utopia {
 		inline operator const T &() const
 		{
 			return value_;
-		} 
+		}
 
 		inline operator T &()
 		{
 			return value_;
-		} 
+		}
 
 		inline bool is_double() const override  { return std::is_same<T, double>::value; }
 		inline bool is_float() const override 	{ return std::is_same<T, float>::value; }

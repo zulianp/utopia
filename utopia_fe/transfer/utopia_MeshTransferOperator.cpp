@@ -30,10 +30,31 @@ namespace utopia {
 		from_boundary(false),
 		to_boundary(false),
 		normalize(false),
+		use_composite_bidirectional(false),
 		use_interpolation(false),
 		nnz_x_row(0),
 		output_path("./")
 		{}
+
+		void print()
+		{
+			std::cout << "normalize_rows " << normalize_rows << std::endl;
+			std::cout << "tol " << tol << std::endl;
+			std::cout << "bi_operator_mass_mat_outside " << bi_operator_mass_mat_outside << std::endl;
+			std::cout << "operator_type " << operator_type << std::endl;
+			std::cout << "clamped " << clamped << std::endl;
+			std::cout << "quad_order " << quad_order << std::endl;
+			std::cout << "force_shell " << force_shell << std::endl;
+			std::cout << "write_operators_to_disk " << write_operators_to_disk << std::endl;
+			std::cout << "force_zero_extension " << force_zero_extension << std::endl;
+			std::cout << "from_boundary " << from_boundary << std::endl;
+			std::cout << "to_boundary " << to_boundary << std::endl;
+			std::cout << "normalize " << normalize << std::endl;
+			std::cout << "use_composite_bidirectional " << use_composite_bidirectional << std::endl;
+			std::cout << "use_interpolation " << use_interpolation << std::endl;
+			std::cout << "nnz_x_row " << nnz_x_row << std::endl;
+			std::cout << "output_path " << output_path << std::endl;
+		}
 
 		inline void read(Input &is) override
 		{
@@ -41,7 +62,7 @@ namespace utopia {
 			is.get("bi-op-mass-outside", bi_operator_mass_mat_outside);
 			is.get("clamped", clamped);
 			is.get("quad-order-approx", quad_order);
-			
+
 			is.get("force-shell", force_shell);
 			is.get("write-operators-to-disk", write_operators_to_disk);
 			is.get("force-zero-extension", force_zero_extension);
@@ -51,7 +72,7 @@ namespace utopia {
 			is.get("use-composite-bidirectional", use_composite_bidirectional);
 			is.get("use-interpolation", use_interpolation);
 			is.get("nnz-x-row", nnz_x_row);
-			is.get("output-path", output_path);	
+			is.get("output-path", output_path);
 		}
 
 		bool normalize_rows;
@@ -102,7 +123,7 @@ namespace utopia {
 		const std::shared_ptr<MeshBase> &to_mesh,
 		const std::shared_ptr<DofMap>   &to_dofs,
 		const TransferOptions &opts
-		) : 
+		) :
 	from_mesh(from_mesh),
 	from_dofs(from_dofs),
 	to_mesh(to_mesh),
@@ -110,23 +131,23 @@ namespace utopia {
 	opts(opts),
 	params_(utopia::make_unique<Params>())
 	{
-		assembly_strategies_[INTERPOLATION] = 
+		assembly_strategies_[INTERPOLATION] =
 		[this]() -> bool { return this->set_up_interpolation(); };
 
-		assembly_strategies_[L2_PROJECTION] = 
+		assembly_strategies_[L2_PROJECTION] =
 		[this]() -> bool { return this->set_up_l2_projection(); };
 
-		assembly_strategies_[PSEUDO_L2_PROJECTION] = 
+		assembly_strategies_[PSEUDO_L2_PROJECTION] =
 		[this]() -> bool { return this->set_up_pseudo_l2_projection(); };
 
-		assembly_strategies_[APPROX_L2_PROJECTION] = 
+		assembly_strategies_[APPROX_L2_PROJECTION] =
 		[this]() -> bool { return this->set_up_approx_l2_projection(); };
 
-		assembly_strategies_[BIDIRECTIONAL_L2_PROJECTION] = 
+		assembly_strategies_[BIDIRECTIONAL_L2_PROJECTION] =
 		[this]() -> bool { return this->set_up_bidirectional_transfer(); };
 
-		assembly_strategies_[BIDIRECTIONAL_PSEUDO_L2_PROJECTION] = 
-		[this]() -> bool { return this->set_up_bidirectional_pseudo_transfer(); };	
+		assembly_strategies_[BIDIRECTIONAL_PSEUDO_L2_PROJECTION] =
+		[this]() -> bool { return this->set_up_bidirectional_pseudo_transfer(); };
 	}
 
 	MeshTransferOperator::~MeshTransferOperator() {}
@@ -138,12 +159,12 @@ namespace utopia {
 
 	void MeshTransferOperator::assemble_mass_matrix(
 		const libMesh::MeshBase &mesh,
-		const libMesh::DofMap &dof_map, 
+		const libMesh::DofMap &dof_map,
 		const int var,
 		const int n_tensor,
 		USparseMatrix &mat
 		) const
-	{	
+	{
 		Chrono c;
 		c.start();
 
@@ -155,7 +176,7 @@ namespace utopia {
 
 		if(params_->nnz_x_row <= 0 &&
 			!dof_map.get_n_nz().empty()) {
-			nnz_x_row = 
+			nnz_x_row =
 			*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end());
 
 			if(!dof_map.get_n_oz().empty()) {
@@ -178,10 +199,10 @@ namespace utopia {
 			auto fe = libMesh::FEBase::build(dim, fe_type);
 			libMesh::QGauss qrule(dim, fe_type.default_quadrature_order());
 			fe->attach_quadrature_rule(&qrule);
-			
+
 			auto &phi = fe->get_phi();
 			auto &JxW = fe->get_JxW();
-			
+
 			for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
 				fe->reinit(*it);
 				dof_map.dof_indices(*it, indices);
@@ -210,7 +231,7 @@ namespace utopia {
 						for(unsigned int qp = 0; qp < n_qp; qp++) {
 							auto value = JxW[qp] * phi[i][qp] * phi[j][qp];
 							assert(!std::isnan(value) && !std::isinf(value));
-							
+
 							for(unsigned int k = 0; k < n_tensor; k++) {
 								el_mat(i + k * phi.size(), j + k * phi.size()) += value;
 							}
@@ -252,7 +273,7 @@ namespace utopia {
 		std::cout << "[Status] using interpolation" << std::endl;
 		auto assembler = std::make_shared<InterpolationLocalAssembler>(get_filtered_from_mesh()->mesh_dimension());
 		auto local2global = std::make_shared<Local2Global>(true);
-		
+
 		std::vector< std::shared_ptr<SparseMatrix> > mats;
 		TransferAssembler transfer_assembler(assembler, local2global);
 		if(!transfer_assembler.assemble(get_filtered_from_mesh(), from_dofs, get_filtered_to_mesh(), to_dofs, mats, opts)) {
@@ -319,13 +340,16 @@ namespace utopia {
 		std::shared_ptr<LocalAssembler> assembler;
 
 		bool use_interpolation = false;
-		const bool assemble_D = 
+		const bool assemble_D =
 			!params_->bi_operator_mass_mat_outside ||
 			 params_->use_composite_bidirectional;
 
+
+		params_->print();
+
 		if(params_->use_composite_bidirectional) {
 			auto from = get_filtered_from_mesh();
-		
+
 			if(params_->use_interpolation) {
 				auto ass_1 = std::make_shared<InterpolationLocalAssembler>(from->mesh_dimension());
 				auto ass_2 = std::make_shared<InterpolationLocalAssembler>(from->mesh_dimension());
@@ -340,7 +364,14 @@ namespace utopia {
 			}
 
 		} else {
-			assembler = std::make_shared<BidirectionalL2LocalAssembler>(get_filtered_from_mesh()->mesh_dimension(), false, !params_->bi_operator_mass_mat_outside);
+
+			std::cout << "params_->bi_operator_mass_mat_outside " << (params_->bi_operator_mass_mat_outside) << std::endl;
+			assembler = std::make_shared<BidirectionalL2LocalAssembler>(
+				get_filtered_from_mesh()->mesh_dimension(),
+				false,
+				!params_->bi_operator_mass_mat_outside);
+
+			std::cout << "n_forms: " << assembler->n_forms() << std::endl;
 		}
 
 		auto local2global = std::make_shared<Local2Global>(use_interpolation);
@@ -366,7 +397,7 @@ namespace utopia {
 
 			const bool restrict_mass_matrix = !params_->use_composite_bidirectional;
 			auto forward = std::make_shared<L2TransferOperator>(mats[0], mass_mat_to, new_solver());
-			
+
 			if(!restrict_mass_matrix) {
 				forward->fix_mass_matrix_operator(params_->tol);
 			} else {
@@ -375,7 +406,7 @@ namespace utopia {
 			}
 
 			auto backward = std::make_shared<L2TransferOperator>(mats[1], mass_mat_from, new_solver());
-			
+
 			if(!restrict_mass_matrix) {
 				backward->fix_mass_matrix_operator(params_->tol);
 			} else {
@@ -475,7 +506,7 @@ namespace utopia {
 	}
 
 	static bool is_bidirectional(const TransferOperatorType operator_type) {
-		return operator_type == BIDIRECTIONAL_L2_PROJECTION || 
+		return operator_type == BIDIRECTIONAL_L2_PROJECTION ||
 			   operator_type == BIDIRECTIONAL_L2_PROJECTION;
 	}
 
@@ -496,7 +527,7 @@ namespace utopia {
 
 		///////////////////////////////////////////////////
 		auto it = assembly_strategies_.find(operator_type);
-		
+
 		bool ok = false;
 		if(it == assembly_strategies_.end()) {
 			ok = assembly_strategies_.begin()->second();
@@ -522,7 +553,7 @@ namespace utopia {
 					}),
 				operator_
 			);
-		} 
+		}
 
 		if(params_->force_zero_extension) {
 			operator_ = std::make_shared<ForceZeroExtension>(operator_, params_->tol);
@@ -559,8 +590,8 @@ namespace utopia {
 		return to_mesh;
 	}
 
-	std::unique_ptr<LinearSolver<USparseMatrix, UVector> > MeshTransferOperator::new_solver() { 
-		return utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi"); 
-		// return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu"); 
+	std::unique_ptr<LinearSolver<USparseMatrix, UVector> > MeshTransferOperator::new_solver() {
+		return utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
+		// return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu");
 	}
 }

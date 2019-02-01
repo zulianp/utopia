@@ -19,7 +19,7 @@
 
 namespace utopia {
     namespace private_ {
-        
+
         class PetrovGalerkinAssembler {
         public:
             using Elem   = libMesh::Elem;
@@ -32,9 +32,9 @@ namespace utopia {
             using DofMap        = libMesh::DofMap;
 
             using ElementMatrix = LocalAssembler::Matrix;
-            
+
             PetrovGalerkinAssembler();
-            
+
             //dof_fun(master_dofs, slave_dofs)
             bool assemble(const Elem &master,
                           FEType master_type,
@@ -42,7 +42,7 @@ namespace utopia {
                           FEType slave_type,
                           std::function<void(std::vector<long> &, std::vector<long> &)> dof_fun
             );
-            
+
             void initialize(const moonolith::Communicator &comm,
                             const std::shared_ptr<LocalAssembler> &assembler,
                             const std::shared_ptr<Local2Global> &local2global,
@@ -51,13 +51,13 @@ namespace utopia {
                             const SizeType from_n_local_dofs,
                             const SizeType to_n_dofs,
                             const SizeType to_n_local_dofs);
-            
-            
+
+
             void finalize(std::vector<std::shared_ptr<SparseMatrix>> &mats);
             void print_stats();
-            
+
         private:
-            
+
             moonolith::Communicator comm_;
             std::shared_ptr<LocalAssembler> assembler_;
             std::shared_ptr<Local2Global> local2global_;
@@ -70,15 +70,16 @@ namespace utopia {
             SizeType to_n_local_dofs_;
             long n_intersections_;
             long n_false_positives_;
-            
+
             std::vector< libMesh::DenseMatrix<libMesh::Real> > elemmat_;
             std::vector< libMesh::Real > local_element_matrices_sum_;
             std::vector< std::shared_ptr< moonolith::SparseMatrix<double> > > mat_buffer_;
-            
+
             std::vector<long> master_dofs_, slave_dofs_;
-            
+
             void init_buffers();
             void finalize_form(std::size_t buffer_num, SparseMatrix &mat);
+            bool check_n_forms(const int n_forms);
         };
 
     }

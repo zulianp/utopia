@@ -68,7 +68,7 @@ namespace utopia {
 		aux_fracture_network->sample(fracture_network->sampler);
 
 		std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_f.dof_map().n_dofs() << " + ";
-		
+
 		if(lagrange_multiplier->empty()) {
 		    std::cout << V_f.dof_map().n_dofs();
 		} else {
@@ -185,7 +185,7 @@ namespace utopia {
 	/*
 		A_m 0   B_t
 		0	A_f kappa * D_t
-		B   kappa * D   0 
+		B   kappa * D   0
 
 	*/
 

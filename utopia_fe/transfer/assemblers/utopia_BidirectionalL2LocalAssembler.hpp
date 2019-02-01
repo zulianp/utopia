@@ -19,7 +19,7 @@ namespace utopia {
 
 		/**
 		* @brief if you are performing volume to surface transfer
-		* the method does not provide reliable results if the volume 
+		* the method does not provide reliable results if the volume
 		* element has facets aligned with the surface ones
 		*/
 		bool assemble(
@@ -62,7 +62,7 @@ namespace utopia {
 					case 3: { return MASTER_X_MASTER; }
 					default: { assert(false); return MASTER_X_SLAVE; }
 				}
-			} else {	
+			} else {
 				switch(index) {
 					case 0: { return MASTER_X_SLAVE;  }
 					case 1: { return SLAVE_X_MASTER;  }
@@ -87,7 +87,7 @@ namespace utopia {
 		std::unique_ptr<libMesh::FEBase> trial_fe, test_fe;
 
 		bool assemble_mass_mat_;
-        bool assemble_mass_mat_r_;
+
 
 		void init_fe(
 			const Elem &trial,
