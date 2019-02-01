@@ -60,90 +60,27 @@
 
 namespace utopia {
 
-	template<class Matrix, class Vector>
-	void apply_boundary_conditions(libMesh::DofMap &dof_map, Matrix &mat, Vector &vec)
-	{
-		using SizeType = UTOPIA_SIZE_TYPE(Vector);
-
-		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
-		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
-
-		Size ls = local_size(mat);
-		Size s = size(mat);
-
-		std::vector<SizeType> index;
-
-		Range rr = range(vec);
-
-		if(has_constaints) {
-			for(SizeType i = rr.begin(); i < rr.end(); ++i) {
-				if( dof_map.is_constrained_dof(i) ) {
-					index.push_back(i);
-				}
-			}
-		}
-
-		set_zero_rows(mat, index, 1.);
-
-		{
-			Write<Vector> w_v(vec);
-
-			Range r = range(vec);
-			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(has_constaints && dof_map.is_constrained_dof(i)) {
-					auto valpos = rhs_values.find(i);
-					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
-				}
-			}
-		}
-		
-	}
-
-
-
-	template<class Vector>
-	void apply_boundary_conditions(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
-	{
-		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
-
-		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
-
-		{
-			Write<Wrapper<Vector, 1>> w_v(vec);
-
-			if(has_constaints) {
-				Range r = range(vec);
-				for(SizeType i = r.begin(); i < r.end(); ++i) {
-					if(dof_map.is_constrained_dof(i)) {
-						auto valpos = rhs_values.find(i);
-
-						// if(valpos != rhs_values.end()) {
-						vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
-						// }
-					}
-				}
-			}
-		}
-	}
+	void apply_boundary_conditions(libMesh::DofMap &dof_map, USparseMatrix &mat, UVector &vec);
+	void apply_boundary_conditions(libMesh::DofMap &dof_map, UVector &vec);
 
 	template<class Vector>
 	void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
 	{
 		vec = local_zeros(dof_map.n_local_dofs());
-
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
-		// libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
-		{
-			Write<Wrapper<Vector, 1>> w_v(vec);
+		Write<Wrapper<Vector, 1>> w_v(vec);
 
+		if(has_constaints) {
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(has_constaints && dof_map.is_constrained_dof(i)) {
+
+				if(dof_map.is_constrained_dof(i)) {
 					auto value = 1.;
 					vec.set(i, value);
 				}
 			}
+
 		}
 	}
 
@@ -157,19 +94,19 @@ namespace utopia {
 	template<class DofMap, class Vector>
 	void apply_zero_boundary_conditions(DofMap &dof_map, Vector &vec)
 	{
-		bool has_constaints = true;
-		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			has_constaints = false;
-		}
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
-		{
-			Write<Vector> w_v(vec);
+		Write<Vector> w_v(vec);
+
+		if(has_constaints) {
+
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(has_constaints && dof_map.is_constrained_dof(i)) {
+				if(dof_map.is_constrained_dof(i)) {
 					vec.set(i, 0.0);
 				}
 			}
+
 		}
 	}
 
@@ -256,7 +193,7 @@ namespace utopia {
 		utopia::convert(p_mat, temp);
 		backend_convert_sparse(temp, utopia_mat);
 	}
-	
+
 #endif //WITH_TRILINOS
 
 

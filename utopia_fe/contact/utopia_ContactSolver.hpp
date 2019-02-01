@@ -14,6 +14,7 @@
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
 #include "utopia_ProjectedGradient.hpp"
+#include "utopia_LibMeshBackend.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -51,7 +52,8 @@ namespace utopia {
 		  use_ssn_(false),
 		  use_pg_(false),
 		  max_non_linear_iterations_(30),
-		  export_results_(false)
+		  export_results_(false),
+		  aux_system_num_(-1)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
@@ -124,6 +126,7 @@ namespace utopia {
 		bool solve_steady()
 		{
 			initialize();
+			first_ = true;
 			if(!solve_contact()) {
 				assert(false);
 				return false;
@@ -131,6 +134,10 @@ namespace utopia {
 
 			if(export_results_) {
 				convert(x_, *V_->subspace(0).equation_system().solution);
+
+				create_aux_system();
+				update_aux_system(x_);
+
 				io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
 
 				UVector s;
@@ -439,6 +446,9 @@ namespace utopia {
 			std::cout << "applying bc.... " << std::flush;
 			apply_boundary_conditions(V_->subspace(0).dof_map(), Hc_, gc_);
 
+			// write("A.m", Hc_);
+			// write("b.m", gc_);
+
 			if(!first_) {
 				apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
 			}
@@ -580,6 +590,65 @@ namespace utopia {
 			return material_->stress(x, result);
 		}
 
+
+		void create_aux_system()
+		{
+			if(aux_system_num_ > 0) {
+				std::cout << "aux system already exists" << std::endl;
+				return;
+			}
+
+			auto &V0 = V_->subspace(0);
+			auto &es = V0.equation_systems();
+
+			const int dim  = es.get_mesh().mesh_dimension();
+
+			auto &aux = es.add_system<libMesh::LinearImplicitSystem>("contact_aux");
+			aux_system_num_ = aux.number();
+
+			auto &dof_map_main = V0.dof_map();
+			auto order = dof_map_main.variable_order(0);
+
+			FunctionSpaceT W;
+			W *= LibMeshFunctionSpace(aux, aux.add_variable("stress_x", order, libMesh::LAGRANGE));
+			W *= LibMeshFunctionSpace(aux, aux.add_variable("stress_y", order, libMesh::LAGRANGE));
+
+			if(dim > 2) {
+				W *= LibMeshFunctionSpace(aux, aux.add_variable("stress_z", order, libMesh::LAGRANGE));
+			}
+
+			aux.init();
+
+			auto m_form = inner(trial(W), test(W)) * dX;
+			utopia::assemble(m_form, aux_mass_matrix_);
+
+
+			aux_inv_mass_matrix_ = utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
+			aux_inv_mass_matrix_->update(utopia::make_ref(aux_mass_matrix_));
+
+
+			aux_inv_mass_vector_ = 1./sum(aux_mass_matrix_, 1);
+
+		}
+
+		void update_aux_system(UVector &x)
+		{
+			UVector s, unscaled_s;
+			stress(x, s);
+
+			auto &V0 = V_->subspace(0);
+			auto &es = V0.equation_systems();
+
+			auto &aux = es.get_system<libMesh::LinearImplicitSystem>("contact_aux");
+
+			unscaled_s = local_zeros(local_size(s));
+			// aux_inv_mass_matrix_->apply(s, unscaled_s);
+			unscaled_s = e_mul(aux_inv_mass_vector_, s);
+			utopia::convert(unscaled_s, *aux.solution);
+			aux.solution->close();
+		}
+
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
@@ -632,6 +701,11 @@ namespace utopia {
 
 		int max_non_linear_iterations_;
 		bool export_results_;
+
+		int aux_system_num_;
+		USparseMatrix aux_mass_matrix_;
+		UVector 	  aux_inv_mass_vector_;
+		std::unique_ptr<LinearSolver<USparseMatrix, UVector>> aux_inv_mass_matrix_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

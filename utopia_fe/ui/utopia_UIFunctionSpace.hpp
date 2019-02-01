@@ -30,7 +30,7 @@ namespace utopia {
 		UIFunctionSpace(
 			const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh,
 			const std::shared_ptr<libMesh::EquationSystems> equation_systems = nullptr)
-		: mesh_(mesh), equation_systems_(equation_systems)
+		: mesh_(mesh), equation_systems_(equation_systems), verbose_(true)
 		{}
 
 		void read(Input &is) override {
@@ -104,6 +104,10 @@ namespace utopia {
 
 			        auto u = trial(space_->subspace(var_num));
 
+			        if(verbose_) {
+			        	std::cout <<  "side: " << side_set << " var: " << var_num << " value: " << value << std::endl;
+			        }
+
 			        init_constraints(
 			        	constraints(
 			        		boundary_conditions(u == coeff(value), {side_set})
@@ -153,6 +157,7 @@ namespace utopia {
 		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh_;
 		std::shared_ptr<libMesh::EquationSystems> equation_systems_;
 		std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space_;
+		bool verbose_;
 	};
 }
 

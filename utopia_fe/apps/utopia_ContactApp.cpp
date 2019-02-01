@@ -208,6 +208,7 @@ namespace utopia {
 
 		if(sim_in.use_gmres) {
 			sc.tao().set_ksp_types("gmres", "bjacobi", "petsc");
+			sc.set_linear_solver(std::make_shared<GMRES<USparseMatrix, UVector>>("bjacobi"));
 		}
 
 #ifdef WITH_M3ELINSOL
