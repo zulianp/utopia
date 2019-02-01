@@ -1,17 +1,17 @@
 {
 	"contact-problem": {
 		"use-amg": false,
-		"use-ssnewton": true,
+		"use-ssnewton": false,
 		"dt": 0.2,
 		"is-steady" : true,
 		"use-gmres" : true,
 		"mesh": {
 			"type": "file",
-			"path" : "../data/contact/contact_cubes.e",
+			"path_0" : "../data/contact/contact_cubes.e",
 			"path_1" : "../data/contact/signorini_79207.e",
 			"path_3" : "../data/contact/quasi_hertz_91.e",
 			"path_4" : "../data/contact/quasi_hertz_750.e",
-			"path_5"   : "../data/contact/quasi_hertz_8732.e"
+			"path"   : "../data/contact/signorini_3358.e"
 
 		},
 		"space": {
@@ -41,7 +41,7 @@
 				{
 					"var": 2,
 					"side": 4,
-					"value": 0.2
+					"value": 0.02
 				},
 
 				{
@@ -66,17 +66,29 @@
 			"stabilization": "none",
 			"stabilization-mag": 0.00001,
 			"parameters": {
-				"mu": 0.3,
-				"lambda": 0.3,
+				"mu": 1,
+				"lambda": 1,
 				"E" : 100,
-				"comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3"
+				"comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3",
+				"sub-domains" : [
+					{
+						"block" : 1,
+					  	"mu" : 1,
+					  	"lambda" : 1
+					},
+					{
+						"block" : 2,
+					  	"mu" : 2.0,
+					  	"lambda" : 2.0
+					}
+				]
 			}
 		},
 
 		"contact": {
 			"n-transient-steps": 30,
 			"max-nl-iter": 100,
-			"radius": 0.1,
+			"radius": 0.4,
 			"pairs": [
 				{
 					"master": 2,

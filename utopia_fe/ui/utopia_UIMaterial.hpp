@@ -30,14 +30,10 @@ namespace utopia {
 			is.get("stabilization", stabilization);
 			is.get("stabilization-mag", stabilization_mag);
 
-			//FIXME
-			Scalar lambda, mu;
-			is.get("parameters", [&](Input &sub_is) {
-				sub_is.get("lambda", lambda);
-				sub_is.get("mu", mu);
-			});
+			LameeParameters params;
+			is.get("parameters", params);
 
-			LameeParameters params(mu, lambda);
+			params.describe(std::cout);
 
 			if(material == "NeoHookean") {
 				material_ = std::make_shared<NeoHookean<decltype(V_), Matrix, Vector>>(V_, params);

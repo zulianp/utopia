@@ -139,13 +139,6 @@ namespace utopia {
 				update_aux_system(x_);
 
 				io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
-
-				UVector s;
-				stress(x_, s);
-
-				double max_s = utopia::max(s);
-
-				std::cout << "max_s: " << max_s << std::endl;
 			}
 
 			finalize();
@@ -338,11 +331,11 @@ namespace utopia {
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
 				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
-#ifdef WITH_M3ELINSOL
+// #ifdef WITH_M3ELINSOL
 				SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
-#else
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);
-#endif //WITH_M3ELINSOL
+// #else
+				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);
+// #endif //WITH_M3ELINSOL
 
 				// ssn.verbose(true);
 				ssn.max_it(40);
@@ -619,15 +612,15 @@ namespace utopia {
 
 			aux.init();
 
-			auto m_form = inner(trial(W), test(W)) * dX;
-			utopia::assemble(m_form, aux_mass_matrix_);
+			// auto m_form = inner(trial(W), test(W)) * dX;
+			// utopia::assemble(m_form, aux_mass_matrix_);
 
 
-			aux_inv_mass_matrix_ = utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
-			aux_inv_mass_matrix_->update(utopia::make_ref(aux_mass_matrix_));
+			// aux_inv_mass_matrix_ = utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
+			// aux_inv_mass_matrix_->update(utopia::make_ref(aux_mass_matrix_));
 
 
-			aux_inv_mass_vector_ = 1./sum(aux_mass_matrix_, 1);
+			// aux_inv_mass_vector_ = 1./sum(aux_mass_matrix_, 1);
 
 		}
 
@@ -641,11 +634,17 @@ namespace utopia {
 
 			auto &aux = es.get_system<libMesh::LinearImplicitSystem>("contact_aux");
 
-			unscaled_s = local_zeros(local_size(s));
+			// unscaled_s = local_zeros(local_size(s));
 			// aux_inv_mass_matrix_->apply(s, unscaled_s);
-			unscaled_s = e_mul(aux_inv_mass_vector_, s);
+			// unscaled_s = e_mul(aux_inv_mass_vector_, s);
+			unscaled_s = e_mul(contact_.inv_mass_vector, s);
 			utopia::convert(unscaled_s, *aux.solution);
+			// utopia::convert(s, *aux.solution);
 			aux.solution->close();
+
+			double max_s = utopia::max(unscaled_s);
+
+			std::cout << "max_s: " << max_s << std::endl;
 		}
 
 
