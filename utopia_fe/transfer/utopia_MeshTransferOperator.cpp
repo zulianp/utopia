@@ -36,24 +36,24 @@ namespace utopia {
 		output_path("./")
 		{}
 
-		void print()
+		void describe(std::ostream &os = std::cout) const
 		{
-			std::cout << "normalize_rows " << normalize_rows << std::endl;
-			std::cout << "tol " << tol << std::endl;
-			std::cout << "bi_operator_mass_mat_outside " << bi_operator_mass_mat_outside << std::endl;
-			std::cout << "operator_type " << operator_type << std::endl;
-			std::cout << "clamped " << clamped << std::endl;
-			std::cout << "quad_order " << quad_order << std::endl;
-			std::cout << "force_shell " << force_shell << std::endl;
-			std::cout << "write_operators_to_disk " << write_operators_to_disk << std::endl;
-			std::cout << "force_zero_extension " << force_zero_extension << std::endl;
-			std::cout << "from_boundary " << from_boundary << std::endl;
-			std::cout << "to_boundary " << to_boundary << std::endl;
-			std::cout << "normalize " << normalize << std::endl;
-			std::cout << "use_composite_bidirectional " << use_composite_bidirectional << std::endl;
-			std::cout << "use_interpolation " << use_interpolation << std::endl;
-			std::cout << "nnz_x_row " << nnz_x_row << std::endl;
-			std::cout << "output_path " << output_path << std::endl;
+			os << "normalize_rows " << normalize_rows << std::endl;
+			os << "tol " << tol << std::endl;
+			os << "bi_operator_mass_mat_outside " << bi_operator_mass_mat_outside << std::endl;
+			os << "operator_type " << operator_type << std::endl;
+			os << "clamped " << clamped << std::endl;
+			os << "quad_order " << quad_order << std::endl;
+			os << "force_shell " << force_shell << std::endl;
+			os << "write_operators_to_disk " << write_operators_to_disk << std::endl;
+			os << "force_zero_extension " << force_zero_extension << std::endl;
+			os << "from_boundary " << from_boundary << std::endl;
+			os << "to_boundary " << to_boundary << std::endl;
+			os << "normalize " << normalize << std::endl;
+			os << "use_composite_bidirectional " << use_composite_bidirectional << std::endl;
+			os << "use_interpolation " << use_interpolation << std::endl;
+			os << "nnz_x_row " << nnz_x_row << std::endl;
+			os << "output_path " << output_path << std::endl;
 		}
 
 		inline void read(Input &is) override
@@ -345,7 +345,7 @@ namespace utopia {
 			 params_->use_composite_bidirectional;
 
 
-		params_->print();
+		// params_->print();
 
 		if(params_->use_composite_bidirectional) {
 			auto from = get_filtered_from_mesh();

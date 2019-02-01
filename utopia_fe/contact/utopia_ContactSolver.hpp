@@ -73,7 +73,7 @@ namespace utopia {
 			linear_solver_ = iterative_solver;
 
 			n_exports = 0;
- 
+
 			tao_.set_type("tron");
 			tao_.set_ksp_types("bcgs", "jacobi", " ");
 		}
@@ -132,6 +132,13 @@ namespace utopia {
 			if(export_results_) {
 				convert(x_, *V_->subspace(0).equation_system().solution);
 				io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
+
+				UVector s;
+				stress(x_, s);
+
+				double max_s = utopia::max(s);
+
+				std::cout << "max_s: " << max_s << std::endl;
 			}
 
 			finalize();
@@ -180,7 +187,7 @@ namespace utopia {
 #ifdef WITH_PETSC
 			UTOPIA_PETSC_MEMUSAGE();
 #endif //WITH_PETSC
-			
+
 			{
 				Vector old_sol = x_;
 
@@ -212,7 +219,7 @@ namespace utopia {
 					old_sol = x_;
 				}
 			}
-			
+
 #ifdef WITH_PETSC
 			UTOPIA_PETSC_MEMUSAGE();
 #endif //WITH_PETSC
@@ -325,11 +332,11 @@ namespace utopia {
 			// } else {
 				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
 #ifdef WITH_M3ELINSOL
-				SemismoothNewton<Matrix, Vector> ssn(linear_solver_); 
+				SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
 #else
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_); 
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);
 #endif //WITH_M3ELINSOL
-				
+
 				// ssn.verbose(true);
 				ssn.max_it(40);
 				ssn.atol(1e-14);
@@ -565,9 +572,9 @@ namespace utopia {
 		}
 
 		TaoSolver<Matrix, Vector> &tao()
-		{								
-			return tao_;				
-		}							
+		{
+			return tao_;
+		}
 
 		virtual bool stress(const Vector &x, Vector &result) {
 			return material_->stress(x, result);
@@ -616,7 +623,7 @@ namespace utopia {
 		bool bypass_contact_;
 		bool exit_on_contact_solve_failure_;
 		bool sol_to_gap_on_contact_bdr_;
-		
+
 
 		int max_outer_loops_;
 

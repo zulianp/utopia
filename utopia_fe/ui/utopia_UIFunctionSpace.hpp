@@ -52,7 +52,7 @@ namespace utopia {
 					sub_is.get("name", var_name);
 					sub_is.get("order", var_order);
 					sub_is.get("fe-family", var_fe_family);
-					
+
 					var_names.push_back(var_name);
 					var_orders.push_back(var_order);
 					fe_families.push_back(var_fe_family);
@@ -85,16 +85,16 @@ namespace utopia {
 					var_names[i],
 					sys.number()
 				);
-				
+
 				space_->add_subspace(ss);
 			}
 
 			is.get("boundary-conditions", [this](Input &is) {
 			    is.get_all([this](Input &is) {
 			        int side_set = 0;
-			        
+
 			        is.get("side", side_set);
-			        
+
 			        double value = 0;
 			        is.get("value", value);
 
@@ -139,7 +139,7 @@ namespace utopia {
 			return space_->subspace_ptr(index);
 		}
 
-		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh() 
+		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh()
 		{
 			return mesh_;
 		}

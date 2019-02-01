@@ -3,60 +3,73 @@
 		"use-amg": false,
 		"use-ssnewton": false,
 		"dt": 0.2,
+		"is-steady" : true,
+		"use-gmres" : true,
 		"mesh": {
 			"type": "file",
-			"path": "../data/wear_2_far.e"
+			"path": "../data/contact/signorini_79207.e"
 		},
 		"space": {
 			"system-name": "contact_sol",
-			"variables": {
-				"ux": {
+			"variables": [
+				{
 					"name": "disp_x"
 				},
-				"uy": {
+				{
 					"name": "disp_y"
+				},
+				{
+					"name": "disp_z"
 				}
-			},
+			],
 			"boundary-conditions": [
 				{
-					"var": 0,
+					"var": 2,
 					"side": 4,
-					"value": "0.0"
+					"value": 0.01
+				},
+				{
+					"var": 0,
+					"side": 1,
+					"value": 0.0
 				},
 				{
 					"var": 1,
-					"side": 4,
-					"value": "0.0"
+					"side": 1,
+					"value": 0.0
+				},
+				{
+					"var": 2,
+					"side": 1,
+					"value": 0.0
 				}
 			]
 		},
 		"model": {
 			"material": "LinearElasticity",
-			"stabilization": "H1",
+			"stabilization": "none",
 			"stabilization-mag": 0.00001,
 			"parameters": {
-				"mu": 60.0,
-				"lambda": 60.0
+				"mu": 0.3,
+				"lambda": 0.3,
+				"E" : 100,
+				"comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3"
 			}
 		},
 		"forcing-functions": [
 			{
 				"coord": 1,
-				"value": -0.1
-			},
-			{
-				"coord": 0,
-				"value": 0.05
+				"value": 0.0
 			}
 		],
 		"contact": {
 			"n-transient-steps": 30,
 			"max-nl-iter": 100,
-			"radius": 0.2,
+			"radius": 0.001,
 			"pairs": [
 				{
 					"master": 2,
-					"slave": 1
+					"slave": 3
 				}
 			]
 		}

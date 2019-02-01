@@ -21,7 +21,7 @@ namespace utopia {
 		~UIMaterial() {}
 
 		void read(Input &is) override {
-			
+
 			std::string material = "LinearElasticity";
 			std::string stabilization = "none";
 			Scalar stabilization_mag = 0.0001;
@@ -55,18 +55,26 @@ namespace utopia {
 		}
 
 		inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
+			assert(material_);
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
 		inline bool stress(const Vector &x, Vector &result) override {
+			assert(material_);
 			return material_->stress(x, result);
 		}
 
 		inline void clear() override {
+			assert(material_);
 			material_->clear();
 		}
 
-		inline bool is_linear() const override { return material_->is_linear(); }
+		inline bool good() const
+		{
+			return static_cast<bool>(material_);
+		}
+
+		inline bool is_linear() const override { assert(material_); return material_->is_linear(); }
 
 	private:
 		FunctionSpace &V_;
