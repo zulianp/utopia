@@ -209,6 +209,7 @@ namespace  utopia
 
     private:
 
+        //FIXME these fields should be removed and set directly in the backend state variables
         // ... GENERAL Iterative SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */
         Scalar rtol_;                   /*!< Relative tolerance. */

@@ -86,7 +86,7 @@ namespace utopia {
 	public:
 		static void apply(const std::string &in, bool &out)
 		{
-			out = in == "1" || in == "true" || in == "yes";
+			out = (in == "1" || in == "true" || in == "yes");
 		}
 	};
 
