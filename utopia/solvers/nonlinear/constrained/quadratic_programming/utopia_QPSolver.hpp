@@ -8,37 +8,37 @@
 
 #include <cmath>
 
-namespace utopia 
+namespace utopia
 {
 
 	template<class Matrix, class Vector>
-	class QPSolver : 	public IterativeSolver<Matrix, Vector>, 	
+	class QPSolver : 	public IterativeSolver<Matrix, Vector>,
 						public virtual VariableBoundSolverInterface<Vector>
 	{
-		public:	
+		public:
 			QPSolver()
 			{
 
-			}		
+			}
 
 	        virtual ~QPSolver()
 	        {
 
 	        }
 
-	        virtual QPSolver * clone() const override = 0; 
+	        virtual QPSolver * clone() const override = 0;
 	};
 
 
 	template<class Vector>
-	class MatrixFreeQPSolver : 	public MatrixFreeLinearSolver<Vector>, 
-								public virtual VariableBoundSolverInterface<Vector> 
+	class MatrixFreeQPSolver : 	public MatrixFreeLinearSolver<Vector>,
+								public virtual VariableBoundSolverInterface<Vector>
 	{
-		public:	
+		public:
 			MatrixFreeQPSolver()
 			{
 
-			}		
+			}
 
 	        virtual ~MatrixFreeQPSolver()
 	        {
@@ -46,7 +46,7 @@ namespace utopia
 	        }
 
 
-	        virtual MatrixFreeQPSolver * clone() const override = 0; 
+	        virtual MatrixFreeQPSolver * clone() const override = 0;
 
 	};
 

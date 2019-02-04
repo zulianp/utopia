@@ -14,7 +14,7 @@ namespace utopia {
         {
             assert(H);
             assert(rhs);
-            
+
             this->data()->H = H;
         }
 

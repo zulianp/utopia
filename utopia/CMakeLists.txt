@@ -271,6 +271,7 @@ endif()
 
 # test suite
 add_subdirectory(tests)
+add_subdirectory(backend/polymorphic)
 
 
 # core modules

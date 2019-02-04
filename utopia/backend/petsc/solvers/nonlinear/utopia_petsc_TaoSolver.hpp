@@ -18,7 +18,7 @@ namespace utopia {
 		TaoSolverWrapper();
 		~TaoSolverWrapper();
 		void destroy();
-		
+
 		bool init(MPI_Comm comm,
 				  const std::string &type,
 				  const PetscReal gatol,
@@ -35,10 +35,10 @@ namespace utopia {
 
 		void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package);
 		bool get_ksp(KSP *ksp);
-		
-		void set_pc_type(const std::string &pc); 
 
-		void set_monitor(MPI_Comm comm); 
+		void set_pc_type(const std::string &pc);
+
+		void set_monitor(MPI_Comm comm);
 
 	private:
 		void * data_;
@@ -57,7 +57,7 @@ namespace utopia {
 		: NewtonBase<Matrix, Vector>(linear_solver)
 		{
 			this->atol(1e-19);
-			this->rtol(1e-12); 
+			this->rtol(1e-12);
 			this->stol(1e-19);
 		}
 
@@ -65,7 +65,7 @@ namespace utopia {
 		: NewtonBase<Matrix, Vector>(nullptr)
 		{
 			this->atol(1e-19);
-			this->rtol(1e-12); 
+			this->rtol(1e-12);
 			this->stol(1e-19);
 		}
 
@@ -84,8 +84,8 @@ namespace utopia {
         void print_usage(std::ostream &os) const override
         {
             NewtonBase<Matrix, Vector>::print_usage(os);
-            this->print_param_usage(os, "type", "string", "Type of tao solver.", "-"); 
-        }		
+            this->print_param_usage(os, "type", "string", "Type of tao solver.", "-");
+        }
 
 		inline void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package)
 		{
@@ -94,19 +94,19 @@ namespace utopia {
 
 		inline void set_pc_type(const std::string &pc)
 		{
-			impl_.set_pc_type(pc); 
+			impl_.set_pc_type(pc);
 		}
 
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x) override
-		{	
-			setup_solve(fun, x); 
+		{
+			setup_solve(fun, x);
 			return impl_.solve(x.implementation());
 		}
 
 		bool smooth(Function<Matrix, Vector> &fun, Vector &x)
-		{	
-			setup_solve(fun, x); 
+		{
+			setup_solve(fun, x);
 			return impl_.smooth(x.implementation());
 		}
 
@@ -126,13 +126,13 @@ namespace utopia {
 				x.implementation().communicator(),
 				type_,
 				this->atol(),
-				this->rtol(), 
+				this->rtol(),
 				this->stol(),
 				this->max_it()
 			);
 
 			if(this->verbose() )
-				impl_.set_monitor(x.implementation().communicator()); 
+				impl_.set_monitor(x.implementation().communicator());
 
 			if(!linear_solver_is_set) {
 				auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>(this->linear_solver());
@@ -149,7 +149,7 @@ namespace utopia {
 				impl_.get_ksp(&ksp);
 				build_ksp(this->linear_solver(), ksp);
 			}
-			
+
 			if(box_constraints_.has_bound()) {
 				box_constraints_.fill_empty_bounds();
 				impl_.set_bounds(
