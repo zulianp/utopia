@@ -69,8 +69,10 @@ namespace utopia {
 		            std::move(forcing_function)
 		        );
 
-		        qp_solver = std::make_shared<PolymorphicQPSolver<USparseMatrix, UVector>>();
-		        is.get("qp-solver", *qp_solver);
+		        is.get("qp-solver", [this](Input &in) {
+		        	this->qp_solver = std::make_shared<PolymorphicQPSolver<USparseMatrix, UVector>>();
+		        	this->qp_solver->read(in);
+		        });
 
 		    } catch(const std::exception &ex) {
 		        std::cerr << ex.what() << std::endl;
@@ -164,7 +166,10 @@ namespace utopia {
 			sc.export_results(true);
 		}
 
-		sc.set_qp_solver(qp_solver);
+		if(qp_solver) {
+			sc.set_qp_solver(qp_solver);
+		}
+
 		sc.set_tol(1e-3);
 		sc.set_max_outer_loops(30);
 		sc.set_use_ssn(sim_in.use_newton);

@@ -1,10 +1,20 @@
 {
 	"contact-problem": {
+		"comment" : "I use * to disable options",
 		"use-amg": false,
 		"use-ssnewton": false,
 		"dt": 0.2,
 		"is-steady" : true,
 		"use-gmres" : true,
+		"qp-solver" : {
+			"*backend" : "any",
+			"type" : "ssnewton",
+			"max-it" : 20,
+			"verbose" : true,
+			"linear-solver" : {
+				"type" : "DIRECT"
+			}
+		},
 		"mesh": {
 			"type": "file",
 			"path_0" : "../data/contact/contact_cubes.e",
@@ -68,11 +78,13 @@
 			"stabilization": "none",
 			"stabilization-mag": 0.00001,
 			"parameters": {
-				"mu": 1,
-				"lambda": 1,
+				"mu": 38,
+				"lambda": 58,
+				"pr" : 0.3,
 				"E" : 100,
-				"comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3",
-				"sub-domains" : [
+				"comment_l" : "lambda = (E * pr)/((1+pr) * (1-2*pr)",
+				"comment_m" : "mu = E/(2*(1+pr))",
+				"-sub-domains" : [
 					{
 						"block" : 1,
 					  	"mu" : 1,

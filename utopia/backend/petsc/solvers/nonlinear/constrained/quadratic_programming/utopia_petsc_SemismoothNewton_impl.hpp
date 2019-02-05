@@ -52,6 +52,8 @@ namespace utopia {
 		impl_->snes->max_it(this->max_it());
 
 		impl_->snes->set_box_constraints(this->get_box_constraints());
+		//(JUST TO BE SURE) FIXME find out why this changes
+		impl_->snes->set_snes_type(SNESVINEWTONSSLS);
 
 		QuadraticFunction<Matrix, Vector> fun(
 			std::make_shared<Matrix>(*this->get_operator()),

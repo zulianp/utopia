@@ -76,7 +76,11 @@ namespace utopia {
 
         inline static LinearSolverPtr default_linear_solver()
         {
-            return utopia::make_unique<PolymorphicLinearSolver<Matrix, Vector>>();
+            auto ls = utopia::make_unique<PolymorphicLinearSolver<Matrix, Vector>>();
+            InputParameters in;
+            in.set("type", DIRECT_TAG);
+            ls->read(in);
+            return std::move(ls);
 // #ifdef WITH_PETSC
 //             return utopia::make_unique<Factorization<Matrix, Vector>>();
 // #else
