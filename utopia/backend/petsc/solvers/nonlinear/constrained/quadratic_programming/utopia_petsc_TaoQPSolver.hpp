@@ -23,6 +23,8 @@ namespace utopia {
 		bool apply(const Vector &rhs, Vector &sol) override;
 		void pc_type(const std::string & pc_type);
 		void tao_type(const std::string &type);
+		void set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package);
+		void read(Input &in) override;
 	private:
 		class Impl;
 		std::unique_ptr<Impl> impl_;

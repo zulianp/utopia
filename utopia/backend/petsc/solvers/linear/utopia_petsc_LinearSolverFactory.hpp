@@ -12,6 +12,9 @@
 #include "utopia_petsc_Factorization.hpp"
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_FactoryMethod.hpp"
+#include "utopia_petsc_GMRES.hpp"
+
+#include "utopia_make_unique.hpp"
 
 #include <map>
 #include <string>
@@ -21,23 +24,28 @@ namespace utopia {
 
 	template<typename Matrix, typename Vector>
 	class LinearSolverFactory<Matrix, Vector, PETSC> {
-	public: 
-		typedef utopia::LinearSolver<Matrix, Vector> LinearSolverT;
-		typedef std::shared_ptr<LinearSolverT>  LinearSolverPtr;
+	public:
+		typedef utopia::LinearSolver<Matrix, Vector>  LinearSolverT;
+		typedef std::unique_ptr<LinearSolverT>        LinearSolverPtr;
 		typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
 
 		template<class Alg>
 		using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;
 		std::map<std::string, std::shared_ptr<FactoryMethodT> > solvers_;
 
-		inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
+		inline static LinearSolverPtr new_linear_solver(const std::string &tag)
 		{
 			auto it = instance().solvers_.find(tag);
 			if(it == instance().solvers_.end()) {
-				return std::make_shared<ConjugateGradient<Matrix, Vector> >();
+				return utopia::make_unique<ConjugateGradient<Matrix, Vector> >();
 			} else  {
 				return it->second->make();
 			}
+		}
+
+		inline static LinearSolverPtr default_linear_solver()
+		{
+			return utopia::make_unique<GMRES<Matrix, Vector>>("bjacobi");
 		}
 
 		inline static LinearSolverFactory &instance()
@@ -51,15 +59,16 @@ namespace utopia {
 		{
 			init();
 		}
-		
+
 		void init()
 		{
-			solvers_[UTOPIA_CG_TAG] = std::make_shared< LSFactoryMethod<ConjugateGradient<Matrix, Vector, HOMEMADE>> >();
-			solvers_[AUTO_TAG]   	= std::make_shared< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
-			solvers_[CG_TAG]   	    = std::make_shared< LSFactoryMethod<ConjugateGradient<Matrix, Vector>> >();
-			solvers_[BICGSTAB_TAG]  = std::make_shared< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
-			solvers_[KSP_TAG] 		= std::make_shared< LSFactoryMethod<KSPSolver<Matrix, Vector>> >();
-			solvers_[DIRECT_TAG]    = std::make_shared< LSFactoryMethod<Factorization<Matrix, Vector>> >();
+			solvers_[UTOPIA_CG_TAG] = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector, HOMEMADE>> >();
+			solvers_[AUTO_TAG]   	= utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
+			solvers_[CG_TAG]   	    = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector>> >();
+			solvers_[BICGSTAB_TAG]  = utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
+			solvers_[KSP_TAG] 		= utopia::make_unique< LSFactoryMethod<KSPSolver<Matrix, Vector>> >();
+			solvers_[DIRECT_TAG]    = utopia::make_unique< LSFactoryMethod<Factorization<Matrix, Vector>> >();
+			solvers_["gmres"]       = utopia::make_unique< LSFactoryMethod<GMRES<Matrix, Vector>> >();
 		}
 	};
 

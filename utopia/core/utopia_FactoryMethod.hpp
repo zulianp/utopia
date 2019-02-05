@@ -2,6 +2,7 @@
 #define UTOPIA_FACTORY_METHOD_HPP
 
 #include <memory>
+#include "utopia_make_unique.hpp"
 
 namespace utopia {
 
@@ -11,7 +12,7 @@ namespace utopia {
 		virtual ~IFactoryMethod()
 		{}
 
-		virtual std::shared_ptr<OutInterface> make() const = 0;
+		virtual std::unique_ptr<OutInterface> make() const = 0;
 	};
 
 
@@ -21,9 +22,9 @@ namespace utopia {
 		FactoryMethod()
 		{}
 
-		std::shared_ptr<OutInterface> make() const final override
+		std::unique_ptr<OutInterface> make() const final override
 		{
-			return std::make_shared<OutObject>();
+			return utopia::make_unique<OutObject>();
 		}
 	};
 
@@ -34,9 +35,9 @@ namespace utopia {
 		: arg_(arg)
 		{}
 
-		std::shared_ptr<OutInterface> make() const final override
+		std::unique_ptr<OutInterface> make() const final override
 		{
-			return std::make_shared<OutObject>(arg_);
+			return utopia::make_unique<OutObject>(arg_);
 		}
 
 	private:
@@ -45,15 +46,15 @@ namespace utopia {
 
 
 	template<class OutInterface, class OutObject>
-	inline std::shared_ptr<IFactoryMethod<OutInterface>> make_factory()
-	{	
-		return std::make_shared<FactoryMethod<OutInterface, OutObject>>();
+	inline std::unique_ptr<IFactoryMethod<OutInterface>> make_factory()
+	{
+		return utopia::make_unique<FactoryMethod<OutInterface, OutObject>>();
 	}
 
 	template<class OutInterface, class OutObject, class Args>
-	inline std::shared_ptr<IFactoryMethod<OutInterface>> make_factory(const Args &args)
-	{	
-		return std::make_shared<UnaryFactoryMethod<OutInterface, Args, OutObject>>(args);
+	inline std::unique_ptr<IFactoryMethod<OutInterface>> make_factory(const Args &args)
+	{
+		return utopia::make_unique<UnaryFactoryMethod<OutInterface, Args, OutObject>>(args);
 	}
 }
 

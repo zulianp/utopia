@@ -64,9 +64,7 @@ namespace utopia {
 			}
 
 			output_path_ += "contact_sol.e";
-			// linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
-			auto  iterative_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
-			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
+			auto  iterative_solver = std::make_shared<GMRES<Matrix, Vector>>("bjacobi");
 
 			iterative_solver->atol(1e-18);
 			iterative_solver->stol(1e-17);
@@ -76,8 +74,10 @@ namespace utopia {
 
 			n_exports = 0;
 
-			tao_.set_type("tron");
-			tao_.set_ksp_types("bcgs", "jacobi", " ");
+			auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
+			tao->tao_type("tron");
+			tao->set_ksp_types("gmres", "bjacobi", " ");
+			qp_solver_ = tao;
 		}
 
 		void set_tol(const Scalar tol)
@@ -306,11 +306,6 @@ namespace utopia {
 
 		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
-#ifdef WITH_PETSC
-				std::cout << "pre qp_solve ";
-				UTOPIA_PETSC_MEMUSAGE();
-#endif //WITH_PETSC
-
 			if(linear_solver_ && !contact_.has_contact()) {
 				linear_solver_->solve(lhs, rhs, inc_c_);
 				return;
@@ -320,83 +315,15 @@ namespace utopia {
 				inc_c = e_mul(contact_.is_contact_node, *box_c.upper_bound());
 			}
 
-			// auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
-			// if(!force_direct_solver_ && mg) {
+			Chrono c;
+			c.start();
 
-			if(use_ssn_) {
-			// 	SemismoothNewton<Matrix, Vector> newton(linear_solver_);
-			// 	newton.verbose(true);
-			// 	newton.max_it(40);
-			// 	newton.set_box_constraints(box_c);
-			// 	newton.solve(lhs, rhs, inc_c);
-			// } else {
-				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
-// #ifdef WITH_M3ELINSOL
-				SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
-// #else
-				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);
-// #endif //WITH_M3ELINSOL
+			qp_solver_->set_box_constraints(box_c);
+			qp_solver_->solve(lhs, rhs, inc_c);
 
-				// ssn.verbose(true);
-				ssn.max_it(40);
-				ssn.atol(1e-14);
-				ssn.rtol(1e-8);
-				ssn.stol(1e-8);
+			c.stop();
 
-
-				ssn.set_box_constraints(box_c);
-				ssn.solve(lhs, rhs, inc_c);
-			} else if(use_pg_) {
-
-				ProjectedGradient<Matrix, Vector> pg;
-				// SemismoothNewton<Matrix, Vector> pg(linear_solver_);
-				// pg.verbose(true);
-				pg.max_it(size(inc_c).get(0) * 20);
-				pg.atol(1e-14);
-				pg.rtol(1e-8);
-				pg.stol(1e-8);
-
-				pg.set_box_constraints(box_c);
-				pg.solve(lhs, rhs, inc_c);
-
-			} else {
-				Chrono c;
-				c.start();
-
-				// static int n_stuff = 0;
-
-				// if(n_stuff++ >= 2) {
-				// 	std::cout << "Writing..." << std::flush;
-					// write("rhs_" + std::to_string(size(lhs).get(0)) + ".m", rhs);
-					// write("g_" + std::to_string(size(lhs).get(0)) + ".m", *box_c.upper_bound());
-					// write_text("lhs_" + std::to_string(size(lhs).get(0)) + ".txt", lhs);
-					// write("lhs_" + std::to_string(size(lhs).get(0)) + ".m", lhs);
-				// 	std::cout << "done." << std::endl;
-				// 	exit(0);
-				// }
-
-				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
-				//(linear_solver_);
-				tao_.set_box_constraints(box_c);
-				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
-				// tao_.set_type("gpcg");
-
-				std::cout << "solving qp-problem " << std::endl;
-
-				tao_.solve(fun, inc_c);
-
-				force_direct_solver_ = false;
-
-				c.stop();
-
-				std::cout << "Solve " << c << std::endl;
-			}
-			// }
-
-#ifdef WITH_PETSC
-				std::cout << "post qp_solve ";
-				UTOPIA_PETSC_MEMUSAGE();
-#endif //WITH_PETSC
+			std::cout << "Solve " << c << std::endl;
 		}
 
 		bool step()
@@ -574,11 +501,6 @@ namespace utopia {
 			sol_to_gap_on_contact_bdr_ = val;
 		}
 
-		TaoSolver<Matrix, Vector> &tao()
-		{
-			return tao_;
-		}
-
 		virtual bool stress(const Vector &x, Vector &result) {
 			return material_->stress(x, result);
 		}
@@ -647,6 +569,11 @@ namespace utopia {
 			std::cout << "max_s: " << max_s << std::endl;
 		}
 
+		inline void set_qp_solver(const std::shared_ptr<QPSolver<Matrix, Vector>> &qp_solver)
+		{
+			qp_solver_ = qp_solver;
+		}
+
 
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
@@ -679,9 +606,6 @@ namespace utopia {
 
 		Vector lagrange_multiplier_;
 
-		//additional vectors
-		// USparseMatrix internal_mass_matrix_;
-
 		std::shared_ptr<Exporter> io_;
 		int n_exports;
 
@@ -692,10 +616,8 @@ namespace utopia {
 		bool exit_on_contact_solve_failure_;
 		bool sol_to_gap_on_contact_bdr_;
 
-
 		int max_outer_loops_;
 
-		TaoSolver<Matrix, Vector> tao_;
 		bool use_ssn_, use_pg_;
 
 		int max_non_linear_iterations_;
@@ -705,6 +627,8 @@ namespace utopia {
 		USparseMatrix aux_mass_matrix_;
 		UVector 	  aux_inv_mass_vector_;
 		std::unique_ptr<LinearSolver<USparseMatrix, UVector>> aux_inv_mass_matrix_;
+
+		std::shared_ptr<QPSolver<Matrix, Vector>> qp_solver_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

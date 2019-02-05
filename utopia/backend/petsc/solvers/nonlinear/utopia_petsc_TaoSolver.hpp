@@ -57,7 +57,7 @@ namespace utopia {
 		: NewtonBase<Matrix, Vector>(linear_solver)
 		{
 			this->atol(1e-19);
-			this->rtol(1e-12);
+			this->rtol(1e-8);
 			this->stol(1e-19);
 		}
 
@@ -65,7 +65,7 @@ namespace utopia {
 		: NewtonBase<Matrix, Vector>(nullptr)
 		{
 			this->atol(1e-19);
-			this->rtol(1e-12);
+			this->rtol(1e-8);
 			this->stol(1e-19);
 		}
 

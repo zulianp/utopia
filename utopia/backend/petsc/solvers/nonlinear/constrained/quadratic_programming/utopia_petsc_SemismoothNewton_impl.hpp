@@ -60,4 +60,12 @@ namespace utopia {
 
 		return impl_->snes->solve(fun, sol);
 	}
+
+	template<class Matrix, class Vector>
+	void SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>::read(Input &in)
+	{
+		impl_->snes->read(in);
+	}
+
 }
+

@@ -22,6 +22,7 @@ namespace utopia {
 		~SemismoothNewton();
 		SemismoothNewton * clone() const override;
 		bool apply(const Vector &rhs, Vector &sol) override;
+		void read(Input &in) override;
 
 	private:
 		class Impl;

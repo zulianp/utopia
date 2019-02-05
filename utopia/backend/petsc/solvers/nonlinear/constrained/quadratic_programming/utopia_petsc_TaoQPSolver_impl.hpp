@@ -77,4 +77,16 @@ namespace utopia {
 	    impl_->tao->set_type(type);
 	}
 
+	template<class Matrix, class Vector>
+	void TaoQPSolver<Matrix, Vector>::read(Input &in)
+	{
+		impl_->tao->read(in);
+	}
+
+	template<class Matrix, class Vector>
+	void TaoQPSolver<Matrix, Vector>::set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package)
+	{
+	    impl_->tao->set_ksp_types(ksp_type, pc_type, solver_package);
+	}
+
 }

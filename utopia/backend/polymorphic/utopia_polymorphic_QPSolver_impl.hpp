@@ -1,5 +1,6 @@
 #include "utopia_polymorphic_QPSolver.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_polymorphic_LinearSolver.hpp"
 
 // includes
 // HOMEMADE
@@ -25,6 +26,8 @@
 
 namespace utopia {
 
+
+    //FIXME use factorymethod class
     template<class Matrix, class Vector>
     class QPSolverRegistry {
     public:
@@ -73,11 +76,12 @@ namespace utopia {
 
         inline static LinearSolverPtr default_linear_solver()
         {
-#ifdef WITH_PETSC
-            return utopia::make_unique<Factorization<Matrix, Vector>>();
-#else
-            return utopia::make_unique<BiCGStab<Matrix, Vector>>();
-#endif
+            return utopia::make_unique<PolymorphicLinearSolver<Matrix, Vector>>();
+// #ifdef WITH_PETSC
+//             return utopia::make_unique<Factorization<Matrix, Vector>>();
+// #else
+//             return utopia::make_unique<BiCGStab<Matrix, Vector>>();
+// #endif
         }
 
         inline static QPSolverPtr default_solver()
@@ -102,6 +106,11 @@ namespace utopia {
 #ifdef WITH_PETSC
             register_solver("petsc", "ssnewton", utopia::make_unique<SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>>(default_linear_solver()));
             register_solver("petsc", "taoqp",    utopia::make_unique<TaoQPSolver<Matrix, Vector>>(default_linear_solver()));
+
+            auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
+            tron->tao_type("tron");
+            tron->set_ksp_types("gmres", "bjacobi", " ");
+            register_solver("petsc", "tron", std::move(tron));
 #endif //WITH_PETSC
 
         }
@@ -126,7 +135,17 @@ namespace utopia {
 
     template<class Matrix, class Vector>
     PolymorphicQPSolver<Matrix, Vector>::PolymorphicQPSolver()
-    { }
+    {
+#ifdef WITH_PETSC
+        auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
+        tron->tao_type("tron");
+        tron->set_ksp_types("gmres", "bjacobi", " ");
+        impl_ = std::move(tron);
+#else
+        impl_ = utopia::make_unique<SemismoothNewton<Matrix, Vector>>(QPSolverRegistry<Matrix, Vector>::default_linear_solver());
+#endif
+
+    }
 
     template<class Matrix, class Vector>
     PolymorphicQPSolver<Matrix, Vector>::~PolymorphicQPSolver()

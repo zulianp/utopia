@@ -17,6 +17,7 @@
 #include "utopia_UIMaterial.hpp"
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_InputParameters.hpp"
+#include "utopia_polymorphic_QPSolver.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
@@ -67,6 +68,9 @@ namespace utopia {
 		            std::move(model),
 		            std::move(forcing_function)
 		        );
+
+		        qp_solver = std::make_shared<PolymorphicQPSolver<USparseMatrix, UVector>>();
+		        is.get("qp-solver", *qp_solver);
 
 		    } catch(const std::exception &ex) {
 		        std::cerr << ex.what() << std::endl;
@@ -132,6 +136,8 @@ namespace utopia {
 		bool export_results;
 		bool is_steady;
 		bool use_gmres;
+
+		std::shared_ptr< QPSolver<USparseMatrix, UVector> > qp_solver;
 	};
 
 	void ContactApp::init(libMesh::LibMeshInit &init)
@@ -145,6 +151,9 @@ namespace utopia {
 
 		const auto &params = sim_in.params();
 
+		auto qp_solver = sim_in.qp_solver;
+
+
 		ContactSolverT sc(
 			make_ref(sim_in.space()),
 			sim_in.model(),
@@ -155,12 +164,13 @@ namespace utopia {
 			sc.export_results(true);
 		}
 
+		sc.set_qp_solver(qp_solver);
 		sc.set_tol(1e-3);
 		sc.set_max_outer_loops(30);
 		sc.set_use_ssn(sim_in.use_newton);
 
 		if(sim_in.use_gmres) {
-			sc.tao().set_ksp_types("gmres", "bjacobi", "petsc");
+			// sc.tao().set_ksp_types("gmres", "bjacobi", "petsc");
 			sc.set_linear_solver(std::make_shared<GMRES<USparseMatrix, UVector>>("bjacobi"));
 		}
 
@@ -208,7 +218,7 @@ namespace utopia {
 		sc.set_use_ssn(sim_in.use_newton);
 
 		if(sim_in.use_gmres) {
-			sc.tao().set_ksp_types("gmres", "bjacobi", "petsc");
+			// sc.tao().set_ksp_types("gmres", "bjacobi", "petsc");
 			sc.set_linear_solver(std::make_shared<GMRES<USparseMatrix, UVector>>("bjacobi"));
 		}
 

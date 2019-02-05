@@ -1,11 +1,11 @@
-#ifndef UTOPIA_SNES_HPP
-#define UTOPIA_SNES_HPP
+#ifndef UTOPIA_SNES_SOLVER_HPP
+#define UTOPIA_SNES_SOLVER_HPP
 
 #include "utopia_Core.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_petsc.hpp"
+// #include "utopia_petsc.hpp"
 #include "utopia_petsc_build_ksp.hpp"
 #include "utopia_VariableBoundSolverInterface.hpp"
 
@@ -357,4 +357,4 @@ namespace utopia
     };
 }
 
-#endif // UTOPIA_SNES_HPP
+#endif // UTOPIA_SNES_SOLVER_HPP
