@@ -111,7 +111,7 @@ namespace utopia {
 				slave_actual_mesh = input_slave.mesh_ptr();
 				slave_actual_space = make_ref(input_slave.space());
 			}
-			
+
 			transfer_operator = std::make_shared<MeshTransferOperator>(
 				master_actual_mesh,
 				make_ref(master_actual_space->dof_map()),
@@ -120,7 +120,7 @@ namespace utopia {
 			);
 
 			transfer_operator->read(is);
-	
+
 #ifdef WITH_TINY_EXPR
 			std::string expr = "x";
 			is.get("function", expr);

@@ -31,5 +31,9 @@ r = -0.5:0.01:0.5;
 
 sigma = p0.*(1-(r.^2/a^2)).^(1/2);
 
+close all;
 figure;
-plot(r, sigma);
+plot(r, real(sigma));
+
+figure;
+plot(r, imag(sigma));

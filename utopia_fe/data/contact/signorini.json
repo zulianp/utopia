@@ -7,7 +7,7 @@
 		"is-steady" : true,
 		"use-gmres" : true,
 		"qp-solver" : {
-			"*backend" : "any",
+			"backend" : "any",
 			"type" : "ssnewton",
 			"max-it" : 20,
 			"verbose" : true,
@@ -17,13 +17,14 @@
 		},
 		"mesh": {
 			"type": "file",
-			"path_0" : "../data/contact/contact_cubes.e",
-			"path_1" : "../data/contact/signorini_79207.e",
-			"path_3" : "../data/contact/quasi_hertz_91.e",
-			"path_4" : "../data/contact/quasi_hertz_750.e",
-			"path_5"   : "../data/contact/signorini_3358.e",
-			"path"   : "../data/contact/pseudo-signorini.e",
-			"path_7"   : "../data/contact/pseudo-signorini-refined-twice.e"
+			"*0path" : "../data/contact/contact_cubes.e",
+			"*1path" : "../data/contact/signorini_79207.e",
+			"*2path" : "../data/contact/quasi_hertz_91.e",
+			"*3path" : "../data/contact/quasi_hertz_750.e",
+			"*4path"   : "../data/contact/signorini_3358.e",
+			"*path"   : "../data/contact/pseudo-signorini.e",
+			"path"   : "../data/contact/pseudo-signorini-refined.e",
+			"*6path"   : "../data/contact/pseudo-signorini-refined-twice.e"
 
 		},
 		"space": {
@@ -84,7 +85,7 @@
 				"E" : 100,
 				"comment_l" : "lambda = (E * pr)/((1+pr) * (1-2*pr)",
 				"comment_m" : "mu = E/(2*(1+pr))",
-				"-sub-domains" : [
+				"*sub-domains" : [
 					{
 						"block" : 1,
 					  	"mu" : 1,
@@ -105,8 +106,8 @@
 			"radius": 0.1,
 			"pairs": [
 				{
-					"master": 2,
-					"slave": 3
+					"master": 3,
+					"slave": 2
 				}
 			]
 		}

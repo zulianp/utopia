@@ -33,7 +33,7 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 #################################################################################
 #################################################################################
 #################################################################################
-set(UTOPIA_DEV_FLAGS 
+set(UTOPIA_DEV_FLAGS
 	"-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
 )
 
@@ -72,7 +72,7 @@ if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
 		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
-		
+
 	endif()
 endif()
 
@@ -236,7 +236,7 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 #################################################################################
 #################################################################################
 
-
+add_subdirectory(backend/polymorphic)
 
 # backend modules
 if(TRY_WITH_BLAS)
@@ -271,7 +271,7 @@ endif()
 
 # test suite
 add_subdirectory(tests)
-add_subdirectory(backend/polymorphic)
+
 
 
 # core modules

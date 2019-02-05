@@ -565,7 +565,9 @@ namespace utopia {
 			aux.solution->close();
 
 			double max_s = utopia::max(unscaled_s);
+			double min_s = utopia::min(unscaled_s);
 
+			std::cout << "min_s: " << min_s << std::endl;
 			std::cout << "max_s: " << max_s << std::endl;
 		}
 

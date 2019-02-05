@@ -143,13 +143,14 @@ namespace utopia {
                         reason = KSP_DIVERGED_ITS;
                         break;
 
-                    default :
+                    default:
                         reason = KSP_CONVERGED_RTOL_NORMAL;
                 }
             }
             else
             {
                 std::cout<<"get convergence reason is not configured for direct solvers yet... \n";
+                reason =  KSP_DIVERGED_PCSETUP_FAILED;
             }
         };
 

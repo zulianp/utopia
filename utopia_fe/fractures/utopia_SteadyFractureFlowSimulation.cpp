@@ -10,6 +10,21 @@
 
 namespace utopia {
 
+	void SteadyFractureFlowSimulation::describe(std::ostream &os) const
+	{
+		matrix->describe(os);
+		fracture_network->describe(os);
+		if(lagrange_multiplier) lagrange_multiplier->describe(os);
+
+		std::cout << "solve_strategy                " << solve_strategy << std::endl;
+		std::cout << "use_mg                        " << use_mg << std::endl;
+		std::cout << "mg_sweeps                     " << mg_sweeps << std::endl;
+		std::cout << "mg_levels                     " << mg_levels << std::endl;
+		std::cout << "plot_matrix                   " << plot_matrix << std::endl;
+		std::cout << "write_operators_to_disk       " << write_operators_to_disk << std::endl;
+		std::cout << "normal_hydraulic_conductivity	" << normal_hydraulic_conductivity << std::endl;
+	}
+
 	SteadyFractureFlowSimulation::SteadyFractureFlowSimulation(libMesh::Parallel::Communicator &comm)
 	{
 		matrix 				= utopia::make_unique<FractureFlow>(comm);
@@ -45,18 +60,20 @@ namespace utopia {
 		    plot_mesh(matrix->mesh.mesh(), "matrix");
 		}
 
-		matrix->describe();
-		fracture_network->describe();
-		lagrange_multiplier->describe();
+		// matrix->describe();
+		// fracture_network->describe();
+		// lagrange_multiplier->describe();
 
-		std::cout << "solve-strategy: "  << solve_strategy << std::endl;
-		std::cout << "use-mg:         "  << use_mg         << std::endl;
-		if(use_mg) {
-		    std::cout << "mg-sweeps:      "  << mg_sweeps      << std::endl;
-		    std::cout << "mg-levels:      "  << mg_levels      << std::endl;
-		}
+		// std::cout << "solve-strategy: "  << solve_strategy << std::endl;
+		// std::cout << "use-mg:         "  << use_mg         << std::endl;
+		// if(use_mg) {
+		//     std::cout << "mg-sweeps:      "  << mg_sweeps      << std::endl;
+		//     std::cout << "mg-levels:      "  << mg_levels      << std::endl;
+		// }
 
-		std::cout << "normal-hydraulic-conductivity " << normal_hydraulic_conductivity << std::endl;
+		// std::cout << "normal-hydraulic-conductivity " << normal_hydraulic_conductivity << std::endl;
+
+		this->describe(std::cout);
 
 		auto &V_m = matrix->space.subspace(0);
 		auto &V_f = fracture_network->space.subspace(0);
@@ -153,9 +170,14 @@ namespace utopia {
 		kappa_D_t = D_t;
 
 
-		// kappa_B   *= normal_hydraulic_conductivity;
+		// // kappa_B   *= normal_hydraulic_conductivity;
+		// kappa_D   *= normal_hydraulic_conductivity;
+		// // kappa_B_t *= normal_hydraulic_conductivity;
+		// kappa_D_t *= normal_hydraulic_conductivity;
+
+		kappa_B   *= normal_hydraulic_conductivity;
 		kappa_D   *= normal_hydraulic_conductivity;
-		// kappa_B_t *= normal_hydraulic_conductivity;
+		kappa_B_t *= normal_hydraulic_conductivity;
 		kappa_D_t *= normal_hydraulic_conductivity;
 
 		c.stop();

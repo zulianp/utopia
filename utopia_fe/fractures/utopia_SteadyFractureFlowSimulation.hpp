@@ -4,10 +4,11 @@
 #include "libmesh/parallel_mesh.h"
 #include "utopia_FractureFlow.hpp"
 #include "utopia_fe_base.hpp"
+#include "utopia_Describable.hpp"
 
 namespace utopia {
 
-	class SteadyFractureFlowSimulation : public Configurable {
+	class SteadyFractureFlowSimulation : public Configurable, public Describable {
 	public:
 		SteadyFractureFlowSimulation(libMesh::Parallel::Communicator &comm);
 		void read(Input &is) override;
@@ -35,6 +36,9 @@ namespace utopia {
 		bool plot_matrix;
 		bool write_operators_to_disk;
 		double normal_hydraulic_conductivity;
+
+		void describe(std::ostream &os) const override;
+
 
 	private:
 		bool solve_cg_dual();
