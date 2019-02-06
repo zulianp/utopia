@@ -11,15 +11,15 @@ namespace utopia {
 	public:
 		template<typename F>
 		inline static void apply(
-			const std::size_t &begin, 
-			const std::size_t &end, 
+			const std::size_t &begin,
+			const std::size_t &end,
 			F f)
-		{	
+		{
 
 			for(auto i = begin; i < end; ++i) {
 				f(i);
 			}
-			
+
 			// const auto r = end - begin;
 			// auto i = begin;
 

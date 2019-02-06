@@ -76,7 +76,7 @@ namespace utopia {
 
 			auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
 			tao->tao_type("tron");
-			tao->set_ksp_types("gmres", "bjacobi", " ");
+			tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
 			qp_solver_ = tao;
 		}
 

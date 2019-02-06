@@ -23,13 +23,13 @@ namespace utopia {
 		using SizeType = typename Traits<Tensor>::SizeType;
 		using Scalar   = typename Traits<Tensor>::Scalar;
 
-		inline void apply_read(const Tensor &v, std::function<void(const Scalar &)> &fun)
-		{
-			const Range r = range(v);
-			for(auto i = r.begin(); i != r.end(); ++i) {
-				fun(v.get(i));
-			}
-		}
+		// inline void apply_read(const Tensor &v, std::function<void(const Scalar &)> &fun)
+		// {
+		// 	const Range r = range(v);
+		// 	for(auto i = r.begin(); i != r.end(); ++i) {
+		// 		fun(v.get(i));
+		// 	}
+		// }
 
 		template<class Fun>
 		inline static void apply_read(const Tensor &v, Fun fun)
@@ -136,19 +136,19 @@ namespace utopia {
 		using SizeType = typename Traits<Tensor>::SizeType;
 		using Scalar   = typename Traits<Tensor>::Scalar;
 
-		inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
-		{
-			Range r = row_range(m);
+		// inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
+		// {
+		// 	Range r = row_range(m);
 
-			Size s = size(m);
-			Read<Tensor> read_lock(m);
+		// 	Size s = size(m);
+		// 	Read<Tensor> read_lock(m);
 
-			for(auto i = r.begin(); i != r.end(); ++i) {
-				for(auto j = 0; j != s.get(1); ++j) {
-					fun(m.get(i, j));
-				}
-			}
-		}
+		// 	for(auto i = r.begin(); i != r.end(); ++i) {
+		// 		for(auto j = 0; j != s.get(1); ++j) {
+		// 			fun(m.get(i, j));
+		// 		}
+		// 	}
+		// }
 
 		template<class Fun>
 		inline static void apply_read(const Tensor &m, Fun fun)
@@ -187,18 +187,18 @@ namespace utopia {
 		using SizeType = typename Traits<Tensor>::SizeType;
 		using Scalar   = typename Traits<Tensor>::Scalar;
 
-		inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
-		{
-			Range r = row_range(m);
+		// inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
+		// {
+		// 	Range r = row_range(m);
 
-			for(auto i = r.begin(); i != r.end(); ++i) {
-				RowView<const Tensor> row_view(m, i);
-				auto n_values = row_view.n_values();
-				for(decltype(n_values) index = 0; index < n_values; ++index) {
-					fun(row_view.get(index));
-				}
-			}
-		}
+		// 	for(auto i = r.begin(); i != r.end(); ++i) {
+		// 		RowView<const Tensor> row_view(m, i);
+		// 		auto n_values = row_view.n_values();
+		// 		for(decltype(n_values) index = 0; index < n_values; ++index) {
+		// 			fun(row_view.get(index));
+		// 		}
+		// 	}
+		// }
 
 		template<class Fun>
 		inline static void apply_read(const Tensor &m, Fun fun)
@@ -212,6 +212,18 @@ namespace utopia {
 					fun(i, row_view.col(index), row_view.get(index));
 				}
 			}
+		}
+
+		template<class Fun>
+		inline static void apply(Tensor &mat, Fun fun)
+		{
+			//FIXME Very innefficient but bust find out other way
+			Tensor mat_copy = mat;
+
+			Write<Tensor> w(mat);
+			each_read(mat_copy, [&mat, &fun](const SizeType i, const SizeType j, const Scalar value) {
+				mat.set(i, j, fun(value));
+			});
 		}
 
 		// template<class Fun>
@@ -342,6 +354,12 @@ namespace utopia {
 	inline void each_transform(Tensor &t, Fun fun)
 	{
 		Each<Tensor>::apply_transform(t, fun);
+	}
+
+	template<class Tensor, class Fun>
+	inline void each_apply(Tensor &t, Fun fun)
+	{
+		Each<Tensor>::apply(t, fun);
 	}
 }
 

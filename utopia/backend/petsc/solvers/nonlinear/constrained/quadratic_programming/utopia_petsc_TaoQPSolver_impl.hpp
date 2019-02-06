@@ -24,7 +24,6 @@ namespace utopia {
 		std::unique_ptr<TaoSolver<Matrix, Vector>> tao;
 	};
 
-
 	template<class Matrix, class Vector>
 	TaoQPSolver<Matrix, Vector>::TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver)
 	: impl_(utopia::make_unique<Impl>(linear_solver))
@@ -39,9 +38,9 @@ namespace utopia {
 		m_utopia_warning_once("TaoQPSolver * TaoQPSolver::clone() not implemented properly");
 		//FIXME
 		//exception-safe cloning
-		// auto cloned_tao    = std::unique_ptr<TaoSolver<Matrix, Vector>>(impl_->tao->clone());
+		auto cloned_tao    = std::unique_ptr<TaoSolver<Matrix, Vector>>(impl_->tao->clone());
 		auto cloned        = utopia::make_unique<TaoQPSolver>();
-		// cloned->impl_->tao = std::move(cloned_tao);
+		cloned->impl_->tao = std::move(cloned_tao);
 		return cloned.release();
 	}
 
@@ -66,12 +65,6 @@ namespace utopia {
 	}
 
 	template<class Matrix, class Vector>
-	void TaoQPSolver<Matrix, Vector>::pc_type(const std::string & pc_type)
-	{
-	    impl_->tao->set_pc_type(pc_type);
-	}
-
-	template<class Matrix, class Vector>
 	void TaoQPSolver<Matrix, Vector>::tao_type(const std::string &type)
 	{
 	    impl_->tao->set_type(type);
@@ -84,9 +77,9 @@ namespace utopia {
 	}
 
 	template<class Matrix, class Vector>
-	void TaoQPSolver<Matrix, Vector>::set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package)
-	{
-	    impl_->tao->set_ksp_types(ksp_type, pc_type, solver_package);
-	}
+	void TaoQPSolver<Matrix, Vector>::set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver)
+    {
+        impl_->tao->set_linear_solver(linear_solver);
+    }
 
 }

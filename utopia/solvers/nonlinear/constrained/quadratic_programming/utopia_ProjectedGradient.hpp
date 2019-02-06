@@ -14,8 +14,7 @@
 #include <cmath>
 #include <cassert>
 
-namespace utopia 
-{
+namespace utopia {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
 	class ProjectedGradient final: public QPSolver<Matrix, Vector>, public MatrixFreeQPSolver<Vector>
@@ -36,7 +35,7 @@ namespace utopia
 			auto ptr = new ProjectedGradient(*this);
 			ptr->set_box_constraints(this->get_box_constraints());
 
-			return ptr; 
+			return ptr;
 		}
 
 		void read(Input &in) override
@@ -58,7 +57,7 @@ namespace utopia
 			return solve(*A_ptr, b, x);
 		}
 
-		bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override 
+		bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
 		{
 			// UTOPIA_RECORD_SCOPE_BEGIN("apply");
 
@@ -68,8 +67,8 @@ namespace utopia
 			init(local_size(b).get(0));
 
 			// ideally, we have two separate implementations, or cases
-			this->fill_empty_bounds(); 
-			
+			this->fill_empty_bounds();
+
 			const auto &upbo = this->get_upper_bound();
 			const auto &lobo = this->get_lower_bound();
 
@@ -105,18 +104,18 @@ namespace utopia
 
 				A.apply(x, u);
 				u = b - u;
-	
+
 				// u = b - A * x;
 
 				{
 					Read<Vector>  r_u(u), r_x(x), r_upbo(upbo), r_lobo(lobo);
-					Write<Vector> w_(p);
+					Write<Vector> w_(p, utopia::LOCAL);
 
 					auto r = range(x);
 
 					for(auto i = r.begin(); i != r.end(); ++i) {
 						const auto x_i = x.get(i);
-						
+
 						if(approxeq(x_i, upbo.get(i)) || approxeq(x_i, lobo.get(i))) {
 							p.set(i, 0);
 						} else {
@@ -124,7 +123,7 @@ namespace utopia
 						}
 					}
 				}
-		
+
 				// UTOPIA_RECORD_VALUE("p <- min_max", p);
 
 				if(iteration % check_s_norm_each == 0) {
@@ -160,7 +159,7 @@ namespace utopia
 					break;
 
 				}
-			}		
+			}
 			// UTOPIA_RECORD_SCOPE_END("apply");
 			return converged;
 		}

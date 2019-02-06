@@ -80,7 +80,7 @@ namespace utopia {
         {
             auto ls = utopia::make_unique<PolymorphicLinearSolver<Matrix, Vector>>();
             InputParameters in;
-            in.set("type", DIRECT_TAG);
+            in.set("type", Solver::direct());
             ls->read(in);
             return std::move(ls);
 // #ifdef WITH_PETSC
@@ -115,7 +115,7 @@ namespace utopia {
 
             auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
             tron->tao_type("tron");
-            tron->set_ksp_types("gmres", "bjacobi", " ");
+            tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
             register_solver("petsc", "tron", std::move(tron));
 #endif //WITH_PETSC
 
@@ -145,7 +145,7 @@ namespace utopia {
 #ifdef WITH_PETSC
         auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
         tron->tao_type("tron");
-        tron->set_ksp_types("gmres", "bjacobi", " ");
+        tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
         impl_ = std::move(tron);
 #else
         impl_ = utopia::make_unique<SemismoothNewton<Matrix, Vector>>(QPSolverRegistry<Matrix, Vector>::default_linear_solver());

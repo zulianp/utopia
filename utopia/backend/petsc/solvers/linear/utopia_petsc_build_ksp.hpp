@@ -56,6 +56,7 @@ namespace utopia {
         auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector, PETSC>>(lin_solver);
         if(ksp_solver) {
             ksp_solver->set_ksp_options(ksp);
+            ksp_solver->attach_preconditioner(ksp);
             return;
         }
 

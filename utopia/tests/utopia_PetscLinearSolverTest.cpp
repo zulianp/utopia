@@ -153,7 +153,7 @@ namespace utopia {
             //  init
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
@@ -320,7 +320,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             //choose smoother
@@ -502,7 +502,7 @@ namespace utopia {
             rhs = local_values(local_size(A).get(0), 13.0);
 
             auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-            cholesky_factorization->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
+            cholesky_factorization->set_type(Solver::petsc(), Solver::lu_decomposition());
 
             if(!cholesky_factorization->solve(A, rhs, x)) {
                 utopia_test_assert(false && "failed to solve");
@@ -544,7 +544,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             //choose smoother

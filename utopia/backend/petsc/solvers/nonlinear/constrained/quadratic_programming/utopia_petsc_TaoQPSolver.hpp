@@ -3,6 +3,8 @@
 
 #include "utopia_QPSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_LinearSolver.hpp"
+
 #include <memory>
 
 namespace utopia {
@@ -21,9 +23,9 @@ namespace utopia {
 		~TaoQPSolver();
 		TaoQPSolver * clone() const override;
 		bool apply(const Vector &rhs, Vector &sol) override;
-		void pc_type(const std::string & pc_type);
+		void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
 		void tao_type(const std::string &type);
-		void set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package);
+		// void set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package);
 		void read(Input &in) override;
 	private:
 		class Impl;

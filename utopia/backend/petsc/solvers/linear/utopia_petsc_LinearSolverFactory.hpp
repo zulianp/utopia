@@ -62,12 +62,12 @@ namespace utopia {
 
 		void init()
 		{
-			solvers_[UTOPIA_CG_TAG] = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector, HOMEMADE>> >();
-			solvers_[AUTO_TAG]   	= utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
-			solvers_[CG_TAG]   	    = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector>> >();
-			solvers_[BICGSTAB_TAG]  = utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
-			solvers_[KSP_TAG] 		= utopia::make_unique< LSFactoryMethod<KSPSolver<Matrix, Vector>> >();
-			solvers_[DIRECT_TAG]    = utopia::make_unique< LSFactoryMethod<Factorization<Matrix, Vector>> >();
+			solvers_[Solver::utopia_cg()] = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector, HOMEMADE>> >();
+			solvers_[Solver::automatic()]   	= utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
+			solvers_[Solver::cg()]   	    = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector>> >();
+			solvers_[Solver::bicgstab()]  = utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
+			solvers_[Solver::ksp()] 		= utopia::make_unique< LSFactoryMethod<KSPSolver<Matrix, Vector>> >();
+			solvers_[Solver::direct()]    = utopia::make_unique< LSFactoryMethod<Factorization<Matrix, Vector>> >();
 			solvers_["gmres"]       = utopia::make_unique< LSFactoryMethod<GMRES<Matrix, Vector>> >();
 		}
 	};

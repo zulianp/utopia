@@ -3,28 +3,11 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_SolverType.hpp"
 
 namespace utopia  {
 
-	typedef const char * SolverTag;
-	static SolverTag AUTO_TAG 		= "AUTO";
-
-	static SolverTag UTOPIA_CG_TAG = "UTOPIA_CG";
-
-	static SolverTag CG_TAG 		= "CG";
-	static SolverTag BICGSTAB_TAG 	= "BICGSTAB";
-	static SolverTag DIRECT_TAG 	= "DIRECT";
-	static SolverTag KSP_TAG 		= "KSP";
-
-// #ifdef WITH_LAPACK
-// 	static SolverTag LAPACK_TAG 	= "LAPACK";
-// #endif //WITH_LAPACK
-
-#ifdef WITH_UMFPACK
-	static SolverTag UMFPACK_TAG 	= "UMFPACK";
-#endif //WITH_UMFPACK
-
-	/**
+	/*
 	 * @brief      Front-end to create linear solver objects.
 	 *
 	 * @tparam     Matrix
@@ -51,7 +34,7 @@ namespace utopia  {
 	 * @return
 	 */
 	template<class Matrix, class Vector>
-	typename LinearSolverFactory<Matrix, Vector>::LinearSolverPtr linear_solver(const SolverTag &tag = AUTO_TAG)
+	typename LinearSolverFactory<Matrix, Vector>::LinearSolverPtr linear_solver(const SolverType &tag = Solver::automatic())
 	{
 	 	return LinearSolverFactory<Matrix, Vector>::new_linear_solver(tag);
 	}
@@ -77,7 +60,7 @@ namespace utopia  {
 	 * @return
 	 */
 	template<class Matrix, class Vector>
-	bool solve(const Matrix A, const Vector rhs, Vector &x, const SolverTag &tag= AUTO_TAG)
+	bool solve(const Matrix A, const Vector rhs, Vector &x, const SolverType &tag= Solver::automatic())
 	{
 		auto solver = linear_solver<Matrix, Vector>(tag);
 		solver->solve(A, rhs, x);

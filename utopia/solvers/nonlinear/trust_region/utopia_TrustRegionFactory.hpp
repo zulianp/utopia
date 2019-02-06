@@ -7,22 +7,10 @@
 #include "utopia_TRNormalEquation.hpp"
 #include "utopia_TrustRegion.hpp"
 #include "utopia_InputParameters.hpp"
+#include "utopia_SolverType.hpp"
 
 namespace utopia 
 {
-
-	typedef const char * TRStrategyTag;
-
-	static TRStrategyTag AUTO_TR_TAG 			= "AUTO_TR";
-	static TRStrategyTag CAUCHYPOINT_TAG 		= "CAUCHYPOINT";
-	static TRStrategyTag DOGLEG_TAG 			= "DOGLEG";
-
-	static TRStrategyTag STEIHAUG_TOINT_TAG 	= "STEIHAUG_TOINT";
-	static TRStrategyTag TOINT_TAG 				= "TOINT";
-	static TRStrategyTag NASH_TAG 		    	= "NASH";
-	static TRStrategyTag LANCZOS_TAG 		    = "LANCZOS";
-	static TRStrategyTag CGNE_TAG 		    	= "CGNE";
-
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
 	class TRStrategyFactory {
@@ -34,7 +22,7 @@ namespace utopia
 	};
 
 	template<class Matrix, class Vector>
-	typename TRStrategyFactory<Matrix, Vector>::StrategyPtr trust_region_strategy(const TRStrategyTag &tag = AUTO_TAG)
+	typename TRStrategyFactory<Matrix, Vector>::StrategyPtr trust_region_strategy(const SolverType &tag = Solver::automatic())
 	{
 	 	return TRStrategyFactory<Matrix, Vector>::new_trust_region_strategy(std::string(tag));
 	}
@@ -62,7 +50,7 @@ namespace utopia
 	 * 	 
 	 */
 	template<typename Matrix, typename Vector>
-	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type, Input & in)
+	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const SolverType & solve_type, Input & in)
 	{
 		// TODO:: check options proper options for normal eq. 
 		if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))
@@ -84,7 +72,7 @@ namespace utopia
 	}
 
 	template<typename Matrix, typename Vector>
-	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const TRStrategyTag & solve_type = AUTO_TR_TAG)
+	const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const SolverType & solve_type = Solver::automatic())
 	{
 		// TODO:: check options proper options for normal eq. 
 		if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))

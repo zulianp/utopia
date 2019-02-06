@@ -72,7 +72,7 @@ message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}
 if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
-		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+		SET(UTOPIA_DEV_FLAGS  "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
 
 	endif()
 endif()

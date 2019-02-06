@@ -327,16 +327,16 @@ namespace utopia
 				tr_solver.solve(fun2, x);
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, STEIHAUG_TOINT_TAG, in);
+				trust_region_solve(fun2, x, Solver::steihaug_toint(), in);
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, NASH_TAG, in);
+				trust_region_solve(fun2, x, Solver::nash(), in);
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, LANCZOS_TAG, in);
+				trust_region_solve(fun2, x, Solver::lanczos(), in);
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, CGNE_TAG, in);
+				trust_region_solve(fun2, x, Solver::cgne(), in);
 			}
 		}
 
@@ -531,7 +531,7 @@ namespace utopia
 			auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
 
 #ifdef PETSC_HAVE_MUMPS
-			lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+			lsolver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
 			Newton<DSMatrixd, DVectord> nlsolver(lsolver);
