@@ -9,7 +9,7 @@ namespace utopia {
 	template<int FILL_TYPE>
 	class Each<DVectord, 1, FILL_TYPE> {
 	public:
-		
+
 		template<class Fun>
 		inline static void apply_read(const DVectord &v, Fun fun)
 		{
@@ -112,15 +112,15 @@ namespace utopia {
 
 				ierr = VecRestoreArrayRead(impl_in, &arr_in); assert(ierr == 0);
 				ierr = VecRestoreArray(impl_out, &arr_out);   assert(ierr == 0);
-			}	
+			}
 
 			(void) ierr;
 		}
-	};	
+	};
 
 	template<class Fun>
-	inline void each_apply(DSMatrixd &mat, Fun fun) 
-	{	
+	inline void each_apply(DSMatrixd &mat, Fun fun)
+	{
 		//FIXME Very innefficient but bust find out other way
 		DSMatrixd mat_copy = mat;
 
@@ -129,7 +129,7 @@ namespace utopia {
 			mat.set(i, j, fun(value));
 		});
 	}
-	
+
 }
 
 #endif //UTOPIA_PETSC_EACH_HPP

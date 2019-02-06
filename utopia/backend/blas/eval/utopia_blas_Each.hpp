@@ -12,7 +12,7 @@ namespace utopia {
 			inline static void apply_read(const Vectord &v, Fun fun)
 			{
 				const auto &impl = raw_type(v);
-				
+
 				For<>::apply(
 					0,
 					impl.size(),
@@ -55,7 +55,7 @@ namespace utopia {
 					}
 				);
 			}
-		};	
+		};
 }
 
 #endif //UTOPIA_BLAS_EACH_HPP

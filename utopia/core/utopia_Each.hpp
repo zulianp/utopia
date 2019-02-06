@@ -1,5 +1,5 @@
 #ifndef UTOPIA_EACH_HPP
-#define UTOPIA_EACH_HPP 
+#define UTOPIA_EACH_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Base.hpp"
@@ -9,6 +9,7 @@
 #include "utopia_Size.hpp"
 #include "utopia_Readable.hpp"
 
+#include <functional>
 // #define UTOPIA_DISABLE_UNROLLING
 
 namespace utopia {
@@ -19,6 +20,17 @@ namespace utopia {
 	template<class Tensor, int FILL_TYPE>
 	class Each<Tensor, 1, FILL_TYPE> {
 	public:
+		using SizeType = typename Traits<Tensor>::SizeType;
+		using Scalar   = typename Traits<Tensor>::Scalar;
+
+		inline void apply_read(const Tensor &v, std::function<void(const Scalar &)> &fun)
+		{
+			const Range r = range(v);
+			for(auto i = r.begin(); i != r.end(); ++i) {
+				fun(v.get(i));
+			}
+		}
+
 		template<class Fun>
 		inline static void apply_read(const Tensor &v, Fun fun)
 		{
@@ -28,7 +40,7 @@ namespace utopia {
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				fun(i, v.get(i));
 			}
-#else			
+#else
 
 			Read<Tensor> read_lock(v);
 			For<>::apply(
@@ -40,6 +52,14 @@ namespace utopia {
 			);
 #endif //UTOPIA_DISABLE_UNROLLING
 
+		}
+
+		inline void apply_write(const Tensor &v, std::function<Scalar()> &fun)
+		{
+			const Range r = range(v);
+			for(auto i = r.begin(); i != r.end(); ++i) {
+				v.set(i, fun());
+			}
 		}
 
 		template<class Fun>
@@ -108,11 +128,28 @@ namespace utopia {
 			);
 #endif //UTOPIA_DISABLE_UNROLLING
 		}
-	};	
+	};
 
 	template<class Tensor>
 	class Each<Tensor, 2, FillType::DENSE> {
 	public:
+		using SizeType = typename Traits<Tensor>::SizeType;
+		using Scalar   = typename Traits<Tensor>::Scalar;
+
+		inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
+		{
+			Range r = row_range(m);
+
+			Size s = size(m);
+			Read<Tensor> read_lock(m);
+
+			for(auto i = r.begin(); i != r.end(); ++i) {
+				for(auto j = 0; j != s.get(1); ++j) {
+					fun(m.get(i, j));
+				}
+			}
+		}
+
 		template<class Fun>
 		inline static void apply_read(const Tensor &m, Fun fun)
 		{
@@ -132,7 +169,7 @@ namespace utopia {
 		inline static void apply_write(Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
-			
+
 			Size s = size(m);
 			Write<Tensor> write_lock(m);
 
@@ -147,14 +184,26 @@ namespace utopia {
 	template<class Tensor>
 	class Each<Tensor, 2, FillType::SPARSE> {
 	public:
+		using SizeType = typename Traits<Tensor>::SizeType;
+		using Scalar   = typename Traits<Tensor>::Scalar;
+
+		inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
+		{
+			Range r = row_range(m);
+
+			for(auto i = r.begin(); i != r.end(); ++i) {
+				RowView<const Tensor> row_view(m, i);
+				auto n_values = row_view.n_values();
+				for(decltype(n_values) index = 0; index < n_values; ++index) {
+					fun(row_view.get(index));
+				}
+			}
+		}
+
 		template<class Fun>
 		inline static void apply_read(const Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
-			
-			// if(r.empty()) {
-			// 	return;
-			// }
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				RowView<const Tensor> row_view(m, i);
@@ -190,7 +239,7 @@ namespace utopia {
 		// 		RowView<Tensor> row_view(m, i);
 
 		// 		for(auto index = 0; index < row_view.n_values(); ++index) {
-		// 			auto val = fun(i, row_view.get_col_at(index), row_view.get_value_at(index)); 
+		// 			auto val = fun(i, row_view.get_col_at(index), row_view.get_value_at(index));
 		// 			row_view.set_value_at(index, val);
 		// 		}
 		// 	}
@@ -209,28 +258,28 @@ namespace utopia {
 	/**
 	 * @ingroup element_acess
 	 * @brief      Creates read lock on the tensor, iterates over all elements and applies provided function on them. \n
-	 * 			   Example usage: Printing vector v. 
+	 * 			   Example usage: Printing vector v.
 	 *
-	 	\code{.cpp} 
+	 	\code{.cpp}
 	 	each_read(v, [](const SizeType i, const double entry) { std::cout << "v(" << i << ") = " << entry << std::endl;  });
 	 	\endcode
-	 * 
 	 *
-	 * @param[in]  v       The tensor. 
-	 * @param[in]  fun     The  function with desirable action. 
+	 *
+	 * @param[in]  v       The tensor.
+	 * @param[in]  fun     The  function with desirable action.
 	 */
 	template<class Tensor, class Fun>
-	inline void each_read(const Tensor &v, Fun fun) 
+	inline void each_read(const Tensor &v, Fun fun)
 	{
 		Each<Tensor>::apply_read(v, fun);
 	}
 
-	
+
 	/**
 	 * @ingroup element_acess
 	 * @brief      Creates write lock on the tensor, iterates over all elements and applies provided function on them. \n
-	 * 			   Example usage: Writing prescribed value to all elements of vector, but the first and the last. 
-	 	\code{.cpp} 
+	 * 			   Example usage: Writing prescribed value to all elements of vector, but the first and the last.
+	 	\code{.cpp}
 	 	Vector v = zeros(10);
     		const double value = 6.0;
 
@@ -239,14 +288,14 @@ namespace utopia {
 				if(i == 0 || i == 10 - 1) {
 					return 0;}
 				return value;
-			});   
+			});
 		\endcode
-	 * @warning    If tensor is a sparse matrix, it will iterate only following the sparsity pattern. 
-	 * @param[in]  v       The tensor. 
-	 * @param[in]  fun     The  function with desirable action. 
+	 * @warning    If tensor is a sparse matrix, it will iterate only following the sparsity pattern.
+	 * @param[in]  v       The tensor.
+	 * @param[in]  fun     The  function with desirable action.
 	 */
 	template<class Tensor, class Fun>
-	inline void each_write(Tensor &v, Fun fun) 
+	inline void each_write(Tensor &v, Fun fun)
 	{
 		Each<Tensor>::apply_write(v, fun);
 	}
@@ -254,17 +303,17 @@ namespace utopia {
 
 	/**
 	 * @ingroup element_acess
-	 * @brief      Creates read lock on the tensor a and write lock on the tensor b, then applies provided function. 
-	 * 			  
-	 * 			  
-	 * 			   Example usage: Applying a filter to the content of a and writing it into b. 
-	 	
-	 	\code{.cpp} 
-		 	{ 
-		 	const double n = 10; 
+	 * @brief      Creates read lock on the tensor a and write lock on the tensor b, then applies provided function.
+	 *
+	 *
+	 * 			   Example usage: Applying a filter to the content of a and writing it into b.
+
+	 	\code{.cpp}
+		 	{
+		 	const double n = 10;
 		        VectorT a = zeros(n);
 		        VectorT b = zeros(n);
-		        VectorT c = values(n, 0.5);  
+		        VectorT c = values(n, 0.5);
 
 		        //writing i/n in the vector
 		        each_write(a, [](const SizeType i) -> double  { return i/double(n); }   );
@@ -278,15 +327,21 @@ namespace utopia {
 		        }
 		    }
 		\endcode
-	 * @warning    Tensor a cannot be equal to the tensor b (for the moment). 
-	 * @param[in]  a       The tensor to be red from/ input. 
-	 * @param[in]  b       The tensor to be write into/ output. 
-	 * @param[in]  fun     The  function with desirable action. 
+	 * @warning    Tensor a cannot be equal to the tensor b (for the moment).
+	 * @param[in]  a       The tensor to be red from/ input.
+	 * @param[in]  b       The tensor to be write into/ output.
+	 * @param[in]  fun     The  function with desirable action.
 	 */
 	template<class Tensor, class Fun>
-	inline void each_transform(const Tensor &a, Tensor &b, Fun fun) 
+	inline void each_transform(const Tensor &a, Tensor &b, Fun fun)
 	{
 		Each<Tensor>::apply_transform(a, b, fun);
+	}
+
+	template<class Tensor, class Fun>
+	inline void each_transform(Tensor &t, Fun fun)
+	{
+		Each<Tensor>::apply_transform(t, fun);
 	}
 }
 
