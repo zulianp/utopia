@@ -57,19 +57,20 @@ namespace utopia {
 			strategy_.set_initial_guess_non_zero(false);
 			strategy_.pc_type(PCLU);
 
+#ifdef PETSC_HAVE_SUPERLU_DIST
+			strategy_.solver_package(MATSOLVERSUPERLU_DIST);
+#else //PETSC_HAVE_SUPERLU_DIST
 #ifdef PETSC_HAVE_MUMPS
 			strategy_.solver_package(MATSOLVERMUMPS);
 #else //PETSC_HAVE_MUMPS
-#ifdef PETSC_HAVE_SUPERLU_DIST
-			strategy_.solver_package(MATSOLVERSUPERLU_DIST);
-#else //PETSC_HAVE_SUPERLU_DIST	
+
 #ifdef PETSC_HAVE_SUPERLU
 			strategy_.solver_package(MATSOLVERSUPERLU);
 #else //PETSC_HAVE_SUPERLU
 			strategy_.solver_package(MATSOLVERPETSC);
 #endif //PETSC_HAVE_SUPERLU
-#endif //PETSC_HAVE_SUPERLU_DIST
 #endif //PETSC_HAVE_MUMPS
+#endif //PETSC_HAVE_SUPERLU_DIST
 
 		}
 

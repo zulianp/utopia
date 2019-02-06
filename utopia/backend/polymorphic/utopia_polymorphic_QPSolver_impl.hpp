@@ -1,6 +1,8 @@
 #include "utopia_polymorphic_QPSolver.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_polymorphic_LinearSolver.hpp"
+#include "utopia_InputParameters.hpp"
+#include "utopia_LinearSolverFactory.hpp"
 
 // includes
 // HOMEMADE

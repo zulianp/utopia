@@ -16,6 +16,7 @@ option(TRY_WITH_MPI "Enable the cuda backend" ON)
 option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
 option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
+option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
 option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
@@ -38,7 +39,7 @@ set(UTOPIA_DEV_FLAGS
 )
 
 # More annoying
-# set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
+set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 
 # More restrictive
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")

@@ -5,8 +5,8 @@
 		"use-ssnewton": false,
 		"dt": 0.2,
 		"is-steady" : true,
-		"use-gmres" : true,
-		"qp-solver" : {
+		"*use-gmres" : true,
+		"*qp-solver" : {
 			"backend" : "any",
 			"type" : "ssnewton",
 			"max-it" : 20,
@@ -18,13 +18,9 @@
 		"mesh": {
 			"type": "file",
 			"*0path" : "../data/contact/contact_cubes.e",
-			"*1path" : "../data/contact/signorini_79207.e",
-			"*2path" : "../data/contact/quasi_hertz_91.e",
-			"*3path" : "../data/contact/quasi_hertz_750.e",
-			"*4path"   : "../data/contact/signorini_3358.e",
 			"*path"   : "../data/contact/pseudo-signorini.e",
-			"path"   : "../data/contact/pseudo-signorini-refined.e",
-			"*6path"   : "../data/contact/pseudo-signorini-refined-twice.e"
+			"**path"   : "../data/contact/pseudo-signorini-refined.e",
+			"path"   : "../data/contact/pseudo-signorini-refined-twice.e"
 
 		},
 		"space": {
@@ -106,8 +102,8 @@
 			"radius": 0.1,
 			"pairs": [
 				{
-					"master": 3,
-					"slave": 2
+					"master": 2,
+					"slave": 3
 				}
 			]
 		}
