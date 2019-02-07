@@ -234,7 +234,7 @@ namespace utopia {
             assert(TaoTypes::is_valid(type_));
 
     		auto ierr = TaoCreate(comm, &tao);  assert(ierr == 0);
-    		ierr      = TaoSetType(tao, static_cast<TaoType>(type_.c_str()));	assert(ierr == 0);
+    		ierr      = TaoSetType(tao, type_.c_str());	assert(ierr == 0);
     	}
 
     	void set_from_options()
@@ -272,7 +272,7 @@ namespace utopia {
 
     		type_ = type;
     		if(tao) {
-    			TaoSetType(tao, static_cast<TaoType>(type_.c_str()));
+    			TaoSetType(tao, type_.c_str());
     		}
     	}
 
