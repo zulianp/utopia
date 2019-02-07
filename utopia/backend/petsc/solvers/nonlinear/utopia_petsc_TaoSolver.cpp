@@ -57,14 +57,7 @@ namespace utopia {
             types_.insert(TAOOWLQN);
             types_.insert(TAOBMRM);
             types_.insert(TAOBLMVM);
-            types_.insert(TAOBQNLS);
-            types_.insert(TAOBNCG);
-            types_.insert(TAOBNLS);
-            types_.insert(TAOBNTR);
-            types_.insert(TAOBNTL);
-            types_.insert(TAOBQNKLS);
-            types_.insert(TAOBQNKTR);
-            types_.insert(TAOBQNKTL);
+
             types_.insert(TAOBQPIP);
             types_.insert(TAOGPCG);
             types_.insert(TAONM);
@@ -75,6 +68,20 @@ namespace utopia {
             types_.insert(TAOASILS);
             types_.insert(TAOASFLS);
             types_.insert(TAOIPM);
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 10, 3)
+          
+            types_.insert(TAOBQNLS);
+            types_.insert(TAOBNCG);
+
+            types_.insert(TAOBNLS);
+            types_.insert(TAOBNTR);
+            types_.insert(TAOBNTL);
+
+            types_.insert(TAOBQNKLS);
+            types_.insert(TAOBQNKTR);
+            types_.insert(TAOBQNKTL);
+#endif
         }
     };
 
@@ -227,7 +234,7 @@ namespace utopia {
             assert(TaoTypes::is_valid(type_));
 
     		auto ierr = TaoCreate(comm, &tao);  assert(ierr == 0);
-    		ierr      = TaoSetType(tao, type_.c_str());	assert(ierr == 0);
+    		ierr      = TaoSetType(tao, static_cast<TaoType>(type_.c_str()));	assert(ierr == 0);
     	}
 
     	void set_from_options()
@@ -265,7 +272,7 @@ namespace utopia {
 
     		type_ = type;
     		if(tao) {
-    			TaoSetType(tao, type_.c_str());
+    			TaoSetType(tao, static_cast<TaoType>(type_.c_str()));
     		}
     	}
 
