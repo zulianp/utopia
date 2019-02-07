@@ -38,12 +38,16 @@ namespace utopia {
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
+            UTOPIA_UNUSED(x);
             H = *this->data()->H;
             return true;
         }
 
         bool hessian(const Vector &x, Matrix &result, Matrix &prec) const override
         {
+            UTOPIA_UNUSED(x);
+            UTOPIA_UNUSED(result);
+            UTOPIA_UNUSED(prec);
             return false;
         }
 
@@ -54,6 +58,7 @@ namespace utopia {
 
         bool update(const Vector &x) override
         {
+            UTOPIA_UNUSED(x);
             return true;
         }
 

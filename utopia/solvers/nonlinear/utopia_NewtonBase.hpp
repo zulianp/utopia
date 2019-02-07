@@ -10,24 +10,18 @@
 #include "utopia_ConjugateGradient.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
-namespace utopia
-{
-
+namespace utopia {
+    
     template<class Matrix, class Vector>
-    class NewtonBase : public NonLinearSolver<Vector>
-    {
+    class NewtonBase : public NonLinearSolver<Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
-
-        NewtonBase( const std::shared_ptr<Solver> &linear_solver):
-                    NonLinearSolver<Vector>(),
-                    linear_solver_(linear_solver), check_diff_(false)
-        {
-
-        }
+        NewtonBase(const std::shared_ptr<Solver> &linear_solver)
+        : NonLinearSolver<Vector>(), linear_solver_(linear_solver), check_diff_(false)
+        { }
 
         virtual ~NewtonBase() {}
 
@@ -69,7 +63,6 @@ namespace utopia
             return true;
         }
 
-
         virtual void read(Input &in) override
         {
             NonLinearSolver<Vector>::read(in);
@@ -83,8 +76,14 @@ namespace utopia
         virtual void print_usage(std::ostream &os) const override
         {
             NonLinearSolver<Vector>::print_usage(os);
-            this->print_param_usage(os, "check_diff", "bool", "Enables finite difference controller", "false");
-            this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-");
+            this->print_param_usage(os, "check_diff", "bool", "Enables finite difference controller", std::to_string(check_diff_));
+
+            if(linear_solver_) {
+                this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-");
+                linear_solver_->print_usage(os);
+            } else {
+                this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "- (null)");
+            }
         }
 
         /**

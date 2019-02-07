@@ -82,4 +82,64 @@ namespace utopia {
         impl_->tao->set_linear_solver(linear_solver);
     }
 
+	template<class Matrix, class Vector>
+   	typename TaoQPSolver<Matrix, Vector>::Scalar TaoQPSolver<Matrix, Vector>::atol() const
+    {
+    	return impl_->tao->atol();
+    }
+
+	template<class Matrix, class Vector>
+    typename TaoQPSolver<Matrix, Vector>::Scalar TaoQPSolver<Matrix, Vector>::rtol() const
+    {
+    	return impl_->tao->rtol();
+    }
+
+	template<class Matrix, class Vector>
+    typename TaoQPSolver<Matrix, Vector>::Scalar TaoQPSolver<Matrix, Vector>::stol() const
+    {
+    	return impl_->tao->stol();
+    }
+
+    template<class Matrix, class Vector>
+    typename TaoQPSolver<Matrix, Vector>::SizeType TaoQPSolver<Matrix, Vector>::max_it() const
+    {
+    	return impl_->tao->max_it();
+    }
+
+	template<class Matrix, class Vector>
+    bool TaoQPSolver<Matrix, Vector>::verbose() const
+    {
+    	return impl_->tao->verbose();
+    }
+
+	template<class Matrix, class Vector>
+    void TaoQPSolver<Matrix, Vector>::atol(const Scalar &atol)
+    {
+    	impl_->tao->atol(atol);
+    }
+
+	template<class Matrix, class Vector>
+    void TaoQPSolver<Matrix, Vector>::rtol(const Scalar &rtol)
+    {
+    	impl_->tao->rtol(rtol);
+    }
+
+	template<class Matrix, class Vector>
+    void TaoQPSolver<Matrix, Vector>::stol(const Scalar &stol)
+    {
+    	impl_->tao->stol(stol);
+    }
+
+	template<class Matrix, class Vector>
+    void TaoQPSolver<Matrix, Vector>::max_it(const SizeType & max_it)
+    {
+    	impl_->tao->max_it(max_it);
+    }
+
+	template<class Matrix, class Vector>
+    void TaoQPSolver<Matrix, Vector>::verbose(const bool &verbose)
+    {
+    	impl_->tao->verbose(verbose);
+    }
+
 }

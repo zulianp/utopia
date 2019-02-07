@@ -46,13 +46,13 @@ namespace utopia
 
         virtual void print_usage(std::ostream &os) const override
         {
-            this->print_param_usage(os, "atol", "real", "Absolute tolerance.", "1e-7");
-            this->print_param_usage(os, "rtol", "real", "Relative tolerance.", "1e-8");
-            this->print_param_usage(os, "stol", "real", "Step size tolerance.", "1e-9");
+            this->print_param_usage(os, "atol", "real", "Absolute tolerance.",  std::to_string(atol()));
+            this->print_param_usage(os, "rtol", "real", "Relative tolerance.",  std::to_string(rtol()));
+            this->print_param_usage(os, "stol", "real", "Step size tolerance.", std::to_string(stol()));
 
-            this->print_param_usage(os, "max-it", "int", "Maximum number of iterations.", "300");
-            this->print_param_usage(os, "verbose", "bool", "Turn on/off output.", "false");
-            this->print_param_usage(os, "time-statistics", "bool", "Collect time-statistics.", "true");
+            this->print_param_usage(os, "max-it", "int", "Maximum number of iterations.", std::to_string(max_it()));
+            this->print_param_usage(os, "verbose", "bool", "Turn on/off output.", std::to_string(verbose_));
+            this->print_param_usage(os, "time-statistics", "bool", "Collect time-statistics.", std::to_string(time_statistics_));
         }
 
 

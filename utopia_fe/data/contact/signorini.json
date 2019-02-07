@@ -6,21 +6,21 @@
 		"dt": 0.2,
 		"is-steady" : true,
 		"*use-gmres" : true,
-		"*qp-solver" : {
-			"backend" : "any",
-			"type" : "ssnewton",
-			"max-it" : 20,
-			"verbose" : true,
+		"qp-solver" : {
+			"backend" : "petsc",
+			"type" : "tron",
+			"max-it" : 5,
+			"verbose" : false,
 			"linear-solver" : {
-				"type" : "DIRECT"
+				"type" : "direct"
 			}
 		},
 		"mesh": {
 			"type": "file",
 			"*0path" : "../data/contact/contact_cubes.e",
-			"*path"   : "../data/contact/pseudo-signorini.e",
+			"path"   : "../data/contact/pseudo-signorini.e",
 			"**path"   : "../data/contact/pseudo-signorini-refined.e",
-			"path"   : "../data/contact/pseudo-signorini-refined-twice.e"
+			"**path"   : "../data/contact/pseudo-signorini-refined-twice.e"
 
 		},
 		"space": {

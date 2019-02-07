@@ -27,6 +27,21 @@ namespace utopia {
 		void tao_type(const std::string &type);
 		// void set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package);
 		void read(Input &in) override;
+
+
+        Scalar atol() const override;
+        Scalar rtol() const override;
+        Scalar stol() const override;
+
+        SizeType max_it() const override;
+        bool verbose() const override;
+
+
+        void atol(const Scalar &atol) override;
+        void rtol(const Scalar &rtol) override;
+        void stol(const Scalar &stol) override;
+        void max_it(const SizeType & max_it) override;
+        void verbose(const bool &verbose) override;
 	private:
 		class Impl;
 		std::unique_ptr<Impl> impl_;

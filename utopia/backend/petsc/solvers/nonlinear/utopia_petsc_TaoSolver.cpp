@@ -2,6 +2,7 @@
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Types.hpp"
+#include "utopia_Describable.hpp"
 
 #include "petsctao.h"
 #include <mpi.h>
@@ -9,6 +10,74 @@
 #define U_CHECKERR(ierr) { if(ierr != 0) return false; }
 
 namespace utopia {
+
+    class TaoTypes : public Describable {
+    public:
+
+        inline static bool is_valid(const std::string &type, const bool verbose = true)
+        {
+            const auto &i = instance();
+            bool valid = i.types_.find(type) != i.types_.end();
+
+            if(!valid && verbose) {
+                std::cerr << "Invalid tao type " << type << ". Valid types are: " << std::endl;
+                i.describe(std::cerr);
+            }
+
+            return valid;
+        }
+
+        void describe(std::ostream &os) const override
+        {
+            for(const auto &t : types_) {
+                os << t << " ";
+            }
+
+            os << std::endl;
+        }
+
+
+    private:
+        std::set<std::string> types_;
+
+        static inline const TaoTypes &instance()
+        {
+            static TaoTypes instance_;
+            return instance_;
+        }
+
+        TaoTypes()
+        {
+            types_.insert(TAOLMVM);
+            types_.insert(TAONLS);
+            types_.insert(TAONTR);
+            types_.insert(TAONTL);
+            types_.insert(TAOCG);
+            types_.insert(TAOTRON);
+            types_.insert(TAOOWLQN);
+            types_.insert(TAOBMRM);
+            types_.insert(TAOBLMVM);
+            types_.insert(TAOBQNLS);
+            types_.insert(TAOBNCG);
+            types_.insert(TAOBNLS);
+            types_.insert(TAOBNTR);
+            types_.insert(TAOBNTL);
+            types_.insert(TAOBQNKLS);
+            types_.insert(TAOBQNKTR);
+            types_.insert(TAOBQNKTL);
+            types_.insert(TAOBQPIP);
+            types_.insert(TAOGPCG);
+            types_.insert(TAONM);
+            types_.insert(TAOPOUNDERS);
+            types_.insert(TAOLCL);
+            types_.insert(TAOSSILS);
+            types_.insert(TAOSSFLS);
+            types_.insert(TAOASILS);
+            types_.insert(TAOASFLS);
+            types_.insert(TAOIPM);
+        }
+    };
+
     
     template<class Matrix, class Vector>
     static PetscErrorCode UtopiaTaoEvaluateObjective(Tao tao, Vec x, PetscReal *ret, void *ctx)
@@ -138,12 +207,15 @@ namespace utopia {
     	Impl(MPI_Comm comm)
     	: tao(nullptr), type_(TAOTRON)
     	{
+            assert(TaoTypes::is_valid(type_));
     		init(comm);
     	}
 
     	Impl()
     	: tao(nullptr), type_(TAOTRON)
-    	{}
+    	{
+            assert(TaoTypes::is_valid(type_));
+        }
 
     	~Impl()
     	{}
@@ -151,8 +223,11 @@ namespace utopia {
     	void init(MPI_Comm comm)
     	{
     		destroy();
-    		auto ierr = TaoCreate(comm, &tao); assert(ierr == 0);
-    		ierr      = TaoSetType(tao, type_);	   assert(ierr == 0);
+
+            assert(TaoTypes::is_valid(type_));
+
+    		auto ierr = TaoCreate(comm, &tao);  assert(ierr == 0);
+    		ierr      = TaoSetType(tao, type_.c_str());	assert(ierr == 0);
     	}
 
     	void set_from_options()
@@ -169,16 +244,28 @@ namespace utopia {
     		}
     	}
 
-    	TaoType get_type()
+    	inline std::string get_type() const
     	{
+            if(initialized()) {
+                TaoType type;
+                TaoGetType(tao, &type);
+
+                assert(TaoTypes::is_valid(type));
+                return type;
+            }
+
+            assert(TaoTypes::is_valid(type_));
+
     		return type_;
     	}
 
-    	void set_type(TaoType type)
+    	void set_type(const std::string &type)
     	{
+            assert(TaoTypes::is_valid(type));
+
     		type_ = type;
     		if(tao) {
-    			TaoSetType(tao, type_);
+    			TaoSetType(tao, type_.c_str());
     		}
     	}
 
@@ -306,7 +393,7 @@ namespace utopia {
 
     private:
     	Tao tao;
-    	TaoType type_;
+    	std::string type_;
 
     };
      
@@ -337,6 +424,7 @@ namespace utopia {
     void TaoSolver<Matrix, Vector>::read(Input &in)
     {
         NewtonBase<Matrix, Vector>::read(in);
+        // VariableBoundSolverInterface<Vector>::read(in);
      	impl_->read(in);
     }
     
