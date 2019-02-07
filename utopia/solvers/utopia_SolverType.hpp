@@ -7,6 +7,19 @@ namespace utopia {
 	typedef const char * SolverType;
 	typedef const char * SolverPackage;
 
+	// class SolverPackage {
+	// public:
+	// 	constexpr SolverPackage(const char * value)
+	// 	: value(value) {}
+
+	// 	constexpr operator const char *() const
+	// 	{
+	// 		return value;
+	// 	}
+
+	// 	const char * value;		
+	// };
+
 	class Solver {
 	public:
 		//all solvers

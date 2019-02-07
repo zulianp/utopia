@@ -18,9 +18,10 @@
 		"mesh": {
 			"type": "file",
 			"*0path" : "../data/contact/contact_cubes.e",
-			"path"   : "../data/contact/pseudo-signorini.e",
-			"**path"   : "../data/contact/pseudo-signorini-refined.e",
-			"**path"   : "../data/contact/pseudo-signorini-refined-twice.e"
+			"**path"   : "../data/contact/pseudo-signorini.e",
+			"*path"   : "../data/contact/pseudo-signorini-refined.e",
+			"path"   : "../data/contact/pseudo-signorini-refined-twice.e",
+			"refinements" : 2
 
 		},
 		"space": {
@@ -99,7 +100,7 @@
 		"contact": {
 			"n-transient-steps": 30,
 			"max-nl-iter": 100,
-			"radius": 0.1,
+			"radius": 0.02,
 			"pairs": [
 				{
 					"master": 2,

@@ -17,6 +17,7 @@
 #include "utopia_petsc_TaoQPSolver.hpp"
 #include "utopia_petsc_RowView.hpp"
 #include "utopia_petsc_SemismoothNewton.hpp"
+#include "petsctao.h"
 #endif //WITH_PETSC
 
 
@@ -114,9 +115,9 @@ namespace utopia {
             register_solver("petsc", "taoqp",    utopia::make_unique<TaoQPSolver<Matrix, Vector>>(default_linear_solver()));
 
             auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
-            tron->tao_type("tron");
+            tron->tao_type(TAOTRON);
             tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
-            register_solver("petsc", "tron", std::move(tron));
+            register_solver("petsc", TAOTRON, std::move(tron));
 #endif //WITH_PETSC
 
         }
@@ -144,7 +145,7 @@ namespace utopia {
     {
 #ifdef WITH_PETSC
         auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
-        tron->tao_type("tron");
+        tron->tao_type(TAOTRON);
         tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
         impl_ = std::move(tron);
 #else
