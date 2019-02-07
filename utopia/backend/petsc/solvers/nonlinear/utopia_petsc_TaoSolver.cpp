@@ -69,6 +69,7 @@ namespace utopia {
             types_.insert(TAOASFLS);
             types_.insert(TAOIPM);
 
+            //TODO check if this is the right version
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 10, 3)
           
             types_.insert(TAOBQNLS);
@@ -254,7 +255,12 @@ namespace utopia {
     	inline std::string get_type() const
     	{
             if(initialized()) {
+                //TODO check if this is the right version
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 10, 3)
                 TaoType type;
+#else
+                const TaoType type;
+#endif
                 TaoGetType(tao, &type);
 
                 assert(TaoTypes::is_valid(type));
