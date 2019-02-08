@@ -2196,16 +2196,108 @@ namespace utopia {
 		}
 	}
 
+	// template<class FE>
+	// void mortar_assemble_weights_aux(const FE &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+	// {
+	// 	libMesh::DenseMatrix<libMesh::Real> elmat;
+	// 	elmat.resize(fe.get_phi().size(), fe.get_phi().size());
+	// 	elmat.zero();
+
+
+	// 	weights.resize(elmat.m(), elmat.n());
+	// 	weights.zero();
+
+	// 	const auto &test = fe.get_phi();
+	// 	const auto &JxW   = fe.get_JxW();
+
+	// 	const uint n_test  = test.size();
+	// 	const uint n_qp    = test[0].size();
+
+	// 	std::cout << n_qp << std::endl;
+
+	// 	for(uint qp = 0; qp < n_qp; ++qp) {
+	// 		for(uint i = 0; i < n_test; ++i) {
+	// 			for(uint j = 0; j < n_test; ++j) {
+	// 				elmat(i, j) += contract(test[i][qp], test[j][qp]) * JxW[qp];
+	// 			}
+	// 		}
+	// 	}
+
+	// 	libMesh::DenseVector<libMesh::Real> sum_elmat(n_test);
+	// 	sum_elmat.zero();
+	// 	libMesh::DenseVector<libMesh::Real> rhs(n_test);
+	// 	rhs.zero();
+
+	// 	libMesh::DenseVector<libMesh::Real> sol(n_test);
+	// 	sol.zero();
+
+	// 	for(uint i = 0; i < n_test; ++i) {
+	// 		for(uint j = 0; j < n_test; ++j) {
+	// 			sum_elmat(i) += elmat(i, j);
+	// 		}
+
+	// 		if(std::abs(sum_elmat(i)) < 1e-16) {
+	// 			sum_elmat(i) = 0;
+	// 			//set identity row where not defined
+	// 			for(uint j = 0; j < n_test; ++j) {
+	// 				elmat(i, j) = (i == j);
+	// 			}
+	// 		}
+	// 	}
+
+	// 	// std::cout << "-----------------------\n";
+	// 	// std::cout << "-----------------------\n";
+
+	// 	// elmat.print(std::cout);
+
+	// 	// std::cout << "-----------------------\n";
+
+	// 	for(uint i = 0; i < n_test; ++i) {
+	// 		if(sum_elmat(i) == 0) {
+	// 			continue;
+	// 		}
+
+	// 		rhs(i) = sum_elmat(i);
+
+	// 		elmat.cholesky_solve(rhs, sol);
+
+	// 		for(uint j = 0; j < n_test; ++j) {
+	// 			weights(i, j) = sol(j);
+	// 		}
+
+	// 		rhs(i) = 0;
+	// 	}
+
+	// 	//normalization for consistently scaled coefficients
+	// 	for(uint i = 0; i < n_test; ++i) {
+	// 		if(sum_elmat(i) == 0) {
+	// 			continue;
+	// 		}
+
+	// 		libMesh::Real t = 0;
+	// 		for(uint j = 0; j < n_test; ++j) {
+	// 			t += weights(i, j);
+	// 		}
+
+	// 		for(uint j = 0; j < n_test; ++j) {
+	// 			weights(i, j) *= 1./t;
+	// 		}
+	// 	}
+
+	// 	weights.print(std::cout);
+	// }
+
+
+
+	static libMesh::Real sum(const libMesh::Real &val) { return val; }
+
+	static libMesh::Real sum(const libMesh::VectorValue<libMesh::Real> &val) {
+		return val(0) + val(1) + val(2);
+	 }
+
 	template<class FE>
 	void mortar_assemble_weights_aux(const FE &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
 	{
-		libMesh::DenseMatrix<libMesh::Real> elmat;
-		elmat.resize(fe.get_phi().size(), fe.get_phi().size());
-		elmat.zero();
-
-
-		weights.resize(elmat.m(), elmat.n());
-		weights.zero();
 
 		const auto &test = fe.get_phi();
 		const auto &JxW   = fe.get_JxW();
@@ -2213,16 +2305,30 @@ namespace utopia {
 		const uint n_test  = test.size();
 		const uint n_qp    = test[0].size();
 
+
+		libMesh::DenseMatrix<libMesh::Real> elmat;
+		elmat.resize(n_test, n_test);
+		elmat.zero();
+
+		libMesh::DenseVector<libMesh::Real> sum_elmat(n_test);
+		sum_elmat.zero();
+
+		weights.resize(elmat.m(), elmat.n());
+		weights.zero();
+
+
 		for(uint qp = 0; qp < n_qp; ++qp) {
 			for(uint i = 0; i < n_test; ++i) {
+				const auto val = sum(test[i][qp]) * JxW[qp];
+				sum_elmat(i) += val;
+
 				for(uint j = 0; j < n_test; ++j) {
 					elmat(i, j) += contract(test[i][qp], test[j][qp]) * JxW[qp];
 				}
 			}
 		}
 
-		libMesh::DenseVector<libMesh::Real> sum_elmat(n_test);
-		sum_elmat.zero();
+	
 		libMesh::DenseVector<libMesh::Real> rhs(n_test);
 		rhs.zero();
 
@@ -2230,9 +2336,9 @@ namespace utopia {
 		sol.zero();
 
 		for(uint i = 0; i < n_test; ++i) {
-			for(uint j = 0; j < n_test; ++j) {
-				sum_elmat(i) += elmat(i, j);
-			}
+			// for(uint j = 0; j < n_test; ++j) {
+			// 	sum_elmat(i) += elmat(i, j);
+			// }
 
 			if(std::abs(sum_elmat(i)) < 1e-16) {
 				sum_elmat(i) = 0;
@@ -2244,11 +2350,14 @@ namespace utopia {
 		}
 
 		// std::cout << "-----------------------\n";
+
+		// std::cout << n_qp << std::endl;
 		// std::cout << "-----------------------\n";
 
 		// elmat.print(std::cout);
 
 		// std::cout << "-----------------------\n";
+
 
 		for(uint i = 0; i < n_test; ++i) {
 			if(sum_elmat(i) == 0) {
@@ -2282,6 +2391,12 @@ namespace utopia {
 			}
 		}
 
+
+
+
+		// sum_elmat.print(std::cout);
+
+		// std::cout << "-----------------------\n";
 		// weights.print(std::cout);
 	}
 

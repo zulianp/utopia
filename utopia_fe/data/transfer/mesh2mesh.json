@@ -1,7 +1,6 @@
 {
 	"transfer": {
 		"type": "l2-projection",
-		"biorth-basis": false,
 		"function": "1",
 		"function-type" : "constant",
 		"master": {

@@ -1,4 +1,5 @@
 #include "utopia_private_PetrovGalerkinAssembler.hpp"
+#include <cassert>
 
 namespace utopia {
 

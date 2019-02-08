@@ -21,7 +21,7 @@
 			"**path"   : "../data/contact/pseudo-signorini.e",
 			"*path"   : "../data/contact/pseudo-signorini-refined.e",
 			"**path"   : "../data/contact/pseudo-signorini-refined-twice.e",
-			"path" : "../data/contact/pseudo-signorini-coarse-slave.e",
+			"path" : "../data/contact/pseudo-signorini-coarse-slave-3.e",
 			"refinements" : 0
 
 		},

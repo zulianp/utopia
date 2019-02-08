@@ -26,7 +26,7 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            value = 0.5 * dot(x, (*this->data()->H) * x) - dot(x,  *rhs_);
+            value = 0.5 * dot(x, (*this->data()->H) * x) - dot(x, *rhs_);
             return true;
         }
 

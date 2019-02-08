@@ -175,10 +175,10 @@ namespace utopia {
 		// // kappa_B_t *= normal_hydraulic_conductivity;
 		// kappa_D_t *= normal_hydraulic_conductivity;
 
-		kappa_B   *= normal_hydraulic_conductivity;
-		kappa_D   *= normal_hydraulic_conductivity;
+		// kappa_B   *= normal_hydraulic_conductivity;
+		// kappa_D   *= normal_hydraulic_conductivity;
 		kappa_B_t *= normal_hydraulic_conductivity;
-		kappa_D_t *= normal_hydraulic_conductivity;
+		// kappa_D_t *= normal_hydraulic_conductivity;
 
 		c.stop();
 		std::cout << "transfer assemly time: " << c << std::endl;

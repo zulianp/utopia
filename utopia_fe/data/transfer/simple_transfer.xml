@@ -2,8 +2,9 @@
 	<!-- <type>approx-l2-projection</type> -->
 	<!-- <type>interpolation</type> -->
 	<type>l2-projection</type>
-	<biorth-basis>0</biorth-basis>
+	<!-- <type>pseudo-l2-projection</type> -->
 	<function>-x</function>
+	<!-- <write-operators-to-disk>true</write-operators-to-disk> -->
 
 	<!-- <force-shell>true</force-shell> -->
 	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
@@ -14,7 +15,7 @@
 	<master>
 		<mesh>
 			<type>square</type>
-			<elem-type>quad</elem-type>
+			<elem-type>tri</elem-type>
 			<order>2</order>
 
 			<min-x>0.</min-x>
@@ -33,7 +34,7 @@
 	<slave>
 		<mesh>
 			<type>square</type>
-			<elem-type>quad</elem-type>
+			<elem-type>tri</elem-type>
 			<order>2</order>
 
 			<min-x>0.</min-x>
@@ -45,7 +46,13 @@
 			<n-x>11</n-x>
 			<n-y>11</n-y>
 		</mesh>
-		<space></space>
+		<space>
+			<variables>
+				<entry>
+					<order>2</order>
+				</entry>
+			</variables>
+		</space>
 	</slave>
 	
 </transfer>
