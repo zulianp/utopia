@@ -7,7 +7,7 @@
 namespace utopia {
 
 	FractureFlowTransportSimulation::FractureFlowTransportSimulation(libMesh::Parallel::Communicator &comm)
-	: steady_flow_(comm), preset_velocity_field_(false), transport_m_("matrix"), transport_f_("fracture_network")
+	: steady_flow_(comm), preset_velocity_field_(false), transport_m_("matrix"), transport_f_("fracture_network"), hack_conductivity(1.)
 	{}
 
 	void FractureFlowTransportSimulation::read(utopia::Input &in)
@@ -31,6 +31,7 @@ namespace utopia {
 
 		in.get("preset-velocity-field", preset_velocity_field_);
 		in.get("transient-solve-strategy", transient_solve_strategy);
+		in.get("hack-conductivity", hack_conductivity);
 	}
 
 
@@ -99,49 +100,83 @@ namespace utopia {
 		transport_m_.assemble_system(*steady_flow_.matrix);
 
 		auto &V_m = transport_m_.space->space().last_subspace();
+		auto &V_f = transport_f_.space->space().last_subspace();
 
-		UVector &xkp1 = transport_m_.concentration;
-		UVector rhs = local_zeros(local_size(xkp1));
+		UVector &xkp1_m = transport_m_.concentration;
+		UVector rhs_m = local_zeros(local_size(xkp1_m));
 
-		apply_boundary_conditions(V_m.dof_map(), transport_m_.system_matrix, xkp1);
+		apply_boundary_conditions(V_m.dof_map(), transport_m_.system_matrix, xkp1_m);
 
-		libMesh::Nemesis_IO io_m(V_m.mesh());
+		UVector &xkp1_f = transport_f_.concentration;
+		UVector rhs_f = local_zeros(local_size(xkp1_f));
 
-		utopia::convert(xkp1, *V_m.equation_system().solution);
+		apply_boundary_conditions(V_f.dof_map(), transport_f_.system_matrix, xkp1_f);
+
+		libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+
+		utopia::convert(xkp1_m, *V_m.equation_system().solution);
+		utopia::convert(xkp1_f, *V_f.equation_system().solution);
 
 		V_m.equation_system().solution->close();
 		io_m.write_timestep("transient.e", V_m.equation_systems(), 1, 0);
 
+		V_f.equation_system().solution->close();
+		io_f.write_timestep("transient_f.e", V_f.equation_systems(), 1, 0);
+
 		Factorization<USparseMatrix, UVector> solver_m, solver_f;
 		solver_m.update(make_ref(transport_m_.system_matrix));
-		// solver_f.update(make_ref(transport_f_.system_matrix));
+		solver_f.update(make_ref(transport_f_.system_matrix));
 
 		// write("A.m", transport_m_.system_matrix);
 
 		assert(!empty(transport_m_.f));
+		assert(!empty(transport_f_.f));
 
 
 		transport_m_.post_process_time_step(0., *steady_flow_.matrix);
+		transport_f_.post_process_time_step(0., *steady_flow_.fracture_network);
 
 
 		int n_timesteps = 1;
 		for(double t = transport_m_.dt; t < transport_m_.simulation_time; t += transport_m_.dt) {
 
-			transport_m_.add_mass(xkp1, rhs);
-			rhs += transport_m_.dt * transport_m_.f;
 
-			transport_m_.constrain_concentration(rhs);
+			{ //matrix
+				transport_m_.add_mass(xkp1_m, rhs_m);
+				rhs_m += transport_m_.dt * transport_m_.f;
 
-			solver_m.apply(rhs, xkp1);
+				transport_m_.constrain_concentration(rhs_m);
+
+				solver_m.apply(rhs_m, xkp1_m);
 
 
-			transport_m_.post_process_time_step(t, *steady_flow_.matrix);
+				transport_m_.post_process_time_step(t, *steady_flow_.matrix);
 
 
-			utopia::convert(xkp1, *V_m.equation_system().solution);
-			V_m.equation_system().solution->close();
+				utopia::convert(xkp1_m, *V_m.equation_system().solution);
+				V_m.equation_system().solution->close();
 
-			io_m.write_timestep("transient.e", V_m.equation_systems(), ++n_timesteps, t);
+				io_m.write_timestep("transient.e", V_m.equation_systems(), ++n_timesteps, t);
+			}
+
+
+			{ //fracture
+				transport_f_.add_mass(xkp1_f, rhs_f);
+				rhs_f += transport_f_.dt * transport_f_.f;
+
+				transport_f_.constrain_concentration(rhs_f);
+
+				solver_f.apply(rhs_f, xkp1_f);
+
+
+				transport_f_.post_process_time_step(t, *steady_flow_.fracture_network);
+
+
+				utopia::convert(xkp1_f, *V_f.equation_system().solution);
+				V_f.equation_system().solution->close();
+
+				io_f.write_timestep("transient_f.e", V_f.equation_systems(), ++n_timesteps, t);
+			}
 		}
 
 		// write_result_csv*
@@ -170,10 +205,17 @@ namespace utopia {
 		apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
 
+		// USparseMatrix hack_B_t = transport_m_.dt * steady_flow_.kappa_B_t;
+		// USparseMatrix hack_D_t = transport_f_.dt * steady_flow_.D_t;
+
+		// USparseMatrix &hack_B_t = steady_flow_.B_t; 
+		USparseMatrix &hack_B_t = steady_flow_.B_t; 
+		USparseMatrix &hack_D_t = steady_flow_.D_t;
+
 		USparseMatrix A = Blocks<USparseMatrix>(3, 3,
 		{
-		    make_ref(A_m),			  nullptr, 					make_ref(steady_flow_.B_t),
-		    nullptr, 				  make_ref(A_f), 			make_ref(steady_flow_.D_t),
+		    make_ref(A_m),			  nullptr, 					make_ref(hack_B_t),
+		    nullptr, 				  make_ref(A_f), 			make_ref(hack_D_t),
 		    make_ref(steady_flow_.B), make_ref(steady_flow_.D), nullptr
 		});
 
@@ -195,19 +237,9 @@ namespace utopia {
 
 		UVector x = blocks(x_m, x_f, lagr);
 
-
-		// KSPSolver<USparseMatrix, UVector> op;
-		// op.set_initial_guess_non_zero(false);
-		// op.ksp_type(KSPPREONLY);
-		// op.pc_type(PCLU);
-		// op.solver_package(MATSOLVERSUPERLU_DIST);
-
 		Factorization<USparseMatrix, UVector> op;
 		op.describe(std::cout);
-
-
 		op.update(make_ref(A));
-
 
 		int n_timesteps = 1;
 		const double dt = transport_m_.dt;
@@ -256,8 +288,10 @@ namespace utopia {
 	{
 
 		if(steady_flow_.solve_strategy == "separate" || transient_solve_strategy == "separate") {
+			std::cout << "[Status] compute_transport_separate" << std::endl;
 			compute_transport_separate();
 		} else {
+			std::cout << "[Status] compute_transport_monolithic" << std::endl;
 			compute_transport_monolithic();
 		}
 	}
@@ -767,7 +801,7 @@ namespace utopia {
 
 			total_in_out_flow[idx++] += outflow_val;
 
-			std::cout << outflow_val << std::endl;
+			std::cout << t << " : " << outflow_val << std::endl;
 		}
 
 		csv.write_table_row(vals);

@@ -1192,7 +1192,7 @@ namespace utopia {
             MatMultAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
             result = std::move(temp);
         } else {
-            result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+            result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
         }
     }
@@ -1205,7 +1205,7 @@ namespace utopia {
             MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
             result = std::move(temp);
         } else {
-            result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+            result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
         }
     }

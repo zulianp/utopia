@@ -60,19 +60,6 @@ namespace utopia {
 		    plot_mesh(matrix->mesh.mesh(), "matrix");
 		}
 
-		// matrix->describe();
-		// fracture_network->describe();
-		// lagrange_multiplier->describe();
-
-		// std::cout << "solve-strategy: "  << solve_strategy << std::endl;
-		// std::cout << "use-mg:         "  << use_mg         << std::endl;
-		// if(use_mg) {
-		//     std::cout << "mg-sweeps:      "  << mg_sweeps      << std::endl;
-		//     std::cout << "mg-levels:      "  << mg_levels      << std::endl;
-		// }
-
-		// std::cout << "normal-hydraulic-conductivity " << normal_hydraulic_conductivity << std::endl;
-
 		this->describe(std::cout);
 
 		auto &V_m = matrix->space.subspace(0);
