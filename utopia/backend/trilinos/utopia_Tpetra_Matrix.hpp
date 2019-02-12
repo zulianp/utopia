@@ -306,6 +306,22 @@ namespace utopia {
            }
         }
 
+       template<typename Integer>
+        void set_matrix(
+         const std::vector<Integer> &rows,
+         const std::vector<Integer> &cols,
+         const Scalar value
+         )
+        {
+            //FIXME and find more efficient way
+           const auto n_rows = rows.size();
+           const auto n_cols = cols.size();
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               for(std::size_t j = 0; j < n_cols; ++j) {
+                   set(rows[i], cols[j], value);
+               }
+           }
+        }
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult_t(const TpetraVector &vec, TpetraVector &result) const;
 
