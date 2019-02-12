@@ -100,7 +100,6 @@ endfunction()
 
 
 list(APPEND UTOPIA_FE_MODULES
-	tests
 	apps
 	fractures
 	wear
@@ -119,6 +118,7 @@ list(APPEND UTOPIA_FE_MODULES
 	core
 	rapidxml
 	base
+    tests
  )
 
 FOREACH(MODULE ${UTOPIA_FE_MODULES})

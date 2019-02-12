@@ -17,11 +17,10 @@ if(INTREPID2_FOUND)
 	target_include_directories(utopia_fe_intrepid2 BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 	set_utopia_compiler_features(utopia_fe_intrepid2)
 
-
-	target_include_directories(utopia_fe_intrepid2 PUBLIC ${INTREPID2_INCLUDE_DIR})
+	target_include_directories(utopia_fe_intrepid2 PUBLIC ${Intrepid2_INCLUDE_DIRS})
 	target_link_libraries(utopia_fe_intrepid2 utopia_fe_libmesh_backend ${INTREPID2_LIBRARIES})
 
-	# set(INTREPID2_INCLUDE_DIR ${Intrepid2_INCLUDE_DIR} PARENT_SCOPE)
+	# set(Intrepid2_INCLUDE_DIRS ${Intrepid2_INCLUDE_DIRS} PARENT_SCOPE)
 	# set(Intrepid2_LIBRARIES ${Intrepid2_LIBRARIES} PARENT_SCOPE)
 
 	#----------------------------------------------------------------------------------------
