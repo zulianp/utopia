@@ -83,7 +83,7 @@ namespace utopia {
 		}
 
 		CSVWriter csv;
-		csv.open_file("result.csv");
+		csv.open_file("result.csv", CSVWriter::write());
 		csv.write_table_row(header);
 		csv.write_table_row(stats);
 		csv.close_file();
@@ -209,7 +209,7 @@ namespace utopia {
 		// USparseMatrix hack_D_t = transport_f_.dt * steady_flow_.D_t;
 
 		// USparseMatrix &hack_B_t = steady_flow_.B_t; 
-		USparseMatrix &hack_B_t = steady_flow_.B_t; 
+		USparseMatrix hack_B_t  = hack_conductivity * steady_flow_.B_t; 
 		USparseMatrix &hack_D_t = steady_flow_.D_t;
 
 		USparseMatrix A = Blocks<USparseMatrix>(3, 3,
@@ -399,8 +399,8 @@ namespace utopia {
 		assert(space);
 
 		{
-			csv.open_file(name + ".csv");
-			std::vector<std::string> vals = { "t" };
+			csv.open_file(name + ".csv", CSVWriter::write());
+			std::vector<std::string> vals = { "t", "c" };
 
 			for(auto io : in_out_flow) {
 				vals.push_back("in/out-flow" + std::to_string(io));
@@ -724,6 +724,8 @@ namespace utopia {
 			partial_boundary_flow_matrix.push_back(temp_boundary_flow_matrix);
 
 			utopia::assemble(flow_form, *temp_boundary_flow_matrix);
+			(*temp_boundary_flow_matrix) *= -1.;
+
 			if(empty(boundary_flow_matrix)) {
 				boundary_flow_matrix = *temp_boundary_flow_matrix;
 			} else {
@@ -794,6 +796,11 @@ namespace utopia {
 			total_in_out_flow.resize(partial_boundary_flow_matrix.size(), 0.);
 		}
 
+		double porosity_x_mass_x_c = sum(mass_matrix * concentration);
+		vals.push_back(porosity_x_mass_x_c);
+
+		std::cout << t << "," << porosity_x_mass_x_c << ",";
+
 		std::size_t idx = 0;
 		for(auto pbfm : partial_boundary_flow_matrix) {
 			double outflow_val = sum(*pbfm * concentration);
@@ -801,9 +808,12 @@ namespace utopia {
 
 			total_in_out_flow[idx++] += outflow_val;
 
-			std::cout << t << " : " << outflow_val << std::endl;
+			std::cout << outflow_val;
+
+			if(idx < partial_boundary_flow_matrix.size()) { std::cout << ","; }
 		}
 
+		std::cout << std::endl;
 		csv.write_table_row(vals);
 	}
 
