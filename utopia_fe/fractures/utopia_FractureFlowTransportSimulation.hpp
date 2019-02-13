@@ -62,6 +62,8 @@ namespace utopia {
 			USparseMatrix system_matrix;
 			USparseMatrix boundary_flow_matrix;
 			std::vector<std::shared_ptr<USparseMatrix>> partial_boundary_flow_matrix;
+			std::vector<std::shared_ptr<USparseMatrix>> partial_concentration_matrix;
+
 			UVector pressure_w;
 			UVector mass_vector;
 			UVector f;
@@ -75,6 +77,7 @@ namespace utopia {
 			std::vector<double> box_min, box_max;
 			std::vector<int> in_out_flow;
 			std::vector<double> total_in_out_flow;
+			std::vector<int> concentration_blocks;
 
 			CSVWriter csv;
 

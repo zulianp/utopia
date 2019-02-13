@@ -402,6 +402,10 @@ namespace utopia {
 			csv.open_file(name + ".csv", CSVWriter::write());
 			std::vector<std::string> vals = { "t", "c" };
 
+			for(auto io : concentration_blocks) {
+				vals.push_back("c-block" + std::to_string(io));
+			}
+
 			for(auto io : in_out_flow) {
 				vals.push_back("in/out-flow" + std::to_string(io));
 			}
@@ -520,6 +524,19 @@ namespace utopia {
 
 					if(side >= 0) {
 						in_out_flow.push_back(side);
+					}
+				});
+		});
+
+		//concentration_blocks
+		in.get("export-concentrations",
+			[this](Input &in) {
+				in.get_all([this](Input &in) {
+					int block = -1;
+					in.get("block", block);
+
+					if(block >= 0) {
+						concentration_blocks.push_back(block);
 					}
 				});
 		});
@@ -716,9 +733,16 @@ namespace utopia {
 
 		}
 
+		for(auto block : concentration_blocks) {
+			auto c_form = integral(inner(ctx_fun(porosity) * c, q), block);
+			auto temp_matrix = std::make_shared<USparseMatrix>();
+			utopia::assemble(c_form, *temp_matrix);
+			partial_concentration_matrix.push_back(temp_matrix);
+		}
 
 		for(auto tag : in_out_flow) {
-			auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
+			// auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
+			auto flow_form = surface_integral(inner(c * inner(vel, normal()), q), tag);
 
 			auto temp_boundary_flow_matrix = std::make_shared<USparseMatrix>();
 			partial_boundary_flow_matrix.push_back(temp_boundary_flow_matrix);
@@ -800,6 +824,13 @@ namespace utopia {
 		vals.push_back(porosity_x_mass_x_c);
 
 		std::cout << t << "," << porosity_x_mass_x_c << ",";
+
+		for(auto pcm : partial_concentration_matrix) {
+			double concentration_value = sum(*pcm * concentration);
+			vals.push_back(concentration_value);
+
+			std::cout << concentration_value << ",";
+		}
 
 		std::size_t idx = 0;
 		for(auto pbfm : partial_boundary_flow_matrix) {
