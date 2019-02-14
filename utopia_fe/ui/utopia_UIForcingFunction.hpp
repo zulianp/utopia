@@ -42,6 +42,13 @@ namespace utopia {
 				is.get("block", block);
 				is.get("type", type);
 
+
+				if(block == -1) {
+					std::cerr << "[Error]ForcingFunction block not specified" << std::endl;
+					return;
+				}
+
+
 #ifdef WITH_TINY_EXPR
 				std::string value;
 				is.get("value", value);

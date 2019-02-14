@@ -7,6 +7,7 @@
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_Describable.hpp"
+#include "utopia_WeakDirichletBoundaryConditions.hpp"
 
 #include "libmesh/parallel_mesh.h"
 
@@ -28,8 +29,12 @@ namespace utopia {
 		UIFunctionSpace<FunctionSpaceT>  space;
 		std::shared_ptr< UIForcingFunction<FunctionSpaceT, UVector> > forcing_function;
 		std::shared_ptr<UIFunction<double>> sampler;
-
 		ElementMatrix diffusion_tensor;
+
+		void apply_weak_BC(USparseMatrix &A, UVector &b) const;
+
+	private:
+		std::shared_ptr< WeakDirichletBoundaryConditions<FunctionSpaceT, USparseMatrix, UVector> > weak_BC_;
 	};
 
 	class FractureFlowAuxSystem {

@@ -6,6 +6,7 @@
 #include "utopia_TransferUtils.hpp"
 #include "utopia_TransferAssembler.hpp"
 
+
 #include <iostream>
 
 namespace utopia {
@@ -117,6 +118,9 @@ namespace utopia {
 		double norm_f_m = norm2(rhs_m);
 
 		std::cout << "forcing_functions: " << norm_f_m << " " << norm_f_f << std::endl;
+
+		matrix->apply_weak_BC(A_m, rhs_m);
+		fracture_network->apply_weak_BC(A_f, rhs_f);
 
 		apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
