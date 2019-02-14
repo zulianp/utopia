@@ -113,6 +113,11 @@ namespace utopia {
 		matrix->forcing_function->eval(x_m, rhs_m);
 		fracture_network->forcing_function->eval(x_f, rhs_f);
 
+		double norm_f_f = norm2(rhs_f);
+		double norm_f_m = norm2(rhs_m);
+
+		std::cout << "forcing_functions: " << norm_f_m << " " << norm_f_f << std::endl;
+
 		apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
 
