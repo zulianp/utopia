@@ -46,6 +46,7 @@
 #include "utopia_Grid2MeshTransferApp.hpp"
 
 #include <functional>
+#include <iostream>
 
 #include "par_moonolith.hpp"
 

@@ -92,7 +92,6 @@ namespace utopia {
 		bool preset_velocity_field_;
 
 		std::string transient_solve_strategy;
-		double hack_conductivity;
 
 	};
 

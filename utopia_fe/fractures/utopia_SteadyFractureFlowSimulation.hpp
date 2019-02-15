@@ -6,6 +6,8 @@
 #include "utopia_fe_base.hpp"
 #include "utopia_Describable.hpp"
 
+#include <memory>
+
 namespace utopia {
 
 	class SteadyFractureFlowSimulation : public Configurable, public Describable {
@@ -27,7 +29,7 @@ namespace utopia {
 		UVector x_m, x_f, lagr;
 
 		USparseMatrix D, B, D_t, B_t;
-		USparseMatrix kappa_D, kappa_B, kappa_D_t, kappa_B_t;
+		USparseMatrix kappa_B_t;
 
 		std::string solve_strategy;
 		bool use_mg;
@@ -36,6 +38,8 @@ namespace utopia {
 		bool plot_matrix;
 		bool write_operators_to_disk;
 		double normal_hydraulic_conductivity;
+
+		std::shared_ptr<UIFunction<double>> normal_hydraulic_conductivity_blocks;
 
 		void describe(std::ostream &os) const override;
 

@@ -7,7 +7,7 @@
 namespace utopia {
 
 	FractureFlowTransportSimulation::FractureFlowTransportSimulation(libMesh::Parallel::Communicator &comm)
-	: steady_flow_(comm), preset_velocity_field_(false), transport_m_("matrix"), transport_f_("fracture_network"), hack_conductivity(1.)
+	: steady_flow_(comm), preset_velocity_field_(false), transport_m_("matrix"), transport_f_("fracture_network")
 	{}
 
 	void FractureFlowTransportSimulation::read(utopia::Input &in)
@@ -31,7 +31,6 @@ namespace utopia {
 
 		in.get("preset-velocity-field", preset_velocity_field_);
 		in.get("transient-solve-strategy", transient_solve_strategy);
-		in.get("hack-conductivity", hack_conductivity);
 	}
 
 
@@ -205,17 +204,11 @@ namespace utopia {
 		apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
 
-		// USparseMatrix hack_B_t = transport_m_.dt * steady_flow_.kappa_B_t;
-		// USparseMatrix hack_D_t = transport_f_.dt * steady_flow_.D_t;
-
-		// USparseMatrix &hack_B_t = steady_flow_.B_t; 
-		USparseMatrix hack_B_t  = hack_conductivity * steady_flow_.B_t; 
-		USparseMatrix &hack_D_t = steady_flow_.D_t;
 
 		USparseMatrix A = Blocks<USparseMatrix>(3, 3,
 		{
-		    make_ref(A_m),			  nullptr, 					make_ref(hack_B_t),
-		    nullptr, 				  make_ref(A_f), 			make_ref(hack_D_t),
+		    make_ref(A_m),			  nullptr, 					make_ref(steady_flow_.kappa_B_t),
+		    nullptr, 				  make_ref(A_f), 			make_ref(steady_flow_.D_t),
 		    make_ref(steady_flow_.B), make_ref(steady_flow_.D), nullptr
 		});
 

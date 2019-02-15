@@ -9,6 +9,7 @@
 
 #include <iostream>
 
+
 namespace utopia {
 
 	void SteadyFractureFlowSimulation::describe(std::ostream &os) const
@@ -56,6 +57,22 @@ namespace utopia {
 		is.get("mg-levels", mg_levels);
 		is.get("plot-matrix", plot_matrix);
 		is.get("normal-hydraulic-conductivity", normal_hydraulic_conductivity);
+
+
+		auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
+
+		is.get("normal-hydraulic-conductivity-blocks", *subdomain_fun);
+
+		if(!subdomain_fun->good()) {
+			normal_hydraulic_conductivity_blocks = std::make_shared<UIConstantFunction<double>>(1.);
+		} else {
+
+			if(!subdomain_fun->has_default()) {
+				subdomain_fun->set_default(utopia::make_unique<UIConstantFunction<double>>(1.));
+			}
+
+			normal_hydraulic_conductivity_blocks = std::move(subdomain_fun);
+		}
 
 		if(plot_matrix) {
 		    plot_mesh(matrix->mesh.mesh(), "matrix");
@@ -135,6 +152,17 @@ namespace utopia {
 		}
 	}
 
+	template<class Space>
+	static void project_function(const std::shared_ptr<UIFunction<double>> &f, Space &V, UVector &vec)
+	{
+		UVector lumped_mass;
+		UVector vec_h;
+		auto v = test(V);
+		utopia::assemble(inner(coeff(1.), v) * dX, lumped_mass);
+		utopia::assemble(inner(ctx_fun(f), v) * dX, vec_h);
+		vec = e_mul(vec_h, 1./lumped_mass);
+	}
+
 	void SteadyFractureFlowSimulation::init_coupling()
 	{
 		Chrono c;
@@ -159,22 +187,40 @@ namespace utopia {
 		set_zero_at_constraint_rows(V_m.dof_map(), B_t);
 		set_zero_at_constraint_rows(V_f.dof_map(), D_t);
 
+		
 
-		kappa_B   = B;
-		kappa_D   = D;
-		kappa_B_t = B_t;
-		kappa_D_t = D_t;
+		auto constant_function = std::dynamic_pointer_cast<UIConstantFunction<double>>(normal_hydraulic_conductivity_blocks);
+		if(constant_function) {
+			kappa_B_t = B_t;
+			kappa_B_t *= (normal_hydraulic_conductivity * constant_function->value());
 
+			std::cout << "normal-hydraulic-conductivity-blocks = " << constant_function->value() << std::endl;
+		} else {
+			//perform l2-projection of kappa
 
-		// // kappa_B   *= normal_hydraulic_conductivity;
-		// kappa_D   *= normal_hydraulic_conductivity;
-		// // kappa_B_t *= normal_hydraulic_conductivity;
-		// kappa_D_t *= normal_hydraulic_conductivity;
+			//either on lagrange mult space or slave space
+			if(lagrange_multiplier->empty()) {
+				UVector kappa;
+				project_function(normal_hydraulic_conductivity_blocks, V_f, kappa);
+				USparseMatrix K = diag(kappa);
+				kappa_B_t = B_t * K;
+				kappa_B_t *= normal_hydraulic_conductivity;
 
-		// kappa_B   *= normal_hydraulic_conductivity;
-		// kappa_D   *= normal_hydraulic_conductivity;
-		kappa_B_t *= normal_hydraulic_conductivity;
-		// kappa_D_t *= normal_hydraulic_conductivity;
+				double min_kappa = min(kappa), max_kappa = max(kappa);
+				std::cout << "normal-hydraulic-conductivity-blocks  in [" << min_kappa << ", " << max_kappa << "]" << std::endl;
+			} else {
+				auto &V_l = lagrange_multiplier->space.subspace(0);
+				UVector kappa;
+				project_function(normal_hydraulic_conductivity_blocks, V_l, kappa);
+				USparseMatrix K = diag(kappa);
+				kappa_B_t = B_t * K;
+				kappa_B_t *= normal_hydraulic_conductivity;
+
+				double min_kappa = min(kappa), max_kappa = max(kappa);
+				std::cout << "normal-hydraulic-conductivity-blocks  in [" << min_kappa << ", " << max_kappa << "]" << std::endl;
+			}
+
+		}
 
 		c.stop();
 		std::cout << "transfer assemly time: " << c << std::endl;
@@ -230,10 +276,10 @@ namespace utopia {
 		solver.update(
 		    make_ref(A_m),
 		    make_ref(A_f),
-		    make_ref(kappa_B),
-		    make_ref(kappa_D),
+		    make_ref(B),
+		    make_ref(D),
 		    make_ref(kappa_B_t),
-		    make_ref(kappa_D_t)
+		    make_ref(D_t)
 		);
 
 		return solver.apply(rhs_m, rhs_f, x_m, x_f, lagr);
@@ -244,8 +290,8 @@ namespace utopia {
 		USparseMatrix A = Blocks<USparseMatrix>(3, 3,
 		{
 		    make_ref(A_m), nullptr, make_ref(kappa_B_t),
-		    nullptr, make_ref(A_f), make_ref(kappa_D_t),
-		    make_ref(kappa_B), make_ref(kappa_D), nullptr
+		    nullptr, make_ref(A_f), make_ref(D_t),
+		    make_ref(B), make_ref(D), nullptr
 		});
 
 		UVector z = local_zeros(local_size(B).get(0));
