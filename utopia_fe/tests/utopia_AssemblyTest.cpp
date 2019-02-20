@@ -44,7 +44,7 @@ namespace utopia {
 		const double norm_laplacian   = norm2(laplacian);
 		const double norm_mass_matrix = norm2(mass_matrix);
 
-		assert(approxeq(9.60035,   norm_laplacian, 1e-5));
-		assert(approxeq(0.0660453, norm_mass_matrix, 1e-5));
+		utopia_test_assert(approxeq(9.60035,   norm_laplacian, 1e-5));
+		utopia_test_assert(approxeq(0.0660453, norm_mass_matrix, 1e-5));
 	}
 }

@@ -113,7 +113,7 @@ namespace utopia {
         convert(sol, *sys.solution);
         sys.solution->close();
         Nemesis_IO(*lm_mesh).write_equation_systems("elast_mg.e", *equation_systems);
-        assert(err < 1e-6);
+        utopia_test_assert(err < 1e-6);
     }
 
     void run_semigeometric_multigrid_poisson(libMesh::Parallel::Communicator &comm)
@@ -184,7 +184,7 @@ namespace utopia {
         }
 
         const double err = norm2(lapl_mat * sol - rhs);
-        assert(err < 1e-6);
+        utopia_test_assert(err < 1e-6);
     }
 
     void SMGTest::run(Input &in)
