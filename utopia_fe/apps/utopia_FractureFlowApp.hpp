@@ -3,11 +3,6 @@
 
 #include <string>
 #include "utopia_FEApp.hpp"
-#include "libmesh/parallel_mesh.h"
-
-namespace libMesh {
-	class LibMeshInit;
-}
 
 namespace utopia {
 	class FractureFlowApp final : public FEApp {

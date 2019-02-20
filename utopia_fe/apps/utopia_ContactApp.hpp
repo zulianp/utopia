@@ -2,7 +2,6 @@
 #define UTOPIA_CONTACT_APP
 
 #include "utopia_FEApp.hpp"
-#include "libmesh/parallel_mesh.h"
 #include <string>
 
 

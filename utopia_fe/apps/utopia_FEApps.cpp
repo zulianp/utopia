@@ -5,6 +5,8 @@
 #include "utopia_RMTRApp.hpp"
 #include "utopia_Grid2MeshTransferApp.hpp"
 #include "utopia_ContactApp.hpp"
+#include "utopia_EikonalApp.hpp"
+#include "utopia_LeastSquaresHelmholtzApp.hpp"
 #include "utopia_make_unique.hpp"
 
 #include <iostream>
@@ -67,5 +69,7 @@ namespace utopia {
 		add_app(RMTRApp::command(),  			 utopia::make_unique<RMTRApp>());
 		add_app(ContactApp::command(),  		 utopia::make_unique<ContactApp>());
 		add_app(Grid2MeshTransferApp::command(), utopia::make_unique<Grid2MeshTransferApp>());
+		add_app(EikonalApp::command(), utopia::make_unique<EikonalApp>());
+		add_app(LeastSquaresHelmholtzApp::command(), utopia::make_unique<LeastSquaresHelmholtzApp>());
 	}
 }
