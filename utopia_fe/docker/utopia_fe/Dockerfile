@@ -66,7 +66,7 @@ RUN cd /utopia_cloned/utopia_fe/bin && \
 
 RUN cd /utopia_cloned/utopia_fe/bin && make -j4
 RUN cd /utopia_cloned/utopia_fe/bin && make install
-RUN cd /utopia_cloned/utopia_fe/bin && ./utopia_fe_exec -r smg
+RUN cd /utopia_cloned/utopia_fe/bin && ./utopia_fe_exec -test all
 
 
 # compile utopia_fe debug (skip because of Docker Hub time limit)
@@ -76,7 +76,7 @@ RUN cd /utopia_cloned/utopia_fe/bin && ./utopia_fe_exec -r smg
 
 # RUN cd /utopia_cloned/utopia_fe/bin_debug && make -j4
 # RUN cd /utopia_cloned/utopia_fe/bin_debug && make install
-# RUN cd /utopia_cloned/utopia_fe/bin_debug && ./utopia_fe_exec -r smg
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && ./utopia_fe_exec -test all
 
 ##########################################################################
 ##########################################################################

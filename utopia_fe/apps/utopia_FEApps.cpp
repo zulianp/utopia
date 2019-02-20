@@ -11,14 +11,19 @@
 
 namespace utopia {
 
-	FEApps::FEApps()
+	void FEApps::print_usage(std::ostream &os) const
 	{
-		add_app(TransferApp::command(),  		 utopia::make_unique<TransferApp>());
-		add_app(FractureFlowApp::command(),  	 utopia::make_unique<FractureFlowApp>());
-		add_app(RMTRApp::command(),  			 utopia::make_unique<RMTRApp>());
-		add_app(ContactApp::command(),  		 utopia::make_unique<ContactApp>());
-		add_app(Grid2MeshTransferApp::command(), utopia::make_unique<Grid2MeshTransferApp>());
+		os << "------------------------------------------------------\n";
+		os << "available apps:\n";
+
+		for(const auto &t : apps_) {
+			os << "\t" << t.first << "\n";
+		}
+
+		os << std::endl;
+		os << "------------------------------------------------------\n";
 	}
+
 
 	void FEApps::add_app(const std::string &command, std::unique_ptr<FEApp> &&app)
 	{
@@ -29,6 +34,11 @@ namespace utopia {
 	{
 		for(int i = 1; i < argc; ++i) {
 			const int ip1 = i+1;
+
+			if(argv[i] == std::string("-test")) {
+				i = ip1;
+				continue;
+			}
 
 			auto it = apps_.find(argv[i]);
 			if(it == apps_.end()) continue;
@@ -48,5 +58,14 @@ namespace utopia {
 			it->second->init(comm);
 			it->second->run(*in);
 		}
+	}
+
+	FEApps::FEApps()
+	{
+		add_app(TransferApp::command(),  		 utopia::make_unique<TransferApp>());
+		add_app(FractureFlowApp::command(),  	 utopia::make_unique<FractureFlowApp>());
+		add_app(RMTRApp::command(),  			 utopia::make_unique<RMTRApp>());
+		add_app(ContactApp::command(),  		 utopia::make_unique<ContactApp>());
+		add_app(Grid2MeshTransferApp::command(), utopia::make_unique<Grid2MeshTransferApp>());
 	}
 }

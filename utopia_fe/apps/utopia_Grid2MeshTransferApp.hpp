@@ -23,13 +23,8 @@ namespace utopia {
 		Grid2MeshTransferApp();
 
 		void run(Input &in) override;
-		void init(libMesh::Parallel::Communicator &comm) override;
-
 
 		static std::string command() { return "-g2m_transfer"; }
-
-	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 	};
 }
 

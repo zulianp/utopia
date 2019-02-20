@@ -62,18 +62,13 @@ namespace utopia {
 		UIFunctionSpace<LibMeshFunctionSpace>  space_;
 	};
 
-	void TransferApp::init(libMesh::Parallel::Communicator &comm)
-    {
-        comm_ = make_ref(comm);
-    }
-
 	void TransferApp::run(Input &in)
 	{
 		Chrono c;
 		c.start();
 
-		InputSpace input_master(*comm_);
-		InputSpace input_slave(*comm_);
+		InputSpace input_master(comm());
+		InputSpace input_slave(comm());
 		bool master_boundary = false, slave_boundary = false;
 
 		std::shared_ptr<libMesh::MeshBase> master_actual_mesh, slave_actual_mesh;
@@ -90,7 +85,7 @@ namespace utopia {
 			is.get("slave-boundary",  slave_boundary);
 
 			if(master_boundary) {
-				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(*comm_, input_master.mesh().mesh_dimension()-1);
+				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_master.mesh().mesh_dimension()-1);
 				input_master.mesh().boundary_info->sync(*b_mesh);
 				master_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
 				master_actual_space->initialize();
@@ -101,7 +96,7 @@ namespace utopia {
 			}
 
 			if(slave_boundary) {
-				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(*comm_, input_slave.mesh().mesh_dimension()-1);
+				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_slave.mesh().mesh_dimension()-1);
 				input_slave.mesh().boundary_info->sync(*b_mesh);
 				slave_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
 				slave_actual_space->initialize();

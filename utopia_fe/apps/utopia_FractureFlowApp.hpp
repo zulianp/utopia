@@ -13,16 +13,11 @@ namespace utopia {
 	class FractureFlowApp final : public FEApp {
 	public:
 		void run(Input &in) override;
-		void init(libMesh::Parallel::Communicator &comm) override;
-
 		
 		inline static std::string command()
 		{
 			return "-fracflow";
 		}
-
-	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 	};
 }
 

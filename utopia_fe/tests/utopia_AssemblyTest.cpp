@@ -1,13 +1,16 @@
+
+#include "utopia_AssemblyTest.hpp"
+
 #include "utopia_libmesh.hpp"
 #include "libmesh/mesh_generation.h"
 
 namespace utopia {
-	void run_assembly_test(libMesh::LibMeshInit &init)
+	void AssemblyTest::run(Input &in)
 	{
 		std::cout << "[run_assembly_test]" << std::endl;
 		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
 
 		const unsigned int n = 2;
 		libMesh::MeshTools::Generation::build_cube(*mesh,

@@ -26,10 +26,7 @@ namespace utopia {
 
     typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-    void RMTRApp::init(libMesh::Parallel::Communicator &comm)
-    {
-        comm_ = make_ref(comm);
-    }
+
 
     static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T)
     {
@@ -306,7 +303,7 @@ namespace utopia {
         Chrono c;
         c.start();
 
-        auto mesh = std::make_shared<libMesh::DistributedMesh>(*comm_);
+        auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
         in.make_mesh(*mesh);
 
         mesh->print_info();
@@ -363,7 +360,7 @@ namespace utopia {
 
 
 
-        meshes[0] = std::make_shared<libMesh::DistributedMesh>(*comm_);
+        meshes[0] = std::make_shared<libMesh::DistributedMesh>(comm());
         in.make_mesh(*meshes[0]);
 
         for(std::size_t i = 1; i < n_levels; ++i) {

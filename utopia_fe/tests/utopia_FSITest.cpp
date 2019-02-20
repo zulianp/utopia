@@ -84,9 +84,9 @@ namespace utopia {
 		}
 	}
 
-	void run_fsi_test(libMesh::LibMeshInit &init)
+	void FSITest::run(Input &in)
 	{
-		moonolith::Communicator comm(init.comm().get());
+		moonolith::Communicator comm(this->comm().get());
 
 		// const double prop = 1.;
 		const double prop = 0.5;
@@ -105,7 +105,7 @@ namespace utopia {
 		//Fluid discretization
 		////////////////////////////////////////////////////////////////////////////////////
 
-		auto fluid_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
+		auto fluid_mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());		
 		libMesh::MeshTools::Generation::build_square(*fluid_mesh,
 			nx_fluid, ny_fluid,
 			-1.5, 1.5,
@@ -133,7 +133,7 @@ namespace utopia {
 		//Solid discretization
 		////////////////////////////////////////////////////////////////////////////////////
 
-		auto solid_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto solid_mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());
 		libMesh::MeshTools::Generation::build_square(*solid_mesh,
 			nx_solid, ny_solid,
 			-0.05, 0.05,

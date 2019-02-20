@@ -27,16 +27,17 @@
 #include <iostream>
 
 namespace utopia {
-	void run_boundary_integral_test(libMesh::LibMeshInit &init)
+
+	void BoundaryIntegralTest::run(Input &in)
 	{
-		moonolith::Communicator comm(init.comm().get());
+		moonolith::Communicator comm(this->comm().get());
 
 		const unsigned int nx = 6;
 		const unsigned int ny = 6;
 		const unsigned int nz = 6;
 
 		auto elem_order = libMesh::SECOND;
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());
 
 		libMesh::MeshTools::Generation::build_cube(*mesh,
 			nx, ny, nz,

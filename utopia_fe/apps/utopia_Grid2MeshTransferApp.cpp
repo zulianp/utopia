@@ -302,18 +302,15 @@ namespace utopia {
 		Grid3 grid3;
 	};
 
-	void Grid2MeshTransferApp::init(libMesh::Parallel::Communicator &comm)
-	{
-		comm_ = make_ref(comm);
-	}
+
 
 	void Grid2MeshTransferApp::run(Input &in)
 	{
 		Chrono c;
 		c.start();
 
-		InputGrid input_master(*comm_);
-		InputSpace input_slave(*comm_);
+		InputGrid input_master(comm());
+		InputSpace input_slave(comm());
 
 		//get operator props
 		std::string path;
@@ -575,7 +572,7 @@ namespace utopia {
 
 			for(int i = ownr->local_nodes_begin(); i < ownr->local_nodes_end(); ++i) {
 				if(enumerate_nodes) {
-					fun_master.set(i, comm_->rank());
+					fun_master.set(i, comm().rank());
 				} else {
 #ifdef WITH_TINY_EXPR
 					if(input_master.is_3D) {

@@ -142,10 +142,6 @@ namespace utopia {
 		std::shared_ptr< QPSolver<USparseMatrix, UVector> > qp_solver;
 	};
 
-	void ContactApp::init(libMesh::Parallel::Communicator &comm)
-    {
-        comm_ = make_ref(comm);
-    }
 
 	static void solve_steady(SimulationInput &sim_in)
 	{
@@ -251,7 +247,7 @@ namespace utopia {
 
 	void ContactApp::run(Input &in)
 	{
-		SimulationInput sim_in(*comm_);
+		SimulationInput sim_in(comm());
 		in.get("contact-problem", sim_in);
 		sim_in.describe(std::cout);
 
@@ -266,11 +262,6 @@ namespace utopia {
 #else
 
 namespace utopia {
-
-	void ContactApp::init(libMesh::Parallel::Communicator &comm)
-	{
-	    comm_ = make_ref(comm);
-	}
 
 	void ContactApp::run(const std::string &path)
 	{

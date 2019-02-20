@@ -4,11 +4,6 @@
 
 namespace utopia {
     
-    void FractureFlowApp::init(libMesh::Parallel::Communicator &comm)
-    {
-        comm_ = make_ref(comm);
-    }
-
     void FractureFlowApp::run(Input &in)
     {
         // <flow-type>transient</flow-type>
@@ -17,11 +12,11 @@ namespace utopia {
         in.get("flow-type", flow_type);
 
         if(flow_type.empty() || flow_type == "steady") {
-            SteadyFractureFlowSimulation sim(*comm_);
+            SteadyFractureFlowSimulation sim(comm());
             sim.read(in);
             sim.run();
         } else {
-            FractureFlowTransportSimulation sim(*comm_);
+            FractureFlowTransportSimulation sim(comm());
             sim.read(in);
             sim.run();
         }

@@ -13,7 +13,7 @@ namespace utopia {
 	class RMTRApp final : public FEApp {
 	public:
 		void run(Input &in) override;
-		void init(libMesh::Parallel::Communicator &comm) override;
+
 
 		
 		inline static std::string command()
@@ -24,7 +24,6 @@ namespace utopia {
 		class SimulationInput;
 
 	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 
 		void solve_newton(const SimulationInput &in);
 		void solve_rmtr(const SimulationInput &in);

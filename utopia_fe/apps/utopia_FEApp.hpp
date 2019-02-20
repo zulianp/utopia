@@ -3,6 +3,9 @@
 
 #include "utopia_ui.hpp"
 #include "utopia_App.hpp"
+#include "utopia_Utils.hpp"
+
+
 #include "libmesh/parallel_mesh.h"
 #include <string>
 
@@ -11,7 +14,19 @@ namespace utopia {
 	class FEApp : public App {
 	public:
 		virtual ~FEApp() {}
-		virtual void init(libMesh::Parallel::Communicator &comm) = 0;
+		
+		inline void init(libMesh::Parallel::Communicator &comm) 
+		{
+			comm_ = utopia::make_ref(comm);
+		}
+
+		inline libMesh::Parallel::Communicator &comm()
+		{
+			return *comm_;
+		}
+
+	private:
+		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 	};
 }
 

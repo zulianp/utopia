@@ -14,12 +14,11 @@ using namespace libMesh;
 
 namespace utopia {
 
-    //not working properly
-    void run_semigeometric_multigrid_elast(libMesh::LibMeshInit &init)
+    void run_semigeometric_multigrid_elast(libMesh::Parallel::Communicator &comm)
     {
         std::cout << "[run_semigeometric_multigrid_elast]" << std::endl;
 
-        auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+        auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(comm);
 
         const unsigned int n = 70;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
@@ -117,10 +116,10 @@ namespace utopia {
         assert(err < 1e-6);
     }
 
-    void run_semigeometric_multigrid_poisson(libMesh::LibMeshInit &init)
+    void run_semigeometric_multigrid_poisson(libMesh::Parallel::Communicator &comm)
     {
         std::cout << "[run_semigeometric_multigrid_poisson]" << std::endl;
-        auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+        auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(comm);
 
         const unsigned int n = 50;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
@@ -188,9 +187,9 @@ namespace utopia {
         assert(err < 1e-6);
     }
 
-    void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init)
+    void SMGTest::run(Input &in)
     {
-        run_semigeometric_multigrid_poisson(init);
-        run_semigeometric_multigrid_elast(init);
+        run_semigeometric_multigrid_poisson(comm());
+        run_semigeometric_multigrid_elast(comm());
     }
 }

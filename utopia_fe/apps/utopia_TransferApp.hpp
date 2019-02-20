@@ -22,12 +22,10 @@ namespace utopia {
 		TransferApp();
 
 		void run(Input &in) override;
-		void init(libMesh::Parallel::Communicator &comm) override;
 
 		static std::string command() { return "-transfer"; }
 
 	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 
 #ifdef WITH_TINY_EXPR
 		std::shared_ptr<SymbolicFunction> fun;
