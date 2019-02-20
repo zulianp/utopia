@@ -1,7 +1,7 @@
 #ifndef UTOPIA_TRANSFER_APP
 #define UTOPIA_TRANSFER_APP
 
-#include "utopia_App.hpp"
+#include "utopia_FEApp.hpp"
 #include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_libmesh.hpp"
@@ -14,15 +14,15 @@ namespace utopia {
 	class LocalAssembler;
 	class Local2Global;
 
-	class TransferApp final : public App {
+	class TransferApp final : public FEApp {
 	public:
 		class InputSpace;
 
 		~TransferApp();
 		TransferApp();
 
-		void init(libMesh::LibMeshInit &init);
-		void run(const std::string &conf_file_path);
+		void run(Input &in) override;
+		void init(libMesh::Parallel::Communicator &comm) override;
 
 		static std::string command() { return "-transfer"; }
 

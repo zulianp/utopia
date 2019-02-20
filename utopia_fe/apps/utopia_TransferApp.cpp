@@ -62,17 +62,16 @@ namespace utopia {
 		UIFunctionSpace<LibMeshFunctionSpace>  space_;
 	};
 
-	void TransferApp::init(libMesh::LibMeshInit &init)
-	{
-		comm_ = make_ref(init.comm());
-	}
+	void TransferApp::init(libMesh::Parallel::Communicator &comm)
+    {
+        comm_ = make_ref(comm);
+    }
 
-	void TransferApp::run(const std::string &conf_file_path)
+	void TransferApp::run(Input &in)
 	{
 		Chrono c;
 		c.start();
 
-		auto is_ptr = open_istream(conf_file_path);
 		InputSpace input_master(*comm_);
 		InputSpace input_slave(*comm_);
 		bool master_boundary = false, slave_boundary = false;
@@ -82,7 +81,7 @@ namespace utopia {
 
 		std::shared_ptr<MeshTransferOperator> transfer_operator;
 
-		is_ptr->get("transfer", [&](Input &is) {
+		in.get("transfer", [&](Input &is) {
 			//get spaces
 			is.get("master", input_master);
 			is.get("slave",  input_slave);

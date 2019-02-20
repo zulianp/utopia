@@ -2,7 +2,7 @@
 #define UTOPIA_RMTR_APP_HPP
 
 #include <string>
-#include "utopia_App.hpp"
+#include "utopia_FEApp.hpp"
 #include "libmesh/parallel_mesh.h"
 
 namespace libMesh {
@@ -10,10 +10,11 @@ namespace libMesh {
 }
 
 namespace utopia {
-	class RMTRApp final : public App {
+	class RMTRApp final : public FEApp {
 	public:
-		void init(libMesh::LibMeshInit &init);
-		void run(const std::string &path) override;
+		void run(Input &in) override;
+		void init(libMesh::Parallel::Communicator &comm) override;
+
 		
 		inline static std::string command()
 		{

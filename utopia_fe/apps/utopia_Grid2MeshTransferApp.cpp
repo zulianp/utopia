@@ -302,17 +302,16 @@ namespace utopia {
 		Grid3 grid3;
 	};
 
-	void Grid2MeshTransferApp::init(libMesh::LibMeshInit &init)
+	void Grid2MeshTransferApp::init(libMesh::Parallel::Communicator &comm)
 	{
-		comm_ = make_ref(init.comm());
+		comm_ = make_ref(comm);
 	}
 
-	void Grid2MeshTransferApp::run(const std::string &conf_file_path)
+	void Grid2MeshTransferApp::run(Input &in)
 	{
 		Chrono c;
 		c.start();
 
-		auto is_ptr = open_istream(conf_file_path);
 		InputGrid input_master(*comm_);
 		InputSpace input_slave(*comm_);
 
@@ -343,10 +342,10 @@ namespace utopia {
 		auto master_mesh_dim = 3;
 		auto master_spatial_dim = 3;
 
-		is_ptr->get("transfer", [&](Input &is) {
+		in.get("transfer", [&](Input &is) {
 			//get spaces
-			is_ptr->get("master", input_master);
-			is_ptr->get("slave",  input_slave);
+			in.get("master", input_master);
+			in.get("slave",  input_slave);
 
 			if(!input_master.is_3D) {
 				master_mesh_dim = 2;

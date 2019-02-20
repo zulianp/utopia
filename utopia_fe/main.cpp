@@ -29,21 +29,18 @@
 #include "utopia_NonLinearElasticityTest.hpp"
 #include "utopia_FEEvalTest.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
-#include "utopia_ContactApp.hpp"
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_EikonalEquationTest.hpp"
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
 #include "utopia_VolumeInterpolationTest.hpp"
 #include "utopia_WearSimulation.hpp"
-#include "utopia_TransferApp.hpp"
-#include "utopia_FractureFlowApp.hpp"
-#include "utopia_RMTRApp.hpp"
 #include "utopia_EnergyAssemblyTest.hpp"
 #include "utopia_Intrepid2Test.hpp"
 #include "utopia_IntersectTest.hpp"
 #include "utopia_FETest.hpp"
 
-#include "utopia_Grid2MeshTransferApp.hpp"
+#include "utopia_FEApps.hpp"
+
 
 #include <functional>
 #include <iostream>
@@ -147,44 +144,49 @@ int main(int argc, char *argv[])
 			} else if(argv[i] == std::string("-data_path")) {
 				utopia::Utopia::instance().set("data_path", argv[ip1]);
 				std::cout << "setting data_path to: " << argv[ip1] << std::endl;
-			} else if(argv[i] == std::string("-wear_sim")) {
-				std::cout << argv[i] << " " << argv[ip1] << std::endl;
-				//passing wear xml path to
-				WearSimulation ws;
-				ws.run(init, argv[ip1]);
-			} else if(argv[i] == TransferApp::command()) {
-				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+			} 
 
-				TransferApp app;
-				app.init(init);
-				app.run(argv[ip1]);
-			} else if(argv[i] == FractureFlowApp::command()) {
-				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+			// else if(argv[i] == std::string("-wear_sim")) {
+			// 	std::cout << argv[i] << " " << argv[ip1] << std::endl;
+			// 	//passing wear xml path to
+			// 	WearSimulation ws;
+			// 	ws.run(init, argv[ip1]);
+			// } else if(argv[i] == TransferApp::command()) {
+			// 	std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
-				FractureFlowApp app;
-				app.init(init);
-				app.run(argv[ip1]);
-			} else if(argv[i] == RMTRApp::command()) {
-				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+			// 	TransferApp app;
+			// 	app.init(init);
+			// 	app.run(argv[ip1]);
+			// } else if(argv[i] == FractureFlowApp::command()) {
+			// 	std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
-				RMTRApp app;
-				app.init(init);
-				app.run(argv[ip1]);
-			} else if(argv[i] == ContactApp::command()) {
-				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+			// 	FractureFlowApp app;
+			// 	app.init(init);
+			// 	app.run(argv[ip1]);
+			// } else if(argv[i] == RMTRApp::command()) {
+			// 	std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
-				ContactApp app;
-				app.init(init);
-				app.run(argv[ip1]);
-			} else if(argv[i] == Grid2MeshTransferApp::command()) {
-				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+			// 	RMTRApp app;
+			// 	app.init(init);
+			// 	app.run(argv[ip1]);
+			// } else if(argv[i] == ContactApp::command()) {
+			// 	std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
-				Grid2MeshTransferApp app;
-				app.init(init);
-				app.run(argv[ip1]);
-			}
+			// 	ContactApp app;
+			// 	app.init(init);
+			// 	app.run(argv[ip1]);
+			// } else if(argv[i] == Grid2MeshTransferApp::command()) {
+			// 	std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+			// 	Grid2MeshTransferApp app;
+			// 	app.init(init);
+			// 	app.run(argv[ip1]);
+			// }
 
 		}
+
+		FEApps apps;
+		apps.run(init.comm(), argc, argv);
 	}
 
 	MOONOLITH_PROFILING_END();

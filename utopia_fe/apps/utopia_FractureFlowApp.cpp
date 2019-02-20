@@ -4,27 +4,25 @@
 
 namespace utopia {
     
-    void FractureFlowApp::init(libMesh::LibMeshInit &init)
+    void FractureFlowApp::init(libMesh::Parallel::Communicator &comm)
     {
-        comm_ = make_ref(init.comm());
+        comm_ = make_ref(comm);
     }
 
-    void FractureFlowApp::run(const std::string &conf_file_path)
+    void FractureFlowApp::run(Input &in)
     {
-        auto is_ptr = open_istream(conf_file_path);
-
         // <flow-type>transient</flow-type>
         std::string flow_type;
 
-        is_ptr->get("flow-type", flow_type);
+        in.get("flow-type", flow_type);
 
         if(flow_type.empty() || flow_type == "steady") {
             SteadyFractureFlowSimulation sim(*comm_);
-            sim.read(*is_ptr);
+            sim.read(in);
             sim.run();
         } else {
             FractureFlowTransportSimulation sim(*comm_);
-            sim.read(*is_ptr);
+            sim.read(in);
             sim.run();
         }
     }

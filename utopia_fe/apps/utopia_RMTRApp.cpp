@@ -26,9 +26,9 @@ namespace utopia {
 
     typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-    void RMTRApp::init(libMesh::LibMeshInit &init)
+    void RMTRApp::init(libMesh::Parallel::Communicator &comm)
     {
-        comm_ = make_ref(init.comm());
+        comm_ = make_ref(comm);
     }
 
     static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T)
@@ -428,20 +428,18 @@ namespace utopia {
     }
 
 
-    void RMTRApp::run(const std::string &conf_file_path)
+    void RMTRApp::run(Input &in)
     {
 
-        auto is_ptr = open_istream(conf_file_path);
+        SimulationInput sim_in;
+        in.get("rmtr-app", sim_in);
 
-        SimulationInput in;
-        is_ptr->get("rmtr-app", in);
+        sim_in.describe();
 
-        in.describe();
-
-        if(in.use_newton) {
-            solve_newton(in);
+        if(sim_in.use_newton) {
+            solve_newton(sim_in);
         } else {
-            solve_rmtr(in);
+            solve_rmtr(sim_in);
         }
     }
 }
