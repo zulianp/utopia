@@ -64,12 +64,12 @@ namespace utopia {
 
 	FEApps::FEApps()
 	{
-		add_app(TransferApp::command(),  		 utopia::make_unique<TransferApp>());
-		add_app(FractureFlowApp::command(),  	 utopia::make_unique<FractureFlowApp>());
-		add_app(RMTRApp::command(),  			 utopia::make_unique<RMTRApp>());
-		add_app(ContactApp::command(),  		 utopia::make_unique<ContactApp>());
-		add_app(Grid2MeshTransferApp::command(), utopia::make_unique<Grid2MeshTransferApp>());
-		add_app(EikonalApp::command(), utopia::make_unique<EikonalApp>());
+		add_app(TransferApp::command(),  		 	 utopia::make_unique<TransferApp>());
+		add_app(FractureFlowApp::command(),  	 	 utopia::make_unique<FractureFlowApp>());
+		add_app(RMTRApp::command(),  			 	 utopia::make_unique<RMTRApp>());
+		add_app(ContactApp::command(),  		 	 utopia::make_unique<ContactApp>());
+		add_app(Grid2MeshTransferApp::command(), 	 utopia::make_unique<Grid2MeshTransferApp>());
+		add_app(EikonalApp::command(), 			 	 utopia::make_unique<EikonalApp>());
 		add_app(LeastSquaresHelmholtzApp::command(), utopia::make_unique<LeastSquaresHelmholtzApp>());
 	}
 }
