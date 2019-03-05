@@ -115,7 +115,7 @@
 <!-- <preset-velocity-field>true</preset-velocity-field> -->
 
 <transport>
-	<dt>0.01</dt>
+	<dt>0.1</dt>
 	<simulation-time>1.</simulation-time>
 	<lump-mass-matrix>false</lump-mass-matrix>
 	<!-- <h1-regularization>false</h1-regularization> -->
@@ -144,7 +144,7 @@
 
 		</space>
 
-		<outflow>
+	<!-- 	<outflow>
 			<entry>
 				<side>0</side>
 			</entry>
@@ -155,7 +155,7 @@
 				<side>3</side>
 			</entry>
 
-		</outflow>
+		</outflow> -->
 		<porosity>
 			<entry>
 				<value>2.</value>
@@ -178,11 +178,11 @@
 			</variables>
 		</space>
 
-		<outflow>
+		<!-- <outflow>
 			<entry>
 				<side>1</side>
 			</entry>
-		</outflow>
+		</outflow> -->
 	</fracture-network>
 
 	

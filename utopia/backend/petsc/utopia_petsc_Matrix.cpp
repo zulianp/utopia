@@ -933,6 +933,11 @@ namespace utopia {
            );
 
         check_error( MatZeroEntries(I.implementation()) );
+        
+        //initialization
+        I.write_lock();
+        I.write_unlock();
+
         check_error( MatShift(I.implementation(), 1.) );
 
         result.dense_init(
