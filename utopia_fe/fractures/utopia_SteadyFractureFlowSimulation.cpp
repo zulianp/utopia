@@ -40,6 +40,7 @@ namespace utopia {
 		plot_matrix = false;
 		write_operators_to_disk = false;
 		normal_hydraulic_conductivity = 1.;
+		use_interpolation = false;
 	}
 
 	void SteadyFractureFlowSimulation::read(Input &is)
@@ -57,7 +58,8 @@ namespace utopia {
 		is.get("mg-levels", mg_levels);
 		is.get("plot-matrix", plot_matrix);
 		is.get("normal-hydraulic-conductivity", normal_hydraulic_conductivity);
-
+		is.get("write-operators-to-disk", write_operators_to_disk);
+		is.get("use-interpolation", use_interpolation);
 
 		auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
 
@@ -172,7 +174,11 @@ namespace utopia {
 		auto &V_f = fracture_network->space.subspace(0);
 
 		if(lagrange_multiplier->empty()) {
-			assemble_projection(V_m, V_f, B, D);
+			if(use_interpolation) {
+				assemble_interpolation(V_m, V_f, B, D);
+			} else {
+				assemble_projection(V_m, V_f, B, D);
+			}
 		} else {
 			auto &V_l = lagrange_multiplier->space.subspace(0);
 			assemble_projection(V_m, V_f, V_l, B, D);
@@ -222,6 +228,11 @@ namespace utopia {
 
 		}
 
+		if(write_operators_to_disk) {
+			write("B.m", B);
+			write("D.m", D);
+		}
+
 		c.stop();
 		std::cout << "transfer assemly time: " << c << std::endl;
 	}
@@ -237,6 +248,8 @@ namespace utopia {
  			ok = solve_cg_dual();
 		} else if(solve_strategy == "separate") {
 			ok = solve_separate();
+		} else if(solve_strategy == "static-condensation") {
+			ok = solve_monolithic_static_condenstation();
 		} else {
 			ok = solve_monolithic();
 		}
@@ -311,6 +324,30 @@ namespace utopia {
 
 		undo_blocks(sol, x_m, x_f, lagr);
 		return ok;
+	}
+
+	bool SteadyFractureFlowSimulation::solve_monolithic_static_condenstation()
+	{
+		// std::cout << "solve_monolithic_static_condenstation" << std::endl;
+		auto &V_m = matrix->space.subspace(0);
+		UVector d_inv = 1./sum(D, 1);
+		USparseMatrix D_inv = diag(d_inv);
+		T = D_inv * B;
+
+		USparseMatrix S = A_m + transpose(T) * A_f * T;
+		UVector rhs = rhs_m + transpose(T) * rhs_f;
+		apply_boundary_conditions(V_m.dof_map(), S, rhs);
+
+		Factorization<USparseMatrix, UVector> op_m;
+		op_m.update(make_ref(S));
+
+		if(!op_m.apply(rhs, x_m)) {
+			return false;
+		}
+
+		x_f = T * x_m;
+		lagr = D_inv * (A_f * (T * x_m) - rhs_f);
+		return true;
 	}
 
 	bool SteadyFractureFlowSimulation::solve_staggered()

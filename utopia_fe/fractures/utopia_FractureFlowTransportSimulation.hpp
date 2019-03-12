@@ -14,6 +14,7 @@ namespace utopia {
 		void compute_transport();
 		void compute_transport_separate();
 		void compute_transport_monolithic();
+		void compute_transport_monolithic_static_condenstation();
 		void append_aux_systems();
 		void write_output();
 		void compute_upwind_operator();

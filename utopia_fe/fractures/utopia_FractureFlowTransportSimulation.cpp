@@ -238,8 +238,6 @@ namespace utopia {
 		const double dt = transport_m_.dt;
 		const double simulation_time = transport_m_.simulation_time;
 
-
-
 		transport_f_.post_process_time_step(0., *steady_flow_.fracture_network);
 		transport_m_.post_process_time_step(0., *steady_flow_.matrix);
 
@@ -276,13 +274,95 @@ namespace utopia {
 		write_result_csv(A);
 	}
 
+	void FractureFlowTransportSimulation::compute_transport_monolithic_static_condenstation()
+	{
+		transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_network);
+		transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
+
+		transport_f_.assemble_system(*steady_flow_.fracture_network);
+		transport_m_.assemble_system(*steady_flow_.matrix);
+
+		auto &V_m = transport_m_.space->space().last_subspace();
+		auto &V_f = transport_f_.space->space().last_subspace();
+
+		UVector &x_m = transport_m_.concentration;
+		UVector &x_f = transport_f_.concentration;
+
+		UVector rhs_m = local_zeros(local_size(x_m));
+		UVector rhs_f = local_zeros(local_size(x_f));
+
+		USparseMatrix &A_m = transport_m_.system_matrix;
+		USparseMatrix &A_f = transport_f_.system_matrix;
+
+		apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
+		apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
+
+		const auto &T = steady_flow_.T;
+
+		USparseMatrix S = A_m + transpose(T) * A_f * T;
+		UVector rhs = rhs_m + transpose(T) * rhs_f;
+
+		apply_boundary_conditions(V_m.dof_map(), S, rhs);
+
+		libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+		utopia::convert(x_m, *V_m.equation_system().solution);
+
+		V_m.equation_system().solution->close();
+		io_m.write_timestep("transient.e", V_m.equation_systems(), 1, 0);
+
+		utopia::convert(x_f, *V_f.equation_system().solution);
+		V_f.equation_system().solution->close();
+		io_f.write_timestep("transient_f.e", V_f.equation_systems(), 1, 0);
+
+		Factorization<USparseMatrix, UVector> op;
+		op.describe(std::cout);
+		op.update(make_ref(S));
+
+		int n_timesteps = 1;
+		const double dt = transport_m_.dt;
+		const double simulation_time = transport_m_.simulation_time;
+
+		transport_f_.post_process_time_step(0., *steady_flow_.fracture_network);
+		transport_m_.post_process_time_step(0., *steady_flow_.matrix);
+
+		for(double t = dt; t < simulation_time; t += dt) {
+			transport_m_.add_mass(x_m, rhs_m);
+			transport_f_.add_mass(x_f, rhs_f);
+
+			rhs_m += transport_m_.dt * transport_m_.f;
+			rhs_f += transport_f_.dt * transport_f_.f;
+
+			transport_m_.constrain_concentration(rhs_m);
+			transport_f_.constrain_concentration(rhs_f);
+
+			rhs = rhs_m + transpose(T) * rhs_f;
+
+			op.apply(rhs, x_m);
+			x_f = T * x_m;
+
+			transport_f_.post_process_time_step(t, *steady_flow_.fracture_network);
+			transport_m_.post_process_time_step(t, *steady_flow_.matrix);
+
+			utopia::convert(x_m, *V_m.equation_system().solution);
+			V_m.equation_system().solution->close();
+
+			utopia::convert(x_f, *V_f.equation_system().solution);
+			V_f.equation_system().solution->close();
+
+			io_m.write_timestep("transient.e",   V_m.equation_systems(), ++n_timesteps, t);
+			io_f.write_timestep("transient_f.e", V_f.equation_systems(), ++n_timesteps, t);
+		}
+
+		write_result_csv(A_m);
+	}
 
 	void FractureFlowTransportSimulation::compute_transport()
 	{
-
 		if(steady_flow_.solve_strategy == "separate" || transient_solve_strategy == "separate") {
 			std::cout << "[Status] compute_transport_separate" << std::endl;
 			compute_transport_separate();
+		} else if(steady_flow_.solve_strategy == "static-condensation") {
+			compute_transport_monolithic_static_condenstation();
 		} else {
 			std::cout << "[Status] compute_transport_monolithic" << std::endl;
 			compute_transport_monolithic();
@@ -736,12 +816,13 @@ namespace utopia {
 		for(auto tag : in_out_flow) {
 			// auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
 			auto flow_form = surface_integral(inner(c * inner(vel, normal()), q), tag);
+			// auto flow_form = -surface_integral(inner(c, q), tag);
 
 			auto temp_boundary_flow_matrix = std::make_shared<USparseMatrix>();
 			partial_boundary_flow_matrix.push_back(temp_boundary_flow_matrix);
 
 			utopia::assemble(flow_form, *temp_boundary_flow_matrix);
-			(*temp_boundary_flow_matrix) *= -1.;
+			(*temp_boundary_flow_matrix) *= -1.0;
 
 			if(empty(boundary_flow_matrix)) {
 				boundary_flow_matrix = *temp_boundary_flow_matrix;
@@ -752,7 +833,7 @@ namespace utopia {
 			std::cout << "boundary flow at " << tag << std::endl;
 		}
 
-		if(!empty(boundary_flow_matrix)) {
+		if(!empty(boundary_flow_matrix) && 0.0 != boundary_factor) {
 			gradient_matrix -= boundary_factor * boundary_flow_matrix;
 		}
 

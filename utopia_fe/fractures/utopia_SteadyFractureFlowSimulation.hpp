@@ -28,7 +28,7 @@ namespace utopia {
 		UVector rhs_m, rhs_f;
 		UVector x_m, x_f, lagr;
 
-		USparseMatrix D, B, D_t, B_t;
+		USparseMatrix D, B, D_t, B_t, T;
 		USparseMatrix kappa_B_t;
 
 		std::string solve_strategy;
@@ -37,6 +37,7 @@ namespace utopia {
 		int mg_levels;
 		bool plot_matrix;
 		bool write_operators_to_disk;
+		bool use_interpolation;
 		double normal_hydraulic_conductivity;
 
 		std::shared_ptr<UIFunction<double>> normal_hydraulic_conductivity_blocks;
@@ -49,6 +50,7 @@ namespace utopia {
 		bool solve_monolithic();
 		bool solve_separate();
 		bool solve_staggered();
+		bool solve_monolithic_static_condenstation();
 
 		template<class IO>
 		void write_output_generic();
