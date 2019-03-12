@@ -91,6 +91,7 @@ namespace utopia {
 		Transport transport_f_;
 		
 		bool preset_velocity_field_;
+		bool use_bicgstab;
 
 		std::string transient_solve_strategy;
 

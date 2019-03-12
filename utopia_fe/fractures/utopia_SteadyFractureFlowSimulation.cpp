@@ -141,6 +141,11 @@ namespace utopia {
 		matrix->apply_weak_BC(A_m, rhs_m);
 		fracture_network->apply_weak_BC(A_f, rhs_f);
 
+		if(write_operators_to_disk) {
+		    write("A_m_neu.m", A_m);
+		    write("A_f_neu.m", A_f);
+		}
+
 		apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
 
@@ -339,11 +344,17 @@ namespace utopia {
 		UVector rhs = rhs_m + transpose(T) * rhs_f;
 		apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
-		Factorization<USparseMatrix, UVector> op_m;
-		op_m.update(make_ref(S));
+	    if(use_mg) {
+	    	auto mg = make_mg_solver(V_m, mg_levels);
+	    	if(!mg->solve(S, rhs, x_m)) {
+	    		return false;
+	    	}
 
-		if(!op_m.apply(rhs, x_m)) {
-			return false;
+	    } else {
+			Factorization<USparseMatrix, UVector> op_m;
+			if(!op_m.solve(S, rhs, x_m)) {
+				return false;
+			}
 		}
 
 		x_f = T * x_m;

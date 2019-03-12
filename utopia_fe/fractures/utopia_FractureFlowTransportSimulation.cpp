@@ -7,7 +7,7 @@
 namespace utopia {
 
 	FractureFlowTransportSimulation::FractureFlowTransportSimulation(libMesh::Parallel::Communicator &comm)
-	: steady_flow_(comm), preset_velocity_field_(false), transport_m_("matrix"), transport_f_("fracture_network")
+	: steady_flow_(comm), preset_velocity_field_(false), use_bicgstab(false), transport_m_("matrix"), transport_f_("fracture_network")
 	{}
 
 	void FractureFlowTransportSimulation::read(utopia::Input &in)
@@ -31,6 +31,7 @@ namespace utopia {
 
 		in.get("preset-velocity-field", preset_velocity_field_);
 		in.get("transient-solve-strategy", transient_solve_strategy);
+		in.get("use-bicgstab", use_bicgstab);
 	}
 
 
@@ -201,6 +202,12 @@ namespace utopia {
 		USparseMatrix &A_m = transport_m_.system_matrix;
 		USparseMatrix &A_f = transport_f_.system_matrix;
 
+
+		if(steady_flow_.write_operators_to_disk) {
+		    write("G_m_neu.m", A_m);
+		    write("G_f_neu.m", A_f);
+		}
+
 		apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
 
@@ -294,6 +301,12 @@ namespace utopia {
 		USparseMatrix &A_m = transport_m_.system_matrix;
 		USparseMatrix &A_f = transport_f_.system_matrix;
 
+		if(steady_flow_.write_operators_to_disk) {
+		    write("G_m_neu.m", A_m);
+		    write("G_f_neu.m", A_f);
+		}
+
+
 		apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
 
@@ -316,9 +329,17 @@ namespace utopia {
 		V_f.equation_system().solution->close();
 		io_f.write_timestep("transient_f.e", V_f.equation_systems(), 1, 0);
 
-		Factorization<USparseMatrix, UVector> op;
-		op.describe(std::cout);
-		op.update(make_ref(S));
+		std::unique_ptr<LinearSolver<USparseMatrix, UVector>> op;
+		if(use_bicgstab) {
+			op = utopia::make_unique<BiCGStab<USparseMatrix, UVector>>();
+		} else {
+			auto fact = utopia::make_unique<Factorization<USparseMatrix, UVector>>();
+			fact->describe(std::cout);
+			op = std::move(fact);
+		}
+
+		
+		op->update(make_ref(S));
 
 		int n_timesteps = 1;
 		const double dt = transport_m_.dt;
@@ -340,7 +361,7 @@ namespace utopia {
 			rhs = rhs_m + transpose(T) * rhs_f;
 			apply_boundary_conditions(V_m.dof_map(), rhs);
 
-			op.apply(rhs, x_m);
+			op->apply(rhs, x_m);
 			x_f = T * x_m;
 
 			transport_f_.post_process_time_step(t, *steady_flow_.fracture_network);
