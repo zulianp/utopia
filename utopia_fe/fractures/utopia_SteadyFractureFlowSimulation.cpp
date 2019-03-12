@@ -330,7 +330,8 @@ namespace utopia {
 	{
 		// std::cout << "solve_monolithic_static_condenstation" << std::endl;
 		auto &V_m = matrix->space.subspace(0);
-		UVector d_inv = 1./sum(D, 1);
+		//Remove the - from D
+		UVector d_inv = (-1.)/sum(D, 1);
 		USparseMatrix D_inv = diag(d_inv);
 		T = D_inv * B;
 

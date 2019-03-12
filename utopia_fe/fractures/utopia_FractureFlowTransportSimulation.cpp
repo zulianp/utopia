@@ -299,8 +299,10 @@ namespace utopia {
 
 		const auto &T = steady_flow_.T;
 
+		assert(!empty(T));
+
 		USparseMatrix S = A_m + transpose(T) * A_f * T;
-		UVector rhs = rhs_m + transpose(T) * rhs_f;
+		UVector rhs     = rhs_m + transpose(T) * rhs_f;
 
 		apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
@@ -336,6 +338,7 @@ namespace utopia {
 			transport_f_.constrain_concentration(rhs_f);
 
 			rhs = rhs_m + transpose(T) * rhs_f;
+			apply_boundary_conditions(V_m.dof_map(), rhs);
 
 			op.apply(rhs, x_m);
 			x_f = T * x_m;
