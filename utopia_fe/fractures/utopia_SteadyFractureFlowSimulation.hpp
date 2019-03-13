@@ -38,6 +38,7 @@ namespace utopia {
 		bool plot_matrix;
 		bool write_operators_to_disk;
 		bool use_interpolation;
+		bool use_biorth;
 		double normal_hydraulic_conductivity;
 
 		std::shared_ptr<UIFunction<double>> normal_hydraulic_conductivity_blocks;

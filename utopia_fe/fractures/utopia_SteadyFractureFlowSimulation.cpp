@@ -43,6 +43,7 @@ namespace utopia {
 		write_operators_to_disk = false;
 		normal_hydraulic_conductivity = 1.;
 		use_interpolation = false;
+		use_biorth = false;
 	}
 
 	void SteadyFractureFlowSimulation::read(Input &is)
@@ -62,6 +63,7 @@ namespace utopia {
 		is.get("normal-hydraulic-conductivity", normal_hydraulic_conductivity);
 		is.get("write-operators-to-disk", write_operators_to_disk);
 		is.get("use-interpolation", use_interpolation);
+		is.get("use-biorth", use_biorth);
 
 		auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
 
@@ -184,7 +186,7 @@ namespace utopia {
 			if(use_interpolation) {
 				assemble_interpolation(V_m, V_f, B, D);
 			} else {
-				assemble_projection(V_m, V_f, B, D);
+				assemble_projection(V_m, V_f, B, D, use_biorth);
 			}
 		} else {
 			auto &V_l = lagrange_multiplier->space.subspace(0);
@@ -378,7 +380,7 @@ namespace utopia {
 		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
 
 		//also add dual-basis case
-		if(use_interpolation) {
+		if(use_interpolation || use_biorth) {
 			//Remove the - from D
 			UVector d_inv = (-1.)/sum(D, 1);
 			USparseMatrix D_inv = diag(d_inv);
@@ -401,10 +403,12 @@ namespace utopia {
 
 			SPStaticCondensationKrylov<USparseMatrix, UVector> sp;
 
-			auto cg = std::make_shared<BiCGStab<USparseMatrix, UVector, HOMEMADE>>();
-			cg->verbose(true);
+			// auto cg = std::make_shared<BiCGStab<USparseMatrix, UVector, HOMEMADE>>();
+			auto mf_solver = std::make_shared<ProjectedGradient<USparseMatrix, UVector, HOMEMADE>>();
+			mf_solver->verbose(true);
+			mf_solver->max_it(60000);
 
-			sp.linear_solver(cg);
+			sp.linear_solver(mf_solver);
 			sp.coupling_op_solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
 			
 
