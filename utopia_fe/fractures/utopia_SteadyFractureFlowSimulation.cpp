@@ -420,8 +420,11 @@ namespace utopia {
 				return false;
 			}
 
+			UVector temp;
 			Factorization<USparseMatrix, UVector> fact;
-			return fact.solve(m_D, (A_f * (T * x_m) - rhs_f), lagr);
+			bool ok = fact.solve(m_D, B * x_m, temp);
+			temp = A_f * temp - rhs_f;
+			return fact.apply(temp, lagr) && ok;
 		}
 	}
 
