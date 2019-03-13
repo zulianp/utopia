@@ -5,6 +5,8 @@
 #include "utopia_FractureFlowUtils.hpp"
 #include "utopia_TransferUtils.hpp"
 #include "utopia_TransferAssembler.hpp"
+#include "utopia_SPStaticCondensation.hpp"
+#include "utopia_SPStaticCondensationKrylov.hpp"
 
 
 #include <iostream>
@@ -331,35 +333,96 @@ namespace utopia {
 		return ok;
 	}
 
+	// bool SteadyFractureFlowSimulation::solve_monolithic_static_condenstation()
+	// {
+	// 	// std::cout << "solve_monolithic_static_condenstation" << std::endl;
+	// 	auto &V_m = matrix->space.subspace(0);
+	// 	auto &V_f = fracture_network->space.subspace(0);
+
+	// 	//Remove the - from D
+	// 	UVector d_inv = (-1.)/sum(D, 1);
+	// 	USparseMatrix D_inv = diag(d_inv);
+	// 	T = D_inv * B;
+
+	// 	apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
+	// 	apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
+
+	// 	USparseMatrix S = A_m + transpose(T) * A_f * T;
+	// 	UVector rhs = rhs_m + transpose(T) * rhs_f;
+	// 	// apply_boundary_conditions(V_m.dof_map(), S, rhs);
+
+	//     if(use_mg) {
+	//     	auto mg = make_mg_solver(V_m, mg_levels);
+	//     	if(!mg->solve(S, rhs, x_m)) {
+	//     		return false;
+	//     	}
+
+	//     } else {
+	// 		Factorization<USparseMatrix, UVector> op_m;
+	// 		if(!op_m.solve(S, rhs, x_m)) {
+	// 			return false;
+	// 		}
+	// 	}
+
+	// 	x_f = T * x_m;
+	// 	lagr = D_inv * (A_f * (T * x_m) - rhs_f);
+	// 	return true;
+	// }
+
 	bool SteadyFractureFlowSimulation::solve_monolithic_static_condenstation()
 	{
-		// std::cout << "solve_monolithic_static_condenstation" << std::endl;
 		auto &V_m = matrix->space.subspace(0);
-		//Remove the - from D
-		UVector d_inv = (-1.)/sum(D, 1);
-		USparseMatrix D_inv = diag(d_inv);
-		T = D_inv * B;
+		auto &V_f = fracture_network->space.subspace(0);
 
-		USparseMatrix S = A_m + transpose(T) * A_f * T;
-		UVector rhs = rhs_m + transpose(T) * rhs_f;
-		apply_boundary_conditions(V_m.dof_map(), S, rhs);
+		apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
+		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
 
-	    if(use_mg) {
-	    	auto mg = make_mg_solver(V_m, mg_levels);
-	    	if(!mg->solve(S, rhs, x_m)) {
-	    		return false;
-	    	}
+		//also add dual-basis case
+		if(use_interpolation) {
+			//Remove the - from D
+			UVector d_inv = (-1.)/sum(D, 1);
+			USparseMatrix D_inv = diag(d_inv);
+			T = D_inv * B;
 
-	    } else {
-			Factorization<USparseMatrix, UVector> op_m;
-			if(!op_m.solve(S, rhs, x_m)) {
+			SPStaticCondensation<USparseMatrix, UVector> sp(std::make_shared<Factorization<USparseMatrix, UVector>>());
+
+		    if(use_mg) {
+		    	sp.linear_solver(make_mg_solver(V_m, mg_levels));
+		    }
+
+		    sp.update(make_ref(A_m), make_ref(A_f), make_ref(T));
+		    if(!sp.apply(rhs_m, rhs_f, x_m, x_f)) {
+		    	return false;
+		    }
+
+			lagr = D_inv * (A_f * (T * x_m) - rhs_f);
+			return true;
+		} else {
+
+			SPStaticCondensationKrylov<USparseMatrix, UVector> sp;
+
+			auto cg = std::make_shared<BiCGStab<USparseMatrix, UVector, HOMEMADE>>();
+			cg->verbose(true);
+
+			sp.linear_solver(cg);
+			sp.coupling_op_solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
+			
+
+			// if(use_mg) {
+			// 	sp.linear_solver(make_mg_solver(V_m, mg_levels));
+			// }
+			USparseMatrix m_D = D;
+			m_D *= -1.;
+
+			sp.update(make_ref(A_m), make_ref(A_f), make_ref(B), make_ref(m_D));
+
+			if(!sp.apply(rhs_m, rhs_f, x_m, x_f)) {
 				return false;
 			}
-		}
 
-		x_f = T * x_m;
-		lagr = D_inv * (A_f * (T * x_m) - rhs_f);
-		return true;
+			Factorization<USparseMatrix, UVector> fact;
+			return fact.solve(m_D, (A_f * (T * x_m) - rhs_f), lagr);
+		}
 	}
 
 	bool SteadyFractureFlowSimulation::solve_staggered()

@@ -1103,10 +1103,15 @@ namespace utopia {
             result.destroy();
             // MatCreateVecs(implementation(), nullptr, &result.implementation());
             create_vecs(nullptr, &result.implementation());
-        } else {
+        } else {    
             Size gs = size();
-            Size ls = local_size();
-            VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
+            if(gs.get(0) != result.size()) {
+                result.destroy();
+                // MatCreateVecs(implementation(), nullptr, &result.implementation());
+                create_vecs(nullptr, &result.implementation());
+            }
+            
+            assert(local_size().get(0) == result.local_size());
         }
 
         check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
