@@ -11,7 +11,7 @@
 namespace utopia {
 
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class SemismoothNewton : public QPSolver<Matrix, Vector> 
+	class SemismoothNewton : public QPSolver<Matrix, Vector>
 	{
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -22,7 +22,7 @@ namespace utopia {
 		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver) :
 		linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
 		{
-			
+
 		}
 
 		SemismoothNewton * clone() const override
@@ -64,8 +64,8 @@ namespace utopia {
         void print_usage(std::ostream &os) const override
         {
             QPSolver<Matrix, Vector>::print_usage(os);
-            this->print_param_usage(os, "active_set_tol", "double", "Numerical tolerance.", "1e-15"); 
-            this->print_param_usage(os, "linear_solve_zero_initial_guess", "bool", "Flag to reset initial guess for each linear solve.", "true"); 
+            this->print_param_usage(os, "active_set_tol", "double", "Numerical tolerance.", "1e-15");
+            this->print_param_usage(os, "linear_solve_zero_initial_guess", "bool", "Flag to reset initial guess for each linear solve.", "true");
         }
 
 

@@ -85,6 +85,10 @@ namespace utopia {
 			// inv_mass_matrix = inv(boundary_mass_matrix);
 		}
 
+		// write("B.m", coupling);
+		// write("D_inv.m", inv_mass_matrix);
+		// exit(0);
+
 
 		transfer_operator = inv_mass_matrix * coupling;
 

@@ -30,7 +30,7 @@ namespace utopia {
 		UIFunctionSpace(
 			const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh,
 			const std::shared_ptr<libMesh::EquationSystems> equation_systems = nullptr)
-		: mesh_(mesh), equation_systems_(equation_systems)
+		: mesh_(mesh), equation_systems_(equation_systems), verbose_(true)
 		{}
 
 		void read(Input &is) override {
@@ -52,7 +52,7 @@ namespace utopia {
 					sub_is.get("name", var_name);
 					sub_is.get("order", var_order);
 					sub_is.get("fe-family", var_fe_family);
-					
+
 					var_names.push_back(var_name);
 					var_orders.push_back(var_order);
 					fe_families.push_back(var_fe_family);
@@ -85,16 +85,16 @@ namespace utopia {
 					var_names[i],
 					sys.number()
 				);
-				
+
 				space_->add_subspace(ss);
 			}
 
 			is.get("boundary-conditions", [this](Input &is) {
 			    is.get_all([this](Input &is) {
 			        int side_set = 0;
-			        
+
 			        is.get("side", side_set);
-			        
+
 			        double value = 0;
 			        is.get("value", value);
 
@@ -103,6 +103,10 @@ namespace utopia {
 			        is.get("var", var_num);
 
 			        auto u = trial(space_->subspace(var_num));
+
+			        if(verbose_) {
+			        	std::cout <<  "side: " << side_set << " var: " << var_num << " value: " << value << std::endl;
+			        }
 
 			        init_constraints(
 			        	constraints(
@@ -139,7 +143,7 @@ namespace utopia {
 			return space_->subspace_ptr(index);
 		}
 
-		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh() 
+		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh()
 		{
 			return mesh_;
 		}
@@ -153,6 +157,7 @@ namespace utopia {
 		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh_;
 		std::shared_ptr<libMesh::EquationSystems> equation_systems_;
 		std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space_;
+		bool verbose_;
 	};
 }
 

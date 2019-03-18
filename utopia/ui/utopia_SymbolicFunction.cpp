@@ -18,10 +18,10 @@ namespace utopia {
 		t_(0.),
 		expr_(expr),
 		vars_({
-			{"x", &x_},
-			{"y", &y_},
-			{"z", &z_},
-			{"t", &t_},
+			{"x", &x_, TE_VARIABLE, nullptr},
+			{"y", &y_, TE_VARIABLE, nullptr},
+			{"z", &z_, TE_VARIABLE, nullptr},
+			{"t", &t_, TE_VARIABLE, nullptr},
 		}),
 		err_(0)
 		{

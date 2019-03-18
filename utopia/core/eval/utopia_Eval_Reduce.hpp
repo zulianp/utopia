@@ -175,6 +175,9 @@ namespace utopia {
             UTOPIA_TRACE_BEGIN(expr);
 
             each_read(expr.expr(), [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
+                UTOPIA_UNUSED(i);
+                UTOPIA_UNUSED(j);
+
                 result += op.apply(value);
             });
 

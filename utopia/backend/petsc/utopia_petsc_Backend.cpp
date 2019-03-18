@@ -340,10 +340,10 @@ namespace utopia {
 		// check_error( MatZeroRows(mat.implementation(), index.size(), &index[0], 1.0, nullptr, nullptr) );
 
 		PetscBool val = PETSC_TRUE;
-		
+
 		MatGetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, &val);
 		MatSetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
-// 
+//
 		check_error( MatZeroRows(mat.implementation(), index.size(), &index[0], diag, nullptr, nullptr) );
 
 		MatSetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, val);
@@ -611,7 +611,7 @@ namespace utopia {
 
 	void PetscBackend::mat_get_col(const PetscMatrix &m, PetscVector &v, const PetscScalar col_id)
 	{
-		m.get_col(v, col_id); 
+		m.get_col(v, col_id);
 	}
 
 	void PetscBackend::apply_binary(PetscVector &result, const PetscMatrix &left, const Multiplies &, const PetscVector &right)
@@ -997,7 +997,7 @@ namespace utopia {
 			VecScatterCreateWithData(x_from.implementation(), is, x_to.implementation(), is, &newctx);
 #else
 			VecScatterCreate(x_from.implementation(), is, x_to.implementation(), is, &newctx);
-#endif 
+#endif
 
 			VecScatterBegin(newctx, x_from.implementation(), x_to.implementation(), INSERT_VALUES, SCATTER_FORWARD);
 			VecScatterEnd(newctx, x_from.implementation(), x_to.implementation(), INSERT_VALUES, SCATTER_FORWARD);
@@ -1053,7 +1053,7 @@ namespace utopia {
 			mat.row_sum(result);
 		} else {
 			mat.col_sum(result);
-			
+
 			// assert(false && "not available in pestsc");
 			// result.set_initialized(false);
 		}

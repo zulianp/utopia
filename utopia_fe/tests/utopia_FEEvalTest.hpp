@@ -1,13 +1,25 @@
 #ifndef UTOPIA_FE_EVAL_TEST_HPP
 #define UTOPIA_FE_EVAL_TEST_HPP
 
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_fe_base.hpp"
+#include "utopia_FETest.hpp"
+#include <string>
 
 
 namespace utopia {
-	void run_fe_eval_test(libMesh::LibMeshInit &init);
+
+	class FEEvalTest final : public FETest {
+	public:
+		void run(Input &in) override;
+
+		inline static std::string command()
+		{
+			return "fe_test";
+		}
+	};
+
 }
+
+
 
 #endif //UTOPIA_FE_EVAL_TEST_HPP

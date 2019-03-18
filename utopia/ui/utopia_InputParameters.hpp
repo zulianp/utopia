@@ -18,7 +18,7 @@ namespace utopia {
 		{
 			return nodes_.empty() && values_.empty();
 		}
-		
+
 		inline SizeType size() const override
 		{
 			return nodes_.size() + values_.size();
@@ -135,6 +135,11 @@ namespace utopia {
 		// 	aux_set(key, val);
 		// }
 
+		inline void set(const std::string &key, const char* val)
+		{
+			aux_set(key, std::string(val));
+		}
+
 		inline void set(const std::string &key, const std::string &val)
 		{
 			aux_set(key, val);
@@ -182,7 +187,7 @@ namespace utopia {
 			// for(const auto &n : nodes_) {
 			// 	n.second->aux_describe(os, level + 1);
 			// }
-			
+
 		}
 
 	};

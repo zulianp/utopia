@@ -35,7 +35,7 @@ namespace utopia {
 				std::map<std::string, std::shared_ptr<FactoryMethodT> > solvers_;
 
 
-				inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
+				inline static LinearSolverPtr new_linear_solver(const SolverType &tag)
 				{
 					auto it = instance().solvers_.find(tag);
 					if(it == instance().solvers_.end()) {
@@ -61,8 +61,8 @@ namespace utopia {
 				void init()
 				{
 	#ifdef WITH_LAPACK
-						solvers_[DIRECT_TAG] = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
-						solvers_[AUTO_TAG]   = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
+						solvers_[Solver::direct()]    = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
+						solvers_[Solver::automatic()] = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
 	#endif //WITH_LAPACK
 				}
 		};

@@ -2,18 +2,14 @@
 #define UTOPIA_RMTR_APP_HPP
 
 #include <string>
-#include "utopia_App.hpp"
-#include "libmesh/parallel_mesh.h"
-
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_FEApp.hpp"
 
 namespace utopia {
-	class RMTRApp final : public App {
+	class RMTRApp final : public FEApp {
 	public:
-		void init(libMesh::LibMeshInit &init);
-		void run(const std::string &path) override;
+		void run(Input &in) override;
+
+
 		
 		inline static std::string command()
 		{
@@ -23,7 +19,6 @@ namespace utopia {
 		class SimulationInput;
 
 	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 
 		void solve_newton(const SimulationInput &in);
 		void solve_rmtr(const SimulationInput &in);

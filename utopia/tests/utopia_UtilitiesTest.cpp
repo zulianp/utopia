@@ -105,7 +105,7 @@ namespace utopia {
             utopia_test_assert(size.get(0) == 2);
             utopia_test_assert(size.get(1) == 2);
 
-            each_read(m2, [](SizeType x, SizeType y, double entry) {
+            each_read(m2, [](SizeType, SizeType, double entry) {
                 utopia_test_assert(approxeq(-4.0, entry));
             });
         }

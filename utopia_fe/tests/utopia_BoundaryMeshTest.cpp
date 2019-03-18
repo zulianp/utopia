@@ -4,12 +4,12 @@
 #include "moonolith_synched_describable.hpp"
 
 namespace utopia {
-	class BoundaryMeshTest {
+	class BoundaryMeshTestImpl {
 	public:
 		using FunctionSpaceT = utopia::LibMeshFunctionSpace;
 
-		BoundaryMeshTest(libMesh::LibMeshInit &init)
-		: comm(init.comm()), n(2)
+		BoundaryMeshTestImpl(libMesh::Parallel::Communicator &comm)
+		: comm(comm), n(2)
 		{
 			build();
 		}
@@ -129,8 +129,9 @@ namespace utopia {
 	};
 
 
-	void run_boundary_mesh_test(libMesh::LibMeshInit &init)
+	void BoundaryMeshTest::run(Input &in)
 	{
-		BoundaryMeshTest(init).run();
+		BoundaryMeshTestImpl impl(comm());
+		impl.run();
 	}
 }

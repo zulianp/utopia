@@ -44,6 +44,28 @@ namespace utopia
         std::shared_ptr<const Matrix> mat_;
     };
 
+
+    template<class Vector, class Fun>
+    class LambdaOperator final : public Operator<Vector> {
+    public:
+        LambdaOperator(Fun fun)
+        : fun_(fun) {}
+
+        inline bool apply(const Vector &rhs, Vector &sol) const override
+        {
+            return fun_(rhs, sol);
+        }
+
+    private:
+        Fun fun_;
+    };
+
+    template<typename Vector>
+    std::unique_ptr< LambdaOperator<Vector, std::function<bool(const Vector &, Vector &)>> > op(std::function<bool(const Vector &, Vector &)> f)
+    {
+        return utopia::make_unique< LambdaOperator<Vector, std::function<bool(const Vector &, Vector &)>> >(f); 
+    }
+
     template<class Matrix>
     std::unique_ptr< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> > op(const std::shared_ptr<const Matrix> &mat)
     {

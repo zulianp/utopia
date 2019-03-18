@@ -18,6 +18,7 @@ find_library(MPI_CLANG_CXX_LIBRARY
 	NAMES mpi_cxx 
 		  mpicxx
 		  mpicxx-mpich-clang
+		  mpic++-mpich-clang
 	PATHS ${MPI_DIR}/lib
 		  $ENV{MPI_DIR}/lib
 		  /opt/local/lib/openmpi-mp/
@@ -57,6 +58,7 @@ IF(MPI_CLANG_CXX_LIBRARY)
 			      mpicxx
 			      mpicxx-openmpi-mp 
 				  mpicxx-mpich-clang
+				  mpic++-mpich-clang
 				  mpic++-mpich-mp
 			HINTS ${MPI_DIR}/bin
 			      $ENV{MPI_DIR}/bin

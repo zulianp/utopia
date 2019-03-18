@@ -14,6 +14,7 @@ namespace utopia {
 		void compute_transport();
 		void compute_transport_separate();
 		void compute_transport_monolithic();
+		void compute_transport_monolithic_static_condenstation();
 		void append_aux_systems();
 		void write_output();
 		void compute_upwind_operator();
@@ -56,11 +57,14 @@ namespace utopia {
 			bool h1_regularization;
 			bool use_upwinding;
 			double regularization_parameter;
+			double boundary_factor;
 			USparseMatrix mass_matrix;
 			USparseMatrix gradient_matrix;
 			USparseMatrix system_matrix;
 			USparseMatrix boundary_flow_matrix;
 			std::vector<std::shared_ptr<USparseMatrix>> partial_boundary_flow_matrix;
+			std::vector<std::shared_ptr<USparseMatrix>> partial_concentration_matrix;
+
 			UVector pressure_w;
 			UVector mass_vector;
 			UVector f;
@@ -74,6 +78,7 @@ namespace utopia {
 			std::vector<double> box_min, box_max;
 			std::vector<int> in_out_flow;
 			std::vector<double> total_in_out_flow;
+			std::vector<int> concentration_blocks;
 
 			CSVWriter csv;
 
@@ -86,9 +91,9 @@ namespace utopia {
 		Transport transport_f_;
 		
 		bool preset_velocity_field_;
+		bool use_bicgstab;
 
 		std::string transient_solve_strategy;
-
 
 	};
 

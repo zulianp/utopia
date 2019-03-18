@@ -5,10 +5,29 @@
 #include "utopia_FractureFlowUtils.hpp"
 #include "utopia_TransferUtils.hpp"
 #include "utopia_TransferAssembler.hpp"
+#include "utopia_SPStaticCondensation.hpp"
+#include "utopia_SPStaticCondensationKrylov.hpp"
+
 
 #include <iostream>
 
+
 namespace utopia {
+
+	void SteadyFractureFlowSimulation::describe(std::ostream &os) const
+	{
+		matrix->describe(os);
+		fracture_network->describe(os);
+		if(lagrange_multiplier) lagrange_multiplier->describe(os);
+
+		std::cout << "solve_strategy                " << solve_strategy << std::endl;
+		std::cout << "use_mg                        " << use_mg << std::endl;
+		std::cout << "mg_sweeps                     " << mg_sweeps << std::endl;
+		std::cout << "mg_levels                     " << mg_levels << std::endl;
+		std::cout << "plot_matrix                   " << plot_matrix << std::endl;
+		std::cout << "write_operators_to_disk       " << write_operators_to_disk << std::endl;
+		std::cout << "normal_hydraulic_conductivity	" << normal_hydraulic_conductivity << std::endl;
+	}
 
 	SteadyFractureFlowSimulation::SteadyFractureFlowSimulation(libMesh::Parallel::Communicator &comm)
 	{
@@ -22,6 +41,9 @@ namespace utopia {
 		mg_levels = 5;
 		plot_matrix = false;
 		write_operators_to_disk = false;
+		normal_hydraulic_conductivity = 1.;
+		use_interpolation = false;
+		use_biorth = false;
 	}
 
 	void SteadyFractureFlowSimulation::read(Input &is)
@@ -38,21 +60,31 @@ namespace utopia {
 		is.get("mg-sweeps", mg_sweeps);
 		is.get("mg-levels", mg_levels);
 		is.get("plot-matrix", plot_matrix);
+		is.get("normal-hydraulic-conductivity", normal_hydraulic_conductivity);
+		is.get("write-operators-to-disk", write_operators_to_disk);
+		is.get("use-interpolation", use_interpolation);
+		is.get("use-biorth", use_biorth);
+
+		auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
+
+		is.get("normal-hydraulic-conductivity-blocks", *subdomain_fun);
+
+		if(!subdomain_fun->good()) {
+			normal_hydraulic_conductivity_blocks = std::make_shared<UIConstantFunction<double>>(1.);
+		} else {
+
+			if(!subdomain_fun->has_default()) {
+				subdomain_fun->set_default(utopia::make_unique<UIConstantFunction<double>>(1.));
+			}
+
+			normal_hydraulic_conductivity_blocks = std::move(subdomain_fun);
+		}
 
 		if(plot_matrix) {
 		    plot_mesh(matrix->mesh.mesh(), "matrix");
 		}
 
-		matrix->describe();
-		fracture_network->describe();
-		lagrange_multiplier->describe();
-
-		std::cout << "solve-strategy: "  << solve_strategy << std::endl;
-		std::cout << "use-mg:         "  << use_mg         << std::endl;
-		if(use_mg) {
-		    std::cout << "mg-sweeps:      "  << mg_sweeps      << std::endl;
-		    std::cout << "mg-levels:      "  << mg_levels      << std::endl;
-		}
+		this->describe(std::cout);
 
 		auto &V_m = matrix->space.subspace(0);
 		auto &V_f = fracture_network->space.subspace(0);
@@ -64,7 +96,7 @@ namespace utopia {
 		aux_fracture_network->sample(fracture_network->sampler);
 
 		std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_f.dof_map().n_dofs() << " + ";
-		
+
 		if(lagrange_multiplier->empty()) {
 		    std::cout << V_f.dof_map().n_dofs();
 		} else {
@@ -105,6 +137,19 @@ namespace utopia {
 		matrix->forcing_function->eval(x_m, rhs_m);
 		fracture_network->forcing_function->eval(x_f, rhs_f);
 
+		double norm_f_f = norm2(rhs_f);
+		double norm_f_m = norm2(rhs_m);
+
+		std::cout << "forcing_functions: " << norm_f_m << " " << norm_f_f << std::endl;
+
+		matrix->apply_weak_BC(A_m, rhs_m);
+		fracture_network->apply_weak_BC(A_f, rhs_f);
+
+		if(write_operators_to_disk) {
+		    write("A_m_neu.m", A_m);
+		    write("A_f_neu.m", A_f);
+		}
+
 		apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
 		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
 
@@ -118,6 +163,17 @@ namespace utopia {
 		}
 	}
 
+	template<class Space>
+	static void project_function(const std::shared_ptr<UIFunction<double>> &f, Space &V, UVector &vec)
+	{
+		UVector lumped_mass;
+		UVector vec_h;
+		auto v = test(V);
+		utopia::assemble(inner(coeff(1.), v) * dX, lumped_mass);
+		utopia::assemble(inner(ctx_fun(f), v) * dX, vec_h);
+		vec = e_mul(vec_h, 1./lumped_mass);
+	}
+
 	void SteadyFractureFlowSimulation::init_coupling()
 	{
 		Chrono c;
@@ -127,7 +183,11 @@ namespace utopia {
 		auto &V_f = fracture_network->space.subspace(0);
 
 		if(lagrange_multiplier->empty()) {
-			assemble_projection(V_m, V_f, B, D);
+			if(use_interpolation) {
+				assemble_interpolation(V_m, V_f, B, D);
+			} else {
+				assemble_projection(V_m, V_f, B, D, use_biorth);
+			}
 		} else {
 			auto &V_l = lagrange_multiplier->space.subspace(0);
 			assemble_projection(V_m, V_f, V_l, B, D);
@@ -141,6 +201,46 @@ namespace utopia {
 
 		set_zero_at_constraint_rows(V_m.dof_map(), B_t);
 		set_zero_at_constraint_rows(V_f.dof_map(), D_t);
+
+		
+
+		auto constant_function = std::dynamic_pointer_cast<UIConstantFunction<double>>(normal_hydraulic_conductivity_blocks);
+		if(constant_function) {
+			kappa_B_t = B_t;
+			kappa_B_t *= (normal_hydraulic_conductivity * constant_function->value());
+
+			std::cout << "normal-hydraulic-conductivity-blocks = " << constant_function->value() << std::endl;
+		} else {
+			//perform l2-projection of kappa
+
+			//either on lagrange mult space or slave space
+			if(lagrange_multiplier->empty()) {
+				UVector kappa;
+				project_function(normal_hydraulic_conductivity_blocks, V_f, kappa);
+				USparseMatrix K = diag(kappa);
+				kappa_B_t = B_t * K;
+				kappa_B_t *= normal_hydraulic_conductivity;
+
+				double min_kappa = min(kappa), max_kappa = max(kappa);
+				std::cout << "normal-hydraulic-conductivity-blocks  in [" << min_kappa << ", " << max_kappa << "]" << std::endl;
+			} else {
+				auto &V_l = lagrange_multiplier->space.subspace(0);
+				UVector kappa;
+				project_function(normal_hydraulic_conductivity_blocks, V_l, kappa);
+				USparseMatrix K = diag(kappa);
+				kappa_B_t = B_t * K;
+				kappa_B_t *= normal_hydraulic_conductivity;
+
+				double min_kappa = min(kappa), max_kappa = max(kappa);
+				std::cout << "normal-hydraulic-conductivity-blocks  in [" << min_kappa << ", " << max_kappa << "]" << std::endl;
+			}
+
+		}
+
+		if(write_operators_to_disk) {
+			write("B.m", B);
+			write("D.m", D);
+		}
 
 		c.stop();
 		std::cout << "transfer assemly time: " << c << std::endl;
@@ -157,6 +257,8 @@ namespace utopia {
  			ok = solve_cg_dual();
 		} else if(solve_strategy == "separate") {
 			ok = solve_separate();
+		} else if(solve_strategy == "static-condensation") {
+			ok = solve_monolithic_static_condenstation();
 		} else {
 			ok = solve_monolithic();
 		}
@@ -165,6 +267,13 @@ namespace utopia {
 		std::cout << "Solver time: " << c << std::endl;
 		return ok;
 	}
+
+	/*
+		A_m 0   B_t
+		0	A_f kappa * D_t
+		B   kappa * D   0
+
+	*/
 
 	bool SteadyFractureFlowSimulation::solve_cg_dual()
 	{
@@ -191,7 +300,7 @@ namespace utopia {
 		    make_ref(A_f),
 		    make_ref(B),
 		    make_ref(D),
-		    make_ref(B_t),
+		    make_ref(kappa_B_t),
 		    make_ref(D_t)
 		);
 
@@ -202,7 +311,7 @@ namespace utopia {
 	{
 		USparseMatrix A = Blocks<USparseMatrix>(3, 3,
 		{
-		    make_ref(A_m), nullptr, make_ref(B_t),
+		    make_ref(A_m), nullptr, make_ref(kappa_B_t),
 		    nullptr, make_ref(A_f), make_ref(D_t),
 		    make_ref(B), make_ref(D), nullptr
 		});
@@ -218,10 +327,109 @@ namespace utopia {
 
 		Factorization<USparseMatrix, UVector> op;
 		op.update(make_ref(A));
+		op.describe(std::cout);
+
 		bool ok = op.apply(rhs, sol);
 
 		undo_blocks(sol, x_m, x_f, lagr);
 		return ok;
+	}
+
+	// bool SteadyFractureFlowSimulation::solve_monolithic_static_condenstation()
+	// {
+	// 	// std::cout << "solve_monolithic_static_condenstation" << std::endl;
+	// 	auto &V_m = matrix->space.subspace(0);
+	// 	auto &V_f = fracture_network->space.subspace(0);
+
+	// 	//Remove the - from D
+	// 	UVector d_inv = (-1.)/sum(D, 1);
+	// 	USparseMatrix D_inv = diag(d_inv);
+	// 	T = D_inv * B;
+
+	// 	apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
+	// 	apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
+
+	// 	USparseMatrix S = A_m + transpose(T) * A_f * T;
+	// 	UVector rhs = rhs_m + transpose(T) * rhs_f;
+	// 	// apply_boundary_conditions(V_m.dof_map(), S, rhs);
+
+	//     if(use_mg) {
+	//     	auto mg = make_mg_solver(V_m, mg_levels);
+	//     	if(!mg->solve(S, rhs, x_m)) {
+	//     		return false;
+	//     	}
+
+	//     } else {
+	// 		Factorization<USparseMatrix, UVector> op_m;
+	// 		if(!op_m.solve(S, rhs, x_m)) {
+	// 			return false;
+	// 		}
+	// 	}
+
+	// 	x_f = T * x_m;
+	// 	lagr = D_inv * (A_f * (T * x_m) - rhs_f);
+	// 	return true;
+	// }
+
+	bool SteadyFractureFlowSimulation::solve_monolithic_static_condenstation()
+	{
+		auto &V_m = matrix->space.subspace(0);
+		auto &V_f = fracture_network->space.subspace(0);
+
+		apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
+		apply_boundary_conditions(V_f.dof_map(), A_f, rhs_f);
+
+		//also add dual-basis case
+		if(use_interpolation || use_biorth) {
+			//Remove the - from D
+			UVector d_inv = (-1.)/sum(D, 1);
+			USparseMatrix D_inv = diag(d_inv);
+			T = D_inv * B;
+
+			SPStaticCondensation<USparseMatrix, UVector> sp(std::make_shared<Factorization<USparseMatrix, UVector>>());
+
+		    if(use_mg) {
+		    	sp.linear_solver(make_mg_solver(V_m, mg_levels));
+		    }
+
+		    sp.update(make_ref(A_m), make_ref(A_f), make_ref(T));
+		    if(!sp.apply(rhs_m, rhs_f, x_m, x_f)) {
+		    	return false;
+		    }
+
+			lagr = D_inv * (A_f * (T * x_m) - rhs_f);
+			return true;
+		} else {
+
+			SPStaticCondensationKrylov<USparseMatrix, UVector> sp;
+
+			// auto cg = std::make_shared<BiCGStab<USparseMatrix, UVector, HOMEMADE>>();
+			auto mf_solver = std::make_shared<ProjectedGradient<USparseMatrix, UVector, HOMEMADE>>();
+			mf_solver->verbose(true);
+			mf_solver->max_it(60000);
+
+			sp.linear_solver(mf_solver);
+			sp.coupling_op_solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
+			
+
+			// if(use_mg) {
+			// 	sp.linear_solver(make_mg_solver(V_m, mg_levels));
+			// }
+			USparseMatrix m_D = D;
+			m_D *= -1.;
+
+			sp.update(make_ref(A_m), make_ref(A_f), make_ref(B), make_ref(m_D));
+
+			if(!sp.apply(rhs_m, rhs_f, x_m, x_f)) {
+				return false;
+			}
+
+			UVector temp;
+			Factorization<USparseMatrix, UVector> fact;
+			bool ok = fact.solve(m_D, B * x_m, temp);
+			temp = A_f * temp - rhs_f;
+			return fact.apply(temp, lagr) && ok;
+		}
 	}
 
 	bool SteadyFractureFlowSimulation::solve_staggered()

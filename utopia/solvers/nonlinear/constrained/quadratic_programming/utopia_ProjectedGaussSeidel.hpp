@@ -6,6 +6,7 @@
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Smoother.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_RowView.hpp"
 
 #include <cmath>
 

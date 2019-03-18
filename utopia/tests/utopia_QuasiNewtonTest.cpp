@@ -455,9 +455,7 @@ namespace utopia
 	        rmtr->solve(x);
 
 	    }
-
-
-
+	    
 
 		QuasiNewtonTest()
 		: _n(10), _verbose(false) { }

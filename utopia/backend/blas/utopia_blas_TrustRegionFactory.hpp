@@ -48,9 +48,9 @@ namespace utopia {
 
 		void init()
 		{
-			strategies_[CAUCHYPOINT_TAG] 	= std::make_shared< TRFactoryMethod< utopia::CauchyPoint<Matrix, Vector>> >(); 
-			strategies_[DOGLEG_TAG] 		= std::make_shared< TRFactoryMethod< utopia::Dogleg<Matrix, Vector>> >(); 
-			strategies_[STEIHAUG_TOINT_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
+			strategies_[Solver::cauchypoint()] 	  = std::make_shared< TRFactoryMethod< utopia::CauchyPoint<Matrix, Vector>> >(); 
+			strategies_[Solver::dogleg()] 		  = std::make_shared< TRFactoryMethod< utopia::Dogleg<Matrix, Vector>> >(); 
+			strategies_[Solver::steihaug_toint()] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
 		}
 	};
 }

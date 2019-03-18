@@ -535,58 +535,8 @@ namespace utopia {
 			readable_ = nullptr;
 		}
 
-		inline void write_lock(WriteMode mode)
-		{
-			switch(mode) {
-				case GLOBAL_INSERT:
-				case GLOBAL_ADD:
-				{
-					//no-op
-					break;
-				}
-				case LOCAL:
-				case AUTO:
-				default:
-				{	
-					writeable_ = utopia::make_unique<LocalView>(implementation());
-					readable_  = utopia::make_unique<ConstLocalView>(*writeable_);
-					break;
-				}
-			}
-		}
-
-		inline void write_unlock(WriteMode mode)
-		{
-			switch(mode) {
-				case GLOBAL_INSERT:
-				case GLOBAL_ADD:
-				{
-					VecAssemblyBegin(implementation());
-					VecAssemblyEnd(implementation());
-
-					set_initialized(true);
-					update_ghosts();
-					break;
-				}
-				case LOCAL:
-				case AUTO:
-				default:
-				{	
-					writeable_ = nullptr;
-					readable_  = nullptr;
-
-					if(!initialized_) {
-						VecAssemblyBegin(implementation());
-						VecAssemblyEnd(implementation());
-
-						set_initialized(true);
-						update_ghosts();
-					}
-					
-					break;
-				}
-			}
-		}
+		void write_lock(WriteMode mode);
+		void write_unlock(WriteMode mode);
 
 		bool is_nan_or_inf() const;
 		bool is_mpi() const;

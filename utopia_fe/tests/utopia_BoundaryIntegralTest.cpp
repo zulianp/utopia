@@ -27,16 +27,17 @@
 #include <iostream>
 
 namespace utopia {
-	void run_boundary_integral_test(libMesh::LibMeshInit &init)
+
+	void BoundaryIntegralTest::run(Input &in)
 	{
-		moonolith::Communicator comm(init.comm().get());
+		moonolith::Communicator comm(this->comm().get());
 
 		const unsigned int nx = 6;
 		const unsigned int ny = 6;
 		const unsigned int nz = 6;
 
 		auto elem_order = libMesh::SECOND;
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());
 
 		libMesh::MeshTools::Generation::build_cube(*mesh,
 			nx, ny, nz,
@@ -127,13 +128,13 @@ namespace utopia {
 		double surface_area   = sum(boundary_mass_matrix);
 		double surface_area_2 = sum(boundary_mass_matrix_2);
 
-		assert(approxeq(surface_area,   6., 1e-10));
-		assert(approxeq(surface_area_2, 6., 1e-10));
+		utopia_test_assert(approxeq(surface_area,   6., 1e-10));
+		utopia_test_assert(approxeq(surface_area_2, 6., 1e-10));
 
 		USparseMatrix diff_mm = boundary_mass_matrix - boundary_mass_matrix_2;
 		const double diff_norm = norm2(diff_mm);
 
-		assert(approxeq(diff_norm, 0.));
+		utopia_test_assert(approxeq(diff_norm, 0.));
 
 		USparseMatrix side_mass_matrix;
 		assemble(surface_integral(inner(u, v), 1), side_mass_matrix);
@@ -141,17 +142,17 @@ namespace utopia {
 		UVector side_mass_vec = sum(side_mass_matrix, 1);
 
 		const double side_area_1 = sum(side_mass_matrix);
-		assert(approxeq(side_area_1, 1., 1e-10));
+		utopia_test_assert(approxeq(side_area_1, 1., 1e-10));
 
 		USparseMatrix side_mass_matrix_12;
 		assemble(surface_integral(inner(u, v), 1) + surface_integral(inner(u, v), 2), side_mass_matrix_12);
 		const double side_area_12 = sum(side_mass_matrix_12);
-		assert(approxeq(side_area_12, 2., 1e-10));
+		utopia_test_assert(approxeq(side_area_12, 2., 1e-10));
 
 		USparseMatrix boundary_lapl;
 		assemble(surface_integral(inner(grad(u), grad(v))), boundary_lapl);
 		const double sum_lapl = sum(boundary_lapl);
-		assert(approxeq(sum_lapl, 0., 1e-10));
+		utopia_test_assert(approxeq(sum_lapl, 0., 1e-10));
 
 		UVector b_fun;
 		assemble(surface_integral(inner(coeff(1.), v), 1), b_fun);
