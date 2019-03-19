@@ -104,12 +104,12 @@ namespace utopia
             std::shared_ptr<Function<Matrix, Vector> > fun_grad_ptr_(&fun_grad, [](Function<Matrix, Vector>*){});
             ODEFormFunction<Matrix, Vector> fun(fun_grad_ptr_); 
 
-            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0; 
+            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0, mu, L; 
             SizeType it_inner = 0; 
 
             Vector g, s, g_new; 
             s = 0 * x; 
-            g_new= 0*x; 
+            g_new = 0*x; 
             Matrix H; 
 
             fun.gradient(x, g); 
@@ -134,7 +134,7 @@ namespace utopia
 
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
-                this->init_solver("Affine similarity", {" it. ", "|| F ||", "|| Delta x || ", "tau"});
+                this->init_solver("Affine similarity", {" it. ", "|| F ||", "|| Delta x || ", "tau", "mu", "inner it"});
                 PrintInfo::print_iter_status(it, {g_norm, 0, tau});
             }
 
@@ -155,26 +155,35 @@ namespace utopia
                 g_norm = norm2(g_new); 
 
 
-                tau = estimate_tau(g_new, g, s, tau, s_norm); 
+                // tau = estimate_tau(g_new, g, s, tau, s_norm); 
 
                 if(norm_l2(g_new) < norm_l2(g))
                 {
+
+                    tau = estimate_tau(g_new, g, s, tau, s_norm); 
+                    mu = estimate_mu(g_new, g, s, tau, s_norm); 
+
+
+                    it_inner = 0; 
+
                     x = x_trial; 
                     g = g_new; 
                     fun.hessian(x, H); 
-                    // tau = estimate_tau(g_new, g, s, tau, s_norm); 
                 }
                 else
                 {
+                    tau = estimate_tau(g_new, g, s, tau, s_norm); 
+                    mu = estimate_mu(g_new, g, s, tau, s_norm); 
+
                     g_norm = g_norm_old; 
                     // bool converged_inner = false; 
-                    it_inner = 0; 
+                    it_inner++; 
                 }
 
 
                 // print iteration status on every iteration
                 if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL){
-                    PrintInfo::print_iter_status(it, {g_norm, s_norm, tau, Scalar(it_inner)});
+                    PrintInfo::print_iter_status(it, {g_norm, s_norm, tau, mu, Scalar(it_inner)});
                 }
 
 
@@ -251,12 +260,26 @@ namespace utopia
             Scalar nom = dot(g, s) - s_norm2; 
             Scalar denom = dot(g_new, s) - s_norm2; 
 
-            Scalar tau_new = tau/2.0 * std::abs(nom/denom); 
+            Scalar tau_new = 0.5*tau * std::abs(nom/denom); 
             // bool flg = this->clamp_tau(tau_new); 
             this->clamp_tau(tau_new); 
             
             return tau_new; 
         }
+
+
+        Scalar estimate_mu(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        {   
+            Scalar s_norm2 = norm_l2_2(s);
+
+            Scalar nom = dot(g, s) - s_norm2; 
+            Scalar denom = tau * s_norm2;
+
+            return nom/denom; 
+        }
+
+
+
 
 
         Scalar norm_l2_2(const Vector & s)
