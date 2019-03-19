@@ -1,6 +1,5 @@
 list(APPEND TEST_MODULES
 	.
-	simulations
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
@@ -26,6 +25,7 @@ target_link_libraries(
 	utopia_fe_functions
 	utopia_fe_fractures
 	utopia_fe_wear
+	utopia_fe_apps
 )
 
 if(TARGET utopia_fe_intrepid2)

@@ -3,13 +3,11 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_FactoryMethod.hpp"
+#include "utopia_Newton.hpp"
+#include "utopia_TrustRegion.hpp"
+#include "utopia_SolverType.hpp"
 
 namespace utopia {
-	typedef const char * NonlinearSolverTag;
-
-	static NonlinearSolverTag NEWTON_TAG 			= "NEWTON";
-	static NonlinearSolverTag LINE_SEARCH_TAG 		= "LINE_SEARCH";
-	static NonlinearSolverTag TRUST_REGION_TAG 		= "TRUST_REGION";
 
 	////////////////////////////////// depreciated /////////////////////////////////////
 	/**
@@ -32,7 +30,7 @@ namespace utopia {
 		typedef std::shared_ptr< LinearSolver<Matrix, Vector> >  LinearSolverPtr;
 		std::map<std::string, FactoryMethodT> nl_solvers_;
 
-		inline static NonLinearSolverPtr solver(const NonlinearSolverTag &tag, LinearSolverPtr & linear_solver)
+		inline static NonLinearSolverPtr solver(const SolverType &tag, LinearSolverPtr & linear_solver)
 		{
 			auto it = instance().nl_solvers_.find(tag);
 			if(it == instance().nl_solvers_.end()) {
@@ -59,8 +57,8 @@ namespace utopia {
 
 		void init()
 		{
-			nl_solvers_[NEWTON_TAG] 	  = std::make_shared< NLSolverFactoryMethod<Newton<Matrix, Vector>> >();   
-			nl_solvers_[TRUST_REGION_TAG] = std::make_shared< NLSolverFactoryMethod<TrustRegion<Matrix, Vector>> >();  
+			nl_solvers_[Solver::newton()] 	  = std::make_shared< NLSolverFactoryMethod<Newton<Matrix, Vector>> >();   
+			nl_solvers_[Solver::trust_region()] = std::make_shared< NLSolverFactoryMethod<TrustRegion<Matrix, Vector>> >();  
 		}
 	};
 

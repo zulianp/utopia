@@ -558,13 +558,13 @@ namespace utopia {
 
 	}
 
-	void run_intersect_test(libMesh::LibMeshInit &init)
+	void IntersectTest::run(Input &in)
 	{
 		UTOPIA_UNIT_TEST_BEGIN("IntersectTest");
 
-		intesect_ray_elem_quad(init.comm());
-		intesect_ray_elem_warped_quad(init.comm());
-		project_ray_elem_hex(init.comm());
+		intesect_ray_elem_quad(this->comm());
+		intesect_ray_elem_warped_quad(this->comm());
+		project_ray_elem_hex(this->comm());
 
 		UTOPIA_RUN_TEST(intersect_hex_with_polygon_test);
 		UTOPIA_RUN_TEST(intersect_tet_with_polygon_test_1);

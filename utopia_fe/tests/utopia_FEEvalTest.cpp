@@ -157,10 +157,9 @@ namespace utopia {
 		}
 	}
 
-	void run_fe_eval_test(libMesh::LibMeshInit &init)
+	void FEEvalTest::run(Input &in)
 	{
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
 
 		const int n = 1;
 		libMesh::MeshTools::Generation::build_square(*mesh,

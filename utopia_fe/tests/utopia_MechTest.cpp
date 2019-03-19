@@ -38,9 +38,9 @@ typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun
 
 namespace utopia {
 
-	void run_mech_test(libMesh::LibMeshInit &init)
+	void MechTest::run(Input &in)
 	{
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());		
 		
 		// const unsigned int n = 8;
 		const unsigned int dim = 2;

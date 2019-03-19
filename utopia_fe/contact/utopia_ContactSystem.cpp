@@ -27,43 +27,43 @@ namespace utopia {
 
 		auto &dof_map_main = equation_systems_->get_system(main_system_num_).get_dof_map();
 		auto order = dof_map_main.variable_order(0);
-		
+
 		var_num_.push_back( aux.add_variable("inc_x", order, libMesh::LAGRANGE) );
 		var_num_.push_back( aux.add_variable("inc_y", order, libMesh::LAGRANGE) );
 
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_.push_back( aux.add_variable("inc_z", order, libMesh::LAGRANGE) );
 
 		var_num_.push_back( aux.add_variable("vel_x", order, libMesh::LAGRANGE) );
 		var_num_.push_back( aux.add_variable("vel_y", order, libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_.push_back( aux.add_variable("vel_z", order, libMesh::LAGRANGE) );
 
 		var_num_.push_back( aux.add_variable("f_x", order, libMesh::LAGRANGE) );
 		var_num_.push_back( aux.add_variable("f_y", order, libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_.push_back( aux.add_variable("f_z", order, libMesh::LAGRANGE) );
 
 		var_num_.push_back( aux.add_variable("fext_x", order, libMesh::LAGRANGE) );
 		var_num_.push_back( aux.add_variable("fext_y", order, libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_.push_back( aux.add_variable("fext_z", order, libMesh::LAGRANGE) );
 
 
 		var_num_.push_back( aux.add_variable("n_x", order, libMesh::LAGRANGE) );
 		var_num_.push_back( aux.add_variable("n_y", order, libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_.push_back( aux.add_variable("n_z", order, libMesh::LAGRANGE) );
 
 		var_num_.push_back( aux.add_variable("wear_disp_x", order, libMesh::LAGRANGE) );
 		var_num_.push_back( aux.add_variable("wear_disp_y", order, libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_.push_back( aux.add_variable("wear_disp_z", order, libMesh::LAGRANGE) );
 
 
@@ -73,7 +73,7 @@ namespace utopia {
 		var_num_.push_back( aux.add_variable("is_contact", order, libMesh::LAGRANGE) );
 		var_num_.push_back( aux.add_variable("gap", order, libMesh::LAGRANGE) );
 
-		aux.init();	
+		aux.init();
 		aux.update();
 
 		wear_ = local_zeros(dof_map_main.n_local_dofs());
@@ -86,7 +86,7 @@ namespace utopia {
 		const UVector &normal_stress,
 		UVector &wear
 		)
-	{	
+	{
 		wear += (dt * wear_coefficient) * abs(e_mul(sliding_distance, normal_stress));
 	}
 
@@ -101,7 +101,7 @@ namespace utopia {
 		const int dim = mesh.mesh_dimension();
 
 		UVector normal_stress = local_zeros(local_size(state.displacement));
-		UVector sliding_distance = local_zeros(local_size(state.displacement)); 
+		UVector sliding_distance = local_zeros(local_size(state.displacement));
 
 			// UVector stress = local_zeros(local_size(state.displacement));
 
@@ -111,7 +111,7 @@ namespace utopia {
 			UVector tangential_velocity = contact.orthogonal_trafo * state.velocity;
 			sliding_distance = local_zeros(local_size(state.displacement));
 
-			{	
+			{
 				Read<UVector>   r_v(tangential_velocity);
 				Write<UVector> w_s(sliding_distance);
 

@@ -62,19 +62,13 @@ namespace utopia {
 		UIFunctionSpace<LibMeshFunctionSpace>  space_;
 	};
 
-	void TransferApp::init(libMesh::LibMeshInit &init)
-	{
-		comm_ = make_ref(init.comm());
-	}
-
-	void TransferApp::run(const std::string &conf_file_path)
+	void TransferApp::run(Input &in)
 	{
 		Chrono c;
 		c.start();
 
-		auto is_ptr = open_istream(conf_file_path);
-		InputSpace input_master(*comm_);
-		InputSpace input_slave(*comm_);
+		InputSpace input_master(comm());
+		InputSpace input_slave(comm());
 		bool master_boundary = false, slave_boundary = false;
 
 		std::shared_ptr<libMesh::MeshBase> master_actual_mesh, slave_actual_mesh;
@@ -82,7 +76,7 @@ namespace utopia {
 
 		std::shared_ptr<MeshTransferOperator> transfer_operator;
 
-		is_ptr->get("transfer", [&](Input &is) {
+		in.get("transfer", [&](Input &is) {
 			//get spaces
 			is.get("master", input_master);
 			is.get("slave",  input_slave);
@@ -91,7 +85,7 @@ namespace utopia {
 			is.get("slave-boundary",  slave_boundary);
 
 			if(master_boundary) {
-				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(*comm_, input_master.mesh().mesh_dimension()-1);
+				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_master.mesh().mesh_dimension()-1);
 				input_master.mesh().boundary_info->sync(*b_mesh);
 				master_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
 				master_actual_space->initialize();
@@ -102,7 +96,7 @@ namespace utopia {
 			}
 
 			if(slave_boundary) {
-				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(*comm_, input_slave.mesh().mesh_dimension()-1);
+				auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_slave.mesh().mesh_dimension()-1);
 				input_slave.mesh().boundary_info->sync(*b_mesh);
 				slave_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
 				slave_actual_space->initialize();
@@ -111,7 +105,7 @@ namespace utopia {
 				slave_actual_mesh = input_slave.mesh_ptr();
 				slave_actual_space = make_ref(input_slave.space());
 			}
-			
+
 			transfer_operator = std::make_shared<MeshTransferOperator>(
 				master_actual_mesh,
 				make_ref(master_actual_space->dof_map()),
@@ -120,7 +114,7 @@ namespace utopia {
 			);
 
 			transfer_operator->read(is);
-	
+
 #ifdef WITH_TINY_EXPR
 			std::string expr = "x";
 			is.get("function", expr);
@@ -190,7 +184,10 @@ namespace utopia {
 		if(mpi_world_rank() == 0) {
 			std::cout << "Assembled M and fun_m" << std::endl;
 			std::cout << c << std::endl;
+			std::cout << std::flush;
 		}
+
+		mpi_world_barrier();
 
 		transfer_operator->apply(fun_master, fun_slave);
 		transfer_operator->apply_transpose(fun_slave, back_fun_master);

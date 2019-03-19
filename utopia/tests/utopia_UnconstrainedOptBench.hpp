@@ -60,54 +60,54 @@ namespace utopia
 		void initialize() override
 		{
 
-			this->register_experiment("TR_STCG",
+			this->register_experiment(Solver::stcg(),
 				[this]() {
 					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
 					TrustRegion<Matrix, Vector> solver(subproblem);
-					run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
+					run_tr(this->test_functions_, solver, Solver::stcg(), this->verbose_);
 				}
 			);
 
-			// this->register_experiment("TR_Lanczos",
+			// this->register_experiment(Solver::lanczos(),
 			// 	[this]() {
 			// 		auto subproblem = std::make_shared<Lanczos<Matrix, Vector> >();
 			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_Lanczos", this->verbose_);
+			// 		run_tr(this->test_functions_, solver, Solver::lanczos(), this->verbose_);
 			// 	}
 			// );			
 
-			// this->register_experiment("TR_Nash",
+			// this->register_experiment(Solver::nash(),
 			// 	[this]() {
 			// 		auto subproblem = std::make_shared<Nash<Matrix, Vector> >();
 			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_Nash", this->verbose_);
+			// 		run_tr(this->test_functions_, solver, Solver::nash(), this->verbose_);
 			// 	}
 			// );		
 
-			// this->register_experiment("TR_Dogleg",
+			// this->register_experiment(Solver::dogleg(),
 			// 	[this]() {
 			// 		auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
 			// 		linear_solver->atol(1e-14); 
 			// 		linear_solver->max_it(10000);
 			// 		auto subproblem = std::make_shared<Dogleg<Matrix, Vector> >(linear_solver); 
 			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_Dogleg", this->verbose_);
+			// 		run_tr(this->test_functions_, solver, Solver::dogleg(), this->verbose_);
 			// 	}
 			// );			
 
 			// // TODO:: add check for slepcs
-			// this->register_experiment("TR_MS",
+			// this->register_experiment(Solver::ms(),
 			// 	[this]() {
 			// 		auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
 			// 		// TODO:: add checks if has arpack
 			// 		eigen_solver->solver_type("arpack");
 					
 			// 		auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
-			// 		linear_solver->set_library_type(PETSC_TAG); 
+			// 		linear_solver->set_library_type(Solver::petsc()); 
 
 			// 		auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
 			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_MS", this->verbose_);
+			// 		run_tr(this->test_functions_, solver, Solver::ms(), this->verbose_);
 			// 	}
 			// );						
 

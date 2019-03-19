@@ -54,14 +54,14 @@ namespace utopia {
 
 		void init()
 		{	
-			strategies_[CAUCHYPOINT_TAG] 	= std::make_shared< TRFactoryMethod< utopia::CauchyPoint<Matrix, Vector>> >(); 
-			strategies_[DOGLEG_TAG] 		= std::make_shared< TRFactoryMethod< utopia::Dogleg<Matrix, Vector>> >(); 
-			strategies_[STEIHAUG_TOINT_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
+			strategies_[Solver::cauchypoint()] 	  = std::make_shared< TRFactoryMethod< utopia::CauchyPoint<Matrix, Vector>> >(); 
+			strategies_[Solver::dogleg()] 		  = std::make_shared< TRFactoryMethod< utopia::Dogleg<Matrix, Vector>> >(); 
+			strategies_[Solver::steihaug_toint()] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
 
-			strategies_[AUTO_TR_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
-			strategies_[NASH_TAG] = std::make_shared< TRFactoryMethod< utopia::Nash<Matrix, Vector>> >(); 
-			strategies_[LANCZOS_TAG] = std::make_shared< TRFactoryMethod< utopia::Lanczos<Matrix, Vector>> >(); 
-			strategies_[CGNE_TAG] = std::make_shared< TRFactoryMethod< utopia::CGNE<Matrix, Vector>> >(); 			
+			strategies_[Solver::automatic()] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
+			strategies_[Solver::nash()] 	 = std::make_shared< TRFactoryMethod< utopia::Nash<Matrix, Vector>> >(); 
+			strategies_[Solver::lanczos()]   = std::make_shared< TRFactoryMethod< utopia::Lanczos<Matrix, Vector>> >(); 
+			strategies_[Solver::cgne()]      = std::make_shared< TRFactoryMethod< utopia::CGNE<Matrix, Vector>> >(); 			
 		}
 	};
 }

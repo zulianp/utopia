@@ -64,9 +64,9 @@ namespace utopia {
 
 
 
-	void run_non_linear_elasticity_test(libMesh::LibMeshInit &init)
+	void NonLinearElasticityTest::run(Input &in)
 	{
-		auto mesh = square(init.comm(), 20, 20, 0., 1., 0., 1., libMesh::QUAD8);
+		auto mesh = square(this->comm(), 20, 20, 0., 1., 0., 1., libMesh::QUAD8);
 
 		const auto dim = mesh->mesh_dimension();
 

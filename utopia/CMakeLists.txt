@@ -16,6 +16,7 @@ option(TRY_WITH_MPI "Enable the cuda backend" ON)
 option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
 option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
+option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
 option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
@@ -33,12 +34,12 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 #################################################################################
 #################################################################################
 #################################################################################
-set(UTOPIA_DEV_FLAGS 
+set(UTOPIA_DEV_FLAGS
 	"-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
 )
 
 # More annoying
-# set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
+set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 
 # More restrictive
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
@@ -66,9 +67,13 @@ IF(WIN32)
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 ENDIF()
 
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+
 if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
-		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+
+		SET(UTOPIA_DEV_FLAGS  "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+
 	endif()
 endif()
 
@@ -232,7 +237,7 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 #################################################################################
 #################################################################################
 
-
+add_subdirectory(backend/polymorphic)
 
 # backend modules
 if(TRY_WITH_BLAS)
@@ -267,6 +272,7 @@ endif()
 
 # test suite
 add_subdirectory(tests)
+
 
 
 # core modules

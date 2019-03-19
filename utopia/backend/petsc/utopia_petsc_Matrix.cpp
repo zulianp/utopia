@@ -1103,10 +1103,15 @@ namespace utopia {
             result.destroy();
             // MatCreateVecs(implementation(), nullptr, &result.implementation());
             create_vecs(nullptr, &result.implementation());
-        } else {
+        } else {    
             Size gs = size();
-            Size ls = local_size();
-            VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
+            if(gs.get(0) != result.size()) {
+                result.destroy();
+                // MatCreateVecs(implementation(), nullptr, &result.implementation());
+                create_vecs(nullptr, &result.implementation());
+            }
+            
+            assert(local_size().get(0) == result.local_size());
         }
 
         check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
@@ -1192,7 +1197,7 @@ namespace utopia {
             MatMultAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
             result = std::move(temp);
         } else {
-            result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+            result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
         }
     }
@@ -1205,7 +1210,7 @@ namespace utopia {
             MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
             result = std::move(temp);
         } else {
-            result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+            result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
         }
     }

@@ -6,10 +6,10 @@
 #include "libmesh/exodusII_io.h"
 
 namespace utopia {
-	void test_msh_reader(libMesh::LibMeshInit &init)
+	void MSHReaderTest::run(Input &in)
 	{
 		std::cout << "[test_msh_reader]" << std::endl;
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());	
 
 		// MeshReaderOpts opts;
 		// opts.append_mode = true;
@@ -33,7 +33,7 @@ namespace utopia {
 
 		UGXMeshReader reader;
 		if(!reader.read("/Users/zulianp/Desktop/algo4u/wearsim/promesh/tibia_insert_wp.ugx", *mesh)) {
-			assert(false);
+			utopia_test_assert(false);
 			return;
 		}
 

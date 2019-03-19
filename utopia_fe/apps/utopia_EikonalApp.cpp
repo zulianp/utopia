@@ -1,5 +1,5 @@
 #include "utopia_libmesh.hpp"
-#include "utopia_LeastSquaresHelmholtz.hpp"
+#include "utopia_EikonalApp.hpp"
 
 #include "utopia_FormEvaluator.hpp"
 #include "utopia_fe_core.hpp"
@@ -24,7 +24,7 @@
 
 namespace utopia {
 
-	void run_eikonal_equation_test(libMesh::LibMeshInit &init)
+	void EikonalApp::run(Input &in)
 	{
 		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
@@ -47,7 +47,7 @@ namespace utopia {
 		const auto elem_order = libMesh::SECOND;
 
 		//mesh
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
 		libMesh::MeshTools::Generation::build_square(
 			*mesh,
 			n, n,

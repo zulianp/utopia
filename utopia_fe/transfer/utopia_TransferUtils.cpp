@@ -37,11 +37,11 @@ namespace utopia {
 	    return true;
 	}
 
-	bool assemble_projection(LibMeshFunctionSpace &from, LibMeshFunctionSpace &to, USparseMatrix &B, USparseMatrix &D)
+	bool assemble_projection(LibMeshFunctionSpace &from, LibMeshFunctionSpace &to, USparseMatrix &B, USparseMatrix &D, const bool use_biorth)
 	{
 	    bool is_shell = from.mesh().mesh_dimension() < from.mesh().spatial_dimension();
 
-	    auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true, is_shell);
+	    auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), use_biorth, true, is_shell);
 	    auto local2global = std::make_shared<Local2Global>(false);
 
 	    TransferAssembler transfer_assembler(assembler, local2global);
@@ -56,8 +56,28 @@ namespace utopia {
 	        return false;
 	    }
 
+	    
 	    B = std::move(*mats[0]);
-	    D = std::move(*mats[1]);
+
+	    if(use_biorth) {
+	    	UVector d = sum(B, 1);
+	  //   	UVector d_inv = local_values(local_size(d), 1.);
+
+			// {
+			// 	Write<UVector> w(d_inv);
+		 //    	each_read(d, [&d_inv](const SizeType i, const double value) {
+		 //    		if(std::abs(value) > 1e-14) {
+		 //    			d_inv.set(i, 1./value);
+		 //    		}
+		 //    	});
+	  //   	}
+
+	    	D = diag(d);
+
+	    } else {
+	    	
+	    	D = std::move(*mats[1]);
+	    }
 
 	    double sum_B = sum(B);
 	    double sum_D = sum(D);

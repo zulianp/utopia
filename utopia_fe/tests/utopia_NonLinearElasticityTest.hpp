@@ -1,12 +1,23 @@
 #ifndef UTOPIA_NON_LINEAR_ELASTICITY_TEST_HPP
 #define UTOPIA_NON_LINEAR_ELASTICITY_TEST_HPP 
 
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_fe_base.hpp"
+#include "utopia_FETest.hpp"
+#include <string>
+
 
 namespace utopia {
-	void run_non_linear_elasticity_test(libMesh::LibMeshInit &init);
+
+	class NonLinearElasticityTest final : public FETest {
+	public:
+		void run(Input &in) override;
+
+		inline static std::string command()
+		{
+			return "nlelast";
+		}
+	};
+
 }
 
 #endif //UTOPIA_NON_LINEAR_ELASTICITY_TEST_HPP

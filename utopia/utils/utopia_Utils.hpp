@@ -137,10 +137,14 @@ namespace utopia
     class CSVWriter
     {
     	 public:
+    	 	inline constexpr static const char * append_binary() { return "ab+"; }
+    	 	inline constexpr static const char * read() { return "r"; }
+    	 	inline constexpr static const char * write() { return "w"; }
+    	 	inline constexpr static const char * append() { return "a+"; }
 
-    	 	void open_file(const std::string & file_name)
+    	 	void open_file(const std::string & file_name, const std::string &mode = append_binary())
     	 	{
-    	 		pFile = fopen(file_name.c_str(), "ab+");
+    	 		pFile = fopen(file_name.c_str(), mode.c_str());
     	 	}
 
     	 	template<class T>

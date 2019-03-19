@@ -49,9 +49,9 @@ namespace utopia {
 		);
 
 		utopia_test_assert(std::abs(energy) > std::abs(energy_after));
-		std::cout << std::abs(energy_after) << std::endl;
+		// std::cout << std::abs(energy_after) << std::endl;
 
-		write("test.e", V, x);
+		// write("test.e", V, x);
 	}
 
 	static void area_test(LibMeshFunctionSpace &V)
@@ -71,9 +71,9 @@ namespace utopia {
 		std::cout << "area: " << area << std::endl;
 	}
 
-	void run_energy_test(libMesh::LibMeshInit &init)
+	void EnergyTest::run(Input &in)
 	{
-		libMesh::DistributedMesh mesh(init.comm());
+		libMesh::DistributedMesh mesh(this->comm());
 
 		int n = 10;
 		libMesh::MeshTools::Generation::build_square(

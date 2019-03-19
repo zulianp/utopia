@@ -128,7 +128,7 @@ namespace utopia {
 
 			repurpose(comm, type_override(), ls, gs);
 
-			write_lock(LOCAL);
+			// write_lock(LOCAL);
 
 			auto r = range();
 
@@ -145,7 +145,10 @@ namespace utopia {
 				VecRestoreArrayRead(x[i], &a);
 			}
 
-			write_unlock(LOCAL);
+			// write_unlock(LOCAL);
+
+			VecAssemblyBegin(implementation());
+			VecAssemblyEnd(implementation());
 		}
 	}	
 
@@ -376,5 +379,58 @@ namespace utopia {
 
 		//TODO add additional checks
 		return true;
+	}
+
+	void PetscVector::write_lock(WriteMode mode)
+	{
+		switch(mode) {
+			case GLOBAL_INSERT:
+			case GLOBAL_ADD:
+			{
+				//no-op
+				break;
+			}
+			case LOCAL:
+			case AUTO:
+			default:
+			{	
+				writeable_ = utopia::make_unique<LocalView>(implementation());
+				readable_  = utopia::make_unique<ConstLocalView>(*writeable_);
+				break;
+			}
+		}
+	}
+
+	void PetscVector::write_unlock(WriteMode mode)
+	{
+		switch(mode) {
+			case GLOBAL_INSERT:
+			case GLOBAL_ADD:
+			{
+				VecAssemblyBegin(implementation());
+				VecAssemblyEnd(implementation());
+
+				set_initialized(true);
+				update_ghosts();
+				break;
+			}
+			case LOCAL:
+			case AUTO:
+			default:
+			{	
+				writeable_ = nullptr;
+				readable_  = nullptr;
+
+				if(!initialized_) {
+					VecAssemblyBegin(implementation());
+					VecAssemblyEnd(implementation());
+
+					set_initialized(true);
+					update_ghosts();
+				}
+				
+				break;
+			}
+		}
 	}
 }

@@ -38,6 +38,12 @@ namespace utopia {
 			forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
 			is.get("forcing-function", *forcing_function);
 
+
+			is.get("weak-bc", [this](Input &in) {
+				weak_BC_ = std::make_shared<WeakDirichletBoundaryConditions<FunctionSpaceT, USparseMatrix, UVector> >(space.subspace(0));
+				weak_BC_->read(in);
+			});
+
 	            //material parameters
 			double diffusivity = 1.;
 			double diffusivities[3] = {1., 1., 1.};
@@ -61,6 +67,13 @@ namespace utopia {
 		} catch(const std::exception &ex) {
 			std::cerr << ex.what() << std::endl;
 			assert(false);
+		}
+	}
+
+	void FractureFlow::apply_weak_BC(USparseMatrix &A, UVector &b) const
+	{
+		if(weak_BC_) {
+			weak_BC_->apply(A, b);
 		}
 	}
 
