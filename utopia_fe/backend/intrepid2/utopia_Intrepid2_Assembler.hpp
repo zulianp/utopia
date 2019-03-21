@@ -4,6 +4,8 @@
 #include "utopia_libmesh_AssemblyContext.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_intrepid2_Types.hpp"
+
 // Intrepid2 includes
 #include <Intrepid2_FunctionSpaceTools.hpp>
 #include <Intrepid2_CellTools.hpp>
@@ -18,14 +20,15 @@
 // Teuchos includes
 #include <Teuchos_oblackholestream.hpp>
 #include <Teuchos_RCP.hpp>
-// #include <Teuchos_BLAS.hpp>
-// #include <Teuchos_GlobalMPISession.hpp>
+#include <Teuchos_BLAS.hpp>
+#include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_TimeMonitor.hpp>
 #include <Teuchos_ParameterList.hpp>
-// #include <Teuchos_XMLParameterListCoreHelpers.hpp>
+#include <Teuchos_XMLParameterListCoreHelpers.hpp>
 
-// // Shards includes
-// #include "Shards_CellTopology.hpp"
+// Shards includes
+#include "Shards_CellTopology.hpp"
+
 
 // Tpetra includes
 #include <Tpetra_Core.hpp>
@@ -34,8 +37,8 @@
 namespace utopia {
 	class Intrepid2Assembler {
 	public:
-		typedef utopia::USparseMatrix GlobalMatrix;
-		typedef utopia::UVector GlobalVector;
+		typedef utopia::TSMatrixd GlobalMatrix;
+		typedef utopia::TVectord GlobalVector;
 		typedef UTOPIA_SCALAR(GlobalVector) Scalar;
 
 		typedef Kokkos::DefaultExecutionSpace Host;
@@ -349,7 +352,8 @@ namespace utopia {
 				for(auto e_it = m.active_local_elements_begin(); e_it != m.active_local_elements_end(); ++e_it) {
 					dof_map.dof_indices(*e_it, indices);
 					zero = zeros(indices.size(), indices.size());
-					add_matrix(zero.implementation(), indices, indices, mat);
+					//local matrix of zeros
+					add_matrix(indices, indices, mat); //TODO
 				}
 				//BUILD the crs graph
 			} else {
