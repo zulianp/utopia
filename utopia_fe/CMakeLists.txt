@@ -58,14 +58,8 @@ foreach(funcLib ${FUNC_LIB})
 	include(${funcLib})
 endforeach(funcLib)
 
-find_package(Utopia)
-if(UTOPIA_FOUND)
-    include_directories(${UTOPIA_INCLUDES})
-    add_definitions(${UTOPIA_DEFS})
-else()
-    message(FATAL_ERROR "Utopia not found.")
-endif()
-
+find_package(Utopia REQUIRED)
+add_definitions(${UTOPIA_DEFS})
 include_directories(rapidxml)
 
 
@@ -98,6 +92,26 @@ function(find_project_files rootPath dirPaths headers sources)
 endfunction()
 ########################################################################
 
+# all arguments after module_name are the dependencies, we access them via ${ARGN}
+macro(add_utopiafe_module module_name)
+	add_library(${module_name} STATIC ${LOCAL_SOURCES})
+	target_link_libraries(${module_name} PUBLIC ${ARGN} ${UTOPIA_LIBRARIES})
+	target_include_directories(${module_name} BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+	foreach(module_dependency ${ARGN})
+		target_include_directories(${module_name} PUBLIC $<TARGET_PROPERTY:${module_dependency},INTERFACE_INCLUDE_DIRECTORIES>)
+	endforeach()
+	target_include_directories(${module_name} PRIVATE ${UTOPIA_INCLUDES})
+	set_utopia_compiler_features(${module_name})
+        if (NOT TOP_LEVEL)
+		set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};${module_name}" PARENT_SCOPE)
+	endif()
+	install(TARGETS ${module_name}
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
+	)
+	install(FILES ${LOCAL_HEADERS} DESTINATION include)
+endmacro(add_utopiafe_module)
 
 list(APPEND UTOPIA_FE_MODULES
 	tests
@@ -121,50 +135,34 @@ list(APPEND UTOPIA_FE_MODULES
 	base
  )
 
+include_directories(BEFORE ${CMAKE_SOURCE_DIR})
+include_directories(BEFORE ${CMAKE_BINARY_DIR})
+
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
 		add_subdirectory("${MODULE}")
 ENDFOREACH(MODULE)
 
-include_directories(BEFORE ${CMAKE_SOURCE_DIR})
-include_directories(BEFORE ${CMAKE_BINARY_DIR})
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
 
 
 #create main library
-list(APPEND TOP_HEADERS utopia_fe.hpp)
-list(APPEND TOP_SOURCES utopia_fe.cpp)
-
-
-add_library(utopia_fe STATIC ${TOP_SOURCES} ${TOP_HEADERS})
-target_link_libraries(utopia_fe ${UTOPIA_LIBRARIES} ${UTOPIA_FE_LIBRARIES} ${TRANSFER_LIB})
-set_utopia_compiler_features(utopia_fe)
-
-add_executable(utopia_fe_exec  main.cpp ${TOP_HEADERS})
+list(APPEND LOCAL_HEADERS utopia_fe.hpp)
+list(APPEND LOCAL_SOURCES utopia_fe.cpp)
+set(TOP_LEVEL 1)
+add_utopiafe_module(utopia_fe ${UTOPIA_FE_LIBRARIES})
+add_executable(utopia_fe_exec  main.cpp ${LOCAL_HEADERS})
+target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_INCLUDES})
 # target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})
 # these next three lines fix some issues on linux
 target_link_libraries(utopia_fe_exec utopia_fe)
-target_link_libraries(utopia_fe_exec ${UTOPIA_FE_LIBRARIES})
-target_link_libraries(utopia_fe_exec ${UTOPIA_LIBRARIES})
-
-
-install(TARGETS utopia_fe
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	)
 
 install(TARGETS utopia_fe_exec
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
 	)
-
-install(FILES ${TOP_HEADERS} DESTINATION include)
-
-
-
 
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------
