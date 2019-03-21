@@ -40,8 +40,8 @@ find_library(UTOPIA_LIBRARIES
 find_path(UTOPIA_CONFIG_FILE_PATH 
   NAMES "utopia-config.cmake"
   HINTS
-    $ENV{UTOPIA_DIR}
     ${UTOPIA_DIR}
+    $ENV{UTOPIA_DIR}
     ${UTOPIA_INCLUDES}/..
     $ENV{MOONOLITH_ROOT}/utopia/build
     PATH_SUFFIXES config 
