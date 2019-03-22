@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PETSC_NONLINEAR_SMOOTHER_HPP
 #define UTOPIA_PETSC_NONLINEAR_SMOOTHER_HPP
 
+#include "utopia_Base.hpp"
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonLinearSolver.hpp"
@@ -10,13 +11,13 @@
 #include "utopia_petsc_SNES.hpp"
 
 #include <petsc/private/snesimpl.h>
-#include "petscsnes.h"  
+#include "petscsnes.h"
 
 #include "utopia_NonlinearSolverInterfaces.hpp"
 
 
-// TODO:: check nonlinear preconditioners ... 
-namespace utopia 
+// TODO:: check nonlinear preconditioners ...
+namespace utopia
 {
 
     template<class Matrix, class Vector>
@@ -30,31 +31,31 @@ namespace utopia
 
 
         public:
-        NonLinearGaussSeidel(   const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) 
+        NonLinearGaussSeidel(   const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>())
                                 : SNESSolver(linear_solver)
-        { 
-            this->set_snes_type("ngs"); 
+        {
+            this->set_snes_type("ngs");
         }
 
-    private: 
-        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                                    const Scalar & rtol     = SNESSolver::rtol(), 
-                                                    const Scalar & stol     = SNESSolver::stol(), 
-                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+    private:
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(),
+                                                    const Scalar & rtol     = SNESSolver::rtol(),
+                                                    const Scalar & stol     = SNESSolver::stol(),
+                                                    const SizeType & max_it = SNESSolver::max_it()) override
         {
-            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it);
 
             // we need to allocate hessian for coloring computation
 
-            PetscBool assembled; 
-            MatAssembled(snes->jacobian_pre, &assembled); 
+            PetscBool assembled;
+            MatAssembled(snes->jacobian_pre, &assembled);
 
             if(!assembled)
                 SNESComputeJacobian(snes, snes->vec_sol, snes->jacobian,  snes->jacobian_pre);
 
-            SNESLineSearch linesearch; 
+            SNESLineSearch linesearch;
             SNESGetLineSearch(snes, &linesearch);
-            SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC); 
+            SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
         }
 
     };
@@ -72,13 +73,13 @@ namespace utopia
 
 
         public:
-        NonLinearConjugateGradient( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                                    const std::vector<std::string> update_types    = {"FR", "PRP", "HS", "DY", "CD"}) 
-                                    :   SNESSolver(linear_solver), 
+        NonLinearConjugateGradient( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
+                                    const std::vector<std::string> update_types    = {"FR", "PRP", "HS", "DY", "CD"})
+                                    :   SNESSolver(linear_solver),
                                         update_types(update_types)
-        { 
-            this->set_snes_type("ncg"); 
-            update_type_ = update_types.at(0); 
+        {
+            this->set_snes_type("ncg");
+            update_type_ = update_types.at(0);
         }
 
         void update_type(const std::string & update_type )
@@ -88,64 +89,64 @@ namespace utopia
 
         std::string & update_type()
         {
-            return update_type_; 
+            return update_type_;
         }
 
         void read(Input &in) override
         {
             SNESSolver::read(in);
 
-            std::string update_type_aux; 
+            std::string update_type_aux;
             in.get("update_type", update_type_aux);
 
-            // validation check 
-            this->update_type(update_type_aux); 
+            // validation check
+            this->update_type(update_type_aux);
         }
 
 
         void print_usage(std::ostream &os) const override
         {
             SNESSolver::print_usage(os);
-            this->print_param_usage(os, "update_type", "string", "Choice of update type.", "FR"); 
+            this->print_param_usage(os, "update_type", "string", "Choice of update type.", "FR");
         }
 
 
 
-    private: 
-        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                                    const Scalar & rtol     = SNESSolver::rtol(), 
-                                                    const Scalar & stol     = SNESSolver::stol(), 
-                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+    private:
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(),
+                                                    const Scalar & rtol     = SNESSolver::rtol(),
+                                                    const Scalar & stol     = SNESSolver::stol(),
+                                                    const SizeType & max_it = SNESSolver::max_it()) override
         {
-            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it);
 
             if(update_type_ == "PRP")
-                SNESNCGSetType(snes, SNES_NCG_PRP); 
+                SNESNCGSetType(snes, SNES_NCG_PRP);
             else if(update_type_ == "HS")
-                SNESNCGSetType(snes, SNES_NCG_HS ); 
+                SNESNCGSetType(snes, SNES_NCG_HS );
             else if(update_type_ == "DY")
-                SNESNCGSetType(snes, SNES_NCG_DY); 
+                SNESNCGSetType(snes, SNES_NCG_DY);
             else if(update_type_ == "CD")
-                SNESNCGSetType(snes, SNES_NCG_CD ); 
+                SNESNCGSetType(snes, SNES_NCG_CD );
             else
-                SNESNCGSetType(snes, SNES_NCG_FR ); 
+                SNESNCGSetType(snes, SNES_NCG_FR );
 
-            // error oriented LS seems to work the best ... 
-            SNESLineSearch linesearch; 
+            // error oriented LS seems to work the best ...
+            SNESLineSearch linesearch;
             SNESGetLineSearch(snes, &linesearch);
-            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
+            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   );
         }
 
 
-    private: 
-        const std::vector<std::string> update_types; 
-        std::string update_type_; 
+    private:
+        const std::vector<std::string> update_types;
+        std::string update_type_;
 
     };
 
 
 
-    // TODO:: put more options 
+    // TODO:: put more options
     template<class Matrix, class Vector>
     class NonLinearGMRES<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
@@ -157,25 +158,25 @@ namespace utopia
 
 
         public:
-        NonLinearGMRES( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) :   
+        NonLinearGMRES( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) :
                         SNESSolver(linear_solver)
-        { 
-            this->set_snes_type("ngmres"); 
+        {
+            this->set_snes_type("ngmres");
         }
 
 
     private:
-        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                            const Scalar & rtol     = SNESSolver::rtol(), 
-                                            const Scalar & stol     = SNESSolver::stol(), 
-                                            const SizeType & max_it = SNESSolver::max_it()) override 
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(),
+                                            const Scalar & rtol     = SNESSolver::rtol(),
+                                            const Scalar & stol     = SNESSolver::stol(),
+                                            const SizeType & max_it = SNESSolver::max_it()) override
         {
-            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it);
 
-            // error oriented LS seems to work the best ... 
-            SNESLineSearch linesearch; 
+            // error oriented LS seems to work the best ...
+            SNESLineSearch linesearch;
             SNESGetLineSearch(snes, &linesearch);
-            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
+            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   );
         }
 
 
@@ -184,7 +185,7 @@ namespace utopia
 
 
 
-    // TODO:: put more options 
+    // TODO:: put more options
     template<class Matrix, class Vector>
     class NonLinearAnderson<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
@@ -196,32 +197,32 @@ namespace utopia
 
 
         public:
-        NonLinearAnderson(  const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) :   
+        NonLinearAnderson(  const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>()) :
                             SNESSolver(linear_solver)
-        { 
-            this->set_snes_type("anderson"); 
+        {
+            this->set_snes_type("anderson");
         }
 
 
-    private: 
-        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                            const Scalar & rtol     = SNESSolver::rtol(), 
-                                            const Scalar & stol     = SNESSolver::stol(), 
-                                            const SizeType & max_it = SNESSolver::max_it()) override 
+    private:
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(),
+                                            const Scalar & rtol     = SNESSolver::rtol(),
+                                            const Scalar & stol     = SNESSolver::stol(),
+                                            const SizeType & max_it = SNESSolver::max_it()) override
         {
-            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it);
 
-            // error oriented LS seems to work the best ... 
-            SNESLineSearch linesearch; 
+            // error oriented LS seems to work the best ...
+            SNESLineSearch linesearch;
             SNESGetLineSearch(snes, &linesearch);
-            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
+            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   );
         }
 
 
     };
 
 
-    // TODO:: put more options 
+    // TODO:: put more options
     template<class Matrix, class Vector>
     class NonLinearRichardson<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
@@ -233,57 +234,57 @@ namespace utopia
 
 
         public:
-        NonLinearRichardson(const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-                            const Scalar & alpha = 1.0) :   
+        NonLinearRichardson(const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
+                            const Scalar & alpha = 1.0) :
                             SNESSolver(linear_solver), alpha_(alpha)
-        { 
-            this->set_snes_type("nrichardson"); 
+        {
+            this->set_snes_type("nrichardson");
         }
 
         void dumping_parameter(const Scalar & alpha)
         {
-            alpha_ = alpha; 
+            alpha_ = alpha;
         }
 
         Scalar dumping_parameter()
         {
-            return alpha_; 
+            return alpha_;
         }
 
         void read(Input &in) override
         {
-            SNESSolver::read(in); 
+            SNESSolver::read(in);
 
-            std::string SNES_type_aux_; 
+            std::string SNES_type_aux_;
             in.get("dumping_parameter", alpha_);
         }
 
 
         void print_usage(std::ostream &os) const override
         {
-            SNESSolver::print_usage(os); 
-            this->print_param_usage(os, "dumping_parameter", "real", "Dumping parameter used to dump step direction.", "1.0"); 
-        }        
-        
-
-    private: 
-        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
-                                                    const Scalar & rtol     = SNESSolver::rtol(), 
-                                                    const Scalar & stol     = SNESSolver::stol(), 
-                                                    const SizeType & max_it = SNESSolver::max_it()) override 
-        {
-            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
-
-            SNESLineSearch linesearch; 
-            SNESGetLineSearch(snes, &linesearch);
-            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
-
-            // set damping 
-            SNESLineSearchSetDamping(linesearch, alpha_); 
+            SNESSolver::print_usage(os);
+            this->print_param_usage(os, "dumping_parameter", "real", "Dumping parameter used to dump step direction.", "1.0");
         }
 
-    private: 
-        Scalar alpha_; 
+
+    private:
+        void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(),
+                                                    const Scalar & rtol     = SNESSolver::rtol(),
+                                                    const Scalar & stol     = SNESSolver::stol(),
+                                                    const SizeType & max_it = SNESSolver::max_it()) override
+        {
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it);
+
+            SNESLineSearch linesearch;
+            SNESGetLineSearch(snes, &linesearch);
+            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   );
+
+            // set damping
+            SNESLineSearchSetDamping(linesearch, alpha_);
+        }
+
+    private:
+        Scalar alpha_;
 
     };
 

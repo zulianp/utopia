@@ -25,10 +25,10 @@ namespace utopia {
             q_builder = std::make_shared<QMortarBuilder3>();
         }
     }
-    
+
     BidirectionalL2LocalAssembler::~BidirectionalL2LocalAssembler()
     {}
-    
+
     bool BidirectionalL2LocalAssembler::assemble(const Elem &trial,
                                      FEType trial_type,
                                      const Elem &test,
@@ -36,11 +36,11 @@ namespace utopia {
                                      Matrix &mat
                                     )
     {
-        
+
         assert(false);
         return false;
     }
-    
+
     bool BidirectionalL2LocalAssembler::assemble(
                                     const Elem &trial,
                                     FEType trial_type,
@@ -50,10 +50,10 @@ namespace utopia {
                                     )
     {
         mat.resize(n_forms());
-        
+
         auto trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
         auto test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
-        
+
         const int order = std::max(
                                 std::max(
                                    order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order),
@@ -72,7 +72,7 @@ namespace utopia {
         );
 
         init_fe(trial, trial_type, test, test_type);
-        
+
         trial_fe->attach_quadrature_rule(&q_trial);
         trial_fe->get_phi();
         trial_fe->get_JxW();
@@ -107,29 +107,29 @@ namespace utopia {
                 mortar_assemble(*test_fe,  *trial_fe, mat[1]);
             }
         }
-        
+
         return true;
-        
+
     }
-    
+
     void BidirectionalL2LocalAssembler::init_fe(const Elem &trial,
                                    FEType trial_type,
                                    const Elem &test,
                                    FEType test_type)
     {
         if(trial_fe) return;
-        
+
         trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
         test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
     }
-    
+
     void BidirectionalL2LocalAssembler::init_biorth(
         const Elem &trial, FEType trial_type,
         const Elem &test, FEType test_type)
     {
         if(!use_biorth) return;
         if(!must_compute_biorth) return;
-        
+
         assemble_biorth_weights(test,
                                 test.dim(),
                                 test_type,
@@ -141,10 +141,10 @@ namespace utopia {
                                 trial_type,
                                 trial_type.order,
                                 trial_biorth_weights);
-        
+
         must_compute_biorth = false;
     }
-    
+
     void BidirectionalL2LocalAssembler::assemble_biorth_weights(const libMesh::Elem &el,
                                                    const int dim,
                                                    const libMesh::FEType &var_type,
@@ -152,9 +152,9 @@ namespace utopia {
                                                    libMesh::DenseMatrix<libMesh::Real> &weights)
     {
         std::unique_ptr<libMesh::FEBase> biorth_elem = libMesh::FEBase::build(dim, var_type);
-        
+
         const int order = order_for_l2_integral(dim, el, el_order, el, el_order);
-        
+
         libMesh::QGauss qg(dim, libMesh::Order(order));
         biorth_elem->attach_quadrature_rule(&qg);
         biorth_elem->reinit(&el);

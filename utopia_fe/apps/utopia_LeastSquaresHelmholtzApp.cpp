@@ -1,5 +1,5 @@
 #include "utopia_libmesh.hpp"
-#include "utopia_LeastSquaresHelmholtz.hpp"
+#include "utopia_LeastSquaresHelmholtzApp.hpp"
 
 #include "utopia_FormEvaluator.hpp"
 #include "utopia_fe_core.hpp"
@@ -24,7 +24,7 @@
 
 namespace utopia {
 
-	void run_form_least_squares_helmholtz(libMesh::LibMeshInit &init)
+	void LeastSquaresHelmholtzApp::run(Input &in)
 	{
 		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
@@ -40,7 +40,7 @@ namespace utopia {
 		const auto elem_order_grad = libMesh::FIRST;
 
 		//mesh
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
 		libMesh::MeshTools::Generation::build_square(
 			*mesh,
 			n, n,

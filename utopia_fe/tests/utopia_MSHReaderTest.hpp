@@ -1,13 +1,23 @@
 #ifndef UTOPIA_MSH_READER_TEST_HPP
 #define UTOPIA_MSH_READER_TEST_HPP 
 
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_fe_base.hpp"
+#include "utopia_FETest.hpp"
+#include <string>
+
 
 namespace utopia {
-	void test_msh_reader(libMesh::LibMeshInit &init);
-}
 
+	class MSHReaderTest final : public FETest {
+	public:
+		void run(Input &in) override;
+
+		inline static std::string command()
+		{
+			return "msh";
+		}
+	};
+
+}
 
 #endif //UTOPIA_MSH_READER_TEST_HPP

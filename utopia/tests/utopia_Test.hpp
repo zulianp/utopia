@@ -45,11 +45,11 @@ namespace utopia
         runPetscNonlinearSolversTest();
         runPetscLinearSolversTest();
         runPetscSlepcSolversTest();
-        runQuasiNewtonTest(); 
+        runQuasiNewtonTest();
 
         runNonlinearMultilevelSolverTest();
 
-        
+
         run_qp_solver_test();
 
         //only works for serial
@@ -96,7 +96,7 @@ namespace utopia
                 else if(token == "nonlinear_multilevel")
                     runNonlinearMultilevelSolverTest();
                 else if(token =="quasi_newton")
-                    runQuasiNewtonTest(); 
+                    runQuasiNewtonTest();
                 // else if (token == "performance")
                     // run_performance_test();
                 else if (token == "algebra")

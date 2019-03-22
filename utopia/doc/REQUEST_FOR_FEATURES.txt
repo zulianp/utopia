@@ -8,5 +8,10 @@ New features:
 -Block iterations for petsc
 
 
-Using external dependencies
+Using external dependencies for par_moonolith
 git submodule add
+
+each(a, b, c, d, [](const Scalar in[3], Scalar out[1])) {
+	//d =  a + b + c;
+	out[0] = in[0] + in[1] + in[2];
+}

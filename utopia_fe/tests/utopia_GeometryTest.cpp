@@ -13,14 +13,15 @@
 #include <memory>
 
 namespace utopia {
-	void run_geometry_test(libMesh::LibMeshInit &init)
+
+	void GeometryTest::run(Input &in)
 	{
 		using namespace libMesh;
 		using namespace std;
 
 		const auto elem_order = FIRST;
 
-		auto mesh = make_shared<libMesh::Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(this->comm());
 		mesh->read("../data/stent2_101.e");
 		auto dim = mesh->mesh_dimension();
 

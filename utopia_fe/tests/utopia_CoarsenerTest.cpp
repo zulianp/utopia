@@ -6,12 +6,12 @@
 #include "libmesh/exodusII_io.h"
 
 namespace utopia {
-	void run_coarsener_test(libMesh::LibMeshInit &init)
+
+	void CoarsenerTest::run(Input &in)
 	{
 		std::cout << "[run_coarsener_test]" << std::endl;
-		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());	
 		// mesh->read("../data/leaves_3d_b.e");
 		mesh->read("../data/wear_2_far.e");
 

@@ -138,7 +138,7 @@ namespace utopia
 			#endif
 			
 			auto linear_solver = std::make_shared<LUDecomposition<DMatrixd, DVectord> >();
-			linear_solver->set_library_type(PETSC_TAG); 
+			linear_solver->set_library_type(Solver::petsc()); 
 
 			auto ms_subproblem = std::make_shared<utopia::MoreSorensenEigen<DMatrixd, DVectord> >(linear_solver, eigen_solver);
 

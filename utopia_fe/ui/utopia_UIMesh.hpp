@@ -24,11 +24,11 @@ namespace utopia {
 		void read(Input &is) override {
 			std::string mesh_type = "square";
 			std::string path = "";
-	
+
 			empty_ = false;
 
 			int refinements = 0;
-			
+
 			double span[3] = { 0., 0., 0. };
 
 			double min_coords[3] = {0., 0., 0.};
@@ -37,6 +37,7 @@ namespace utopia {
 			int n[3] = {5, 5, 5};
 
 			double scale = 1.;
+			double shift[3] = {0. , 0., 0.};
 
 			std::string elem_type = "quad";
 
@@ -46,11 +47,11 @@ namespace utopia {
 			is.get("path", path);
 
 			is.get("refinements", refinements);
-			
+
 			is.get("span-x", span[0]);
 			is.get("span-y", span[1]);
 			is.get("span-z", span[2]);
-			
+
 			is.get("min-x", min_coords[0]);
 			is.get("min-y", min_coords[1]);
 			is.get("min-z", min_coords[2]);
@@ -64,6 +65,9 @@ namespace utopia {
 			is.get("n-z", n[2]);
 
 			is.get("scale", scale);
+			is.get("shift-x", shift[0]);
+			is.get("shift-y", shift[1]);
+			is.get("shift-z", shift[2]);
 
 
 			if(mesh_type == "file") {
@@ -100,7 +104,7 @@ namespace utopia {
 					sphere_refine,//const unsigned int nr = 2,
 					get_type(elem_type, order, 3)
 					//const unsigned int 	n_smooth = 2,
-					// const bool 	flat = true 
+					// const bool 	flat = true
 				);
 
 			} else if(mesh_type == "aabb") {
@@ -133,6 +137,7 @@ namespace utopia {
 			//build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
 
 			scale_mesh(scale, *mesh_);
+			shift_mesh(shift, *mesh_);
 
 			refine(refinements, *mesh_);
 
@@ -214,7 +219,7 @@ namespace utopia {
 		        if(elem_type == "tri") {
 		            type = libMesh::TRI3;
 		        }
-		        
+
 		        if(order == 2) {
 		            type = libMesh::QUAD8;
 
@@ -240,7 +245,7 @@ namespace utopia {
 		static void refine(const int n_refs, libMesh::MeshBase &mesh)
 		{
 		    if(n_refs <= 0) return;
-		    
+
 		    libMesh::MeshRefinement mesh_refinement(mesh);
 		    mesh_refinement.make_flags_parallel_consistent();
 		    mesh_refinement.uniformly_refine(n_refs);
@@ -251,11 +256,21 @@ namespace utopia {
 			if(scale_factor == 1.) return;
 			assert(scale_factor > 0.);
 
-			// for(auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
 			for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
 
 				for(int i = 0; i < LIBMESH_DIM; ++i) {
 					(**it)(i) *= scale_factor;
+				}
+			}
+		}
+
+		static void shift_mesh(const double t[3], libMesh::MeshBase &mesh)
+		{
+			if(0. == t[0] && 0. == t[1] && 0. == t[2]) return;
+
+			for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
+				for(int i = 0; i < LIBMESH_DIM; ++i) {
+					(**it)(i) += t[i];
 				}
 			}
 		}

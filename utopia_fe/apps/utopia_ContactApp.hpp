@@ -1,25 +1,20 @@
 #ifndef UTOPIA_CONTACT_APP
 #define UTOPIA_CONTACT_APP
 
-#include "utopia_LibMeshApp.hpp"
-#include "libmesh/parallel_mesh.h"
+#include "utopia_FEApp.hpp"
 #include <string>
 
 
 namespace utopia {
 
-	class ContactApp final : public App {
+	class ContactApp final : public FEApp {
 	public:
-		void run(const std::string &path) override;
-		void init(libMesh::LibMeshInit &init);
+		void run(Input &in) override;
 
 		inline static std::string command()
 		{
 			return "-contact";
 		}
-
-	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 	};
 }
 

@@ -37,9 +37,9 @@ namespace utopia
 
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
 		public:
-			bool residual(const Vector &/*point*/, Vector &/*result*/) const { return true; }
-			bool jacobian(const Vector &/*x*/, Matrix &/*hessian*/) const { return true; }
-			bool value(const Vector &, Scalar &val) const { return true; }
+			bool residual(const Vector &, Vector &) const { return true; }
+			bool jacobian(const Vector &, Matrix &) const { return true; }
+			bool value(const Vector &, Scalar &) const { return true; }
 			bool update(const Vector &) { return true; }
 		};
 
@@ -145,7 +145,7 @@ namespace utopia
 
 
 			//solve problem
-			line_search_solve(fun, actual, BACKTRACKING_TAG, in);
+			line_search_solve(fun, actual, Solver::backtracking(), in);
 
 			//test outcome...
 			Vector expected = values(n, 0.468919);
@@ -223,15 +223,15 @@ namespace utopia
 				in.set("verbose", false); 
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, STEIHAUG_TOINT_TAG, in);
+				trust_region_solve(fun2, x, Solver::steihaug_toint(), in);
 				utopia_test_assert(approxeq(expected, x));
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, DOGLEG_TAG, in);
+				trust_region_solve(fun2, x, Solver::dogleg(), in);
 				utopia_test_assert(approxeq(expected, x));
 
 				x = values(10, 2);
-				trust_region_solve(fun2, x, CAUCHYPOINT_TAG, in);
+				trust_region_solve(fun2, x, Solver::cauchypoint(), in);
 				utopia_test_assert(approxeq(expected, x));
 
 				Vector expected_rosenbrock = values(2, 1);
@@ -241,12 +241,12 @@ namespace utopia
 				x0 = values(2, 2.0);
 				in.set("atol", 1e-13);
 				in.set("rtol", 1e-17); 
-				trust_region_solve(rosenbrock, x0, STEIHAUG_TOINT_TAG, in);
+				trust_region_solve(rosenbrock, x0, Solver::steihaug_toint(), in);
 
 				auto diff_norm = norm2(expected_rosenbrock - x0);
 
 	            if(diff_norm > 1e-12) {
-	                utopia_error("tr_test: STEIHAUG_TOINT_TAG with rosenbrock is failing");
+	                utopia_error("tr_test: Solver::steihaug_toint() with rosenbrock is failing");
 	            }
 			}
 		}

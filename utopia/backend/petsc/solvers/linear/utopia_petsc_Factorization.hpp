@@ -4,45 +4,11 @@
 #include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_DirectSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_SolverType.hpp"
 
 namespace utopia {
 
-	//FIXME
-	enum DirectSolverLib {
-		PETSC_TAG = 0,
-
-#ifdef PETSC_HAVE_MUMPS
-		MUMPS_TAG = 1,
-#endif //WITH_MUMPS
-
-#ifdef PETSC_HAVE_SUPERLU
-		SUPERLU_TAG = 2,
-#endif //WITH_SUPERLU
-
-#ifdef PETSC_HAVE_SUPERLU_DIST
-		SUPERLU_DIST_TAG = 3,
-#endif //WITH_SUPERLU_DIST
-
-	};
-
-	static const int N_SOLVER_LIBS = 4;
-
-//////////////////////////////////////////////////////////
-
-	enum DirectSolverType {
-		LU_DECOMPOSITION_TAG = 0,
-		CHOLESKY_DECOMPOSITION_TAG = 1
-	};
-
-	static const int N_SOLVER_TYPES = 2;
-
-//////////////////////////////////////////////////////////
-
-	static const char * SOLVER_LIBS [N_SOLVER_LIBS] = { "petsc", "mumps", "superlu", "superlu_dist"};
-	static const char * SOLVER_TYPES[N_SOLVER_TYPES]   = {"lu", "cholesky" };
-
-
-//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
 	template<typename Matrix, typename Vector>
 	class Factorization<Matrix, Vector, PETSC> : public DirectSolver<Matrix, Vector>
 	{
@@ -51,30 +17,44 @@ namespace utopia {
 		typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
 
 	public:
-		Factorization(const std::string sp = "mumps", const std::string pct = "lu")
-		 //{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"},
-			//{"mumps", "superlu", "superlu_dist", "petsc", "cusparse"}
+		Factorization()
 		{
 			strategy_.ksp_type(KSPPREONLY);
 			strategy_.set_initial_guess_non_zero(false);
-
-#ifdef PETSC_HAVE_MUMPS
-			if(pct=="lu" && sp == "mumps") {
-				set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
-			} else
-#endif //PETSC_HAVE_MUMPS
-			if(pct=="cholesky") {
-				set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
-			}
-			else {
-				set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
-			}
+			strategy_.pc_type(PCLU);
+			strategy_.solver_package(default_package());
 		}
 
-		void set_type(DirectSolverLib lib, DirectSolverType type)
+		inline constexpr static SolverPackage default_package()
 		{
-			strategy_.solver_package(SOLVER_LIBS[lib]);
-			strategy_.pc_type(SOLVER_TYPES[type]);
+#ifdef PETSC_HAVE_SUPERLU_DIST
+			return MATSOLVERSUPERLU_DIST;
+#else //PETSC_HAVE_SUPERLU_DIST
+#ifdef PETSC_HAVE_MUMPS
+			return MATSOLVERMUMPS;
+#else //PETSC_HAVE_MUMPS
+
+#ifdef PETSC_HAVE_SUPERLU
+			return MATSOLVERSUPERLU;
+#else //PETSC_HAVE_SUPERLU
+			return MATSOLVERPETSC;
+#endif //PETSC_HAVE_SUPERLU
+#endif //PETSC_HAVE_MUMPS
+#endif //PETSC_HAVE_SUPERLU_DIST
+		}
+
+		Factorization(const std::string &sp, const std::string &pct)
+		{
+			strategy_.ksp_type(KSPPREONLY);
+			strategy_.set_initial_guess_non_zero(false);
+			strategy_.pc_type(pct);
+			strategy_.solver_package(sp);
+		}
+
+		void set_type(const std::string &lib, const std::string &type)
+		{
+			strategy_.solver_package(lib);
+			strategy_.pc_type(type);
 		}
 
 		inline bool apply(const Vector &b, Vector &x) override
@@ -87,10 +67,14 @@ namespace utopia {
 			strategy_.update(op);
 		}
 
-
 		Factorization * clone() const override
 		{
 			return new Factorization(*this);
+		}
+
+		void describe(std::ostream &os) const
+		{
+			strategy_.describe(os);
 		}
 
 	private:

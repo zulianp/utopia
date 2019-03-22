@@ -2,18 +2,22 @@
 #define UTOPIA_INTERSECT_TEST_HPP
 
 #include "utopia_fe_base.hpp"
-
-
-
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_FETest.hpp"
+#include <string>
 
 
 namespace utopia {
-	void run_intersect_test(libMesh::LibMeshInit &init);
+
+	class IntersectTest final : public FETest {
+	public:
+		void run(Input &in) override;
+
+		inline static std::string command()
+		{
+			return "isect";
+		}
+	};
+
 }
-
-
 
 #endif //UTOPIA_INTERSECT_TEST_HPP

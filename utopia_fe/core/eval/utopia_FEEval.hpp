@@ -29,6 +29,7 @@
 #include "utopia_FEEval_SymbolicTensor.hpp"
 #include "utopia_FEEval_SymbolicFunction.hpp"
 #include "utopia_FEEval_Factory.hpp"
+#include "utopia_FEEval_Norm.hpp"
 
 
 

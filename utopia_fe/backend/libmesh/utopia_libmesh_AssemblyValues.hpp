@@ -26,6 +26,8 @@
 
 namespace utopia {
 
+	template<class T> class Normal;
+
 	class LibMeshAssemblyValues {
 	public:
 		typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
@@ -365,6 +367,11 @@ namespace utopia {
 				ctx.fe()[s.subspace_id()]->get_dphi();
 			}
 
+			void init_normals()
+			{
+				ctx.fe()[0]->get_normals();
+			}
+
 			void init_dphi(const ProductFunctionSpace<LibMeshFunctionSpace> &s)
 			{
 				s.each([&](const int, const LibMeshFunctionSpace &space) {
@@ -472,6 +479,13 @@ namespace utopia {
 			inline int visit(const ContextFunction<Out, F> &expr)
 			{
 				init_xyz();
+				return TRAVERSE_CONTINUE;
+			}
+
+			template<class Out, class F>
+			inline int visit(const ContextFunction<Out, Normal<F>> &expr)
+			{
+				init_normals();
 				return TRAVERSE_CONTINUE;
 			}
 

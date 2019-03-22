@@ -102,9 +102,9 @@ namespace utopia
 	 		for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
 	 		{
 	 			if(i < vars.size() -1)
-	 				fprintf (pFile,"%f,", vars[i]);
+	 				fprintf (pFile,"%g,", vars[i]);
 	 			else
-	 				fprintf (pFile,"%f", vars[i]);
+	 				fprintf (pFile,"%g", vars[i]);
 	 		}
 	 		fprintf (pFile, "\n");
 	 	}

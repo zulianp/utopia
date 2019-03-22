@@ -3,6 +3,8 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_LinearSolverFactory.hpp"
+#include "utopia_SimpleBacktracking.hpp"
+#include "utopia_Backtracking.hpp"
 
 #include <map>
 #include <string>
@@ -10,11 +12,10 @@
 
 namespace utopia {
 
-	typedef const char * LSStrategyTag;
+	typedef const char * SolverType;
 
-	static LSStrategyTag SIMPLE_BACKTRACKING_TAG 	= "SIMPLE_BACKTRACKING";
-	static LSStrategyTag BACKTRACKING_TAG 			= "BACKTRACKING";
-
+	static SolverType SIMPLE_BACKTRACKING_TAG 	= "SIMPLE_BACKTRACKING";
+	static SolverType BACKTRACKING_TAG 			= "BACKTRACKING";
 
 	/**
 	 * @brief      Front-end to create ls strategy objects.
@@ -28,7 +29,7 @@ namespace utopia {
 			typedef std::shared_ptr< LSStrategy<Vector> > StrategyPtr;
 			std::map<std::string, StrategyPtr> strategies_;
 
-			inline static StrategyPtr new_line_search_strategy(const LSStrategyTag &tag)
+			inline static StrategyPtr new_line_search_strategy(const SolverType &tag)
 			{
 				auto it = instance().strategies_.find(tag);
 				if(it == instance().strategies_.end()) 
@@ -53,14 +54,14 @@ namespace utopia {
 
 			void init()
 			{
-					strategies_[SIMPLE_BACKTRACKING_TAG] 		= std::make_shared<utopia::SimpleBacktracking<Vector> >(); 
-					strategies_[BACKTRACKING_TAG] 				= std::make_shared<utopia::Backtracking<Vector> >(); 
+					strategies_[Solver::simple_backtracking()] = std::make_shared<utopia::SimpleBacktracking<Vector> >(); 
+					strategies_[Solver::backtracking()] 	   = std::make_shared<utopia::Backtracking<Vector> >(); 
 			}
 	};
 
 
 	template<class Vector>
-	typename LSStrategyFactory<Vector>::StrategyPtr line_search_strategy(const LSStrategyTag &tag = AUTO_TAG)
+	typename LSStrategyFactory<Vector>::StrategyPtr line_search_strategy(const SolverType &tag = Solver::automatic())
 	{
 	 	return LSStrategyFactory<Vector>::new_line_search_strategy(tag);
 	}
@@ -84,7 +85,7 @@ namespace utopia {
 	 *     		alpha_min() = 1e-7; \n
 	 */
 	template<typename Matrix, typename Vector>
-	const SolutionStatus & line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const LSStrategyTag &tag, Input & params)
+	const SolutionStatus & line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const SolverType &tag, Input & params)
 	{
 		// auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
 		auto lin_solver = std::make_shared<ConjugateGradient<Matrix, Vector> > ();

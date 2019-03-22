@@ -255,10 +255,10 @@ namespace utopia
 
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
-        	tr_strategy_fine->pc_type("jacobi");
+        	tr_strategy_fine->set_linear_solver(std::make_shared<GMRES<DSMatrixd, DVectord>>(PCJACOBI));
 
         	auto tr_strategy_coarse =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
-        	tr_strategy_coarse->pc_type("lu");
+        	tr_strategy_coarse->set_linear_solver(std::make_shared<GMRES<DSMatrixd, DVectord>>(PCLU));
 
         	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(problem.n_levels);
 	        rmtr->set_coarse_tr_strategy(tr_strategy_coarse); 
@@ -312,11 +312,11 @@ namespace utopia
 
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
-        	tr_strategy_fine->pc_type("jacobi");
+        	tr_strategy_fine->set_linear_solver(std::make_shared<GMRES<DSMatrixd, DVectord>>(PCJACOBI));
         	tr_strategy_fine->verbose(false);
 
         	auto tr_strategy_coarse =  std::make_shared<utopia::TaoQPSolver<DSMatrixd, DVectord> >(lsolver); 
-        	tr_strategy_coarse->pc_type("lu");
+        	tr_strategy_coarse->set_linear_solver(std::make_shared<GMRES<DSMatrixd, DVectord>>(PCLU));
         	// tr_strategy_coarse->verbose(true);
         	tr_strategy_coarse->verbose(false);
 

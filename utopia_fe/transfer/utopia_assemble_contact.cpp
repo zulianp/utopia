@@ -1318,7 +1318,8 @@ namespace utopia {
 						  const bool use_volume_differential)
 	{
 		moonolith::SearchSettings settings;
-		// settings.verbosity_level = 2;
+		// settings.verbosity_level = 3;
+		// settings.use_synch = true;
 
 		bool ok = false;
 		if(mesh->mesh_dimension() == 2) {

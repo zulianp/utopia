@@ -1,12 +1,23 @@
 #ifndef UTOPIA_COARSENER_TEST_HPP
 #define UTOPIA_COARSENER_TEST_HPP 
 
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_fe_base.hpp"
+#include "utopia_FETest.hpp"
+#include <string>
+
 
 namespace utopia {
-	void run_coarsener_test(libMesh::LibMeshInit &init);
+
+	class CoarsenerTest final : public FETest {
+	public:
+		void run(Input &in) override;
+
+		inline static std::string command()
+		{
+			return "coarsener_test";
+		}
+	};
+
 }
 
 

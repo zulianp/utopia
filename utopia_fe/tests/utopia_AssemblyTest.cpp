@@ -1,13 +1,16 @@
+
+#include "utopia_AssemblyTest.hpp"
+
 #include "utopia_libmesh.hpp"
 #include "libmesh/mesh_generation.h"
 
 namespace utopia {
-	void run_assembly_test(libMesh::LibMeshInit &init)
+	void AssemblyTest::run(Input &in)
 	{
 		std::cout << "[run_assembly_test]" << std::endl;
 		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
 
 		const unsigned int n = 2;
 		libMesh::MeshTools::Generation::build_cube(*mesh,
@@ -41,7 +44,7 @@ namespace utopia {
 		const double norm_laplacian   = norm2(laplacian);
 		const double norm_mass_matrix = norm2(mass_matrix);
 
-		assert(approxeq(9.60035,   norm_laplacian, 1e-5));
-		assert(approxeq(0.0660453, norm_mass_matrix, 1e-5));
+		utopia_test_assert(approxeq(9.60035,   norm_laplacian, 1e-5));
+		utopia_test_assert(approxeq(0.0660453, norm_mass_matrix, 1e-5));
 	}
 }

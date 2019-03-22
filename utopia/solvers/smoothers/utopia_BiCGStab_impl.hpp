@@ -161,6 +161,12 @@ namespace utopia {
 		while(!converged)
 		{
 			rho = dot(r0_, r_);
+			
+			if(rho == 0.) {
+				converged = true;
+				break;
+			}
+
 			beta = (rho/rho_old) * (alpha/omega);
 			p_ = r_ + beta * (p_ - omega * v_);
 			A.apply(p_, v_);

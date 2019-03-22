@@ -92,6 +92,7 @@ namespace utopia {
 		bool set_up_approx_l2_projection();
 		bool set_up_bidirectional_transfer();
 		bool set_up_bidirectional_pseudo_transfer();
+		static std::unique_ptr<LinearSolver<USparseMatrix, UVector> > new_solver();
 
 		std::map<TransferOperatorType, std::function<bool()>> assembly_strategies_;
 
