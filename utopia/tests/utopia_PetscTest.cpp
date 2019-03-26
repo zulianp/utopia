@@ -910,7 +910,7 @@ namespace utopia {
 
         //FIXME
         if(!has_nan_or_inf(sol)) {
-            utopia_error("petsc_is_nan_or_inf: failed. Known problem on alpine-linux");
+            utopia_error("petsc_is_nan_or_inf: failed. Known problem related to petsc-3.9. They disallow divisions by 0 and instead set the value to 0");
         }
 
         utopia_test_assert(!has_nan_or_inf(denom));
