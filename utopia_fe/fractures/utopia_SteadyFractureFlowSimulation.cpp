@@ -325,6 +325,11 @@ namespace utopia {
 
 		UVector sol = blocks(x_m, x_f, lagr);
 
+
+		if(write_operators_to_disk) {
+			write("S_moonolithic.m", A);
+		}
+
 		Factorization<USparseMatrix, UVector> op;
 		op.update(make_ref(A));
 		op.describe(std::cout);
@@ -395,6 +400,10 @@ namespace utopia {
 		    sp.update(make_ref(A_m), make_ref(A_f), make_ref(T));
 		    if(!sp.apply(rhs_m, rhs_f, x_m, x_f)) {
 		    	return false;
+		    }
+
+		    if(write_operators_to_disk) {
+		    	write("S_static.m", sp.get_operator());
 		    }
 
 			lagr = D_inv * (A_f * (T * x_m) - rhs_f);

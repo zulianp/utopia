@@ -67,6 +67,11 @@ namespace utopia {
 			return ok;
 		}
 
+		inline const Matrix &get_operator() const
+		{
+			return S;
+		}
+
 	private:
 		Matrix S;
 		Vector rhs;
