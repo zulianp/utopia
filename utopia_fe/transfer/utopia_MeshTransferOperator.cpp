@@ -507,7 +507,7 @@ namespace utopia {
 
 	static bool is_bidirectional(const TransferOperatorType operator_type) {
 		return operator_type == BIDIRECTIONAL_L2_PROJECTION ||
-			   operator_type == BIDIRECTIONAL_L2_PROJECTION;
+			   operator_type == BIDIRECTIONAL_PSEUDO_L2_PROJECTION;
 	}
 
 	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)

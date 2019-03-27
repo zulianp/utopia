@@ -1,4 +1,5 @@
 #include "utopia_petsc_Vector.hpp"
+#include "utopia_petsc_quirks.hpp"
 
 #include <set>
 #include <cstring>
@@ -243,11 +244,7 @@ namespace utopia {
 
 		ISCreateGeneral(comm, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
 
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,11,0) || (UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,10,0) && PETSC_VERSION_RELEASE == 0)
-		VecScatterCreateWithData(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
-#else
-		VecScatterCreate(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
-#endif
+		UtopiaVecScatterCreate(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
 
 		VecScatterBegin(scatter_context, implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(scatter_context,   implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
