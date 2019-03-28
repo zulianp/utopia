@@ -7,15 +7,15 @@
 
 namespace utopia {
 
-	class ContactApp final : public FEApp {
-	public:
-		void run(Input &in) override;
+    class ContactApp final : public FEApp {
+    public:
+        void run(Input &in) override;
 
-		inline static std::string command()
-		{
-			return "-contact";
-		}
-	};
+        inline static std::string command()
+        {
+            return "-contact";
+        }
+    };
 }
 
 

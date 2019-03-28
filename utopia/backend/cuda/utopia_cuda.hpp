@@ -1,5 +1,5 @@
 #ifndef UTOPIA_CUDA_HPP
-#define UTOPIA_CUDA_HPP 
+#define UTOPIA_CUDA_HPP
 
 #include <thrust/device_vector.h>
 

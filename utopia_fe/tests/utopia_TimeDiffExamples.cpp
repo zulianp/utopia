@@ -20,7 +20,7 @@
 
 // namespace utopia {
 
-// #ifndef WITHOUT_TIME_DIFF_EXAMPLES	
+// #ifndef WITHOUT_TIME_DIFF_EXAMPLES
 
 // 	template<class Expr_>
 // 	class ExplicitIntegratorTransform {
@@ -67,7 +67,7 @@
 // 		auto uf = trafo.get_update_function(eq);
 
 // 		ExodusII_IO io(v.mesh());
-		
+
 // 		auto mass 	= uf.left().expr();
 // 		auto l_form = uf.right();
 
@@ -76,7 +76,7 @@
 // 		USparseMatrix m = sparse(s.get(0), s.get(0), 0.2 * s.get(0));
 // 		USparseMatrix boundary_matrix = identity(s.get(0), s.get(0));
 
-// 		{	
+// 		{
 // 			Write<USparseMatrix> w_m(m);
 // 			Write<UVector>  w_g(g);
 // 			assemble(v, v, mass, m, false);
@@ -104,7 +104,7 @@
 // 				std::stringstream ss;
 // 			 	io.write_timestep("heat_equation.e", context.equation_systems, write_iteration++, t);
 // 			}
-// 			{	
+// 			{
 // 				Write<UVector> w_g(g);
 // 				assemble(v, l_form, g);
 // 			}
@@ -116,7 +116,7 @@
 
 // 	void run_time_diff_examples(libMesh::LibMeshInit &init)
 // 	{
-// 		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
+// 		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 // 		MeshTools::Generation::build_square (*mesh,
 // 			10, 10,
 // 			-1., 1.,
@@ -157,11 +157,11 @@
 // 		context.equation_systems.print_info();
 // 		context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 0;
 // 		context.equation_systems.solve();
-// 		integrate(eq, 0, 0.001, 2, context); 		
+// 		integrate(eq, 0, 0.001, 2, context);
 // 	}
 
 // #else
 // 	void run_time_diff_examples(libMesh::LibMeshInit &init) {}
-// #endif	
+// #endif
 
 // }

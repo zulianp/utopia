@@ -3,10 +3,10 @@
 
 #include "utopia_Base.hpp"
 
-namespace utopia 
+namespace utopia
 {
     template<class Vector>
-    class LeastSquaresFunctionBase 
+    class LeastSquaresFunctionBase
     {
         public:
             DEF_UTOPIA_SCALAR(Vector)
@@ -21,12 +21,12 @@ namespace utopia
 
 
     /**
-     * @brief      Nonlinear Function for normal equation problems. 
-     *             Additionally routines from Function class, one should supply also residual and jacobian.  
+     * @brief      Nonlinear Function for normal equation problems.
+     *             Additionally routines from Function class, one should supply also residual and jacobian.
      *
-     * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ... 
-     * @tparam     Matrix  
-     * @tparam     Vector  
+     * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ...
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector>
     class LeastSquaresFunction  : public LeastSquaresFunctionBase<Vector>

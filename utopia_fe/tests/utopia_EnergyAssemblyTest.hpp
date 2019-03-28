@@ -8,15 +8,15 @@
 
 namespace utopia {
 
-	class EnergyTest final : public FETest {
-	public:
-		void run(Input &in) override;
+    class EnergyTest final : public FETest {
+    public:
+        void run(Input &in) override;
 
-		inline static std::string command()
-		{
-			return "energy";
-		}
-	};
+        inline static std::string command()
+        {
+            return "energy";
+        }
+    };
 
 }
 

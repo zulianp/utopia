@@ -1,5 +1,5 @@
 #ifndef UTOPIA_FORM_EXPRESSIONS_HPP
-#define UTOPIA_FORM_EXPRESSIONS_HPP 
+#define UTOPIA_FORM_EXPRESSIONS_HPP
 
 #include "utopia_BasisFunction.hpp"
 #include "utopia_Coefficient.hpp"

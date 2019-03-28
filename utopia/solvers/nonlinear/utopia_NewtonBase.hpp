@@ -11,7 +11,7 @@
 #include "utopia_NonLinearSolver.hpp"
 
 namespace utopia {
-    
+
     template<class Matrix, class Vector>
     class NewtonBase : public NonLinearSolver<Vector> {
     public:

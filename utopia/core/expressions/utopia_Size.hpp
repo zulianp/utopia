@@ -28,10 +28,10 @@ namespace utopia {
         /**
          * @ingroup    size
          * @brief       Returns size of the object. \n
-         *              To obtain size of the object, use following syntax: M.size().get(d), where M represents tensor and d dimension of interest. 
+         *              To obtain size of the object, use following syntax: M.size().get(d), where M represents tensor and d dimension of interest.
          *
          */
-        inline SizeType get(SizeType index) const 
+        inline SizeType get(SizeType index) const
         {
             assert(index < (SizeType)_data.size());
             return _data[index];
@@ -69,7 +69,7 @@ namespace utopia {
         /**
          * @ingroup     size
          * @brief       Returns dimension of the object. \n
-         *              Use following syntax: long d = M.size().n_dims(), where M represents tensor and d is its dimension. 
+         *              Use following syntax: long d = M.size().n_dims(), where M represents tensor and d is its dimension.
          *
          */
         inline SizeType n_dims() const

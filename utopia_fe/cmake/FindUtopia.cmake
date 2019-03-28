@@ -19,32 +19,32 @@ include(FindPackageHandleStandardArgs)
 # Search for include files
 find_path(UTOPIA_INCLUDES
   NAMES "utopia.hpp"
-  HINTS 
+  HINTS
       ${UTOPIA_DIR}
       $ENV{UTOPIA_DIR}
       $ENV{MOONOLITH_ROOT}/utopia/build
-  PATH_SUFFIXES include  
+  PATH_SUFFIXES include
   NO_DEFAULT_PATH)
 
-# Search for libraries 
+# Search for libraries
 find_library(UTOPIA_LIBRARIES
  NAMES utopia
- HINTS 
+ HINTS
      ${UTOPIA_DIR}
      ${UTOPIA_INCLUDES}/..
      $ENV{UTOPIA_DIR}
-  
-     PATH_SUFFIXES lib 
+
+     PATH_SUFFIXES lib
  NO_DEFAULT_PATH)
 
-find_path(UTOPIA_CONFIG_FILE_PATH 
+find_path(UTOPIA_CONFIG_FILE_PATH
   NAMES "utopia-config.cmake"
   HINTS
     ${UTOPIA_DIR}
     $ENV{UTOPIA_DIR}
     ${UTOPIA_INCLUDES}/..
     $ENV{MOONOLITH_ROOT}/utopia/build
-    PATH_SUFFIXES config 
+    PATH_SUFFIXES config
   NO_DEFAULT_PATH)
 
 

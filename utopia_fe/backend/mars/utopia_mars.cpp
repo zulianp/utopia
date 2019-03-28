@@ -2,6 +2,6 @@
 
 
 namespace utopia {
-	template class MarsFunctionSpace<2, 2>;
-	template class MarsFunctionSpace<3, 3>;
+    template class MarsFunctionSpace<2, 2>;
+    template class MarsFunctionSpace<3, 3>;
 }

@@ -8,15 +8,15 @@
 
 namespace utopia {
 
-	class FEEvalTest final : public FETest {
-	public:
-		void run(Input &in) override;
+    class FEEvalTest final : public FETest {
+    public:
+        void run(Input &in) override;
 
-		inline static std::string command()
-		{
-			return "fe_test";
-		}
-	};
+        inline static std::string command()
+        {
+            return "fe_test";
+        }
+    };
 
 }
 

@@ -10,100 +10,100 @@
 
 namespace utopia {
 
-	void generic_stream(Input &is)
-	{
-		utopia_test_assert(is.good());
-		//TODO
-	}
+    void generic_stream(Input &is)
+    {
+        utopia_test_assert(is.good());
+        //TODO
+    }
 
-	void xml_stream()
-	{
-		Path path = Utopia::instance().get("data_path") + "/xmlsamples/xml_test.xml";
+    void xml_stream()
+    {
+        Path path = Utopia::instance().get("data_path") + "/xmlsamples/xml_test.xml";
 
-		auto is_ptr = open_istream(path);
-		utopia_test_assert(bool(is_ptr));
+        auto is_ptr = open_istream(path);
+        utopia_test_assert(bool(is_ptr));
 
-		if(!is_ptr) return;
-		generic_stream(*is_ptr);
-	}
+        if(!is_ptr) return;
+        generic_stream(*is_ptr);
+    }
 
 #ifdef WITH_TINY_EXPR
-	void symbolic_expr()
-	{
-		{
-			SymbolicFunction f("x + y + z");
-			double w = f.eval(1, 2, 3);
-			utopia_test_assert(f.valid());
-			utopia_test_assert(approxeq(w, 6.));
+    void symbolic_expr()
+    {
+        {
+            SymbolicFunction f("x + y + z");
+            double w = f.eval(1, 2, 3);
+            utopia_test_assert(f.valid());
+            utopia_test_assert(approxeq(w, 6.));
 
-			w = f.eval(1, 2);
-			utopia_test_assert(approxeq(w, 3.));
-		}
+            w = f.eval(1, 2);
+            utopia_test_assert(approxeq(w, 3.));
+        }
 
-		{
-			SymbolicFunction f("x*y");
-			double w = f.eval({2, 2, 3});
-			utopia_test_assert(f.valid());
-			utopia_test_assert(approxeq(w, 4.));
-		}
-	}
+        {
+            SymbolicFunction f("x*y");
+            double w = f.eval({2, 2, 3});
+            utopia_test_assert(f.valid());
+            utopia_test_assert(approxeq(w, 4.));
+        }
+    }
 
 #endif //WITH_TINY_EXPR
 
 
-	void input_parameters()
-	{
-		InputParameters in;
-		in.set("string-key", std::string("value"));
-		in.set("double-key", 1.);
-		in.set("int-key", 20);
+    void input_parameters()
+    {
+        InputParameters in;
+        in.set("string-key", std::string("value"));
+        in.set("double-key", 1.);
+        in.set("int-key", 20);
 
-		double d_value = 2.;
-		int i_value = 10;
-		std::string s_value = "blah";
+        double d_value = 2.;
+        int i_value = 10;
+        std::string s_value = "blah";
 
-		in.get("string-key", s_value);
-		in.get("double-key", d_value);
-		in.get("int-key", i_value);
+        in.get("string-key", s_value);
+        in.get("double-key", d_value);
+        in.get("int-key", i_value);
 
-		utopia_test_assert(s_value == "value");
-		utopia_test_assert(d_value == 1.);
-		utopia_test_assert(i_value == 20);
+        utopia_test_assert(s_value == "value");
+        utopia_test_assert(d_value == 1.);
+        utopia_test_assert(i_value == 20);
 
-		int inexistent_key = -6;
-		in.get("inexistent-key", inexistent_key);
-		utopia_test_assert(inexistent_key == -6);
+        int inexistent_key = -6;
+        in.get("inexistent-key", inexistent_key);
+        utopia_test_assert(inexistent_key == -6);
 
-	}
+    }
 
-	void newton_ui()
-	{
-		const std::string data_path = Utopia::instance().get("data_path");
+    void newton_ui()
+    {
+        const std::string data_path = Utopia::instance().get("data_path");
 
 #ifdef WITH_PETSC
 
-		// auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-		auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-		Newton<DSMatrixd, DVectord> newton(cg);
+        // auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        Newton<DSMatrixd, DVectord> newton(cg);
 
 #ifdef WITH_JSON
-		newton.import("Newton", data_path + "/json/default.json");
+        newton.import("Newton", data_path + "/json/default.json");
 #endif //WITH_JSON
 
-		newton.import("Newton", data_path + "/xml/default.xml");
+        newton.import("Newton", data_path + "/xml/default.xml");
 #endif //WITH_PETSC
-	}
+    }
 
-	void run_ui_test()
-	{
-		UTOPIA_UNIT_TEST_BEGIN("UITest");
-		UTOPIA_RUN_TEST(xml_stream);
-		UTOPIA_RUN_TEST(input_parameters);
-		UTOPIA_RUN_TEST(newton_ui);
+    void run_ui_test()
+    {
+        UTOPIA_UNIT_TEST_BEGIN("UITest");
+        UTOPIA_RUN_TEST(xml_stream);
+        UTOPIA_RUN_TEST(input_parameters);
+        UTOPIA_RUN_TEST(newton_ui);
 #ifdef WITH_TINY_EXPR
-		UTOPIA_RUN_TEST(symbolic_expr);
+        UTOPIA_RUN_TEST(symbolic_expr);
 #endif //WITH_TINY_EXPR
-		UTOPIA_UNIT_TEST_END("UITest");
-	}
+        UTOPIA_UNIT_TEST_END("UITest");
+    }
 
 }

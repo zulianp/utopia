@@ -17,11 +17,11 @@ namespace utopia {
 
         const Expr &expr() const
         {
-        	return expr_;
+            return expr_;
         }
 
     private:
-    	UTOPIA_STORE_CONST(Expr) expr_;
+        UTOPIA_STORE_CONST(Expr) expr_;
     };
 
     template<class Expr>
@@ -35,7 +35,7 @@ namespace utopia {
     template<class Tensor>
     Structure<Wrapper<Tensor, 2>> structure(const Wrapper<Tensor, 2> &mat)
     {
-    	return Structure<Wrapper<Tensor, 2>>(mat);
+        return Structure<Wrapper<Tensor, 2>>(mat);
     }
 
     template<class Tensor>

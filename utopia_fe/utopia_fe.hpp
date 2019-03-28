@@ -1,5 +1,5 @@
 #ifndef UTOPIA_FE_HPP
-#define UTOPIA_FE_HPP 
+#define UTOPIA_FE_HPP
 
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia.hpp"

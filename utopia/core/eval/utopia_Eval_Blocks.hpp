@@ -21,7 +21,7 @@ namespace utopia {
 
             for(auto b_ptr : b) {
                 assert((b_ptr));
-                
+
                 n += local_size(*b_ptr).get(0);
             }
 
@@ -32,7 +32,7 @@ namespace utopia {
 
             {
                 Write<Tensor> w_(l);
-               
+
                 for(auto b_ptr : b) {
                     auto rr = range(*b_ptr);
                     Read<Tensor> r_(*b_ptr);

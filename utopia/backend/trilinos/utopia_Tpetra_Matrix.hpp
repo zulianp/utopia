@@ -14,7 +14,6 @@
 #include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
-
 #include <iostream>
 #include <memory>
 

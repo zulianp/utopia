@@ -22,55 +22,55 @@
 
 namespace utopia {
 
-	template<typename Matrix, typename Vector>
-	class LinearSolverFactory<Matrix, Vector, PETSC> {
-	public:
-		typedef utopia::LinearSolver<Matrix, Vector>  LinearSolverT;
-		typedef std::unique_ptr<LinearSolverT>        LinearSolverPtr;
-		typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
+    template<typename Matrix, typename Vector>
+    class LinearSolverFactory<Matrix, Vector, PETSC> {
+    public:
+        typedef utopia::LinearSolver<Matrix, Vector>  LinearSolverT;
+        typedef std::unique_ptr<LinearSolverT>        LinearSolverPtr;
+        typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
 
-		template<class Alg>
-		using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;
-		std::map<std::string, std::shared_ptr<FactoryMethodT> > solvers_;
+        template<class Alg>
+        using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;
+        std::map<std::string, std::shared_ptr<FactoryMethodT> > solvers_;
 
-		inline static LinearSolverPtr new_linear_solver(const std::string &tag)
-		{
-			auto it = instance().solvers_.find(tag);
-			if(it == instance().solvers_.end()) {
-				return utopia::make_unique<ConjugateGradient<Matrix, Vector> >();
-			} else  {
-				return it->second->make();
-			}
-		}
+        inline static LinearSolverPtr new_linear_solver(const std::string &tag)
+        {
+            auto it = instance().solvers_.find(tag);
+            if(it == instance().solvers_.end()) {
+                return utopia::make_unique<ConjugateGradient<Matrix, Vector> >();
+            } else  {
+                return it->second->make();
+            }
+        }
 
-		inline static LinearSolverPtr default_linear_solver()
-		{
-			return utopia::make_unique<GMRES<Matrix, Vector>>("bjacobi");
-		}
+        inline static LinearSolverPtr default_linear_solver()
+        {
+            return utopia::make_unique<GMRES<Matrix, Vector>>("bjacobi");
+        }
 
-		inline static LinearSolverFactory &instance()
-		{
-			static LinearSolverFactory instance_;
-			return instance_;
-		}
+        inline static LinearSolverFactory &instance()
+        {
+            static LinearSolverFactory instance_;
+            return instance_;
+        }
 
-	private:
-		LinearSolverFactory()
-		{
-			init();
-		}
+    private:
+        LinearSolverFactory()
+        {
+            init();
+        }
 
-		void init()
-		{
-			solvers_[Solver::utopia_cg()] = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector, HOMEMADE>> >();
-			solvers_[Solver::automatic()]   	= utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
-			solvers_[Solver::cg()]   	    = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector>> >();
-			solvers_[Solver::bicgstab()]  = utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
-			solvers_[Solver::ksp()] 		= utopia::make_unique< LSFactoryMethod<KSPSolver<Matrix, Vector>> >();
-			solvers_[Solver::direct()]    = utopia::make_unique< LSFactoryMethod<Factorization<Matrix, Vector>> >();
-			solvers_["gmres"]       = utopia::make_unique< LSFactoryMethod<GMRES<Matrix, Vector>> >();
-		}
-	};
+        void init()
+        {
+            solvers_[Solver::utopia_cg()] = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector, HOMEMADE>> >();
+            solvers_[Solver::automatic()]   	= utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
+            solvers_[Solver::cg()]   	    = utopia::make_unique< LSFactoryMethod<ConjugateGradient<Matrix, Vector>> >();
+            solvers_[Solver::bicgstab()]  = utopia::make_unique< LSFactoryMethod<BiCGStab<Matrix, Vector>> >();
+            solvers_[Solver::ksp()] 		= utopia::make_unique< LSFactoryMethod<KSPSolver<Matrix, Vector>> >();
+            solvers_[Solver::direct()]    = utopia::make_unique< LSFactoryMethod<Factorization<Matrix, Vector>> >();
+            solvers_["gmres"]       = utopia::make_unique< LSFactoryMethod<GMRES<Matrix, Vector>> >();
+        }
+    };
 
 }
 

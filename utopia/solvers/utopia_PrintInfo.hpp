@@ -3,18 +3,18 @@
 
 
 #include <iomanip>
-#include <limits> 
-#include <chrono>   
+#include <limits>
+#include <chrono>
 #include "utopia_Utils.hpp"
 #include "utopia_Traits.hpp"
-    
-namespace utopia 
+
+namespace utopia
 {
     /**
-     * @brief      The class helping to print-out information about solver: initialization messages, prinitning iteration status, time-stats and exit/convergance messages. 
-     *             It also helps pass solution and informations about solve back into FEM packages. 
+     * @brief      The class helping to print-out information about solver: initialization messages, prinitning iteration status, time-stats and exit/convergance messages.
+     *             It also helps pass solution and informations about solve back into FEM packages.
      */
-    class PrintInfo 
+    class PrintInfo
     {
         typedef double Scalar;
 
@@ -24,21 +24,21 @@ namespace utopia
         {
             if(mpi_world_rank() == 0)
             {
-                std::cout << std::setw(10)  << std::right << std::string(80, '_') <<  std::setw(15)<< std::endl; 
-                std::cout<<  std::setw(45) << std::right << " utopia:: "<< method << std::setw(15)<< std::endl; 
-                std::cout << std::setw(10)  << std::right << std::string(80, '_') <<  std::setw(15)<< std::endl; 
+                std::cout << std::setw(10)  << std::right << std::string(80, '_') <<  std::setw(15)<< std::endl;
+                std::cout<<  std::setw(45) << std::right << " utopia:: "<< method << std::setw(15)<< std::endl;
+                std::cout << std::setw(10)  << std::right << std::string(80, '_') <<  std::setw(15)<< std::endl;
                 std::cout << std::endl;
 
                 for(auto item =  status_variables.begin(); item!= status_variables.end(); item++ )
                     std::cout << std::setw(27) << std::right << *item ;
-                std::cout<<std::endl; 
-                    
-                auto n = status_variables.size(); 
+                std::cout<<std::endl;
+
+                auto n = status_variables.size();
                 for(size_t i = 0; i < n; i ++ )
-                    std::cout << std::setw(27) << std::right << std::string(10, '-'); 
-                std::cout<<std::endl; 
+                    std::cout << std::setw(27) << std::right << std::string(10, '-');
+                std::cout<<std::endl;
             }
-        }     
+        }
 
 
         static void print_iter_status(const std::vector<Scalar> status_variables)
@@ -46,10 +46,10 @@ namespace utopia
             if(mpi_world_rank() == 0)
             {
                 for(auto item =  status_variables.begin(); item!= status_variables.end(); item++ )
-                    std::cout << std::setw(27) <<  std::right << *item; 
-                std::cout << std::endl; 
+                    std::cout << std::setw(27) <<  std::right << *item;
+                std::cout << std::endl;
             }
-        }     
+        }
 
 
 
@@ -58,16 +58,16 @@ namespace utopia
         {
             if(mpi_world_rank() == 0)
             {
-                std::cout.precision(15); 
-                std::cout << std::setw(27) << std::right << it; 
+                std::cout.precision(15);
+                std::cout << std::setw(27) << std::right << it;
                 for(auto item =  scalar_vars.begin(); item!= scalar_vars.end(); item++ )
-                    std::cout << std::setw(27) << std::right << *item; 
-                std::cout<<std::endl; 
+                    std::cout << std::setw(27) << std::right << *item;
+                std::cout<<std::endl;
             }
         }
 
 
-    private: 
+    private:
         PrintInfo()
         {
 

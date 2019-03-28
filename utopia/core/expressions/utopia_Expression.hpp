@@ -12,7 +12,7 @@ namespace utopia {
 
     /*!
      * @brief Every result of an algebraic
-     * operation is an expression. 
+     * operation is an expression.
      * @tparam Derived is the most specific subclass of Expression.
      * It is using the Curiously Recurring Template (CRT) pattern.
      */
@@ -28,8 +28,8 @@ namespace utopia {
         // virtual ~Expression() { }
 
         ///@return itself as its Derived type
-        inline constexpr const Derived &derived() const { 
-            return static_cast<const Derived &>(*this); 
+        inline constexpr const Derived &derived() const {
+            return static_cast<const Derived &>(*this);
         }
 
         ///@return itself as its Derived type

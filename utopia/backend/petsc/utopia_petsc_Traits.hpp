@@ -29,7 +29,7 @@ namespace utopia {
         typedef utopia::PetscVector Vector;
         typedef utopia::PetscSerialVector SerialVector;
 
-        enum 
+        enum
         {
             Backend = PETSC
         };
@@ -47,7 +47,7 @@ namespace utopia {
         typedef utopia::PetscCuVector Vector;
         typedef utopia::PetscCuVector SerialVector;
 
-        enum 
+        enum
         {
             Backend = PETSC
         };
