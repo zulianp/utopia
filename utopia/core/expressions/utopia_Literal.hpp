@@ -12,7 +12,7 @@ namespace utopia {
     template<typename _Scalar>
     class Number : public Expression< Number<_Scalar> > {
     public:
-        static const int Order = 0; 
+        static const int Order = 0;
         // static const int  StoreAs = UTOPIA_BY_VALUE;
 
         enum {
@@ -35,25 +35,25 @@ namespace utopia {
             return value_;
         }
 
-        inline Number &operator+=(const Scalar &other) 
+        inline Number &operator+=(const Scalar &other)
         {
             value_ += other;
             return *this;
         }
 
-        inline Number &operator-=(const Scalar &other) 
+        inline Number &operator-=(const Scalar &other)
         {
             value_ -= other;
             return *this;
         }
 
-        inline Number &operator*=(const Scalar &other) 
+        inline Number &operator*=(const Scalar &other)
         {
             value_ *= other;
             return *this;
         }
 
-        inline Number &operator/=(const Scalar &other) 
+        inline Number &operator/=(const Scalar &other)
         {
             value_ /= other;
             return *this;
@@ -108,14 +108,14 @@ namespace utopia {
 
 
    template<typename T>
-   class IsScalar  
+   class IsScalar
    {
       public: enum { value = false };
    };
 
 
    template<typename T>
-   class IsScalar< Number<T> >  
+   class IsScalar< Number<T> >
    {
      public:  enum { value = true };
    };
@@ -151,6 +151,6 @@ namespace utopia {
     void disp(const Number<T> &num, std::ostream &os = std::cout)
     {
         os << static_cast<T>(num) << std::endl;
-    }   
+    }
 }
 #endif //utopia_utopia_LITERAL_HPP

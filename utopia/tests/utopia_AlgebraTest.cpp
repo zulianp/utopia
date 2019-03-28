@@ -50,7 +50,7 @@ namespace utopia {
             Matrix A = values(n, n, 1.);
 
             double value = 0.5 * dot(x, A * x) + dot(x, b);
-            double expected = sum(A) * 0.5 + sum(b);    
+            double expected = sum(A) * 0.5 + sum(b);
 
             utopia_test_assert(approxeq(value, expected));
             utopia_test_assert(approxeq(value, n*n*0.5 + n*2.));
@@ -122,7 +122,7 @@ namespace utopia {
         }
 
         void determinant_test()
-        {   
+        {
             if(mpi_world_size() > 1) {
                 std::cerr << "[Warning] determinant only implemented for serial and small matrices" << std::endl;
                 return;
@@ -166,13 +166,13 @@ namespace utopia {
 
             Vector actual_min = utopia::min(one, two);
             Vector actual_max = utopia::max(one, two);
-            
+
             utopia_test_assert(approxeq(one, actual_min));
             utopia_test_assert(approxeq(two, actual_max));
-        
+
             actual_min = utopia::min(two, values(n, 1.));
             actual_max = utopia::max(values(n, 2.), one);
-        
+
             utopia_test_assert(approxeq(one, actual_min));
             utopia_test_assert(approxeq(two, actual_max));
         }
@@ -185,8 +185,8 @@ namespace utopia {
 
             Matrix A = local_values(k, m, 1.);
             Vector x = local_values(k, 1.0);
-            Vector x_result = transpose(A)*x; 
-            Scalar x_norm = norm2(x_result); 
+            Vector x_result = transpose(A)*x;
+            Scalar x_norm = norm2(x_result);
 
             utopia_test_assert(x_norm!=0.0);
         }
@@ -201,7 +201,7 @@ namespace utopia {
             static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value), "should be true" );
             static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value),  "should be true"  );
             static_assert( (IsSubTree<Matrix, decltype(expr)>::value),  "should be true"  );
-            static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  ); 
+            static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  );
         }
 
         static void print_backend_info()

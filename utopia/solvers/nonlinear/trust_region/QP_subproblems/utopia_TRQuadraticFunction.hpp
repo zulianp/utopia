@@ -7,7 +7,7 @@ namespace utopia {
 
     // this function differs from QuadraticFunction in 2 things: - different signs for rhs term
     //                                                           - supports const
-    // TODO:: merge with original QPFunction...                                                           
+    // TODO:: merge with original QPFunction...
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class TRQuadraticFunction final : public Function<Matrix, Vector, Backend> {
     public:
@@ -18,12 +18,12 @@ namespace utopia {
         {
 
         }
-        
+
         ~TRQuadraticFunction() { }
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            value = 0.5 * dot(x, *H_ * x); 
+            value = 0.5 * dot(x, *H_ * x);
             value -= dot(x,  *rhs_);
             return true;
         }

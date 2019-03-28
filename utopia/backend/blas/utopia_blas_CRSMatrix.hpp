@@ -78,7 +78,7 @@ namespace utopia {
             rowptr_[0] = 0;
 
             const SizeType row_ptr_size = rowptr_.size();
-            
+
             for(SizeType i = 1; i < row_ptr_size; ++i) {
                 rowptr_[i] = nnzXRow + rowptr_[i-1];
             }
@@ -213,7 +213,7 @@ namespace utopia {
                 for(SizeType k = rowptr_[r]; k != rowptr_[r+1]; ++k) {
                     const SizeType c = colindex_[k];
                     if(c == INVALID_INDEX) continue;
-                    
+
                     if(map_transpose) {
                         mat[std::make_pair(c, r)] = entries_[k];
                     } else {
@@ -252,7 +252,7 @@ namespace utopia {
             if(rowptr_.empty()) return INVALID_INDEX;
 
             assert(std::vector<SizeType>::size_type(i + 1) < rowptr_.size());
-            
+
             if(std::vector<SizeType>::size_type(rowptr_[i + 1]) >= colindex_.size()) {
                 return INVALID_INDEX;
             }

@@ -10,8 +10,8 @@
 
  namespace utopia
  {
-    	template<class Matrix, class Vector>
-     	class TrustRegion final: public NewtonBase<Matrix, Vector>,
+        template<class Matrix, class Vector>
+         class TrustRegion final: public NewtonBase<Matrix, Vector>,
                                public TrustRegionBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -22,25 +22,25 @@
         typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 
-     	public:
-      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem): 
+         public:
+      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem):
                   NonLinearSolver(tr_subproblem)
       {
-        
+
       }
 
-      using utopia::TrustRegionBase<Vector>::get_pred; 
+      using utopia::TrustRegionBase<Vector>::get_pred;
 
       void read(Input &in) override
       {
-        TrustRegionBase::read(in); 
-        NonLinearSolver::read(in); 
+        TrustRegionBase::read(in);
+        NonLinearSolver::read(in);
       }
 
       void print_usage(std::ostream &os) const override
       {
         TrustRegionBase::print_usage(os);
-        NonLinearSolver::print_usage(os); 
+        NonLinearSolver::print_usage(os);
       }
 
       bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override
@@ -55,7 +55,7 @@
 
          SizeType it = 0;
          SizeType it_successful = 0;
-         
+
          static const auto infty = std::numeric_limits<Scalar>::infinity();
          Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
 
@@ -92,13 +92,13 @@
           }
         #endif
 
-        bool accepted = true; 
+        bool accepted = true;
 
         // solve starts here
         while(!converged)
         {
           fun.value(x_k, E_k);
-          
+
           if(accepted)
             fun.hessian(x_k, H);
     //----------------------------------------------------------------------------
@@ -106,14 +106,14 @@
     //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            p_k *= 0; 
-            tr_subproblem->current_radius(delta); 
-            tr_subproblem->solve(H, -1.0 * g, p_k);      
-            this->solution_status_.num_linear_solves++;  
+            p_k *= 0;
+            tr_subproblem->current_radius(delta);
+            tr_subproblem->solve(H, -1.0 * g, p_k);
+            this->solution_status_.num_linear_solves++;
           }
           else
           {
-            utopia_warning("TrustRegion::Set suitable TR subproblem.... \n "); 
+            utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
           }
 
           pred = this->get_pred(g, H, p_k);
@@ -159,8 +159,8 @@
             g_norm = norm2(g);
             r_norm = g_norm/g0_norm;
 
-            norms2(g, p_k, g_norm, s_norm); 
-            r_norm = g_norm/g0_norm;            
+            norms2(g, p_k, g_norm, s_norm);
+            r_norm = g_norm/g0_norm;
           }
           else
           {
@@ -188,7 +188,7 @@
         }
 
         // some benchmarking
-        TrustRegionBase::print_statistics(it, it_successful);      
+        TrustRegionBase::print_statistics(it, it_successful);
 
           return true;
       }
@@ -202,7 +202,7 @@
 
       void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &linear_solver) override
       {
-          utopia_error("TrustRegion:: do not use set_linear solver. Use set_trust_region_strateg... \n"); 
+          utopia_error("TrustRegion:: do not use set_linear solver. Use set_trust_region_strateg... \n");
       }
 
 

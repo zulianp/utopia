@@ -1,5 +1,5 @@
 list(APPEND INTEROPERABILITY_MODULES
-	.
+    .
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR INTEROPERABILITY_MODULES LOCAL_HEADERS LOCAL_SOURCES)
@@ -16,7 +16,7 @@ target_include_directories(utopia_interoperability PUBLIC ../backend ${INTEROPER
 # endif()
 
 if(TARGET utopia_petsc)
-	target_link_libraries(utopia_interoperability utopia_petsc)
+    target_link_libraries(utopia_interoperability utopia_petsc)
 endif()
 
 # if(TARGET utopia_blas)
@@ -28,7 +28,7 @@ endif()
 # endif()
 
 if(TARGET utopia_trilinos)
-	target_link_libraries(utopia_interoperability utopia_trilinos)
+    target_link_libraries(utopia_interoperability utopia_trilinos)
 endif()
 
 # if(TARGET utopia_m3elinsol)
@@ -36,10 +36,10 @@ endif()
 # endif()
 
 install(TARGETS utopia_interoperability
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	)
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    )
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)
 

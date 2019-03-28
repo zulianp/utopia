@@ -10,7 +10,7 @@
 namespace utopia {
 
 #ifdef WITH_PETSC
-		template class PolymorphicQPSolver<DSMatrixd, DVectord>;
+        template class PolymorphicQPSolver<DSMatrixd, DVectord>;
 #endif //WITH_PETSC
 
 }

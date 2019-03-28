@@ -25,8 +25,8 @@ namespace utopia {
         {
             set_entries(Entries(rows_ * cols_, value));
         }
-		
-		~Matrix() { }
+
+        ~Matrix() { }
 
         Matrix() : rows_(0), cols_(0) {}
 
@@ -74,18 +74,18 @@ namespace utopia {
         void set_entries(EntriesT &&entries) {
             entries_ = std::forward<EntriesT>(entries);
         }
-		
-		inline T &at(const SizeType index)
-		{
-			assert(index < entries_.size());
-			return entries_[index];
-		}
 
-		inline const T &at(const SizeType index) const
-		{
-			assert(index < entries_.size());
-			return entries_[index];
-		}
+        inline T &at(const SizeType index)
+        {
+            assert(index < entries_.size());
+            return entries_[index];
+        }
+
+        inline const T &at(const SizeType index) const
+        {
+            assert(index < entries_.size());
+            return entries_[index];
+        }
         void set(SizeType i, SizeType j, T value) {
             assert(i < rows());
             assert(j < cols());

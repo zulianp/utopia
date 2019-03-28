@@ -8,7 +8,7 @@
 */
 
 /*
-Copyright 2003 by Steven S. Skiena; all rights reserved. 
+Copyright 2003 by Steven S. Skiena; all rights reserved.
 
 Permission is granted for use in non-commerical applications
 provided this copyright notice remains intact and unchanged.
@@ -75,7 +75,7 @@ typedef struct {
 
 double signed_triangle_area(point a, point b, point c)
 {
-  return( (a[X]*b[Y] - a[Y]*b[X] + a[Y]*c[X] 
+  return( (a[X]*b[Y] - a[Y]*b[X] + a[Y]*c[X]
     - a[X]*c[Y] + b[X]*c[Y] - c[X]*b[Y]) / 2.0 );
 }
 
@@ -210,7 +210,7 @@ double area(polygon *p)
 //   double area(), area_triangulate();
 
 //   scanf("%d",&p.n);
-//   for (i=0; i<p.n; i++) 
+//   for (i=0; i<p.n; i++)
 //     scanf("%lf %lf",&p.p[i][X],&p.p[i][Y]);
 
 // /*
@@ -242,8 +242,8 @@ void print_triangulation(triangulation *t)
 
 void triangulate_polygon(const int n_vertices, const double *in_polygon, std::vector<int> &result)
 {
-  polygon p;  
-  triangulation t; 
+  polygon p;
+  triangulation t;
 
   p.n = n_vertices;
   for(int i = 0; i < n_vertices; ++i) {
@@ -264,8 +264,8 @@ void triangulate_polygon(const int n_vertices, const double *in_polygon, std::ve
 
 void triangulate_polygon(const utopia::Polygon2 &in_polygon, std::vector<int> &result)
 {
-  polygon p;  
-  triangulation t; 
+  polygon p;
+  triangulation t;
 
   int n_vertices = in_polygon.size();
 

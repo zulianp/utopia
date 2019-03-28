@@ -3,11 +3,11 @@
 
 
 __kernel void <@KERNEL_NAME@>(
-	const SizeType n_entries, 
-	//auto generated variables here below:
-	<@[list]ARG_IN@>)
+    const SizeType n_entries,
+    //auto generated variables here below:
+    <@[list]ARG_IN@>)
 {
-		//the composite expression here below:
-		//result[0] = 
-		<@OP@>;
+        //the composite expression here below:
+        //result[0] =
+        <@OP@>;
 }

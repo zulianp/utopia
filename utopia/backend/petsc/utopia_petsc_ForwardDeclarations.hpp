@@ -2,7 +2,7 @@
 #ifndef UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 #define UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 
-namespace utopia 
+namespace utopia
 {
     class PetscMatrix;
     class PetscSparseMatrix;

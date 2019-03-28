@@ -17,33 +17,33 @@ namespace utopia
 
         ExtendedRosenbrock21(const SizeType & n_loc): n_loc_(n_loc)
         {
-            x_init_ = local_values(n_loc_, 1.0); 
+            x_init_ = local_values(n_loc_, 1.0);
 
             {
                 Write<Vector> wx(x_init_);
-                
-                each_write(x_init_, [](const SizeType i) -> double 
-                { 
-                    return (i%2 == 1) ? - 1.2 : 1.0; 
-                }   );
-            } 
 
-            x_exact_ = local_values(n_loc_, 1.0); 
+                each_write(x_init_, [](const SizeType i) -> double
+                {
+                    return (i%2 == 1) ? - 1.2 : 1.0;
+                }   );
+            }
+
+            x_exact_ = local_values(n_loc_, 1.0);
         }
 
         std::string name() const override
         {
-            return "Extended Rosenbrock"; 
+            return "Extended Rosenbrock";
         }
 
         SizeType dim() const override
         {
-            return n_loc_; 
+            return n_loc_;
         }
 
         bool parallel() const override
         {
-            return true; 
+            return true;
         }
 
 
@@ -206,18 +206,18 @@ namespace utopia
 
         Vector initial_guess() const override
         {
-            return x_init_; 
+            return x_init_;
         }
 
         const Vector & exact_sol() const override
         {
-            return x_exact_; 
+            return x_exact_;
         }
 
         Scalar min_function_value() const override
         {
-            return 0; 
-        }        
+            return 0;
+        }
 
     private:
         SizeType n_loc_;
@@ -262,9 +262,9 @@ namespace utopia
 
         }
 
-    private: 
-        Vector x_init_; 
-        Vector x_exact_; 
+    private:
+        Vector x_init_;
+        Vector x_exact_;
 
     };
 

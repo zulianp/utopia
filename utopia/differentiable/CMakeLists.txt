@@ -1,5 +1,5 @@
 list(APPEND DIFFERENTIABLE_MODULES
-	.
+    .
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR DIFFERENTIABLE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
@@ -8,14 +8,14 @@ list(APPEND LOCAL_SOURCES utopia_differentiable.cpp)
 
 add_library(utopia_differentiable STATIC ${LOCAL_SOURCES})
 target_link_libraries(utopia_differentiable utopia_core)
-target_include_directories(utopia_differentiable PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) 
+target_include_directories(utopia_differentiable PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
 install(TARGETS utopia_differentiable
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
-	)
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    )
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)
 

@@ -8,15 +8,15 @@
 
 namespace utopia {
 
-	class BoundaryMeshTest final : public FETest {
-	public:
-		void run(Input &in) override;
+    class BoundaryMeshTest final : public FETest {
+    public:
+        void run(Input &in) override;
 
-		inline static std::string command()
-		{
-			return "bit";
-		}
-	};
+        inline static std::string command()
+        {
+            return "bit";
+        }
+    };
 
 }
 

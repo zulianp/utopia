@@ -45,7 +45,7 @@
 
 // 		typedef Kokkos::DynRankView<Scalar, Device>    DeviceRankView;
 // 		typedef Kokkos::DynRankView<Scalar, Host>    HostRankView;
-		
+
 // 		template<typename T>
 // 		using TensorView2 = Kokkos::DualView<T**, Kokkos::LayoutRight>;
 
@@ -83,8 +83,8 @@
 // 			std::unique_ptr<DeviceRankView> q_weights_;
 // 		};
 
-	
-		
+
+
 
 // 		class IntrepidFunctionSpace {
 // 		public:
@@ -110,7 +110,7 @@
 
 // 					space.dof_map().dof_indices(&e, indices);
 // 					assert(cell_ptr_->getNodeCount() == indices.size());
-					
+
 // 					for(auto i = 0; i < e.n_nodes(); ++i) {
 // 						const auto &node = e.node_ref(i);
 // 						e2n(index, i) = indices[i];
@@ -132,9 +132,9 @@
 // 			}
 
 // 			std::shared_ptr<CellTopology> cell_ptr_;
-			
-// 			TensorView3<Scalar> points_; 
-// 			TensorView2<int> elem_to_node_; 
+
+// 			TensorView3<Scalar> points_;
+// 			TensorView2<int> elem_to_node_;
 
 // 			IntrepidCubature cub_;
 // 			int num_elements;
@@ -164,7 +164,7 @@
 
 // 					fun           = DeviceRankView("fun", num_fields, num_quad_points);
 // 					ref_grad      = DeviceRankView("ref_grad", num_fields, num_quad_points, dim);
-					
+
 // 					grad     	  = DeviceRankView("grad", num_elements, num_fields, num_quad_points, dim);
 // 					test_weighted = DeviceRankView("test_weighted", num_elements, num_fields, num_quad_points, dim);
 
@@ -178,7 +178,7 @@
 // 					auto &q_weights = *q.q_weights_;
 
 // 					fe.getValues(fun, 	   q_points, Intrepid2::OPERATOR_VALUE);
-// 					fe.getValues(ref_grad, q_points, Intrepid2::OPERATOR_GRAD);	
+// 					fe.getValues(ref_grad, q_points, Intrepid2::OPERATOR_GRAD);
 
 // 					DeviceRankView nodes = space.points_.template view<Device>();
 
@@ -245,7 +245,7 @@
 // 				data = DeviceRankView("element_matrix", num_elements, num_quad_points);
 // 			}
 
-// 			void set(IntrepidFunctionSpace &space, const Scalar value) 
+// 			void set(IntrepidFunctionSpace &space, const Scalar value)
 // 			{
 // 				int num_quad_points = space.cub_.q->getNumPoints();
 // 				Kokkos::parallel_for(space.num_elements, KOKKOS_LAMBDA(int k) {
@@ -273,7 +273,7 @@
 // 			c.start();
 
 // 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
-			
+
 // 			typedef typename TraitsT::Vector ElementVector;
 
 // 			static const int Backend = TraitsT::Backend;
@@ -292,7 +292,7 @@
 
 // 			//assemble energy
 
-// 			//global redu e	
+// 			//global redu e
 // 			m.comm().sum(val);
 
 // 			//perf
@@ -315,7 +315,7 @@
 // 			c.start();
 
 // 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
-			
+
 // 			static const int Backend = TraitsT::Backend;
 
 // 			const auto &space = find_space<LibMeshFunctionSpace>(expr);
@@ -335,8 +335,8 @@
 // 			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
 // 				SizeType nnz_x_row = 0;
 // 				if(!dof_map.get_n_nz().empty()) {
-// 					nnz_x_row = 
-// 					*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) + 
+// 					nnz_x_row =
+// 					*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) +
 // 					*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
 // 				}
 
@@ -372,7 +372,7 @@
 // 			Kokkos::parallel_for(i_space.num_elements, KOKKOS_LAMBDA(const int k) {
 // 			  for (int row = 0; row < num_fields; row++){
 // 			      for (int col = 0; col < num_fields; col++){
-			         
+
 // 			          int row_index = elem_to_node(k, row);
 // 			          int col_index = elem_to_node(k, col);
 
@@ -432,7 +432,7 @@
 
 // 			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
 // 				// vec = local_zeros(dof_map.n_local_dofs());
-// 				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
+// 				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 // 			} else {
 // 				vec *= 0.;
 // 			}

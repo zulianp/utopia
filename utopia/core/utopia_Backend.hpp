@@ -16,10 +16,10 @@ namespace utopia {
     template<typename Scalar, int BackendType>
     class Backend {
     public:
-    	Backend()
-    	{
-    		static_assert(BackendType < HOMEMADE, "No Backend implemented");
-    	}
+        Backend()
+        {
+            static_assert(BackendType < HOMEMADE, "No Backend implemented");
+        }
     };
 }
 #endif //utopia_utopia_BACKEND_HPP

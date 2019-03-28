@@ -16,7 +16,7 @@ namespace utopia {
 
     private:
         void block_test()
-        {   
+        {
             int n1 = 5;
             int n2 = 5;
             int n3 = 3;
@@ -44,7 +44,7 @@ namespace utopia {
            Vector r1 = zeros(n1), r2 = zeros(n3);
 
            undo_blocks(r, r1, r2);
-           
+
            utopia_test_assert(
             approxeq(
                 double(sum(r)),
@@ -80,7 +80,7 @@ namespace utopia {
             csv.get(1, 0, val); utopia_test_assert( val == 0 );
             csv.get(1, 1, val); utopia_test_assert( val == 1 );
             csv.get(1, 2, val); utopia_test_assert( val == 2 );
-            
+
             csv.get(2, 0, val); utopia_test_assert( val == 1 );
             csv.get(2, 1, val); utopia_test_assert( val == 2 );
             csv.get(2, 2, val); utopia_test_assert( val == 3 );
@@ -275,7 +275,7 @@ namespace utopia {
 
             {
                 Read<Matrix> r_m(m);
-                Read<Vector> r_v(v);                
+                Read<Vector> r_v(v);
                 inline_eval((m + m) * v + v, res);
             }
 
@@ -283,7 +283,7 @@ namespace utopia {
             utopia_test_assert(approxeq(v_exp, res));
 
             Number<double> num = 0;
-            
+
             {
                 Read<Matrix> r_m(m);
                 Read<Vector> r_v(v);
@@ -338,8 +338,8 @@ namespace utopia {
 
 #ifdef WITH_PETSC
         BlockTest<DSMatrixd, DVectord>().run();
-        
-        
+
+
         if(mpi_world_size() == 1) {
             UtilitiesTest<DMatrixd, DVectord>().run();
             BlockTest<DMatrixd, DVectord>().run();
@@ -358,7 +358,7 @@ namespace utopia {
             BlockTest<TSMatrixd, TVectord>().run();
 #endif //WITH_TRILINOS
         }
-        
+
         UTOPIA_UNIT_TEST_END("UtilitiesTest");
     }
 }

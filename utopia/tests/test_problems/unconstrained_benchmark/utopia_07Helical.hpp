@@ -7,15 +7,15 @@
 
 
 namespace utopia
-{   
+{
     template<class Matrix, class Vector>
-    class Hellical07 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class Hellical07 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        Hellical07() 
+        Hellical07()
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
@@ -25,35 +25,35 @@ namespace utopia
             {
                 const Write<Vector> write1(x_init_);
                 const Write<Vector> write2(x_exact_);
-                                
+
                 x_init_.set(0, -1.0);
                 x_init_.set(1, 0.0);
                 x_init_.set(2, 0.0);
 
                 x_exact_.set(0, 1.0);
-                x_exact_.set(1, 0.0);                
-                x_exact_.set(2, 0.0);                                
+                x_exact_.set(1, 0.0);
+                x_exact_.set(2, 0.0);
             }
 
         }
 
         std::string name() const override
         {
-            return "Hellical valley"; 
+            return "Hellical valley";
         }
 
         SizeType dim() const override
         {
-            return 3; 
+            return 3;
         }
 
 
-        bool value(const Vector &point, typename Vector::Scalar &result) const override 
+        bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
-            }            
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
+            }
             assert(point.size().get(0) == 3);
 
             const Read<Vector> read(point);
@@ -62,19 +62,19 @@ namespace utopia
             const Scalar y = point.get(1);
             const Scalar z = point.get(2);
 
-            Scalar th = theta(x,y); 
-            Scalar a = z - (10.0 * th); 
-            Scalar b = std::sqrt((x*x) + (y*y)) - 1.0; 
-            
+            Scalar th = theta(x,y);
+            Scalar a = z - (10.0 * th);
+            Scalar b = std::sqrt((x*x) + (y*y)) - 1.0;
+
             result = (100.0 * a*a) + (100.0 * b*b) + (z*z);
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &result) const override 
+        bool gradient(const Vector &point, Vector &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 3);
@@ -88,9 +88,9 @@ namespace utopia
             const Scalar z = point.get(2);
 
             const Scalar xx = x * x;
-            const Scalar yy = y * y; 
-            const Scalar r = std::sqrt(xx + yy); 
-            const Scalar t =  z - (10.0 * theta(x,y)); 
+            const Scalar yy = y * y;
+            const Scalar r = std::sqrt(xx + yy);
+            const Scalar t =  z - (10.0 * theta(x,y));
             const Scalar s1 = 5.0 * t / ( pi() * r * r );
 
             const Scalar a = 200.0 * ( x - (x / r) + (y * s1));
@@ -104,13 +104,13 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override 
+        bool hessian(const Vector &point, Matrix &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
-                        
+
             assert(point.size().get(0) == 3);
             result = zeros(3,3);
 
@@ -122,17 +122,17 @@ namespace utopia
             const Scalar z = point.get(2);
 
             const Scalar xx = x * x;
-            const Scalar yy = y * y; 
-            const Scalar xy = x * y; 
-            const Scalar xxyy = xx + yy; 
+            const Scalar yy = y * y;
+            const Scalar xy = x * y;
+            const Scalar xxyy = xx + yy;
 
-            const Scalar pixy = pi() * ( xx + yy ); 
-            const Scalar xxyy32 = std::pow(xxyy , 3./2.); 
+            const Scalar pixy = pi() * ( xx + yy );
+            const Scalar xxyy32 = std::pow(xxyy , 3./2.);
 
 
-            const Scalar th = theta(x,y); 
-            Scalar h1 = pi() * (xxyy);     
-            Scalar h2 = h1 * (xxyy);     
+            const Scalar th = theta(x,y);
+            Scalar h1 = pi() * (xxyy);
+            Scalar h2 = h1 * (xxyy);
 
             Scalar  term11 = 200.0 - (200.0 * yy * ( 1.0 / xxyy32 - 25.0 / ( h1 *h1 )));
                     term11 -= 2000.0 * xy * ( z - 10.0 * th )/h2;
@@ -142,7 +142,7 @@ namespace utopia
 
 
             Scalar  term12 = 200.0 * xy / xxyy32;
-                    term12 += 1000.0 /h2; 
+                    term12 += 1000.0 /h2;
                     term12 *= ( ( z - (10.0 * th)) * ( xx - yy ) - (5.0 * xy / pi()) );
 
 
@@ -157,28 +157,28 @@ namespace utopia
             result.set(1, 0, term12);
             result.set(1, 1, term22);
             result.set(1, 2, mixed23);
-            
+
             result.set(2, 0, mixed13);
             result.set(2, 1, mixed23);
-            result.set(2, 2, 202.0);    
+            result.set(2, 2, 202.0);
 
-            
+
             return true;
         }
 
         Vector initial_guess() const override
         {
-            return x_init_; 
+            return x_init_;
         }
 
         const Vector & exact_sol() const override
         {
-            return x_exact_; 
+            return x_exact_;
         }
 
         Scalar min_function_value() const override
         {
-            return 0; 
+            return 0;
         }
 
 
@@ -198,14 +198,14 @@ namespace utopia
             }
 
             constexpr Scalar pi() const
-            { 
-                return 3.141592653589793238462643383279502884; 
+            {
+                return 3.141592653589793238462643383279502884;
             }
 
 
-    private: 
-        Vector x_init_; 
-        Vector x_exact_; 
+    private:
+        Vector x_init_;
+        Vector x_exact_;
 
     };
 }

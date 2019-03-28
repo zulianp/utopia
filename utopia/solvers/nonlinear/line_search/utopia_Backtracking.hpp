@@ -27,31 +27,31 @@ namespace utopia {
         Backtracking(): LSStrategy<Vector>(), c2_(1e-8)
 
         {
-        
+
         }
-        
+
         void read(Input &in) override
-        {   
-            LSStrategy<Vector>::read(in); 
+        {
+            LSStrategy<Vector>::read(in);
             in.get("c2", c2_);
         }
 
         void print_usage(std::ostream &os) const override
         {
-            LSStrategy<Vector>::print_usage(os); 
-            this->print_param_usage(os, "c2", "double", "Constant used for Wolfe conditions.", "1e-8"); 
+            LSStrategy<Vector>::print_usage(os);
+            this->print_param_usage(os, "c2", "double", "Constant used for Wolfe conditions.", "1e-8");
         }
 
         void c2(const Scalar  & c)
         {
-            c2_ = c; 
+            c2_ = c;
         }
 
 
         Scalar c2() const
         {
-            return c2_; 
-        } 
+            return c2_;
+        }
 
 
         /**

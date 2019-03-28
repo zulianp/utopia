@@ -29,19 +29,19 @@ namespace utopia {
 
         /** @defgroup lock Locks
          * @ingroup read_write
-         *  @brief  Provides synchronized access to a shared object. 
+         *  @brief  Provides synchronized access to a shared object.
          */
 
 
         /**
          *@ingroup element_acess
-         * 
-         * @brief       Sets element of matrix on position (row, column) to given value. 
+         *
+         * @brief       Sets element of matrix on position (row, column) to given value.
          * @warning     Please do not forget to use this function inside of write lock.  \n
          *              Petsc does not allow to mix add and set.
-         * 
+         *
          * @param[in]  row      The row index.
-         * @param[in]  col      The column index. 
+         * @param[in]  col      The column index.
          * @param[in]  value    The value.
          */
         inline void set(const SizeType row, const SizeType col, const Scalar value)
@@ -49,18 +49,18 @@ namespace utopia {
             assert_enabled(is_write_locked());
             assert(row < (SizeType)size(derived()).get(0));
             assert(col < (SizeType)size(derived()).get(1));
-            
+
             Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), row, col, value);
         }
 
         /**
          * @ingroup     element_acess
-         * @brief       Adds value to already existing value of the element on position (row, column). 
+         * @brief       Adds value to already existing value of the element on position (row, column).
          * @warning     Please do not forget to use this function inside of write lock. \n
          *              Petsc does not allow to mix add and set.
-         * 
+         *
          * @param[in]  row      The row index.
-         * @param[in]  col      The column index. 
+         * @param[in]  col      The column index.
          * @param[in]  value    The value.
          */
         inline void add(const SizeType row, const SizeType col, const Scalar value)
@@ -75,11 +75,11 @@ namespace utopia {
 
         /**
          * @ingroup     element_acess
-         * @brief       Sets prescribed value to all elements, which index matches with one provided by index sets. 
+         * @brief       Sets prescribed value to all elements, which index matches with one provided by index sets.
          * @warning     Please do not forget to use this function inside of write lock. \n
-         * 
+         *
          * @param[in]  row      The set of row indices.
-         * @param[in]  col      The set of column indices. 
+         * @param[in]  col      The set of column indices.
          * @param[in]  value    The value.
          */
         // template<typename Ordinal>
@@ -143,13 +143,13 @@ namespace utopia {
         {
             lock_active_ = false;
         }
-#endif //ENABLE_LOCK_CHECK   
+#endif //ENABLE_LOCK_CHECK
 
     private:
         DERIVED_CRT(Derived);
 #ifdef ENABLE_LOCK_CHECK
         bool lock_active_;
-#endif //ENABLE_LOCK_CHECK  
+#endif //ENABLE_LOCK_CHECK
     };
 
     template<class Implementation, class Derived>
@@ -159,7 +159,7 @@ namespace utopia {
 
         /**
          * @ingroup     element_acess
-         * @brief       Sets element of vector on position (i) to given value. 
+         * @brief       Sets element of vector on position (i) to given value.
          * @warning     Please do not forget to use this function inside of write lock.  \n
          *              Petsc does not allow to mix add and set.
          * @param[in]  index  The index.
@@ -195,11 +195,11 @@ namespace utopia {
 
         /**
          * @ingroup     element_acess
-         * @brief       Sets prescribed value to all elements, which index matches with one provided by index set. 
+         * @brief       Sets prescribed value to all elements, which index matches with one provided by index set.
          * @warning     Please do not forget to use this function inside of write lock. \n
-         * 
-         * @param[in]  indices  The set of indices. 
-         * @param[in]  value    The value. 
+         *
+         * @param[in]  indices  The set of indices.
+         * @param[in]  value    The value.
          */
         template<typename Ordinal>
         inline void set(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values)
@@ -235,13 +235,13 @@ namespace utopia {
         {
             lock_active_ = false;
         }
-#endif //ENABLE_LOCK_CHECK   
+#endif //ENABLE_LOCK_CHECK
 
     private:
         DERIVED_CRT(Derived);
 #ifdef ENABLE_LOCK_CHECK
         bool lock_active_;
-#endif //ENABLE_LOCK_CHECK  
+#endif //ENABLE_LOCK_CHECK
     };
 
     enum WriteMode {
@@ -268,7 +268,7 @@ namespace utopia {
         {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_lock();
-#endif //ENABLE_LOCK_CHECK            
+#endif //ENABLE_LOCK_CHECK
             Backend<Scalar, Traits<Tensor>::Backend>::write_lock(_tensor.implementation(), mode_);
         }
 
@@ -276,7 +276,7 @@ namespace utopia {
         {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_unlock();
-#endif //ENABLE_LOCK_CHECK   
+#endif //ENABLE_LOCK_CHECK
             Backend<Scalar, Traits<Tensor>::Backend>::write_unlock(_tensor.implementation(), mode_);
         }
 

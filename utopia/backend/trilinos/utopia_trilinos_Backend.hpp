@@ -252,10 +252,10 @@ namespace utopia {
         }
 
         template<typename Integer>
-       	inline static void get(const TpetraVector &v, const std::vector<Integer> &index, std::vector<Scalar> &values)
-       	{
-       		v.get(index, values);
-       	}
+           inline static void get(const TpetraVector &v, const std::vector<Integer> &index, std::vector<Scalar> &values)
+           {
+               v.get(index, values);
+           }
 
         inline static void set(TpetraVector &v, const TpetraVector::GO &index, Scalar value)
         {
@@ -424,15 +424,15 @@ namespace utopia {
 
         void apply_tensor_reduce(TpetraVector &result, const TpetraMatrix &mat, const Plus &, const int dim)
         {
-        	if(dim == 1) {
-        		TpetraVector vec;
-        		vec.values(mat.communicator(), mat.local_size().get(1), mat.size().get(1), 1.);
-        		mat.mult(vec, result);
-        	} else {
-        		TpetraVector vec;
-        		vec.values(mat.communicator(), mat.local_size().get(0), mat.size().get(0), 1.);
-        		mat.mult_t(vec, result);
-        	}
+            if(dim == 1) {
+                TpetraVector vec;
+                vec.values(mat.communicator(), mat.local_size().get(1), mat.size().get(1), 1.);
+                mat.mult(vec, result);
+            } else {
+                TpetraVector vec;
+                vec.values(mat.communicator(), mat.local_size().get(0), mat.size().get(0), 1.);
+                mat.mult_t(vec, result);
+            }
         }
 
         //blas 1
@@ -588,8 +588,8 @@ namespace utopia {
 
         void diag_scale_left(TpetraMatrix &result, const TpetraVector &diag, const TpetraMatrix &m)
         {
-        	result = m;
-        	result.implementation().leftScale(diag.implementation());
+            result = m;
+            result.implementation().leftScale(diag.implementation());
         }
 
         static void multiply(

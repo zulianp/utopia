@@ -4,7 +4,7 @@
 namespace utopia {
     Logger::Logger() {}
     Logger::~Logger() {}
-    
+
     class Logger::Entry final {
     public:
         inline explicit Entry(const std::string &file,
@@ -14,18 +14,18 @@ namespace utopia {
         line(line),
         message(message)
         {}
-        
+
         inline friend std::ostream &operator<<(std::ostream &os, const Entry &e)
         {
             os << e.file << ":" << e.line << "\n" << e.message;
             return os;
         }
-        
+
         std::string file;
         int line;
         std::string message;
     };
-    
+
     void StandardLogger::status(const std::string &file,
                                 const int line,
                                 const std::string &message)
@@ -36,7 +36,7 @@ namespace utopia {
             status_entries_.push_back(std::make_shared<Entry>(file, line, message));
         }
     }
-    
+
     void StandardLogger::warning(const std::string &file,
                                  const int line,
                                  const std::string &message)
@@ -47,7 +47,7 @@ namespace utopia {
             warning_entries_.push_back(std::make_shared<Entry>(file, line, message));
         }
     }
-    
+
     void StandardLogger::error(const std::string &file,
                                const int line,
                                const std::string &message)
@@ -58,7 +58,7 @@ namespace utopia {
             error_entries_.push_back(std::make_shared<Entry>(file, line, message));
         }
     }
-    
+
     void StandardLogger::flush()
     {
         if(!status_entries_.empty()) {
@@ -70,14 +70,14 @@ namespace utopia {
             status_stream_ << "--------------------------------------------------------" << std::endl;
             status_stream_.clear();
         }
-        
+
         if(!warning_entries_.empty()) {
             status_stream_ << "--------------------------------------------------------" << std::endl;
             warning_stream_ << "[Warning]:\n" << std::endl;
             for(auto e : warning_entries_) {
                 warning_stream_ << *e << "\n" << std::endl;
             }
-            
+
             status_stream_ << "--------------------------------------------------------" << std::endl;
             warning_stream_.clear();
         }
@@ -87,12 +87,12 @@ namespace utopia {
             for(auto e : error_entries_) {
                 error_stream_ << *e << std::endl;
             }
-            
+
             status_stream_ << "--------------------------------------------------------" << std::endl;
             error_entries_.clear();
         }
     }
-    
+
     StandardLogger::StandardLogger(std::ostream &status_stream,
                                    std::ostream &warning_stream,
                                    std::ostream &error_stream)
@@ -104,6 +104,6 @@ namespace utopia {
     warning_direct_output_(true),
     error_direct_output_(true)
     { }
-    
+
     StandardLogger::~StandardLogger() {}
 }

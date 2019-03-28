@@ -7,7 +7,7 @@ set(SLEPC_INCLUDE_DIR   "${SLEPC_DIR}/include")
 set(SLEPC_LIB_DIR       "${SLEPC_DIR}/${PETSC_ARCH}/lib")
 
 message(" lib dir = ${SLEPC_DIR}/${PETSC_ARCH}/lib")
-find_library(SLEPC_LIB_SLEPC     slepc 
+find_library(SLEPC_LIB_SLEPC     slepc
              HINTS ${SLEPC_DIR}/${PETSC_ARCH}/lib)
 
 message(${SLEPC_LIB_SLEPC})

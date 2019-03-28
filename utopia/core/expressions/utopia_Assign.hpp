@@ -17,7 +17,7 @@ namespace utopia {
         static const int Order = Left::Order;
 
         typedef typename Left::Scalar Scalar;
-        
+
         Assign(Left &left, const Right &right) : _left(left), _right(right)
         {}
 

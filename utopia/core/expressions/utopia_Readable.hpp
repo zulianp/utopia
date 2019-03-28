@@ -9,9 +9,9 @@
 #include "utopia_Config.hpp"
 
 namespace utopia {
-    
+
     /*!
-     * @brief 
+     * @brief
      * It provides the interfaces for reading the entries of
      * Implementation.
      * @tparam Implementation the backend type
@@ -21,7 +21,7 @@ namespace utopia {
     class Readable;
 
     /*!
-     * @brief Specialization of Readable for 2nd order tensors. 
+     * @brief Specialization of Readable for 2nd order tensors.
      * It provides the interfaces for reading the entries of
      * Implementation.
      * @tparam Implementation the backend type
@@ -34,11 +34,11 @@ namespace utopia {
 
          /**
          * @ingroup     element_acess
-         * @brief       Reads value of the element from matrix defined by index (row, column). 
+         * @brief       Reads value of the element from matrix defined by index (row, column).
          * @warning     Please do not forget to use this function inside of read lock. \n
-         * 
-         * @param[in]  indices  The set of indices. 
-         * @param[in]  value    The value. 
+         *
+         * @param[in]  indices  The set of indices.
+         * @param[in]  value    The value.
          */
         inline Scalar get(const int row, const int col) const
         {
@@ -69,7 +69,7 @@ namespace utopia {
         {
             lock_active_ = false;
         }
-#endif //NDEBUG   
+#endif //NDEBUG
 
     private:
         CONST_DERIVED_CRT(Derived);
@@ -94,11 +94,11 @@ namespace utopia {
 
          /**
          * @ingroup     element_acess
-         * @brief       Gets value of the element, which index matches with requested one.  
+         * @brief       Gets value of the element, which index matches with requested one.
          * @warning     Please do not forget to use this function inside of read lock. \n
-         * 
-         * @param[in]  indices  The set of indices. 
-         * @param[in]  value    The value. 
+         *
+         * @param[in]  indices  The set of indices.
+         * @param[in]  value    The value.
          */
         inline Scalar get(const int index) const
         {
@@ -134,11 +134,11 @@ namespace utopia {
         {
             lock_active_ = false;
         }
-#endif //NDEBUG   
+#endif //NDEBUG
 
     private:
         CONST_DERIVED_CRT(Derived);
-        
+
 #ifdef ENABLE_LOCK_CHECK
         mutable bool lock_active_;
 #endif //NDEBUG
@@ -153,7 +153,7 @@ namespace utopia {
 
         /**
          * @ingroup     lock
-         * @brief       Reading lock providing memory access to the object. 
+         * @brief       Reading lock providing memory access to the object.
          * @param      tensor  The tensor (the const qualifier might be removed internally).
          */
         Read(const Tensor &tensor)
@@ -185,7 +185,7 @@ namespace utopia {
 
         /**
          * @ingroup     lock
-         * @brief       Lock providing both: read and write memory access to the object. 
+         * @brief       Lock providing both: read and write memory access to the object.
          * @param      tensor  The tensor.
          */
         ReadAndWrite(Tensor &tensor)
@@ -194,7 +194,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.read_lock();
             _tensor.write_lock();
-#endif            
+#endif
             Backend<Scalar, Traits<Tensor>::Backend >::read_and_write_lock(_tensor.implementation());
         }
 
@@ -203,7 +203,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.read_unlock();
             _tensor.write_unlock();
-#endif   
+#endif
             Backend<Scalar, Traits<Tensor>::Backend >::read_and_write_unlock(_tensor.implementation());
         }
 

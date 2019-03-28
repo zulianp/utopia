@@ -19,7 +19,7 @@ include(FindPackageHandleStandardArgs)
 # Search for include files
 find_path(UTOPIA_FE_INSTALLATION_PATH
   NAMES "include/utopia_fe.hpp"
-  HINTS 
+  HINTS
       $ENV{UTOPIA_FE_DIR}
       ${UTOPIA_FE_DIR}
       $ENV{UTOPIA_DIR}
@@ -27,7 +27,7 @@ find_path(UTOPIA_FE_INSTALLATION_PATH
   NO_DEFAULT_PATH)
 
 
-find_path(UTOPIA_FE_CONFIG_FILE_PATH 
+find_path(UTOPIA_FE_CONFIG_FILE_PATH
   NAMES "utopia_fe_config.cmake"
   HINTS
     $ENV{UTOPIA_FE_DIR}
@@ -35,7 +35,7 @@ find_path(UTOPIA_FE_CONFIG_FILE_PATH
     ${UTOPIA_FE_INCLUDES}/..
     $ENV{UTOPIA_DIR}
     ${UTOPIA_DIR}
-    PATH_SUFFIXES config 
+    PATH_SUFFIXES config
   NO_DEFAULT_PATH)
 
 if(UTOPIA_FE_CONFIG_FILE_PATH)

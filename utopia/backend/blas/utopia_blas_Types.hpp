@@ -37,7 +37,7 @@ namespace utopia {
     {
         return utopiaType.implementation();
     }
-    
+
 }
 
 #endif //UTOPIA_BLAS_TYPES_HPP

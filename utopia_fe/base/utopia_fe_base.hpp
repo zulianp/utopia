@@ -6,11 +6,11 @@
 
 namespace utopia {
 #ifdef WITH_TRILINOS_ALGEBRA
-	using USparseMatrix = TSMatrixd;
-	using UVector  = TVectord;
+    using USparseMatrix = TSMatrixd;
+    using UVector  = TVectord;
 #else
-	using USparseMatrix = DSMatrixd;
-	using UVector  = DVectord;
+    using USparseMatrix = DSMatrixd;
+    using UVector  = DVectord;
 #endif //WITH_TRILINOS_ALGEBRA
 }
 

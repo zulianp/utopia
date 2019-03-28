@@ -9,7 +9,7 @@
 #include <petscpc.h>
 #include <petscksp.h>
 
-// extern "C" 
+// extern "C"
 // {
 #include "petscmat.h"
 #include "petscvec.h"
@@ -17,7 +17,7 @@
 
 
 namespace utopia {
- 
+
     /**
      * @brief      Wrapper for PETSC implementation of SOR.
      *             Be aware, that this function doesn't run in parallel.
@@ -32,23 +32,23 @@ namespace utopia {
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
         typedef utopia::Smoother<Matrix, Vector>        Smoother;
-        
+
     public:
         GaussSeidel()
         {
-            
+
         }
-        
+
         void read(Input &in) override
         {
-            Solver::read(in); 
-            Smoother::read(in); 
+            Solver::read(in);
+            Smoother::read(in);
         }
 
         void print_usage(std::ostream &os) const override
         {
-            Solver::print_usage(os); 
-            Smoother::print_usage(os); 
+            Solver::print_usage(os);
+            Smoother::print_usage(os);
         }
 
 
@@ -66,7 +66,7 @@ namespace utopia {
             if(this->verbose()) {
               std::cout << "before smooth: " << double(norm2(rhs - A * x)) << std::endl;
             }
-            
+
             MatSOR(raw_type(A),
                    raw_type(rhs),
                    1,
@@ -80,10 +80,10 @@ namespace utopia {
            if(this->verbose()) {
              std::cout << "after smooth: " << double(norm2(rhs - A * x)) << std::endl;
            }
-            
+
             return true;
         }
-        
+
         /**
          * @brief      Solving system with Gauss-Seidel method.
          *
@@ -93,11 +93,11 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &x) override
         {
             const Matrix &A = *this->get_operator();
-            
+
             SizeType it = 0;
             Scalar r_norm = 9999;
             this->init_solver("Petsc Gauss-Seidel", {"it. ", "||r||" });
-            
+
             while(it < this->max_it() && r_norm > this->rtol()) {
                 MatSOR(
                        raw_type(A),
@@ -109,19 +109,19 @@ namespace utopia {
                        this->sweeps(),
                        this->sweeps(),
                        raw_type(x));
-                
+
                 r_norm = norm2(A*x - rhs);
-                
+
                 it += this->sweeps();
-                
+
                 if(this->verbose())
                     PrintInfo::print_iter_status(it, {r_norm});
             }
-            
+
             return true;
         }
-        
-        
+
+
         /**
          * @brief      Nonlinear smoothing. First it calls GS smoother and then it project constrains.
          * !!!! THIS DOES NOT GIVE CORRECT RESULTS IN A SIMULATION THE PROJECTION CANNOT HAPPEN OUTSIDE A GS STEP
@@ -135,23 +135,23 @@ namespace utopia {
          */
         // bool nonlinear_smooth(const Matrix &A, const Vector &rhs, const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set) override
         // {
-        
+
         //     smooth(A, rhs, x);
         //     project_constraints(ub, lb, x, active_set);
         //     return true;
-        
+
         // }
-        
+
         inline GaussSeidel * clone() const override
         {
             return new GaussSeidel(*this);
         }
-        
+
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             Solver::update(op);
         }
-        
+
     private:
         /**
          * @brief      Function projects constraints, such that \f$ lb < x < ub \f$
@@ -181,9 +181,9 @@ namespace utopia {
             }
             return true;
         }
-        
+
     };
-    
+
 }
 
 #endif //UTOPIA_PETSC_GS_HPP

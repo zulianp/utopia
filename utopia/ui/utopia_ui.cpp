@@ -7,40 +7,40 @@
 
 
 namespace utopia {
-	template class Convertible<double>;
-	template class Convertible<float>;
-	template class Convertible<long>;
-	template class Convertible<int>;
-	template class Convertible<bool>;
-	template class Convertible<std::string>;
+    template class Convertible<double>;
+    template class Convertible<float>;
+    template class Convertible<long>;
+    template class Convertible<int>;
+    template class Convertible<bool>;
+    template class Convertible<std::string>;
 
 
     std::unique_ptr<Input> open_istream(const Path &path)
-	{
-		if(path.extension() == "xml") {
-			// auto ret = make_unique<XMLInput>();
-			// ret->open(path);
-			// return ret;
-			
-			//portable version when compuling with nvcc
-			auto ret = new XMLInput();
-			auto ret_ptr = std::unique_ptr<Input>(ret);
-			ret->open(path);
-			return ret_ptr;
-			
-		} else 
-#ifdef WITH_JSON
-		if(path.extension() == "json") {
+    {
+        if(path.extension() == "xml") {
+            // auto ret = make_unique<XMLInput>();
+            // ret->open(path);
+            // return ret;
 
-			auto ret = new JSONInput();
-			auto ret_ptr = std::unique_ptr<Input>(ret);
-			ret->open(path);
-			return ret_ptr;
-		} else 
+            //portable version when compuling with nvcc
+            auto ret = new XMLInput();
+            auto ret_ptr = std::unique_ptr<Input>(ret);
+            ret->open(path);
+            return ret_ptr;
+
+        } else
+#ifdef WITH_JSON
+        if(path.extension() == "json") {
+
+            auto ret = new JSONInput();
+            auto ret_ptr = std::unique_ptr<Input>(ret);
+            ret->open(path);
+            return ret_ptr;
+        } else
 #endif //WITH_JSON
-		{
-			std::cerr << "[Error] format not supported" << std::endl;
-			return nullptr;
-		}
-	}
+        {
+            std::cerr << "[Error] format not supported" << std::endl;
+            return nullptr;
+        }
+    }
 }

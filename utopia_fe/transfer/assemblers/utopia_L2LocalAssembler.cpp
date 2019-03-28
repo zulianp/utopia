@@ -8,243 +8,243 @@
 #include <numeric>
 
 namespace utopia {
-	static bool check(const LocalAssembler::Matrix &mat)
-	{
-		for(const auto &v : mat.get_values()) {
-			assert(!std::isnan(v));
-			assert(!std::isinf(v));
+    static bool check(const LocalAssembler::Matrix &mat)
+    {
+        for(const auto &v : mat.get_values()) {
+            assert(!std::isnan(v));
+            assert(!std::isinf(v));
 
-			if(std::isnan(v) || std::isinf(v)) {
-				return false;
-			}
-		}
+            if(std::isnan(v) || std::isinf(v)) {
+                return false;
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	L2LocalAssembler::L2LocalAssembler(
-		const int dim,
-		const bool use_biorth,
-		const bool assemble_mass_mat,
-		const bool is_shell)
-	: dim(dim),
-	use_biorth(use_biorth),
-	must_compute_biorth(use_biorth),
-	// composite_ir(dim),
-	q_trial(dim),
-	q_test(dim),
-	assemble_mass_mat_(assemble_mass_mat),
-	max_n_quad_points_(0)
-	{
+    L2LocalAssembler::L2LocalAssembler(
+        const int dim,
+        const bool use_biorth,
+        const bool assemble_mass_mat,
+        const bool is_shell)
+    : dim(dim),
+    use_biorth(use_biorth),
+    must_compute_biorth(use_biorth),
+    // composite_ir(dim),
+    q_trial(dim),
+    q_test(dim),
+    assemble_mass_mat_(assemble_mass_mat),
+    max_n_quad_points_(0)
+    {
 
-		if(dim == 1) {
-			q_builder = std::make_shared<QMortarBuilder1>();
-		} else if(dim == 2) {
-			if(is_shell) {
-				q_builder = std::make_shared<QMortarBuilderShell2>();
-			} else {
-				q_builder = std::make_shared<QMortarBuilder2>();
-			}
-		} else {
-			assert(dim == 3);
-			q_builder = std::make_shared<QMortarBuilder3>(); 
-		} 
-	}
+        if(dim == 1) {
+            q_builder = std::make_shared<QMortarBuilder1>();
+        } else if(dim == 2) {
+            if(is_shell) {
+                q_builder = std::make_shared<QMortarBuilderShell2>();
+            } else {
+                q_builder = std::make_shared<QMortarBuilder2>();
+            }
+        } else {
+            assert(dim == 3);
+            q_builder = std::make_shared<QMortarBuilder3>();
+        }
+    }
 
-	L2LocalAssembler::~L2LocalAssembler()
-	{}
+    L2LocalAssembler::~L2LocalAssembler()
+    {}
 
-	bool L2LocalAssembler::assemble(
-		const Elem &trial,
-		FEType trial_type,
-		const Elem &test,
-		FEType test_type,
-		Matrix &mat
-		)
-	{
-		const int order = order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order);
+    bool L2LocalAssembler::assemble(
+        const Elem &trial,
+        FEType trial_type,
+        const Elem &test,
+        FEType test_type,
+        Matrix &mat
+        )
+    {
+        const int order = order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order);
 
-		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
-			return false;
-		}
+        if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
+            return false;
+        }
 
-		max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
+        max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
 
-		init_biorth(test, test_type);
-		init_fe(trial, trial_type, test, test_type);
+        init_biorth(test, test_type);
+        init_fe(trial, trial_type, test, test_type);
 
-		trial_fe->attach_quadrature_rule(&q_trial);
-		trial_fe->get_phi();
-		trial_fe->reinit(&trial);
+        trial_fe->attach_quadrature_rule(&q_trial);
+        trial_fe->get_phi();
+        trial_fe->reinit(&trial);
 
-		test_fe->attach_quadrature_rule(&q_test);
-		test_fe->get_phi();
-		test_fe->get_JxW();
-		test_fe->reinit(&test);
+        test_fe->attach_quadrature_rule(&q_test);
+        test_fe->get_phi();
+        test_fe->get_JxW();
+        test_fe->reinit(&test);
 
-		if(use_biorth) {
-			mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat);
-		} else {
-			mortar_assemble(*trial_fe, *test_fe, mat);
-		}
+        if(use_biorth) {
+            mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat);
+        } else {
+            mortar_assemble(*trial_fe, *test_fe, mat);
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	bool L2LocalAssembler::assemble(
-		const Elem &trial,
-		FEType trial_type,
-		const Elem &test,
-		FEType test_type,
-		std::vector<Matrix> &mat
-		) 
-	{
-		mat.resize(n_forms());
+    bool L2LocalAssembler::assemble(
+        const Elem &trial,
+        FEType trial_type,
+        const Elem &test,
+        FEType test_type,
+        std::vector<Matrix> &mat
+        )
+    {
+        mat.resize(n_forms());
 
-		if(!assemble_mass_mat_) {
-			return assemble(trial, trial_type, test, test_type, mat[0]);
-		}
-		
-		const int order = std::max(
-			order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order), 
-			order_for_l2_integral(dim, test, test_type.order, test, test_type.order)
-		);
+        if(!assemble_mass_mat_) {
+            return assemble(trial, trial_type, test, test_type, mat[0]);
+        }
+
+        const int order = std::max(
+            order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order),
+            order_for_l2_integral(dim, test, test_type.order, test, test_type.order)
+        );
 
 
-		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
-			return false;
-		}
+        if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
+            return false;
+        }
 
-		max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
+        max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
 
-		init_biorth(test, test_type);
-		init_fe(trial, trial_type, test, test_type);
+        init_biorth(test, test_type);
+        init_fe(trial, trial_type, test, test_type);
 
-		trial_fe->attach_quadrature_rule(&q_trial);
-		trial_fe->get_phi();
-		trial_fe->reinit(&trial);
+        trial_fe->attach_quadrature_rule(&q_trial);
+        trial_fe->get_phi();
+        trial_fe->reinit(&trial);
 
-		test_fe->attach_quadrature_rule(&q_test);
-		test_fe->get_phi();
-		test_fe->get_JxW();
-		test_fe->reinit(&test);
+        test_fe->attach_quadrature_rule(&q_test);
+        test_fe->get_phi();
+        test_fe->get_JxW();
+        test_fe->reinit(&test);
 
-		if(use_biorth) {
-			mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
-			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
-		} else {
-			mortar_assemble(*trial_fe, *test_fe, mat[0]);
-			mortar_assemble(*test_fe,  *test_fe, mat[1]);
-		}
+        if(use_biorth) {
+            mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
+            mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
+        } else {
+            mortar_assemble(*trial_fe, *test_fe, mat[0]);
+            mortar_assemble(*test_fe,  *test_fe, mat[1]);
+        }
 
-		assert(check(mat[0]));
-		assert(check(mat[1]));
+        assert(check(mat[0]));
+        assert(check(mat[1]));
 
-		return true;
+        return true;
 
-	}
+    }
 
-	// bool L2LocalAssembler::volume_to_side_assemble(
-	// 	const Elem &master,
-	// 	FEType master_type,
-	// 	const Elem &slave,
-	// 	FEType slave_type,
-	// 	const int slave_side_num,
-	// 	std::vector<Matrix> &mat) 
-	// {
-	// 	mat.resize(n_forms());
+    // bool L2LocalAssembler::volume_to_side_assemble(
+    // 	const Elem &master,
+    // 	FEType master_type,
+    // 	const Elem &slave,
+    // 	FEType slave_type,
+    // 	const int slave_side_num,
+    // 	std::vector<Matrix> &mat)
+    // {
+    // 	mat.resize(n_forms());
 
-	// 	auto trial_fe   = libMesh::FEBase::build(trial.dim(), trial_type);
-	// 	auto test_fe    = libMesh::FEBase::build(test.dim(),  test_type);
-		
-	// 	const int order = std::max(
-	// 		order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order), 
-	// 		order_for_l2_integral(dim, test, test_type.order, test, test_type.order)
-	// 	);
+    // 	auto trial_fe   = libMesh::FEBase::build(trial.dim(), trial_type);
+    // 	auto test_fe    = libMesh::FEBase::build(test.dim(),  test_type);
 
-	// 	auto side_ptr = test.build_side_ptr(slave_side_num);
+    // 	const int order = std::max(
+    // 		order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order),
+    // 		order_for_l2_integral(dim, test, test_type.order, test, test_type.order)
+    // 	);
 
-	// 	if(!q_builder->build(trial, trial_type, *side_ptr, test_type, q_trial, q_test)) {
-	// 		return false;
-	// 	}
+    // 	auto side_ptr = test.build_side_ptr(slave_side_num);
 
-	// 	init_biorth(test, test_type);
-	// 	init_fe(trial, trial_type, test, test_type);
+    // 	if(!q_builder->build(trial, trial_type, *side_ptr, test_type, q_trial, q_test)) {
+    // 		return false;
+    // 	}
 
-	// 	trial_fe->attach_quadrature_rule(&q_trial);
-	// 	trial_fe->get_phi();
-	// 	trial_fe->reinit(&trial);
+    // 	init_biorth(test, test_type);
+    // 	init_fe(trial, trial_type, test, test_type);
 
-	// 	test_fe->attach_quadrature_rule(&q_test);
-	// 	test_fe->get_phi();
-	// 	test_fe->get_JxW();
-	// 	test_fe->reinit(&test, slave_side_num);
+    // 	trial_fe->attach_quadrature_rule(&q_trial);
+    // 	trial_fe->get_phi();
+    // 	trial_fe->reinit(&trial);
 
-	// 	if(use_biorth) {
-	// 		mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
-	// 		if(assemble_mass_mat_) {
-	// 			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
-	// 		}
-	// 	} else {
-	// 		mortar_assemble(*trial_fe, *test_fe, mat[0]);
+    // 	test_fe->attach_quadrature_rule(&q_test);
+    // 	test_fe->get_phi();
+    // 	test_fe->get_JxW();
+    // 	test_fe->reinit(&test, slave_side_num);
 
-	// 		if(assemble_mass_mat_) {
-	// 			mortar_assemble(*test_fe,  *test_fe, mat[1]);
-	// 		}
-	// 	}
+    // 	if(use_biorth) {
+    // 		mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
+    // 		if(assemble_mass_mat_) {
+    // 			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
+    // 		}
+    // 	} else {
+    // 		mortar_assemble(*trial_fe, *test_fe, mat[0]);
 
-	// 	assert(check(mat[0]));
-	// 	assert(!assemble_mass_mat_ || check(mat[1]));
+    // 		if(assemble_mass_mat_) {
+    // 			mortar_assemble(*test_fe,  *test_fe, mat[1]);
+    // 		}
+    // 	}
 
-	// 	return true;
-	// }
+    // 	assert(check(mat[0]));
+    // 	assert(!assemble_mass_mat_ || check(mat[1]));
 
-	void L2LocalAssembler::init_fe(
-		const Elem &trial,
-		FEType trial_type,
-		const Elem &test,
-		FEType test_type)
-	{
-		if(trial_fe) return;
+    // 	return true;
+    // }
 
-		trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
-		test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
-	}
+    void L2LocalAssembler::init_fe(
+        const Elem &trial,
+        FEType trial_type,
+        const Elem &test,
+        FEType test_type)
+    {
+        if(trial_fe) return;
 
-	void L2LocalAssembler::init_biorth(const Elem &test, FEType test_type)
-	{
-		if(!use_biorth) return;
-		if(!must_compute_biorth) return;
+        trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
+        test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
+    }
 
-		assemble_biorth_weights(
-			test,
-			test.dim(),
-			test_type,
-			test_type.order,
-			biorth_weights);
+    void L2LocalAssembler::init_biorth(const Elem &test, FEType test_type)
+    {
+        if(!use_biorth) return;
+        if(!must_compute_biorth) return;
 
-		must_compute_biorth = false;
-	}
+        assemble_biorth_weights(
+            test,
+            test.dim(),
+            test_type,
+            test_type.order,
+            biorth_weights);
 
-	void L2LocalAssembler::assemble_biorth_weights(
-		const libMesh::Elem &el,
-		const int dim,
-		const libMesh::FEType &var_type,
-		const int el_order,
-		libMesh::DenseMatrix<libMesh::Real> &weights)
-	{
-		std::unique_ptr<libMesh::FEBase> biorth_elem = libMesh::FEBase::build(dim, var_type);
+        must_compute_biorth = false;
+    }
 
-		const int order = order_for_l2_integral(dim, el, el_order, el, el_order);
+    void L2LocalAssembler::assemble_biorth_weights(
+        const libMesh::Elem &el,
+        const int dim,
+        const libMesh::FEType &var_type,
+        const int el_order,
+        libMesh::DenseMatrix<libMesh::Real> &weights)
+    {
+        std::unique_ptr<libMesh::FEBase> biorth_elem = libMesh::FEBase::build(dim, var_type);
 
-		libMesh::QGauss qg(dim, libMesh::Order(order));
-		biorth_elem->attach_quadrature_rule(&qg);
-		biorth_elem->reinit(&el);
-		mortar_assemble_weights(*biorth_elem, weights);
-	}
+        const int order = order_for_l2_integral(dim, el, el_order, el, el_order);
 
-	void L2LocalAssembler::print_stats(std::ostream &os) const
-	{
-		os << "max-n-quad-points: " << max_n_quad_points_ << "\n";
-	}
+        libMesh::QGauss qg(dim, libMesh::Order(order));
+        biorth_elem->attach_quadrature_rule(&qg);
+        biorth_elem->reinit(&el);
+        mortar_assemble_weights(*biorth_elem, weights);
+    }
+
+    void L2LocalAssembler::print_stats(std::ostream &os) const
+    {
+        os << "max-n-quad-points: " << max_n_quad_points_ << "\n";
+    }
 }

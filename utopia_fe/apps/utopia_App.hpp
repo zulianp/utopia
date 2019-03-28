@@ -5,11 +5,11 @@
 #include <string>
 
 namespace utopia {
-	class App {
-	public:
-		virtual ~App() {}
-		virtual void run(Input &in) = 0;
-	};
+    class App {
+    public:
+        virtual ~App() {}
+        virtual void run(Input &in) = 0;
+    };
 }
 
 #endif //UTOPIA_APP_HPP
