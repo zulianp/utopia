@@ -3,7 +3,7 @@
 
 #ifdef WITH_INTREPID2
 #include <utopia_Intrepid2_Assembler.hpp>
-#include "utopia_libmesh.hpp"
+#include "../libmesh/utopia_libmesh.hpp"
 
 namespace utopia {
 
@@ -54,8 +54,8 @@ namespace utopia {
 		assembler.assemble(b_form, H);
 
 		disp(H);
-
-		apply_boundary_conditions(V.dof_map(), H, rhs);
+        //TODO FIXME
+		//apply_boundary_conditions(V.dof_map(), H, rhs);
 
 		TVectord x = local_zeros(local_size(rhs)); //UVector x
 		solve(H, rhs, x);
@@ -72,4 +72,3 @@ namespace utopia {
 	}
 
 #endif //WITH_INTREPID2
-
