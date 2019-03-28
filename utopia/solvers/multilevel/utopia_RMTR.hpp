@@ -98,11 +98,13 @@ namespace utopia
             in.get("hessian_update_eta", _hessian_update_eta);
             // in.get("verbosity_level", _verbosity_level);
 
-            if(_tr_subproblems.size() > 0) 
+            const auto n_subproblems = _tr_subproblems.size();
+
+            if(n_subproblems > 0) 
             {
                 in.get("coarse-QPSolver", *_tr_subproblems[0]);
 
-                for(auto i=1; i < _tr_subproblems.size(); i++)
+                for(std::size_t i = 1; i < n_subproblems; i++)
                     in.get("fine-QPSolver", *_tr_subproblems[i]);
             }
         }
