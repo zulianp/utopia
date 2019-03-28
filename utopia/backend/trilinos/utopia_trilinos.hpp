@@ -7,7 +7,6 @@
 // #include <mpi.h>
 #include <Teuchos_DefaultMpiComm.hpp>
 #include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
 #include <Tpetra_Map.hpp>
 #include <Tpetra_MultiVector.hpp>
 #include <Tpetra_Vector.hpp>

@@ -10,6 +10,7 @@
 #include <utility>
 #include <cmath>
 #include <TpetraExt_MatrixMatrix_def.hpp>
+#include <Tpetra_Core.hpp>
 
 namespace utopia {
     class TrilinosBackend : public ScalarBackend<TpetraVector::Scalar> {
