@@ -6,12 +6,12 @@
 
 
 namespace libMesh {
-	class LibMeshInit;
+    class LibMeshInit;
 }
 
 
 namespace utopia {
-	void run_intrepid2_test(libMesh::LibMeshInit &init);
+    void run_intrepid2_test(libMesh::LibMeshInit &init);
 }
 
 

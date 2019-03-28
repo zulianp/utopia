@@ -12,12 +12,12 @@
 
 //forward decl
 namespace moonolith {
-	class Communicator;
+    class Communicator;
 }
 
 namespace libMesh {
-	class MeshBase;
-	class DofMap;
+    class MeshBase;
+    class DofMap;
 }
 
 namespace utopia {

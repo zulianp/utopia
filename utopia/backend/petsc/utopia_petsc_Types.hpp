@@ -109,7 +109,7 @@ namespace utopia {
     {
         t.implementation().update_ghosts();
     }
-    
+
 
     UTOPIA_DEPRECATED_MSG("sparse_mref will be removed use wrap(Mat, DSMatrixd) instead")
     inline DSMatrixd sparse_mref(const Mat &m) {
@@ -128,7 +128,7 @@ namespace utopia {
     }
 
     ///////////////////////////////////////////////////////////////////////////////
-    
+
     UTOPIA_MAKE_PARALLEL_TRAITS(DMatrixd);
     UTOPIA_MAKE_PARALLEL_TRAITS(DVectord);
     UTOPIA_MAKE_PARALLEL_TRAITS(DSMatrixd);

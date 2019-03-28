@@ -4,7 +4,7 @@
 #include "utopia_FEApp.hpp"
 
 namespace utopia {
-	using FETest = utopia::FEApp;
+    using FETest = utopia::FEApp;
 }
 
 #endif //UTOPIA_FE_TEST_HPP

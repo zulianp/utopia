@@ -10,8 +10,8 @@
 
  namespace utopia
  {
-    	template<class Vector>
-     	class QuasiTrustRegion final: public TrustRegionBase<Vector>, public QuasiNewtonBase<Vector> 
+        template<class Vector>
+         class QuasiTrustRegion final: public TrustRegionBase<Vector>, public QuasiNewtonBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -20,24 +20,24 @@
         typedef utopia::HessianApproximation<Vector> HessianApproximation;
         typedef utopia::QuasiNewtonBase<Vector>     NonLinearSolver;
 
-     	public:
-      QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx, 
-                        const std::shared_ptr<TRSubproblem> &tr_subproblem): 
+         public:
+      QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx,
+                        const std::shared_ptr<TRSubproblem> &tr_subproblem):
                         NonLinearSolver(hessian_approx, tr_subproblem)
       {
-        
+
       }
 
       void read(Input &in) override
       {
-        TrustRegionBase<Vector>::read(in); 
-        QuasiNewtonBase<Vector>::read(in); 
+        TrustRegionBase<Vector>::read(in);
+        QuasiNewtonBase<Vector>::read(in);
       }
 
       void print_usage(std::ostream &os) const override
       {
-        TrustRegionBase<Vector>::print_usage(os); 
-        QuasiNewtonBase<Vector>::print_usage(os); 
+        TrustRegionBase<Vector>::print_usage(os);
+        QuasiNewtonBase<Vector>::print_usage(os);
       }
 
 
@@ -67,14 +67,14 @@
 
          bool rad_flg = false;
 
-         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)), x_trial; 
+         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)), x_trial;
 
         // #define DEBUG_mode
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
-        this->initialize_approximation(); 
-            
+        this->initialize_approximation();
+
         fun.gradient(x_k, g);
         g0_norm = norm2(g);
         g_norm = g0_norm;
@@ -99,7 +99,7 @@
         #endif
 
         it++;
-        auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
+        auto multiplication_action = this->hessian_approx_strategy_->build_apply_H();
 
         // solve starts here
         while(!converged)
@@ -110,19 +110,19 @@
     //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            p_k *= 0; 
-            tr_subproblem->current_radius(delta); 
-            tr_subproblem->solve(*multiplication_action, -1.0 * g, p_k);   
-            this->solution_status_.num_linear_solves++; 
+            p_k *= 0;
+            tr_subproblem->current_radius(delta);
+            tr_subproblem->solve(*multiplication_action, -1.0 * g, p_k);
+            this->solution_status_.num_linear_solves++;
           }
           else
           {
-            utopia_warning("TrustRegion::Set suitable TR subproblem.... \n "); 
+            utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
           }
 
 
-          x_trial = x_k + p_k; 
-          pred = this->get_pred(g, *multiplication_action, p_k); 
+          x_trial = x_k + p_k;
+          pred = this->get_pred(g, *multiplication_action, p_k);
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
@@ -156,24 +156,24 @@
           if (rho >= this->rho_tol())
             it_successful++;
 
-          // good reduction, accept trial point 
+          // good reduction, accept trial point
           if (rho >= this->rho_tol())
           {
             x_k += p_k;
 
-            y = g; 
+            y = g;
             fun.gradient(x_k, g);
-            y = g - y; 
+            y = g - y;
 
-            E_taken = E_new; 
-            
+            E_taken = E_new;
+
           }
           // otherwise, keep old point
           else
           {
-            Vector grad_trial; 
+            Vector grad_trial;
             fun.gradient(x_trial, grad_trial);
-            y = grad_trial - g;       
+            y = grad_trial - g;
 
             E_taken = E_old;
           }
@@ -183,8 +183,8 @@
     //----------------------------------------------------------------------------
     //    convergence check
     //----------------------------------------------------------------------------
-          norms2(g, p_k, g_norm, s_norm); 
-          r_norm = g_norm/g0_norm;                
+          norms2(g, p_k, g_norm, s_norm);
+          r_norm = g_norm/g0_norm;
 
           #ifdef DEBUG_mode
             if(this->verbose_)
@@ -202,14 +202,14 @@
           it++;
 
         }
-        
+
           return true;
       }
 
 
     void set_trust_region_strategy(const std::shared_ptr<TRSubproblem> &tr_linear_solver)
     {
-      NonLinearSolver::set_linear_solver(tr_linear_solver); 
+      NonLinearSolver::set_linear_solver(tr_linear_solver);
     }
 
 

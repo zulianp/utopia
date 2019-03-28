@@ -1,5 +1,5 @@
 #ifndef MFEML2P_MORTAR_ASSEMBLER_HPP
-#define MFEML2P_MORTAR_ASSEMBLER_HPP 
+#define MFEML2P_MORTAR_ASSEMBLER_HPP
 
 
 #include "utopia_LibMeshBackend.hpp"
@@ -16,7 +16,7 @@ namespace utopia {
 // 	// public:
 
 // 	// 	MortarAssembler(
-// 	// 		const std::shared_ptr<LibMeshFESpaceBase> &master, 
+// 	// 		const std::shared_ptr<LibMeshFESpaceBase> &master,
 // 	// 		const std::shared_ptr<LibMeshFESpaceBase> &slave);
 
 // 	// 	 bool assemble(USparseMatrix &B);
@@ -30,7 +30,7 @@ namespace utopia {
 
 // 	// 	private:
 // 	// 		std::shared_ptr<LibMeshFESpaceBase> master_;
-// 	// 		std::shared_ptr<LibMeshFESpaceBase> slave_;	
+// 	// 		std::shared_ptr<LibMeshFESpaceBase> slave_;
 
 // 	// 		bool use_biorth_;
 // 	// };
@@ -40,77 +40,77 @@ namespace utopia {
 // 	static const ushort UNASSIGNED = 0;
 // 	static const ushort REMOVED    = 3;
 
-	class ContactAssembly {
-	public:
-		typedef libMesh::Real RealT;
+    class ContactAssembly {
+    public:
+        typedef libMesh::Real RealT;
 
-		long parent_element_master;
-		int side_number_master;
-		long id_master;
+        long parent_element_master;
+        int side_number_master;
+        long id_master;
 
-		long parent_element_slave;
-		int side_number_slave;
-		long id_slave;
+        long parent_element_slave;
+        int side_number_slave;
+        long id_slave;
 
-		RealT relative_area;
-		RealT isect_area;
-		
-		RealT avg_gap;
+        RealT relative_area;
+        RealT isect_area;
 
-		libMesh::DenseMatrix<RealT> coupling;
-		libMesh::DenseVector<RealT> gap;
-		libMesh::DenseMatrix<RealT> normals;
+        RealT avg_gap;
 
-		bool is_valid; 
+        libMesh::DenseMatrix<RealT> coupling;
+        libMesh::DenseVector<RealT> gap;
+        libMesh::DenseMatrix<RealT> normals;
 
-		friend bool operator<(const ContactAssembly &left, const ContactAssembly &right) {
-			if(!left.is_valid) {
-				return false;
-			}
+        bool is_valid;
 
-			if(!right.is_valid) {
-				return true;
-			}
+        friend bool operator<(const ContactAssembly &left, const ContactAssembly &right) {
+            if(!left.is_valid) {
+                return false;
+            }
 
-			if(std::abs(left.avg_gap) < std::abs(right.avg_gap)) {
-				return true;
-			}
+            if(!right.is_valid) {
+                return true;
+            }
 
-			if(std::abs(left.avg_gap) > std::abs(right.avg_gap)) {
-				return false;
-			}
+            if(std::abs(left.avg_gap) < std::abs(right.avg_gap)) {
+                return true;
+            }
 
-			if(left.id_slave < right.id_slave) {
-				return true;
-			}
+            if(std::abs(left.avg_gap) > std::abs(right.avg_gap)) {
+                return false;
+            }
 
-			if(left.id_slave > right.id_slave) {
-				return false;
-			}
+            if(left.id_slave < right.id_slave) {
+                return true;
+            }
 
-			return left.id_master < right.id_master;
-		}
+            if(left.id_slave > right.id_slave) {
+                return false;
+            }
 
-		void describe(std::ostream &os = std::cout) const
-		{
-			os << "-------------------------------------\n";
-			os << id_master << ", " << id_slave << "\n";
-			os << "gap:\n";
-			gap.print(os);
-			os << "\n";
-			os << "relative_area: " << relative_area << "\n";
-			os << "normals:\n";
-			normals.print(os);
-			os << "\n";
+            return left.id_master < right.id_master;
+        }
 
-			os << "coupling:\n";
-			coupling.print(os);
-			os << "\n";
-			os << "-------------------------------------\n";
-		}
+        void describe(std::ostream &os = std::cout) const
+        {
+            os << "-------------------------------------\n";
+            os << id_master << ", " << id_slave << "\n";
+            os << "gap:\n";
+            gap.print(os);
+            os << "\n";
+            os << "relative_area: " << relative_area << "\n";
+            os << "normals:\n";
+            normals.print(os);
+            os << "\n";
 
-		void finalize();
-	};
+            os << "coupling:\n";
+            coupling.print(os);
+            os << "\n";
+            os << "-------------------------------------\n";
+        }
+
+        void finalize();
+    };
 
 // 	static void build_dag(std::vector< std::shared_ptr<ContactAssembly> > &contacts, std::vector< std::vector<long> > &dag, std::vector<long> &ordering);
 // 	static void assign_master_and_slave_roles(const std::vector< std::vector<long> > &dag, const std::vector<long> &ordering, const std::vector< std::vector<long> > &adj_list, std::vector<ushort> &role);
@@ -123,7 +123,7 @@ namespace utopia {
 // 	// 	{
 // 	// 		this->strict_gap_policy = strict_gap_policy;
 // 	// 	}
-		
+
 
 // 	// 	MortarContactAssembler(const std::shared_ptr<LibMeshFESpaceBase> &space);
 // 	// 	bool assemble(USparseMatrix &coupling, UVector &gap, UVector &normals, USparseMatrix &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate = std::shared_ptr<moonolith::Predicate>());
@@ -132,7 +132,7 @@ namespace utopia {
 // 	// 		std::shared_ptr<LibMeshFESpaceBase> space_;
 // 	// 		bool strict_gap_policy;
 
-			
+
 // 	// };
 
 }

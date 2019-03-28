@@ -10,7 +10,7 @@
 
 
 
- namespace utopia 
+ namespace utopia
  {
         /**
          * @brief      The class for transfer operators.
@@ -32,52 +32,52 @@
 
         bool interpolate(const Vector &x, Vector &x_new) const override
         {
-            x_new = x; 
-            return true; 
+            x_new = x;
+            return true;
         }
 
 
         bool restrict(const Vector &x, Vector &x_new) const override
         {
-            x_new = x; 
-            return true; 
+            x_new = x;
+            return true;
         }
 
 
         bool boolean_restrict_or(const Vector &x, Vector &x_new) override
         {
-            x_new = x; 
-            return true; 
+            x_new = x;
+            return true;
         }
 
 
         bool restrict(const Matrix &M, Matrix &M_new) const override
         {
-            M_new = M; 
-            return true; 
+            M_new = M;
+            return true;
         }
 
 
         bool project_down(const Vector &x, Vector &x_new) const override
         {
-            x_new = x; 
-            return true; 
+            x_new = x;
+            return true;
         }
 
 
         Scalar interpolation_inf_norm() const override
         {
-            return 1.0; 
+            return 1.0;
         }
 
         Scalar projection_inf_norm() const override
         {
-            return 1.0; 
+            return 1.0;
         }
 
         Scalar restriction_inf_norm() const override
         {
-            return 1.0; 
+            return 1.0;
         }
 
 

@@ -140,7 +140,7 @@ PETSC_DIR  = ${PETSC_DIR}
 PETSC_ARCH = ${PETSC_ARCH}
 -include ${PETSC_VARIABLES_FILE}
 show :
-	-@echo -n \${\${VARIABLE}}
+    -@echo -n \${\${VARIABLE}}
 ")
 
 
@@ -176,7 +176,7 @@ show :
     if(NOT GFORTRAN_EXECUTABLE)
       find_program(GFORTRAN_EXECUTABLE gfortran-mp-6)
     endif()
-    
+
     if(NOT GFORTRAN_EXECUTABLE)
       find_program(GFORTRAN_EXECUTABLE gfortran-mp-5)
     endif()
@@ -242,8 +242,8 @@ elseif (FOUND_PETSC_CONF)
 
 int main() {
   std::cout << PETSC_VERSION_MAJOR << \".\"
-	    << PETSC_VERSION_MINOR << \".\"
-	    << PETSC_VERSION_SUBMINOR;
+        << PETSC_VERSION_MINOR << \".\"
+        << PETSC_VERSION_SUBMINOR;
   return 0;
 }
 ")

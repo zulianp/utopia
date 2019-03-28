@@ -20,7 +20,7 @@ namespace utopia {
 
         typedef utopia::CCSMatrix<T> CCSMatrix;
         typedef typename std::vector<T>::size_type SizeType;
-        
+
         enum {
             Backend = BLAS
         };

@@ -27,7 +27,7 @@ namespace utopia {
         cg.max_it(n);
         cg.solve(m, y, sol);
 
-        CuVectord r = y - m * sol; 
+        CuVectord r = y - m * sol;
         double err = norm2(r);
         utopia_test_assert(err < 1e-10);
     }
@@ -54,7 +54,7 @@ namespace utopia {
         ksp.max_it(n);
         ksp.solve(m, b, x);
 
-        Vector r = b - m * x; 
+        Vector r = b - m * x;
         double err = norm2(r);
         utopia_test_assert(err < 1e-10);
     }

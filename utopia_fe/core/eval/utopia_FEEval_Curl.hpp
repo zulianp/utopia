@@ -7,21 +7,21 @@
 
 namespace utopia {
 
-	template<class Tensor, class Traits, int Backend, int IsQuadData>
-	class FEEval<Curl<Tensor>, Traits, Backend, IsQuadData> {
-	public:
-		typedef utopia::Curl<Tensor> Expr;
-		typedef typename Traits::CurlType CurlT;
+    template<class Tensor, class Traits, int Backend, int IsQuadData>
+    class FEEval<Curl<Tensor>, Traits, Backend, IsQuadData> {
+    public:
+        typedef utopia::Curl<Tensor> Expr;
+        typedef typename Traits::CurlType CurlT;
 
-	    template<template<class> class Function, class Spaces>
-	    inline static auto apply(
-	    	const Curl< Function<ProductFunctionSpace<Spaces> > > &expr,
-	    	AssemblyContext<Backend> &ctx) -> CurlT
-	    {
-	    	const auto & space_ptr = expr.expr().space_ptr();
-	    	return FEBackend<Backend>::curl(expr.expr(), ctx);
-	    }
-	};
+        template<template<class> class Function, class Spaces>
+        inline static auto apply(
+            const Curl< Function<ProductFunctionSpace<Spaces> > > &expr,
+            AssemblyContext<Backend> &ctx) -> CurlT
+        {
+            const auto & space_ptr = expr.expr().space_ptr();
+            return FEBackend<Backend>::curl(expr.expr(), ctx);
+        }
+    };
 
 }
 

@@ -15,73 +15,73 @@
 
 namespace utopia {
 
-	class InputStream;
+    class InputStream;
 
-	class GaitCycle final : public Configurable {
-	public:
+    class GaitCycle final : public Configurable {
+    public:
 
-		////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
 
-		class Configuration : public Configurable {
-		public:
-			Configuration() {}
-			virtual ~Configuration() {}
+        class Configuration : public Configurable {
+        public:
+            Configuration() {}
+            virtual ~Configuration() {}
 
-			virtual void update(const int time_step) = 0;
-			virtual void init(ProductFunctionSpace<LibMeshFunctionSpace> &) {}
-			virtual void describe(std::ostream &) const {}
+            virtual void update(const int time_step) = 0;
+            virtual void init(ProductFunctionSpace<LibMeshFunctionSpace> &) {}
+            virtual void describe(std::ostream &) const {}
 
-			virtual void displacement_and_forces(
-				ProductFunctionSpace<LibMeshFunctionSpace> &space,
-				UVector &displacement,
-				UVector &forces) const = 0;
+            virtual void displacement_and_forces(
+                ProductFunctionSpace<LibMeshFunctionSpace> &space,
+                UVector &displacement,
+                UVector &forces) const = 0;
 
-			virtual int n_steps() const = 0;
-			virtual double dt() const = 0;
-		};
+            virtual int n_steps() const = 0;
+            virtual double dt() const = 0;
+        };
 
-		////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
 
-		GaitCycle();
-		void read(Input &is) override;
-		void update(const std::size_t time_step);	
-		
-		inline int n_steps() const  {
-			return conf_->n_steps();
-		}
+        GaitCycle();
+        void read(Input &is) override;
+        void update(const std::size_t time_step);
 
-		inline void init(ProductFunctionSpace<LibMeshFunctionSpace> &space) {
-			conf_->init(space);
-		}
+        inline int n_steps() const  {
+            return conf_->n_steps();
+        }
 
-		void displacement_and_forces(
-			ProductFunctionSpace<LibMeshFunctionSpace> &space,
-			UVector &displacement,
-			UVector &forces) const;
+        inline void init(ProductFunctionSpace<LibMeshFunctionSpace> &space) {
+            conf_->init(space);
+        }
 
-		virtual void describe(std::ostream &os) const 
-		{
-			if(conf_) conf_->describe(os);
-		}
+        void displacement_and_forces(
+            ProductFunctionSpace<LibMeshFunctionSpace> &space,
+            UVector &displacement,
+            UVector &forces) const;
 
-		Configuration &conf()
-		{
-			assert(conf_);
-			return *conf_;
-		}
+        virtual void describe(std::ostream &os) const
+        {
+            if(conf_) conf_->describe(os);
+        }
 
-
-		const Configuration &conf() const
-		{
-			assert(conf_);
-			return *conf_;
-		}
+        Configuration &conf()
+        {
+            assert(conf_);
+            return *conf_;
+        }
 
 
-		std::shared_ptr<Configuration> conf_;
-		std::map<std::string, std::shared_ptr<Configuration>> conf_types_;	
-	};
+        const Configuration &conf() const
+        {
+            assert(conf_);
+            return *conf_;
+        }
+
+
+        std::shared_ptr<Configuration> conf_;
+        std::map<std::string, std::shared_ptr<Configuration>> conf_types_;
+    };
 }
 
 #endif //UTOPIA_GAIT_CYCLE_HPP

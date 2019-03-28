@@ -31,11 +31,11 @@ namespace utopia  {
     /*!
      * @ingroup  parallel_expressions
      * @brief  Extracts square diagonal blocks from parallel distributed matrix and assigns them to the local matrices. \n
-     *             The ordering of blocks corresponds to the ordering of the  MPI_rank. 
+     *             The ordering of blocks corresponds to the ordering of the  MPI_rank.
      *
      */
     template<class Derived>
-    LocalDiagBlock<Derived> local_diag_block(const Expression<Derived> &expr) 
+    LocalDiagBlock<Derived> local_diag_block(const Expression<Derived> &expr)
     {
         return LocalDiagBlock<Derived>(expr.derived());
     }

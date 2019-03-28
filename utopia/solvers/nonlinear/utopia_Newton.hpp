@@ -35,7 +35,7 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
-        typedef utopia::LSStrategy<Vector>                  LSStrategy; 
+        typedef utopia::LSStrategy<Vector>                  LSStrategy;
 
     public:
         Newton(const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
@@ -75,7 +75,7 @@ namespace utopia
                 //find direction step
                 step = local_zeros(local_size(x));
 
-                if(this->has_preconditioned_solver() && fun.has_preconditioner()) 
+                if(this->has_preconditioned_solver() && fun.has_preconditioner())
                 {
                     fun.hessian(x, hessian, preconditioner);
                     this->linear_solve(hessian, preconditioner, -grad, step);
@@ -85,10 +85,10 @@ namespace utopia
                 }
 
                 if(ls_strategy_) {
-                    
-                    ls_strategy_->get_alpha(fun, grad, x, step, alpha_); 
+
+                    ls_strategy_->get_alpha(fun, grad, x, step, alpha_);
                     x += alpha_ * step;
-                } else { 
+                } else {
                     //update x
                     if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
                     {
@@ -105,7 +105,7 @@ namespace utopia
                 fun.gradient(x, grad);
 
                 // norms needed for convergence check
-                norms2(grad, step, g_norm, s_norm); 
+                norms2(grad, step, g_norm, s_norm);
                 r_norm = g_norm/g0_norm;
 
 
@@ -118,7 +118,7 @@ namespace utopia
                 it++;
             }
 
-            this->print_statistics(it); 
+            this->print_statistics(it);
 
             return true;
         }
@@ -137,28 +137,28 @@ namespace utopia
     {
         NewtonBase<Matrix, Vector>::print_usage(os);
 
-        this->print_param_usage(os, "dumping", "real", "Default step size.", "1.0"); 
-        this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-"); 
+        this->print_param_usage(os, "dumping", "real", "Default step size.", "1.0");
+        this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-");
     }
 
 
 
     /**
-     * @brief      Sets strategy for computing step-size. 
+     * @brief      Sets strategy for computing step-size.
      *
      * @param[in]  strategy  The line-search strategy.
      *
-     * @return     
+     * @return
      */
     void set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
     {
-      ls_strategy_ = strategy; 
+      ls_strategy_ = strategy;
     }
 
 
     private:
         Scalar alpha_;   /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
+        std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
 
     };
 

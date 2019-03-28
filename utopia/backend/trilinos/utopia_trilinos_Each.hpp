@@ -131,19 +131,19 @@ namespace utopia {
         template<class Fun>
         inline static void apply_read(const TVectord &v, Fun fun)
         {
-        	auto impl = raw_type(v);
-        	auto view = impl->getLocalView<Kokkos::HostSpace>();
-        	auto map  = impl->getMap()->getLocalMap();
+            auto impl = raw_type(v);
+            auto view = impl->getLocalView<Kokkos::HostSpace>();
+            auto map  = impl->getMap()->getLocalMap();
 
-        	const auto r = range(v);
+            const auto r = range(v);
 
-        	For<>::apply(
-        		0,
-        		r.extent(),
-        		[&map, &view, &fun](const std::size_t i) {
-        			fun(map.getGlobalElement(i), view(i, 0));
-        		}
-        	);
+            For<>::apply(
+                0,
+                r.extent(),
+                [&map, &view, &fun](const std::size_t i) {
+                    fun(map.getGlobalElement(i), view(i, 0));
+                }
+            );
         }
 
         template<class Fun>
@@ -156,11 +156,11 @@ namespace utopia {
             const auto r = range(v);
 
             For<>::apply(
-            	0,
-            	r.extent(),
-            	[&map, &view, &fun](const std::size_t i) {
-            		view(i, 0) = fun(map.getGlobalElement(i));
-            	}
+                0,
+                r.extent(),
+                [&map, &view, &fun](const std::size_t i) {
+                    view(i, 0) = fun(map.getGlobalElement(i));
+                }
             );
         }
 
@@ -176,12 +176,12 @@ namespace utopia {
                 auto map  = impl->getMap()->getLocalMap();
 
                 For<>::apply(
-                	0,
-                	r.extent(),
-                	[&map, &view, &fun](const std::size_t i) {
-                		auto &val = view(i, 0);
-                		val = fun(map.getGlobalElement(i), val);
-                	}
+                    0,
+                    r.extent(),
+                    [&map, &view, &fun](const std::size_t i) {
+                        auto &val = view(i, 0);
+                        val = fun(map.getGlobalElement(i), val);
+                    }
                 );
 
             } else {
@@ -196,14 +196,14 @@ namespace utopia {
                 auto map_out  = impl_out->getMap()->getLocalMap();
 
                 For<>::apply(
-                	0,
-                	r.extent(),
-                	[&view_in, &map_in, &view_out, map_out, &fun](const std::size_t i) {;
-                		assert(map_in.getGlobalElement(i) == map_out.getGlobalElement(i));
+                    0,
+                    r.extent(),
+                    [&view_in, &map_in, &view_out, map_out, &fun](const std::size_t i) {;
+                        assert(map_in.getGlobalElement(i) == map_out.getGlobalElement(i));
 
-                		const auto &val = view_in(i, 0);
-                		view_out(i, 0) = fun(map_in.getGlobalElement(i), val);
-                	}
+                        const auto &val = view_in(i, 0);
+                        view_out(i, 0) = fun(map_in.getGlobalElement(i), val);
+                    }
                 );
             }
         }
@@ -213,7 +213,7 @@ namespace utopia {
     template<class Fun>
     inline void each_transform(TVectord &in_out, Fun fun)
     {
-    	each_transform(in_out, in_out, fun);
+        each_transform(in_out, in_out, fun);
     }
 
 }

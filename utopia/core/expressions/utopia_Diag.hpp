@@ -74,7 +74,7 @@ namespace utopia {
 
     /**
      * @ingroup     reductions
-     * @brief       \f$  diag( \cdot ) \f$ 
+     * @brief       \f$  diag( \cdot ) \f$
      */
     template<class Derived>
     Diag<Derived> diag(const Expression<Derived> &expr) {

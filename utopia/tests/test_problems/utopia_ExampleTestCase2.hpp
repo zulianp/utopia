@@ -1,6 +1,6 @@
 /*! \file utopia_ExampleTestCase2.hpp
-     Nonlinear Semismooth Newton method 
-     Created by Alena Kopanicakova 
+     Nonlinear Semismooth Newton method
+     Created by Alena Kopanicakova
 */
 
 #ifndef UTOPIA_SOLVER_EXAMPLE_TEST_CASE2_HPP
@@ -10,16 +10,16 @@
 #include <vector>
 
 
-namespace utopia 
+namespace utopia
 {
     /**
-     * @brief      Example used for testing Nonlinear Semismooth method. 
+     * @brief      Example used for testing Nonlinear Semismooth method.
      *
-     * @tparam     Matrix 
-     * @tparam     Vector 
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class ExampleTestCase2 
+    class ExampleTestCase2
     {
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
 
@@ -32,9 +32,9 @@ namespace utopia
         /**
          * @brief      Assembles operators.
          *
-         * @param[in]  N     The problem size. 
+         * @param[in]  N     The problem size.
          */
-        void assembly(SizeType N) 
+        void assembly(SizeType N)
         {
             const Scalar h = 1.0 / (N - 1);
             A = sparse(N, N, 3);
@@ -48,7 +48,7 @@ namespace utopia
 
                     const Scalar inv_2h = (1. / (h * h));
 
-                    // diag 
+                    // diag
                     A.set(i, i, 2.0 * inv_2h);
 
                     // upper diag
@@ -104,9 +104,9 @@ namespace utopia
          * @brief      Gets the operators.
          *
          * @param[in]  N      The problem size.
-         * @param      A_out  The stifness matrix. 
+         * @param      A_out  The stifness matrix.
          * @param      b_out  The constraints.
-         * @param      g_out  The upper bound. 
+         * @param      g_out  The upper bound.
          */
         void getOperators(const SizeType N, Matrix &A_out, Vector &b_out, Vector &g_out) {
             this->assembly(N);

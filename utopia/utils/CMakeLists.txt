@@ -1,5 +1,5 @@
 list(APPEND UTILS_MODULES
-	.
+    .
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR UTILS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
@@ -12,19 +12,19 @@ find_package(MPIExtended)
 
 
 if(TRY_WITH_MPI)
-	if(MPI_FOUND)
-		list(APPEND UTOPIA_INCLUDES ${MPI_CXX_INCLUDE_PATH})
-		list(APPEND UTOPIA_LIBRARIES  ${MPI_CXX_LIBRARIES} )
+    if(MPI_FOUND)
+        list(APPEND UTOPIA_INCLUDES ${MPI_CXX_INCLUDE_PATH})
+        list(APPEND UTOPIA_LIBRARIES  ${MPI_CXX_LIBRARIES} )
 
-		target_include_directories(utopia_utils PUBLIC ${MPI_CXX_INCLUDE_PATH})
-		# target_link_libraries(utopia_utils utopia_core ${MPI_CXX_LIBRARIES} )
-		target_link_libraries(utopia_utils ${MPI_CXX_LIBRARIES})
+        target_include_directories(utopia_utils PUBLIC ${MPI_CXX_INCLUDE_PATH})
+        # target_link_libraries(utopia_utils utopia_core ${MPI_CXX_LIBRARIES} )
+        target_link_libraries(utopia_utils ${MPI_CXX_LIBRARIES})
 
 
-		message(STATUS "WHAT: ${MPI_CXX_INCLUDE_PATH} ${MPI_CXX_LIBRARIES}")
-		
-		set(WITH_MPI TRUE PARENT_SCOPE)
-	endif()
+        message(STATUS "WHAT: ${MPI_CXX_INCLUDE_PATH} ${MPI_CXX_LIBRARIES}")
+
+        set(WITH_MPI TRUE PARENT_SCOPE)
+    endif()
 endif()
 
 
@@ -32,10 +32,10 @@ endif()
 set_utopia_compiler_features(utopia_utils)
 
 install(TARGETS utopia_utils
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
-	)
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    )
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)
 

@@ -1,5 +1,5 @@
 #ifndef UTOPIA_FE_HOMEMADE_HPP
-#define UTOPIA_FE_HOMEMADE_HPP 
+#define UTOPIA_FE_HOMEMADE_HPP
 
 #include "utopia_homemade_AssemblyContext.hpp"
 #include "utopia_homemade_FE.hpp"

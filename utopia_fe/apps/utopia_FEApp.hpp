@@ -11,23 +11,23 @@
 
 namespace utopia {
 
-	class FEApp : public App {
-	public:
-		virtual ~FEApp() {}
-		
-		inline void init(libMesh::Parallel::Communicator &comm) 
-		{
-			comm_ = utopia::make_ref(comm);
-		}
+    class FEApp : public App {
+    public:
+        virtual ~FEApp() {}
 
-		inline libMesh::Parallel::Communicator &comm()
-		{
-			return *comm_;
-		}
+        inline void init(libMesh::Parallel::Communicator &comm)
+        {
+            comm_ = utopia::make_ref(comm);
+        }
 
-	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
-	};
+        inline libMesh::Parallel::Communicator &comm()
+        {
+            return *comm_;
+        }
+
+    private:
+        std::shared_ptr<libMesh::Parallel::Communicator> comm_;
+    };
 }
 
 #endif //UTOPIA_FE_APP_HPP

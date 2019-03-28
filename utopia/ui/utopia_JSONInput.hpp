@@ -11,32 +11,32 @@
 
 namespace utopia {
 
-	class JSONInput final : public Input {
-	public:
-		JSONInput();
-		~JSONInput();
+    class JSONInput final : public Input {
+    public:
+        JSONInput();
+        ~JSONInput();
 
-		bool open(const Path &path);
+        bool open(const Path &path);
 
-		SizeType size() const override;
-		void get(std::vector<std::shared_ptr<IConvertible>> &values) override;
-		void get_all(std::function<void(Input &)> lambda) override;
-		void get(const std::string &key, bool &val) override;
-		void get(const std::string &key, double &val) override;
-		void get(const std::string &key, int &val) override;
-		void get(const std::string &key, long &val) override;
-		void get(const std::string &key, unsigned long &val) override;
-		// void get(const std::string &key, SizeType &val) override;
-		void get(const std::string &key, std::string &val) override;
-		void get(const std::string &key, Configurable &val) override;
-		void get(const std::string &key, std::function<void(Input &)> lambda) override;
-		bool good() const override;
+        SizeType size() const override;
+        void get(std::vector<std::shared_ptr<IConvertible>> &values) override;
+        void get_all(std::function<void(Input &)> lambda) override;
+        void get(const std::string &key, bool &val) override;
+        void get(const std::string &key, double &val) override;
+        void get(const std::string &key, int &val) override;
+        void get(const std::string &key, long &val) override;
+        void get(const std::string &key, unsigned long &val) override;
+        // void get(const std::string &key, SizeType &val) override;
+        void get(const std::string &key, std::string &val) override;
+        void get(const std::string &key, Configurable &val) override;
+        void get(const std::string &key, std::function<void(Input &)> lambda) override;
+        bool good() const override;
 
-	private:
+    private:
 
-		class Impl;
-		std::unique_ptr<Impl> impl_;
-	};
+        class Impl;
+        std::unique_ptr<Impl> impl_;
+    };
 }
 
 #endif //WITH_JSON

@@ -1,6 +1,6 @@
 /*! \file utopia_NonlinSemismoothNewton.hpp
-    Nonlinear Semismooth Newton method 
-    Created by Alena Kopanicakova 
+    Nonlinear Semismooth Newton method
+    Created by Alena Kopanicakova
 */
 
 #ifndef UTOPIA_SOLVER_NONLINSEMISMOOTH_NEWTON_HPP
@@ -9,20 +9,20 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
-#include "utopia_BoxConstraints.hpp"  
+#include "utopia_BoxConstraints.hpp"
 #include "utopia_Core.hpp"
 #include <vector>
 
-namespace utopia 
-{   
+namespace utopia
+{
     /**
-     * @brief      Nonlinear Semi-smooth solver. 
+     * @brief      Nonlinear Semi-smooth solver.
      *
-     * @tparam     Matrix 
-     * @tparam     Vector 
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class NonlinSemismoothNewton : public NewtonBase<Matrix, Vector> 
+    class NonlinSemismoothNewton : public NewtonBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -30,13 +30,13 @@ namespace utopia
         typedef utopia::BoxConstraints<Vector>      BoxConstraints;
 
     public:
-       NonlinSemismoothNewton(  const std::shared_ptr <Solver> &linear_solver): 
+       NonlinSemismoothNewton(  const std::shared_ptr <Solver> &linear_solver):
                                 NewtonBase<Matrix, Vector>(linear_solver)
-        {  
+        {
 
         }
 
-        bool solve(Function<Matrix, Vector> & fun, Vector & x_new) override 
+        bool solve(Function<Matrix, Vector> & fun, Vector & x_new) override
         {
 
          using namespace utopia;
@@ -55,11 +55,11 @@ namespace utopia
          Matrix Hessian;
          Vector grad;
 
-        Vector upbo; 
+        Vector upbo;
         if(constraints_->has_upper_bound())
-            upbo = *constraints_->upper_bound(); 
+            upbo = *constraints_->upper_bound();
         else
-            std::cout<<"NonlinSemismoothNewton does not support other types at the moment.... \n"; 
+            std::cout<<"NonlinSemismoothNewton does not support other types at the moment.... \n";
 
 
          this->linear_solve(G, upbo, Ginvg);
@@ -68,10 +68,10 @@ namespace utopia
          this->init_solver("NON-LINEAR - SEMISMOOTH NEWTON METHOD", { " it. ", " err " });
 
          while(!converged) {
-            // this is super expensive 
-            d = lambda + c * (G * x_new - upbo); 
+            // this is super expensive
+            d = lambda + c * (G * x_new - upbo);
 
-            //! active, inactive constraints 
+            //! active, inactive constraints
             if(is_sparse<Matrix>::value) {
                 Ac = local_sparse(local_N, local_N, 1);
                 Ic = local_sparse(local_N, local_N, 1);
@@ -79,16 +79,16 @@ namespace utopia
                 Ac = local_zeros({ local_N, local_N });
                 Ic = local_zeros({ local_N, local_N });
             }
-            
+
             {
                 Read<Vector> r (d);
                 Write<Matrix> w_Ac (Ac);
                 Write<Matrix> w_Ic (Ic);
-                
-                const Range rr = row_range(Ac);    
+
+                const Range rr = row_range(Ac);
 
                 for ( SizeType i = rr.begin(); i != rr.end(); i ++){
-                    if(d.get(i) > 0){    
+                    if(d.get(i) > 0){
                         Ac.set(i, i, 1.0);
                     } else {
                         Ic.set(i, i, 1.0);
@@ -107,9 +107,9 @@ namespace utopia
 
             Scalar err = norm2(x_new - x_old);
 
-                // print iteration status on every iteration 
+                // print iteration status on every iteration
             if(this->verbose_)
-                PrintInfo::print_iter_status(iterations, {err}); 
+                PrintInfo::print_iter_status(iterations, {err});
 
 
                 // check convergence and print interation info
@@ -123,18 +123,18 @@ namespace utopia
 
         virtual bool set_box_constraints(const std::shared_ptr<BoxConstraints> & box)
         {
-          constraints_ = box; 
-          return true; 
+          constraints_ = box;
+          return true;
         }
 
         virtual std::shared_ptr<BoxConstraints> get_box_constraints() const
         {
-          return constraints_; 
+          return constraints_;
         }
 
-    
+
     private:
-        std::shared_ptr<BoxConstraints> constraints_; 
+        std::shared_ptr<BoxConstraints> constraints_;
 };
 
 }

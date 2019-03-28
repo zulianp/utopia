@@ -12,28 +12,28 @@
 #include "utopia_StoreAs.hpp"
 #include <string>
 
-namespace utopia {   
+namespace utopia {
     /**
-     * @brief  
+     * @brief
      *
      * @tparam     Left   The vector with stored values.
-     * @tparam     Right  The vector defining shape. 
-     * @tparam     Result  The left vector with local distribution of right vector. 
+     * @tparam     Right  The vector defining shape.
+     * @tparam     Result  The left vector with local distribution of right vector.
      */
     template<class Left, class Right>
-    class LocalRedistribute : public Expression< LocalRedistribute<Left, Right> > 
+    class LocalRedistribute : public Expression< LocalRedistribute<Left, Right> >
     {
     public:
         LocalRedistribute(const Left &left, const Right &right)
                 : _left(left), _right(right)
         {}
 
-        inline const Left &left() const 
+        inline const Left &left() const
         {
             return _left;
         }
 
-        inline const Right &right() const 
+        inline const Right &right() const
         {
             return _right;
         }
@@ -59,15 +59,15 @@ namespace utopia {
      * @ingroup  parallel_expressions
      * @brief      Reshapes local sizes of vector x, according to the distribution of shape vector, while preserving data of the original vector.
 
-     * @note       Global sizes of vectors x and shape vector have to be same. 
+     * @note       Global sizes of vectors x and shape vector have to be same.
      *
-     * @param[in]  left          The vector to be reshaped. 
-     * @param[in]  shape_vector  The vector defining new shape. 
+     * @param[in]  left          The vector to be reshaped.
+     * @param[in]  shape_vector  The vector defining new shape.
      *
-     * @tparam     Left          
-     * @tparam     Right         
+     * @tparam     Left
+     * @tparam     Right
      *
-     * @return     
+     * @return
      */
     template<class Left, class Right>
     inline LocalRedistribute<Left, Right> redistribute_as(const Expression<Left> &left, const Expression<Right> &shape_vector)

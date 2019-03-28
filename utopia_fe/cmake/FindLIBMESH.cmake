@@ -45,11 +45,11 @@ endforeach()
 set(LIBMESH_DEFINITIONS ${PC_LIBMESH_CFLAGS_STRIPPED})
 
 find_path(LIBMESH_INCLUDE_DIR libmesh/libmesh.h
-  HINTS 
+  HINTS
    ${LIBMESH_DIR}/include
-  $ENV{LIBMESH_DIR}/include 
-  ${PC_LIBMESH_INCLUDEDIR} 
-  ${PC_LIBMESH_INCLUDE_DIRS} 
+  $ENV{LIBMESH_DIR}/include
+  ${PC_LIBMESH_INCLUDEDIR}
+  ${PC_LIBMESH_INCLUDE_DIRS}
   ${LIBMESH_INCLUDES_MY_LOCATIONS}
   PATH_SUFFIXES libmesh installed
 )
@@ -57,10 +57,10 @@ find_path(LIBMESH_INCLUDE_DIR libmesh/libmesh.h
 find_library(LIBMESH_LIBRARY
              NAMES  mesh_${METHOD} mesh
              HINTS  ${LIBMESH_DIR}/lib
-                    $ENV{LIBMESH_DIR}/lib 
-                    $ENV{LIBMESH_DIR} 
-                    ${PC_LIBMESH_LIBDIR} 
-                    ${PC_LIBMESH_LIBARY_DIRS}  
+                    $ENV{LIBMESH_DIR}/lib
+                    $ENV{LIBMESH_DIR}
+                    ${PC_LIBMESH_LIBDIR}
+                    ${PC_LIBMESH_LIBARY_DIRS}
                     ${LIBMESH_LIB_MY_LOCATIONS}
             )
 
@@ -71,7 +71,7 @@ set(LIBMESH_INCLUDE_DIRS ${LIBMESH_INCLUDE_DIR})
 
 find_program(LIBMESH_CONFIG_EXECUTABLE
     NAMES libmesh-config
-    HINTS ${LIBMESH_DIR} ${LIBMESH_INCLUDE_DIR}/../ ${LIBMESH_BIN_MY_LOCATIONS} $ENV{LIBMESH_DIR} 
+    HINTS ${LIBMESH_DIR} ${LIBMESH_INCLUDE_DIR}/../ ${LIBMESH_BIN_MY_LOCATIONS} $ENV{LIBMESH_DIR}
     PATH_SUFFIXES bin
     DOC "libmesh-config executable" )
 mark_as_advanced( LIBMESH_CONFIG_EXECUTABLE )

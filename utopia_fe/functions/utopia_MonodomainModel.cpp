@@ -2,5 +2,5 @@
 #include "utopia_fe_base.hpp"
 
 namespace utopia {
-	template class MonodomainModel<LibMeshFunctionSpace, USparseMatrix, UVector>;
+    template class MonodomainModel<LibMeshFunctionSpace, USparseMatrix, UVector>;
 }
