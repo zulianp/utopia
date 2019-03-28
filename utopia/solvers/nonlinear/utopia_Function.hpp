@@ -9,7 +9,7 @@ namespace utopia
 {
     /**
      * @brief      Base class for Nonlinear Function. All application context needed by solver is usually provided inside of this functions.
-     *             In optimization settings, user needs to supply value(energy), gradient/ 
+     *             In optimization settings, user needs to supply value(energy), gradient/
      *
      * @tparam     Matrix
      * @tparam     Vector

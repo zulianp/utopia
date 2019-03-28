@@ -3,7 +3,7 @@
 
 namespace utopia
 {
-	void run_kokkos_test();
+    void run_kokkos_test();
 }
 
 #endif //UTOPIA_TRILINOS_TEST_HPP

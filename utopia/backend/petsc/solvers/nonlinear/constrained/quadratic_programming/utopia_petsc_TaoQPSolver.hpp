@@ -9,24 +9,24 @@
 
 namespace utopia {
 
-	template<class Matrix, class Vector>
-	class TaoQPSolver final : public QPSolver<Matrix, Vector> {
-		typedef UTOPIA_SCALAR(Vector)    			 Scalar;
-		typedef UTOPIA_SIZE_TYPE(Vector) 			 SizeType;
-		typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-		typedef utopia::QPSolver<Matrix, Vector> 	 Super;
-		typedef utopia::BoxConstraints<Vector>       BoxConstraints;
+    template<class Matrix, class Vector>
+    class TaoQPSolver final : public QPSolver<Matrix, Vector> {
+        typedef UTOPIA_SCALAR(Vector)    			 Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) 			 SizeType;
+        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
+        typedef utopia::QPSolver<Matrix, Vector> 	 Super;
+        typedef utopia::BoxConstraints<Vector>       BoxConstraints;
 
-	public:
+    public:
 
-		TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<Factorization<Matrix, Vector>>());
-		~TaoQPSolver();
-		TaoQPSolver * clone() const override;
-		bool apply(const Vector &rhs, Vector &sol) override;
-		void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
-		void tao_type(const std::string &type);
-		// void set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package);
-		void read(Input &in) override;
+        TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<Factorization<Matrix, Vector>>());
+        ~TaoQPSolver();
+        TaoQPSolver * clone() const override;
+        bool apply(const Vector &rhs, Vector &sol) override;
+        void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
+        void tao_type(const std::string &type);
+        // void set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string &solver_package);
+        void read(Input &in) override;
 
 
         Scalar atol() const override;
@@ -42,11 +42,11 @@ namespace utopia {
         void stol(const Scalar &stol) override;
         void max_it(const SizeType & max_it) override;
         void verbose(const bool &verbose) override;
-	private:
-		class Impl;
-		std::unique_ptr<Impl> impl_;
+    private:
+        class Impl;
+        std::unique_ptr<Impl> impl_;
 
-	};
+    };
 
 }
 

@@ -9,9 +9,9 @@
 #include <petscsys.h>
 
 /*
- 
+
  Placeholder for box constraints
- 
+
  */
 #undef __FUNCT__
 #define __FUNCT__ "constrain_box"
@@ -157,12 +157,12 @@ PetscErrorCode  constrain_blocknd(BLOCKSOLVER * blocksolver, MatScalar * diag, P
                                   PetscScalar * lb, PetscScalar * ub, int row,
                                   int bs, PetscBool * constrained){
     PetscFunctionBegin;
-    
+
     PetscErrorCode ierr;
-    
+
 //    MatScalar * diag_constrained;
     PetscBool allowzeropivot=PETSC_TRUE,zeropivotdetected=PETSC_FALSE;
-    
+
 //    PetscMalloc1(bs*bs, &blocksolver->diag_constrained);
 
     for(int i = 0; i<bs;i++){
@@ -175,7 +175,7 @@ PetscErrorCode  constrain_blocknd(BLOCKSOLVER * blocksolver, MatScalar * diag, P
             PetscFunctionReturn(0);
         }
     }
-    
+
     for(int i = 0; i<bs;i++){
         if (x[row + i] < lb[row + i]+NBGS_TOL){
             for (int j=0;j<bs;j++){
@@ -246,7 +246,7 @@ PetscErrorCode  constrain_blocknd(BLOCKSOLVER * blocksolver, MatScalar * diag, P
 #define __FUNCT__ "local_inode_nbgs"
 // Most of this is stolen from the petsc-source. Only works for aij-matrices.
 PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb, Vec ubub, int bs, PetscReal omega){
-    
+
     Mat_SeqAIJ        *a = (Mat_SeqAIJ*)A->data;
     PetscScalar       sum1 = 0.0,sum2 = 0.0,sum3 = 0.0,sum4 = 0.0,sum5 = 0.0,tmp0,tmp1;
     MatScalar         *ibdiag,*bdiag,work[25],*t;
@@ -260,13 +260,13 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
     const PetscInt    *sizes = a->inode.size,*idx,*diag = a->diag,*ii = a->i;
     PetscBool         allowzeropivot,zeropivotdetected=PETSC_FALSE;
     PetscBool         *constrained_nodal_coords;
-    
+
     //    Vec loc_active_indices;
 
     PetscFunctionBegin;
-    
+
     ierr = PetscMalloc(bs, &constrained_nodal_coords);CHKERRQ(ierr);
-    
+
     ierr = MatGetLocalSize(A, &m, &n); CHKERRQ(ierr);
     nodes = m/bs;
     // we need some security checks here for non-fitting inode-setups ...
@@ -277,7 +277,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
             }
         }
     }
-    
+
     if (nbgs->constrained && nbgs->active_coordinates){
         //        ierr = VecDuplicate(xx, &loc_active_indices); CHKERRQ(ierr);
         ierr = VecGetLocalVector(nbgs->active_coordinates, nbgs->loc_active_indices); CHKERRQ(ierr);
@@ -295,7 +295,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
             ierr = PetscMalloc1(cnt,&a->inode.bdiag); CHKERRQ(ierr);
             ierr = PetscMalloc1(A->rmap->n,&a->inode.ssor_work); CHKERRQ(ierr);
         }
-        
+
         /* copy over the diagonal blocks and invert them */
         ibdiag = a->inode.ibdiag;
         bdiag  = a->inode.bdiag;
@@ -337,14 +337,14 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
     ibdiag = a->inode.ibdiag;
     bdiag  = a->inode.bdiag;
     t      = a->inode.ssor_work;
-    
+
     ierr = VecGetArray(xx,&x);CHKERRQ(ierr);
     ierr = VecGetArrayRead(bb,&b);CHKERRQ(ierr);
     if (nbgs->constrained) {
         ierr = VecGetArray(lblb,&lb);CHKERRQ(ierr);
         ierr = VecGetArray(ubub,&ub);CHKERRQ(ierr);
     }
-    
+
     /* We count flops by assuming the upper triangular and lower triangular parts have the same number of nonzeros */
     // SOR_ZERO_INITIAL_GUESS)
     // SOR_FORWARD_SWEEP || flag & SOR_LOCAL_FORWARD_SWEEP
@@ -352,11 +352,11 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
         sz  = diag[row] - ii[row];
         v1  = a->a + ii[row];
         idx = a->j + ii[row];
-        
+
         /* see comments for MatMult_SeqAIJ_Inode() for how this is coded */
         switch (bs){
             case 1:
-                
+
                 sum1 = b[row];
                 for (n = 0; n<sz-1; n+=2) {
                     i1    = idx[0];
@@ -366,14 +366,14 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                     tmp1  = x[i2];
                     sum1 -= v1[0] * tmp0 + v1[1] * tmp1; v1 += 2;
                 }
-                
+
                 if (n == sz-1) {
                     tmp0  = x[*idx];
                     sum1 -= *v1 * tmp0;
                 }
                 t[row]   = sum1;
                 x[row++] = sum1*(*ibdiag++);
-                
+
                 if (nbgs->constrained){
                     nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
@@ -385,7 +385,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                         }
                     }
                 }
-                
+
                 break;
             case 2:
                 v2   = a->a + ii[row+1];
@@ -400,7 +400,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                     sum1 -= v1[0] * tmp0 + v1[1] * tmp1; v1 += 2;
                     sum2 -= v2[0] * tmp0 + v2[1] * tmp1; v2 += 2;
                 }
-                
+
                 if (n == sz-1) {
                     tmp0  = x[*idx];
                     sum1 -= v1[0] * tmp0;
@@ -410,8 +410,8 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 t[row+1] = sum2;
                 x[row++] = sum1*ibdiag[0] + sum2*ibdiag[2];
                 x[row++] = sum1*ibdiag[1] + sum2*ibdiag[3];
-                
-                
+
+
                 if (nbgs->constrained){
                     nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
@@ -422,10 +422,10 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                         }
                     }
                 }
-                
+
                 ibdiag  += 4;
                 bdiag  += 4;
-                
+
                 break;
             case 3:
                 v2   = a->a + ii[row+1];
@@ -443,7 +443,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                     sum2 -= v2[0] * tmp0 + v2[1] * tmp1; v2 += 2;
                     sum3 -= v3[0] * tmp0 + v3[1] * tmp1; v3 += 2;
                 }
-                
+
                 if (n == sz-1) {
                     tmp0  = x[*idx];
                     sum1 -= v1[0] * tmp0;
@@ -456,7 +456,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 x[row++] = sum1*ibdiag[0] + sum2*ibdiag[3] + sum3*ibdiag[6];
                 x[row++] = sum1*ibdiag[1] + sum2*ibdiag[4] + sum3*ibdiag[7];
                 x[row++] = sum1*ibdiag[2] + sum2*ibdiag[5] + sum3*ibdiag[8];
-                
+
                 if (nbgs->constrained){
                     nbgs->constrain(&nbgs->blocksolver,  bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
@@ -489,7 +489,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                     sum3 -= v3[0] * tmp0 + v3[1] * tmp1; v3 += 2;
                     sum4 -= v4[0] * tmp0 + v4[1] * tmp1; v4 += 2;
                 }
-                
+
                 if (n == sz-1) {
                     tmp0  = x[*idx];
                     sum1 -= v1[0] * tmp0;
@@ -505,7 +505,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 x[row++] = sum1*ibdiag[1] + sum2*ibdiag[5] + sum3*ibdiag[9] + sum4*ibdiag[13];
                 x[row++] = sum1*ibdiag[2] + sum2*ibdiag[6] + sum3*ibdiag[10] + sum4*ibdiag[14];
                 x[row++] = sum1*ibdiag[3] + sum2*ibdiag[7] + sum3*ibdiag[11] + sum4*ibdiag[15];
-                
+
                 if (nbgs->constrained){
                     nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
@@ -541,7 +541,7 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                     sum4 -= v4[0] * tmp0 + v4[1] * tmp1; v4 += 2;
                     sum5 -= v5[0] * tmp0 + v5[1] * tmp1; v5 += 2;
                 }
-                
+
                 if (n == sz-1) {
                     tmp0  = x[*idx];
                     sum1 -= v1[0] * tmp0;
@@ -555,13 +555,13 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 t[row+2] = sum3;
                 t[row+3] = sum4;
                 t[row+4] = sum5;
-                
+
                 x[row++] = sum1*ibdiag[0] + sum2*ibdiag[5] + sum3*ibdiag[10] + sum4*ibdiag[15] + sum5*ibdiag[20];
                 x[row++] = sum1*ibdiag[1] + sum2*ibdiag[6] + sum3*ibdiag[11] + sum4*ibdiag[16] + sum5*ibdiag[21];
                 x[row++] = sum1*ibdiag[2] + sum2*ibdiag[7] + sum3*ibdiag[12] + sum4*ibdiag[17] + sum5*ibdiag[22];
                 x[row++] = sum1*ibdiag[3] + sum2*ibdiag[8] + sum3*ibdiag[13] + sum4*ibdiag[18] + sum5*ibdiag[23];
                 x[row++] = sum1*ibdiag[4] + sum2*ibdiag[9] + sum3*ibdiag[14] + sum4*ibdiag[19] + sum5*ibdiag[24];
-                
+
                 if (nbgs->constrained){
                     nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
@@ -572,19 +572,19 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                         }
                     }
                 }
-                
+
                 ibdiag  += 25;
                 bdiag +=25;
                 break;
-                
+
             default:
                 SETERRQ1(PETSC_COMM_SELF,PETSC_ERR_SUP,"Size %D not supported",bs);
         }
-        
+
         xb   = t;
         ierr = PetscLogFlops(a->nz);CHKERRQ(ierr);
     }
-    
+
     ierr = VecRestoreArray(xx,&x);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(bb,&b);CHKERRQ(ierr);
 
@@ -594,12 +594,12 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
         ierr = VecRestoreLocalVector(nbgs->active_coordinates, nbgs->loc_active_indices); CHKERRQ(ierr);
         //        ierr = VecDestroy(&nbgs->loc_active_indices); CHKERRQ(ierr);
     }
-    
+
     if (nbgs->constrained) {
         ierr = VecRestoreArray(lblb,&lb);CHKERRQ(ierr);
         ierr = VecRestoreArray(ubub,&ub);CHKERRQ(ierr);
     }
-    
+
     //    ierr = PetscFree3(a->inode.ibdiag,a->inode.bdiag,a->inode.ssor_work);CHKERRQ(ierr);
     ierr = PetscFree(constrained_nodal_coords); CHKERRQ(ierr);
     PetscFunctionReturn(0);
@@ -610,10 +610,10 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
 // This does:
 //  x = x + \sum_j B_j^1*(b_j- A_j*x_j), under lb <= x <= ub, where j is the number of blocks
 PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub ,PetscInt _blocksize){
-    
+
     PetscFunctionBegin;
     PetscErrorCode ierr;
-    
+
     //    Mat loc_A; // holds the local diagonal part of A
     //    Vec res, u, lb_u, ub_u, loc_res, loc_x, loc_u, loc_lb, loc_ub;
     if (nbgs == NULL){
@@ -637,7 +637,7 @@ PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub 
 
     ierr = VecGetLocalVector(nbgs->res, nbgs->loc_res);CHKERRQ(ierr);
     ierr = VecGetLocalVector(nbgs->u, nbgs->loc_u);CHKERRQ(ierr);
-    
+
     if (nbgs->constrained){
 
         ierr = VecWAXPY(nbgs->lb_u, -1, x, _lb); CHKERRQ(ierr);
@@ -754,7 +754,7 @@ extern PetscErrorCode NBGSCreate(NBGS_CTX * nbgs, Mat _A, Vec _x, Vec _lb, Vec _
     nbgs->lb = _lb;
     nbgs->ub = _ub;
     nbgs->constrain = constrain;
-    
+
     ierr = MatGetSize(_A, &nbgs->M, &nbgs->N ); CHKERRQ(ierr);
     ierr = MatGetLocalSize(_A, &nbgs->m, &nbgs->n); CHKERRQ(ierr);
     ierr = MatGetDiagonalBlock(_A, &nbgs->loc_A); CHKERRQ(ierr);

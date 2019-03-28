@@ -6,103 +6,103 @@
 #include "utopia_TreeNavigator.hpp"
 
 namespace utopia {
-	
-	template<class Expr, int Number>
-	class Variable : public Expression< Variable<Expr, Number> > {
-	public:
-		static const int Order = Expr::Order;
 
-		typedef typename Expr::Scalar Scalar;
+    template<class Expr, int Number>
+    class Variable : public Expression< Variable<Expr, Number> > {
+    public:
+        static const int Order = Expr::Order;
 
-		inline Expr &expr()
-		{
-			assert(expr_);
-			return *expr_;
-		}
+        typedef typename Expr::Scalar Scalar;
 
-		inline const Expr &expr() const
-		{
-			assert(expr_);
-			return *expr_;
-		}
+        inline Expr &expr()
+        {
+            assert(expr_);
+            return *expr_;
+        }
 
-		inline static constexpr int get_number()
-		{
-			return Number;
-		}
+        inline const Expr &expr() const
+        {
+            assert(expr_);
+            return *expr_;
+        }
 
-		void set(const std::shared_ptr<Expr> &expr)
-		{
-			expr_ = expr;
-		}
+        inline static constexpr int get_number()
+        {
+            return Number;
+        }
 
-		Variable(const std::shared_ptr<Expr> &expr)
-		: expr_(expr) {}
+        void set(const std::shared_ptr<Expr> &expr)
+        {
+            expr_ = expr;
+        }
 
-		std::string getClass() const override {
-			return "Variable<" + expr_->getClass() + ">";
-		}
+        Variable(const std::shared_ptr<Expr> &expr)
+        : expr_(expr) {}
 
-	private:
-		std::shared_ptr<Expr> expr_;
-	};
+        std::string getClass() const override {
+            return "Variable<" + expr_->getClass() + ">";
+        }
 
-	template<class Expr, int Number>
-	class SearchVariableAction {
-	public:
-		
-		template<class Node>
-		inline void pre_order_visit(const Node &) {}
+    private:
+        std::shared_ptr<Expr> expr_;
+    };
 
-		template<class Node>
-		inline void post_order_visit(const Node &) {}
+    template<class Expr, int Number>
+    class SearchVariableAction {
+    public:
 
-		template<class Node>
-		inline void in_order_visit(const Node &) {}
+        template<class Node>
+        inline void pre_order_visit(const Node &) {}
 
-		void pre_order_visit(const Variable<Expr, Number> &var) 
-		{
-			var_ = &var;
-		}
+        template<class Node>
+        inline void post_order_visit(const Node &) {}
 
-		SearchVariableAction() : var_(nullptr) {}
+        template<class Node>
+        inline void in_order_visit(const Node &) {}
 
-		const Variable<Expr, Number> * get_var()
-		{
-			assert(var_);
-			return var_;
-		}
+        void pre_order_visit(const Variable<Expr, Number> &var)
+        {
+            var_ = &var;
+        }
 
-	public:
-		const Variable<Expr, Number> * var_;
-	};
+        SearchVariableAction() : var_(nullptr) {}
 
-	template<class VarExpr, int Number, class Expr>
-	Variable<VarExpr, Number> &find_variable(Expression<Expr> &expr)
-	{
-		//TODO make if more efficient by using a static search and pruning
-		SearchVariableAction<VarExpr, Number> action;
-		auto nav = make_nav(action);
-		nav.visit(expr.derived());
-		//this is not so bad because of the signature.
-		return *const_cast< Variable<VarExpr, Number> *>(action.get_var());
-	}
+        const Variable<Expr, Number> * get_var()
+        {
+            assert(var_);
+            return var_;
+        }
 
-	template<class Expr, int Number>
-	class Traits< Variable<Expr, Number> > : public Traits<Expr> {};
+    public:
+        const Variable<Expr, Number> * var_;
+    };
 
-	template<class Expr, int Number>
-	auto size(const Variable<Expr, Number> &expr) -> decltype( size(expr.expr()) ) {
-	    return size(expr.expr());
-	}
+    template<class VarExpr, int Number, class Expr>
+    Variable<VarExpr, Number> &find_variable(Expression<Expr> &expr)
+    {
+        //TODO make if more efficient by using a static search and pruning
+        SearchVariableAction<VarExpr, Number> action;
+        auto nav = make_nav(action);
+        nav.visit(expr.derived());
+        //this is not so bad because of the signature.
+        return *const_cast< Variable<VarExpr, Number> *>(action.get_var());
+    }
 
-	template<class Expr, int Number, class Traits, int Backend>
-	class Eval<Variable<Expr, Number>, Traits, Backend> {
-	public:
-	    inline static auto apply(const Variable<Expr, Number> &expr) -> decltype(expr.expr().implementation()) {
-	        return expr.expr().implementation();
-	    }
-	};
+    template<class Expr, int Number>
+    class Traits< Variable<Expr, Number> > : public Traits<Expr> {};
+
+    template<class Expr, int Number>
+    auto size(const Variable<Expr, Number> &expr) -> decltype( size(expr.expr()) ) {
+        return size(expr.expr());
+    }
+
+    template<class Expr, int Number, class Traits, int Backend>
+    class Eval<Variable<Expr, Number>, Traits, Backend> {
+    public:
+        inline static auto apply(const Variable<Expr, Number> &expr) -> decltype(expr.expr().implementation()) {
+            return expr.expr().implementation();
+        }
+    };
 }
 
 #endif //UTOPIA_VARIABLE_HPP

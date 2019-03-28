@@ -1,15 +1,15 @@
 #ifndef UTOPIA_NON_LINEAR_HPP
-#define UTOPIA_NON_LINEAR_HPP 
+#define UTOPIA_NON_LINEAR_HPP
 
 #include "utopia_Base.hpp"
 
-// functions 
+// functions
 #include "utopia_Function.hpp"
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_FunctionNormalEq.hpp"
 
-// base solvers 
+// base solvers
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NewtonBase.hpp"
 

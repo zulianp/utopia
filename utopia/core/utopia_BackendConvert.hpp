@@ -40,7 +40,7 @@
 // 	{
 // 	    auto ls = local_size(from).get(0);
 // 	    to = local_zeros(ls);
-	    
+
 // 	    Write< Wrapper<TensorTo, 1> > w_t(to);
 // 	    each_read(from, [&to](const SizeType i, const double val) {
 // 	        to.set(i, val);

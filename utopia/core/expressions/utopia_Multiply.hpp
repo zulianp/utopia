@@ -21,7 +21,7 @@ namespace utopia {
     #define TENSOR_ORDER_MULTIPLY(Left_, Right_) (MultiplyTensorOrder<Left_, Right_>::Order)
 
     template<class _Left, class _Right>
-    class Multiply : public Expression< Multiply<_Left, _Right> >, 
+    class Multiply : public Expression< Multiply<_Left, _Right> >,
                      public Castable< Multiply<_Left, _Right>,
                                       TENSOR_ORDER_MULTIPLY(_Left, _Right)>
                     {
@@ -63,7 +63,7 @@ namespace utopia {
         } else {
             result.set(1, size(expr.right()).get(1));
         }
-        
+
         return result;
     }
 

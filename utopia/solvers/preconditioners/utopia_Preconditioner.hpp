@@ -13,7 +13,7 @@
 
 #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
 
-namespace utopia 
+namespace utopia
 {
     template<class Vector>
     class Operator {
@@ -63,7 +63,7 @@ namespace utopia
     template<typename Vector>
     std::unique_ptr< LambdaOperator<Vector, std::function<bool(const Vector &, Vector &)>> > op(std::function<bool(const Vector &, Vector &)> f)
     {
-        return utopia::make_unique< LambdaOperator<Vector, std::function<bool(const Vector &, Vector &)>> >(f); 
+        return utopia::make_unique< LambdaOperator<Vector, std::function<bool(const Vector &, Vector &)>> >(f);
     }
 
     template<class Matrix>
@@ -93,7 +93,7 @@ namespace utopia
         virtual void print_usage(std::ostream &os) const override
         {
 
-        }   
+        }
 
         virtual Preconditioner * clone() const override = 0;
     };
@@ -113,7 +113,7 @@ namespace utopia
         : expr_(expr)
         {}
 
-        virtual ExprPreconditioner * clone() const override 
+        virtual ExprPreconditioner * clone() const override
         {
             return new ExprPreconditioner(*this);
         }
@@ -148,7 +148,7 @@ namespace utopia
             return op_;
         }
 
-        virtual DelegatePreconditioner * clone() const override 
+        virtual DelegatePreconditioner * clone() const override
         {
             return new DelegatePreconditioner(*this);
         }
@@ -156,7 +156,7 @@ namespace utopia
     private:
         std::shared_ptr<const Matrix> op_;
     };
-    
+
 }
 
 #endif //UTOPIA_UTOPIA_PRECONDITIONER_HPP

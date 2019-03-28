@@ -1,5 +1,5 @@
 #ifndef UTOPIA_HESSIAN_APPROX_HPP
-#define UTOPIA_HESSIAN_APPROX_HPP 
+#define UTOPIA_HESSIAN_APPROX_HPP
 
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_BFGS.hpp"

@@ -1,5 +1,5 @@
 #ifndef UTOPIA_OPENCL_GENERATOR_H
-#define UTOPIA_OPENCL_GENERATOR_H 
+#define UTOPIA_OPENCL_GENERATOR_H
 
 #include "utopia_Utils.hpp"
 
@@ -12,12 +12,12 @@
 #include <memory>
 
 namespace utopia {
-	namespace opencl {
-		class OpenCLGenerator {
-		public:
+    namespace opencl {
+        class OpenCLGenerator {
+        public:
 
-		};
-	}
+        };
+    }
 }
 
 #endif //UTOPIA_OPENCL_GENERATOR_H

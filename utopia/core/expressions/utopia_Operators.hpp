@@ -158,12 +158,12 @@ namespace utopia {
             return x * x;
         }
     };
-    
-    
+
+
     class Pow {
     public:
         std::string getClass() const { return "Pow"; }
-        
+
         template<typename T>
         inline T apply(const T &x) const {
             return std::pow(x,a_);
@@ -246,7 +246,7 @@ namespace utopia {
     class Reciprocal {
     public:
         typedef T Scalar;
-        
+
         std::string getClass() const { return "Reciprocal"; }
 
         template<typename T2>
@@ -271,7 +271,7 @@ namespace utopia {
         template<typename T>
         inline static T apply(const T &left, const T &right) {
             using std::min;
-            
+
             return min(left, right);
         }
     };
@@ -339,7 +339,7 @@ namespace utopia {
 
     };
 
-    
+
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP

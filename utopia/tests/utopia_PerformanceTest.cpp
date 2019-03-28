@@ -71,7 +71,7 @@
 // 			const int n = N[k];
 
 // 			Matrix m;//  = values(n, n, 0.001); //not needed
-// 			Vector v1 = values(n, 0.1); 
+// 			Vector v1 = values(n, 0.1);
 // 			Vector v2 = values(n, 0.2);
 // 			Vector v3 = values(n, 0.3);
 
@@ -79,7 +79,7 @@
 // 			c.start();
 
 // 			Vector res;
-// 			double checksum = .0;      
+// 			double checksum = .0;
 
 // 			{
 // 				Read<Matrix> r_m(m);
@@ -118,13 +118,13 @@
 
 // 			Matrix m  = values(n, n, 0.001);
 // 			Vector v1 = values(n, 0.1);
-// 			Vector v2 = values(n, 0.2); 
+// 			Vector v2 = values(n, 0.2);
 // 			Vector v3 = values(n, 0.3);
 
 // 			Chrono c;
 // 			Chrono all_runs;
-			
-// 			for(int i = 0; i < N_RUNS; ++i) {		 
+
+// 			for(int i = 0; i < N_RUNS; ++i) {
 
 // 				c.start();
 // 				double checksum = .0;
@@ -169,11 +169,11 @@
 
 // 			Matrix m;
 // 			Vector v1 = values(n, 0.1);
-// 			Vector v2 = values(n, 0.2); 
+// 			Vector v2 = values(n, 0.2);
 // 			Vector v3 = values(n, 0.3);
 
 // 			Chrono c, all_runs;
-// 			for(int i = 0; i < N_RUNS; ++i) {		 
+// 			for(int i = 0; i < N_RUNS; ++i) {
 
 // 				c.start();
 // 				double checksum = .0;
@@ -227,11 +227,11 @@
 
 // 			Matrix m;
 // 			Vector v1 = Vector::Constant(n, 0.1);
-// 			Vector v2 = Vector::Constant(n, 0.2); 
+// 			Vector v2 = Vector::Constant(n, 0.2);
 // 			Vector v3 = Vector::Constant(n, 0.3);
 
 // 			Chrono c, all_runs;
-// 			for(int i = 0; i < N_RUNS; ++i) {		 
+// 			for(int i = 0; i < N_RUNS; ++i) {
 // 				c.start();
 // 				double checksum = .0;
 // 				Vector res;
@@ -275,12 +275,12 @@
 
 // 			Matrix m  = Matrix::Constant(n, n, 0.001);
 // 			Vector v1 = Vector::Constant(n, 0.1);
-// 			Vector v2 = Vector::Constant(n, 0.2); 
+// 			Vector v2 = Vector::Constant(n, 0.2);
 // 			Vector v3 = Vector::Constant(n, 0.3);
 
 
 // 			Chrono c, all_runs;
-// 			for(int i = 0; i < N_RUNS; ++i) {		 
+// 			for(int i = 0; i < N_RUNS; ++i) {
 // 				c.start();
 // 				double checksum = .0;
 // 				Vector res;
@@ -314,7 +314,7 @@
 // 		test_program_eigen_3_vectors("eigen3");
 // 		test_program_eigen_3_mixed("eigen3");
 // 	}
-// #endif //WITH_EIGEN_3	
+// #endif //WITH_EIGEN_3
 
 
 // 	void run_performance_test()
@@ -329,7 +329,7 @@
 
 // 		if(verbose) {
 // 			std::cout << "------------------------------------\n";
-// 			std::cout << "OpenCL: " << std::endl; 
+// 			std::cout << "OpenCL: " << std::endl;
 // 			CLStats::instance().clear();
 // 			CLContext::instance().describe_current_setup();
 // 		}
@@ -339,34 +339,34 @@
 // 		if(verbose) {
 // 			CLStats::instance().describe(std::cout);
 // 		}
-		
-// #endif //WITH_UTOPIA_OPENCL		
+
+// #endif //WITH_UTOPIA_OPENCL
 
 // #ifdef WITH_BLAS
 // 		if(verbose) {
 // 			std::cout << "------------------------------------\n";
-// 			std::cout << "Blas: " << std::endl; 
+// 			std::cout << "Blas: " << std::endl;
 // 		}
 
-// 		test_program_inlined<Matrixd, Vectord>("inline"); 
+// 		test_program_inlined<Matrixd, Vectord>("inline");
 // 		test_program<Matrixd, Vectord>("blas");
-// #endif		
+// #endif
 
 // #ifdef WITH_PETSC
 // 		if(verbose) {
 // 			std::cout << "------------------------------------\n";
-// 			std::cout << "PETSC: " << std::endl; 
+// 			std::cout << "PETSC: " << std::endl;
 // 		}
 // 		test_program<DMatrixd, DVectord>("petsc");
-// #endif //WITH_PETSC		
+// #endif //WITH_PETSC
 
 // #ifdef WITH_EIGEN_3
 // 		if(verbose) {
 // 			std::cout << "------------------------------------\n";
-// 			std::cout << "Eigen 3: " << std::endl; 
+// 			std::cout << "Eigen 3: " << std::endl;
 // 		}
-// 		run_performance_test_eigen_3();		
-// #endif //WITH_EIGEN_3		
+// 		run_performance_test_eigen_3();
+// #endif //WITH_EIGEN_3
 
 
 // 		UTOPIA_UNIT_TEST_END("PerformanceTest");

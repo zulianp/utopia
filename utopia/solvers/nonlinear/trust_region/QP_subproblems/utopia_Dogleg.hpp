@@ -7,7 +7,7 @@
 namespace utopia
 {
 
-	template<class Matrix, class Vector>
+    template<class Matrix, class Vector>
     class Dogleg final: public TRSubproblem<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
@@ -33,9 +33,9 @@ namespace utopia
             void read(Input &in) override
             {
                 TRSubproblem<Matrix, Vector>::read(in);
-                
+
                 if(ls_solver_){
-                    in.get("linear-solver", *ls_solver_); 
+                    in.get("linear-solver", *ls_solver_);
                 }
             }
 
@@ -43,11 +43,11 @@ namespace utopia
             void print_usage(std::ostream &os) const override
             {
                 TRSubproblem<Matrix, Vector>::print_usage(os);
-                this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-"); 
+                this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-");
             }
 
         protected:
-            bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k) 
+            bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k)
             {
                 Vector p_N = local_zeros(local_size(p_k)), p_SD = local_zeros(local_size(p_k));
                 Scalar g_B_g = dot(g, B * g);
@@ -58,7 +58,7 @@ namespace utopia
                 }
                 else
                 {
-                    utopia_error("Dogleg:: linear solver is missing... \n"); 
+                    utopia_error("Dogleg:: linear solver is missing... \n");
                 }
 
                 if(norm2(p_k) <= this->current_radius())

@@ -1,5 +1,5 @@
 // #ifndef UTOPIA_PETSC_PROJECTED_GAUSS_SEIDEL_HPP
-// #define UTOPIA_PETSC_PROJECTED_GAUSS_SEIDEL_HPP 
+// #define UTOPIA_PETSC_PROJECTED_GAUSS_SEIDEL_HPP
 
 // #include "utopia_Base.hpp"
 
@@ -52,7 +52,7 @@
 
 // 		void init(const Matrix &A);
 
-// 		void set_use_line_search(const bool val) 
+// 		void set_use_line_search(const bool val)
 // 		{
 // 			use_line_search_ = val;
 // 		}
@@ -62,7 +62,7 @@
 // 		    IterativeSolver<Matrix, Vector>::update(op);
 // 		    init(*op);
 // 		}
-		
+
 // 	private:
 // 		PetscInt block_size_;
 // 		bool use_line_search_;
@@ -73,7 +73,7 @@
 // 		Vector prev_active_set_;
 // 		Vector changed_;
 // 		Vector old_x_;
-		
+
 // 		std::shared_ptr<void> ctx_;
 // 	};
 // }

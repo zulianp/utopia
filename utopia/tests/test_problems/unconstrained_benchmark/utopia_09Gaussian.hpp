@@ -7,15 +7,15 @@
 
 
 namespace utopia
-{   
+{
     template<class Matrix, class Vector>
-    class Gaussian09 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class Gaussian09 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        Gaussian09() 
+        Gaussian09()
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
@@ -25,34 +25,34 @@ namespace utopia
             {
                 const Write<Vector> write1(x_init_);
                 const Write<Vector> write2(x_exact_);
-                
+
                 x_init_.set(0, 0.4);
                 x_init_.set(1, 1.0);
                 x_init_.set(2, 0.0);
 
                 x_exact_.set(0, 0.398956);
-                x_exact_.set(1, 1.00002);                
-                x_exact_.set(2, 0.0);                                
+                x_exact_.set(1, 1.00002);
+                x_exact_.set(2, 0.0);
             }
 
         }
 
         std::string name() const override
         {
-            return "Gaussaian"; 
+            return "Gaussaian";
         }
 
         SizeType dim() const override
         {
-            return 3; 
+            return 3;
         }
 
 
-        bool value(const Vector &point, typename Vector::Scalar &result) const override 
+        bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 3);
@@ -63,22 +63,22 @@ namespace utopia
             const Scalar y = point.get(1);
             const Scalar z = point.get(2);
 
-            result = 0.0; 
+            result = 0.0;
             for(SizeType i = 1; i <=15; i++)
-            {   
+            {
                 Scalar a = ( 3.5 - (0.5 * ( i - 1.0 )) - z );
                 Scalar b = (x* std::exp(- 0.5 * y * a*a )) - p(i);
                 result += b*b;
             }
-    
+
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &g) const override 
+        bool gradient(const Vector &point, Vector &g) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 3);
@@ -91,12 +91,12 @@ namespace utopia
             const Scalar y = point.get(1);
             const Scalar z = point.get(2);
 
-            Scalar a = 0.0; 
-            Scalar b = 0.0; 
-            Scalar c = 0.0; 
+            Scalar a = 0.0;
+            Scalar b = 0.0;
+            Scalar c = 0.0;
 
             for(SizeType i =1; i <=15; i++)
-            {   
+            {
                 Scalar d1 = 0.5 * ( i - 1.);
                 Scalar d2 = 3.5 - d1 - z;
                 Scalar arg = - 0.5 * y * d2 * d2;
@@ -114,13 +114,13 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override 
+        bool hessian(const Vector &point, Matrix &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
-                        
+
             assert(point.size().get(0) == 3);
             result = zeros(3,3);
 
@@ -131,15 +131,15 @@ namespace utopia
             const Scalar y = point.get(1);
             const Scalar z = point.get(2);
 
-            Scalar term11 = 0.0; 
-            Scalar term22 = 0.0; 
-            Scalar term33 = 0.0; 
-            Scalar term21 = 0.0; 
-            Scalar term31 = 0.0; 
-            Scalar term32 = 0.0; 
+            Scalar term11 = 0.0;
+            Scalar term22 = 0.0;
+            Scalar term33 = 0.0;
+            Scalar term21 = 0.0;
+            Scalar term31 = 0.0;
+            Scalar term32 = 0.0;
 
             for(SizeType i =1; i <=15; i++)
-            {   
+            {
                 Scalar d1 = 0.5 * ( i - 1.0);
                 Scalar d2 = 3.5 - d1 - z;
                 Scalar arg = 0.5 * y * d2 * d2;
@@ -156,8 +156,8 @@ namespace utopia
             }
 
             term11 *= 2.0;
-            term22 *= 0.5 * x; 
-            term33 *= 2.0 * x * y; 
+            term22 *= 0.5 * x;
+            term33 *= 2.0 * x * y;
             term31 *= 2.0 * y;
             term32 *= 2.0 * x;
 
@@ -168,27 +168,27 @@ namespace utopia
             result.set(1, 0, term21);
             result.set(1, 1, term22);
             result.set(1, 2, term32);
-            
+
             result.set(2, 0, term31);
             result.set(2, 1, term32);
-            result.set(2, 2, term33);    
+            result.set(2, 2, term33);
 
             return true;
         }
 
         Vector initial_guess() const override
         {
-            return x_init_; 
+            return x_init_;
         }
 
         const Vector & exact_sol() const override
         {
-            return x_exact_; 
+            return x_exact_;
         }
 
         Scalar min_function_value() const override
         {
-            return 1.12793e-8; 
+            return 1.12793e-8;
         }
 
 
@@ -196,7 +196,7 @@ namespace utopia
             Scalar p(const SizeType & i) const
             {
                 if(i==1 || i ==15)
-                    return 0.0009; 
+                    return 0.0009;
                 else if(i==2 || i == 14)
                     return 0.0044;
                 else if(i==3 || i == 13)
@@ -206,21 +206,21 @@ namespace utopia
                 else if(i==5 || i == 11)
                     return 0.1295;
                 else if(i==6 || i == 10)
-                    return 0.2420;     
+                    return 0.2420;
                 else if(i==7 || i == 9)
-                    return 0.3521;     
+                    return 0.3521;
                 else if(i==8)
-                    return 0.3989; 
+                    return 0.3989;
                 else
                 {
-                    utopia_error("Gaussian09::p():: we should never reach here... \n"); 
-                    return 0; 
+                    utopia_error("Gaussian09::p():: we should never reach here... \n");
+                    return 0;
                 }
             }
 
-    private: 
-        Vector x_init_; 
-        Vector x_exact_; 
+    private:
+        Vector x_init_;
+        Vector x_exact_;
 
     };
 }
