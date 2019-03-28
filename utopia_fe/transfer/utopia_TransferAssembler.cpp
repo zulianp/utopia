@@ -206,6 +206,13 @@ namespace utopia {
 			this->local2global = local2global;
 
 			this->comm = moonolith::Communicator(from_mesh->comm().get());
+
+			if(Utopia::instance().verbose()) {
+				moonolith::root_describe("---------------------------------------\n"
+					"begin: initializing fespaces adapter\n",
+					comm, logger());
+			}
+
 			this->local_spaces = std::make_shared<FESpacesAdapter>(from_mesh, to_mesh, from_dofs, to_dofs, opts.from_var_num, opts.to_var_num);
 
 			predicate = std::make_shared<moonolith::MasterAndSlave>();
@@ -216,6 +223,12 @@ namespace utopia {
 				for(auto t : opts.tags) {
 					predicate->add(t.first, t.second);
 				}
+			}
+
+			if(Utopia::instance().verbose()) {
+				moonolith::root_describe("---------------------------------------\n"
+					"end: initializing fespaces adapter\n",
+					comm, logger());
 			}
 		}
 
@@ -307,7 +320,23 @@ namespace utopia {
 				to_dofs->n_local_dofs()
 			);
 
+			if(Utopia::instance().verbose()) {
+				moonolith::root_describe("---------------------------------------\n"
+					"begin: search_and_compute ",
+					comm, std::cout);
+
+				settings.verbosity_level = 2;
+			}
+
 			moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
+
+
+			if(Utopia::instance().verbose()) {
+				moonolith::root_describe("---------------------------------------\n"
+					"end: search_and_compute ",
+					comm, std::cout);
+			}
+
 
 			pg_assembler_.finalize(mats_);
 			pg_assembler_.print_stats();
@@ -323,6 +352,15 @@ namespace utopia {
 			const auto n_elements 	  = n_elements_from + n_elements_to;
 
 			MOONOLITH_EVENT_BEGIN("create_adapters");
+
+			if(Utopia::instance().verbose()) {
+				moonolith::root_describe("---------------------------------------\n"
+					"begin: init_tree\n",
+					comm, logger());
+
+				moonolith::synch_describe("n_elements: " + std::to_string(n_elements),
+					comm, logger());
+			}
 
 			tree = NTreeT::New(predicate, settings.max_elements, settings.max_depth);
 			tree->reserve(n_elements);
@@ -387,6 +425,13 @@ namespace utopia {
 			}
 
 			tree->root()->bound().static_bound().enlarge(1e-8);
+
+
+			if(Utopia::instance().verbose()) {
+				moonolith::root_describe("---------------------------------------\n"
+					"end: init_tree ",
+					comm, std::cout);
+			}
 
 			MOONOLITH_EVENT_END("create_adapters");
 		}
