@@ -140,7 +140,7 @@ PETSC_DIR  = ${PETSC_DIR}
 PETSC_ARCH = ${PETSC_ARCH}
 -include ${PETSC_VARIABLES_FILE}
 show :
-    -@echo -n \${\${VARIABLE}}
+	-@echo -n \${\${VARIABLE}}
 ")
 
 
