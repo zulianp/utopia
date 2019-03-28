@@ -37,7 +37,7 @@ namespace  utopia
 
             virtual void print_usage(std::ostream &os) const override
             {
-                this->print_param_usage(os, "current_radius", "real", "Value of trust region radius.", "1e14"); 
+                this->print_param_usage(os, "current_radius", "real", "Value of trust region radius.", "1e14");
             }
 
         protected:
@@ -79,8 +79,8 @@ namespace  utopia
 
 
         protected:
-            Scalar current_radius_;    
-    }; 
+            Scalar current_radius_;
+    };
 
 
     template<class Matrix, class Vector>
@@ -95,7 +95,7 @@ namespace  utopia
             }
 
             virtual ~TRSubproblem( ){}
-            virtual TRSubproblem * clone() const override = 0;            
+            virtual TRSubproblem * clone() const override = 0;
 
             virtual void read(Input &in) override
             {
@@ -107,7 +107,7 @@ namespace  utopia
             {
                 IterativeSolver<Matrix, Vector>::print_usage(os);
                 TRSubproblemBase<Vector>::print_usage(os);
-            }            
+            }
     };
 
 
@@ -135,7 +135,7 @@ namespace  utopia
             {
                 MatrixFreeLinearSolver<Vector>::print_usage(os);
                 TRSubproblemBase<Vector>::print_usage(os);
-            }                
+            }
     };
 
 }

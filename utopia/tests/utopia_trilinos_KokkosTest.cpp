@@ -32,7 +32,7 @@ namespace utopia {
 
         utopia_test_assert(approxeq(z, w));
     }
-    
+
     void kokkos_min()
     {
         auto n = 10;
@@ -40,7 +40,7 @@ namespace utopia {
         TVectord v = local_values(n, 1.);
 
         TVectord w = local_values(n, 10.);
-        
+
         TVectord z = min(w , v);
 
         utopia_test_assert(approxeq(z, v));
@@ -49,14 +49,14 @@ namespace utopia {
     void kokkos_sum_reduction()
     {
         auto n = 10;
-        
+
         TVectord v = local_values(n, 1.);
-        
+
         double z = sum(v);
 
         utopia_test_assert(approxeq(z, size(v).get(0) * 1.));
     }
-    
+
     void kokkos_min_reduction()
     {
         auto n = 10;
@@ -64,16 +64,16 @@ namespace utopia {
         TVectord v = local_values(n, 1.);
 
         auto r = range(v);
-       
+
         each_write(v,  KOKKOS_LAMBDA(const SizeType i) -> double {
             return i - r.begin();
         });
-        
+
         double z = min(v);
 
         utopia_test_assert(approxeq(0., z));
     }
-    
+
     void kokkos_max_reduction()
     {
         auto n = 10;
@@ -81,7 +81,7 @@ namespace utopia {
         TVectord v = local_values(n, 1.);
 
         auto r = range(v);
-        
+
         each_write(v, KOKKOS_LAMBDA(const SizeType i) -> double {
             return i - r.begin();
         });
@@ -130,7 +130,7 @@ namespace utopia {
         auto n = 10;
         TVectord w = local_values(n, 50);
 
-        parallel_each_read(w, KOKKOS_LAMBDA(const SizeType i, const double entry) 
+        parallel_each_read(w, KOKKOS_LAMBDA(const SizeType i, const double entry)
         { });
     }
 
@@ -149,9 +149,9 @@ namespace utopia {
                 if(i >= cols) {
                     break;
                 }
-                
+
                 P.set(i, i, 1.);
-                
+
             }
         }
 

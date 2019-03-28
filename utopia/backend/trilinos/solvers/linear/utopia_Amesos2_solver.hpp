@@ -17,25 +17,25 @@ namespace utopia {
      */
     template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class Amesos2Solver {};
-    
+
     template <typename Matrix, typename Vector>
     class Amesos2Solver<Matrix, Vector, TRILINOS> final : public DirectSolver<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-            
+
         Amesos2Solver();
         Amesos2Solver(const Amesos2Solver &other);
         ~Amesos2Solver();
-        
+
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;
 
         void read(Input &is) override;
         void print_usage(std::ostream &os) const override;
-          
-        
+
+
         int get_nnzLU () const;
         int get_num_preorder () const;
         int get_num_sym_fact () const;
@@ -61,7 +61,7 @@ namespace utopia {
         Amesos2Solver * clone() const override;
 
         private:
-            
+
             class Impl;
             std::unique_ptr<Impl> impl_;
 

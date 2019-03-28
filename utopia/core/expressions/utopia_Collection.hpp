@@ -1,5 +1,5 @@
 // #ifndef UTOPIA_ITERABLE_HPP
-// #define UTOPIA_ITERABLE_HPP 
+// #define UTOPIA_ITERABLE_HPP
 
 // #include <iterator>
 // #include "utopia_ForwardDeclarations.hpp"
@@ -49,7 +49,7 @@
 // 		std::shared_ptr<std::vector<Expr> > container_;
 // 	};
 
-// 	template<class Expr>       
+// 	template<class Expr>
 // 	Collection<Expr> wrap(std::vector<Expr> &container)
 // 	{
 // 		return Collection<Expr>(container);

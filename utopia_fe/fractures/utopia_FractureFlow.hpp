@@ -13,42 +13,42 @@
 
 namespace utopia {
 
-	class FractureFlow final : public Configurable, public Describable {
-	public:
-		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
-		typedef utopia::Traits<FunctionSpaceT> TraitsT;
-		typedef typename TraitsT::Matrix ElementMatrix;
+    class FractureFlow final : public Configurable, public Describable {
+    public:
+        typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
+        typedef utopia::Traits<FunctionSpaceT> TraitsT;
+        typedef typename TraitsT::Matrix ElementMatrix;
 
 
-		FractureFlow(libMesh::Parallel::Communicator &comm);
-		void read(Input &is) override;
-		bool empty() const;
-		void describe(std::ostream &os = std::cout) const override;
+        FractureFlow(libMesh::Parallel::Communicator &comm);
+        void read(Input &is) override;
+        bool empty() const;
+        void describe(std::ostream &os = std::cout) const override;
 
-		UIMesh<libMesh::DistributedMesh> mesh;
-		UIFunctionSpace<FunctionSpaceT>  space;
-		std::shared_ptr< UIForcingFunction<FunctionSpaceT, UVector> > forcing_function;
-		std::shared_ptr<UIFunction<double>> sampler;
-		ElementMatrix diffusion_tensor;
+        UIMesh<libMesh::DistributedMesh> mesh;
+        UIFunctionSpace<FunctionSpaceT>  space;
+        std::shared_ptr< UIForcingFunction<FunctionSpaceT, UVector> > forcing_function;
+        std::shared_ptr<UIFunction<double>> sampler;
+        ElementMatrix diffusion_tensor;
 
-		void apply_weak_BC(USparseMatrix &A, UVector &b) const;
+        void apply_weak_BC(USparseMatrix &A, UVector &b) const;
 
-	private:
-		std::shared_ptr< WeakDirichletBoundaryConditions<FunctionSpaceT, USparseMatrix, UVector> > weak_BC_;
-	};
+    private:
+        std::shared_ptr< WeakDirichletBoundaryConditions<FunctionSpaceT, USparseMatrix, UVector> > weak_BC_;
+    };
 
-	class FractureFlowAuxSystem {
-	public:
-	    FractureFlowAuxSystem(LibMeshFunctionSpace &V, const std::string &name = "aperture");
-	    void sample(const std::shared_ptr<UIFunction<double>> &sampler);
+    class FractureFlowAuxSystem {
+    public:
+        FractureFlowAuxSystem(LibMeshFunctionSpace &V, const std::string &name = "aperture");
+        void sample(const std::shared_ptr<UIFunction<double>> &sampler);
 
-	    UVector sampled;
+        UVector sampled;
 
-	private:
+    private:
 
-	    libMesh::LinearImplicitSystem &aux_;
-	    std::vector<int> var_nums_;
-	};
+        libMesh::LinearImplicitSystem &aux_;
+        std::vector<int> var_nums_;
+    };
 
 }
 

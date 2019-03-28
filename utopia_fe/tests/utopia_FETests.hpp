@@ -10,18 +10,18 @@
 
 namespace utopia {
 
-	class FETests {
-	public:
-		FETests();
-		void run(libMesh::Parallel::Communicator &comm, int argc, char * argv[]);
-		int add_test(const std::string &command, std::unique_ptr<FETest> &&app);
-		void print_usage(std::ostream &os) const;
+    class FETests {
+    public:
+        FETests();
+        void run(libMesh::Parallel::Communicator &comm, int argc, char * argv[]);
+        int add_test(const std::string &command, std::unique_ptr<FETest> &&app);
+        void print_usage(std::ostream &os) const;
 
-	private:
-		std::map<std::string, std::unique_ptr<FETest>> tests_;
+    private:
+        std::map<std::string, std::unique_ptr<FETest>> tests_;
 
-		
-	};
+
+    };
 }
 
 #endif //UTOPIA_FE_FE_TESTS_HPP

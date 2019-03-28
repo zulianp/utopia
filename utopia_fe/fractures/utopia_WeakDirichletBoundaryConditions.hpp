@@ -6,84 +6,84 @@
 
 namespace utopia {
 
-		template<class FunctionSpace, class Matrix, class Vector>
-		class WeakDirichletBoundaryConditions final : public Configurable {
-		public:
+        template<class FunctionSpace, class Matrix, class Vector>
+        class WeakDirichletBoundaryConditions final : public Configurable {
+        public:
 
-			WeakDirichletBoundaryConditions(FunctionSpace &V) : V_(V) {}
+            WeakDirichletBoundaryConditions(FunctionSpace &V) : V_(V) {}
 
-			~WeakDirichletBoundaryConditions() {}
+            ~WeakDirichletBoundaryConditions() {}
 
-			void read(Input &is) override {
-
-			
-
-				is.get_all([this](Input &is) {
-					int side = -1;
-					double penalty = 1e8;
-					std::string function_type = "expr";
-
-					is.get("side", side);
-					is.get("penalty", penalty);
-
-					assert(side != -1);
-					
-					if(side == -1) {
-						std::cerr << "[Error] side not specified" << std::endl;
-						return;
-					}
-
-	#ifdef WITH_TINY_EXPR
-					std::string value;
-					is.get("value", value);
-					auto f = symbolic(value);
-	#else
-					double value = 0.;
-					is.get("value", value);
-					auto f = coeff(value);
-	#endif //WITH_TINY_EXPR
+            void read(Input &is) override {
 
 
-					std::cout << "[Status] weak bc side = " << side << ", value = " << value << ", penalty = " << penalty << std::endl;
 
-					auto u = trial(V_);
-					auto v = test(V_);
+                is.get_all([this](Input &is) {
+                    int side = -1;
+                    double penalty = 1e8;
+                    std::string function_type = "expr";
 
-					auto b_form = surface_integral(penalty * inner(u, v), side);
-					auto l_form = surface_integral(penalty * inner(f, v), side);
+                    is.get("side", side);
+                    is.get("penalty", penalty);
 
-					Matrix B_temp;
-					Vector Bf_temp;
-					utopia::assemble(b_form == l_form, B_temp, Bf_temp);
+                    assert(side != -1);
 
-					if(empty(B_)) {
-						B_ = std::move(B_temp);
-					} else {
-						B_ += B_temp;
-					}
+                    if(side == -1) {
+                        std::cerr << "[Error] side not specified" << std::endl;
+                        return;
+                    }
 
-					if(empty(Bf_)) {
-						Bf_ = std::move(Bf_temp);
-					} else {
-						Bf_ += Bf_temp;
-					}
-				});
-			}
+    #ifdef WITH_TINY_EXPR
+                    std::string value;
+                    is.get("value", value);
+                    auto f = symbolic(value);
+    #else
+                    double value = 0.;
+                    is.get("value", value);
+                    auto f = coeff(value);
+    #endif //WITH_TINY_EXPR
 
-			inline void apply(Matrix &A, Vector &b) const
-			{
-				if(empty(B_)) return;
 
-				A += B_;
-				b += Bf_;
-			}
+                    std::cout << "[Status] weak bc side = " << side << ", value = " << value << ", penalty = " << penalty << std::endl;
 
-		private:
-			FunctionSpace &V_;
+                    auto u = trial(V_);
+                    auto v = test(V_);
 
-			Matrix B_;
-			Vector Bf_;
-		};
+                    auto b_form = surface_integral(penalty * inner(u, v), side);
+                    auto l_form = surface_integral(penalty * inner(f, v), side);
+
+                    Matrix B_temp;
+                    Vector Bf_temp;
+                    utopia::assemble(b_form == l_form, B_temp, Bf_temp);
+
+                    if(empty(B_)) {
+                        B_ = std::move(B_temp);
+                    } else {
+                        B_ += B_temp;
+                    }
+
+                    if(empty(Bf_)) {
+                        Bf_ = std::move(Bf_temp);
+                    } else {
+                        Bf_ += Bf_temp;
+                    }
+                });
+            }
+
+            inline void apply(Matrix &A, Vector &b) const
+            {
+                if(empty(B_)) return;
+
+                A += B_;
+                b += Bf_;
+            }
+
+        private:
+            FunctionSpace &V_;
+
+            Matrix B_;
+            Vector Bf_;
+        };
 }
 
 #endif //UTOPIA_WEAK_DIRICHLET_BOUNDARY_CONDITIONS_HPP

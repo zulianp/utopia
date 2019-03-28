@@ -81,7 +81,7 @@ namespace utopia {
             }
 
             result[n_actual_intersection].points.resize(n_nodes);
-            
+
             for(std::size_t i = 0; i < n_nodes; ++i) {
                 result[n_actual_intersection].points[i].x = solution[k][i].X/cut_off + min_x;
                 result[n_actual_intersection].points[i].y = solution[k][i].Y/cut_off + min_y;

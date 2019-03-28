@@ -8,15 +8,15 @@
 
 namespace utopia {
 
-	class FormEvalTest final : public FETest {
-	public:
-		void run(Input &in) override;
+    class FormEvalTest final : public FETest {
+    public:
+        void run(Input &in) override;
 
-		inline static std::string command()
-		{
-			return "fet";
-		}
-	};
+        inline static std::string command()
+        {
+            return "fet";
+        }
+    };
 
 }
 

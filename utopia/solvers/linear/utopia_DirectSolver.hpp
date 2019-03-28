@@ -1,5 +1,5 @@
 #ifndef UTOPIA_DIRECT_SOLVER_HPP
-#define UTOPIA_DIRECT_SOLVER_HPP 
+#define UTOPIA_DIRECT_SOLVER_HPP
 
 
 #include <iostream>
@@ -7,8 +7,8 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Preconditioner.hpp"
 
-namespace utopia 
-{   
+namespace utopia
+{
     template<typename Matrix, typename Vector>
     class DirectSolver : public LinearSolver<Matrix, Vector> {
     public:
@@ -28,7 +28,7 @@ namespace utopia
         virtual void print_usage(std::ostream &os) const override
         {
 
-        }        
+        }
     };
 
 }

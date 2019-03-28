@@ -1,5 +1,5 @@
 #ifndef UTOPIA_PETSC_HPP
-#define UTOPIA_PETSC_HPP 
+#define UTOPIA_PETSC_HPP
 
 #include "utopia_petsc_Backend.hpp"
 #include "utopia_petsc_Error.hpp"
@@ -33,19 +33,19 @@
 
 
 #ifdef WITH_SLEPC
-	#include "utopia_petsc_Slepc.hpp"
+    #include "utopia_petsc_Slepc.hpp"
 #endif
 
 
-// very much experimental files for the moment 
+// very much experimental files for the moment
 #include "utopia_petsc_SNES.hpp"
 #include "utopia_petsc_build_ksp.hpp"
 #include "utopia_petsc_Each.hpp"
 #include "utopia_petsc_debug.hpp"
 
 namespace utopia {
-	void optimize_nnz(DSMatrixd &A);
-	bool is_diagonally_dominant(const DSMatrixd &A);
+    void optimize_nnz(DSMatrixd &A);
+    bool is_diagonally_dominant(const DSMatrixd &A);
 }
 
 #endif //UTOPIA_PETSC_HPP

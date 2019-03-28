@@ -2,7 +2,7 @@
 #define UTOPIA_CORE_HPP
 
 
-// to get rid of unused variables in Realease build 
+// to get rid of unused variables in Realease build
 // #define ASSERT_DEBUG
 
 // #ifdef ASSERT_DEBUG

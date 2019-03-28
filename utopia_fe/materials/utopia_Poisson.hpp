@@ -13,20 +13,20 @@ namespace utopia {
     public:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        
+
         FormPoisson(FunctionSpace &V) : V_(V)
         {
             initialize();
         }
-        
+
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {
-            Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
             x_ = x;
             synchronize(x_);
 
             auto u  = trial(V_);
-          
+
             auto uk = interpolate(x_, u);
             auto r  = interpolate(rhs_, u);
 
@@ -38,10 +38,10 @@ namespace utopia {
 
             return true;
         }
-        
+
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
             x_ = x;
             synchronize(x_);
 
@@ -49,7 +49,7 @@ namespace utopia {
             auto v  = test(V_);
             auto uk = interpolate(x_, u);
             auto r  = interpolate(rhs_, u);
-            
+
             auto l_form = inner(grad(uk), grad(v)) * dX;
 
             utopia::assemble(l_form, gradient);
@@ -71,7 +71,7 @@ namespace utopia {
 
             return true;
         }
-        
+
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
             hessian = H_;
@@ -84,18 +84,18 @@ namespace utopia {
 
             return true;
         }
-        
+
     private:
         FunctionSpace &V_;
         Vector rhs_;
         Matrix H_;
-        
+
         void initialize()
         {
             auto u  = trial(V_);
             auto v  = test(V_);
             auto b_form = inner(grad(u), grad(v)) * dX;
-            utopia::assemble(b_form, H_);            
+            utopia::assemble(b_form, H_);
             utopia::assemble(inner(coeff(1.), v) * dX, rhs_);
 
             apply_boundary_conditions(V_.dof_map(), H_, rhs_);
@@ -109,9 +109,9 @@ namespace utopia {
              mark_constrained_dofs(V_.dof_map(), marked);
              this->set_equality_constrains(marked, x);
 
-             
+
         }
-        
+
     };
 
 
@@ -120,42 +120,42 @@ namespace utopia {
     public:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        
+
         Poisson(FunctionSpace &V) : V_(V), rhs_value_(10000.)
         {
             initialize();
         }
-        
+
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {
             energy = 0.5 * dot(H_ * x, x) - dot(x, rhs_);
             return true;
         }
-        
+
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
-        {   
+        {
             gradient = H_ * x - rhs_;
             apply_zero_boundary_conditions(V_.dof_map(), gradient);
             return true;
         }
-        
+
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
             hessian = H_;
             return true;
         }
-        
+
         bool update(const Vector &) override
         {
             return true;
         }
-        
+
     private:
         FunctionSpace &V_;
         Vector rhs_;
         Matrix H_;
         Scalar rhs_value_;
-        
+
         void initialize()
         {
             auto u  = trial(V_);
@@ -178,9 +178,9 @@ namespace utopia {
             mark_constrained_dofs(V_.dof_map(), marked);
             this->set_equality_constrains(marked, x);
         }
-        
+
     };
-    
+
 }
 
 #endif // UTOPIA_POISSON_HPP

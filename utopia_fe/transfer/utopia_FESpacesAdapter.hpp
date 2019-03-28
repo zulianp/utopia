@@ -1,5 +1,5 @@
 #ifndef UTOPIA_FE_SPACES_ADAPTER_HPP
-#define UTOPIA_FE_SPACES_ADAPTER_HPP 
+#define UTOPIA_FE_SPACES_ADAPTER_HPP
 
 #include "utopia_copy_dofmap.hpp"
 #include "utopia_ElementDofMap.hpp"
@@ -148,7 +148,7 @@ namespace utopia {
             assert(i >= 0);
             return handle_to_element_id_[i];
         }
-        
+
 
 
     private:
@@ -164,13 +164,13 @@ namespace utopia {
 
 template<class Iterator>
     static void write_space(
-        const Iterator &begin, 
+        const Iterator &begin,
         const Iterator &end,
         libMesh::MeshBase &space,
         const std::vector<ElementDofMap> &dof_map,
         const std::vector<ElementDofMap> &variable_order,
         const std::vector<libMesh::dof_id_type> &handle_to_element_id,
-        const int role, 
+        const int role,
         moonolith::OutputStream &os)
     {
         const int dim         = space.mesh_dimension();
@@ -273,9 +273,9 @@ template<class Iterator>
 
     template<class Iterator>
     static void write_element_selection(
-        const Iterator &begin, 
-        const Iterator &end, 
-        const FESpacesAdapter &spaces, 
+        const Iterator &begin,
+        const Iterator &end,
+        const FESpacesAdapter &spaces,
         moonolith::OutputStream &os)
     {
 
@@ -321,33 +321,33 @@ template<class Iterator>
 
         if(has_master) {
             write_space(
-                master_selection.begin(), 
-                master_selection.end(), 
-                *m, 
+                master_selection.begin(),
+                master_selection.end(),
+                *m,
                 spaces.dof_map(0),
-                spaces.variable_order(0), 
+                spaces.variable_order(0),
                 spaces.handle_to_element_id(0),
-                0, 
+                0,
                 os);
         }
 
         if(has_slave) {
             write_space(
-                slave_selection.begin(), 
-                slave_selection.end(), 
-                *s, 
+                slave_selection.begin(),
+                slave_selection.end(),
+                *s,
                 spaces.dof_map(1),
-                spaces.variable_order(1), 
+                spaces.variable_order(1),
                 spaces.handle_to_element_id(1),
-                1, 
+                1,
                 os);
         }
     }
 
     static void read_space(
-        moonolith::InputStream &is, 
+        moonolith::InputStream &is,
         std::shared_ptr<libMesh::MeshBase> & space,
-        std::vector<ElementDofMap> &dof_map, 
+        std::vector<ElementDofMap> &dof_map,
         std::vector<ElementDofMap> &variable_order,
         std::vector<libMesh::dof_id_type> &handle_to_element_id,
         const libMesh::Parallel::Communicator &comm)
@@ -380,18 +380,18 @@ template<class Iterator>
                 is >> p(j);
             }
 
-            mesh_ptr->add_point(p);        
+            mesh_ptr->add_point(p);
         }
 
         dof_map.resize(n_elements);
-        
+
         handle_to_element_id.resize(n_elements);
 
 
         CHECK_STREAM_READ_BEGIN("elements", is);
 
         for(long i = 0; i !=n_elements; ++i) {
-            handle_to_element_id[i] = i; 
+            handle_to_element_id[i] = i;
             //READ 7
 
             int type, e_n_nodes;
@@ -410,19 +410,19 @@ template<class Iterator>
 
                 elem->set_node(ii) = & mesh_ptr->node(index);
             }
-            
+
             mesh_ptr->add_elem(elem);
-            
+
             libmesh_assert(elem);
 
             //READ 9
             is >> dof_map.at(i);
-            
+
             //READ 10
             int volume_tag;
-            
+
             is >> volume_tag;
-            
+
             elem->subdomain_id()=volume_tag;
         }
 
@@ -435,9 +435,9 @@ template<class Iterator>
     }
 
     static void read_spaces(
-        moonolith::InputStream &is, 
-        FESpacesAdapter &spaces, 
-        const libMesh::Parallel::Communicator &comm_master, 
+        moonolith::InputStream &is,
+        FESpacesAdapter &spaces,
+        const libMesh::Parallel::Communicator &comm_master,
         const libMesh::Parallel::Communicator &comm_slave)
     {
         bool has_master, has_slave;
@@ -447,10 +447,10 @@ template<class Iterator>
 
         if(has_master) {
             read_space(
-                is, 
-                spaces.spaces()[0], 
+                is,
+                spaces.spaces()[0],
                 spaces.dof_map(0),
-                spaces.variable_order(0), 
+                spaces.variable_order(0),
                 spaces.handle_to_element_id(0),
                 comm_master);
 
@@ -460,8 +460,8 @@ template<class Iterator>
 
         if(has_slave) {
             read_space(
-                is, 
-                spaces.spaces()[1], 
+                is,
+                spaces.spaces()[1],
                 spaces.dof_map(1),
                 spaces.variable_order(1),
 

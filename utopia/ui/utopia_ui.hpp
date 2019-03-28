@@ -11,8 +11,8 @@
 
 namespace utopia {
 
-	class Path;
-	std::unique_ptr<Input> open_istream(const Path &path);
+    class Path;
+    std::unique_ptr<Input> open_istream(const Path &path);
 }
 
 #endif //UTOPIA_UI_HPP

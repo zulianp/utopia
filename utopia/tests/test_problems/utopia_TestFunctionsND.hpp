@@ -63,7 +63,7 @@ namespace utopia {
         bool hessian(const Vector &point, Matrix &result) const override
         {
             Matrix temp = outer(point, point);
-            
+
             if(empty(result) || size(result) != size(temp)) {
                 result = temp;
             }
@@ -236,7 +236,7 @@ namespace utopia {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<class Matrix, class Vector>
-    class MildStiffExample : public virtual Function<Matrix, Vector> , public virtual LeastSquaresFunction<Matrix, Vector> 
+    class MildStiffExample : public virtual Function<Matrix, Vector> , public virtual LeastSquaresFunction<Matrix, Vector>
     {
         static_assert(!utopia::is_sparse<Matrix>::value, "utopia::MildStiffExample does not support sparse matrices as Hessian is dense matrix.");
 
@@ -246,90 +246,90 @@ namespace utopia {
 
         MildStiffExample(const SizeType & n): n_(n)
         {
-            x_init_ = values(n_, 1.0);    
+            x_init_ = values(n_, 1.0);
 
-            const SizeType n_local = local_size(x_init_).get(0); 
-            b_ = local_values(n_local, 1.0); 
-            Vector u = local_values(n_local, 1.0); 
+            const SizeType n_local = local_size(x_init_).get(0);
+            b_ = local_values(n_local, 1.0);
+            Vector u = local_values(n_local, 1.0);
 
-            Matrix U = outer(u, u); 
-            Scalar udot = 2./dot(u,u); 
-            Matrix I = local_identity(n_local, n_local); 
-            U = I - (udot * U); 
+            Matrix U = outer(u, u);
+            Scalar udot = 2./dot(u,u);
+            Matrix I = local_identity(n_local, n_local);
+            U = I - (udot * U);
 
-            Matrix D = local_identity(n_local, n_local); 
-            
+            Matrix D = local_identity(n_local, n_local);
+
             {
-                Write<Matrix> re(D); 
-                auto r = row_range(D); 
+                Write<Matrix> re(D);
+                auto r = row_range(D);
 
                 for(auto i=r.begin(); i != r.end(); ++i)
-                    D.set(i,i, i+1); 
+                    D.set(i,i, i+1);
             }
 
             // because some problem with petsc, when using UDU
-            UDU_ = U * D; 
-            UDU_ *= U; 
+            UDU_ = U * D;
+            UDU_ *= U;
 
         }
 
-        bool value(const Vector &x, Scalar &result) const override 
+        bool value(const Vector &x, Scalar &result) const override
         {
             assert(x.size().get(0) == n_);
-            Vector g = 0*x; 
-            gradient(x, g); 
+            Vector g = 0*x;
+            gradient(x, g);
             result = 0.5 * dot(g, g);
             return true;
         }
 
-        bool gradient(const Vector &x, Vector &g) const override 
+        bool gradient(const Vector &x, Vector &g) const override
         {
             assert(x.size().get(0) == n_);
-            
+
             if(empty(g)){
-                g = 0*x; 
+                g = 0*x;
             }
 
             {
-                Write<Vector> wg(g); 
-                Read<Vector> rx(x); 
-                auto r = range(g); 
+                Write<Vector> wg(g);
+                Read<Vector> rx(x);
+                auto r = range(g);
 
                 for(auto i=r.begin(); i!=r.end(); ++i)
-                    g.set(i, std::pow(x.get(i), 3.)); 
+                    g.set(i, std::pow(x.get(i), 3.));
             }
 
-            g = (UDU_* g) - b_; 
+            g = (UDU_* g) - b_;
 
             return true;
         }
 
-        bool residual(const Vector &x, Vector &g) const override 
+        bool residual(const Vector &x, Vector &g) const override
         {
-            return gradient(x, g); 
+            return gradient(x, g);
         }
 
-        bool jacobian(const Vector &x, Matrix &H) const override 
+        bool jacobian(const Vector &x, Matrix &H) const override
         {
-            return hessian(x, H); 
+            return hessian(x, H);
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override 
+        bool hessian(const Vector &x, Matrix &H) const override
         {
 
-            Vector c = 0*x; 
+            Vector c = 0*x;
 
             {
-                Write<Vector> wg(c); 
-                Read<Vector> rx(x); 
-                auto r = range(c); 
+                Write<Vector> wg(c);
+                Read<Vector> rx(x);
+                auto r = range(c);
 
                 for(auto i=r.begin(); i!=r.end(); ++i)
-                    c.set(i, std::pow(x.get(i), 2.)); 
+                    c.set(i, std::pow(x.get(i), 2.));
             }
 
-            Matrix C = diag(c); 
-            H = 3. * UDU_ * C; 
+            Matrix C = diag(c);
+            H = 3. * UDU_ * C;
 
             return true;
         }
@@ -337,14 +337,14 @@ namespace utopia {
 
         void get_initial_guess(Vector & x) const
         {
-            x = x_init_; 
+            x = x_init_;
         }
 
         private:
-            const SizeType n_; 
-            Matrix UDU_; 
-            Vector b_; 
-            Vector x_init_; 
+            const SizeType n_;
+            Matrix UDU_;
+            Vector b_;
+            Vector x_init_;
 
     };
 

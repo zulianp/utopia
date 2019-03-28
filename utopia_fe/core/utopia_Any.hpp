@@ -2,8 +2,8 @@
 #define UTOPIA_FE_UNIVERSAL_TYPE_HPP
 
 namespace utopia {
-	class Any {};
-	class None {};
+    class Any {};
+    class None {};
 }
 
 #endif //UTOPIA_FE_UNIVERSAL_TYPE_HPP

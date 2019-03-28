@@ -35,7 +35,7 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 #################################################################################
 #################################################################################
 set(UTOPIA_DEV_FLAGS
-	"-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
+    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
 )
 
 # More annoying
@@ -45,52 +45,52 @@ set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
 if(UNIX AND NOT APPLE)
-	set(LINUX TRUE)
+    set(LINUX TRUE)
 endif()
 
 if(LINUX)
-	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
 
 
 if(ENABLE_TRACE)
-	set(UTOPIA_TRACE_ENABLED ON)
+    set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
 if(ENABLE_PASSO_EXTENSIONS)
-	set(WITH_PASSO_EXTENSIONS TRUE)
+    set(WITH_PASSO_EXTENSIONS TRUE)
 endif()
 
 IF(WIN32)
-	SET(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
-	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
+    SET(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 ENDIF()
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
 if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
-		SET(UTOPIA_DEV_FLAGS  "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+        SET(UTOPIA_DEV_FLAGS  "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
 
-	endif()
+    endif()
 endif()
 
 if(ENABLE_LOCK_CHECKING)
-	set(ENABLE_LOCK_CHECK TRUE)
+    set(ENABLE_LOCK_CHECK TRUE)
 endif()
 
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
-	IF(WIN32)
-		SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
-	ELSE()
-		SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-	ENDIF()
+    IF(WIN32)
+         SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
+    ELSE()
+         SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    ENDIF()
 endif()
 
 if(ENABLE_CXX14_FEATURES)
-	SET(WITH_CPP14 TRUE)
+    SET(WITH_CPP14 TRUE)
 endif()
 
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
@@ -100,14 +100,14 @@ message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 if( CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
-	message(FATAL_ERROR
-		"In-source builds are not allowed.
-		CMake would overwrite the makefiles distributed with Moose.
-		Please create a directory and run cmake from there, passing the path
-		to this source directory as the last argument.
-		This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
-		Please delete them."
-	)
+    message(FATAL_ERROR
+        "In-source builds are not allowed.
+        CMake would overwrite the makefiles distributed with Moose.
+        Please create a directory and run cmake from there, passing the path
+        to this source directory as the last argument.
+        This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
+        Please delete them."
+    )
 endif()
 
 #################################################################################
@@ -116,83 +116,83 @@ endif()
 # Utitlity functions
 
 function(create_absolute_paths root paths absolutePaths)
-	FOREACH(path ${${paths}})
-	SET(temp; ${temp} ${${root}}/${path})
-	ENDFOREACH()
-	SET(${absolutePaths} ${temp} PARENT_SCOPE)
+    FOREACH(path ${${paths}})
+    SET(temp; ${temp} ${${root}}/${path})
+    ENDFOREACH()
+    SET(${absolutePaths} ${temp} PARENT_SCOPE)
 endfunction()
 
 #################################################################################
 macro(print_dependency_table)
-	SET(DEP_TABLE "\n____________________________________________________\n\n   BACKENDS and STATUS TABLE\n")
-	SET(DEP_TABLE "${DEP_TABLE}--------------------------------------------------\n")
-	SET(DEP_TABLE "${DEP_TABLE}backend\t\t| active\t| developement status\n--------------------------------------------------\n")
-	SET(DEP_TABLE "${DEP_TABLE}petsc\t\t| ${UTOPIA_PETSC}\t\t| usable\n")
-	SET(DEP_TABLE "${DEP_TABLE}slepc\t\t| ${UTOPIA_SLEPC}\t\t| usable\n")
-	SET(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_BLAS}\t\t| usable\n")
-	SET(DEP_TABLE "${DEP_TABLE}trilinos\t| ${UTOPIA_TRILINOS}\t\t| basic algebra usable\n")
-	# SET(DEP_TABLE "${DEP_TABLE}openblas\t| ${OPEN_BLAS_FOUND}\t\t| usable\n")
-	SET(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_LAPACK}\t\t| usable\n")
-	SET(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| usable\n")
-	SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable but can be easily developed further\n")
-	SET(DEP_TABLE "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
-	SET(DEP_TABLE "${DEP_TABLE}m3elinsol\t| ${UTOPIA_M3ELINSOL}\t\t| work in progress\n")
-	SET(DEP_TABLE "${DEP_TABLE}____________________________________________________\n")
-	message(STATUS ${DEP_TABLE})
+    SET(DEP_TABLE "\n____________________________________________________\n\n   BACKENDS and STATUS TABLE\n")
+    SET(DEP_TABLE "${DEP_TABLE}--------------------------------------------------\n")
+    SET(DEP_TABLE "${DEP_TABLE}backend\t\t| active\t| developement status\n--------------------------------------------------\n")
+    SET(DEP_TABLE "${DEP_TABLE}petsc\t\t| ${UTOPIA_PETSC}\t\t| usable\n")
+    SET(DEP_TABLE "${DEP_TABLE}slepc\t\t| ${UTOPIA_SLEPC}\t\t| usable\n")
+    SET(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_BLAS}\t\t| usable\n")
+    SET(DEP_TABLE "${DEP_TABLE}trilinos\t| ${UTOPIA_TRILINOS}\t\t| basic algebra usable\n")
+    # SET(DEP_TABLE "${DEP_TABLE}openblas\t| ${OPEN_BLAS_FOUND}\t\t| usable\n")
+    SET(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_LAPACK}\t\t| usable\n")
+    SET(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| usable\n")
+    SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable but can be easily developed further\n")
+    SET(DEP_TABLE "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
+    SET(DEP_TABLE "${DEP_TABLE}m3elinsol\t| ${UTOPIA_M3ELINSOL}\t\t| work in progress\n")
+    SET(DEP_TABLE "${DEP_TABLE}____________________________________________________\n")
+    message(STATUS ${DEP_TABLE})
 endmacro()
 
 #################################################################################
 
 function(find_project_files rootPath dirPaths headers sources)
-	SET(verbose TRUE)
+    SET(verbose TRUE)
 
-	SET(theaders ${${headers}})
-	SET(tsources ${${sources}})
+    SET(theaders ${${headers}})
+    SET(tsources ${${sources}})
 
-	SET(ROOT_PATH ${${rootPath}})
-	SET(DIR_PATHS ${${dirPaths}})
+    SET(ROOT_PATH ${${rootPath}})
+    SET(DIR_PATHS ${${dirPaths}})
 
-	FOREACH(INCLUDE_PATH ${DIR_PATHS})
-		INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
+    FOREACH(INCLUDE_PATH ${DIR_PATHS})
+        INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
 
-		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
-		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
-		file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
-		file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
+        file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
+        file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
+        file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
+        file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
 
-		SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
+        SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
 
-		SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
-		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
-	ENDFOREACH(INCLUDE_PATH)
+        SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
+        SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
+    ENDFOREACH(INCLUDE_PATH)
 
-	SET(${headers} ${theaders} PARENT_SCOPE)
-	SET(${sources} ${tsources} PARENT_SCOPE)
+    SET(${headers} ${theaders} PARENT_SCOPE)
+    SET(${sources} ${tsources} PARENT_SCOPE)
 endfunction()
 
 #################################################################################
 
 function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST ITEM_PREFIX LIST_OF_STRINGS)
-	#http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
-	LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
+    #http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
+    LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
 
-	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
+    SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS})
+    FOREACH(LIST_EL ${LIST_OF_STRINGS})
 
-		string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
-		if(IS_FRAME_WORK)
-			get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
-			string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH "${LIST_EL}")
-			string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME "${FRAMEWORK_NAME}")
-			SET(TEMPSTR "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
-		else()
-		SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
-	endif()
-	ENDFOREACH(LIST_EL)
+        string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
+        if(IS_FRAME_WORK)
+            get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
+            string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH "${LIST_EL}")
+            string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME "${FRAMEWORK_NAME}")
+            SET(TEMPSTR "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
+        else()
+            SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
+        endif()
+    ENDFOREACH(LIST_EL)
 
-	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
-	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
+    SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
+    SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
 endfunction()
 
 #################################################################################
@@ -205,7 +205,7 @@ LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
 SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
 FOREACH(LIST_EL ${LIST_OF_STRINGS})
-	SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
+    SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
 ENDFOREACH(LIST_EL)
 
 SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
@@ -240,33 +240,33 @@ add_subdirectory(backend/polymorphic)
 
 # backend modules
 if(TRY_WITH_BLAS)
-	add_subdirectory(backend/blas)
+    add_subdirectory(backend/blas)
 endif()
 
 if(TRY_WITH_TRILINOS)
-	add_subdirectory(backend/trilinos)
+    add_subdirectory(backend/trilinos)
 endif()
 
 if(TRY_WITH_PETSC)
-	add_subdirectory(backend/petsc)
+    add_subdirectory(backend/petsc)
 endif()
 
 
 if(TRY_WITH_CUDA)
-	add_subdirectory(backend/cuda)
+    add_subdirectory(backend/cuda)
 endif()
 
 if(TRY_WITH_OPENCL)
-	add_subdirectory(backend/opencl)
+    add_subdirectory(backend/opencl)
 endif()
 
 if(TRY_WITH_M3ELINSOL)
-	add_subdirectory(backend/m3elinsol)
+    add_subdirectory(backend/m3elinsol)
 endif()
 
 # weird stuff goes here
 if(USE_SPIKE_SOLVERS)
-	list(APPEND UTOPIA_MODULES spike/solvers)
+    list(APPEND UTOPIA_MODULES spike/solvers)
 endif()
 
 # test suite
@@ -278,7 +278,7 @@ add_subdirectory(tests)
 set(UTOPIA_MODULES interoperability backend solvers differentiable core ui utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
-	add_subdirectory(${MODULE})
+    add_subdirectory(${MODULE})
 endforeach(MODULE)
 
 
@@ -294,16 +294,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
 
 list(APPEND UTOPIA_HEADERS
-	utopia.hpp
-	utopia_Base.hpp
-	utopia_Instance.hpp
-	)
+    utopia.hpp
+    utopia_Base.hpp
+    utopia_Instance.hpp
+    )
 
 list(APPEND UTOPIA_SOURCES
-	utopia.cpp
-	utopia_Instance.cpp
-	utopia_Base.cpp
-	)
+    utopia.cpp
+    utopia_Instance.cpp
+    utopia_Base.cpp
+    )
 
 # config is created based on the successful backend compilations
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
@@ -313,19 +313,19 @@ configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utop
 include(WriteCompilerDetectionHeader)
 
 write_compiler_detection_header(
-	FILE utopia_compiler_features.hpp
-	PREFIX UTOPIA
-	COMPILERS GNU Clang MSVC Intel AppleClang
-	FEATURES
-		# cxx_final #already in c++11
-		# cxx_noexcept #already in c++11
-		cxx_attribute_deprecated # in c++14
-	ALLOW_UNKNOWN_COMPILERS
+  FILE utopia_compiler_features.hpp
+  PREFIX UTOPIA
+  COMPILERS GNU Clang MSVC Intel AppleClang
+  FEATURES
+             # cxx_final #already in c++11
+             # cxx_noexcept #already in c++11
+             cxx_attribute_deprecated # in c++14
+  ALLOW_UNKNOWN_COMPILERS
 )
 
 install(FILES
-	${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
-	DESTINATION include
+    ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+    DESTINATION include
 )
 
 ##########################################################
@@ -336,26 +336,26 @@ target_link_libraries(utopia ${UTOPIA_COMPONENTS})
 target_link_libraries(utopia ${UTOPIA_LIBRARIES})
 
 if(NOT UTOPIA_ARCHIVE_ONLY)
-	# add_library(utopia_dynamic SHARED utopia.cpp ${UTOPIA_SOURCES})
-	# target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
-	# target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
+    # add_library(utopia_dynamic SHARED utopia.cpp ${UTOPIA_SOURCES})
+    # target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
+    # target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
 
-	add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
-	target_link_libraries(utopia_exec utopia)
-	target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
-	target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
+    add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
+    target_link_libraries(utopia_exec utopia)
+    target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
+    target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
-	install(TARGETS utopia utopia_exec #utopia_dynamic
-		RUNTIME DESTINATION bin
-		LIBRARY DESTINATION lib
-		ARCHIVE DESTINATION lib
-	)
+    install(TARGETS utopia utopia_exec #utopia_dynamic
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
 else()
-	install(TARGETS utopia
-		RUNTIME DESTINATION bin
-		LIBRARY DESTINATION lib
-		ARCHIVE DESTINATION lib
-	)
+    install(TARGETS utopia
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
 endif()
 
 install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
