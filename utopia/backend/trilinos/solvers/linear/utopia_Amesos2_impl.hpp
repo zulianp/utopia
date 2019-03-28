@@ -37,7 +37,6 @@
 #include <Tpetra_Map.hpp>
 #include <Tpetra_Operator.hpp>
 #include <Tpetra_Vector.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
 #include <Tpetra_Version.hpp>
 
 //////

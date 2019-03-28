@@ -106,7 +106,7 @@ namespace utopia {
 
 	TpetraVector::Scalar TpetraVector::max() const
 	{
-	  	Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), -std::numeric_limits<Scalar>::max());
+	  	Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), std::numeric_limits<Scalar>::min());
 	  	auto &comm = *communicator();
 	  	Scalar ret_global = 0.;
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
