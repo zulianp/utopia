@@ -448,6 +448,21 @@ namespace utopia {
 				forward->init();
 				backward->init();
 				operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+
+				if(params_->normalize) {
+					operator_ = std::make_shared<BidirectionalOperator>(
+						std::make_shared<NormalizedOperator>(
+							local_size(*forward),
+							forward
+						),
+						std::make_shared<NormalizedOperator>(
+							local_size(*backward),
+							backward
+						)
+					);
+				} else {
+					operator_ = std::make_shared<BidirectionalOperator>(forward, backward);
+				}
 			}
 		}
 
