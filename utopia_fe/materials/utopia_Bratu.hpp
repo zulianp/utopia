@@ -12,14 +12,14 @@ namespace utopia {
     public:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        
+
         Bratu(FunctionSpace &V, const Scalar lambda = 1.5) : V_(V), lambda_(lambda)
 
         {
             if(lambda>=0.0 && lambda < 6.81)
-                lambda_=lambda; 
+                lambda_=lambda;
             else{
-                std::cout<<"Bratu: lambda is not in the correct range. Please choose from the range: 0 < lambda < 6.8."; 
+                std::cout<<"Bratu: lambda is not in the correct range. Please choose from the range: 0 < lambda < 6.8.";
                 lambda_ = 1.0;
             }
 
@@ -28,7 +28,7 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &energy) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
             x_ = x;
             synchronize(x_);
 
@@ -39,10 +39,10 @@ namespace utopia {
             utopia::assemble(f, energy);
             return true;
         }
-        
+
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
             x_ = x;
             synchronize(x_);
 
@@ -50,17 +50,17 @@ namespace utopia {
             auto v  = test(V_);
             auto uk = interpolate(x_, u);
 
-            auto l_form = inner(grad(uk), grad(v)) * dX - lambda_ * inner(exp( uk), v) * dX; 
+            auto l_form = inner(grad(uk), grad(v)) * dX - lambda_ * inner(exp( uk), v) * dX;
 
             utopia::assemble(l_form, gradient);
 
             apply_zero_boundary_conditions(V_.dof_map(), gradient);
             return true;
         }
- 
+
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
             x_ = x;
             synchronize(x_);
 
@@ -73,7 +73,7 @@ namespace utopia {
             set_identity_at_constraint_rows(V_.dof_map(), hessian);
             return true;
         }
-        
+
     private:
         FunctionSpace &V_;
         Scalar lambda_;
@@ -88,9 +88,9 @@ namespace utopia {
             mark_constrained_dofs(V_.dof_map(), marked);
             this->set_equality_constrains(marked, x);
         }
-        
+
     };
-    
+
 }
 
 #endif // UTOPIA_FE_BRATU_HPP

@@ -1,5 +1,5 @@
 #ifndef UTOPIA_SEMIGEOMETRIC_MULTIGRID_TEST_HPP
-#define UTOPIA_SEMIGEOMETRIC_MULTIGRID_TEST_HPP 
+#define UTOPIA_SEMIGEOMETRIC_MULTIGRID_TEST_HPP
 
 
 #include "utopia_fe_base.hpp"
@@ -9,15 +9,15 @@
 
 namespace utopia {
 
-	class SMGTest final : public FETest {
-	public:
-		void run(Input &in) override;
+    class SMGTest final : public FETest {
+    public:
+        void run(Input &in) override;
 
-		inline static std::string command()
-		{
-			return "smg";
-		}
-	};
+        inline static std::string command()
+        {
+            return "smg";
+        }
+    };
 
 }
 

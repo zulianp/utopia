@@ -1,5 +1,5 @@
 #ifndef UTOPIA_FE_SPACES_R_ADAPTER_HPP
-#define UTOPIA_FE_SPACES_R_ADAPTER_HPP 
+#define UTOPIA_FE_SPACES_R_ADAPTER_HPP
 
 
 #include "utopia_copy_dofmap.hpp"
@@ -166,14 +166,14 @@ private:
 
 template<class Iterator>
 static void write_space(
-    const Iterator &begin, 
+    const Iterator &begin,
     const Iterator &end,
     libMesh::MeshBase &space,
     const std::vector<ElementDofMap> &dof_map,
     const std::vector<ElementDofMap> &dof_map_reverse,
     const std::vector<ElementDofMap> &variable_order,
     const std::vector<libMesh::dof_id_type> &handle_to_element_id,
-    const int role, 
+    const int role,
     moonolith::OutputStream &os)
 {
     const int dim         = space.mesh_dimension();
@@ -259,15 +259,15 @@ static void write_space(
 
         //WRITE 9
     assert(!dof_map.at(local_element_id).empty());
-        
+
     assert(!dof_map_reverse.at(local_element_id).empty());
 
     os << dof_map.at(local_element_id);
-        
+
     os << dof_map_reverse.at(local_element_id);
-        
+
     int block_id=elem->subdomain_id();
-        
+
     os << block_id;
 }
 
@@ -285,9 +285,9 @@ os << variable_order.at(0);
 
 template<class Iterator>
 static void write_element_selection(
-    const Iterator &begin, 
-    const Iterator &end, 
-    const FESpacesRAdapter &spaces, 
+    const Iterator &begin,
+    const Iterator &end,
+    const FESpacesRAdapter &spaces,
     moonolith::OutputStream &os)
 {
     if(spaces.spaces().empty()){
@@ -331,13 +331,13 @@ static void write_element_selection(
 
     if(has_master) {
         write_space(
-            master_selection.begin(), 
-            master_selection.end(), 
-            *m, spaces.dof_map(0), 
+            master_selection.begin(),
+            master_selection.end(),
+            *m, spaces.dof_map(0),
             spaces.dof_map_reverse(0),
-            spaces.variable_order(0), 
+            spaces.variable_order(0),
             spaces.handle_to_element_id(0),
-            0, 
+            0,
             os);
     }
 
@@ -355,12 +355,12 @@ static void write_element_selection(
 }
 
 static void read_space(
-    moonolith::InputStream &is, 
+    moonolith::InputStream &is,
     std::shared_ptr<libMesh::MeshBase> & space,
     std::vector<ElementDofMap> &dof_map,
     std::vector<ElementDofMap> &dof_map_reverse,
     std::vector<libMesh::dof_id_type> &handle_to_element_id,
-    std::vector<ElementDofMap> &variable_order, 
+    std::vector<ElementDofMap> &variable_order,
     const libMesh::Parallel::Communicator &comm)
 {
     using namespace std;
@@ -420,8 +420,8 @@ static void read_space(
             is >> index;
             elem->set_node(ii) = & mesh_ptr->node(index);
         }
-        
-        
+
+
         mesh_ptr->add_elem(elem);
         libmesh_assert(elem);
 
@@ -429,9 +429,9 @@ static void read_space(
         is >> dof_map.at(i);
         is >> dof_map_reverse.at(i);
         int volume_tag;
-        
+
         is >> volume_tag;
-        
+
         elem->subdomain_id()=volume_tag;
 
 
@@ -471,7 +471,7 @@ static void read_spaces(
             spaces.spaces()[0],
             spaces.dof_map(0),
             spaces.dof_map_reverse(0),
-            spaces.handle_to_element_id(0), 
+            spaces.handle_to_element_id(0),
             spaces.variable_order(0),
             comm_master);
 
@@ -481,7 +481,7 @@ static void read_spaces(
 
         if(has_slave) {
             read_space(
-                is, 
+                is,
                 spaces.spaces()[1],
                 spaces.dof_map(1),
                 spaces.dof_map_reverse(1),

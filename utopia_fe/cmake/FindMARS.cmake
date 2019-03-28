@@ -19,30 +19,30 @@ include(FindPackageHandleStandardArgs)
 # Search for include files
 find_path(MARS_INCLUDES
   NAMES "mars.hpp"
-  HINTS 
+  HINTS
       ${MARS_DIR}
       $ENV{MARS_DIR}
-  PATH_SUFFIXES include  
+  PATH_SUFFIXES include
   NO_DEFAULT_PATH)
 
-# Search for libraries 
+# Search for libraries
 find_library(MARS_LIBRARIES
  NAMES mars
- HINTS 
+ HINTS
      ${MARS_DIR}
      ${MARS_INCLUDES}/..
      $ENV{MARS_DIR}
-     PATH_SUFFIXES lib 
+     PATH_SUFFIXES lib
  NO_DEFAULT_PATH)
 
-# find_path(MARS_CONFIG_FILE_PATH 
+# find_path(MARS_CONFIG_FILE_PATH
 #   NAMES "mars_config.cmake"
 #   HINTS
 #     $ENV{MARS_DIR}
 #     ${MARS_DIR}
 #     ${MARS_INCLUDES}/..
 #     $ENV{MOONOLITH_ROOT}/utopia/build
-#     PATH_SUFFIXES config 
+#     PATH_SUFFIXES config
 #   NO_DEFAULT_PATH)
 
 

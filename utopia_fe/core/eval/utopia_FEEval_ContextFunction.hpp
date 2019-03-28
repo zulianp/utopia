@@ -7,34 +7,34 @@
 
 
 namespace utopia {
-	template<class Out, class Fun, class Traits, int Backend, int IsQuadData>
-	class FEEval<ContextFunction<Out, Fun>, Traits, Backend, IsQuadData> {
-	public:
-		typedef utopia::ContextFunction<Out, Fun> Expr;
+    template<class Out, class Fun, class Traits, int Backend, int IsQuadData>
+    class FEEval<ContextFunction<Out, Fun>, Traits, Backend, IsQuadData> {
+    public:
+        typedef utopia::ContextFunction<Out, Fun> Expr;
 
-	    inline static auto apply(
-	    	const Expr &expr,
-	    	AssemblyContext<Backend> &ctx) -> Out
-	    {
-	    	return expr.eval(ctx);
-	    } 
-	};
+        inline static auto apply(
+            const Expr &expr,
+            AssemblyContext<Backend> &ctx) -> Out
+        {
+            return expr.eval(ctx);
+        }
+    };
 
 
 
-	template<class Out, class Fun, class AssemblyContext>
-	class FunctionalTraits<ContextFunction<Out, Fun>, AssemblyContext> {
-	public:
-		inline static int type(const ContextFunction<Out, Fun> &expr, const AssemblyContext &ctx)  
-		{ 
-			return 0;
-		}
+    template<class Out, class Fun, class AssemblyContext>
+    class FunctionalTraits<ContextFunction<Out, Fun>, AssemblyContext> {
+    public:
+        inline static int type(const ContextFunction<Out, Fun> &expr, const AssemblyContext &ctx)
+        {
+            return 0;
+        }
 
-		inline static int order(const ContextFunction<Out, Fun> &expr, const AssemblyContext &ctx) 
-		{
-			return 0;
-		}
-	};
+        inline static int order(const ContextFunction<Out, Fun> &expr, const AssemblyContext &ctx)
+        {
+            return 0;
+        }
+    };
 }
 
 

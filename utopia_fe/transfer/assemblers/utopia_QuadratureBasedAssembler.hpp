@@ -6,24 +6,24 @@
 
 namespace utopia {
 
-	class QMortarBuilder;
+    class QMortarBuilder;
 
-	class QuadratureBasedAssembler {
-	public:
-		QuadratureBasedAssembler();
-		virtual ~QuadratureBasedAssembler();
+    class QuadratureBasedAssembler {
+    public:
+        QuadratureBasedAssembler();
+        virtual ~QuadratureBasedAssembler();
 
-		inline const QMortarBuilder &get_q_builder() const
-		{
-			assert(q_builder);
-			return *q_builder;
-		}
+        inline const QMortarBuilder &get_q_builder() const
+        {
+            assert(q_builder);
+            return *q_builder;
+        }
 
-		void set_q_builder(const std::shared_ptr<QMortarBuilder> &q_builder);
+        void set_q_builder(const std::shared_ptr<QMortarBuilder> &q_builder);
 
-	protected:
-		std::shared_ptr<QMortarBuilder> q_builder;
-	};
+    protected:
+        std::shared_ptr<QMortarBuilder> q_builder;
+    };
 
 }
 

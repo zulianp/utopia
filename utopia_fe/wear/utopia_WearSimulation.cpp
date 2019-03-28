@@ -34,9 +34,9 @@ namespace utopia {
         mesh_refinement.uniformly_refine(n_refs);
     }
 
-	class ElasticitySimulation {
-	public:
-		virtual ~ElasticitySimulation() {}
+    class ElasticitySimulation {
+    public:
+        virtual ~ElasticitySimulation() {}
 
         class Desc : public Configurable {
         public:
@@ -89,55 +89,55 @@ namespace utopia {
             int mesh_refinements;
         };
 
-		ElasticitySimulation()
-		{}
+        ElasticitySimulation()
+        {}
 
-		virtual bool init_sim(libMesh::Parallel::Communicator &comm, Input &is)
-		{
-			bool ok = false;
+        virtual bool init_sim(libMesh::Parallel::Communicator &comm, Input &is)
+        {
+            bool ok = false;
 
-			is.get("simulation", [this, &ok, &comm](Input &is) {
+            is.get("simulation", [this, &ok, &comm](Input &is) {
                 ok = init(comm, is);
             });
 
-			return ok;
-		}
+            return ok;
+        }
 
-		virtual bool init(libMesh::Parallel::Communicator &comm, Input &is)
-		{
+        virtual bool init(libMesh::Parallel::Communicator &comm, Input &is)
+        {
             // is.read(desc_);
             desc_.read(is);
 
-			mesh = std::make_shared<libMesh::DistributedMesh>(comm);
-			mesh->read(desc_.mesh_path);
+            mesh = std::make_shared<libMesh::DistributedMesh>(comm);
+            mesh->read(desc_.mesh_path);
 
             refine(desc_.mesh_refinements, *mesh);
 
-			auto dim = mesh->mesh_dimension();
+            auto dim = mesh->mesh_dimension();
 
             equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
-			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear");
-			main_sys_num = sys.number();
+            auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear");
+            main_sys_num = sys.number();
 
-			auto elem_order = libMesh::FIRST;
+            auto elem_order = libMesh::FIRST;
 
-			auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
-			auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
-			V  = Vx * Vy;
+            auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
+            auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
+            V  = Vx * Vy;
 
-			if(dim == 3) {
-				V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
-			}
+            if(dim == 3) {
+                V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
+            }
 
             /////////////////////////////////////////////////////////////////////////////
 
-			if(desc_.material_name == "NeoHookean") {
-				material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
-			} else if(desc_.material_name == "SaintVenantKirchoff") {
-				material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
+            if(desc_.material_name == "NeoHookean") {
+                material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
+            } else if(desc_.material_name == "SaintVenantKirchoff") {
+                material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
             } else /*if(desc_.material_name == "LinearElasticity")*/ {
-				material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
-			}
+                material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
+            }
 
             if(desc_.stabilization != "none") {
                 std::cout << "using stabilization: " << desc_.stabilization << " mag: " << desc_.stabilization_mag << std::endl;
@@ -147,7 +147,7 @@ namespace utopia {
             /////////////////////////////////////////////////////////////////////////////
 
             is.get("boundary-conditions", [this](Input &is) {
-            	is.get("dirichlet", [this](Input &is) {
+                is.get("dirichlet", [this](Input &is) {
 
                     is.get_all([this](Input &is) {
                         int side_set = 0, coord = 0;
@@ -173,7 +173,7 @@ namespace utopia {
 
                     });
 
-            	});
+                });
             });
 
 
@@ -196,13 +196,13 @@ namespace utopia {
 
         virtual void describe(std::ostream &os) const
         {
-        	os << "mesh_path:\t" << desc_.mesh_path << "\n";
-        	os << "output_path:\t" << desc_.output_path << "\n";
-        	os << "material_name:\t" << desc_.material_name << "\n";
-        	os << "material_params:\n";
-        	desc_.params.describe(os);
-        	os << "n_time_teps:\t" << desc_.n_time_teps << "\n";
-        	os << "dt:\t" << desc_.dt << "\n";
+            os << "mesh_path:\t" << desc_.mesh_path << "\n";
+            os << "output_path:\t" << desc_.output_path << "\n";
+            os << "material_name:\t" << desc_.material_name << "\n";
+            os << "material_params:\n";
+            desc_.params.describe(os);
+            os << "n_time_teps:\t" << desc_.n_time_teps << "\n";
+            os << "dt:\t" << desc_.dt << "\n";
         }
 
         inline Path output_path() const
@@ -211,33 +211,33 @@ namespace utopia {
         }
 
     public:
-    	std::shared_ptr<libMesh::DistributedMesh> mesh;
-    	ProductFunctionSpace<LibMeshFunctionSpace> V;
-    	std::shared_ptr<libMesh::EquationSystems> equation_systems;
-    	std::shared_ptr<ElasticMaterial<USparseMatrix, UVector> > material;
+        std::shared_ptr<libMesh::DistributedMesh> mesh;
+        ProductFunctionSpace<LibMeshFunctionSpace> V;
+        std::shared_ptr<libMesh::EquationSystems> equation_systems;
+        std::shared_ptr<ElasticMaterial<USparseMatrix, UVector> > material;
         std::shared_ptr<CompositeForcingFunction<UVector> > forcing_function;
 
-    	int main_sys_num;
-    	int aux_sys_num;
+        int main_sys_num;
+        int aux_sys_num;
 
         Desc desc_;
     };
 
     class ContactSimulation : public ElasticitySimulation {
     public:
-    	virtual ~ContactSimulation() {}
+        virtual ~ContactSimulation() {}
 
-    	virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
-    	{
-    		bool ok = true;
-    		if(!ElasticitySimulation::init(comm, is)) {
-    			ok = false;
-    		}
+        virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
+        {
+            bool ok = true;
+            if(!ElasticitySimulation::init(comm, is)) {
+                ok = false;
+            }
 
 
             std::set<int> temp;
-    		is.get("contact", [this,&temp](Input &is) {
-    			is.get("radius", contact_params.search_radius);
+            is.get("contact", [this,&temp](Input &is) {
+                is.get("radius", contact_params.search_radius);
 
                 std::string type;
                 is.get("type", type);
@@ -281,7 +281,7 @@ namespace utopia {
                         contact_params.contact_pair_tags.push_back({ master, slave });
                     });
                 });
-    		});
+            });
 
             contact_surfaces.clear();
             contact_surfaces.insert(contact_surfaces.end(), temp.begin(), temp.end());
@@ -291,8 +291,8 @@ namespace utopia {
 
         virtual void describe(std::ostream &os) const override
         {
-        	ElasticitySimulation::describe(os);
-        	contact_params.describe(os);
+            ElasticitySimulation::describe(os);
+            contact_params.describe(os);
         }
 
         ContactParams contact_params;
@@ -307,13 +307,13 @@ namespace utopia {
 
     class WearSimulation::SimulationInput : public ContactSimulation {
     public:
-    	SimulationInput()
+        SimulationInput()
         : wear_coefficient(7e-3), extrapolation_factor(10.)
-    	{}
+        {}
 
-    	virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
-    	{
-    		if(!ContactSimulation::init(comm, is)) return false;
+        virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
+        {
+            if(!ContactSimulation::init(comm, is)) return false;
 
             is.get("wear", [this](Input &is) {
                 is.get("n-cycles",   n_cycles);
@@ -323,11 +323,11 @@ namespace utopia {
             });
 
             gc.init(V);
-    		return true;
-    	}
+            return true;
+        }
 
 
-    	GaitCycle gc;
+        GaitCycle gc;
         int n_cycles;
         double wear_coefficient, extrapolation_factor;
 
@@ -347,16 +347,16 @@ namespace utopia {
         typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
         typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> TransientContactSolverT;
 
-    	SimulationInput in;
-    	auto is_ptr = open_istream(conf_file_path);
-    	if(!is_ptr) {
-    		std::cerr << "[Error] invalid path " << conf_file_path << std::endl;
-    		assert(false);
-    		return;
-    	}
+        SimulationInput in;
+        auto is_ptr = open_istream(conf_file_path);
+        if(!is_ptr) {
+            std::cerr << "[Error] invalid path " << conf_file_path << std::endl;
+            assert(false);
+            return;
+        }
 
-    	in.init_sim(init.comm(), *is_ptr);
-    	in.describe(std::cout);
+        in.init_sim(init.comm(), *is_ptr);
+        in.describe(std::cout);
 
 
         auto configuration_forces = std::make_shared<ConstantForcingFunction<UVector>>();
@@ -426,7 +426,7 @@ namespace utopia {
         UVector overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
         UVector wear_displacement = overriden_displacement;
 
-  
+
 
         MechanicsState state;
 
