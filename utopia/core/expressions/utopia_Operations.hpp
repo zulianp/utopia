@@ -21,7 +21,7 @@ namespace utopia {
     template<class Expr>
     Binary<Expr, Number<double>, Minus> operator-(const Expression<Expr> &left, const double &right)
     {
-        return Binary<Expr, Number<double>, Minus>(left, right); 
+        return Binary<Expr, Number<double>, Minus>(left, right);
     }
 
     template<class Expr>
@@ -143,52 +143,52 @@ namespace utopia {
      * @brief   \f$ \frac 1 {x_i}  \f$.
      */
     template<class Derived>
-    auto operator / (const typename Derived::Scalar &left, 
+    auto operator / (const typename Derived::Scalar &left,
                      const Expression<Derived> &expr) -> decltype( transform(expr, Reciprocal<typename Derived::Scalar>(left)) ) {
         return transform(expr, Reciprocal<typename Derived::Scalar>(left));
     }
 
     template<class LDerived, class RDerived>
     Binary<LDerived, RDerived, Divides> operator / (const Expression<LDerived> &left,
-                                                    const Expression<RDerived> &right) 
+                                                    const Expression<RDerived> &right)
     {
         return Binary<LDerived, RDerived, Divides>(left.derived(), right.derived());
     }
 
     //Counteract the reciprocal capture of the / operator
     template<class Expr, class Operation>
-    Binary<Number<typename Expr::Scalar>, 
-           Reduce<Expr, Operation>, Divides> operator / (const typename Expr::Scalar &left, 
-                                                         const Reduce<Expr, Operation> &right) 
+    Binary<Number<typename Expr::Scalar>,
+           Reduce<Expr, Operation>, Divides> operator / (const typename Expr::Scalar &left,
+                                                         const Reduce<Expr, Operation> &right)
     {
-        return Binary<Number<typename Expr::Scalar>, 
+        return Binary<Number<typename Expr::Scalar>,
                       Reduce<Expr, Operation>, Divides>(left, right);
     }
 
     template<class Derived, class Expr, class Operation>
-    Binary<Derived, 
-           Reduce<Expr, Operation>, Divides> operator / (const Expression<Derived> &left, 
-                                                         const Reduce<Expr, Operation> &right) 
+    Binary<Derived,
+           Reduce<Expr, Operation>, Divides> operator / (const Expression<Derived> &left,
+                                                         const Reduce<Expr, Operation> &right)
     {
-        return Binary<Derived, 
+        return Binary<Derived,
                       Reduce<Expr, Operation>, Divides>(left.derived(), right);
     }
 
     template<class Expr, int Type>
-    Binary<Number<typename Expr::Scalar>, 
-           Norm<Expr, Type>, Divides> operator/(const typename Expr::Scalar &left, 
-                                                const Norm<Expr, Type> &right) 
+    Binary<Number<typename Expr::Scalar>,
+           Norm<Expr, Type>, Divides> operator/(const typename Expr::Scalar &left,
+                                                const Norm<Expr, Type> &right)
     {
-        return Binary<Number<typename Expr::Scalar>, 
+        return Binary<Number<typename Expr::Scalar>,
                       Norm<Expr, Type>, Divides>(left, right);
     }
 
     template<class LExpr, class LOp, class RExpr, class ROp>
-    Binary<Reduce<LExpr, LOp>, 
+    Binary<Reduce<LExpr, LOp>,
            Reduce<RExpr, ROp>, Divides> operator/(const Reduce<LExpr, LOp> &left,
-                                                  const Reduce<RExpr, ROp> &right) 
+                                                  const Reduce<RExpr, ROp> &right)
     {
-        return Binary<Reduce<LExpr, LOp>, 
+        return Binary<Reduce<LExpr, LOp>,
                       Reduce<RExpr, ROp>, Divides>(left, right);
     }
 
@@ -223,20 +223,20 @@ namespace utopia {
     }
 
 
-    
+
     /**
      * @ingroup tensor_products
-     * @brief   Pointwise multiplication. 
+     * @brief   Pointwise multiplication.
      */
     template<class Left, class Right>
     inline Binary<Left, Right, EMultiplies> e_mul(const Expression<Left> &left, const Expression<Right> &right) {
-        return Binary<Left, Right, EMultiplies>(left.derived(), 
+        return Binary<Left, Right, EMultiplies>(left.derived(),
                                                 right.derived());
     }
 
     /**
      * @ingroup tensor_products
-     * @brief   Pointwise min. 
+     * @brief   Pointwise min.
      */
     template<class Left, class Right>
     inline Binary<Left, Right, Min> min(const Expression<Left> &left, const Expression<Right> &right) {
@@ -246,7 +246,7 @@ namespace utopia {
 
     /**
      * @ingroup tensor_products
-     * @brief   Pointwise max. 
+     * @brief   Pointwise max.
      */
     template<class Left, class Right>
     inline Binary<Left, Right, Max> max(const Expression<Left> &left, const Expression<Right> &right) {

@@ -15,7 +15,7 @@ namespace utopia {
 
     // template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Tensor::FILL_TYPE>
     // class ParallelEach {};
-    
+
     template<int FILL_TYPE>
     class ParallelEach<TVectord, 1, FILL_TYPE>{
     public:
@@ -30,7 +30,7 @@ namespace utopia {
                 k_v(i, 0) = fun(offset + i);
             });
         }
-        
+
         template<class Fun>
         inline static void apply_read(const TVectord &v, Fun fun)
         {
@@ -83,7 +83,7 @@ namespace utopia {
                  });
              });
         }
-        
+
         template<class Fun>
         inline static void apply_read(const TSMatrixd &mat, Fun fun)
         {
@@ -158,10 +158,10 @@ namespace utopia {
             });
         }
     };
-    
+
     template<class Fun>
-    inline void parallel_each_apply(TSMatrixd &mat, Fun fun) 
-    {   
+    inline void parallel_each_apply(TSMatrixd &mat, Fun fun)
+    {
         typedef Kokkos::TeamPolicy<>               team_policy;
         typedef Kokkos::TeamPolicy<>::member_type  member_type;
 

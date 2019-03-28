@@ -3,14 +3,14 @@
 
 #include "utopia_Base.hpp"
 
-namespace utopia 
+namespace utopia
 {
     /**
-     * @brief       Function for box-constrained nonlinear problems. 
-     *              Additionally to gradient, hessian, function value provides interface to lower and upper bound on solution. 
+     * @brief       Function for box-constrained nonlinear problems.
+     *              Additionally to gradient, hessian, function value provides interface to lower and upper bound on solution.
      *
-     * @tparam     Matrix  
-     * @tparam     Vector  
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector>
     class FunctionBoxConstrained : public Function<Matrix, Vector>

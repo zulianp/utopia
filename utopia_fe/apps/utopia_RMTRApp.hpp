@@ -5,24 +5,24 @@
 #include "utopia_FEApp.hpp"
 
 namespace utopia {
-	class RMTRApp final : public FEApp {
-	public:
-		void run(Input &in) override;
+    class RMTRApp final : public FEApp {
+    public:
+        void run(Input &in) override;
 
 
-		
-		inline static std::string command()
-		{
-			return "-rmtr";
-		}
 
-		class SimulationInput;
+        inline static std::string command()
+        {
+            return "-rmtr";
+        }
 
-	private:
+        class SimulationInput;
 
-		void solve_newton(const SimulationInput &in);
-		void solve_rmtr(const SimulationInput &in);
-	};
+    private:
+
+        void solve_newton(const SimulationInput &in);
+        void solve_rmtr(const SimulationInput &in);
+    };
 }
 
 #endif //UTOPIA_RMTR_APP_HPP

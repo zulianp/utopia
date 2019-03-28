@@ -7,19 +7,19 @@
 
 namespace utopia {
     template<typename T>
-	class CudaTraits {
-	public:
-		typedef T Scalar;
-		typedef utopia::CUDAMatrix<T> Matrix;
-		typedef utopia::CUDAVector<T> Vector;
-		typedef long SizeType;
-		enum {
-			Backend = CUDA
-		};
-	};
+    class CudaTraits {
+    public:
+        typedef T Scalar;
+        typedef utopia::CUDAMatrix<T> Matrix;
+        typedef utopia::CUDAVector<T> Vector;
+        typedef long SizeType;
+        enum {
+            Backend = CUDA
+        };
+    };
 
-	UTOPIA_MAKE_TRAITS_TPL_1(CUDAVector, CudaTraits);
-	UTOPIA_MAKE_TRAITS_DENSE_TPL_1(CUDAMatrix, CudaTraits);
+    UTOPIA_MAKE_TRAITS_TPL_1(CUDAVector, CudaTraits);
+    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(CUDAMatrix, CudaTraits);
 }
 
 #endif //UTOPIA_CUDA_TRAITS_HPP

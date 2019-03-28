@@ -62,7 +62,7 @@ namespace utopia {
         std::vector<SizeType> is{0, 1, 2, 3, 4, 5, 6, 7, 8};
 
         {
-            Write<Matrixd> w_A(A); 
+            Write<Matrixd> w_A(A);
             A.set_matrix(is, is, {
                 +6.944444e+05, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, +1.388889e+06, -5.555556e+04, 0, -3.194444e+05, -3.472222e+05, 0, 0, 0,

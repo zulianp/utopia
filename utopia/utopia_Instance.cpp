@@ -47,7 +47,7 @@ namespace utopia {
 
 #ifdef WITH_TRILINOS
         Tpetra::initialize(&argc, &argv);
-#endif //WITH_TRILINOS  
+#endif //WITH_TRILINOS
     }
 
 
@@ -77,7 +77,7 @@ namespace utopia {
 
 #ifdef WITH_TRILINOS
         Tpetra::finalize();
-#endif //WITH_TRILINOS  
+#endif //WITH_TRILINOS
 
         return  instance().exit_code_;
     }

@@ -1,6 +1,6 @@
 
 #ifndef UTOPIA_V_TREE_HPP
-#define UTOPIA_V_TREE_HPP 
+#define UTOPIA_V_TREE_HPP
 
 #include "utopia_VElementAdapter.hpp"
 
@@ -17,20 +17,20 @@ namespace utopia {
         enum {
             Dimension = _Dimension
         };
-        
+
         typedef utopia::BoxBoxAdapter<Dimension> Bound;
         typedef utopia::VElementAdapter<Dimension> DataType;
-        
+
     };
-    
+
     template<int Dimension>
     class VTree : public moonolith::Tree< VTreeTraits<Dimension> > {
     public:
         typedef VTreeTraits<Dimension> Traits;
-        
+
         VTree() {};
-        
-        
+
+
         static std::shared_ptr<VTree> New(const std::shared_ptr<moonolith::Predicate> &predicate,
                                           const int maxElementsXNode = moonolith::DEFAULT_REFINE_MAX_ELEMENTS,
                                           const int maxDepth = moonolith::DEFAULT_REFINE_DEPTH
@@ -42,8 +42,8 @@ namespace utopia {
             tree->set_mutator_factory(factory);
             return tree;
         }
-        
-        
+
+
     };
 }
 

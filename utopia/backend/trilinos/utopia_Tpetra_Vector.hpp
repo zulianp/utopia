@@ -16,16 +16,15 @@
 
 #include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
 
 #include <memory>
 
 namespace utopia {
 
     class TpetraVector {
-    public: 
-    
-    
+    public:
+
+
     typedef Tpetra::Operator<>::scalar_type SC;
     typedef Tpetra::Operator<SC>::local_ordinal_type LO;
     typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
@@ -118,7 +117,7 @@ namespace utopia {
 
 
 
-        void ghosted(const rcp_comm_type &comm, 
+        void ghosted(const rcp_comm_type &comm,
                      const TpetraVector::GO &local_size,
                      const TpetraVector::GO &global_size,
                      const std::vector<GO> &ghost_index
@@ -384,7 +383,7 @@ namespace utopia {
         {
             //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
             result.values(this->communicator(), local_size().get(0), size().get(0), 0.);
-          
+
             result.implementation().elementWiseMultiply(
                 1.,
                 this->implementation(),
@@ -459,7 +458,7 @@ namespace utopia {
         {
             return !ghosted_vec_.is_null();
         }
-        
+
     private:
         rcpvector_type vec_;
         rcpvector_type ghosted_vec_;

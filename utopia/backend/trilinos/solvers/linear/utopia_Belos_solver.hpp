@@ -52,8 +52,8 @@ namespace utopia {
          */
         void read_xml(const std::string &path);
 
-        void read(Input &in) override { 
-          Smoother<Matrix, Vector>::read(in); 
+        void read(Input &in) override {
+          Smoother<Matrix, Vector>::read(in);
           PreconditionedSolver::read(in);
           //TODO
           m_utopia_warning_once("not implemented");
@@ -61,7 +61,7 @@ namespace utopia {
 
         void print_usage(std::ostream &os = std::cout) const override
         {
-          Smoother<Matrix, Vector>::print_usage(os); 
+          Smoother<Matrix, Vector>::print_usage(os);
           PreconditionedSolver::print_usage(os);
           //TODO
           m_utopia_warning_once("not implemented");

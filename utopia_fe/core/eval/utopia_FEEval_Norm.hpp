@@ -7,34 +7,34 @@
 
 namespace utopia {
 
-	template<class InnerExpr, int Type, class Traits, int Backend, int IsQuadData>
-	class FEEval<Norm<InnerExpr, Type>, Traits, Backend, IsQuadData> {
-	public:
-		typedef utopia::Norm<InnerExpr, Type> Expr;		
+    template<class InnerExpr, int Type, class Traits, int Backend, int IsQuadData>
+    class FEEval<Norm<InnerExpr, Type>, Traits, Backend, IsQuadData> {
+    public:
+        typedef utopia::Norm<InnerExpr, Type> Expr;
 
-		inline static auto apply(
-			const Expr &expr,
-			AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::trace(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx) )
-		{
-			static_assert(Type == 2, "TODO other norms");
+        inline static auto apply(
+            const Expr &expr,
+            AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::trace(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx) )
+        {
+            static_assert(Type == 2, "TODO other norms");
 
-			return FEBackend<Backend>::norm2(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx);
-		}  
-	};
+            return FEBackend<Backend>::norm2(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx);
+        }
+    };
 
-	template<class Inner, int Type, class AssemblyContext>
-	class FunctionalTraits<Norm<Inner, Type>, AssemblyContext> {
-	public:
-		inline static int type(const Norm<Inner, Type> &expr, const AssemblyContext &ctx)  
-		{ 
-			return FunctionalTraits<Inner, AssemblyContext>::type(expr.expr(), ctx);
-		}
+    template<class Inner, int Type, class AssemblyContext>
+    class FunctionalTraits<Norm<Inner, Type>, AssemblyContext> {
+    public:
+        inline static int type(const Norm<Inner, Type> &expr, const AssemblyContext &ctx)
+        {
+            return FunctionalTraits<Inner, AssemblyContext>::type(expr.expr(), ctx);
+        }
 
-		inline static int order(const Norm<Inner, Type> &expr, const AssemblyContext &ctx) 
-		{
-			return FunctionalTraits<Inner, AssemblyContext>::order(expr.expr(), ctx);
-		}
-	};
+        inline static int order(const Norm<Inner, Type> &expr, const AssemblyContext &ctx)
+        {
+            return FunctionalTraits<Inner, AssemblyContext>::order(expr.expr(), ctx);
+        }
+    };
 }
 
 #endif //UTOPIA_FE_EVAL_NORM2_HPP

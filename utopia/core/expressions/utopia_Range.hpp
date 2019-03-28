@@ -45,7 +45,7 @@ namespace utopia {
         }
 
         /**
-         * @return extent of the range => number of elements between 1st and the last element in the range. 
+         * @return extent of the range => number of elements between 1st and the last element in the range.
          */
         inline SizeType extent() const
         {
@@ -53,21 +53,21 @@ namespace utopia {
         }
 
         /**
-         * @brief      Checks if range is empty. 
+         * @brief      Checks if range is empty.
          */
         inline bool empty() const {
             return _extent == 0;
         }
 
         /**
-         * @brief      Checks if range is valid. 
+         * @brief      Checks if range is valid.
          */
         inline bool valid() const {
             return _extent >= 0;
         }
 
         /**
-         * @brief      Checks if given index is inside of the range. 
+         * @brief      Checks if given index is inside of the range.
          */
         inline bool inside(const SizeType index) const
         {
@@ -86,7 +86,7 @@ namespace utopia {
         }
 
         /**
-         * @brief      Finds intersection with other range. 
+         * @brief      Finds intersection with other range.
          */
         inline Range intersect(const Range &other) const {
             using std::max;

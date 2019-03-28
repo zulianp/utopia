@@ -12,12 +12,12 @@ namespace utopia {
     public:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        
+
         MinSurf(FunctionSpace &V) : V_(V)
         {
             initialize();
         }
-        
+
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {
             // auto u  = trial(V_);
@@ -26,7 +26,7 @@ namespace utopia {
             // utopia::assemble(f, energy);
             return true;
         }
-        
+
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
         {
             auto u  = trial(V_);
@@ -35,12 +35,12 @@ namespace utopia {
             // auto denom = sqrt( inner(coeff(1.) + inner(grad(uk), grad(uk)) );
             // auto num   = inner(grad(uk)/denom, grad(v));
             // auto l_form = (num/denom) * dX;
- 
+
             // auto l_form = ( inner( grad(uk), grad(v) ) / inner( grad(uk), grad(v) ) ) * dX;
             // utopia::assemble(l_form, gradient);
             return true;
         }
-        
+
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
             // auto u  = trial(V_);
@@ -53,7 +53,7 @@ namespace utopia {
             // set_identity_at_constraint_rows(V_.dof_map(), hessian);
             return true;
         }
-        
+
     private:
         FunctionSpace &V_;
 
@@ -67,7 +67,7 @@ namespace utopia {
             this->set_equality_constrains(marked, x);
         }
     };
-    
+
 }
 
 #endif // UTOPIA_MIN_SURF_HPP

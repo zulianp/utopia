@@ -10,16 +10,16 @@
 #include <vector>
 
 namespace utopia {
-	typedef utopia::Matrixd ElementMatrix;
-	typedef utopia::Vectord ElementVector;
-	typedef std::vector< std::vector<utopia::ElementVector> > HMDerivative;
-	typedef std::vector< std::vector<utopia::ElementMatrix> > HMJacobian;
-	typedef std::vector< std::vector<double> > HMFun;
+    typedef utopia::Matrixd ElementMatrix;
+    typedef utopia::Vectord ElementVector;
+    typedef std::vector< std::vector<utopia::ElementVector> > HMDerivative;
+    typedef std::vector< std::vector<utopia::ElementMatrix> > HMJacobian;
+    typedef std::vector< std::vector<double> > HMFun;
 
-	typedef std::vector< std::vector<utopia::ElementVector> > HMVectorFEFun;
-	typedef std::vector< std::vector<utopia::ElementMatrix> > HMVectorFEDerivative;
+    typedef std::vector< std::vector<utopia::ElementVector> > HMVectorFEFun;
+    typedef std::vector< std::vector<utopia::ElementMatrix> > HMVectorFEDerivative;
 
-	typedef std::vector<double> HMDx;
+    typedef std::vector<double> HMDx;
 }
 
 #endif //UTOPIA_HOMEMADE_FE_TYPES_HPP

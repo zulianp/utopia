@@ -6,10 +6,10 @@
 #include "utopia_Function.hpp"
 
 
-namespace utopia 
+namespace utopia
 {
     template<class Matrix, class Vector>
-    class Chebyquad35 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class Chebyquad35 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
@@ -19,71 +19,71 @@ namespace utopia
         {
 
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
-            
-            x_exact_ = values(8, 0.0); 
-            x_init_ = values(8, 0.0); 
-            SizeType n_global = 8.0; 
+
+            x_exact_ = values(8, 0.0);
+            x_init_ = values(8, 0.0);
+            SizeType n_global = 8.0;
 
             {
                 const Write<Vector> write1(x_init_);
                 const Write<Vector> write2(x_exact_);
 
-                each_write(x_init_, [n_global](const SizeType i) -> double 
-                { 
+                each_write(x_init_, [n_global](const SizeType i) -> double
+                {
                     return (i+1)/Scalar(n_global +1);
-                }   );   
+                }   );
 
-                x_exact_.set(0, 0.043153); 
-                x_exact_.set(1, 0.193091); 
-                x_exact_.set(2, 0.266329); 
-                x_exact_.set(3, 0.500000); 
-                x_exact_.set(4, 0.500000); 
-                x_exact_.set(5, 0.733671); 
-                x_exact_.set(6, 0.806910); 
-                x_exact_.set(7, 0.956847); 
-            }            
+                x_exact_.set(0, 0.043153);
+                x_exact_.set(1, 0.193091);
+                x_exact_.set(2, 0.266329);
+                x_exact_.set(3, 0.500000);
+                x_exact_.set(4, 0.500000);
+                x_exact_.set(5, 0.733671);
+                x_exact_.set(6, 0.806910);
+                x_exact_.set(7, 0.956847);
+            }
         }
 
         std::string name() const override
         {
-            return "Chebyquad"; 
+            return "Chebyquad";
         }
 
         SizeType dim() const override
         {
-            return 8; 
+            return 8;
         }
 
-        bool value(const Vector &x, Scalar &result) const override 
+        bool value(const Vector &x, Scalar &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(size(x).get(0) == this->dim());
-            
-            Vector fvec; 
-            this->eval_polynomial(x, fvec); 
-            result = dot(fvec, fvec); 
+
+            Vector fvec;
+            this->eval_polynomial(x, fvec);
+            result = dot(fvec, fvec);
 
             return true;
         }
 
-        bool gradient(const Vector &x, Vector &g) const override 
+        bool gradient(const Vector &x, Vector &g) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(size(x).get(0) == this->dim());
-            
-            Vector fvec; 
-            this->eval_polynomial(x, fvec); 
 
-            g = zeros(this->dim()); 
-            std::vector<Scalar>g_help(this->dim()); 
+            Vector fvec;
+            this->eval_polynomial(x, fvec);
+
+            g = zeros(this->dim());
+            std::vector<Scalar>g_help(this->dim());
 
             {
                 const Read<Vector> read1(x);
@@ -95,7 +95,7 @@ namespace utopia
                     Scalar t2 = (2.0 * x.get(j)) - 1.0;
                     Scalar t  = 2.0 * t2;
                     Scalar s1 = 0.0;
-                    Scalar s2 = 2.0; 
+                    Scalar s2 = 2.0;
 
                     for(auto i=0; i<this->dim(); i++)
                     {
@@ -115,7 +115,7 @@ namespace utopia
 
                 for(auto i=0; i<this->dim(); i++)
                 {
-                    g.set(i, g_help[i]/this->dim() *2.0); 
+                    g.set(i, g_help[i]/this->dim() *2.0);
                 }
             }
 
@@ -123,22 +123,22 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override 
+        bool hessian(const Vector &x, Matrix &H) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
-                        
-            auto n = this->dim(); 
-            assert(size(x).get(0) == n);
-            
-            Vector fvec; 
-            this->eval_polynomial(x, fvec); 
 
-            H = zeros(n, n); 
+            auto n = this->dim();
+            assert(size(x).get(0) == n);
+
+            Vector fvec;
+            this->eval_polynomial(x, fvec);
+
+            H = zeros(n, n);
             std::vector<std::vector<Scalar> > hess(n, std::vector<Scalar>(n));
-            std::vector<Scalar> g(n); 
+            std::vector<Scalar> g(n);
 
             Scalar d1 = 1.0 / n;
             Scalar d2 = 2.0 * d1;
@@ -160,7 +160,7 @@ namespace utopia
                     g[j-1] = s2;
 
                     for(auto i=2; i <= n; i++)
-                    {                
+                    {
                       Scalar th = (4.0 * t2) + (t * s2) - s1;
                       s1 = s2;
                       s2 = th;
@@ -174,7 +174,7 @@ namespace utopia
                       hess[j-1][j-1] += (fvec.get(i-1) * th) + (d1 * s2 * s2);
                     }
 
-                    hess[j-1][j-1] *= d2; 
+                    hess[j-1][j-1] *= d2;
 
                     for(auto k=1; k <= j-1; k++)
                     {
@@ -196,7 +196,7 @@ namespace utopia
                             tt2 = tth;
                       }
 
-                        hess[j-1][k-1] = d2 * d1 * hess[j-1][k-1]; 
+                        hess[j-1][k-1] = d2 * d1 * hess[j-1][k-1];
 
                     }
                 }
@@ -210,28 +210,28 @@ namespace utopia
                 {
                     for(auto j=0; j < this->dim(); j++)
                     {
-                        H.set(i, j,  hess[i][j]); 
+                        H.set(i, j,  hess[i][j]);
                     }
                 }
 
             }
 
-            // this could be done way much nicer... 
-            Matrix D = diag(diag(H)); 
-            H = H + transpose(H) - D;             
+            // this could be done way much nicer...
+            Matrix D = diag(diag(H));
+            H = H + transpose(H) - D;
 
 
             return true;
         }
-        
+
         Vector initial_guess() const override
         {
-            return x_init_; 
+            return x_init_;
         }
 
         const Vector & exact_sol() const override
         {
-            return x_exact_; 
+            return x_exact_;
         }
 
         Scalar min_function_value() const override
@@ -244,11 +244,11 @@ namespace utopia
             void eval_polynomial(const Vector & x, Vector & fvec) const
             {
                 if(empty(fvec)){
-                    fvec=local_zeros(local_size(x).get(0)); 
+                    fvec=local_zeros(local_size(x).get(0));
                 }
 
-                const SizeType n_global = size(x).get(0); 
-                std::vector<Scalar>f_help(n_global); 
+                const SizeType n_global = size(x).get(0);
+                std::vector<Scalar>f_help(n_global);
 
                 {
                     const Read<Vector> read1(x);
@@ -261,7 +261,7 @@ namespace utopia
 
                         for(auto i=0; i<n_global; i++)
                         {
-                            f_help[i] = f_help[i] + t2; 
+                            f_help[i] = f_help[i] + t2;
                             Scalar th = t * t2 - t1;
                             t1 = t2;
                             t2 = th;
@@ -271,11 +271,11 @@ namespace utopia
 
                 for(auto i=1; i<=n_global; i++)
                 {
-                    f_help[i -1] = f_help[i-1]/n_global; 
+                    f_help[i -1] = f_help[i-1]/n_global;
 
                     if( (i%2) == 0)
                     {
-                        f_help[i -1] = f_help[i -1] + (1.0/((i*i) -1.0)); 
+                        f_help[i -1] = f_help[i -1] + (1.0/((i*i) -1.0));
                     }
 
                 }
@@ -285,17 +285,17 @@ namespace utopia
 
                     for(auto i=0; i<n_global; i++)
                     {
-                        fvec.set(i, f_help[i]); 
+                        fvec.set(i, f_help[i]);
                     }
                 }
             }
 
-    private: 
-        Vector x_init_; 
-        Vector x_exact_; 
+    private:
+        Vector x_init_;
+        Vector x_exact_;
 
-    };    
-    
+    };
+
 }
 
 #endif //UTOPIA_SOLVER_CHEBYQUAD_35

@@ -123,7 +123,7 @@ namespace utopia {
             default: {
                 return "unknown code";
             }
-        }   
+        }
     }
 
     //explicit

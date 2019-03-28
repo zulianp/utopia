@@ -9,7 +9,7 @@
 #include "utopia_HessianApproximations.hpp"
 
 
-namespace utopia 
+namespace utopia
 {
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class QuasiRMTR :   public RMTR<Matrix, Vector, CONSISTENCY_LEVEL>
@@ -22,81 +22,81 @@ namespace utopia
 
 
         typedef utopia::MatrixFreeTRSubproblem<Vector>  TRSubproblem;
-        typedef std::shared_ptr<TRSubproblem>           TRSubproblemPtr; 
+        typedef std::shared_ptr<TRSubproblem>           TRSubproblemPtr;
 
 
         typedef utopia::HessianApproximation<Vector>    HessianApproximation;
-        typedef std::shared_ptr<HessianApproximation>   HessianApproxPtr; 
+        typedef std::shared_ptr<HessianApproximation>   HessianApproxPtr;
 
 
         static_assert(utopia::is_first_order<CONSISTENCY_LEVEL>::value, "utopia::QuasiRMTR does not support second order, nor galerkin consistency, nor Galerkin.");
 
     public:
 
-        QuasiRMTR(  const SizeType & n_levels): 
+        QuasiRMTR(  const SizeType & n_levels):
                     RMTR(n_levels)
         {
-         //   hessian_approxs_.resize(n_levels); 
+         //   hessian_approxs_.resize(n_levels);
         }
 
         virtual ~QuasiRMTR()
         {
-            
-        } 
-        
+
+        }
+
         virtual void read(Input &in) override
         {
             RMTR::read(in);
 
-            if(_tr_subproblems.size() > 0) 
+            if(_tr_subproblems.size() > 0)
             {
                 in.get("coarse-QPSolver", *_tr_subproblems[0]);
 
                 for(auto i=1; i < _tr_subproblems.size(); i++)
                     in.get("fine-QPSolver", *_tr_subproblems[i]);
             }
-            
-            if(hessian_approxs_.size() > 0) 
+
+            if(hessian_approxs_.size() > 0)
             {
                 for(auto i=1; i < hessian_approxs_.size(); i++)
                     in.get("hessian-approx-strategy", *hessian_approxs_[i]);
-            }            
+            }
         }
 
         virtual void print_usage(std::ostream &os) const override
         {
             RMTR::print_usage(os);
 
-            this->print_param_usage(os, "coarse-QPSolver", "MatrixFreeTRSubproblem", "Input parameters for fine level QP solvers.", "-"); 
-            this->print_param_usage(os, "fine-QPSolver", "MatrixFreeTRSubproblem", "Input parameters for coarse level QP solver.", "-"); 
-            this->print_param_usage(os, "hessian-approx-strategy", "HessianApproximation", "Input parameters for hessian approximation strategies.", "-"); 
-        }  
-
-
-        virtual std::string name() override 
-        { 
-            return "Quasi_RMTR";  
+            this->print_param_usage(os, "coarse-QPSolver", "MatrixFreeTRSubproblem", "Input parameters for fine level QP solvers.", "-");
+            this->print_param_usage(os, "fine-QPSolver", "MatrixFreeTRSubproblem", "Input parameters for coarse level QP solver.", "-");
+            this->print_param_usage(os, "hessian-approx-strategy", "HessianApproximation", "Input parameters for hessian approximation strategies.", "-");
         }
-        
+
+
+        virtual std::string name() override
+        {
+            return "Quasi_RMTR";
+        }
+
 
         virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
         {
             if(hessian_approxs_.size() != this->n_levels())
-                hessian_approxs_.resize(this->n_levels()); 
+                hessian_approxs_.resize(this->n_levels());
 
-            for(auto l  = 0; l != hessian_approxs_.size(); ++l) 
+            for(auto l  = 0; l != hessian_approxs_.size(); ++l)
                 hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(strategy->clone());
 
             return true;
         }
-      
+
         virtual bool set_hessian_approximation_strategies(const std::vector<HessianApproxPtr> &strategies)
         {
             if(strategies.size() != this->n_levels()){
-                utopia_error("utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of strategies does not equal with levels in ML hierarchy. \n"); 
+                utopia_error("utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of strategies does not equal with levels in ML hierarchy. \n");
             }
-            
-            hessian_approxs_ = strategies; 
+
+            hessian_approxs_ = strategies;
 
             return true;
         }
@@ -104,14 +104,14 @@ namespace utopia
         virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy, const SizeType & level)
         {
             if(hessian_approxs_.size() != this->n_levels())
-                hessian_approxs_.resize(this->n_levels()); 
-            
+                hessian_approxs_.resize(this->n_levels());
+
             if(level <= this->n_levels())
             {
                 hessian_approxs_[level] = strategy;
             }
             else{
-                utopia_error("utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n");             
+                utopia_error("utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n");
             }
 
             return true;
@@ -121,7 +121,7 @@ namespace utopia
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
             if(_tr_subproblems.size() != this->n_levels())
-                _tr_subproblems.resize(this->n_levels()); 
+                _tr_subproblems.resize(this->n_levels());
 
             _tr_subproblems[0] = strategy;
 
@@ -131,32 +131,32 @@ namespace utopia
         bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
             if(_tr_subproblems.size() != this->n_levels())
-                _tr_subproblems.resize(this->n_levels()); 
+                _tr_subproblems.resize(this->n_levels());
 
-            // starting from level 1 .... 
-            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
+            // starting from level 1 ....
+            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l)
                 _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
 
 
             return true;
-        }        
+        }
 
 
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
         {
             if(strategies.size() != this->n_levels()){
-                utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n"); 
+                utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n");
             }
-            
-            _tr_subproblems = strategies; 
+
+            _tr_subproblems = strategies;
 
             return true;
         }
 
 
     protected:
-        virtual void init_memory(const SizeType & fine_local_size) override 
-        {   
+        virtual void init_memory(const SizeType & fine_local_size) override
+        {
             RMTR::init_memory(fine_local_size);
             hessian_approxs_[this->n_levels() - 1 ]->initialize();
         }
@@ -169,7 +169,7 @@ namespace utopia
 
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) override
         {
-            return false; 
+            return false;
         }
 
 
@@ -181,9 +181,9 @@ namespace utopia
             // else
             //     this->_tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
 
-            auto multiplication_action = hessian_approxs_[level]->build_apply_H(); 
-            _tr_subproblems[level]->current_radius(this->memory_.delta[level]); 
-            _tr_subproblems[level]->solve(*multiplication_action, -1.0 * this->memory_.g[level], this->memory_.s[level]);            
+            auto multiplication_action = hessian_approxs_[level]->build_apply_H();
+            _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
+            _tr_subproblems[level]->solve(*multiplication_action, -1.0 * this->memory_.g[level], this->memory_.s[level]);
 
             return true;
         }
@@ -191,8 +191,8 @@ namespace utopia
         virtual Scalar get_pred(const SizeType & level) override
         {
             Scalar l_term = dot(this->memory_.g[level], this->memory_.s[level]);
-            Scalar qp_term = hessian_approxs_[level]->compute_uHu_dot(this->memory_.s[level]); 
-            return  (- l_term - 0.5 * qp_term); 
+            Scalar qp_term = hessian_approxs_[level]->compute_uHu_dot(this->memory_.s[level]);
+            return  (- l_term - 0.5 * qp_term);
         }
 
 
@@ -200,14 +200,14 @@ namespace utopia
         {
             Vector grad_old = this->memory_.g[level];
             this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
-            Vector y = this->memory_.g[level] - grad_old; 
+            Vector y = this->memory_.g[level] - grad_old;
 
-            // swap back.... 
-            this->memory_.g[level] = grad_old; 
+            // swap back....
+            this->memory_.g[level] = grad_old;
 
             hessian_approxs_[level]->update(this->memory_.s[level], y);
 
-            return true; 
+            return true;
         }
 
 
@@ -230,20 +230,20 @@ namespace utopia
             RMTR::check_initialization();
 
             if(this->hessian_approxs_.size() != this->n_levels()){
-                utopia_error("utopia::QuasiRMTR:: number of Hessian approximation streategies and levels not equal. \n"); 
-                return false; 
+                utopia_error("utopia::QuasiRMTR:: number of Hessian approximation streategies and levels not equal. \n");
+                return false;
             }
 
-            return true; 
+            return true;
         }
 
 
-    protected:   
+    protected:
         std::vector<HessianApproxPtr>  hessian_approxs_;
 
 
     private:
-        std::vector<TRSubproblemPtr>        _tr_subproblems; 
+        std::vector<TRSubproblemPtr>        _tr_subproblems;
 
 
     };

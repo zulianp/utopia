@@ -16,18 +16,18 @@
 
 namespace utopia {
 
-	template<typename Matrix, typename Vector>
-	class KSPSolver<Matrix, Vector, TRILINOS> :
-		public CrossBackendLinearSolverAndSmoother<
+    template<typename Matrix, typename Vector>
+    class KSPSolver<Matrix, Vector, TRILINOS> :
+        public CrossBackendLinearSolverAndSmoother<
             Matrix, Vector,
             DSMatrixd, DVectord,
             KSPSolver<DSMatrixd, DVectord, PETSC>
             > {};
 
       //FIXME remove me once the belos solver works
-	template<typename Matrix, typename Vector>
-	class Factorization<Matrix, Vector, TRILINOS> :
-		public CrossBackendLinearSolver<
+    template<typename Matrix, typename Vector>
+    class Factorization<Matrix, Vector, TRILINOS> :
+        public CrossBackendLinearSolver<
             Matrix, Vector,
             DSMatrixd, DVectord,
             Factorization<DSMatrixd, DVectord, PETSC>

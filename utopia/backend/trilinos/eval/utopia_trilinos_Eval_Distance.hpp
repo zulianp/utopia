@@ -19,7 +19,7 @@
 
 // 		        auto &&l = Eval<Left, Traits>::apply(left);
 // 		        auto &&r = Eval<Right, Traits>::apply(right);
-		        
+
 // 		        result = KokkosEvalDistance<Vector, NormType>::apply(l, r, false);
 
 // 		        auto &comm = *l.communicator();
@@ -37,7 +37,7 @@
 // 			Wrapper<Tensor_, 1>,
 // 			Wrapper<Tensor_, 1>,
 // 			2
-// 			>, 
+// 			>,
 // 			Traits, TRILINOS> {
 // 	public:
 // 		using Tensor = utopia::Wrapper<Tensor_, 1>;
@@ -65,7 +65,7 @@
 // 			Wrapper<Tensor_, 1>,
 // 			Wrapper<Tensor_, 1>,
 // 			1
-// 			>, 
+// 			>,
 // 			Traits, TRILINOS> {
 // 	public:
 // 		using Tensor = utopia::Wrapper<Tensor_, 1>;
@@ -95,7 +95,7 @@
 // 			Wrapper<Tensor_, 1>,
 // 			Wrapper<Tensor_, 1>,
 // 			INFINITY_NORM_TAG
-// 			>, 
+// 			>,
 // 			Traits, TRILINOS> {
 // 	public:
 // 		using Tensor = utopia::Wrapper<Tensor_, 1>;

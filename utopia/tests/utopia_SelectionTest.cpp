@@ -49,7 +49,7 @@ namespace utopia {
         void matrix_selection_test()
         {
             typedef typename utopia::Traits<Vector>::SizeType SizeType;
-            
+
             const SizeType n = mpi_world_size() * 3;
             Matrix m = zeros(n, n);
             auto rr = row_range(m);

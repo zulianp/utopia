@@ -62,7 +62,7 @@ namespace utopia {
     class SOR<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
-        
+
         SOR()
         : KSPSolver<Matrix, Vector, PETSC>()
         {
