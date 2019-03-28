@@ -45,7 +45,7 @@ set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
 if(UNIX AND NOT APPLE)
-       set(LINUX TRUE)
+	set(LINUX TRUE)
 endif()
 
 if(LINUX)
@@ -83,9 +83,9 @@ endif()
 
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
 	IF(WIN32)
-	 	SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
+		SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 	ELSE()
-	 	SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+		SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 	ENDIF()
 endif()
 
@@ -100,14 +100,14 @@ message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 if( CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
-    message(FATAL_ERROR
-        "In-source builds are not allowed.
-        CMake would overwrite the makefiles distributed with Moose.
-        Please create a directory and run cmake from there, passing the path
-        to this source directory as the last argument.
-        This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
-        Please delete them."
-        )
+	message(FATAL_ERROR
+		"In-source builds are not allowed.
+		CMake would overwrite the makefiles distributed with Moose.
+		Please create a directory and run cmake from there, passing the path
+		to this source directory as the last argument.
+		This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
+		Please delete them."
+	)
 endif()
 
 #################################################################################
@@ -187,8 +187,8 @@ function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST ITE
 			string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME "${FRAMEWORK_NAME}")
 			SET(TEMPSTR "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
 		else()
-	    	SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
-	    endif()
+		SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
+	endif()
 	ENDFOREACH(LIST_EL)
 
 	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
@@ -205,7 +205,7 @@ LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
 SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
 FOREACH(LIST_EL ${LIST_OF_STRINGS})
-    SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
+	SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
 ENDFOREACH(LIST_EL)
 
 SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
@@ -243,12 +243,12 @@ if(TRY_WITH_BLAS)
 	add_subdirectory(backend/blas)
 endif()
 
-if(TRY_WITH_PETSC)
-	add_subdirectory(backend/petsc)
-endif()
-
 if(TRY_WITH_TRILINOS)
 	add_subdirectory(backend/trilinos)
+endif()
+
+if(TRY_WITH_PETSC)
+	add_subdirectory(backend/petsc)
 endif()
 
 
@@ -313,19 +313,19 @@ configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utop
 include(WriteCompilerDetectionHeader)
 
 write_compiler_detection_header(
-  FILE utopia_compiler_features.hpp
-  PREFIX UTOPIA
-  COMPILERS GNU Clang MSVC Intel AppleClang
-  FEATURES
-  		   # cxx_final #already in c++11
-  		   # cxx_noexcept #already in c++11
-  		   cxx_attribute_deprecated # in c++14
-  ALLOW_UNKNOWN_COMPILERS
+	FILE utopia_compiler_features.hpp
+	PREFIX UTOPIA
+	COMPILERS GNU Clang MSVC Intel AppleClang
+	FEATURES
+		# cxx_final #already in c++11
+		# cxx_noexcept #already in c++11
+		cxx_attribute_deprecated # in c++14
+	ALLOW_UNKNOWN_COMPILERS
 )
 
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
-  DESTINATION include
+	${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+	DESTINATION include
 )
 
 ##########################################################
