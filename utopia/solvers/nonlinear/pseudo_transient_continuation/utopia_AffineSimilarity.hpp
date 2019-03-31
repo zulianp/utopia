@@ -104,13 +104,15 @@ namespace utopia
             std::shared_ptr<Function<Matrix, Vector> > fun_grad_ptr_(&fun_grad, [](Function<Matrix, Vector>*){});
             ODEFormFunction<Matrix, Vector> fun(fun_grad_ptr_); 
 
-            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0, mu, L; 
+            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0, mu, L, tau_old; 
             SizeType it_inner = 0; 
 
-            Vector g, s, g_new; 
+            Vector g, s, g_new, r; 
             s = 0 * x; 
             g_new = 0*x; 
             Matrix H; 
+
+            bool inner_loop = false; 
 
             fun.gradient(x, g); 
             g_norm = norm2(g); 
@@ -147,6 +149,10 @@ namespace utopia
                 s = 0*x; 
                 this->linear_solve(A, g, s);
 
+                r = g - A*s; 
+                // std::cout<<"r: "<< norm2(r) << "  \n"; 
+
+
                 Vector x_trial = x + tau * s; 
                 s_norm = norm2(s); 
 
@@ -157,11 +163,27 @@ namespace utopia
 
                 // tau = estimate_tau(g_new, g, s, tau, s_norm); 
 
-                if(norm_l2(g_new) < norm_l2(g))
-                {
+               // Scalar theta = norm_l2(g_new)/norm_l2(g); 
 
-                    tau = estimate_tau(g_new, g, s, tau, s_norm); 
+
+                if(norm2(g_new) < norm2(g))
+                {
                     mu = estimate_mu(g_new, g, s, tau, s_norm); 
+                    // mu = estimate_mu_inexact(g_new, g, s, r, tau, s_norm);
+
+                    // if(mu < 0)
+                    // {
+                    //     std::cout<<"mu estimated .... \n"; 
+                    //     tau = 1./(2. * g_norm_old); 
+                    // }
+                    // else
+                    // {
+                        tau = estimate_tau(g_new, g, s, tau, s_norm); 
+                        // tau = estimate_tau_inexact(g_new, g, s, r,  tau, s_norm); 
+                    // }
+
+
+
 
 
                     it_inner = 0; 
@@ -172,10 +194,32 @@ namespace utopia
                 }
                 else
                 {
-                    tau = estimate_tau(g_new, g, s, tau, s_norm); 
                     mu = estimate_mu(g_new, g, s, tau, s_norm); 
+                    // mu = estimate_mu_inexact(g_new, g, s, r, tau, s_norm);
 
-                    g_norm = g_norm_old; 
+                    // if(std::abs(tau-tau_old) < 1e-3){
+                    //     tau = 1./Scalar(norm2(g)); 
+                    // }
+                    // else
+                    // {
+
+
+                    // if(mu < 0)
+                    // {
+                    //     std::cout<<"mu estimated2 .... \n"; 
+                    //     tau = 1./(2. * g_norm_old) ; 
+                    // }
+                    // else
+                    // {
+                        tau = estimate_tau(g_new, g, s, tau, s_norm); 
+                        tau_old = tau; 
+                        g_norm = g_norm_old; 
+                        // tau = estimate_tau_inexact(g_new, g, s, r,  tau, s_norm); 
+                    // }
+
+                    // }
+
+                    
                     // bool converged_inner = false; 
                     it_inner++; 
                 }
@@ -263,9 +307,32 @@ namespace utopia
             Scalar tau_new = 0.5*tau * std::abs(nom/denom); 
             // bool flg = this->clamp_tau(tau_new); 
             this->clamp_tau(tau_new); 
-            
+
+            if(tau_new==tau_max_ && tau_new == tau)
+            {
+                tau_new = 1./norm2(g); 
+            }
+        
             return tau_new; 
         }
+
+        Scalar estimate_tau_inexact(const Vector & g_new, const Vector & g, const Vector & s, const Vector & r,  const Scalar & tau, const Scalar & s_norm)
+        {   
+            Scalar s_norm2 = norm_l2_2(s);
+
+            Scalar r_norm = dot(r, I_*s);
+
+            // std::cout<<"r_norm: "<< r_norm << "  \n"; 
+
+            Scalar nom = dot(g, s) - s_norm2 - r_norm; 
+            Scalar denom = dot(g_new, s) - s_norm2 - r_norm; 
+
+            Scalar tau_new = 0.5*tau * std::abs(nom/denom); 
+            // bool flg = this->clamp_tau(tau_new); 
+            this->clamp_tau(tau_new); 
+            
+            return tau_new; 
+        }        
 
 
         Scalar estimate_mu(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
@@ -278,6 +345,17 @@ namespace utopia
             return nom/denom; 
         }
 
+
+        Scalar estimate_mu_inexact(const Vector & g_new, const Vector & g, const Vector & s,  const Vector & r, const Scalar & tau, const Scalar & s_norm)
+        {   
+            Scalar s_norm2 = norm_l2_2(s);
+            Scalar r_norm = dot(r, I_*s);
+
+            Scalar nom = dot(g, s) - s_norm2 - r_norm; 
+            Scalar denom = tau * s_norm2;
+
+            return nom/denom; 
+        }        
 
 
 
