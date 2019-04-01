@@ -31,11 +31,12 @@ namespace utopia
                             mass_init_(false), 
                             scaling_init_(false),
                             tau_max_(1e9),
-                            tau_min_(-1e9), 
+                            tau_min_(1e-9), 
                             alpha_treshold_(1e-10), 
-                            max_inner_it_(5), 
+                            max_inner_it_(10), 
                             m_(-1.0), 
-                            use_m_(true)
+                            use_m_(true), 
+                            tau_option_(1)
                             {
                                 verbosity_level_ =  VERBOSITY_LEVEL_NORMAL; 
                             }
@@ -53,6 +54,7 @@ namespace utopia
             in.get("max_inner_it", max_inner_it_);
             in.get("m", m_);
             in.get("use_m", use_m_);
+            in.get("tau_option", tau_option_); 
         }
 
         void print_usage(std::ostream &os) const override
@@ -281,6 +283,16 @@ namespace utopia
         }
 
 
+        void tau_option(const SizeType &tau_option)
+        {
+            tau_option_ = tau_option; 
+        }
+
+        Scalar tau_option() const 
+        {
+            return tau_option_; 
+        }
+
 
         VerbosityLevel verbosity_level() const 
         {
@@ -344,7 +356,27 @@ namespace utopia
         // }
 
 
-        Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        // Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        // {   
+        //     Scalar nom = std::abs(dot(s, M_ * s - g)) * tau;             
+        //     Vector gs_diff = ((M_inv_ * g_trial) - s); 
+        //     Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm) * c_; 
+
+
+        //     if(use_m_)
+        //     {
+        //         Scalar tau_new = nom/ help_denom; 
+        //         return (m_*tau - tau_new)/(m_-1.0); 
+        //     }
+        //     else
+        //     {
+        //         return nom/ help_denom;
+        //     }
+        // }
+
+
+        // version before rescaling 
+        Scalar estimate_tau1(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
         {   
             Scalar nom = std::abs(dot(s, M_ * s - g)) * tau;             
             Vector gs_diff = ((M_inv_ * g_trial) - s); 
@@ -360,8 +392,63 @@ namespace utopia
             {
                 return nom/ help_denom;
             }
+        }        
+
+
+
+        // scaled by Amrein and Wihler formula
+        Scalar estimate_tau2(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        {   
+            Scalar s_norm2 = norm_l2_2(s);
+
+            Scalar nom = s_norm2 - dot(g, s); 
+            Scalar denom = dot(g_trial, s) - s_norm2; 
+
+            return 0.5*tau * std::abs(nom/denom); 
         }
 
+
+
+        // scaled by Amrein and Wihler negative  formula
+        Scalar estimate_tau3(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        {   
+            Scalar s_norm2 = norm_l2_2(s);
+
+            Scalar nom = dot(g, s) - s_norm2; 
+            Scalar denom = dot(g_trial, s) - s_norm2; 
+
+            return 0.5*tau * std::abs(nom/denom); 
+        }        
+
+
+        Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        {
+            if(tau_option_ ==3){
+                return estimate_tau3(g_trial, g, s, tau, s_norm); 
+            }
+            else if(tau_option_ ==2)
+            {
+                return estimate_tau2(g_trial, g, s, tau, s_norm); 
+            }
+            else // tau_option_ ==1
+            {
+                return estimate_tau1(g_trial, g, s, tau, s_norm);                               
+            }
+        }
+
+
+
+
+
+        Scalar norm_l2_2(const Vector & s)
+        {   
+            return dot(s, M_*s); 
+        }
+
+        Scalar norm_l2(const Vector & s)
+        {   
+            return std::sqrt(norm_l2_2(s)); 
+        }
 
 
         void update_scaling_matrices(const Vector & x_old, const Vector & x_new)
@@ -446,6 +533,7 @@ namespace utopia
         SizeType max_inner_it_; 
         Scalar m_; 
         bool use_m_; 
+        SizeType tau_option_; 
 
     };
 

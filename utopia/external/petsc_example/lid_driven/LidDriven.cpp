@@ -210,6 +210,7 @@ int main(int argc,char **argv)
 
     
     solver.verbose(true);
+    solver.tau_option(1); 
     // solver.use_m(false); 
     // solver.set_m(-1); 
     solver.atol(1e-7); 
