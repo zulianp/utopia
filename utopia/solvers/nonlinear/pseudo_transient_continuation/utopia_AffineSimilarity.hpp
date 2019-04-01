@@ -13,55 +13,12 @@
 
 namespace utopia
 {
-    // since $F = - \nabla f(x)$
-    // TODO:: add scaling matrices into evaluations 
-    template<class Matrix, class Vector>
-    class ODEFormFunction final: public Function<Matrix, Vector>
-    {
-    public:
-        DEF_UTOPIA_SCALAR(Matrix)
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-
-        typedef utopia::Function<Matrix, Vector>    Fun;
-
-        ODEFormFunction(const std::shared_ptr<Function<Matrix, Vector> > & fun):
-        fun_(fun)
-        {
-
-        }
-
-        bool value(const Vector &/*point*/, Scalar & value) const override
-        {
-            value = 0; 
-            return false; // should not be necessary
-            // TODO:: think about using Normal eq. function
-        }
-
-        bool gradient(const Vector & x, Vector &g) const override
-        {
-            fun_->gradient(x, g); 
-            g = -1.0 * g; 
-            return true; 
-        }
-
-        bool hessian(const Vector &x, Matrix &H) const override
-        {
-            fun_->hessian(x, H); 
-            H = -1.0 * H; 
-            return true; 
-        }
-
-        private:
-            std::shared_ptr<Fun> fun_;   
-    };
-
-
+    
     template<class Matrix, class Vector>
     class AffineSimilarity : public NewtonBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
         typedef utopia::LSStrategy<Vector>                  LSStrategy; 
 
@@ -71,10 +28,14 @@ namespace utopia
     public:
        AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
                             NewtonBase<Matrix, Vector>(linear_solver), 
+                            mass_init_(false), 
+                            scaling_init_(false),
                             tau_max_(1e9),
-                            tau_min_(1e-9), 
+                            tau_min_(-1e9), 
                             alpha_treshold_(1e-10), 
-                            max_inner_it_(5)
+                            max_inner_it_(5), 
+                            m_(-1.0), 
+                            use_m_(true)
                             {
                                 verbosity_level_ =  VERBOSITY_LEVEL_NORMAL; 
                             }
@@ -84,10 +45,14 @@ namespace utopia
         void read(Input &in) override
         {
             NewtonBase<Matrix, Vector>::read(in);
+            in.get("mass_init", mass_init_);
+            in.get("scaling_init_", scaling_init_);
             in.get("tau_max", tau_max_);
             in.get("tau_min", tau_min_);
             in.get("alpha_treshold", alpha_treshold_);
             in.get("max_inner_it", max_inner_it_);
+            in.get("m", m_);
+            in.get("use_m", use_m_);
         }
 
         void print_usage(std::ostream &os) const override
@@ -97,144 +62,183 @@ namespace utopia
         }
 
 
-        bool solve(Function<Matrix, Vector> &fun_grad, Vector &x) override
+        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
            using namespace utopia;
 
-            std::shared_ptr<Function<Matrix, Vector> > fun_grad_ptr_(&fun_grad, [](Function<Matrix, Vector>*){});
-            ODEFormFunction<Matrix, Vector> fun(fun_grad_ptr_); 
+           if(mass_init_ == false && mpi_world_rank() == 0)
+           {
+                std::cerr<<"Affine similarity solver requires mass matrix to be initialized .... \n "; 
+                return false; 
+           }
 
-            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0, mu, L, tau_old; 
-            SizeType it_inner = 0; 
+            Vector g, s, rhs, x_trial, g_trial;
+            Matrix H, A;
 
-            Vector g, s, g_new, r; 
-            s = 0 * x; 
-            g_new = 0*x; 
-            Matrix H; 
-
-            bool inner_loop = false; 
-
-            fun.gradient(x, g); 
-            g_norm = norm2(g); 
-
-            fun.hessian(x, H); 
-
-            if(empty(I_)){
-                
-                if(this->verbose())
-                {
-                    std::cout<<"mass matrix not set, using Identity matrix ... \n";
-                }
-
-                I_  = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+            // init Ds
+            if(!scaling_init_)
+            {
+                Vector d = local_values(local_size(x).get(0), 1.0); 
+                D_ = diag(d); 
+                D_inv_ = D_; // since inverse of identity is identity ... 
             }
 
-            Scalar  tau = 1./g_norm; 
+
+            Scalar g_norm, s_norm=9e9, tau;
+            SizeType it = 0, it_inner = 0;
 
             bool converged = false; 
-            SizeType it = 0; 
+
+            // no scaling transform here... 
+            Vector x_test = D_ * x;
+            gradient(fun, x_test, g); 
+            g_norm = norm2(g);
+
+            SizeType solves_counter = 0; 
+
+            // initialization of  tau 
+            tau = 1.0/g_norm;  
+
 
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
-                this->init_solver("Affine similarity", {" it. ", "|| F ||", "|| Delta x || ", "tau", "mu", "inner it"});
+                this->init_solver("Affine similarity", {" it. ", "|| F ||", "|| Delta x || ", "tau", "it_inner"});
                 PrintInfo::print_iter_status(it, {g_norm, 0, tau});
             }
 
-            it++; 
+            print_statistics(it, g_norm, tau,  it_inner); 
+
+            it++;
+            Vector x_old = x; 
 
             while(!converged)
-            {   
-                // to be investigated
-                Matrix A = I_ - tau * H; 
-                s = 0*x; 
-                this->linear_solve(A, g, s);
+            {
+                // scaling transformation
+                x = D_ * x; 
 
-                r = g - A*s; 
-                // std::cout<<"r: "<< norm2(r) << "  \n"; 
+                hessian(fun, x, H); 
+                // tau = 1.0/norm2(H);  
 
+                //  necessary if scaling matrix changes for it to next it
+                //  so that residual monotonicity test does not compare 2 completly different things... 
+                gradient(fun, x, g); 
 
-                Vector x_trial = x + tau * s; 
+                A = M_ - tau *H; 
+                rhs = g; 
+
+                //find direction step
+                s = local_zeros(local_size(x));
+                this->linear_solve(A, rhs, s);
+                solves_counter++; 
+
+                // build trial point 
+                x_trial = x + tau * s; 
+
+                // size of correction - without step size... 
                 s_norm = norm2(s); 
 
-                fun.gradient(x_trial, g_new); 
-                g_norm_old = g_norm; 
-                g_norm = norm2(g_new); 
+                // gradient of trial point 
+                gradient(fun, x_trial, g_trial);                 
 
-
-                // tau = estimate_tau(g_new, g, s, tau, s_norm); 
-
-               // Scalar theta = norm_l2(g_new)/norm_l2(g); 
-
-
-                if(norm2(g_new) < norm2(g))
-                {
-                    mu = estimate_mu(g_new, g, s, tau, s_norm); 
-                    // mu = estimate_mu_inexact(g_new, g, s, r, tau, s_norm);
-
-                    // if(mu < 0)
-                    // {
-                    //     std::cout<<"mu estimated .... \n"; 
-                    //     tau = 1./(2. * g_norm_old); 
-                    // }
-                    // else
-                    // {
-                        tau = estimate_tau(g_new, g, s, tau, s_norm); 
-                        // tau = estimate_tau_inexact(g_new, g, s, r,  tau, s_norm); 
-                    // }
-
-
-
-
-
-                    it_inner = 0; 
+                if(residual_monotonicity_test(g_trial, g))
+                {   
+                    // update tau since, you  have already all ingredients 
+                    tau = estimate_tau(g_trial, g, s, tau, s_norm); 
+                    clamp_tau(tau); 
 
                     x = x_trial; 
-                    g = g_new; 
-                    fun.hessian(x, H); 
+                    it_inner = 1; 
                 }
                 else
-                {
-                    mu = estimate_mu(g_new, g, s, tau, s_norm); 
-                    // mu = estimate_mu_inexact(g_new, g, s, r, tau, s_norm);
-
-                    // if(std::abs(tau-tau_old) < 1e-3){
-                    //     tau = 1./Scalar(norm2(g)); 
-                    // }
-                    // else
-                    // {
-
-
-                    // if(mu < 0)
-                    // {
-                    //     std::cout<<"mu estimated2 .... \n"; 
-                    //     tau = 1./(2. * g_norm_old) ; 
-                    // }
-                    // else
-                    // {
-                        tau = estimate_tau(g_new, g, s, tau, s_norm); 
-                        tau_old = tau; 
-                        g_norm = g_norm_old; 
-                        // tau = estimate_tau_inexact(g_new, g, s, r,  tau, s_norm); 
-                    // }
-
-                    // }
-
+                { 
+                    if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
+                    {
+                        this->init_solver("Fixed point it ", {" it. ", "|| tau ||"});
+                        PrintInfo::print_iter_status(0, {tau});
+                    }
                     
-                    // bool converged_inner = false; 
-                    it_inner++; 
-                }
+                    // here initial value for tau comes from tau_opt 
+                    tau = estimate_tau(g_trial, g, s, tau, s_norm); 
+                    clamp_tau(tau); 
 
+                    bool converged_inner = false;
+                    it_inner = 1; 
+
+                    if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
+                        PrintInfo::print_iter_status(it_inner, {tau});
+
+                    while(!converged_inner && it_inner < max_inner_it_)
+                    {
+                        A = M_ - tau *H;
+                        rhs = g; 
+                        
+                        //find direction step
+                        s = local_zeros(local_size(x));
+                        this->linear_solve(A, rhs, s);
+                        solves_counter++; 
+                        it_inner++; 
+
+                        // building trial point... 
+                        x_trial = x + tau * s; 
+
+                        // plain correction, without step-size
+                        s_norm = norm2(s); 
+                    
+                        // gradient of x_trial 
+                        gradient(fun, x_trial, g_trial); 
+
+                        // we iterate until residual monotonicity test is satisfied... 
+                        if(residual_monotonicity_test(g_trial, g))
+                        {   
+                            x = x_trial; 
+                            converged_inner = true; 
+                        }
+                        else
+                        {
+                            // this seems to perform better than 
+                            // performing update also after residual monotonicity is satisfied
+                            tau = estimate_tau(g_trial, g, s, tau, s_norm); 
+                            converged_inner =  clamp_tau(tau); 
+                        }
+
+                        if(!converged_inner && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
+                            PrintInfo::print_iter_status(it_inner, {tau});
+                    }
+
+                    if (mpi_world_rank() == 0 && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
+                        std::cout<<"------------------------------ end of fixed point iteration ------------------------ \n"; 
+
+                }  // this is outer loop of residual monicity test
+                
+                // scale back to the initial unknown 
+                x = D_inv_ * x; 
+
+                // test wrt untransformed grad... 
+                Vector g_test; 
+                fun.gradient(x, g_test); 
+                g_norm = norm2(g_test);
+
+                // iterative adaptation of diagonal scaling... 
+                if(!scaling_init_)
+                {
+                    update_scaling_matrices(x, x_old); 
+                    x_old = x; 
+                }
 
                 // print iteration status on every iteration
-                if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL){
-                    PrintInfo::print_iter_status(it, {g_norm, s_norm, tau, mu, Scalar(it_inner)});
-                }
+                if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
+                    PrintInfo::print_iter_status(it, {g_norm, s_norm, tau, Scalar(it_inner-1)});
 
+                print_statistics(it, g_norm, tau,  it_inner); 
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, 9e9, s_norm);
                 it++;
-            }
+
+            } // outer solve loop while(!converged)
+
+            if (mpi_world_rank() == 0 && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
+                std::cout<<"solves_counter: "<< solves_counter << "  \n"; 
 
             return true;
         }
@@ -242,10 +246,41 @@ namespace utopia
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        void set_mass_matrix(const Matrix & M)
+        {
+            M_ = M; 
+            
+            Vector d = diag(M_); 
+            M_inv_  = diag( 1.0/ d); 
+            c_      = max(d); 
+
+            mass_init_ = true; 
+        }
+
         void set_max_inner_it(const SizeType & max_it)
         {
             max_inner_it_ = max_it; 
         }
+
+        void set_scaling_matrix(const Matrix & D)
+        {
+            D_ = D; 
+            D_inv_ = diag( 1.0/ diag(D_)); 
+            scaling_init_ = true; 
+        }
+
+        void set_m(const Scalar & m )
+        {
+            m_ = m; 
+        }
+
+
+        void use_m(const bool flg)
+        {
+            use_m_ = flg; 
+        }
+
+
 
         VerbosityLevel verbosity_level() const 
         {
@@ -289,85 +324,62 @@ namespace utopia
         }
 
     
-    public:
-        void set_mass_matrix(const Matrix & M)
-        {
-            I_ = M; 
-        }
-
-
     private: 
-        Scalar estimate_tau(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        // Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        // {
+        //     Vector gs_diff = (g_trial - (M_ * s)); 
+        //     Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
+        //     Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
+        //     return (tau  *  std::abs(nom)/ help_denom); 
+        // }
+
+
+        // last, working version
+        // Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        // {   
+        //     Vector gs_diff = (g_trial - (M_ * s)); 
+        //     Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
+        //     Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
+        //     return (tau  *  std::abs(nom)/ help_denom); 
+        // }
+
+
+        Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
         {   
-            Scalar s_norm2 = norm_l2_2(s);
+            Scalar nom = std::abs(dot(s, M_ * s - g)) * tau;             
+            Vector gs_diff = ((M_inv_ * g_trial) - s); 
+            Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm) * c_; 
 
-            Scalar nom = dot(g, s) - s_norm2; 
-            Scalar denom = dot(g_new, s) - s_norm2; 
 
-            Scalar tau_new = 0.5*tau * std::abs(nom/denom); 
-            // bool flg = this->clamp_tau(tau_new); 
-            this->clamp_tau(tau_new); 
-
-            if(tau_new==tau_max_ && tau_new == tau)
+            if(use_m_)
             {
-                tau_new = 1./norm2(g); 
+                Scalar tau_new = nom/ help_denom; 
+                return (m_*tau - tau_new)/(m_-1.0); 
             }
-        
-            return tau_new; 
-        }
-
-        Scalar estimate_tau_inexact(const Vector & g_new, const Vector & g, const Vector & s, const Vector & r,  const Scalar & tau, const Scalar & s_norm)
-        {   
-            Scalar s_norm2 = norm_l2_2(s);
-
-            Scalar r_norm = dot(r, I_*s);
-
-            // std::cout<<"r_norm: "<< r_norm << "  \n"; 
-
-            Scalar nom = dot(g, s) - s_norm2 - r_norm; 
-            Scalar denom = dot(g_new, s) - s_norm2 - r_norm; 
-
-            Scalar tau_new = 0.5*tau * std::abs(nom/denom); 
-            // bool flg = this->clamp_tau(tau_new); 
-            this->clamp_tau(tau_new); 
-            
-            return tau_new; 
-        }        
-
-
-        Scalar estimate_mu(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
-        {   
-            Scalar s_norm2 = norm_l2_2(s);
-
-            Scalar nom = dot(g, s) - s_norm2; 
-            Scalar denom = tau * s_norm2;
-
-            return nom/denom; 
+            else
+            {
+                return nom/ help_denom;
+            }
         }
 
 
-        Scalar estimate_mu_inexact(const Vector & g_new, const Vector & g, const Vector & s,  const Vector & r, const Scalar & tau, const Scalar & s_norm)
-        {   
-            Scalar s_norm2 = norm_l2_2(s);
-            Scalar r_norm = dot(r, I_*s);
 
-            Scalar nom = dot(g, s) - s_norm2 - r_norm; 
-            Scalar denom = tau * s_norm2;
+        void update_scaling_matrices(const Vector & x_old, const Vector & x_new)
+        {
+            Vector x_scaling = local_values(local_size(x_old).get(0), 1.0); 
 
-            return nom/denom; 
-        }        
+            {   
+                Read<Vector>    r1(x_old), r2(x_new); 
+                auto tol = alpha_treshold_; 
+                each_write(x_scaling, [&x_old, &x_new, tol](const SizeType i) -> double 
+                { 
+                    return std::max(std::max(std::abs(x_old.get(i)), std::abs(x_new.get(i))), tol); 
+                });
 
+            }
 
-
-
-        Scalar norm_l2_2(const Vector & s)
-        {   
-            return dot(s, I_*s); 
-        }
-
-        Scalar norm_l2(const Vector & s)
-        {   
-            return std::sqrt(norm_l2_2(s)); 
+            D_ = diag(x_scaling); 
+            D_inv_ = diag(1.0/x_scaling); 
         }
 
 
@@ -378,38 +390,62 @@ namespace utopia
                 tau = tau_max_;        
                 return true; 
             }
-            else if (std::isnan(tau))
+            else if (std::isnan(tau) || tau ==0 || tau < tau_min_)
             {
                 tau = tau_max_;        
                 return true; 
             }
-            else if (tau ==0 || tau < tau_min_) // check this out...
-            {
-                tau  = tau_min_;
-                return true; 
-            }
-            else{
+            else
                 return false; 
-            }
         }
 
 
-        bool residual_monotonicity_test(const Vector & g_trial, const Vector & g_old)
+        void gradient(Function<Matrix, Vector> &fun,  const Vector & x, Vector & g)
         {
-            return (norm_l2(g_trial) < norm_l2(g_old)) ? true : false; 
+            Vector x_s = D_inv_ * x; 
+            fun.gradient(x_s, g); 
+            g = -1.0 * g; // because we work with negative definitness 
         }
+
+        void hessian(Function<Matrix, Vector> &fun,  const Vector & x, Matrix & H)
+        {
+            Vector x_s = D_inv_ * x; 
+            fun.hessian(x_s, H); 
+
+            H = -1.0 * H; // because we work with negative definitness
+            H = H * D_inv_; 
+        }
+
+
+        bool residual_monotonicity_test(const Vector & g_trial, const Vector & g)
+        {
+            // this quantities have already D_inv inside ...
+            return (norm2(g_trial) < norm2(g)) ? true : false; 
+        }
+
 
 
     private:
+        Matrix M_;                  // mass matrix 
+        Matrix M_inv_;              // inverse of mass matrix         
+
+        Matrix D_;                  // scaling matrix
+        Matrix D_inv_; 
+
+        bool mass_init_;            // marker of initialization of mass matrix 
+        bool scaling_init_;       
+
         VerbosityLevel verbosity_level_;   // verbosity level 
 
         Scalar tau_max_;            // clamping values of tau to prevent infty 
         Scalar tau_min_;            // clamping values of tau to prevent devision by zero 
 
         Scalar alpha_treshold_;     // treshold on scaling
-        SizeType max_inner_it_; 
 
-        Matrix I_; 
+        Scalar c_;                  // 
+        SizeType max_inner_it_; 
+        Scalar m_; 
+        bool use_m_; 
 
     };
 
