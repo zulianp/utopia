@@ -1,4 +1,5 @@
 #include "utopia_petsc_ConvergedReason.hpp"
+#include "utopia_Config.hpp"
 #include <petscksp.h>
 
 namespace utopia {
@@ -6,7 +7,11 @@ namespace utopia {
     bool ksp_convergence_fatal_failure(const int code)
     {
         switch(code) {
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,11,0)
             case KSP_DIVERGED_PCSETUP_FAILED:
+#else
+            case KSP_DIVERGED_PC_FAILED:
+#endif
             {
                 return true;
             }
@@ -137,8 +142,11 @@ namespace utopia {
                 os << "KSP_DIVERGED_INDEFINITE_MAT\n";
                 break;
             }
-
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,11,0)
             case KSP_DIVERGED_PCSETUP_FAILED:
+#else
+            case KSP_DIVERGED_PC_FAILED:
+#endif
             {
                 os << "KSP_DIVERGED_PCSETUP_FAILED\n";
                 break;
