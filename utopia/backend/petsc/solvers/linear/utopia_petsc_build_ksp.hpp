@@ -151,7 +151,11 @@ namespace utopia {
             else
             {
                 std::cout<<"get convergence reason is not configured for direct solvers yet... \n";
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,11,0)
                 reason =  KSP_DIVERGED_PCSETUP_FAILED;
+#else
+                reason =  KSP_DIVERGED_PC_FAILED;
+#endif
             }
         };
 
