@@ -1,7 +1,18 @@
 #ifndef UTOPIA_INTREPID_2_ASSEMBLER_HPP
 #define UTOPIA_INTREPID_2_ASSEMBLER_HPP
 
-#include "utopia_libmesh_AssemblyContext.hpp"
+#include "utopia_Base.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_AssemblyContext.hpp"
+
+#include "utopia_FEIsSubTree.hpp"
+#include "utopia_Traverse.hpp"
+#include "utopia_ProductFunctionSpace.hpp"
+
+//TODO replace them
+#include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_libmesh_AssemblyValues.hpp"
+
 #include "utopia_make_unique.hpp"
 
 #include "utopia_intrepid2_Types.hpp"

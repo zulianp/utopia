@@ -9,10 +9,10 @@
 #include "utopia.hpp"
 #include "utopia_fe_base.hpp"
 
-#include "libmesh/sparse_matrix.h"
+/*#include "libmesh/sparse_matrix.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dense_matrix.h"
-#include "libmesh/dense_vector.h"
+#include "libmesh/dense_vector.h"*/
 
 namespace utopia {
 
