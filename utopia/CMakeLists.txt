@@ -45,7 +45,7 @@ set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
 if(UNIX AND NOT APPLE)
-       set(LINUX TRUE)
+    set(LINUX TRUE)
 endif()
 
 if(LINUX)
@@ -107,7 +107,7 @@ if( CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
         to this source directory as the last argument.
         This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
         Please delete them."
-        )
+    )
 endif()
 
 #################################################################################
@@ -243,12 +243,12 @@ if(TRY_WITH_BLAS)
     add_subdirectory(backend/blas)
 endif()
 
-if(TRY_WITH_PETSC)
-    add_subdirectory(backend/petsc)
-endif()
-
 if(TRY_WITH_TRILINOS)
     add_subdirectory(backend/trilinos)
+endif()
+
+if(TRY_WITH_PETSC)
+    add_subdirectory(backend/petsc)
 endif()
 
 
@@ -324,8 +324,8 @@ write_compiler_detection_header(
 )
 
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
-  DESTINATION include
+    ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+    DESTINATION include
 )
 
 ##########################################################
