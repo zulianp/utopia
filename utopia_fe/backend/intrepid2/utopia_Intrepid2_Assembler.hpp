@@ -295,7 +295,7 @@ namespace utopia {
 
 			//assemble energy
 
-			//global redu e	
+			//global reduce
 			m.comm().sum(val);
 
 			//perf

@@ -7,6 +7,7 @@ add_utopiafe_module(utopia_fe_tests
     transfer
     utopia_fe_visualization
     utopia_fe_homemade
+    utopia_fe_intrepid2_backend
     utopia_fe_libmesh_backend
     utopia_fe_contact
     utopia_fe_materials
@@ -18,6 +19,6 @@ add_utopiafe_module(utopia_fe_tests
 )
 
 if(TARGET utopia_fe_intrepid2)
-    message(STATUS "compiling intrepid 2 tests")
-    target_link_libraries(utopia_fe_tests INTERFACE utopia_fe_intrepid2)
+    message(STATUS "compiling intrepid2 tests")
+    target_link_libraries(utopia_fe_tests INTERFACE utopia_fe_intrepid2_backend)
 endif()
