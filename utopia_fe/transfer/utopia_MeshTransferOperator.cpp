@@ -29,7 +29,7 @@ namespace utopia {
 		force_zero_extension(false),
 		from_boundary(false),
 		to_boundary(false),
-		normalize(false),
+		normalize(true),
 		use_composite_bidirectional(false),
 		use_interpolation(false),
 		nnz_x_row(0),
@@ -242,7 +242,7 @@ namespace utopia {
 				add_matrix(el_mat, indices, indices, mat);
 			}
 		}
-
+                //utopia::write(""mat);
 		c.stop();
 		std::cout << "assemble_mass_matrix (time)\n" << c << std::endl;
 	}
@@ -591,7 +591,9 @@ namespace utopia {
 	}
 
 	std::unique_ptr<LinearSolver<USparseMatrix, UVector> > MeshTransferOperator::new_solver() {
-		return utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
-		// return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu");
+		std::cout<<"I am in solver"<<std::endl;
+                return utopia::make_unique<ConjugateGradient<USparseMatrix, UVector>>();
+                std::cout<<"I am in solver"<<std::endl;
+		//return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu");
 	}
 }

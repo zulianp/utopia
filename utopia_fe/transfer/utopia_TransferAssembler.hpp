@@ -95,13 +95,15 @@ namespace utopia {
 	public:
 		inline void apply(const UVector &from, UVector &to) const override
 		{
-			UVector B_from = *B * from;
+			std::cout<<"I am here 0"<<std::endl;
+                        UVector B_from = *B * from;
 
 			if(empty(to)) {
 				to = B_from;
 			}
-
+                        std::cout<<"I am here"<<std::endl;
 			linear_solver->apply(B_from, to);
+                        std::cout<<"I am out"<<std::endl;
 		}
 
 		///@brief assumes that D is symmetric
@@ -158,6 +160,9 @@ namespace utopia {
 
 			double t_max = max(t_to);
 			double t_min = min(t_to);
+                        
+                       // utopia::disp(*D);
+                       // utopia::disp(*B);
 
 			double sum_D = sum(*D);
 			double sum_B = sum(*B);
@@ -177,7 +182,7 @@ namespace utopia {
 		inline L2TransferOperator(
 			const std::shared_ptr<USparseMatrix> &B,
 			const std::shared_ptr<USparseMatrix> &D,
-			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>()
 		)
 		: B(B), D(D), linear_solver(linear_solver)
 		{
@@ -188,12 +193,16 @@ namespace utopia {
 
 		inline void init()
 		{
-			linear_solver->update(D);
+		    std::cout<<"linear_solver->update(D);"<<std::endl;	
+                    linear_solver->update(D);
+                    std::cout<<"linear_solver->update(D);after"<<std::endl;
 		}
 
 		void restrict_mass_matrix_old(const double tol = 1e-16)
 		{
-			auto rr = row_range(*B);
+			std::cout<<"restrict_mass_matrix_old"<<std::endl;
+
+                        auto rr = row_range(*B);
 
 			const SizeType n_local = rr.extent();
 
@@ -223,7 +232,9 @@ namespace utopia {
 
 		void restrict_mass_matrix(const double tol = 1e-16)
 		{
-			auto rr = row_range(*B);
+			std::cout<<"restrict_mass_matrix_old"<<std::endl;
+                        
+                        auto rr = row_range(*B);
 
 			const SizeType n_local = rr.extent();
 
@@ -556,7 +567,9 @@ namespace utopia {
 
 		inline void apply(const UVector &from, UVector &to) const
 		{
-			forward_->apply(from, to);
+		   //utopia::disp(from);
+                   //utopia::disp(to);	
+                   forward_->apply(from, to);
 		}
 
 		inline void apply_transpose(const UVector &from, UVector &to) const
