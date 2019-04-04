@@ -102,17 +102,40 @@ namespace utopia {
 
                     is.get("var", var_num);
 
+
+                    std::string type = "constant"; //expr
+
+                    is.get("type", type);
+
                     auto u = trial(space_->subspace(var_num));
 
-                    if(verbose_) {
-                        std::cout <<  "side: " << side_set << " var: " << var_num << " value: " << value << std::endl;
-                    }
+                    if(type == "expr") {
+#ifdef WITH_TINY_EXPR
+                        std::string expr = "0";
+                        is.get("value", expr);
+                        auto g = symbolic(expr);
 
-                    init_constraints(
-                        constraints(
-                            boundary_conditions(u == coeff(value), {side_set})
-                            )
-                        );
+                        init_constraints(constraints(
+                            boundary_conditions(u == g, {side_set})
+                        ));
+#else
+                        assert(false);
+                        std::cerr << "needs tiny expr library" << std::endl;
+#endif
+
+                    } else {
+
+                        if(verbose_) {
+                            std::cout <<  "side: " << side_set << " var: " << var_num << " value: " << value << std::endl;
+                        }
+
+                        init_constraints(
+                            constraints(
+                                boundary_conditions(u == coeff(value), {side_set})
+                                )
+                            );
+
+                        }
 
                 });
             });

@@ -135,7 +135,7 @@ namespace utopia {
             }
 
             CHECK_STREAM_READ_END("vol_proj", in);
-        };
+        }
 
         void write(
             const long ownerrank, const long recvrank,
@@ -157,7 +157,7 @@ namespace utopia {
             }
 
             CHECK_STREAM_WRITE_END("vol_proj", out);
-        };
+        }
 
     };
 
