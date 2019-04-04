@@ -13,14 +13,14 @@
         ],
         "boundary-conditions" : [
             {
-                "side" : 1,
-                "type" : "expr",
-                "value" : "y"
+                "side"  : 1,
+                "type"  : "expr",
+                "value" : "sin(5*y)^2"
             },
              {
-                "side" : 3,
-                "type" : "expr",
-                "value" : "1.0-y"
+                "side"  : 3,
+                "type"  : "expr",
+                "value" : "sin(1.0-y)^2"
             }
 
         ]
