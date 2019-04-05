@@ -399,7 +399,7 @@ namespace utopia {
 
             sp.update(make_ref(A_m), make_ref(A_f), make_ref(T));
 
-            apply_boundary_conditions(V_m.dof_map(), sp.get_operator(), x_m);
+            // apply_boundary_conditions(V_m.dof_map(), sp.get_operator(), x_m);
             
             if(!sp.apply(rhs_m, rhs_f, x_m, x_f)) {
                 return false;

@@ -607,7 +607,7 @@ namespace utopia {
 
     std::unique_ptr<LinearSolver<USparseMatrix, UVector> > MeshTransferOperator::new_solver() {
         // return utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
-        // return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu");
-        return utopia::make_unique<ConjugateGradient<USparseMatrix, UVector>>();
+        return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu");
+        // return utopia::make_unique<ConjugateGradient<USparseMatrix, UVector>>();
     }
 }

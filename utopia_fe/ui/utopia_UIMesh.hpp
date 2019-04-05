@@ -6,6 +6,7 @@
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_modification.h"
+#include "utopia_UIMorph.hpp"
 
 #include <memory>
 
@@ -150,6 +151,13 @@ namespace utopia {
 
             if(mesh_type == "file" && order == 2) {
                 mesh_->all_second_order();
+            }
+
+            UIMorph<libMesh::DistributedMesh> morph;
+            is.get("morph", morph);
+            
+            if(morph.is_valid()) {
+                morph.apply(*mesh_);
             }
         }
 
