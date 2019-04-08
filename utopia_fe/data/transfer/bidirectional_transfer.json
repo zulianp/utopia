@@ -1,0 +1,48 @@
+{
+	"transfer": {
+		"type": "bidirectional-l2-projection",
+		"biorth-basis": false,
+		"function": "1",
+		"function-type" : "constant",
+		"nnz-x-row" : 26,
+		"normalize" : true,
+		"master": {
+			"mesh": {
+				"type": "square",
+				"elem-type": "quad",
+				"order": 1,
+				"n-x": 200,
+				"n-y": 180,
+				"min-x": 0.0,
+				"max-x": 1.0,
+
+				"min-y": 0.0,
+				"max-y": 0.5
+			},
+			"space": {
+				"system-name" : "master",
+				"variables" : [
+					{
+						"name" : "u_m",
+						"order" : 1
+					}
+				]
+			}
+		},
+		"slave": {
+			"mesh": {
+				"type": "file",
+				"path" : "../data/transfer/mesh_bug.e"
+			},
+			"space": {
+				"system-name" : "slave",
+				"variables" : [
+					{
+						"name" : "u_s",
+						"order" : 1
+					}
+				]
+			}
+		}
+	}
+}
