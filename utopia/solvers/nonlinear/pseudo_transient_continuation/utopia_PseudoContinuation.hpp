@@ -32,7 +32,7 @@ namespace utopia
 
     public:
        PseudoContinuation(  const std::shared_ptr <Solver> &linear_solver):
-                            NewtonBase<Matrix, Vector>(linear_solver), tau_max_(1e14)
+                            NewtonBase<Matrix, Vector>(linear_solver), tau_max_(1e14),reset_mass_matrix_(false)
         {
 
         }
@@ -47,6 +47,12 @@ namespace utopia
             return tau_max_; 
         }
 
+        void reset_mass_matrix(const bool reset_mass)
+        {
+            reset_mass_matrix_ = reset_mass; 
+        }
+
+
         void read(Input &in) override
         {
             NewtonBase<Matrix, Vector>::read(in);
@@ -59,6 +65,10 @@ namespace utopia
             this->print_param_usage(os, "tau_max", "real", "Upper bound for tau.", "1e14"); 
         }
 
+        void set_mass_matrix(const Matrix & M)
+        {
+            I_ = M; 
+        }
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
@@ -79,7 +89,11 @@ namespace utopia
             g_norm = norm2(g); 
 
             fun.hessian(x, H); 
-            Matrix I = local_identity(local_size(H)); 
+
+            if(empty(I_) || reset_mass_matrix_==true)
+            {
+                I_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+            }
 
             // tau = 1.0/g_norm; 
 
@@ -92,7 +106,8 @@ namespace utopia
 
             while(!converged)
             {
-                H_damped = H + 1./tau * I; 
+
+                H_damped = H + 1./tau * I_; 
 
                 s = 0 * x; 
                 this->linear_solve(H_damped, -1.0 * g, s);
@@ -126,6 +141,8 @@ namespace utopia
     
     private:
         Scalar tau_max_; 
+        Matrix I_;
+        bool reset_mass_matrix_; 
 
 
     };

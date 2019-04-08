@@ -56,6 +56,7 @@ typedef struct {
 extern PetscErrorCode FormInitialGuess(SNES,Vec,void*);
 extern PetscErrorCode FormFunction(SNES,Vec,Vec,void*);
 extern PetscErrorCode FormJacobian(SNES,Vec,Mat,Mat,void*);
+extern PetscErrorCode Save_VTK_XML(DM da,Vec X,const char filename[]); 
 
 int main(int argc,char **argv)
 {
@@ -134,6 +135,15 @@ int main(int argc,char **argv)
     using namespace utopia; 
     DVectord x_u; 
     convert(x, x_u); 
+
+    ierr    = SNESSolve(snes,NULL,x);CHKERRQ(ierr);
+    ierr    = SNESGetIterationNumber(snes,&its);CHKERRQ(ierr);
+    SNESConvergedReason reason; 
+    ierr = SNESGetConvergedReason(snes, &reason); 
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"Number of SNES iterations = %D\n", its);CHKERRQ(ierr);
+    std::cout<<"reason: "<< reason << "  \n"; 
+
+    
     
     PETSCUtopiaNonlinearFunction<DSMatrixd, DVectord> fun(snes);
 
@@ -142,9 +152,11 @@ int main(int argc,char **argv)
     // newton.verbose(true);  
     // newton.solve(fun, x_u); 
 
-    utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    // utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    AffineSimilarityAW<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
-    // utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+
+    //utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
 
     //solver.set_scaling_matrix(utopia::local_identity(local_size(Mass_utopia).get(0), local_size(Mass_utopia).get(1))); 
@@ -159,7 +171,7 @@ int main(int argc,char **argv)
     // solver.set_m(-1); 
     solver.atol(1e-7); 
     solver.max_it(300); 
-    solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+    // solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
     solver.solve(fun, x_u); 
 
 
@@ -168,7 +180,7 @@ int main(int argc,char **argv)
   }
 
 
-
+  Save_VTK_XML(da, x, "output.vtk"); 
 
 
 
@@ -655,5 +667,27 @@ PetscErrorCode FormJacobian(SNES snes,Vec X,Mat jac,Mat B,void *ptr)
   }
 
   ierr = PetscLogFlops((41.0 + 8.0*POWFLOP)*xm*ym);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode Save_VTK_XML(DM da,Vec X,const char filename[])
+{
+  PetscErrorCode ierr;
+  PetscViewer       viewer;
+  // ierr = PetscViewerVTKOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&view);CHKERRQ(ierr);
+  // ierr = VecView(X,view);CHKERRQ(ierr);
+  // ierr = PetscViewerDestroy(&view);CHKERRQ(ierr);
+
+
+  PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename, &viewer);
+  PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_VTK);
+  DMDASetUniformCoordinates(da, 0.0, 1, 0.0, 1, 0.0, 0.0);
+  DMView(da, viewer);
+  VecView(X, viewer);
+  PetscViewerDestroy(&viewer);
+
+
+
   PetscFunctionReturn(0);
 }

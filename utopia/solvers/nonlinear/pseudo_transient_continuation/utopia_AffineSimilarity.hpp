@@ -68,11 +68,11 @@ namespace utopia
         {
            using namespace utopia;
 
-           if(mass_init_ == false && mpi_world_rank() == 0)
+           if(empty(M_) && mpi_world_rank() == 0)
            {
-                std::cerr<<"Affine similarity solver requires mass matrix to be initialized .... \n "; 
-                return false; 
+                std::cout<<"Affine similarity solver requires mass matrix to be initialized .... \n "; 
            }
+
 
             Vector g, s, rhs, x_trial, g_trial;
             Matrix H, A;
@@ -84,6 +84,7 @@ namespace utopia
                 D_ = diag(d); 
                 D_inv_ = D_; // since inverse of identity is identity ... 
             }
+
 
 
             Scalar g_norm, s_norm=9e9, tau;
@@ -117,8 +118,15 @@ namespace utopia
             {
                 // scaling transformation
                 x = D_ * x; 
-
                 hessian(fun, x, H); 
+
+                if(!mass_init_ || empty(M_))
+                {
+                    M_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+                    M_inv_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+                    mass_init_ = true; 
+                }
+
                 // tau = 1.0/norm2(H);  
 
                 //  necessary if scaling matrix changes for it to next it
@@ -129,7 +137,7 @@ namespace utopia
                 rhs = g; 
 
                 //find direction step
-                s = local_zeros(local_size(x));
+                s = local_zeros(local_size(x)); 
                 this->linear_solve(A, rhs, s);
                 solves_counter++; 
 
@@ -159,6 +167,7 @@ namespace utopia
                         PrintInfo::print_iter_status(0, {tau});
                     }
                     
+
                     // here initial value for tau comes from tau_opt 
                     tau = estimate_tau(g_trial, g, s, tau, s_norm); 
                     clamp_tau(tau); 
@@ -242,6 +251,9 @@ namespace utopia
             if (mpi_world_rank() == 0 && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                 std::cout<<"solves_counter: "<< solves_counter << "  \n"; 
 
+
+            // reseting mass matrix initialization 
+            mass_init_ = false; 
             return true;
         }
 
@@ -255,7 +267,6 @@ namespace utopia
             Vector d = diag(M_); 
             M_inv_  = diag( 1.0/ d); 
             c_      = max(d); 
-
             mass_init_ = true; 
         }
 
@@ -382,7 +393,6 @@ namespace utopia
             Vector gs_diff = ((M_inv_ * g_trial) - s); 
             Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm) * c_; 
 
-
             if(use_m_)
             {
                 Scalar tau_new = nom/ help_denom; 
@@ -435,9 +445,6 @@ namespace utopia
                 return estimate_tau1(g_trial, g, s, tau, s_norm);                               
             }
         }
-
-
-
 
 
         Scalar norm_l2_2(const Vector & s)
@@ -509,7 +516,6 @@ namespace utopia
             // this quantities have already D_inv inside ...
             return (norm2(g_trial) < norm2(g)) ? true : false; 
         }
-
 
 
     private:

@@ -196,8 +196,9 @@
     {
         if(rho < this->eta1())
         {
-          Scalar dx_norm = norm2(p_k); 
-          delta = this->gamma1() * dx_norm;   // this is fine for L2 norm 
+          // Scalar dx_norm = norm2(p_k); 
+          // delta = this->gamma1() * dx_norm;   // this is fine for L2 norm 
+          delta = this->gamma1() * delta;   // this is fine for L2 norm 
         }
         else if (rho > this->eta2())
         {

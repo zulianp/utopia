@@ -112,16 +112,17 @@ namespace utopia
 			// );						
 
 
-			this->register_experiment("PseudoTransientContinuation",
-				[this]() {
-					auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
-					linear_solver->atol(1e-14); 
-					linear_solver->max_it(10000);
+			// this->register_experiment("PseudoTransientContinuation",
+			// 	[this]() {
+			// 		auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
+			// 		linear_solver->atol(1e-14); 
+			// 		linear_solver->max_it(10000);
 
-					PseudoContinuation<Matrix, Vector> solver(linear_solver); 
-					run_tr(this->test_functions_, solver, "PseudoTransientContinuation", this->verbose_);
-				}
-			);		
+			// 		PseudoContinuation<Matrix, Vector> solver(linear_solver); 
+			// 		solver.reset_mass_matrix(true); 
+			// 		run_tr(this->test_functions_, solver, "PseudoTransientContinuation", this->verbose_);
+			// 	}
+			// );		
 
 
 			// add slepcs checks 
@@ -158,7 +159,8 @@ namespace utopia
 			// does not converge for most of the test cases ....		
 			// this->register_experiment("AffineSimilarity",
 			// 	[this]() {
-			// 		auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>("petsc");			
+			// 		auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();			
+			// 		linear_solver->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG); 
 			// 		AffineSimilarity<Matrix, Vector> solver(linear_solver); 
 			// 		run_tr(this->test_functions_, solver, "AffineSimilarity", this->verbose_);
 			// 	}
@@ -182,7 +184,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 30); 
+			in.set("max-it", 100); 
 			in.set("verbose", true); 
 
 			auto params_qp = std::make_shared<InputParameters>(); 
@@ -202,7 +204,7 @@ namespace utopia
 			}
 
 	    	for(auto i =0; i < test_functions.size(); i++)
-	    	// for(auto i =0; i < 10; i++)
+	    	// for(auto i =0; i < 2; i++)
 	    	{
 				Vector x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 

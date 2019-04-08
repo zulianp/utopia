@@ -1550,14 +1550,20 @@ int main(int argc,char *argv[])
       
       PETSCUtopiaNonlinearFunction<DSMatrixd, DVectord> fun(snes);
 
-      auto linear_solver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
+//      auto linear_solver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
       // Newton<DSMatrixd, DVectord> newton(linear_solver); 
       // newton.verbose(true);  
       // newton.solve(fun, x_u); 
 
-    // utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
-      utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+      auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+      linear_solver->pc_type("asm");
+      linear_solver->atol(1e-12); 
+      utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+
+      // auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+      // linear_solver->pc_type("asm");
+      // utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
 
       // solver.set_scaling_matrix(utopia::local_identity(local_size(Mass_utopia).get(0), local_size(Mass_utopia).get(1))); 
@@ -1565,7 +1571,7 @@ int main(int argc,char *argv[])
       PetscInt dim = size(x_u).get(0); 
 
       DSMatrixd Mass_utopia = identity(dim, dim); 
-      // solver.set_mass_matrix(Mass_utopia); 
+      solver.set_mass_matrix(Mass_utopia); 
 
       
       solver.verbose(true);
@@ -1573,7 +1579,7 @@ int main(int argc,char *argv[])
       // solver.set_m(-1); 
       solver.atol(1e-7); 
       solver.max_it(300); 
-      // solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+      solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
       solver.solve(fun, x_u); 
 
 

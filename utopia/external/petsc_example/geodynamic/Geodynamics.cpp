@@ -278,7 +278,8 @@ PetscErrorCode UpdateSolution(SNES snes, AppCtx *user, PetscInt *nits)
       // newton.verbose(true);  
       // newton.solve(fun, x_u); 
 
-      utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+      // utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+      AffineSimilarityAW<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
       //utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
@@ -310,7 +311,7 @@ PetscErrorCode UpdateSolution(SNES snes, AppCtx *user, PetscInt *nits)
       // solver.set_m(-1); 
       solver.atol(1e-7); 
       solver.max_it(300); 
-      solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+      // solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
       solver.solve(fun, x_u); 
 
 
@@ -365,7 +366,8 @@ PetscErrorCode UpdateSolution(SNES snes, AppCtx *user, PetscInt *nits)
         // newton.verbose(true);  
         // newton.solve(fun, x_u); 
 
-        utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+        // utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+        AffineSimilarityAW<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
         //utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
@@ -390,7 +392,7 @@ PetscErrorCode UpdateSolution(SNES snes, AppCtx *user, PetscInt *nits)
 
         solver.set_mass_matrix(Mass_utopia); 
 
-        solver.tau_option(2); 
+        // solver.tau_option(2); 
         solver.verbose(true);
         // solver.use_m(false); 
         // solver.set_m(-1); 

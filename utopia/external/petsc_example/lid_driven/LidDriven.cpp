@@ -94,6 +94,9 @@ typedef struct {
 extern PetscErrorCode FormInitialGuess(AppCtx*,DM,Vec);
 // extern PetscErrorCode NonlinearGS(SNES,Vec,Vec,void*);
 
+extern PetscErrorCode ComputeMarker(DM da, Vec & Xguess);
+extern PetscErrorCode Save_VTK_XML(DM da,Vec X,const char filename[]); 
+
 int main(int argc,char **argv)
 {
   AppCtx         user;                /* user-defined work context */
@@ -183,12 +186,21 @@ int main(int argc,char **argv)
   ierr = SNESSetJacobian(snes,jac,jac,SNESComputeJacobianDefault,NULL); CHKERRQ(ierr);
   MatDestroy(&jac);
 
+  Vec Marker; 
+  std::cout<<"--- here.... \n"; 
 
+  VecDuplicate(x, &Marker); 
+  VecCopy(x, Marker); 
 
+  ComputeMarker(da, Marker); 
+  std::cout<<"--- out .... \n"; 
+
+  
   {
     using namespace utopia; 
-    DVectord x_u; 
+    DVectord x_u, Marker_u; 
     convert(x, x_u); 
+    convert(Marker, Marker_u); 
     
     PETSCUtopiaNonlinearFunction<DSMatrixd, DVectord> fun(snes);
 
@@ -197,7 +209,8 @@ int main(int argc,char **argv)
     // newton.verbose(true);  
     // newton.solve(fun, x_u); 
 
-    utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    // utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    AffineSimilarityAW<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
     // utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
@@ -205,12 +218,24 @@ int main(int argc,char **argv)
     //solver.set_scaling_matrix(utopia::local_identity(local_size(Mass_utopia).get(0), local_size(Mass_utopia).get(1))); 
     
 
-    DSMatrixd Mass_utopia = identity(dim, dim); 
+      DSMatrixd Mass_utopia = identity(dim, dim); 
+      std::cout<<"only in serial \n"; 
+      {
+        Read<utopia::DVectord> read(Marker_u);
+        Write<utopia::DSMatrixd> write(Mass_utopia);
+
+        for(auto i=0; i < dim; i++)
+        {
+          if(Marker_u.get(i) == 1 ||Marker_u.get(i) == 2)
+            Mass_utopia.set(i,i, 0);
+        }
+      }
+
     solver.set_mass_matrix(Mass_utopia); 
 
     
     solver.verbose(true);
-    solver.tau_option(1); 
+    // solver.tau_option(2); 
     // solver.use_m(false); 
     // solver.set_m(-1); 
     solver.atol(1e-7); 
@@ -224,6 +249,7 @@ int main(int argc,char **argv)
   }
 
 
+  Save_VTK_XML(da, x, "output.vtk"); 
 
   /*
      Visualize solution
@@ -429,5 +455,59 @@ PetscErrorCode FormFunctionLocal(DMDALocalInfo *info,Field **x,Field **f,void *p
      Flop count (multiply-adds are counted as 2 operations)
   */
   ierr = PetscLogFlops(84.0*info->ym*info->xm);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+
+PetscErrorCode ComputeMarker(DM da, Vec & Xguess)
+/* ------------------------------------------------------------------- */
+{
+  AppCtx         *user;
+  PetscInt       i,j,is,js,im,jm;
+  PetscErrorCode ierr;
+  Field          **x_new;
+
+  /* Get the fine grid */
+  ierr   = DMGetApplicationContext(da,&user);CHKERRQ(ierr);
+  ierr   = DMDAGetCorners(da,&is,&js,NULL,&im,&jm,NULL);CHKERRQ(ierr);
+  ierr   = DMDAVecGetArray(da,Xguess,(void**)&x_new);CHKERRQ(ierr);
+
+  /* Compute initial guess */
+  for (j=js; j<js+jm; j++) {
+    for (i=is; i<is+im; i++) {
+      x_new[j][i].u = 1.0; 
+      x_new[j][i].v = 2.0;
+      x_new[j][i].omega = 3.0; 
+      x_new[j][i].temp = 4.0; 
+    }
+  }
+
+  /* Restore x to Xguess */
+  ierr = DMDAVecRestoreArray(da,Xguess,(void**)&x_new);CHKERRQ(ierr);
+
+  return 0;
+}
+
+
+
+PetscErrorCode Save_VTK_XML(DM da,Vec X,const char filename[])
+{
+  PetscErrorCode ierr;
+  PetscViewer       viewer;
+  // ierr = PetscViewerVTKOpen(PETSC_COMM_WORLD,filename,FILE_MODE_WRITE,&view);CHKERRQ(ierr);
+  // ierr = VecView(X,view);CHKERRQ(ierr);
+  // ierr = PetscViewerDestroy(&view);CHKERRQ(ierr);
+
+
+  PetscViewerASCIIOpen(PETSC_COMM_WORLD, "testing.vtk", &viewer);
+  PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_VTK);
+  DMDASetUniformCoordinates(da, 0.0, 1, 0.0, 1, 0.0, 0.0);
+  DMView(da, viewer);
+  VecView(X, viewer);
+  PetscViewerDestroy(&viewer);
+
+
+
   PetscFunctionReturn(0);
 }
