@@ -576,6 +576,17 @@ namespace utopia {
             qp_solver_ = qp_solver;
         }
 
+        inline QPSolver<Matrix, Vector> &qp_solver()
+        {
+            assert(qp_solver_);
+            return *qp_solver_;
+        }
+
+        inline const QPSolver<Matrix, Vector> &qp_solver() const
+        {
+            assert(qp_solver_);
+            return *qp_solver_;
+        }
 
     private:
         std::shared_ptr<FunctionSpaceT> V_;
