@@ -11,6 +11,8 @@
 #include "moonolith_check_stream.hpp"
 #include "moonolith_make_unique.hpp"
 
+#include "utopia_ElementDofMap.hpp"
+
 #include <cassert>
 
 namespace utopia {
@@ -41,21 +43,21 @@ namespace utopia {
 
         static Integer n_elements(const FunctionSpace &space)
         {
-            return space.mesh().n_active_elements();
+            return space.mesh().n_active_local_elem();
         }
 
         static ElementIter elements_begin(const FunctionSpace &space)
         {
-            if(space.mesh().n_active_local_elements() == 0) {
+            if(space.mesh().n_active_local_elem() == 0) {
                 return space.mesh().local_elements_begin();
             }
 
             return space.mesh().active_local_elements_begin();
         }
 
-        static Integer elements_end(const FunctionSpace &space)
+        static ElementIter elements_end(const FunctionSpace &space)
         {
-            if(space.mesh().n_active_local_elements() == 0) {
+            if(space.mesh().n_active_local_elem() == 0) {
                 return space.mesh().local_elements_end();
             }
 
@@ -144,7 +146,6 @@ namespace utopia {
                 const libMesh::Elem *elem = space.elem(global_element_id);
 
                 for(libMesh::dof_id_type j = 0; j != elem->n_nodes(); ++j) {
-
                     nodeIds.insert(elem->node(j));
                 }
 
@@ -217,7 +218,7 @@ namespace utopia {
                 assert(!dof_map.at(local_element_id).empty());
                 os << dof_map.at(local_element_id);
                 //WRITE 10
-                int volume_tag=elem->subdomain_id();
+                int volume_tag = elem->subdomain_id();
                 os << volume_tag;
             }
 
@@ -239,14 +240,14 @@ namespace utopia {
             CHECK_STREAM_WRITE_END("serialize", os);
         }
 
-         std::unique_ptr<FunctionSpace> build(moonolith::InputStream &is) const
+        std::unique_ptr<FunctionSpace> build(moonolith::InputStream &is) const
         {
 
             CHECK_STREAM_READ_BEGIN("serialize", is);
 
             auto space = moonolith::make_unique<FunctionSpace>();
-            auto &dof_map = space.dof_map();
-            auto &handle_to_element_id = space.handle_to_element_id();
+            auto &dof_map = space->dof_map();
+            auto &handle_to_element_id = space->handle_to_element_id();
 
             using namespace std;
 
@@ -266,7 +267,7 @@ namespace utopia {
 
             mesh_ptr->reserve_nodes(n_nodes);
 
-            for (long iii = 0; iii != n_nodes; ++iii) {
+            for (long iii = 0; iii < n_nodes; ++iii) {
 
                 libMesh::Point p;
 
@@ -285,7 +286,7 @@ namespace utopia {
 
             CHECK_STREAM_READ_BEGIN("elements", is);
 
-            for(long i = 0; i !=n_elements; ++i) {
+            for(long i = 0; i < n_elements; ++i) {
                 handle_to_element_id[i] = i;
                 //READ 7
 
@@ -327,7 +328,7 @@ namespace utopia {
             int n_vars;
 
             is >> n_vars;
-            space.set_n_vars(n_vars);
+            space->set_n_vars(n_vars);
 
             for(int i = 0; i < n_vars; ++i) {
                 int fe_family;
@@ -335,8 +336,8 @@ namespace utopia {
                
                 is >> fe_family >> fe_order;
 
-                space.fe_type(i).family = fe_family;
-                space.fe_type(i).order = fe_order;
+                space->fe_type(i).family = fe_family;
+                space->fe_type(i).order = fe_order;
             }
 
             space->set_mesh(mesh_ptr);
@@ -345,6 +346,82 @@ namespace utopia {
             return space;
         }
 
+    };
+
+    class LibMeshFunctionSpaceAdapter {
+    public:
+
+        class FEType {
+        public:
+            int family;
+            int order;
+        };
+
+        inline libMesh::MeshBase &mesh()
+        {
+            assert(mesh_);
+            return *mesh_;
+        }
+
+        inline const libMesh::MeshBase &mesh() const
+        {
+            assert(mesh_);
+            return *mesh_;
+        }
+
+        inline std::vector<ElementDofMap> &dof_map() 
+        {
+            return dof_map_;
+        }
+
+        inline const std::vector<ElementDofMap> &dof_map() const
+        {
+            return dof_map_;
+        }
+
+        inline std::vector<libMesh::dof_id_type> &handle_to_element_id()
+        {
+            return handle_to_element_id_;
+        }
+
+        inline const std::vector<libMesh::dof_id_type> &handle_to_element_id() const
+        {
+            return handle_to_element_id_;
+        }
+
+        inline libMesh::dof_id_type handle_to_element_id(const std::size_t local_idx) const
+        {
+            assert(local_idx < handle_to_element_id_.size());
+            return handle_to_element_id_[local_idx];
+        }
+
+        void set_mesh(const std::shared_ptr<libMesh::MeshBase> &mesh)
+        {
+            mesh_ = mesh;
+        }
+
+        void set_n_vars(const std::size_t n_vars)
+        {
+            fe_type_.resize(n_vars);
+        }
+
+        FEType &fe_type(const std::size_t i)
+        {
+            assert(i < fe_type_.size());
+            return fe_type_[i];
+        }
+
+        const FEType &fe_type(const std::size_t i) const
+        {
+            assert(i < fe_type_.size());
+            return fe_type_[i];
+        }
+
+    private:
+        std::shared_ptr<libMesh::MeshBase> mesh_;
+        std::vector<ElementDofMap> dof_map_;
+        std::vector<libMesh::dof_id_type> handle_to_element_id_;
+        std::vector<FEType> fe_type_;
     };
 
     class ContactAssembler {

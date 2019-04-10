@@ -47,6 +47,9 @@ namespace utopia {
             return global.empty();
         }
 
+        inline std::size_t n_dofs() const { return global.size(); }
+        inline long dof(const std::size_t idx) const { assert(idx < global.size()); return global[idx]; }
+
         std::vector<long> global;
         //for(int side_number = 0; side_number < e.n_sides(); ++side_number)
             //boundary_face_dof_map[side_number] gives the dofs associated to
