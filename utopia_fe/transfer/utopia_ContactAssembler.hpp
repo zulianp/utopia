@@ -4,6 +4,8 @@
 #include "libmesh/mesh.h"
 #include "libmesh/elem.h"
 #include "libmesh/serial_mesh.h"
+#include "libmesh/boundary_mesh.h"
+#include "libmesh/dof_map.h"
 
 #include "moonolith_mesh_adapter.hpp"
 #include "moonolith_polygon.hpp"
@@ -12,12 +14,13 @@
 #include "moonolith_make_unique.hpp"
 
 #include "utopia_ElementDofMap.hpp"
+#include "MortarAssemble.hpp"
 
 #include <cassert>
 
 namespace utopia {
 
-    template<int Dim, class FunctionSpace>
+    template<class FunctionSpace>
     class LibMeshCollectionManager {
     public:
         using Elem  = libMesh::Elem;
@@ -38,18 +41,22 @@ namespace utopia {
 
         static Integer tag(const FunctionSpace &space, const ElementIter &e_it)
         {
-            return (*e_it)->subdomain_id();
+            return space.tag(e_it);
         }
 
         static Integer n_elements(const FunctionSpace &space)
         {
-            return space.mesh().n_active_local_elem();
+            if(space.mesh().is_serial()) {
+                return space.mesh().n_elem();
+            } else {
+                return space.mesh().n_active_local_elem();
+            }
         }
 
         static ElementIter elements_begin(const FunctionSpace &space)
         {
-            if(space.mesh().n_active_local_elem() == 0) {
-                return space.mesh().local_elements_begin();
+            if(space.mesh().is_serial()) {
+                return space.mesh().elements_begin();
             }
 
             return space.mesh().active_local_elements_begin();
@@ -57,8 +64,8 @@ namespace utopia {
 
         static ElementIter elements_end(const FunctionSpace &space)
         {
-            if(space.mesh().n_active_local_elem() == 0) {
-                return space.mesh().local_elements_end();
+            if(space.mesh().is_serial()) {
+                return space.mesh().elements_end();
             }
 
             return space.mesh().active_local_elements_end();
@@ -69,7 +76,7 @@ namespace utopia {
             return (*e_it)->id();
         }
 
-        static bool skip(const FunctionSpace &space, const Integer &element_index)
+        static bool skip(const FunctionSpace &space, const ElementIter &e_it)
         {
             return false;
         }
@@ -78,29 +85,28 @@ namespace utopia {
         static void fill_bound(const FunctionSpace &space, const Integer handle, Bound &bound, const double blow_up)
         {
             const auto &mesh = space.mesh();
-            const auto &e = mesh.elem(handle);
-            auto dim = mesh.spatial_dimension();
+            const auto &e = *mesh.elem(handle);
+            const auto dim = mesh.spatial_dimension();
 
-            assert(dim == Dim);
 
-            if(Dim > mesh.mesh_dimension()) {
-                std::array<double, Dim> p, q;
+            if(dim > mesh.mesh_dimension()) {
+                std::vector<double> p(dim);
                 
                 Point nn;
-                compute_side_normal(Dim, e, nn);
+                compute_side_normal(dim, e, nn);
 
                 for(Integer i = 0; i < e.n_nodes(); ++i) {
                     
                     const auto &q = e.node_ref(i);
 
-                    for(Integer d = 0; d < Dim; ++d) {
-                        p[d] = q[d] + blow_up * nn(d);
+                    for(Integer d = 0; d < dim; ++d) {
+                        p[d] = q(d) + blow_up * nn(d);
                     }
 
-                    bound += p.values;
+                    bound += p;
 
-                    for(Integer d = 0; d < Dim; ++d) {
-                        p[d] = q[d] - blow_up * nn(d);
+                    for(Integer d = 0; d < dim; ++d) {
+                        p[d] = q(d) - blow_up * nn(d);
                     }
 
                     bound += p;
@@ -108,12 +114,12 @@ namespace utopia {
 
             } else {
 
-                std::array<double, Dim> p;
+                std::vector<double> p(dim);
                 
-                for(Integer i = 0; i < n_nodes(e); ++i) {
+                for(Integer i = 0; i < e.n_nodes(); ++i) {
                     const auto &q = e.node_ref(i);
                     
-                    for(Integer d = 0; d < Dim; ++d) {
+                    for(Integer d = 0; d < dim; ++d) {
                         p[d] = q(d);
                     }
 
@@ -129,11 +135,10 @@ namespace utopia {
 
             const auto &mesh = space.mesh();
 
-            const int dim         = space.mesh_dimension();
+            const int dim         = mesh.mesh_dimension();
             const long n_elements = std::distance(begin, end);
             const auto &dof_map   = space.dof_map();
-            const auto &fe_types  = space.fe_types();
-
+            // const auto &fe_types  = space.fe_types();
 
             std::set<long> nodeIds;
             std::map<long, long> mapping;
@@ -143,7 +148,7 @@ namespace utopia {
                 const libMesh::dof_id_type local_element_id = *it;
                 const libMesh::dof_id_type global_element_id = space.handle_to_element_id(local_element_id);
 
-                const libMesh::Elem *elem = space.elem(global_element_id);
+                const libMesh::Elem *elem = mesh.elem(global_element_id);
 
                 for(libMesh::dof_id_type j = 0; j != elem->n_nodes(); ++j) {
                     nodeIds.insert(elem->node(j));
@@ -173,7 +178,7 @@ namespace utopia {
 
             for(auto node_id : nodeIds){
 
-                const libMesh::Point &p = space.node(node_id);
+                const libMesh::Point &p = mesh.node(node_id);
 
                 for(int i = 0; i < LIBMESH_DIM; ++i) {
 
@@ -192,7 +197,7 @@ namespace utopia {
                 const libMesh::dof_id_type local_element_id = *it;
                 const libMesh::dof_id_type global_element_id = space.handle_to_element_id(local_element_id);
 
-                const libMesh::Elem *elem = space.elem(global_element_id);
+                const libMesh::Elem *elem = mesh.elem(global_element_id);
 
                 const int e_n_nodes = elem->n_nodes();
 
@@ -351,11 +356,17 @@ namespace utopia {
     class LibMeshFunctionSpaceAdapter {
     public:
 
+        using ElementIter = typename libMesh::MeshBase::const_element_iterator;
+        using Integer = libMesh::dof_id_type;
+
         class FEType {
         public:
             int family;
             int order;
         };
+
+        LibMeshFunctionSpaceAdapter() : is_extracted_surface_(false)
+        {}
 
         inline libMesh::MeshBase &mesh()
         {
@@ -405,6 +416,11 @@ namespace utopia {
             fe_type_.resize(n_vars);
         }
 
+        inline std::size_t n_vars() const 
+        {
+            return fe_type_.size();
+        } 
+
         FEType &fe_type(const std::size_t i)
         {
             assert(i < fe_type_.size());
@@ -417,11 +433,153 @@ namespace utopia {
             return fe_type_[i];
         }
 
+        void boundary_ids_workaround(const libMesh::MeshBase &parent_mesh)
+        {
+            auto e_it  = mesh_->active_local_elements_begin();
+            auto e_end = mesh_->active_local_elements_end();
+
+            for (; e_it != e_end; ++e_it){
+                auto *elem = *e_it;
+                auto *parent = elem->interior_parent();
+                assert(parent);
+
+                std::size_t n_sides = parent->n_sides();
+
+                auto c_elem = elem->centroid();
+
+                bool found_side = false;
+                for(std::size_t side_num = 0; side_num < n_sides; ++side_num) {
+                    if(parent->neighbor_ptr(side_num) == nullptr) {
+                        auto side_ptr = parent->build_side_ptr(side_num);
+                        auto c_side   = side_ptr->centroid();
+
+                        if((c_side - c_elem).norm() < 1e-14) {
+                            //same element overwrite useless information
+                            elem->subdomain_id() = parent_mesh.get_boundary_info().boundary_id(parent, side_num);
+                            found_side = true;
+                            break;
+                        }
+                    }
+                }
+
+                assert(found_side);
+            }
+        }
+
+        void extract_surface_init(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const libMesh::DofMap &dof_map,
+            const int var_num)
+        {
+            auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
+
+            mesh->get_boundary_info().sync(*b_mesh);
+
+            es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
+            es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
+
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+            auto &sys = es->get_system("boundary_sys");
+            auto b_var_num = sys.add_variable("lambda", fe_type); 
+            es->init();
+
+            init(b_mesh, sys.get_dof_map(), b_var_num);
+            is_extracted_surface_ = true;
+            boundary_ids_workaround(*mesh);
+        }
+
+        Integer tag(const ElementIter &e_it) const
+        {
+            return (*e_it)->subdomain_id();
+        }
+
+        void print_tags() const
+        {
+            auto e_it  = mesh_->active_local_elements_begin();
+            auto e_end = mesh_->active_local_elements_end();
+
+            std::set<int> unique_tags;
+
+            libMesh::dof_id_type local_element_id = 0;
+            for (; e_it != e_end; ++e_it, ++local_element_id){
+                auto *elem = *e_it;
+                unique_tags.insert(tag(e_it));
+            }
+
+            std::cout << "----------\n";
+            std::cout << "tags:\n";
+
+            for(auto t : unique_tags) {
+                std::cout << t << " ";
+            }
+
+            std::cout << "----------\n";
+
+        }
+
+        void init(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const libMesh::DofMap &dof_map,
+            const int var_num)
+        {
+            const libMesh::dof_id_type n_elements = mesh->n_active_local_elem();
+
+            std::vector<libMesh::dof_id_type> temp;
+            dof_map_.resize(n_elements);
+            handle_to_element_id_.resize(n_elements);
+
+            auto e_it  = mesh->active_local_elements_begin();
+            auto e_end = mesh->active_local_elements_end();
+
+            libMesh::dof_id_type local_element_id = 0;
+            for (; e_it != e_end; ++e_it, ++local_element_id){
+                auto *elem = *e_it;
+
+                handle_to_element_id_[local_element_id] = elem->id();
+
+                dof_map.dof_indices(elem, temp, var_num);
+
+                dof_map_[local_element_id].global.insert(
+                    dof_map_[local_element_id].global.end(),
+                    temp.begin(),
+                    temp.end()
+                );
+            }
+
+            // std::size_t n_vars = dof_map.n_variables();
+            // this->set_n_vars(n_vars);
+
+            // for(std::size_t i = 0; i < n_vars; ++i) {
+            //     this->fe_type(i).family = dof_map.variable(i).type().family;
+            //     this->fe_type(i).order  = dof_map.variable(i).type().order;
+            // }
+
+            std::size_t n_vars = dof_map.n_variables();
+            this->set_n_vars(1);
+
+            this->fe_type(0).family = dof_map.variable(var_num).type().family;
+            this->fe_type(0).order  = dof_map.variable(var_num).type().order;
+
+            mesh_ = mesh;
+            is_extracted_surface_ = false;
+        }
+
     private:
         std::shared_ptr<libMesh::MeshBase> mesh_;
         std::vector<ElementDofMap> dof_map_;
         std::vector<libMesh::dof_id_type> handle_to_element_id_;
         std::vector<FEType> fe_type_;
+        std::unique_ptr<libMesh::EquationSystems> es;
+
+        bool is_extracted_surface_;
+    };
+
+    class PermutationBuilder {
+    public:
+        //1) build permutation from surface to volume
+        //2) build permutation from element-node dofmap to volume
+        //3) build permutation from surface element-node dofmap to volume
+        
     };
 
     class ContactAssembler {
@@ -429,5 +587,21 @@ namespace utopia {
     };
 
 }
+
+namespace moonolith {
+    template<>
+    class CollectionManager<utopia::LibMeshFunctionSpaceAdapter> 
+    : public utopia::LibMeshCollectionManager<utopia::LibMeshFunctionSpaceAdapter> {
+    public:
+        using super = utopia::LibMeshCollectionManager<utopia::LibMeshFunctionSpaceAdapter>;
+        using super::super;
+        
+    };
+}
+
+namespace utopia {
+    using LibMeshCollectionManagerT = moonolith::CollectionManager<utopia::LibMeshFunctionSpaceAdapter>;
+}
+
 
 #endif //UTOPIA_CONTACT_ASSEMBLER_HPP

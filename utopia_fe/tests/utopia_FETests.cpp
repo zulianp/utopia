@@ -17,7 +17,7 @@
 #include "utopia_NonLinearElasticityTest.hpp"
 #include "utopia_SDCTest.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
-
+#include "utopia_RefactoredContactTest.hpp"
 
 namespace utopia {
 
@@ -43,6 +43,7 @@ namespace utopia {
 
         for(int i = 1; i < argc; ++i) {
             const int ip1 = i+1;
+            const int ip2 = i+2;
 
             if(argv[i] == std::string("-test")) {
 
@@ -64,11 +65,24 @@ namespace utopia {
                         std::cout << "--------------------------------------------" << std::endl;
                         it->second->init(comm);
 
-                        InputParameters in;
-                        it->second->run(in);
+                        if(ip2 < argc) {
+                            auto in = open_istream(argv[ip2]);
+
+                            if(in) {
+                                it->second->run(*in);
+                            } else {
+                                InputParameters in;
+                                it->second->run(in);
+                            }
+
+                        } else {
+                            InputParameters in;
+                            it->second->run(in);
+                        }
 
                         std::cout << "--------------------------------------------" << std::endl;
                         std::cout << "--------------------------------------------" << std::endl;
+                        std::cout << "Exiting runtime..." << std::endl;
                     }
                 } else {
                     std::cerr << "[Error] run requires an input string" << std::endl;
@@ -107,8 +121,9 @@ namespace utopia {
         // add_test(Intrepid2Test::command(), utopia::make_unique<Intrepid2Test>());
         add_test(MSHReaderTest::command(), utopia::make_unique<MSHReaderTest>());
         // add_test(MechTest::command(), utopia::make_unique<MechTest>()); //FIXME missing mesh
-         add_test(NonLinearElasticityTest::command(), utopia::make_unique<NonLinearElasticityTest>());
+        add_test(NonLinearElasticityTest::command(), utopia::make_unique<NonLinearElasticityTest>());
         add_test(SMGTest::command(), utopia::make_unique<SMGTest>());
+        add_test(RefactoredContactTest::command(), utopia::make_unique<RefactoredContactTest>());
 
     }
 
