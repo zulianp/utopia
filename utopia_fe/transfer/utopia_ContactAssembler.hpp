@@ -1046,6 +1046,36 @@ namespace utopia {
             assert(false);
         }
 
+
+    template<typename T, int Dim>
+    inline void normal(const libMesh::Elem &elem, moonolith::Vector<T, Dim> &nn)
+    {
+        using namespace libMesh;
+        Point o, u, v, n;
+
+        if(Dim == 2) {
+            assert(elem.n_nodes() >= 2);
+            o = elem.point(0);
+            u = elem.point(1);
+            u -= o;
+            n(0) =  u(1);
+            n(1) = -u(0);
+
+        } else {
+            assert(Dim == 3);
+            o = elem.point(0);
+            u = elem.point(1);
+            v = elem.point(2);
+            u -= o;
+            v -= o;
+            n = u.cross(v);
+        }
+
+        n *= 1./n.norm();
+
+        make(n, nn);
+    }
+
     template<typename T, int Dim>
     inline void convert(const libMesh::QGauss &q_in, const T &rescale, moonolith::Quadrature<T, Dim> &q_out)
     {
@@ -1092,6 +1122,9 @@ namespace utopia {
             }
         }
     }
+
+
+
 
 }
 

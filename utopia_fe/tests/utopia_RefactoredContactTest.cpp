@@ -28,12 +28,53 @@ namespace utopia {
     class ContactData<2> {
     public:
         moonolith::Line<double, 2> master, slave;
+        moonolith::Quadrature<double, 2> q_master, q_slave;
+        moonolith::Quadrature<double, 1> q_rule;
+        int current_q_order = -1;
     };
 
     template<>
     class ContactData<3> {
     public:
         moonolith::Polygon<double, 3> master, slave;
+        moonolith::Quadrature<double, 3> q_master, q_slave;
+        moonolith::Quadrature<double, 2> q_rule;
+        int current_q_order = -1;
+    };
+
+    template<int Dim>
+    class ElementContactAlgorithm {
+    public:
+        ContactData<Dim> data;
+
+        moonolith::Vector<double, Dim> normal_master, normal_slave;
+
+        template<class Adapter>
+        bool apply(const Adapter &master, const Adapter &slave)
+        {
+            auto &m_space = master.collection();
+            auto &m_elem  = master.elem();
+
+            auto &s_space = slave.collection();
+            auto &s_elem  = slave.elem();
+
+            auto m_id = m_elem.id();
+            auto s_id = s_elem.id();
+
+            auto &m_dof = master.dofs();
+            auto &s_dof = slave.dofs();
+
+            make(m_elem, data.master);
+            make(s_elem, data.slave);   
+
+            normal(m_elem, normal_master);
+            normal(s_elem, normal_slave);
+
+            auto cos_angle = dot(normal_master, normal_slave);
+            std::cout << cos_angle << std::endl;
+            return true;
+        }
+
     };
 
     template<int Dim>
@@ -56,35 +97,13 @@ namespace utopia {
             params.search_radius
         );
 
-        ContactData<Dim> contact_data;
+        ElementContactAlgorithm<Dim> contact_algo;
 
         bool ok = false;
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
-            auto &m_space = master.collection();
-            auto &m_elem  = master.elem();
-
-            auto &s_space = slave.collection();
-            auto &s_elem  = slave.elem();
-
-            auto m_id = m_elem.id();
-            auto s_id = s_elem.id();
-
-            auto &m_dof = master.dofs();
-            auto &s_dof = slave.dofs();
-
-            make(m_elem, contact_data.master);
-            make(s_elem, contact_data.slave);   
-
-            // std::cout << m_id << "(" << master.tag() << ") -> " << s_id  << "(" << slave.tag() << ")" << std::endl;
-
-
-            // auto v = isect.compute(master, slave);
-
-            // if(v == 0.) return false;
-
-            // vol += v;
-            ok = true;
-            return true;
+            bool isected = contact_algo.apply(master, slave);
+            if(isected) { ok = true; }
+            return isected;
         });
 
         return ok;
