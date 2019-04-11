@@ -36,16 +36,11 @@ namespace utopia {
         s.verbosity_level = 3;
         AlogrithmT algo(m_comm, cm, s);
 
-        if(!algo.init(
+        algo.init(
             adapter,
             params.contact_pair_tags,
             params.search_radius
-        )) {
-            assert(false);
-            std::cerr <<  "[Error] tree empty" << std::endl;
-            return false;
-        }
-
+        );
 
         bool ok = false;
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
