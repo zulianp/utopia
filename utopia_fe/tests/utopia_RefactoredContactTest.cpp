@@ -33,7 +33,7 @@ namespace utopia {
         moonolith::Communicator m_comm(cm->comm.get());
 
         moonolith::SearchSettings s;
-        s.verbosity_level = 3;
+        // s.verbosity_level = 3;
         AlogrithmT algo(m_comm, cm, s);
 
         algo.init(
@@ -53,7 +53,7 @@ namespace utopia {
             auto m_id = m_elem.id();
             auto s_id = s_elem.id();
 
-            std::cout << m_id << "(" << master.tag() << ") -> " << s_id  << "(" << slave.tag() << ")" << std::endl;
+            // std::cout << m_id << "(" << master.tag() << ") -> " << s_id  << "(" << slave.tag() << ")" << std::endl;
 
 
             // auto v = isect.compute(master, slave);
@@ -98,12 +98,14 @@ namespace utopia {
 
             adapter.print_tags();
 
+            bool found_contact = false;
             if(V.mesh().spatial_dimension() == 2) {
-                run_contact<2>(params.contact_params, adapter);
+                found_contact = run_contact<2>(params.contact_params, adapter);
             } else if(V.mesh().spatial_dimension() == 3) {
-                run_contact<3>(params.contact_params, adapter);
+                found_contact = run_contact<3>(params.contact_params, adapter);
             }
 
+            assert(found_contact);
         });
         
     }
