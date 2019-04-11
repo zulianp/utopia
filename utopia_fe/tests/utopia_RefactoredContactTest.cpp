@@ -21,6 +21,20 @@
 
 namespace utopia {
 
+    template<int Dim>
+    class ContactData {};
+
+    template<>
+    class ContactData<2> {
+    public:
+        moonolith::Line<double, 2> master, slave;
+    };
+
+    template<>
+    class ContactData<3> {
+    public:
+        moonolith::Polygon<double, 3> master, slave;
+    };
 
     template<int Dim>
     bool run_contact(const ContactParams &params, LibMeshFunctionSpaceAdapter &adapter)
@@ -42,6 +56,8 @@ namespace utopia {
             params.search_radius
         );
 
+        ContactData<Dim> contact_data;
+
         bool ok = false;
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
             auto &m_space = master.collection();
@@ -52,6 +68,12 @@ namespace utopia {
 
             auto m_id = m_elem.id();
             auto s_id = s_elem.id();
+
+            auto &m_dof = master.dofs();
+            auto &s_dof = slave.dofs();
+
+            make(m_elem, contact_data.master);
+            make(s_elem, contact_data.slave);   
 
             // std::cout << m_id << "(" << master.tag() << ") -> " << s_id  << "(" << slave.tag() << ")" << std::endl;
 

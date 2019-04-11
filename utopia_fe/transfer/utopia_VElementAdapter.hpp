@@ -99,15 +99,10 @@ template<int Dimension>
             return element_;
         }
 
-
         libMesh::Elem * get()
         {
             assert(fe_);
-
-            //std::cout<<"I AM IN GET"<<std::endl;
-
             assert(element_ < fe_->n_local_elem());
-
             return fe_->elem(element_);
         }
 
@@ -117,17 +112,14 @@ template<int Dimension>
             return fe_->elem(element_);
         }
 
-
         inline const  libMesh::MeshBase  &space() const
         {
             assert(fe_);
             return *fe_;
         }
 
-
         void set_dof_map(std::vector<long> * ptr)
         {
-
             dof_map_ = ptr;
         }
 
@@ -137,10 +129,8 @@ template<int Dimension>
             return *dof_map_;
         }
 
-
-         void set_dof_map_reverse(std::vector<long> * ptr)
+        void set_dof_map_reverse(std::vector<long> * ptr)
         {
-
             dof_map_reverse_ = ptr;
         }
 
