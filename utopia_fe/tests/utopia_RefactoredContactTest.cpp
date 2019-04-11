@@ -21,6 +21,58 @@
 
 namespace utopia {
 
+
+    template<int Dim>
+    bool run_contact(const ContactParams &params, LibMeshFunctionSpaceAdapter &adapter)
+    {
+        using AlogrithmT = moonolith::SingleCollectionOneMasterOneSlaveAlgorithm<Dim, LibMeshFunctionSpaceAdapter>;
+        using Adapter    = typename AlogrithmT::Adapter;
+
+        auto cm = std::make_shared<LibMeshCollectionManagerT>(adapter.comm()); 
+
+        moonolith::Communicator m_comm(cm->comm.get());
+
+        moonolith::SearchSettings s;
+        s.verbosity_level = 3;
+        AlogrithmT algo(m_comm, cm, s);
+
+        if(!algo.init(
+            adapter,
+            params.contact_pair_tags,
+            params.search_radius
+        )) {
+            assert(false);
+            std::cerr <<  "[Error] tree empty" << std::endl;
+            return false;
+        }
+
+
+        bool ok = false;
+        algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
+            auto &m_space = master.collection();
+            auto &m_elem  = master.elem();
+
+            auto &s_space = slave.collection();
+            auto &s_elem  = slave.elem();
+
+            auto m_id = m_elem.id();
+            auto s_id = s_elem.id();
+
+            std::cout << m_id << "(" << master.tag() << ") -> " << s_id  << "(" << slave.tag() << ")" << std::endl;
+
+
+            // auto v = isect.compute(master, slave);
+
+            // if(v == 0.) return false;
+
+            // vol += v;
+            ok = true;
+            return true;
+        });
+
+        return ok;
+    }
+
     void RefactoredContactTest::run(Input &in) {
 
         using ProductSpaceT    = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
@@ -38,9 +90,6 @@ namespace utopia {
             in.get("contact", params);
 
             model = make_unique<MaterialT>(space.space());
-            // auto forcing_function = make_unique<ForcingFunctionT>(space.space());
-
-            // in.get("model", *model);
 
             auto &V = space.space().subspace(0);
 
@@ -54,34 +103,11 @@ namespace utopia {
 
             adapter.print_tags();
 
-            auto cm = std::make_shared<LibMeshCollectionManagerT>(comm()); 
-
-            using AlogrithmT = moonolith::SingleCollectionOneMasterOneSlaveAlgorithm<3, LibMeshFunctionSpaceAdapter>;
-            using Adapter    = AlogrithmT::Adapter;
-
-            moonolith::Communicator m_comm(comm().get());
-            AlogrithmT algo(m_comm, cm);
-
-            if(!algo.init(
-                adapter,
-                params.contact_params.contact_pair_tags,
-                params.contact_params.search_radius
-            )) {
-                assert(false);
-                std::cerr <<  "[Error] tree empty" << std::endl;
-                return;
+            if(V.mesh().spatial_dimension() == 2) {
+                run_contact<2>(params.contact_params, adapter);
+            } else if(V.mesh().spatial_dimension() == 3) {
+                run_contact<3>(params.contact_params, adapter);
             }
-
-            algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
-                // auto v = isect.compute(master, slave);
-
-                // if(v == 0.) return false;
-
-                // vol += v;
-                return true;
-            });
-
-
 
         });
         

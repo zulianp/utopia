@@ -39,6 +39,11 @@ namespace utopia {
             return **e_it;
         }
 
+        static const Elem &elem(const FunctionSpace &space, const Integer idx) 
+        {
+            return *space.mesh().elem(idx);
+        }
+
         static Integer tag(const FunctionSpace &space, const ElementIter &e_it)
         {
             return space.tag(e_it);
@@ -47,7 +52,12 @@ namespace utopia {
         static Integer n_elements(const FunctionSpace &space)
         {
             if(space.mesh().is_serial()) {
-                return space.mesh().n_elem();
+                auto n_elems = space.mesh().n_active_local_elem();
+                if(n_elems == 0) {
+                    return space.mesh().n_elem();
+                } else {
+                    return n_elems;
+                }
             } else {
                 return space.mesh().n_active_local_elem();
             }
@@ -56,7 +66,13 @@ namespace utopia {
         static ElementIter elements_begin(const FunctionSpace &space)
         {
             if(space.mesh().is_serial()) {
-                return space.mesh().elements_begin();
+                auto n_elems = space.mesh().n_active_local_elem();
+
+                if(n_elems == 0) {
+                    return space.mesh().elements_begin();
+                } else {
+                    return space.mesh().active_local_elements_begin();
+                }
             }
 
             return space.mesh().active_local_elements_begin();
@@ -64,11 +80,17 @@ namespace utopia {
 
         static ElementIter elements_end(const FunctionSpace &space)
         {
-            if(space.mesh().is_serial()) {
-                return space.mesh().elements_end();
-            }
+          if(space.mesh().is_serial()) {
+              auto n_elems = space.mesh().n_active_local_elem();
 
-            return space.mesh().active_local_elements_end();
+              if(n_elems == 0) {
+                  return space.mesh().elements_end();
+              } else {
+                  return space.mesh().active_local_elements_end();
+              }
+          }
+
+          return space.mesh().active_local_elements_end();
         }
 
         static Integer handle(const FunctionSpace &space, const ElementIter &e_it)
@@ -87,7 +109,6 @@ namespace utopia {
             const auto &mesh = space.mesh();
             const auto &e = *mesh.elem(handle);
             const auto dim = mesh.spatial_dimension();
-
 
             if(dim > mesh.mesh_dimension()) {
                 std::vector<double> p(dim);
@@ -135,7 +156,7 @@ namespace utopia {
 
             const auto &mesh = space.mesh();
 
-            const int dim         = mesh.mesh_dimension();
+            const int dim         = mesh.spatial_dimension();
             const long n_elements = std::distance(begin, end);
             const auto &dof_map   = space.dof_map();
             // const auto &fe_types  = space.fe_types();
@@ -488,7 +509,7 @@ namespace utopia {
             boundary_ids_workaround(*mesh);
         }
 
-        Integer tag(const ElementIter &e_it) const
+        static Integer tag(const ElementIter &e_it)
         {
             return (*e_it)->subdomain_id();
         }
@@ -515,6 +536,11 @@ namespace utopia {
 
             std::cout << "----------\n";
 
+        }
+
+        const libMesh::Parallel::Communicator &comm() const
+        {
+            return this->mesh_->comm(); 
         }
 
         void init(
