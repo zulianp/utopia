@@ -50,7 +50,7 @@ namespace utopia {
         using InputStream  = moonolith::InputStream;
         using OutputStream = moonolith::OutputStream;
 
-        using NTreeT 		= utopia::VTree<Dimensions>;
+        using NTreeT        = utopia::VTree<Dimensions>;
         using DataContainer = typename NTreeT::DataContainer;
         using Adapter       = typename NTreeT::DataType;
 
@@ -59,9 +59,9 @@ namespace utopia {
             const TransferOptions &opts,
             const std::shared_ptr<FESpacesAdapter> &local_spaces)
         : comm(comm),
-          m_comm(comm.get()),
-          opts(opts),
-          local_spaces(local_spaces)
+        m_comm(comm.get()),
+        opts(opts),
+        local_spaces(local_spaces)
         {}
 
         const libMesh::Parallel::Communicator &comm;
@@ -77,7 +77,7 @@ namespace utopia {
             const long senderrank,
             bool is_forwarding, DataContainer &data,
             InputStream &in
-        ) {
+            ) {
 
             CHECK_STREAM_READ_BEGIN("vol_proj", in);
 
@@ -135,7 +135,7 @@ namespace utopia {
             }
 
             CHECK_STREAM_READ_END("vol_proj", in);
-        };
+        }
 
         void write(
             const long ownerrank, const long recvrank,
@@ -157,7 +157,7 @@ namespace utopia {
             }
 
             CHECK_STREAM_WRITE_END("vol_proj", out);
-        };
+        }
 
     };
 
@@ -171,7 +171,7 @@ namespace utopia {
         using SparseMatrix  = utopia::USparseMatrix;
         using MeshBase      = libMesh::MeshBase;
         using DofMap        = libMesh::DofMap;
-        using NTreeT 		= utopia::VTree<Dimensions>;
+        using NTreeT        = utopia::VTree<Dimensions>;
         using DataContainer = typename NTreeT::DataContainer;
         using Adapter       = typename NTreeT::DataType;
 
@@ -198,14 +198,21 @@ namespace utopia {
         {
             this->from_mesh = from_mesh;
             this->from_dofs = from_dofs;
-            this->to_mesh 	= to_mesh;
-            this->to_dofs	= to_dofs;
-            this->opts 		= opts;
+            this->to_mesh   = to_mesh;
+            this->to_dofs   = to_dofs;
+            this->opts      = opts;
 
             this->assembler = assembler;
             this->local2global = local2global;
 
             this->comm = moonolith::Communicator(from_mesh->comm().get());
+
+            if(Utopia::instance().verbose()) {
+                moonolith::root_describe("---------------------------------------\n"
+                    "begin: initializing fespaces adapter\n",
+                    comm, logger());
+            }
+
             this->local_spaces = std::make_shared<FESpacesAdapter>(from_mesh, to_mesh, from_dofs, to_dofs, opts.from_var_num, opts.to_var_num);
 
             predicate = std::make_shared<moonolith::MasterAndSlave>();
@@ -217,14 +224,20 @@ namespace utopia {
                     predicate->add(t.first, t.second);
                 }
             }
+
+            if(Utopia::instance().verbose()) {
+                moonolith::root_describe("---------------------------------------\n"
+                    "end: initializing fespaces adapter\n",
+                    comm, logger());
+            }
         }
 
         inline bool assemble(Adapter &master,
-                      Adapter &slave)
+            Adapter &slave)
         {
             //FIXME assuming elements are all the same
-             auto master_type = from_dofs->variable(opts.from_var_num).type();
-             auto slave_type  = to_dofs->variable(opts.to_var_num).type();
+            auto master_type = from_dofs->variable(opts.from_var_num).type();
+            auto slave_type  = to_dofs->variable(opts.to_var_num).type();
 
             const auto &master_mesh = master.space();;
             const auto &slave_mesh  = slave.space();
@@ -240,7 +253,7 @@ namespace utopia {
                     master_dofs = master.dof_map();
                     slave_dofs  = slave.dof_map();
                 }
-            );
+                );
         }
 
         bool assemble(std::vector<std::shared_ptr<SparseMatrix> > &mats)
@@ -278,7 +291,7 @@ namespace utopia {
                 const long senderrank,
                 bool is_forwarding, DataContainer &data,
                 InputStream &in
-            ) {
+                ) {
                 serializer.read(ownerrank, senderrank, is_forwarding, data, in);
             };
 
@@ -288,7 +301,7 @@ namespace utopia {
                 const std::vector<long>::const_iterator &end,
                 const DataContainer &data,
                 OutputStream &out
-            ) {
+                ) {
                 serializer.write(ownerrank, recvrank, begin, end, data, out);
             };
 
@@ -305,9 +318,25 @@ namespace utopia {
                 from_dofs->n_local_dofs(),
                 to_dofs->n_dofs(),
                 to_dofs->n_local_dofs()
-            );
+                );
+
+            if(Utopia::instance().verbose()) {
+                moonolith::root_describe("---------------------------------------\n"
+                    "begin: search_and_compute ",
+                    comm, std::cout);
+
+                settings.verbosity_level = 2;
+            }
 
             moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
+
+
+            if(Utopia::instance().verbose()) {
+                moonolith::root_describe("---------------------------------------\n"
+                    "end: search_and_compute ",
+                    comm, std::cout);
+            }
+
 
             pg_assembler_.finalize(mats_);
             pg_assembler_.print_stats();
@@ -320,9 +349,18 @@ namespace utopia {
 
             const auto n_elements_from = from_mesh->n_active_local_elem();
             const auto n_elements_to   = to_mesh->n_active_local_elem();
-            const auto n_elements 	  = n_elements_from + n_elements_to;
+            const auto n_elements     = n_elements_from + n_elements_to;
 
             MOONOLITH_EVENT_BEGIN("create_adapters");
+
+            if(Utopia::instance().verbose()) {
+                moonolith::root_describe("---------------------------------------\n"
+                    "begin: init_tree\n",
+                    comm, logger());
+
+                moonolith::synch_describe("n_elements: " + std::to_string(n_elements),
+                    comm, logger());
+            }
 
             tree = NTreeT::New(predicate, settings.max_elements, settings.max_depth);
             tree->reserve(n_elements);
@@ -339,11 +377,11 @@ namespace utopia {
                         bool first = true;
                         libMesh::dof_id_type local_element_id = 0;
                         for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
-
+                            
                             // if(boundary_elements_only) {
-                            // 	if(!(*it)->is_boundary()) {
-                            // 		continue;
-                            // 	}
+                            //  if(!(*it)->is_boundary()) {
+                            //      continue;
+                            //  }
                             // }
 
                             auto elem = *it;
@@ -387,6 +425,13 @@ namespace utopia {
             }
 
             tree->root()->bound().static_bound().enlarge(1e-8);
+
+
+            if(Utopia::instance().verbose()) {
+                moonolith::root_describe("---------------------------------------\n"
+                    "end: init_tree ",
+                    comm, std::cout);
+            }
 
             MOONOLITH_EVENT_END("create_adapters");
         }
@@ -480,19 +525,19 @@ namespace utopia {
             assembler_->print_stats(ss);
             moonolith::root_describe(ss.str(), comm, std::cout);
         }
-
+        
         ///////////////////////////
 
         return ok;
     }
 
     bool TransferAssembler::assemble(
-            const std::shared_ptr<MeshBase> &from_mesh,
-            const std::shared_ptr<DofMap>   &from_dofs,
-            const std::shared_ptr<MeshBase> &to_mesh,
-            const std::shared_ptr<DofMap>   &to_dofs,
-            SparseMatrix &B,
-            const TransferOptions &opts
+        const std::shared_ptr<MeshBase> &from_mesh,
+        const std::shared_ptr<DofMap>   &from_dofs,
+        const std::shared_ptr<MeshBase> &to_mesh,
+        const std::shared_ptr<DofMap>   &to_dofs,
+        SparseMatrix &B,
+        const TransferOptions &opts
         )
     {
         std::vector<std::shared_ptr<SparseMatrix> > mats;
