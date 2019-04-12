@@ -36,40 +36,40 @@ namespace utopia {
 			0., 1.,
 			0., 1.,
 			libMesh::TRI3);
+        std::string var_name = "pota";
+//		Intrepid2FunctionSpace V(var_name);//mesh); //TODO
 
-		LibMeshFunctionSpace V(mesh); //TODO
-
-		auto u = trial(V);
+//		auto u = trial(V);
 		/*init_constraints( constraints(
 			boundary_conditions(u == coeff(0), {1, 3}),
 			boundary_conditions(u == coeff(0), {0, 2})
 		));*/
 		
 
-		V.initialize();
+//		V.initialize();
 
 		//////////////////////////////////////////
 		//////////////////////////////////////////
-		auto v = test(V);
+//		auto v = test(V);
 
-		auto b_form = inner(grad(u), grad(v)) * dX;
-		auto l_form = inner(coeff(1.), v) * dX;
+//		auto b_form = inner(grad(u), grad(v)) * dX;
+//		auto l_form = inner(coeff(1.), v) * dX;
 
 		TSMatrixd H;
 		TVectord rhs;
 
 		Intrepid2Assembler assembler;
-		assembler.assemble(l_form, rhs);
-		assembler.assemble(b_form, H);
+//		assembler.assemble(l_form, rhs);
+//		assembler.assemble(b_form, H);
 
 		disp(H);
         //TODO FIXME
-		apply_boundary_conditions(V.dof_map(), H, rhs);
+//		apply_boundary_conditions(V.dof_map(), H, rhs);
 
 		TVectord x = local_zeros(local_size(rhs)); //UVector x
 		solve(H, rhs, x);
 
-		//write("intrepid2test.e", V, x); //TODO implement write function
+//		write("intrepid2test.e", V, x); //TODO implement write function
 		//////////////////////////////////////////
 	}
 }

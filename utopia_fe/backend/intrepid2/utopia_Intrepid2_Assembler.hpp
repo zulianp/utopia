@@ -15,7 +15,7 @@
 
 #include "utopia_make_unique.hpp"
 
-#include "utopia_intrepid2_Types.hpp"
+#include "utopia_Intrepid2_Types.hpp"
 
 // Intrepid2 includes
 #include <Intrepid2_FunctionSpaceTools.hpp>
@@ -74,7 +74,7 @@ namespace utopia {
 				std::cout << i << " " << v(i) << std::endl;
 			}
 		}
-
+        //needed to integrate
 		class IntrepidCubature {
 		public:
 			Intrepid2::DefaultCubatureFactory  cub_factory_;
@@ -109,7 +109,7 @@ namespace utopia {
 				auto num_nodes    = m.n_local_nodes(); //FIXME include ghost nodes
 				num_elements      = m.n_active_local_elem();
 
-				cell_ptr_     = std::make_shared<CellTopology>(shards::getCellTopologyData<shards::Triangle<3>>());
+				cell_ptr_     = std::make_shared<CellTopology>(shards::getCellTopologyData<shards::Triangle<3>>());  //TODO fixed to triangle in 3D
 				points_ 	  = TensorView3<Scalar>("points", num_elements, cell_ptr_->getNodeCount(), dim);
 				elem_to_node_ = TensorView2<int>("elem2node", num_elements, cell_ptr_->getNodeCount());
 

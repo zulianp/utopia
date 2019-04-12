@@ -3,12 +3,13 @@
 
 #include <iostream>
 
-//#include "utopia_fe_kokkos_fix.hpp"
+#include "utopia_fe_kokkos_fix.hpp"
 
-#include "utopia_intrepid2_FEForwardDeclarations.hpp"
+#include "utopia_Intrepid2_FEForwardDeclarations.hpp"
 #include "utopia.hpp"
 #include "utopia_fe_base.hpp"
 
+#include "libmesh/dof_map.h"
 /*#include "libmesh/sparse_matrix.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dense_matrix.h"
