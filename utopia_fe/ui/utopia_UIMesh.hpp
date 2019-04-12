@@ -203,6 +203,10 @@ namespace utopia {
                     }
                 }
 
+                if(order == 3) {
+                    type = libMesh::HEX27;
+                }
+
                 if(elem_type == "prism") {
                     type = libMesh::PRISM6;
 
@@ -233,6 +237,15 @@ namespace utopia {
 
                     if(elem_type == "tri") {
                         type = libMesh::TRI6;
+                    }
+                }
+
+                if(order == 3) {
+                    type = libMesh::QUAD9;
+
+                     if(elem_type == "tri") {
+                        assert(false);
+                        // type = libMesh::TRI6;
                     }
                 }
 
