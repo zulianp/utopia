@@ -16,6 +16,7 @@
 #include "moonolith_polygon.hpp"
 #include "moonolith_line.hpp"
 #include "moonolith_map_quadrature.hpp"
+#include "moonolith_affine_transform.hpp"
 
 #include "utopia_ElementDofMap.hpp"
 #include "MortarAssemble.hpp"
@@ -1141,6 +1142,49 @@ namespace utopia {
     {
         static const moonolith::Vector<T, Dim> zero;
         return convert(q_in, zero, 1., weight_rescale, q_out);
+    }
+
+    inline void make_line_transform(
+        const libMesh::Elem &elem,
+        moonolith::AffineTransform<double, 1, 2> &trafo)
+    {
+        const auto &q0 = elem.node_ref(0);
+        const auto &q1 = elem.node_ref(1);
+
+        moonolith::Vector<double, 2> p0, p1;
+
+        p0.x = q1(0);
+        p0.y = q0(1);
+
+        p1.x = q1(0);
+        p1.y = q1(1);
+
+        make(p0, p1, trafo);
+    }
+
+    inline void make_trianle_transform(
+        const libMesh::Elem &elem,
+        moonolith::AffineTransform<double, 2, 3> &trafo)
+    {
+        const auto &q0 = elem.node_ref(0);
+        const auto &q1 = elem.node_ref(1);
+        const auto &q2 = elem.node_ref(2);
+
+        moonolith::Vector<double, 3> p0, p1, p2;
+
+        p0.x = q0(0);
+        p0.y = q0(1);
+        p0.z = q0(2);
+
+        p1.x = q1(0);
+        p1.y = q1(1);
+        p1.z = q1(2);
+
+        p2.x = q2(0);
+        p2.y = q2(1);
+        p2.z = q2(2);
+
+        make(p0, p1, p2, trafo);
     }
 
 }
