@@ -135,10 +135,10 @@ namespace utopia {
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
 
-            // const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
+            const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
 
             //force usage of non-affine code
-            const bool is_affine = false;
+            // const bool is_affine = false;
 
             if(is_affine) {
                 //AFFINE CONTACT
