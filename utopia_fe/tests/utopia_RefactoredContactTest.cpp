@@ -67,10 +67,11 @@ namespace utopia {
                     }
 
                     point_shift.x = 1;
+                    point_rescale = 0.5;
                     weight_rescale = 0.5;
 
                     convert(ir, point_shift, point_rescale, weight_rescale, q);
-                } if(Dim == 3) {
+                } else if(Dim == 3) {
 
                     libMesh::QGauss ir(2, libMesh::Order(order));
 
@@ -91,8 +92,8 @@ namespace utopia {
                 current_order = order;
             }
 
-            trial_weight_rescale = ref_area_of_surf(trial.type());
-            test_weight_rescale  = ref_area_of_surf(test.type());
+            trial_weight_rescale = ref_volume(trial.type());
+            test_weight_rescale  = ref_volume(test.type());
         }
 
     };
@@ -100,27 +101,32 @@ namespace utopia {
     template<int Dim>
     class ProjectionAlgorithm {
     public:
-        using Trafo = moonolith::AffineTransform<double, Dim-1, Dim>;
+        using Trafo     = moonolith::AffineTransform<double, Dim-1, Dim>;
+        using Shape     = moonolith::Shape<double, Dim-1, Dim>;
         using SubVector = moonolith::Vector<double, Dim-1>;
         using Vector    = moonolith::Vector<double, Dim>;
-        
-        moonolith::AffineContact<double, Dim> contact;
-        std::shared_ptr<Trafo> trafo_m, trafo_s;
 
+        //algorithms
+        moonolith::AffineContact<double, Dim> affine_contact;
+        moonolith::WarpedContact<double, Dim> warped_contact;
+
+        //buffers
+        std::shared_ptr<Trafo> trafo_m, trafo_s;
+        std::shared_ptr<Shape> shape_m, shape_s;
         SurfaceQuadratureConverter<Dim> converter;
+
+        double area = 0.;
 
         ProjectionAlgorithm()
         {
             trafo_m = std::make_shared<Trafo>();
-            trafo_s = std::make_shared<Trafo>(); 
-
-            contact.trafo_master = trafo_m;
-            contact.trafo_slave  = trafo_s;
+            trafo_s = std::make_shared<Trafo>();
+            affine_contact.trafo_master = trafo_m;
+            affine_contact.trafo_slave  = trafo_s;
         }
 
-
         template<class Adapter>
-        double apply(Adapter &master, Adapter &slave)
+        bool apply(Adapter &master, Adapter &slave)
         {
             auto &m_m = master.collection();
             auto &m_s = slave.collection();
@@ -128,83 +134,47 @@ namespace utopia {
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
 
-            make(e_m, contact.master);
-            make(e_s, contact.slave);
+            const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
 
-            // make_transform(e_m, *trafo_m);
-            // make_transform(e_s, *trafo_s);
+            if(is_affine) {
+                //AFFINE CONTACT
+                make(e_m, affine_contact.master);
+                make(e_s, affine_contact.slave);
 
-            converter.init(
-               e_m,
-               m_m.fe_type(0).order,
-               e_s,
-               m_s.fe_type(0).order,
-               contact.q_rule
-            );
+                make_transform(e_m, *trafo_m);
+                make_transform(e_s, *trafo_s);
 
-            // if(contact.compute()) {
-            //     return contact.q_slave.weights[0] * moonolith::measure(contact.slave);
-            // }
+                converter.init(
+                   e_m,
+                   m_m.fe_type(0).order,
+                   e_s,
+                   m_s.fe_type(0).order,
+                   affine_contact.q_rule
+                );
 
-            return 0.;
+                if(affine_contact.compute()) {
+                    auto slave_area = moonolith::measure(affine_contact.slave);
+                    
+                    auto sum_w = 0.;
+                    for(auto w : affine_contact.q_slave.weights) {
+                        sum_w += w;
+                    }
+
+                    auto isect_area = sum_w * slave_area;
+                    area += isect_area;
+                    return true;
+                }
+
+                return false;
+
+            } else {
+                //WARPED CONTACT
+
+            }
+
+            return false;
         }
     };
-
-    // template<int Dim>
-    // class ContactData {};
-
-    // template<>
-    // class ContactData<2> {
-    // public:
-    //     moonolith::Line<double, 2> master, slave;
-    //     moonolith::Quadrature<double, 2> q_master, q_slave;
-    //     moonolith::Quadrature<double, 1> q_rule;
-    //     int current_q_order = -1;
-    // };
-
-    // template<>
-    // class ContactData<3> {
-    // public:
-    //     moonolith::Polygon<double, 3> master, slave;
-    //     moonolith::Quadrature<double, 3> q_master, q_slave;
-    //     moonolith::Quadrature<double, 2> q_rule;
-    //     int current_q_order = -1;
-    // };
-
-    // template<int Dim>
-    // class ElementContactAlgorithm {
-    // public:
-    //     ContactData<Dim> data;
-
-    //     moonolith::Vector<double, Dim> normal_master, normal_slave;
-
-    //     template<class Adapter>
-    //     bool apply(const Adapter &master, const Adapter &slave)
-    //     {
-    //         auto &m_space = master.collection();
-    //         auto &m_elem  = master.elem();
-
-    //         auto &s_space = slave.collection();
-    //         auto &s_elem  = slave.elem();
-
-    //         auto m_id = m_elem.id();
-    //         auto s_id = s_elem.id();
-
-    //         auto &m_dof = master.dofs();
-    //         auto &s_dof = slave.dofs();
-
-    //         make(m_elem, data.master);
-    //         make(s_elem, data.slave);   
-
-    //         normal(m_elem, normal_master);
-    //         normal(s_elem, normal_slave);
-
-    //         auto cos_angle = dot(normal_master, normal_slave);
-    //         std::cout << cos_angle << std::endl;
-    //         return true;
-    //     }
-
-    // };
 
     template<int Dim>
     bool run_contact(const ContactParams &params, LibMeshFunctionSpaceAdapter &adapter)
@@ -234,6 +204,9 @@ namespace utopia {
             if(isected) { ok = true; }
             return isected;
         });
+
+
+        std::cout << "area: " << contact_algo.area << std::endl;
 
         return ok;
     }
@@ -271,7 +244,8 @@ namespace utopia {
             bool found_contact = false;
             if(V.mesh().spatial_dimension() == 2) {
                 found_contact = run_contact<2>(params.contact_params, adapter);
-            } else if(V.mesh().spatial_dimension() == 3) {
+            } 
+            else if(V.mesh().spatial_dimension() == 3) {
                 found_contact = run_contact<3>(params.contact_params, adapter);
             }
 

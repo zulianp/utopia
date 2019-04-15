@@ -1162,7 +1162,7 @@ namespace utopia {
         make(p0, p1, trafo);
     }
 
-    inline void make_trianle_transform(
+    inline void make_triangle_transform(
         const libMesh::Elem &elem,
         moonolith::AffineTransform<double, 2, 3> &trafo)
     {
@@ -1186,6 +1186,128 @@ namespace utopia {
 
         make(p0, p1, p2, trafo);
     }
+
+    inline void make_transform(
+        const libMesh::Elem &elem,
+        std::shared_ptr<moonolith::Transform<double, 2, 3>> &trafo)
+    {
+        trafo = std::make_shared<Transform2>(elem);
+    }   
+
+    inline void make_transform(
+        const libMesh::Elem &elem,
+        std::shared_ptr<moonolith::Transform<double, 1, 2>> &trafo)
+    {
+        trafo = std::make_shared<Transform1>(elem);
+    }   
+
+    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 2, 2> &trafo)
+    {
+        libMesh::Point p0(0.0, 0.0, 0.0);
+        libMesh::Point p1(1.0, 0.0, 0.0);
+        libMesh::Point p2(0.0, 1.0, 0.0);
+
+        // figure out the ordering of the map
+        p0 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p0);
+        p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p1);
+        p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p2);
+
+        moonolith::Vector<double, 2> q0, q1, q2;
+
+        q0.x = p0(0);
+        q0.y = p0(1);
+
+        q1.x = p1(0);
+        q1.y = p1(1);
+
+        q2.x = p2(0);
+        q2.y = p2(1);
+
+        moonolith::make(q0, q1, q2, trafo);
+    }
+
+    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 3, 3> &trafo)
+    {
+        libMesh::Point p0(0.0, 0.0, 0.0);
+        libMesh::Point p1(1.0, 0.0, 0.0);
+        libMesh::Point p2(0.0, 1.0, 0.0);
+        libMesh::Point p3(0.0, 0.0, 1.0);
+
+        // figure out the ordering of the map
+        p0 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, p0);
+        p1 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, p1);
+        p2 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, p2);
+        p3 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, p3);
+
+        moonolith::Vector<double, 3> q0, q1, q2, q3;
+
+        q0.x = p0(0);
+        q0.y = p0(1);
+        q0.z = p0(2);
+
+        q1.x = p1(0);
+        q1.y = p1(1);
+        q1.z = p1(2);
+
+        q2.x = p2(0);
+        q2.y = p2(1);
+        q2.z = p2(2);
+
+        q3.x = p3(0);
+        q3.y = p3(1);
+        q3.z = p3(2);
+
+        moonolith::make(q0, q1, q2, q3, trafo);
+    }
+
+    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 2, 3> &trafo)
+    {
+        libMesh::Point p0(0.0, 0.0);
+        libMesh::Point p1(1.0, 0.0);
+        libMesh::Point p2(0.0, 1.0);
+
+        // figure out the ordering of the map
+        p0 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p0);
+        p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p1);
+        p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p2);
+
+        moonolith::Vector<double, 3> q0, q1, q2;
+
+        q0.x = p0(0);
+        q0.y = p0(1);
+        q0.z = p0(2);
+
+        q1.x = p1(0);
+        q1.y = p1(1);
+        q1.z = p1(2);
+
+        q2.x = p2(0);
+        q2.y = p2(1);
+        q2.z = p2(2);
+
+        moonolith::make(q0, q1, q2, trafo);
+    }
+
+    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 1, 2> &trafo)
+    {
+        libMesh::Point p0(-1.0, 0.0);
+        libMesh::Point p1(1.0, 0.0);
+
+        // figure out the ordering of the map
+        p0 = libMesh::FE<1, libMesh::LAGRANGE>::map(&elem, p0);
+        p1 = libMesh::FE<1, libMesh::LAGRANGE>::map(&elem, p1);
+
+        moonolith::Vector<double, 2> q0, q1;
+
+        q0.x = p0(0);
+        q0.y = p0(1);
+
+        q1.x = p1(0);
+        q1.y = p1(1);
+
+        moonolith::make(q0, q1, trafo);
+    }
+
 
 }
 

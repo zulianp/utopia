@@ -148,12 +148,6 @@ namespace utopia {
         public Transform,
         public moonolith::Transform<double, 3, 3> {
     public:
-    public:
-        // Transform3(const Polyhedron &polyhedron, const libMesh::Elem &elem)
-        // : polyhedron_(polyhedron), elem_(elem)
-        // {
-        //  assert(polyhedron.n_nodes == 4 || polyhedron.n_nodes == 8 && "must be either a tetrahedron or a hex");
-        // }
 
         Transform3(const libMesh::Elem &elem)
         : elem_(elem)
@@ -195,7 +189,9 @@ namespace utopia {
     };
 
 
-    class AffineTransform2 : public Transform {
+    class AffineTransform2 :
+        public Transform,
+        public moonolith::Transform<double, 2, 2> {
     public:
         AffineTransform2(const libMesh::Elem &elem)
         {
@@ -223,6 +219,27 @@ namespace utopia {
             return A_inv_m_b_;
         }
 
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        {
+            libMesh::Point ref(in.x, in.y), world;
+            apply(ref, world);
+            out.x = world(0);
+            out.y = world(1);
+            //FIXME
+            return true;
+        }
+
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        {
+            libMesh::Point ref, world(in.x, in.y);
+            
+            transform_to_reference(ref, world);
+            out.x = ref(0);
+            out.y = ref(1);
+            //FIXME
+            return true;
+        }
+
     private:
         libMesh::DenseMatrix<libMesh::Real> A_inv_;
         libMesh::DenseVector<libMesh::Real> A_inv_m_b_;
@@ -235,7 +252,9 @@ namespace utopia {
     };
 
 
-    class AffineTransform3 : public Transform {
+    class AffineTransform3 :
+        public Transform,
+        public moonolith::Transform<double, 3, 3> {
     public:
         AffineTransform3(const libMesh::Elem &elem)
         {
@@ -263,6 +282,32 @@ namespace utopia {
             return A_inv_m_b_;
         }
 
+
+        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        {
+            libMesh::Point ref(in.x, in.y, in.z), world;
+            apply(ref, world);
+            out.x = world(0);
+            out.y = world(1);
+            out.z = world(2);
+           
+            //FIXME
+            return true;
+        }
+
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        {
+            libMesh::Point ref, world(in.x, in.y, in.z);
+            
+            transform_to_reference(ref, world);
+            out.x = ref(0);
+            out.y = ref(1);
+            out.z = ref(2);
+           
+            //FIXME
+            return true;
+        }
+
     private:
         libMesh::DenseMatrix<libMesh::Real> A_inv_;
         libMesh::DenseVector<libMesh::Real> A_inv_m_b_;
@@ -272,7 +317,10 @@ namespace utopia {
                                                   libMesh::DenseVector<libMesh::Real> &A_inv_m_b);
     };
 
-    class SideAffineTransform3 : public Transform {
+    class SideAffineTransform3 :
+        public Transform,
+        public moonolith::Transform<double, 2, 3>,
+        public moonolith::Transform<double, 3, 3>  {
     public:
         inline SideAffineTransform3(const libMesh::Elem &elem, const int side)
         : a_trafo_()
@@ -288,6 +336,54 @@ namespace utopia {
 
         void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
 
+
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 3> &out) const override
+        {
+            libMesh::Point ref(in.x, in.y), world;
+            apply(ref, world);
+            out.x = world(0);
+            out.y = world(1);
+            out.z = world(2);
+            //FIXME
+            return true;
+        }
+
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 2> &out) const override
+        {
+            libMesh::Point ref, world(in.x, in.y, in.z);
+            
+            transform_to_reference(ref, world);
+            out.x = ref(0);
+            out.y = ref(1);
+            //FIXME
+            return true;
+        }
+
+        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        {
+            libMesh::Point ref(in.x, in.y, in.z), world;
+            apply(ref, world);
+            out.x = world(0);
+            out.y = world(1);
+            out.z = world(2);
+           
+            //FIXME
+            return true;
+        }
+
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        {
+            libMesh::Point ref, world(in.x, in.y, in.z);
+            
+            transform_to_reference(ref, world);
+            out.x = ref(0);
+            out.y = ref(1);
+            out.z = ref(2);
+           
+            //FIXME
+            return true;
+        }
+
     private:
         AffineTransform3 a_trafo_;
 
@@ -297,7 +393,10 @@ namespace utopia {
                                                   libMesh::DenseVector<libMesh::Real> &A_inv_m_b);
     };
 
-    class SideAffineTransform2 : public Transform {
+    class SideAffineTransform2 :
+        public Transform,
+        public moonolith::Transform<double, 1, 2>,
+        public moonolith::Transform<double, 2, 2> {
     public:
         inline SideAffineTransform2(const libMesh::Elem &elem, const int side)
         : a_trafo_()
@@ -318,6 +417,47 @@ namespace utopia {
         }
 
         void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
+
+        inline bool apply(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 2> &out) const override
+        {
+            libMesh::Point ref(in.x), world;
+            apply(ref, world);
+            out.x = world(0);
+            out.y = world(1);
+            //FIXME
+            return true;
+        }
+
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 1> &out) const override
+        {
+            libMesh::Point ref, world(in.x, in.y);
+            
+            transform_to_reference(ref, world);
+            out.x = ref(0);
+            //FIXME
+            return true;
+        }
+
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        {
+            libMesh::Point ref(in.x, in.y), world;
+            apply(ref, world);
+            out.x = world(0);
+            out.y = world(1);
+           
+            //FIXME
+            return true;
+        }
+
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        {
+            libMesh::Point ref, world(in.x, in.y);
+            transform_to_reference(ref, world);
+            out.x = ref(0);
+            out.y = ref(1);
+            //FIXME
+            return true;
+        }
 
     private:
         AffineTransform2 a_trafo_;
