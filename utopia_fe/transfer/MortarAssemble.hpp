@@ -478,6 +478,9 @@ namespace utopia {
         const std::vector<libMesh::Point> &fun,
         libMesh::DenseMatrix<libMesh::Real> &result
     );
+
+    double ref_volume(int type);
+    double ref_area_of_surf(int type);
 }
 
 #endif //UTOPIA_MORTAR_ASSEMBLE_HPP

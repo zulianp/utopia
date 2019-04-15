@@ -1077,7 +1077,12 @@ namespace utopia {
     }
 
     template<typename T, int Dim>
-    inline void convert(const libMesh::QGauss &q_in, const T &rescale, moonolith::Quadrature<T, Dim> &q_out)
+    inline void convert(
+        const libMesh::QGauss &q_in,
+        const moonolith::Vector<T, Dim> &point_shift,
+        const T &point_rescale,
+        const T &weight_rescale,
+        moonolith::Quadrature<T, Dim> &q_out)
     {
         const auto &p_in = q_in.get_points();
         const auto &w_in = q_in.get_weights();
@@ -1087,19 +1092,24 @@ namespace utopia {
         q_out.resize(n_qp);
 
         for(std::size_t k = 0; k < n_qp; ++k) {
-            q_out.weights[k] = w_in[k] * rescale;
+            q_out.weights[k] = w_in[k] * weight_rescale;
 
             const auto &pk_in = p_in[k];
             auto &pk_out = q_out.points[k];
 
             for(int i = 0; i < Dim; ++i) {
-                pk_out[i] = pk_in(i);
+                pk_out[i] = (pk_in(i) + point_shift[i]) * point_rescale;
             }
         }
     }
 
     template<typename T, int Dim>
-    inline void convert(const moonolith::Quadrature<T, Dim> &q_in, const T &rescale, QMortar &q_out)
+    inline void convert(
+        const moonolith::Quadrature<T, Dim> &q_in,
+        const moonolith::Vector<T, Dim> &point_shift,
+        const T &point_rescale,
+        const T &weight_rescale,
+        QMortar &q_out)
     {
         const auto &p_in = q_in.points;
         const auto &w_in = q_in.weights;
@@ -1112,19 +1122,26 @@ namespace utopia {
         q_out.resize(n_qp);
 
         for(std::size_t k = 0; k < n_qp; ++k) {
-            w_out[k] = w_in[k] * rescale;
+            w_out[k] = w_in[k] * weight_rescale;
 
             const auto &pk_in = p_in[k];
             auto &pk_out = p_out[k];
 
             for(int i = 0; i < Dim; ++i) {
-                pk_out(i) = pk_in[i];
+                pk_out(i) = (pk_in[i] + point_shift[i]) * point_rescale;
             }
         }
     }
 
-
-
+    template<typename T, int Dim>
+    inline void convert(
+        const moonolith::Quadrature<T, Dim> &q_in,
+        const T &weight_rescale,
+        QMortar &q_out)
+    {
+        static const moonolith::Vector<T, Dim> zero;
+        return convert(q_in, zero, 1., weight_rescale, q_out);
+    }
 
 }
 

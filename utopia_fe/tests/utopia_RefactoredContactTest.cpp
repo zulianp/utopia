@@ -18,64 +18,193 @@
 #include "libmesh/mesh_refinement.h"
 
 #include "utopia_ContactAssembler.hpp"
+#include "moonolith_affine_transform.hpp"
+#include "moonolith_contact.hpp"
 
 namespace utopia {
 
-    template<int Dim>
-    class ContactData {};
-
-    template<>
-    class ContactData<2> {
-    public:
-        moonolith::Line<double, 2> master, slave;
-        moonolith::Quadrature<double, 2> q_master, q_slave;
-        moonolith::Quadrature<double, 1> q_rule;
-        int current_q_order = -1;
-    };
-
-    template<>
-    class ContactData<3> {
-    public:
-        moonolith::Polygon<double, 3> master, slave;
-        moonolith::Quadrature<double, 3> q_master, q_slave;
-        moonolith::Quadrature<double, 2> q_rule;
-        int current_q_order = -1;
-    };
 
     template<int Dim>
-    class ElementContactAlgorithm {
+    class SurfaceQuadratureConverter {
     public:
-        ContactData<Dim> data;
+        using SubVector = moonolith::Vector<double, Dim-1>;
+        using Vector    = moonolith::Vector<double, Dim>;
 
-        moonolith::Vector<double, Dim> normal_master, normal_slave;
+        //from libmesh to moonolith
+        SubVector point_shift;
+        double    point_rescale;
+        double    weight_rescale;
 
-        template<class Adapter>
-        bool apply(const Adapter &master, const Adapter &slave)
+        //from moonolith to libmesh
+        double    trial_weight_rescale;
+        double    test_weight_rescale;
+
+        int current_order;
+
+        SurfaceQuadratureConverter()
+        : current_order(-1)
+        {}
+
+        void init(
+            const libMesh::Elem &trial,
+            const int trial_order,
+            const libMesh::Elem &test,
+            const int test_order,
+            moonolith::Quadrature<double, Dim-1> &q)
         {
-            auto &m_space = master.collection();
-            auto &m_elem  = master.elem();
+            const int order = order_for_l2_integral(Dim-1, trial, trial_order, test, test_order);
 
-            auto &s_space = slave.collection();
-            auto &s_elem  = slave.elem();
+            if(order != current_order) {
+                moonolith::fill(point_shift, 0.);
 
-            auto m_id = m_elem.id();
-            auto s_id = s_elem.id();
+                if(Dim == 2) {  
+                    libMesh::QGauss ir(1, libMesh::Order(order));
 
-            auto &m_dof = master.dofs();
-            auto &s_dof = slave.dofs();
+                    if(order <= 2) {
+                        ir.init(libMesh::EDGE2);
+                    } else {
+                        ir.init(libMesh::EDGE4);
+                    }
 
-            make(m_elem, data.master);
-            make(s_elem, data.slave);   
+                    point_shift.x = 1;
+                    weight_rescale = 0.5;
 
-            normal(m_elem, normal_master);
-            normal(s_elem, normal_slave);
+                    convert(ir, point_shift, point_rescale, weight_rescale, q);
+                } if(Dim == 3) {
 
-            auto cos_angle = dot(normal_master, normal_slave);
-            std::cout << cos_angle << std::endl;
-            return true;
+                    libMesh::QGauss ir(2, libMesh::Order(order));
+
+                    if(order <= 2) {
+                        ir.init(libMesh::TRI3);
+                    } else {
+                        ir.init(libMesh::TRI6);
+                    }
+
+                    weight_rescale = 2.0;
+
+                    convert(ir, point_shift, point_rescale, weight_rescale, q);
+
+                } else {
+                    assert(false);
+                }
+
+                current_order = order;
+            }
+
+            trial_weight_rescale = ref_area_of_surf(trial.type());
+            test_weight_rescale  = ref_area_of_surf(test.type());
         }
 
     };
+
+    template<int Dim>
+    class ProjectionAlgorithm {
+    public:
+        using Trafo = moonolith::AffineTransform<double, Dim-1, Dim>;
+        using SubVector = moonolith::Vector<double, Dim-1>;
+        using Vector    = moonolith::Vector<double, Dim>;
+        
+        moonolith::AffineContact<double, Dim> contact;
+        std::shared_ptr<Trafo> trafo_m, trafo_s;
+
+        SurfaceQuadratureConverter<Dim> converter;
+
+        ProjectionAlgorithm()
+        {
+            trafo_m = std::make_shared<Trafo>();
+            trafo_s = std::make_shared<Trafo>(); 
+
+            contact.trafo_master = trafo_m;
+            contact.trafo_slave  = trafo_s;
+        }
+
+
+        template<class Adapter>
+        double apply(Adapter &master, Adapter &slave)
+        {
+            auto &m_m = master.collection();
+            auto &m_s = slave.collection();
+
+            auto &e_m = master.elem();
+            auto &e_s = slave.elem();
+
+            make(e_m, contact.master);
+            make(e_s, contact.slave);
+
+            // make_transform(e_m, *trafo_m);
+            // make_transform(e_s, *trafo_s);
+
+            converter.init(
+               e_m,
+               m_m.fe_type(0).order,
+               e_s,
+               m_s.fe_type(0).order,
+               contact.q_rule
+            );
+
+            // if(contact.compute()) {
+            //     return contact.q_slave.weights[0] * moonolith::measure(contact.slave);
+            // }
+
+            return 0.;
+        }
+    };
+
+    // template<int Dim>
+    // class ContactData {};
+
+    // template<>
+    // class ContactData<2> {
+    // public:
+    //     moonolith::Line<double, 2> master, slave;
+    //     moonolith::Quadrature<double, 2> q_master, q_slave;
+    //     moonolith::Quadrature<double, 1> q_rule;
+    //     int current_q_order = -1;
+    // };
+
+    // template<>
+    // class ContactData<3> {
+    // public:
+    //     moonolith::Polygon<double, 3> master, slave;
+    //     moonolith::Quadrature<double, 3> q_master, q_slave;
+    //     moonolith::Quadrature<double, 2> q_rule;
+    //     int current_q_order = -1;
+    // };
+
+    // template<int Dim>
+    // class ElementContactAlgorithm {
+    // public:
+    //     ContactData<Dim> data;
+
+    //     moonolith::Vector<double, Dim> normal_master, normal_slave;
+
+    //     template<class Adapter>
+    //     bool apply(const Adapter &master, const Adapter &slave)
+    //     {
+    //         auto &m_space = master.collection();
+    //         auto &m_elem  = master.elem();
+
+    //         auto &s_space = slave.collection();
+    //         auto &s_elem  = slave.elem();
+
+    //         auto m_id = m_elem.id();
+    //         auto s_id = s_elem.id();
+
+    //         auto &m_dof = master.dofs();
+    //         auto &s_dof = slave.dofs();
+
+    //         make(m_elem, data.master);
+    //         make(s_elem, data.slave);   
+
+    //         normal(m_elem, normal_master);
+    //         normal(s_elem, normal_slave);
+
+    //         auto cos_angle = dot(normal_master, normal_slave);
+    //         std::cout << cos_angle << std::endl;
+    //         return true;
+    //     }
+
+    // };
 
     template<int Dim>
     bool run_contact(const ContactParams &params, LibMeshFunctionSpaceAdapter &adapter)
@@ -97,7 +226,7 @@ namespace utopia {
             params.search_radius
         );
 
-        ElementContactAlgorithm<Dim> contact_algo;
+        ProjectionAlgorithm<Dim> contact_algo;
 
         bool ok = false;
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {

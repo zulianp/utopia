@@ -662,7 +662,7 @@ namespace utopia {
         assert(quad_index == n_quad_points);
     }
 
-    static double ref_volume(int type)
+    double ref_volume(int type)
     {
         if(is_hex(type)) {
             return 8.;
@@ -684,7 +684,7 @@ namespace utopia {
         }
     }
 
-    static double ref_area_of_surf(int type)
+    double ref_area_of_surf(int type)
     {
         if(is_tri(type)) {
             return 2.;
