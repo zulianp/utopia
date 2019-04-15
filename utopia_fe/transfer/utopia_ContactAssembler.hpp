@@ -468,6 +468,17 @@ namespace utopia {
             return fe_type_[i];
         }
 
+        const libMesh::FEType libmesh_fe_type(const std::size_t i) const
+        {
+            assert(i < fe_type_.size());
+            const auto &f = fe_type(i);
+
+            return libMesh::FEType(
+                libMesh::Order(f.order),
+                libMesh::FEFamily(f.family)
+            );
+        }
+
         void boundary_ids_workaround(const libMesh::MeshBase &parent_mesh)
         {
             auto e_it  = mesh_->active_local_elements_begin();
@@ -786,6 +797,36 @@ namespace utopia {
             make(elem.node_ref(1), poly.p1);
         }
 
+
+        template<typename T, int Dim>
+        inline void make_non_affine(const libMesh::Elem &elem, moonolith::Storage<moonolith::Vector<T, Dim>> &poly_line)
+        {   
+            const int n_nodes = elem.n_nodes();
+
+            poly_line.resize(n_nodes);
+
+            if(n_nodes == 2) {
+                //P1
+                make(elem.node_ref(0), poly_line[0]);
+                make(elem.node_ref(1), poly_line[1]);
+            } else if(n_nodes == 3) {
+                //P2
+                make(elem.node_ref(0), poly_line[0]);
+                make(elem.node_ref(2), poly_line[1]);
+                make(elem.node_ref(1), poly_line[2]);
+            } else if(n_nodes == 4) {
+                //P3
+                make(elem.node_ref(0), poly_line[0]);
+                make(elem.node_ref(2), poly_line[1]);
+                make(elem.node_ref(3), poly_line[2]);
+                make(elem.node_ref(1), poly_line[3]);
+            } else {
+                assert(false);
+            }
+
+        }
+
+
         template<typename T, int Dim>
         inline void make(const libMesh::Elem &elem, moonolith::Polygon<T, Dim> &poly)
         {
@@ -798,6 +839,32 @@ namespace utopia {
                const auto &p = elem.node_ref(i);
                auto &q = poly.points[i];
                make(p, q);
+           }
+        }
+
+
+        template<typename T, int Dim>
+        inline void make_non_affine(const libMesh::Elem &elem, moonolith::Polygon<T, Dim> &poly)
+        {
+           assert(is_tri(elem.type()) || is_quad(elem.type()));
+           auto n_corner_nodes = is_tri(elem.type()) ? 3 : 4;
+           auto n_nodes = elem.n_nodes();
+
+           if(n_nodes == n_corner_nodes) {
+                //fallback to affine case
+                return make(elem, poly);
+           }
+
+           //P2 only
+           assert(n_nodes = n_corner_nodes * 2);
+
+           poly.resize(n_nodes);
+
+           for(auto i = 0; i < n_nodes; i+=2) {
+               const auto &p = elem.node_ref(i);
+               const auto &q = elem.node_ref(i + n_corner_nodes);
+               make(p, poly.points[i]);
+               make(q, poly.points[i + 1]);
            }
         }
 
@@ -1144,48 +1211,48 @@ namespace utopia {
         return convert(q_in, zero, 1., weight_rescale, q_out);
     }
 
-    inline void make_line_transform(
-        const libMesh::Elem &elem,
-        moonolith::AffineTransform<double, 1, 2> &trafo)
-    {
-        const auto &q0 = elem.node_ref(0);
-        const auto &q1 = elem.node_ref(1);
+    // inline void make_line_transform(
+    //     const libMesh::Elem &elem,
+    //     moonolith::AffineTransform<double, 1, 2> &trafo)
+    // {
+    //     const auto &q0 = elem.node_ref(0);
+    //     const auto &q1 = elem.node_ref(1);
 
-        moonolith::Vector<double, 2> p0, p1;
+    //     moonolith::Vector<double, 2> p0, p1;
 
-        p0.x = q1(0);
-        p0.y = q0(1);
+    //     p0.x = q1(0);
+    //     p0.y = q0(1);
 
-        p1.x = q1(0);
-        p1.y = q1(1);
+    //     p1.x = q1(0);
+    //     p1.y = q1(1);
 
-        make(p0, p1, trafo);
-    }
+    //     make(p0, p1, trafo);
+    // }
 
-    inline void make_triangle_transform(
-        const libMesh::Elem &elem,
-        moonolith::AffineTransform<double, 2, 3> &trafo)
-    {
-        const auto &q0 = elem.node_ref(0);
-        const auto &q1 = elem.node_ref(1);
-        const auto &q2 = elem.node_ref(2);
+    // inline void make_triangle_transform(
+    //     const libMesh::Elem &elem,
+    //     moonolith::AffineTransform<double, 2, 3> &trafo)
+    // {
+    //     const auto &q0 = elem.node_ref(0);
+    //     const auto &q1 = elem.node_ref(1);
+    //     const auto &q2 = elem.node_ref(2);
 
-        moonolith::Vector<double, 3> p0, p1, p2;
+    //     moonolith::Vector<double, 3> p0, p1, p2;
 
-        p0.x = q0(0);
-        p0.y = q0(1);
-        p0.z = q0(2);
+    //     p0.x = q0(0);
+    //     p0.y = q0(1);
+    //     p0.z = q0(2);
 
-        p1.x = q1(0);
-        p1.y = q1(1);
-        p1.z = q1(2);
+    //     p1.x = q1(0);
+    //     p1.y = q1(1);
+    //     p1.z = q1(2);
 
-        p2.x = q2(0);
-        p2.y = q2(1);
-        p2.z = q2(2);
+    //     p2.x = q2(0);
+    //     p2.y = q2(1);
+    //     p2.z = q2(2);
 
-        make(p0, p1, p2, trafo);
-    }
+    //     make(p0, p1, p2, trafo);
+    // }
 
     inline void make_transform(
         const libMesh::Elem &elem,

@@ -18,6 +18,7 @@
 #include "libmesh/mesh_refinement.h"
 
 #include "utopia_ContactAssembler.hpp"
+#include "utopia_LibMeshShape.hpp"
 #include "moonolith_affine_transform.hpp"
 #include "moonolith_contact.hpp"
 
@@ -134,7 +135,10 @@ namespace utopia {
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
 
-            const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
+            // const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
+
+            //force usage of non-affine code
+            const bool is_affine = false;
 
             if(is_affine) {
                 //AFFINE CONTACT
@@ -163,13 +167,31 @@ namespace utopia {
                     auto isect_area = sum_w * slave_area;
                     area += isect_area;
                     return true;
+                } else {
+                    return false;
                 }
-
-                return false;
 
             } else {
                 //WARPED CONTACT
+                warped_contact.shape_master = std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0));
+                warped_contact.shape_slave  = std::make_shared<LibMeshShape<double, Dim>>(e_s, m_s.libmesh_fe_type(0));
 
+                make_non_affine(e_m, warped_contact.master);
+                make_non_affine(e_s, warped_contact.slave);
+
+                converter.init(
+                   e_m,
+                   m_m.fe_type(0).order,
+                   e_s,
+                   m_s.fe_type(0).order,
+                   warped_contact.q_rule
+                );
+
+                if(warped_contact.compute()) {
+                    return true;
+                } else {
+                    return false;
+                }
             }
 
             return false;

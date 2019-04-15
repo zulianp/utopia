@@ -397,7 +397,7 @@ namespace utopia {
         LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
         V.initialize();
 
-        Ray<double, 2> ray = {
+        moonolith::Ray<double, 2> ray = {
             {-0.5, 0.6 },
             { 1., 0. }
         };
@@ -440,7 +440,7 @@ namespace utopia {
         LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
         V.initialize();
 
-        Ray<double, 2> ray = {
+        moonolith::Ray<double, 2> ray = {
             {-0.5, 0.6 },
             { 1., 0. }
         };
@@ -524,37 +524,37 @@ namespace utopia {
 
         QMortar left_q(3), right_q(3);
 
-        ok = left_shape.make_quadrature(
-            plane.n,
-            {{ 0.6, 0.5, 0.6 }},
-            {1.},
-            left_q
-        );
+        // ok = left_shape.make_quadrature(
+        //     plane.n,
+        //     {{ 0.6, 0.5, 0.6 }},
+        //     {1.},
+        //     left_q
+        // );
 
-        ok = left_shape.make_quadrature(
-            plane.n,
-            composite_q_points,
-            composite_q_weights,
-            left_q
-        ); utopia_test_assert(ok);
+        // ok = left_shape.make_quadrature(
+        //     plane.n,
+        //     composite_q_points,
+        //     composite_q_weights,
+        //     left_q
+        // ); utopia_test_assert(ok);
 
-        ok = right_shape.make_quadrature(
-            plane.n,
-            composite_q_points,
-            composite_q_weights,
-            right_q
-        ); utopia_test_assert(ok);
+        // ok = right_shape.make_quadrature(
+        //     plane.n,
+        //     composite_q_points,
+        //     composite_q_weights,
+        //     right_q
+        // ); utopia_test_assert(ok);
 
 
-        if(ok) {
-            std::cout << composite_q_points.size() << std::endl;
+        // if(ok) {
+        //     std::cout << composite_q_points.size() << std::endl;
 
-            for(std::size_t i = 0; i < composite_q_points.size(); ++i) {
-                auto p = composite_q_points[i];
-                std::cout << p.x << " " << p.y << " " << p.z;
-                std::cout << ", w = " << composite_q_weights[i] << std::endl;
-            }
-        }
+        //     for(std::size_t i = 0; i < composite_q_points.size(); ++i) {
+        //         auto p = composite_q_points[i];
+        //         std::cout << p.x << " " << p.y << " " << p.z;
+        //         std::cout << ", w = " << composite_q_weights[i] << std::endl;
+        //     }
+        // }
 
     }
 
