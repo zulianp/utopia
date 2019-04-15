@@ -188,6 +188,17 @@ namespace utopia {
                 );
 
                 if(warped_contact.compute()) {
+                    auto slave_area = moonolith::measure(warped_contact.slave);
+                    
+                    auto sum_w = 0.;
+                    for(auto w : warped_contact.q_slave.weights) {
+                        sum_w += w;
+                    }
+
+                    auto isect_area = sum_w * slave_area;
+
+                    std::cout << warped_contact.gap[0] << " " << slave_area << " " << sum_w << std::endl;
+                    area += isect_area;
                     return true;
                 } else {
                     return false;
@@ -220,17 +231,14 @@ namespace utopia {
 
         ProjectionAlgorithm<Dim> contact_algo;
 
-        bool ok = false;
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
-            bool isected = contact_algo.apply(master, slave);
-            if(isected) { ok = true; }
-            return isected;
+            return contact_algo.apply(master, slave);
         });
 
-
+        m_comm.all_reduce(&contact_algo.area, 1, moonolith::MPISum());
         std::cout << "area: " << contact_algo.area << std::endl;
 
-        return ok;
+        return contact_algo.area > 0.;
     }
 
     void RefactoredContactTest::run(Input &in) {
@@ -254,12 +262,22 @@ namespace utopia {
             auto &V = space.space().subspace(0);
 
             LibMeshFunctionSpaceAdapter adapter;
+
+            if(V.mesh().spatial_dimension() == V.mesh().mesh_dimension()) {
            
-            adapter.extract_surface_init(
-                make_ref(V.mesh()),
-                V.dof_map(),
-                params.contact_params.variable_number
-            );
+                adapter.extract_surface_init(
+                    make_ref(V.mesh()),
+                    V.dof_map(),
+                    params.contact_params.variable_number
+                );
+            } else {
+                //shell mesh
+                adapter.init(
+                    make_ref(V.mesh()),
+                    V.dof_map(),
+                    params.contact_params.variable_number
+                );
+            }
 
             adapter.print_tags();
 
