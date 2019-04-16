@@ -23,6 +23,7 @@
 #include "moonolith_contact.hpp"
 #include "moonolith_sparse_matrix.hpp"
 #include "moonolith_redistribute.hpp"
+#include "moonolith_assign_functions.hpp"
 
 #include <vector>
 #include <memory>
@@ -33,32 +34,196 @@ namespace utopia {
     //matrix proxy for utopia
     class MatrixInserter {
     public:
-        MatrixInserter(MPI_Comm mpi_comm) :
+        MatrixInserter(MPI_Comm mpi_comm, const bool use_add) :
           comm(mpi_comm),
           m_matrix(comm),
-          redist(comm)
+          redist(comm),
+          use_add(use_add)
         {}
 
-        template<class InsertMode>
-        void finalize(InsertMode mode)
+        void finalize(const int n_local_rows, const int n_local_cols)
         {
-            // finalize_local_structure
+            ownership_ranges_rows.resize(comm.size() + 1);
+            ownership_ranges_cols.resize(comm.size() + 1);
+
+            std::fill(ownership_ranges_rows.begin(), ownership_ranges_rows.end(), 0);
+            std::fill(ownership_ranges_cols.begin(), ownership_ranges_cols.end(), 0);
+
+            ownership_ranges_rows[comm.rank() + 1] = n_local_rows;
+            ownership_ranges_cols[comm.rank() + 1] = n_local_cols;
+
+            comm.all_reduce(&ownership_ranges_rows[0], ownership_ranges_rows.size(), moonolith::MPISum());
+            comm.all_reduce(&ownership_ranges_cols[0], ownership_ranges_cols.size(),  moonolith::MPISum());
+
+            std::partial_sum(ownership_ranges_rows.begin(), ownership_ranges_rows.end(), ownership_ranges_rows.begin());
+            std::partial_sum(ownership_ranges_cols.begin(), ownership_ranges_cols.end(), ownership_ranges_cols.begin());
+
+            if(use_add) {
+                redist.apply(ownership_ranges_rows, m_matrix, moonolith::AddAssign<double>());
+            } else {
+                redist.apply(ownership_ranges_rows, m_matrix, moonolith::Assign<double>());
+            }
+        }
+
+        template<typename IDX, class ElementMatrix>
+        void add(
+            const std::vector<IDX> &rows,
+            const std::vector<IDX> &cols,
+            ElementMatrix &mat
+            )
+        {   
+            std::size_t n_rows = rows.size();
+            std::size_t n_cols = cols.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+                for(std::size_t j = 0; j < n_cols; ++j) {
+                    auto dof_J = cols[j];
+                    m_matrix.add(dof_I, dof_J, mat(i, j));
+                }
+            }
+        }
+
+        template<typename IDX, class ElementMatrix>
+        void insert(
+            const std::vector<IDX> &rows,
+            const std::vector<IDX> &cols,
+            ElementMatrix &mat
+            )
+        {
+            if(use_add) {
+                add(rows, cols, mat);
+            } else {
+                set_non_zero(rows, cols, mat);
+            }
+        }
+
+        template<typename IDX, class ElementMatrix>
+        void set(
+            const std::vector<IDX> &rows,
+            const std::vector<IDX> &cols,
+            ElementMatrix &mat
+            )
+        {   
+            std::size_t n_rows = rows.size();
+            std::size_t n_cols = cols.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+                for(std::size_t j = 0; j < n_cols; ++j) {
+                    auto dof_J = cols[j];
+                    m_matrix.set(dof_I, dof_J, mat(i, j));
+                }
+            }
+        }
+
+        template<typename IDX, class ElementMatrix>
+        void set_non_zero(
+            const std::vector<IDX> &rows,
+            const std::vector<IDX> &cols,
+            ElementMatrix &mat
+            )
+        {   
+            std::size_t n_rows = rows.size();
+            std::size_t n_cols = cols.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+                for(std::size_t j = 0; j < n_cols; ++j) {
+                    auto dof_J = cols[j];
+
+                    if(std::abs(mat(i, j)) != 0.) {
+                        m_matrix.set(dof_I, dof_J, mat(i, j));
+                    }
+                }
+            }
+        }
+
+        template<typename IDX, class ElementVector>
+        void set(
+            const std::vector<IDX> &rows,
+            ElementVector &vec
+            )
+        {   
+            std::size_t n_rows = rows.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+                m_matrix.set(dof_I, 0, vec(i));
+            }
+        }
+
+
+        template<typename IDX, class ElementVector>
+        void set_non_zero(
+            const std::vector<IDX> &rows,
+            ElementVector &vec
+            )
+        {   
+            std::size_t n_rows = rows.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+
+                if(std::abs(vec(i)) != 0.) {
+                    m_matrix.set(dof_I, 0, vec(i));
+                }
+            }
+        }
+
+        template<typename IDX, class ElementVector>
+        void add(
+            const std::vector<IDX> &rows,
+            ElementVector &vec
+            )
+        {   
+            std::size_t n_rows = rows.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+                m_matrix.add(dof_I, 0, vec(i));
+            }
+        }
+
+        template<typename IDX, class ElementVector>
+        void insert(
+            const std::vector<IDX> &rows,
+            ElementVector &vec
+            )
+        {   
+            if(use_add) {
+                add(rows, vec);
+            } else {
+                set_non_zero(rows, vec);
+            }
         }
 
         void fill(USparseMatrix &mat)
         {
-            //
+            //TODO
         }
 
         void fill(UVector &vec)
         {
-            //
+            //TODO
+        }
+
+        //remove row variants (incomplete intersections)
+        void fill(const std::vector<bool> &remove_row, USparseMatrix &mat)
+        {
+            //TODO
+        }
+
+        void fill(const std::vector<bool> &remove_row, UVector &vec)
+        {
+            //TODO
         }
 
         moonolith::Communicator comm;
         moonolith::SparseMatrix<double> m_matrix;
         moonolith::Redistribute< moonolith::SparseMatrix<double> > redist;
-        std::vector<moonolith::Integer> ownership_ranges;
+        std::vector<moonolith::Integer> ownership_ranges_rows, ownership_ranges_cols;
+        bool use_add;
     };
 
     class ContactData {
@@ -93,6 +258,16 @@ namespace utopia {
         double    test_weight_rescale;
 
         int current_order;
+
+        void convert_master(const moonolith::Quadrature<double, Dim-1> &in, QMortar &out)
+        {
+            convert(in, trial_weight_rescale, out);
+        }
+
+        void convert_slave(const moonolith::Quadrature<double, Dim-1> &in, QMortar &out)
+        {
+            convert(in, test_weight_rescale, out);
+        }
 
         SurfaceQuadratureConverter()
         : current_order(-1)
@@ -199,6 +374,8 @@ namespace utopia {
                 master_fe->get_phi();
                 slave_fe->get_phi();
                 slave_fe->get_JxW();
+
+                //initialize biorth if needed
             }
         }
 
@@ -227,8 +404,8 @@ namespace utopia {
             std::vector<double> values_s(dofs_s.global.size(), 1);
             data.is_contact.set(dofs_petsc_s, values_s);
 
-            convert(q_master, converter.trial_weight_rescale, lm_q_master);
-            convert(q_slave,  converter.test_weight_rescale, lm_q_slave);
+            converter.convert_master(q_master, lm_q_master);
+            converter.convert_slave(q_slave, lm_q_slave);
 
             init_fe(m_m.fe_type(0).order, m_s.fe_type(0).order);
 
@@ -304,10 +481,7 @@ namespace utopia {
             } else {
                 //WARPED CONTACT
                 bool use_newton = false;
-                auto libmesh_shape = std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);
-                // libmesh_shape->verbose(true);
-                warped_contact.shape_master = libmesh_shape;
-               
+                warped_contact.shape_master= std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);               
                 warped_contact.shape_slave = std::make_shared<LibMeshShape<double, Dim>>(e_s, m_s.libmesh_fe_type(0), use_newton);
 
                 make_non_affine(e_m, warped_contact.master);
