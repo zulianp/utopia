@@ -822,6 +822,11 @@ namespace utopia {
 
         }
 
+        template<typename T, int Dim>
+        inline void make_non_affine(const libMesh::Elem &elem, moonolith::PolyLine<T, Dim> &poly_line)
+        {
+            make_non_affine(elem, poly_line.points);
+        }
 
         template<typename T, int Dim>
         inline void make(const libMesh::Elem &elem, moonolith::Polygon<T, Dim> &poly)
