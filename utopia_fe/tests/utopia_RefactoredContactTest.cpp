@@ -22,7 +22,25 @@
 #include "moonolith_affine_transform.hpp"
 #include "moonolith_contact.hpp"
 
+
+#include <vector>
+#include <memory>
+
 namespace utopia {
+
+    class ContactData {
+    public:
+        UVector is_contact;
+
+        void init(const libMesh::dof_id_type n_local_dofs)
+        {
+            is_contact = local_zeros(n_local_dofs);
+        }
+
+        ContactData() {}
+    private:
+        ContactData(const ContactData &other) {}
+    };
 
 
     template<int Dim>
@@ -107,6 +125,8 @@ namespace utopia {
         using SubVector = moonolith::Vector<double, Dim-1>;
         using Vector    = moonolith::Vector<double, Dim>;
 
+        ContactData &data;
+
         //algorithms
         moonolith::AffineContact<double, Dim> affine_contact;
         moonolith::WarpedContact<double, Dim> warped_contact;
@@ -118,7 +138,8 @@ namespace utopia {
 
         double area = 0.;
 
-        ProjectionAlgorithm()
+        ProjectionAlgorithm(ContactData &data)
+        : data(data)
         {
             trafo_m = std::make_shared<Trafo>();
             trafo_s = std::make_shared<Trafo>();
@@ -135,10 +156,13 @@ namespace utopia {
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
 
-            const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
+            auto &dofs_m = master.dofs();
+            auto &dofs_s = slave.dofs();
+
+            // const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
 
             //force usage of non-affine code
-            // const bool is_affine = false;
+            const bool is_affine = false;
 
             if(is_affine) {
                 //AFFINE CONTACT
@@ -199,6 +223,21 @@ namespace utopia {
 
                     std::cout << warped_contact.gap[0] << " " << slave_area << " " << sum_w << std::endl;
                     area += isect_area;
+
+
+                    std::vector<PetscInt> dofs_petsc_s;
+                    dofs_petsc_s.insert(dofs_petsc_s.end(), dofs_s.global.begin(), dofs_s.global.end());
+
+                    std::vector<double> values_s(dofs_s.global.size(), 1);
+                    data.is_contact.set(dofs_petsc_s, values_s);
+                    // for(auto d : dofs_s.global) {
+                    //     data.is_contact.set({d}, {1.});
+                    // }
+
+                    // for(auto d : dofs_m.global) {
+                    //     data.is_contact.set({d}, {1.});
+                    // }
+
                     return true;
                 } else {
                     return false;
@@ -210,7 +249,10 @@ namespace utopia {
     };
 
     template<int Dim>
-    bool run_contact(const ContactParams &params, LibMeshFunctionSpaceAdapter &adapter)
+    bool run_contact(
+        const ContactParams &params,
+        LibMeshFunctionSpaceAdapter &adapter,
+        ContactData &contact_data)
     {
         using AlogrithmT = moonolith::SingleCollectionOneMasterOneSlaveAlgorithm<Dim, LibMeshFunctionSpaceAdapter>;
         using Adapter    = typename AlogrithmT::Adapter;
@@ -221,6 +263,7 @@ namespace utopia {
 
         moonolith::SearchSettings s;
         // s.verbosity_level = 3;
+        // s.disable_redistribution = true;
         AlogrithmT algo(m_comm, cm, s);
 
         algo.init(
@@ -229,7 +272,9 @@ namespace utopia {
             params.search_radius
         );
 
-        ProjectionAlgorithm<Dim> contact_algo;
+        ProjectionAlgorithm<Dim> contact_algo(contact_data);
+
+        Write<UVector> w(contact_data.is_contact);
 
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
             return contact_algo.apply(master, slave);
@@ -261,9 +306,12 @@ namespace utopia {
 
             auto &V = space.space().subspace(0);
 
+
             LibMeshFunctionSpaceAdapter adapter;
 
-            if(V.mesh().spatial_dimension() == V.mesh().mesh_dimension()) {
+            bool is_volume = V.mesh().spatial_dimension() == V.mesh().mesh_dimension();
+
+            if(is_volume) {
            
                 adapter.extract_surface_init(
                     make_ref(V.mesh()),
@@ -281,15 +329,25 @@ namespace utopia {
 
             adapter.print_tags();
 
+            ContactData contact_data;
+            contact_data.init(adapter.n_local_dofs());
+
             bool found_contact = false;
             if(V.mesh().spatial_dimension() == 2) {
-                found_contact = run_contact<2>(params.contact_params, adapter);
+                found_contact = run_contact<2>(params.contact_params, adapter, contact_data);
             } 
             else if(V.mesh().spatial_dimension() == 3) {
-                found_contact = run_contact<3>(params.contact_params, adapter);
+                found_contact = run_contact<3>(params.contact_params, adapter, contact_data);
             }
 
             assert(found_contact);
+
+            if(is_volume) {
+                UVector x = (*adapter.permutation()) * contact_data.is_contact;
+                write("warped.e", V, x);
+            }
+
+           
         });
         
     }

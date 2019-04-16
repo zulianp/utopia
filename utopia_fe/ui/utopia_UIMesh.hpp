@@ -153,12 +153,29 @@ namespace utopia {
                 mesh_->all_second_order();
             }
 
-            UIMorph<libMesh::DistributedMesh> morph;
-            is.get("morph", morph);
-            
-            if(morph.is_valid()) {
-                morph.apply(*mesh_);
+            { 
+                //single morph
+                UIMorph<libMesh::DistributedMesh> morph;
+                is.get("morph", morph);
+                
+                if(morph.is_valid()) {
+                    morph.apply(*mesh_);
+                }
             }
+
+            //multi morph
+            is.get("morphs", [this](Input &is) {
+                is.get_all([this](Input &is) {
+
+                    UIMorph<libMesh::DistributedMesh> morph;
+                    morph.read(is);
+                    
+                    if(morph.is_valid()) {
+                        morph.apply(*mesh_);
+                    }
+
+                });
+            });
         }
 
         inline libMesh::DistributedMesh &mesh()
