@@ -329,7 +329,7 @@ namespace utopia
             // initialize();
 
             memory_.x[fine_level] = x_h;
-            memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level]));
+            memory_.g[fine_level] = local_zeros(local_size(memory_.x[fine_level]));
 
             if(!skip_BC_checks())
                 this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]);
@@ -442,11 +442,12 @@ namespace utopia
             this->transfer(level-1).restrict(memory_.g[level], memory_.g_diff[level-1]);
             this->transfer(level-1).project_down(memory_.x[level], memory_.x[level-1]);
 
-            if(!skip_BC_checks())
+            if(!skip_BC_checks()){
                 this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]);
+            }
 
             //----------------------------------------------------------------------------
-            //                  initializing coarse level (deltas, constriants, hessian approx, ...)
+            //                  initializing coarse level (deltas, constraints, hessian approx, ...)
             //----------------------------------------------------------------------------
             this->init_level(level-1);
 
@@ -1079,8 +1080,14 @@ namespace utopia
 
         virtual void compute_s_global(const SizeType & level, Vector & s_global)
         {
-            if(level < this->n_levels()-1)
+            if(empty( memory_.x_0[level]))
+            {
+                s_global = 0*memory_.x[level]; 
+            }
+            else if(level < this->n_levels()-1)
+            {
                 s_global = memory_.x[level] - memory_.x_0[level];
+            }
         }
 
 

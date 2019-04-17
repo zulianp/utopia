@@ -210,9 +210,9 @@ int main(int argc,char **argv)
     // newton.solve(fun, x_u); 
 
     // utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
-    AffineSimilarityAW<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    // AffineSimilarityAW<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
-    // utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
 
     //solver.set_scaling_matrix(utopia::local_identity(local_size(Mass_utopia).get(0), local_size(Mass_utopia).get(1))); 
@@ -220,6 +220,7 @@ int main(int argc,char **argv)
 
       DSMatrixd Mass_utopia = identity(dim, dim); 
       std::cout<<"only in serial \n"; 
+      std::cout<<"dim: "<< dim << "  \n"; 
       {
         Read<utopia::DVectord> read(Marker_u);
         Write<utopia::DSMatrixd> write(Mass_utopia);
@@ -232,15 +233,16 @@ int main(int argc,char **argv)
       }
 
     solver.set_mass_matrix(Mass_utopia); 
+    solver.verbose(true);
 
     
-    solver.verbose(true);
-    // solver.tau_option(2); 
+
+    // solver.tau_option(3); 
     // solver.use_m(false); 
     // solver.set_m(-1); 
     solver.atol(1e-7); 
-    solver.max_it(300); 
-    solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+    solver.max_it(1000); 
+    // solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
     solver.solve(fun, x_u); 
 
 

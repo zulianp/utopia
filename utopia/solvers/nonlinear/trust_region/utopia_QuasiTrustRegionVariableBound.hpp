@@ -86,7 +86,7 @@
         if(this->verbose_)
         {
           this->init_solver("TRUST_REGION_BASE",
-                              {" it. ", "||P_c(x-g)-x||","J_k", "J_{k+1}", "ared","pred", "rho", "delta_k", "|| p_k || "});
+                              {" it. ", "||P_c(x-g)-x||","J_k", "J_{k+1}", "ared","pred", "rho", "delta_k", "|| p_k ||_{inf} "});
           PrintInfo::print_iter_status(it, {g_norm}); 
         }
 
@@ -169,10 +169,11 @@
     //    convergence check 
     //----------------------------------------------------------------------------          
           g_norm = this->criticality_measure_infty(x_k, g); 
-          s_norm = norm2(p_k); 
+          s_norm = norm_infty(p_k); 
 
-          if(this->verbose_)
+          if(this->verbose_){
             PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm}); 
+          }
 
           converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta); 
     //----------------------------------------------------------------------------

@@ -236,10 +236,12 @@ namespace utopia
 
 			PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
 
+			solver.reset_mass_matrix(true); 
 			solver.atol(1e-9); 
 			solver.stol(1e-14); 
 			solver.max_it(500);
 			solver.verbose(false); 
+			
 
 			solver.solve(fun, x); 
 			utopia_test_assert(approxeq(x, expected_woods, 1e-8));
@@ -251,6 +253,9 @@ namespace utopia
 			DVectord x_stiff; 
 			fun_stiff.get_initial_guess(x_stiff); 
 			solver.solve(fun_stiff, x_stiff); 
+
+
+			exit(0); 
 
 		}
 

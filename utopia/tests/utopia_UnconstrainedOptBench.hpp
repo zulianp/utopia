@@ -60,13 +60,13 @@ namespace utopia
 		void initialize() override
 		{
 
-			this->register_experiment("TR_STCG",
-				[this]() {
-					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-					TrustRegion<Matrix, Vector> solver(subproblem);
-					run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
-				}
-			);
+			// this->register_experiment("TR_STCG",
+			// 	[this]() {
+			// 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+			// 		TrustRegion<Matrix, Vector> solver(subproblem);
+			// 		run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
+			// 	}
+			// );
 
 			// this->register_experiment("TR_Lanczos",
 			// 	[this]() {
@@ -157,14 +157,14 @@ namespace utopia
 
 
 			// does not converge for most of the test cases ....		
-			// this->register_experiment("AffineSimilarity",
-			// 	[this]() {
-			// 		auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();			
-			// 		linear_solver->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG); 
-			// 		AffineSimilarity<Matrix, Vector> solver(linear_solver); 
-			// 		run_tr(this->test_functions_, solver, "AffineSimilarity", this->verbose_);
-			// 	}
-			// );		
+			this->register_experiment("AffineSimilarity",
+				[this]() {
+					auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();			
+					linear_solver->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG); 
+					AffineSimilarity<Matrix, Vector> solver(linear_solver); 
+					run_tr(this->test_functions_, solver, "AffineSimilarity", this->verbose_);
+				}
+			);		
 
 
 		}
@@ -184,7 +184,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 100); 
+			in.set("max-it", 20); 
 			in.set("verbose", true); 
 
 			auto params_qp = std::make_shared<InputParameters>(); 

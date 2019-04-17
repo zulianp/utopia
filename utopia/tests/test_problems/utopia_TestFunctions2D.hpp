@@ -113,7 +113,7 @@ namespace utopia
             H.set(0, 0, 2.0 * x1);
             H.set(0, 1, -1.0);
             H.set(1, 0, 1.0);
-            H.set(1, 1, pi/2 * std::sin(pi/2*x2));
+            H.set(1, 1, pi/2. * std::sin(pi/2.*x2));
             return true;
         }
     };
