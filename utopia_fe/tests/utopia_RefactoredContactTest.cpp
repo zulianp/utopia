@@ -34,7 +34,7 @@ namespace utopia {
     //matrix proxy for utopia
     class MatrixInserter {
     public:
-        MatrixInserter(MPI_Comm mpi_comm, const bool use_add) :
+        MatrixInserter(MPI_Comm mpi_comm, const bool use_add = true) :
           comm(mpi_comm),
           m_matrix(comm),
           redist(comm),
@@ -57,6 +57,21 @@ namespace utopia {
 
             std::partial_sum(ownership_ranges_rows.begin(), ownership_ranges_rows.end(), ownership_ranges_rows.begin());
             std::partial_sum(ownership_ranges_cols.begin(), ownership_ranges_cols.end(), ownership_ranges_cols.begin());
+
+            if(use_add) {
+                redist.apply(ownership_ranges_rows, m_matrix, moonolith::AddAssign<double>());
+            } else {
+                redist.apply(ownership_ranges_rows, m_matrix, moonolith::Assign<double>());
+            }
+        }
+
+        void finalize(const int n_local_rows)
+        {
+            ownership_ranges_rows.resize(comm.size() + 1);
+            std::fill(ownership_ranges_rows.begin(), ownership_ranges_rows.end(), 0);
+            ownership_ranges_rows[comm.rank() + 1] = n_local_rows;
+            comm.all_reduce(&ownership_ranges_rows[0], ownership_ranges_rows.size(), moonolith::MPISum());
+            std::partial_sum(ownership_ranges_rows.begin(), ownership_ranges_rows.end(), ownership_ranges_rows.begin());
 
             if(use_add) {
                 redist.apply(ownership_ranges_rows, m_matrix, moonolith::AddAssign<double>());
@@ -171,6 +186,23 @@ namespace utopia {
             }
         }
 
+        template<typename IDX>
+        void set_non_zero(
+            const std::vector<IDX> &rows,
+            std::vector<double> &vec
+            )
+        {   
+            std::size_t n_rows = rows.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+
+                if(std::abs(vec[i]) != 0.) {
+                    m_matrix.set(dof_I, 0, vec[i]);
+                }
+            }
+        }
+
         template<typename IDX, class ElementVector>
         void add(
             const std::vector<IDX> &rows,
@@ -182,6 +214,20 @@ namespace utopia {
             for(std::size_t i = 0; i < n_rows; ++i) {
                 auto dof_I = rows[i];
                 m_matrix.add(dof_I, 0, vec(i));
+            }
+        }
+
+        template<typename IDX>
+        void add(
+            const std::vector<IDX> &rows,
+            std::vector<double> &vec
+            )
+        {   
+            std::size_t n_rows = rows.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+                m_matrix.add(dof_I, 0, vec[i]);
             }
         }
 
@@ -200,23 +246,70 @@ namespace utopia {
 
         void fill(USparseMatrix &mat)
         {
-            //TODO
+            auto nnz = m_matrix.local_max_entries_x_col();
+            auto n_local_rows = ownership_ranges_rows[comm.rank() + 1] - ownership_ranges_rows[comm.rank()];
+            auto n_local_cols = ownership_ranges_cols[comm.rank() + 1] - ownership_ranges_cols[comm.rank()];
+            mat = local_sparse(n_local_rows, n_local_cols, nnz);
+
+            {
+                utopia::Write<utopia::USparseMatrix> write(mat);
+                for (auto it = m_matrix.iter(); it; ++it) {
+                    mat.set(it.row(), it.col(), *it);
+                }
+            }
         }
 
         void fill(UVector &vec)
         {
-            //TODO
+            auto n_local_rows = ownership_ranges_rows[comm.rank() + 1] - ownership_ranges_rows[comm.rank()];
+            vec = local_zeros(n_local_rows);
+            {
+                Write<UVector> w_g(vec);
+
+                for(auto it = m_matrix.iter(); it; ++it) {
+                    assert(it.col() == 0);
+                    vec.set(it.row(), *it);
+                }
+            }
         }
 
         //remove row variants (incomplete intersections)
         void fill(const std::vector<bool> &remove_row, USparseMatrix &mat)
         {
             //TODO
+            // {
+            //     utopia::Write<utopia::USparseMatrix> write(Mat);
+            //     for (auto it = B_buffer.iter(); it; ++it) {
+
+            //         const SizeType index = it.row() - side_node_ownership_ranges[comm.rank()];
+            //         assert(index < remove_row.size());
+
+            //         if(!remove_row[index]) {
+            //             mat.set(it.row(), it.col(), *it);
+            //         }
+            //     }
+            // }
         }
 
         void fill(const std::vector<bool> &remove_row, UVector &vec)
         {
             //TODO
+            // auto n_local_rows = ownership_ranges_rows[comm.rank() + 1] - ownership_ranges_rows[comm.rank()];
+
+            // UVector vec = local_zeros(n_local_rows);
+            // {
+            //     Write<UVector> w_g(vec);
+
+            //     for (auto it = gap_buffer.iter(); it; ++it) {
+
+            //         const SizeType index = it.row() - ownership_ranges_rows[comm.rank()];
+            //         assert(index < remove_row.size());
+
+            //         if(!remove_row[index]) {
+            //             vec.set(it.row(), *it);
+            //         }
+            //     }
+            // }
         }
 
         moonolith::Communicator comm;
@@ -228,17 +321,53 @@ namespace utopia {
 
     class ContactData {
     public:
-        UVector is_contact;
-        USparseMatrix B, D;
+        MatrixInserter B, D;
+        MatrixInserter gap, normal;
 
-        void init(const libMesh::dof_id_type n_local_dofs)
+        USparseMatrix B_x, D_x;
+        UVector weighted_gap_x, gap_x;//, normal_
+        UVector diag_inv_D_x;
+
+        inline MPI_Comm comm() const
         {
-            is_contact = local_zeros(n_local_dofs);
+            return B.comm.get();
         }
 
-        ContactData() {}
+        void finalize(const SizeType n_local_dofs)
+        {
+            B.finalize(n_local_dofs, n_local_dofs);
+            D.finalize(n_local_dofs, n_local_dofs);
+            gap.finalize(n_local_dofs);
+
+            B.fill(B_x);
+            D.fill(D_x);
+            gap.fill(weighted_gap_x);
+
+            double sum_B_x = sum(B_x);
+            double sum_D_x = sum(D_x);
+
+            UVector d = sum(D_x, 1);
+            diag_inv_D_x = local_zeros(local_size(d));
+
+            {
+                Write<UVector> w(diag_inv_D_x);
+
+                each_read(d, [this](const SizeType i, const double value) {
+                    if(std::abs(value) > 1e-15) {
+                        diag_inv_D_x.set(i, 1./value);
+                    }
+
+                });
+            }
+
+            gap_x = e_mul(diag_inv_D_x, weighted_gap_x);
+
+            std::cout << sum_B_x << " == " << sum_D_x << std::endl;
+        }
+
+        ContactData(MPI_Comm comm) : B(comm), D(comm), gap(comm), normal(comm) {}
     private:
-        ContactData(const ContactData &other) {}
+        ContactData(const ContactData &other) : B(other.comm()), D(other.comm()), gap(other.comm()), normal(other.comm()) {}
     };
 
 
@@ -351,6 +480,7 @@ namespace utopia {
         QMortar lm_q_master, lm_q_slave;
         std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
         libMesh::DenseMatrix<libMesh::Real> b_elmat, d_elmat;
+        libMesh::DenseVector<libMesh::Real> gap_vec;
 
         double area = 0.;
 
@@ -395,14 +525,8 @@ namespace utopia {
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
 
-            auto &dofs_m = master.dofs();
-            auto &dofs_s = slave.dofs();
-
-            dofs_petsc_s.clear();
-            dofs_petsc_s.insert(dofs_petsc_s.end(), dofs_s.global.begin(), dofs_s.global.end());
-
-            std::vector<double> values_s(dofs_s.global.size(), 1);
-            data.is_contact.set(dofs_petsc_s, values_s);
+            auto &dofs_m = master.dofs().global;
+            auto &dofs_s = slave.dofs().global;
 
             converter.convert_master(q_master, lm_q_master);
             converter.convert_slave(q_slave, lm_q_slave);
@@ -421,6 +545,14 @@ namespace utopia {
             d_elmat.zero();
             mortar_assemble(*slave_fe, *slave_fe, d_elmat);
 
+
+            gap_vec.zero();
+            integrate_scalar_function(
+                *slave_fe,
+                gap,
+                gap_vec
+            );
+
             auto partial_sum = std::accumulate(
                 b_elmat.get_values().begin(),
                 b_elmat.get_values().end(),
@@ -429,6 +561,12 @@ namespace utopia {
 
             assert(partial_sum > 0.);
             area += partial_sum;
+
+            data.B.insert(dofs_s, dofs_m, b_elmat);
+            data.D.insert(dofs_s, dofs_s, d_elmat);
+            data.gap.insert(dofs_s, gap_vec);
+
+            // data.g
         }
 
         template<class Adapter>
@@ -542,7 +680,7 @@ namespace utopia {
 
         ProjectionAlgorithm<Dim> contact_algo(contact_data);
 
-        Write<UVector> w(contact_data.is_contact);
+        // Write<UVector> w(contact_data.is_contact);
 
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
             return contact_algo.apply(master, slave);
@@ -550,6 +688,10 @@ namespace utopia {
 
         m_comm.all_reduce(&contact_algo.area, 1, moonolith::MPISum());
         std::cout << "area: " << contact_algo.area << std::endl;
+
+
+        auto n_local_dofs = adapter.n_local_dofs();
+        contact_data.finalize(n_local_dofs);
 
         return contact_algo.area > 0.;
     }
@@ -597,8 +739,7 @@ namespace utopia {
 
             adapter.print_tags();
 
-            ContactData contact_data;
-            contact_data.init(adapter.n_local_dofs());
+            ContactData contact_data(V.mesh().comm().get());
 
             bool found_contact = false;
             if(V.mesh().spatial_dimension() == 2) {
@@ -610,8 +751,10 @@ namespace utopia {
 
             assert(found_contact);
 
+
+
             if(is_volume) {
-                UVector x = (*adapter.permutation()) * contact_data.is_contact;
+                UVector x = (*adapter.permutation()) * contact_data.gap_x;
                 write("warped.e", V, x);
             }
 

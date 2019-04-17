@@ -194,7 +194,8 @@ namespace utopia {
             Scalar &t
             )
         {
-            if(t != 0.) {
+            // if(t != 0.) 
+            {
 
                 Write<Vectord> w_x(x_ref_), w_u(u_);
 
@@ -221,12 +222,14 @@ namespace utopia {
                 t = dot(p - ray.o, ray.dir);
                 u_.set(Dim-1, t);
 
-            } else {
+            } 
 
-                //valid initial guess
-                x_ref_.set(0.);
-                u_.set(0.);
-            }
+            // else {
+
+            //     //valid initial guess
+            //     x_ref_.set(0.);
+            //     u_.set(0.);
+            // }
         }
 
         bool intersect_gradient_descent(const Ray &ray,

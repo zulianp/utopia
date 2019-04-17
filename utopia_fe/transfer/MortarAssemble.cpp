@@ -2232,30 +2232,30 @@ namespace utopia {
     {
         mortar_assemble_weighted_aux(trial_fe, test_fe, weights, elmat);
     }
+    
+    // void integrate_scalar_function(
+    //     const libMesh::FEBase &test_fe,
+    //     const std::vector<double> &fun,
+    //     libMesh::DenseVector<libMesh::Real> &result
+    // )
+    // {
+    //     const auto &phi = test_fe.get_phi();
+    //     const auto &dx = test_fe.get_JxW();
+    //     const auto n_qp = fun.size();
+    //     const auto n_shape_functions = phi.size();
 
-    void integrate_scalar_function(
-        const libMesh::FEBase &test_fe,
-        const std::vector<double> &fun,
-        libMesh::DenseVector<libMesh::Real> &result
-    )
-    {
-        const auto &phi = test_fe.get_phi();
-        const auto &dx = test_fe.get_JxW();
-        const auto n_qp = fun.size();
-        const auto n_shape_functions = phi.size();
+    //     assert(n_qp == phi[0].size());
+    //     assert(n_qp == dx.size());
 
-        assert(n_qp == phi[0].size());
-        assert(n_qp == dx.size());
+    //     result.resize(n_shape_functions);
+    //     result.zero();
 
-        result.resize(n_shape_functions);
-        result.zero();
-
-        for(std::size_t i = 0; i < n_shape_functions; ++i) {
-            for(std::size_t qp = 0; qp < n_qp; ++qp) {
-                result(i) += phi[i][qp] * fun[qp] * dx[qp];
-            }
-        }
-    }
+    //     for(std::size_t i = 0; i < n_shape_functions; ++i) {
+    //         for(std::size_t qp = 0; qp < n_qp; ++qp) {
+    //             result(i) += phi[i][qp] * fun[qp] * dx[qp];
+    //         }
+    //     }
+    // }
 
 
     void integrate_point_function(
