@@ -31,24 +31,45 @@
 
 namespace utopia {
 
-
-   
-
     class ContactData {
     public:
         MatrixInserter B, D;
         MatrixInserter gap, normal;
+        MatrixInserter area;
 
+
+        //scalar version
         USparseMatrix B_x, D_x;
-        UVector weighted_gap_x, gap_x, normal_xyz;
+        UVector weighted_gap_x, gap_x;
         UVector diag_inv_D_x;
+        UVector area_x;
+
+        //vector version
+        UVector normal_xyz;
+        UVector diag_inv_D_xyz;
 
         inline MPI_Comm comm() const
         {
             return B.comm.get();
         }
 
+        void switch_dim(
+            const UVector &in,
+            const SizeType spatial_dim,
+            UVector &out)
+        {
+            out = local_zeros(local_size(in).get(0) * spatial_dim);
+            Write<UVector> w(out);
+
+            each_read(in, [&](const SizeType i, const double val) {
+                for(SizeType d = 0; d < spatial_dim; ++d) {
+                    out.set(i * spatial_dim + d, val);
+                }
+            });
+        }
+
         void finalize(
+            const SizeType n_local_elems,
             const SizeType n_local_dofs,
             const SizeType spatial_dim)
         {
@@ -56,14 +77,17 @@ namespace utopia {
             D.finalize(n_local_dofs, n_local_dofs);
             gap.finalize(n_local_dofs);
             normal.finalize(n_local_dofs * spatial_dim);
+            area.finalize(n_local_elems);
 
             B.fill(B_x);
             D.fill(D_x);
             gap.fill(weighted_gap_x);
             normal.fill(normal_xyz);
+            area.fill(area_x);
 
             double sum_B_x = sum(B_x);
             double sum_D_x = sum(D_x);
+            double sum_normal_xyz = sum(normal_xyz);
 
             UVector d = sum(D_x, 1);
             diag_inv_D_x = local_zeros(local_size(d));
@@ -75,18 +99,23 @@ namespace utopia {
                     if(std::abs(value) > 1e-15) {
                         diag_inv_D_x.set(i, 1./value);
                     }
-
                 });
             }
 
             gap_x = e_mul(diag_inv_D_x, weighted_gap_x);
 
+
+            switch_dim(diag_inv_D_x, spatial_dim, diag_inv_D_xyz);
+
+            normal_xyz = e_mul(diag_inv_D_xyz, normal_xyz);
+
             std::cout << sum_B_x << " == " << sum_D_x << std::endl;
+            std::cout << sum_normal_xyz << std::endl;
         }
 
-        ContactData(MPI_Comm comm) : B(comm), D(comm), gap(comm), normal(comm) {}
+        ContactData(MPI_Comm comm) : B(comm), D(comm), gap(comm), normal(comm), area(comm) {}
     private:
-        ContactData(const ContactData &other) : B(other.comm()), D(other.comm()), gap(other.comm()), normal(other.comm()) {}
+        ContactData(const ContactData &other) : B(other.comm()), D(other.comm()), gap(other.comm()), normal(other.comm()), area(other.comm()) {}
     };
 
 
@@ -199,8 +228,12 @@ namespace utopia {
         std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
         libMesh::DenseMatrix<libMesh::Real> b_elmat, d_elmat;
         libMesh::DenseVector<libMesh::Real> gap_vec, normal_vec;
+        libMesh::DenseMatrix<libMesh::Real> biorth_weights;
+        libMesh::DenseMatrix<libMesh::Real> local_trafo;
 
         double area = 0.;
+        bool use_biorth = true;
+        double alpha = 1./5.;
 
         ProjectionAlgorithm(ContactData &data)
         : data(data), lm_q_master(Dim-1), lm_q_slave(Dim-1)
@@ -216,8 +249,65 @@ namespace utopia {
 
                 //TODO check for the affine contact too
             }
+        }
 
+        //assemble for p2
+        static void assemble_local_trafo(
+            const libMesh::Elem &el,
+            const int el_order,
+            const double alpha,
+            libMesh::DenseMatrix<libMesh::Real> &trafo,
+            libMesh::DenseMatrix<libMesh::Real> &inv_trafo)
+        {
+            assert(el_order == 2);
+            int n = is_tri(el.type()) ? 3 : (is_quad(el.type()) ? 4 : 2);
+            int n_nodes = el.n_nodes();
 
+            assert(n * 2 == n_nodes);
+            trafo.resize(n_nodes, n_nodes);
+
+            /////////////////////////////////
+            for(int i = 0; i < n; ++i) {
+                //block (0,0)
+                trafo(i, i) = 1.0;
+
+                //block (1,1)
+                trafo(n + i, n + i) = (1 - 2*alpha);
+            }
+
+            /////////////////////////////////
+            //block (1,0)
+            for(int i = 0; i < n-1; ++i) {
+                trafo(n + i, i + 1) = alpha;
+            }
+
+            trafo(n_nodes-1, n-1) = alpha;
+            trafo(n_nodes-1, 0)   = alpha;
+            /////////////////////////////////
+        }
+
+        void assemble_biorth_weights(
+                const libMesh::Elem &el,
+                const int el_order,
+                libMesh::DenseMatrix<libMesh::Real> &weights)
+            {
+                std::unique_ptr<libMesh::FEBase> biorth_elem = libMesh::FEBase::build(Dim-1, libMesh::Order(el_order));
+
+                const int order = order_for_l2_integral(Dim-1, el, el_order, el, el_order);
+
+                libMesh::QGauss qg(Dim-1, libMesh::Order(order));
+                biorth_elem->attach_quadrature_rule(&qg);
+                biorth_elem->reinit(&el);
+                mortar_assemble_weights(*biorth_elem, weights);
+            }
+
+        void init_biorth(
+            const libMesh::Elem &el,
+            const int el_order)
+        {
+            if(use_biorth && biorth_weights.get_values().empty()) {
+                assemble_biorth_weights(el, el_order, biorth_weights);
+            }
         }
 
         void init_fe(int master_order, int slave_order)
@@ -229,9 +319,59 @@ namespace utopia {
                 master_fe->get_phi();
                 slave_fe->get_phi();
                 slave_fe->get_JxW();
-
-                //initialize biorth if needed
             }
+        }
+
+        void local_assemble_aux(
+            const moonolith::Vector<double, Dim> &normal,
+            const moonolith::Storage<double> &gap)
+        {
+            b_elmat.zero();
+            d_elmat.zero();
+            gap_vec.zero();
+            normal_vec.zero();
+
+            if(use_biorth) {
+                //P1 biorth
+                mortar_assemble_weighted_biorth(
+                    *master_fe,
+                    *slave_fe,
+                    biorth_weights,
+                    b_elmat
+                );
+
+                mortar_assemble_weighted_biorth(
+                    *slave_fe,
+                    *slave_fe, 
+                    biorth_weights,
+                    d_elmat);
+                
+                integrate_scalar_function_weighted_biorth(
+                    *slave_fe,
+                    biorth_weights,
+                    gap,
+                    gap_vec
+                );
+                
+                l2_project_normal_weighted_biorth(
+                    *slave_fe,
+                    biorth_weights,
+                    normal,
+                    normal_vec
+                );
+
+            } else {
+                mortar_assemble(*master_fe, *slave_fe, b_elmat);
+                mortar_assemble(*slave_fe, *slave_fe, d_elmat);
+                integrate_scalar_function(
+                    *slave_fe,
+                    gap,
+                    gap_vec
+                );
+                
+                l2_project_normal(*slave_fe, normal, normal_vec);
+            }
+
         }
 
         template<class Adapter>
@@ -256,6 +396,7 @@ namespace utopia {
 
             auto &dofs_m = master.dofs().global;
             auto &dofs_s = slave.dofs().global;
+            auto global_slave_id = slave.dofs().global_id;
 
             converter.convert_master(q_master, lm_q_master);
             converter.convert_slave(q_slave, lm_q_slave);
@@ -268,25 +409,17 @@ namespace utopia {
             slave_fe->attach_quadrature_rule(&lm_q_slave);
             slave_fe->reinit(&e_s);
 
+            init_biorth(e_s, m_s.fe_type(0).order);
+
             ///////////////////////////////////////////////////////
             //assemble local element matrices
 
-            b_elmat.zero();
-            mortar_assemble(*master_fe, *slave_fe, b_elmat);
-
-            d_elmat.zero();
-            mortar_assemble(*slave_fe, *slave_fe, d_elmat);
-
-            gap_vec.zero();
-            integrate_scalar_function(
-                *slave_fe,
-                gap,
-                gap_vec
+            local_assemble_aux(normal, gap);
+            auto isect_area = std::accumulate(
+                b_elmat.get_values().begin(),
+                b_elmat.get_values().end(),
+                libMesh::Real(0.0)
             );
-
-            normal_vec.zero();
-            l2_project_normal(*slave_fe, normal, normal_vec);
-
 
             ///////////////////////////////////////////////////////
             //local to global
@@ -295,19 +428,12 @@ namespace utopia {
             data.D.insert(dofs_s, dofs_s, d_elmat);
             data.gap.insert(dofs_s, gap_vec);
             data.normal.insert_tensor_product_idx(dofs_s, Dim, normal_vec);
-
+            data.area.insert(global_slave_id, isect_area);
 
             ///////////////////////////////////////////////////////
             //check on the area
-
-            auto partial_sum = std::accumulate(
-                b_elmat.get_values().begin(),
-                b_elmat.get_values().end(),
-                libMesh::Real(0.0)
-            );
-
-            assert(partial_sum > 0.);
-            area += partial_sum;
+            // assert(isect_area > 0.);
+            area += isect_area;
         }
 
         template<class Adapter>
@@ -434,8 +560,11 @@ namespace utopia {
         std::cout << "area: " << contact_algo.area << std::endl;
 
 
-        auto n_local_dofs = adapter.n_local_dofs();
-        contact_data.finalize(n_local_dofs, Dim);
+        contact_data.finalize(
+            adapter.n_local_elems(),
+            adapter.n_local_dofs(),
+            Dim
+        );
 
         return contact_algo.area > 0.;
     }
@@ -463,7 +592,9 @@ namespace utopia {
 
             LibMeshFunctionSpaceAdapter adapter;
 
-            bool is_volume = V.mesh().spatial_dimension() == V.mesh().mesh_dimension();
+            auto spatial_dim = V.mesh().spatial_dimension();
+
+            bool is_volume = spatial_dim == V.mesh().mesh_dimension();
 
             if(is_volume) {
            
@@ -485,21 +616,26 @@ namespace utopia {
 
             ContactData contact_data(V.mesh().comm().get());
 
+
+
             bool found_contact = false;
-            if(V.mesh().spatial_dimension() == 2) {
+            if(spatial_dim == 2) {
                 found_contact = run_contact<2>(params.contact_params, adapter, contact_data);
             } 
-            else if(V.mesh().spatial_dimension() == 3) {
+            else if(spatial_dim == 3) {
                 found_contact = run_contact<3>(params.contact_params, adapter, contact_data);
             }
 
             assert(found_contact);
 
+            if(found_contact) {
+                adapter.make_tensor_product_permutation(spatial_dim);
 
-
-            if(is_volume) {
-                UVector x = (*adapter.permutation()) * contact_data.gap_x;
-                write("warped.e", V, x);
+                if(is_volume) {
+                   // UVector x = (*adapter.permutation()) * contact_data.gap_x;
+                    UVector x = (*adapter.tensor_permutation()) * contact_data.normal_xyz;
+                    write("warped.e", V, x);
+                }
             }
 
            

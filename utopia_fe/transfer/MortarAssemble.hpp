@@ -326,6 +326,79 @@ namespace utopia {
         }
     }
 
+    inline double biorth(
+        const std::vector<std::vector<double>> &phi,
+        const libMesh::DenseMatrix<libMesh::Real> &weights,
+        const int i,
+        const int qp
+    )
+    {
+        double ret = 0.;
+        auto n_funs = phi.size();
+        for(std::size_t k = 0; k < n_funs; ++k) {
+            ret += phi[k][qp] * weights(i, k);
+        }
+
+        return ret;
+    }
+
+
+    template<class Array>
+    void integrate_scalar_function_weighted_biorth(
+        const libMesh::FEBase &test_fe,
+        const libMesh::DenseMatrix<libMesh::Real> &weights,
+        const Array &fun,
+        libMesh::DenseVector<libMesh::Real> &result
+    )
+    {
+        const auto &phi = test_fe.get_phi();
+        const auto &dx = test_fe.get_JxW();
+        const auto n_qp = fun.size();
+        const auto n_shape_functions = phi.size();
+
+        assert(n_qp == phi[0].size());
+        assert(n_qp == dx.size());
+
+        result.resize(n_shape_functions);
+        result.zero();
+
+        for(std::size_t i = 0; i < n_shape_functions; ++i) {
+            for(std::size_t qp = 0; qp < n_qp; ++qp) {
+                auto f = biorth(phi, weights, i, qp);
+                result(i) += f * fun[qp] * dx[qp];
+            }
+        }
+    }
+
+    template<int Dim>
+    void l2_project_normal_weighted_biorth(
+        const libMesh::FEBase &test_fe,
+        const libMesh::DenseMatrix<libMesh::Real> &weights,
+        const moonolith::Vector<double, Dim> &normal,
+        
+        libMesh::DenseVector<libMesh::Real> &result
+    )
+    {
+        const auto &phi = test_fe.get_phi();
+        const auto &dx  = test_fe.get_JxW();
+        const auto n_qp = dx.size();
+        const auto n_shape_functions = phi.size();
+
+        assert(n_qp == phi[0].size());
+
+        result.resize(n_shape_functions * Dim);
+        result.zero();
+
+        for(std::size_t i = 0; i < n_shape_functions; ++i) {
+            for(std::size_t qp = 0; qp < n_qp; ++qp) {
+                auto f = biorth(phi, weights, i, qp);
+                for(std::size_t d = 0; d < Dim; ++d) {
+                    result(i*Dim + d) += f * normal[d] * dx[qp];
+                }
+            }
+        }
+    }
+
     double ref_volume(int type);
     double ref_area_of_surf(int type);
 }

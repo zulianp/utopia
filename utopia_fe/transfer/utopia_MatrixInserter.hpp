@@ -79,6 +79,19 @@ namespace utopia {
             }
         }
 
+
+        template<typename IDX>
+        void insert(const IDX &idx, const double val)
+        {
+            if(use_add) {
+                m_matrix.add(idx, 0, val);
+            } else {
+                if(val != 0.) {
+                    m_matrix.set(idx, 0, val);
+                }
+            }
+        }
+
         template<typename IDX, class ElementMatrix>
         void insert(
             const std::vector<IDX> &rows,
