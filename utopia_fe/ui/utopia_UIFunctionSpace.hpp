@@ -11,149 +11,177 @@
 
 namespace utopia {
 
-	template<class FunctionSpace>
-	class UIFunctionSpace final : public Configurable {
-	public:
-		UIFunctionSpace()
-		{}
+    template<class FunctionSpace>
+    class UIFunctionSpace final : public Configurable {
+    public:
+        UIFunctionSpace()
+        {}
 
-		void read(Input &is) override {}
+        void read(Input &is) override {}
 
-	private:
-		std::shared_ptr<FunctionSpace> space_;
-	};
+    private:
+        std::shared_ptr<FunctionSpace> space_;
+    };
 
 
-	template<>
-	class UIFunctionSpace<LibMeshFunctionSpace> final : public Configurable {
-	public:
-		UIFunctionSpace(
-			const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh,
-			const std::shared_ptr<libMesh::EquationSystems> equation_systems = nullptr)
-		: mesh_(mesh), equation_systems_(equation_systems)
-		{}
+    template<>
+    class UIFunctionSpace<LibMeshFunctionSpace> final : public Configurable {
+    public:
+        UIFunctionSpace(
+            const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh,
+            const std::shared_ptr<libMesh::EquationSystems> equation_systems = nullptr)
+        : mesh_(mesh), equation_systems_(equation_systems), verbose_(true)
+        {}
 
-		void read(Input &is) override {
-			int n_vars = 0;
+        void read(Input &is) override {
+            int n_vars = 0;
 
-			std::vector<std::string> var_names;
-			std::vector<int> var_orders;
-			std::vector<std::string> fe_families;
+            std::vector<std::string> var_names;
+            std::vector<int> var_orders;
+            std::vector<std::string> fe_families;
 
-			std::string system_name = "main";
-			std::string fe_family = "LAGRANGE";
+            std::string system_name = "main";
+            std::string fe_family = "LAGRANGE";
 
-			is.get("variables", [&](Input &sub_is_mid) {
-				sub_is_mid.get_all([&](Input &sub_is) {
-					std::string var_name = "u_" + std::to_string(n_vars);
-					int var_order = 1;
-					std::string var_fe_family = fe_family;
+            is.get("variables", [&](Input &sub_is_mid) {
+                sub_is_mid.get_all([&](Input &sub_is) {
+                    std::string var_name = "u_" + std::to_string(n_vars);
+                    int var_order = 1;
+                    std::string var_fe_family = fe_family;
 
-					sub_is.get("name", var_name);
-					sub_is.get("order", var_order);
-					sub_is.get("fe-family", var_fe_family);
-					
-					var_names.push_back(var_name);
-					var_orders.push_back(var_order);
-					fe_families.push_back(var_fe_family);
+                    sub_is.get("name", var_name);
+                    sub_is.get("order", var_order);
+                    sub_is.get("fe-family", var_fe_family);
 
-					++n_vars;
-				});
-			});
+                    var_names.push_back(var_name);
+                    var_orders.push_back(var_order);
+                    fe_families.push_back(var_fe_family);
 
-			if(n_vars == 0) {
-				var_names.push_back("u");
-				var_orders.push_back(1);
-				fe_families.push_back(fe_family);
-				n_vars = 1;
-			}
+                    ++n_vars;
+                });
+            });
 
-			is.get("system-name", system_name);
+            if(n_vars == 0) {
+                var_names.push_back("u");
+                var_orders.push_back(1);
+                fe_families.push_back(fe_family);
+                n_vars = 1;
+            }
 
-			if(!equation_systems_) {
-				equation_systems_ = std::make_shared<libMesh::EquationSystems>(mesh_->mesh());
-			}
+            is.get("system-name", system_name);
 
-			auto &sys = equation_systems_->add_system<libMesh::LinearImplicitSystem>(system_name);
-			space_ = std::make_shared<ProductFunctionSpace<LibMeshFunctionSpace>>();
+            if(!equation_systems_) {
+                equation_systems_ = std::make_shared<libMesh::EquationSystems>(mesh_->mesh());
+            }
 
-			for(int i = 0; i < n_vars; ++i) {
-				auto ss = std::make_shared<LibMeshFunctionSpace>(
-					equation_systems_,
-					libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_families[i]),
-					libMesh::Order(var_orders[i]),
-					var_names[i],
-					sys.number()
-				);
-				
-				space_->add_subspace(ss);
-			}
+            auto &sys = equation_systems_->add_system<libMesh::LinearImplicitSystem>(system_name);
+            space_ = std::make_shared<ProductFunctionSpace<LibMeshFunctionSpace>>();
 
-			is.get("boundary-conditions", [this](Input &is) {
-			    is.get_all([this](Input &is) {
-			        int side_set = 0;
-			        
-			        is.get("side", side_set);
-			        
-			        double value = 0;
-			        is.get("value", value);
+            for(int i = 0; i < n_vars; ++i) {
+                auto ss = std::make_shared<LibMeshFunctionSpace>(
+                    equation_systems_,
+                    libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_families[i]),
+                    libMesh::Order(var_orders[i]),
+                    var_names[i],
+                    sys.number()
+                );
 
-			        int var_num = 0;
+                space_->add_subspace(ss);
+            }
 
-			        is.get("var", var_num);
+            is.get("boundary-conditions", [this](Input &is) {
+                is.get_all([this](Input &is) {
+                    int side_set = 0;
 
-			        auto u = trial(space_->subspace(var_num));
+                    is.get("side", side_set);
 
-			        init_constraints(
-			        	constraints(
-			        		boundary_conditions(u == coeff(value), {side_set})
-			        		)
-			        	);
+                    double value = 0;
+                    is.get("value", value);
 
-			    });
-			});
+                    int var_num = 0;
 
-			for(int i = 0; i < n_vars; ++i) {
-				space_->subspace(i).initialize();
-			}
-		}
+                    is.get("var", var_num);
 
-		inline ProductFunctionSpace<LibMeshFunctionSpace> &space()
-		{
-			assert(space_);
-			return *space_;
-		}
 
-		inline void set_space(const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace> > &space)
-		{
-			space_ = space;
-		}
+                    std::string type = "constant"; //expr
 
-		inline LibMeshFunctionSpace &subspace(int index)
-		{
-			return space_->subspace(index);
-		}
+                    is.get("type", type);
 
-		inline std::shared_ptr<LibMeshFunctionSpace> subspace_ptr(int index)
-		{
-			return space_->subspace_ptr(index);
-		}
+                    auto u = trial(space_->subspace(var_num));
 
-		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh() 
-		{
-			return mesh_;
-		}
+                    if(type == "expr") {
+#ifdef WITH_TINY_EXPR
+                        std::string expr = "0";
+                        is.get("value", expr);
+                        auto g = symbolic(expr);
 
-		inline bool initialized() const
-		{
-			return static_cast<bool>(space_);
-		}
+                        init_constraints(constraints(
+                            boundary_conditions(u == g, {side_set})
+                        ));
+#else
+                        assert(false);
+                        std::cerr << "needs tiny expr library" << std::endl;
+#endif
 
-	private:
-		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh_;
-		std::shared_ptr<libMesh::EquationSystems> equation_systems_;
-		std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space_;
-	};
+                    } else {
+
+                        if(verbose_) {
+                            std::cout <<  "side: " << side_set << " var: " << var_num << " value: " << value << std::endl;
+                        }
+
+                        init_constraints(
+                            constraints(
+                                boundary_conditions(u == coeff(value), {side_set})
+                                )
+                            );
+
+                        }
+
+                });
+            });
+
+            for(int i = 0; i < n_vars; ++i) {
+                space_->subspace(i).initialize();
+            }
+        }
+
+        inline ProductFunctionSpace<LibMeshFunctionSpace> &space()
+        {
+            assert(space_);
+            return *space_;
+        }
+
+        inline void set_space(const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace> > &space)
+        {
+            space_ = space;
+        }
+
+        inline LibMeshFunctionSpace &subspace(int index)
+        {
+            return space_->subspace(index);
+        }
+
+        inline std::shared_ptr<LibMeshFunctionSpace> subspace_ptr(int index)
+        {
+            return space_->subspace_ptr(index);
+        }
+
+        std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh()
+        {
+            return mesh_;
+        }
+
+        inline bool initialized() const
+        {
+            return static_cast<bool>(space_);
+        }
+
+    private:
+        std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh_;
+        std::shared_ptr<libMesh::EquationSystems> equation_systems_;
+        std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space_;
+        bool verbose_;
+    };
 }
 
 

@@ -26,10 +26,7 @@ namespace utopia {
 
     typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-    void RMTRApp::init(libMesh::LibMeshInit &init)
-    {
-        comm_ = make_ref(init.comm());
-    }
+
 
     static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T)
     {
@@ -291,7 +288,7 @@ namespace utopia {
             f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "poisson") {
             f = std::make_shared<FormPoisson<decltype(V), USparseMatrix, UVector>>(V);
-        } 
+        }
 
         else {
             assert(false);
@@ -306,7 +303,7 @@ namespace utopia {
         Chrono c;
         c.start();
 
-        auto mesh = std::make_shared<libMesh::DistributedMesh>(*comm_);
+        auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
         in.make_mesh(*mesh);
 
         mesh->print_info();
@@ -354,8 +351,8 @@ namespace utopia {
         auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
         auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
 
-        // coarse_solver->verbose(true); 
-        // smoother->verbose(true); 
+        // coarse_solver->verbose(true);
+        // smoother->verbose(true);
         // auto coarse_solver = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
         // coarse_solver->atol(1e-12);
         // coarse_solver->rtol(1e-12);
@@ -363,7 +360,7 @@ namespace utopia {
 
 
 
-        meshes[0] = std::make_shared<libMesh::DistributedMesh>(*comm_);
+        meshes[0] = std::make_shared<libMesh::DistributedMesh>(comm());
         in.make_mesh(*meshes[0]);
 
         for(std::size_t i = 1; i < n_levels; ++i) {
@@ -384,8 +381,8 @@ namespace utopia {
         for(std::size_t i = 1; i < n_levels; ++i) {
             auto T_cf = std::make_shared<USparseMatrix>();
             auto T_fc = std::make_shared<USparseMatrix>();
-            assemble_interpolation(*spaces[i-1], *spaces[i],   *T_cf); //assemble_projection 
-            assemble_interpolation(*spaces[i],   *spaces[i-1], *T_fc); //assemble_projection 
+            assemble_interpolation(*spaces[i-1], *spaces[i],   *T_cf); //assemble_projection
+            assemble_interpolation(*spaces[i],   *spaces[i-1], *T_fc); //assemble_projection
             transfers[i-1] = std::make_shared<IPTransferT>(T_cf, T_fc);
         }
 
@@ -396,9 +393,9 @@ namespace utopia {
         auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, FIRST_ORDER> >(n_levels);
         rmtr->set_transfer_operators(transfers);
 
-        
-        rmtr->set_coarse_tr_strategy(coarse_solver); 
-        rmtr->set_fine_tr_strategy(smoother); 
+
+        rmtr->set_coarse_tr_strategy(coarse_solver);
+        rmtr->set_fine_tr_strategy(smoother);
 
         rmtr->max_it(30);
         rmtr->max_coarse_it(3);
@@ -421,27 +418,25 @@ namespace utopia {
 
         bool ok = rmtr->solve(x);
 
-        std::cout<<"fine dofs:  "<< size(x).get(0) << "  \n"; 
+        std::cout<<"fine dofs:  "<< size(x).get(0) << "  \n";
 
         //Write solution to disk
         write("rmtr.e", *spaces.back(), x);
     }
 
 
-    void RMTRApp::run(const std::string &conf_file_path)
+    void RMTRApp::run(Input &in)
     {
 
-        auto is_ptr = open_istream(conf_file_path);
+        SimulationInput sim_in;
+        in.get("rmtr-app", sim_in);
 
-        SimulationInput in;
-        is_ptr->get("rmtr-app", in);
+        sim_in.describe();
 
-        in.describe();
-
-        if(in.use_newton) {
-            solve_newton(in);
+        if(sim_in.use_newton) {
+            solve_newton(sim_in);
         } else {
-            solve_rmtr(in);
+            solve_rmtr(sim_in);
         }
     }
 }

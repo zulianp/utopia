@@ -8,141 +8,141 @@
 
 namespace utopia {
 
-	template<class Scalar, class Op> class KokkosOp {};
+    template<class Scalar, class Op> class KokkosOp {};
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Max> {
-	public:
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
-			return (a > b)? a : b;
-		}
-	};
+    template<class Scalar>
+    class KokkosOp<Scalar, Max> {
+    public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            return (a > b)? a : b;
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Min> {
-	public:
-		KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &a, const Scalar &b) const {
-			return (a < b)? a : b;
-		}
-	};
+    template<class Scalar>
+    class KokkosOp<Scalar, Min> {
+    public:
+        KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &a, const Scalar &b) const {
+            return (a < b)? a : b;
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Plus> {
-	public:
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
-			return a + b;
-		}
-	};
+    template<class Scalar>
+    class KokkosOp<Scalar, Plus> {
+    public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            return a + b;
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, IsNaNOrInf> {
-	public:
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &val) {
-			return
-				Kokkos::Details::ArithTraits<Scalar>::isNan(val) ||
-				Kokkos::Details::ArithTraits<Scalar>::isInf(val);
-		}
+    template<class Scalar>
+    class KokkosOp<Scalar, IsNaNOrInf> {
+    public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &val) {
+            return
+                Kokkos::Details::ArithTraits<Scalar>::isNan(val) ||
+                Kokkos::Details::ArithTraits<Scalar>::isInf(val);
+        }
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
-			auto apply_a = apply(a);
-			auto apply_b = apply(b);
-			return (apply_a > apply_b)? apply_a : apply_b;
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            auto apply_a = apply(a);
+            auto apply_b = apply(b);
+            return (apply_a > apply_b)? apply_a : apply_b;
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Exp> {
-	public:
-		KokkosOp(const Exp &) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Exp> {
+    public:
+        KokkosOp(const Exp &) {}
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-			return Kokkos::Details::ArithTraits<Scalar>::exp(value);
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return Kokkos::Details::ArithTraits<Scalar>::exp(value);
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Sqrt> {
-	public:
-		KokkosOp(const Sqrt &) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Sqrt> {
+    public:
+        KokkosOp(const Sqrt &) {}
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-			return Kokkos::Details::ArithTraits<Scalar>::sqrt(value);
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return Kokkos::Details::ArithTraits<Scalar>::sqrt(value);
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Pow> {
-	public:
-		KokkosOp(const Pow &in) : a_(in.a_) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Pow> {
+    public:
+        KokkosOp(const Pow &in) : a_(in.a_) {}
 
-		KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &value) const {
-			return Kokkos::Details::ArithTraits<Scalar>::pow(value, a_);
-		}
+        KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &value) const {
+            return Kokkos::Details::ArithTraits<Scalar>::pow(value, a_);
+        }
 
-		Scalar a_;
-	};
+        Scalar a_;
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Reciprocal<Scalar>> {
-	public:
-		KokkosOp(const Reciprocal<Scalar> &in) : num_(in.numerator()) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Reciprocal<Scalar>> {
+    public:
+        KokkosOp(const Reciprocal<Scalar> &in) : num_(in.numerator()) {}
 
-		KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &value) const {
-			return num_/value;
-		}
+        KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &value) const {
+            return num_/value;
+        }
 
-		Scalar num_;
-	};
+        Scalar num_;
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Pow2> {
-	public:
-		KokkosOp(const Pow2 &) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Pow2> {
+    public:
+        KokkosOp(const Pow2 &) {}
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-			return value * value;
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return value * value;
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Abs> {
-	public:
-		KokkosOp(const Abs &) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Abs> {
+    public:
+        KokkosOp(const Abs &) {}
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-			return Kokkos::Details::ArithTraits<Scalar>::abs(value);
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return Kokkos::Details::ArithTraits<Scalar>::abs(value);
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Log> {
-	public:
-		KokkosOp(const Log &) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Log> {
+    public:
+        KokkosOp(const Log &) {}
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-			return Kokkos::Details::ArithTraits<Scalar>::log(value); 
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return Kokkos::Details::ArithTraits<Scalar>::log(value);
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Sin> {
-	public:
-		KokkosOp(const Sin &) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Sin> {
+    public:
+        KokkosOp(const Sin &) {}
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-			return Kokkos::Details::ArithTraits<Scalar>::sin(value); 
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return Kokkos::Details::ArithTraits<Scalar>::sin(value);
+        }
+    };
 
-	template<class Scalar>
-	class KokkosOp<Scalar, Cos> {
-	public:
-		KokkosOp(const Cos &) {}
+    template<class Scalar>
+    class KokkosOp<Scalar, Cos> {
+    public:
+        KokkosOp(const Cos &) {}
 
-		KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-			return Kokkos::Details::ArithTraits<Scalar>::cos(value); 
-		}
-	};
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return Kokkos::Details::ArithTraits<Scalar>::cos(value);
+        }
+    };
 }
 
-#endif 
+#endif

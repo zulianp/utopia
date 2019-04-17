@@ -14,8 +14,8 @@ option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" 
 #################################################################################
 #################################################################################
 #################################################################################
-set(UTOPIA_FE_DEV_FLAGS 
-	"-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
+set(UTOPIA_FE_DEV_FLAGS
+    "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
 )
 
 # More annoying
@@ -32,11 +32,11 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(LINUX)
-	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
 if(ENABLE_TRILINOS_ALGEBRA)
-	set(WITH_TRILINOS_ALGEBRA TRUE)
+    set(WITH_TRILINOS_ALGEBRA TRUE)
 endif()
 
 set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
@@ -44,9 +44,9 @@ set(UTOPIA_FE_CMAKES_PATH ${UTOPIA_FE_ROOT_PATH}/libcmake)
 
 
 if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
-		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
-	endif()
+    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+        SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+    endif()
 endif()
 
 ################################## Include cmake functions and find modules
@@ -55,184 +55,182 @@ include(${UTOPIA_FE_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils" )
 foreach(funcLib ${FUNC_LIB})
-	include(${funcLib})
+    include(${funcLib})
 endforeach(funcLib)
 
-find_package(Utopia)
-if(UTOPIA_FOUND)
-    include_directories(${UTOPIA_INCLUDES})
-    add_definitions(${UTOPIA_DEFS})
-else()
-    message(FATAL_ERROR "Utopia not found.")
-endif()
-
+find_package(Utopia REQUIRED)
+add_definitions(${UTOPIA_DEFS})
 include_directories(rapidxml)
 
 
 ########################################################################
 function(find_project_files rootPath dirPaths headers sources)
-	SET(verbose TRUE)
+    SET(verbose TRUE)
 
-	SET(theaders ${${headers}})
-	SET(tsources ${${sources}})
+    SET(theaders ${${headers}})
+    SET(tsources ${${sources}})
 
-	SET(ROOT_PATH ${${rootPath}})
-	SET(DIR_PATHS ${${dirPaths}})
+    SET(ROOT_PATH ${${rootPath}})
+    SET(DIR_PATHS ${${dirPaths}})
 
-	FOREACH(INCLUDE_PATH ${DIR_PATHS})
-		INCLUDE_DIRECTORIES(BEFORE ${ROOT_PATH}/${INCLUDE_PATH})
+    FOREACH(INCLUDE_PATH ${DIR_PATHS})
+        INCLUDE_DIRECTORIES(BEFORE ${ROOT_PATH}/${INCLUDE_PATH})
 
-		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
-		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
-		file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
-		file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
+        file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
+        file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
+        file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
+        file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
 
-		SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
+        SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
 
-		SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
-		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
-	ENDFOREACH(INCLUDE_PATH)
+        SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
+        SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
+    ENDFOREACH(INCLUDE_PATH)
 
-	SET(${headers} ${theaders} PARENT_SCOPE)
-	SET(${sources} ${tsources} PARENT_SCOPE)
+    SET(${headers} ${theaders} PARENT_SCOPE)
+    SET(${sources} ${tsources} PARENT_SCOPE)
 endfunction()
 ########################################################################
 
+# all arguments after module_name are the dependencies, we access them via ${ARGN}
+macro(add_utopiafe_module module_name)
+    add_library(${module_name} STATIC ${LOCAL_SOURCES})
+    target_link_libraries(${module_name} PUBLIC ${ARGN} ${UTOPIA_LIBRARIES})
+    target_include_directories(${module_name} BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+    foreach(module_dependency ${ARGN})
+        target_include_directories(${module_name} PUBLIC $<TARGET_PROPERTY:${module_dependency},INTERFACE_INCLUDE_DIRECTORIES>)
+    endforeach()
+    target_include_directories(${module_name} PRIVATE ${UTOPIA_INCLUDES})
+    set_utopia_compiler_features(${module_name})
+        if (NOT TOP_LEVEL)
+        set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};${module_name}" PARENT_SCOPE)
+    endif()
+    install(TARGETS ${module_name}
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
+    install(FILES ${LOCAL_HEADERS} DESTINATION include)
+endmacro(add_utopiafe_module)
 
 list(APPEND UTOPIA_FE_MODULES
-	tests
-	apps
-	fractures
-	wear
-	ui
-	multigrid
-	transfer
-	visualization
-	backend/libmesh
-	backend/homemade
-	backend/intrepid2
-	backend/mars
-	intersection
-	contact
-	materials
-	functions
-	core
-	rapidxml
-	base
+    tests
+    apps
+    fractures
+    wear
+    ui
+    multigrid
+    transfer
+    visualization
+    backend/libmesh
+    backend/homemade
+    backend/intrepid2
+    backend/mars
+    intersection
+    contact
+    materials
+    functions
+    core
+    rapidxml
+    base
  )
-
-FOREACH(MODULE ${UTOPIA_FE_MODULES})
-		add_subdirectory("${MODULE}")
-ENDFOREACH(MODULE)
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
+
+FOREACH(MODULE ${UTOPIA_FE_MODULES})
+        add_subdirectory("${MODULE}")
+ENDFOREACH(MODULE)
+
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
 
 
 #create main library
-list(APPEND TOP_HEADERS utopia_fe.hpp)
-list(APPEND TOP_SOURCES utopia_fe.cpp)
-
-
-add_library(utopia_fe STATIC ${TOP_SOURCES} ${TOP_HEADERS})
-target_link_libraries(utopia_fe ${UTOPIA_LIBRARIES} ${UTOPIA_FE_LIBRARIES} ${TRANSFER_LIB})
-set_utopia_compiler_features(utopia_fe)
-
-add_executable(utopia_fe_exec  main.cpp ${TOP_HEADERS})
+list(APPEND LOCAL_HEADERS utopia_fe.hpp)
+list(APPEND LOCAL_SOURCES utopia_fe.cpp)
+set(TOP_LEVEL 1)
+add_utopiafe_module(utopia_fe ${UTOPIA_FE_LIBRARIES})
+add_executable(utopia_fe_exec  main.cpp ${LOCAL_HEADERS})
+target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_INCLUDES})
 # target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})
 # these next three lines fix some issues on linux
 target_link_libraries(utopia_fe_exec utopia_fe)
-target_link_libraries(utopia_fe_exec ${UTOPIA_FE_LIBRARIES})
-target_link_libraries(utopia_fe_exec ${UTOPIA_LIBRARIES})
-
-
-install(TARGETS utopia_fe
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	)
 
 install(TARGETS utopia_fe_exec
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	)
-
-install(FILES ${TOP_HEADERS} DESTINATION include)
-
-
-
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    )
 
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------
 
 function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST ITEM_PREFIX LIST_OF_STRINGS)
-	#http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
+    #http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
 
-	LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
+    LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
 
-	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
+    SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS})
+    FOREACH(LIST_EL ${LIST_OF_STRINGS})
 
-		string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
-		if(IS_FRAME_WORK)
-			get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
-			string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH "${LIST_EL}")
-			string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME "${FRAMEWORK_NAME}")
+        string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
+        if(IS_FRAME_WORK)
+            get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
+            string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH "${LIST_EL}")
+            string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME "${FRAMEWORK_NAME}")
 
-			SET(TEMPSTR "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
-		else()
-	    	SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
-	    endif()
-	ENDFOREACH(LIST_EL)
+            SET(TEMPSTR "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
+        else()
+            SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
+        endif()
+    ENDFOREACH(LIST_EL)
 
-	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
-	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
+    SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
+    SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
 endfunction()
 
 function(append_list_to_string_for_makefile_with_postfix OUTPUT_STRING PRE_LIST POST_LIST ITEM_PREFIX ITEM_POSTFIX LIST_OF_STRINGS)
-	#http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
+    #http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
 
-	LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
+    LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
 
-	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
+    SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS})
+    FOREACH(LIST_EL ${LIST_OF_STRINGS})
 
-		string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
-		if(IS_FRAME_WORK)
-			get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
-			string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH "${LIST_EL}")
-			string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME "${FRAMEWORK_NAME}")
+        string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
+        if(IS_FRAME_WORK)
+            get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
+            string(REGEX REPLACE "/${FRAMEWORK_NAME}" "" FRAMEWORK_PATH "${LIST_EL}")
+            string(REGEX REPLACE ".framework" "" FRAMEWORK_NAME "${FRAMEWORK_NAME}")
 
-			SET(TEMPSTR "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
-		else()
-	    	SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL}${ITEM_POSTFIX} ")
-	    endif()
-	ENDFOREACH(LIST_EL)
+            SET(TEMPSTR "${TEMPSTR}-F${FRAMEWORK_PATH} -framework ${FRAMEWORK_NAME} ")
+        else()
+            SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL}${ITEM_POSTFIX} ")
+        endif()
+    ENDFOREACH(LIST_EL)
 
-	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
-	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
+    SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
+    SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
 endfunction()
 
 #################################################################################
 
 function(append_list_to_string_for_cmake OUTPUT_STRING PRE_LIST POST_LIST LIST_OF_STRINGS)
 #http://stackoverflow.com/questions/5248749/passing-a-list-to-a-cmake-macro
-	LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
+    LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
 
-	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
+    SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS})
-	    SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
-	ENDFOREACH(LIST_EL)
+    FOREACH(LIST_EL ${LIST_OF_STRINGS})
+        SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
+    ENDFOREACH(LIST_EL)
 
-	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
-	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
+    SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
+    SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
 endfunction()
 
 

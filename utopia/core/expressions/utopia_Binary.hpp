@@ -17,7 +17,7 @@
 namespace utopia {
 
     template<class _Left, class _Right, class _Operation>
-    class Binary : public Expression<Binary<_Left, _Right, _Operation> >, 
+    class Binary : public Expression<Binary<_Left, _Right, _Operation> >,
                    public Castable<Binary<_Left, _Right, _Operation>,
                                    TENSOR_ORDER_BINARY(_Left, _Right)> {
     public:

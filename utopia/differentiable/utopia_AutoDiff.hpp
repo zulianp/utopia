@@ -1,5 +1,5 @@
 #ifndef UTOPIA_AUTO_DIFF_HPP
-#define UTOPIA_AUTO_DIFF_HPP 
+#define UTOPIA_AUTO_DIFF_HPP
 
 #include "utopia_Differentiable.hpp"
 #include "utopia_AutoDiffExpr.hpp"
@@ -15,11 +15,11 @@
 #include "utopia_Simplify_Multiply.hpp"
 
 namespace utopia {
-	template<class Derived>
-	auto simplify(const Expression<Derived> &expr) ->decltype(Simplify<Derived>::make(expr.derived()))
-	{
-		return Simplify<Derived>::make(expr.derived());
-	}
+    template<class Derived>
+    auto simplify(const Expression<Derived> &expr) ->decltype(Simplify<Derived>::make(expr.derived()))
+    {
+        return Simplify<Derived>::make(expr.derived());
+    }
 }
 
 #endif //UTOPIA_AUTO_DIFF_HPP

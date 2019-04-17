@@ -6,23 +6,23 @@
 #include "libmesh/exodusII_io.h"
 
 namespace utopia {
-	void run_coarsener_test(libMesh::LibMeshInit &init)
-	{
-		std::cout << "[run_coarsener_test]" << std::endl;
-		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
-		// mesh->read("../data/leaves_3d_b.e");
-		mesh->read("../data/wear_2_far.e");
+    void CoarsenerTest::run(Input &in)
+    {
+        std::cout << "[run_coarsener_test]" << std::endl;
 
-		if(mpi_world_size() == 1) {
-			plot_mesh(*mesh, "mesh/fine");
-		}
+        auto mesh = std::make_shared<libMesh::DistributedMesh>(this->comm());
+        // mesh->read("../data/leaves_3d_b.e");
+        mesh->read("../data/wear_2_far.e");
 
-		BoundingBoxCoarsener bb_coarsener;
-		bb_coarsener.init(4, *mesh);
-		bb_coarsener.describe();
+        if(mpi_world_size() == 1) {
+            plot_mesh(*mesh, "mesh/fine");
+        }
 
-		libMesh::ExodusII_IO(*bb_coarsener.get_mesh()).write("prova.e");
-	}
+        BoundingBoxCoarsener bb_coarsener;
+        bb_coarsener.init(4, *mesh);
+        bb_coarsener.describe();
+
+        libMesh::ExodusII_IO(*bb_coarsener.get_mesh()).write("prova.e");
+    }
 }

@@ -1,16 +1,25 @@
 #ifndef UTOPIA_SEMIGEOMETRIC_MULTIGRID_TEST_HPP
-#define UTOPIA_SEMIGEOMETRIC_MULTIGRID_TEST_HPP 
+#define UTOPIA_SEMIGEOMETRIC_MULTIGRID_TEST_HPP
 
 
-#include "utopia_fe_core.hpp"
-#include "utopia_assemble_volume_transfer.hpp"
-#include "utopia_assemble_volume_transfer_r.hpp"
-#include "utopia_LibMeshBackend.hpp"
+#include "utopia_fe_base.hpp"
+#include "utopia_FETest.hpp"
+#include <string>
 
 
 namespace utopia {
 
-	void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init);
+    class SMGTest final : public FETest {
+    public:
+        void run(Input &in) override;
+
+        inline static std::string command()
+        {
+            return "smg";
+        }
+    };
+
 }
+
 
 #endif //UTOPIA_SEMIGEOMETRIC_MULTIGRID_TEST_HPP

@@ -6,16 +6,16 @@
 #include "utopia_Function.hpp"
 
 
-namespace utopia 
+namespace utopia
 {
     template<class Matrix, class Vector>
-    class Woods14 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class Woods14 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        Woods14() 
+        Woods14()
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
@@ -25,36 +25,36 @@ namespace utopia
             {
                 const Write<Vector> write1(x_init_);
                 const Write<Vector> write2(x_exact_);
-                
+
                 x_init_.set(0, -3.0);
                 x_init_.set(1, -1.0);
                 x_init_.set(2, -3.0);
-                x_init_.set(3, -1.0);                
+                x_init_.set(3, -1.0);
 
                 x_exact_.set(0, 1.0);
-                x_exact_.set(1, 1.0);     
+                x_exact_.set(1, 1.0);
                 x_exact_.set(2, 1.0);
-                x_exact_.set(3, 1.0);     
+                x_exact_.set(3, 1.0);
             }
 
         }
 
         std::string name() const override
         {
-            return "Wood"; 
+            return "Wood";
         }
 
         SizeType dim() const override
         {
-            return 4; 
+            return 4;
         }
 
 
-        bool value(const Vector &point, typename Vector::Scalar &result) const override 
+        bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 4);
@@ -67,16 +67,16 @@ namespace utopia
                 const Scalar y = point.get(2);
                 const Scalar z = point.get(3);
 
-                result = 100* pow( x - w*w, 2) + pow(w - 1, 2) + 90 * pow(z -y*y, 2) + pow(1 -y, 2) + 10.1 * ( pow(x - 1, 2) + pow(z -1, 2)) + 19.8 * (x-1) * (z-1); 
+                result = 100* pow( x - w*w, 2) + pow(w - 1, 2) + 90 * pow(z -y*y, 2) + pow(1 -y, 2) + 10.1 * ( pow(x - 1, 2) + pow(z -1, 2)) + 19.8 * (x-1) * (z-1);
             }
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &result) const override 
+        bool gradient(const Vector &point, Vector &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 4);
@@ -99,11 +99,11 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override 
+        bool hessian(const Vector &point, Matrix &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 4);
@@ -136,35 +136,35 @@ namespace utopia
             result.set(3, 1, 99/5);
             result.set(3, 2, -360 * y);
             result.set(3, 3, 1001/5);
-            
+
             return true;
         }
-        
+
         Vector initial_guess() const override
         {
-            return x_init_; 
+            return x_init_;
         }
 
         const Vector & exact_sol() const override
         {
-            return x_exact_; 
+            return x_exact_;
         }
 
         Scalar min_function_value() const override
         {
-            return 0; 
+            return 0;
         }
 
 
-    private: 
-        Vector x_init_; 
-        Vector x_exact_; 
+    private:
+        Vector x_init_;
+        Vector x_exact_;
 
 
     };
 
-    
-    
+
+
 }
 
 #endif //UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP

@@ -1,7 +1,7 @@
 #ifndef UTOPIA_TR_INCLUDES_HPP
 #define UTOPIA_TR_INCLUDES_HPP
 
-// subproblems 
+// subproblems
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
 #include "utopia_Dogleg.hpp"
@@ -9,16 +9,16 @@
 #include "utopia_TRQuadraticFunction.hpp"
 #include "utopia_MoreSorensen.hpp"
 
-// tr-based minimization algorithms 
+// tr-based minimization algorithms
 #include "utopia_TRBase.hpp"
 #include "utopia_TrustRegion.hpp"
 #include "utopia_QuasiTrustRegion.hpp"
-#include "utopia_TRNormalEquation.hpp" 
+#include "utopia_TRNormalEquation.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 
 
-// factory 
+// factory
 #include "utopia_TrustRegionFactory.hpp"
 
 

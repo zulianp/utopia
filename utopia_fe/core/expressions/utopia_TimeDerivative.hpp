@@ -1,70 +1,70 @@
 #ifndef UTOPIA_TIME_DERIVATIVE_HPP
-#define UTOPIA_TIME_DERIVATIVE_HPP 
+#define UTOPIA_TIME_DERIVATIVE_HPP
 
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {
-	template<class Expr_, int OrderOfDifferentiation_>
-	class TimeDerivative : public Expression< TimeDerivative<Expr_, OrderOfDifferentiation_> > {
-	public:
+    template<class Expr_, int OrderOfDifferentiation_>
+    class TimeDerivative : public Expression< TimeDerivative<Expr_, OrderOfDifferentiation_> > {
+    public:
 
-		typedef Expr_ Expr;
-		
-		enum {
-			Order = Expr::Order
-		};
+        typedef Expr_ Expr;
 
-		enum {
-			OrderOfDifferentiation = OrderOfDifferentiation_
-		};
+        enum {
+            Order = Expr::Order
+        };
 
-		typedef typename Expr::Scalar Scalar;
+        enum {
+            OrderOfDifferentiation = OrderOfDifferentiation_
+        };
 
-		TimeDerivative(const Expr &expr)
-		: expr_(expr)
-		{}
+        typedef typename Expr::Scalar Scalar;
 
-		std::string getClass() const override { return "TimeDerivative<" + expr_.getClass() + ">"; }
+        TimeDerivative(const Expr &expr)
+        : expr_(expr)
+        {}
 
-		
-		inline const Expr &expr() const
-		{
-			return expr_;
-		}
+        std::string getClass() const override { return "TimeDerivative<" + expr_.getClass() + ">"; }
 
-	private:
-		UTOPIA_STORE_CONST(Expr) expr_;
-	};
 
-	template<class Derived>
-	TimeDerivative<Derived, 1> dt(const Expression<Derived> &expr)
-	{
-		return expr.derived();
-	}
+        inline const Expr &expr() const
+        {
+            return expr_;
+        }
 
-	template<class Expr, int OrderOfDifferentiation>
-	class Traits< TimeDerivative<Expr, OrderOfDifferentiation> > : public Traits<Expr> {
-	public:
-		enum {
-			FILL_TYPE = utopia::FillType::DENSE
-		};
-	};
+    private:
+        UTOPIA_STORE_CONST(Expr) expr_;
+    };
 
-	template<typename T>
-	class DeltaT : public Number<T> {
-	public:
-		DeltaT(const T dt = 0.1)
-		: Number<T>(dt){}
-	};
+    template<class Derived>
+    TimeDerivative<Derived, 1> dt(const Expression<Derived> &expr)
+    {
+        return expr.derived();
+    }
 
-	template<typename T>
-	class Traits< DeltaT<T> > {
-	public:
-		enum {
-			FILL_TYPE = utopia::FillType::SCALAR
-		};
-	};
+    template<class Expr, int OrderOfDifferentiation>
+    class Traits< TimeDerivative<Expr, OrderOfDifferentiation> > : public Traits<Expr> {
+    public:
+        enum {
+            FILL_TYPE = utopia::FillType::DENSE
+        };
+    };
+
+    template<typename T>
+    class DeltaT : public Number<T> {
+    public:
+        DeltaT(const T dt = 0.1)
+        : Number<T>(dt){}
+    };
+
+    template<typename T>
+    class Traits< DeltaT<T> > {
+    public:
+        enum {
+            FILL_TYPE = utopia::FillType::SCALAR
+        };
+    };
 
 }
 

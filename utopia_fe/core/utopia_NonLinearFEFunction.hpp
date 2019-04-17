@@ -3,15 +3,15 @@
 
 // #include "utopia_Base.hpp"
 
-// namespace utopia 
+// namespace utopia
 // {
 //     /**
 //      * @brief      Base class for Nonlinear NonLinearFEFunction. All application context needed by solver is usually provided inside of this functions.
 //      *             In optimization settings, user needs to supply value(energy), gradient, hessian.
 //      *
-//      * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ... 
-//      * @tparam     Matrix  
-//      * @tparam     Vector  
+//      * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ...
+//      * @tparam     Matrix
+//      * @tparam     Vector
 //      */
 // //     template<class Matrix, class Vector, class LHS, class RHS, int Backend>
 // //     class NonLinearFEFunction  {
@@ -25,7 +25,7 @@
 
 // //     //     virtual ~NonLinearFEFunction() { }
 
-// //     //     virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const 
+// //     //     virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const
 // //     //     {
 // //     //         return 1.;
 // //     //     }

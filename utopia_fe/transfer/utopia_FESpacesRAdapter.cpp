@@ -31,17 +31,17 @@ namespace utopia {
         spaces_.push_back(master);
         spaces_.push_back(slave);
 
-        Copy_Dof_Map::copy_global_dofs( *master, dof_map_master, _from_var_num, 
+        Copy_Dof_Map::copy_global_dofs( *master, dof_map_master, _from_var_num,
             dof_maps_[0], var_type_[0], handle_to_element_id_[0]);
 
-        Copy_Dof_Map::copy_global_dofs( *slave, dof_map_slave,  _to_var_num,  
+        Copy_Dof_Map::copy_global_dofs( *slave, dof_map_slave,  _to_var_num,
             dof_maps_[1], var_type_[1], handle_to_element_id_[1]);
 
-        Copy_Dof_Map::copy_global_dofs( *master , dof_map_reverse_master,  _to_var_num_r, 
+        Copy_Dof_Map::copy_global_dofs( *master , dof_map_reverse_master,  _to_var_num_r,
             dof_maps_reverse_[0], var_type_[0], handle_to_element_id_[0]);
 
 
-        Copy_Dof_Map::copy_global_dofs( *slave, dof_map_reverse_slave, _from_var_num_r,   
+        Copy_Dof_Map::copy_global_dofs( *slave, dof_map_reverse_slave, _from_var_num_r,
             dof_maps_reverse_[1], var_type_[1], handle_to_element_id_[1]);
 
 

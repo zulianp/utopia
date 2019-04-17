@@ -7,6 +7,8 @@
 
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
+#include "utopia_polymorphic_QPSolver.hpp"
+
 namespace utopia {
 
     template<class Matrix, class Vector>
@@ -103,10 +105,42 @@ namespace utopia {
         bool verbose = false;
     };
 
+
+    //FIXME merge with the other once it is poperly implemented
+    template<class Matrix, class Vector>
+    class PQPSolverTest {
+    public:
+
+        void run()
+        {
+           UTOPIA_RUN_TEST(poly_qp);
+        }
+
+        void poly_qp()
+        {
+            QPSolverTest<Matrix, Vector> s;
+
+            PolymorphicQPSolver<Matrix, Vector> solver;
+            InputParameters in;
+
+            in.set("backend", "any");
+            in.set("type",    "pg");
+            // in.set("verbose", true);
+            in.set("max-it",  2000);
+
+            solver.read(in);
+
+            s.run_qp_solver(solver);
+        }
+
+    };
+
     void run_qp_solver_test() {
         UTOPIA_UNIT_TEST_BEGIN("QPSolverTest");
 #ifdef WITH_PETSC
         QPSolverTest<DSMatrixd, DVectord>().run();
+        PQPSolverTest<DSMatrixd, DVectord>().run();
+
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS

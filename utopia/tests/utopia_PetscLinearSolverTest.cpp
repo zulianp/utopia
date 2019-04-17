@@ -26,7 +26,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_superlu_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
-            UTOPIA_RUN_TEST(petsc_st_cg_mg); 
+            UTOPIA_RUN_TEST(petsc_st_cg_mg);
 
 #endif //PETSC_HAVE_MUMPS
         }
@@ -153,7 +153,7 @@ namespace utopia {
             //  init
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
@@ -220,13 +220,13 @@ namespace utopia {
             DVectord sol = zeros(_n);
 
             GMRES<DMatrixd, DVectord> gmres;
-            gmres.pc_type(PCBJACOBI); 
+            gmres.pc_type(PCBJACOBI);
 
-            gmres.number_of_subdomains(mpi_world_size()); 
-            gmres.update(std::make_shared<DMatrixd>(mat)); 
-            gmres.sub_ksp_pc_type(KSPPREONLY, PCILU); 
+            gmres.number_of_subdomains(mpi_world_size());
+            gmres.update(std::make_shared<DMatrixd>(mat));
+            gmres.sub_ksp_pc_type(KSPPREONLY, PCILU);
 
-            gmres.verbose(false); 
+            gmres.verbose(false);
             gmres.solve(mat, rhs, sol);
 
             DVectord expected = zeros(_n);
@@ -320,7 +320,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             //choose smoother
@@ -343,7 +343,7 @@ namespace utopia {
 
             //CG with diagonal preconditioner
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
-            
+
             x_0 = rhs;
             cg.solve(A, rhs, x_0);
 
@@ -428,12 +428,12 @@ namespace utopia {
             interpolation_operators.push_back(make_ref(I_3));
 
             //  init
-            
+
 #ifdef PETSC_HAVE_SUPERLU_DIST
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >(MATSOLVERSUPERLU_DIST, PCLU);
 #else
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-           
+
             if(mpi_world_size() > 1) {
                 if(mpi_world_rank() == 0) {
                     std::cerr << "[Error] Direct solver does not work in parallel compile with SuperLU" << std::endl;
@@ -502,7 +502,7 @@ namespace utopia {
             rhs = local_values(local_size(A).get(0), 13.0);
 
             auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-            cholesky_factorization->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
+            cholesky_factorization->set_type(Solver::petsc(), Solver::lu_decomposition());
 
             if(!cholesky_factorization->solve(A, rhs, x)) {
                 utopia_test_assert(false && "failed to solve");
@@ -544,7 +544,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             //choose smoother
@@ -573,7 +573,7 @@ namespace utopia {
             x_0 = zeros(A.size().get(0));
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
             cg.solve(A, -1.0 * rhs, x_0);
-            
+
 
             //CG with multigrid preconditioner
             x_0 = zeros(A.size().get(0));
@@ -590,8 +590,8 @@ namespace utopia {
             // multigrid.solve(rhs, x_0);
 
             //! [MG solve example]
-        }        
-    
+        }
+
 
         PetscLinearSolverTest()
         : _n(10) { }

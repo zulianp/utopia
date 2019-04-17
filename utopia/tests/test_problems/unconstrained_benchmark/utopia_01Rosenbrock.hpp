@@ -9,20 +9,20 @@
 namespace utopia
 {
     /**
-     * @brief      Rosenbrock 2D banana function. \n 
-     *             The floor of the valley follows approximately the parabola \f$ y = x^2 + 1/200 \f$.   
-     *             The covariance matrix is not positive-definite. On the dashed line it is singular. 
+     * @brief      Rosenbrock 2D banana function. \n
+     *             The floor of the valley follows approximately the parabola \f$ y = x^2 + 1/200 \f$.
+     *             The covariance matrix is not positive-definite. On the dashed line it is singular.
      *             Stepping method tend to perform at least as well as gradient methods for this function.
      *
      */
     template<class Matrix, class Vector>
-    class Rosenbrock01 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class Rosenbrock01 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        Rosenbrock01() 
+        Rosenbrock01()
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
@@ -32,15 +32,15 @@ namespace utopia
             {
                 const Write<Vector> write1(x_init_);
                 x_init_.set(0, -1.2);
-                x_init_.set(1, 1.0);        
+                x_init_.set(1, 1.0);
             }
 
         }
 
-        bool value(const Vector &point, typename Vector::Scalar &result) const override 
+        bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
+                utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
@@ -55,10 +55,10 @@ namespace utopia
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &result) const override 
+        bool gradient(const Vector &point, Vector &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
+                utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
@@ -76,13 +76,13 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override 
+        bool hessian(const Vector &point, Matrix &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
+                utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
-                        
+
             assert(point.size().get(0) == this->dim());
 
             result = zeros(this->dim(), this->dim());
@@ -103,33 +103,33 @@ namespace utopia
 
         Vector initial_guess() const override
         {
-            return x_init_; 
+            return x_init_;
         }
 
         const Vector & exact_sol() const override
         {
-            return x_exact_; 
+            return x_exact_;
         }
 
         Scalar min_function_value() const override
         {
-            return 1; 
+            return 1;
         }
 
         std::string name() const override
         {
-            return "Rosenbrock"; 
+            return "Rosenbrock";
         }
 
         SizeType dim() const override
         {
-            return 2; 
+            return 2;
         }
 
 
-    private: 
-        Vector x_init_; 
-        Vector x_exact_; 
+    private:
+        Vector x_init_;
+        Vector x_exact_;
 
     };
 }

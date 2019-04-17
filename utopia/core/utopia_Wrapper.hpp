@@ -111,7 +111,7 @@ namespace utopia {
             //FIXME
             _impl = expr._impl;
         }
-        
+
         Wrapper() { }
 
         Wrapper(const Implementation &impl)
@@ -272,7 +272,7 @@ namespace utopia {
     {
         //FIXME
         return (long) &t;
-    } 
+    }
 
 
     /** \addtogroup ranges
@@ -283,7 +283,7 @@ namespace utopia {
      */
 
     /*!
-     * @fn Range range(const Wrapper<Tensor, 1> &v) 
+     * @fn Range range(const Wrapper<Tensor, 1> &v)
      * @brief  ranges allow to coordinate the access of parts of the tensor based on memory location.
      * The location is defined by how the vector is paritioned among processes.
      * @tparam Tensor the backend type of the 1st order tensor
@@ -333,8 +333,8 @@ namespace utopia {
      * @ingroup    io
      * @brief      Reads tensor from file.
      *
-     * @param[in]  path    The path. 
-     * @param[in]  t       Tensor to be read and used. 
+     * @param[in]  path    The path.
+     * @param[in]  t       Tensor to be read and used.
      */
     template<class Tensor, int Order>
     inline bool read(const std::string &path, Wrapper<Tensor, Order> &t) {
@@ -343,7 +343,7 @@ namespace utopia {
 
     template<class Tensor, int Order, class... Args>
     inline bool read(const std::string &path, Wrapper<Tensor, Order> &t, Args &&...args) {
-    	auto &backend = Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance();
+        auto &backend = Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance();
         return backend.read(path, t.implementation(), backend.parse_args(options(args...)));
     }
 
@@ -351,8 +351,8 @@ namespace utopia {
      * @ingroup    io
      * @brief      Writes and saves tensor into file.
      *
-     * @param[in]  path    The path. 
-     * @param[in]  t       Tensor to be saved. 
+     * @param[in]  path    The path.
+     * @param[in]  t       Tensor to be saved.
      */
     template<class Tensor, int Order>
     inline bool write(const std::string &path, const Wrapper<Tensor, Order> &t) {
@@ -375,11 +375,11 @@ namespace utopia {
      * @brief      Monitoring of the specific tensor over iterations in solvers. \n
      *             Outputs matlab file, with saved values of tensor over iterates. \n
      *
-     * @param[in]  it      The iteration. 
+     * @param[in]  it      The iteration.
      * @param      t       Tensor to be monitored.
      */
     template<class Tensor, int Order>
-    inline void monitor(const long &it, Wrapper<Tensor, Order> &t) 
+    inline void monitor(const long &it, Wrapper<Tensor, Order> &t)
     {
         Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().monitor(it, t.implementation());
     }
@@ -389,13 +389,13 @@ namespace utopia {
      * @brief      Monitoring of the specific tensor over iterations in solvers. \n
      *             Outputs matlab file, with saved values of tensor over iterates. \n
      *
-     * @param[in]  it                    The iteration number. 
+     * @param[in]  it                    The iteration number.
      * @param[in]  name_of_file          The name of file.
      * @param[in]  name_of_instance      The name of tensor to be saved.
      * @param      t                     Tensor to be monitored.
      */
     template<class Tensor, int Order>
-    inline void monitor(const long &it, Wrapper<Tensor, Order> &t, const std::string name_of_file, const std::string name_of_instance) 
+    inline void monitor(const long &it, Wrapper<Tensor, Order> &t, const std::string name_of_file, const std::string name_of_instance)
     {
         Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().monitor(it, t.implementation(), name_of_file, name_of_instance);
     }
@@ -409,7 +409,7 @@ namespace utopia {
      * @return     The global nnz.
      */
     template<class Tensor>
-    inline typename Traits<Tensor>::Scalar get_global_nnz(Wrapper<Tensor, 2> &t) 
+    inline typename Traits<Tensor>::Scalar get_global_nnz(Wrapper<Tensor, 2> &t)
     {
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().get_global_nnz(t.implementation());
     }
@@ -421,7 +421,7 @@ namespace utopia {
      * @return     The local nnz.
      */
     template<class Tensor>
-    inline typename Traits<Tensor>::Scalar get_local_nnz(Wrapper<Tensor, 2> &t) 
+    inline typename Traits<Tensor>::Scalar get_local_nnz(Wrapper<Tensor, 2> &t)
     {
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().get_local_nnz(t.implementation());
     }
@@ -431,18 +431,18 @@ namespace utopia {
      * @brief      Converts backend-type tensor into utopia-wrapper specified type of tensor.
      *
      * @param      rawType  The external library tensor (backend supported).
-     * @param      t        Utopia tensor(wrapper). 
+     * @param      t        Utopia tensor(wrapper).
      */
     template<class RawType, class Tensor, int Order>
     inline void convert(RawType &rawType, Wrapper<Tensor, Order> &t) {
         Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().convert(rawType, t.implementation());
     }
-    
+
     /**
      * @ingroup    interoperability
-     * @brief      Converts utopia-wrapper specified type of tensor into original type. 
+     * @brief      Converts utopia-wrapper specified type of tensor into original type.
      *
-     * @param      t        Utopia tensor(wrapper). 
+     * @param      t        Utopia tensor(wrapper).
      * @param      rawType  The external library tensor (backend supported).
      */
     template<class Tensor, int Order, class RawType>
@@ -530,13 +530,13 @@ namespace utopia {
     }
 
     /**
-     * @ingroup    io 
-     * @brief      Displays any tensor. 
+     * @ingroup    io
+     * @brief      Displays any tensor.
      *
-     * @param[in]  w      The tensor tobe displayed. 
+     * @param[in]  w      The tensor tobe displayed.
      *
      * @tparam     Impl   The tensor implementation.
-     * @tparam     Order  The order of the tensor. 
+     * @tparam     Order  The order of the tensor.
      */
     template<class Impl, int Order>
     void disp(const Wrapper<Impl, Order> &w)
@@ -547,31 +547,31 @@ namespace utopia {
 
     /**
      * @ingroup    queries
-     * @brief      Checks, if Tensor was assembled. 
+     * @brief      Checks, if Tensor was assembled.
      *
-     * @param[in]  w               The wrapper of Tensor. 
+     * @param[in]  w               The wrapper of Tensor.
      *
-     * @tparam     Implementation  Actual tensor. 
-     * @tparam     Order           The order of the tensor. 
+     * @tparam     Implementation  Actual tensor.
+     * @tparam     Order           The order of the tensor.
      *
-     * @return     State of assembly. 
+     * @return     State of assembly.
      */
     template<class Implementation, int Order>
     bool empty(const Wrapper<Implementation, Order> &w)
     {
         static_assert(Order >= 1, "Does not work for scalars");
-        auto s = size(w); 
+        auto s = size(w);
         return s.get(0) <= 0;
     }
 
     /**
      * @ingroup    queries
-     * @brief      Checks, if Tensor contains inf/nan. 
+     * @brief      Checks, if Tensor contains inf/nan.
      *
-     * @param[in]  w       The wrapper of Tensor. 
+     * @param[in]  w       The wrapper of Tensor.
      *
-     * @tparam     Tensor  Actual tensor. 
-     * @tparam     Order   The order of the tensor. 
+     * @tparam     Tensor  Actual tensor.
+     * @tparam     Order   The order of the tensor.
      *
      * @return     1 if there is some nan or inf, 0 otherwise
      */
@@ -589,15 +589,15 @@ namespace utopia {
     }
 
     template<class Tensor, int Order>
-    inline auto raw_type(const Wrapper<Tensor, Order> &w) -> decltype( 
-        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation()) 
+    inline auto raw_type(const Wrapper<Tensor, Order> &w) -> decltype(
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation())
         ) &
     {
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation());
     }
 
     template<class Tensor, int Order>
-    inline auto raw_type(Wrapper<Tensor, Order> &w) -> decltype( 
+    inline auto raw_type(Wrapper<Tensor, Order> &w) -> decltype(
         Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation())
         ) &
     {

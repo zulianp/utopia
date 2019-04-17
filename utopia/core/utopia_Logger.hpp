@@ -22,101 +22,101 @@
 
 namespace utopia {
 
-	class Logger {
-	public:
-		class Entry;
+    class Logger {
+    public:
+        class Entry;
 
-		virtual void warning(
-			const std::string &file,
-			const int line,
-			const std::string &message) = 0;
+        virtual void warning(
+            const std::string &file,
+            const int line,
+            const std::string &message) = 0;
 
-		virtual void error(
-			const std::string &file,
-			const int line,
-			const std::string &message) = 0;
+        virtual void error(
+            const std::string &file,
+            const int line,
+            const std::string &message) = 0;
 
-		virtual void status(
-			const std::string &file,
-			const int line,
-			const std::string &message) = 0;
+        virtual void status(
+            const std::string &file,
+            const int line,
+            const std::string &message) = 0;
 
-		virtual void flush() = 0;
+        virtual void flush() = 0;
 
-		Logger();
-		virtual ~Logger();
-	};
+        Logger();
+        virtual ~Logger();
+    };
 
-	class NullLogger final : public Logger {
-	public:
-		inline void warning(
-			const std::string &,
-			const int,
-			const std::string &) override {}
+    class NullLogger final : public Logger {
+    public:
+        inline void warning(
+            const std::string &,
+            const int,
+            const std::string &) override {}
 
-		inline void error(
-			const std::string &,
-			const int,
-			const std::string &) override {}
+        inline void error(
+            const std::string &,
+            const int,
+            const std::string &) override {}
 
-		inline void status(
-			const std::string &,
-			const int,
-			const std::string &) override {}
+        inline void status(
+            const std::string &,
+            const int,
+            const std::string &) override {}
 
-		inline void flush() override {}
-	};
+        inline void flush() override {}
+    };
 
-	class StandardLogger final : public Logger {
-	public:
-		void status(
-			const std::string &file,
-			const int line,
-			const std::string &message) override;
+    class StandardLogger final : public Logger {
+    public:
+        void status(
+            const std::string &file,
+            const int line,
+            const std::string &message) override;
 
-		void warning(
-			const std::string &file,
-			const int line,
-			const std::string &message) override;
+        void warning(
+            const std::string &file,
+            const int line,
+            const std::string &message) override;
 
-		void error(
-			const std::string &file,
-			const int line,
-			const std::string &message) override;
+        void error(
+            const std::string &file,
+            const int line,
+            const std::string &message) override;
 
-		StandardLogger(
-			std::ostream &status_stream = std::cout,
-			std::ostream &warning_stream = std::cerr,
-			std::ostream &error_stream = std::cerr
-			);
+        StandardLogger(
+            std::ostream &status_stream = std::cout,
+            std::ostream &warning_stream = std::cerr,
+            std::ostream &error_stream = std::cerr
+            );
 
-		~StandardLogger();
+        ~StandardLogger();
 
-		void flush() override;
+        void flush() override;
 
-		inline void set_direct_output(
-			const bool status,
-			const bool warning,
-			const bool error)
-		{
-			status_direct_output_ = status;
-			warning_direct_output_ = warning;
-			error_direct_output_ = error;
-		}
+        inline void set_direct_output(
+            const bool status,
+            const bool warning,
+            const bool error)
+        {
+            status_direct_output_ = status;
+            warning_direct_output_ = warning;
+            error_direct_output_ = error;
+        }
 
-	private:
-		std::ostream &status_stream_;
-		std::ostream &warning_stream_;
-		std::ostream &error_stream_;
+    private:
+        std::ostream &status_stream_;
+        std::ostream &warning_stream_;
+        std::ostream &error_stream_;
 
-		bool status_direct_output_;
-		bool warning_direct_output_;
-		bool error_direct_output_;
+        bool status_direct_output_;
+        bool warning_direct_output_;
+        bool error_direct_output_;
 
-		std::vector<std::shared_ptr<Logger::Entry>> status_entries_;
-		std::vector<std::shared_ptr<Logger::Entry>> warning_entries_;
-		std::vector<std::shared_ptr<Logger::Entry>> error_entries_;
-	};
+        std::vector<std::shared_ptr<Logger::Entry>> status_entries_;
+        std::vector<std::shared_ptr<Logger::Entry>> warning_entries_;
+        std::vector<std::shared_ptr<Logger::Entry>> error_entries_;
+    };
 }
 
 #endif //UTOPIA_LOGGER_HPP

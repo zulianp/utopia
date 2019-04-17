@@ -1,6 +1,6 @@
 {
 	"simulation": {
-		"mesh" : "/Users/zulianp/Desktop/algo4u/wearsim/mesh_files/wear_geoms_normal.e",
+		"mesh" : "/Users/zulianp/Desktop/in_the_cloud/owncloud/zulian/algo4u/wearsim/mesh_files/wear_geoms_normal.e",
 		"mesh-refinements": 0,
 		"model": {
 			"material": "LinearElasticity",
@@ -9,6 +9,15 @@
 			"parameters": {
 				"mu": 160.0,
 				"lambda": 160.0
+			}
+		},
+		"qp-solver" : {
+			"backend" : "petsc",
+			"type" : "tron",
+			"max-it" : 5,
+			"verbose" : true,
+			"linear-solver" : {
+				"type" : "direct"
 			}
 		},
 		"boundary-conditions": {

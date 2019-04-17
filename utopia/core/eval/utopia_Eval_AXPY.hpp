@@ -64,7 +64,7 @@ namespace utopia {
         typedef utopia::Wrapper<LeftTensor, Order> Left;
         typedef utopia::Wrapper<RightTensor, Order> Right;
         typedef utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Plus> Expr;
-       
+
         inline static EXPR_TYPE(Traits, Left) apply(const Expr &expr)
         {
             EXPR_TYPE(Traits, Left) result;
@@ -92,7 +92,7 @@ namespace utopia {
         typedef utopia::Wrapper<LeftTensor, Order> Left;
         typedef utopia::Wrapper<RightTensor, Order> Right;
         typedef utopia::Binary<Left, Binary<Right, Number<ScalarT>, Multiplies>, Plus> Expr;
-       
+
         inline static EXPR_TYPE(Traits, Left) apply(const Expr &expr)
         {
             EXPR_TYPE(Traits, Left) result;
@@ -224,7 +224,7 @@ namespace utopia {
                 auto &&l  = Eval<Left, Traits, Backend>::apply(expr.left());
                 auto &&ll = Eval<Left, Traits, Backend>::apply(expr.right().left());
                 auto &&rr = Eval<Right, Traits, Backend>::apply(expr.right().right().right());
-                
+
                 auto &&alpha = expr.right().right().left();
 
                 if(&rr == &l) {
@@ -275,7 +275,7 @@ namespace utopia {
                 auto &&l  = Eval<Left, Traits, Backend>::apply(expr.left());
                 auto &&ll = Eval<Left, Traits, Backend>::apply(expr.right().right());
                 auto &&rr = Eval<Right, Traits, Backend>::apply(expr.right().left().right());
-               
+
                 auto &&alpha = expr.right().left().left();
 
                 if(&rr == &l) {

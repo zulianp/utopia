@@ -23,21 +23,21 @@
 // 			libMesh::TRI3
 // 		);
 
-// 		LibMeshFunctionSpace V(mesh); 
+// 		LibMeshFunctionSpace V(mesh);
 
 // 		auto u = trial(V);
 // 		init_constraints( constraints(
 // 			boundary_conditions(u == coeff(0), {1, 3}),
 // 			boundary_conditions(u == coeff(0), {0, 2})
 // 		));
-		
+
 
 // 		V.initialize();
 
 // 		//////////////////////////////////////////
 // 		//////////////////////////////////////////
 
-		
+
 
 
 // 		auto v = test(V);
@@ -66,10 +66,10 @@
 // }
 
 // #else
-	
-	namespace utopia {
-		void run_intrepid2_test(libMesh::LibMeshInit &){}
-	}
+
+    namespace utopia {
+        void run_intrepid2_test(libMesh::LibMeshInit &){}
+    }
 
 // #endif //WITH_INTREPID2
 

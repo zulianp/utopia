@@ -7,171 +7,41 @@
 #include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_petsc_Types.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_VariableBoundSolverInterface.hpp"
 #include "utopia_petsc_build_ksp.hpp"
+#include "utopia_NonLinearSmoother.hpp"
 
-#include <mpi.h>
 #include <string>
 
 namespace utopia {
-	class TaoSolverWrapper {
-	public:
-		TaoSolverWrapper();
-		~TaoSolverWrapper();
-		void destroy();
-		
-		bool init(MPI_Comm comm,
-				  const std::string &type,
-				  const PetscReal gatol,
-				  const PetscReal grtol,
-				  const PetscReal gttol,
-				  const PetscInt  maxits);
 
-		bool set_bounds(const PetscVector &lb, const PetscVector &ub);
-		bool solve(PetscVector &x);
-		bool smooth(PetscVector &x);
+    template<class Matrix, class Vector>
+    class TaoSolver final : public NewtonBase<Matrix, Vector>,
+                            // public NonLinearSmoother<Matrix, Vector>, //Maybe removing rhs from interface??
+                            public VariableBoundSolverInterface<Vector>,
+                            public virtual Clonable {
+    public:
+        TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver);
+        TaoSolver();
+        ~TaoSolver();
 
-		void set_function(Function<DMatrixd, DVectord> &fun);
-		void set_function(Function<DSMatrixd, DVectord> &fun);
+        void set_type(const std::string &type);
+        void read(Input &in) override;
+        void print_usage(std::ostream &os) const override;
 
-		void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package);
-		bool get_ksp(KSP *ksp);
-		
-		void set_pc_type(const std::string &pc); 
-
-		void set_monitor(MPI_Comm comm); 
-
-	private:
-		void * data_;
-		std::string ksp_type_;
-		std::string pc_type_;
-		std::string solver_package_;
-	};
+        bool solve(Function<Matrix, Vector> &fun, Vector &x) override;
+        bool smooth(Function<Matrix, Vector> &fun, Vector &x);// override;
+        TaoSolver * clone() const override;
 
 
-	template<class Matrix, class Vector>
-	class TaoSolver final : public NewtonBase<Matrix, Vector> {
-	public:
-		typedef utopia::BoxConstraints<Vector> BoxConstraints;
+    private:
+        class Impl;
+        std::unique_ptr<Impl> impl_;
 
-		TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver)
-		: NewtonBase<Matrix, Vector>(linear_solver)
-		{
-			this->atol(1e-19);
-			this->rtol(1e-12); 
-			this->stol(1e-19);
-		}
-
-		TaoSolver()
-		: NewtonBase<Matrix, Vector>(nullptr)
-		{
-			this->atol(1e-19);
-			this->rtol(1e-12); 
-			this->stol(1e-19);
-		}
-
-		void set_type(const std::string &type)
-		{
-			type_ = type;
-		}
-
-        void read(Input &in) override
-        {
-            NewtonBase<Matrix, Vector>::read(in);
-            in.get("type", type_);
-        }
-
-
-        void print_usage(std::ostream &os) const override
-        {
-            NewtonBase<Matrix, Vector>::print_usage(os);
-            this->print_param_usage(os, "type", "string", "Type of tao solver.", "-"); 
-        }		
-
-		inline void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package)
-		{
-			impl_.set_ksp_types(ksp, pc, solver_package);
-		}
-
-		inline void set_pc_type(const std::string &pc)
-		{
-			impl_.set_pc_type(pc); 
-		}
-
-
-		bool solve(Function<Matrix, Vector> &fun, Vector &x) override
-		{	
-			setup_solve(fun, x); 
-			return impl_.solve(x.implementation());
-		}
-
-		bool smooth(Function<Matrix, Vector> &fun, Vector &x)
-		{	
-			setup_solve(fun, x); 
-			return impl_.smooth(x.implementation());
-		}
-
-
-		void setup_solve(Function<Matrix, Vector> &fun,Vector & x)
-		{
-			bool linear_solver_is_set = false;
-			auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
-
-			if(ksp_solver) {
-				set_ksp_types(ksp_solver->ksp_type(), ksp_solver->pc_type(), ksp_solver->solver_package());
-				m_utopia_warning_once("> FIXME TaoSolver does not consider the ksp tollerances");
-				linear_solver_is_set = true;
-			}
-
-			impl_.init(
-				x.implementation().communicator(),
-				type_,
-				this->atol(),
-				this->rtol(), 
-				this->stol(),
-				this->max_it()
-			);
-
-			if(this->verbose() )
-				impl_.set_monitor(x.implementation().communicator()); 
-
-			if(!linear_solver_is_set) {
-				auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>(this->linear_solver());
-				if(factorization) {
-					KSP ksp;
-					impl_.get_ksp(&ksp);
-					factorization->strategy().set_ksp_options(ksp);
-					linear_solver_is_set = true;
-				}
-			}
-
-			if(this->linear_solver() && !linear_solver_is_set) {
-				KSP ksp;
-				impl_.get_ksp(&ksp);
-				build_ksp(this->linear_solver(), ksp);
-			}
-			
-			if(box_constraints_.has_bound()) {
-				box_constraints_.fill_empty_bounds();
-				impl_.set_bounds(
-					box_constraints_.lower_bound()->implementation(),
-					box_constraints_.upper_bound()->implementation()
-				);
-			}
-			impl_.set_function(fun);
-		}
-
-
-		bool set_box_constraints(const BoxConstraints &box_constraints)
-		{
-			box_constraints_ = box_constraints;
-			return true;
-		}
-
-	private:
-		TaoSolverWrapper impl_;
-		BoxConstraints box_constraints_;
-		std::string type_;
-	};
+        void init(Function<Matrix, Vector> &fun, Vector &x);
+        void set_function(Function<Matrix, Vector> &fun);
+        bool get_ksp(KSP *ksp);
+    };
 }
 
 #endif //UTOPIA_PETSC_TAO_SOLVER_HPP

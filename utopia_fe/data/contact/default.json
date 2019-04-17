@@ -1,61 +1,61 @@
 {
 	"contact-problem": {
-		"use-amg": false, 
-		"use-ssnewton": false, 
-		"dt": 0.2, 
+		"use-amg": false,
+		"use-ssnewton": false,
+		"dt": 0.2,
 		"mesh": {
-			"type": "file", 
+			"type": "file",
 			"path": "../data/wear_2_far.e"
-		}, 
+		},
 		"space": {
-			"system-name": "contact_sol", 
+			"system-name": "contact_sol",
 			"variables": {
 				"ux": {
 					"name": "disp_x"
-				}, 
+				},
 				"uy": {
 					"name": "disp_y"
 				}
-			}, 
+			},
 			"boundary-conditions": [
 				{
-					"var": 0, 
-					"side": 4, 
+					"var": 0,
+					"side": 4,
 					"value": "0.0"
-				}, 
+				},
 				{
-					"var": 1, 
-					"side": 4, 
+					"var": 1,
+					"side": 4,
 					"value": "0.0"
 				}
 			]
-		}, 
+		},
 		"model": {
-			"material": "LinearElasticity", 
-			"stabilization": "H1", 
-			"stabilization-mag": 0.00001, 
+			"material": "LinearElasticity",
+			"stabilization": "H1",
+			"stabilization-mag": 0.00001,
 			"parameters": {
-				"mu": 60.0, 
+				"mu": 60.0,
 				"lambda": 60.0
 			}
-		}, 
+		},
 		"forcing-functions": [
 			{
-				"coord": 1, 
+				"coord": 1,
 				"value": -0.1
 			},
 			{
-				"coord": 0, 
+				"coord": 0,
 				"value": 0.05
 			}
-		], 
+		],
 		"contact": {
-			"n-transient-steps": 30, 
-			"max-nl-iter": 100, 
-			"radius": 0.2, 
+			"n-transient-steps": 30,
+			"max-nl-iter": 100,
+			"radius": 0.2,
 			"pairs": [
 				{
-					"master": 2, 
+					"master": 2,
 					"slave": 1
 				}
 			]

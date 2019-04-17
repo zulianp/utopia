@@ -10,7 +10,7 @@
 
 #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
 
-namespace utopia 
+namespace utopia
 {
 
    template<class Matrix, class Vector>
@@ -53,7 +53,7 @@ namespace utopia
     public:
         bool apply(const Vector &rhs, Vector &sol) override
         {
-            sol = rhs; 
+            sol = rhs;
             return true;
         }
 
@@ -61,11 +61,11 @@ namespace utopia
         {
             return new IdentityPreconditioner(*this);
         }
-     
+
     };
 
     template<class Vector>
-    class FunctionPreconditioner final: public Preconditioner<Vector> 
+    class FunctionPreconditioner final: public Preconditioner<Vector>
     {
         public:
             FunctionPreconditioner(const std::function< void(const Vector &, Vector &) > operator_action)
@@ -74,7 +74,7 @@ namespace utopia
 
             bool apply(const Vector &rhs, Vector &ret) override
             {
-                operator_action_(rhs, ret); 
+                operator_action_(rhs, ret);
                 return true;
             }
 
@@ -84,7 +84,7 @@ namespace utopia
             }
 
         private:
-            std::function< void(const Vector &, Vector &) > operator_action_; 
+            std::function< void(const Vector &, Vector &) > operator_action_;
     };
 
 }

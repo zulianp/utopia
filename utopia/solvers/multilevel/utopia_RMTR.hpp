@@ -20,8 +20,8 @@
 namespace utopia
 {
 
-    enum LocalSolveType{    PRE_SMOOTHING  = 1, 
-                            POST_SMOOTHING = 2, 
+    enum LocalSolveType{    PRE_SMOOTHING  = 1,
+                            POST_SMOOTHING = 2,
                             COARSE_SOLVE   = 0};
 
 
@@ -32,9 +32,9 @@ namespace utopia
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-        
+
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem;
-        typedef std::shared_ptr<TRSubproblem>               TRSubproblemPtr; 
+        typedef std::shared_ptr<TRSubproblem>               TRSubproblemPtr;
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -44,7 +44,7 @@ namespace utopia
     public:
 
         using TrustRegionBase<Vector>::delta_update;
-        using TrustRegionBase<Vector>::get_pred; 
+        using TrustRegionBase<Vector>::get_pred;
 
        /**
         * @brief      RMTR base-class
@@ -54,34 +54,34 @@ namespace utopia
         */
         RMTR(   const SizeType & n_levels):
                 NonlinearMultiLevelBase<Matrix,Vector>(n_levels),
-                _it_global(0), 
-                _skip_BC_checks(false), 
-                _max_coarse_it(2), 
-                _max_smoothing_it(1), 
-                _max_QP_smoothing_it(5), 
-                _max_QP_coarse_it(50), 
-                _eps_delta_termination(0.001),   
-                _grad_smoothess_termination(0.5), 
-                _check_gradient_smoothness(true), 
-                _eps_grad_termination(1e-8), 
-                _hessian_update_delta(0.15), 
-                _hessian_update_eta(0.5), 
-                _verbosity_level(VERBOSITY_LEVEL_NORMAL), 
+                _it_global(0),
+                _skip_BC_checks(false),
+                _max_coarse_it(2),
+                _max_smoothing_it(1),
+                _max_QP_smoothing_it(5),
+                _max_QP_coarse_it(50),
+                _eps_delta_termination(0.001),
+                _grad_smoothess_termination(0.5),
+                _check_gradient_smoothness(true),
+                _eps_grad_termination(1e-8),
+                _hessian_update_delta(0.15),
+                _hessian_update_eta(0.5),
+                _verbosity_level(VERBOSITY_LEVEL_NORMAL),
                 red_(FG_LIGHT_MAGENTA),
                 def_(FG_DEFAULT),
                 yellow_(FG_LIGHT_YELLOW),
                 green_(FG_LIGHT_GREEN)
         {
-            
+
         }
 
-    
+
         virtual ~RMTR(){}
 
         virtual void read(Input &in) override
         {
             NonlinearMultiLevelBase<Matrix, Vector>::read(in);
-            TrustRegionBase<Vector>::read(in); 
+            TrustRegionBase<Vector>::read(in);
 
             in.get("skip_BC_checks", _skip_BC_checks);
             in.get("max_coarse_it", _max_coarse_it);
@@ -98,11 +98,13 @@ namespace utopia
             in.get("hessian_update_eta", _hessian_update_eta);
             // in.get("verbosity_level", _verbosity_level);
 
-            if(_tr_subproblems.size() > 0) 
+            const auto n_subproblems = _tr_subproblems.size();
+
+            if(n_subproblems > 0)
             {
                 in.get("coarse-QPSolver", *_tr_subproblems[0]);
 
-                for(auto i=1; i < _tr_subproblems.size(); i++)
+                for(std::size_t i = 1; i < n_subproblems; i++)
                     in.get("fine-QPSolver", *_tr_subproblems[i]);
             }
         }
@@ -112,24 +114,24 @@ namespace utopia
             NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
             TrustRegionBase<Vector>::print_usage(os);
 
-            this->print_param_usage(os, "skip_BC_checks", "bool", "Skip treatment of BC conditions.", "false"); 
-            this->print_param_usage(os, "max_coarse_it", "int", "Maximum number of coarse iterations.", "2"); 
-            this->print_param_usage(os, "max_smoothing_it", "int", "Maximum number of smoothing steps.", "1"); 
-            this->print_param_usage(os, "max_QP_smoothing_it", "int", "Maximum number of iterations for fine level QP solver.", "5"); 
-            this->print_param_usage(os, "max_QP_coarse_it", "int", "Maximum number of iterations for coarse level QP solver.", "50"); 
+            this->print_param_usage(os, "skip_BC_checks", "bool", "Skip treatment of BC conditions.", "false");
+            this->print_param_usage(os, "max_coarse_it", "int", "Maximum number of coarse iterations.", "2");
+            this->print_param_usage(os, "max_smoothing_it", "int", "Maximum number of smoothing steps.", "1");
+            this->print_param_usage(os, "max_QP_smoothing_it", "int", "Maximum number of iterations for fine level QP solver.", "5");
+            this->print_param_usage(os, "max_QP_coarse_it", "int", "Maximum number of iterations for coarse level QP solver.", "50");
 
-            this->print_param_usage(os, "eps_delta_termination", "real", "Constant used for quiting recursion based on size of tr. radius.", "0.001"); 
-            this->print_param_usage(os, "grad_smoothess_termination", "real", "Constant used for quiting recursion based on smoothness of the gradient on given level.", "0.5"); 
-            this->print_param_usage(os, "check_gradient_smoothness", "real", "Flag turning on/off check for gradient smoothiness.", "true"); 
-            this->print_param_usage(os, "eps_grad_termination", "real", "Constant used for quiting recursion based on smoothness of the gradient on given level.", "1e-8"); 
+            this->print_param_usage(os, "eps_delta_termination", "real", "Constant used for quiting recursion based on size of tr. radius.", "0.001");
+            this->print_param_usage(os, "grad_smoothess_termination", "real", "Constant used for quiting recursion based on smoothness of the gradient on given level.", "0.5");
+            this->print_param_usage(os, "check_gradient_smoothness", "real", "Flag turning on/off check for gradient smoothiness.", "true");
+            this->print_param_usage(os, "eps_grad_termination", "real", "Constant used for quiting recursion based on smoothness of the gradient on given level.", "1e-8");
 
-            this->print_param_usage(os, "hessian_update_delta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.15"); 
-            this->print_param_usage(os, "hessian_update_eta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.5"); 
-            this->print_param_usage(os, "verbosity_level", "VerbosityLevel", "Specifies level of verbosity.", "VERBOSITY_LEVEL_NORMAL"); 
+            this->print_param_usage(os, "hessian_update_delta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.15");
+            this->print_param_usage(os, "hessian_update_eta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.5");
+            this->print_param_usage(os, "verbosity_level", "VerbosityLevel", "Specifies level of verbosity.", "VERBOSITY_LEVEL_NORMAL");
 
-            this->print_param_usage(os, "coarse-QPSolver", "TRSubproblem", "Input parameters for fine level QP solvers.", "-"); 
-            this->print_param_usage(os, "fine-QPSolver", "TRSubproblem", "Input parameters for coarse level QP solver.", "-"); 
-        }        
+            this->print_param_usage(os, "coarse-QPSolver", "TRSubproblem", "Input parameters for fine level QP solvers.", "-");
+            this->print_param_usage(os, "fine-QPSolver", "TRSubproblem", "Input parameters for coarse level QP solver.", "-");
+        }
 
 
         virtual VerbosityLevel verbosity_level() const
@@ -157,12 +159,12 @@ namespace utopia
 
         virtual void skip_BC_checks(const bool skip_BC_checks)
         {
-            _skip_BC_checks = skip_BC_checks; 
+            _skip_BC_checks = skip_BC_checks;
         }
 
-        virtual bool skip_BC_checks() const 
+        virtual bool skip_BC_checks() const
         {
-            return _skip_BC_checks; 
+            return _skip_BC_checks;
         }
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve;
@@ -182,8 +184,8 @@ namespace utopia
         }
 
 
-        // this parameter define total number of smoothing its - sucessful and unsuccessful 
-        // while pre_smooting and post_smoothing count just sucessful iterations 
+        // this parameter define total number of smoothing its - sucessful and unsuccessful
+        // while pre_smooting and post_smoothing count just sucessful iterations
         virtual void max_smoothing_it(const SizeType & max_smoothing_it)
         {
             _max_smoothing_it = max_smoothing_it;
@@ -227,12 +229,12 @@ namespace utopia
             _check_gradient_smoothness = flg;
         }
 
-        virtual bool check_grad_smoothness() const 
+        virtual bool check_grad_smoothness() const
         {
-            return _check_gradient_smoothness; 
-        }        
+            return _check_gradient_smoothness;
+        }
 
-        
+
         virtual void handle_equality_constraints()
         {
             const SizeType L = this->n_levels();
@@ -244,12 +246,12 @@ namespace utopia
                 this->transfer(i).handle_equality_constraints(flags);
             }
         }
-  
+
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
             if(_tr_subproblems.size() != this->n_levels())
-                _tr_subproblems.resize(this->n_levels()); 
+                _tr_subproblems.resize(this->n_levels());
 
             _tr_subproblems[0] = strategy;
 
@@ -259,10 +261,10 @@ namespace utopia
         bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
             if(_tr_subproblems.size() != this->n_levels())
-                _tr_subproblems.resize(this->n_levels()); 
+                _tr_subproblems.resize(this->n_levels());
 
-            // starting from level 1 .... 
-            for(std::size_t l = 1; l != this->n_levels(); ++l) 
+            // starting from level 1 ....
+            for(std::size_t l = 1; l != this->n_levels(); ++l)
                 _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
 
 
@@ -273,14 +275,14 @@ namespace utopia
         bool set_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy, const SizeType & level)
         {
             if(_tr_subproblems.size() != this->n_levels())
-                _tr_subproblems.resize(this->n_levels()); 
-            
+                _tr_subproblems.resize(this->n_levels());
+
             if(level <= this->n_levels())
             {
                 _tr_subproblems[level] = strategy;
             }
             else{
-                utopia_error("utopia::RMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n"); 
+                utopia_error("utopia::RMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n");
             }
 
             return true;
@@ -290,10 +292,10 @@ namespace utopia
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
         {
             if(strategies.size() != this->n_levels()){
-                utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n"); 
+                utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n");
             }
-            
-            _tr_subproblems = strategies; 
+
+            _tr_subproblems = strategies;
 
             return true;
         }
@@ -309,15 +311,15 @@ namespace utopia
         virtual bool solve(Vector &x_h) override
         {
             if(!this->check_initialization())
-                return false; 
-            
+                return false;
+
 
             bool converged = false;
             SizeType fine_level = this->n_levels()-1;
             Scalar r_norm, r0_norm, rel_norm, energy;
 
 
-            //-------------- INITIALIZATIONS ---------------            
+            //-------------- INITIALIZATIONS ---------------
             if(!skip_BC_checks())
                 this->function(fine_level).get_eq_constrains_values(x_h);
 
@@ -465,7 +467,7 @@ namespace utopia
             if(this->check_grad_smoothness())
                 smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1);
             else
-                smoothness_flg = true; 
+                smoothness_flg = true;
 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
@@ -483,7 +485,7 @@ namespace utopia
                 {
                     if(!skip_BC_checks())
                         this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]);
-                    
+
                     this->function(level-1).hessian(memory_.x[level-1], memory_.H[level-1]);
                     memory_.H_diff[level-1] -=  memory_.H[level-1];
                 }
@@ -526,7 +528,7 @@ namespace utopia
                 coarse_reduction -= this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1);
 
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
-                
+
                 if(!skip_BC_checks())
                     this->zero_correction_related_to_equality_constrain(this->function(level), memory_.s[level]);
 
@@ -593,7 +595,7 @@ namespace utopia
 
             if(this->post_smoothing_steps()!=0)
             {
-                auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE : POST_SMOOTHING; 
+                auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE : POST_SMOOTHING;
                 this->local_tr_solve(level, post_smoothing_solve_type);
             }
 
@@ -617,17 +619,17 @@ namespace utopia
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0;
             bool make_grad_updates = true, /*make_hess_updates = true,*/ converged = false, delta_converged = false;
 
-            const bool exact_solve_flg = (solve_type >0) ? true : false; 
+            const bool exact_solve_flg = (solve_type >0) ? true : false;
 
 
-            this->initialize_local_solve(level, solve_type); 
+            this->initialize_local_solve(level, solve_type);
 
 
-            // should be neccessary just first time, we enter given level 
+            // should be neccessary just first time, we enter given level
             if(empty(memory_.s[level]))
                  memory_.s[level] = local_zeros(local_size(memory_.x[level]));
 
-            // important, as this can be postsmoothing 
+            // important, as this can be postsmoothing
             this->compute_s_global(level, memory_.s_working[level]);
             this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
 
@@ -671,8 +673,8 @@ namespace utopia
 
 
                 // update in hessian approx ...
-                // TODO:: could be done in more elegant way.... 
-                this->update_level(level);   
+                // TODO:: could be done in more elegant way....
+                this->update_level(level);
 
             //----------------------------------------------------------------------------
             //     acceptance of trial point
@@ -732,20 +734,20 @@ namespace utopia
         virtual bool check_initialization()
         {
             if(this->level_functions_.size() != this->n_levels()){
-                utopia_error("utopia::RMTR:: number of level Functions and levels not equal. \n"); 
-                return false; 
+                utopia_error("utopia::RMTR:: number of level Functions and levels not equal. \n");
+                return false;
             }
             if(this->transfers_.size() + 1 != this->n_levels()){
-                utopia_error("utopia::RMTR:: number of transfers and levels not equal. \n"); 
-                return false; 
+                utopia_error("utopia::RMTR:: number of transfers and levels not equal. \n");
+                return false;
             }
-            
+
             // if(this->_tr_subproblems.size() != this->n_levels()){
-            //     utopia_error("utopia::RMTR:: number of QP solvers and levels not equal. \n");             
-            //     return false; 
+            //     utopia_error("utopia::RMTR:: number of QP solvers and levels not equal. \n");
+            //     return false;
             // }
 
-            return true; 
+            return true;
         }
 
         virtual bool check_feasibility(const SizeType & level )
@@ -827,7 +829,7 @@ namespace utopia
 
         virtual bool update_level(const SizeType & level)
         {
-            return false; 
+            return false;
         }
 
 
@@ -892,13 +894,13 @@ namespace utopia
             // every other level
             else if (level > 0 && solve_type == PRE_SMOOTHING)
             {
-                if(it_success >= this->pre_smoothing_steps() || it >= this->max_smoothing_it()) 
+                if(it_success >= this->pre_smoothing_steps() || it >= this->max_smoothing_it())
                     return true;
             }
             else if (level > 0 && solve_type == POST_SMOOTHING)
             {
-                if(it_success >= this->post_smoothing_steps() || it >= this->max_smoothing_it()) 
-                    return true;   
+                if(it_success >= this->post_smoothing_steps() || it >= this->max_smoothing_it())
+                    return true;
             }
             else if(delta < this->delta_min())
                 return true;
@@ -949,8 +951,8 @@ namespace utopia
          */
         virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/)
         {
-            Scalar Rg_norm, g_norm; 
-            norms2(g_restricted, g_coarse, Rg_norm, g_norm); 
+            Scalar Rg_norm, g_norm;
+            norms2(g_restricted, g_coarse, Rg_norm, g_norm);
 
             return (Rg_norm >= _grad_smoothess_termination * g_norm) ? true : false;
         }
@@ -998,9 +1000,9 @@ namespace utopia
                 _tr_subproblems[level]->max_it(_max_QP_coarse_it);
             else
                 _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
-            
-            _tr_subproblems[level]->current_radius(memory_.delta[level]); 
-            _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);                
+
+            _tr_subproblems[level]->current_radius(memory_.delta[level]);
+            _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
 
             return true;
         }
@@ -1117,13 +1119,13 @@ namespace utopia
             }
         }
 
-    private: 
-        std::vector<TRSubproblemPtr>        _tr_subproblems; 
+    private:
+        std::vector<TRSubproblemPtr>        _tr_subproblems;
 
     protected:
         SizeType                            _it_global;                 /** * global iterate counter  */
         // ----------------------- PARAMETERS ----------------------
-        bool                            _skip_BC_checks; 
+        bool                            _skip_BC_checks;
 
         SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
         SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
@@ -1135,7 +1137,7 @@ namespace utopia
         Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
 
         Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
-        bool                           _check_gradient_smoothness; 
+        bool                           _check_gradient_smoothness;
         Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
 
         Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */

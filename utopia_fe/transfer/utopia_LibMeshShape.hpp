@@ -13,13 +13,13 @@ namespace utopia {
     public:
         using Vector = utopia::Vector<Scalar, Dim>;
         virtual ~LibMeshShape() {}
-        
+
         LibMeshShape(const libMesh::Elem &elem, const libMesh::FEType type, const bool use_newton = true)
         : elem_(elem), type_(type), q_(Dim), max_iter_(100), tol_(1e-14), use_newton_(use_newton), verbose_(false)
         {
             init();
         }
-        
+
         inline void verbose(const bool val)
         {
             verbose_ = val;
@@ -28,10 +28,10 @@ namespace utopia {
         inline bool intersect(const Ray<Scalar, Dim> &ray,
                               Scalar &t) override
         {
-        	if(use_newton_) {
-        		return intersect_newton(ray, t);
-        	} else {
-            	return intersect_gradient_descent(ray, t);
+            if(use_newton_) {
+                return intersect_newton(ray, t);
+            } else {
+                return intersect_gradient_descent(ray, t);
             }
         }
 
@@ -98,7 +98,7 @@ namespace utopia {
 
                 for(int d = 0; d < Dim; ++d) {
                     q.get_points()[i](d) = ref_point[d];
-                } 
+                }
             }
 
             return true;
@@ -109,18 +109,18 @@ namespace utopia {
         libMesh::FEType type_;
         std::unique_ptr<libMesh::FEBase> fe_;
         QMortar q_;
-        
+
         //mats and vecs
         Vectord g_, g_1_, x_, x_ref_, p_, n_, r_, h_, Jtn_, v_, u_;
         Matrixd A_, J_, H_, H_fe_, JtJ_;
-        
+
         LUDecomposition<Matrixd, Vectord> solver_;
-        
+
         int max_iter_;
         Scalar tol_;
         bool use_newton_;
         bool verbose_;
-        
+
         inline void get_point(Vectord &x) const
         {
             Write<Vectord> w_(x);
@@ -129,49 +129,49 @@ namespace utopia {
                 x.set(i, xyz[0](i));
             }
         }
-        
+
         inline void get_hessian(const Vectord &v, Matrixd &H) const
-        {        
-        	Read<Vectord> r_(v);
-        	Write<Matrixd> w_(H);
+        {
+            Read<Vectord> r_(v);
+            Write<Matrixd> w_(H);
 
             const auto &d2d2x = fe_->get_d2xyzdxi2();
 
             auto val = 0.;
 
             for(int i = 0; i < Dim; ++i) {
-            	val += v.get(i) * d2d2x[0](i);
+                val += v.get(i) * d2d2x[0](i);
             }
 
             H.set(0, 0, val);
-         
-        	if(Dim > 2) {
-        		const auto &d2dxdy = fe_->get_d2xyzdeta2();
-        		const auto &d2d2y  = fe_->get_d2xyzdxideta();
 
-        		auto val01 = 0., val11 = 0.;
+            if(Dim > 2) {
+                const auto &d2dxdy = fe_->get_d2xyzdeta2();
+                const auto &d2d2y  = fe_->get_d2xyzdxideta();
 
-        		for(int i = 0; i < Dim; ++i) {
-        			val01 += v.get(i) * d2dxdy[0](i);
-        			val11 += v.get(i) * d2d2y[0](i);
-        		}
+                auto val01 = 0., val11 = 0.;
 
-        		H.set(0, 1, val01);
-        		H.set(1, 0, val01);
-        		H.set(1, 1, val11);
-        	}
+                for(int i = 0; i < Dim; ++i) {
+                    val01 += v.get(i) * d2dxdy[0](i);
+                    val11 += v.get(i) * d2d2y[0](i);
+                }
+
+                H.set(0, 1, val01);
+                H.set(1, 0, val01);
+                H.set(1, 1, val11);
+            }
         }
-        
+
         inline void get_jacobian(Matrixd &J) const
         {
             Write<Matrixd> w_(J);
-            
+
             const auto &ddxi = fe_->get_dxyzdxi();
             for(int i = 0; i < Dim; ++i) {
                 auto val = ddxi[0](i);
                 J.set(i, 0, val);
             }
-            
+
             if(Dim > 2) {
                 const auto &ddeta = fe_->get_dxyzdeta();
                 for(int i = 0; i < Dim; ++i) {
@@ -180,33 +180,33 @@ namespace utopia {
                 }
             }
         }
-       
+
         void init()
         {
             fe_ = libMesh::FEBase::build(elem_.dim(), type_);
             fe_->get_xyz();
             fe_->get_dxyzdxi();
-            
+
             if(Dim > 2) {
                 fe_->get_dxyzdeta();
             }
 
             if(use_newton_) {
-	            fe_->get_d2xyzdxi2();
-	         
-            	if(Dim > 2) {
-            		fe_->get_d2xyzdeta2();
-            		// fe_->get_d2xyzdzeta2();
-            		fe_->get_d2xyzdxideta();
-            	}
+                fe_->get_d2xyzdxi2();
 
-            	// fe_->get_d2xyzdxidzeta();
-            	// fe_->get_d2xyzdetadzeta();
+                if(Dim > 2) {
+                    fe_->get_d2xyzdeta2();
+                    // fe_->get_d2xyzdzeta2();
+                    fe_->get_d2xyzdxideta();
+                }
+
+                // fe_->get_d2xyzdxidzeta();
+                // fe_->get_d2xyzdetadzeta();
             }
-            
+
             q_.resize(1);
             q_.get_weights()[0] = 1.;
-            
+
             g_ = zeros(Dim);
             x_ = zeros(Dim);
             x_ref_ = zeros(Dim - 1);
@@ -214,94 +214,94 @@ namespace utopia {
             n_ = zeros(Dim);
             h_ = zeros(Dim);
             u_ = zeros(Dim);
-            
+
             g_1_ = zeros(Dim-1);
-            
+
             J_ = zeros(Dim, Dim-1);
             H_ = zeros(Dim, Dim);
             A_ = zeros(Dim -1, Dim - 1);
-            
+
             H_fe_ = zeros(Dim-1, Dim-1);
         }
-        
+
         bool intersect_gradient_descent(const Ray<Scalar, Dim> &ray,
                                         Scalar &t)
         {
             {
                 Write<Vectord> w_n(p_), w_p(n_);
-                
+
                 for(int i = 0; i < Dim; ++i) {
                     p_.set(i, ray.o[i]);
                     n_.set(i, ray.dir[i]);
                 }
             }
-            
+
             //valid initial guess
             x_ref_.set(0.);
             u_.set(0.);
-            
+
             Scalar g_2 = 0.;
             Scalar nn = dot(n_, n_);
-            
+
             auto norm_g_prev = 10000.;
-            
+
             for(int i = 0; i < max_iter_; ++i) {
                 reinit(x_ref_);
-                
+
                 //get main fe quantities
                 get_point(x_);
                 get_jacobian(J_);
-                
+
                 JtJ_ = transpose(J_) * J_;
                 Jtn_ = transpose(J_) * n_;
-                
+
                 r_ = p_ + t * n_;
-                
+
                 g_1_ = (transpose(J_) * (x_ - r_));
                 g_2  = dot(n_, r_ - x_);
-                
+
                 //build overall gradient
                 {
                     Write<Vectord> w_g(g_);
-                    
+
                     for(int d = 0; d < Dim-1; ++d) {
                         g_.set(d, g_1_.get(d));
                     }
-                    
+
                     g_.set(Dim-1, g_2);
                 }
-                
+
                 u_ -= g_;
-                
+
                 {
                     //update ref coordinates
                     Read<Vectord> r_u(u_);
                     Write<Vectord> w_x_ref(x_ref_);
-                    
+
                     for(int d = 0; d < Dim-1; ++d) {
                         x_ref_.set(d, u_.get(d));
                     }
-                    
+
                     //update ray intersection
                     t = u_.get(Dim - 1);
                 }
-                
+
                 const Scalar norm_g = norm2(g_);
 
                 if(verbose_) { std::cout << "gradient_descent: iter: " << i << " " << norm_g << std::endl; }
-                
+
                 if(norm_g_prev < norm_g) {
                     std::cout << "diverged" << std::endl;
                     return false;
                 }
-                
+
                 if(norm_g <= tol_) {
                     return true;
                 }
-                
+
                 norm_g_prev = norm_g;
             }
-            
+
             return false;
         }
 
@@ -310,25 +310,25 @@ namespace utopia {
         {
             {
                 Write<Vectord> w_n(p_), w_p(n_);
-                
+
                 for(int i = 0; i < Dim; ++i) {
                     p_.set(i, ray.o[i]);
                     n_.set(i, ray.dir[i]);
                 }
             }
-            
+
             //valid initial guess
             x_ref_.set(0.);
             u_.set(0.);
-            
+
             Scalar g_2 = 0.;
             Scalar nn = dot(n_, n_);
-            
+
             auto norm_g_prev = 10000.;
-            
+
             for(int i = 0; i < max_iter_; ++i) {
                 reinit(x_ref_);
-                
+
                 //get main fe quantities
                 get_point(x_);
                 get_jacobian(J_);
@@ -338,35 +338,35 @@ namespace utopia {
                     disp(x_);
                     disp("----------");
                 }
-                
+
                 JtJ_ = transpose(J_) * J_;
                 Jtn_ = transpose(J_) * n_;
-                
+
                 r_ = p_ + t * n_;
-                
+
                 g_1_ = (transpose(J_) * (x_ - r_));
                 g_2  = dot(n_, r_ - x_);
-                
+
                 //build overall gradient
                 {
                     Write<Vectord> w_g(g_);
-                    
+
                     for(int d = 0; d < Dim-1; ++d) {
                         g_.set(d, g_1_.get(d));
                     }
-                    
+
                     g_.set(Dim-1, g_2);
                 }
 
                 const Scalar norm_g = norm2(g_);
 
                 if(verbose_) { std::cout << "newton: iter: " << i << " " << norm_g << std::endl; }
-                
+
                 if(norm_g_prev < norm_g) {
                     std::cout << "diverged" << std::endl;
                     return false;
                 }
-                
+
                 if(norm_g <= tol_) {
                     return true;
                 }
@@ -390,13 +390,13 @@ namespace utopia {
                     H_.set(Dim-1, Dim-1, nn);
                 }
 
-                solver_.solve(H_, g_, h_); 
+                solver_.solve(H_, g_, h_);
                 u_ -= h_;
 
                 if(verbose_) {
 
                     disp("----------");
-                    
+
                     disp("J:");
                     disp(J_);
                     disp("----------");
@@ -408,19 +408,19 @@ namespace utopia {
                     disp("A:");
                     disp(A_);
                     disp("----------");
-                  
+
                     disp("H:");
                     disp(H_);
                     disp("----------");
-                   
+
                     disp("g:");
                     disp(g_);
                     disp("----------");
-                   
+
                     disp("h:");
                     disp(h_);
                     disp("----------");
-                   
+
                     disp("u:");
                     disp(u_);
                     disp("----------");
@@ -428,70 +428,70 @@ namespace utopia {
 
 
                 }
-                
+
                 {
                     //update ref coordinates
                     Read<Vectord> r_u(u_);
                     Write<Vectord> w_x_ref(x_ref_);
-                    
+
                     for(int d = 0; d < Dim - 1; ++d) {
                         x_ref_.set(d, u_.get(d));
                     }
-                    
+
                     //update ray intersection
                     t = u_.get(Dim - 1);
                 }
-                
+
                 if(verbose_) {
                    disp("x_ref:");
                    disp(x_ref_);
                    disp("----------");
                 }
-                
+
                 norm_g_prev = norm_g;
             }
-            
+
             return false;
         }
 
-        
+
     protected:
         virtual void reinit(const Vectord &x_ref)
         {
             Read<Vectord> r_(x_ref);
-            
+
             for(int i = 0; i < Dim - 1; ++i) {
                 q_.get_points()[0](i) = x_ref.get(i);
             }
-            
+
             fe_->attach_quadrature_rule(&q_);
             fe_->reinit(&elem_);
         }
-        
+
     };
-    
+
     template<typename Scalar, int Dim>
     class LibMeshSideShape final : public Shape<Scalar, Dim> {
     public:
         LibMeshSideShape(const libMesh::Elem &elem, const libMesh::FEType type, const int side)
         : elem_(elem), type_(type), side_(side)
         {}
-        
+
         bool intersect(
                        const Ray<Scalar, Dim> &ray,
                        Scalar &t) override
         {
             return false;
         }
-        
+
     private:
         const libMesh::Elem &elem_;
         libMesh::FEType type_;
         int side_;
     };
-    
-    
-    
+
+
+
 }
 
 

@@ -8,17 +8,17 @@
 
 
 
-namespace utopia 
+namespace utopia
 {
 
     /**
-     * @brief      Example of the nonlinear function. Used to test nonlinear solvers. 
+     * @brief      Example of the nonlinear function. Used to test nonlinear solvers.
      *
-     * @tparam     Matrix 
-     * @tparam     Vector 
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class TestFunction2D_1 : public Function<Matrix, Vector> 
+    class TestFunction2D_1 : public Function<Matrix, Vector>
     {
     public:
 
@@ -59,26 +59,26 @@ namespace utopia
 
 
     template<class Matrix, class Vector>
-    class SmallSingularExample : public Function<Matrix, Vector> 
+    class SmallSingularExample : public Function<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
 
-        SmallSingularExample() 
+        SmallSingularExample()
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
         }
 
-        bool value(const Vector &x, typename Vector::Scalar &result) const override 
+        bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
             assert(x.size().get(0) == 2);
-            Vector g = values(2, 0.0); 
-            gradient(x, g); 
+            Vector g = values(2, 0.0);
+            gradient(x, g);
             result = 0.5 * norm2(g);
             return true;
         }
 
-        bool gradient(const Vector &x, Vector &g) const override 
+        bool gradient(const Vector &x, Vector &g) const override
         {
             assert(x.size().get(0) == 2);
             g = zeros(2);
@@ -96,7 +96,7 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override 
+        bool hessian(const Vector &x, Matrix &H) const override
         {
             assert(x.size().get(0) == 2);
 

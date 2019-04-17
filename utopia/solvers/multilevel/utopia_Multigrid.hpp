@@ -87,8 +87,8 @@ namespace utopia
 
         void read(Input &in) override
         {
-          LinearMultiLevel<Matrix, Vector>::read(in); 
-          IterativeSolver::read(in); 
+          LinearMultiLevel<Matrix, Vector>::read(in);
+          IterativeSolver::read(in);
 
           in.get("perform_galerkin_assembly", perform_galerkin_assembly_);
           in.get("use_line_search", use_line_search_);
@@ -99,20 +99,20 @@ namespace utopia
           }
           if(coarse_solver_) {
               in.get("coarse_solver", *coarse_solver_);
-          }          
+          }
 
         }
 
         void print_usage(std::ostream &os) const override
         {
-          LinearMultiLevel<Matrix, Vector>::print_usage(os); 
-          IterativeSolver::print_usage(os); 
+          LinearMultiLevel<Matrix, Vector>::print_usage(os);
+          IterativeSolver::print_usage(os);
 
-          this->print_param_usage(os, "perform_galerkin_assembly", "bool", "Flag turning on/off galerkin assembly.", "true"); 
-          this->print_param_usage(os, "use_line_search", "bool", "Flag turning on/off line-search after coarse grid correction.", "false"); 
-          this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1"); 
-          this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-"); 
-          this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-"); 
+          this->print_param_usage(os, "perform_galerkin_assembly", "bool", "Flag turning on/off galerkin assembly.", "true");
+          this->print_param_usage(os, "use_line_search", "bool", "Flag turning on/off line-search after coarse grid correction.", "false");
+          this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1");
+          this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-");
+          this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-");
         }
 
 
@@ -308,7 +308,7 @@ namespace utopia
 
                 assert(!empty(memory.r[l-1]));
 
-                
+
 
 
                 standard_cycle(l-1);
@@ -482,20 +482,20 @@ namespace utopia
             use_line_search_ = val;
         }
 
-        bool use_line_search() const 
+        bool use_line_search() const
         {
-            return use_line_search_; 
-        }        
+            return use_line_search_;
+        }
 
         inline void block_size(const SizeType size)
         {
             block_size_ = size;
         }
 
-        inline SizeType block_size() const 
+        inline SizeType block_size() const
         {
-          return block_size_; 
-        }        
+          return block_size_;
+        }
 
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;
