@@ -285,34 +285,39 @@ namespace utopia
 
             const SizeType finer_level = level+1;
 
-            //----------------------------------------------------------------------------
-            //     soft projection of tr bounds
-            //----------------------------------------------------------------------------
-            Vector tr_fine_last_lower = this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-            {
-                ReadAndWrite<Vector> rv(tr_fine_last_lower);
-                Read<Vector> rl(constraints_memory_.tr_lower[finer_level]);
+            // //----------------------------------------------------------------------------
+            // //     soft projection of tr bounds
+            // //----------------------------------------------------------------------------
+            // Vector tr_fine_last_lower = this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+            // {
+            //     ReadAndWrite<Vector> rv(tr_fine_last_lower);
+            //     Read<Vector> rl(constraints_memory_.tr_lower[finer_level]);
 
-                Range r = range(tr_fine_last_lower);
+            //     Range r = range(tr_fine_last_lower);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                    tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
-            }
-            this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
+            //     for(SizeType i = r.begin(); i != r.end(); ++i)
+            //         tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
+            // }
+            // this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
 
 
 
-            Vector tr_fine_last_upper = this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-            {
-                ReadAndWrite<Vector> rv(tr_fine_last_upper);
-                Read<Vector> rl(constraints_memory_.tr_upper[finer_level]);
+            // Vector tr_fine_last_upper = this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+            // {
+            //     ReadAndWrite<Vector> rv(tr_fine_last_upper);
+            //     Read<Vector> rl(constraints_memory_.tr_upper[finer_level]);
 
-                Range r = range(tr_fine_last_upper);
+            //     Range r = range(tr_fine_last_upper);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                    tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
-            }
-            this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
+            //     for(SizeType i = r.begin(); i != r.end(); ++i)
+            //         tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
+            // }
+            // this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
+
+            std::cout<<"----------- TODO:: fix bug in projection of active constriants (Quasi RMTR inf)- at the moment works only with the identity transfer------ \n"; 
+            constraints_memory_.tr_upper[level] = local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+            constraints_memory_.tr_lower[level] = local_values(local_size(this->memory_.x[finer_level]).get(0), -1.* this->memory_.delta[finer_level]);
+
 
 
             if(has_box_constraints_)
@@ -320,13 +325,20 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 //     projection of variable bounds to the coarse level
                 //----------------------------------------------------------------------------
-                Vector lx =  (constraints_memory_.x_lower[finer_level] - this->memory_.x[finer_level]);
-                Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(lx);
-                constraints_memory_.x_lower[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), lower_multiplier);
+                // Vector lx =  (constraints_memory_.x_lower[finer_level] - this->memory_.x[finer_level]);
+                // Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(lx);
+                // constraints_memory_.x_lower[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), lower_multiplier);
 
-                Vector ux =  (constraints_memory_.x_upper[finer_level] - this->memory_.x[finer_level]);
-                Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
-                constraints_memory_.x_upper[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), upper_multiplier);
+                // Vector ux =  (constraints_memory_.x_upper[finer_level] - this->memory_.x[finer_level]);
+                // Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
+                // constraints_memory_.x_upper[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), upper_multiplier);
+
+
+                std::cout<<"----------- TODO:: fix bug in projection of active constriants (Quasi RMTR inf)- at the moment works only with the identity transfer------ \n"; 
+                constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level];
+                constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
+
+
 
                 //----------------------------------------------------------------------------
                 //     intersect bounds on the coarse level
@@ -533,6 +545,7 @@ namespace utopia
                 // this is interesting heuristic
                 if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
                 {
+                    std::cout<<"whessian approx reseted .... \n"; 
                     hessian_approxs_[level]->reset();
                     hessian_approxs_[level]->initialize();
                 }

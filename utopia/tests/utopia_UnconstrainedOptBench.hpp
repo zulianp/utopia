@@ -160,7 +160,7 @@ namespace utopia
 			this->register_experiment("AffineSimilarity",
 				[this]() {
 					auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();			
-					// linear_solver->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);  // Tags do not exist enymore 
+					// linear_solver->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);  // Tags do not exist enymore s
 					AffineSimilarity<Matrix, Vector> solver(linear_solver); 
 					run_tr(this->test_functions_, solver, "AffineSimilarity", this->verbose_);
 				}

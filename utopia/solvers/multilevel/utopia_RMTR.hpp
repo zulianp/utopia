@@ -432,7 +432,11 @@ namespace utopia
                 return true;
 
             this->compute_s_global(level, memory_.s_working[level]);
+
+            std::cout<<"requesting grad - RMTR ... \n"; 
             this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+            std::cout<<"memory_.g[level]: "<< norm2(memory_.g[level]) << "  \n"; 
+
 
             if(level == this->n_levels()-1)
             {
@@ -442,6 +446,10 @@ namespace utopia
             }
 
             this->transfer(level-1).restrict(memory_.g[level], memory_.g_diff[level-1]);
+            std::cout<<"memory_.g_diff[level-1]: "<< norm2(memory_.g_diff[level-1]) << "  \n"; 
+
+
+
             this->transfer(level-1).project_down(memory_.x[level], memory_.x[level-1]);
 
             if(!skip_BC_checks()){
@@ -457,6 +465,8 @@ namespace utopia
             //                   first order coarse level objective managment
             //----------------------------------------------------------------------------
             this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
+            std::cout<<"memory_.g[level-1]: "<< norm2(memory_.g[level-1]) << "  \n"; 
+
 
             if(!skip_BC_checks())
             {
@@ -471,7 +481,10 @@ namespace utopia
 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
+            {
                 memory_.g_diff[level-1] -= memory_.g[level-1];
+                std::cout<<"No-Galerkin:: memory_.g_diff[level-1]: "<< norm2(memory_.g_diff[level-1]) << "  \n"; 
+            }
 
             //----------------------------------------------------------------------------
             //                   second order coarse level objective managment
@@ -507,6 +520,8 @@ namespace utopia
             //----------------------------------------------------------------------------
             if(level == 1 && smoothness_flg)
             {
+                std::cout<<"before calling recursion:: memory_.g_diff[level-1]: "<< norm2(memory_.g_diff[level-1]) << "  \n"; 
+                std::cout<<"before calling recursion:: memory_.g[level-1]: "<< norm2(memory_.g[level-1]) << "  \n"; 
                 this->local_tr_solve(level - 1, COARSE_SOLVE);
             }
             else if(smoothness_flg)
@@ -631,7 +646,15 @@ namespace utopia
 
             // important, as this can be postsmoothing
             this->compute_s_global(level, memory_.s_working[level]);
+
+            std::cout<<"------ Level : "<< level << "  \n"; 
+
+            std::cout<<"local solve :: memory_.g[level]: "<< norm2(memory_.g[level]) << "  \n"; 
+            std::cout<<"local solve :: memory_.g_diff[level]: "<< norm2(memory_.g_diff[level]) << "  \n"; 
             this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+            std::cout<<"local solve after recomputing:: memory_.g[level]: "<< norm2(memory_.g[level]) << "  \n"; 
+            std::cout<<"local solve after recomputing:: memory_.g_diff[level]: "<< norm2(memory_.g_diff[level]) << "  \n"; 
+
 
 
             energy_old = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
@@ -1050,7 +1073,10 @@ namespace utopia
                 return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
             }
             else
-                 return fun.gradient(memory_.x[level], memory_.g[level]);
+            {
+                std::cout<<"--- fine level gradient eval.... \n";
+                return fun.gradient(memory_.x[level], memory_.g[level]);
+            }
         }
 
         /**
