@@ -605,6 +605,7 @@ namespace utopia {
 
                 dof_map.dof_indices(elem, temp, var_num);
 
+                dof_map_[local_element_id].global_id = elem->id();
                 dof_map_[local_element_id].global.insert(
                     dof_map_[local_element_id].global.end(),
                     temp.begin(),
