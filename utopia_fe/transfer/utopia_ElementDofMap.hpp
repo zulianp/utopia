@@ -32,14 +32,18 @@ namespace utopia {
 
     class ElementDofMap : public moonolith::Serializable {
     public:
+        ElementDofMap() : global_id(-1) {}
+
         inline void read(moonolith::InputStream &is) override
         {
             read_vector(global, is);
+            is >> global_id;
         }
 
         inline void write(moonolith::OutputStream &os) const override
         {
             write_vector(global, os);
+            os << global_id;
         }
 
         inline bool empty() const
@@ -51,13 +55,7 @@ namespace utopia {
         inline long dof(const std::size_t idx) const { assert(idx < global.size()); return global[idx]; }
 
         std::vector<long> global;
-        //for(int side_number = 0; side_number < e.n_sides(); ++side_number)
-            //boundary_face_dof_map[side_number] gives the dofs associated to
-            //if(boundary_face_dof_map[side_number].empty()) { means is not a boundary face }
-        //the boundary face
-        //std::vector< std::vector<long> > boundary_face_dof_map;
-
-        //get_side_dof_query(side, std::vector<bool> &is_boundary)
+        long global_id;
     };
 }
 

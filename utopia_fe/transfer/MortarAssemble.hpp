@@ -24,6 +24,7 @@
 #include "utopia_intersector.hpp"
 #include "utopia_libmesh_Utils.hpp"
 #include "utopia_libmesh_Transform.hpp"
+#include "moonolith_vector.hpp"
 
 #include <memory>
 #include <math.h>
@@ -298,6 +299,32 @@ namespace utopia {
         const std::vector<libMesh::Point> &fun,
         libMesh::DenseMatrix<libMesh::Real> &result
     );
+
+    template<int Dim>
+    void l2_project_normal(
+        const libMesh::FEBase &test_fe,
+        const moonolith::Vector<double, Dim> &normal,
+        libMesh::DenseVector<libMesh::Real> &result
+    )
+    {
+        const auto &phi = test_fe.get_phi();
+        const auto &dx  = test_fe.get_JxW();
+        const auto n_qp = dx.size();
+        const auto n_shape_functions = phi.size();
+
+        assert(n_qp == phi[0].size());
+
+        result.resize(n_shape_functions * Dim);
+        result.zero();
+
+        for(std::size_t i = 0; i < n_shape_functions; ++i) {
+            for(std::size_t qp = 0; qp < n_qp; ++qp) {
+                for(std::size_t d = 0; d < Dim; ++d) {
+                    result(i*Dim + d) += phi[i][qp] * normal[d] * dx[qp];
+                }
+            }
+        }
+    }
 
     double ref_volume(int type);
     double ref_area_of_surf(int type);

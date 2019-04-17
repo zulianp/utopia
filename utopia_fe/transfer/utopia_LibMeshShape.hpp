@@ -25,7 +25,7 @@ namespace utopia {
         virtual ~LibMeshShape() {}
 
         LibMeshShape(const libMesh::Elem &elem, const libMesh::FEType type, const bool use_newton = true)
-        : elem_(elem), type_(type), q_(Dim), max_iter_(7000), tol_(1e-8), accept_tol_(1e-7), use_newton_(use_newton), verbose_(false)
+        : elem_(elem), type_(type), q_(Dim), max_iter_(8000), tol_(1e-8), accept_tol_(1e-6), use_newton_(use_newton), verbose_(false)
         {
             init();
         }
