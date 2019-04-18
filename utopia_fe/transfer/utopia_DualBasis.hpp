@@ -1,6 +1,11 @@
 #ifndef UTOPIA_DUAL_BASIS_HPP
 #define UTOPIA_DUAL_BASIS_HPP
 
+#include "libmesh/elem.h"
+#include "libmesh/dense_matrix.h"
+
+#include "utopia_libmesh_Utils.hpp"
+
 namespace utopia {
 
     class DualBasis {
@@ -26,20 +31,27 @@ namespace utopia {
             /////////////////////////////////
             for(int i = 0; i < n; ++i) {
                 //block (0,0)
-                inv_trafo(i, i) = 1.0;
+                tafo(i, i)     = 1.0;
+                inv_tafo(i, i) = 1.0;
 
                 //block (1,1)
-                inv_trafo(n + i, n + i) = (1 - 2*alpha);
+                tafo(n + i, n + i) = (1 - 2*alpha);
+                inv_tafo(n + i, n + i) = 1./(1 - 2*alpha);
+
             }
 
             /////////////////////////////////
             //block (1,0)
             for(int i = 0; i < n-1; ++i) {
-                inv_trafo(n + i, i + 1) = alpha;
+                tafo(n + i, i + 1) = alpha;
+                inv_tafo(n + i, i + 1) = alpha/(1 - 2.*alpha);
             }
 
-            inv_trafo(n_nodes-1, n-1) = alpha;
-            inv_trafo(n_nodes-1, 0)   = alpha;
+            tafo(n_nodes-1, n-1) = alpha;
+            tafo(n_nodes-1, 0)   = alpha;
+
+            inv_tafo(n_nodes-1, n-1) = alpha/(1 - 2.*alpha);
+            inv_tafo(n_nodes-1, 0)   = alpha/(1 - 2.*alpha);
             /////////////////////////////////
         }
     };
