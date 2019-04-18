@@ -37,6 +37,7 @@ namespace utopia {
         bool check_valid(const Matrix &mat) const;
         void init_q(const std::size_t n_qp);
         void contained_points(const Elem &trial, const Elem &test, std::vector<int> &test_dofs);
+        void contained_points_1(const Elem &trial, const Elem &test, std::vector<int> &test_dofs);
         void contained_points_2(const Elem &trial, const Elem &test, std::vector<int> &test_dofs);
         void contained_points_3(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const;
 

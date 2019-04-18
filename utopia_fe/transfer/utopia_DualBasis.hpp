@@ -13,6 +13,48 @@ namespace utopia {
     class DualBasis {
     public:
 
+        static bool build_inverse_trafo(
+            const libMesh::MeshBase &mesh,
+            const libMesh::DofMap &dof_map,
+            const UVector &elem_on_contact_boundary,
+            const double alpha,
+            USparseMatrix &mat
+            )
+        {
+
+            using SizeType = UTOPIA_SIZE_TYPE(USparseMatrix);
+
+            auto e_begin = elements_begin(mesh);
+            auto e_end   = elements_end(mesh);
+
+            // mat = sparse(
+            //     {
+            //         dof_map.n_dofs(),
+            //         dof_map.n_dofs() 
+            //     },
+            //     dof_map.get_n_nz(),
+            //     dof_map.get_n_oz()
+            // );
+
+            Read<UVector> r(elem_on_contact_boundary);
+            Write<USparseMatrix> w(mat);
+            
+            libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo;
+            std::vector<libMesh::dof_id_type> dofs;
+
+            for(auto it = e_begin; it != e_end; ++it) {
+                const auto * e = *it;
+
+                if(elem_on_contact_boundary.get(e->id()) > 0.) {
+                    dof_map.dof_indices(e, dofs);
+                    assemble_local_trafo(e->type(), alpha, local_trafo, inv_trafo);
+                    mat.set_matrix(dofs, dofs, inv_trafo.get_values());
+                }   
+            }
+
+            return true;
+        }
+
         //transposed trafo
         static bool assemble_local_trafo(
             const libMesh::ElemType el_type,

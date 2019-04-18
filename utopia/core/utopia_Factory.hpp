@@ -223,11 +223,34 @@ namespace utopia {
         _Scalar _values;
     };
 
+    template<typename SizeType>
+    class NNZXRow {
+    public:
+        NNZXRow(const std::vector<SizeType> &d_nnz, const std::vector<SizeType> &o_nnz)
+        : d_nnz(d_nnz), o_nnz(o_nnz)
+        {}
+
+        const std::vector<SizeType> &d_nnz, &o_nnz;
+    };
+
+    template<typename SizeType>
+    class FactoryTraits< NNZXRow<SizeType> > {
+    public:
+        typedef double Scalar;
+
+        static constexpr const char * getClass()
+        {
+            return "NNZXRow";
+        }
+
+        enum {
+            FILL_TYPE = FillType::SPARSE
+        };
+    };
 
     template<typename T>
     class LocalNNZ {
     public:
-
 
         LocalNNZ()  {};
         LocalNNZ(T nnz) : _nnz(nnz) {};
@@ -597,6 +620,15 @@ namespace utopia {
     inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
         return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
+    }
+
+    template<typename T>
+    inline Factory<NNZXRow<T>, 2> sparse(
+        const Size &gs,
+        const std::vector<SizeType> &d_nnz,
+        const std::vector<SizeType> &o_nnz)
+    {
+        return Factory<NNZXRow<T>, 2>(gs, NNZXRow<T>(d_nnz, o_nnz));
     }
 
     template<typename _SizeType, typename _IntType, typename _Scalar>

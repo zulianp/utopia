@@ -16,7 +16,9 @@ namespace utopia {
     {
         std::shared_ptr<Transform> elem_trafo;
         if(elem.has_affine_map()) {
-            if(dim == 2) {
+            if(dim == 1) {
+                elem_trafo = std::make_shared<Transform1>(elem);
+            } else  if(dim == 2) {
                 if(elem.dim() == 1) {
                     elem_trafo = std::make_shared<Transform1>(elem);
                 } else {
@@ -32,7 +34,9 @@ namespace utopia {
                 }
             }
         } else {
-            if(dim == 2) {
+            if(dim == 1) {
+                elem_trafo = std::make_shared<Transform1>(elem);
+            } else if(dim == 2) {
                 assert(elem.dim() == 2);
                 elem_trafo = std::make_shared<Transform2>(elem);
             } else {
@@ -161,7 +165,10 @@ namespace utopia {
 
         test_dofs.reserve(n_potential_nodes);
 
-        if(dim == 2) {
+        if(dim == 1) {
+            contained_points_1(trial, test, test_dofs);
+            return;
+        } else if(dim == 2) {
             contained_points_2(trial, test, test_dofs);
             return;
         } else if(dim == 3) {
@@ -173,6 +180,25 @@ namespace utopia {
         for(int i = 0; i < n_potential_nodes; ++i) {
             auto const & test_node = test.node_ref(i);
             if(trial.contains_point(test_node, tol)) {
+                test_dofs.push_back(i);
+            }
+        }
+    }
+
+    void InterpolationLocalAssembler::contained_points_1(const Elem &trial, const Elem &test, std::vector<int> &test_dofs)
+    {
+        libMesh::Point p1 = trial.node_ref(0), p2 = trial.node_ref(1);
+        libMesh::Point u = p2 - p1;
+        auto len_u = u.norm();
+        u /= len_u;
+
+        test_dofs.clear();
+
+        auto test_n_nodes = test.n_nodes();
+        for(int i = 0; i < test_n_nodes; ++i) {
+            const auto &q = test.node_ref(i);
+            double d = u.contract(q - p1);
+            if(d >= -tol && d <= len_u + tol) {
                 test_dofs.push_back(i);
             }
         }
