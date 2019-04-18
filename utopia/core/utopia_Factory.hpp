@@ -622,13 +622,13 @@ namespace utopia {
         return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
     }
 
-    template<typename T>
-    inline Factory<NNZXRow<T>, 2> sparse(
+    template<typename SizeType>
+    inline Factory<NNZXRow<SizeType>, 2> sparse(
         const Size &gs,
         const std::vector<SizeType> &d_nnz,
         const std::vector<SizeType> &o_nnz)
     {
-        return Factory<NNZXRow<T>, 2>(gs, NNZXRow<T>(d_nnz, o_nnz));
+        return Factory<NNZXRow<SizeType>, 2>(gs, NNZXRow<SizeType>(d_nnz, o_nnz));
     }
 
     template<typename _SizeType, typename _IntType, typename _Scalar>

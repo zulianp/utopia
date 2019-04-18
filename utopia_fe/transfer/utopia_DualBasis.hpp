@@ -27,14 +27,14 @@ namespace utopia {
             auto e_begin = elements_begin(mesh);
             auto e_end   = elements_end(mesh);
 
-            // mat = sparse(
-            //     {
-            //         dof_map.n_dofs(),
-            //         dof_map.n_dofs() 
-            //     },
-            //     dof_map.get_n_nz(),
-            //     dof_map.get_n_oz()
-            // );
+            mat = sparse(
+                {
+                    dof_map.n_dofs(),
+                    dof_map.n_dofs() 
+                },
+                dof_map.get_n_nz(),
+                dof_map.get_n_oz()
+            );
 
             Read<UVector> r(elem_on_contact_boundary);
             Write<USparseMatrix> w(mat);

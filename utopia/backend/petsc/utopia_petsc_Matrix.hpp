@@ -429,6 +429,35 @@ namespace utopia {
                const std::vector<PetscInt> &o_nnz
            );
 
+        template<class Int>
+        void matij_init(
+               MPI_Comm comm,
+               MatType type,
+               PetscInt rows_local,
+               PetscInt cols_local,
+               PetscInt rows_global,
+               PetscInt cols_global,
+               const std::vector<Int> &d_nnz,
+               const std::vector<Int> &o_nnz
+        )
+        {
+            std::vector<PetscInt> petsc_d_nnz(d_nnz.size()), petsc_o_nnz(o_nnz.size());
+
+            std::copy(d_nnz.begin(), d_nnz.end(), petsc_d_nnz.begin());
+            std::copy(o_nnz.begin(), o_nnz.end(), petsc_o_nnz.begin());
+
+            matij_init(
+                comm,
+                type,
+                rows_local,
+                cols_local,
+                rows_global,
+                cols_global,
+                petsc_d_nnz,
+                petsc_o_nnz
+            );
+        }
+
          void mat_baij_init(
             MPI_Comm comm,
             PetscInt rows_local,

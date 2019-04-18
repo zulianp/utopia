@@ -4,6 +4,7 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_petsc_Traits.hpp"
 #include "utopia_petsc_Backend.hpp"
+#include "utopia_petsc_Eval_NZZXRow.hpp"
 
 /*! @file
 * Petsc language extensions

@@ -659,12 +659,15 @@ namespace utopia {
         //unused
         static void vec_to_mat(Matrix &m, const Vector &v, const bool transpose);
 
+     
+        static void apply_args(const PetscArgs &args, Matrix &m);
+        static void apply_args(const PetscArgs &args, Vector &m);
+
+    public:
         inline static MPI_Comm default_communicator() {
             return PETSC_COMM_WORLD;
         }
 
-        static void apply_args(const PetscArgs &args, Matrix &m);
-        static void apply_args(const PetscArgs &args, Vector &m);
     };
 
     template<>
