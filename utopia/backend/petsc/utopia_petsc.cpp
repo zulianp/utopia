@@ -19,7 +19,6 @@ namespace utopia {
     template class Wrapper<PetscVector, 1>;
 
     //petsc linear solvers and smoothers
-    // template class KSPSolver<DSMatrixd, DVectord>;
     template class ConjugateGradient<DSMatrixd, DVectord>;
     template class GaussSeidel<DSMatrixd, DVectord>;
     template class SPBlockConjugateGradient<DSMatrixd, DVectord>;
