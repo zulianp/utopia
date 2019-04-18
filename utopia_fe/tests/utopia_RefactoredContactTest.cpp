@@ -603,14 +603,7 @@ namespace utopia {
                 }
             }
 
-            libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo;
-            DualBasis::assemble_local_trafo(libMesh::EDGE3, 1./5., trafo, inv_trafo);
-
-            std::cout << "-----------------------\n";
-            trafo.print(std::cout);
-            std::cout << "-----------------------\n";
-            inv_trafo.print(std::cout);
-
+            libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
 
             DualBasis::assemble_local_trafo(libMesh::TRI6, 1./5., trafo, inv_trafo);
 
@@ -619,12 +612,20 @@ namespace utopia {
             std::cout << "-----------------------\n";
             inv_trafo.print(std::cout);
 
-            DualBasis::assemble_local_trafo(libMesh::QUAD8, 1./5., trafo, inv_trafo);
+
+            DualBasis::assemble_biorth_weights(
+                    *V.mesh().elem(0),
+                    2,
+                    trafo,
+                    weights);
 
             std::cout << "-----------------------\n";
-            trafo.print(std::cout);
+            weights.print(std::cout);
             std::cout << "-----------------------\n";
-            inv_trafo.print(std::cout);
+
+
+
+
         });
         
     }
