@@ -271,7 +271,7 @@ namespace utopia {
                 libMesh::ElemType type = libMesh::EDGE2;
 
                 if(order == 2) {
-                    type = libMesh::EDGE4;
+                    type = libMesh::EDGE3;
                 }
 
                 return type;
