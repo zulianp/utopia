@@ -1,5 +1,5 @@
 #include "utopia_RefactoredContactTest.hpp"
-
+#include "utopia_DualBasis.hpp"
 
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_Newmark.hpp"
@@ -232,7 +232,7 @@ namespace utopia {
         libMesh::DenseMatrix<libMesh::Real> local_trafo;
 
         double area = 0.;
-        bool use_biorth = true;
+        bool use_biorth = false;
         double alpha = 1./5.;
 
         ProjectionAlgorithm(ContactData &data)
@@ -603,7 +603,28 @@ namespace utopia {
                 }
             }
 
-           
+            libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo;
+            DualBasis::assemble_local_trafo(libMesh::EDGE3, 1./5., trafo, inv_trafo);
+
+            std::cout << "-----------------------\n";
+            trafo.print(std::cout);
+            std::cout << "-----------------------\n";
+            inv_trafo.print(std::cout);
+
+
+            DualBasis::assemble_local_trafo(libMesh::TRI6, 1./5., trafo, inv_trafo);
+
+            std::cout << "-----------------------\n";
+            trafo.print(std::cout);
+            std::cout << "-----------------------\n";
+            inv_trafo.print(std::cout);
+
+            DualBasis::assemble_local_trafo(libMesh::QUAD8, 1./5., trafo, inv_trafo);
+
+            std::cout << "-----------------------\n";
+            trafo.print(std::cout);
+            std::cout << "-----------------------\n";
+            inv_trafo.print(std::cout);
         });
         
     }
