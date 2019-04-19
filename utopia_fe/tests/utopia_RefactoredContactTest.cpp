@@ -113,6 +113,8 @@ namespace utopia {
 
             std::cout << sum_B_x << " == " << sum_D_x << std::endl;
             std::cout << sum_normal_xyz << std::endl;
+
+            write("area_x.m", area_x);
         }
 
         ContactData(MPI_Comm comm) : B(comm), D(comm), gap(comm), normal(comm), area(comm) {}
@@ -151,6 +153,13 @@ namespace utopia {
         SurfaceQuadratureConverter()
         : point_rescale(1.), weight_rescale(1.), trial_weight_rescale(1.), test_weight_rescale(1.), current_order(-1)
         {}
+
+        bool check_unity(const moonolith::Quadrature<double, Dim-1> &q)
+        {
+            auto sum_w = std::accumulate(q.weights.begin(), q.weights.end(), 0.);
+            assert(approxeq(sum_w, 1., 1e-10));
+            return approxeq(sum_w, 1., 1e-10);
+        }
 
         void init(
             const libMesh::Elem &trial,
@@ -201,6 +210,8 @@ namespace utopia {
 
             trial_weight_rescale = ref_volume(trial.type());
             test_weight_rescale  = ref_volume(test.type());
+
+            assert(check_unity(q));
         }
 
     };
@@ -249,12 +260,14 @@ namespace utopia {
             auto dim          = mesh.mesh_dimension();
             auto fe_type      = space.libmesh_fe_type(0);
             auto n_local_dofs = mesh.n_active_local_elem();
+
+            volumes = local_zeros(n_local_dofs);
            
             {
                 Write<UVector> w(volumes, utopia::LOCAL);
 
                 auto fe = libMesh::FEBase::build(dim, fe_type);
-                libMesh::QGauss qrule(dim, fe_type.default_quadrature_order());
+                libMesh::QGauss qrule(dim, fe_type.order);
                 fe->attach_quadrature_rule(&qrule);
 
                 auto &JxW = fe->get_JxW();
@@ -271,12 +284,14 @@ namespace utopia {
                         vol += JxW[qp];
                     }
 
-                    volumes.set((*it)->id(), vol);
+                    volumes.set((*it)->id(), std::abs(vol));
                 }
             }
 
             c.stop();
             std::cout << "assemble volumes (time)\n" << c << std::endl;
+            double sum_v = sum(volumes);
+            std::cout << "sum_v: " << sum_v << std::endl;
         }
 
         ProjectionAlgorithm(ContactData &data)
@@ -441,7 +456,7 @@ namespace utopia {
 
             ///////////////////////////////////////////////////////
             //check on the area
-            // assert(isect_area > 0.);
+            assert(isect_area > 0.);
             area += isect_area;
         }
 
@@ -569,6 +584,14 @@ namespace utopia {
         std::cout << "area: " << contact_algo.area << std::endl;
 
 
+        UVector volumes;
+        contact_algo.assemble_volumes(
+            adapter,
+            volumes
+        );
+
+        write("vols.m", volumes);
+
         contact_data.finalize(
             adapter.n_local_elems(),
             adapter.n_local_dofs(),
@@ -647,28 +670,25 @@ namespace utopia {
                 }
             }
 
-            libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
+            // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
 
-            DualBasis::assemble_local_trafo(libMesh::TRI6, 1./5., trafo, inv_trafo);
+            // DualBasis::assemble_local_trafo(libMesh::TRI6, 1./5., trafo, inv_trafo);
 
-            std::cout << "-----------------------\n";
-            trafo.print(std::cout);
-            std::cout << "-----------------------\n";
-            inv_trafo.print(std::cout);
-
-
-            DualBasis::assemble_biorth_weights(
-                    *V.mesh().elem(0),
-                    2,
-                    trafo,
-                    weights);
-
-            std::cout << "-----------------------\n";
-            weights.print(std::cout);
-            std::cout << "-----------------------\n";
+            // std::cout << "-----------------------\n";
+            // trafo.print(std::cout);
+            // std::cout << "-----------------------\n";
+            // inv_trafo.print(std::cout);
 
 
+            // DualBasis::assemble_biorth_weights(
+            //         *V.mesh().elem(0),
+            //         2,
+            //         trafo,
+            //         weights);
 
+            // std::cout << "-----------------------\n";
+            // weights.print(std::cout);
+            // std::cout << "-----------------------\n";
 
         });
         
