@@ -103,12 +103,9 @@ namespace utopia {
                 });
             }
 
-            zero_rows_to_identity(D_x);
-
+            zero_rows_to_identity(D_x, 1e-15);
             Factorization<USparseMatrix, UVector> solver;
             solver.solve(D_x, weighted_gap_x, gap_x);
-            // gap_x = e_mul(diag_inv_D_x, weighted_gap_x);
-
 
             switch_dim(diag_inv_D_x, spatial_dim, diag_inv_D_xyz);
 
@@ -239,6 +236,48 @@ namespace utopia {
         double area = 0.;
         bool use_biorth = false;
         double alpha = 1./5.;
+
+        void assemble_volumes(
+            LibMeshFunctionSpaceAdapter &space,
+            UVector &volumes
+            ) const
+        {
+            Chrono c;
+            c.start();
+
+            auto &mesh        = space.mesh();
+            auto dim          = mesh.mesh_dimension();
+            auto fe_type      = space.libmesh_fe_type(0);
+            auto n_local_dofs = mesh.n_active_local_elem();
+           
+            {
+                Write<UVector> w(volumes, utopia::LOCAL);
+
+                auto fe = libMesh::FEBase::build(dim, fe_type);
+                libMesh::QGauss qrule(dim, fe_type.default_quadrature_order());
+                fe->attach_quadrature_rule(&qrule);
+
+                auto &JxW = fe->get_JxW();
+
+                for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
+                    fe->reinit(*it);
+
+                    auto n_qp = qrule.n_points();
+
+                    assert(n_qp > 0);
+
+                    double vol = 0.;
+                    for(unsigned int qp = 0; qp < n_qp; qp++) {
+                        vol += JxW[qp];
+                    }
+
+                    volumes.set((*it)->id(), vol);
+                }
+            }
+
+            c.stop();
+            std::cout << "assemble volumes (time)\n" << c << std::endl;
+        }
 
         ProjectionAlgorithm(ContactData &data)
         : data(data), lm_q_master(Dim-1), lm_q_slave(Dim-1)
