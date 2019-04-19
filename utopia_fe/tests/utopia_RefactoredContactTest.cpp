@@ -15,6 +15,7 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 #include "utopia_MatrixInserter.hpp"
+#include "utopia_ZeroRowsToIdentity.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
@@ -102,7 +103,11 @@ namespace utopia {
                 });
             }
 
-            gap_x = e_mul(diag_inv_D_x, weighted_gap_x);
+            zero_rows_to_identity(D_x);
+
+            Factorization<USparseMatrix, UVector> solver;
+            solver.solve(D_x, weighted_gap_x, gap_x);
+            // gap_x = e_mul(diag_inv_D_x, weighted_gap_x);
 
 
             switch_dim(diag_inv_D_x, spatial_dim, diag_inv_D_xyz);
