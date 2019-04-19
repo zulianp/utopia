@@ -147,7 +147,7 @@ namespace utopia {
         }
 
         SurfaceQuadratureConverter()
-        : current_order(-1)
+        : point_rescale(1.), weight_rescale(1.), trial_weight_rescale(1.), test_weight_rescale(1.), current_order(-1)
         {}
 
         void init(
@@ -452,7 +452,7 @@ namespace utopia {
                 //WARPED CONTACT
                 bool use_newton = false;
                 // warped_contact.shape_master= std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);               
-                auto lm_shape_master= std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);               
+                auto lm_shape_master = std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);               
                 // lm_shape_master->verbose(true);
                 warped_contact.shape_master = lm_shape_master;
                 warped_contact.shape_slave = std::make_shared<LibMeshShape<double, Dim>>(e_s, m_s.libmesh_fe_type(0), use_newton);
@@ -597,8 +597,8 @@ namespace utopia {
                 adapter.make_tensor_product_permutation(spatial_dim);
 
                 if(is_volume) {
-                   // UVector x = (*adapter.permutation()) * contact_data.gap_x;
-                    UVector x = (*adapter.tensor_permutation()) * contact_data.normal_xyz;
+                   UVector x = (*adapter.permutation()) * contact_data.gap_x;
+                    // UVector x = (*adapter.tensor_permutation()) * contact_data.normal_xyz;
                     write("warped.e", V, x);
                 }
             }

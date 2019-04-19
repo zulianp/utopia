@@ -85,26 +85,27 @@ namespace utopia {
         template<typename T, int Dim>
         inline void make_non_affine(const libMesh::Elem &elem, moonolith::Polygon<T, Dim> &poly)
         {
-           assert(is_tri(elem.type()) || is_quad(elem.type()));
-           auto n_corner_nodes = is_tri(elem.type()) ? 3 : 4;
-           auto n_nodes = elem.n_nodes();
+            assert(is_tri(elem.type()) || is_quad(elem.type()));
+            auto n_corner_nodes = is_tri(elem.type()) ? 3 : 4;
+            auto n_nodes = elem.n_nodes();
 
-           if(n_nodes == n_corner_nodes) {
+            if(n_nodes == n_corner_nodes) {
                 //fallback to affine case
                 return make(elem, poly);
-           }
+            }
 
-           //P2 only
-           assert(n_nodes = n_corner_nodes * 2);
+            //P2 only
+            assert(n_nodes = n_corner_nodes * 2);
 
-           poly.resize(n_nodes);
+            poly.resize(n_nodes);
 
-           for(auto i = 0; i < n_nodes; i+=2) {
-               const auto &p = elem.node_ref(i);
-               const auto &q = elem.node_ref(i + n_corner_nodes);
-               make(p, poly.points[i]);
-               make(q, poly.points[i + 1]);
-           }
+            for(auto i = 0; i < n_corner_nodes; ++i) {
+                const auto i2 = i*2;
+                const auto &p = elem.node_ref(i);
+                const auto &q = elem.node_ref(i + n_corner_nodes);
+                make(p, poly.points[i2]);
+                make(q, poly.points[i2 + 1]);
+            }
         }
 
         template<typename T>
