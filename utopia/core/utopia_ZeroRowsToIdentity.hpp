@@ -3,37 +3,45 @@
 
 #include "utopia_Traits.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Temp.hpp"
 
 #include <vector>
 #include <cmath>
+
 
 namespace utopia {
 
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
     class ZeroRowsToIdentity {
     public:
-        using Scalar = UTOPIA_SCALAR(Matrix);
+        using Scalar   = UTOPIA_SCALAR(Matrix);
+        using SizeType = UTOPIA_SIZE_TYPE(Matrix);
 
         static void apply(Matrix &A, const Scalar tol = 0.)
         {
             Size s = local_size(A);
             const std::size_t n = s.get(0);
-            std::vector<bool> d(n, false);
+            std::vector<bool> is_zero_row(n, true);
             const std::size_t r_begin = row_range(A).begin();
 
-            each_read(A,[&d, r_begin, tol](const SizeType i, const SizeType, const double val) {
+            each_read(A,[&is_zero_row, r_begin, tol](const SizeType i, const SizeType, const double val) {
                 if(std::abs(val) > tol) {
-                    d[i - r_begin] = true;
+                    is_zero_row[i - r_begin] = false;
                 }
             });
 
-            Write<Matrix> w(A);
+            std::vector<SizeType> idx;
+            idx.reserve(is_zero_row.size());
+
             for(std::size_t i = 0; i < n; ++i) {
-                if(!d[i]) {
-                    auto i_global = i + r_begin;
-                    A.set(i_global, i_global, 1.);
+                if(is_zero_row[i]) {
+                    idx.push_back(i + r_begin);
                 }
             }
+
+            //hack in case some rows do not exist (relevant for petsc)
+            A += 0. * local_identity(local_size(A));
+            set_zero_rows(A, idx, 1.);
         }
     };
 

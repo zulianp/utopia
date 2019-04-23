@@ -38,8 +38,6 @@ namespace utopia {
         MatrixInserter gap, normal;
         MatrixInserter area;
 
-        
-
         class Tensors {
         public:
             USparseMatrix B, D, Q, T;
@@ -58,11 +56,16 @@ namespace utopia {
 
                 out.weighted_gap = perm * weighted_gap;
                 // out.normal = tensorized_perm * normal;
+              
             }
 
             void finalize(const SizeType spatial_dim)
             {
-                zero_rows_to_identity(D, 1e-15);
+                D += 0. * local_identity(local_size(D));
+                zero_rows_to_identity(D, 1e-13);
+
+                write("B.m", B);
+                write("D.m", D);
                 
                 gap = local_zeros(local_size(weighted_gap));
                 solver.update(make_ref(D)); 
@@ -97,29 +100,77 @@ namespace utopia {
 
   
 
-        void finalize(const LibMeshFunctionSpaceAdapter &adapter)
+        void finalize(
+            const LibMeshFunctionSpaceAdapter &adapter,
+            const UVector &volumes)
         {
             const SizeType n_local_elems = adapter.n_local_elems();
             const SizeType n_local_dofs  = adapter.n_local_dofs();
             const SizeType spatial_dim   = adapter.spatial_dim();
 
+            area.finalize(n_local_elems);
+            area.fill(element_wise.area);
+
+
+            auto r = range(volumes);
+
+            std::vector<bool> remove(r.extent(), false);
+
+            {
+                Read<UVector> rv(volumes), ra(element_wise.area);
+
+                for(auto i = r.begin(); i < r.end(); ++i) {
+                    if(!approxeq(volumes.get(i), element_wise.area.get(i), 1e-3)) {
+                        remove[i - r.begin()] = true;
+                    } else {
+                        std::cout << "=====================================\n";
+                        std::cout << i << ") " << volumes.get(i) << " == " << element_wise.area.get(i) << std::endl;
+                    }
+
+                } 
+            }
+
+
+            {
+                Write<USparseMatrix> wD(element_wise.D);
+                Write<UVector> wg(element_wise.gap);
+
+                std::vector<double> zeros;
+                SizeType i = 0;
+                for(auto e_it = elements_begin(adapter.mesh()); e_it != elements_end(adapter.mesh()); ++e_it, ++i) {
+                    if(remove[i]) {
+                        const auto &dofs = adapter.dof_map()[i].global;
+                        zeros.resize(dofs.size() * dofs.size(), 0.);
+                        element_wise.D.set_matrix(dofs, dofs, zeros);
+
+                        for(auto d : dofs) {
+                            element_wise.gap.set(d, 0.);
+                        }
+                    }
+
+                }
+            }
+
+
             B.finalize(n_local_dofs, n_local_dofs);
             D.finalize(n_local_dofs, n_local_dofs);
             gap.finalize(n_local_dofs);
             normal.finalize(n_local_dofs * spatial_dim);
-            area.finalize(n_local_elems);
+            
 
             B.fill(element_wise.B);
             D.fill(element_wise.D);
             gap.fill(element_wise.weighted_gap);
             normal.fill(element_wise.normal);
-            area.fill(element_wise.area);
+            
 
             double sum_B_x = sum(element_wise.B);
             double sum_D_x = sum(element_wise.D);
             double sum_normal_xyz = sum(element_wise.normal);
 
             assert(adapter.permutation());
+
+
 
             element_wise.convert(
                 *adapter.permutation(),
@@ -421,7 +472,6 @@ namespace utopia {
             const moonolith::Storage<double> &gap
         )
         {
-
             ///////////////////////////////////////////////////////
             //set-up
 
@@ -602,8 +652,8 @@ namespace utopia {
             volumes
         );
 
-        adapter.make_tensor_product_permutation(adapter.spatial_dim());
-        contact_data.finalize(adapter);
+        // adapter.make_tensor_product_permutation(adapter.spatial_dim());
+        contact_data.finalize(adapter, volumes);
         return contact_algo.area > 0.;
     }
 
