@@ -131,27 +131,6 @@ namespace utopia {
             }
 
 
-            {
-                Write<USparseMatrix> wD(element_wise.D);
-                Write<UVector> wg(element_wise.gap);
-
-                std::vector<double> zeros;
-                SizeType i = 0;
-                for(auto e_it = elements_begin(adapter.mesh()); e_it != elements_end(adapter.mesh()); ++e_it, ++i) {
-                    if(remove[i]) {
-                        const auto &dofs = adapter.dof_map()[i].global;
-                        zeros.resize(dofs.size() * dofs.size(), 0.);
-                        element_wise.D.set_matrix(dofs, dofs, zeros);
-
-                        for(auto d : dofs) {
-                            element_wise.gap.set(d, 0.);
-                        }
-                    }
-
-                }
-            }
-
-
             B.finalize(n_local_dofs, n_local_dofs);
             D.finalize(n_local_dofs, n_local_dofs);
             gap.finalize(n_local_dofs);
@@ -162,6 +141,27 @@ namespace utopia {
             D.fill(element_wise.D);
             gap.fill(element_wise.weighted_gap);
             normal.fill(element_wise.normal);
+
+            //FIXME use fill methods
+            {
+                Write<USparseMatrix> wD(element_wise.D);
+                Write<UVector> wg(element_wise.weighted_gap);
+
+                std::vector<double> zeros;
+                SizeType i = 0;
+                for(auto e_it = elements_begin(adapter.mesh()); e_it != elements_end(adapter.mesh()); ++e_it, ++i) {
+                    if(remove[i]) {
+                        const auto &dofs = adapter.dof_map()[i].global;
+                        zeros.resize(dofs.size() * dofs.size(), 0.);
+                        element_wise.D.set_matrix(dofs, dofs, zeros);
+
+                        for(auto d : dofs) {
+                            element_wise.weighted_gap.set(d, 0.);
+                        }
+                    }
+
+                }
+            }
             
 
             double sum_B_x = sum(element_wise.B);
