@@ -315,6 +315,26 @@ namespace utopia
             this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
 
 
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////Debugging stuff - works well with identity transfer ////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            Vector test_tr_lower, test_tr_upper; 
+
+            test_tr_upper =  this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+            test_tr_lower =  this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+
+            test_tr_upper -= constraints_memory_.tr_upper[level]; 
+            test_tr_lower -= constraints_memory_.tr_lower[level]; 
+
+            std::cout<<"norm(TR_lower): "<< norm2(test_tr_lower) << " \n"; 
+            std::cout<<"norm(test_tr_upper): "<< norm2(test_tr_upper) << " \n"; 
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
             if(has_box_constraints_)
             {
                 //----------------------------------------------------------------------------
@@ -327,6 +347,22 @@ namespace utopia
                 Vector ux =  (constraints_memory_.x_upper[finer_level] - this->memory_.x[finer_level]);
                 Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
                 constraints_memory_.x_upper[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), upper_multiplier);
+
+
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////////Debugging stuff - works well with identity transfer ////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                Vector test_UB, test_LB; 
+                test_UB = constraints_memory_.x_upper[level] - constraints_memory_.x_upper[finer_level]; 
+                test_LB = constraints_memory_.x_lower[level] - constraints_memory_.x_lower[finer_level]; 
+                std::cout<<"norm(test_UB): "<< norm2(test_UB) << " \n"; 
+                std::cout<<"norm(test_LB): "<< norm2(test_LB) << " \n"; 
+                std::cout<<"---- OVERWRITING SCALING OF CONSTRAINTS \n"; 
+                constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
+                constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
+                std::cout<<"------- TO be fixed:: works only with the identity constraints ..... \n"; 
+
+
 
                 //----------------------------------------------------------------------------
                 //     intersect bounds on the coarse level
@@ -420,6 +456,10 @@ namespace utopia
             get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc);
 
             Pc -= this->memory_.x[level];
+
+            std::cout<<"level: "<< level << " \n"; 
+            std::cout<<"norm2(g) "<< norm2(this->memory_.g[level]) << "    Pc_norm(g): "<< norm2(Pc) << "  \n"; 
+
             return norm2(Pc);
         }
 
@@ -476,7 +516,6 @@ namespace utopia
             );
 
 
-
             // generating constraints to go for QP solve
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
@@ -484,16 +523,44 @@ namespace utopia
             // // setting should be really parameters from outside ...
             // this->_tr_subproblems[level]->atol(1e-16);
 
-            // if(flg)
+            // To do this, we need to do some casting to QP solver, not to matrix free thing... 
+            // if(flg){
             //     this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
-            // else
+            // }
+            // else{
             //     this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
+            // }
 
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
             _tr_subproblems[level]->set_box_constraints(box);
 
             this->_tr_subproblems[level]->solve(*multiplication_action, -1.0 * this->memory_.g[level], this->memory_.s[level]);
+
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////Debugging stuff ////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////            
+            Vector s = this->memory_.s[level]; 
+            Vector test = 0*s; 
+
+            {
+                  Read<Vector> rs(s), rl(l), ru(u);
+                  Write<Vector> wv(test);
+
+                  each_write(test, [&l, &u, &s](const SizeType i) -> double
+                  {
+                    auto ui = u.get(i);
+                    auto li = l.get(i);
+                    auto si = s.get(i);
+                    return  ( (si > ui) || (si < li))  ? 1.0 : 0.0; }   );
+
+            }
+
+            std::cout<< "norm_infty(test)  "<< norm_infty(test) <<"  \n"; 
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
             // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
