@@ -520,11 +520,10 @@ namespace utopia
             // swap back....
             this->memory_.g[level] = grad_old;
 
-            std::cout<<"grad_old: "<< norm2(grad_old) << "   \n"; 
-            std::cout<<"norm2( this->memory_.g[level]): "<< norm2( this->memory_.g[level]) << "   \n"; 
-            std::cout<<"norm2(y): "<< norm2(y) << "   \n"; 
-
-            std::cout<<"norm2(this->memory_.s[level]): "<< norm2(this->memory_.s[level]) << "   \n"; 
+            // std::cout<<"grad_old: "<< norm2(grad_old) << "   \n"; 
+            // std::cout<<"norm2( this->memory_.g[level]): "<< norm2( this->memory_.g[level]) << "   \n"; 
+            // std::cout<<"norm2(y): "<< norm2(y) << "   \n"; 
+            // std::cout<<"norm2(this->memory_.s[level]): "<< norm2(this->memory_.s[level]) << "   \n"; 
 
             hessian_approxs_[level]->update(this->memory_.s[level], y);
 
