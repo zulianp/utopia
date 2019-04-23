@@ -101,6 +101,53 @@ namespace utopia {
         }
     };
 
+
+
+    /*!
+    * @brief Triple product (m1 * m2 * m1^T := m1 * m2 * transpose(m1)) optimization for the petsc backend
+    */
+    template<class M1, class M2, class Traits>
+    class Eval<
+        //The pattern to match
+        Multiply< Multiply<M1, M2>, Transposed<M1>>,
+        //Type information
+        Traits,
+        //Restriction to the backend with the PETSC tag.
+        PETSC> {
+    public:
+        typedef utopia::Multiply< Multiply<M1, M2>, Transposed<M1>> Expr;
+
+        inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+        {
+            EXPR_TYPE(Traits, Expr) result;
+
+            UTOPIA_TRACE_BEGIN(expr);
+
+            //Check if left and right operands are the same object
+            if(&expr.left().left() == &expr.right().expr()) {
+                //Perform optimal triple product
+                UTOPIA_BACKEND(Traits).triple_product_rart(
+                    result,
+                    Eval<M1, Traits>::apply(expr.left().right()),
+                    Eval<M2, Traits>::apply(expr.right().expr())
+                );
+
+            } else {
+                //Perform general triple product
+                UTOPIA_BACKEND(Traits).triple_product(
+                    result,
+                    Eval<M1, Traits>::apply(expr.left().left()),
+                    Eval<M2, Traits>::apply(expr.left().right()),
+                    Eval<Transposed<M1>, Traits>::apply(expr.right())
+                );
+            }
+
+            // assert( result.same_type(Eval<M1, Traits>::apply(expr.right())) );
+            UTOPIA_TRACE_END(expr);
+            return result;
+        }
+    };
+
     //! [pattern matching and optimizations]
 
     template<class Left, class Right, class Traits>

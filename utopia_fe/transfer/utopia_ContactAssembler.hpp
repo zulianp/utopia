@@ -459,6 +459,11 @@ namespace utopia {
             return fe_type_.size();
         } 
 
+        inline int spatial_dim() const
+        {
+            return mesh_->spatial_dimension();
+        }
+
         FEType &fe_type(const std::size_t i)
         {
             assert(i < fe_type_.size());
@@ -538,16 +543,6 @@ namespace utopia {
 
             permutation_ = std::make_shared<USparseMatrix>();
 
-            // bundary_permutation_matrix(
-            // *b_mesh,
-            // dof_map,
-            // sys.get_dof_map(),
-            // var_num,
-            // 0,
-            // 0,
-            // 0,
-            // *permutation_);
-
             bundary_permutation_map(
                 *b_mesh,
                 dof_map,
@@ -565,6 +560,49 @@ namespace utopia {
             );
 
             n_local_dofs_ =  sys.get_dof_map().n_local_dofs();
+        }
+
+
+        void extract_surface_init_for_contact(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const libMesh::DofMap &dof_map,
+            const int var_num)
+        {
+            auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
+
+            mesh->get_boundary_info().sync(*b_mesh);
+
+            es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
+            es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
+
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+            auto &sys = es->get_system("boundary_sys");
+            auto b_var_num = sys.add_variable("lambda", fe_type); 
+            es->init();
+
+            init(b_mesh, sys.get_dof_map(), b_var_num);
+            is_extracted_surface_ = true;
+            boundary_ids_workaround(*mesh);
+
+            permutation_ = std::make_shared<USparseMatrix>();
+
+            bundary_permutation_map(
+                *b_mesh,
+                dof_map,
+                sys.get_dof_map(),
+                var_num,
+                0,
+                0,
+                0,
+                boundary_to_volume_map
+            );
+
+            n_local_dofs_ = element_node_dof_map_and_permutation(
+                                   *b_mesh,
+                                   sys.get_dof_map(),
+                                   boundary_to_volume_map,
+                                   dof_map_,
+                                    *permutation_);
         }
 
         static Integer tag(const ElementIter &e_it)
@@ -650,17 +688,17 @@ namespace utopia {
             n_local_dofs_ = dof_map.n_local_dofs();
         }
 
-        const std::shared_ptr<USparseMatrix> &permutation()
+        const std::shared_ptr<USparseMatrix> &permutation() const
         {
             return permutation_;
         }
 
-        const std::shared_ptr<USparseMatrix> &tensor_permutation()
+        const std::shared_ptr<USparseMatrix> &tensor_permutation() const
         {
             return tensor_permutation_;
         }
 
-        static void bundary_permutation_matrix(
+        void bundary_permutation_matrix(
             const libMesh::MeshBase &boundary_mesh,
             const libMesh::DofMap &volume_dof_map,
             const libMesh::DofMap &surface_dof_map,
@@ -670,52 +708,21 @@ namespace utopia {
             unsigned int b_comp,
             USparseMatrix &matrix)
         {
-            std::vector<libMesh::dof_id_type> dof_boundary;
+            bundary_permutation_map(
+                boundary_mesh,
+                volume_dof_map,
+                surface_dof_map,
+                var_num,
+                comp,
+                b_var_num,
+                b_comp,
+                boundary_to_volume_map
+            );
 
-            unsigned int sys_num   = volume_dof_map.sys_number();
-            unsigned int b_sys_num = surface_dof_map.sys_number();
-
-            matrix = local_sparse(volume_dof_map.n_local_dofs(), surface_dof_map.n_local_dofs(), 1);
-
-            utopia::Write<USparseMatrix> w(matrix);
-            auto rr = row_range(matrix);
-
-            // loop through all boundary elements.
-            for (const auto & b_elem : boundary_mesh.active_local_element_ptr_range())
-            {
-                const libMesh::Elem * v_elem = b_elem->interior_parent();
-
-                // loop through all nodes in each boundary element.
-                for (unsigned int node = 0; node < b_elem->n_nodes(); node++) {
-                    
-                    // Node in boundary element.
-                    const libMesh::Node * b_node = b_elem->node_ptr(node);
-
-                    for (unsigned int node_id=0; node_id < v_elem->n_nodes(); node_id++)
-                    {
-                        // Nodes in interior_parent element.
-                        const libMesh::Node * v_node = v_elem->node_ptr(node_id);
-
-                        const auto v_dof = v_node->dof_number(
-                                                        sys_num,
-                                                        var_num,
-                                                        comp);
-
-                        if (v_node->absolute_fuzzy_equals(*b_node, 1e-14))
-                        {
-                            // Global dof_index for node in BoundaryMesh
-                            const auto b_dof = b_node->dof_number(
-                                                            b_sys_num,
-                                                            b_var_num,
-                                                            b_comp);
-                           
-                            if(rr.inside(b_dof)){
-                                matrix.set(v_dof, b_dof, 1.0);
-                            }
-                        }
-                    }
-                }
-            }
+            bundary_permutation_matrix_from_map(
+                boundary_to_volume_map,
+                *permutation_
+            );
         }
 
         class Map {
@@ -729,7 +736,7 @@ namespace utopia {
         };
 
         static void bundary_permutation_matrix_from_map(
-            Map &map,
+            const Map &map,
             USparseMatrix &mat)
         {
             auto n_local_dof_vol = map.to_range_end - map.to_range_begin;
@@ -741,6 +748,67 @@ namespace utopia {
             for(std::size_t i = 0; i < n_local_dofs_surf; ++i) {
                 mat.set(map.idx[i], i + map.from_range_begin, 1.);
             }
+        }
+
+        static SizeType element_node_dof_map_and_permutation(
+            const libMesh::MeshBase &mesh,
+            const libMesh::DofMap &dof_map,
+            const Map &map,
+            std::vector<ElementDofMap> &elem_dof_map,
+            USparseMatrix &mat)
+        {
+            moonolith::Communicator comm(mesh.comm().get());
+
+            auto n_local_dof_vol  = map.to_range_end   - map.to_range_begin;
+            auto n_local_dof_surf = map.from_range_end - map.from_range_begin;
+            
+            SizeType dof_x_elem = 0, n_local_elems = mesh.n_active_local_elem();
+            std::vector<libMesh::dof_id_type> dof_indices;
+
+            {
+                auto e_it = elements_begin(mesh);
+                if(e_it != elements_end(mesh)) {
+                    dof_map.dof_indices(*e_it, dof_indices);
+                    dof_x_elem = dof_indices.size();
+                }
+            }
+
+            std::vector<SizeType> dof_offsets(comm.size() + 1, 0);
+            dof_offsets[comm.rank() + 1] = dof_x_elem * n_local_elems;
+
+            comm.all_reduce(&dof_offsets[0], dof_offsets.size(), moonolith::MPISum());
+
+            auto start_dof = dof_offsets[comm.rank()];
+            auto n_local_e2n_dofs_surf = dof_offsets[comm.rank() + 1] - start_dof;
+
+            mat = local_sparse(n_local_dof_vol, n_local_e2n_dofs_surf, 1);
+
+            auto r_begin = map.from_range_begin;
+
+            elem_dof_map.resize(n_local_elems);
+
+            SizeType el_idx = 0;
+            SizeType idx = start_dof;
+            Write<USparseMatrix> w(mat);
+            for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it, ++el_idx) {
+                dof_map.dof_indices(*e_it, dof_indices);
+
+                auto &el_dof = elem_dof_map[el_idx];
+                auto n = dof_indices.size();
+                el_dof.global.resize(n);
+                el_dof.global_id = (*e_it)->id();
+
+                for(std::size_t k = 0; k < n; ++k, ++idx) {
+                    const auto i = dof_indices[k];
+                    const auto local_i = i - r_begin;
+                    assert(local_i < map.idx.size());
+
+                    mat.set(map.idx[local_i], idx, 1.);
+                    el_dof.global[k] = idx;
+                }
+            }
+
+            return n_local_e2n_dofs_surf;
         }
 
         static void bundary_permutation_map(

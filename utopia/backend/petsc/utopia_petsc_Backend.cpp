@@ -930,7 +930,7 @@ namespace utopia {
 
     void PetscBackend::triple_product_ptap(PetscMatrix & result, const PetscMatrix & A, const PetscMatrix &P)
     {
-        if(result.implementation()  != A.implementation() &&
+        if(result.implementation() != A.implementation() &&
            result.implementation() != P.implementation()) {
             MatDestroy(&result.implementation());
         } else {
@@ -951,6 +951,19 @@ namespace utopia {
         }
 
         assert(result.same_type(A));
+    }
+
+    void PetscBackend::triple_product_rart(PetscMatrix &result, const PetscMatrix &A, const PetscMatrix &R)
+    {
+        if(result.implementation() != A.implementation() &&
+           result.implementation() != R.implementation()) {
+            MatDestroy(&result.implementation());
+        } else {
+            std::cerr << "[Error] not handled case in triple_product_ptap" << std::endl;
+            assert(false);
+        }
+
+        check_error( MatRARt(A.implementation(), R.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );
     }
 
     void PetscBackend::triple_product(PetscMatrix &result, const PetscMatrix &A, const PetscMatrix &B, const PetscMatrix &C)

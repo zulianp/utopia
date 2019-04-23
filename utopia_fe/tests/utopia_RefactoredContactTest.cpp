@@ -38,83 +38,96 @@ namespace utopia {
         MatrixInserter gap, normal;
         MatrixInserter area;
 
+        
 
-        //scalar version
-        USparseMatrix B_x, D_x;
-        UVector weighted_gap_x, gap_x;
-        UVector diag_inv_D_x;
-        UVector area_x;
+        class Tensors {
+        public:
+            USparseMatrix B, D, Q, T;
+            UVector weighted_gap, gap, normal;
+            UVector area;
 
-        //vector version
-        UVector normal_xyz;
-        UVector diag_inv_D_xyz;
+            Factorization<USparseMatrix, UVector> solver;
+
+            void convert(
+                const USparseMatrix &perm,
+                const USparseMatrix &tensorized_perm,
+                Tensors &out) const
+            {
+                out.B = perm * B * transpose(perm);
+                out.D = perm * D * transpose(perm);
+
+                out.weighted_gap = perm * weighted_gap;
+                // out.normal = tensorized_perm * normal;
+            }
+
+            void finalize(const SizeType spatial_dim)
+            {
+                zero_rows_to_identity(D, 1e-15);
+                
+                gap = local_zeros(local_size(weighted_gap));
+                solver.update(make_ref(D)); 
+                solver.apply(weighted_gap, gap);
+
+                // switch_dim(diag_inv_D_x, spatial_dim, diag_inv_D_xyz);
+            }
+
+            void switch_dim(
+                const UVector &in,
+                const SizeType spatial_dim,
+                UVector &out)
+            {
+                out = local_zeros(local_size(in).get(0) * spatial_dim);
+                Write<UVector> w(out);
+
+                each_read(in, [&](const SizeType i, const double val) {
+                    for(SizeType d = 0; d < spatial_dim; ++d) {
+                        out.set(i * spatial_dim + d, val);
+                    }
+                });
+            }
+        };
+
+        Tensors element_wise;
+        Tensors dof_wise;
 
         inline MPI_Comm comm() const
         {
             return B.comm.get();
         }
 
-        void switch_dim(
-            const UVector &in,
-            const SizeType spatial_dim,
-            UVector &out)
-        {
-            out = local_zeros(local_size(in).get(0) * spatial_dim);
-            Write<UVector> w(out);
+  
 
-            each_read(in, [&](const SizeType i, const double val) {
-                for(SizeType d = 0; d < spatial_dim; ++d) {
-                    out.set(i * spatial_dim + d, val);
-                }
-            });
-        }
-
-        void finalize(
-            const SizeType n_local_elems,
-            const SizeType n_local_dofs,
-            const SizeType spatial_dim)
+        void finalize(const LibMeshFunctionSpaceAdapter &adapter)
         {
+            const SizeType n_local_elems = adapter.n_local_elems();
+            const SizeType n_local_dofs  = adapter.n_local_dofs();
+            const SizeType spatial_dim   = adapter.spatial_dim();
+
             B.finalize(n_local_dofs, n_local_dofs);
             D.finalize(n_local_dofs, n_local_dofs);
             gap.finalize(n_local_dofs);
             normal.finalize(n_local_dofs * spatial_dim);
             area.finalize(n_local_elems);
 
-            B.fill(B_x);
-            D.fill(D_x);
-            gap.fill(weighted_gap_x);
-            normal.fill(normal_xyz);
-            area.fill(area_x);
+            B.fill(element_wise.B);
+            D.fill(element_wise.D);
+            gap.fill(element_wise.weighted_gap);
+            normal.fill(element_wise.normal);
+            area.fill(element_wise.area);
 
-            double sum_B_x = sum(B_x);
-            double sum_D_x = sum(D_x);
-            double sum_normal_xyz = sum(normal_xyz);
+            double sum_B_x = sum(element_wise.B);
+            double sum_D_x = sum(element_wise.D);
+            double sum_normal_xyz = sum(element_wise.normal);
 
-            UVector d = sum(D_x, 1);
-            diag_inv_D_x = local_zeros(local_size(d));
+            assert(adapter.permutation());
 
-            {
-                Write<UVector> w(diag_inv_D_x);
+            element_wise.convert(
+                *adapter.permutation(),
+                *adapter.tensor_permutation(),
+                dof_wise
+            );
 
-                each_read(d, [this](const SizeType i, const double value) {
-                    if(std::abs(value) > 1e-15) {
-                        diag_inv_D_x.set(i, 1./value);
-                    }
-                });
-            }
-
-            zero_rows_to_identity(D_x, 1e-15);
-            Factorization<USparseMatrix, UVector> solver;
-            solver.solve(D_x, weighted_gap_x, gap_x);
-
-            switch_dim(diag_inv_D_x, spatial_dim, diag_inv_D_xyz);
-
-            normal_xyz = e_mul(diag_inv_D_xyz, normal_xyz);
-
-            std::cout << sum_B_x << " == " << sum_D_x << std::endl;
-            std::cout << sum_normal_xyz << std::endl;
-
-            write("area_x.m", area_x);
+            dof_wise.finalize(spatial_dim);
         }
 
         ContactData(MPI_Comm comm) : B(comm), D(comm), gap(comm), normal(comm), area(comm) {}
@@ -458,6 +471,9 @@ namespace utopia {
             //check on the area
             assert(isect_area > 0.);
             area += isect_area;
+
+
+            std::cout << moonolith::measure(warped_contact.slave) << " == " << isect_area << " == " << moonolith::measure(q_slave) << std::endl;
         }
 
         template<class Adapter>
@@ -573,9 +589,6 @@ namespace utopia {
         );
 
         ProjectionAlgorithm<Dim> contact_algo(contact_data);
-
-        // Write<UVector> w(contact_data.is_contact);
-
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
             return contact_algo.apply(master, slave);
         });
@@ -583,21 +596,14 @@ namespace utopia {
         m_comm.all_reduce(&contact_algo.area, 1, moonolith::MPISum());
         std::cout << "area: " << contact_algo.area << std::endl;
 
-
         UVector volumes;
         contact_algo.assemble_volumes(
             adapter,
             volumes
         );
 
-        write("vols.m", volumes);
-
-        contact_data.finalize(
-            adapter.n_local_elems(),
-            adapter.n_local_dofs(),
-            Dim
-        );
-
+        adapter.make_tensor_product_permutation(adapter.spatial_dim());
+        contact_data.finalize(adapter);
         return contact_algo.area > 0.;
     }
 
@@ -630,7 +636,7 @@ namespace utopia {
 
             if(is_volume) {
            
-                adapter.extract_surface_init(
+                adapter.extract_surface_init_for_contact(
                     make_ref(V.mesh()),
                     V.dof_map(),
                     params.contact_params.variable_number
@@ -661,13 +667,7 @@ namespace utopia {
             assert(found_contact);
 
             if(found_contact) {
-                adapter.make_tensor_product_permutation(spatial_dim);
-
-                if(is_volume) {
-                   UVector x = (*adapter.permutation()) * contact_data.gap_x;
-                    // UVector x = (*adapter.tensor_permutation()) * contact_data.normal_xyz;
-                    write("warped.e", V, x);
-                }
+                write("warped.e", V, contact_data.dof_wise.gap);
             }
 
             // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;

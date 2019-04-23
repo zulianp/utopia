@@ -416,6 +416,7 @@ namespace utopia {
         static void mat_mult_add(PetscVector &result, const PetscMatrix &m, const PetscVector &right, const PetscVector &left);
         static void mat_mult_t_add(PetscVector &result, const PetscMatrix &m, const PetscVector &right, const PetscVector &left);
         static void triple_product_ptap(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &);
+        static void triple_product_rart(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &);
         static void triple_product(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &, const PetscMatrix &);
 
 
