@@ -77,6 +77,92 @@ T*/
 #include <utopia.hpp>      
 
 
+namespace utopia 
+{
+    template<class Matrix, class Vector> 
+    class PETSCUtopiaNonlinearFunctionNormalEq : public LeastSquaresFunction<Matrix, Vector>, 
+                                                 public Function<Matrix, Vector>
+    {
+
+        public:
+            PETSCUtopiaNonlinearFunctionNormalEq(SNES snes) 
+            : snes(snes), first_grad(0) 
+            {
+            
+            }
+
+            bool gradient(const Vector &x, Vector &gradient) const override
+            {
+                if(first_grad == 0) 
+                {
+                    utopia::convert(snes->vec_sol_update, gradient);
+                    first_grad++;
+                }
+
+                SNESComputeFunction(snes, utopia::raw_type(x), utopia::raw_type(gradient));   
+                return true; 
+            }
+
+            bool hessian(const Vector &x, Matrix &hessian) const override
+            {
+                 SNESComputeJacobian(snes, utopia::raw_type(x), snes->jacobian,  snes->jacobian_pre);
+                 wrap(snes->jacobian, hessian);
+                return true; 
+            }
+
+            bool value(const Vector &point, typename Vector::Scalar &result) const override 
+            {
+                Vector bla = point; 
+                SNESComputeFunction(snes, utopia::raw_type(point), utopia::raw_type(bla));   
+                PetscReal val; 
+                // VecNorm(snes->vec_sol_update, NORM_2, &val);
+                val = norm2(bla);
+                result = val * val; 
+
+                return true; 
+            }
+
+            bool residual(const Vector &point, Vector &residual) const override 
+            {
+                if(first_resid == 0) 
+                {
+                    // utopia::convert(snes->vec_sol, residual);
+                  residual = point; 
+                    first_resid++;
+                }
+                SNESComputeFunction(snes,utopia::raw_type(point), utopia::raw_type(residual));  
+                return true; 
+            }
+
+
+            bool jacobian(const Vector &x, Matrix &jacobian) const override
+            {
+                SNESComputeJacobian(snes, utopia::raw_type(x), snes->jacobian,  snes->jacobian_pre);
+                convert(snes->jacobian, jacobian);
+                return true; 
+            }
+
+
+
+            bool update(const Vector &/*x*/) override
+            {
+
+                return true; 
+            }
+
+
+
+
+        private:
+
+            SNES snes;
+            mutable PetscInt first_grad = 0 ;
+            mutable PetscInt first_resid = 0;
+        };
+
+    }
+
+
 /*
    User-defined routines and data structures
 */
@@ -203,6 +289,7 @@ int main(int argc,char **argv)
     convert(Marker, Marker_u); 
     
     PETSCUtopiaNonlinearFunction<DSMatrixd, DVectord> fun(snes);
+    // PETSCUtopiaNonlinearFunctionNormalEq<DSMatrixd, DVectord> fun(snes);
 
     auto linear_solver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
     // Newton<DSMatrixd, DVectord> newton(linear_solver); 
@@ -232,6 +319,23 @@ int main(int argc,char **argv)
         }
       }
 
+      // Mass_utopia = 1./(0.0416667) * Mass_utopia; 
+      Mass_utopia = 1./(0.0208333) * Mass_utopia; 
+      
+//////////////////////////////////////////////////////////////////////////////////////////////////
+    // auto subproblem = std::make_shared<utopia::Dogleg<DSMatrixd, DVectord> >();
+    // auto lsolver = std::make_shared< LUDecomposition<DSMatrixd, DVectord> >();
+    // subproblem->set_linear_solver(lsolver); 
+
+
+    // LeastSquaresTrustRegion<DSMatrixd, DVectord> solver(subproblem);
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
     solver.set_mass_matrix(Mass_utopia); 
     solver.verbose(true);
 
@@ -242,6 +346,7 @@ int main(int argc,char **argv)
     // solver.set_m(-1); 
     solver.atol(1e-7); 
     solver.max_it(1000); 
+
     // solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
     solver.solve(fun, x_u); 
 
@@ -295,6 +400,8 @@ PetscErrorCode FormInitialGuess(AppCtx *user,DM da,Vec X)
 
   ierr = DMDAGetInfo(da,0,&mx,0,0,0,0,0,0,0,0,0,0,0);CHKERRQ(ierr);
   dx   = 1.0/(mx-1);
+
+  std::cout<<"dx: "<< dx << "  \n";
 
   /*
      Get local grid boundaries (for 2-dimensional DMDA):

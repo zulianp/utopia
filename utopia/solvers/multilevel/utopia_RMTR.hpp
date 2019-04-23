@@ -582,13 +582,15 @@ namespace utopia
 
                 // because, x + Is_{l-1} does not have to be inside of the feasible set....
                 // mostly case for rmtr_inf with bounds...
-                if(rho > this->rho_tol() && converged==false)
+                if(rho > this->rho_tol() && converged==false){
                     converged = this->check_feasibility(level);
+                }
 
 
                 // terminate, since TR rad. does not allow to take more corrections on given level
-                if(converged==true)
+                if(converged==true){
                     return true;
+                }
 
 
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)

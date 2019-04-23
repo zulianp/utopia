@@ -74,22 +74,26 @@ namespace utopia
                 Scalar nom      = dot(y,y);
                 Scalar denom    = dot(y,s);
 
+                // std::cout<<"denom:  "<< denom << "  nom: "<< nom << "   \n"; 
+
+                // if denom > eps, hessian approx. should be positive semidefinite
+                if(denom < 1e-12 || !std::isfinite(denom) || !std::isfinite(nom) )
+                {
+                    // if(mpi_world_rank()==0){
+                        // std::cout<<"denom:  "<< denom << "  nom: "<< nom << "   \n"; 
+                        // utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
+                    // }
+
+                    return false;
+                }                
+
                 // theta and gamma are inverse of each other
                 theta_ = nom/denom;
                 gamma_ = denom/nom;
 
-
-                // if denom > eps, hessian approx. should be positive semidefinite
-                if(denom < 1e-12 || !std::isfinite(denom))
-                {
-                    // if(mpi_world_rank()==0)
-                    //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
-
-                    return false;
-                }
-
-                if(m_ ==0)
+                if(m_ ==0){
                     return true;
+                }
 
                 if(current_m_ < m_)
                 {
@@ -100,8 +104,9 @@ namespace utopia
                     Scalar ys = 1./std::pow(denom, 1./2.);
                     b_[current_m_] = ys * y;
 
-                    if(current_m_ > 0)
+                    if(current_m_ > 0){
                         dots(S_[current_m_], b_, Sb_dots_[current_m_]);
+                    }
                 }
                 else
                 {
@@ -184,8 +189,9 @@ namespace utopia
                     result += (bv * b_[i]) - (av * a_[i]);
                 }
 
-                if(has_nan_or_inf(result))
+                if(has_nan_or_inf(result)){
                     result = theta_ * v;
+                }
 
                 return true;
             }
