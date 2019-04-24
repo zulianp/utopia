@@ -586,7 +586,7 @@ namespace utopia
                 });
             }
 
-            this->memory_.s[level] = s; 
+            this->memory_.s[level] = s_new; 
 
 
             // std::cout<< "norm_infty(test)  "<< norm_infty(test) <<"  \n"; 
