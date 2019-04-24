@@ -563,21 +563,31 @@ namespace utopia
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////Debugging stuff ////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////            
-            // Vector s = this->memory_.s[level]; 
-            // Vector test = 0*s; 
+            Vector s = this->memory_.s[level]; 
+            Vector s_new = s; 
 
-            // {
-            //       Read<Vector> rs(s), rl(l), ru(u);
-            //       Write<Vector> wv(test);
+            {
+                Read<Vector> rs(s), rl(l), ru(u);
+                Write<Vector> wv(s_new);
 
-            //       each_write(test, [&l, &u, &s](const SizeType i) -> double
-            //       {
-            //         auto ui = u.get(i);
-            //         auto li = l.get(i);
-            //         auto si = s.get(i);
-            //         return  ( (si > ui) || (si < li))  ? 1.0 : 0.0; }   );
+                each_write(s_new, [&l, &u, &s](const SizeType i) -> double
+                {
+                    auto ui = u.get(i);
+                    auto li = l.get(i);
+                    auto si = s.get(i);
 
-            // }
+                    if(si > ui)
+                        return ui; 
+                    else if(si < li)
+                        return li; 
+                    else 
+                        return si; 
+
+                });
+            }
+
+            this->memory_.s[level] = s; 
+
 
             // std::cout<< "norm_infty(test)  "<< norm_infty(test) <<"  \n"; 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
