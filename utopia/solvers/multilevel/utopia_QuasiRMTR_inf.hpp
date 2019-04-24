@@ -19,6 +19,9 @@
 #include "utopia_MultiLevelEvaluations.hpp"
 #include "utopia_RMTR.hpp"
 
+#include "utopia_Transfer.hpp"
+#include "utopia_IdentityTransfer.hpp"
+
 
 namespace utopia
 {
@@ -285,51 +288,60 @@ namespace utopia
 
             const SizeType finer_level = level+1;
 
-            //----------------------------------------------------------------------------
-            //     soft projection of tr bounds
-            //----------------------------------------------------------------------------
-            Vector tr_fine_last_lower = this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+
+            if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&this->transfer(level)))
             {
-                ReadAndWrite<Vector> rv(tr_fine_last_lower);
-                Read<Vector> rl(constraints_memory_.tr_lower[finer_level]);
-
-                Range r = range(tr_fine_last_lower);
-
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                    tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
+                // std::cout<<"yes, identity transfer, TR bounds ... \n"; 
+                constraints_memory_.tr_upper[level] =  this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+                constraints_memory_.tr_lower[level] =  this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
             }
-            this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
-
-
-
-            Vector tr_fine_last_upper = this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+            else
             {
-                ReadAndWrite<Vector> rv(tr_fine_last_upper);
-                Read<Vector> rl(constraints_memory_.tr_upper[finer_level]);
+                //----------------------------------------------------------------------------
+                //     soft projection of tr bounds
+                //----------------------------------------------------------------------------
+                Vector tr_fine_last_lower = this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+                {
+                    ReadAndWrite<Vector> rv(tr_fine_last_lower);
+                    Read<Vector> rl(constraints_memory_.tr_lower[finer_level]);
 
-                Range r = range(tr_fine_last_upper);
+                    Range r = range(tr_fine_last_lower);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                    tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
+                    for(SizeType i = r.begin(); i != r.end(); ++i)
+                        tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
+                }
+                this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
+
+
+
+                Vector tr_fine_last_upper = this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+                {
+                    ReadAndWrite<Vector> rv(tr_fine_last_upper);
+                    Read<Vector> rl(constraints_memory_.tr_upper[finer_level]);
+
+                    Range r = range(tr_fine_last_upper);
+
+                    for(SizeType i = r.begin(); i != r.end(); ++i)
+                        tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
+                }
+                this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
             }
-            this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
 
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////Debugging stuff - works well with identity transfer ////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            Vector test_tr_lower, test_tr_upper; 
+            // Vector test_tr_lower, test_tr_upper; 
 
-            test_tr_upper =  this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-            test_tr_lower =  this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+            // test_tr_upper =  this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
+            // test_tr_lower =  this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
 
-            test_tr_upper -= constraints_memory_.tr_upper[level]; 
-            test_tr_lower -= constraints_memory_.tr_lower[level]; 
+            // test_tr_upper -= constraints_memory_.tr_upper[level]; 
+            // test_tr_lower -= constraints_memory_.tr_lower[level]; 
 
-            std::cout<<"norm(TR_lower): "<< norm2(test_tr_lower) << " \n"; 
-            std::cout<<"norm(test_tr_upper): "<< norm2(test_tr_upper) << " \n"; 
+            // std::cout<<"norm(TR_lower): "<< norm2(test_tr_lower) << " \n"; 
+            // std::cout<<"norm(test_tr_upper): "<< norm2(test_tr_upper) << " \n"; 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 
 
@@ -337,31 +349,40 @@ namespace utopia
 
             if(has_box_constraints_)
             {
-                //----------------------------------------------------------------------------
-                //     projection of variable bounds to the coarse level
-                //----------------------------------------------------------------------------
-                Vector lx =  (constraints_memory_.x_lower[finer_level] - this->memory_.x[finer_level]);
-                Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(lx);
-                constraints_memory_.x_lower[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), lower_multiplier);
 
-                Vector ux =  (constraints_memory_.x_upper[finer_level] - this->memory_.x[finer_level]);
-                Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
-                constraints_memory_.x_upper[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), upper_multiplier);
+                if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&this->transfer(level)))
+                {
+                    // std::cout<<"yes, identity transfer, LB, UB ... \n"; 
+                    constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
+                    constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
+                }
+                else
+                {
+                    //----------------------------------------------------------------------------
+                    //     projection of variable bounds to the coarse level
+                    //----------------------------------------------------------------------------
+                    Vector lx =  (constraints_memory_.x_lower[finer_level] - this->memory_.x[finer_level]);
+                    Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(lx);
+                    constraints_memory_.x_lower[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), lower_multiplier);
+
+                    Vector ux =  (constraints_memory_.x_upper[finer_level] - this->memory_.x[finer_level]);
+                    Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
+                    constraints_memory_.x_upper[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), upper_multiplier);
+                }
 
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 //////////////////////////////////////Debugging stuff - works well with identity transfer ////////////////////////////////
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                Vector test_UB, test_LB; 
-                test_UB = constraints_memory_.x_upper[level] - constraints_memory_.x_upper[finer_level]; 
-                test_LB = constraints_memory_.x_lower[level] - constraints_memory_.x_lower[finer_level]; 
-                std::cout<<"norm(test_UB): "<< norm2(test_UB) << " \n"; 
-                std::cout<<"norm(test_LB): "<< norm2(test_LB) << " \n"; 
-                std::cout<<"---- OVERWRITING SCALING OF CONSTRAINTS \n"; 
-                constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
-                constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
-                std::cout<<"------- TO be fixed:: works only with the identity constraints ..... \n"; 
-
+                // Vector test_UB, test_LB; 
+                // test_UB = constraints_memory_.x_upper[level] - constraints_memory_.x_upper[finer_level]; 
+                // test_LB = constraints_memory_.x_lower[level] - constraints_memory_.x_lower[finer_level]; 
+                // std::cout<<"norm(test_UB): "<< norm2(test_UB) << " \n"; 
+                // std::cout<<"norm(test_LB): "<< norm2(test_LB) << " \n"; 
+                // std::cout<<"---- OVERWRITING SCALING OF CONSTRAINTS \n"; 
+                // constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
+                // constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
+                // std::cout<<"------- TO be fixed:: works only with the identity constraints ..... \n"; 
 
 
                 //----------------------------------------------------------------------------
@@ -457,8 +478,8 @@ namespace utopia
 
             Pc -= this->memory_.x[level];
 
-            std::cout<<"level: "<< level << " \n"; 
-            std::cout<<"norm2(g) "<< norm2(this->memory_.g[level]) << "    Pc_norm(g): "<< norm2(Pc) << "  \n"; 
+            // std::cout<<"level: "<< level << " \n"; 
+            // std::cout<<"norm2(g) "<< norm2(this->memory_.g[level]) << "    Pc_norm(g): "<< norm2(Pc) << "  \n"; 
 
             return norm2(Pc);
         }
@@ -542,23 +563,23 @@ namespace utopia
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////Debugging stuff ////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////            
-            Vector s = this->memory_.s[level]; 
-            Vector test = 0*s; 
+            // Vector s = this->memory_.s[level]; 
+            // Vector test = 0*s; 
 
-            {
-                  Read<Vector> rs(s), rl(l), ru(u);
-                  Write<Vector> wv(test);
+            // {
+            //       Read<Vector> rs(s), rl(l), ru(u);
+            //       Write<Vector> wv(test);
 
-                  each_write(test, [&l, &u, &s](const SizeType i) -> double
-                  {
-                    auto ui = u.get(i);
-                    auto li = l.get(i);
-                    auto si = s.get(i);
-                    return  ( (si > ui) || (si < li))  ? 1.0 : 0.0; }   );
+            //       each_write(test, [&l, &u, &s](const SizeType i) -> double
+            //       {
+            //         auto ui = u.get(i);
+            //         auto li = l.get(i);
+            //         auto si = s.get(i);
+            //         return  ( (si > ui) || (si < li))  ? 1.0 : 0.0; }   );
 
-            }
+            // }
 
-            std::cout<< "norm_infty(test)  "<< norm_infty(test) <<"  \n"; 
+            // std::cout<< "norm_infty(test)  "<< norm_infty(test) <<"  \n"; 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
