@@ -10,6 +10,11 @@
 #include "moonolith_line.hpp"
 #include "moonolith_map_quadrature.hpp"
 #include "moonolith_affine_transform.hpp"
+#include "moonolith_elem_shape.hpp"
+#include "moonolith_vector.hpp"
+#include "moonolith_elem_triangle.hpp"
+#include "moonolith_elem_quad.hpp"
+#include "moonolith_elem_segment.hpp"
 
 #include "libmesh/point.h"
 #include "libmesh/elem.h"
@@ -613,6 +618,263 @@ namespace utopia {
         q1.y = p1(1);
 
         moonolith::make(q0, q1, trafo);
+    }
+
+
+    template<class E>
+    void make_triangle_1(const libMesh::Elem &in, E &out)
+    {
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(0.0, 0.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(0));
+        ///////////////////////////
+
+        ref_p(0) = 1.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(1));
+
+        ///////////////////////////
+        ref_p(0) = 0.0;
+        ref_p(1) = 1.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(2));
+    }
+
+    template<class E>
+    void make_triangle_2(const libMesh::Elem &in, E &out)
+    {
+        make_triangle_1(in, out);
+
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(0.5, 0.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(3));
+
+        ///////////////////////////
+        // ref_p(0) = 0.0;
+        ref_p(1) = 0.5;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(4));
+
+        ///////////////////////////
+        ref_p(0) = 0.0;
+        ref_p(1) = 0.5;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(5));
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Triangle<double, 1, Dim> &out)
+    {
+        make_triangle_1(in , out);
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Triangle<double, 2, Dim> &out)
+    {
+        make_triangle_2(in, out);
+        out.set_affine(in.has_affine_map());
+    }   
+
+
+    template<class E>
+    void make_quad_1(const libMesh::Elem &in, E &out)
+    {
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(-1.0, -1.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(0));
+        ///////////////////////////
+
+        ref_p(0) = 1.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(1));
+
+        ///////////////////////////
+        ref_p(1) = 1.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(2));
+
+        ///////////////////////////
+        ref_p(0) = -1.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(3));
+    }
+
+    template<class E>
+    void make_quad_2(const libMesh::Elem &in, E &out)
+    {
+        make_quad_1(in, out);
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(0.0, -1.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(3));
+        ///////////////////////////
+
+        ref_p(0) = 1.0;
+        ref_p(1) = 0.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(4));
+
+        ///////////////////////////
+        ref_p(0) = 0.0;
+        ref_p(1) = 1.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(5));
+
+        ///////////////////////////
+        ref_p(0) = -1.0;
+        ref_p(1) = 0.0;
+        p = libMesh::FE<2, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(6));
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Quad<double, 1, Dim> &out)
+    {
+        make_quad_1(in, out);
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Quad<double, 2, Dim> &out)
+    {
+        make_quad_2(in, out);
+        out.set_affine(in.has_affine_map());
+    }
+
+    template<class E>
+    void make_seg_1(const libMesh::Elem &in, E &out)
+    {
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(-1.0, 0.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<1, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(0));
+        ///////////////////////////
+
+        ref_p(0) = 1.0;
+        p = libMesh::FE<1, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(1));
+        ///////////////////////////
+    }
+
+    template<class E>
+    void make_seg_2(const libMesh::Elem &in, E &out)
+    {
+        make_seg_1(in, out);
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(0.0, 0.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<1, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(2));
+        ///////////////////////////
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Segment<double, 1, Dim> &out)
+    {
+        make_seg_1(in, out);
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Segment<double, 2, Dim> &out)
+    {
+        make_seg_2(in, out);
+        out.set_affine(in.has_affine_map());
+    }
+
+    template<class E> using LMS = moonolith::OwnedElemShape<E>;
+
+    template<int Dim>
+    std::unique_ptr< moonolith::Shape<double, Dim-1, Dim> > make_shape(const libMesh::Elem &elem, const libMesh::FEType &type);
+
+    template<>
+    std::unique_ptr< moonolith::Shape<double, 1, 2> > make_shape<2>(const libMesh::Elem &elem, const libMesh::FEType &type)
+    {
+        using moonolith::Segment;
+
+        if(is_edge(elem.type())) {
+
+             if(type.order == 2) {
+                 auto s = moonolith::make_unique< LMS< Segment<double, 2, 2> > >();
+                 make_element(elem, s->elem());
+                 s->init();
+                 return s;
+             }
+
+             if(type.order == 1) {
+                 auto s = moonolith::make_unique< LMS< Segment<double, 1, 2> > >();
+                 make_element(elem, s->elem());
+                 s->init();
+                 return s;
+             }
+        }
+
+        assert(false);
+        std::cerr << " unsupported type" << std::endl;
+        return nullptr;
+    }
+
+    template<>
+    std::unique_ptr< moonolith::Shape<double, 2, 3> > make_shape<3>(const libMesh::Elem &elem, const libMesh::FEType &type)
+    {
+       using moonolith::Triangle;
+       using moonolith::Quad;
+      
+       if(is_tri(elem.type())) {
+
+            if(type.order == 2) {
+                auto s = moonolith::make_unique< LMS< Triangle<double, 2, 3> > >();
+                make_element(elem, s->elem());
+                s->init();
+                return s;
+            }
+
+            if(type.order == 1) {
+                auto s = moonolith::make_unique< LMS< Triangle<double, 1, 3> > >();
+                make_element(elem, s->elem());
+                s->init();
+                return s;
+            }
+
+       } else if(is_quad(elem.type())) {
+
+            if(type.order == 2) {
+                auto s = moonolith::make_unique< LMS< Quad<double, 2, 3> > >();
+                make_element(elem, s->elem());
+                s->init();
+                return s;
+            }
+
+            if(type.order == 1) {
+                auto s = moonolith::make_unique< LMS< Quad<double, 1, 3> > >();
+                make_element(elem, s->elem());
+                s->init();
+                return s;
+            }
+
+       }
+
+       assert(false);
+       std::cerr << " unsupported type" << std::endl;
+       return nullptr;
     }
 
 }

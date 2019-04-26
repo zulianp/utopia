@@ -259,8 +259,8 @@ namespace utopia {
                 get_point(x_);
                 get_jacobian(J_);
 
-                JtJ_ = transpose(J_) * J_;
-                Jtn_ = transpose(J_) * n_;
+                // JtJ_ = transpose(J_) * J_;
+                // Jtn_ = transpose(J_) * n_;
 
                 r_ = p_ + t * n_;
 

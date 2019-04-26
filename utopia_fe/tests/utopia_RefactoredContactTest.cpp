@@ -26,6 +26,10 @@
 #include "moonolith_sparse_matrix.hpp"
 #include "moonolith_redistribute.hpp"
 #include "moonolith_assign_functions.hpp"
+#include "moonolith_elem_shape.hpp"
+#include "moonolith_elem_triangle.hpp"
+#include "moonolith_elem_quad.hpp"
+#include "moonolith_elem_segment.hpp"
 
 #include <vector>
 #include <memory>
@@ -202,16 +206,19 @@ namespace utopia {
         double    trial_weight_rescale;
         double    test_weight_rescale;
 
+        SubVector ref_point_shift;
+        double    ref_point_rescale;
+
         int current_order;
 
         void convert_master(const moonolith::Quadrature<double, Dim-1> &in, QMortar &out)
         {
-            convert(in, trial_weight_rescale, out);
+            convert(in, ref_point_shift, ref_point_rescale, trial_weight_rescale, out);
         }
 
         void convert_slave(const moonolith::Quadrature<double, Dim-1> &in, QMortar &out)
         {
-            convert(in, test_weight_rescale, out);
+            convert(in, ref_point_shift, ref_point_rescale, test_weight_rescale, out);
         }
 
         SurfaceQuadratureConverter()
@@ -230,12 +237,15 @@ namespace utopia {
             const int trial_order,
             const libMesh::Elem &test,
             const int test_order,
-            moonolith::Quadrature<double, Dim-1> &q)
+            moonolith::Quadrature<double, Dim-1> &q,
+            const bool shift_in_ref_el = false)
         {
             const int order = order_for_l2_integral(Dim-1, trial, trial_order, test, test_order);
 
             if(order != current_order) {
                 moonolith::fill(point_shift, 0.);
+                moonolith::fill(ref_point_shift, 0.);
+                ref_point_rescale = 1.0;
 
                 if(Dim == 2) {  
                     libMesh::QGauss ir(1, libMesh::Order(order));
@@ -250,6 +260,11 @@ namespace utopia {
                     point_rescale = 0.5;
                     weight_rescale = 0.5;
 
+                    if(shift_in_ref_el) {
+                        ref_point_shift.x = -1.0;
+                        ref_point_rescale = 2.0;
+                    }
+
                     convert(ir, point_shift, point_rescale, weight_rescale, q);
                 } else if(Dim == 3) {
 
@@ -262,6 +277,12 @@ namespace utopia {
                     }
 
                     weight_rescale = 2.0;
+
+
+                    if(shift_in_ref_el && is_quad(trial.type())) {
+                        ref_point_shift.x = -1.0;
+                        ref_point_rescale = 2.0;
+                    }
 
                     convert(ir, point_shift, point_rescale, weight_rescale, q);
 
@@ -575,12 +596,14 @@ namespace utopia {
 
             } else {
                 //WARPED CONTACT
-                bool use_newton = false;
-                // warped_contact.shape_master= std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);               
-                auto lm_shape_master = std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);               
-                // lm_shape_master->verbose(true);
-                warped_contact.shape_master = lm_shape_master;
-                warped_contact.shape_slave = std::make_shared<LibMeshShape<double, Dim>>(e_s, m_s.libmesh_fe_type(0), use_newton);
+                // bool shift_in_ref_el = false;
+                // bool use_newton = false;
+                // warped_contact.shape_master = std::make_shared<LibMeshShape<double, Dim>>(e_m, m_m.libmesh_fe_type(0), use_newton);
+                // warped_contact.shape_slave  = std::make_shared<LibMeshShape<double, Dim>>(e_s, m_s.libmesh_fe_type(0), use_newton);
+
+                bool shift_in_ref_el = true;
+                warped_contact.shape_master = make_shape<Dim>(e_m, m_m.libmesh_fe_type(0));
+                warped_contact.shape_slave  = make_shape<Dim>(e_s, m_s.libmesh_fe_type(0));
 
                 make_non_affine(e_m, warped_contact.master);
                 make_non_affine(e_s, warped_contact.slave);
@@ -590,7 +613,8 @@ namespace utopia {
                    m_m.fe_type(0).order,
                    e_s,
                    m_s.fe_type(0).order,
-                   warped_contact.q_rule
+                   warped_contact.q_rule,
+                   shift_in_ref_el
                 );
 
                 if(warped_contact.compute()) {

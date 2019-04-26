@@ -32,7 +32,7 @@ namespace utopia {
         void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
         void apply(const libMesh::Point &ref, libMesh::Point &world) const override;
 
-        inline bool apply(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 1> &out) const override
+        inline bool apply(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 1> &out) override
         {
             libMesh::Point ref(in.x), world;
             apply(ref, world);
@@ -41,7 +41,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 1> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 1> &out) override
         {
             libMesh::Point ref, world(in.x);
             transform_to_reference(ref, world);
@@ -50,7 +50,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref(in.x), world;
             apply(ref, world);
@@ -60,7 +60,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 1> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 1> &out) override
         {
             libMesh::Point ref, world(in.x, in.y);
             
@@ -95,7 +95,7 @@ namespace utopia {
 
         static void compute_affine_transformation(const libMesh::Elem * elem, libMesh::DenseMatrix<libMesh::Real> &A_inv);
 
-        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref(in.x, in.y), world;
             apply(ref, world);
@@ -106,7 +106,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref, world(in.x, in.y);
             transform_to_reference(ref, world);
@@ -116,7 +116,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref(in.x, in.y), world;
             apply(ref, world);
@@ -127,7 +127,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref, world(in.x, in.y, in.z);
             
@@ -157,7 +157,7 @@ namespace utopia {
         void apply(const libMesh::Point &ref, libMesh::Point &world) const override;
 
 
-        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref(in.x, in.y, in.z), world;
             apply(ref, world);
@@ -169,7 +169,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref, world(in.x, in.y, in.z);
             
@@ -219,7 +219,7 @@ namespace utopia {
             return A_inv_m_b_;
         }
 
-        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref(in.x, in.y), world;
             apply(ref, world);
@@ -229,7 +229,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref, world(in.x, in.y);
             
@@ -283,7 +283,7 @@ namespace utopia {
         }
 
 
-        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref(in.x, in.y, in.z), world;
             apply(ref, world);
@@ -295,7 +295,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref, world(in.x, in.y, in.z);
             
@@ -337,7 +337,7 @@ namespace utopia {
         void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
 
 
-        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref(in.x, in.y), world;
             apply(ref, world);
@@ -348,7 +348,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref, world(in.x, in.y, in.z);
             
@@ -359,7 +359,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref(in.x, in.y, in.z), world;
             apply(ref, world);
@@ -371,7 +371,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 3> &in, moonolith::Vector<double, 3> &out) override
         {
             libMesh::Point ref, world(in.x, in.y, in.z);
             
@@ -418,7 +418,7 @@ namespace utopia {
 
         void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
 
-        inline bool apply(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply(const moonolith::Vector<double, 1> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref(in.x), world;
             apply(ref, world);
@@ -428,7 +428,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 1> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 1> &out) override
         {
             libMesh::Point ref, world(in.x, in.y);
             
@@ -438,7 +438,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref(in.x, in.y), world;
             apply(ref, world);
@@ -449,7 +449,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) const override
+        inline bool apply_inverse(const moonolith::Vector<double, 2> &in, moonolith::Vector<double, 2> &out) override
         {
             libMesh::Point ref, world(in.x, in.y);
             transform_to_reference(ref, world);
