@@ -118,7 +118,9 @@ namespace utopia {
 
             auto r = range(volumes);
 
-            std::vector<bool> remove(r.extent(), false);
+            // std::vector<bool> remove(r.extent(), false);
+            std::vector<bool> remove(adapter.n_local_dofs(), false);
+            auto cr = adapter.permutation()->implementation().col_range();
 
             {
                 Read<UVector> rv(volumes), ra(element_wise.area);
@@ -129,6 +131,17 @@ namespace utopia {
                     if(a > 0.0) {
                         if(!approxeq(volumes.get(i), a, 1e-3)) {
                             remove[i - r.begin()] = true;
+
+                            const auto &dofs = adapter.dof_map()[i - r.begin()].global;
+                            // zeros.resize(dofs.size() * dofs.size(), 0.);
+                            // element_wise.D.set_matrix(dofs, dofs, zeros);
+
+                            for(auto d : dofs) {
+                                // element_wise.weighted_gap.set(d, 0.);
+
+                                remove[d - cr.begin()] = true;
+                            }
+
                         } else {
                             std::cout << "=====================================\n";
                             std::cout << i << ") " << volumes.get(i) << " == " << element_wise.area.get(i) << std::endl;
@@ -145,31 +158,31 @@ namespace utopia {
             normal.finalize(n_local_dofs * spatial_dim);
             
 
-            B.fill(element_wise.B);
-            D.fill(element_wise.D);
-            gap.fill(element_wise.weighted_gap);
+            B.fill(remove, element_wise.B);
+            D.fill(remove, element_wise.D);
+            gap.fill(remove, element_wise.weighted_gap);
             normal.fill(element_wise.normal);
 
             //FIXME use fill methods
-            {
-                Write<USparseMatrix> wD(element_wise.D);
-                Write<UVector> wg(element_wise.weighted_gap);
+            // {
+            //     Write<USparseMatrix> wD(element_wise.D);
+            //     Write<UVector> wg(element_wise.weighted_gap);
 
-                std::vector<double> zeros;
-                SizeType i = 0;
-                for(auto e_it = elements_begin(adapter.mesh()); e_it != elements_end(adapter.mesh()); ++e_it, ++i) {
-                    if(remove[i]) {
-                        const auto &dofs = adapter.dof_map()[i].global;
-                        zeros.resize(dofs.size() * dofs.size(), 0.);
-                        element_wise.D.set_matrix(dofs, dofs, zeros);
+            //     std::vector<double> zeros;
+            //     SizeType i = 0;
+            //     for(auto e_it = elements_begin(adapter.mesh()); e_it != elements_end(adapter.mesh()); ++e_it, ++i) {
+            //         if(remove[i]) {
+            //             const auto &dofs = adapter.dof_map()[i].global;
+            //             zeros.resize(dofs.size() * dofs.size(), 0.);
+            //             element_wise.D.set_matrix(dofs, dofs, zeros);
 
-                        for(auto d : dofs) {
-                            element_wise.weighted_gap.set(d, 0.);
-                        }
-                    }
+            //             for(auto d : dofs) {
+            //                 element_wise.weighted_gap.set(d, 0.);
+            //             }
+            //         }
 
-                }
-            }
+            //     }
+            // }
             
 
             double sum_B_x = sum(element_wise.B);
