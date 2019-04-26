@@ -226,6 +226,11 @@
                 return true;
             }
 
+            bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override
+            {
+                assert("utopia_MatrixTransfer:: project_down_positive_negative() -  not implemented.... "); 
+            }
+
             const Matrix &I() const
             {
                 return *_I;

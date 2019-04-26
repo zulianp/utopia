@@ -307,11 +307,11 @@ namespace utopia
 
                     Range r = range(tr_fine_last_lower);
 
-                    for(SizeType i = r.begin(); i != r.end(); ++i)
+                    for(SizeType i = r.begin(); i != r.end(); ++i){
                         tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
+                    }
                 }
-                this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
-
+                //this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);s
 
 
                 Vector tr_fine_last_upper = this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
@@ -321,29 +321,17 @@ namespace utopia
 
                     Range r = range(tr_fine_last_upper);
 
-                    for(SizeType i = r.begin(); i != r.end(); ++i)
+                    for(SizeType i = r.begin(); i != r.end(); ++i){
                         tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
+                    }
                 }
-                this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
+                //this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
+
+
+                this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
+                this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
+
             }
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////Debugging stuff - works well with identity transfer ////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // Vector test_tr_lower, test_tr_upper; 
-
-            // test_tr_upper =  this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-            // test_tr_lower =  this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-
-            // test_tr_upper -= constraints_memory_.tr_upper[level]; 
-            // test_tr_lower -= constraints_memory_.tr_lower[level]; 
-
-            // std::cout<<"norm(TR_lower): "<< norm2(test_tr_lower) << " \n"; 
-            // std::cout<<"norm(test_tr_upper): "<< norm2(test_tr_upper) << " \n"; 
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
 
 
@@ -355,6 +343,15 @@ namespace utopia
                     // std::cout<<"yes, identity transfer, LB, UB ... \n"; 
                     constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
                     constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
+                }
+                // this is simplification in case, where the upper and lower bound are constant vectors 
+                else if(box_constraints_.uniform())
+                {
+                    
+                    // we can use this trick, as L2 projection preserves constants 
+                    // in theory, we could have setup it just on the beginning of the solution process, as it does not change with iterates 
+                    this->transfer(level).project_down(constraints_memory_.x_lower[finer_level], constraints_memory_.x_lower[level]);
+                    this->transfer(level).project_down(constraints_memory_.x_upper[finer_level], constraints_memory_.x_upper[level]);
                 }
                 else
                 {
@@ -369,20 +366,6 @@ namespace utopia
                     Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
                     constraints_memory_.x_upper[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), upper_multiplier);
                 }
-
-
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                //////////////////////////////////////Debugging stuff - works well with identity transfer ////////////////////////////////
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                // Vector test_UB, test_LB; 
-                // test_UB = constraints_memory_.x_upper[level] - constraints_memory_.x_upper[finer_level]; 
-                // test_LB = constraints_memory_.x_lower[level] - constraints_memory_.x_lower[finer_level]; 
-                // std::cout<<"norm(test_UB): "<< norm2(test_UB) << " \n"; 
-                // std::cout<<"norm(test_LB): "<< norm2(test_LB) << " \n"; 
-                // std::cout<<"---- OVERWRITING SCALING OF CONSTRAINTS \n"; 
-                // constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
-                // constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
-                // std::cout<<"------- TO be fixed:: works only with the identity constraints ..... \n"; 
 
 
                 //----------------------------------------------------------------------------

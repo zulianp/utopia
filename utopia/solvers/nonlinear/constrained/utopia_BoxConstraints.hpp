@@ -13,15 +13,19 @@ namespace utopia {
     template<class Vector>
     class BoxConstraints {
     public:
-        DEF_UTOPIA_SCALAR(Vector)
+        DEF_UTOPIA_SCALAR(Vector); 
+        typedef UTOPIA_SIZE_TYPE(Vector)  SizeType;
 
         BoxConstraints(const std::shared_ptr<Vector> &lower_bound,
-                       const std::shared_ptr<Vector> &upper_bound)
-        : lower_bound_(lower_bound),
-          upper_bound_(upper_bound),
-          min_val_(-std::numeric_limits<Scalar>::max()),
-          max_val_(std::numeric_limits<Scalar>::max())
-        {}
+                       const std::shared_ptr<Vector> &upper_bound): 
+        lower_bound_(lower_bound),
+        upper_bound_(upper_bound),
+        min_val_(-std::numeric_limits<Scalar>::max()),
+        max_val_(std::numeric_limits<Scalar>::max()), 
+        uniform_(false)
+        {
+
+        }
 
         BoxConstraints() {}
 
@@ -73,6 +77,16 @@ namespace utopia {
             if(!upper_bound_) {
                 upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_).get(0), max_val_));
             }
+        }  
+
+        inline bool uniform() const 
+        {
+            return uniform_; 
+        }
+
+        inline void uniform(const bool & flg)
+        {
+            uniform_ = flg; 
         }
 
     private:
@@ -80,7 +94,9 @@ namespace utopia {
         std::shared_ptr<Vector> upper_bound_;
         Scalar min_val_;
         Scalar max_val_;
+        bool uniform_; 
     };
+
 
     template<class Vector>
     inline BoxConstraints<Vector> make_box_constaints(const std::shared_ptr<Vector> &lower_bound,
@@ -100,6 +116,9 @@ namespace utopia {
     {
         return BoxConstraints<Vector>(nullptr, upper_bound);
     }
+
+
+
 }
 
 #endif //UTOPIA_BOX_CONSTRAINTS_HPP
