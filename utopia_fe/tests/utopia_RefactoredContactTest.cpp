@@ -124,11 +124,15 @@ namespace utopia {
                 Read<UVector> rv(volumes), ra(element_wise.area);
 
                 for(auto i = r.begin(); i < r.end(); ++i) {
-                    if(!approxeq(volumes.get(i), element_wise.area.get(i), 1e-3)) {
-                        remove[i - r.begin()] = true;
-                    } else {
-                        std::cout << "=====================================\n";
-                        std::cout << i << ") " << volumes.get(i) << " == " << element_wise.area.get(i) << std::endl;
+                    const auto a = element_wise.area.get(i);
+
+                    if(a > 0.0) {
+                        if(!approxeq(volumes.get(i), a, 1e-3)) {
+                            remove[i - r.begin()] = true;
+                        } else {
+                            std::cout << "=====================================\n";
+                            std::cout << i << ") " << volumes.get(i) << " == " << element_wise.area.get(i) << std::endl;
+                        }
                     }
 
                 } 
