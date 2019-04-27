@@ -291,7 +291,6 @@ namespace utopia
 
             if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&this->transfer(level)))
             {
-                // std::cout<<"yes, identity transfer, TR bounds ... \n"; 
                 constraints_memory_.tr_upper[level] =  this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
                 constraints_memory_.tr_lower[level] =  this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
             }
@@ -311,8 +310,6 @@ namespace utopia
                         tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
                     }
                 }
-                //this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);s
-
 
                 Vector tr_fine_last_upper = this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
                 {
@@ -325,14 +322,15 @@ namespace utopia
                         tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
                     }
                 }
-                //this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
+
+                // ------------------------ TO be investigated -----------------
+                // this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
+                // this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
 
 
-                this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
-                this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
-
+                this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
+                this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
             }
-
 
 
             if(has_box_constraints_)
@@ -347,7 +345,7 @@ namespace utopia
                 // this is simplification in case, where the upper and lower bound are constant vectors 
                 else if(box_constraints_.uniform())
                 {
-                    
+                    std::cout<<"yes, uniform.... \n"; 
                     // we can use this trick, as L2 projection preserves constants 
                     // in theory, we could have setup it just on the beginning of the solution process, as it does not change with iterates 
                     this->transfer(level).project_down(constraints_memory_.x_lower[finer_level], constraints_memory_.x_lower[level]);

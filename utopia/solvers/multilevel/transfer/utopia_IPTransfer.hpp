@@ -181,21 +181,21 @@
 
         bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override
         {
-            // if(empty(P_pos_))
-            // {
-                std::cout<<"----- yes, initialization --- \n"; 
+            if(empty(P_pos_))
+            {
+                std::cout<<"---- pos alloc.... \n"; 
                 P_pos_ = *_Pr;
                 chop_smaller_than(P_pos_, 1e-13); 
-            // }
+            }
 
-            // if(empty(P_neg_))
-            // {
-                std::cout<<"----- yes, initialization --- \n"; 
+            if(empty(P_neg_))
+            {
+                std::cout<<"---- neg alloc.... \n"; 
                 P_neg_ = (*_Pr); 
                 chop_bigger_than(P_pos_, -1e-13); 
-            // }
+            }
                 
-            x_new = P_pos_*x_pos + P_neg_*x_neg; 
+            x_new = (P_pos_*x_pos) + (P_neg_*x_neg); 
             return true; 
         }
 
