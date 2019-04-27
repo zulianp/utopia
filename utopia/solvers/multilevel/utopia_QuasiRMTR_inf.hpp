@@ -323,13 +323,14 @@ namespace utopia
                     }
                 }
 
-                // ------------------------ TO be investigated -----------------
-                // this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
-                // this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
+                // ------------------------ new version, taking into account  positive and negative elements projection separatelly -----------------
+                this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
+                this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
 
 
-                this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
-                this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
+                // ------------------------ old version, incorect in case that projection has negative elements  -----------------
+                // this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
+                // this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
             }
 
 
@@ -341,15 +342,6 @@ namespace utopia
                     // std::cout<<"yes, identity transfer, LB, UB ... \n"; 
                     constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
                     constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
-                }
-                // this is simplification in case, where the upper and lower bound are constant vectors 
-                else if(box_constraints_.uniform())
-                {
-                    std::cout<<"yes, uniform.... \n"; 
-                    // we can use this trick, as L2 projection preserves constants 
-                    // in theory, we could have setup it just on the beginning of the solution process, as it does not change with iterates 
-                    this->transfer(level).project_down(constraints_memory_.x_lower[finer_level], constraints_memory_.x_lower[level]);
-                    this->transfer(level).project_down(constraints_memory_.x_upper[finer_level], constraints_memory_.x_upper[level]);
                 }
                 else
                 {

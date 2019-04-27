@@ -183,16 +183,14 @@
         {
             if(empty(P_pos_))
             {
-                std::cout<<"---- pos alloc.... \n"; 
                 P_pos_ = *_Pr;
                 chop_smaller_than(P_pos_, 1e-13); 
             }
 
             if(empty(P_neg_))
             {
-                std::cout<<"---- neg alloc.... \n"; 
                 P_neg_ = (*_Pr); 
-                chop_bigger_than(P_pos_, -1e-13); 
+                chop_bigger_than(P_neg_, -1e-13); 
             }
                 
             x_new = (P_pos_*x_pos) + (P_neg_*x_neg); 
