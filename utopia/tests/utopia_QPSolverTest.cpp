@@ -90,6 +90,15 @@ namespace utopia {
             run_qp_solver(pgs);
         }
 
+        void MPRGP_test() const
+        {
+            std::cout<<"---- MPGRP solver --- \n"; 
+            MPGRP<Matrix, Vector> qp_solver;
+
+            // run_qp_solver(pgs);
+        }
+
+
         void run()
         {
             print_backend_info();
@@ -97,6 +106,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
+            UTOPIA_RUN_TEST(MPRGP_test); 
         }
 
         QPSolverTest() : n(20) {}

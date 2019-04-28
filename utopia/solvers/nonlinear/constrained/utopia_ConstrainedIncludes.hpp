@@ -17,6 +17,7 @@
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_GeneralizedCauchyPoint.hpp"
 #include "utopia_ProjectedGradientActiveSet.hpp"
+#include "utopia_MPRGP.hpp"
 
 #endif //UTOPIA_CONSTRAINTED_HPP
 
