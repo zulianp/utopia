@@ -19,7 +19,7 @@ namespace utopia {
 
         SizeType spatial_dim = surf_mesh.spatial_dimension();
 
-        bundary_element_node_permutation_map(
+        boundary_element_node_permutation_map(
             surf_mesh,
             vol_dof_map,
             surf_dof_map,
@@ -57,43 +57,51 @@ namespace utopia {
     //let us assume that the displacement degees of freedom are consecutive 
     //in the volume dofmap
     void LibMeshDofMapAdapter::vector_permuation_map_from_map(
-        const SizeType spatial_dim,
+        const std::size_t spatial_dim,
         const Mapping &mapping,
         Mapping &vector_mapping)
     {
-        auto n_en_local_dofs = mapping.size();
-        vector_mapping.idx.resize(n_en_local_dofs * spatial_dim);
+        assert(spatial_dim > 0);
 
-        for(std::size_t i = 0; i < n_en_local_dofs; ++i) {
-            SizeType i_offset = i * spatial_dim;
-            for(SizeType d = 0; d < spatial_dim; ++d) {
+        const auto n_mappings = mapping.size();
+        vector_mapping.idx.resize(n_mappings * spatial_dim);
+
+        for(std::size_t i = 0; i < n_mappings; ++i) {
+            const std::size_t i_offset = i * spatial_dim;
+            
+            for(std::size_t d = 0; d < spatial_dim; ++d) {
+                assert(i_offset + d < n_mappings * spatial_dim);
                 vector_mapping.idx[i_offset + d] = mapping.idx[i] + d;
+                // std::cout << "map[" << (i_offset + d) <<  "] = " << vector_mapping.idx[i_offset + d] << std::endl;;
             }
         }
 
         vector_mapping.from_range_begin = mapping.from_range_begin * spatial_dim;
-        vector_mapping.from_range_end = mapping.from_range_end     * spatial_dim;
+        vector_mapping.from_range_end   = mapping.from_range_end   * spatial_dim;
 
-        vector_mapping.to_range_begin = mapping.to_range_begin;
-        vector_mapping.to_range_end   = mapping.to_range_end;
+        vector_mapping.to_range_begin   = mapping.to_range_begin;
+        vector_mapping.to_range_end     = mapping.to_range_end;
     }
 
     void LibMeshDofMapAdapter::permutation_matrix_from_map(
         const Mapping &map,
         USparseMatrix &mat)
     {
-        auto n_local_dof_vol = map.to_range_end - map.to_range_begin;
-        auto n_local_dofs_surf = map.idx.size();
+        auto n_local_dof_vol = map.to_extent();
+        auto n_mappings      = map.idx.size();
 
-        mat = local_sparse(n_local_dof_vol, n_local_dofs_surf, 1);
+        mat = local_sparse(n_local_dof_vol, map.from_extent(), 1);
 
-        Write<USparseMatrix> w(mat);
-        for(std::size_t i = 0; i < n_local_dofs_surf; ++i) {
-            mat.set(map.idx[i], i + map.from_range_begin, 1.);
+        {
+            Write<USparseMatrix> w(mat);
+
+            for(std::size_t i = 0; i < n_mappings; ++i) {
+                mat.set(map.idx[i], i + map.from_range_begin, 1.);
+            }
         }
     }
 
-    void LibMeshDofMapAdapter::bundary_permutation_map(
+    void LibMeshDofMapAdapter::boundary_permutation_map(
         const libMesh::MeshBase &surf_mesh,
         const libMesh::DofMap   &volume_dof_map,
         const libMesh::DofMap   &surf_dof_map,
@@ -116,7 +124,7 @@ namespace utopia {
         Range rr(surf_dof_map.first_dof(), surf_dof_map.last_dof() + 1);
 
         map.from_range_begin = rr.begin();
-        map.from_range_end = rr.end();
+        map.from_range_end   = rr.end();
 
         map.to_range_begin = volume_dof_map.first_dof();
         map.to_range_end   = volume_dof_map.last_dof() + 1;
@@ -159,7 +167,7 @@ namespace utopia {
         }
     }
 
-    void LibMeshDofMapAdapter::bundary_element_node_permutation_map(
+    void LibMeshDofMapAdapter::boundary_element_node_permutation_map(
         const libMesh::MeshBase &surf_mesh,
         const libMesh::DofMap   &volume_dof_map,
         const libMesh::DofMap   &surf_dof_map,
@@ -176,21 +184,31 @@ namespace utopia {
         unsigned int sys_num   = volume_dof_map.sys_number();
         unsigned int surf_sys_num = surf_dof_map.sys_number();
 
-        map.idx.resize(surf_dof_map.n_local_dofs());
+        Range rr = element_node_range(
+                surf_mesh,
+                surf_dof_map
+        );
+
+        map.idx.resize(rr.extent());
         std::fill(map.idx.begin(), map.idx.end(), 0);
 
-        Range rr(surf_dof_map.first_dof(), surf_dof_map.last_dof() + 1);
-
         map.from_range_begin = rr.begin();
-        map.from_range_end = rr.end();
+        map.from_range_end   = rr.end();
 
         map.to_range_begin = volume_dof_map.first_dof();
         map.to_range_end   = volume_dof_map.last_dof() + 1;
 
+        std::vector<libMesh::dof_id_type> dof_indices;
         // loop through all boundary elements.
-        for (const auto &b_elem : surf_mesh.active_local_element_ptr_range())
+
+        SizeType local_el_idx = -1;
+        for(const auto &b_elem : surf_mesh.active_local_element_ptr_range())
         {
+            ++local_el_idx;
             const libMesh::Elem * v_elem = b_elem->interior_parent();
+
+            surf_dof_map.dof_indices(b_elem, dof_indices);
+            auto n_dofs_x_el = dof_indices.size();
 
             // loop through all nodes in each boundary element.
             for (unsigned int node = 0; node < b_elem->n_nodes(); node++) {
@@ -216,9 +234,14 @@ namespace utopia {
                                                         surf_var_num,
                                                         surf_comp);
                        
-                        if(rr.inside(b_dof)){
-                            map.idx[b_dof - rr.begin()] = v_dof;
-                        }
+                        auto dof_it = std::find(dof_indices.begin(), dof_indices.end(), b_dof);
+                        assert(dof_it != dof_indices.end());
+
+                        auto local_ind = std::distance(dof_indices.begin(), dof_it);
+                        auto map_ind = local_el_idx * n_dofs_x_el + local_ind;
+
+                        assert(map.idx[map_ind] == 0);
+                        map.idx[map_ind] = v_dof;
                     }
                 }
             }
@@ -261,7 +284,7 @@ namespace utopia {
             dof_offsets[comm.rank() + 1]);
     }
 
-    SizeType LibMeshDofMapAdapter::element_node_dof_map_and_permutation(
+    void LibMeshDofMapAdapter::element_node_dof_map_and_permutation(
         const libMesh::MeshBase &mesh,
         const libMesh::DofMap &dof_map,
         const Mapping &map,
@@ -270,10 +293,10 @@ namespace utopia {
     {
         moonolith::Communicator comm(mesh.comm().get());
 
-        auto n_local_dof_vol  = map.to_range_end   - map.to_range_begin;            
+        auto n_local_dof_vol  = map.to_range_end - map.to_range_begin;            
         auto n_local_elems = mesh.n_active_local_elem();
-        Range enr = element_node_range(mesh, dof_map);
-        mat = local_sparse(n_local_dof_vol, enr.extent(), 1);
+
+        mat = local_sparse(n_local_dof_vol, map.from_extent(), 1);
 
         auto r_begin = map.from_range_begin;
 
@@ -281,7 +304,7 @@ namespace utopia {
         std::vector<libMesh::dof_id_type> dof_indices;
 
         SizeType el_idx = 0;
-        SizeType idx = enr.begin();
+        SizeType idx = map.from_range_begin;
         Write<USparseMatrix> w(mat);
        
         for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it, ++el_idx) {
@@ -297,12 +320,10 @@ namespace utopia {
                 const auto local_i = i - r_begin;
                 assert(local_i < map.idx.size());
 
-                mat.set(map.idx[local_i], idx, 1.);
+                mat.set(map.idx[idx], idx, 1.);
                 el_dof.global[k] = idx;
             }
         }
-
-        return enr.extent();
     }
 
 

@@ -20,6 +20,28 @@ namespace utopia {
     class LibMeshDofMapAdapter {
     public:
 
+        inline void describe(std::ostream &os = std::cout) const
+        {
+            os << "n_ne_dofs: " << mapping_.from_extent() << "\n";
+            os << "element_dof_map: [" << mapping_.from_range_begin << "-" << mapping_.from_range_end << ")\n";
+            os << "dof_map:         [" << mapping_.to_range_begin   << "-" << mapping_.to_range_end   << ")\n";
+
+            if(permutation_) {
+                auto perm_size = size(*permutation_);
+                double entries = sum(*permutation_);
+
+                std::cout << perm_size.get(0) << " x "  << perm_size.get(1) << " nnz: " << entries << std::endl;
+            }
+
+            if(vector_permutation_) {
+                auto perm_size = size(*vector_permutation_);
+                double entries = sum(*vector_permutation_);
+
+                std::cout << perm_size.get(0) << " x "  << perm_size.get(1) << " nnz: " << entries << std::endl;
+            }
+
+        }
+
         class Mapping {
         public:
             SizeType from_range_begin, from_range_end;
@@ -36,7 +58,12 @@ namespace utopia {
             return mapping_;
         }
         
-        std::vector<ElementDofMap> & dofs()
+        std::vector<ElementDofMap> & element_dof_map()
+        {
+            return dofs_;
+        }
+
+        const std::vector<ElementDofMap> & element_dof_map() const
         {
             return dofs_;
         }
@@ -58,12 +85,19 @@ namespace utopia {
         
         std::shared_ptr<const USparseMatrix> permutation() const
         {
+            assert(permutation_);
             return permutation_;
+        }
+
+        std::shared_ptr<const USparseMatrix> vector_permutation() const
+        {
+            assert(vector_permutation_);
+            return vector_permutation_;
         }
 
         inline SizeType n_local_dofs() const
         {
-            return mapping_.size();
+            return mapping_.from_extent();
         }
 
         //surf_mesh is extracted from vol_mesh
@@ -84,7 +118,7 @@ namespace utopia {
         //let us assume that the displacement degees of freedom are consecutive 
         //in the volume dofmap
         static void vector_permuation_map_from_map(
-            const SizeType spatial_dim,
+            const std::size_t spatial_dim,
             const Mapping &mapping,
             Mapping &vector_mapping);
 
@@ -92,7 +126,7 @@ namespace utopia {
             const Mapping &map,
             USparseMatrix &mat);
 
-        static void bundary_permutation_map(
+        static void boundary_permutation_map(
             const libMesh::MeshBase &surf_mesh,
             const libMesh::DofMap   &volume_dof_map,
             const libMesh::DofMap   &surf_dof_map,
@@ -100,7 +134,7 @@ namespace utopia {
             unsigned int surf_var_num,
             Mapping &map);
 
-        static void bundary_element_node_permutation_map(
+        static void boundary_element_node_permutation_map(
             const libMesh::MeshBase &surf_mesh,
             const libMesh::DofMap   &volume_dof_map,
             const libMesh::DofMap   &surf_dof_map,
@@ -117,7 +151,7 @@ namespace utopia {
             const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map);
 
-        static SizeType element_node_dof_map_and_permutation(
+        static void element_node_dof_map_and_permutation(
             const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map,
             const Mapping &map,

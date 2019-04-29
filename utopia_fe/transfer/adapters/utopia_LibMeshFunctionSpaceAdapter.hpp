@@ -2,6 +2,7 @@
 #define UTOPIA_LIBMESH_FUNCTION_SPACE_ADAPTER_HPP
 
 #include "utopia_LibMeshCollectionManager.hpp"
+#include "utopia_LibMeshDofMapAdapter.hpp"
 
 namespace utopia {
 
@@ -32,14 +33,14 @@ namespace utopia {
             return *mesh_;
         }
 
-        inline std::vector<ElementDofMap> &dof_map() 
+        inline std::vector<ElementDofMap> &element_dof_map() 
         {
-            return dof_map_;
+            return dof_map_.element_dof_map();
         }
 
-        inline const std::vector<ElementDofMap> &dof_map() const
+        inline const std::vector<ElementDofMap> &element_dof_map() const
         {
-            return dof_map_;
+            return dof_map_.element_dof_map();
         }
 
         inline std::vector<libMesh::dof_id_type> &handle_to_element_id()
@@ -134,47 +135,47 @@ namespace utopia {
             }
         }
 
-        void extract_surface_init(
-            const std::shared_ptr<libMesh::MeshBase> &mesh,
-            const libMesh::DofMap &dof_map,
-            const int var_num)
-        {
-            auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
+        // void extract_surface_init(
+        //     const std::shared_ptr<libMesh::MeshBase> &mesh,
+        //     const libMesh::DofMap &dof_map,
+        //     const int var_num)
+        // {
+        //     auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
 
-            mesh->get_boundary_info().sync(*b_mesh);
+        //     mesh->get_boundary_info().sync(*b_mesh);
 
-            es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
-            es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
+        //     es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
+        //     es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
 
-            libMesh::FEType fe_type = dof_map.variable_type(var_num);
-            auto &sys = es->get_system("boundary_sys");
-            auto b_var_num = sys.add_variable("lambda", fe_type); 
-            es->init();
+        //     libMesh::FEType fe_type = dof_map.variable_type(var_num);
+        //     auto &sys = es->get_system("boundary_sys");
+        //     auto b_var_num = sys.add_variable("lambda", fe_type); 
+        //     es->init();
 
-            init(b_mesh, sys.get_dof_map(), b_var_num);
-            is_extracted_surface_ = true;
-            boundary_ids_workaround(*mesh);
+        //     init(b_mesh, sys.get_dof_map(), b_var_num);
+        //     is_extracted_surface_ = true;
+        //     boundary_ids_workaround(*mesh);
 
-            permutation_ = std::make_shared<USparseMatrix>();
+        //     permutation_ = std::make_shared<USparseMatrix>();
 
-            bundary_permutation_map(
-                *b_mesh,
-                dof_map,
-                sys.get_dof_map(),
-                var_num,
-                0,
-                0,
-                0,
-                boundary_to_volume_map
-            );
+        //     bundary_permutation_map(
+        //         *b_mesh,
+        //         dof_map,
+        //         sys.get_dof_map(),
+        //         var_num,
+        //         0,
+        //         0,
+        //         0,
+        //         boundary_to_volume_map
+        //     );
 
-            bundary_permutation_matrix_from_map(
-                boundary_to_volume_map,
-                *permutation_
-            );
+        //     bundary_permutation_matrix_from_map(
+        //         boundary_to_volume_map,
+        //         *permutation_
+        //     );
 
-            n_local_dofs_ =  sys.get_dof_map().n_local_dofs();
-        }
+        //     n_local_dofs_ =  sys.get_dof_map().n_local_dofs();
+        // }
 
 
         void extract_surface_init_for_contact(
@@ -194,29 +195,20 @@ namespace utopia {
             auto b_var_num = sys.add_variable("lambda", fe_type); 
             es->init();
 
-            init(b_mesh, sys.get_dof_map(), b_var_num);
+            init_aux(b_mesh, sys.get_dof_map(), b_var_num);
             is_extracted_surface_ = true;
             boundary_ids_workaround(*mesh);
 
-            permutation_ = std::make_shared<USparseMatrix>();
-
-            bundary_permutation_map(
-                *b_mesh,
+            //surf_mesh is extracted from vol_mesh
+            dof_map_.init_for_contact(
+                *mesh,
                 dof_map,
+                *b_mesh,
                 sys.get_dof_map(),
                 var_num,
-                0,
-                0,
-                0,
-                boundary_to_volume_map
-            );
+                b_var_num);
 
-            n_local_dofs_ = element_node_dof_map_and_permutation(
-                                   *b_mesh,
-                                   sys.get_dof_map(),
-                                   boundary_to_volume_map,
-                                   dof_map_,
-                                    *permutation_);
+            dof_map_.describe();
         }
 
         static Integer tag(const ElementIter &e_it)
@@ -253,15 +245,14 @@ namespace utopia {
             return this->mesh_->comm(); 
         }
 
-        void init(
+
+        void init_aux(
             const std::shared_ptr<libMesh::MeshBase> &mesh,
             const libMesh::DofMap &dof_map,
             const int var_num)
         {
             const libMesh::dof_id_type n_elements = mesh->n_active_local_elem();
 
-            std::vector<libMesh::dof_id_type> temp;
-            dof_map_.resize(n_elements);
             handle_to_element_id_.resize(n_elements);
 
             auto e_it  = mesh->active_local_elements_begin();
@@ -272,15 +263,6 @@ namespace utopia {
                 auto *elem = *e_it;
 
                 handle_to_element_id_[local_element_id] = elem->id();
-
-                dof_map.dof_indices(elem, temp, var_num);
-
-                dof_map_[local_element_id].global_id = elem->id();
-                dof_map_[local_element_id].global.insert(
-                    dof_map_[local_element_id].global.end(),
-                    temp.begin(),
-                    temp.end()
-                );
             }
 
             // std::size_t n_vars = dof_map.n_variables();
@@ -291,7 +273,7 @@ namespace utopia {
             //     this->fe_type(i).order  = dof_map.variable(i).type().order;
             // }
 
-            std::size_t n_vars = dof_map.n_variables();
+            // std::size_t n_vars = dof_map.n_variables();
             this->set_n_vars(1);
 
             this->fe_type(0).family = dof_map.variable(var_num).type().family;
@@ -299,195 +281,243 @@ namespace utopia {
 
             mesh_ = mesh;
             is_extracted_surface_ = false;
-            n_local_dofs_ = dof_map.n_local_dofs();
         }
 
-        const std::shared_ptr<USparseMatrix> &permutation() const
+        // void init(
+        //     const std::shared_ptr<libMesh::MeshBase> &mesh,
+        //     const libMesh::DofMap &dof_map,
+        //     const int var_num)
+        // {
+        //     const libMesh::dof_id_type n_elements = mesh->n_active_local_elem();
+
+        //     std::vector<libMesh::dof_id_type> temp;
+        //     dof_map_.resize(n_elements);
+        //     handle_to_element_id_.resize(n_elements);
+
+        //     auto e_it  = mesh->active_local_elements_begin();
+        //     auto e_end = mesh->active_local_elements_end();
+
+        //     libMesh::dof_id_type local_element_id = 0;
+        //     for (; e_it != e_end; ++e_it, ++local_element_id){
+        //         auto *elem = *e_it;
+
+        //         handle_to_element_id_[local_element_id] = elem->id();
+
+        //         dof_map.dof_indices(elem, temp, var_num);
+
+        //         dof_map_[local_element_id].global_id = elem->id();
+        //         dof_map_[local_element_id].global.insert(
+        //             dof_map_[local_element_id].global.end(),
+        //             temp.begin(),
+        //             temp.end()
+        //         );
+        //     }
+
+        //     // std::size_t n_vars = dof_map.n_variables();
+        //     // this->set_n_vars(n_vars);
+
+        //     // for(std::size_t i = 0; i < n_vars; ++i) {
+        //     //     this->fe_type(i).family = dof_map.variable(i).type().family;
+        //     //     this->fe_type(i).order  = dof_map.variable(i).type().order;
+        //     // }
+
+        //     std::size_t n_vars = dof_map.n_variables();
+        //     this->set_n_vars(1);
+
+        //     this->fe_type(0).family = dof_map.variable(var_num).type().family;
+        //     this->fe_type(0).order  = dof_map.variable(var_num).type().order;
+
+        //     mesh_ = mesh;
+        //     is_extracted_surface_ = false;
+        //     n_local_dofs_ = dof_map.n_local_dofs();
+        // }
+
+        const std::shared_ptr<const USparseMatrix> permutation() const
         {
-            return permutation_;
+            return dof_map_.permutation();
         }
 
-        const std::shared_ptr<USparseMatrix> &tensor_permutation() const
+        const std::shared_ptr<const USparseMatrix> vector_permutation() const
         {
-            return tensor_permutation_;
+            return dof_map_.vector_permutation();
         }
 
-        void bundary_permutation_matrix(
-            const libMesh::MeshBase &boundary_mesh,
-            const libMesh::DofMap &volume_dof_map,
-            const libMesh::DofMap &surface_dof_map,
-            unsigned int var_num,
-            unsigned int comp,
-            unsigned int b_var_num,
-            unsigned int b_comp,
-            USparseMatrix &matrix)
-        {
-            bundary_permutation_map(
-                boundary_mesh,
-                volume_dof_map,
-                surface_dof_map,
-                var_num,
-                comp,
-                b_var_num,
-                b_comp,
-                boundary_to_volume_map
-            );
+        // void bundary_permutation_matrix(
+        //     const libMesh::MeshBase &boundary_mesh,
+        //     const libMesh::DofMap &volume_dof_map,
+        //     const libMesh::DofMap &surface_dof_map,
+        //     unsigned int var_num,
+        //     unsigned int comp,
+        //     unsigned int b_var_num,
+        //     unsigned int b_comp,
+        //     USparseMatrix &matrix)
+        // {
+        //     bundary_permutation_map(
+        //         boundary_mesh,
+        //         volume_dof_map,
+        //         surface_dof_map,
+        //         var_num,
+        //         comp,
+        //         b_var_num,
+        //         b_comp,
+        //         boundary_to_volume_map
+        //     );
 
-            bundary_permutation_matrix_from_map(
-                boundary_to_volume_map,
-                *permutation_
-            );
-        }
+        //     bundary_permutation_matrix_from_map(
+        //         boundary_to_volume_map,
+        //         *permutation_
+        //     );
+        // }
 
-        class Map {
-        public:
-            SizeType from_range_begin, from_range_end;
-            SizeType to_range_begin, to_range_end;
-            std::vector<SizeType> idx;
+        // class Map {
+        // public:
+        //     SizeType from_range_begin, from_range_end;
+        //     SizeType to_range_begin, to_range_end;
+        //     std::vector<SizeType> idx;
 
-            inline SizeType from_extent() const { return from_range_end - from_range_begin; }
-            inline SizeType to_extent()   const { return to_range_end   - to_range_begin; }
-        };
+        //     inline SizeType from_extent() const { return from_range_end - from_range_begin; }
+        //     inline SizeType to_extent()   const { return to_range_end   - to_range_begin; }
+        // };
 
-        static void bundary_permutation_matrix_from_map(
-            const Map &map,
-            USparseMatrix &mat)
-        {
-            auto n_local_dof_vol = map.to_range_end - map.to_range_begin;
-            auto n_local_dofs_surf = map.idx.size();
+        // static void bundary_permutation_matrix_from_map(
+        //     const Map &map,
+        //     USparseMatrix &mat)
+        // {
+        //     auto n_local_dof_vol = map.to_range_end - map.to_range_begin;
+        //     auto n_local_dofs_surf = map.idx.size();
 
-            mat = local_sparse(n_local_dof_vol, n_local_dofs_surf, 1);
+        //     mat = local_sparse(n_local_dof_vol, n_local_dofs_surf, 1);
 
-            Write<USparseMatrix> w(mat);
-            for(std::size_t i = 0; i < n_local_dofs_surf; ++i) {
-                mat.set(map.idx[i], i + map.from_range_begin, 1.);
-            }
-        }
+        //     Write<USparseMatrix> w(mat);
+        //     for(std::size_t i = 0; i < n_local_dofs_surf; ++i) {
+        //         mat.set(map.idx[i], i + map.from_range_begin, 1.);
+        //     }
+        // }
 
-        static SizeType element_node_dof_map_and_permutation(
-            const libMesh::MeshBase &mesh,
-            const libMesh::DofMap &dof_map,
-            const Map &map,
-            std::vector<ElementDofMap> &elem_dof_map,
-            USparseMatrix &mat)
-        {
-            moonolith::Communicator comm(mesh.comm().get());
+        // static SizeType element_node_dof_map_and_permutation(
+        //     const libMesh::MeshBase &mesh,
+        //     const libMesh::DofMap &dof_map,
+        //     const Map &map,
+        //     std::vector<ElementDofMap> &elem_dof_map,
+        //     USparseMatrix &mat)
+        // {
+        //     moonolith::Communicator comm(mesh.comm().get());
 
-            auto n_local_dof_vol  = map.to_range_end   - map.to_range_begin;
-            auto n_local_dof_surf = map.from_range_end - map.from_range_begin;
+        //     auto n_local_dof_vol  = map.to_range_end   - map.to_range_begin;
+        //     auto n_local_dof_surf = map.from_range_end - map.from_range_begin;
             
-            SizeType dof_x_elem = 0, n_local_elems = mesh.n_active_local_elem();
-            std::vector<libMesh::dof_id_type> dof_indices;
+        //     SizeType dof_x_elem = 0, n_local_elems = mesh.n_active_local_elem();
+        //     std::vector<libMesh::dof_id_type> dof_indices;
 
-            {
-                auto e_it = elements_begin(mesh);
-                if(e_it != elements_end(mesh)) {
-                    dof_map.dof_indices(*e_it, dof_indices);
-                    dof_x_elem = dof_indices.size();
-                }
-            }
+        //     {
+        //         auto e_it = elements_begin(mesh);
+        //         if(e_it != elements_end(mesh)) {
+        //             dof_map.dof_indices(*e_it, dof_indices);
+        //             dof_x_elem = dof_indices.size();
+        //         }
+        //     }
 
-            std::vector<SizeType> dof_offsets(comm.size() + 1, 0);
-            dof_offsets[comm.rank() + 1] = dof_x_elem * n_local_elems;
+        //     std::vector<SizeType> dof_offsets(comm.size() + 1, 0);
+        //     dof_offsets[comm.rank() + 1] = dof_x_elem * n_local_elems;
 
-            comm.all_reduce(&dof_offsets[0], dof_offsets.size(), moonolith::MPISum());
+        //     comm.all_reduce(&dof_offsets[0], dof_offsets.size(), moonolith::MPISum());
 
-            auto start_dof = dof_offsets[comm.rank()];
-            auto n_local_e2n_dofs_surf = dof_offsets[comm.rank() + 1] - start_dof;
+        //     auto start_dof = dof_offsets[comm.rank()];
+        //     auto n_local_e2n_dofs_surf = dof_offsets[comm.rank() + 1] - start_dof;
 
-            mat = local_sparse(n_local_dof_vol, n_local_e2n_dofs_surf, 1);
+        //     mat = local_sparse(n_local_dof_vol, n_local_e2n_dofs_surf, 1);
 
-            auto r_begin = map.from_range_begin;
+        //     auto r_begin = map.from_range_begin;
 
-            elem_dof_map.resize(n_local_elems);
+        //     elem_dof_map.resize(n_local_elems);
 
-            SizeType el_idx = 0;
-            SizeType idx = start_dof;
-            Write<USparseMatrix> w(mat);
-            for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it, ++el_idx) {
-                dof_map.dof_indices(*e_it, dof_indices);
+        //     SizeType el_idx = 0;
+        //     SizeType idx = start_dof;
+        //     Write<USparseMatrix> w(mat);
+        //     for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it, ++el_idx) {
+        //         dof_map.dof_indices(*e_it, dof_indices);
 
-                auto &el_dof = elem_dof_map[el_idx];
-                auto n = dof_indices.size();
-                el_dof.global.resize(n);
-                el_dof.global_id = (*e_it)->id();
+        //         auto &el_dof = elem_dof_map[el_idx];
+        //         auto n = dof_indices.size();
+        //         el_dof.global.resize(n);
+        //         el_dof.global_id = (*e_it)->id();
 
-                for(std::size_t k = 0; k < n; ++k, ++idx) {
-                    const auto i = dof_indices[k];
-                    const auto local_i = i - r_begin;
-                    assert(local_i < map.idx.size());
+        //         for(std::size_t k = 0; k < n; ++k, ++idx) {
+        //             const auto i = dof_indices[k];
+        //             const auto local_i = i - r_begin;
+        //             assert(local_i < map.idx.size());
 
-                    mat.set(map.idx[local_i], idx, 1.);
-                    el_dof.global[k] = idx;
-                }
-            }
+        //             mat.set(map.idx[local_i], idx, 1.);
+        //             el_dof.global[k] = idx;
+        //         }
+        //     }
 
-            return n_local_e2n_dofs_surf;
-        }
+        //     return n_local_e2n_dofs_surf;
+        // }
 
-        static void bundary_permutation_map(
-            const libMesh::MeshBase &boundary_mesh,
-            const libMesh::DofMap &volume_dof_map,
-            const libMesh::DofMap &surface_dof_map,
-            unsigned int var_num,
-            unsigned int comp,
-            unsigned int b_var_num,
-            unsigned int b_comp,
-            Map &map)
-        {
-            std::vector<libMesh::dof_id_type> dof_boundary;
+        // static void bundary_permutation_map(
+        //     const libMesh::MeshBase &boundary_mesh,
+        //     const libMesh::DofMap &volume_dof_map,
+        //     const libMesh::DofMap &surface_dof_map,
+        //     unsigned int var_num,
+        //     unsigned int comp,
+        //     unsigned int b_var_num,
+        //     unsigned int b_comp,
+        //     Map &map)
+        // {
+        //     std::vector<libMesh::dof_id_type> dof_boundary;
 
-            unsigned int sys_num   = volume_dof_map.sys_number();
-            unsigned int b_sys_num = surface_dof_map.sys_number();
+        //     unsigned int sys_num   = volume_dof_map.sys_number();
+        //     unsigned int b_sys_num = surface_dof_map.sys_number();
 
-            map.idx.resize(surface_dof_map.n_local_dofs());
-            std::fill(map.idx.begin(), map.idx.end(), 0);
+        //     map.idx.resize(surface_dof_map.n_local_dofs());
+        //     std::fill(map.idx.begin(), map.idx.end(), 0);
 
-            Range rr(surface_dof_map.first_dof(), surface_dof_map.last_dof() + 1);
+        //     Range rr(surface_dof_map.first_dof(), surface_dof_map.last_dof() + 1);
 
-            map.from_range_begin = rr.begin();
-            map.from_range_end = rr.end();
+        //     map.from_range_begin = rr.begin();
+        //     map.from_range_end = rr.end();
 
-            map.to_range_begin = volume_dof_map.first_dof();
-            map.to_range_end   = volume_dof_map.last_dof() + 1;
+        //     map.to_range_begin = volume_dof_map.first_dof();
+        //     map.to_range_end   = volume_dof_map.last_dof() + 1;
 
-            // loop through all boundary elements.
-            for (const auto & b_elem : boundary_mesh.active_local_element_ptr_range())
-            {
-                const libMesh::Elem * v_elem = b_elem->interior_parent();
+        //     // loop through all boundary elements.
+        //     for (const auto & b_elem : boundary_mesh.active_local_element_ptr_range())
+        //     {
+        //         const libMesh::Elem * v_elem = b_elem->interior_parent();
 
-                // loop through all nodes in each boundary element.
-                for (unsigned int node = 0; node < b_elem->n_nodes(); node++) {
+        //         // loop through all nodes in each boundary element.
+        //         for (unsigned int node = 0; node < b_elem->n_nodes(); node++) {
                     
-                    // Node in boundary element.
-                    const libMesh::Node * b_node = b_elem->node_ptr(node);
+        //             // Node in boundary element.
+        //             const libMesh::Node * b_node = b_elem->node_ptr(node);
 
-                    for (unsigned int node_id=0; node_id < v_elem->n_nodes(); node_id++)
-                    {
-                        // Nodes in interior_parent element.
-                        const libMesh::Node * v_node = v_elem->node_ptr(node_id);
+        //             for (unsigned int node_id=0; node_id < v_elem->n_nodes(); node_id++)
+        //             {
+        //                 // Nodes in interior_parent element.
+        //                 const libMesh::Node * v_node = v_elem->node_ptr(node_id);
 
-                        const auto v_dof = v_node->dof_number(
-                                                        sys_num,
-                                                        var_num,
-                                                        comp);
+        //                 const auto v_dof = v_node->dof_number(
+        //                                                 sys_num,
+        //                                                 var_num,
+        //                                                 comp);
 
-                        if (v_node->absolute_fuzzy_equals(*b_node, 1e-14))
-                        {
-                            // Global dof_index for node in BoundaryMesh
-                            const auto b_dof = b_node->dof_number(
-                                                            b_sys_num,
-                                                            b_var_num,
-                                                            b_comp);
+        //                 if (v_node->absolute_fuzzy_equals(*b_node, 1e-14))
+        //                 {
+        //                     // Global dof_index for node in BoundaryMesh
+        //                     const auto b_dof = b_node->dof_number(
+        //                                                     b_sys_num,
+        //                                                     b_var_num,
+        //                                                     b_comp);
                            
-                            if(rr.inside(b_dof)){
-                                map.idx[b_dof - rr.begin()] = v_dof;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //                     if(rr.inside(b_dof)){
+        //                         map.idx[b_dof - rr.begin()] = v_dof;
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         inline libMesh::dof_id_type n_local_elems() const
         {
@@ -496,50 +526,18 @@ namespace utopia {
 
         inline libMesh::dof_id_type n_local_dofs() const
         {
-            return n_local_dofs_;
-        }
-
-        void make_tensor_product_permutation(const int dim)
-        {
-            assert(permutation_);
-            if(!permutation_) { return; }
-
-            tensor_permutation_ = std::make_shared<USparseMatrix>();
-
-            auto n_local_dofs_surf = boundary_to_volume_map.from_extent();
-
-            assert(n_local_dofs_surf > 0);
-
-            *tensor_permutation_ = local_sparse(
-                boundary_to_volume_map.to_extent(),
-                n_local_dofs_surf * dim,
-                1
-            );
-
-            Write<USparseMatrix> w(*tensor_permutation_);
-            for(std::size_t i = 0; i < n_local_dofs_surf; ++i) {
-                for(int d = 0; d < dim; ++d) {
-                    tensor_permutation_->set(
-                        boundary_to_volume_map.idx[i] + d,
-                        i * dim + d + boundary_to_volume_map.from_range_begin,
-                        1.
-                    );
-                }
-            }
+            // return n_local_dofs_;
+            return dof_map_.n_local_dofs();
         }
 
     private:
         std::shared_ptr<libMesh::MeshBase> mesh_;
-        std::vector<ElementDofMap> dof_map_;
         std::vector<libMesh::dof_id_type> handle_to_element_id_;
         std::vector<FEType> fe_type_;
         std::unique_ptr<libMesh::EquationSystems> es;
 
-        Map boundary_to_volume_map;
-        std::shared_ptr<USparseMatrix> permutation_, tensor_permutation_;
-
+        LibMeshDofMapAdapter dof_map_;
         bool is_extracted_surface_;
-        libMesh::dof_id_type n_local_dofs_;
     };
 
     // class PermutationBuilder {

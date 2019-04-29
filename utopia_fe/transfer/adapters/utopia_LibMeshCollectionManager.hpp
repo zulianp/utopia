@@ -48,7 +48,7 @@ namespace utopia {
         {
             const auto &space = a.collection();
             assert( space.handle_to_element_id(local_idx) == a.elem().id() );
-            a.set_dofs(&space.dof_map()[local_idx]);
+            a.set_dofs(&space.element_dof_map()[local_idx]);
         }
 
         static const Elem &elem(const FunctionSpace &space, const ElementIter &e_it) 
@@ -175,7 +175,7 @@ namespace utopia {
 
             const int dim         = mesh.spatial_dimension();
             const long n_elements = std::distance(begin, end);
-            const auto &dof_map   = space.dof_map();
+            const auto &dof_map   = space.element_dof_map();
             // const auto &fe_types  = space.fe_types();
 
             std::set<long> nodeIds;
@@ -289,7 +289,7 @@ namespace utopia {
             CHECK_STREAM_READ_BEGIN("serialize", is);
 
             auto space = moonolith::make_unique<FunctionSpace>();
-            auto &dof_map = space->dof_map();
+            auto &dof_map = space->element_dof_map();
             auto &handle_to_element_id = space->handle_to_element_id();
 
             using namespace std;
