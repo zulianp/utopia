@@ -39,8 +39,11 @@ namespace utopia {
             Write<Matrix> w(out);
 
             each_read(in, [&](const SizeType i, const SizeType j, const Scalar val) {
+                const auto offset_i = i * dim;
+                const auto offset_j = j * dim;
+
                 for(SizeType d = 0; d < dim; ++d) {
-                    out.set(i*dim + d, j*dim + d, val);
+                    out.set(offset_i + d, offset_j + d, val);
                 }
             });
         }
