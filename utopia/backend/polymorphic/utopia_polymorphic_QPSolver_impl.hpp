@@ -38,11 +38,11 @@ namespace utopia {
         using LinearSolverPtr = std::unique_ptr<utopia::LinearSolver<Matrix, Vector>>;
 
         std::map<
-        	std::string,
-        	std::map<
-        		std::string,
-        		QPSolverPtr
-        	>
+            std::string,
+            std::map<
+                std::string,
+                QPSolverPtr
+            >
         > solvers;
 
         inline void register_solver(const std::string &backend,

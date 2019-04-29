@@ -8,6 +8,6 @@
 
 namespace utopia {
 #ifdef WITH_PETSC
-	template class PolymorphicLinearSolver<DSMatrixd, DVectord>;
+    template class PolymorphicLinearSolver<DSMatrixd, DVectord>;
 #endif
 }

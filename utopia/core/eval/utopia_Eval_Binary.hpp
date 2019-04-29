@@ -58,7 +58,7 @@ namespace utopia {
                 result,
                 Eval<Left,  Traits>::apply(expr.left()),
                 expr.operation(),
-                Eval<Right, Traits>::apply(expr.right())                 
+                Eval<Right, Traits>::apply(expr.right())
                 );
 
             UTOPIA_TRACE_END(expr);

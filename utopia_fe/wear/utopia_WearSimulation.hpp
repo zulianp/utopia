@@ -4,20 +4,20 @@
 #include <string>
 
 namespace libMesh {
-	class LibMeshInit;
+    class LibMeshInit;
 }
 
 namespace utopia {
-	class WearSimulation {
-	public:
-		class SimulationInput;
-		class SimulationOutput;
+    class WearSimulation {
+    public:
+        class SimulationInput;
+        class SimulationOutput;
 
-		void run(libMesh::LibMeshInit &init, const std::string &conf_file_path);
+        void run(libMesh::LibMeshInit &init, const std::string &conf_file_path);
 
-		WearSimulation();
-		~WearSimulation();
-	};
+        WearSimulation();
+        ~WearSimulation();
+    };
 }
 
 #endif //UTOPIA_FE_WEAR_SIMULATION_HPP

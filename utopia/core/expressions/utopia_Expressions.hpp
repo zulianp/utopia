@@ -44,7 +44,7 @@
 #include "utopia_MatGetCol.hpp"
 
 /** @defgroup 	algebra Algebra
- *  @brief      Expressions to perform specialized algebraic operations. 
+ *  @brief      Expressions to perform specialized algebraic operations.
  */
 
 

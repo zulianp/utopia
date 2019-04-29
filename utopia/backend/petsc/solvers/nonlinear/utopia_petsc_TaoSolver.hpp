@@ -15,33 +15,33 @@
 
 namespace utopia {
 
-	template<class Matrix, class Vector>
-	class TaoSolver final : public NewtonBase<Matrix, Vector>,
-							// public NonLinearSmoother<Matrix, Vector>, //Maybe removing rhs from interface??
-							public VariableBoundSolverInterface<Vector>,
-							public virtual Clonable {
-	public:
-		TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver);
-		TaoSolver();
-		~TaoSolver();
+    template<class Matrix, class Vector>
+    class TaoSolver final : public NewtonBase<Matrix, Vector>,
+                            // public NonLinearSmoother<Matrix, Vector>, //Maybe removing rhs from interface??
+                            public VariableBoundSolverInterface<Vector>,
+                            public virtual Clonable {
+    public:
+        TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver);
+        TaoSolver();
+        ~TaoSolver();
 
-		void set_type(const std::string &type);
+        void set_type(const std::string &type);
         void read(Input &in) override;
         void print_usage(std::ostream &os) const override;
 
-		bool solve(Function<Matrix, Vector> &fun, Vector &x) override;
-		bool smooth(Function<Matrix, Vector> &fun, Vector &x);// override;
-		TaoSolver * clone() const override;
-		
-		
-	private:
-		class Impl;
-		std::unique_ptr<Impl> impl_;
+        bool solve(Function<Matrix, Vector> &fun, Vector &x) override;
+        bool smooth(Function<Matrix, Vector> &fun, Vector &x);// override;
+        TaoSolver * clone() const override;
 
-		void init(Function<Matrix, Vector> &fun, Vector &x);
-		void set_function(Function<Matrix, Vector> &fun);
-		bool get_ksp(KSP *ksp);
-	};
+
+    private:
+        class Impl;
+        std::unique_ptr<Impl> impl_;
+
+        void init(Function<Matrix, Vector> &fun, Vector &x);
+        void set_function(Function<Matrix, Vector> &fun);
+        bool get_ksp(KSP *ksp);
+    };
 }
 
 #endif //UTOPIA_PETSC_TAO_SOLVER_HPP

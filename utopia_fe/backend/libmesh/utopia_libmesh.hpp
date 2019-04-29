@@ -23,29 +23,29 @@
 namespace utopia {
 
 
-	inline ContextFunction<
-				std::vector<double>,
-				std::function<std::vector<double>(const AssemblyContext<LIBMESH_TAG> &)>
-		   > symbolic_to_ctx_fun(const std::string &expr)
-	{
+    inline ContextFunction<
+                std::vector<double>,
+                std::function<std::vector<double>(const AssemblyContext<LIBMESH_TAG> &)>
+           > symbolic_to_ctx_fun(const std::string &expr)
+    {
 
-		std::function<std::vector<double>(const AssemblyContext<LIBMESH_TAG> &)> f = [expr](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
-		{
-			SymbolicFunction fun(expr);
-			const auto &pts = ctx.fe()[0]->get_xyz();
+        std::function<std::vector<double>(const AssemblyContext<LIBMESH_TAG> &)> f = [expr](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+        {
+            SymbolicFunction fun(expr);
+            const auto &pts = ctx.fe()[0]->get_xyz();
 
-			const auto n = pts.size();
-			std::vector<double> ret(n);
+            const auto n = pts.size();
+            std::vector<double> ret(n);
 
-			for(std::size_t i = 0; i != n; ++i) {
-				ret[i] = fun.eval(pts[i](0), pts[i](1), pts[i](2));
-			}
+            for(std::size_t i = 0; i != n; ++i) {
+                ret[i] = fun.eval(pts[i](0), pts[i](1), pts[i](2));
+            }
 
-			return ret;
-		};
+            return ret;
+        };
 
-		return ctx_fun<std::vector<double> >(f);
-	}
+        return ctx_fun<std::vector<double> >(f);
+    }
 }
 
 #endif //WITH_TINY_EXPR

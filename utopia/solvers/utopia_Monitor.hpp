@@ -3,7 +3,7 @@
 
 #include "utopia_SolutionStatus.hpp"
 
-namespace utopia 
+namespace utopia
 {
 
     template<class Vector>
@@ -45,28 +45,28 @@ namespace utopia
 
 
         const SolutionStatus & solution_status() const
-        { 
+        {
             return solution_status_;
-        } 
+        }
 
         void solution_status(const SolutionStatus & sol)
-        { 
+        {
             solution_status_ = sol;
-        }         
+        }
 
-        SizeType get_num_it() const 
+        SizeType get_num_it() const
         {
             return solution_status_.iterates;
         }
 
-        SizeType get_convergence_reason() const 
+        SizeType get_convergence_reason() const
         {
             return solution_status_.reason;
-        }        
+        }
 
 
-    protected: 
-        SolutionStatus solution_status_; 
+    protected:
+        SolutionStatus solution_status_;
 
     };
 }

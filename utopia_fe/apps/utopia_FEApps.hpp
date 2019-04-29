@@ -9,15 +9,15 @@
 
 namespace utopia {
 
-	class FEApps {
-	public:
-		FEApps();
-		void run(libMesh::Parallel::Communicator &comm, int argc, char * argv[]);
-		void add_app(const std::string &command, std::unique_ptr<FEApp> &&app);
-		void print_usage(std::ostream &os) const;
-	private:
-		std::map<std::string, std::unique_ptr<FEApp>> apps_;
-	};
+    class FEApps {
+    public:
+        FEApps();
+        void run(libMesh::Parallel::Communicator &comm, int argc, char * argv[]);
+        void add_app(const std::string &command, std::unique_ptr<FEApp> &&app);
+        void print_usage(std::ostream &os) const;
+    private:
+        std::map<std::string, std::unique_ptr<FEApp>> apps_;
+    };
 }
 
 #endif //UTOPIA_FE_APPS_HPP

@@ -12,17 +12,17 @@
 
 namespace utopia {
 
-	namespace internals {
-		bool lapack_dgesv_solve(const Matrixd::Implementation &A, const Vectord::Implementation &b, Vectord::Implementation &x);
-	}
+    namespace internals {
+        bool lapack_dgesv_solve(const Matrixd::Implementation &A, const Vectord::Implementation &b, Vectord::Implementation &x);
+    }
 
-	template<>
+    template<>
     class LUDecomposition<Matrixd, Vectord, BLAS> : public DirectSolver<Matrixd, Vectord> {
     public:
         inline bool apply(const Vectord &b, Vectord &x) override
         {
             return internals::lapack_dgesv_solve(this->get_operator()->implementation(), b.implementation(), x.implementation());
-        }      
+        }
 
         LUDecomposition * clone() const override
         {

@@ -24,84 +24,84 @@
 
 namespace utopia {
 
-	void LeastSquaresHelmholtzApp::run(Input &in)
-	{
-		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
+    void LeastSquaresHelmholtzApp::run(Input &in)
+    {
+        typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-		//model parameters
-		const unsigned int n = 50;
-		const double c = 10.0;
-		const double beta = 0.99;
-		const double f = 5.;
+        //model parameters
+        const unsigned int n = 50;
+        const double c = 10.0;
+        const double beta = 0.99;
+        const double f = 5.;
 
-		//discretization parameters
-		const auto elem_type       = libMesh::QUAD8;
-		const auto elem_order 	   = libMesh::SECOND;
-		const auto elem_order_grad = libMesh::FIRST;
+        //discretization parameters
+        const auto elem_type       = libMesh::QUAD8;
+        const auto elem_order 	   = libMesh::SECOND;
+        const auto elem_order_grad = libMesh::FIRST;
 
-		//mesh
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
-		libMesh::MeshTools::Generation::build_square(
-			*mesh,
-			n, n,
-			0, 1,
-			0, 1.,
-			elem_type
-		);
+        //mesh
+        auto mesh = std::make_shared<libMesh::DistributedMesh>(comm());
+        libMesh::MeshTools::Generation::build_square(
+            *mesh,
+            n, n,
+            0, 1,
+            0, 1.,
+            elem_type
+        );
 
-		//equations system
-		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
-		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("leastsquares_helmoholtz");
+        //equations system
+        auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
+        auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("leastsquares_helmoholtz");
 
-		//scalar function space
-		auto V = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order, "u");
+        //scalar function space
+        auto V = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order, "u");
 
-		//vector function space
-		auto Qx = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order_grad, "grad_x");
-		auto Qy = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order_grad, "grad_y");
-		auto Q  = Qx * Qy;
+        //vector function space
+        auto Qx = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order_grad, "grad_x");
+        auto Qy = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order_grad, "grad_y");
+        auto Q  = Qx * Qy;
 
-		auto u = trial(V);
-		auto v = test(V);
+        auto u = trial(V);
+        auto v = test(V);
 
-		auto s = trial(Q);
-		auto q = test(Q);
+        auto s = trial(Q);
+        auto q = test(Q);
 
-		auto sx = s[0];
-		auto sy = s[1];
+        auto sx = s[0];
+        auto sy = s[1];
 
-		//bilinear forms
-		auto b_11 = integral((c*c) * inner(u, v) + inner(grad(u), grad(v)));
-		auto b_12 = integral(c * inner(div(s), v) + inner(s, grad(v)));
-		auto b_21 = integral(c * inner(u, div(q)) + inner(grad(u), q));
-		auto b_22 = integral(inner(s, q) + inner(div(s), div(q)) + beta * inner(curl(s), curl(q)));
+        //bilinear forms
+        auto b_11 = integral((c*c) * inner(u, v) + inner(grad(u), grad(v)));
+        auto b_12 = integral(c * inner(div(s), v) + inner(s, grad(v)));
+        auto b_21 = integral(c * inner(u, div(q)) + inner(grad(u), q));
+        auto b_22 = integral(inner(s, q) + inner(div(s), div(q)) + beta * inner(curl(s), curl(q)));
 
-		//linear forms
-		auto l_1 = integral(c * inner(coeff(f), v));
-		auto l_2 = integral(inner(coeff(f), div(q)));
+        //linear forms
+        auto l_1 = integral(c * inner(coeff(f), v));
+        auto l_2 = integral(inner(coeff(f), div(q)));
 
-		auto b_form = b_11 + b_12 + b_21 + b_22;
-		auto l_form = l_1 + l_2;
+        auto b_form = b_11 + b_12 + b_21 + b_22;
+        auto l_form = l_1 + l_2;
 
-		UVector sol;
-		if(!solve(
-			equations(
-				b_form == l_form
-			),
-			constraints(
-				boundary_conditions(u  == coeff(0.0), {0, 1, 2}),
-				boundary_conditions(sx == coeff(0.0), {3}),
-				boundary_conditions(sy == coeff(0.0), {3})
-			),
-			sol)) {
+        UVector sol;
+        if(!solve(
+            equations(
+                b_form == l_form
+            ),
+            constraints(
+                boundary_conditions(u  == coeff(0.0), {0, 1, 2}),
+                boundary_conditions(sx == coeff(0.0), {3}),
+                boundary_conditions(sy == coeff(0.0), {3})
+            ),
+            sol)) {
 
-			std::cerr << "[Error] unable to solve" << std::endl;
-			return;
-		}
+            std::cerr << "[Error] unable to solve" << std::endl;
+            return;
+        }
 
 
-		libMesh::ExodusII_IO io(*mesh);
-		convert(sol, *sys.solution);
-		io.write_equation_systems("leastsquares_helmoholtz.e", *equation_systems);
-	}
+        libMesh::ExodusII_IO io(*mesh);
+        convert(sol, *sys.solution);
+        io.write_equation_systems("leastsquares_helmoholtz.e", *equation_systems);
+    }
 }

@@ -14,7 +14,7 @@ namespace  utopia
             virtual ~MatrixFreeLinearSolver() {}
             virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
-            virtual MatrixFreeLinearSolver * clone() const =0; 
+            virtual MatrixFreeLinearSolver * clone() const =0;
 
             virtual void read(Input &in) override{ }
             virtual void print_usage(std::ostream &os) const override{ }
@@ -22,7 +22,7 @@ namespace  utopia
 
 
     template<class Vector>
-    class FunctionOperator final: public Operator<Vector> 
+    class FunctionOperator final: public Operator<Vector>
     {
         public:
             FunctionOperator(const std::function< void(const Vector &, Vector &) > operator_action)
@@ -31,15 +31,15 @@ namespace  utopia
 
             bool apply(const Vector &rhs, Vector &ret) const override
             {
-                operator_action_(rhs, ret); 
+                operator_action_(rhs, ret);
                 return true;
             }
 
         private:
-            std::function< void(const Vector &, Vector &) > operator_action_; 
+            std::function< void(const Vector &, Vector &) > operator_action_;
     };
 
-    
+
     template<class Vector>
     class EmptyPrecondMatrixFreeLinearSolver final: public MatrixFreeLinearSolver<Vector>
     {
@@ -52,25 +52,25 @@ namespace  utopia
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 if(precond_){
-                    precond_->apply(rhs, sol); 
+                    precond_->apply(rhs, sol);
                 }
                 else{
-                    utopia_warning("EmptyPrecondMatrixFreeLinearSolver: preconditioner is missing \n"); 
+                    utopia_warning("EmptyPrecondMatrixFreeLinearSolver: preconditioner is missing \n");
                 }
-                return true; 
+                return true;
             }
 
-            
+
             EmptyPrecondMatrixFreeLinearSolver * clone() const override
             {
                 return new EmptyPrecondMatrixFreeLinearSolver(*this);
-            }     
+            }
 
             void read(Input &in) override
             {
                 MatrixFreeLinearSolver<Vector>::read(in);
                 if(precond_){
-                    in.get("precond", *precond_); 
+                    in.get("precond", *precond_);
                 }
             }
 
@@ -78,8 +78,8 @@ namespace  utopia
             void print_usage(std::ostream &os) const override
             {
                 MatrixFreeLinearSolver<Vector>::print_usage(os);
-                this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-"); 
-            }              
+                this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-");
+            }
 
         private:
             std::shared_ptr<Preconditioner<Vector> > precond_;

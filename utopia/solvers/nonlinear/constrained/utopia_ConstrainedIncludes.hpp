@@ -1,5 +1,5 @@
 #ifndef UTOPIA_CONSTRAINTED_HPP
-#define UTOPIA_CONSTRAINTED_HPP 
+#define UTOPIA_CONSTRAINTED_HPP
 
 #include "utopia_Base.hpp"
 #include "utopia_NonlinSemismoothNewton.hpp"

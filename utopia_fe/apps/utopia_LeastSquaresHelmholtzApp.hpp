@@ -6,15 +6,15 @@
 
 namespace utopia {
 
-	class LeastSquaresHelmholtzApp final : public FEApp {
-	public:
-		void run(Input &in) override;
-		
-		inline static std::string command()
-		{
-			return "-helmholtz";
-		}
-	};
+    class LeastSquaresHelmholtzApp final : public FEApp {
+    public:
+        void run(Input &in) override;
+
+        inline static std::string command()
+        {
+            return "-helmholtz";
+        }
+    };
 }
 
 

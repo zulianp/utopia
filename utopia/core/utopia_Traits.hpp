@@ -32,7 +32,7 @@ namespace utopia {
         // static const int DIAGONAL           = 1;
         // static const int TRI_DIAGONAL       = 2;
         /////////////////////////////////////////////////
-        
+
         /////////////////////////////////////////////////
         static const int DENSE              = 12;
 
@@ -135,7 +135,7 @@ namespace utopia {
 
 
     template<class Left, class Right, class Default,
-             int SparsityLeft  = utopia::Traits<Left>::FILL_TYPE, 
+             int SparsityLeft  = utopia::Traits<Left>::FILL_TYPE,
              int SparsityRight = utopia::Traits<Right>::FILL_TYPE>
     class ChooseType {
     public:
@@ -292,7 +292,7 @@ namespace utopia {
 #define UTOPIA_MAKE_TRAITS_DENSE(TensorType, TraitsType)  \
     template<> class Traits<TensorType> : public TraitsType, public DefaultDenseTraits { }; \
     template<> class Traits<const TensorType &> : public TraitsType, public DefaultDenseTraits { }; \
-    template<> class Traits<TensorType &> : public TraitsType, public DefaultDenseTraits { } 
+    template<> class Traits<TensorType &> : public TraitsType, public DefaultDenseTraits { }
 
 #define UTOPIA_MAKE_TRAITS_TPL_1(TensorType, TraitsType)  \
     template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultDelegateTraits {}; \
@@ -302,12 +302,12 @@ namespace utopia {
 #define UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(TensorType, TraitsType)  \
     template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultSparseTraits { }; \
     template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultSparseTraits { }; \
-    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultSparseTraits { }   
+    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultSparseTraits { }
 
 #define UTOPIA_MAKE_TRAITS_DENSE_TPL_1(TensorType, TraitsType)  \
     template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultDenseTraits { }; \
     template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultDenseTraits { }; \
-    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultDenseTraits {  }     
+    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultDenseTraits {  }
 
     //Always to be called within the utopia namespace
 #define UTOPIA_MAKE_PARALLEL_TRAITS(TensorType)  template<> class is_parallel<TensorType> { public: enum { value = true}; }

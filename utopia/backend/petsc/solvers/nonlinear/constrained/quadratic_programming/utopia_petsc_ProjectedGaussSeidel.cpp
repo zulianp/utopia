@@ -13,7 +13,7 @@
 // 	int bs, PetscBool * constrained);
 
 // namespace utopia {
-	
+
 // 	bool ProjectedGaussSeidel<DSMatrixd, DVectord, PETSC>::apply(const Vector &b, Vector &x)
 // 	{
 // 		if(this->verbose())
@@ -46,7 +46,7 @@
 
 // 			PetscScalar diff = norm2(old_x_ - x);
 // 			if(this->verbose())
-// 				PrintInfo::print_iter_status({static_cast<Scalar>(i), diff}); 
+// 				PrintInfo::print_iter_status({static_cast<Scalar>(i), diff});
 
 // 			if(this->check_convergence(i, 1, 1, diff)) {
 // 				converged = true;
@@ -73,7 +73,7 @@
 // 		auto ctx = std::static_pointer_cast<NBGS_CTX>(ctx_);
 
 // 		for(SizeType i = 0; i < this->sweeps(); ++i) {
-	
+
 // 			auto err = NBGSStep(
 // 					ctx.get(),
 // 					raw_type(A),
@@ -117,7 +117,7 @@
 // 			raw_type(*constraints_.upper_bound()),
 // 			block_size_,
 // 			use_line_search_? PETSC_TRUE : PETSC_FALSE,
-// 			has_bound? 		  PETSC_TRUE : PETSC_FALSE, 
+// 			has_bound? 		  PETSC_TRUE : PETSC_FALSE,
 // 			(block_size_ == 1)? &constrain_box :  &constrain_blocknd
 // 		);
 

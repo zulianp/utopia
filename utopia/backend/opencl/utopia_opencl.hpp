@@ -1,5 +1,5 @@
 #ifndef UTOPIA_OPENCL_HPP
-#define UTOPIA_OPENCL_HPP 
+#define UTOPIA_OPENCL_HPP
 
 #include "utopia_opencl_Evaluator.hpp"
 #include "utopia_opencl_Kernel.hpp"

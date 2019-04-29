@@ -8,27 +8,27 @@
 
 namespace utopia {
 
-	template<class Matrix, class Vector>
-	class PolymorphicQPSolver : public QPSolver<Matrix, Vector>  {
-	public:
-			typedef UTOPIA_SCALAR(Vector)    			 Scalar;
-			typedef UTOPIA_SIZE_TYPE(Vector) 			 SizeType;
-			typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-			typedef utopia::QPSolver<Matrix, Vector> 	 Super;
-			typedef utopia::BoxConstraints<Vector>       BoxConstraints;
+    template<class Matrix, class Vector>
+    class PolymorphicQPSolver : public QPSolver<Matrix, Vector>  {
+    public:
+            typedef UTOPIA_SCALAR(Vector)    			 Scalar;
+            typedef UTOPIA_SIZE_TYPE(Vector) 			 SizeType;
+            typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
+            typedef utopia::QPSolver<Matrix, Vector> 	 Super;
+            typedef utopia::BoxConstraints<Vector>       BoxConstraints;
 
-		public:
+        public:
 
-			PolymorphicQPSolver();
-			~PolymorphicQPSolver();
-			PolymorphicQPSolver * clone() const override;
-			bool apply(const Vector &rhs, Vector &sol) override;
-			void read(Input &in) override;
+            PolymorphicQPSolver();
+            ~PolymorphicQPSolver();
+            PolymorphicQPSolver * clone() const override;
+            bool apply(const Vector &rhs, Vector &sol) override;
+            void read(Input &in) override;
 
-		private:
-			std::unique_ptr<QPSolver<Matrix, Vector>> impl_;
+        private:
+            std::unique_ptr<QPSolver<Matrix, Vector>> impl_;
 
-	};
+    };
 
 }
 

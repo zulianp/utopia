@@ -6,13 +6,13 @@
 #include "petscmat.h"
 
 namespace utopia {
-	class PetscSerialSparseMatrix : public PetscSparseMatrix {
-	public:
-		virtual MatType type_override() const override
-		{
-		    return MATSEQAIJ;
-		}
-	};
+    class PetscSerialSparseMatrix : public PetscSparseMatrix {
+    public:
+        virtual MatType type_override() const override
+        {
+            return MATSEQAIJ;
+        }
+    };
 
 }
 

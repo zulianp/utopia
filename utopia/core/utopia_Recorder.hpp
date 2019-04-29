@@ -22,95 +22,95 @@
 
 
 namespace utopia {
-	class Recorder {
-	public:
-		template<class Derived, class T>
-		void record_expr_and_value(const Expression<Derived> &expr, const Wrapper<T, 1> &v)
-		{
-			record_name_and_value(expr.getClass(), v);
-		}
+    class Recorder {
+    public:
+        template<class Derived, class T>
+        void record_expr_and_value(const Expression<Derived> &expr, const Wrapper<T, 1> &v)
+        {
+            record_name_and_value(expr.getClass(), v);
+        }
 
-		void scope_begin(const std::string &name)
-		{
-			++n_nested_scopes_;
+        void scope_begin(const std::string &name)
+        {
+            ++n_nested_scopes_;
 
-			if(mpi_world_rank() == 0) {
-				os_  << std::setfill(' ');
-				os_ << std::setw(n_nested_scopes_*10) << " " <<  "%----------------------------------------------------------------\n";
-				os_ << std::setw(n_nested_scopes_*10) << " " <<  "%begin: " << name << std::endl;
-			}
-		}
+            if(mpi_world_rank() == 0) {
+                os_  << std::setfill(' ');
+                os_ << std::setw(n_nested_scopes_*10) << " " <<  "%----------------------------------------------------------------\n";
+                os_ << std::setw(n_nested_scopes_*10) << " " <<  "%begin: " << name << std::endl;
+            }
+        }
 
 
-		void scope_end(const std::string &name)
-		{
-			if(mpi_world_rank() == 0) {
-				os_ << std::setfill(' ');
-				os_ << std::setw(n_nested_scopes_*10) << " " << "%end: " << name << std::endl;
-				os_ << std::setw(n_nested_scopes_*10) << " " << "%----------------------------------------------------------------\n";
-			}
-				--n_nested_scopes_;
+        void scope_end(const std::string &name)
+        {
+            if(mpi_world_rank() == 0) {
+                os_ << std::setfill(' ');
+                os_ << std::setw(n_nested_scopes_*10) << " " << "%end: " << name << std::endl;
+                os_ << std::setw(n_nested_scopes_*10) << " " << "%----------------------------------------------------------------\n";
+            }
+                --n_nested_scopes_;
 
-		}
+        }
 
-		template<class T>
-		void record_name_and_value(const std::string &name, const Wrapper<T, 1> &v)
-		{
-			typedef utopia::Wrapper<T, 1> Vector;
-			DEF_UTOPIA_SCALAR(Vector);
+        template<class T>
+        void record_name_and_value(const std::string &name, const Wrapper<T, 1> &v)
+        {
+            typedef utopia::Wrapper<T, 1> Vector;
+            DEF_UTOPIA_SCALAR(Vector);
 
-			mpi_world_barrier();
+            mpi_world_barrier();
 
-			if(mpi_world_rank() == 0) {
-				os_ << std::setfill(' ');
-				os_ << std::endl;
-				os_ << std::setw(n_nested_scopes_*10) << " " << "% " << name << "\n";
-				os_ << std::setw(n_nested_scopes_*10) << " " << "v_" << expr_num_++ << " = [";
-			}
+            if(mpi_world_rank() == 0) {
+                os_ << std::setfill(' ');
+                os_ << std::endl;
+                os_ << std::setw(n_nested_scopes_*10) << " " << "% " << name << "\n";
+                os_ << std::setw(n_nested_scopes_*10) << " " << "v_" << expr_num_++ << " = [";
+            }
 
-			mpi_world_barrier();
+            mpi_world_barrier();
 
-			for(int i = 0; i < mpi_world_size(); ++i) {
-				mpi_world_barrier();
+            for(int i = 0; i < mpi_world_size(); ++i) {
+                mpi_world_barrier();
 
-				if(i == mpi_world_rank()) {
-					os_ << std::flush;
+                if(i == mpi_world_rank()) {
+                    os_ << std::flush;
 
-					each_read(v, [this](const SizeType i, const Scalar val) {
-						os_ << val << " ";
-					});
+                    each_read(v, [this](const SizeType i, const Scalar val) {
+                        os_ << val << " ";
+                    });
 
-					os_ << std::flush;
-				}
-			}
+                    os_ << std::flush;
+                }
+            }
 
-			mpi_world_barrier();
+            mpi_world_barrier();
 
-			os_ << std::flush;
-			if(mpi_world_rank() == 0) {
-				os_ << "]';";
-				os_ << std::endl;
-			}
+            os_ << std::flush;
+            if(mpi_world_rank() == 0) {
+                os_ << "]';";
+                os_ << std::endl;
+            }
 
-			os_ << std::flush;
+            os_ << std::flush;
 
-			mpi_world_barrier();
-		}
+            mpi_world_barrier();
+        }
 
-		static Recorder &instance()
-		{
-			static Recorder instance_;
-			return instance_;
-		}
+        static Recorder &instance()
+        {
+            static Recorder instance_;
+            return instance_;
+        }
 
-		Recorder(std::ostream &os = std::cout)
-		: os_(os), expr_num_(0), n_nested_scopes_(0)
-		{}
+        Recorder(std::ostream &os = std::cout)
+        : os_(os), expr_num_(0), n_nested_scopes_(0)
+        {}
 
-		std::ostream &os_;
-		long expr_num_;
-		long n_nested_scopes_;
-	};
+        std::ostream &os_;
+        long expr_num_;
+        long n_nested_scopes_;
+    };
 }
 
 #endif //UTOPIA_RECORDER_HPP

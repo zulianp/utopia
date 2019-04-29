@@ -11,32 +11,32 @@
 
 
 namespace utopia {
-	class LocalAssembler;
-	class Local2Global;
+    class LocalAssembler;
+    class Local2Global;
 
-	class TransferApp final : public FEApp {
-	public:
-		class InputSpace;
+    class TransferApp final : public FEApp {
+    public:
+        class InputSpace;
 
-		~TransferApp();
-		TransferApp();
+        ~TransferApp();
+        TransferApp();
 
-		void run(Input &in) override;
+        void run(Input &in) override;
 
-		static std::string command() { return "-transfer"; }
+        static std::string command() { return "-transfer"; }
 
-	private:
+    private:
 
 #ifdef WITH_TINY_EXPR
-		std::shared_ptr<SymbolicFunction> fun;
+        std::shared_ptr<SymbolicFunction> fun;
 #else
-		std::shared_ptr<ConstantCoefficient<double, 0>> fun;
+        std::shared_ptr<ConstantCoefficient<double, 0>> fun;
 #endif //WITH_TINY_EXPR
 
-		bool fun_is_constant;
-		bool write_operators_to_disk;
+        bool fun_is_constant;
+        bool write_operators_to_disk;
 
-	};
+    };
 }
 
 

@@ -8,18 +8,18 @@
 
 namespace utopia {
 
-	template<class FunctionSpaceT, class Traits, int Backend, int IsQuadData>
-	class FEEval<TestFunction<FunctionSpaceT>, Traits, Backend, IsQuadData> {
-	public:
-		typedef utopia::TestFunction<FunctionSpaceT> Expr;
+    template<class FunctionSpaceT, class Traits, int Backend, int IsQuadData>
+    class FEEval<TestFunction<FunctionSpaceT>, Traits, Backend, IsQuadData> {
+    public:
+        typedef utopia::TestFunction<FunctionSpaceT> Expr;
 
-	    inline static auto apply(
-	    	const Expr &expr,
-	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::fun(expr, ctx) )
-	    {
-	    	return FEBackend<Backend>::fun(expr, ctx);
-	    } 
-	};
+        inline static auto apply(
+            const Expr &expr,
+            AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::fun(expr, ctx) )
+        {
+            return FEBackend<Backend>::fun(expr, ctx);
+        }
+    };
 }
 
 #endif //UTOPIA_FE_EVAL_TEST_FUNCTION_HPP

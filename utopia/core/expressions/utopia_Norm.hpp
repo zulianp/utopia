@@ -43,21 +43,21 @@ namespace utopia {
     template<class Expr>
     class Unfold< Norm<Expr, 2> > {
     public:
-        typedef utopia::Unary< 
-                        utopia::Reduce< 
-                                utopia::Unary<Expr, utopia::Pow2>, 
-                                utopia::Plus >, 
-                        utopia::Sqrt 
+        typedef utopia::Unary<
+                        utopia::Reduce<
+                                utopia::Unary<Expr, utopia::Pow2>,
+                                utopia::Plus >,
+                        utopia::Sqrt
                         > Type;
 
         inline static Type apply(const Norm<Expr, 2> &expr)
         {
-            return Type( Reduce < 
-                                Unary<Expr, Pow2>, 
-                                Plus 
-                                >( Unary<Expr, Pow2>(expr.expr()) ) 
+            return Type( Reduce <
+                                Unary<Expr, Pow2>,
+                                Plus
+                                >( Unary<Expr, Pow2>(expr.expr()) )
                         );
-        }                        
+        }
     };
 
     template<class Expr>
@@ -74,7 +74,7 @@ namespace utopia {
     //     inline static Type apply(const Norm<Expr, 2> &expr)
     //     {
     //         return expr.expr().expr().expr();
-    //     }  
+    //     }
 
     // };
 

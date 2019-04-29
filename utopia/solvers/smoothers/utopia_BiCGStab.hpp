@@ -10,44 +10,44 @@
 
 namespace utopia {
 
-	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class BiCGStab final: public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
-	public:
-		typedef UTOPIA_SCALAR(Vector) 	 Scalar;
-		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-		typedef utopia::Preconditioner<Vector> Preconditioner;
+    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    class BiCGStab final: public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
+    public:
+        typedef UTOPIA_SCALAR(Vector) 	 Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        typedef utopia::Preconditioner<Vector> Preconditioner;
 
-		using PreconditionedSolver<Matrix, Vector>::solve;
-	
-		BiCGStab();	
-		BiCGStab * clone() const override;
-		
-		inline bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
-		{
-			if(this->get_preconditioner()) {
-				return solve_preconditioned(A, b, x);
-			} else {
-				return solve_unpreconditioned(A, b, x);
-			}
-		}
+        using PreconditionedSolver<Matrix, Vector>::solve;
 
-		inline bool apply(const Vector &b, Vector &x) override
-		{
-			auto A_ptr = utopia::op(this->get_operator());
-			return solve(*A_ptr, b, x);
-		}
+        BiCGStab();
+        BiCGStab * clone() const override;
 
-		bool smooth(const Vector &rhs, Vector &x) override;
+        inline bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
+        {
+            if(this->get_preconditioner()) {
+                return solve_preconditioned(A, b, x);
+            } else {
+                return solve_unpreconditioned(A, b, x);
+            }
+        }
 
-		//for chosing the preconditioned solver one
-		void update(const std::shared_ptr<const Matrix> &op) override;
+        inline bool apply(const Vector &b, Vector &x) override
+        {
+            auto A_ptr = utopia::op(this->get_operator());
+            return solve(*A_ptr, b, x);
+        }
+
+        bool smooth(const Vector &rhs, Vector &x) override;
+
+        //for chosing the preconditioned solver one
+        void update(const std::shared_ptr<const Matrix> &op) override;
 
 
-		void read(Input &in) override
+        void read(Input &in) override
         {
             MatrixFreeLinearSolver<Vector>::read(in);
-            Smoother<Matrix, Vector>::read(in); 
-            PreconditionedSolver<Matrix, Vector>::read(in); 
+            Smoother<Matrix, Vector>::read(in);
+            PreconditionedSolver<Matrix, Vector>::read(in);
         }
 
         void print_usage(std::ostream &os) const override
@@ -57,22 +57,22 @@ namespace utopia {
             PreconditionedSolver<Matrix, Vector>::print_usage(os);
         }
 
-	private:
-		void init(const Size &ls);
-		bool solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
-		bool solve_unpreconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
+    private:
+        void init(const Size &ls);
+        bool solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
+        bool solve_unpreconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
 
-		Vector r0_;
-		Vector r_;
-		Vector v_;
-		Vector p_;
-		Vector h_;
-		Vector y_;
-		Vector t_;
-		Vector s_;
-		Vector z_;
-		Vector K_inv_t_;
-	};
+        Vector r0_;
+        Vector r_;
+        Vector v_;
+        Vector p_;
+        Vector h_;
+        Vector y_;
+        Vector t_;
+        Vector s_;
+        Vector z_;
+        Vector K_inv_t_;
+    };
 }
 
 #endif //UTOPIA_BICG_STAB_HPP

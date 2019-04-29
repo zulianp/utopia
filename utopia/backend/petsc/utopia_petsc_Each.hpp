@@ -6,117 +6,117 @@
 
 namespace utopia {
 
-	template<int FILL_TYPE>
-	class Each<DVectord, 1, FILL_TYPE> {
-	public:
+    template<int FILL_TYPE>
+    class Each<DVectord, 1, FILL_TYPE> {
+    public:
 
-		template<class Fun>
-		inline static void apply_read(const DVectord &v, Fun fun)
-		{
-			PetscErrorCode ierr;
+        template<class Fun>
+        inline static void apply_read(const DVectord &v, Fun fun)
+        {
+            PetscErrorCode ierr;
 
-			const auto r = range(v);
-			const std::size_t r_begin = r.begin();
-			const auto &impl = raw_type(v);
+            const auto r = range(v);
+            const std::size_t r_begin = r.begin();
+            const auto &impl = raw_type(v);
 
-			const PetscScalar *arr;
+            const PetscScalar *arr;
 
-			ierr = VecGetArrayRead(impl, &arr); assert(ierr == 0);
+            ierr = VecGetArrayRead(impl, &arr); assert(ierr == 0);
 
-			For<>::apply(
-				r_begin,
-				r.end(),
-				[&arr, &fun, r_begin](const std::size_t i) {
-					auto idx = i - r_begin;
-					fun(i, arr[idx]);
-				}
-			);
+            For<>::apply(
+                r_begin,
+                r.end(),
+                [&arr, &fun, r_begin](const std::size_t i) {
+                    auto idx = i - r_begin;
+                    fun(i, arr[idx]);
+                }
+            );
 
-			ierr = VecRestoreArrayRead(impl, &arr); assert(ierr == 0);
-			(void) ierr;
-		}
+            ierr = VecRestoreArrayRead(impl, &arr); assert(ierr == 0);
+            (void) ierr;
+        }
 
-		template<class Fun>
-		inline static void apply_write(DVectord &v, Fun fun)
-		{
-			PetscErrorCode ierr;
+        template<class Fun>
+        inline static void apply_write(DVectord &v, Fun fun)
+        {
+            PetscErrorCode ierr;
 
-			const auto r = range(v);
-			const std::size_t r_begin = r.begin();
-			const auto &impl = raw_type(v);
+            const auto r = range(v);
+            const std::size_t r_begin = r.begin();
+            const auto &impl = raw_type(v);
 
-			PetscScalar *arr;
+            PetscScalar *arr;
 
-			ierr = VecGetArray(impl, &arr); assert(ierr == 0);
+            ierr = VecGetArray(impl, &arr); assert(ierr == 0);
 
-			For<>::apply(
-				r_begin,
-				r.end(),
-				[&arr, &fun, r_begin](const std::size_t i) {
-					auto idx = i - r_begin;
-					arr[idx] = fun(i);
-				}
-			);
+            For<>::apply(
+                r_begin,
+                r.end(),
+                [&arr, &fun, r_begin](const std::size_t i) {
+                    auto idx = i - r_begin;
+                    arr[idx] = fun(i);
+                }
+            );
 
-			ierr = VecRestoreArray(impl, &arr); assert(ierr == 0);
-			(void) ierr;
-		}
+            ierr = VecRestoreArray(impl, &arr); assert(ierr == 0);
+            (void) ierr;
+        }
 
-		template<class Fun>
-		inline static void apply_transform(const DVectord &in, DVectord &out, Fun fun)
-		{
-			PetscErrorCode ierr;
+        template<class Fun>
+        inline static void apply_transform(const DVectord &in, DVectord &out, Fun fun)
+        {
+            PetscErrorCode ierr;
 
-			const auto s = size(in);
-			if(s != size(out)) {
-				out = local_zeros(s);
-			}
+            const auto s = size(in);
+            if(s != size(out)) {
+                out = local_zeros(s);
+            }
 
-			const auto &impl_in = raw_type(in);
-			auto &impl_out = raw_type(out);
+            const auto &impl_in = raw_type(in);
+            auto &impl_out = raw_type(out);
 
-			const auto r = range(out);
-			const std::size_t r_begin = r.begin();
+            const auto r = range(out);
+            const std::size_t r_begin = r.begin();
 
-			if(impl_in == impl_out) {
-				PetscScalar *arr;
+            if(impl_in == impl_out) {
+                PetscScalar *arr;
 
-				ierr = VecGetArray(impl_out, &arr); assert(ierr == 0);
+                ierr = VecGetArray(impl_out, &arr); assert(ierr == 0);
 
-				For<>::apply(
-					r_begin,
-					r.end(),
-					[arr, &fun, r_begin](const std::size_t i) {
-						auto idx = i - r_begin;
-						arr[idx] = fun(i, arr[idx]);
-					}
-				);
+                For<>::apply(
+                    r_begin,
+                    r.end(),
+                    [arr, &fun, r_begin](const std::size_t i) {
+                        auto idx = i - r_begin;
+                        arr[idx] = fun(i, arr[idx]);
+                    }
+                );
 
-				ierr = VecRestoreArray(impl_out, &arr); assert(ierr == 0);
+                ierr = VecRestoreArray(impl_out, &arr); assert(ierr == 0);
 
-			} else {
-				const PetscScalar *arr_in;
-				PetscScalar *arr_out;
+            } else {
+                const PetscScalar *arr_in;
+                PetscScalar *arr_out;
 
-				ierr = VecGetArrayRead(impl_in, &arr_in); assert(ierr == 0);
-				ierr = VecGetArray(impl_out, &arr_out);   assert(ierr == 0);
+                ierr = VecGetArrayRead(impl_in, &arr_in); assert(ierr == 0);
+                ierr = VecGetArray(impl_out, &arr_out);   assert(ierr == 0);
 
-				For<>::apply(
-					r_begin,
-					r.end(),
-					[arr_in, arr_out, &fun, r_begin](const std::size_t i) {
-						auto idx = i - r_begin;
-						arr_out[idx] = fun(i, arr_in[idx]);
-					}
-				);
+                For<>::apply(
+                    r_begin,
+                    r.end(),
+                    [arr_in, arr_out, &fun, r_begin](const std::size_t i) {
+                        auto idx = i - r_begin;
+                        arr_out[idx] = fun(i, arr_in[idx]);
+                    }
+                );
 
-				ierr = VecRestoreArrayRead(impl_in, &arr_in); assert(ierr == 0);
-				ierr = VecRestoreArray(impl_out, &arr_out);   assert(ierr == 0);
-			}
+                ierr = VecRestoreArrayRead(impl_in, &arr_in); assert(ierr == 0);
+                ierr = VecRestoreArray(impl_out, &arr_out);   assert(ierr == 0);
+            }
 
-			(void) ierr;
-		}
-	};
+            (void) ierr;
+        }
+    };
 
 }
 

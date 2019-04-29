@@ -48,15 +48,15 @@ IF(DEFINED Intrepid2_VERSION)
     "^[0-9]+\\.([0-9]+).*$" "\\1"
     INTREPID2_VERSION_MINOR "${Intrepid2_VERSION}")
 
-  # If there is no subminor number, 
-  # INTREPID2_VERSION_SUBMINOR is set to an empty string. 
+  # If there is no subminor number,
+  # INTREPID2_VERSION_SUBMINOR is set to an empty string.
   # If that is the case, set the subminor number to zero
   STRING(REGEX REPLACE
     "^[0-9]+\\.[0-9]+\\.?(([0-9]+)?).*$" "\\1"
     INTREPID2_VERSION_SUBMINOR "${Intrepid2_VERSION}")
   IF("${INTREPID2_VERSION_SUBMINOR}" STREQUAL "")
     SET(INTREPID2_VERSION_SUBMINOR "0")
-  ENDIF()  
+  ENDIF()
 ENDIF()
 
 

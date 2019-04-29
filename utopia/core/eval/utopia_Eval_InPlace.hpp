@@ -19,7 +19,7 @@ namespace utopia {
             typedef utopia::Assign<Left, TransformedExpr> AssignExpr;
 
             UTOPIA_TRACE_BEGIN(expr);
-            
+
             bool out = Eval<AssignExpr, Traits>::apply(
                     AssignExpr(
                             expr.left(),
@@ -43,7 +43,7 @@ namespace utopia {
         inline static bool apply(const InPlace<Left, Right, Plus> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-            
+
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
                   1.,
@@ -62,7 +62,7 @@ namespace utopia {
         inline static bool apply(const InPlace<Left, Right, Minus> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-            
+
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
                   -1.,
@@ -82,7 +82,7 @@ namespace utopia {
         inline static bool apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-            
+
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
                   static_cast<T>(expr.right().left()),
@@ -102,7 +102,7 @@ namespace utopia {
         inline static bool apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-            
+
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
                   -static_cast<T>(expr.right().left()),
