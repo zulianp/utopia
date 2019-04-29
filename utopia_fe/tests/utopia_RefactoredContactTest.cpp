@@ -47,7 +47,8 @@ namespace utopia {
             USparseMatrix B_x, D_x;
 
             USparseMatrix B, D, Q, T;
-            UVector weighted_gap, gap, normal;
+            UVector weighted_gap, gap;
+            UVector weighted_normal, normal;
             UVector area;
             UVector is_contact;
 
@@ -61,9 +62,9 @@ namespace utopia {
                 out.B = vector_perm * B * transpose(vector_perm);
                 out.D = vector_perm * D * transpose(vector_perm);
 
-                out.weighted_gap = perm * weighted_gap;
-                out.normal       = vector_perm * normal;
-                out.is_contact   = perm * is_contact;
+                out.weighted_gap    = perm * weighted_gap;
+                out.weighted_normal = vector_perm * weighted_normal;
+                out.is_contact      = perm * is_contact;
 
                 SizeType n_local_contact_nodes = 0;
                 each_transform(out.is_contact, out.is_contact, [&n_local_contact_nodes](const SizeType i, const double val) -> double {
@@ -75,8 +76,8 @@ namespace utopia {
                     }
                 });
 
-                double sum_normal   = sum(out.normal);
-                double sum_normal_e = sum(normal);
+                double sum_normal   = sum(out.weighted_normal);
+                double sum_normal_e = sum(weighted_normal);
 
                 std::cout << "n_local_contact_nodes: " << n_local_contact_nodes << std::endl;
                 std::cout << "sum(normal): " << sum_normal << " == " << sum_normal_e << std::endl;
@@ -88,21 +89,38 @@ namespace utopia {
                 gap = local_zeros(local_size(weighted_gap));
                 solver.update(make_ref(D)); 
                 solver.apply(weighted_gap, gap);
-            }
+                solver.apply(weighted_normal, normal);
 
-            void switch_dim(
-                const UVector &in,
-                const SizeType spatial_dim,
-                UVector &out)
-            {
-                out = local_zeros(local_size(in).get(0) * spatial_dim);
-                Write<UVector> w(out);
+                auto r = range(normal);
 
-                each_read(in, [&](const SizeType i, const double val) {
-                    for(SizeType d = 0; d < spatial_dim; ++d) {
-                        out.set(i * spatial_dim + d, val);
+                Read<UVector> ric(is_contact);
+                ReadAndWrite<UVector> rw(normal);
+                for(auto i = r.begin(); i < r.end(); i += spatial_dim) {
+                    bool is_node_in_contact = is_contact.get(i);
+
+
+                    if(is_node_in_contact) {
+                        double len_n = 0.0;
+                        for(SizeType d = 0; d < spatial_dim; ++d) {
+                            auto temp = normal.get(i + d);
+                            len_n += temp * temp;
+                        }
+
+                        if(len_n > 0.0) {
+                            len_n = std::sqrt(len_n);
+
+                            for(SizeType d = 0; d < spatial_dim; ++d) {
+                                normal.set(i + d, normal.get(i + d)/len_n);
+                            }
+                        } else {
+                            assert(false);
+                        }
+                    } else {
+                        for(SizeType d = 0; d < spatial_dim; ++d) {
+                            normal.set(i + d, 0.0);
+                        }
                     }
-                });
+                }
             }
         };
 
@@ -171,14 +189,14 @@ namespace utopia {
             B.fill(remove, element_wise.B_x);
             D.fill(remove, element_wise.D_x);
             gap.fill(remove, element_wise.weighted_gap);
-            normal.fill(element_wise.normal);
+            normal.fill(element_wise.weighted_normal);
 
             tensor_prod_with_identity(element_wise.B_x, spatial_dim, element_wise.B);
             tensor_prod_with_identity(element_wise.D_x, spatial_dim, element_wise.D);
 
             double sum_B_x = sum(element_wise.B_x);
             double sum_D_x = sum(element_wise.D_x);
-            double sum_normal_xyz = sum(element_wise.normal);
+            double sum_normal_xyz = sum(element_wise.weighted_normal);
 
             assert(adapter.permutation());
 
@@ -720,8 +738,6 @@ namespace utopia {
             model = make_unique<MaterialT>(space.space());
 
             auto &V = space.space().subspace(0);
-
-
             LibMeshFunctionSpaceAdapter adapter;
 
             auto spatial_dim = V.mesh().spatial_dimension();
@@ -762,9 +778,9 @@ namespace utopia {
             assert(found_contact);
 
             if(found_contact) {
-                write("warped.e", V, contact_data.dof_wise.gap);
+                // write("warped.e", V, contact_data.dof_wise.gap);
                 // write("warped.e", V, contact_data.dof_wise.is_contact);
-                // write("warped.e", V, contact_data.dof_wise.normal);
+                write("warped.e", V, contact_data.dof_wise.normal);
             }
 
             // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
