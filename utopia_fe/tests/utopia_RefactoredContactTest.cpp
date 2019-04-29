@@ -102,8 +102,6 @@ namespace utopia {
             return B.comm.get();
         }
 
-  
-
         void finalize(
             const LibMeshFunctionSpaceAdapter &adapter,
             const UVector &volumes)
