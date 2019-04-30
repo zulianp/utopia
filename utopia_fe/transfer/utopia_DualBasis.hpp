@@ -5,6 +5,7 @@
 #include "libmesh/dense_matrix.h"
 #include "libmesh/fe_base.h"
 #include "utopia_libmesh_Utils.hpp"
+#include "utopia_ElementDofMap.hpp"
 #include "MortarAssemble.hpp"
 
 namespace utopia {
@@ -66,6 +67,71 @@ namespace utopia {
             }
 
             for(SizeType i = 0; i < n_local; ++i) {
+                if(is_node_on_boundary[i]) {
+                    auto dof_I = i + rr.begin();
+                    mat.set(dof_I, dof_I, 1.);
+                }
+            }
+
+            return true;
+        }
+
+
+        static bool build_inverse_trafo(
+            const libMesh::MeshBase &mesh,
+            const SizeType n_local_dofs,
+            const std::vector<ElementDofMap> &dof_map,
+            const UVector &elem_to_transform,
+            const double alpha,
+            USparseMatrix &mat
+            )
+        {
+            using SizeType = UTOPIA_SIZE_TYPE(USparseMatrix);
+
+            auto e_begin = elements_begin(mesh);
+            auto e_end   = elements_end(mesh);
+
+            SizeType nnz = 0;
+            if(!dof_map.empty()) {
+                //estimate
+                nnz = dof_map[0].global.size() * 10;
+            }
+
+            mat = local_sparse(n_local_dofs, n_local_dofs, nnz);
+
+            Read<UVector> r(elem_to_transform);
+            Write<USparseMatrix> w(mat);
+
+            std::vector<bool> is_node_on_boundary(n_local_dofs, false);
+
+            auto rr = row_range(mat);
+            
+            libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo;
+            std::vector<libMesh::dof_id_type> dofs;
+
+            if(e_begin != e_end) {
+                assemble_local_trafo((*e_begin)->type(), alpha, local_trafo, inv_trafo);
+            }
+
+            SizeType idx = 0;
+            for(auto it = e_begin; it != e_end; ++it, ++idx) {
+                const auto * e = *it;
+
+                if(elem_to_transform.get(e->id()) > 0.) {
+                    // dof_map.dof_indices(e, dofs);
+
+                    const auto &dofs = dof_map[idx].global;
+                    mat.set_matrix(dofs, dofs, inv_trafo.get_values());
+
+                    for(auto d : dofs) {
+                        if(rr.inside(d)) {
+                            is_node_on_boundary[d - rr.begin()] = true;
+                        }
+                    }
+                }   
+            }
+
+            for(SizeType i = 0; i < n_local_dofs; ++i) {
                 if(is_node_on_boundary[i]) {
                     auto dof_I = i + rr.begin();
                     mat.set(dof_I, dof_I, 1.);

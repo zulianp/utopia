@@ -2224,6 +2224,7 @@ namespace utopia {
 
 
 
+
     void mortar_assemble_weighted_biorth(
                                          const libMesh::FEVectorBase &trial_fe,
                                          const libMesh::FEVectorBase &test_fe,
@@ -2436,6 +2437,62 @@ namespace utopia {
 
                 for(uint d = 0; d < dim; ++d) {
                     normals(i, d) += biorth_test * surf_normal(d) * JxW[qp];
+                }
+            }
+        }
+    }
+
+    void mortar_assemble_weighted_biorth(const libMesh::FEBase &trial_fe,
+                                         const libMesh::DenseMatrix<libMesh::Real> &trafo,
+                                         const libMesh::FEBase &test_fe,
+                                         const libMesh::DenseMatrix<libMesh::Real> &weights,
+                                         libMesh::DenseMatrix<libMesh::Real> &elmat)
+    {
+        if(elmat.m() != test_fe.get_phi().size() ||
+           elmat.n() != trial_fe.get_phi().size()) {
+            
+            elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
+            elmat.zero();
+        }
+        
+        const auto &trial = trial_fe.get_phi();
+        const auto &test  = test_fe.get_phi();
+        const auto &JxW   = test_fe.get_JxW();
+        
+        const uint n_test  = test.size();
+        const uint n_trial = trial.size();
+        const uint n_qp    = test[0].size();
+
+        std::vector<double> w_trial(n_trial);
+        std::vector<double> w_test(n_test);
+        
+        for(uint qp = 0; qp < n_qp; ++qp) {
+
+            //build trial test
+            for(uint j = 0; j < n_trial; ++j) {
+                auto w_trial_j = 0.;
+                
+                for(uint k = 0; k < n_trial; ++k) {
+                    w_trial_j += trial[k][qp] * trafo(j, k);
+                } 
+
+                w_trial[j] = w_trial_j; 
+            }
+
+            //build weigthed test
+            for(uint j = 0; j < n_test; ++j) {
+                auto w_test_j = 0.;
+                
+                for(uint k = 0; k < n_test; ++k) {
+                    w_test_j += test[k][qp] * weights(j, k);
+                } 
+
+                w_test[j] = w_test_j; 
+            }
+
+            for(uint i = 0; i < n_test; ++i) {
+                for(uint j = 0; j < n_trial; ++j) {
+                    elmat(i, j) += w_test[i] * w_trial[j] * JxW[qp];
                 }
             }
         }

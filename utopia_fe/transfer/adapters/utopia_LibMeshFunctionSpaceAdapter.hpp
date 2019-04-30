@@ -184,6 +184,7 @@ namespace utopia {
             const int var_num)
         {
             auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
+            source_dof_map_ = utopia::make_ref(dof_map);
 
             mesh->get_boundary_info().sync(*b_mesh);
 
@@ -245,6 +246,11 @@ namespace utopia {
             return this->mesh_->comm(); 
         }
 
+        const libMesh::DofMap &source_dof_map() const
+        {
+            assert(source_dof_map_);
+            return *source_dof_map_; 
+        }
 
         void init_aux(
             const std::shared_ptr<libMesh::MeshBase> &mesh,
@@ -538,6 +544,8 @@ namespace utopia {
 
         LibMeshDofMapAdapter dof_map_;
         bool is_extracted_surface_;
+
+        std::shared_ptr<const libMesh::DofMap> source_dof_map_;
     };
 
     // class PermutationBuilder {

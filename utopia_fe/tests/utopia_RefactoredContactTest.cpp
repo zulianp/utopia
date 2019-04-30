@@ -16,6 +16,7 @@
 #include "utopia_polymorphic_QPSolver.hpp"
 #include "utopia_MatrixInserter.hpp"
 #include "utopia_ZeroRowsToIdentity.hpp"
+#include "utopia_NormalizeRows.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
@@ -44,7 +45,7 @@ namespace utopia {
 
         class Tensors {
         public:
-            USparseMatrix B_x, D_x;
+            USparseMatrix B_x, D_x, Q_x;
 
             USparseMatrix B, D, Q, T;
             UVector weighted_gap, gap;
@@ -61,6 +62,11 @@ namespace utopia {
             {
                 out.B = vector_perm * B * transpose(vector_perm);
                 out.D = vector_perm * D * transpose(vector_perm);
+                
+                if(!empty(Q)) {
+                    out.Q = vector_perm * Q * transpose(vector_perm);
+                    normalize_rows(out.Q);
+                }
 
                 out.weighted_gap    = perm * weighted_gap;
                 out.weighted_normal = vector_perm * weighted_normal;
@@ -87,9 +93,29 @@ namespace utopia {
             {
                 zero_rows_to_identity(D, 1e-13);
                 gap = local_zeros(local_size(weighted_gap));
-                solver.update(make_ref(D)); 
-                solver.apply(weighted_gap, gap);
-                solver.apply(weighted_normal, normal);
+
+                if(!empty(Q)) {
+                    UVector d_inv = diag(D);
+
+                    each_transform(d_inv, d_inv, [](const SizeType i, const double value) -> double {
+                        if(std::abs(value) > 1e-15) {
+                            return 1./value;
+                        } else {
+                            return 0.0;
+                        }
+                    });
+
+                    USparseMatrix D_inv = diag(d_inv);
+                    T = Q * D_inv;
+
+                    gap    = T * weighted_gap;
+                    normal = T * weighted_normal;
+
+                } else {
+                    solver.update(make_ref(D)); 
+                    solver.apply(weighted_gap, gap);
+                    solver.apply(weighted_normal, normal);
+                }
 
                 auto r = range(normal);
 
@@ -134,7 +160,9 @@ namespace utopia {
 
         void finalize(
             const LibMeshFunctionSpaceAdapter &adapter,
-            const UVector &volumes)
+            const UVector &volumes,
+            const double alpha,
+            const bool use_biorth)
         {
             const SizeType n_local_elems = adapter.n_local_elems();
             const SizeType n_local_dofs  = adapter.n_local_dofs();
@@ -150,15 +178,23 @@ namespace utopia {
 
             element_wise.is_contact = local_zeros(adapter.n_local_dofs());
 
+            UVector elem_to_transform;
+
+            const bool must_assemble_trafo = use_biorth && adapter.fe_type(0).order == 2;
+            // if(must_assemble_trafo) {
+            elem_to_transform = local_zeros(r.extent());
+            // } 
+
+
             {
                 Read<UVector> rv(volumes), ra(element_wise.area);
-                Write<UVector> wic(element_wise.is_contact);
+                Write<UVector> wic(element_wise.is_contact), wett(elem_to_transform);
 
                 for(auto i = r.begin(); i < r.end(); ++i) {
                     const auto a = element_wise.area.get(i);
 
                     if(a > 0.0) {
-                        if(!approxeq(volumes.get(i), a, 1e-3)) {
+                        if(!use_biorth && !approxeq(volumes.get(i), a, 1e-3)) {
                             remove[i - r.begin()] = true;
 
                             const auto &dofs = adapter.element_dof_map()[i - r.begin()].global;
@@ -175,6 +211,10 @@ namespace utopia {
 
                             for(auto d : dofs) {
                                 element_wise.is_contact.set(d, 1.0);
+                            }
+
+                            if(must_assemble_trafo) {
+                                elem_to_transform.set(i, 1.);
                             }
                         }
                     }
@@ -193,6 +233,19 @@ namespace utopia {
 
             tensor_prod_with_identity(element_wise.B_x, spatial_dim, element_wise.B);
             tensor_prod_with_identity(element_wise.D_x, spatial_dim, element_wise.D);
+    
+            if(must_assemble_trafo) {
+                DualBasis::build_inverse_trafo(
+                            adapter.mesh(),
+                            adapter.n_local_dofs(),
+                            adapter.element_dof_map(),
+                            elem_to_transform,
+                            alpha,
+                            element_wise.Q_x
+                           );
+
+                tensor_prod_with_identity(element_wise.Q_x, spatial_dim, element_wise.Q);
+            }
 
             double sum_B_x = sum(element_wise.B_x);
             double sum_D_x = sum(element_wise.D_x);
@@ -366,9 +419,11 @@ namespace utopia {
         libMesh::DenseVector<libMesh::Real> gap_vec, normal_vec;
         libMesh::DenseMatrix<libMesh::Real> biorth_weights;
         libMesh::DenseMatrix<libMesh::Real> local_trafo;
+        libMesh::DenseMatrix<libMesh::Real> inv_local_trafo;
 
         double area = 0.;
-        bool use_biorth = false;
+        bool use_biorth = true;
+        bool use_trafo = false;
         double alpha = 1./5.;
 
         void assemble_volumes(
@@ -452,8 +507,21 @@ namespace utopia {
             const libMesh::Elem &el,
             const int el_order)
         {
+            use_trafo = false;
             if(use_biorth && biorth_weights.get_values().empty()) {
                 assemble_biorth_weights(el, el_order, biorth_weights);
+
+                if(el_order == 2) {
+
+                    DualBasis::assemble_local_trafo(
+                                el.type(),
+                                alpha,
+                                local_trafo,
+                                inv_local_trafo);
+
+                    biorth_weights.right_multiply(local_trafo);
+                    use_trafo = true;
+                }
             }
         }
 
@@ -487,11 +555,23 @@ namespace utopia {
                     b_elmat
                 );
 
-                mortar_assemble_weighted_biorth(
-                    *slave_fe,
-                    *slave_fe, 
-                    biorth_weights,
-                    d_elmat);
+                if(use_trafo) {
+                    //use trafo also for trial element
+                    mortar_assemble_weighted_biorth(
+                        *slave_fe,
+                        local_trafo,
+                        *slave_fe, 
+                        biorth_weights,
+                        d_elmat
+                    );
+
+                } else {
+                    mortar_assemble_weighted_biorth(
+                        *slave_fe,
+                        *slave_fe, 
+                        biorth_weights,
+                        d_elmat);
+                }
                 
                 integrate_scalar_function_weighted_biorth(
                     *slave_fe,
@@ -694,6 +774,7 @@ namespace utopia {
         // s.disable_redistribution = true;
         AlogrithmT algo(m_comm, cm, s);
 
+
         algo.init(
             adapter,
             params.contact_pair_tags,
@@ -701,6 +782,7 @@ namespace utopia {
         );
 
         ProjectionAlgorithm<Dim> contact_algo(contact_data);
+        contact_algo.use_biorth = params.use_biorthogonal_basis;
         algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
             return contact_algo.apply(master, slave);
         });
@@ -715,7 +797,7 @@ namespace utopia {
         );
 
         // adapter.make_tensor_product_permutation(adapter.spatial_dim());
-        contact_data.finalize(adapter, volumes);
+        contact_data.finalize(adapter, volumes, contact_algo.alpha, contact_algo.use_biorth);
         return contact_algo.area > 0.;
     }
 
@@ -778,9 +860,9 @@ namespace utopia {
             assert(found_contact);
 
             if(found_contact) {
-                // write("warped.e", V, contact_data.dof_wise.gap);
+                write("gap.e", V, contact_data.dof_wise.gap);
                 // write("warped.e", V, contact_data.dof_wise.is_contact);
-                write("warped.e", V, contact_data.dof_wise.normal);
+                write("normal.e", V, contact_data.dof_wise.normal);
             }
 
             // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
