@@ -81,7 +81,7 @@ namespace  utopia
                 const auto &lb = constraints.lower_bound();
 
                 if(this->verbose()){
-                    this->init_solver("ProjectedGradientActiveSet", {" "});
+                    this->init_solver("MPGRP", {" "});
                 }
 
     

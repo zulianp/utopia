@@ -95,6 +95,65 @@ namespace utopia {
             std::cout<<"---- MPGRP solver --- \n"; 
             MPGRP<Matrix, Vector> qp_solver;
 
+            SizeType n = 10; 
+
+            Matrix A = sparse(n, n, 3);
+            assemble_symmetric_laplacian_1D(A, true);
+
+            auto h = 1./(n-1.);
+            A = 1./h*A;
+
+            {
+                Range r = row_range(A);
+                Write<Matrix> w(A);
+                if(r.begin() == 0) {
+                    A.set(0, 0, 1.);
+                }
+
+                if(r.end() == n) {
+                    A.set(n-1, n-1, 1.);
+                }
+            }
+
+            disp(A); 
+
+            Vector  b = local_values(local_size(A).get(0), 50.0); 
+
+            {
+                Range row_range = range(b);
+                Write<Vector> w(b);
+
+                for(auto r = row_range.begin(); r!= row_range.end(); ++r)
+                {
+                    if(r >= n/2.)
+                    {
+                        b.set(r, -50.0); 
+                    }
+                    if((r == 0)) 
+                    {
+                        b.set(r, 0); 
+                    }
+
+                    if(r == (n-1))
+                    {
+                        b.set(r, 0); 
+                    }                    
+                }
+            }
+            b = h*b; 
+
+            Vector lb = local_values(local_size(A).get(0), -0.5); 
+            Vector ub = local_values(local_size(A).get(0), 0.5); 
+
+            Vector x = 0*b; 
+
+            qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
+            qp_solver.verbose(true);
+            qp_solver.solve(A, b, x); 
+
+
+            exit(0); 
+
             // run_qp_solver(pgs);
         }
 

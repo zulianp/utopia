@@ -24,7 +24,7 @@ namespace utopia
             
                 PetscScalar    *newVals;
                 PetscInt       *newCols;
-                PetscInt       rStart, rEnd, numRows, maxRows, r, colMax = 0;
+                PetscInt       rStart=0, rEnd=0, numRows=0, maxRows=0, r=0, colMax = 0;
 
                 MatGetOwnershipRange(raw_type(A), &rStart, &rEnd);
                 for (r = rStart; r < rEnd; ++r) 
@@ -78,7 +78,7 @@ namespace utopia
             
                 PetscScalar    *newVals;
                 PetscInt       *newCols;
-                PetscInt       rStart, rEnd, numRows, maxRows, r, colMax = 0;
+                PetscInt       rStart=0, rEnd=0, numRows=0, maxRows=0, r=0, colMax = 0;
 
                 MatGetOwnershipRange(raw_type(A), &rStart, &rEnd);
                 for (r = rStart; r < rEnd; ++r) 
