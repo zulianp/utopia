@@ -62,12 +62,17 @@ namespace utopia {
 
             qp_solver.max_it(n*40);
             qp_solver.verbose(verbose);
-            qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+
+            auto box = make_upper_bound_constraints(make_ref(upper_bound)); 
+            box.fill_empty_bounds(); 
+
+            qp_solver.set_box_constraints(box);
 
             Chrono c;
             c.start();
             bool ok = qp_solver.solve(m, rhs, solution);
             c.stop();
+            
 
             utopia_test_assert(ok);
         }
@@ -94,8 +99,10 @@ namespace utopia {
         {
             std::cout<<"---- MPGRP solver --- \n"; 
             MPGRP<Matrix, Vector> qp_solver;
+            run_qp_solver(qp_solver);
 
-            SizeType n = 10; 
+
+            SizeType n = 50; 
 
             Matrix A = sparse(n, n, 3);
             assemble_symmetric_laplacian_1D(A, true);
@@ -115,8 +122,6 @@ namespace utopia {
                 }
             }
 
-            disp(A); 
-
             Vector  b = local_values(local_size(A).get(0), 50.0); 
 
             {
@@ -129,7 +134,7 @@ namespace utopia {
                     {
                         b.set(r, -50.0); 
                     }
-                    if((r == 0)) 
+                    if(r == 0) 
                     {
                         b.set(r, 0); 
                     }
@@ -140,6 +145,7 @@ namespace utopia {
                     }                    
                 }
             }
+
             b = h*b; 
 
             Vector lb = local_values(local_size(A).get(0), -0.5); 
@@ -149,12 +155,8 @@ namespace utopia {
 
             qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
             qp_solver.verbose(true);
+            qp_solver.max_it(100); 
             qp_solver.solve(A, b, x); 
-
-
-            exit(0); 
-
-            // run_qp_solver(pgs);
         }
 
 
@@ -216,9 +218,9 @@ namespace utopia {
         QPSolverTest<TSMatrixd, TVectord>().run();
 #endif //WITH_TRILINOS
 
-#ifdef WITH_BLAS
-        QPSolverTest<Matrixd, Vectord>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+//         QPSolverTest<Matrixd, Vectord>().run(); // TODO:: because blas is missing min operation .... 
+// #endif //WITH_BLAS
 
         UTOPIA_UNIT_TEST_END("QPSolverTest");
     }
