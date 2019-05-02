@@ -75,7 +75,7 @@ namespace utopia {
             moonolith::HouseholderTransformation<double, 3> h3;
 
             template<int Dim>
-            void build_aux(
+            static void build_aux(
                 moonolith::Vector<double, Dim> &v,
                 moonolith::HouseholderTransformation<double, Dim> &H,
                 libMesh::DenseMatrix<double> &mat)
@@ -222,7 +222,7 @@ namespace utopia {
                     }
                 }
 
-                auto ls = local_size(T);
+                auto ls = local_size(D);
                 orthognal_trafo = local_sparse(ls.get(0), ls.get(1), spatial_dim);
 
                 {
@@ -251,6 +251,12 @@ namespace utopia {
                                     orthognal_trafo.set(i + di, i + dj, local_ot(di, dj));
                                 }
                             }
+                        } else {
+
+                            for(SizeType di = 0; di < spatial_dim; ++di) {
+                                orthognal_trafo.set(i + di, i + di, 1.0);
+                            }
+                            
                         }
                     }
                 }
