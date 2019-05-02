@@ -24,15 +24,6 @@ namespace  utopia
             {
                 MatrixFreeQPSolver<Vector>::read(in);
                 QPSolver<Matrix, Vector>::read(in);
-
-                // in.get("Cauchy-point", cp_);
-
-                // if(precond_) {
-                //     in.get("precond", *precond_);
-                // }
-                // if(linear_solver_) {
-                //     in.get("linear-solver", *linear_solver_);
-                // }
             }
 
 
@@ -40,10 +31,6 @@ namespace  utopia
             {
                 MatrixFreeQPSolver<Vector>::print_usage(os);
                 QPSolver<Matrix, Vector>::print_usage(os);
-
-                // this->print_param_usage(os, "Cauchy-point", "GeneralizedCauchyPoint", "Input parameters for Generalized Cauchy point solver.", "-");
-                // this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for Preconditioner.", "-");
-                // this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for LinearSolver.", "-");
             }
 
 
@@ -53,14 +40,16 @@ namespace  utopia
                 return new MPGRP(*this);
             }
 
-            void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
-            {
-                precond_ = precond;
-            }
+            // void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
+            // {
+            //     precond_ = precond;
+            // }
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
+                this->fill_empty_bounds(); 
                 auto &box = this->get_box_constraints();
+
 
                 // init(local_size(rhs).get(0));
                 return aux_solve(A, rhs, sol, box);
@@ -69,6 +58,7 @@ namespace  utopia
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
                 auto A_op_ptr = utopia::op_ref(A);
+                this->fill_empty_bounds(); 
                 auto &box = this->get_box_constraints();
 
                 // init(local_size(rhs).get(0));
@@ -79,9 +69,6 @@ namespace  utopia
         private:
             bool aux_solve(const Operator<Vector> &A, const Vector &rhs, Vector &x, const BoxConstraints<Vector> & constraints)
             {
-                std::cout<<"DO checks for upper, lower bounds .... \n"; 
-                std::cout<<"DO speedup by allocating vectors .... \n"; 
-
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
 
@@ -174,7 +161,6 @@ namespace  utopia
     
                 return true;
             }
-
 
           
 
@@ -288,16 +274,13 @@ namespace  utopia
 
             Scalar get_normA()
             {
-                std::cout<<"------TODO::  get norm A ----- \n"; 
                 // return 36; 
                 return 100; 
             }
 
 
-
-        private:
-            std::shared_ptr<Preconditioner<Vector> > precond_;
-            Vector r, q, d, Hd;
+        // private:
+        //     Vector r, q, d, Hd; // Speed of algo, can be improve big time... 
 
     };
 }

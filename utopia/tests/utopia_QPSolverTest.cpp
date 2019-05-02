@@ -59,20 +59,15 @@ namespace utopia {
             Vector upper_bound = values(n, 100.0);
             Vector solution    = zeros(n);
 
-
             qp_solver.max_it(n*40);
             qp_solver.verbose(verbose);
-
-            auto box = make_upper_bound_constraints(make_ref(upper_bound)); 
-            box.fill_empty_bounds(); 
-
-            qp_solver.set_box_constraints(box);
+            qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
             Chrono c;
             c.start();
             bool ok = qp_solver.solve(m, rhs, solution);
             c.stop();
-            
+
 
             utopia_test_assert(ok);
         }
