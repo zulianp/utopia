@@ -95,7 +95,7 @@ namespace utopia {
 
                 bool ok = true;
                 each_read(sum_T, [&ok](const SizeType i, const double val) {
-                    if(!approxeq(val, 0.0, 1e-2) && !approxeq(val, 1.0, 1e-2)) {
+                    if(!approxeq(val, 0.0, 1e-1) && !approxeq(val, 1.0, 1e-1)) {
                         std::cerr << i << "] " << val << "\n";
                         ok = false;
                     }
@@ -104,7 +104,7 @@ namespace utopia {
                 return ok;
             }
 
-            void finalize(const SizeType spatial_dim)
+            void finalize(const SizeType spatial_dim, const bool normalize = true)
             {
                 zero_rows_to_identity(D, 1e-13);
                 gap = local_zeros(local_size(weighted_gap));
@@ -123,6 +123,8 @@ namespace utopia {
                     USparseMatrix D_inv = diag(d_inv);
                     T = Q * D_inv * B;
 
+                    normalize_rows(T);
+
                     assert(check_op(T));
 
                     gap    = Q * (D_inv * weighted_gap);
@@ -134,34 +136,38 @@ namespace utopia {
                     solver.apply(weighted_normal, normal);
                 }
 
-                auto r = range(normal);
-
-                Read<UVector> ric(is_contact);
-                ReadAndWrite<UVector> rw(normal);
-                for(auto i = r.begin(); i < r.end(); i += spatial_dim) {
-                    bool is_node_in_contact = is_contact.get(i);
+                if(normalize) {
+                    auto r = range(normal);
 
 
-                    if(is_node_in_contact) {
-                        double len_n = 0.0;
-                        for(SizeType d = 0; d < spatial_dim; ++d) {
-                            auto temp = normal.get(i + d);
-                            len_n += temp * temp;
-                        }
+                    Read<UVector> ric(is_contact);
+                    ReadAndWrite<UVector> rw(normal);
+                    for(auto i = r.begin(); i < r.end(); i += spatial_dim) {
+                        bool is_node_in_contact = is_contact.get(i);
 
-                        if(len_n > 0.0) {
-                            len_n = std::sqrt(len_n);
 
+                        if(is_node_in_contact) {
+                            double len_n = 0.0;
                             for(SizeType d = 0; d < spatial_dim; ++d) {
-                                normal.set(i + d, normal.get(i + d)/len_n);
+                                auto temp = normal.get(i + d);
+                                len_n += temp * temp;
+                            }
+
+                            if(len_n > 0.0) {
+                                len_n = std::sqrt(len_n);
+
+                                for(SizeType d = 0; d < spatial_dim; ++d) {
+                                    normal.set(i + d, normal.get(i + d)/len_n);
+                                }
+                            } else {
+                                assert(false);
                             }
                         } else {
-                            assert(false);
+                            for(SizeType d = 0; d < spatial_dim; ++d) {
+                                normal.set(i + d, 0.0);
+                            }
                         }
-                    } else {
-                        for(SizeType d = 0; d < spatial_dim; ++d) {
-                            normal.set(i + d, 0.0);
-                        }
+
                     }
                 }
             }
@@ -208,7 +214,9 @@ namespace utopia {
                     const auto a = element_wise.area.get(i);
 
                     if(a > 0.0) {
-                        if(!approxeq(volumes.get(i), a, 1e-3)) {
+                        auto ratio = a/volumes.get(i);
+
+                        if(!approxeq(ratio, 1.0, 1e-2)) {
                             remove[i - r.begin()] = true;
 
                             const auto &dofs = adapter.element_dof_map()[i - r.begin()].global;
@@ -843,12 +851,19 @@ namespace utopia {
             bool is_volume = spatial_dim == V.mesh().mesh_dimension();
 
             if(is_volume) {
+
+                Chrono c;
+                c.start();
            
                 adapter.extract_surface_init_for_contact(
                     make_ref(V.mesh()),
                     V.dof_map(),
                     params.contact_params.variable_number
                 );
+
+                c.stop();
+
+                std::cout << "adapter extact surf: " << c << std::endl;
             } else {
                 //shell mesh
                 assert(false); //TODO
