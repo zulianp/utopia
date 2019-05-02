@@ -42,7 +42,7 @@ namespace utopia {
             return true;
         }
 
-        static bool build_inverse_trafo(
+        static bool build_global_trafo(
             const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map,
             const UVector &elem_to_transform,
@@ -72,11 +72,12 @@ namespace utopia {
 
             auto rr = row_range(mat);
             
-            libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo;
+            libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo, local_trafo_t;
             std::vector<libMesh::dof_id_type> dofs;
 
             if(e_begin != e_end) {
                 assemble_local_trafo((*e_begin)->type(), alpha, local_trafo, inv_trafo);
+                local_trafo.get_transpose(local_trafo_t);
             }
 
             for(auto it = e_begin; it != e_end; ++it) {
@@ -84,7 +85,7 @@ namespace utopia {
 
                 if(elem_to_transform.get(e->id()) > 0.) {
                     dof_map.dof_indices(e, dofs);
-                    mat.set_matrix(dofs, dofs, inv_trafo.get_values());
+                    mat.set_matrix(dofs, dofs, local_trafo_t.get_values());
 
                     for(auto d : dofs) {
                         if(rr.inside(d)) {
@@ -105,7 +106,7 @@ namespace utopia {
         }
 
 
-        static bool build_inverse_trafo(
+        static bool build_global_trafo(
             const libMesh::MeshBase &mesh,
             const SizeType n_local_dofs,
             const std::vector<ElementDofMap> &dof_map,
@@ -134,12 +135,15 @@ namespace utopia {
 
             auto rr = row_range(mat);
             
-            libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo;
+            libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo, local_trafo_t;
             std::vector<libMesh::dof_id_type> dofs;
 
             if(e_begin != e_end) {
                 assemble_local_trafo((*e_begin)->type(), alpha, local_trafo, inv_trafo);
+                local_trafo.get_transpose(local_trafo_t);
             }
+
+
 
             SizeType idx = 0;
             for(auto it = e_begin; it != e_end; ++it, ++idx) {
@@ -149,7 +153,7 @@ namespace utopia {
                     // dof_map.dof_indices(e, dofs);
 
                     const auto &dofs = dof_map[idx].global;
-                    mat.set_matrix(dofs, dofs, inv_trafo.get_values());
+                    mat.set_matrix(dofs, dofs, local_trafo_t.get_values());
 
                     for(auto d : dofs) {
                         if(rr.inside(d)) {

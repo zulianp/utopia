@@ -89,6 +89,13 @@ namespace utopia {
                 std::cout << "sum(normal): " << sum_normal << " == " << sum_normal_e << std::endl;
             }
 
+            static bool check_op(const USparseMatrix &T)
+            {
+                UVector sum_T = sum(T, 1);
+                disp(sum_T);
+                return true;
+            }
+
             void finalize(const SizeType spatial_dim)
             {
                 zero_rows_to_identity(D, 1e-13);
@@ -106,10 +113,12 @@ namespace utopia {
                     });
 
                     USparseMatrix D_inv = diag(d_inv);
-                    T = Q * D_inv;
+                    T = Q * D_inv * B;
 
-                    gap    = T * weighted_gap;
-                    normal = T * weighted_normal;
+                    assert(check_op(T));
+
+                    gap    = Q * (D_inv * weighted_gap);
+                    normal = Q * (D_inv * weighted_normal);
 
                 } else {
                     solver.update(make_ref(D)); 
@@ -181,10 +190,7 @@ namespace utopia {
             UVector elem_to_transform;
 
             const bool must_assemble_trafo = use_biorth && adapter.fe_type(0).order == 2;
-            // if(must_assemble_trafo) {
             elem_to_transform = local_zeros(r.extent());
-            // } 
-
 
             {
                 Read<UVector> rv(volumes), ra(element_wise.area);
@@ -194,7 +200,7 @@ namespace utopia {
                     const auto a = element_wise.area.get(i);
 
                     if(a > 0.0) {
-                        if(/*!use_biorth &&*/ !approxeq(volumes.get(i), a, 1e-3)) {
+                        if(!approxeq(volumes.get(i), a, 1e-3)) {
                             remove[i - r.begin()] = true;
 
                             const auto &dofs = adapter.element_dof_map()[i - r.begin()].global;
@@ -235,7 +241,7 @@ namespace utopia {
             tensor_prod_with_identity(element_wise.D_x, spatial_dim, element_wise.D);
     
             if(must_assemble_trafo) {
-                DualBasis::build_inverse_trafo(
+                DualBasis::build_global_trafo(
                             adapter.mesh(),
                             adapter.n_local_dofs(),
                             adapter.element_dof_map(),
@@ -853,7 +859,7 @@ namespace utopia {
 
             if(found_contact) {
                 write("gap.e", V, contact_data.dof_wise.gap);
-                write("is_contact.e", V, contact_data.dof_wise.gap);
+                write("is_contact.e", V, contact_data.dof_wise.is_contact);
                 // write("warped.e", V, contact_data.dof_wise.is_contact);
                 write("normal.e", V, contact_data.dof_wise.normal);
             } else {
