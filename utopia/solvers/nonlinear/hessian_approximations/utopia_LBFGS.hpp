@@ -23,7 +23,7 @@ namespace utopia
 
             }
 
-            void initialize() override
+            void initialize(const Vector & /*x_k*/, const Vector & /* g */) override
             {
                 theta_ = 1.0;
                 gamma_ = 1.0;
@@ -54,7 +54,8 @@ namespace utopia
                 rho_.clear();
                 Sb_dots_.clear();
 
-                this->initialize();
+                Vector x, g; 
+                this->initialize(x, g);
             }
 
             inline LBFGS<Vector> * clone() const override
@@ -62,7 +63,7 @@ namespace utopia
                 return new LBFGS<Vector>(*this);
             }
 
-            bool update(const Vector &  s, const Vector &  y ) override
+            bool update(const Vector &  s, const Vector &  y, const Vector & /*x*/, const Vector &  /* g */ ) override
             {
 
                 if(!this->initialized())
@@ -175,7 +176,7 @@ namespace utopia
             bool apply_H(const Vector & v , Vector & result) const  override
             {
                 if(!this->initialized()){
-                    utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n");
+                    utopia_error("utopia::LBFGS::apply_H:: missing initialization... \n");
                 }
 
                 result = theta_ * v;

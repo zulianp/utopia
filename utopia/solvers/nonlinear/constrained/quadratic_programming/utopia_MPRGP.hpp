@@ -275,7 +275,7 @@ namespace  utopia
             Scalar get_normA()
             {
                 // return 36; 
-                return 100; 
+                return 1000; 
             }
 
 

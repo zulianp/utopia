@@ -149,7 +149,7 @@ namespace utopia {
             Vector x = 0*b; 
 
             qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
-            qp_solver.verbose(true);
+            qp_solver.verbose(verbose);
             qp_solver.max_it(100); 
             qp_solver.solve(A, b, x); 
         }

@@ -77,7 +77,7 @@
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
 
-        this->initialize_approximation(); 
+        this->initialize_approximation(x_k, g); 
         
         g0_norm = norm2(g);
         g_norm = g0_norm;
@@ -164,7 +164,7 @@
             y = grad_trial - g;       
           }
 
-          this->update(p_k, y);
+          this->update(p_k, y, x_k, g);
     //----------------------------------------------------------------------------
     //    convergence check 
     //----------------------------------------------------------------------------          

@@ -22,7 +22,7 @@ namespace utopia
 
             }
 
-            void initialize() override
+            void initialize(const Vector & /*x_k*/, const Vector & /* g */) override
             {
                 theta_ = 1.0;
                 gamma_ = 1.0;
@@ -46,7 +46,8 @@ namespace utopia
                 p_.clear();
                 p_inv_.clear();
 
-                this->initialize();
+                Vector x, g; 
+                this->initialize(x, g);
             }
 
             inline LSR1<Vector> * clone() const override
@@ -54,7 +55,7 @@ namespace utopia
                 return new LSR1<Vector>(*this);
             }
 
-            bool update(const Vector &  s, const Vector &  y ) override
+            bool update(const Vector &  s, const Vector &  y, const Vector & /*x*/, const Vector &  /* g */ ) override
             {
 
                 if(!this->initialized())

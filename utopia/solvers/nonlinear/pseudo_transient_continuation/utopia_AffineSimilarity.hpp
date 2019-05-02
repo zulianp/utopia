@@ -178,6 +178,10 @@ namespace utopia
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                         PrintInfo::print_iter_status(it_inner, {tau});
 
+
+                    Scalar tau_old = tau; 
+                    Scalar tau_diff = 1e9; 
+
                     while(!converged_inner && it_inner < max_inner_it_)
                     {
                         A = M_ - tau *H;
@@ -203,6 +207,7 @@ namespace utopia
                         {   
                             x = x_trial; 
                             converged_inner = true; 
+                            std::cout<<"converged, because of the monotonicity test. \n"; 
                         }
                         else
                         {
@@ -210,7 +215,26 @@ namespace utopia
                             // performing update also after residual monotonicity is satisfied
                             tau = estimate_tau(g_trial, g, s, tau, s_norm); 
                             converged_inner =  clamp_tau(tau); 
+                            std::cout<<"converged, clamping  \n"; 
                         }
+
+
+                        if(! converged)
+                        {
+                            tau_diff = std::abs(tau - tau_old); 
+                            if(tau_diff < 1e-1)
+                            {
+                                converged_inner = true; 
+                                x = x_trial; 
+                                std::cout<<"converged, because of tau_diff   "<< tau_diff << "  \n"; 
+                            }
+                            else
+                            {
+                                tau_old = tau; 
+                            }
+                        }
+
+
 
                         if(!converged_inner && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                             PrintInfo::print_iter_status(it_inner, {tau});
