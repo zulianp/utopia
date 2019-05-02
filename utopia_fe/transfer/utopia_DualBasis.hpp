@@ -11,6 +11,31 @@
 
 namespace utopia {
 
+    static bool is_diag(const libMesh::DenseMatrix<double> &d, const bool verbose = true)
+    {
+        bool ret = true;
+        for(int i = 0; i < d.m(); ++i) {
+            for(int j = 0; j < d.n(); ++j) {
+                if(i != j) {
+                    if(!approxeq(d(i, j), 0.0, 1e-10)) { 
+                        ret = false;
+                        break;
+                    }
+                }
+            }
+
+            if(!ret) break;
+        }
+
+        if(verbose && !ret) {
+            std::cerr << "---------------\n";
+            d.print();
+            std::cerr << "---------------\n";
+        }
+
+        return ret;
+    }
+
     //@brief from the paper DUAL QUADRATIC MORTAR FINITE ELEMENT METHODS FOR 3D FINITE DEFORMATION CONTACT∗
     class DualBasis {
     public:
@@ -39,6 +64,7 @@ namespace utopia {
                     false
             );
 
+            weights.right_multiply(trafo);
             return true;
         }
 

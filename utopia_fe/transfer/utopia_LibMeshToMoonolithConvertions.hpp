@@ -441,7 +441,7 @@ namespace utopia {
             auto &pk_out = p_out[k];
 
             for(int i = 0; i < Dim; ++i) {
-                pk_out(i) = (pk_in[i] + point_shift[i]) * point_rescale;
+                pk_out(i) = pk_in[i] * point_rescale + point_shift[i];
             }
         }
     }

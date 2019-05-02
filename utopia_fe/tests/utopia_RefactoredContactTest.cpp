@@ -92,8 +92,16 @@ namespace utopia {
             static bool check_op(const USparseMatrix &T)
             {
                 UVector sum_T = sum(T, 1);
-                disp(sum_T);
-                return true;
+
+                bool ok = true;
+                each_read(sum_T, [&ok](const SizeType i, const double val) {
+                    if(!approxeq(val, 0.0, 1e-2) && !approxeq(val, 1.0, 1e-2)) {
+                        std::cerr << i << "] " << val << "\n";
+                        ok = false;
+                    }
+                });
+
+                return ok;
             }
 
             void finalize(const SizeType spatial_dim)
@@ -515,9 +523,9 @@ namespace utopia {
             const libMesh::Elem &el,
             const int el_order)
         {
-            use_trafo = false;
             if(use_biorth && biorth_weights.get_values().empty()) {
-                
+                    
+                use_trafo = false;
                 if(el_order == 2) {
                     DualBasis::build_trafo_and_weights(el.type(), el_order, alpha, local_trafo, inv_local_trafo, biorth_weights);
                     use_trafo = true;
@@ -538,6 +546,7 @@ namespace utopia {
                 slave_fe->get_JxW();
             }
         }
+
 
         void local_assemble_aux(
             const moonolith::Vector<double, Dim> &normal,
@@ -588,6 +597,11 @@ namespace utopia {
                     normal,
                     normal_vec
                 );
+
+                // if(!is_diag(d_elmat)) {
+                //     biorth_weights.print();
+                //     assert(false);
+                // }
 
             } else {
                 mortar_assemble(*master_fe, *slave_fe, b_elmat);
