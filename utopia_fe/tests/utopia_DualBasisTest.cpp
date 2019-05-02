@@ -29,7 +29,7 @@ namespace utopia {
 
         // trafo.print();
 
-        std::cout << "------------------------\n";
+        // std::cout << "------------------------\n";
 
         assert(approxeq(6.0, sum_t, 1e-10));
 
@@ -42,7 +42,6 @@ namespace utopia {
         assert(approxeq(6.0, sum_w, 1e-10));
 
         // weights.print();
-
 
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////

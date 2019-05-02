@@ -194,7 +194,7 @@ namespace utopia {
                     const auto a = element_wise.area.get(i);
 
                     if(a > 0.0) {
-                        if(!use_biorth && !approxeq(volumes.get(i), a, 1e-3)) {
+                        if(/*!use_biorth &&*/ !approxeq(volumes.get(i), a, 1e-3)) {
                             remove[i - r.begin()] = true;
 
                             const auto &dofs = adapter.element_dof_map()[i - r.begin()].global;
@@ -261,7 +261,9 @@ namespace utopia {
 
             dof_wise.finalize(spatial_dim);
 
-            static const double LARGE_VALUE = 10000;
+
+            //FIXME
+            static const double LARGE_VALUE = 0.0;
 
             Read<UVector> ric(dof_wise.is_contact);
             each_transform(dof_wise.gap, dof_wise.gap, [&](const SizeType i, const double value) -> double {
@@ -511,21 +513,7 @@ namespace utopia {
             if(use_biorth && biorth_weights.get_values().empty()) {
                 
                 if(el_order == 2) {
-                    DualBasis::assemble_local_trafo(
-                                el.type(),
-                                alpha,
-                                local_trafo,
-                                inv_local_trafo);
-
-                    DualBasis::assemble_biorth_weights(
-                        el,
-                        el_order,
-                        local_trafo,
-                        biorth_weights
-                    );
-
-                    biorth_weights.print();
-
+                    DualBasis::build_trafo_and_weights(el.type(), el_order, alpha, local_trafo, inv_local_trafo, biorth_weights);
                     use_trafo = true;
                 } else {
                     assemble_biorth_weights(el, el_order, biorth_weights);
@@ -865,6 +853,7 @@ namespace utopia {
 
             if(found_contact) {
                 write("gap.e", V, contact_data.dof_wise.gap);
+                write("is_contact.e", V, contact_data.dof_wise.gap);
                 // write("warped.e", V, contact_data.dof_wise.is_contact);
                 write("normal.e", V, contact_data.dof_wise.normal);
             } else {
