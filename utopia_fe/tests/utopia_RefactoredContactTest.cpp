@@ -43,11 +43,62 @@ namespace utopia {
         MatrixInserter gap, normal;
         MatrixInserter area;
 
+
+        class OrthTrafo {
+        public:
+            void build(const std::vector<double> &n, libMesh::DenseMatrix<double> &mat)
+            {
+                auto spatial_dim = n.size();
+
+                if(spatial_dim == 2) {
+                    v2.x = n[0];
+                    v2.y = n[1];
+
+                    build_aux(v2, h2, mat);
+
+                } else if(spatial_dim == 3) {
+                    v3.x = n[0];
+                    v3.y = n[1];
+                    v3.z = n[2];
+
+                    build_aux(v3, h3, mat);
+                } else {
+                    assert(false);
+                }
+            }
+
+        private:
+            moonolith::Vector<double, 2> v2;
+            moonolith::Vector<double, 3> v3;
+
+            moonolith::HouseholderTransformation<double, 2> h2;
+            moonolith::HouseholderTransformation<double, 3> h3;
+
+            template<int Dim>
+            void build_aux(
+                moonolith::Vector<double, Dim> &v,
+                moonolith::HouseholderTransformation<double, Dim> &H,
+                libMesh::DenseMatrix<double> &mat)
+            {
+                v[0] -= 1;
+                v /= length(v);
+                H.init(v);
+
+                mat.resize(Dim, Dim);
+
+                for(int i = 0; i < Dim; ++i) {
+                    for(int j = 0; j < Dim; ++j) {
+                        mat(i, j) = H(i, j);
+                    }
+                }
+            }
+        };
+
         class Tensors {
         public:
             USparseMatrix B_x, D_x, Q_x;
 
-            USparseMatrix B, D, Q, T;
+            USparseMatrix B, D, Q, T, orthognal_trafo;
             UVector weighted_gap, gap;
             UVector weighted_normal, normal;
             UVector area;
@@ -168,6 +219,39 @@ namespace utopia {
                             }
                         }
 
+                    }
+                }
+
+                auto ls = local_size(T);
+                orthognal_trafo = local_sparse(ls.get(0), ls.get(1), spatial_dim);
+
+                {
+                    auto r = range(normal);
+
+                    Read<UVector> ric(is_contact), rn(normal);
+                    Write<USparseMatrix> w(orthognal_trafo);
+
+            
+                    std::vector<double> nn(spatial_dim, 0.);
+                    OrthTrafo ot;
+                    libMesh::DenseMatrix<double> local_ot;
+
+                    for(auto i = r.begin(); i < r.end(); i += spatial_dim) {
+                        bool is_node_in_contact = is_contact.get(i);
+
+                        if(is_node_in_contact) {
+                            for(SizeType d = 0; d < spatial_dim; ++d) {
+                                nn[d] = normal.get(i + d);
+                            }
+
+                            ot.build(nn, local_ot);
+
+                            for(SizeType di = 0; di < spatial_dim; ++di) {
+                                for(SizeType dj = 0; dj < spatial_dim; ++dj) {
+                                    orthognal_trafo.set(i + di, i + dj, local_ot(di, dj));
+                                }
+                            }
+                        }
                     }
                 }
             }
