@@ -4,6 +4,7 @@
 #include "libmesh/elem.h"
 #include "libmesh/dense_matrix.h"
 #include "libmesh/fe_base.h"
+#include "libmesh/reference_elem.h"
 #include "utopia_libmesh_Utils.hpp"
 #include "utopia_ElementDofMap.hpp"
 #include "MortarAssemble.hpp"
@@ -13,6 +14,33 @@ namespace utopia {
     //@brief from the paper DUAL QUADRATIC MORTAR FINITE ELEMENT METHODS FOR 3D FINITE DEFORMATION CONTACT∗
     class DualBasis {
     public:
+
+        static bool build_trafo_and_weights(
+            const libMesh::ElemType type,
+            const int order,
+            const double alpha,
+            libMesh::DenseMatrix<libMesh::Real> &trafo,
+            libMesh::DenseMatrix<libMesh::Real> &inv_trafo,
+            libMesh::DenseMatrix<libMesh::Real> &weights)
+        {
+
+            if(!DualBasis::assemble_local_trafo(type, alpha, trafo, inv_trafo)) {
+                assert(false);
+                return false;
+            }
+
+            const auto &ref_elem = libMesh::ReferenceElem::get(type);
+
+            DualBasis::assemble_biorth_weights(
+                    ref_elem,
+                    order,
+                    trafo,
+                    weights,
+                    false
+            );
+
+            return true;
+        }
 
         static bool build_inverse_trafo(
             const libMesh::MeshBase &mesh,
@@ -268,7 +296,8 @@ namespace utopia {
         static void assemble_biorth_weights(
             const libMesh::Elem &el,
             const int el_order,
-            libMesh::DenseMatrix<libMesh::Real> &weights)
+            libMesh::DenseMatrix<libMesh::Real> &weights,
+            const bool normalize = true)
         {
             const auto dim = el.dim();
             std::unique_ptr<libMesh::FEBase> biorth_elem = libMesh::FEBase::build(dim, libMesh::Order(el_order));
@@ -277,10 +306,10 @@ namespace utopia {
             libMesh::QGauss qg(dim, libMesh::Order(order));
             biorth_elem->attach_quadrature_rule(&qg);
             biorth_elem->reinit(&el);
-            assemble_biorth_weights(*biorth_elem, weights);
+            assemble_biorth_weights(*biorth_elem, weights, normalize);
         }
 
-        static void assemble_biorth_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+        static void assemble_biorth_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights, const bool normalize = true)
         {
             const auto &test = fe.get_phi();
             const auto &JxW  = fe.get_JxW();
@@ -300,14 +329,15 @@ namespace utopia {
                 }
             }
 
-            assemble_biorth_weights(elmat, weights);
+            assemble_biorth_weights(elmat, weights, normalize);
         }
 
         static void assemble_biorth_weights(
             const libMesh::Elem &el,
             const int el_order,
             const libMesh::DenseMatrix<libMesh::Real> &trafo,
-            libMesh::DenseMatrix<libMesh::Real> &weights)
+            libMesh::DenseMatrix<libMesh::Real> &weights,
+            const bool normalize = true)
         {
             const auto dim = el.dim();
             std::unique_ptr<libMesh::FEBase> biorth_elem = libMesh::FEBase::build(dim, libMesh::Order(el_order));
@@ -316,13 +346,14 @@ namespace utopia {
             libMesh::QGauss qg(dim, libMesh::Order(order));
             biorth_elem->attach_quadrature_rule(&qg);
             biorth_elem->reinit(&el);
-            assemble_biorth_weights(*biorth_elem, trafo, weights);
+            assemble_biorth_weights(*biorth_elem, trafo, weights, normalize);
         }
 
         static void assemble_biorth_weights(
             const libMesh::FEBase &fe,
             const libMesh::DenseMatrix<libMesh::Real> &trafo,
-            libMesh::DenseMatrix<libMesh::Real> &weights)
+            libMesh::DenseMatrix<libMesh::Real> &weights,
+            const bool normalize = true)
         {
             const auto &test = fe.get_phi();
             const auto &JxW  = fe.get_JxW();
@@ -356,12 +387,13 @@ namespace utopia {
                 }
             }
             
-            assemble_biorth_weights(elmat, weights);
+            assemble_biorth_weights(elmat, weights, normalize);
         }
 
         static void assemble_biorth_weights(
             libMesh::DenseMatrix<libMesh::Real> &elmat,
-            libMesh::DenseMatrix<libMesh::Real> &weights)
+            libMesh::DenseMatrix<libMesh::Real> &weights,
+            const bool normalize)
         {
             auto n_test = elmat.n();
             libMesh::DenseVector<libMesh::Real> rhs(n_test);
@@ -409,19 +441,21 @@ namespace utopia {
                 rhs(i) = 0;
             }
 
-            //normalization for consistently scaled coefficients
-            for(uint i = 0; i < n_test; ++i) {
-                if(sum_elmat(i) == 0) {
-                    continue;
-                }
+            if(normalize) {
+                 //normalization for consistently scaled coefficients
+                for(uint i = 0; i < n_test; ++i) {
+                    if(sum_elmat(i) == 0) {
+                        continue;
+                    }
 
-                libMesh::Real t = 0;
-                for(uint j = 0; j < n_test; ++j) {
-                    t += weights(i, j);
-                }
+                    libMesh::Real t = 0;
+                    for(uint j = 0; j < n_test; ++j) {
+                        t += weights(i, j);
+                    }
 
-                for(uint j = 0; j < n_test; ++j) {
-                    weights(i, j) *= 1./t;
+                    for(uint j = 0; j < n_test; ++j) {
+                        weights(i, j) *= 1./t;
+                    }
                 }
             }
         }

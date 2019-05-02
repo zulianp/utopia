@@ -509,18 +509,26 @@ namespace utopia {
         {
             use_trafo = false;
             if(use_biorth && biorth_weights.get_values().empty()) {
-                assemble_biorth_weights(el, el_order, biorth_weights);
-
+                
                 if(el_order == 2) {
-
                     DualBasis::assemble_local_trafo(
                                 el.type(),
                                 alpha,
                                 local_trafo,
                                 inv_local_trafo);
 
-                    biorth_weights.right_multiply(local_trafo);
+                    DualBasis::assemble_biorth_weights(
+                        el,
+                        el_order,
+                        local_trafo,
+                        biorth_weights
+                    );
+
+                    biorth_weights.print();
+
                     use_trafo = true;
+                } else {
+                    assemble_biorth_weights(el, el_order, biorth_weights);
                 }
             }
         }
@@ -844,46 +852,24 @@ namespace utopia {
             }
 
             adapter.print_tags();
-
             ContactData contact_data(V.mesh().comm().get());
-
-
 
             bool found_contact = false;
             if(spatial_dim == 2) {
                 found_contact = run_contact<2>(params.contact_params, adapter, contact_data);
-            } 
-            else if(spatial_dim == 3) {
+            } else if(spatial_dim == 3) {
                 found_contact = run_contact<3>(params.contact_params, adapter, contact_data);
             }
 
-            assert(found_contact);
+            // assert(found_contact);
 
             if(found_contact) {
                 write("gap.e", V, contact_data.dof_wise.gap);
                 // write("warped.e", V, contact_data.dof_wise.is_contact);
                 write("normal.e", V, contact_data.dof_wise.normal);
+            } else {
+                write("mesh.e", V, contact_data.dof_wise.gap);
             }
-
-            // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
-
-            // DualBasis::assemble_local_trafo(libMesh::TRI6, 1./5., trafo, inv_trafo);
-
-            // std::cout << "-----------------------\n";
-            // trafo.print(std::cout);
-            // std::cout << "-----------------------\n";
-            // inv_trafo.print(std::cout);
-
-
-            // DualBasis::assemble_biorth_weights(
-            //         *V.mesh().elem(0),
-            //         2,
-            //         trafo,
-            //         weights);
-
-            // std::cout << "-----------------------\n";
-            // weights.print(std::cout);
-            // std::cout << "-----------------------\n";
 
         });
         

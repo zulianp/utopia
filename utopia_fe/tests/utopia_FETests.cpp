@@ -18,6 +18,7 @@
 #include "utopia_SDCTest.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
 #include "utopia_RefactoredContactTest.hpp"
+#include "utopia_DualBasisTest.hpp"
 
 namespace utopia {
 
@@ -124,6 +125,7 @@ namespace utopia {
         add_test(NonLinearElasticityTest::command(), utopia::make_unique<NonLinearElasticityTest>());
         add_test(SMGTest::command(), utopia::make_unique<SMGTest>());
         add_test(RefactoredContactTest::command(), utopia::make_unique<RefactoredContactTest>());
+        add_test(DualBasisTest::command(), utopia::make_unique<DualBasisTest>());
 
     }
 
