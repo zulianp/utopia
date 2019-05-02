@@ -215,8 +215,11 @@ namespace utopia {
 
     std::size_t max_nnz_x_row(const LibMeshFunctionSpace &space)
     {
-        const auto &dof_map = space.dof_map();
+        return max_nnz_x_row(space.dof_map());
+    }
 
+    std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map)
+    {
 
         std::size_t nnz = 0;
 

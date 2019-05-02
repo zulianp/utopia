@@ -43,6 +43,7 @@ namespace utopia {
         UVector &to_vector);
 
 
+    std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map);
     std::size_t max_nnz_x_row(const LibMeshFunctionSpace &space);
 
 }

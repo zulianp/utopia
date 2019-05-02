@@ -2,6 +2,26 @@
 
 namespace utopia {
 
+#define CHRONO_START() utopia::Chrono macro_chrono_; macro_chrono_.start();
+#define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ << std::endl;}
+
+
+    static std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map)
+    {
+        std::size_t nnz = 0;
+
+        if(!dof_map.get_n_nz().empty()) {
+            nnz = *std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end());
+
+        }
+
+        if(!dof_map.get_n_oz().empty()) {
+            nnz += *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+        }
+
+        return nnz;
+    }
+
     //surf_mesh is extracted from vol_mesh
     void LibMeshDofMapAdapter::init_for_contact(
         libMesh::MeshBase &vol_mesh,
@@ -18,6 +38,7 @@ namespace utopia {
         vector_permutation_ = std::make_shared<USparseMatrix>();
 
         SizeType spatial_dim = surf_mesh.spatial_dimension();
+        max_nnz_ = max_nnz_x_row(surf_dof_map);
 
         boundary_element_node_permutation_map(
             surf_mesh,
@@ -87,10 +108,12 @@ namespace utopia {
         const Mapping &map,
         USparseMatrix &mat)
     {
+        CHRONO_START();
+
         auto n_local_dof_vol = map.to_extent();
         auto n_mappings      = map.idx.size();
 
-        mat = local_sparse(n_local_dof_vol, map.from_extent(), 1);
+        mat = local_sparse(n_local_dof_vol, map.from_extent(), max_nnz_);
 
         {
             Write<USparseMatrix> w(mat);
@@ -99,6 +122,8 @@ namespace utopia {
                 mat.set(map.idx[i], i + map.from_range_begin, 1.);
             }
         }
+
+        CHRONO_END("permutation_matrix_from_map");
     }
 
     void LibMeshDofMapAdapter::boundary_permutation_map(
@@ -109,6 +134,8 @@ namespace utopia {
         unsigned int surf_var_num,
         Mapping &map)
     {
+        CHRONO_START();
+
         //I do not think we need anything but 0 at the moment
         unsigned int comp = 0;
         unsigned int surf_comp = 0;
@@ -165,6 +192,8 @@ namespace utopia {
                 }
             }
         }
+
+        CHRONO_END("boundary_permutation_map");
     }
 
     void LibMeshDofMapAdapter::boundary_element_node_permutation_map(
@@ -175,6 +204,7 @@ namespace utopia {
         unsigned int surf_var_num,
         Mapping &map)
     {
+        CHRONO_START();
         //I do not think we need anything but 0 at the moment
         unsigned int comp = 0;
         unsigned int surf_comp = 0;
@@ -246,6 +276,8 @@ namespace utopia {
                 }
             }
         }
+
+        CHRONO_END("boundary_element_node_permutation_map");
     }
 
     SizeType LibMeshDofMapAdapter::count_dof_x_elem(
@@ -291,12 +323,14 @@ namespace utopia {
         std::vector<ElementDofMap> &elem_dof_map,
         USparseMatrix &mat)
     {
+        CHRONO_START();
+
         moonolith::Communicator comm(mesh.comm().get());
 
         auto n_local_dof_vol  = map.to_range_end - map.to_range_begin;            
         auto n_local_elems = mesh.n_active_local_elem();
 
-        mat = local_sparse(n_local_dof_vol, map.from_extent(), 1);
+        mat = local_sparse(n_local_dof_vol, map.from_extent(), max_nnz_);
 
         auto r_begin = map.from_range_begin;
 
@@ -324,6 +358,8 @@ namespace utopia {
                 el_dof.global[k] = idx;
             }
         }
+
+        CHRONO_END("element_node_dof_map_and_permutation");
     }
 
 

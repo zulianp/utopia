@@ -19,6 +19,7 @@ namespace utopia {
 
     class LibMeshDofMapAdapter {
     public:
+        LibMeshDofMapAdapter() : max_nnz_(1) {}
 
         inline void describe(std::ostream &os = std::cout) const
         {
@@ -115,18 +116,19 @@ namespace utopia {
             const int var_num,
             const bool build_element_dof_map);
 
+    private:
         //let us assume that the displacement degees of freedom are consecutive 
         //in the volume dofmap
-        static void vector_permuation_map_from_map(
+        /*static*/ void vector_permuation_map_from_map(
             const std::size_t spatial_dim,
             const Mapping &mapping,
             Mapping &vector_mapping);
 
-        static void permutation_matrix_from_map(
+        /*static*/ void permutation_matrix_from_map(
             const Mapping &map,
             USparseMatrix &mat);
 
-        static void boundary_permutation_map(
+        /*static*/ void boundary_permutation_map(
             const libMesh::MeshBase &surf_mesh,
             const libMesh::DofMap   &volume_dof_map,
             const libMesh::DofMap   &surf_dof_map,
@@ -134,7 +136,7 @@ namespace utopia {
             unsigned int surf_var_num,
             Mapping &map);
 
-        static void boundary_element_node_permutation_map(
+        /*static*/ void boundary_element_node_permutation_map(
             const libMesh::MeshBase &surf_mesh,
             const libMesh::DofMap   &volume_dof_map,
             const libMesh::DofMap   &surf_dof_map,
@@ -142,16 +144,16 @@ namespace utopia {
             unsigned int surf_var_num,
             Mapping &map);
 
-        static SizeType count_dof_x_elem(
+        /*static*/ SizeType count_dof_x_elem(
             const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map
             );
 
-        static Range element_node_range(
+        /*static*/ Range element_node_range(
             const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map);
 
-        static void element_node_dof_map_and_permutation(
+        /*static*/ void element_node_dof_map_and_permutation(
             const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map,
             const Mapping &map,
@@ -162,7 +164,7 @@ namespace utopia {
         Mapping mapping_;
         std::vector<ElementDofMap> dofs_;
         std::shared_ptr<USparseMatrix> permutation_;
-
+        SizeType max_nnz_;
         //only for contact
         Mapping vector_mapping_;
         std::shared_ptr<USparseMatrix> vector_permutation_;

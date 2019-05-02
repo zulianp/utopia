@@ -183,6 +183,10 @@ namespace utopia {
             const libMesh::DofMap &dof_map,
             const int var_num)
         {
+
+            Chrono c;
+            c.start();
+
             auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
             source_dof_map_ = utopia::make_ref(dof_map);
 
@@ -195,6 +199,10 @@ namespace utopia {
             auto &sys = es->get_system("boundary_sys");
             auto b_var_num = sys.add_variable("lambda", fe_type); 
             es->init();
+
+            c.stop();
+
+            std::cout << "libmesh get_boundary_info + eq system: " << c << std::endl;
 
             init_aux(b_mesh, sys.get_dof_map(), b_var_num);
             is_extracted_surface_ = true;

@@ -863,7 +863,7 @@ namespace utopia {
 
                 c.stop();
 
-                std::cout << "adapter extact surf: " << c << std::endl;
+                std::cout << "adapter extract surf: " << c << std::endl;
             } else {
                 //shell mesh
                 assert(false); //TODO
