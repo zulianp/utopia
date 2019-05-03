@@ -29,8 +29,9 @@ namespace utopia {
         UVector weighted_normal, normal;
         UVector area;
         UVector is_contact;
+        UVector inv_mass_vector;
 
-        Factorization<USparseMatrix, UVector> solver;
+        // Factorization<USparseMatrix, UVector> solver;
     };
 
     class ContactAssembler {
@@ -40,14 +41,78 @@ namespace utopia {
             libMesh::DofMap &dof_map,
             const ContactParams &params);
 
-        void couple(const UVector &in, UVector &out);
-        void uncouple(const UVector &in, UVector &out);
-        void couple(const USparseMatrix &in, USparseMatrix &out);
+        bool init_no_contact(
+            const libMesh::MeshBase &mesh,
+            const libMesh::DofMap &dof_map);
+
+        //retro-compatiblity
+        inline bool assemble(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const std::shared_ptr<libMesh::DofMap> &dof_map,
+            const ContactParams &params)
+        {
+            return assemble(*mesh, *dof_map, params);
+        }
+
+        //retro-compatiblity
+        bool init_no_contact(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const std::shared_ptr<libMesh::DofMap> &dof_map)
+        {
+            return init_no_contact(*mesh, *dof_map);
+        }
+
+        void couple(const UVector &in, UVector &out) const;
+        void uncouple(const UVector &in, UVector &out) const;
+        void couple(const USparseMatrix &in, USparseMatrix &out) const;
 
         const UVector &gap() const;
+        UVector &gap();
+
+        inline void apply_orthogonal_trafo(const UVector &in, UVector &out) const
+        {
+            assert(contact_tensors_);
+            out = contact_tensors_->orthogonal_trafo * in;
+        }
+
+        inline const USparseMatrix &orthogonal_trafo() const
+        {
+            return contact_tensors_->orthogonal_trafo;
+        }
+        
+        
+        inline const UVector &normals() const { 
+            assert(contact_tensors_);
+            return contact_tensors_->normal;
+        }
+        
+        // inline const UVector &inv_mass_vector() const { 
+        //     assert(contact_tensors_);
+        //     return contact_tensors_->inv_mass_vector;
+        // }
+
+        void remove_mass(const UVector &in, UVector &out) const;
+
+        inline const UVector &is_contact_node() const { 
+            assert(contact_tensors_);
+            return contact_tensors_->is_contact;
+        }
+        
+        inline bool initialized() const
+        {
+            return static_cast<bool>(contact_tensors_);
+        }
+
+        inline bool has_contact() const
+        {
+            return has_contact_;
+        }
+
+        ContactAssembler() : has_contact_(false) {}
 
     private:
         std::shared_ptr<ContactTensors> contact_tensors_;
+        bool has_contact_;
     };
 
 }

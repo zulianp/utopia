@@ -97,7 +97,7 @@ namespace utopia {
             auto &V_0 = V_->subspace(0);
 
             if(bypass_contact_) {
-                if(!contact_.initialized) {
+                if(!contact_.initialized()) {
                     contact_.init_no_contact(
                         utopia::make_ref(V_0.mesh()),
                         utopia::make_ref(V_0.dof_map()));
@@ -108,7 +108,7 @@ namespace utopia {
 
             deform_mesh(V_0.mesh(), V_0.dof_map(), x);
 
-            contact_.init(
+            contact_.assemble(
                 utopia::make_ref(V_0.mesh()),
                 utopia::make_ref(V_0.dof_map()),
                 params_
@@ -312,7 +312,7 @@ namespace utopia {
             }
 
             if(sol_to_gap_on_contact_bdr_) {
-                inc_c = e_mul(contact_.is_contact_node, *box_c.upper_bound());
+                inc_c = e_mul(contact_.is_contact_node(), *box_c.upper_bound());
             }
 
             Chrono c;
@@ -355,12 +355,16 @@ namespace utopia {
             std::cout << "norm_g: " << norm_g << std::endl;
 
             //handle transformations
-            const auto &T = contact_.complete_transformation;
+            // const auto &T = contact_.complete_transformation;
 
-            gc_ = transpose(T) * g_;
+            contact_.couple(g_, gc_);
+
+            // gc_ = transpose(T) * g_;
             //change sign to negative gradient
             gc_ *= -1.;
-            Hc_ = transpose(T) * H_ * T;
+            // Hc_ = transpose(T) * H_ * T;
+
+            contact_.couple(H_, Hc_);
 
 
             std::cout << "applying bc.... " << std::flush;
@@ -376,10 +380,14 @@ namespace utopia {
             std::cout << "done" << std::endl;
 
             inc_c_ *= 0.;
-            qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)), inc_c_);
+            qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap() - xc_)), inc_c_);
 
             xc_ += inc_c_;
-            x_ += T * inc_c_;
+            // x_ += T * inc_c_;
+
+            UVector inc;
+            contact_.uncouple(inc_c_, inc);
+            x_ += inc;
 
             first_ = false;
             return true;
@@ -559,7 +567,9 @@ namespace utopia {
             // unscaled_s = local_zeros(local_size(s));
             // aux_inv_mass_matrix_->apply(s, unscaled_s);
             // unscaled_s = e_mul(aux_inv_mass_vector_, s);
-            unscaled_s = e_mul(contact_.inv_mass_vector, s);
+            // unscaled_s = e_mul(contact_.inv_mass_vector(), s);
+
+            contact_.remove_mass(s, unscaled_s);
             utopia::convert(unscaled_s, *aux.solution);
             // utopia::convert(s, *aux.solution);
             aux.solution->close();

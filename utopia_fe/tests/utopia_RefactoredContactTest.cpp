@@ -35,24 +35,20 @@ namespace utopia {
 
             model = make_unique<MaterialT>(space.space());
 
+            auto &V = space.space().subspace(0);
+
             ContactAssembler assembler;
             if(assembler.assemble(
                 mesh.mesh(),
-                space.space().subspace(0).dof_map(),
+                V.dof_map(),
                 params.contact_params)) {
 
-
-
+                write("gap.e", V, assembler.gap());
+                //write("is_contact.e", V, contact_data.dof_wise.is_contact);
+                //write("normal.e", V, contact_data.dof_wise.normal);
             }
 
-            // if(found_contact) {
-            //     write("gap.e", V, contact_data.dof_wise.gap);
-            //     write("is_contact.e", V, contact_data.dof_wise.is_contact);
-            //     // write("warped.e", V, contact_data.dof_wise.is_contact);
-            //     write("normal.e", V, contact_data.dof_wise.normal);
-            // } else {
-            //     write("mesh.e", V, contact_data.dof_wise.gap);
-            // }
+
 
         });
         

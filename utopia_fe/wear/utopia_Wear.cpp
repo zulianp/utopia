@@ -249,12 +249,12 @@ namespace utopia {
 
         // UVector stress = local_zeros(local_size(state.displacement));
 
-        if(contact.initialized) {
+        if(contact.initialized()) {
             // stress = e_mul(mech_ctx.inverse_mass_vector, (state.external_force - state.internal_force));
             // stress = (state.external_force - state.internal_force);
-            normal_stress = contact.orthogonal_trafo * state.stress;
+            normal_stress = contact.orthogonal_trafo() * state.stress;
 
-            UVector tangential_velocity = contact.orthogonal_trafo * state.velocity;
+            UVector tangential_velocity = contact.orthogonal_trafo() * state.velocity;
             sliding_distance = local_zeros(local_size(state.velocity));
 
             {
@@ -276,14 +276,14 @@ namespace utopia {
                 }
             }
 
-            sliding_distance = e_mul(contact.is_contact_node, sliding_distance);
+            sliding_distance = e_mul(contact.is_contact_node(), sliding_distance);
             // normal_stress = e_mul(contact.is_contact_node, contact.orthogonal_trafo * stress);
 
             //override normal stress
             {
                 normal_stress *= 0.;
 
-                Read<UVector> r_s(state.stress), r_n(contact.normals);
+                Read<UVector> r_s(state.stress), r_n(contact.normals());
                 Write<UVector> w_n(normal_stress);
 
                 Range r = range(state.stress);
@@ -291,7 +291,7 @@ namespace utopia {
                 for(auto i = r.begin(); i != r.end(); i+= dim) {
                     double ns = 0.;
                     for(unsigned int d = 0; d < dim; ++d) {
-                        ns += state.stress.get(i+d) * contact.normals.get(i+d);
+                        ns += state.stress.get(i+d) * contact.normals().get(i+d);
                     }
 
                     normal_stress.set(i, ns);
@@ -311,7 +311,7 @@ namespace utopia {
         {
             Read<UVector> r_d(state.displacement), r_v(state.velocity);
             Read<UVector> r_f(state.internal_force), r_ef(state.external_force), r_ns(normal_stress);
-            Read<UVector> r_c(contact.is_contact_node);
+            Read<UVector> r_c(contact.is_contact_node());
 
             auto nd 	= mesh.local_nodes_begin();
             auto nd_end = mesh.local_nodes_end();
@@ -331,7 +331,7 @@ namespace utopia {
                     aux.solution->set(dest_dof_vel,   state.velocity.get(source_dof));
                     // aux.solution->set(dest_dof_force, state.internal_force.get(source_dof));
 
-                    if(contact.initialized) {
+                    if(contact.initialized()) {
                         aux.solution->set(dest_dof_force, state.stress.get(source_dof));
                     }
 
@@ -339,8 +339,8 @@ namespace utopia {
 
                     auto dest_dof_n = node->dof_number(aux.number(), var_num_aux[4 * dim + d], 0);
 
-                    if(contact.initialized) {
-                        aux.solution->set(dest_dof_n, contact.normals.get(source_dof));
+                    if(contact.initialized()) {
+                        aux.solution->set(dest_dof_n, contact.normals().get(source_dof));
                     } else {
                         aux.solution->set(dest_dof_n, 0.);
                     }
@@ -362,9 +362,9 @@ namespace utopia {
                 unsigned int dest_dof_is_contact = node->dof_number(aux.number(), var_num_aux[6 * dim + 3], 0);
                 unsigned int dest_dof_is_gap = node->dof_number(aux.number(), var_num_aux[6 * dim + 4], 0);
 
-                if(contact.initialized) {
-                    aux.solution->set(dest_dof_is_contact, contact.is_contact_node.get(source_dof));
-                    aux.solution->set(dest_dof_is_gap, contact.gap.get(source_dof));
+                if(contact.initialized()) {
+                    aux.solution->set(dest_dof_is_contact, contact.is_contact_node().get(source_dof));
+                    aux.solution->set(dest_dof_is_gap, contact.gap().get(source_dof));
                 } else {
                     aux.solution->set(dest_dof_is_contact, 0.);
                     aux.solution->set(dest_dof_is_gap, 0.);

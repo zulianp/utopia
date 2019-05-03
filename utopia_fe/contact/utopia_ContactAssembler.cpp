@@ -9,6 +9,7 @@
 #include "utopia_LibMeshShape.hpp"
 #include "utopia_SurfaceQuadratureConverter.hpp"
 #include "utopia_OrthogonalTransformation.hpp"
+#include "utopia_ElementWisePseudoInverse.hpp"
 
 #include "moonolith_affine_transform.hpp"
 #include "moonolith_contact.hpp"
@@ -84,13 +85,15 @@ namespace utopia {
         if(!empty(Q)) {
             UVector d_inv = diag(D);
             
-            each_transform(d_inv, d_inv, [](const SizeType i, const double value) -> double {
-                if(std::abs(value) > 1e-15) {
-                    return 1./value;
-                } else {
-                    return 0.0;
-                }
-            });
+            // each_transform(d_inv, d_inv, [](const SizeType i, const double value) -> double {
+            //     if(std::abs(value) > 1e-15) {
+            //         return 1./value;
+            //     } else {
+            //         return 0.0;
+            //     }
+            // });
+
+            e_pseudo_inv(d_inv, d_inv, 1e-15);
             
             USparseMatrix D_inv = diag(d_inv);
             T = Q * D_inv * B;
@@ -99,13 +102,23 @@ namespace utopia {
             
             assert(check_op(T));
             
-            gap    = Q * (D_inv * weighted_gap);
-            normal = Q * (D_inv * weighted_normal);
+            gap    = Q * e_mul(d_inv, weighted_gap);
+            normal = Q * e_mul(d_inv, weighted_normal);
             
         } else {
-            solver.update(make_ref(D));
-            solver.apply(weighted_gap, gap);
-            solver.apply(weighted_normal, normal);
+            // if(is_b)
+
+            inv_mass_vector = diag(D);
+            e_pseudo_inv(inv_mass_vector, inv_mass_vector, 1e-15);
+
+            gap    = e_mul(inv_mass_vector, weighted_gap);
+            normal = e_mul(inv_mass_vector, weighted_normal);
+
+            USparseMatrix D_inv = diag(d_inv);
+            T = D_inv * B;
+            
+            normalize_rows(T);
+            assert(check_op(T));
         }
         
         if(normalize) {
@@ -295,8 +308,7 @@ namespace utopia {
             dof_wise->finalize(spatial_dim);
             
             
-            //FIXME
-            static const double LARGE_VALUE = 0.0;
+            static const double LARGE_VALUE = 1e6;
             
             Read<UVector> ric(dof_wise->is_contact);
             each_transform(dof_wise->gap, dof_wise->gap, [&](const SizeType i, const double value) -> double {
@@ -766,35 +778,38 @@ namespace utopia {
         adapter.print_tags();
         ContactDataBuffers contact_data(mesh.comm().get());
         
-        bool found_contact = false;
+        has_contact_ = false;
         if(spatial_dim == 2) {
-            found_contact = ContactAlgorithm<2>::apply(params, adapter, contact_data);
+            has_contact_ = ContactAlgorithm<2>::apply(params, adapter, contact_data);
         } else if(spatial_dim == 3) {
-            found_contact = ContactAlgorithm<3>::apply(params, adapter, contact_data);
+            has_contact_ = ContactAlgorithm<3>::apply(params, adapter, contact_data);
         }
         
-        if(found_contact) {
+        if(has_contact_) {
             contact_tensors_ = contact_data.dof_wise;
         } else {
             //init default
+            init_no_contact(
+                mesh,
+                dof_map);
         }
         
-        return found_contact;
+        return has_contact_;
     }
     
-    void ContactAssembler::couple(const UVector &in, UVector &out)
+    void ContactAssembler::couple(const UVector &in, UVector &out) const
     {
         assert(contact_tensors_);
         out = transpose(contact_tensors_->complete_transformation) * in;
     }
     
-    void ContactAssembler::uncouple(const UVector &in, UVector &out)
+    void ContactAssembler::uncouple(const UVector &in, UVector &out) const
     {
         assert(contact_tensors_);
         out = contact_tensors_->complete_transformation * in;
     }
     
-    void ContactAssembler::couple(const USparseMatrix &in, USparseMatrix &out)
+    void ContactAssembler::couple(const USparseMatrix &in, USparseMatrix &out) const
     {
         assert(contact_tensors_);
         
@@ -807,6 +822,48 @@ namespace utopia {
     {
         assert(contact_tensors_);
         return contact_tensors_->gap;
+    }
+
+    UVector &ContactAssembler::gap()
+    {
+        assert(contact_tensors_);
+        return contact_tensors_->gap;
+    }
+
+    bool ContactAssembler::init_no_contact(
+        const libMesh::MeshBase &mesh,
+        const libMesh::DofMap &dof_map)
+    {
+
+        if(!contact_tensors_) {
+            contact_tensors_ = std::make_shared<ContactTensors>();
+        }
+
+        auto n_local_dofs = dof_map.n_local_dofs();
+
+        contact_tensors_->gap = local_values(n_local_dofs, 100000000);
+        contact_tensors_->weighted_gap = local_values(n_local_dofs, 100000000);
+        contact_tensors_->normal = local_zeros(n_local_dofs);
+
+        contact_tensors_->inv_mass_vector = local_values(n_local_dofs, 1.);
+        contact_tensors_->is_contact = local_zeros(n_local_dofs);
+
+        contact_tensors_->T = local_identity(n_local_dofs, n_local_dofs);
+        contact_tensors_->orthogonal_trafo  = local_identity(n_local_dofs, n_local_dofs);
+        contact_tensors_->complete_transformation = local_identity(n_local_dofs, n_local_dofs);
+        has_contact_ = false;
+        return true;
+    }
+
+
+    void ContactAssembler::remove_mass(const UVector &in, UVector &out) const
+    {
+        if(!empty(contact_tensors_->inv_mass_vector )) {
+            //P1 stuff
+            out = e_mul(contact_tensors_->inv_mass_vector, in);
+        } else {
+
+        }
     }
 }
 

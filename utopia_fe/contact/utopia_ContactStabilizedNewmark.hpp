@@ -39,9 +39,9 @@ namespace utopia {
             if(is_new_time_step_) {
                 //copy for time-adaptivity for changing the predictor for different dt
 
-                O_copy_   = this->contact().orthogonal_trafo;
-                // O_copy_   = this->contact().complete_transformation;
-                gap_copy_ = this->contact().gap;
+                O_copy_   = this->contact().orthogonal_trafo();
+                // O_copy_   = this->contact().complete_transformation();
+                gap_copy_ = this->contact().gap();
                 update_predictor();
 
                 is_new_time_step_ = false;
