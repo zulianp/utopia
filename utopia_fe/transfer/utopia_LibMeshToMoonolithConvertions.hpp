@@ -806,7 +806,7 @@ namespace utopia {
     std::unique_ptr< moonolith::Shape<double, Dim-1, Dim> > make_shape(const libMesh::Elem &elem, const libMesh::FEType &type);
 
     template<>
-    std::unique_ptr< moonolith::Shape<double, 1, 2> > make_shape<2>(const libMesh::Elem &elem, const libMesh::FEType &type)
+    inline std::unique_ptr< moonolith::Shape<double, 1, 2> > make_shape<2>(const libMesh::Elem &elem, const libMesh::FEType &type)
     {
         using moonolith::Segment;
 
@@ -833,7 +833,7 @@ namespace utopia {
     }
 
     template<>
-    std::unique_ptr< moonolith::Shape<double, 2, 3> > make_shape<3>(const libMesh::Elem &elem, const libMesh::FEType &type)
+    inline std::unique_ptr< moonolith::Shape<double, 2, 3> > make_shape<3>(const libMesh::Elem &elem, const libMesh::FEType &type)
     {
        using moonolith::Triangle;
        using moonolith::Quad;
