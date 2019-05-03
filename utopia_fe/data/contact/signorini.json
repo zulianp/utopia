@@ -22,20 +22,24 @@
 			"*path"   : "../data/contact/pseudo-signorini-refined.e",
 			"**path"   : "../data/contact/pseudo-signorini-refined-twice.e",
 			"path" : "../data/contact/pseudo-signorini-coarse-slave-3.e",
-			"refinements" : 0
+			"refinements" : 0,
+			"order" : 2
 
 		},
 		"space": {
 			"system-name": "contact_sol",
 			"variables": [
 				{
-					"name": "disp_x"
+					"name": "disp_x",
+					"order" : 2
 				},
 				{
-					"name": "disp_y"
+					"name": "disp_y",
+					"order" : 2
 				},
 				{
-					"name": "disp_z"
+					"name": "disp_z",
+					"order" : 2
 				}
 			],
 			"boundary-conditions": [
