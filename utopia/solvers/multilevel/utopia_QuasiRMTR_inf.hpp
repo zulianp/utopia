@@ -248,7 +248,9 @@ namespace utopia
                 constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
 
 
-            hessian_approxs_[this->n_levels() - 1 ]->initialize();
+            // hessian_approxs_[this->n_levels() - 1 ]->initialize();
+            SizeType fine_lev=this->n_levels() - 1; 
+            hessian_approxs_[fine_lev]->initialize(this->memory_.x[fine_lev], this->memory_.g[fine_lev]);
         }
 
 
@@ -596,7 +598,9 @@ namespace utopia
             // std::cout<<"norm2(y): "<< norm2(y) << "   \n"; 
             // std::cout<<"norm2(this->memory_.s[level]): "<< norm2(this->memory_.s[level]) << "   \n"; 
 
-            hessian_approxs_[level]->update(this->memory_.s[level], y);
+
+            // hessian_approxs_[level]->update(this->memory_.s[level], y);
+            hessian_approxs_[level]->update(this->memory_.s[level], y, this->memory_.x[level], this->memory_.g[level]);
 
             return true;
         }
@@ -610,7 +614,8 @@ namespace utopia
                 if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
                 {
                     hessian_approxs_[level]->reset();
-                    hessian_approxs_[level]->initialize();
+                    // hessian_approxs_[level]->initialize();
+                    hessian_approxs_[level]->initialize(this->memory_.x[level], this->memory_.g[level]);    
                 }
             }
         }

@@ -92,13 +92,11 @@ namespace utopia {
 
         void MPRGP_test() const
         {
-            std::cout<<"---- MPGRP solver --- \n"; 
             MPGRP<Matrix, Vector> qp_solver;
             run_qp_solver(qp_solver);
 
 
             SizeType n = 50; 
-
             Matrix A = sparse(n, n, 3);
             assemble_symmetric_laplacian_1D(A, true);
 
