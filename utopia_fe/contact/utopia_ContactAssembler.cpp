@@ -114,7 +114,7 @@ namespace utopia {
             gap    = e_mul(inv_mass_vector, weighted_gap);
             normal = e_mul(inv_mass_vector, weighted_normal);
 
-            USparseMatrix D_inv = diag(d_inv);
+            USparseMatrix D_inv = diag(inv_mass_vector);
             T = D_inv * B;
             
             normalize_rows(T);
