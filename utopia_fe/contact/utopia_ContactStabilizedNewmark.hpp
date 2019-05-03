@@ -16,7 +16,9 @@ namespace utopia {
     class ContactStabilizedNewmark : public ContactSolver<Matrix, Vector> {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
-        typedef typename ContactSolver<Matrix, Vector>::FunctionSpaceT FunctionSpaceT;
+        using super = ContactSolver<Matrix, Vector>;
+        using FunctionSpaceT = typename super::FunctionSpaceT;
+        using ContactT       = typename super::ContactT;
 
         ContactStabilizedNewmark(
             const std::shared_ptr<FunctionSpaceT> &V,

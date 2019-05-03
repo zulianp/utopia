@@ -230,7 +230,7 @@ namespace utopia {
     void Wear::update_aux_system(
         const int main_system_number,
         const MechanicsState &state,
-        const Contact &contact,
+        const ContactT &contact,
         const double dt,
         libMesh::EquationSystems &es)
     {

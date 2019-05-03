@@ -9,22 +9,34 @@
 			"type": "file",
 			"path_0" : "../data/contact/contact_cubes.e",
 			"path_1" : "../data/contact/signorini_79207.e",
-			"path" : "../data/contact/quasi_hertz_91.e",
-			"path_3" : "../data/contact/quasi_hertz_750.e",
-			"*path"   : "../data/contact/quasi_hertz_8732.e"
-
+			"path_2" : "../data/contact/quasi_hertz_91.e",
+			"path" : "../data/contact/quasi_hertz_750.e",
+			"*path"   : "../data/contact/quasi_hertz_8732.e",
+			"order" : 2
+		},
+		"qp-solver" : {
+			"backend" : "petsc",
+			"type" : "tron",
+			"max-it" : 5,
+			"verbose" : true,
+			"linear-solver" : {
+				"type" : "direct"
+			}
 		},
 		"space": {
 			"system-name": "contact_sol",
 			"variables": [
 				{
-					"name": "disp_x"
+					"name": "disp_x",
+					"order" : 2
 				},
 				{
-					"name": "disp_y"
+					"name": "disp_y",
+					"order" : 2
 				},
 				{
-					"name": "disp_z"
+					"name": "disp_z",
+					"order" : 2
 				}
 			],
 			"boundary-conditions": [

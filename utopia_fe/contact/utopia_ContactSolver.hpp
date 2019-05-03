@@ -10,6 +10,7 @@
 #include "utopia.hpp"
 #include "utopia_materials.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_ContactAssembler.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
@@ -33,6 +34,9 @@ namespace utopia {
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
         typedef libMesh::Nemesis_IO Exporter;
         // typedef libMesh::ExodusII_IO Exporter;
+
+        // using ContactT = utopia::Contact;
+        using ContactT = utopia::ContactAssembler;
 
         ContactSolver(
             const std::shared_ptr<FunctionSpaceT> &V,
@@ -118,9 +122,9 @@ namespace utopia {
 
             auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
 
-            if(mg) {
-                mg->update_contact(contact_);
-            }
+            // if(mg) {
+            //     mg->update_contact(contact_);
+            // }
         }
 
         bool solve_steady()
@@ -346,6 +350,8 @@ namespace utopia {
 #endif //WITH_PETSC
             }
 
+            //maybe apply boundary conditions here???
+
             if(!assemble_hessian_and_gradient(x_, H_, g_)) {
                 assert(false);
                 return false;
@@ -414,7 +420,7 @@ namespace utopia {
 
         }
 
-        const Contact &contact() const
+        const ContactT &contact() const
         {
             return contact_;
         }
@@ -621,7 +627,7 @@ namespace utopia {
         Vector xc_;
         Vector rhs_;
 
-        Contact contact_;
+        ContactT contact_;
 
         Vector inactive_set_;
         Vector active_set_;

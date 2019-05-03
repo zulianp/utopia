@@ -92,7 +92,7 @@ namespace utopia {
 
     void ContactSystem::update(
         const MechanicsState &state,
-        const Contact &contact,
+        const ContactT &contact,
         const double dt)
     {
         using libMesh::MeshBase;

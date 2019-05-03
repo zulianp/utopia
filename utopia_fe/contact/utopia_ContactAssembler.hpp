@@ -24,7 +24,7 @@ namespace utopia {
     // private:
         USparseMatrix B_x, D_x, Q_x;
 
-        USparseMatrix B, D, Q, T, orthogonal_trafo, complete_transformation;
+        USparseMatrix B, D, D_inv, Q, T, orthogonal_trafo, complete_transformation;
         UVector weighted_gap, gap;
         UVector weighted_normal, normal;
         UVector area;

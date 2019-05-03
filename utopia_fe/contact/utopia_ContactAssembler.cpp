@@ -84,29 +84,23 @@ namespace utopia {
         
         if(!empty(Q)) {
             UVector d_inv = diag(D);
-            
-            // each_transform(d_inv, d_inv, [](const SizeType i, const double value) -> double {
-            //     if(std::abs(value) > 1e-15) {
-            //         return 1./value;
-            //     } else {
-            //         return 0.0;
-            //     }
-            // });
 
             e_pseudo_inv(d_inv, d_inv, 1e-15);
             
-            USparseMatrix D_inv = diag(d_inv);
-            T = Q * D_inv * B;
+            USparseMatrix D_tilde_inv = diag(d_inv);
+            D_inv = Q * D_tilde_inv;
+            T = D_inv * B;
             
             normalize_rows(T);
             
             assert(check_op(T));
+
+            T += local_identity(local_size(T));
             
             gap    = Q * e_mul(d_inv, weighted_gap);
             normal = Q * e_mul(d_inv, weighted_normal);
             
         } else {
-            // if(is_b)
 
             inv_mass_vector = diag(D);
             e_pseudo_inv(inv_mass_vector, inv_mass_vector, 1e-15);
@@ -114,22 +108,22 @@ namespace utopia {
             gap    = e_mul(inv_mass_vector, weighted_gap);
             normal = e_mul(inv_mass_vector, weighted_normal);
 
-            USparseMatrix D_inv = diag(inv_mass_vector);
+            D_inv = diag(inv_mass_vector);
             T = D_inv * B;
             
             normalize_rows(T);
             assert(check_op(T));
+
+            T += local_identity(local_size(T));
         }
         
         if(normalize) {
             auto r = range(normal);
             
-            
             Read<UVector> ric(is_contact);
             ReadAndWrite<UVector> rw(normal);
             for(auto i = r.begin(); i < r.end(); i += spatial_dim) {
                 bool is_node_in_contact = is_contact.get(i);
-                
                 
                 if(is_node_in_contact) {
                     double len_n = 0.0;
@@ -152,7 +146,6 @@ namespace utopia {
                         normal.set(i + d, 0.0);
                     }
                 }
-                
             }
         }
         
@@ -190,7 +183,6 @@ namespace utopia {
                     for(SizeType di = 0; di < spatial_dim; ++di) {
                         orthogonal_trafo.set(i + di, i + di, 1.0);
                     }
-                    
                 }
             }
         }
@@ -251,8 +243,8 @@ namespace utopia {
                             }
                             
                         } else {
-                            std::cout << "=====================================\n";
-                            std::cout << i << ") " << volumes.get(i) << " == " << element_wise.area.get(i) << std::endl;
+                            // std::cout << "=====================================\n";
+                            // std::cout << i << ") " << volumes.get(i) << " == " << element_wise.area.get(i) << std::endl;
                             
                             const auto &dofs = adapter.element_dof_map()[i - r.begin()].global;
                             
@@ -320,11 +312,7 @@ namespace utopia {
                     return LARGE_VALUE;
                 }
             });
-            
-            
-            
         }
-        
         
         MatrixInserter B, D;
         MatrixInserter gap, normal;
@@ -605,7 +593,7 @@ namespace utopia {
             area += isect_area;
             
             
-            std::cout << moonolith::measure(warped_contact.slave) << " == " << isect_area << " == " << moonolith::measure(q_slave) << std::endl;
+            // std::cout << moonolith::measure(warped_contact.slave) << " == " << isect_area << " == " << moonolith::measure(q_slave) << std::endl;
         }
         
         template<class Adapter>
@@ -745,6 +733,9 @@ namespace utopia {
                                     const ContactParams &params)
     {
         
+        Chrono overall_time;
+        overall_time.start();
+
         LibMeshFunctionSpaceAdapter adapter;
         
         auto spatial_dim = mesh.spatial_dimension();
@@ -794,6 +785,11 @@ namespace utopia {
                 dof_map);
         }
         
+
+
+        overall_time.stop();
+        std::cout << "ContactAssembler::assemble: " << overall_time << std::endl;
+
         return has_contact_;
     }
     
@@ -855,14 +851,13 @@ namespace utopia {
         return true;
     }
 
-
     void ContactAssembler::remove_mass(const UVector &in, UVector &out) const
     {
         if(!empty(contact_tensors_->inv_mass_vector )) {
             //P1 stuff
             out = e_mul(contact_tensors_->inv_mass_vector, in);
         } else {
-
+            out = contact_tensors_->D_inv * in;
         }
     }
 }

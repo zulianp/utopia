@@ -11,6 +11,7 @@
 #include "utopia_fe_core.hpp"
 #include "utopia_libmesh.hpp"
 #include "utopia_Mechanics.hpp"
+#include "utopia_ContactAssembler.hpp"
 
 
 #include <vector>
@@ -25,6 +26,9 @@ namespace utopia {
 
     class Wear {
     public:
+        // using ContactT = utopia::Contact;
+        using ContactT = utopia::ContactAssembler;
+
         Wear();
 
         void set_params(
@@ -65,7 +69,7 @@ namespace utopia {
         void update_aux_system(
             const int main_system_number,
             const MechanicsState &state,
-            const Contact &contact,
+            const ContactT &contact,
             const double dt,
             libMesh::EquationSystems &es);
 
