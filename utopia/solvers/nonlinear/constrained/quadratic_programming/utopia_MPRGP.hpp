@@ -15,7 +15,7 @@ namespace  utopia
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         public:
-            MPGRP(): eps_eig_est_(1e-2)
+            MPGRP(): eps_eig_est_(1e-1)
             {
 
             }
@@ -282,7 +282,7 @@ namespace  utopia
                 Vector y = local_values(n_loc, 1.0); 
                 SizeType it = 0; 
                 bool converged = false; 
-                Scalar gnorm, lambda = 0.0; 
+                Scalar gnorm, lambda = 0.0, lambda_old; 
 
                 while(!converged)
                 {
@@ -291,10 +291,12 @@ namespace  utopia
                     y  = Scalar(1.0/Scalar(norm2(y)))*y; 
                     gnorm = norm2(y - y_old);
 
+                    lambda_old = lambda; 
+
                     A.apply(y, y_old);
                     lambda = dot(y, y_old);
                     
-                    converged  = (gnorm < eps_eig_est_) ?  true: false; 
+                    converged  = ((gnorm < eps_eig_est_) || (std::abs(lambda_old-lambda) < eps_eig_est_)) ?  true: false; 
                     
                     it=it+1;  
                 }

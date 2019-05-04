@@ -147,8 +147,8 @@ namespace utopia {
             Vector x = 0*b; 
 
             qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
-            qp_solver.verbose(false);
-            qp_solver.max_it(n); 
+            qp_solver.verbose(true);
+            qp_solver.max_it(n*2); 
             qp_solver.set_eig_comp_tol(1e-1); 
             qp_solver.solve(A, b, x); 
 
