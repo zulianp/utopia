@@ -51,7 +51,7 @@ namespace  utopia
                 auto &box = this->get_box_constraints();
 
 
-                // init(local_size(rhs).get(0));
+                init(local_size(rhs).get(0));
                 return aux_solve(A, rhs, sol, box);
             }
 
@@ -61,7 +61,7 @@ namespace  utopia
                 this->fill_empty_bounds(); 
                 auto &box = this->get_box_constraints();
 
-                // init(local_size(rhs).get(0));
+                init(local_size(rhs).get(0));
                 return aux_solve(*A_op_ptr, rhs, sol, box);
             }
 
@@ -76,7 +76,7 @@ namespace  utopia
                     this->init_solver("MPGRP", {"it", "|| g ||"});
                 }
 
-                const Scalar gamma =1; 
+                const Scalar gamma = 1.0; 
                 const Scalar alpha_bar = 1.95/this->get_normA(); 
 
                 SizeType it =0; 
@@ -85,15 +85,12 @@ namespace  utopia
 
                 Scalar alpha_cg, alpha_f, beta_sc; 
 
-                Vector Px; 
-                this->get_projection(x, *lb, *ub, Px); 
-                x = Px; 
+                this->get_projection(x, *lb, *ub, Ax); 
+                x = Ax; 
 
-                Vector Ax;
                 A.apply(x, Ax);
-                Vector g = Ax - rhs; 
+                g = Ax - rhs; 
 
-                Vector fi, beta, gp, p, y, Ap, Abeta; 
                 this->get_fi(x, g, *lb, *ub, fi); 
                 this->get_beta(x, g, *lb, *ub, beta); 
                 gp = fi + beta; 
@@ -147,15 +144,15 @@ namespace  utopia
                     this->get_beta(x, g, *lb, *ub, beta); 
 
                     gp = fi+beta;
-
-                    it++; 
                     
                     gnorm = norm2(gp); 
-                    converged = (gnorm < this->atol() || it > this->max_it()) ? true : false; 
+                    it++; 
 
-                    if(this->verbose())
+                    if(this->verbose()){
                         PrintInfo::print_iter_status(it, {gnorm});
+                    }
 
+                    converged = this->check_convergence(it, gnorm, 1, 1);
                 }
 
     
@@ -254,11 +251,11 @@ namespace  utopia
                         Scalar xi = x.get(i); 
                         Scalar gi = g.get(i);
 
-                        if(std::abs(li -  xi) < 1e-13)
+                        if(std::abs(li -  xi) < 1e-14)
                         {
                             return std::min(0.0, gi); 
                         }
-                        else if(std::abs(ui -  xi) < 1e-13)
+                        else if(std::abs(ui -  xi) < 1e-14)
                         {
                             return std::max(0.0, gi); 
                         }
@@ -275,12 +272,55 @@ namespace  utopia
             Scalar get_normA()
             {
                 // return 36; 
-                return 1000; 
+                return 10; 
             }
 
 
-        // private:
-        //     Vector r, q, d, Hd; // Speed of algo, can be improve big time... 
+            void init(const SizeType &ls)
+            {
+                auto zero_expr = local_zeros(ls);
+
+                //resets all buffers in case the size has changed
+                if(!empty(fi)) {
+                    fi = zero_expr;
+                }
+
+                if(!empty(beta)) {
+                    beta = zero_expr;
+                }
+
+                if(!empty(gp)) {
+                    gp = zero_expr;
+                }                
+
+                if(!empty(p)) {
+                    p = zero_expr;
+                }
+
+                if(!empty(y)) {
+                    y = zero_expr;
+                }
+
+                if(!empty(Ap)) {
+                    Ap = zero_expr;
+                }
+
+                if(!empty(Abeta)) {
+                    Abeta = zero_expr;
+                }
+
+                if(!empty(Ax)) {
+                    Ax = zero_expr;
+                }            
+
+                if(!empty(g)) {
+                    g = zero_expr;
+                }                            
+            }
+
+
+        private:
+            Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g; 
 
     };
 }
