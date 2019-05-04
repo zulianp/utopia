@@ -96,7 +96,7 @@ namespace utopia {
             run_qp_solver(qp_solver);
 
 
-            SizeType n = 50; 
+            SizeType n = 100; 
             Matrix A = sparse(n, n, 3);
             assemble_symmetric_laplacian_1D(A, true);
 
@@ -147,9 +147,12 @@ namespace utopia {
             Vector x = 0*b; 
 
             qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
-            qp_solver.verbose(verbose);
-            qp_solver.max_it(100); 
+            qp_solver.verbose(false);
+            qp_solver.max_it(n); 
+            qp_solver.set_eig_comp_tol(1e-1); 
             qp_solver.solve(A, b, x); 
+
+            // disp(x, "x"); 
         }
 
 

@@ -15,7 +15,7 @@ namespace  utopia
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         public:
-            MPGRP()
+            MPGRP(): eps_eig_est_(1e-2)
             {
 
             }
@@ -66,6 +66,12 @@ namespace  utopia
             }
 
 
+            void set_eig_comp_tol(const Scalar & eps_eig_est)
+            {
+                eps_eig_est_ = eps_eig_est; 
+            }
+
+
         private:
             bool aux_solve(const Operator<Vector> &A, const Vector &rhs, Vector &x, const BoxConstraints<Vector> & constraints)
             {
@@ -77,7 +83,7 @@ namespace  utopia
                 }
 
                 const Scalar gamma = 1.0; 
-                const Scalar alpha_bar = 1.95/this->get_normA(); 
+                const Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs).get(0)); 
 
                 SizeType it =0; 
                 bool converged= false; 
@@ -269,10 +275,34 @@ namespace  utopia
             }
 
 
-            Scalar get_normA()
+            Scalar get_normA(const Operator<Vector> &A, const SizeType & n_loc)
             {
-                // return 36; 
-                return 10; 
+                // Super simple power method to estimate the biggest eigenvalue 
+                Vector y_old; 
+                Vector y = local_values(n_loc, 1.0); 
+                SizeType it = 0; 
+                bool converged = false; 
+                Scalar gnorm, lambda = 0.0; 
+
+                while(!converged)
+                {
+                    y_old = y; 
+                    A.apply(y_old, y);
+                    y  = Scalar(1.0/Scalar(norm2(y)))*y; 
+                    gnorm = norm2(y - y_old);
+
+                    A.apply(y, y_old);
+                    lambda = dot(y, y_old);
+                    
+                    converged  = (gnorm < eps_eig_est_) ?  true: false; 
+                    
+                    it=it+1;  
+                }
+
+                if(this->verbose())
+                    std::cout<<"Power method converged in "<< it << " iterations. Largest eig: "<< lambda << "  \n"; 
+
+                return lambda; 
             }
 
 
@@ -321,6 +351,7 @@ namespace  utopia
 
         private:
             Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g; 
+            Scalar eps_eig_est_; 
 
     };
 }
