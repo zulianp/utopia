@@ -14,6 +14,7 @@ namespace utopia {
 
     private:
         int operator_power_ = 1;
+        std::set<libMesh::boundary_id_type> requested_boundary_ids_;
     };
 
 }
