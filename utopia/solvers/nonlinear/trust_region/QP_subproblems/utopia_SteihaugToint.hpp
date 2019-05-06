@@ -269,7 +269,7 @@ namespace utopia
                 p_k = betta * p_k - v_k;
 
                 // updating norms recursively  - see TR book
-                sMp = (betta * sMp) + (alpha * p_norm);
+                sMp = betta * ( sMp + (alpha * p_norm));
                 p_norm = g_v_prod_new + (betta*betta * p_norm);
                 s_norm = s_norm_new;
 
