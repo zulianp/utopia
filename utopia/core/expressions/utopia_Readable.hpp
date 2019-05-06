@@ -178,6 +178,32 @@ namespace utopia {
         const Tensor &_tensor;
     };
 
+
+    template<class T, int Order>
+    class Read< std::vector<Wrapper<T, Order> > > {
+    public:
+        using Tensors = std::vector<Wrapper<T, Order> >;
+        using Scalar  = typename Traits<T>::Scalar;
+        
+
+        Read(const Tensors &tensors)
+        : tensors_(tensors)
+        {
+            for(auto &t : tensors_) {
+                Backend<Scalar, Traits<T>::Backend>::read_lock(t.implementation());
+            }
+        }
+
+        ~Read()
+        {
+            for(auto &t : tensors_) {
+                Backend<Scalar, Traits<T>::Backend>::read_unlock(t.implementation());
+            }
+        }
+
+        const Tensors &tensors_;
+    };
+
     template<class Tensor>
     class ReadAndWrite {
     public:

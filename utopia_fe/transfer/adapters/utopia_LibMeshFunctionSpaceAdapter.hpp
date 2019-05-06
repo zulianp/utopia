@@ -198,6 +198,7 @@ namespace utopia {
             libMesh::FEType fe_type = dof_map.variable_type(var_num);
             auto &sys = es->get_system("boundary_sys");
             auto b_var_num = sys.add_variable("lambda", fe_type); 
+            surf_dof_map_ = make_ref(sys.get_dof_map());
             es->init();
 
             c.stop();
@@ -210,6 +211,49 @@ namespace utopia {
 
             //surf_mesh is extracted from vol_mesh
             dof_map_.init_for_contact(
+                *mesh,
+                dof_map,
+                *b_mesh,
+                sys.get_dof_map(),
+                var_num,
+                b_var_num);
+
+            dof_map_.describe();
+        }
+
+        void extract_surface_init(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const libMesh::DofMap &dof_map,
+            const int var_num)
+        {
+
+            Chrono c;
+            c.start();
+
+            auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
+            source_dof_map_ = utopia::make_ref(dof_map);
+
+            mesh->get_boundary_info().sync(*b_mesh);
+
+            es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
+            es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
+
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+            auto &sys = es->get_system("boundary_sys");
+            auto b_var_num = sys.add_variable("lambda", fe_type); 
+            surf_dof_map_ = make_ref(sys.get_dof_map());
+            es->init();
+
+            c.stop();
+
+            std::cout << "libmesh get_boundary_info + eq system: " << c << std::endl;
+
+            init_aux(b_mesh, sys.get_dof_map(), b_var_num);
+            is_extracted_surface_ = true;
+            boundary_ids_workaround(*mesh);
+
+            //surf_mesh is extracted from vol_mesh
+            dof_map_.init_for_surface(
                 *mesh,
                 dof_map,
                 *b_mesh,
@@ -544,6 +588,13 @@ namespace utopia {
             return dof_map_.n_local_dofs();
         }
 
+        inline const libMesh::DofMap &surf_dof_map() const
+        {
+            assert(surf_dof_map_);
+            return *surf_dof_map_;
+        }
+
+
     private:
         std::shared_ptr<libMesh::MeshBase> mesh_;
         std::vector<libMesh::dof_id_type> handle_to_element_id_;
@@ -554,6 +605,7 @@ namespace utopia {
         bool is_extracted_surface_;
 
         std::shared_ptr<const libMesh::DofMap> source_dof_map_;
+        std::shared_ptr<const libMesh::DofMap> surf_dof_map_;
     };
 
     // class PermutationBuilder {

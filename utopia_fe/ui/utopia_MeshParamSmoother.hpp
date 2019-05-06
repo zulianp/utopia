@@ -15,6 +15,13 @@ namespace utopia {
     private:
         int operator_power_ = 1;
         std::set<libMesh::boundary_id_type> requested_boundary_ids_;
+
+        void apply_aux(
+            const libMesh::MeshBase &surf_mesh,
+            const libMesh::DofMap &surf_dof_map,
+            const USparseMatrix &permutation,
+            const libMesh::DofMap &dof_map,
+            libMesh::MeshBase &mesh);
     };
 
 }

@@ -66,6 +66,46 @@ namespace utopia {
                     );
     }
 
+    void LibMeshDofMapAdapter::init_for_surface(
+        libMesh::MeshBase &vol_mesh,
+        const libMesh::DofMap &vol_dof_map,
+        libMesh::MeshBase &surf_mesh,
+        const libMesh::DofMap &surf_dof_map,
+        const int var_num,
+        const int surf_var_num)
+    {
+        //scalar dofs
+        permutation_        = std::make_shared<USparseMatrix>();
+        
+        //vector dofs
+        // vector_permutation_ = std::make_shared<USparseMatrix>();
+
+        SizeType spatial_dim = surf_mesh.spatial_dimension();
+        max_nnz_ = max_nnz_x_row(surf_dof_map);
+
+        boundary_permutation_map(
+            surf_mesh,
+            vol_dof_map,
+            surf_dof_map,
+            var_num,
+            surf_var_num,
+            mapping_
+        );
+
+        permutation_matrix_from_map(
+                               mapping_,
+                                *permutation_
+                            );
+
+        //vector permuation
+        // vector_permuation_map_from_map(spatial_dim, mapping_, vector_mapping_);
+
+        // permutation_matrix_from_map(
+        //                 vector_mapping_,
+        //                 *vector_permutation_
+        //             );
+    }
+
     void init(
         const std::shared_ptr<libMesh::MeshBase> &mesh,
         const libMesh::DofMap &dof_map,

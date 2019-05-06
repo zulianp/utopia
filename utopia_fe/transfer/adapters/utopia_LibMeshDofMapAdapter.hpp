@@ -110,6 +110,14 @@ namespace utopia {
             const int var_num,
             const int surf_var_num);
 
+        void init_for_surface(
+            libMesh::MeshBase &vol_mesh,
+            const libMesh::DofMap &vol_dof_map,
+            libMesh::MeshBase &surf_mesh,
+            const libMesh::DofMap &surf_dof_map,
+            const int var_num,
+            const int surf_var_num);
+
         void init(
             const std::shared_ptr<libMesh::MeshBase> &mesh,
             const libMesh::DofMap &dof_map,
