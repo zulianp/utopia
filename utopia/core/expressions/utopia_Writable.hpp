@@ -283,6 +283,33 @@ namespace utopia {
 
         WriteMode mode_;
     };
+
+    template<class T, int Order>
+    class Write< std::vector<Wrapper<T, Order> > > {
+    public:
+        using Tensors = std::vector<Wrapper<T, Order> >;
+        using Scalar  = typename Traits<T>::Scalar;
+        
+
+        Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
+        : tensors_(tensors), mode_(mode)
+        {
+            for(auto &t : tensors_) {
+                Backend<Scalar, Traits<T>::Backend>::write_lock(t.implementation(), mode_);
+            }
+        }
+
+        ~Write()
+        {
+            for(auto &t : tensors_) {
+                Backend<Scalar, Traits<T>::Backend>::write_unlock(t.implementation(), mode_);
+            }
+        }
+
+        Tensors &tensors_;
+        WriteMode mode_;
+    };
+
 }
 
 #endif //UTOPIA_UTOPIA_WRITABLE_HPP

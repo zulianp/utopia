@@ -7,6 +7,7 @@
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_modification.h"
 #include "utopia_UIMorph.hpp"
+#include "utopia_MeshParamSmoother.hpp"
 
 #include <memory>
 
@@ -163,6 +164,12 @@ namespace utopia {
                 }
             }
 
+            // is.get("improve-smoothness", [this](Input &is) {
+            //     MeshParamSmoother smoother;
+            //     smoother.read(is);
+            //     smoother.apply(*mesh_);
+            // });
+
             //multi morph
             is.get("morphs", [this](Input &is) {
                 is.get_all([this](Input &is) {
@@ -173,7 +180,7 @@ namespace utopia {
                     if(morph.is_valid()) {
                         morph.apply(*mesh_);
                     }
-
+                    
                 });
             });
         }

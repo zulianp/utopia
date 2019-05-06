@@ -8,6 +8,7 @@
 #include "utopia_EikonalApp.hpp"
 #include "utopia_LeastSquaresHelmholtzApp.hpp"
 #include "utopia_PoissonApp.hpp"
+#include "utopia_SmoothApp.hpp"
 #include "utopia_make_unique.hpp"
 
 #include <iostream>
@@ -73,5 +74,6 @@ namespace utopia {
         add_app(EikonalApp::command(), 			 	 utopia::make_unique<EikonalApp>());
         add_app(LeastSquaresHelmholtzApp::command(), utopia::make_unique<LeastSquaresHelmholtzApp>());
         add_app(PoissonApp::command(), utopia::make_unique<PoissonApp>());
+        add_app(SmoothApp::command(), utopia::make_unique<SmoothApp>());
     }
 }
