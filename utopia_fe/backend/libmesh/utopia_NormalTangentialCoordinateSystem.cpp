@@ -94,7 +94,8 @@ namespace utopia {
                 for(uint side = 0; side < e.n_sides(); ++side) {
                     if(e.neighbor_ptr(side) != nullptr) {continue;}
 
-                    bool select = false;
+                    //if empty take them all
+                    bool select = boundary_tags.empty();
                     for(auto t : boundary_tags) {
                         if(mesh.get_boundary_info().has_boundary_id(&e, side, t)) {
                             select = true;

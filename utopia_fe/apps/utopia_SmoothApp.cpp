@@ -1,5 +1,6 @@
 #include "utopia_SmoothApp.hpp"
 #include "utopia_UIMesh.hpp"
+#include "utopia_CurvatureBasedEdgeProjection.hpp"
 
 #include "libmesh/exodusII_io.h"
 
@@ -10,9 +11,16 @@ namespace utopia {
         UIMesh<libMesh::DistributedMesh> mesh(comm());
         in.get("mesh", mesh);
 
-        MeshParamSmoother smoother;
-        smoother.read(in);
-        smoother.apply(mesh.mesh());
+        if(mesh.mesh().mesh_dimension() == 3)
+        {
+            CurvatureBasedEdgeProjection smoother;
+            smoother.read(in);
+            smoother.apply(mesh.mesh());
+        } else {
+            MeshParamSmoother smoother;
+            smoother.read(in);
+            smoother.apply(mesh.mesh());
+        }
 
         libMesh::ExodusII_IO io(mesh.mesh());
 
