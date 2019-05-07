@@ -201,11 +201,11 @@ namespace utopia {
                 vert = 0;
                 for(int i = 0; i < side_ptr->n_nodes(); ++i) {
                     if(!side_ptr->is_vertex(i)) {
-                        // auto &node = mesh.node_ref(side_ptr->node(i));
+                        auto &node = mesh.node_ref(side_ptr->node(i));
 
-                        // for(int d = 0; d < 3; ++d) {
-                        //     node(d) = edge_points[vert][d];
-                        // }
+                        for(int d = 0; d < 3; ++d) {
+                            node(d) = edge_points[vert][d];
+                        }
 
                         ++vert;
                     }
