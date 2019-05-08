@@ -73,7 +73,8 @@ namespace utopia {
             const libMesh::DofMap &dof_map,
             const UVector &elem_to_transform,
             const double alpha,
-            USparseMatrix &mat
+            USparseMatrix &mat,
+            const bool inverse = false
             )
         {
             using SizeType = UTOPIA_SIZE_TYPE(USparseMatrix);
@@ -103,7 +104,13 @@ namespace utopia {
 
             if(e_begin != e_end) {
                 assemble_local_trafo((*e_begin)->type(), alpha, local_trafo, inv_trafo);
-                local_trafo.get_transpose(local_trafo_t);
+
+                if(inverse) {
+                    inv_trafo.get_transpose(local_trafo_t);
+                } else {
+                    local_trafo.get_transpose(local_trafo_t);
+                }
+                
             }
 
             for(auto it = e_begin; it != e_end; ++it) {
@@ -138,7 +145,8 @@ namespace utopia {
             const std::vector<ElementDofMap> &dof_map,
             const UVector &elem_to_transform,
             const double alpha,
-            USparseMatrix &mat
+            USparseMatrix &mat,
+            const bool inverse = false
             )
         {
             using SizeType = UTOPIA_SIZE_TYPE(USparseMatrix);
@@ -166,7 +174,12 @@ namespace utopia {
 
             if(e_begin != e_end) {
                 assemble_local_trafo((*e_begin)->type(), alpha, local_trafo, inv_trafo);
-                local_trafo.get_transpose(local_trafo_t);
+
+                if(inverse) {
+                    inv_trafo.get_transpose(local_trafo_t);
+                } else {
+                    local_trafo.get_transpose(local_trafo_t);
+                }
             }
 
 

@@ -10,9 +10,10 @@
 			"path_0" : "../data/contact/contact_cubes.e",
 			"path_1" : "../data/contact/signorini_79207.e",
 			"path_2" : "../data/contact/quasi_hertz_91.e",
-			"**path" : "../data/contact/quasi_hertz_750.e",
-			"path" : "../data/contact/quasi_hertz_750_smooth.e",
-			"*path"   : "../data/contact/quasi_hertz_8732.e",
+			"path_3" : "../data/contact/quasi_hertz_750.e",
+			"path_4" : "../data/contact/quasi_hertz_750_smooth.e",
+			"path_5"   : "../data/contact/quasi_hertz_8732.e",
+			"path"   : "../data/contact/quasi_hertz_8732_smooth.e",
 			"order" : 2
 		},
 		"qp-solver" : {

@@ -39,6 +39,9 @@ namespace utopia {
         if(!empty(Q)) {
             out.Q = vector_perm * Q * transpose(vector_perm);
             normalize_rows(out.Q);
+
+            out.Q_inv = vector_perm * Q_inv * transpose(vector_perm);
+            normalize_rows(out.Q_inv);
         }
         
         out.weighted_gap    = perm * weighted_gap;
@@ -86,6 +89,8 @@ namespace utopia {
             UVector d_inv = diag(D);
 
             e_pseudo_inv(d_inv, d_inv, 1e-15);
+
+            inv_mass_vector = d_inv;
             
             USparseMatrix D_tilde_inv = diag(d_inv);
             D_inv = Q * D_tilde_inv;
@@ -280,10 +285,25 @@ namespace utopia {
                                               adapter.element_dof_map(),
                                               elem_to_transform,
                                               alpha,
-                                              element_wise.Q_x
+                                              element_wise.Q_x,
+                                              false
                                               );
+
                 
                 tensor_prod_with_identity(element_wise.Q_x, spatial_dim, element_wise.Q);
+
+
+                DualBasis::build_global_trafo(
+                                              adapter.mesh(),
+                                              adapter.n_local_dofs(),
+                                              adapter.element_dof_map(),
+                                              elem_to_transform,
+                                              alpha,
+                                              element_wise.Q_x,
+                                              true);
+                
+                
+                tensor_prod_with_identity(element_wise.Q_x, spatial_dim, element_wise.Q_inv);
             }
             
             double sum_B_x = sum(element_wise.B_x);
@@ -856,6 +876,12 @@ namespace utopia {
         if(!empty(contact_tensors_->inv_mass_vector )) {
             //P1 stuff
             out = e_mul(contact_tensors_->inv_mass_vector, in);
+
+            if(!empty(contact_tensors_->Q_inv)) {
+                UVector temp = out;
+                out = contact_tensors_->Q_inv * temp;
+            }
+
         } else {
             out = contact_tensors_->D_inv * in;
         }

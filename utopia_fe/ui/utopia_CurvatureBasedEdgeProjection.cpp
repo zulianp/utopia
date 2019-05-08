@@ -119,7 +119,7 @@ namespace utopia {
                 in.get("id", id);
                 boundary_tags.push_back(id);
 
-                std::cout << "side: " << id << std::endl;
+                // std::cout << "side: " << id << std::endl;
             });
         });
     }
