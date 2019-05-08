@@ -875,12 +875,16 @@ namespace utopia {
     {
         if(!empty(contact_tensors_->inv_mass_vector )) {
             //P1 stuff
-            out = e_mul(contact_tensors_->inv_mass_vector, in);
-
             if(!empty(contact_tensors_->Q_inv)) {
-                UVector temp = out;
-                out = contact_tensors_->Q_inv * temp;
+                out = e_mul(
+                    contact_tensors_->inv_mass_vector,
+                    contact_tensors_->Q_inv * in
+                );
+
+                return;
             }
+
+            out = e_mul(contact_tensors_->inv_mass_vector, in);
 
         } else {
             out = contact_tensors_->D_inv * in;
