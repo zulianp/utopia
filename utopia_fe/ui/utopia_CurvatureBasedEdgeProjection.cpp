@@ -6,30 +6,30 @@
 
 namespace utopia {
 
-   static bool assemble_smooth_normals(const libMesh::MeshBase &mesh,
-                                 const libMesh::DofMap &dof_map,
-                                 const std::vector<int> &boundary_tags,
-                                 UVector &normals)
-    {
-        using namespace libMesh;
+ static bool assemble_smooth_normals(const libMesh::MeshBase &mesh,
+   const libMesh::DofMap &dof_map,
+   const std::vector<int> &boundary_tags,
+   UVector &normals)
+ {
+    using namespace libMesh;
 
-        const uint spatial_dim = mesh.spatial_dimension();
-        const uint n_dims = mesh.mesh_dimension();
-        std::unique_ptr<FEBase> fe = FEBase::build(n_dims, dof_map.variable_order(0));
-        fe->get_normals();
-        fe->get_phi();
-        fe->get_JxW();
+    const uint spatial_dim = mesh.spatial_dimension();
+    const uint n_dims = mesh.mesh_dimension();
+    std::unique_ptr<FEBase> fe = FEBase::build(n_dims, dof_map.variable_order(0));
+    fe->get_normals();
+    fe->get_phi();
+    fe->get_JxW();
 
-        QGauss quad(n_dims-1 , FIFTH);
+    QGauss quad(n_dims-1 , FIFTH);
 
 
-        const SizeType local_dofs = dof_map.n_local_dofs();
-        normals = local_zeros(local_dofs * spatial_dim);
+    const SizeType local_dofs = dof_map.n_local_dofs();
+    normals = local_zeros(local_dofs * spatial_dim);
 
-        std::vector<libMesh::dof_id_type> dof_indices;
-        DenseVector<Real> vec, local_touched;
+    std::vector<libMesh::dof_id_type> dof_indices;
+    DenseVector<Real> vec, local_touched;
 
-        SizeType n_detected_side_sets = 0;
+    SizeType n_detected_side_sets = 0;
         { //synch-block begin
             Write<UVector> w_n(normals);
 
@@ -114,6 +114,25 @@ namespace utopia {
 
     }
 
+    static void make_index(const moonolith::Polygon<double, 3> &poly, const libMesh::Elem &elem, std::vector<uint> &idx)
+    {
+        auto n = poly.size();
+        idx.resize(n);
+
+        assert(n <= elem.n_nodes());
+
+        moonolith::Vector<double, 3> p;
+        for(std::size_t i = 0; i < n; ++i) {
+            make(elem.node_ref(i), p);
+            for(std::size_t j = 0; j < n; ++j) {
+                if(distance(p, poly[j]) < 1e-16) {
+                    idx[j] = i;
+                    break;
+                }
+            }
+        }
+    }
+
     void CurvatureBasedEdgeProjection::apply(libMesh::MeshBase &mesh)
     {
         using Point2 = moonolith::Vector<double, 2>;
@@ -133,84 +152,114 @@ namespace utopia {
             V.dof_map(),
             boundary_tags,
             normals
-        ); assert(ok);
+            ); assert(ok);
 
-
-
+        UVector trafo_points = local_zeros(mesh.n_local_nodes()*3);
+        auto vr = range(trafo_points);
 
         moonolith::PNTriangle<double, 3> pn_triangle;
-        std::array<Point3, 3> triangle, edge_points, t_normals;
-        std::array<Point2, 3> edge_nodes
-        { 
-            Point2(0.5, 0.0),
-            Point2(0.5, 0.5),
-            Point2(0.0, 0.5)
-        };
+        std::array<Point3, 3> triangle, t_normals;
+        moonolith::Polygon<double, 3> polygon;
+        std::vector<uint> node_idx;
 
+        moonolith::AffineTransform<double, 2, 3> trafo;
 
-        Read<UVector> r(normals);
-        for(auto e_it = mesh.active_local_elements_begin(); e_it != mesh.active_local_elements_end(); ++e_it) {
-            const auto &e = **e_it;
+        int export_id = 0;
+        moonolith::MatlabScripter matlab;
+        matlab.close_all();
 
-            for(uint side = 0; side < e.n_sides(); ++side) {
-                if(e.neighbor_ptr(side) != nullptr) {continue;}
+        {
+            Read<UVector> r(normals);
+            Write<UVector> w(trafo_points);
+            for(auto e_it = mesh.active_local_elements_begin(); e_it != mesh.active_local_elements_end(); ++e_it) {
+                const auto &e = **e_it;
 
-                //if empty take them all
-                bool select = boundary_tags.empty();
-                for(auto t : boundary_tags) {
-                    if(mesh.get_boundary_info().has_boundary_id(&e, side, t)) {
-                        select = true;
-                        break;
+                for(uint side = 0; side < e.n_sides(); ++side) {
+                    if(e.neighbor_ptr(side) != nullptr) {continue;}
+
+                    //if empty take them all
+                    bool select = boundary_tags.empty();
+                    for(auto t : boundary_tags) {
+                        if(mesh.get_boundary_info().has_boundary_id(&e, side, t)) {
+                            select = true;
+                            break;
+                        }
                     }
-                }
 
-                auto side_ptr = e.build_side_ptr(side);
+                    auto side_ptr = e.build_side_ptr(side);
+                    make(*side_ptr, polygon);
+                    make_index(polygon, *side_ptr, node_idx);
+                    make_transform(*side_ptr, trafo);
 
-                int vert = 0;
-                for(int i = 0; i < side_ptr->n_nodes(); ++i) {
-                    if(side_ptr->is_vertex(i)) {
-                        make(side_ptr->node_ref(i), triangle[vert]);
-                        const auto dof = side_ptr->node_ref(i).dof_number(0, 0, 0);
+                    for(std::size_t i = 0; i < 3; ++i) {
+                        const auto dof = side_ptr->node_ref(node_idx[i]).dof_number(0, 0, 0);
+                        triangle[i] = polygon[i];
 
                         for(int d = 0; d < 3; ++d) {
-                            t_normals[vert][d] = normals.get(dof * 3 + d);
+                            t_normals[i][d] = normals.get(dof * 3 + d);
                         }
-
-                        vert++;
                     }
-                }
 
-                pn_triangle.init(triangle, t_normals);
+                    pn_triangle.init(triangle, t_normals);
 
-                std::cout << "===========================\n";
+                    bool must_export = export_id == 0;
 
-                for(int j = 0; j < 3; ++j) {
-                    print(triangle[j]);
-                }
+                    if(must_export) {
 
-                std::cout << "---------------------------\n";
-                for(int j = 0; j < 3; ++j) {
+                    write(matlab,
+                           triangle,
+                           t_normals,
+                           pn_triangle
+                    );
+                    }
 
-                    pn_triangle.apply(edge_nodes[j], edge_points[j]);
-                    print(edge_points[j]);
-                }
+                    export_id++;
 
-                std::cout << "===========================\n";
+                    // exit(0);
+
+                    for(int i = 0; i < side_ptr->n_nodes(); ++i) {
+                        const auto dof = side_ptr->node(i);
+                        if(!vr.inside(dof)) continue;
+
+                        Point2 ref_point;
+                        Point3 p;
+                        make(side_ptr->node_ref(i), p);
+                        trafo.apply_inverse(p, ref_point);
 
 
-                vert = 0;
-                for(int i = 0; i < side_ptr->n_nodes(); ++i) {
-                    if(!side_ptr->is_vertex(i)) {
-                        auto &node = mesh.node_ref(side_ptr->node(i));
+                        pn_triangle.apply(ref_point, p);
+
+                        if(must_export) {
+                            print(ref_point);
+                            matlab.plot(p, "b.");
+                            matlab.text(p, std::to_string(i));
+                        }
 
                         for(int d = 0; d < 3; ++d) {
-                            node(d) = edge_points[vert][d];
-                        }
+                            trafo_points.set(dof * 3 + d, p[d]);
 
-                        ++vert;
+                        }
                     }
                 }
             }
         }
+
+
+        {
+            Read<UVector> r(trafo_points);
+            // UVector g_points = ghosted
+
+            for(auto n_it = mesh.local_nodes_begin(); n_it != mesh.local_nodes_end(); ++n_it) {
+                auto &node = **n_it;
+                const auto dof = node.id();
+
+                for(int d = 0; d < 3; ++d) {
+                   node(d) = trafo_points.get(dof * 3 + d);
+                }
+            }
+        }
+
+        matlab.axis_equal();
+        matlab.save("mesh.m");
     }
 }
