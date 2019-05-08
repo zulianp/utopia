@@ -5,6 +5,8 @@
 #include "utopia_ui.hpp"
 #include "utopia_libmesh.hpp"
 
+#include <vector>
+
 namespace utopia {
 
     class CurvatureBasedEdgeProjection final : public Configurable   {
@@ -16,6 +18,7 @@ namespace utopia {
     private:
         // int operator_power_ = 1;
         // std::set<libMesh::boundary_id_type> requested_boundary_ids_;
+        std::vector<int> boundary_tags;
 
         // void apply_aux(
         //     const libMesh::MeshBase &surf_mesh,

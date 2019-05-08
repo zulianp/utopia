@@ -111,7 +111,17 @@ namespace utopia {
 
     void CurvatureBasedEdgeProjection::read(Input &is)
     {
+        std::cout << "CurvatureBasedEdgeProjection::read ..." << std::endl;
 
+        is.get("sides", [this](Input &in) {
+            in.get_all([this](Input &in) {
+                int id = -1;
+                in.get("id", id);
+                boundary_tags.push_back(id);
+
+                std::cout << "side: " << id << std::endl;
+            });
+        });
     }
 
     static void make_index(const moonolith::Polygon<double, 3> &poly, const libMesh::Elem &elem, std::vector<uint> &idx)
@@ -145,7 +155,7 @@ namespace utopia {
         UVector is_normal_component;
         UVector normals;
         USparseMatrix mat;
-        std::vector<int> boundary_tags;
+        // std::vector<int> boundary_tags;
 
         bool ok = assemble_smooth_normals(
             mesh,
@@ -155,6 +165,8 @@ namespace utopia {
             ); assert(ok);
 
         UVector trafo_points = local_zeros(mesh.n_local_nodes()*3);
+        UVector touched = local_zeros(mesh.n_local_nodes());
+
         auto vr = range(trafo_points);
 
         moonolith::PNTriangle<double, 3> pn_triangle;
@@ -164,13 +176,15 @@ namespace utopia {
 
         moonolith::AffineTransform<double, 2, 3> trafo;
 
-        int export_id = 0;
-        moonolith::MatlabScripter matlab;
-        matlab.close_all();
+        // int export_id = 0;
+        // moonolith::MatlabScripter matlab;
+        // matlab.close_all();
+
+
 
         {
             Read<UVector> r(normals);
-            Write<UVector> w(trafo_points);
+            Write<UVector> w(trafo_points), wt(touched);
             for(auto e_it = mesh.active_local_elements_begin(); e_it != mesh.active_local_elements_end(); ++e_it) {
                 const auto &e = **e_it;
 
@@ -185,6 +199,8 @@ namespace utopia {
                             break;
                         }
                     }
+
+                    if(!select) continue;
 
                     auto side_ptr = e.build_side_ptr(side);
                     make(*side_ptr, polygon);
@@ -202,18 +218,18 @@ namespace utopia {
 
                     pn_triangle.init(triangle, t_normals);
 
-                    bool must_export = export_id == 0;
+                    // bool must_export = export_id == 0;
 
-                    if(must_export) {
+                    // if(must_export) {
 
-                    write(matlab,
-                           triangle,
-                           t_normals,
-                           pn_triangle
-                    );
-                    }
+                    // write(matlab,
+                    //        triangle,
+                    //        t_normals,
+                    //        pn_triangle
+                    // );
+                    // }
 
-                    export_id++;
+                    // export_id++;
 
                     // exit(0);
 
@@ -229,12 +245,13 @@ namespace utopia {
 
                         pn_triangle.apply(ref_point, p);
 
-                        if(must_export) {
-                            print(ref_point);
-                            matlab.plot(p, "b.");
-                            matlab.text(p, std::to_string(i));
-                        }
+                        // if(must_export) {
+                        //     print(ref_point);
+                        //     matlab.plot(p, "b.");
+                        //     matlab.text(p, std::to_string(i));
+                        // }
 
+                        touched.set(dof, 1.);
                         for(int d = 0; d < 3; ++d) {
                             trafo_points.set(dof * 3 + d, p[d]);
 
@@ -246,20 +263,22 @@ namespace utopia {
 
 
         {
-            Read<UVector> r(trafo_points);
+            Read<UVector> r(trafo_points), rt(touched);
             // UVector g_points = ghosted
 
             for(auto n_it = mesh.local_nodes_begin(); n_it != mesh.local_nodes_end(); ++n_it) {
                 auto &node = **n_it;
                 const auto dof = node.id();
 
-                for(int d = 0; d < 3; ++d) {
-                   node(d) = trafo_points.get(dof * 3 + d);
+                if(touched.get(dof) > 0.) {
+                    for(int d = 0; d < 3; ++d) {
+                       node(d) = trafo_points.get(dof * 3 + d);
+                    }
                 }
             }
         }
 
-        matlab.axis_equal();
-        matlab.save("mesh.m");
+        // matlab.axis_equal();
+        // matlab.save("mesh.m");
     }
 }
