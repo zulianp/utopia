@@ -351,6 +351,9 @@ namespace utopia {
             }
 
             //maybe apply boundary conditions here???
+            if(material_->is_linear()) {
+                apply_boundary_conditions(V_->subspace(0).dof_map(), x_);
+            }
 
             if(!assemble_hessian_and_gradient(x_, H_, g_)) {
                 assert(false);
@@ -379,9 +382,12 @@ namespace utopia {
             // write("A.m", Hc_);
             // write("b.m", gc_);
 
-            if(!first_) {
+            if(!first_ || material_->is_linear()) {
                 apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
-            }
+            } 
+            // else {
+            //     apply_boundary_conditions(V_->subspace(0).dof_map(), inc_c_);
+            // }
 
             std::cout << "done" << std::endl;
 
