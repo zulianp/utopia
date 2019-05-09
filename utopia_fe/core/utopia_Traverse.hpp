@@ -678,6 +678,59 @@ namespace utopia {
         }
     }
 
+
+    template<class Expr, class Visitor>
+    inline static int traverse(Dual<Expr> &expr, Visitor &visitor)
+    {
+        switch(visitor.visit(expr)) {
+            case TRAVERSE_CONTINUE:
+            {
+                return traverse(expr.expr(), visitor);
+            }
+
+            case TRAVERSE_STOP:
+            {
+                return TRAVERSE_STOP;
+            }
+
+            case TRAVERSE_SKIP_SUBTREE:
+            {
+                return TRAVERSE_CONTINUE;
+            }
+
+            default: {
+                std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+                return TRAVERSE_STOP;
+            }
+        }
+    }
+
+    template<class Expr, class Visitor>
+    inline static int traverse(const Dual<Expr> &expr, Visitor &visitor)
+    {
+        switch(visitor.visit(expr)) {
+            case TRAVERSE_CONTINUE:
+            {
+                return traverse(expr.expr(), visitor);
+            }
+
+            case TRAVERSE_STOP:
+            {
+                return TRAVERSE_STOP;
+            }
+
+            case TRAVERSE_SKIP_SUBTREE:
+            {
+                return TRAVERSE_CONTINUE;
+            }
+
+            default: {
+                std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+                return TRAVERSE_STOP;
+            }
+        }
+    }
+
     template<class Coefficient, class Function, class Visitor>
     inline static int traverse(const Interpolate<Coefficient, Function> &expr, Visitor &visitor)
     {

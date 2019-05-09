@@ -19,6 +19,7 @@ namespace utopia {
     template<class> class TestFunction;
     template<class> class TrialFunction;
     template<class> class BlockVar;
+    template<class> class Dual;
 
     template<class, class> class Interpolate;
     template<class, int> class TimeDerivative;

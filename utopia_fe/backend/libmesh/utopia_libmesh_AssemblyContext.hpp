@@ -128,34 +128,34 @@ namespace utopia {
         }
 
         template<class Expr>
-        void init(const Expr &expr)
+        void init(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
-            init_fe_from(expr);
+            init_fe_from(expr, quad);
         }
 
         template<class Expr>
-        void reinit(const Expr &expr)
+        void reinit(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
             if(active_values_)
-                active_values().reinit_fe_from(expr);
+                active_values().reinit_fe_from(expr, quad);
 
             init_all_side_fe_from(expr);
         }
 
 
         template<class Expr>
-        void init_bilinear(const Expr &expr)
+        void init_bilinear(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
             static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
-            init_fe_from(expr);
+            init_fe_from(expr, quad);
         }
 
         template<class Expr>
-        void init_linear(const Expr &expr)
+        void init_linear(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
-            init_fe_from(expr);
+            init_fe_from(expr, quad);
         }
 
         template<class Expr>
@@ -226,10 +226,10 @@ namespace utopia {
         }
 
         template<class Expr>
-        void init_fe_from(const Expr &expr)
+        void init_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad)
         {
             if(active_values_)
-                active_values().init_fe_from(expr);
+                active_values().init_fe_from(expr, quad);
             init_offsets(expr);
 
             init_all_side_fe_from(expr);

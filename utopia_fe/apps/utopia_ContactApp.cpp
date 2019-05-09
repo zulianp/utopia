@@ -18,6 +18,7 @@
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
+#include "utopia_ContactStress.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
@@ -30,7 +31,8 @@ namespace utopia {
     public:
         using ProductSpaceT    = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
         using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
-        using ForcingFunctionT = UIForcingFunction<ProductSpaceT, UVector>;
+        using ForcingFunctionT = utopia::UIForcingFunction<ProductSpaceT, UVector>;
+        using ContactStressT   = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, USparseMatrix, UVector>;
 
         SimulationInput(libMesh::Parallel::Communicator &comm) :
         mesh_(comm),
@@ -131,6 +133,7 @@ namespace utopia {
         UIFunctionSpace<LibMeshFunctionSpace> space_;
         UIContactParams params_;
         std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model_;
+        std::shared_ptr< ContactStressT > contact_stress_;
         double dt_;
         bool use_amg_;
     public:

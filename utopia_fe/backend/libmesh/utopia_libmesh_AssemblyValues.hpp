@@ -72,6 +72,15 @@ namespace utopia {
             return fe_;
         }
 
+        inline const libMesh::DenseMatrix<double> &biorth_weights(const int subspace_id) const
+        {
+            if(biorth_weights_.size() == 1) {
+                return biorth_weights_[0];
+            }
+
+            return biorth_weights_[subspace_id];
+        }
+
         inline const std::vector< std::unique_ptr<FE> > &trial() const
         {
             return fe_;
@@ -89,7 +98,7 @@ namespace utopia {
         }
 
         template<class Expr>
-        void init_fe_from(const Expr &expr)
+        void init_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad)
         {
             auto space_ptr = find_any_space(expr); assert(bool(space_ptr));
             space_ptr->initialize();
@@ -105,7 +114,11 @@ namespace utopia {
                 quadrature_order_ = (temp + 2) * 2;
             }
 
-            set_up_quadrature(dim, quadrature_order_);
+            if(quad) {
+                set_up_quadrature(quad);
+            } else {
+                set_up_quadrature(dim, quadrature_order_);
+            }
             block_id_ = elem->subdomain_id();
 
             const auto &eq_sys = space_ptr->equation_system();
@@ -134,11 +147,15 @@ namespace utopia {
         }
 
         template<class Expr>
-        void reinit_fe_from(const Expr &expr)
+        void reinit_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad)
         {
             auto space_ptr = find_any_space(expr);
             const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
             block_id_ = elem->subdomain_id();
+
+            if(quad) {
+                set_up_quadrature(quad);
+            }
 
             on_boundary_ = elem->on_boundary();
 
@@ -160,6 +177,31 @@ namespace utopia {
         inline bool on_boundary() const
         {
             return on_boundary_;
+        }
+
+        inline static bool subspaces_are_equal(const libMesh::DofMap &dof_map)
+        {
+            //FIXME check all info
+            const std::size_t n_vars = dof_map.n_variables();
+            int order = dof_map.variable_type(0).order;
+            for(std::size_t i = 0; i < n_vars; ++i) {
+                if(order != dof_map.variable_type(i).order) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        void init_biorth()
+        {
+            if(!trial_has_dual_ && !test_has_dual_) {
+                return;
+            }
+
+
+            //IMPLEMENT ME
+            assert(false);
         }
 
         template<class Expr>
@@ -264,6 +306,13 @@ namespace utopia {
             return ret;
         }
 
+        void set_up_quadrature(const std::shared_ptr<libMesh::QBase> &quad)
+        {
+            quad_test_ = quad;
+            quad_trial_ = quad;
+            reset_quadrature_ = false;
+        }
+
         void set_up_quadrature(const int dim, const int quadrature_order)
         {
             if(reset_quadrature_) {
@@ -281,8 +330,22 @@ namespace utopia {
             }
         }
 
+        void set_trial_has_dual(const bool val) {
+            trial_has_dual_ = val; 
+        }
+
+        void set_test_has_dual(const bool val) {
+            test_has_dual_ = val; 
+        }
+
         LibMeshAssemblyValues()
-        : current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), on_boundary_(false)
+        : current_element_(0),
+          quadrature_order_(2),
+           block_id_(0),
+           reset_quadrature_(true),
+           on_boundary_(false),
+           trial_has_dual_(false),
+           test_has_dual_(false)
         {}
 
 
@@ -292,11 +355,13 @@ namespace utopia {
         int block_id_;
         bool reset_quadrature_;
         bool on_boundary_;
+        bool trial_has_dual_, test_has_dual_;
 
 
         std::shared_ptr<libMesh::QBase> quad_trial_;
         std::shared_ptr<libMesh::QBase> quad_test_;
         std::vector< std::unique_ptr<FE> > fe_;
+        std::vector< libMesh::DenseMatrix<double> > biorth_weights_;
 
         //additional precomputed values
         std::vector<std::shared_ptr<VectorElement>> vector_fe_;
@@ -362,9 +427,28 @@ namespace utopia {
                 return TRAVERSE_CONTINUE;
             }
 
+            template<class T>
+            inline int visit(const Dual<T> &expr)
+            {
+                init_dual(*expr);
+                return TRAVERSE_CONTINUE;
+            }
+
             void init_dphi(const LibMeshFunctionSpace &s)
             {
                 ctx.fe()[s.subspace_id()]->get_dphi();
+            }
+
+            template<class Space>
+            void init_dual(const TrialFunction<Space> &)
+            {
+                ctx.set_trial_has_dual(true);
+            }
+
+            template<class Space>
+            void init_dual(const TestFunction<Space> &)
+            {
+                ctx.set_test_has_dual(true);
             }
 
             void init_normals()
