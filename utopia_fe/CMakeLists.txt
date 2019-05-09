@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8.1)
+cmake_minimum_required(VERSION 3.5)
 project(utopia_fe)
 
 #To kill the policy warning  (maybe not a good idea yet)
