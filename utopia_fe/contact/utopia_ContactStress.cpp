@@ -37,11 +37,9 @@ namespace utopia {
 
         USparseMatrix B, D;
         // bool ok = assemble_interpolation(P1_.subspace(0), V_.subspace(0), P1toV_, D, V_.n_subspaces());  assert(ok);
-        bool ok = assemble_interpolation(V_.subspace(0).mesh(), P1_.subspace(0).dof_map(), V_.subspace(0).dof_map(), P1toV_);
-             ok = assemble_projection(V_.subspace(0), P1_.subspace(0), B, D, true, V_.n_subspaces()); assert(ok);
+        bool ok = assemble_interpolation(V_.subspace(0).mesh(), P1_.subspace(0).dof_map(), V_.subspace(0).dof_map(), P1toV_); assert(ok);
+             ok = assemble_projection(V_.subspace(0), P1_.subspace(0), B, D, true, V_.n_subspaces());                         assert(ok);
              // ok = assemble_interpolation(V_.subspace(0).mesh(), V_.subspace(0).dof_map(), P1_.subspace(0).dof_map(), VtoP1_);
-
-        
 
         UVector lumped = sum(D, 1);
         inverse_mass_vector_ = 1./lumped;
