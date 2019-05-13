@@ -15,7 +15,7 @@ namespace utopia {
     std::shared_ptr<Transform> InterpolationLocalAssembler::get_trafo(const Elem &elem) const
     {
         std::shared_ptr<Transform> elem_trafo;
-        if(elem.has_affine_map()) {
+        if(force_affine_ || elem.has_affine_map()) {
             if(dim == 1) {
                 elem_trafo = std::make_shared<Transform1>(elem);
             } else  if(dim == 2) {

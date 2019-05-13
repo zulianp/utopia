@@ -6,21 +6,21 @@ namespace utopia {
 #define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ << std::endl;}
 
 
-    static std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map)
-    {
-        std::size_t nnz = 0;
+    // static std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map)
+    // {
+    //     std::size_t nnz = 0;
 
-        if(!dof_map.get_n_nz().empty()) {
-            nnz = *std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end());
+    //     if(!dof_map.get_n_nz().empty()) {
+    //         nnz = *std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end());
 
-        }
+    //     }
 
-        if(!dof_map.get_n_oz().empty()) {
-            nnz += *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
-        }
+    //     if(!dof_map.get_n_oz().empty()) {
+    //         nnz += *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+    //     }
 
-        return nnz;
-    }
+    //     return nnz;
+    // }
 
     //surf_mesh is extracted from vol_mesh
     void LibMeshDofMapAdapter::init_for_contact(

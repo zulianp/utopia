@@ -1,6 +1,8 @@
 #ifndef UTOPIA_LINEAR_ELASTICITY_HPP
 #define UTOPIA_LINEAR_ELASTICITY_HPP
 
+#include "utopia_ElasticMaterial.hpp"
+
 namespace utopia {
 
     template<class FunctionSpaceT, class Matrix, class Vector>

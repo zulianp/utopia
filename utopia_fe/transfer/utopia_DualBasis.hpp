@@ -39,6 +39,89 @@ namespace utopia {
     //@brief from the paper DUAL QUADRATIC MORTAR FINITE ELEMENT METHODS FOR 3D FINITE DEFORMATION CONTACT∗
     class DualBasis {
     public:
+        using VectorValueT = libMesh::VectorValue<double>;
+
+        libMesh::DenseMatrix<libMesh::Real> trafo_;
+        libMesh::DenseMatrix<libMesh::Real> inv_trafo_;
+        libMesh::DenseMatrix<libMesh::Real> weights_;
+
+        std::vector<std::vector<double>> phi_;
+        std::vector<std::vector<VectorValueT>> dphi_;
+
+        int order = -1;
+
+        bool compute_phi    = false;
+        bool compute_dphi   = false;
+        bool compute_divphi = false;
+
+        bool empty() const
+        {
+            return weights_.n() == 0;
+        }
+
+        bool must_compute_values() const
+        {
+            return compute_dphi || compute_dphi || compute_divphi;
+        }
+
+        constexpr static const double DEFAULT_ALPHA = 1./5;
+
+        void init(
+            const libMesh::ElemType &type,
+            const double alpha = DEFAULT_ALPHA)
+        {
+            build_trafo_and_weights(type, order, alpha, trafo_, inv_trafo_, weights_);
+        }
+
+        void compute_values(const libMesh::FEBase &fe)
+        {
+
+            if(compute_phi) {
+                const auto &phi = fe.get_phi();
+
+                uint n_fun = phi.size();
+                uint n_qp =  phi[0].size();
+
+                phi_.resize(n_fun);
+
+                for(uint p = 0; p < n_fun; ++p) {
+                    phi_[p].resize(n_qp);
+
+                    for(uint k = 0; k < n_qp; ++k) {
+                        auto f = 0.0;
+
+                        for(uint i = 0; i < n_fun; ++i) {
+                            f += weights_(p, i) * phi[i][k];
+                        }
+
+                        phi_[p][k] = f;
+                    }
+                }
+            }
+
+            if(compute_dphi) {
+                const auto &dphi = fe.get_dphi();
+
+                uint n_fun = dphi.size();
+                uint n_qp =  dphi[0].size();
+
+                dphi_.resize(n_fun);
+
+                for(uint p = 0; p < n_fun; ++p) {
+                    dphi_[p].resize(n_qp);
+
+                    for(uint k = 0; k < n_qp; ++k) {
+                        auto f = weights_(p, 0) * dphi[0][k];
+
+                        for(uint i = 1; i < n_fun; ++i) {
+                            f += weights_(p, i) * dphi[i][k];
+                        }
+
+                        dphi_[p][k] = f;
+                    }
+                }
+            }
+        }
 
         static bool build_trafo_and_weights(
             const libMesh::ElemType type,

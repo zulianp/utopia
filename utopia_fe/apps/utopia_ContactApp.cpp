@@ -64,6 +64,10 @@ namespace utopia {
                 is.get("is-steady", is_steady);
                 is.get("use-gmres", use_gmres);
 
+                is.get("contact-stress", [this, &model](Input &in) {
+                    contact_stress_ = std::make_shared<ContactStressT>(space_.space(), model->params);
+                });
+
                 assert(model->good());
 
                 model_ = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
@@ -128,12 +132,13 @@ namespace utopia {
             os << is_steady << std::endl;
         }
 
+        std::shared_ptr< ContactStressT > contact_stress_;
     private:
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<LibMeshFunctionSpace> space_;
         UIContactParams params_;
         std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model_;
-        std::shared_ptr< ContactStressT > contact_stress_;
+        
         double dt_;
         bool use_amg_;
     public:
@@ -154,12 +159,15 @@ namespace utopia {
 
         auto qp_solver = sim_in.qp_solver;
 
-
         ContactSolverT sc(
             make_ref(sim_in.space()),
             sim_in.model(),
             params.contact_params
         );
+
+        if(sim_in.contact_stress_) {
+            sc.set_contact_stress(sim_in.contact_stress_);
+        }
 
         if(sim_in.export_results) {
             sc.export_results(true);
@@ -212,6 +220,10 @@ namespace utopia {
             sim_in.dt(),
             params.contact_params
         );
+
+        if(sim_in.contact_stress_) {
+            sc.set_contact_stress(sim_in.contact_stress_);
+        }
 
         if(sim_in.export_results) {
             sc.export_results(true);

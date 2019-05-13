@@ -15,7 +15,7 @@ namespace utopia {
         using Matrix = libMesh::DenseMatrix<libMesh::Real>;
 
         InterpolationLocalAssembler(const int dim, const bool nested_meshes = false)
-        : dim(dim), nested_meshes(nested_meshes), tol(1e-10)
+        : dim(dim), nested_meshes(nested_meshes), tol(1e-10), force_affine_(false)
         { }
 
         bool assemble(
@@ -26,10 +26,15 @@ namespace utopia {
             Matrix &mat
             ) override;
 
+        void force_affine(const bool val) {
+            force_affine_ = val;
+        }
+        
     private:
         int dim;
         bool nested_meshes;
         double tol;
+        bool force_affine_;
         std::shared_ptr<QMortar> q_trial, q_test;
         Matrix trial_pts, test_pts;
 

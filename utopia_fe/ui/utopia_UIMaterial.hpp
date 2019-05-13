@@ -29,8 +29,6 @@ namespace utopia {
             is.get("material", material);
             is.get("stabilization", stabilization);
             is.get("stabilization-mag", stabilization_mag);
-
-            LameeParameters params;
             is.get("parameters", params);
 
             params.describe(std::cout);
@@ -71,6 +69,8 @@ namespace utopia {
         }
 
         inline bool is_linear() const override { assert(material_); return material_->is_linear(); }
+
+        LameeParameters params;
 
     private:
         FunctionSpace &V_;

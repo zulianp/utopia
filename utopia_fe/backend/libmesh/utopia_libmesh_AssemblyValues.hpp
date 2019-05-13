@@ -14,6 +14,7 @@
 #include "utopia_SymbolicFunction.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_TreeNavigator.hpp"
+#include "utopia_DualBasis.hpp"
 
 #include "utopia_fe_core.hpp"
 
@@ -72,14 +73,14 @@ namespace utopia {
             return fe_;
         }
 
-        inline const libMesh::DenseMatrix<double> &biorth_weights(const int subspace_id) const
-        {
-            if(biorth_weights_.size() == 1) {
-                return biorth_weights_[0];
-            }
+        // inline const libMesh::DenseMatrix<double> &biorth_weights(const int subspace_id) const
+        // {
+        //     if(biorth_weights_.size() == 1) {
+        //         return biorth_weights_[0];
+        //     }
 
-            return biorth_weights_[subspace_id];
-        }
+        //     return biorth_weights_[subspace_id];
+        // }
 
         inline const std::vector< std::unique_ptr<FE> > &trial() const
         {
@@ -131,6 +132,9 @@ namespace utopia {
                 fe_[i] = std::move(fe);
 
             }
+
+            //FIXME find-out if this is needed
+            dual_fe_.resize(n_vars);
 
             init_fe_flags(expr);
 
@@ -193,12 +197,29 @@ namespace utopia {
             return true;
         }
 
-        void init_biorth()
+        void init_dual(const libMesh::ElemType type)
         {
-            if(!trial_has_dual_ && !test_has_dual_) {
+            if(!has_dual_) {
                 return;
             }
 
+            const auto n_fun = dual_fe_.size();
+            assert(n_fun == fe_.size());
+
+            for(uint i = 0; i < n_fun; ++i) {
+                if(dual_fe_[i].empty()) {
+                    dual_fe_[i].init(type);
+                }
+
+                dual_fe_[i].compute_values(*fe_[i]);
+            }
+
+            if(!vector_fe_.empty()) {
+                for(auto &vf : vector_fe_) {
+                    //FIXME
+                    vf->make_dual(dual_fe_[0].weights_);
+                }
+            }
 
             //IMPLEMENT ME
             assert(false);
@@ -249,6 +270,8 @@ namespace utopia {
                     v_fe_ptr->init(fe_);
                 }
             }
+
+            init_dual(s_type);
         }
 
         template<class Expr>
@@ -273,6 +296,8 @@ namespace utopia {
                     v_fe_ptr->reinit(fe_);
                 }
             }
+
+            //init_dual(s_type);
         }
 
         const DXType &dx() const
@@ -330,12 +355,8 @@ namespace utopia {
             }
         }
 
-        void set_trial_has_dual(const bool val) {
-            trial_has_dual_ = val; 
-        }
-
-        void set_test_has_dual(const bool val) {
-            test_has_dual_ = val; 
+        void set_has_dual(const bool val) {
+            has_dual_ = val; 
         }
 
         LibMeshAssemblyValues()
@@ -344,10 +365,12 @@ namespace utopia {
            block_id_(0),
            reset_quadrature_(true),
            on_boundary_(false),
-           trial_has_dual_(false),
-           test_has_dual_(false)
+           has_dual_(false)
         {}
 
+
+        std::vector<DualBasis> &dual_fe() { return dual_fe_; }
+        const std::vector<DualBasis> &dual_fe()  const { return dual_fe_; }
 
     private:
         long current_element_;
@@ -355,13 +378,13 @@ namespace utopia {
         int block_id_;
         bool reset_quadrature_;
         bool on_boundary_;
-        bool trial_has_dual_, test_has_dual_;
+        bool has_dual_;
 
 
         std::shared_ptr<libMesh::QBase> quad_trial_;
         std::shared_ptr<libMesh::QBase> quad_test_;
         std::vector< std::unique_ptr<FE> > fe_;
-        std::vector< libMesh::DenseMatrix<double> > biorth_weights_;
+        std::vector<DualBasis> dual_fe_;
 
         //additional precomputed values
         std::vector<std::shared_ptr<VectorElement>> vector_fe_;
@@ -428,9 +451,23 @@ namespace utopia {
             }
 
             template<class T>
-            inline int visit(const Dual<T> &expr)
+            inline int visit(const Dual<TestFunction<T>> &expr)
             {
-                init_dual(*expr);
+                init_phi_dual(*expr.expr().space_ptr());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const Gradient<Dual<TestFunction<T>>> &expr)
+            {
+                init_dphi_dual(*expr.expr().space_ptr());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const Divergence<Dual<TestFunction<T>>> &expr)
+            {
+                init_div_dual(*expr.expr().space_ptr());
                 return TRAVERSE_CONTINUE;
             }
 
@@ -439,17 +476,6 @@ namespace utopia {
                 ctx.fe()[s.subspace_id()]->get_dphi();
             }
 
-            template<class Space>
-            void init_dual(const TrialFunction<Space> &)
-            {
-                ctx.set_trial_has_dual(true);
-            }
-
-            template<class Space>
-            void init_dual(const TestFunction<Space> &)
-            {
-                ctx.set_test_has_dual(true);
-            }
 
             void init_normals()
             {
@@ -461,7 +487,6 @@ namespace utopia {
                 s.each([&](const int, const LibMeshFunctionSpace &space) {
                     ctx.fe()[space.subspace_id()]->get_dphi();
                 });
-
 
                 //vfe
                 const std::size_t s_id = s.subspace(0).subspace_id();
@@ -477,6 +502,54 @@ namespace utopia {
                 }
 
                 ctx.vector_fe()[s_id]->grad_flag = true;
+            }
+
+            void init_phi_dual(const LibMeshFunctionSpace &s)
+            {
+                ctx.set_has_dual(true);
+                ctx.dual_fe()[s.subspace_id()].compute_phi = true;
+                ctx.dual_fe()[s.subspace_id()].order = s.order();
+            }
+
+            void init_dphi_dual(const LibMeshFunctionSpace &s)
+            {
+                ctx.set_has_dual(true);
+                ctx.dual_fe()[s.subspace_id()].compute_dphi = true;
+                ctx.dual_fe()[s.subspace_id()].order = s.order();
+            }
+
+            void init_div_dual(const LibMeshFunctionSpace &s)
+            {
+                ctx.set_has_dual(true);
+                ctx.dual_fe()[s.subspace_id()].compute_divphi = true;
+                ctx.dual_fe()[s.subspace_id()].order = s.order();
+            }
+
+            void init_phi_dual(const ProductFunctionSpace<LibMeshFunctionSpace> &space)
+            {
+                ctx.set_has_dual(true);
+                space.each([&](const int, const LibMeshFunctionSpace &s) {
+                    ctx.dual_fe()[s.subspace_id()].compute_phi = true;
+                    ctx.dual_fe()[s.subspace_id()].order = s.order();
+                });
+            }
+
+            void init_dphi_dual(const ProductFunctionSpace<LibMeshFunctionSpace> &space)
+            {
+                ctx.set_has_dual(true);
+                space.each([&](const int, const LibMeshFunctionSpace &s) {
+                    ctx.dual_fe()[s.subspace_id()].compute_dphi = true;
+                    ctx.dual_fe()[s.subspace_id()].order = s.order();
+                });
+            }
+
+            void init_div_dual(const ProductFunctionSpace<LibMeshFunctionSpace> &space)
+            {
+               ctx.set_has_dual(true);
+               space.each([&](const int, const LibMeshFunctionSpace &s) {
+                   ctx.dual_fe()[s.subspace_id()].compute_divphi = true;
+                   ctx.dual_fe()[s.subspace_id()].order = s.order();
+               });
             }
 
             template<class Expr>

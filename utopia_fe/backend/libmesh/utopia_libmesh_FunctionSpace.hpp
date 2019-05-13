@@ -101,6 +101,12 @@ namespace utopia {
             return dof_map().variable_order(this->subspace_id());
         }
 
+        inline libMesh::Order order() const
+        {
+            return dof_map().variable_order(this->subspace_id());
+        }
+
+
         inline libMesh::FEType type()
         {
             return dof_map().variable_type(this->subspace_id());
@@ -191,6 +197,9 @@ namespace utopia {
 
 
     void write(const Path &path, LibMeshFunctionSpace &space, UVector &x);
+
+    std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map);
+    std::size_t max_nnz_x_row(const LibMeshFunctionSpace &space);
 }
 
 #endif //UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP

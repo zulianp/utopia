@@ -89,6 +89,27 @@ namespace utopia {
         mat.add_matrix(row_dofs, col_dofs, block.get_values());
     }
 
+    inline static void set_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
+                                  const std::vector<libMesh::dof_id_type> &row_dofs,
+                                  const std::vector<libMesh::dof_id_type> &col_dofs,
+                                  USparseMatrix &mat)
+    {
+        // Size s = size(mat);
+        // for(uint i = 0; i < row_dofs.size(); ++i) {
+        //  for(uint j = 0; j < col_dofs.size(); ++j) {
+        //      const libMesh::Real val = block(i, j);
+        //      if(val != 0.0) {
+        //          assert(row_dofs[i] < s.get(0));
+        //          assert(col_dofs[j] < s.get(1));
+
+        //          mat.add(row_dofs[i], col_dofs[j], val);
+        //      }
+        //  }
+        // }
+
+        mat.set_matrix(row_dofs, col_dofs, block.get_values());
+    }
+
     inline static void add_vector(
         const libMesh::DenseVector<libMesh::Real> &block,
         const std::vector<libMesh::dof_id_type> &dofs,

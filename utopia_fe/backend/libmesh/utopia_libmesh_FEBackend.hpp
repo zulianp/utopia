@@ -893,6 +893,16 @@ namespace utopia {
             return std::move(mats);
         }
 
+        static TensorValueT default_identity() 
+        {
+            TensorValueT ret;
+            for(int i = 0; i < LIBMESH_DIM; ++i) {
+                ret(i, i) = 1.0;
+            }
+
+            return ret;
+        }
+
         template<typename T>
         static auto apply_binary(
             const double val,
@@ -992,6 +1002,21 @@ namespace utopia {
 
             for(std::size_t i = 0; i != n; ++i) {
                 left[i] += right[i];
+            }
+
+            return std::move(left);
+        }
+
+        static auto apply_binary(
+            QValues<Matrix> &&left,
+            const QValues<TensorValueT> &right,
+            const Plus &,
+            const AssemblyContext<LIBMESH_TAG> &) -> QValues<Matrix>
+        {
+            std::size_t n = left.size();
+
+            for(std::size_t i = 0; i != n; ++i) {
+                add(left[i], right[i]);
             }
 
             return std::move(left);
@@ -2642,6 +2667,37 @@ namespace utopia {
             }
 
             return ret;
+        }
+
+        inline static auto multiply(
+            const QValues<double> &left,
+            QValues<TensorValueT> &&right,
+            const AssemblyContext<LIBMESH_TAG> &ctx
+            ) -> QValues<TensorValueT>
+        {
+            auto n_qp = left.size();
+
+            for(std::size_t qp = 0; qp < n_qp; ++qp) {
+                right[qp] *= left[qp];
+            }
+
+            return std::move(right);
+        }
+
+        inline static auto multiply(
+            const QValues<double> &left,
+            const TensorValueT &right,
+            const AssemblyContext<LIBMESH_TAG> &ctx
+            ) -> QValues<TensorValueT>
+        {
+            auto n_qp = left.size();
+            QValues<TensorValueT> ret(n_qp, right);
+
+            for(std::size_t qp = 0; qp < n_qp; ++qp) {
+                ret[qp] *= left[qp];
+            }
+
+            return std::move(ret);
         }
 
         template<class Tensor, int Order>
