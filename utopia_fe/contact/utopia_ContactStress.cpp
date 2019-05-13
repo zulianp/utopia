@@ -1,4 +1,6 @@
 #include "utopia_ContactStress.hpp"
+
+#include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_libmesh.hpp"
 #include "utopia_libmesh_FEBackend.hpp"
 #include "utopia_LibMeshBackend.hpp"
@@ -47,11 +49,11 @@ namespace utopia {
         VtoP1_ = USparseMatrix(diag(inverse_mass_vector_)) * B;
         
 
-        // USparseMatrix mass_mat;
-        // utopia::assemble(inner(trial(P1_), test(P1_)) * dX, mass_mat);
+        USparseMatrix mass_mat;
+        utopia::assemble(surface_integral(inner(trial(P1_), test(P1_))), mass_mat);
 
-        // UVector lumped = sum(mass_mat, 1);
-        // inverse_mass_vector_ = 1./lumped;
+        lumped = sum(mass_mat, 1);
+        e_pseudo_inv(lumped, inverse_mass_vector_, 1e-10);
     }
 
     template class ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, USparseMatrix, UVector>;
