@@ -75,10 +75,23 @@ namespace utopia
                 Scalar nom      = dot(y,y);
                 Scalar denom    = dot(y,s);
 
-                // std::cout<<"denom:  "<< denom << "  nom: "<< nom << "   \n"; 
+                // theta and gamma are inverse of each other
+                theta_ = std::max(1.0, nom/denom);
+                gamma_ = std::max(1.0, denom/nom);                
+
 
                 // if denom > eps, hessian approx. should be positive semidefinite
-                if(denom < 1e-12 || !std::isfinite(denom) || !std::isfinite(nom) )
+
+                if(!std::isfinite(denom) || !std::isfinite(nom))
+                {
+                    theta_ = 1.0; 
+                    gamma_ = 1.0; 
+
+                    return false; 
+                }
+
+
+                if(denom < 1e-12)
                 {
                     // if(mpi_world_rank()==0){
                         // std::cout<<"denom:  "<< denom << "  nom: "<< nom << "   \n"; 
@@ -88,9 +101,6 @@ namespace utopia
                     return false;
                 }                
 
-                // theta and gamma are inverse of each other
-                theta_ = nom/denom;
-                gamma_ = denom/nom;
 
                 if(m_ ==0){
                     return true;

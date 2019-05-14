@@ -21,7 +21,7 @@ namespace utopia
   public:
     TrustRegionBase():
     delta_max_(1e14), delta_min_(1e-14), delta0_(1.0), gamma1_(0.2), gamma2_(2.0),
-    eta1_(0.1), eta2_(0.85), rho_tol_(0.005), eps_(1e-14)
+    eta1_(0.1), eta2_(0.75), rho_tol_(0.005), eps_(1e-14)
     {
 
     }
