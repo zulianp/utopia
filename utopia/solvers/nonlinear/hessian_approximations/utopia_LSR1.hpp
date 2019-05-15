@@ -70,6 +70,7 @@ namespace utopia
                 Scalar nom = std::abs(dot(s, diff));
                 Scalar denom = norm2(s) * norm2(diff);
 
+
                 if(nom/denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom))
                 {
                     if(mpi_world_rank()==0){
@@ -77,7 +78,7 @@ namespace utopia
                     }
 
                     return false;
-                }
+                } 
 
 
                 if(current_m_ < m_)

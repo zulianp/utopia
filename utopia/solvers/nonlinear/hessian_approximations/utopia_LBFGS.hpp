@@ -74,10 +74,15 @@ namespace utopia
 
                 Scalar nom      = dot(y,y);
                 Scalar denom    = dot(y,s);
-
+                
                 // theta and gamma are inverse of each other
                 theta_ = std::max(1.0, nom/denom);
-                gamma_ = std::max(1.0, denom/nom);                
+                gamma_ = std::max(1.0, denom/nom);      
+
+
+                // Scalar ss       = dot(s,s);
+                // theta_ = std::max(1.0, denom/ss);
+                // gamma_ = std::max(1.0, ss/denom);      
 
 
                 // if denom > eps, hessian approx. should be positive semidefinite
@@ -255,6 +260,7 @@ namespace utopia
                     a_[k] = 1.0/scaling_factor * a_[k];
                 }
             }
+
 
 
         private:
