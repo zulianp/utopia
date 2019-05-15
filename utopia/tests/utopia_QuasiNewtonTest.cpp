@@ -345,7 +345,7 @@ namespace utopia
                 tr_solver.atol(1e-6);
                 tr_solver.rtol(1e-10);
                 tr_solver.stol(1e-10);
-                tr_solver.verbose(true);
+                tr_solver.verbose(false);
                 tr_solver.max_it(300);
                 tr_solver.delta0(1);
                 tr_solver.solve(fun, x);
