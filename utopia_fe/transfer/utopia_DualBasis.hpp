@@ -132,22 +132,40 @@ namespace utopia {
             libMesh::DenseMatrix<libMesh::Real> &weights)
         {
 
-            if(!DualBasis::assemble_local_trafo(type, alpha, trafo, inv_trafo)) {
-                assert(false);
-                return false;
-            }
+            if(order != 1) {
+                if(!DualBasis::assemble_local_trafo(type, alpha, trafo, inv_trafo)) {
+                    assert(false);
+                    return false;
+                }
 
-            const auto &ref_elem = libMesh::ReferenceElem::get(type);
+                const auto &ref_elem = libMesh::ReferenceElem::get(type);
 
-            DualBasis::assemble_biorth_weights(
+                DualBasis::assemble_biorth_weights(
+                        ref_elem,
+                        order,
+                        trafo,
+                        weights,
+                        false
+                );
+
+                weights.right_multiply(trafo);
+            } else {
+                const auto &ref_elem = libMesh::ReferenceElem::get(type);
+
+                assemble_biorth_weights(
                     ref_elem,
                     order,
-                    trafo,
-                    weights,
-                    false
-            );
+                    weights);
 
-            weights.right_multiply(trafo);
+                auto n = weights.n();
+                trafo.resize(n, n);
+                inv_trafo.resize(n, n);
+
+                for(uint i = 0; i < n; ++i) {
+                    trafo(i, i) = 1.0;
+                    inv_trafo(i, i) = 1.0;
+                }
+            }
             return true;
         }
 
@@ -329,6 +347,9 @@ namespace utopia {
                 trafo.resize(6, 6);
                 inv_trafo.resize(6, 6);
 
+                trafo.zero();
+                inv_trafo.zero();
+
                 trafo(0, 0) = 1;
                 trafo(0, 3) = alpha;
                 trafo(0, 5) = alpha;
@@ -368,6 +389,9 @@ namespace utopia {
             if(el_type == libMesh::QUAD8) {
                 trafo.resize(8, 8);
                 inv_trafo.resize(8, 8);
+
+                trafo.zero();
+                inv_trafo.zero();
 
                 trafo(0, 0) = 1;
                 trafo(0, 4) = alpha;

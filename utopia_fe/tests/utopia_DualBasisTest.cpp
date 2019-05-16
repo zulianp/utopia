@@ -37,14 +37,14 @@ namespace utopia {
 
         assert(approxeq(n_nodes, sum_w, 1e-10));
 
-        // std::cout << "------------------------\n";
-        // weights.print();
+        std::cout << "------------------------\n";
+        weights.print();
 
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
 
         libMesh::QGauss qrule(dim, libMesh::Order(2*order));
-        qrule.init(libMesh::TRI6);
+        qrule.init(e_type);
 
         auto fe = libMesh::FEBase::build(dim, libMesh::Order(order));
         fe->get_phi();
@@ -80,8 +80,8 @@ namespace utopia {
             coupling
         );
 
-        std::cout << "------------------------\n";
-        coupling.print();
+        // std::cout << "------------------------\n";
+        // coupling.print();
 
         libMesh::DenseMatrix<libMesh::Real> mass_mat_dual, inv_mass_mat_dual;
         mortar_assemble_weighted_biorth(
@@ -100,8 +100,8 @@ namespace utopia {
             sum_mm_dual += mm;
         }
 
-        std::cout << "------------------------\n";
-        mass_mat_dual.print();
+        // std::cout << "------------------------\n";
+        // mass_mat_dual.print();
 
         inv_mass_mat_dual.resize(mass_mat_dual.m(), mass_mat_dual.n());
         inv_mass_mat_dual.zero();
@@ -163,10 +163,12 @@ namespace utopia {
         auto dim = 2;
         auto order = 2;
 
-        test_dual_basis(libMesh::TRI6, dim, order, alpha);
+        // test_dual_basis(libMesh::TRI6, dim, order, alpha);
+        // test_dual_basis(libMesh::QUAD4, dim, 1, alpha);
+        test_dual_basis(libMesh::QUAD8, dim, 2, alpha);
 
-        dim = 1;
-        test_dual_basis(libMesh::EDGE3, dim, order, alpha);
+        // dim = 1;
+        // test_dual_basis(libMesh::EDGE3, dim, order, alpha);
     }
 }
 
