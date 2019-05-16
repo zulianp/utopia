@@ -102,7 +102,11 @@ namespace utopia {
         UVector x_p1_, stress_p1_;
 
         UVector inverse_mass_vector_;
-    };
+
+        UVector p1_is_normal_component_;
+        UVector p1_normals_;
+        USparseMatrix p1_mat_;
+};
 
 }
 

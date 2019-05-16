@@ -4,6 +4,7 @@
 #include "utopia_libmesh.hpp"
 #include "utopia_libmesh_FEBackend.hpp"
 #include "utopia_LibMeshBackend.hpp"
+#include "utopia_NormalTangentialCoordinateSystem.hpp"
 #include "utopia.hpp"
 #include "utopia_fe_base.hpp"
 #include "utopia_fe_core.hpp"
@@ -18,7 +19,9 @@ namespace utopia {
         x_p1_ = VtoP1_ * x;
 
         bool ok = elast_.stress(x_p1_, stress_p1_); assert(ok);
-        result = P1toV_ * e_mul(inverse_mass_vector_, stress_p1_);
+        UVector sigma = p1_mat_ * e_mul(inverse_mass_vector_, stress_p1_);
+
+        result = P1toV_ * sigma;
         return ok;
     }
 
@@ -52,6 +55,14 @@ namespace utopia {
 
         lumped = sum(mass_mat, 1);
         e_pseudo_inv(lumped, inverse_mass_vector_, 1e-10);
+
+        const std::vector<int> bt;
+        assemble_normal_tangential_transformation(P1_[0].mesh(),
+                                                  P1_[0].dof_map(),
+                                                  bt,
+                                                  p1_is_normal_component_,
+                                                  p1_normals_,
+                                                  p1_mat_);
     }
 
     template class ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, USparseMatrix, UVector>;

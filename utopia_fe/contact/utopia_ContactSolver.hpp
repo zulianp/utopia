@@ -502,8 +502,8 @@ namespace utopia {
         {
             UVector s, unscaled_s;
             if(contact_stress_) {
-                contact_stress_->assemble(x, s);
-                contact_.apply_orthogonal_trafo(s, unscaled_s);
+                contact_stress_->assemble(x, unscaled_s);
+                // contact_.apply_orthogonal_trafo(s, unscaled_s);
             } else {
                 stress(x, s);
                 contact_.remove_mass(s, unscaled_s);
