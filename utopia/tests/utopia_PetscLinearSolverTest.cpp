@@ -432,7 +432,7 @@ namespace utopia {
 #ifdef PETSC_HAVE_SUPERLU_DIST
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >(MATSOLVERSUPERLU_DIST, PCLU);
 #else
-            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >(MATSOLVERPETSC, PCLU);
 
             if(mpi_world_size() > 1) {
                 if(mpi_world_rank() == 0) {

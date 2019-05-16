@@ -137,8 +137,8 @@ namespace utopia
 				eigen_solver->solver_type("arpack");			
 			#endif
 			
-			auto linear_solver = std::make_shared<LUDecomposition<DMatrixd, DVectord> >();
-			linear_solver->set_library_type(PETSC_TAG); 
+			auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord> >(MATSOLVERPETSC, PCLU);
+			// linear_solver->set_library_type(PETSC_TAG); 
 
 			auto ms_subproblem = std::make_shared<utopia::MoreSorensenEigen<DMatrixd, DVectord> >(linear_solver, eigen_solver);
 

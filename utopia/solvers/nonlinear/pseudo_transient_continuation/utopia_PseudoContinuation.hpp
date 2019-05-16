@@ -116,21 +116,9 @@ namespace utopia
                 s = 0 * x; 
                 this->linear_solve(H_damped, -1.0 * g, s);
 
-                // std::cout<< "norm (x): "<< norm2(x) << "  \n"; 
-                // std::cout<< "norm (I): "<< norm2(I_) << "  \n"; 
-                // std::cout<< "norm (H): "<< norm2(H) << "  \n"; 
-                // std::cout<< "norm (H_dump): "<< norm2(H_damped) << "  \n"; 
-                // std::cout<< "norm (g): "<< norm2(g) << "  \n"; 
-                // std::cout<< "norm (s): "<< norm2(s) << "  \n"; 
-
                 x += s; 
-
-                // std::cout<< "norm (x): "<< norm2(x) << "  \n"; 
-
+                
                 fun.gradient(x, g); 
-
-
-                // std::cout<< "norm (g): "<< norm2(g) << "  \n"; 
 
                 g_old = g_norm; 
                 norms2(g, s, g_norm, s_norm); 

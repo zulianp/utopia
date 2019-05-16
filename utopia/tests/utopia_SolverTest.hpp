@@ -10,6 +10,7 @@ namespace utopia
     void runSolversTest();
     void runNonlinearMultilevelSolverTest();
     void runQuasiNewtonTest();
+    void runPetscPseudoTransientContinuationTest(); 
 
 }
 

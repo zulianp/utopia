@@ -47,7 +47,10 @@ namespace utopia
         runPetscSlepcSolversTest();
         runQuasiNewtonTest();
 
+
         runNonlinearMultilevelSolverTest();
+
+        runPetscPseudoTransientContinuationTest(); 
 
 
         run_qp_solver_test();
@@ -127,7 +130,10 @@ namespace utopia
                     run_qp_solver_test();
                 }else if(token == "uncon_bench") {
                     run_unconstrained_optimization_benchmark();
-                }
+                }else if(token == "pseudo_cont") {
+                    runPetscPseudoTransientContinuationTest();
+                }                
+                
             }
         }
 

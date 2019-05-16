@@ -47,11 +47,8 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_sparse_newton_test);
             UTOPIA_RUN_TEST(petsc_newton_petsc_cg_test);
             UTOPIA_RUN_TEST(petsc_tr_rr_test);
-            UTOPIA_RUN_TEST(petsc_mprgp_test);
             UTOPIA_RUN_TEST(petsc_snes_test);
             UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test);
-            // UTOPIA_RUN_TEST(affine_similarity_small_test);
-            // UTOPIA_RUN_TEST(affine_similarity_stiff_test);
         }
 
         void petsc_ngs_test()
@@ -207,104 +204,6 @@ namespace utopia
             GenericSemismoothNewton<DSMatrixd, DVectord, F> solver(f, linear_solver);
 
             solver.solve(A, rhs, sol);
-        }
-
-
-        void petsc_mprgp_test()
-        {
-            const SizeType n = 50;
-            const PetscScalar h = 1.0/(n-1);
-
-
-            DSMatrixd A = sparse(n, n, 3);
-            DVectord b, u, l;
-
-            // 1d laplace
-            {
-                Write<DSMatrixd> w_A(A);
-                const Range r = row_range(A);
-
-                for(SizeType i = r.begin(); i != r.end(); ++i) {
-                    if(i > 0) {
-                        A.add(i, i - 1, -1.0);
-                    }
-
-                    if(i < n-1) {
-                        A.add(i, i + 1, -1.0);
-                    }
-
-                    A.add(i, i, 2.0);
-                }
-            }
-
-            A = (n-1)*A;
-
-            // bc conditions
-            {
-                Range r = row_range(A);
-                Write<DSMatrixd> w(A);
-                if(r.begin() == 0) {
-                    A.set(0, 0, 1.);
-                    A.set(0, 1, 0);
-                }
-
-                if(r.end() == n) {
-                    A.set(n-1, n-1, 1.);
-                    A.set(n-1, n-2, 0.);
-                }
-            }
-
-            l = values(n, -1.);
-            u = values(n, 1.);
-
-            b = values(n, 50.);
-
-            {
-                Write<DVectord> w (b);
-                Range rhs_range = range(b);;
-                for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++) {
-                    if(i > n/2) {
-                        b.set(i, -50);
-                    }
-
-                    if(i ==0 || i == n-1) {
-                        b.set(i, 0);
-                    }
-                }
-            }
-
-            b *= h;
-
-            // just testing
-            // u =  values(local_size(u).get(0), 999);
-            // l =  values(local_size(u).get(0), -999);
-
-            auto box = make_box_constaints(make_ref(l), make_ref(u));
-
-            //FIXME the following unilateral constraints do not work with MPRGP
-            // auto box = make_upper_bound_constraints(make_ref(u));
-
-
-            DVectord x_0 = 0. * b;
-            auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-            // auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-            // auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-            // auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-            lsolver->atol(1e-15);
-            lsolver->rtol(1e-15);
-            lsolver->stol(1e-15);
-            // lsolver->verbose(true);
-
-            SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
-            nlsolver.set_box_constraints(box);
-            // nlsolver.verbose(true);
-
-            nlsolver.max_it(200);
-            nlsolver.solve(A, b, x_0);
-
-            // disp(l);
-            // disp(u);
-            // utopia_test_assert(approxeq(x, x_0));
         }
 
         void petsc_tr_rr_test()
@@ -670,66 +569,6 @@ namespace utopia
             }
         }
 
-
-        // void affine_similarity_small_test()
-        // {
-        // 	if(mpi_world_size() >1)
-        // 		return;
-
-        // 	SmallSingularExample<DMatrixd, DVectord> fun;
-        // 	DVectord x_exact 	= values(2, 1.0);
-        // 	DVectord x   		= values(2, 1.0);
-
-        // 	{
-        // 		Write<DVectord> r1(x_exact, LOCAL);
-        // 		Write<DVectord> r2(x, LOCAL);
-
-        // 		x.set(1, 0.0);
-        // 		x_exact.set(0, 0.0);
-        // 	}
-
-        // 	auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>("petsc");
-        // 	AffineSimilarity<DMatrixd, DVectord> solver(linear_solver);
-
-        // 	DMatrixd I = identity(2,2);
-        // 	solver.set_mass_matrix(I);
-        // 	solver.set_scaling_matrix(I);
-        // 	solver.verbose(false);
-        // 	solver.atol(1e-9);
-        // 	solver.verbosity_level(VERBOSITY_LEVEL_NORMAL);
-        // 	solver.solve(fun, x);
-        // 	utopia_test_assert(approxeq(x, x_exact, 1e-6));
-        // }
-
-
-        // void affine_similarity_stiff_test()
-        // {
-        // 	if(mpi_world_size() >1)
-        // 		return;
-
-
-        // 	const SizeType n = 100;
-
-        // 	MildStiffExample<DMatrixd, DVectord> fun(n);
-        // 	DVectord x, g;
-        // 	fun.get_initial_guess(x);
-
-        // 	auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();
-        // 	linear_solver->atol(1e-14);
-        // 	linear_solver->max_it(10000);
-
-        // 	AffineSimilarity<DMatrixd, DVectord> solver(linear_solver);
-
-        // 	DMatrixd I = identity(n,n);
-        // 	solver.set_mass_matrix(I);
-        // 	solver.set_scaling_matrix(I);
-        // 	solver.verbose(false);
-        // 	solver.atol(1e-9);
-        // 	solver.stol(1e-14);
-        // 	solver.max_it(500);
-        // 	solver.verbosity_level(VERBOSITY_LEVEL_NORMAL);
-        // 	solver.solve(fun, x);
-        // }
 
         PetscNonlinearSolverTest()
         : _n(100) { }
