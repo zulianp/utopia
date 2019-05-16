@@ -95,13 +95,13 @@ namespace utopia
                 I_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
             }
 
-            // tau = 1.0/g_norm; 
+            tau = 1.0/g_norm; 
 
             // follows paper Combining TR methods and Rosenbrock Methods for Gradient systems
-            tau = std::min(g_norm, 10.0); 
+            // tau = std::min(g_norm, 10.0); 
             // tau = 1.0; 
 
-            // option suitalbe to compare with AF-similarity solver
+            // option suitable to compare with AF-similarity solver
             // tau = 1.0/g_norm; 
             
 
