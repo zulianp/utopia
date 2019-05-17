@@ -8,6 +8,7 @@
 #include "utopia_libmesh.hpp"
 #include "utopia_FEFilter.hpp"
 #include "utopia_FEEval_Filter.hpp"
+#include "utopia_VonMisesStress.hpp"
 
 
 #include <libmesh/tensor_value.h>
@@ -29,6 +30,14 @@ namespace utopia {
             return initialized_;
         }
 
+        void clear() override
+        {
+            initialized_ = false;
+        }
+
+        bool is_linear() const override { return true; }
+
+        
         // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         {
@@ -50,13 +59,6 @@ namespace utopia {
             result = hessian * x;
             return true;
         }
-
-        void clear() override
-        {
-            initialized_ = false;
-        }
-
-        bool is_linear() const override { return true; }
 
         bool normal_stress(const UVector &x, UVector &out)
         {
@@ -83,51 +85,6 @@ namespace utopia {
             return true;
         }  
 
-        static double von_mises(const LMDenseMatrix &stress)
-        {
-            auto s = size(stress);
-
-            if(s.get(0) == 2) {
-                return von_mises_2(stress);
-            } else {
-                assert(s.get(0) == 3);
-                return von_mises_3(stress);
-            }
-        }
-
-        static double von_mises_2(const LMDenseMatrix &stress)
-        {
-            using std::sqrt;
-            Read<LMDenseMatrix> r(stress);
-
-            double result =  0.5 * ( stress.get(0,0) - stress.get(1, 1) ) *
-            ( stress.get(0,0) - stress.get(1, 1) ) +
-            3.0  *  stress.get(0, 1) * stress.get(0, 1);
-            
-            result = sqrt( fabs(result) );
-            assert(result == result && "von_mises_2: result is nan");
-            return result;
-        }
-
-        static double von_mises_3(const LMDenseMatrix &stress)
-        {
-            using std::sqrt;
-            Read<LMDenseMatrix> r(stress);
-
-            double result = 0.5 * ( stress.get(0, 0) - stress.get(0, 1) ) *
-            ( stress.get(0, 0) - stress.get(0, 1) ) +
-            3.0  *  stress.get(0, 1) * stress.get(0, 1);
-            
-            result += 0.5 * (stress.get(2, 2) - stress.get(0, 1)) * (stress.get(2, 2) - stress.get(0, 1)) + 3.0  * stress.get(2, 1) * stress.get(2, 1);
-            result += 0.5 * (stress.get(2, 2) - stress.get(0, 0)) * (stress.get(2, 2) - stress.get(0, 0)) + 3.0  * stress.get(2, 0) * stress.get(2, 0);
-            
-            result = sqrt( fabs(result) );
-            
-            assert(result == result && "von_mises_3: result is nan");
-            return result;
-        }
-
-
         bool von_mises_stress(const UVector &x, UVector &out)
         {
             auto u = trial(V_);
@@ -141,7 +98,7 @@ namespace utopia {
             auto strain = transpose(grad(uk)) + grad(uk);
             auto stress = mu * strain + lambda * trace(strain) * identity();
 
-            auto vm = filter(stress, von_mises);
+            auto vm = filter(stress, VonMisesStress::apply);
 
             UVector mass_vector;
             bool ok = utopia::assemble(integral(dot(vm, vx)), out); assert(ok);
@@ -398,6 +355,7 @@ namespace utopia {
             
         //     stress = e_mul(stress, 1./mass);
         // }
+
     };
 }
 
