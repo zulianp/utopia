@@ -36,7 +36,7 @@ namespace utopia {
 
         void init_grad(std::vector< std::unique_ptr<FE> > &fe_object)
         {
-            const std::size_t n_quad_points = fe_object[start_var]->get_phi()[0].size();
+            const std::size_t n_quad_points = fe_object[start_var]->get_dphi()[0].size();
 
             uint n_shape_functions = 0;
             for(uint i = 0; i < n_vars; ++i) {

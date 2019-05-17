@@ -103,9 +103,9 @@ namespace utopia {
 
         UVector inverse_mass_vector_;
 
-        UVector p1_is_normal_component_;
-        UVector p1_normals_;
-        USparseMatrix p1_mat_;
+        // UVector p1_is_normal_component_;
+        // UVector p1_normals_;
+        // USparseMatrix p1_mat_;
 };
 
 }

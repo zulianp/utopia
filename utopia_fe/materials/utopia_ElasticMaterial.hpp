@@ -19,6 +19,18 @@ namespace utopia {
             return false;
         }
 
+        virtual bool normal_stress(const UVector &x, UVector &out, const int subspace = 0) 
+        {
+            out = local_values(local_size(x).get(0), -1);
+            return false;
+        }
+
+        virtual bool von_mises_stress(const UVector &x, UVector &out, const int subspace = 0) 
+        {
+            out = local_values(local_size(x).get(0), -1);
+            return false;
+        }
+
         virtual void clear() {}
         virtual bool is_linear() const { return false; }
     };
