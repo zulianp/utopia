@@ -158,7 +158,33 @@ namespace utopia {
     }
 
     template<class Expr, class Out, int Order, class Fun, class Visitor>
-    inline static int traverse(Filter<Expr, Out, Order, Fun> &&expr, Visitor &visitor)
+    inline static int traverse(const Filter<Expr, Out, Order, Fun> &expr, Visitor &visitor)
+    {
+        switch(visitor.visit(expr)) {
+            case TRAVERSE_CONTINUE:
+            {
+                return traverse(expr.expr(), visitor);
+            }
+
+            case TRAVERSE_STOP:
+            {
+                return TRAVERSE_STOP;
+            }
+
+            case TRAVERSE_SKIP_SUBTREE:
+            {
+                return TRAVERSE_CONTINUE;
+            }
+
+            default: {
+                std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+                return TRAVERSE_STOP;
+            }
+        }
+    }
+
+    template<class Expr, class Out, int Order, class Fun, class Visitor>
+    inline static int traverse(Filter<Expr, Out, Order, Fun> &expr, Visitor &visitor)
     {
         switch(visitor.visit(expr)) {
             case TRAVERSE_CONTINUE:
