@@ -147,7 +147,7 @@ namespace utopia {
             bool ok = utopia::assemble(integral(dot(vm, vx)), out); assert(ok);
             if(!ok) return false;
 
-            utopia::assemble(surface_integral(dot(coeff(1.0), vx)), mass_vector);
+            utopia::assemble(integral(dot(coeff(1.0), vx)), mass_vector);
 
             e_pseudo_inv(mass_vector, mass_vector, 1e-14);
             out = e_mul(mass_vector, out);
