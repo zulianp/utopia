@@ -9,6 +9,7 @@
 #include "utopia_fe_base.hpp"
 #include "utopia_fe_core.hpp"
 
+
 namespace utopia {
 
     template<class FunctionSpaceT, class Matrix, class Vector>
@@ -18,8 +19,12 @@ namespace utopia {
         x_p1_ = ghosted(p1_dof_map.n_local_dofs(), p1_dof_map.n_dofs(), p1_dof_map.get_send_list());
         x_p1_ = VtoP1_ * x;
 
-        bool ok = elast_.stress(x_p1_, stress_p1_); assert(ok);
-        UVector sigma = p1_mat_ * e_mul(inverse_mass_vector_, stress_p1_);
+        // bool ok = elast_.stress(x_p1_, stress_p1_); assert(ok);
+        // UVector sigma = p1_mat_ * e_mul(inverse_mass_vector_, stress_p1_);
+
+        UVector sigma;
+        // bool ok = elast_.normal_stress(x_p1_, sigma);
+        bool ok = elast_.von_mises_stress(x_p1_, sigma);
 
         result = P1toV_ * sigma;
         return ok;

@@ -1394,6 +1394,55 @@ namespace utopia {
             return ret;
         }
 
+
+        static auto multiply(
+            const QValues<Matrix> &left,
+            const QValues<VectorValueT> &vals,
+            const AssemblyContext<LIBMESH_TAG> &) -> QValues<VectorValueT>
+        {
+            auto ret = vals;
+            auto n = vals.size();
+            for(std::size_t i = 0; i < n; ++i) {
+                multiply(left[i], vals[i], ret[i]);
+            }
+
+            return ret;
+        }
+
+
+        static auto multiply(
+            const QValues<Matrix> &left,
+            const VectorValueT &right,
+            const AssemblyContext<LIBMESH_TAG> &) -> QValues<VectorValueT>
+        {
+            auto n = left.size();
+            QValues<VectorValueT> ret(n);
+            for(std::size_t i = 0; i < n; ++i) {
+                multiply(left[i], right, ret[i]);
+            }
+
+            return ret;
+        }
+
+
+
+
+        template<typename T>
+        static auto multiply(
+            const QValues<Matrix> &left,
+            const QValues<TensorValueT> &vals,
+            const AssemblyContext<LIBMESH_TAG> &) -> QValues<TensorValueT>
+        {
+            auto ret = vals;
+            auto n = vals.size();
+            for(std::size_t i = 0; i < n; ++i) {
+                multiply(left[i], vals[i], ret[i]);
+            }
+
+            return ret;
+        }
+
+
         template<typename T>
         static auto multiply(
             const double val,
@@ -2919,6 +2968,21 @@ namespace utopia {
                     }
                 }
             }
+        }
+
+        inline static void multiply(const Matrix &left, const VectorValueT &right, VectorValueT &out)
+        {
+            Size s_l = size(left);
+            Read<Matrix> r_l(left);
+
+            for(uint i = 0; i < s_l.get(0); ++i) {
+                out(i) = left.get(i, 0) * right(0);
+
+                for(uint j = 1; j < s_l.get(1); ++j) {
+                    out(i) += left.get(i, j) * right(j);
+                }
+            }
+
         }
 
         inline static void multiply(const LMDenseMatrix &left, const double &right, LMDenseMatrix &out)

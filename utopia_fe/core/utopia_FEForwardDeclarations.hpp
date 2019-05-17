@@ -32,6 +32,9 @@ namespace utopia {
     template<class, class> class ContextFunction;
     template<typename,int> class ConstantCoefficient;
 
+    template<class Expr, class Out_, int Order_, class Fun>
+    class Filter;
+
 }
 
 #endif //UTOPIA_FE_FORWARD_DECLARATIONS_HPP
