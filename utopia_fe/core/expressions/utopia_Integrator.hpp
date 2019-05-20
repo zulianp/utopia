@@ -33,7 +33,7 @@ namespace utopia {
     };
 
     template<class FunctionSpace>
-    class LinearIntegrator : public Integrator<FunctionSpace>,
+    class LinearIntegrator : public virtual Integrator<FunctionSpace>,
                              public Expression< LinearIntegrator<FunctionSpace> > {
     public:
         enum {
@@ -83,7 +83,7 @@ namespace utopia {
     ////////////////////////////////////////////////////////////////////////////////////
 
     template<class FunctionSpace>
-    class BilinearIntegrator : public Integrator<FunctionSpace>,
+    class BilinearIntegrator : public virtual Integrator<FunctionSpace>,
                                public Expression< BilinearIntegrator<FunctionSpace> > {
     public:
         enum {
