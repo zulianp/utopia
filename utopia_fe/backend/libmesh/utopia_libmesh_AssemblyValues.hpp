@@ -442,6 +442,21 @@ namespace utopia {
                 return TRAVERSE_CONTINUE;
             }
 
+
+            template<class T>
+            inline int visit(const LinearIntegrator<T> &expr)
+            {
+                expr.init_values(ctx);
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const BilinearIntegrator<T> &expr)
+            {
+                expr.init_values(ctx);
+                return TRAVERSE_CONTINUE;
+            }
+
             template<class T>
             inline int visit(const TestFunction<T> &expr)
             {
@@ -663,6 +678,7 @@ namespace utopia {
             LibMeshAssemblyValues &ctx;
         };
 
+    public:
         template<class Expr>
         void init_fe_flags(const Expr &expr)
         {

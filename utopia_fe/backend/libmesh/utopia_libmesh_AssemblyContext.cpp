@@ -7,7 +7,7 @@ namespace utopia {
         const auto nt = n_shape_functions();
         auto s = size(v);
 
-        if(reset || nt != v.get(0)) {
+        if(reset || nt != s.get(0)) {
             v = zeros(nt);
         }
     }

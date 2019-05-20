@@ -26,7 +26,37 @@ namespace utopia {
         inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
         {
             prod_space_ = expr.space_ptr();
-            space_ = expr.space_ptr()->subspace_ptr(0);
+            space_ = prod_space_->subspace_ptr(0);
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const LinearIntegrator<T> &expr)
+        {
+            space_ = expr.test_ptr();
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const LinearIntegrator<ProductFunctionSpace<T>> &expr)
+        {
+            prod_space_ =  expr.test_ptr();
+            space_ = prod_space_->subspace_ptr(0);
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const BilinearIntegrator<T> &expr)
+        {
+            space_ =  expr.test_ptr();
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const BilinearIntegrator<ProductFunctionSpace<T>> &expr)
+        {
+            prod_space_ = expr.test_ptr();
+            space_ = prod_space_->subspace_ptr(0);
             return TRAVERSE_STOP;
         }
 
@@ -63,6 +93,18 @@ namespace utopia {
 
 
     template<class Space, class Expr>
+    class FindTestSpace<ProductFunctionSpace<Space>, Expr> {
+    public:
+
+        FindTestSpace<Space, Expr> find_;
+
+        std::shared_ptr<ProductFunctionSpace<Space>> space() const
+        {
+            return find_.prod_space();
+        }
+    };
+
+    template<class Space, class Expr>
     class FindTrialSpace {
     public:
         template<class Any>
@@ -79,7 +121,7 @@ namespace utopia {
         inline int visit(const TrialFunction<ProductFunctionSpace<T>> &expr)
         {
             prod_space_ = expr.space_ptr();
-            space_ = expr.space_ptr()->subspace_ptr(0);
+            space_ = prod_space_->subspace_ptr(0);
             return TRAVERSE_STOP;
         }
 
@@ -87,6 +129,22 @@ namespace utopia {
         inline int visit(const Interpolate<Coefficient, Function> &expr)
         {
             return visit(expr.fun());
+        }
+
+
+        template<class T>
+        inline int visit(const BilinearIntegrator<T> &expr)
+        {
+            space_ = expr.trial_ptr();
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const BilinearIntegrator<ProductFunctionSpace<T>> &expr)
+        {
+            prod_space_ = expr.trial_ptr();
+            space_ = prod_space_->subspace_ptr(0);
+            return TRAVERSE_STOP;
         }
 
         FindTrialSpace()
@@ -121,7 +179,17 @@ namespace utopia {
     };
 
 
+    template<class Space, class Expr>
+    class FindTrialSpace<ProductFunctionSpace<Space>, Expr> {
+    public:
 
+        FindTrialSpace<Space, Expr> find_;
+
+        std::shared_ptr<ProductFunctionSpace<Space>> space() const
+        {
+            return find_.prod_space();
+        }
+    };
 
     template<class Mesh, class Expr>
     class FindMesh {

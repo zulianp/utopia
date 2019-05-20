@@ -19,6 +19,7 @@
 #include "utopia_SemigeometricMultigridTest.hpp"
 #include "utopia_RefactoredContactTest.hpp"
 #include "utopia_DualBasisTest.hpp"
+#include "utopia_IntegratorTest.hpp"
 
 namespace utopia {
 
@@ -126,7 +127,7 @@ namespace utopia {
         add_test(SMGTest::command(), utopia::make_unique<SMGTest>());
         add_test(RefactoredContactTest::command(), utopia::make_unique<RefactoredContactTest>());
         add_test(DualBasisTest::command(), utopia::make_unique<DualBasisTest>());
-
+        add_test(IntegratorTest::command(), utopia::make_unique<IntegratorTest>());
     }
 
 }

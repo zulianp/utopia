@@ -181,6 +181,7 @@ namespace utopia {
 
         typedef std::vector<libMesh::Real> DXType;
         typedef libMesh::MeshBase MeshType;
+        typedef utopia::LibMeshAssemblyValues AssemblyValues;
     };
 
     typedef utopia::Traits<LibMeshFunctionSpace> LibMeshTraits;

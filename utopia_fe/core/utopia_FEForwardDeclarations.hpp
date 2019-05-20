@@ -18,6 +18,7 @@ namespace utopia {
     template<class> class Integral;
     template<class> class TestFunction;
     template<class> class TrialFunction;
+    template<class, class> class BasisFunction;
     template<class> class BlockVar;
     template<class> class Dual;
 
@@ -34,6 +35,9 @@ namespace utopia {
 
     template<class Expr, class Out_, int Order_, class Fun>
     class Filter;
+
+    template<class> class LinearIntegrator;
+    template<class> class BilinearIntegrator;
 
 }
 

@@ -199,12 +199,31 @@ namespace utopia {
 
     template<class Expr>
     bool assemble(
+        Expr &expr,
+        double &val)
+    {
+        return LibMeshAssembler().assemble(expr, val);
+    }
+
+    template<class Expr>
+    bool assemble(
         const Expr &expr,
         USparseMatrix &mat,
         const bool first = true)
     {
         return LibMeshAssembler().assemble(expr, mat);
     }
+
+
+    template<class Expr>
+    bool assemble(
+        Expr &expr,
+        USparseMatrix &mat,
+        const bool first = true)
+    {
+        return LibMeshAssembler().assemble(expr, mat);
+    }
+
 
 
     template<class Expr, typename T>
@@ -234,6 +253,15 @@ namespace utopia {
     template<class Expr>
     bool assemble(
         const Expr &expr,
+        UVector &vec,
+        const bool first = true)
+    {
+        return LibMeshAssembler().assemble(expr, vec);
+    }
+
+    template<class Expr>
+    bool assemble(
+        Expr &expr,
         UVector &vec,
         const bool first = true)
     {
