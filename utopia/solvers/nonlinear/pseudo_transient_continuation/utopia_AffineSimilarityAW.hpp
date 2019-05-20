@@ -107,15 +107,13 @@ namespace utopia
             Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0, mu, L, tau_old; 
             SizeType it_inner = 0; 
 
+
             Vector g, s, g_new, r; 
             s = 0 * x; 
             g_new = 0*x; 
             Matrix H; 
 
             // bool inner_loop = false; 
-
-            fun.gradient(x, g); 
-            g_norm = norm2(g); 
 
             fun.hessian(x, H); 
 
@@ -128,6 +126,25 @@ namespace utopia
 
                 I_  = local_identity(local_size(H).get(0), local_size(H).get(1)); 
             }
+            
+
+            if(empty(D_))
+            {
+                D_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+                D_inv_ = D_; 
+            }
+
+
+            x = D_inv_ * x; 
+
+            fun.gradient(x, g); 
+            g = D_inv_ * g; 
+            g_norm = norm2(g); 
+
+            // recompute
+            fun.hessian(x, H); 
+
+
 
             Scalar  tau = 1./g_norm; 
 
@@ -157,6 +174,8 @@ namespace utopia
                 s_norm = norm2(s); 
 
                 fun.gradient(x_trial, g_new); 
+                g_new = D_inv_ * g_new; 
+
                 g_norm_old = g_norm; 
                 g_norm = norm2(g_new); 
 
@@ -236,6 +255,9 @@ namespace utopia
                 it++;
             }
 
+
+            x = D_ * x; 
+
             return true;
         }
 
@@ -293,6 +315,14 @@ namespace utopia
         void set_mass_matrix(const Matrix & M)
         {
             I_ = M; 
+        }
+
+        void set_scaling_matrix(const Matrix & D)
+        {
+            D_ = D; 
+
+            Vector d = diag(D_); 
+            D_inv_ = diag(1.0/d); 
         }
 
 
@@ -410,6 +440,8 @@ namespace utopia
         SizeType max_inner_it_; 
 
         Matrix I_; 
+        Matrix D_; 
+        Matrix D_inv_; 
 
     };
 
