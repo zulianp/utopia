@@ -299,7 +299,8 @@ int main(int argc,char **argv)
     // utopia::AffineSimilarity<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
     // AffineSimilarityAW<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
-    utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    // utopia::PseudoContinuation<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
+    utopia::ASTRUM<utopia::DSMatrixd, utopia::DVectord> solver(linear_solver); 
 
 
     //solver.set_scaling_matrix(utopia::local_identity(local_size(Mass_utopia).get(0), local_size(Mass_utopia).get(1))); 

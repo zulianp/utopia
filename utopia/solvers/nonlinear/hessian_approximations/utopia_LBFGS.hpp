@@ -18,7 +18,7 @@ namespace utopia
 
         public:
 
-            LBFGS(const SizeType & m): m_(m), current_m_(0), theta_(1.0), gamma_(1.0)
+            LBFGS(const SizeType & m): m_(m), current_m_(0), theta_(1.0), gamma_(1.0), theta_min_(1.0)
             {
 
             }
@@ -76,8 +76,8 @@ namespace utopia
                 Scalar denom    = dot(y,s);
                 
                 // theta and gamma are inverse of each other
-                theta_ = std::max(1.0, nom/denom);
-                gamma_ = std::max(1.0, denom/nom);      
+                theta_ = std::max(theta_min_, nom/denom);
+                gamma_ = 1./theta_; 
 
 
                 // Scalar ss       = dot(s,s);
@@ -222,6 +222,17 @@ namespace utopia
                 return m_;
             }
 
+
+            Scalar theta_min() const
+            {
+                return theta_min_; 
+            }
+
+            void theta_min(const Scalar & theta_min)
+            {
+                theta_min_ = theta_min; 
+            }
+
             void read(Input &in) override
             {
                 HessianApproximation<Vector>::read(in);
@@ -268,6 +279,7 @@ namespace utopia
             SizeType current_m_; // current amount of vectors in the memory
             Scalar theta_;
             Scalar gamma_;
+            Scalar theta_min_; 
 
             std::vector<Vector> Y_;
             std::vector<Vector> S_;
