@@ -474,10 +474,36 @@ namespace utopia {
             return ctx.offset[space.subspace_id()];
         }
 
+        static inline unsigned int offset(const ProductFunctionSpace<LibMeshFunctionSpace> &space, const AssemblyContext<LIBMESH_TAG> &ctx)
+        {
+            return offset(space[0], ctx);
+        }
 
         static inline unsigned int n_shape_functions(const LibMeshFunctionSpace &space, const AssemblyContext<LIBMESH_TAG> &ctx)
         {
             return ctx.fe()[space.subspace_id()]->n_shape_functions();
+        }
+
+        static inline Range range(
+            const LibMeshFunctionSpace &space,
+            const AssemblyContext<LIBMESH_TAG> &ctx)
+        {
+            auto off = offset(space, ctx);
+            return {
+                off,
+                off + n_shape_functions(space, ctx)
+            };
+        }
+
+        static inline Range range(
+            const ProductFunctionSpace<LibMeshFunctionSpace> &space,
+            const AssemblyContext<LIBMESH_TAG> &ctx)
+        {
+            auto off = offset(space, ctx);
+            return {
+                off,
+                off + n_shape_functions(space, ctx)
+            };
         }
 
         static inline unsigned int n_shape_functions(const ProductFunctionSpace<LibMeshFunctionSpace> &space, const AssemblyContext<LIBMESH_TAG> &ctx)

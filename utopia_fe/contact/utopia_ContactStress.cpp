@@ -22,15 +22,15 @@ namespace utopia {
         x_p1_ = VtoP1_ * x;
 
         UVector von_mises, normal_stress, sigma;
-        ok = elast_.von_mises_stress(x_p1_, von_mises, 0);  assert(ok);
-        ok = elast_.normal_stress(x_p1_, normal_stress, 1); assert(ok);
+        ok = elast_->von_mises_stress(x_p1_, von_mises, 0);  assert(ok);
+        ok = elast_->normal_stress(x_p1_, normal_stress, 1); assert(ok);
 
         sigma = von_mises + normal_stress;
 
         convert(sigma, *P1_[0].equation_system().solution);
         P1_[0].equation_system().solution->close();
 
-        ok = elast_.stress(x_p1_, sigma); assert(ok);
+        ok = elast_->stress(x_p1_, sigma); assert(ok);
         result = P1toV_ * e_mul(inverse_mass_vector_, sigma);
         return ok;
     }
