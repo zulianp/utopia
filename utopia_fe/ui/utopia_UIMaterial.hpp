@@ -34,17 +34,19 @@ namespace utopia {
             params.describe(std::cout);
 
             if(material == "NeoHookean") {
-                material_ = std::make_shared<NeoHookean<decltype(V_), Matrix, Vector>>(V_, params);
+                std::cout << "Using: NeoHookean" << std::endl;
+                material_ = std::make_shared<NeoHookean<FunctionSpace, Matrix, Vector>>(V_, params);
             } else if(material == "SaintVenantKirchoff") {
-                material_ = std::make_shared<SaintVenantKirchoff<decltype(V_), Matrix, Vector>>(V_, params);
+                std::cout << "Using: SaintVenantKirchoff" << std::endl;
+                material_ = std::make_shared<SaintVenantKirchoff<FunctionSpace, Matrix, Vector>>(V_, params);
             } else /*if(material == "LinearElasticity")*/ {
-                material_ = std::make_shared<LinearElasticity<decltype(V_), Matrix, Vector>>(V_, params);
+                material_ = std::make_shared<LinearElasticity<FunctionSpace, Matrix, Vector>>(V_, params);
             }
 
             if(stabilization != "none") {
                 std::cout << "using stabilization: " << stabilization << " mag: " << stabilization_mag << std::endl;
-                // StabilizedMaterial<decltype(V_), Matrix, Vector> sm(V_, stabilization_mag, material_, stabilization);
-                material_ = std::make_shared<StabilizedMaterial<decltype(V_), Matrix, Vector>>(V_, stabilization_mag, material_, stabilization);
+                // StabilizedMaterial<FunctionSpace, Matrix, Vector> sm(V_, stabilization_mag, material_, stabilization);
+                material_ = std::make_shared<StabilizedMaterial<FunctionSpace, Matrix, Vector>>(V_, stabilization_mag, material_, stabilization);
             }
         }
 

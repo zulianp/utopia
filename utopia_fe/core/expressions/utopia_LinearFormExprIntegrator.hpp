@@ -70,12 +70,24 @@ namespace utopia {
 
     template<class FunctionSpace, class Expr>
     std::unique_ptr<LinearIntegrator<FunctionSpace>> linear_form(
-        const  std::shared_ptr<FunctionSpace> &fs,
+        const std::shared_ptr<FunctionSpace> &fs,
         const Expr &expr
         )
     {
         return utopia::make_unique< LinearFormExprIntegrator<FunctionSpace, Expr> >(
             fs,
+            expr
+        );
+    }
+
+    template<class FS, class Expr>
+    std::unique_ptr<LinearIntegrator<FS>> linear_form(
+        FunctionSpace<FS> &fs,
+        const Expr &expr
+        )
+    {
+        return utopia::make_unique< LinearFormExprIntegrator<FS, Expr> >(
+            make_ref(fs.derived()),
             expr
         );
     }

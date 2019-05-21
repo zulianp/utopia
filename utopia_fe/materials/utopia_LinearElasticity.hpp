@@ -10,6 +10,7 @@
 #include "utopia_FEEval_Filter.hpp"
 #include "utopia_VonMisesStress.hpp"
 
+#include "utopia_Integrators.hpp"
 
 #include <libmesh/tensor_value.h>
 #include <libmesh/fe.h>
@@ -17,7 +18,7 @@
 namespace utopia {
 
     template<class FunctionSpaceT, class Matrix, class Vector>
-    class LinearElasticity final : public ElasticMaterial<Matrix, Vector> {
+    class LinearElasticity final : public ElasticMaterial<Matrix, Vector>, public ModularEquationIntegrator<FunctionSpaceT> {
     public:
         LinearElasticity(FunctionSpaceT &V, const LameeParameters &params)
         : V_(V), params_(params), initialized_(false)
@@ -26,6 +27,7 @@ namespace utopia {
         bool init(Matrix &hessian)
         {
             if(initialized_) return true;
+            
             initialized_ = assemble_hessian(hessian);
             return initialized_;
         }
@@ -37,8 +39,6 @@ namespace utopia {
 
         bool is_linear() const override { return true; }
 
-        
-        // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         {
             if(!init(hessian)) {
@@ -116,7 +116,13 @@ namespace utopia {
         LameeParameters params_;
         bool initialized_;
 
-        bool assemble_hessian(Matrix &hessian)
+        void init_integrators(const UVector &x)
+        {
+            init_bilinear_integrator();
+            init_linear_integrator(x);
+        }
+
+        void init_bilinear_integrator()
         {
             auto u = trial(V_);
             auto v = test(V_);
@@ -128,8 +134,46 @@ namespace utopia {
             auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
             auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+            
+            this->bilinear_integrator( 
+                bilinear_form(V_, b_form)
+            );
+        }
 
+        void init_linear_integrator(const UVector &x)
+        {
+            auto u = trial(V_);
+            auto v = test(V_);
+            auto uk = interpolate(x, u);
+
+            auto mu     = params_.var_mu();
+            auto lambda = params_.var_lambda();
+
+            auto e_u = 0.5 * ( transpose(grad(uk)) + grad(uk) );
+            auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+
+            auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+            
+            this->linear_integrator( linear_form(make_ref(V_), b_form) );
+        }
+
+        bool assemble_hessian(Matrix &hessian)
+        {
+            // init_bilinear_integrator();
+            // assert( this->bilinear_integrator() );
+            auto u = trial(V_);
+            auto v = test(V_);
+
+            auto mu     = params_.var_mu();
+            auto lambda = params_.var_lambda();
+
+            auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
+            auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+
+            auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+            
             return assemble(b_form, hessian);
+            // return assemble(*this->bilinear_integrator(), hessian);
         }
 
     };

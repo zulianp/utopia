@@ -15,7 +15,6 @@ namespace utopia {
         : V_(V), params_(params)
         {}
 
-        // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         {
             auto mu     = params_.var_mu();
@@ -42,8 +41,7 @@ namespace utopia {
 
             return assemble(b_form == l_form, hessian, gradient);
         }
-
-
+        
         bool stress(const Vector &x, Vector &result) override {
 
             auto mu     = params_.var_mu();

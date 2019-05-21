@@ -82,6 +82,18 @@ namespace utopia {
         );
     }
 
+    template<class FS, class Expr>
+    std::unique_ptr<BilinearIntegrator<FS>> bilinear_form(
+        FunctionSpace<FS> &fs,
+        const Expr &expr
+        )
+    {
+        return utopia::make_unique< BiLinearFormExprIntegrator<FS, Expr> >(
+            make_ref(fs.derived()),
+            expr
+        );
+    }
+
 }
 
 #endif //UTOPIA_BILINEAR_FORM_EXPR_INTEGRATOR_HPP

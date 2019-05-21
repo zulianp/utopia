@@ -24,6 +24,7 @@ namespace utopia {
         auto &V = space.space();
 
         std::shared_ptr<BilinearIntegrator<ProductSpaceT>> bilinear_integrator;
+        std::shared_ptr<EquationIntegrator<ProductSpaceT>> eq_integrator;
         std::shared_ptr<LinearIntegrator<ProductSpaceT>>   linear_integrator;
 
         linear_integrator = linear_form(
@@ -38,7 +39,7 @@ namespace utopia {
         utopia::assemble(*linear_integrator, vec);
 
         double vol = sum(vec);
-        disp(vol);
+        approxeq(8.0, vol, 1e-7);
 
         bilinear_integrator = bilinear_form(
             space.space_ptr(), 
@@ -52,9 +53,9 @@ namespace utopia {
         utopia::assemble(*bilinear_integrator, mat);
         double vol_mat = sum(mat);
 
-        disp(vol_mat);
+        approxeq(8.0, vol_mat, 1e-7);
 
-        auto eq_integrator = equation(
+        eq_integrator = equation(
             bilinear_integrator,
             linear_integrator
         );
@@ -62,11 +63,26 @@ namespace utopia {
         utopia::assemble(*eq_integrator, mat, vec);
         vol = sum(vec);
 
-        disp(vol);
+        approxeq(8.0, vol, 1e-7);
 
         vol_mat = sum(mat);
 
-        disp(vol_mat);
+        approxeq(8.0, vol_mat, 1e-7);
+
+        CompositeEquationIntegrator<ProductSpaceT> composite_integrator;
+
+        composite_integrator.add_integrator(eq_integrator);
+        composite_integrator.add_integrator(eq_integrator);
+
+        utopia::assemble(composite_integrator, mat, vec);
+
+        vol = sum(vec);
+
+        approxeq(16.0, vol, 1e-7);
+
+        vol_mat = sum(mat);
+
+        approxeq(16.0, vol_mat, 1e-7);
     }
 }
 
