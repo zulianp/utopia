@@ -127,6 +127,36 @@ namespace utopia {
             }
         }
 
+        template<class FS, class Matrix, class Vector>
+        static void apply(
+                    EquationIntegrator<FS> &expr,
+                    Matrix &mat,
+                    Vector &vec,
+                    AssemblyContext<LIBMESH_TAG> &ctx)
+        {
+            if(expr.is_surface()) {
+
+                if(ctx.n_sides() != 0) {
+                    ctx.surface_integral_begin();
+
+                    for(std::size_t i = 0; i < ctx.n_sides(); ++i) {
+                        ctx.set_side(i);
+
+                        if(expr.assemble(ctx, mat, vec)) {
+                            ctx.set_has_assembled(true);
+                        }
+                    }
+
+                    ctx.surface_integral_end();
+                }
+
+            } else {
+               if(expr.assemble(ctx, mat, vec)) {
+                   ctx.set_has_assembled(true);
+               }
+            }
+        }
+
         template<class Expr, class Tensor>
         static void apply(
                     const Integral<Expr> &expr,

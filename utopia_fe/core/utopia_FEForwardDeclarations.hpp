@@ -38,6 +38,7 @@ namespace utopia {
 
     template<class> class LinearIntegrator;
     template<class> class BilinearIntegrator;
+    template<class> class EquationIntegrator;
 
 }
 

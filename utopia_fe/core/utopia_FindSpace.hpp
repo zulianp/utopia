@@ -60,6 +60,21 @@ namespace utopia {
             return TRAVERSE_STOP;
         }
 
+        template<class T>
+        inline int visit(const EquationIntegrator<T> &expr)
+        {
+            space_ =  expr.test_ptr();
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const EquationIntegrator<ProductFunctionSpace<T>> &expr)
+        {
+            prod_space_ = expr.test_ptr();
+            space_ = prod_space_->subspace_ptr(0);
+            return TRAVERSE_STOP;
+        }
+
         FindTestSpace()
         : space_(nullptr)
         {}
@@ -141,6 +156,21 @@ namespace utopia {
 
         template<class T>
         inline int visit(const BilinearIntegrator<ProductFunctionSpace<T>> &expr)
+        {
+            prod_space_ = expr.trial_ptr();
+            space_ = prod_space_->subspace_ptr(0);
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const EquationIntegrator<T> &expr)
+        {
+            space_ = expr.trial_ptr();
+            return TRAVERSE_STOP;
+        }
+
+        template<class T>
+        inline int visit(const EquationIntegrator<ProductFunctionSpace<T>> &expr)
         {
             prod_space_ = expr.trial_ptr();
             space_ = prod_space_->subspace_ptr(0);

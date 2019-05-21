@@ -69,6 +69,17 @@ namespace utopia {
         }
 
         template<class Expr>
+        inline int visit(const EquationIntegrator<Expr> &expr)
+        {
+            if(expr.is_surface()) {
+                has_surface_integral = true;
+                return TRAVERSE_STOP;
+            } else {
+                return TRAVERSE_CONTINUE;
+            }
+        }
+
+        template<class Expr>
         void apply(const Expr &expr)
         {
             traverse(expr, *this);

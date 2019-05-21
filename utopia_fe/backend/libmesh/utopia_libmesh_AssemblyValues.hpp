@@ -442,7 +442,6 @@ namespace utopia {
                 return TRAVERSE_CONTINUE;
             }
 
-
             template<class T>
             inline int visit(const LinearIntegrator<T> &expr)
             {
@@ -456,6 +455,14 @@ namespace utopia {
                 expr.init_values(ctx);
                 return TRAVERSE_CONTINUE;
             }
+
+            template<class T>
+            inline int visit(const EquationIntegrator<T> &expr)
+            {
+                expr.init_values(ctx);
+                return TRAVERSE_CONTINUE;
+            }
+
 
             template<class T>
             inline int visit(const TestFunction<T> &expr)

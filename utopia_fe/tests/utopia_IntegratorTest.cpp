@@ -5,6 +5,7 @@
 
 #include "utopia_LinearFormExprIntegrator.hpp"
 #include "utopia_BilinearFormExprIntegrator.hpp"
+#include "utopia_CompositeEquationIntegrator.hpp"
 
 namespace utopia {
 
@@ -22,7 +23,10 @@ namespace utopia {
 
         auto &V = space.space();
 
-        auto linear_integrator = linear_form(
+        std::shared_ptr<BilinearIntegrator<ProductSpaceT>> bilinear_integrator;
+        std::shared_ptr<LinearIntegrator<ProductSpaceT>>   linear_integrator;
+
+        linear_integrator = linear_form(
             space.space_ptr(),
             surface_integral(
                         inner(coeff(1.0), test(V[0])) + 
@@ -36,7 +40,7 @@ namespace utopia {
         double vol = sum(vec);
         disp(vol);
 
-        auto bilinear_integrator = bilinear_form(
+        bilinear_integrator = bilinear_form(
             space.space_ptr(), 
             surface_integral(
                         inner(trial(V[0]), test(V[0])) + 
@@ -47,6 +51,20 @@ namespace utopia {
         USparseMatrix mat;
         utopia::assemble(*bilinear_integrator, mat);
         double vol_mat = sum(mat);
+
+        disp(vol_mat);
+
+        auto eq_integrator = equation(
+            bilinear_integrator,
+            linear_integrator
+        );
+
+        utopia::assemble(*eq_integrator, mat, vec);
+        vol = sum(vec);
+
+        disp(vol);
+
+        vol_mat = sum(mat);
 
         disp(vol_mat);
     }

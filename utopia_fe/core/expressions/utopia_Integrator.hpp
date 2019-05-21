@@ -80,6 +80,31 @@ namespace utopia {
         inline static int order(const LinearIntegrator<FunctionSpace> &expr, const AssemblyContext &ctx) { return expr.order(ctx); }
     };
 
+    template<class FunctionSpace, class Visitor>
+    inline static int traverse(LinearIntegrator<FunctionSpace> &expr, Visitor &visitor)
+    {
+        return visitor.visit(expr);
+    }
+
+     //temporary fix
+    template<class Space>
+    std::shared_ptr<Space> find_any_space(const LinearIntegrator<Space> &expr)
+    {
+        return expr.test_ptr();
+    }
+
+    template<class FunctionSpace, class Visitor>
+    inline static int traverse(const LinearIntegrator<FunctionSpace> &expr, Visitor &visitor)
+    {
+        return visitor.visit(expr);
+    }
+
+    template<class Space>
+    std::shared_ptr<Space> find_any_space(const LinearIntegrator<ProductFunctionSpace<Space>> &expr)
+    {
+        return expr.test_ptr()->subspace_ptr(0);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////
 
     template<class FunctionSpace>
@@ -140,22 +165,8 @@ namespace utopia {
         inline static int order(const BilinearIntegrator<FunctionSpace> &expr, const AssemblyContext &ctx) { return expr.order(ctx); }
     };
 
-    //////////////////////////////////////////////////////////////////////
-
-    template<class FunctionSpace, class Visitor>
-    inline static int traverse(LinearIntegrator<FunctionSpace> &expr, Visitor &visitor)
-    {
-        return visitor.visit(expr);
-    }
-
     template<class FunctionSpace, class Visitor>
     inline static int traverse(BilinearIntegrator<FunctionSpace> &expr, Visitor &visitor)
-    {
-        return visitor.visit(expr);
-    }
-
-    template<class FunctionSpace, class Visitor>
-    inline static int traverse(const LinearIntegrator<FunctionSpace> &expr, Visitor &visitor)
     {
         return visitor.visit(expr);
     }
@@ -164,19 +175,6 @@ namespace utopia {
     inline static int traverse(const BilinearIntegrator<FunctionSpace> &expr, Visitor &visitor)
     {
         return visitor.visit(expr);
-    }
-
-    //temporary fix
-    template<class Space>
-    std::shared_ptr<Space> find_any_space(const LinearIntegrator<Space> &expr)
-    {
-        return expr.test_ptr();
-    }
-
-    template<class Space>
-    std::shared_ptr<Space> find_any_space(const LinearIntegrator<ProductFunctionSpace<Space>> &expr)
-    {
-        return expr.test_ptr()->subspace_ptr(0);
     }
 
     //temporary fix
@@ -191,6 +189,97 @@ namespace utopia {
     {
         return expr.test_ptr()->subspace_ptr(0);
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////
+
+    template<class FunctionSpace>
+    class EquationIntegrator : public virtual Integrator<FunctionSpace>,
+                               public Expression< EquationIntegrator<FunctionSpace> > {
+    public:
+        enum {
+            StoreAs = UTOPIA_BY_REFERENCE
+        };
+
+        typedef utopia::Traits<FunctionSpace> TraitsT;
+        typedef typename TraitsT::Matrix ElementMatrix;
+        typedef typename TraitsT::Vector ElementVector;
+
+        using Type = ElementMatrix;
+
+        static const int BACKEND_TAG = Traits<FunctionSpace>::Backend;
+
+        virtual ~EquationIntegrator() {}
+        
+        virtual bool assemble(
+            const Range &trial_r,
+            const Range &test_r,
+            AssemblyContext<BACKEND_TAG> &ctx,
+            ElementMatrix &mat,
+            ElementVector &vec) = 0;
+
+        bool assemble(
+            AssemblyContext<BACKEND_TAG> &ctx,
+            ElementMatrix &mat,
+            ElementVector &rhs)
+        {
+            auto trial_r = this->trial_range(ctx);
+            auto test_r  = this->test_range(ctx);
+            ctx.init_tensor(mat, false);
+            ctx.init_tensor(rhs, false);
+            return assemble(trial_r, test_r, ctx, mat, rhs);
+        }
+
+        //symmetric by default
+        virtual const FunctionSpace &trial() const { return this->test(); }
+        virtual std::shared_ptr<FunctionSpace> trial_ptr() const { return this->test_ptr(); }
+
+        virtual Range trial_range(const AssemblyContext<BACKEND_TAG> &ctx) const 
+        {
+            return FEBackend<BACKEND_TAG>::range(trial(), ctx);
+        }
+    };
+
+    template<class FunctionSpace>
+    class Traits< EquationIntegrator<FunctionSpace> > : public Traits<FunctionSpace> {
+    public:
+        static const int FILL_TYPE = utopia::FillType::DENSE;
+        static const int Order = 1;
+    };
+
+    template<class FunctionSpace, class AssemblyContext>
+    class FunctionalTraits<EquationIntegrator<FunctionSpace>, AssemblyContext>  {
+    public:
+        inline static int type(const EquationIntegrator<FunctionSpace> &expr,  const AssemblyContext &ctx) { return FunctionalTraits<FunctionSpace, AssemblyContext>::type(expr.test(), ctx);  }
+        inline static int order(const EquationIntegrator<FunctionSpace> &expr, const AssemblyContext &ctx) { return expr.order(ctx); }
+    };
+
+    template<class FunctionSpace, class Visitor>
+    inline static int traverse(EquationIntegrator<FunctionSpace> &expr, Visitor &visitor)
+    {
+        return visitor.visit(expr);
+    }
+
+    template<class FunctionSpace, class Visitor>
+    inline static int traverse(const EquationIntegrator<FunctionSpace> &expr, Visitor &visitor)
+    {
+        return visitor.visit(expr);
+    }
+
+    //temporary fix
+    template<class Space>
+    std::shared_ptr<Space> find_any_space(const EquationIntegrator<Space> &expr)
+    {
+        return expr.test_ptr();
+    }
+
+    template<class Space>
+    std::shared_ptr<Space> find_any_space(const EquationIntegrator<ProductFunctionSpace<Space>> &expr)
+    {
+        return expr.test_ptr()->subspace_ptr(0);
+    }
+
+    //////////////////////////////////////////////////////////////////////
 
 }
 

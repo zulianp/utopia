@@ -65,7 +65,6 @@ namespace utopia {
             FormEval<Form, BAKEND_FLAG>::apply(expr, tensor, ctx);
         }
 
-
         template<class Expr, class Matrix, class Vector>
         static void eval(
             const Expr &expr,
@@ -76,7 +75,15 @@ namespace utopia {
             FormEval<Expr, BAKEND_FLAG>::apply(expr, mat, vec, ctx);
         }
 
-
+        template<class Expr, class Matrix, class Vector>
+        static void eval(
+            Expr &expr,
+            Wrapper<Matrix, 2> &mat,
+            Wrapper<Vector, 1> &vec,
+            AssemblyContext<BAKEND_FLAG> &ctx)
+        {
+            FormEval<Expr, BAKEND_FLAG>::apply(expr, mat, vec, ctx);
+        }
 
         template<class Expr, typename T>
         static void eval(

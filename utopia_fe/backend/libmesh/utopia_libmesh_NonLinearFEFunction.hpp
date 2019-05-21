@@ -281,6 +281,17 @@ namespace utopia {
         return assemble(equations(equation), mat, vec);
     }
 
+    template<class FunctionSpaceT>
+    bool assemble(EquationIntegrator<FunctionSpaceT> &equation, USparseMatrix &mat, UVector &vec)
+    {
+        return LibMeshAssembler().assemble(equation, mat, vec);
+    }
+
+    template<class FunctionSpaceT>
+    bool assemble(const EquationIntegrator<FunctionSpaceT> &equation, USparseMatrix &mat, UVector &vec)
+    {
+        return LibMeshAssembler().assemble(equation, mat, vec);
+    }
 
     template<class Expr>
     void init_constraints(const Expr &expr)
