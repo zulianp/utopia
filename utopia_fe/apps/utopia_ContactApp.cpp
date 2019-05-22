@@ -24,17 +24,14 @@
 
 namespace utopia {
 
-
-
-
-    class SimulationInput : public Configurable {
+    class ContactAppInput : public Configurable {
     public:
         using ProductSpaceT    = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
         using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
         using ForcingFunctionT = utopia::UIForcingFunction<ProductSpaceT, UVector>;
         using ContactStressT   = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, USparseMatrix, UVector>;
 
-        SimulationInput(libMesh::Parallel::Communicator &comm) :
+        ContactAppInput(libMesh::Parallel::Communicator &comm) :
         mesh_(comm),
         space_(make_ref(mesh_)),
         dt_(0.1),
@@ -154,7 +151,7 @@ namespace utopia {
     };
 
 
-    static void solve_steady(SimulationInput &sim_in)
+    static void solve_steady(ContactAppInput &sim_in)
     {
         typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
 
@@ -211,7 +208,7 @@ namespace utopia {
 
     }
 
-    static void solve_transient(SimulationInput &sim_in)
+    static void solve_transient(ContactAppInput &sim_in)
     {
         typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> ContactSolverT;
 
@@ -265,7 +262,7 @@ namespace utopia {
 
     void ContactApp::run(Input &in)
     {
-        SimulationInput sim_in(comm());
+        ContactAppInput sim_in(comm());
         in.get("contact-problem", sim_in);
         sim_in.describe(std::cout);
 
