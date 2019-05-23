@@ -14,7 +14,7 @@
 		"qp-solver" : {
 			"backend" : "petsc",
 			"type" : "tron",
-			"max-it" : 5,
+			"max-it" : 8,
 			"verbose" : true,
 			"linear-solver" : {
 				"type" : "direct"

@@ -204,6 +204,10 @@ namespace utopia {
 
         os << "normalize_axial_force_by_area: " << normalize_axial_force_by_area_ << "\n";
 
+
+        os << "tibial-rotation-offset: " << tibial_rotation_offset_ << "\n";
+        os << "tibial-rotation-offset-axis: " << tibial_rotation_offset_axis_ << "\n";
+
     }
 
     void ISO14243_3::describe(std::ostream &os) const

@@ -377,29 +377,31 @@ namespace utopia {
         // sor->stol(1e-10);
         // solver->set_linear_solver(sor);
         solver->set_linear_solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
-        
         solver->set_tol(in.step_tol);
         solver->set_max_non_linear_iterations(in.max_nl_iter);
         solver->set_max_outer_loops(40);
+
+        //FIXME
+        is.get("simulation", *solver);
         
         
-        if(in.is_steady) {
-            if(in.use_pg) {
-                solver->set_use_pg(true);
-            } else {
-                solver->set_use_ssn(true);
-            }
-            // solver->tao().set_type("gpcg");
-            // solver->tao().verbose(true);
-            // solver->tao().atol(1e-8);
-            // solver->tao().rtol(1e-8);
-            // solver->tao().stol(1e-8);
-        } else {
-            // solver->tao().atol(1e-8);
-            // solver->tao().rtol(1e-8);
-            // solver->tao().stol(1e-8);
-            // solver->tao().verbose(true); //REMOVED_TRILINOS
-        }
+        // if(in.is_steady) {
+        //     if(in.use_pg) {
+        //         solver->set_use_pg(true);
+        //     } else {
+        //         solver->set_use_ssn(true);
+        //     }
+        //     // solver->tao().set_type("gpcg");
+        //     // solver->tao().verbose(true);
+        //     // solver->tao().atol(1e-8);
+        //     // solver->tao().rtol(1e-8);
+        //     // solver->tao().stol(1e-8);
+        // } else {
+        //     // solver->tao().atol(1e-8);
+        //     // solver->tao().rtol(1e-8);
+        //     // solver->tao().stol(1e-8);
+        //     // solver->tao().verbose(true); //REMOVED_TRILINOS
+        // }
         
         // auto ls = std::make_shared<Factorization<USparseMatrix, UVector>>();
         // auto ls = std::make_shared<GMRES<USparseMatrix, UVector>>();

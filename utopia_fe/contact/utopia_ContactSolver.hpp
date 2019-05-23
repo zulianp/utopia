@@ -17,6 +17,7 @@
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStress.hpp"
+#include "utopia_polymorphic_QPSolver.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -29,7 +30,7 @@
 namespace utopia {
 
     template<class Matrix, class Vector>
-    class ContactSolver {
+    class ContactSolver : public Configurable {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
@@ -50,7 +51,7 @@ namespace utopia {
           force_direct_solver_(false),
           bypass_contact_(false),
           exit_on_contact_solve_failure_(true),
-          sol_to_gap_on_contact_bdr_(false),
+          plot_gap_(false),
           max_outer_loops_(20),
           use_ssn_(false),
           use_pg_(false),
@@ -81,6 +82,17 @@ namespace utopia {
             tao->tao_type("tron");
             tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
             qp_solver_ = tao;
+        }
+
+        virtual void read(Input &is) override {
+            is.get("qp-solver", [this](Input &in) {
+                this->qp_solver_ = std::make_shared<PolymorphicQPSolver<USparseMatrix, UVector>>();
+                this->qp_solver_->read(in);
+            });
+
+            is.get("outer-loop-tol", tol_);
+            is.get("max-outer-loops", max_outer_loops_);
+            is.get("plot-gap", plot_gap_);
         }
 
         void set_tol(const Scalar tol)
@@ -132,7 +144,12 @@ namespace utopia {
             }
 
             if(export_results_) {
-                convert(x_, *V_->subspace(0).equation_system().solution);
+
+                if(plot_gap_) {
+                    convert(contact_.gap(), *V_->subspace(0).equation_system().solution);
+                } else {
+                    convert(x_, *V_->subspace(0).equation_system().solution);
+                }
 
                 create_aux_system();
                 update_aux_system(x_);
@@ -258,9 +275,9 @@ namespace utopia {
                 return;
             }
 
-            if(sol_to_gap_on_contact_bdr_) {
-                inc_c = e_mul(contact_.is_contact_node(), *box_c.upper_bound());
-            }
+            // if(plot_gap_) {
+            //     inc_c = e_mul(contact_.is_contact_node(), *box_c.upper_bound());
+            // }
 
             Chrono c;
             c.start();
@@ -449,8 +466,8 @@ namespace utopia {
             exit_on_contact_solve_failure_ = val;
         }
 
-        void set_sol_to_gap_on_contact_bdr(const bool val) {
-            sol_to_gap_on_contact_bdr_ = val;
+        void plot_gap(const bool val) {
+            plot_gap_ = val;
         }
 
         virtual bool stress(const Vector &x, Vector &result) {
@@ -584,7 +601,7 @@ namespace utopia {
         bool force_direct_solver_;
         bool bypass_contact_;
         bool exit_on_contact_solve_failure_;
-        bool sol_to_gap_on_contact_bdr_;
+        bool plot_gap_;
 
         int max_outer_loops_;
 

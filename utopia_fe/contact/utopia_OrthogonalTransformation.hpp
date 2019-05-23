@@ -45,8 +45,15 @@ namespace utopia {
             libMesh::DenseMatrix<double> &mat)
         {
             v[0] -= 1;
-            v /= length(v);
-            H.init(v);
+
+            auto len = length(v);
+
+            if(len == 0.) {
+                H.identity();
+            } else {
+                v /= len;
+                H.init(v);
+            }
 
             mat.resize(Dim, Dim);
 
