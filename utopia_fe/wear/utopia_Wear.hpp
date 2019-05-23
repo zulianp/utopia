@@ -12,6 +12,7 @@
 #include "utopia_libmesh.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia_ContactAssembler.hpp"
+#include "utopia_ContactSolver.hpp"
 
 
 #include <vector>
@@ -26,8 +27,8 @@ namespace utopia {
 
     class Wear {
     public:
-        // using ContactT = utopia::Contact;
-        using ContactT = utopia::ContactAssembler;
+        using ContactSolverT = utopia::ContactSolver<USparseMatrix, UVector>;
+        using ContactT       = ContactSolverT::ContactT;
 
         Wear();
 

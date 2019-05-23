@@ -6,6 +6,7 @@
 #include "utopia_ContactAssembler.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia.hpp"
+#include "utopia_ContactSolver.hpp"
 
 #include <memory>
 
@@ -18,8 +19,8 @@ namespace utopia {
 
     class ContactSystem {
     public:
-        // using ContactT = utopia::Contact;
-        using ContactT = utopia::ContactAssembler;
+        using ContactSolverT = utopia::ContactSolver<USparseMatrix, UVector>;
+        using ContactT = ContactSolverT::ContactT;
 
         ContactSystem(const std::shared_ptr<libMesh::EquationSystems> &equation_systems, const int main_system_num);
         ~ContactSystem();

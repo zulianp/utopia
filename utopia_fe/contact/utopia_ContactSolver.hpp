@@ -35,7 +35,8 @@ namespace utopia {
         DEF_UTOPIA_SCALAR(Matrix)
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
         typedef libMesh::Nemesis_IO Exporter;
-        using ContactT = utopia::ContactAssembler;
+        // using ContactT = utopia::ContactAssembler;
+        using ContactT = utopia::Contact;
         using ContactStressT = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, Matrix, Vector>;
 
         ContactSolver(
@@ -129,6 +130,15 @@ namespace utopia {
                 params_
             );
 
+            if(plot_gap_) {
+                UVector gap = e_mul(contact_.is_contact_node(), contact_.gap());
+                UVector is_contact = contact_.is_contact_node();
+
+                write("gap.e",        V_->subspace(0), gap);
+                write("is_contact.e", V_->subspace(0), is_contact);
+                plot_gap_ = false;
+            }
+
             deform_mesh(V_0.mesh(), V_0.dof_map(), -x);
 
             auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
@@ -145,11 +155,11 @@ namespace utopia {
 
             if(export_results_) {
 
-                if(plot_gap_) {
-                    convert(contact_.gap(), *V_->subspace(0).equation_system().solution);
-                } else {
-                    convert(x_, *V_->subspace(0).equation_system().solution);
-                }
+                // if(plot_gap_) {
+                //     convert(contact_.gap(), *V_->subspace(0).equation_system().solution);
+                // } else {
+                convert(x_, *V_->subspace(0).equation_system().solution);
+                // }
 
                 create_aux_system();
                 update_aux_system(x_);
@@ -224,7 +234,7 @@ namespace utopia {
                     } else {
                         if(i + 1 == max_outer_loops_) {
                             std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance " << tol_ << std::endl;
-                            return false;
+                            return true;
                         }
                     }
 

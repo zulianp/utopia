@@ -41,6 +41,7 @@ namespace utopia {
         is_steady(false),
         use_gmres(false),
         outer_loop_tol(1e-3),
+        max_outer_loops(1),
         plot_gap(false) {}
 
         void read(Input &is) override
@@ -63,6 +64,7 @@ namespace utopia {
                 is.get("is-steady", is_steady);
                 is.get("use-gmres", use_gmres);
                 is.get("outer-loop-tol", outer_loop_tol);
+                is.get("max-outer-loops", max_outer_loops);
                 is.get("plot-gap", plot_gap);
 
                 is.get("contact-stress", [this, &model](Input &in) {
@@ -148,6 +150,7 @@ namespace utopia {
         bool is_steady;
         bool use_gmres;
         double outer_loop_tol;
+        int max_outer_loops;
         bool plot_gap;
 
         std::shared_ptr< QPSolver<USparseMatrix, UVector> > qp_solver;
@@ -182,7 +185,7 @@ namespace utopia {
 
         sc.plot_gap(sim_in.plot_gap);
         sc.set_tol(sim_in.outer_loop_tol);
-        sc.set_max_outer_loops(30);
+        sc.set_max_outer_loops(sim_in.max_outer_loops);
         sc.set_use_ssn(sim_in.use_newton);
 
         if(sim_in.use_gmres) {
