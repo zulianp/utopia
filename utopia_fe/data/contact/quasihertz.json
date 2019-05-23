@@ -1,6 +1,6 @@
 {
 	"contact-problem": {
-		"*contact-stress" : true,
+		"contact-stress" : true,
 		"use-amg": false,
 		"use-ssnewton": true,
 		"dt": 0.2,
@@ -23,7 +23,7 @@
 			"*type" : "tron",
 			"backend" : "any",
 			"type" : "ssnewton",
-			"max-it" : 2,
+			"max-it" : 8,
 			"verbose" : true,
 			"linear-solver" : {
 				"type" : "direct"
@@ -81,12 +81,14 @@
 		},
 		"model": {
 			"*material" : "LinearElasticity",
-			"material"  : "NeoHookean",
+			"*material"  : "NeoHookean",
 			"*stabilization": "L2_LUMPED",
 			"stabilization-mag": 0.000001,
+			"rescaling" : 1e2,
 			"parameters": {
 				"mu": 0.3,
-				"lambda": 0.3,
+				"*lambda": 0.3,
+				"poisson-ratio" : 0.1,
 				"E" : 100,
 				"comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3"
 			}

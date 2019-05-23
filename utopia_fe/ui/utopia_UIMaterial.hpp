@@ -50,6 +50,8 @@ namespace utopia {
                 // StabilizedMaterial<FunctionSpace, Matrix, Vector> sm(V_, stabilization_mag, material_, stabilization);
                 material_ = std::make_shared<StabilizedMaterial<FunctionSpace, Matrix, Vector>>(V_, stabilization_mag, material_, stabilization);
             }
+
+            material_->rescaling(rescaling);
         }
 
         inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {

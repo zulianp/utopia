@@ -59,6 +59,7 @@ namespace utopia {
             }
 
             result = hessian * x;
+            result *= 1./rescaling_;
             return true;
         }
 

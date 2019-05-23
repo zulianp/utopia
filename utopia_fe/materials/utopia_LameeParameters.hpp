@@ -128,7 +128,6 @@ namespace utopia {
 
         static bool read_parameters(Input &in, ShearModulus &mu, FirstLameParameter &lambda)
         {
-
             in.get("mu", mu.value);
             in.get("lambda", lambda.value);
 
@@ -137,6 +136,7 @@ namespace utopia {
                 in.get("poisson-ratio", ni.value);
 
                 assert(ni.valid());
+                lambda.init(mu, ni);
             }
 
             return mu.valid() && lambda.valid();
