@@ -10,6 +10,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class ElasticMaterial {
     public:
+        using Scalar = UTOPIA_SCALAR(Vector);
+
         virtual ~ElasticMaterial() {}
         // virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
         virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
@@ -33,6 +35,13 @@ namespace utopia {
 
         virtual void clear() {}
         virtual bool is_linear() const { return false; }
+
+        virtual Scalar rescaling() const
+        {
+            return 1.0;
+        }
+
+        virtual void rescaling(const Scalar &) {}
     };
 
 }

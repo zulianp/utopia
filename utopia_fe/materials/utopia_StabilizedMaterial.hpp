@@ -11,6 +11,8 @@ namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
     class StabilizedMaterial final : public ElasticMaterial<Matrix, Vector> {
     public:
+        using Scalar = UTOPIA_SCALAR(Vector);
+
         enum StabilizationType {
             L2 = 0,
             H1 = 1,
@@ -81,6 +83,15 @@ namespace utopia {
 
         bool stress(const Vector &x, Vector &result) override {
             return material_->stress(x, result);
+        }
+
+        inline Scalar rescaling() const override
+        {
+            return material_->rescaling();
+        }
+
+        inline void rescaling(const Scalar &value) override {
+            material_->rescaling(value);
         }
 
     private:

@@ -20,8 +20,10 @@ namespace utopia {
     template<class FunctionSpaceT, class Matrix, class Vector>
     class LinearElasticity final : public ElasticMaterial<Matrix, Vector>, public ModularEquationIntegrator<FunctionSpaceT> {
     public:
+        using Scalar = UTOPIA_SCALAR(Vector);
+
         LinearElasticity(FunctionSpaceT &V, const LameeParameters &params)
-        : V_(V), params_(params), initialized_(false)
+        : V_(V), params_(params), initialized_(false), rescaling_(1.0)
         {}
 
         bool init(Matrix &hessian)
@@ -111,10 +113,20 @@ namespace utopia {
             return true;
         }
 
+        inline Scalar rescaling() const override
+        {
+            return rescaling_;
+        }
+
+        inline void rescaling(const Scalar &value) override {
+            rescaling_ = value;
+        }
+
     private:
         FunctionSpaceT &V_;
         LameeParameters params_;
         bool initialized_;
+        Scalar rescaling_;
 
         void init_integrators(const UVector &x)
         {
@@ -133,7 +145,7 @@ namespace utopia {
             auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
             auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-            auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+            auto b_form = integral(((2. * rescaling_) * mu) * inner(e_u, e_v) + (rescaling_ * lambda) * inner(div(u), div(v)));
             
             this->bilinear_integrator( 
                 bilinear_form(V_, b_form)
@@ -152,7 +164,7 @@ namespace utopia {
             auto e_u = 0.5 * ( transpose(grad(uk)) + grad(uk) );
             auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-            auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+            auto b_form = integral(((2. * rescaling_) * mu) * inner(e_u, e_v) + (rescaling_ * lambda) * inner(div(u), div(v)));
             
             this->linear_integrator( linear_form(make_ref(V_), b_form) );
         }
@@ -170,7 +182,7 @@ namespace utopia {
             auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
             auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-            auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+            auto b_form = integral(((2. * rescaling_) * mu) * inner(e_u, e_v) + (rescaling_ * lambda) * inner(div(u), div(v)));
             
             return assemble(b_form, hessian);
             // return assemble(*this->bilinear_integrator(), hessian);

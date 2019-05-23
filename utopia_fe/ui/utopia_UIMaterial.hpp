@@ -25,11 +25,13 @@ namespace utopia {
             std::string material = "LinearElasticity";
             std::string stabilization = "none";
             Scalar stabilization_mag = 0.0001;
+            Scalar rescaling = 1.0;
 
             is.get("material", material);
             is.get("stabilization", stabilization);
             is.get("stabilization-mag", stabilization_mag);
             is.get("parameters", params);
+            is.get("rescaling", rescaling);
 
             params.describe(std::cout);
 
