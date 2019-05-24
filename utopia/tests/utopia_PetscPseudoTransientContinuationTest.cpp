@@ -16,6 +16,9 @@ namespace utopia
             UTOPIA_RUN_TEST(PTC_small_test);
             UTOPIA_RUN_TEST(ASTRUM_small_test);
 
+
+            UTOPIA_RUN_TEST(CSR_test_paper); 
+
             // UTOPIA_RUN_TEST(affine_similarity_stiff_test);
         }
 
@@ -84,34 +87,27 @@ namespace utopia
         }        
 
 
-        // void affine_similarity_stiff_test()
-        // {
-        // 	if(mpi_world_size() >1)
-        // 		return;
+        void CSR_test_paper()
+        {
+        	if(mpi_world_size() >1)
+        		return;
 
 
-        // 	const SizeType n = 100;
+        	ContinuousStirredReactor<DMatrixd, DVectord> fun;
+        	DVectord x;
+        	fun.get_initial_guess(x);
 
-        // 	MildStiffExample<DMatrixd, DVectord> fun(n);
-        // 	DVectord x, g;
-        // 	fun.get_initial_guess(x);
+        	auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>(MATSOLVERPETSC, PCLU);
+            ASTRUM<DMatrixd, DVectord> solver(linear_solver); 
+            solver.tau_init(1e4); 
+            solver.scaling(false); 
 
-        // 	auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord>>();
-        // 	linear_solver->atol(1e-14);
-        // 	linear_solver->max_it(10000);
+            // solver.reset_mass_matrix(true); 
 
-        // 	AffineSimilarity<DMatrixd, DVectord> solver(linear_solver);
-
-        // 	DMatrixd I = identity(n,n);
-        // 	solver.set_mass_matrix(I);
-        // 	solver.set_scaling_matrix(I);
-        // 	solver.verbose(false);
-        // 	solver.atol(1e-9);
-        // 	solver.stol(1e-14);
-        // 	solver.max_it(500);
-        // 	solver.verbosity_level(VERBOSITY_LEVEL_NORMAL);
-        // 	solver.solve(fun, x);
-        // }
+            solver.verbose(verbose_);
+            solver.atol(1e-9);
+            solver.solve(fun, x);
+        }
 
         PseudoTransientContinuationTest()
         : _n(100), verbose_(true) { }

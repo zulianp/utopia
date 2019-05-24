@@ -118,6 +118,105 @@ namespace utopia
         }
     };
 
+
+    template<class Matrix, class Vector>
+    class ContinuousStirredReactor : public Function<Matrix, Vector>
+    {
+    public:
+        DEF_UTOPIA_SCALAR(Matrix)
+
+        ContinuousStirredReactor()
+        {
+            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
+        }
+
+        bool value(const Vector &x, typename Vector::Scalar &result) const override
+        {
+            assert(x.size().get(0) == 4);
+            Vector g = values(2, 0.0);
+            gradient(x, g);
+            result = 0.5 * norm2(g);
+            return true;
+        }
+
+        bool gradient(const Vector &x, Vector &g) const override
+        {
+            assert(x.size().get(0) == 4);
+            g = zeros(4);
+
+            {
+
+                const Read<Vector> read(x);
+                const Write<Vector> write(g);
+
+
+                const Scalar x1 = x.get(0);
+                const Scalar x2 = x.get(1);
+                const Scalar x3 = x.get(2);
+                const Scalar x4 = x.get(3);
+
+                g.set(0, 1.0-x1-(100.0*x1*x2));
+                g.set(1, 2.0-x2-(100.0*x1*x2)-(100.0*x2*x3)); 
+                g.set(2, -x3+(100.0*x1*x2)-(100*x2*x3));
+                g.set(3, -x4+(100.0*x2*x3));
+            }
+
+            g = -1.0*g; 
+
+            return true;
+        }
+
+        bool hessian(const Vector &x, Matrix &H) const override
+        {
+            assert(x.size().get(0) == 4);
+
+            H = zeros(4,4);
+
+            {
+                const Read<Vector> read(x);
+                const Write<Matrix> write(H);
+
+                const Scalar x1 = x.get(0);
+                const Scalar x2 = x.get(1);
+                const Scalar x3 = x.get(2);
+                const Scalar x4 = x.get(3);
+
+                H.set(0, 0, -1.0-(100.0*x2));
+                H.set(0, 1, -100.0*x1);
+                H.set(0, 2, 0.0);
+                H.set(0, 3, 0.0);
+
+                H.set(1, 0, -100.0*x2);
+                H.set(1, 1, -1.0-(100.0*x1)-(100.*x3));
+                H.set(1, 2, -100.0*x2);
+                H.set(1, 3, 0.0);
+
+                H.set(2, 0, 100.0*x2);
+                H.set(2, 1, 100.0*(x1-x3));
+                H.set(2, 2, -1.0-(100.0*x2));
+                H.set(2, 3, 0.0);            
+
+                H.set(3, 0, 0.0);
+                H.set(3, 1, 100.0*x3);
+                H.set(3, 2, 100.0*x2);
+                H.set(3, 3, -1.0);
+            }
+
+            H = -1.0*H; 
+
+            return true;
+        }
+
+
+        void get_initial_guess(Vector & x)
+        {
+            // x = values(4, 0.0);
+            // x = values(4, 10.0);
+            x = values(4, 25.0);
+        }
+
+    };
+
 }
 
 #endif //UTOPIA_SOLVER_TESTFUNCTIONS2D_HPP

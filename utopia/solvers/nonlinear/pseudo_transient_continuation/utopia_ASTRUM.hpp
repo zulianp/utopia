@@ -131,6 +131,7 @@ namespace utopia
 
             fun.hessian(x, H); 
 
+
             if(empty(I_) || reset_mass_matrix_==true)
             {
                 
@@ -480,6 +481,17 @@ namespace utopia
 
             Scalar nom = s_norm2 - dot(g, s); 
             Scalar denom = tau * s_norm2;
+
+
+            // TODO:: verify 
+            // Scalar nom = dot(s, s-g); 
+            // Scalar denom = tau * norm2(s)*norm2(s);
+
+
+           // nom = (dot(s, s - g));
+           // denom = norm(s)^2 * tau;
+           // mu = nom/denom; 
+
 
             return nom/denom; 
         }
