@@ -13,8 +13,6 @@ namespace utopia
 
         void run()
         {
-            std::cout<<"here..... \n"; 
-
             UTOPIA_RUN_TEST(PTC_small_test);
             UTOPIA_RUN_TEST(ASTRUM_small_test);
 
@@ -46,7 +44,7 @@ namespace utopia
             PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
             solver.reset_mass_matrix(false); 
 
-        	solver.verbose(false);
+        	solver.verbose(verbose_);
         	solver.atol(1e-9);
         	solver.solve(fun, x);
         	utopia_test_assert(approxeq(x, x_exact, 1e-6));
@@ -74,9 +72,12 @@ namespace utopia
             linear_solver->max_it(10000);
 
             ASTRUM<DMatrixd, DVectord> solver(linear_solver); 
+            solver.tau_init(2); 
+            solver.scaling(false); 
+
             // solver.reset_mass_matrix(true); 
 
-            solver.verbose(true);
+            solver.verbose(verbose_);
             solver.atol(1e-9);
             solver.solve(fun, x);
             utopia_test_assert(approxeq(x, x_exact, 1e-6));
@@ -113,10 +114,11 @@ namespace utopia
         // }
 
         PseudoTransientContinuationTest()
-        : _n(100) { }
+        : _n(100), verbose_(true) { }
 
     private:
         int _n;
+        bool verbose_; 
     };
 
 #endif //WITH_PETSC

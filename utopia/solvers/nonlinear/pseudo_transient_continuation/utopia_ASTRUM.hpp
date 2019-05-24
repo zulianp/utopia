@@ -69,12 +69,15 @@ namespace utopia
     public:
        ASTRUM(  const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
                 NewtonBase<Matrix, Vector>(linear_solver), 
-                tau_max_(1e9),
+                tau_max_(1e14),
                 tau_min_(1e-9), 
+                tau_zero_user_(-1),
                 alpha_treshold_(1e-10), 
                 max_inner_it_(5), 
                 reset_mass_matrix_(false), 
-                is_identity_(false)
+                is_identity_(false), 
+                scaling_user_provided_(false), 
+                scaling_(true)
                 {
                     verbosity_level_ =  VERBOSITY_LEVEL_NORMAL; 
                 }
@@ -85,8 +88,12 @@ namespace utopia
             NewtonBase<Matrix, Vector>::read(in);
             in.get("tau_max", tau_max_);
             in.get("tau_min", tau_min_);
+            in.get("tau_zero_user", tau_zero_user_);
             in.get("alpha_treshold", alpha_treshold_);
             in.get("max_inner_it", max_inner_it_);
+            in.get("reset_mass_matrix", reset_mass_matrix_); 
+            in.get("scaling", scaling_); 
+
         }
 
         void print_usage(std::ostream &os) const override
@@ -127,17 +134,42 @@ namespace utopia
             if(empty(I_) || reset_mass_matrix_==true)
             {
                 
-                if(this->verbose())
-                {
-                    std::cout<<"mass matrix not set, using Identity matrix ... \n";
-                }
+                // if(this->verbose())
+                // {
+                //     std::cout<<"mass matrix not set, using Identity matrix ... \n";
+                // }
 
                 I_  = local_identity(local_size(H).get(0), local_size(H).get(1)); 
                 is_identity_ = true; 
             }
 
-            Scalar  tau = 1./g_norm; 
-            // Scalar  tau = g_norm; 
+            if(!scaling_)
+            {
+                D_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+                D_inv_ = D_; 
+
+                // if(mpi_world_rank()==0){
+                //     std::cout<<" init of scaling matrix.... \n"; 
+                // }
+            }
+
+            if(empty(D_))
+            {
+
+                this->update_scaling_matrices(x, x);
+
+                // initialize D to identity 
+                // D_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+                // D_inv_ = D_; 
+
+                // if(mpi_world_rank()==0){
+                //     std::cout<<" init of scaling matrix from x .... \n"; 
+                // }
+            }            
+
+
+            Scalar tau = (tau_zero_user_ > 0)? tau_zero_user_ : std::max(1., 1./g_norm);
+
 
             bool converged = false; 
             SizeType it = 0; 
@@ -152,16 +184,21 @@ namespace utopia
 
             while(!converged)
             {   
-                // to be investigated
-                Matrix A = I_ - tau * H; 
+                // old version of Peter 
+                // Matrix A = I_ - (D_inv_ * (tau * H) * D_); 
+                Matrix A = D_inv_  * (I_ -  (tau * H)) * D_; 
+
                 s = 0*x; 
-                this->linear_solve(A, g, s);
+                Vector g_help = D_inv_ * g; 
+                this->linear_solve(A, g_help, s);                
 
-                r = g - A*s; 
+
+                // linear system 
+                // r = g - A*s; 
 
 
-                Vector x_trial = x + tau * s; 
-                s_norm = norm2(s); 
+                Vector x_trial = x + (tau * D_* s); 
+                s_norm = norm2(D_*s); 
 
                 fun.gradient(x_trial, g_new); 
                 g_norm_old = g_norm; 
@@ -193,7 +230,16 @@ namespace utopia
                 else
                 {
                     // std::cout<<"violation of nonpositivity of mu .... \n"; 
-                    tau = tau * g_norm_old/g_norm; 
+
+                    // Kelley, Keyes
+                    // tau = tau * g_norm_old/g_norm; 
+
+                    // original formula, no residual decrease required
+                    tau = estimate_tau(g_new, g, s, tau, s_norm); 
+
+                    // // Peters suggestion
+                    // tau = 0.5* tau * g_norm_old/g_norm; 
+
                     AS_form_used = false;
                     rho = 1.0; 
                 }
@@ -202,6 +248,11 @@ namespace utopia
                 if(rho>0)
                 {
                     // std::cout<<"step taken.... \n"; 
+                    if(!scaling_user_provided_ && scaling_)
+                    {
+                        this->update_scaling_matrices(x, x_trial);
+                    }
+
                     x = x_trial; 
                     g = g_new; 
                     fun.hessian(x, H); 
@@ -250,9 +301,52 @@ namespace utopia
 
         Scalar tau_max() const { return tau_max_; }
         Scalar tau_min() const { return tau_min_; }
+        Scalar tau_init() const { return tau_zero_user_; }
 
-        void tau_max(const Scalar & tau_max)  {  tau_max_ = tau_max; }
-        void tau_min(const Scalar & tau_min)  { tau_min_ = tau_min; }
+        void tau_max(const Scalar & tau_max)    {   tau_max_ = tau_max; }
+        void tau_min(const Scalar & tau_min)    {   tau_min_ = tau_min; }
+        void tau_init(const Scalar & tau_init)  {   tau_zero_user_ = tau_init; }
+
+
+        void scaling(const bool & flg)
+        {
+            scaling_ = flg; 
+        }
+
+        bool scaling() const
+        {
+            return scaling_; 
+        }
+
+
+        void set_scaling_matrix(const Matrix & D)
+        {
+            D_ = D; 
+
+            Vector d = diag(D_); 
+            D_inv_ = diag(1.0/d); 
+
+            scaling_user_provided_ = true; 
+            scaling_ = true; 
+        }                
+
+        void set_mass_matrix(const Matrix & M)
+        {
+            I_ = M; 
+
+            Matrix Diff  = local_identity(local_size(M).get(0), local_size(M).get(1)); 
+            Diff = Diff - I_; 
+
+            if(max(Diff) > 0)
+            {
+                is_identity_ = false; 
+            }
+            else
+            {
+                is_identity_ = true; 
+            }
+        }
+
 
     protected:
         virtual void print_statistics(  const SizeType & it, const Scalar & g_norm, 
@@ -278,24 +372,29 @@ namespace utopia
             }
         }
 
-    
-    public:
-        void set_mass_matrix(const Matrix & M)
+        void update_scaling_matrices(const Vector & x_old, const Vector & x_new)
         {
-            I_ = M; 
+            Vector x_scaling = local_values(local_size(x_old).get(0), 1.0); 
 
-            Matrix Diff  = local_identity(local_size(M).get(0), local_size(M).get(1)); 
-            Diff = Diff - I_; 
+            {   
+                Read<Vector>    r1(x_old), r2(x_new); 
+                auto tol = alpha_treshold_; 
+                each_write(x_scaling, [&x_old, &x_new, tol](const SizeType i) -> double 
+                { 
+                    return std::max(std::max(std::abs(x_old.get(i)), std::abs(x_new.get(i))), tol); 
+                });
 
-            if(max(Diff) > 0)
-            {
-                is_identity_ = false; 
             }
-            else
-            {
-                is_identity_ = true; 
-            }
+
+            D_ = diag(1./x_scaling); 
+            D_inv_ = diag(x_scaling);         
+
+            // if(mpi_world_rank()==0){
+            //     std::cout<<" scaling matrix updated .... \n"; 
+            // }
         }
+
+
 
 
     private: 
@@ -316,8 +415,8 @@ namespace utopia
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
-            Scalar nom = dot(g, s) - s_norm2; 
-            Scalar denom = dot(g_new, s) - s_norm2; 
+            Scalar nom = dot(D_inv_*g, s) - s_norm2; 
+            Scalar denom = dot(D_inv_*g_new, s) - s_norm2; 
 
             Scalar tau_new = 0.5*tau * std::abs(nom/denom); 
             // bool flg = this->clamp_tau(tau_new); 
@@ -326,7 +425,7 @@ namespace utopia
             // changing initial guess for fixed point iteration
             if(tau_new==tau_min_)
             {
-                tau_new = 1./Scalar(2.*norm2(g)); 
+                tau_new = 1./Scalar(2.*norm_l2_2(g)); 
             }
         
             return tau_new; 
@@ -445,6 +544,7 @@ namespace utopia
 
         Scalar tau_max_;            // clamping values of tau to prevent infty 
         Scalar tau_min_;            // clamping values of tau to prevent devision by zero 
+        Scalar tau_zero_user_; 
 
         Scalar alpha_treshold_;     // treshold on scaling
         SizeType max_inner_it_; 
@@ -452,6 +552,11 @@ namespace utopia
         Matrix I_; 
         bool reset_mass_matrix_; 
         bool is_identity_; 
+
+        Matrix D_; 
+        Matrix D_inv_; 
+        bool scaling_user_provided_; 
+        bool scaling_; 
 
     };
 

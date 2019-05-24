@@ -130,7 +130,7 @@ namespace utopia
                     run_qp_solver_test();
                 }else if(token == "uncon_bench") {
                     run_unconstrained_optimization_benchmark();
-                }else if(token == "pseudo_cont") {
+                }else if(token == "pseudo_continuation") {
                     runPetscPseudoTransientContinuationTest();
                 }                
                 
