@@ -230,15 +230,15 @@ namespace utopia
                 // mu is positive, so lets take PTC update formula
                 else
                 {
-                    // std::cout<<"violation of nonpositivity of mu .... \n"; 
+                    // std::cout<<"mu  is positive => 1st Lipschitz condition violated  .... \n"; 
 
-                    // Kelley, Keyes
+                    // Kelley, Keyes formula
                     // tau = tau * g_norm_old/g_norm; 
 
                     // original formula, no residual decrease required
                     tau = estimate_tau(g_new, g, s, tau, s_norm); 
 
-                    // // Peters suggestion
+                    // Peters suggestion
                     // tau = 0.5* tau * g_norm_old/g_norm; 
 
                     AS_form_used = false;

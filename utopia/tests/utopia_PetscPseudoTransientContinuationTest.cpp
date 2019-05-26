@@ -13,8 +13,8 @@ namespace utopia
 
         void run()
         {
-            UTOPIA_RUN_TEST(PTC_small_test);
-            UTOPIA_RUN_TEST(ASTRUM_small_test);
+            // UTOPIA_RUN_TEST(PTC_small_test);
+            // UTOPIA_RUN_TEST(ASTRUM_small_test);
 
 
             UTOPIA_RUN_TEST(CSR_test_paper); 
@@ -95,18 +95,31 @@ namespace utopia
 
         	ContinuousStirredReactor<DMatrixd, DVectord> fun;
         	DVectord x;
-        	fun.get_initial_guess(x);
+        	fun.get_initial_guess(x, 25.0);
 
         	auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>(MATSOLVERPETSC, PCLU);
             ASTRUM<DMatrixd, DVectord> solver(linear_solver); 
             solver.tau_init(1e4); 
             solver.scaling(false); 
 
+            // fun.inlet_concentration_A(0.5);
+            // fun.inlet_concentration_B(1.0);
+            // fun.inlet_concentration_C(3.0);
+            // fun.inlet_concentration_D(4.0);
+
+            // fun.rate_const_1(2); 
+            // fun.rate_const_2(3); 
+
+            // fun.vol_flow_rate(2);
+            // fun.reactor_volume(80);
             // solver.reset_mass_matrix(true); 
 
             solver.verbose(verbose_);
-            solver.atol(1e-9);
+            solver.atol(1e-10);
             solver.solve(fun, x);
+
+
+            // utopia_test_assert(approxeq(x, fun.exact_sol(), 1e-4));
         }
 
         PseudoTransientContinuationTest()
