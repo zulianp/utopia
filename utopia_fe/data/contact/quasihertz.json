@@ -7,7 +7,7 @@
 		"is-steady" : true,
 		"use-gmres" : true,
 		"outer-loop-tol" : 0.001,
-		"max-outer-loops" : 4,
+		"max-outer-loops" : 10,
 		"discretization" : "new",
 		"mesh": {
 			"type": "file",
@@ -27,6 +27,7 @@
 			"type" : "ssnewton",
 			"max-it" : 8,
 			"verbose" : true,
+			"use-adaptive-tol" : true,
 			"linear-solver" : {
 				"type" : "direct"
 			}
