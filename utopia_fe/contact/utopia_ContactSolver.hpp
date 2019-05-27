@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <fstream>
+#include <cassert>
 
 namespace utopia {
 
@@ -36,7 +37,7 @@ namespace utopia {
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
         typedef libMesh::Nemesis_IO Exporter;
         // using ContactT = utopia::ContactAssembler;
-        using ContactT = utopia::Contact;
+        using ContactT = utopia::IContact;
         using ContactStressT = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, Matrix, Vector>;
 
         ContactSolver(
@@ -60,6 +61,8 @@ namespace utopia {
           export_results_(false),
           aux_system_num_(-1)
         {
+            contact_ = utopia::make_unique<Contact>();
+
             io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
             output_path_ = utopia::Utopia::instance().get("output_path");
@@ -82,10 +85,18 @@ namespace utopia {
             auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
             tao->tao_type("tron");
             tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
-            qp_solver_ = tao;
+            qp_solver_ = tao;            
         }
 
         virtual void read(Input &is) override {
+
+            std::string discretization = "legacy";
+            is.get("discretization", discretization);
+
+            if(discretization != "legacy") {
+                contact_ = utopia::make_unique<ContactAssembler>();
+            }
+
             is.get("qp-solver", [this](Input &in) {
                 this->qp_solver_ = std::make_shared<PolymorphicQPSolver<USparseMatrix, UVector>>();
                 this->qp_solver_->read(in);
@@ -113,8 +124,8 @@ namespace utopia {
             auto &V_0 = V_->subspace(0);
 
             if(bypass_contact_) {
-                if(!contact_.initialized()) {
-                    contact_.init_no_contact(
+                if(!contact_->initialized()) {
+                    contact_->init_no_contact(
                         utopia::make_ref(V_0.mesh()),
                         utopia::make_ref(V_0.dof_map()));
                 }
@@ -124,15 +135,15 @@ namespace utopia {
 
             deform_mesh(V_0.mesh(), V_0.dof_map(), x);
 
-            contact_.assemble(
+            contact_->assemble(
                 utopia::make_ref(V_0.mesh()),
                 utopia::make_ref(V_0.dof_map()),
                 params_
             );
 
             if(plot_gap_) {
-                UVector gap = e_mul(contact_.is_contact_node(), contact_.gap());
-                UVector is_contact = contact_.is_contact_node();
+                UVector gap = e_mul(contact_->is_contact_node(), contact_->gap());
+                UVector is_contact = contact_->is_contact_node();
 
                 write("gap.e",        V_->subspace(0), gap);
                 write("is_contact.e", V_->subspace(0), is_contact);
@@ -156,7 +167,7 @@ namespace utopia {
             if(export_results_) {
 
                 // if(plot_gap_) {
-                //     convert(contact_.gap(), *V_->subspace(0).equation_system().solution);
+                //     convert(contact_->gap(), *V_->subspace(0).equation_system().solution);
                 // } else {
                 convert(x_, *V_->subspace(0).equation_system().solution);
                 // }
@@ -280,13 +291,13 @@ namespace utopia {
 
         void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
         {
-            if(linear_solver_ && !contact_.has_contact()) {
+            if(linear_solver_ && !contact_->has_contact()) {
                 linear_solver_->solve(lhs, rhs, inc_c_);
                 return;
             }
 
             // if(plot_gap_) {
-            //     inc_c = e_mul(contact_.is_contact_node(), *box_c.upper_bound());
+            //     inc_c = e_mul(contact_->is_contact_node(), *box_c.upper_bound());
             // }
 
             Chrono c;
@@ -334,11 +345,11 @@ namespace utopia {
             std::cout << "norm_g: " << norm_g << std::endl;
 
             //handle transformations
-            contact_.couple(g_, gc_);
+            contact_->couple(g_, gc_);
 
             //change sign to negative gradient
             gc_ *= -1.;
-            contact_.couple(H_, Hc_);
+            contact_->couple(H_, Hc_);
 
 
             std::cout << "applying bc.... " << std::flush;
@@ -352,12 +363,12 @@ namespace utopia {
             std::cout << "done" << std::endl;
 
             inc_c_ *= 0.;
-            qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap() - xc_)), inc_c_);
+            qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_)), inc_c_);
 
             xc_ += inc_c_;
 
             UVector inc;
-            contact_.uncouple(inc_c_, inc);
+            contact_->uncouple(inc_c_, inc);
             x_ += inc;
 
             first_ = false;
@@ -387,7 +398,8 @@ namespace utopia {
 
         const ContactT &contact() const
         {
-            return contact_;
+            assert(contact_);
+            return *contact_;
         }
 
         ElasticMaterial<Matrix, Vector> &material()
@@ -530,10 +542,10 @@ namespace utopia {
             UVector s, unscaled_s;
             if(contact_stress_) {
                 contact_stress_->assemble(x, unscaled_s);
-                // contact_.apply_orthogonal_trafo(s, unscaled_s);
+                // contact_->apply_orthogonal_trafo(s, unscaled_s);
             } else {
                 stress(x, s);
-                contact_.remove_mass(s, unscaled_s);
+                contact_->remove_mass(s, unscaled_s);
             }
 
             auto &V0 = V_->subspace(0);
@@ -595,7 +607,7 @@ namespace utopia {
         Vector xc_;
         Vector rhs_;
 
-        ContactT contact_;
+        std::unique_ptr<IContact> contact_;
 
         Vector inactive_set_;
         Vector active_set_;

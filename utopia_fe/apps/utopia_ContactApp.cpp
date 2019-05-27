@@ -157,7 +157,7 @@ namespace utopia {
     };
 
 
-    static void solve_steady(ContactAppInput &sim_in)
+    static void solve_steady(ContactAppInput &sim_in, Input &in)
     {
         typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
 
@@ -170,6 +170,8 @@ namespace utopia {
             sim_in.model(),
             params.contact_params
         );
+
+        in.get("contact-problem", sc);
 
         if(sim_in.contact_stress_) {
             sc.set_contact_stress(sim_in.contact_stress_);
@@ -215,7 +217,7 @@ namespace utopia {
 
     }
 
-    static void solve_transient(ContactAppInput &sim_in)
+    static void solve_transient(ContactAppInput &sim_in, Input &in)
     {
         typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> ContactSolverT;
 
@@ -227,6 +229,9 @@ namespace utopia {
             sim_in.dt(),
             params.contact_params
         );
+
+
+        in.get("contact-problem", sc);
 
         if(sim_in.contact_stress_) {
             sc.set_contact_stress(sim_in.contact_stress_);
@@ -274,9 +279,9 @@ namespace utopia {
         sim_in.describe(std::cout);
 
         if(sim_in.is_steady) {
-            solve_steady(sim_in);
+            solve_steady(sim_in, in);
         } else {
-            solve_transient(sim_in);
+            solve_transient(sim_in, in);
         }
     }
 }
