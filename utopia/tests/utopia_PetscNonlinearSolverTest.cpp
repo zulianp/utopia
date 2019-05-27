@@ -448,6 +448,9 @@ namespace utopia
 
             SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> petsc_ss_newton(lsolver);
             SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> homemade_ss_newton(lsolver);
+            InputParameters hm_params;
+            hm_params.set("use-adaptive-tol", true);
+            homemade_ss_newton.read(hm_params);
 
             // initial guess
             DVectord x_0 = values(_n, 0.0);
