@@ -238,7 +238,7 @@ namespace utopia {
 
                     ++n_exports;
 
-                    std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
+                    std::cout << "outer_loop: " << i << "/" << max_outer_loops_ << " diff: " << diff << std::endl;
                     if(diff < tol_) {
                         std::cout << "terminated at iteration " << i << " with diff " << diff << " <  " << tol_ << std::endl;
                         break;

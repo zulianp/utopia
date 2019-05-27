@@ -185,9 +185,9 @@ namespace utopia {
             sc.set_qp_solver(qp_solver);
         }
 
-        sc.plot_gap(sim_in.plot_gap);
-        sc.set_tol(sim_in.outer_loop_tol);
-        sc.set_max_outer_loops(sim_in.max_outer_loops);
+        // sc.plot_gap(sim_in.plot_gap);
+        // sc.set_tol(sim_in.outer_loop_tol);
+        // sc.set_max_outer_loops(sim_in.max_outer_loops);
         sc.set_use_ssn(sim_in.use_newton);
 
         if(sim_in.use_gmres) {
@@ -229,7 +229,6 @@ namespace utopia {
             sim_in.dt(),
             params.contact_params
         );
-
 
         in.get("contact-problem", sc);
 

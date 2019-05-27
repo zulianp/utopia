@@ -6,7 +6,8 @@
 		"dt": 0.2,
 		"is-steady" : true,
 		"use-gmres" : true,
-		"outer-loop-tol" : 1,
+		"outer-loop-tol" : 0.001,
+		"max-outer-loops" : 4,
 		"discretization" : "new",
 		"mesh": {
 			"type": "file",
