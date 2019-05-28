@@ -29,7 +29,7 @@ namespace utopia {
         UVector weighted_normal, normal;
         UVector area;
         UVector is_contact;
-        UVector is_glue_node;
+        UVector is_glue;
         UVector inv_mass_vector;
 
         // Factorization<USparseMatrix, UVector> solver;
@@ -99,7 +99,7 @@ namespace utopia {
 
         inline const UVector &is_glue_node() const override { 
             assert(contact_tensors_);
-            return contact_tensors_->is_glue_node;
+            return contact_tensors_->is_glue;
         }
         
         inline bool initialized() const override

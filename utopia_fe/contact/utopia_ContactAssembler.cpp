@@ -47,7 +47,8 @@ namespace utopia {
         out.weighted_gap    = perm * weighted_gap;
         out.weighted_normal = vector_perm * weighted_normal;
         out.is_contact      = perm * is_contact;
-        
+        out.is_glue         = perm * is_glue;
+    
         SizeType n_local_contact_nodes = 0;
         each_transform(out.is_contact, out.is_contact, [&n_local_contact_nodes](const SizeType i, const double val) -> double {
             if(val > 0) {
@@ -57,12 +58,26 @@ namespace utopia {
                 return 0.0;
             }
         });
-        
+
+        //remove filted out nodes (glue nodes are a subset of contact nodes)
+        out.is_glue = e_mul(out.is_glue, out.is_contact);
+
+        SizeType n_local_glue_nodes = 0;
+        each_transform(out.is_glue, out.is_glue, [&n_local_glue_nodes](const SizeType i, const double val) -> double {
+            if(val > 0) {
+                ++n_local_glue_nodes;
+                return 1.;
+            } else {
+                return 0.0;
+            }
+        });
+
         double sum_normal   = sum(out.weighted_normal);
         double sum_normal_e = sum(weighted_normal);
         
         std::cout << "n_local_contact_nodes: " << n_local_contact_nodes << std::endl;
-        std::cout << "sum(normal): " << sum_normal << " == " << sum_normal_e << std::endl;
+        std::cout << "n_local_glue_nodes:    " << n_local_glue_nodes << std::endl;
+        std::cout << "sum(normal):           " << sum_normal << " == " << sum_normal_e << std::endl;
     }
     
     bool ContactTensors::check_op(const USparseMatrix &T)
@@ -217,6 +232,8 @@ namespace utopia {
             const SizeType n_local_elems = adapter.n_local_elems();
             const SizeType n_local_dofs  = adapter.n_local_dofs();
             const SizeType spatial_dim   = adapter.spatial_dim();
+
+
             
             area.finalize(n_local_elems);
             area.fill(element_wise.area);
@@ -274,11 +291,13 @@ namespace utopia {
             D.finalize(n_local_dofs, n_local_dofs);
             gap.finalize(n_local_dofs);
             normal.finalize(n_local_dofs * spatial_dim);
+            is_glue.finalize(n_local_dofs);
             
             B.fill(remove, element_wise.B_x);
             D.fill(remove, element_wise.D_x);
             gap.fill(remove, element_wise.weighted_gap);
             normal.fill(element_wise.weighted_normal);
+            is_glue.fill(element_wise.is_glue);
             
             tensor_prod_with_identity(element_wise.B_x, spatial_dim, element_wise.B);
             tensor_prod_with_identity(element_wise.D_x, spatial_dim, element_wise.D);
@@ -342,14 +361,16 @@ namespace utopia {
         MatrixInserter B, D;
         MatrixInserter gap, normal;
         MatrixInserter area;
+        MatrixInserter is_glue;
         ContactTensors element_wise;
         std::shared_ptr<ContactTensors> dof_wise;
         
-        ContactDataBuffers(MPI_Comm comm) : B(comm), D(comm), gap(comm), normal(comm), area(comm) {
+        ContactDataBuffers(MPI_Comm comm) : B(comm), D(comm), gap(comm), normal(comm), area(comm), is_glue(comm, false) {
             dof_wise = std::make_shared<ContactTensors>();
         }
     private:
-        ContactDataBuffers(const ContactDataBuffers &other) : B(other.comm()), D(other.comm()), gap(other.comm()), normal(other.comm()), area(other.comm()) {}
+        ContactDataBuffers(const ContactDataBuffers &other) 
+        : B(other.comm()), D(other.comm()), gap(other.comm()), normal(other.comm()), area(other.comm()), is_glue(other.comm()) {}
     };
     
     
@@ -621,10 +642,10 @@ namespace utopia {
             auto master_tag = master.tag();
             auto slave_tag  = slave.tag();            
             
+            if(is_glue(master_tag, slave_tag)) {
+                data.is_glue.insert(dofs_s, 1.0);
+            }
 
-            // if(is_glue(master_tag, slave_tag)) {
-            //     std::cout << "IS_GLUE: " << master_tag << ", " << slave_tag << std::endl;
-            // }
             // std::cout << moonolith::measure(warped_contact.slave) << " == " << isect_area << " == " << moonolith::measure(q_slave) << std::endl;
         }
         
