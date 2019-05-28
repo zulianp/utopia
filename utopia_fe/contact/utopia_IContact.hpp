@@ -4,6 +4,7 @@
 #include "utopia.hpp"
 #include "utopia_fe_base.hpp"
 #include "moonolith_search_radius.hpp"
+#include "moonolith_is_glue.hpp"
 
 #include <vector>
 #include <utility>
@@ -21,11 +22,12 @@ namespace utopia {
     class ContactParams {
     public:
         ContactParams()
-        : search_radius(0.1), variable_number(0), use_biorthogonal_basis(true)
+        : search_radius(0.1), is_glue(std::make_shared<moonolith::IsGlue>()), variable_number(0), use_biorthogonal_basis(true)
         {}
 
         double search_radius;
         std::shared_ptr< moonolith::SearchRadius<double> > side_set_search_radius;
+        std::shared_ptr< moonolith::IsGlue > is_glue;
         std::vector<std::pair<int, int> > contact_pair_tags;
         std::vector<bool> glued;
         unsigned int variable_number;

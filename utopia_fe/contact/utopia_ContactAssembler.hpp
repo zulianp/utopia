@@ -18,7 +18,6 @@ namespace utopia {
 
         
         void finalize(const SizeType spatial_dim, const bool normalize = true);
-        // void determine_glued(const ContactParams &params);
 
         static bool check_op(const USparseMatrix &T);
 

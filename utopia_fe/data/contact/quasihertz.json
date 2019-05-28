@@ -104,7 +104,8 @@
 			"pairs": [
 				{
 					"master": 1,
-					"slave": 3
+					"slave": 3,
+					"glue" : true
 				}
 			],
 			"search-radius" : {

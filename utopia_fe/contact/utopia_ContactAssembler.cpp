@@ -362,6 +362,7 @@ namespace utopia {
         using Vector    = moonolith::Vector<double, Dim>;
         
         ContactDataBuffers &data;
+        const moonolith::IsGlue &is_glue;
         
         //algorithms
         moonolith::AffineContact<double, Dim> affine_contact;
@@ -432,8 +433,8 @@ namespace utopia {
             std::cout << "sum_v: " << sum_v << std::endl;
         }
         
-        ProjectionAlgorithm(ContactDataBuffers &data)
-        : data(data), lm_q_master(Dim-1), lm_q_slave(Dim-1)
+        ProjectionAlgorithm(ContactDataBuffers &data, const moonolith::IsGlue &is_glue)
+        : data(data), lm_q_master(Dim-1), lm_q_slave(Dim-1), is_glue(is_glue)
         {
             trafo_m = std::make_shared<Trafo>();
             trafo_s = std::make_shared<Trafo>();
@@ -620,6 +621,10 @@ namespace utopia {
             auto master_tag = master.tag();
             auto slave_tag  = slave.tag();            
             
+
+            // if(is_glue(master_tag, slave_tag)) {
+            //     std::cout << "IS_GLUE: " << master_tag << ", " << slave_tag << std::endl;
+            // }
             // std::cout << moonolith::measure(warped_contact.slave) << " == " << isect_area << " == " << moonolith::measure(q_slave) << std::endl;
         }
         
@@ -743,7 +748,7 @@ namespace utopia {
                 );
             }
 
-            ProjectionAlgorithm<Dim> contact_algo(contact_data);
+            ProjectionAlgorithm<Dim> contact_algo(contact_data, *params.is_glue);
             contact_algo.use_biorth = params.use_biorthogonal_basis;
             algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
                 return contact_algo.apply(master, slave);

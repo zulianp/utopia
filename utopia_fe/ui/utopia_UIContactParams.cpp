@@ -32,6 +32,8 @@ namespace utopia {
             use_pg = true;
         }
 
+        contact_params.is_glue = std::make_shared<moonolith::IsGlue>();
+
         is.get("n-transient-steps", n_transient_steps);
 
         is.get("pairs", [this,&temp](Input &is) {
@@ -50,9 +52,9 @@ namespace utopia {
 
                 contact_params.contact_pair_tags.push_back({ master, slave });
                 contact_params.glued.push_back(is_glued);
+                contact_params.is_glue->insert(master, slave);
             });
         });
-
 
         contact_surfaces.clear();
         contact_surfaces.insert(contact_surfaces.end(), temp.begin(), temp.end());
