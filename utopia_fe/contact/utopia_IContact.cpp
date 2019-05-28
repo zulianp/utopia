@@ -12,6 +12,11 @@ namespace utopia {
             os << p.first << ", " << p.second << "\n";
         }
 
+        if(side_set_search_radius) {
+            os << "search-radius: " << std::endl;
+            side_set_search_radius->describe(os);
+        }
+
         os << std::endl;
     }
 

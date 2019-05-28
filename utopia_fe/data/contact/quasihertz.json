@@ -7,15 +7,15 @@
 		"is-steady" : true,
 		"use-gmres" : true,
 		"outer-loop-tol" : 0.001,
-		"max-outer-loops" : 10,
+		"max-outer-loops" : 20,
 		"discretization" : "new",
 		"mesh": {
 			"type": "file",
 			"path_0" : "../data/contact/contact_cubes.e",
 			"path_1" : "../data/contact/signorini_79207.e",
 			"path_2" : "../data/contact/quasi_hertz_91.e",
-			"path"   : "../data/contact/quasi_hertz_750.e",
-			"path_4" : "../data/contact/quasi_hertz_750_smooth.e",
+			"path_3"   : "../data/contact/quasi_hertz_750.e",
+			"path" : "../data/contact/quasi_hertz_750_smooth.e",
 			"path_5" : "../data/contact/quasi_hertz_8732.e",
 			"path_6" : "../data/contact/quasi_hertz_8732_smooth.e",
 			"order" : 2
@@ -106,7 +106,16 @@
 					"master": 1,
 					"slave": 3
 				}
-			]
+			],
+			"search-radius" : {
+			    "default" : 0.7,
+			    "sides" : [
+			        {
+			            "id" : 1,
+			            "value" : 0.3
+			        }
+			    ]
+			}
 		}
 	}
 }

@@ -18,6 +18,7 @@ namespace utopia {
 
         
         void finalize(const SizeType spatial_dim, const bool normalize = true);
+        // void determine_glued(const ContactParams &params);
 
         static bool check_op(const USparseMatrix &T);
 
@@ -29,6 +30,7 @@ namespace utopia {
         UVector weighted_normal, normal;
         UVector area;
         UVector is_contact;
+        UVector is_glue_node;
         UVector inv_mass_vector;
 
         // Factorization<USparseMatrix, UVector> solver;
@@ -37,6 +39,8 @@ namespace utopia {
     class ContactAssembler final : public IContact {
     public:
         using IContact::assemble;
+
+        void read(Input &) override;
 
         bool assemble(
             libMesh::MeshBase &mesh,
@@ -92,6 +96,11 @@ namespace utopia {
         inline const UVector &is_contact_node() const override { 
             assert(contact_tensors_);
             return contact_tensors_->is_contact;
+        }
+
+        inline const UVector &is_glue_node() const override { 
+            assert(contact_tensors_);
+            return contact_tensors_->is_glue_node;
         }
         
         inline bool initialized() const override

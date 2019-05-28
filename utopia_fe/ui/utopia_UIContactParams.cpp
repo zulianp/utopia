@@ -40,7 +40,8 @@ namespace utopia {
                 is.get("master", master);
                 is.get("slave", slave);
 
-                            // std::cout << master << " " << slave << std::endl;
+                bool is_glued = false;
+                is.get("glue", is_glued);
 
                 assert(master != -1);
                 assert(slave  != -1);
@@ -48,11 +49,34 @@ namespace utopia {
                 temp.insert(slave);
 
                 contact_params.contact_pair_tags.push_back({ master, slave });
+                contact_params.glued.push_back(is_glued);
             });
         });
 
 
         contact_surfaces.clear();
         contact_surfaces.insert(contact_surfaces.end(), temp.begin(), temp.end());
+
+        is.get("search-radius", [this](Input &in) {
+            in.get("default", contact_params.search_radius);
+
+            contact_params.side_set_search_radius = std::make_shared<moonolith::SearchRadius<double>>(contact_params.search_radius);
+
+            in.get("sides", [this](Input &is) {
+                is.get_all([this](Input &is) {
+                    int id = -1;
+                    double value = contact_params.search_radius;
+
+                    is.get("id", id);
+                    is.get("value", value);
+
+                    contact_params.side_set_search_radius->insert(id, value);
+                });
+            });
+        });
+
+        if(!contact_params.side_set_search_radius) {
+            contact_params.side_set_search_radius = std::make_shared<moonolith::SearchRadius<double>>(contact_params.search_radius);
+        }
     }
 }

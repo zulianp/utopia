@@ -27,7 +27,7 @@
 #include "libmesh/mesh_refinement.h"
 
 namespace utopia {
-    
+
     
     void ContactTensors::convert(const USparseMatrix &perm,
                                  const USparseMatrix &vector_perm,
@@ -194,6 +194,11 @@ namespace utopia {
         
         complete_transformation = T * orthogonal_trafo;
     }
+
+    // void ContactTensors::determine_glued(const ContactParams &params)
+    // {
+    //     is_glue_node = local_zeros(local_size(is_contact));
+    // }
     
     
     class ContactDataBuffers {
@@ -611,7 +616,9 @@ namespace utopia {
             //check on the area
             assert(isect_area > 0.);
             area += isect_area;
-            
+        
+            auto master_tag = master.tag();
+            auto slave_tag  = slave.tag();            
             
             // std::cout << moonolith::measure(warped_contact.slave) << " == " << isect_area << " == " << moonolith::measure(q_slave) << std::endl;
         }
@@ -721,13 +728,21 @@ namespace utopia {
             // s.verbosity_level = 3;
             // s.disable_redistribution = true;
             AlogrithmT algo(m_comm, cm, s);
+
+            if(params.side_set_search_radius) {
+                params.side_set_search_radius->describe(std::cout);
             
-            algo.init(
-                      adapter,
+                algo.init(adapter,
+                      params.contact_pair_tags,
+                      params.side_set_search_radius
+                    );
+            } else {
+                algo.init(adapter,
                       params.contact_pair_tags,
                       params.search_radius
-                      );
-            
+                );
+            }
+
             ProjectionAlgorithm<Dim> contact_algo(contact_data);
             contact_algo.use_biorth = params.use_biorthogonal_basis;
             algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
@@ -738,10 +753,7 @@ namespace utopia {
             std::cout << "area: " << contact_algo.area << std::endl;
             
             UVector volumes;
-            contact_algo.assemble_volumes(
-                                          adapter,
-                                          volumes
-                                          );
+            contact_algo.assemble_volumes(adapter,volumes);
             
             contact_data.finalize(adapter, volumes, contact_algo.alpha, contact_algo.use_biorth);
             return contact_algo.area > 0.;
@@ -889,6 +901,12 @@ namespace utopia {
         } else {
             out = contact_tensors_->D_inv * in;
         }
+    }
+
+
+    void ContactAssembler::read(Input &in)
+    {
+
     }
 }
 

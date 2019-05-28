@@ -3,6 +3,7 @@
 
 #include "utopia.hpp"
 #include "utopia_fe_base.hpp"
+#include "moonolith_search_radius.hpp"
 
 #include <vector>
 #include <utility>
@@ -24,17 +25,21 @@ namespace utopia {
         {}
 
         double search_radius;
+        std::shared_ptr< moonolith::SearchRadius<double> > side_set_search_radius;
         std::vector<std::pair<int, int> > contact_pair_tags;
+        std::vector<bool> glued;
         unsigned int variable_number;
         bool use_biorthogonal_basis;
 
         void describe(std::ostream &os) const;
     };
 
-    class IContact {
+    class IContact : public Configurable {
     public:
         IContact() {}
         virtual ~IContact() {}
+
+        virtual void read(Input &) override {}
 
         virtual bool init_no_contact(
             const std::shared_ptr<libMesh::MeshBase> &mesh,
@@ -59,6 +64,8 @@ namespace utopia {
         
         virtual void remove_mass(const UVector &in, UVector &out) const = 0;
         virtual const UVector &is_contact_node() const = 0;
+        virtual const UVector &is_glue_node() const = 0;
+
         virtual bool initialized() const = 0;
         virtual bool has_contact() const = 0;
         virtual void print_debug_info() = 0;
