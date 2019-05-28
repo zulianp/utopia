@@ -70,6 +70,7 @@ namespace utopia {
 
         virtual bool initialized() const = 0;
         virtual bool has_contact() const = 0;
+        virtual bool has_glue() const  { return false; }
         virtual void print_debug_info() = 0;
     };
 }

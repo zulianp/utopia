@@ -112,7 +112,12 @@ namespace utopia {
             return has_contact_;
         }
 
-        ContactAssembler() : has_contact_(false) {}
+        inline bool has_glue() const override
+        {
+            return has_glue_;
+        }
+
+        ContactAssembler() : has_contact_(false), has_glue_(false) {}
 
         inline void print_debug_info() override
         {
@@ -122,6 +127,7 @@ namespace utopia {
     private:
         std::shared_ptr<ContactTensors> contact_tensors_;
         bool has_contact_;
+        bool has_glue_;
     };
 
 }

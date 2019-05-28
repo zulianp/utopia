@@ -843,7 +843,15 @@ namespace utopia {
                 dof_map);
         }
         
+        has_glue_ = has_contact_ && !params.is_glue->empty();
 
+        if(has_glue_) {
+            double n_glued = sum(contact_tensors_->is_glue);
+
+            if(n_glued == 0.) {
+                has_glue_ = false;
+            }
+        }
 
         overall_time.stop();
         std::cout << "ContactAssembler::assemble: " << overall_time << std::endl;
@@ -906,6 +914,7 @@ namespace utopia {
         contact_tensors_->orthogonal_trafo  = local_identity(n_local_dofs, n_local_dofs);
         contact_tensors_->complete_transformation = local_identity(n_local_dofs, n_local_dofs);
         has_contact_ = false;
+        has_glue_ = false;
         return true;
     }
 
