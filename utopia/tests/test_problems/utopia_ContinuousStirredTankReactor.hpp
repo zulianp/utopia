@@ -12,7 +12,7 @@ namespace utopia
 {
 
     /**
-     * @brief       Example taken from "Numerical methods for chemical engineers with MATLAB applications" by Constantinides, N. Mostoufi, et al.
+     * @brief       Example taken from "Numerical methods for chemical engineers with MATLAB applications" by Constantinides, Mostoufi, et al.
      *              Example used for testing ASTRUM solver in "A new adaptive approach to pseudo-transient continuation method" by Kopanicakova, Krause, Deuflhard
      *              
      *             Note: - example can run only in serial  
@@ -44,7 +44,7 @@ namespace utopia
             {
                 const Write<Vector> write2(x_exact_);
 
-                // valid only for constants as choosen in the constructor
+                // valid only for constants choosen in the constructor
                 x_exact_.set(0, 0.056613650336565);
                 x_exact_.set(1, 0.166635845605265);
                 x_exact_.set(2, 0.053408544932134);

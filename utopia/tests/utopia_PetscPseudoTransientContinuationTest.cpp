@@ -94,29 +94,34 @@ namespace utopia
 
 
         	ContinuousStirredReactor<DMatrixd, DVectord> fun;
-        	DVectord x;
-        	fun.get_initial_guess(x, 25.0);
+        	DVectord x0, x;
+        	fun.get_initial_guess(x0, 0.0);
 
         	auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>(MATSOLVERPETSC, PCLU);
-            ASTRUM<DMatrixd, DVectord> solver(linear_solver); 
-            solver.tau_init(1e4); 
-            solver.scaling(false); 
-
-            // fun.inlet_concentration_A(0.5);
-            // fun.inlet_concentration_B(1.0);
-            // fun.inlet_concentration_C(3.0);
-            // fun.inlet_concentration_D(4.0);
-
-            // fun.rate_const_1(2); 
-            // fun.rate_const_2(3); 
-
-            // fun.vol_flow_rate(2);
-            // fun.reactor_volume(80);
-            // solver.reset_mass_matrix(true); 
-
+            // ASTRUM<DMatrixd, DVectord> solver(linear_solver); 
+            PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
+            // solver.scaling(false); 
+            solver.reset_mass_matrix(true); 
             solver.verbose(verbose_);
-            solver.atol(1e-10);
-            solver.solve(fun, x);
+            solver.atol(1e-8);
+            solver.max_it(5000000);
+
+            // std::vector<double> vec_tau = {1e-6, 1e-4, 1e-2, 1, 1e2, 1e4, 1e6}; 
+            // std::vector<double> vec_tau = {1, 1e2, 1e4, 1e6}; 
+            // std::vector<double> vec_tau = {1e-4, 1e-2}; 
+            // std::vector<double> vec_tau = {1e-8}; 
+
+            std::vector<double> vec_tau = {1e-4}; 
+
+
+
+            for(auto i=0; i < vec_tau.size(); i++)
+            {
+                x = x0; 
+                solver.tau_init(vec_tau[i]); 
+                std::cout<<"---- Solve with tau: "<< vec_tau[i] << " \n \n"; 
+                solver.solve(fun, x);
+            }
 
 
             // utopia_test_assert(approxeq(x, fun.exact_sol(), 1e-4));

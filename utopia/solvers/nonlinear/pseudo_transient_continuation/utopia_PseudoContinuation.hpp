@@ -32,7 +32,7 @@ namespace utopia
 
     public:
        PseudoContinuation(  const std::shared_ptr <Solver> &linear_solver):
-                            NewtonBase<Matrix, Vector>(linear_solver), tau_max_(1e14),reset_mass_matrix_(false)
+                            NewtonBase<Matrix, Vector>(linear_solver), tau_max_(1e14),reset_mass_matrix_(false), tau_zero_user_(-1)
         {
 
         }
@@ -46,6 +46,17 @@ namespace utopia
         {
             return tau_max_; 
         }
+        
+        Scalar tau_init() const 
+        { 
+            return tau_zero_user_; 
+        }
+        
+        void tau_init(const Scalar & tau_init)  
+        {   
+            tau_zero_user_ = tau_init; 
+        }
+
 
         void reset_mass_matrix(const bool reset_mass)
         {
@@ -80,7 +91,7 @@ namespace utopia
             bool converged = false; 
             SizeType it = 0; 
 
-            Scalar g_norm, g_old, s_norm=9e9, tau; 
+            Scalar g_norm, g_old, s_norm=9e9; 
 
             Vector g = local_zeros(local_size(x)), s; 
             Matrix H, H_damped; 
@@ -95,7 +106,8 @@ namespace utopia
                 I_ = local_identity(local_size(H).get(0), local_size(H).get(1)); 
             }
 
-            tau = 1.0/g_norm; 
+            // tau = 1.0/g_norm; 
+            Scalar tau = (tau_zero_user_ > 0)? tau_zero_user_ : std::max(1., 1./g_norm);
 
             // follows paper Combining TR methods and Rosenbrock Methods for Gradient systems
             // tau = std::min(g_norm, 10.0); 
@@ -148,6 +160,7 @@ namespace utopia
         Scalar tau_max_; 
         Matrix I_;
         bool reset_mass_matrix_; 
+        Scalar tau_zero_user_; 
 
 
     };

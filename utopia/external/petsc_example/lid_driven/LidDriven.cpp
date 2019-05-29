@@ -306,6 +306,9 @@ int main(int argc,char **argv)
     //solver.set_scaling_matrix(utopia::local_identity(local_size(Mass_utopia).get(0), local_size(Mass_utopia).get(1))); 
     
 
+    std::cout<<"mx: "<< mx << "   my: "<< my << "  \n"; 
+
+
       DSMatrixd Mass_utopia = identity(dim, dim); 
       std::cout<<"only in serial \n"; 
       std::cout<<"dim: "<< dim << "  \n"; 
@@ -315,13 +318,17 @@ int main(int argc,char **argv)
 
         for(auto i=0; i < dim; i++)
         {
-          if(Marker_u.get(i) == 1 ||Marker_u.get(i) == 2)
+          if(Marker_u.get(i) == 1 || Marker_u.get(i) == 2)
+          {
             Mass_utopia.set(i,i, 0);
+          }
         }
       }
 
       // Mass_utopia = 1./(0.0416667) * Mass_utopia; 
-      Mass_utopia = 1./(0.0208333) * Mass_utopia; 
+      auto dx   = 1.0/(mx-1);
+      std::cout<<"dx: "<< dx << " \n"; 
+      Mass_utopia = 1./dx * Mass_utopia; 
       
 //////////////////////////////////////////////////////////////////////////////////////////////////
     // auto subproblem = std::make_shared<utopia::Dogleg<DSMatrixd, DVectord> >();
@@ -334,13 +341,13 @@ int main(int argc,char **argv)
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
     solver.set_mass_matrix(Mass_utopia); 
     solver.verbose(true);
+    // solver.tau_init(1e2);
+    solver.set_max_inner_it(1);
 
-    
+
+      
 
     // solver.tau_option(3); 
     // solver.use_m(false); 
@@ -349,6 +356,7 @@ int main(int argc,char **argv)
     solver.max_it(1000); 
 
     // solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+    // x_u = 0*x_u; 
     solver.solve(fun, x_u); 
 
 
@@ -356,7 +364,7 @@ int main(int argc,char **argv)
     convert(x_u, x); 
   }
 
-
+  std::cout<<"saving to vtk..... \n"; 
   Save_VTK_XML(da, x, "output.vtk"); 
 
   /*
@@ -610,10 +618,11 @@ PetscErrorCode Save_VTK_XML(DM da,Vec X,const char filename[])
   // ierr = PetscViewerDestroy(&view);CHKERRQ(ierr);
 
 
-  PetscViewerASCIIOpen(PETSC_COMM_WORLD, "testing.vtk", &viewer);
+  PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename, &viewer);
   PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_VTK);
   DMDASetUniformCoordinates(da, 0.0, 1, 0.0, 1, 0.0, 0.0);
   DMView(da, viewer);
+  VecView(X, viewer);
   VecView(X, viewer);
   PetscViewerDestroy(&viewer);
 
