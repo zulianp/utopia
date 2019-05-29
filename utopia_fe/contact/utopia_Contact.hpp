@@ -56,7 +56,7 @@ namespace utopia {
         }
 
         inline const UVector &is_contact_node() const override { return is_contact_node_; }
-        inline const UVector &is_glue_node() const override { return is_contact_node_; }
+        inline const UVector &is_glue_node() const override { return is_glue_node_; }
         
         inline bool initialized() const override
         {

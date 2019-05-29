@@ -835,7 +835,7 @@ namespace utopia {
                                                      );
 
             if(black_list_) {
-                black_list_->init(adapter.mesh());
+                black_list_->init(mesh);
             }
             
             c.stop();

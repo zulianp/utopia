@@ -152,6 +152,8 @@ namespace utopia {
                 write("is_contact.e",   V_->subspace(0), is_contact);
                 write("normals.e",      V_->subspace(0), normals);
                 write("is_glue_node.e", V_->subspace(0), is_glue_node);
+
+                
                 plot_gap_ = false;
             }
 
