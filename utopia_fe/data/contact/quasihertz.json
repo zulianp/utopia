@@ -7,7 +7,7 @@
 		"is-steady" : true,
 		"use-gmres" : true,
 		"outer-loop-tol" : 0.001,
-		"max-outer-loops" : 20,
+		"max-outer-loops" : 1,
 		"discretization" : "new",
 		"mesh": {
 			"type": "file",
@@ -93,7 +93,6 @@
 				"*lambda": 0.3,
 				"poisson-ratio" : 0.1,
 				"E" : 100,
-				"comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3"
 			}
 		},
 
@@ -104,8 +103,7 @@
 			"pairs": [
 				{
 					"master": 1,
-					"slave": 3,
-					"glue" : true
+					"slave": 3
 				}
 			],
 			"search-radius" : {

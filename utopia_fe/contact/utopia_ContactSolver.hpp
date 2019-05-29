@@ -363,7 +363,26 @@ namespace utopia {
             std::cout << "done" << std::endl;
 
             inc_c_ *= 0.;
-            qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_)), inc_c_);
+
+            if(contact_->has_glue()) {  
+                auto constr = make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_));
+                constr.fill_empty_bounds();
+
+                auto &u = *constr.upper_bound();
+                auto &l = *constr.lower_bound();
+
+                Write<UVector> wu(u), wl(l);
+                each_read(contact_->is_glue_node(), [&constr, &l, &u](const SizeType i, const double val) {
+                    if(val > 0.) {
+                        u.set(i, 0.0);
+                        l.set(i, 0.0);
+                    }   
+                });
+
+                qp_solve(Hc_, gc_, constr, inc_c_);
+            } else {
+                qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_)), inc_c_);
+            }
 
             xc_ += inc_c_;
 

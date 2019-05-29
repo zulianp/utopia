@@ -52,7 +52,10 @@ namespace utopia {
 
                 contact_params.contact_pair_tags.push_back({ master, slave });
                 contact_params.glued.push_back(is_glued);
-                contact_params.is_glue->insert(master, slave);
+
+                if(is_glued) {
+                    contact_params.is_glue->insert(master, slave);
+                }
             });
         });
 

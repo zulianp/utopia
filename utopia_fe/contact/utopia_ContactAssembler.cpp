@@ -206,6 +206,21 @@ namespace utopia {
                 }
             }
         }
+
+
+        {
+            auto r = range(is_glue);
+            ReadAndWrite<UVector> rw(is_glue);
+            for(auto i = r.begin(); i < r.end(); i += spatial_dim) {
+                auto val = is_glue.get(i);
+
+                if(val > 0.) {
+                    for(SizeType d = 1; d < spatial_dim; ++d) {
+                        is_glue.set(i + d, val);
+                    }
+                }
+            }
+        }
         
         complete_transformation = T * orthogonal_trafo;
     }
@@ -268,6 +283,9 @@ namespace utopia {
                             for(auto d : dofs) {
                                 remove[d - cr.begin()] = true;
                             }
+
+                            std::cout << "=====================================\n";
+                            std::cout << i << ") removed. " << ratio << " % of slave volume" << std::endl;
                             
                         } else {
                             // std::cout << "=====================================\n";
@@ -467,6 +485,7 @@ namespace utopia {
                 warped_contact.invert_plane_dir = true;
                 
                 //TODO check for the affine contact too
+                // affine_contact.invert_plane_dir = true;
             }
         }
         
@@ -577,6 +596,8 @@ namespace utopia {
                 
                 l2_project_normal(*slave_fe, normal, normal_vec);
             }
+
+            // moonolith::print(normal, std::cout);
             
         }
         
@@ -646,7 +667,7 @@ namespace utopia {
                 data.is_glue.insert(dofs_s, 1.0);
             }
 
-            // std::cout << moonolith::measure(warped_contact.slave) << " == " << isect_area << " == " << moonolith::measure(q_slave) << std::endl;
+            // std::cout << isect_area << std::endl;
         }
         
         template<class Adapter>
@@ -658,10 +679,10 @@ namespace utopia {
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
             
-            const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
+            // const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
             
             //force usage of non-affine code
-            // const bool is_affine = false;
+            const bool is_affine = false;
             
             if(is_affine) {
                 //AFFINE CONTACT
