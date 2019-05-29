@@ -64,7 +64,7 @@ namespace utopia {
 
         SizeType n_local_glue_nodes = 0;
         each_transform(out.is_glue, out.is_glue, [&n_local_glue_nodes](const SizeType i, const double val) -> double {
-            if(val > 0) {
+            if(val > 1e-8) {
                 ++n_local_glue_nodes;
                 return 1.;
             } else {
@@ -597,7 +597,7 @@ namespace utopia {
                 l2_project_normal(*slave_fe, normal, normal_vec);
             }
 
-            // moonolith::print(normal, std::cout);
+            moonolith::print(normal, std::cout);
             
         }
         
@@ -678,7 +678,8 @@ namespace utopia {
             
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
-            
+                
+            //FIXME
             // const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
             
             //force usage of non-affine code
@@ -761,13 +762,14 @@ namespace utopia {
     public:
         
         static bool apply(const ContactParams &params,
+                          const std::shared_ptr<ElementBlackList> &black_list,
                           LibMeshFunctionSpaceAdapter &adapter,
                           ContactDataBuffers &contact_data)
         {
             using AlogrithmT = moonolith::SingleCollectionOneMasterOneSlaveAlgorithm<Dim, LibMeshFunctionSpaceAdapter>;
             using Adapter    = typename AlogrithmT::Adapter;
             
-            auto cm = std::make_shared<LibMeshCollectionManagerT>(adapter.comm());
+            auto cm = std::make_shared<LibMeshCollectionManagerT>(adapter.comm(), black_list);
             
             moonolith::Communicator m_comm(cm->comm.get());
             
@@ -831,6 +833,10 @@ namespace utopia {
                                                      dof_map,
                                                      params.variable_number
                                                      );
+
+            if(black_list_) {
+                black_list_->init(adapter.mesh());
+            }
             
             c.stop();
             
@@ -850,9 +856,9 @@ namespace utopia {
         
         has_contact_ = false;
         if(spatial_dim == 2) {
-            has_contact_ = ContactAlgorithm<2>::apply(params, adapter, contact_data);
+            has_contact_ = ContactAlgorithm<2>::apply(params, black_list_, adapter, contact_data);
         } else if(spatial_dim == 3) {
-            has_contact_ = ContactAlgorithm<3>::apply(params, adapter, contact_data);
+            has_contact_ = ContactAlgorithm<3>::apply(params, black_list_, adapter, contact_data);
         }
         
         if(has_contact_) {
@@ -959,10 +965,12 @@ namespace utopia {
         }
     }
 
-
     void ContactAssembler::read(Input &in)
     {
-
+        in.get("black-list", [this](Input &in) {
+            black_list_ = std::make_shared<ElementBlackList>(true);
+            black_list_->read(in);
+        });
     }
 }
 

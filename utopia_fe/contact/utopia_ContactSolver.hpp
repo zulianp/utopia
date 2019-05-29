@@ -105,6 +105,7 @@ namespace utopia {
             is.get("outer-loop-tol", tol_);
             is.get("max-outer-loops", max_outer_loops_);
             is.get("plot-gap", plot_gap_);
+            is.get("contact", *contact_);
         }
 
         void set_tol(const Scalar tol)
@@ -144,9 +145,13 @@ namespace utopia {
             if(plot_gap_) {
                 UVector gap = e_mul(contact_->is_contact_node(), contact_->gap());
                 UVector is_contact = contact_->is_contact_node();
+                UVector normals = contact_->normals();
+                UVector is_glue_node = contact_->is_glue_node();
 
-                write("gap.e",        V_->subspace(0), gap);
-                write("is_contact.e", V_->subspace(0), is_contact);
+                write("gap.e",          V_->subspace(0), gap);
+                write("is_contact.e",   V_->subspace(0), is_contact);
+                write("normals.e",      V_->subspace(0), normals);
+                write("is_glue_node.e", V_->subspace(0), is_glue_node);
                 plot_gap_ = false;
             }
 
@@ -373,7 +378,7 @@ namespace utopia {
 
                 Write<UVector> wu(u), wl(l);
                 each_read(contact_->is_glue_node(), [&constr, &l, &u](const SizeType i, const double val) {
-                    if(val > 0.) {
+                    if(val > 1e-8) {
                         u.set(i, 0.0);
                         l.set(i, 0.0);
                     }   

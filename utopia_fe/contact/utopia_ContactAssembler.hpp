@@ -3,6 +3,7 @@
 
 #include "utopia_LibMeshFunctionSpaceAdapter.hpp"
 #include "utopia_IContact.hpp"
+#include "utopia_NodeBlackLister.hpp"
 
 #include <cassert>
 
@@ -128,6 +129,8 @@ namespace utopia {
         std::shared_ptr<ContactTensors> contact_tensors_;
         bool has_contact_;
         bool has_glue_;
+
+        std::shared_ptr<ElementBlackList> black_list_;
     };
 
 }

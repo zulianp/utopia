@@ -20,6 +20,7 @@
 #include "moonolith_map_quadrature.hpp"
 #include "moonolith_affine_transform.hpp"
 #include "utopia_LibMeshToMoonolithConvertions.hpp"
+#include "utopia_NodeBlackLister.hpp"
 
 #include "utopia_ElementDofMap.hpp"
 #include "MortarAssemble.hpp"
@@ -37,9 +38,10 @@ namespace utopia {
         using Integer = libMesh::dof_id_type;
 
         const libMesh::Parallel::Communicator &comm;
+        const std::shared_ptr<ElementBlackList> black_list_;
 
-        LibMeshCollectionManager(const libMesh::Parallel::Communicator &comm)
-        : comm(comm)
+        LibMeshCollectionManager(const libMesh::Parallel::Communicator &comm, const std::shared_ptr<ElementBlackList> &black_list)
+        : comm(comm), black_list_(black_list)
         {}
 
         //we need to add this information because of the lack of local indexing in libmesh meshes
@@ -115,8 +117,13 @@ namespace utopia {
             return (*e_it)->id();
         }
 
-        static bool skip(const FunctionSpace &space, const ElementIter &e_it)
+        //static 
+        bool skip(const FunctionSpace &space, const ElementIter &e_it)
         {
+            if(black_list_ && black_list_->is_black_listed(**e_it)) {
+                return true;
+            }
+
             return false;
         }
 
