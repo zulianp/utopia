@@ -587,7 +587,7 @@ namespace utopia {
             }
 
             assert(check_constraints(x, true));
-            assert(check_non_negative(lambda_p, true));
+            // assert(check_non_negative(lambda_p, true));
             return true;
         }
 

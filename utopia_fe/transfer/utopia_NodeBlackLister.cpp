@@ -75,9 +75,9 @@ namespace utopia {
 
             if(parent) {
                 const bool found_black_listed = is_black_listed(parent->id());
-                if(found_black_listed) {
-                    std::cout << "FOUND BLACK LISTED" << std::endl;
-                }
+                // if(found_black_listed) {
+                //     std::cout << "FOUND BLACK LISTED" << std::endl;
+                // }
                 return found_black_listed;
             }
         } else {

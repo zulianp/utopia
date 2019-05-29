@@ -597,7 +597,7 @@ namespace utopia {
                 l2_project_normal(*slave_fe, normal, normal_vec);
             }
 
-            moonolith::print(normal, std::cout);
+            // moonolith::print(normal, std::cout);
             
         }
         
