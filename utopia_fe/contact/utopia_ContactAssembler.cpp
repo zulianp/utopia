@@ -20,6 +20,7 @@
 #include "moonolith_elem_triangle.hpp"
 #include "moonolith_elem_quad.hpp"
 #include "moonolith_elem_segment.hpp"
+#include "moonolith_matlab_scripter.hpp"
 
 #include <vector>
 #include <memory>
@@ -284,8 +285,8 @@ namespace utopia {
                                 remove[d - cr.begin()] = true;
                             }
 
-                            std::cout << "=====================================\n";
-                            std::cout << i << ") removed. " << ratio << " % of slave volume" << std::endl;
+                            // std::cout << "=====================================\n";
+                            // std::cout << i << ") removed. " << int(ratio * 100) << "% of slave volume" << std::endl;
                             
                         } else {
                             // std::cout << "=====================================\n";
@@ -485,7 +486,7 @@ namespace utopia {
                 warped_contact.invert_plane_dir = true;
                 
                 //TODO check for the affine contact too
-                // affine_contact.invert_plane_dir = true;
+                affine_contact.invert_plane_dir = true;
             }
         }
         
@@ -581,7 +582,19 @@ namespace utopia {
                                                   );
                 
                 // if(!is_diag(d_elmat)) {
+                //     moonolith::MatlabScripter script;
+
+                //     script.close_all();
+                //     script.hold_on();
+                //     script.plot(affine_contact.master, "b.-");
+                //     script.plot(affine_contact.slave, "r.-");
+                //     script.plot(affine_contact.q_master_physical.points, "b*");
+                //     script.plot(affine_contact.q_slave_physical.points,  "r*");
+                //     script.axis_equal();
+                //     script.save("bug.m");
+
                 //     biorth_weights.print();
+                //     d_elmat.print();
                 //     assert(false);
                 // }
                 
@@ -680,13 +693,14 @@ namespace utopia {
             auto &e_s = slave.elem();
                 
             //FIXME
-            // const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
+            const bool is_affine = e_m.has_affine_map() && e_s.has_affine_map();
             
             //force usage of non-affine code
-            const bool is_affine = false;
+            // const bool is_affine = false;
             
             if(is_affine) {
                 //AFFINE CONTACT
+                bool shift_in_ref_el = true;
                 make(e_m, affine_contact.master);
                 make(e_s, affine_contact.slave);
                 
@@ -698,7 +712,8 @@ namespace utopia {
                                m_m.fe_type(0).order,
                                e_s,
                                m_s.fe_type(0).order,
-                               affine_contact.q_rule
+                               affine_contact.q_rule,
+                               shift_in_ref_el
                                );
                 
                 if(affine_contact.compute()) {
