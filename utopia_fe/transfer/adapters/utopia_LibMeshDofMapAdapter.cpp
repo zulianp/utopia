@@ -346,10 +346,16 @@ namespace utopia {
         SizeType dof_x_elem = count_dof_x_elem(mesh, dof_map), n_local_elems = mesh.n_active_local_elem();
         std::vector<libMesh::dof_id_type> dof_indices;
 
-        std::vector<SizeType> dof_offsets(comm.size() + 1, 0);
+        const auto n = comm.size();
+        std::vector<SizeType> dof_offsets(n + 1, 0);
         dof_offsets[comm.rank() + 1] = dof_x_elem * n_local_elems;
 
         comm.all_reduce(&dof_offsets[0], dof_offsets.size(), moonolith::MPISum());
+
+        //scan
+        for(int i = 0; i < n; ++i) {
+            dof_offsets[i + 1] += dof_offsets[i];
+        }
 
         return Range(
             dof_offsets[comm.rank()],

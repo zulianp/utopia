@@ -214,7 +214,7 @@ namespace utopia {
                         auto val = el_mat(i, j);
                         if(std::abs(val) < 1e-10) continue;
 
-                        mat.set(dof_p2[i], dof_p1[j], val);
+                        mat.set_matrix({dof_p2[i]}, {dof_p1[j]}, {val});
                     }
                 }
             }
