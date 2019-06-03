@@ -484,8 +484,6 @@ namespace utopia {
             if(Dim == 2) {
                 //somehow the order of surface-line elements is clockwise
                 warped_contact.invert_plane_dir = true;
-                
-                //TODO check for the affine contact too
                 affine_contact.invert_plane_dir = true;
             }
         }
@@ -610,8 +608,28 @@ namespace utopia {
                 l2_project_normal(*slave_fe, normal, normal_vec);
             }
 
-            // moonolith::print(normal, std::cout);
-            
+            // if(approxeq(normal[0], -1, 1e-8)) {
+            //     moonolith::print(normal, std::cout);
+            //     std::cout << gap[0] << std::endl;
+
+
+                // static int isect = 0;
+                // moonolith::MatlabScripter script;
+
+                // script.close_all();
+                // script.hold_on();
+                // script.plot(affine_contact.master, "b.-");
+                // script.plot(affine_contact.slave, "r.-");
+                // script.plot(affine_contact.q_master_physical.points, "b*");
+                // script.plot(affine_contact.q_slave_physical.points,  "r*");
+                // script.axis_equal();
+                // script.save("bug" + std::to_string(isect++) + ".m");
+
+            //     biorth_weights.print();
+            //     d_elmat.print();
+            //     assert(false);
+
+            // }
         }
         
         template<class Adapter>
@@ -669,6 +687,25 @@ namespace utopia {
             data.area.insert(global_slave_id, isect_area);
             
             ///////////////////////////////////////////////////////
+          
+
+            // if(isect_area != isect_area) {
+            //     moonolith::MatlabScripter script;
+
+            //     script.close_all();
+            //     script.hold_on();
+            //     script.plot(affine_contact.master, "b.-");
+            //     script.plot(affine_contact.slave, "r.-");
+            //     script.plot(affine_contact.q_master_physical.points, "b*");
+            //     script.plot(affine_contact.q_slave_physical.points,  "r*");
+            //     script.axis_equal();
+            //     script.save("bug.m");
+
+            //     biorth_weights.print();
+            //     d_elmat.print();
+            //     assert(false);
+            // }
+
             //check on the area
             assert(isect_area > 0.);
             area += isect_area;
@@ -680,7 +717,7 @@ namespace utopia {
                 data.is_glue.insert(dofs_s, 1.0);
             }
 
-            // std::cout << isect_area << std::endl;
+            // std::cout << isect_area << "/" << moonolith::measure(affine_contact.slave) << std::endl;
         }
         
         template<class Adapter>
@@ -717,8 +754,6 @@ namespace utopia {
                                );
                 
                 if(affine_contact.compute()) {
-                    auto slave_area = moonolith::measure(affine_contact.slave);
-                    
                     assemble(
                              master,
                              slave,
