@@ -163,12 +163,23 @@ namespace utopia {
         auto dim = 2;
         auto order = 2;
 
-        // test_dual_basis(libMesh::TRI6, dim, order, alpha);
-        // test_dual_basis(libMesh::QUAD4, dim, 1, alpha);
+        test_dual_basis(libMesh::TRI6, dim, order, alpha);
+        test_dual_basis(libMesh::QUAD4, dim, 1, alpha);
         test_dual_basis(libMesh::QUAD8, dim, 2, alpha);
 
-        // dim = 1;
-        // test_dual_basis(libMesh::EDGE3, dim, order, alpha);
+        dim = 1;
+        test_dual_basis(libMesh::EDGE3, dim, order, alpha);
+
+        // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
+        // DualBasis::build_trafo_and_weights(
+        //            libMesh::HEX8,
+        //            1,
+        //            1./5,
+        //            trafo,
+        //            inv_trafo,
+        //            weights);
+
+        // weights.print();
     }
 }
 
