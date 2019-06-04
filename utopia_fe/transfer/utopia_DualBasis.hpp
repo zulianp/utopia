@@ -439,6 +439,71 @@ namespace utopia {
                 return true;
             }
 
+            if(el_type == libMesh::TET10) {
+                trafo.resize(10, 10);
+                inv_trafo.resize(10, 10);
+
+                trafo.zero();
+                inv_trafo.zero();
+
+                trafo(0, 0) = 1;
+                trafo(0, 4) = alpha;
+                trafo(0, 6) = alpha;
+                trafo(0, 7) = alpha;
+
+                trafo(1, 1) = 1;
+                trafo(1, 4) = alpha;
+                trafo(1, 5) = alpha;
+                trafo(1, 8) = alpha;
+
+                trafo(2, 2) = 1;
+                trafo(2, 5) = alpha;
+                trafo(2, 6) = alpha;
+                trafo(2, 9) = alpha;
+
+                trafo(3, 3) = 1;
+                trafo(3, 7) = alpha;
+                trafo(3, 8) = alpha;
+                trafo(3, 9) = alpha;
+
+                trafo(4, 4) = (1 - 2*alpha);
+                trafo(5, 5) = (1 - 2*alpha);
+                trafo(6, 6) = (1 - 2*alpha);
+                trafo(7, 7) = (1 - 2*alpha);
+                trafo(8, 8) = (1 - 2*alpha);
+                trafo(9, 9) = (1 - 2*alpha);
+
+                /////////////////////////////////////////////
+
+                inv_trafo(0, 0) = 1;
+                inv_trafo(0, 4) = (1 - 2*alpha);
+                inv_trafo(0, 6) = (1 - 2*alpha);
+                inv_trafo(0, 7) = (1 - 2*alpha);
+
+                inv_trafo(1, 1) = 1;
+                inv_trafo(1, 4) = (1 - 2*alpha);
+                inv_trafo(1, 5) = (1 - 2*alpha);
+                inv_trafo(1, 8) = (1 - 2*alpha);
+
+                inv_trafo(2, 2) = 1;
+                inv_trafo(2, 5) = (1 - 2*alpha);
+                inv_trafo(2, 6) = (1 - 2*alpha);
+                inv_trafo(2, 9) = (1 - 2*alpha);
+
+                inv_trafo(3, 3) = 1;
+                inv_trafo(3, 7) = (1 - 2*alpha);
+                inv_trafo(3, 8) = (1 - 2*alpha);
+                inv_trafo(3, 9) = (1 - 2*alpha);
+
+                inv_trafo(4, 4) = 1./(1 - 2*alpha);
+                inv_trafo(5, 5) = 1./(1 - 2*alpha);
+                inv_trafo(6, 6) = 1./(1 - 2*alpha);
+                inv_trafo(7, 7) = 1./(1 - 2*alpha);
+                inv_trafo(8, 8) = 1./(1 - 2*alpha);
+                inv_trafo(9, 9) = 1./(1 - 2*alpha);
+                return true;
+            }
+
             assert(false && "not implemented");
             return false;
         }
