@@ -1,45 +1,4 @@
 // @HEADER
-// ************************************************************************
-//
-//                           Intrepid Package
-//                 Copyright (2007) Sandia Corporation
-//
-// Under terms of Contract DE-AC04-94AL85000, there is a non-exclusive
-// license for use of this work by or on behalf of the U.S. Government.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// 1. Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-// notice, this list of conditions and the following disclaimer in the
-// documentation and/or other materials provided with the distribution.
-//
-// 3. Neither the name of the Corporation nor the names of the
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY SANDIA CORPORATION "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL SANDIA CORPORATION OR THE
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Questions? Contact Pavel Bochev  (pbboche@sandia.gov)
-//                    Denis Ridzal  (dridzal@sandia.gov), or
-//                    Kara Peterson (kjpeter@sandia.gov)
-//
-// ************************************************************************
-// @HEADER
 
 /** \file   example_03.cpp
     \brief  Example building stiffness matrix and right hand side for a Poisson equation 
@@ -118,7 +77,9 @@
 /*#include "TpetraExt_RowMatrixOut.hpp"
 #include "TpetraExt_MultiVectorOut.hpp"*/
 
-using namespace std;
+#include<chrono>
+
+//using namespace std;
 using namespace Intrepid2;
 
 // Functions to evaluate exact solution and derivatives
@@ -128,6 +89,10 @@ double evalDivGradu(double & x, double & y, double & z);
 
 int main(int argc, char *argv[]) {
 
+
+using Clock = std::chrono::high_resolution_clock; 
+Clock::time_point start_time = Clock::now();
+
         //types of Operators
         typedef Tpetra::Operator<>::scalar_type SC;
         typedef Tpetra::Operator<SC>::local_ordinal_type LO;
@@ -136,22 +101,26 @@ int main(int argc, char *argv[]) {
 
     //types of Kokkos Parallel Nodes
     typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-
+    typedef Kokkos::Serial ks; //TODO difference between kokkos serial and serial node
 #ifdef KOKKOS_ENABLE_CUDA
+    typedef Kokkos::CUDA kc;
     typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
     typedef cuda_node NT;
 #elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
     typedef rocm_node NT;
 #elif defined KOKKOS_ENABLE_OPENMP
+    typedef Kokkos::OpenMP ko;
     typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
     typedef openmp_node NT;
 #else
     typedef serial_node NT;
 #endif
 
- typedef Kokkos::Serial ks; //TODO difference between kokkos serial and serial node
- 
+
+    typedef ks execution_space;
+
+ Kokkos::initialize();
   //Check number of arguments
    if (argc < 4) {
       std::cout <<"\n>>> ERROR: Invalid number of arguments.\n\n";
@@ -237,8 +206,8 @@ int main(int argc, char *argv[]) {
     double hz = (rightZ-leftZ)/((double)NZ);
 
    // Get nodal coordinates
-    Kokkos::View<double**> nodeCoord("pota",numNodes, spaceDim);
-    Kokkos::View<int*> nodeOnBoundary("pota1",numNodes);
+    Kokkos::DynRankView<double,execution_space> nodeCoord("pota",numNodes, spaceDim);
+    Kokkos::DynRankView<int,execution_space> nodeOnBoundary("pota1",numNodes);
     int inode = 0;
     for (int k=0; k<NZ+1; k++) {
       for (int j=0; j<NY+1; j++) {
@@ -259,7 +228,7 @@ int main(int argc, char *argv[]) {
 #define DUMP_DATA
 #ifdef DUMP_DATA
    // Print nodal coords
-    ofstream fcoordout("coords.dat");
+    std::ofstream fcoordout("coords.dat");
     for (int i=0; i<numNodes; i++) {
        fcoordout << nodeCoord(i,0) <<" ";
        fcoordout << nodeCoord(i,1) <<" ";
@@ -270,7 +239,7 @@ int main(int argc, char *argv[]) {
 
 
   // Element to Node map
-    Kokkos::View<int**> elemToNode("elemToNode",numElems, numNodesPerElem);
+    Kokkos::DynRankView<int,execution_space> elemToNode("elemToNode",numElems, numNodesPerElem);
     int ielem = 0;
     for (int k=0; k<NZ; k++) {
       for (int j=0; j<NY; j++) {
@@ -289,7 +258,7 @@ int main(int argc, char *argv[]) {
     }
 #ifdef DUMP_DATA
    // Output connectivity
-    ofstream fe2nout("elem2node.dat");
+    std::ofstream fe2nout("elem2node.dat");
     for (int k=0; k<NZ; k++) {
       for (int j=0; j<NY; j++) {
         for (int i=0; i<NX; i++) {
@@ -312,13 +281,13 @@ int main(int argc, char *argv[]) {
    // Get numerical integration points and weights
     DefaultCubatureFactory  cubFactory;                                   
     int cubDegree = 2;
-    auto hexCub = cubFactory.create<ks,double,double>(hex_8, cubDegree); //Teuchos::RCP<Cubature<double> >
+    auto hexCub = cubFactory.create<execution_space,double,double>(hex_8, cubDegree); //Teuchos::RCP<Cubature<double> >
 
     int cubDim       = hexCub->getDimension();
     int numCubPoints = hexCub->getNumPoints();
 
-    Kokkos::DynRankView<double,ks> cubPoints("cubPoints",numCubPoints, cubDim);
-    Kokkos::DynRankView<double,ks> cubWeights("cubWeights",numCubPoints);
+    Kokkos::DynRankView<double,execution_space> cubPoints("cubPoints",numCubPoints, cubDim);
+    Kokkos::DynRankView<double,execution_space> cubWeights("cubWeights",numCubPoints);
     hexCub->getCubature(cubPoints, cubWeights);
 
 
@@ -327,10 +296,10 @@ int main(int argc, char *argv[]) {
      *outStream << "Getting basis ... \n\n";
 
    // Define basis 
-     Basis_HGRAD_HEX_C1_FEM<ks,double,double> hexHGradBasis;
+     Basis_HGRAD_HEX_C1_FEM<execution_space,double,double> hexHGradBasis;
      int numFieldsG = hexHGradBasis.getCardinality();
-     Kokkos::DynRankView<double,ks> hexGVals("hexGVals",numFieldsG, numCubPoints); 
-     Kokkos::DynRankView<double,ks> hexGrads("hexGrads",numFieldsG, numCubPoints, spaceDim); 
+     Kokkos::DynRankView<double,execution_space> hexGVals("hexGVals",numFieldsG, numCubPoints); 
+     Kokkos::DynRankView<double,execution_space> hexGrads("hexGrads",numFieldsG, numCubPoints, spaceDim); 
 
   // Evaluate basis values and gradients at cubature points
      hexHGradBasis.getValues(hexGVals, cubPoints, OPERATOR_VALUE);
@@ -342,28 +311,28 @@ int main(int argc, char *argv[]) {
     *outStream << "Building stiffness matrix and right hand side ... \n\n";
 
  // Settings and data structures for mass and stiffness matrices
-    typedef CellTools<ks>  CellTools;
-    typedef FunctionSpaceTools<ks> fst;
+    typedef CellTools<execution_space>  CellTools;
+    typedef FunctionSpaceTools<execution_space> fst;
     int numCells = 1; 
 
    // Container for nodes
-    Kokkos::DynRankView<double,ks> hexNodes("hexNodes",numCells, numNodesPerElem, spaceDim);
+    Kokkos::DynRankView<double,execution_space> hexNodes("hexNodes",numCells, numNodesPerElem, spaceDim);
    // Containers for Jacobian
-    Kokkos::DynRankView<double,ks> hexJacobian("hexNodes",numCells, numCubPoints, spaceDim, spaceDim);
-    Kokkos::DynRankView<double,ks> hexJacobInv("hexJacobInv",numCells, numCubPoints, spaceDim, spaceDim);
-    Kokkos::DynRankView<double,ks> hexJacobDet("hexJacobDet",numCells, numCubPoints);
+    Kokkos::DynRankView<double,execution_space> hexJacobian("hexNodes",numCells, numCubPoints, spaceDim, spaceDim);
+    Kokkos::DynRankView<double,execution_space> hexJacobInv("hexJacobInv",numCells, numCubPoints, spaceDim, spaceDim);
+    Kokkos::DynRankView<double,execution_space> hexJacobDet("hexJacobDet",numCells, numCubPoints);
    // Containers for element HGRAD stiffness matrix
-    Kokkos::DynRankView<double,ks> localStiffMatrix("localStiffMatrix",numCells, numFieldsG, numFieldsG);
-    Kokkos::DynRankView<double,ks> weightedMeasure("weightedMeasure",numCells, numCubPoints);
-    Kokkos::DynRankView<double,ks> hexGradsTransformed("hexGradsTransformed",numCells, numFieldsG, numCubPoints, spaceDim);
-    Kokkos::DynRankView<double,ks> hexGradsTransformedWeighted("hexGradsTransformedWeighted",numCells, numFieldsG, numCubPoints, spaceDim);
+    Kokkos::DynRankView<double,execution_space> localStiffMatrix("localStiffMatrix",numCells, numFieldsG, numFieldsG);
+    Kokkos::DynRankView<double,execution_space> weightedMeasure("weightedMeasure",numCells, numCubPoints);
+    Kokkos::DynRankView<double,execution_space> hexGradsTransformed("hexGradsTransformed",numCells, numFieldsG, numCubPoints, spaceDim);
+    Kokkos::DynRankView<double,execution_space> hexGradsTransformedWeighted("hexGradsTransformedWeighted",numCells, numFieldsG, numCubPoints, spaceDim);
    // Containers for right hand side vectors
-    Kokkos::DynRankView<double,ks> rhsData("rhsData",numCells, numCubPoints);
-    Kokkos::DynRankView<double,ks> localRHS("localRHS",numCells, numFieldsG);
-    Kokkos::DynRankView<double,ks> hexGValsTransformed("hexGValsTransformed",numCells, numFieldsG, numCubPoints);
-    Kokkos::DynRankView<double,ks> hexGValsTransformedWeighted("hexGValsTransformedWeighted",numCells, numFieldsG, numCubPoints);
+    Kokkos::DynRankView<double,execution_space> rhsData("rhsData",numCells, numCubPoints);
+    Kokkos::DynRankView<double,execution_space> localRHS("localRHS",numCells, numFieldsG);
+    Kokkos::DynRankView<double,execution_space> hexGValsTransformed("hexGValsTransformed",numCells, numFieldsG, numCubPoints);
+    Kokkos::DynRankView<double,execution_space> hexGValsTransformedWeighted("hexGValsTransformedWeighted",numCells, numFieldsG, numCubPoints);
    // Container for cubature points in physical space
-    Kokkos::DynRankView<double,ks> physCubPoints("physCubPoints",numCells, numCubPoints, cubDim);
+    Kokkos::DynRankView<double,execution_space> physCubPoints("physCubPoints",numCells, numCubPoints, cubDim);
 
    // Global arrays in Tpetra format 
     Teuchos::RCP<const Teuchos::Comm<int> > Comm = Tpetra::getDefaultComm ();
@@ -475,11 +444,14 @@ int main(int argc, char *argv[]) {
 #endif
 
    std::cout << "End Result: TEST PASSED\n";
+   double time_spent = std::chrono::duration_cast<std::chrono::duration<double>>(Clock::now() - start_time).count();
+   std::cout << "Total Time: " << time_spent << std::endl;
    
    // reset format state of std::cout
    std::cout.copyfmt(oldFormatState);
-   
    return 0;
+   
+   Kokkos::finalize();
 }
 
 
@@ -492,7 +464,7 @@ int main(int argc, char *argv[]) {
  */
 
    // function2
-   double exactu = sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
+   double exactu = std::sin(M_PI*x)*std::sin(M_PI*y)*std::sin(M_PI*z)*std::exp(x+y+z);
 
    return exactu;
  }
@@ -508,12 +480,12 @@ int main(int argc, char *argv[]) {
  */
 
    // function2
-       gradu1 = (M_PI*cos(M_PI*x)+sin(M_PI*x))
-                  *sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
-       gradu2 = (M_PI*cos(M_PI*y)+sin(M_PI*y))
-                  *sin(M_PI*x)*sin(M_PI*z)*exp(x+y+z);
-       gradu3 = (M_PI*cos(M_PI*z)+sin(M_PI*z))
-                  *sin(M_PI*x)*sin(M_PI*y)*exp(x+y+z);
+       gradu1 = (M_PI*std::cos(M_PI*x)+std::sin(M_PI*x))
+                  *std::sin(M_PI*y)*std::sin(M_PI*z)*std::exp(x+y+z);
+       gradu2 = (M_PI*std::cos(M_PI*y)+std::sin(M_PI*y))
+                  *std::sin(M_PI*x)*std::sin(M_PI*z)*std::exp(x+y+z);
+       gradu3 = (M_PI*std::cos(M_PI*z)+std::sin(M_PI*z))
+                  *std::sin(M_PI*x)*std::sin(M_PI*y)*std::exp(x+y+z);
   
    return 0;
  }
@@ -527,11 +499,11 @@ int main(int argc, char *argv[]) {
  */
 
    // function 2
-   double divGradu = -3.0*M_PI*M_PI*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z)
-                    + 2.0*M_PI*cos(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z)
-                    + 2.0*M_PI*cos(M_PI*y)*sin(M_PI*x)*sin(M_PI*z)*exp(x+y+z)
-                    + 2.0*M_PI*cos(M_PI*z)*sin(M_PI*x)*sin(M_PI*y)*exp(x+y+z)
-                    + 3.0*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
+   double divGradu = -3.0*M_PI*M_PI*std::sin(M_PI*x)*std::sin(M_PI*y)*std::sin(M_PI*z)*exp(x+y+z)
+                    + 2.0*M_PI*std::cos(M_PI*x)*std::sin(M_PI*y)*std::sin(M_PI*z)*std::exp(x+y+z)
+                    + 2.0*M_PI*std::cos(M_PI*y)*std::sin(M_PI*x)*std::sin(M_PI*z)*std::exp(x+y+z)
+                    + 2.0*M_PI*std::cos(M_PI*z)*std::sin(M_PI*x)*std::sin(M_PI*y)*std::exp(x+y+z)
+                    + 3.0*std::sin(M_PI*x)*std::sin(M_PI*y)*std::sin(M_PI*z)*std::exp(x+y+z);
    
    return divGradu;
  }
