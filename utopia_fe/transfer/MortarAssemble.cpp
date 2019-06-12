@@ -47,11 +47,18 @@ namespace utopia {
 
         int order = 0;
         if(dim == 2 || dim == 1) {
-            order = master_order * (is_quad(master_el.type())? 2 : 1 ) +
-            slave_order  * (is_quad(slave_el.type()) ? 2 : 1 ) * (slave_has_affine_map? 1 : 2);
+            const auto actual_slave_order = slave_order * (is_quad(slave_el.type()) ? 2 : 1 );
+            order = master_order * (is_quad(master_el.type())? 2 : 1 ) + actual_slave_order; 
+            if(slave_has_affine_map) {
+                order += (actual_slave_order - 1) * 2;
+            }
+
         } else if(dim == 3) {
-            order = master_order * ( is_hex(master_el.type())? 3 : 1 ) +
-            slave_order  * ( is_hex(slave_el.type())? 3  : 1 ) * (slave_has_affine_map? 1 : 2);
+           const auto actual_slave_order = slave_order * (is_hex(slave_el.type()) ? 3 : 1 );
+           order = master_order * (is_hex(master_el.type())? 3 : 1 ) + actual_slave_order; 
+           if(slave_has_affine_map) {
+               order += (actual_slave_order - 1) * 2;
+           }
         } else {
             assert(false && "not supported yet for dim != 2 or dim != 3");
         }
