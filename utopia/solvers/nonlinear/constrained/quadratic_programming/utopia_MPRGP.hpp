@@ -15,7 +15,7 @@ namespace  utopia
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         public:
-            MPGRP(): eps_eig_est_(1e-1)
+            MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10)
             {
 
             }
@@ -84,6 +84,7 @@ namespace  utopia
 
                 const Scalar gamma = 1.0; 
                 const Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs).get(0)); 
+                Scalar pAp; 
 
                 SizeType it =0; 
                 bool converged= false; 
@@ -108,7 +109,19 @@ namespace  utopia
                     if(dot(beta, beta) <= (gamma*gamma * dot(fi,fi)))
                     {
                         A.apply(p, Ap);
-                        alpha_cg = dot(g, p)/dot(p,Ap);
+
+                        // curvature condition check?? 
+                        pAp = dot(p, Ap); 
+                        // if(pAp <= 0.0)
+                        // {   
+                        //     if(this->verbose())
+                        //     {
+                        //         std::cout<<"MPRGP::curvature condition violated, terminating.... \n"; 
+                        //     }
+                        //     return true;
+                        // }
+
+                        alpha_cg = dot(g, p)/pAp;
                         y = x - alpha_cg*p;
                         alpha_f = get_alpha_f(x, p, *lb, *ub);
 
@@ -117,7 +130,7 @@ namespace  utopia
                             x = y; 
                             g = g - alpha_cg*Ap;
                             this->get_fi(x, g, *lb, *ub, fi); 
-                            beta_sc = dot(fi,Ap)/dot(p,Ap);
+                            beta_sc = dot(fi,Ap)/pAp;
                             p = fi - beta_sc*p;
 
                         }
@@ -296,7 +309,7 @@ namespace  utopia
                     A.apply(y, y_old);
                     lambda = dot(y, y_old);
                     
-                    converged  = ((gnorm < eps_eig_est_) || (std::abs(lambda_old-lambda) < eps_eig_est_)) ?  true: false; 
+                    converged  = ((gnorm < eps_eig_est_) || (std::abs(lambda_old-lambda) < eps_eig_est_) || it > power_method_max_it_) ?  true: false; 
                     
                     it=it+1;  
                 }
@@ -354,6 +367,7 @@ namespace  utopia
         private:
             Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g; 
             Scalar eps_eig_est_; 
+            SizeType power_method_max_it_; 
 
     };
 }

@@ -327,8 +327,8 @@ int main(int argc,char **argv)
 
       // Mass_utopia = 1./(0.0416667) * Mass_utopia; 
       auto dx   = 1.0/(mx-1);
-      std::cout<<"dx: "<< dx << " \n"; 
-      Mass_utopia = 1./dx * Mass_utopia; 
+      // std::cout<<"dx: "<< dx << " \n"; 
+      Mass_utopia = 1./(dx) * Mass_utopia; 
       
 //////////////////////////////////////////////////////////////////////////////////////////////////
     // auto subproblem = std::make_shared<utopia::Dogleg<DSMatrixd, DVectord> >();
@@ -343,21 +343,44 @@ int main(int argc,char **argv)
 //////////////////////////////////////////////////////////////////////////////////////////////////
     solver.set_mass_matrix(Mass_utopia); 
     solver.verbose(true);
-    // solver.tau_init(1e2);
+    // solver.tau_init(1e4);
+    solver.scaling(true); 
     solver.set_max_inner_it(1);
 
 
       
-
-    // solver.tau_option(3); 
-    // solver.use_m(false); 
-    // solver.set_m(-1); 
-    solver.atol(1e-7); 
+    solver.atol(1e-8); 
+    solver.stol(1e-13); 
     solver.max_it(1000); 
+    solver.set_scaling_treshold(1e-5); 
+
+
+      // std::vector<double> vec_tau = {1e-6, 1e-4, 1e-2, 1, 1e2, 1e4, 1e6}; 
+      std::vector<double> vec_tau = {1e6, 1e4, 1e2, 1, 1e-2, 1e-4}; 
+
+      // std::vector<double> vec_tau = {1, 1e2, 1e4, 1e6}; 
+      // std::vector<double> vec_tau = {1e-4, 1e-2}; 
+      // std::vector<double> vec_tau = {8e3}; 
+
+      // std::vector<double> vec_tau = {100}; 
+
+      utopia::DVectord x_u_init = x_u; 
+
+
+      for(auto i=0; i < vec_tau.size(); i++)
+      {
+          x_u = x_u_init; 
+          // x_u = 0.0*x_u_init; 
+          solver.tau_init(vec_tau[i]); 
+          std::cout<<"---- Solve with tau: "<< vec_tau[i] << " \n \n"; 
+          solver.solve(fun, x_u);
+      }
+
+
 
     // solver.verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
     // x_u = 0*x_u; 
-    solver.solve(fun, x_u); 
+    // solver.solve(fun, x_u); 
 
 
 
@@ -622,7 +645,6 @@ PetscErrorCode Save_VTK_XML(DM da,Vec X,const char filename[])
   PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_VTK);
   DMDASetUniformCoordinates(da, 0.0, 1, 0.0, 1, 0.0, 0.0);
   DMView(da, viewer);
-  VecView(X, viewer);
   VecView(X, viewer);
   PetscViewerDestroy(&viewer);
 

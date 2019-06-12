@@ -72,7 +72,8 @@ namespace utopia
                 tau_max_(1e14),
                 tau_min_(1e-9), 
                 tau_zero_user_(-1),
-                alpha_treshold_(1e-10), 
+                alpha_treshold_(1.0), 
+                // alpha_treshold_(1e-10), 
                 max_inner_it_(5), 
                 reset_mass_matrix_(false), 
                 is_identity_(false), 
@@ -298,6 +299,18 @@ namespace utopia
         {
             verbosity_level_ = this->verbose() ? verbose_level : VERBOSITY_LEVEL_QUIET;  
         }
+
+
+        void set_scaling_treshold(const Scalar & tol)
+        {
+            alpha_treshold_ = tol; 
+        }
+
+        Scalar set_scaling_treshold() const
+        {
+            return alpha_treshold_;  
+        }        
+
 
 
         Scalar tau_max() const { return tau_max_; }

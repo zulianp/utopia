@@ -97,7 +97,7 @@ namespace utopia
             Matrix H, H_damped; 
 
             fun.gradient(x, g); 
-            g_norm = norm2(g); 
+            g_norm = norm_l2(g); 
 
             fun.hessian(x, H); 
 
@@ -133,7 +133,9 @@ namespace utopia
                 fun.gradient(x, g); 
 
                 g_old = g_norm; 
-                norms2(g, s, g_norm, s_norm); 
+                // norms2(g, s, g_norm, s_norm); 
+                s_norm = norm2(s); 
+                g_norm = norm_l2(g); 
                 
                 if(g_norm > 1e-11)
                     tau = std::min(tau * g_old/g_norm, tau_max_); 
@@ -156,6 +158,19 @@ namespace utopia
             return true;
         }
     
+    private:
+        Scalar norm_l2_2(const Vector & s)
+        {   
+            return dot(s, I_*s); 
+        }
+
+        Scalar norm_l2(const Vector & s)
+        {   
+            return std::sqrt(norm_l2_2(s)); 
+        }
+
+
+
     private:
         Scalar tau_max_; 
         Matrix I_;
