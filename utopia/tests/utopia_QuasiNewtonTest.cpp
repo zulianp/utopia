@@ -337,7 +337,9 @@ namespace utopia
 
                                                                     // BAALI
                                                                     // NOCEDAL
-                hess_approx->damping_tech(utopia::DampingTechnique::POWEL); 
+                hess_approx->damping_tech(utopia::LBFGSDampingTechnique::POWEL); 
+                
+                hess_approx->scaling_tech(utopia::LBFGSScalingTechnique::FORBENIUS); 
 
                 // auto hess_approx = std::make_shared<JFNK<Vector>>(fun); 
 

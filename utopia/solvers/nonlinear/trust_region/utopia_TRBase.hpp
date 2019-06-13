@@ -20,8 +20,8 @@ namespace utopia
 
   public:
     TrustRegionBase():
-    delta_max_(1e14), delta_min_(1e-14), delta0_(1.0), gamma1_(0.2), gamma2_(2.0),
-    eta1_(0.1), eta2_(0.75), rho_tol_(0.005), eps_(1e-14)
+    delta_max_(1e14), delta_min_(1e-14), delta0_(1.0), gamma1_(0.25), gamma2_(2.5),
+    eta1_(0.05), eta2_(0.9), rho_tol_(0.005), eps_(1e-14)
     {
 
     }
@@ -246,6 +246,22 @@ namespace utopia
         }
       }
     }
+
+
+
+    virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar &radius)
+    {
+        if(rho >= eta2_)
+        {
+          radius = std::max( Scalar(gamma2_ * norm_infty(p_k)), radius);
+        }
+        else if (rho < eta1_ )
+        {
+          radius = gamma1_ * norm_infty(p_k); 
+        }
+    }
+
+
 
 
     /*!
