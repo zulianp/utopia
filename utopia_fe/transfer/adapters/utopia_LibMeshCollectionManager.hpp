@@ -39,9 +39,13 @@ namespace utopia {
 
         const libMesh::Parallel::Communicator &comm;
         const std::shared_ptr<ElementBlackList> black_list_;
+        const bool is_auto_tag_mode_;
 
-        LibMeshCollectionManager(const libMesh::Parallel::Communicator &comm, const std::shared_ptr<ElementBlackList> &black_list)
-        : comm(comm), black_list_(black_list)
+        LibMeshCollectionManager(
+            const libMesh::Parallel::Communicator &comm,
+            const std::shared_ptr<ElementBlackList> &black_list,
+            const bool is_auto_tag_mode = false)
+        : comm(comm), black_list_(black_list), is_auto_tag_mode_(is_auto_tag_mode)
         {}
 
         //we need to add this information because of the lack of local indexing in libmesh meshes
@@ -63,8 +67,11 @@ namespace utopia {
             return *space.mesh().elem(idx);
         }
 
-        static Integer tag(const FunctionSpace &space, const ElementIter &e_it)
+        Integer tag(const FunctionSpace &space, const ElementIter &e_it)
         {
+            //return -1 for auto tag mode
+            if(is_auto_tag_mode_) return -1;
+
             return space.tag(e_it);
         }
 
