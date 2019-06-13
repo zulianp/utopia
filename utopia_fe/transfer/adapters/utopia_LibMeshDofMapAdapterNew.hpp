@@ -21,7 +21,13 @@ namespace utopia {
     //TODO FEType
     class ElementDofMapAdapter {
     public:
+
         void init(
+            libMesh::MeshBase &mesh,
+            const libMesh::DofMap &dof_map,
+            const int var_num);
+
+        void init_surf_to_vol(
             libMesh::MeshBase &vol_mesh,
             const libMesh::DofMap &vol_dof_map,
             libMesh::MeshBase &surf_mesh,
@@ -29,7 +35,30 @@ namespace utopia {
             const int var_num,
             const int surf_var_num);
 
+        void make_element_node_map(ElementDofMapAdapter &out) const;
+
+        static void make_permutation(const ElementDofMapAdapter &from, const ElementDofMapAdapter &to, USparseMatrix &mat);
+        
+        //original dof structure has to have the vector structure already
+        //from vector to vector. from map has a scalar map
+        static void make_vector_permutation(
+            const int dim,
+            const ElementDofMapAdapter &from,
+            const ElementDofMapAdapter &to,
+             USparseMatrix &mat);
+
+        //original dof structure has to have the vector structure already
+        //from scalar to repeated vector
+        static void make_tensorize_permutation(
+            const int dim,
+            const ElementDofMapAdapter &from,
+            const ElementDofMapAdapter &to,
+             USparseMatrix &mat);
+
     private:
+        moonolith::Communicator comm_;
+        SizeType n_local_dofs_;
+        SizeType max_nnz_;
         moonolith::DofMap dof_map_;
     };
 
