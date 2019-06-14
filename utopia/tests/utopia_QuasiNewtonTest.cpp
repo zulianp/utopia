@@ -338,7 +338,7 @@ namespace utopia
                                                                     // BAALI
                                                                     // NOCEDAL
                 hess_approx->damping_tech(utopia::LBFGSDampingTechnique::POWEL); 
-                
+
                 hess_approx->scaling_tech(utopia::LBFGSScalingTechnique::FORBENIUS); 
 
                 // auto hess_approx = std::make_shared<JFNK<Vector>>(fun); 
@@ -350,7 +350,7 @@ namespace utopia
 
                 QuasiTrustRegionVariableBound<Vector>  tr_solver(hess_approx, qp_solver);
                 tr_solver.set_box_constraints(box);
-                tr_solver.atol(1e-6);
+                tr_solver.atol(1e-13);
                 tr_solver.rtol(1e-10);
                 tr_solver.stol(1e-10);
                 tr_solver.verbose(true);

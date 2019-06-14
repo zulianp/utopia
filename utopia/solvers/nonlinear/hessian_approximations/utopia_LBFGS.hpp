@@ -48,12 +48,19 @@ namespace utopia
 
                 Y_.resize(m_);
                 S_.resize(m_);
+                P_.resize(m_); 
 
-                a_.resize(m_);
-                b_.resize(m_);
+
+                if(scaling_tech_==LBFGSScalingTechnique::FORBENIUS)
+                {
+                    SY_point_wise_.resize(m_); 
+                    YY_point_wise_.resize(m_); 
+                }
+
 
                 rho_.resize(m_);
-                Sb_dots_.resize(m_, std::vector<Scalar>(m_));
+                yts_.resize(m_); 
+                stp_.resize(m_); 
 
                 this->initialized(true);
             }
@@ -63,12 +70,14 @@ namespace utopia
             {
                 Y_.clear();
                 S_.clear();
-
-                a_.clear();
-                b_.clear();
+                P_.clear(); 
 
                 rho_.clear();
-                Sb_dots_.clear();
+                yts_.clear(); 
+                stp_.clear(); 
+
+                SY_point_wise_.clear(); 
+                YY_point_wise_.clear();                 
 
                 Vector x, g; 
                 this->initialize(x, g);
@@ -110,46 +119,68 @@ namespace utopia
                     S_[current_m_]      = s;
                     rho_[current_m_]    = 1./denom;
 
-                    Scalar ys = 1./std::pow(denom, 1./2.);
-                    b_[current_m_] = ys * y_hat;
+                    yts_[current_m_]    = denom; 
 
-                    if(current_m_ > 0){
-                        dots(S_[current_m_], b_, Sb_dots_[current_m_]);
+
+                    if(scaling_tech_==LBFGSScalingTechnique::FORBENIUS)
+                    {
+                        SY_point_wise_[current_m_] = e_mul(s, y_hat); 
+                        YY_point_wise_[current_m_] = e_mul(y_hat, y_hat);                     
                     }
                 }
                 else
                 {
-                    Y_[0]   = y_hat;
-                    S_[0]   = s;
-                    rho_[0] = 1./denom;
-
-                    Scalar ys = 1./std::pow(denom, 1./2.);
-                    b_[0] = ys * y_hat;
+                    Y_[0]       = y_hat;
+                    S_[0]       = s;
+                    rho_[0]     = 1./denom;
+                    yts_[0]     = denom; 
 
                     std::rotate(Y_.begin(), Y_.begin() + 1, Y_.end());
                     std::rotate(S_.begin(), S_.begin() + 1, S_.end());
-
                     std::rotate(rho_.begin(), rho_.begin() + 1, rho_.end());
-                    std::rotate(b_.begin(), b_.begin() + 1, b_.end());
+                    std::rotate(yts_.begin(), yts_.begin() + 1, yts_.end());
 
-                    dots(S_[m_-1], b_, Sb_dots_[0]);
-                    std::rotate(Sb_dots_.begin(), Sb_dots_.begin() + 1, Sb_dots_.end());
+                    if(scaling_tech_==LBFGSScalingTechnique::FORBENIUS)
+                    {
+                        SY_point_wise_[0] = e_mul(s, y_hat); 
+                        YY_point_wise_[0] = e_mul(y_hat, y_hat);    
 
-                    for(auto i=0; i < Sb_dots_.size()-1; i++){
-                        for(auto j=1; j < Sb_dots_.size(); j++){
-                            Sb_dots_[i][j-1] = Sb_dots_[i][j];
-                        }
-                    }
-
+                        std::rotate(SY_point_wise_.begin(), SY_point_wise_.begin() + 1, SY_point_wise_.end());
+                        std::rotate(YY_point_wise_.begin(), YY_point_wise_.begin() + 1, YY_point_wise_.end());
+                    }                    
                 }
 
                 current_m_++;
 
-                // this is here just to save computation time Bv product
-                this->update_a_b();
-
                 // updating the factors... 
                 this->init_scaling_factors(y_hat, s); 
+
+
+                // preallocation for forward product ... 
+                SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
+                for(auto i =0; i < current_memory_size; i++)
+                {
+                    this->apply_H0(S_[i], P_[i]); 
+
+                    for(auto j=0; j < i; j++)
+                    {
+                        // Scalar mult1 = dot(S_[j], P_[i])/stp_[j]; 
+                        // Scalar mult2 = dot(S_[i], Y_[j])/yts_[j]; 
+
+                        Scalar mult1; 
+                        Scalar mult2;
+
+                        dots(S_[j], P_[i], mult1, S_[i], Y_[j], mult2); 
+                        mult1 = mult1/stp_[j]; 
+                        mult2 = mult2/yts_[j]; 
+
+
+                        P_[i] = P_[i]  - (mult1 * P_[j]) + (mult2 * Y_[j]); 
+                    }
+
+                    stp_[i] = dot(S_[i], P_[i]); 
+                }     
+
 
                 return true;
             }
@@ -187,49 +218,21 @@ namespace utopia
             }
 
             bool apply_H(const Vector & v , Vector & result) const  override
-            {
-                // this->apply_H_fast(v, result); 
-
-                // this->apply_H_slow(v, result); 
-
+            {   
                 this-apply_H_new(v, result); 
+
+                // debugging 
+                // this->apply_H_slow(v, result); 
 
                 return true;
             }
 
-
-            bool apply_H_fast(const Vector & v , Vector & result) const
-            {
-                if(!this->initialized()){
-                    utopia_error("utopia::LBFGS::apply_H:: missing initialization... \n");
-                }
-
-                result = theta_ * v;
-                SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
-
-                for(auto i=0; i < current_memory_size; i++)
-                {
-                    Scalar bv  = dot(b_[i], v);
-                    Scalar av  = dot(a_[i], v);
-
-                    result += (bv * b_[i]) - (av * a_[i]);
-                }
-
-                if(has_nan_or_inf(result)){
-                    result = theta_ * v;
-                }
-
-                return true; 
-            }
-
-
-
+            // version used for debugging purposes 
             bool apply_H_slow(const Vector & v , Vector & result) const
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LBFGS::apply_H:: missing initialization... \n");
                 }
-
 
                 std::vector<Vector> a, b; 
                 a.resize(m_);
@@ -242,7 +245,6 @@ namespace utopia
                     Scalar mult_b = 1./std::sqrt(dot(Y_[k], S_[k]));
                     b[k] = mult_b * Y_[k];
 
-                    // a[k] = theta_ * S_[k]; 
                     this->apply_H0(S_[k], a[k]); 
 
                     for(auto i = 0; i < k; i++)
@@ -258,7 +260,6 @@ namespace utopia
                     a[k] = mult_a * a[k]; 
                 }                
 
-                // result = theta_ * v;
                 this->apply_H0(v, result); 
 
                 for(auto i=0; i < current_memory_size; i++)
@@ -280,39 +281,16 @@ namespace utopia
                     utopia_error("utopia::LBFGS::apply_H:: missing initialization... \n");
                 }
 
-                std::vector<Vector> P; 
-                std::vector<Scalar> stp, yts;
-                stp.resize(m_);
-                yts.resize(m_);
-                P.resize(m_);
-
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
-
-                for(auto i =0; i < current_memory_size; i++)
-                {
-                    this->apply_H0(S_[i], P[i]); 
-
-                    yts[i] = dot(Y_[i], S_[i]); 
-
-                    for(auto j=0; j < i; j++)
-                    {
-                        Scalar mult1 = dot(S_[j], P[i])/stp[j]; 
-                        Scalar mult2 = dot(S_[i], Y_[j])/yts[j]; 
-
-                        P[i] = P[i]  - (mult1 * P[j]) + (mult2 * Y_[j]); 
-                    }
-
-                    stp[i] = dot(S_[i], P[i]); 
-                }                
 
                 this->apply_H0(v, result); 
 
                 for(auto i =0; i < current_memory_size; i++)
                 {
-                    Scalar stz = dot(S_[i], result); 
-                    Scalar ytx = dot(Y_[i], v); 
+                    Scalar stz, ytx; 
+                    dots(S_[i], result, stz, Y_[i], v, ytx); 
 
-                    result = result + ((ytx/yts[i]) * Y_[i]) - ((stz/stp[i]) * P[i]);
+                    result = result + ((ytx/yts_[i]) * Y_[i]) - ((stz/stp_[i]) * P_[i]);
                 }
 
                 return true;
@@ -390,32 +368,6 @@ namespace utopia
 
 
         private:
-            void update_a_b()
-            {
-                if(!this->initialized()){
-                    utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n");
-                }
-
-                SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
-
-                for(auto k =0; k < current_memory_size; k++)
-                {
-                    a_[k] = theta_ * S_[k];
-
-                    for(auto i = 0; i < k; i++)
-                    {
-                        Scalar aS = dot(a_[i], S_[k]);
-
-                        a_[k] += Sb_dots_[k][i] * b_[i];
-                        a_[k] -= aS * a_[i];
-                    }
-
-                    Scalar scaling_factor = (std::pow(dot(S_[k], a_[k]), 1./2.));
-                    a_[k] = 1.0/scaling_factor * a_[k];
-                }
-            }
-
-
 
             bool init_damping(const Vector & y, const Vector & s, Vector & y_hat)
             {
@@ -477,19 +429,6 @@ namespace utopia
                 else
                 {
                     SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
-
-                    // TBD:: reallocate
-                    std::vector<Vector> SY_point_wise_; 
-                    std::vector<Vector> YY_point_wise_; 
-
-                    SY_point_wise_.resize(m_); 
-                    YY_point_wise_.resize(m_); 
-
-                    for(auto i=0; i <current_memory_size; i++)
-                    {
-                        SY_point_wise_[i] = e_mul(S_[i], Y_[i]); 
-                        YY_point_wise_[i] = e_mul(Y_[i], Y_[i]); 
-                    }
 
                     Vector SY_sum = local_values(local_size(y).get(0), 0.0); 
                     Vector YY_sum = local_values(local_size(y).get(0), 0.0); 
@@ -591,8 +530,11 @@ namespace utopia
                 Vector Bs = 0.0*s; 
                 this->apply_H(s, Bs); 
 
-                Scalar sy   = dot(y,s);
-                Scalar sBs  = dot(s, Bs); 
+                // Scalar sy   = dot(y,s);
+                // Scalar sBs  = dot(s, Bs); 
+
+                Scalar sy, sBs; 
+                dots(y, s, sy, s, Bs, sBs); 
 
                 Scalar psi; 
 
@@ -661,12 +603,12 @@ namespace utopia
 
             std::vector<Vector> Y_;
             std::vector<Vector> S_;
+            std::vector<Vector> P_; 
+            
 
-            std::vector<Vector > b_;
-            std::vector<Vector > a_;
             std::vector<Scalar > rho_;
-
-            std::vector<std::vector<Scalar> > Sb_dots_;
+            std::vector<Scalar>  yts_;
+            std::vector<Scalar>  stp_;
 
             LBFGSDampingTechnique damping_tech_; 
             LBFGSScalingTechnique scaling_tech_; 
@@ -674,8 +616,8 @@ namespace utopia
             Vector D_; 
             Vector D_inv_; 
 
-            // std::vector<Vector> SY_point_wise_; 
-            // std::vector<Vector> YY_point_wise_; 
+            std::vector<Vector> SY_point_wise_; 
+            std::vector<Vector> YY_point_wise_; 
 
 
             std::function< void(const Vector &, Vector &) > H0_action_; 
@@ -683,8 +625,6 @@ namespace utopia
 
         };
 
-
-// TBD:: - optimize dot products, fix pre-allocations, fix dots 
 
 }
 
