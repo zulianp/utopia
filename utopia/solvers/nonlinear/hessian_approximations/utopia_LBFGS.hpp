@@ -605,7 +605,6 @@ namespace utopia
             std::vector<Vector> S_;
             std::vector<Vector> P_; 
             
-
             std::vector<Scalar > rho_;
             std::vector<Scalar>  yts_;
             std::vector<Scalar>  stp_;
