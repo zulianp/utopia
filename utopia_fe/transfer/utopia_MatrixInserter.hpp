@@ -4,6 +4,7 @@
 #include "moonolith_communicator.hpp"
 #include "moonolith_sparse_matrix.hpp"
 #include "moonolith_redistribute.hpp"
+#include "moonolith_expanding_array.hpp"
 
 #include "utopia_fe_base.hpp"
 
@@ -80,6 +81,26 @@ namespace utopia {
         }
 
 
+        template<typename IDX, class ElementMatrix>
+        void add(
+            const moonolith::Storage<IDX> &rows,
+            const moonolith::Storage<IDX> &cols,
+            ElementMatrix &mat
+            )
+        {   
+            std::size_t n_rows = rows.size();
+            std::size_t n_cols = cols.size();
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                auto dof_I = rows[i];
+                for(std::size_t j = 0; j < n_cols; ++j) {
+                    auto dof_J = cols[j];
+                    m_matrix.add(dof_I, dof_J, mat(i, j));
+                }
+            }
+        }
+
+
         template<typename IDX>
         void insert(const IDX &idx, const double val)
         {
@@ -92,8 +113,27 @@ namespace utopia {
             }
         }
 
+
+
         template<typename IDX>
         void insert(const std::vector<IDX> &idx, const double val)
+        {
+            if(use_add) {
+
+                for(auto i : idx) {
+                    m_matrix.add(i, 0, val);
+                }
+            } else {
+                if(val != 0.) {
+                    for(auto i : idx) {
+                        m_matrix.set(i, 0, val);
+                    }
+                }
+            }
+        }
+
+        template<typename IDX>
+        void insert(const moonolith::Storage<IDX> &idx, const double val)
         {
             if(use_add) {
 
@@ -309,6 +349,212 @@ namespace utopia {
                 set_non_zero_tensor_product_idx(rows, tensor_dim, vec);
             }
         } 
+
+
+
+
+        //////////////////////////////////////////////////////
+
+        template<typename IDX, class ElementMatrix>
+       void insert(
+           const moonolith::Storage<IDX> &rows,
+           const moonolith::Storage<IDX> &cols,
+           ElementMatrix &mat
+           )
+       {
+           if(use_add) {
+               add(rows, cols, mat);
+           } else {
+               set_non_zero(rows, cols, mat);
+           }
+       }
+
+       template<typename IDX, class ElementMatrix>
+       void set(
+           const moonolith::Storage<IDX> &rows,
+           const moonolith::Storage<IDX> &cols,
+           ElementMatrix &mat
+           )
+       {   
+           std::size_t n_rows = rows.size();
+           std::size_t n_cols = cols.size();
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+               for(std::size_t j = 0; j < n_cols; ++j) {
+                   auto dof_J = cols[j];
+                   m_matrix.set(dof_I, dof_J, mat(i, j));
+               }
+           }
+       }
+
+       template<typename IDX, class ElementMatrix>
+       void set_non_zero(
+           const moonolith::Storage<IDX> &rows,
+           const moonolith::Storage<IDX> &cols,
+           ElementMatrix &mat
+           )
+       {   
+           std::size_t n_rows = rows.size();
+           std::size_t n_cols = cols.size();
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+               for(std::size_t j = 0; j < n_cols; ++j) {
+                   auto dof_J = cols[j];
+
+                   if(std::abs(mat(i, j)) != 0.) {
+                       m_matrix.set(dof_I, dof_J, mat(i, j));
+                   }
+               }
+           }
+       }
+
+       template<typename IDX, class ElementVector>
+       void set(
+           const moonolith::Storage<IDX> &rows,
+           ElementVector &vec
+           )
+       {   
+           std::size_t n_rows = rows.size();
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+               m_matrix.set(dof_I, 0, vec(i));
+           }
+       }
+
+
+       template<typename IDX, class ElementVector>
+       void set_non_zero(
+           const moonolith::Storage<IDX> &rows,
+           ElementVector &vec
+           )
+       {   
+           std::size_t n_rows = rows.size();
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+
+               if(std::abs(vec(i)) != 0.) {
+                   m_matrix.set(dof_I, 0, vec(i));
+               }
+           }
+       }
+
+       template<typename IDX>
+       void set_non_zero(
+           const moonolith::Storage<IDX> &rows,
+           moonolith::Storage<double> &vec
+           )
+       {   
+           std::size_t n_rows = rows.size();
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+
+               if(std::abs(vec[i]) != 0.) {
+                   m_matrix.set(dof_I, 0, vec[i]);
+               }
+           }
+       }
+
+       template<typename IDX, class ElementVector>
+       void add(
+           const moonolith::Storage<IDX> &rows,
+           ElementVector &vec
+           )
+       {   
+           std::size_t n_rows = rows.size();
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+               m_matrix.add(dof_I, 0, vec(i));
+           }
+       }
+
+       template<typename IDX>
+       void add(
+           const moonolith::Storage<IDX> &rows,
+           moonolith::Storage<double> &vec
+           )
+       {   
+           std::size_t n_rows = rows.size();
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+               m_matrix.add(dof_I, 0, vec[i]);
+           }
+       }
+
+       template<typename IDX, class ElementVector>
+       void insert(
+           const moonolith::Storage<IDX> &rows,
+           ElementVector &vec
+           )
+       {   
+           if(use_add) {
+               add(rows, vec);
+           } else {
+               set_non_zero(rows, vec);
+           }
+       }
+
+       template<typename IDX, class ElementVector>
+       void add_tensor_product_idx(
+           const moonolith::Storage<IDX> &rows,
+           const int &tensor_dim,
+           ElementVector &vec
+           )
+       {   
+           std::size_t n_rows = rows.size();
+
+           IDX idx = 0;
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+               auto dof_I_x_d = dof_I * tensor_dim;
+              
+               for(IDX k = 0; k < tensor_dim; ++k, ++idx) {
+                   m_matrix.add(dof_I_x_d + k, 0, vec(idx));
+               }
+           }
+       }
+
+       template<typename IDX, class ElementVector>
+       void set_non_zero_tensor_product_idx(
+           const moonolith::Storage<IDX> &rows,
+           const int &tensor_dim,
+           ElementVector &vec
+           )
+       {   
+           std::size_t n_rows = rows.size();
+
+           IDX idx = 0;
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               auto dof_I = rows[i];
+               auto dof_I_x_d = dof_I * tensor_dim;
+              
+               for(IDX k = 0; k < tensor_dim; ++k, ++idx) {
+                   if(std::abs(vec(idx)) != 0.0) {
+                       m_matrix.set(dof_I_x_d + k, 0, vec(idx));
+                   }
+               }
+           }
+       }
+
+       template<typename IDX, class ElementVector>
+       void insert_tensor_product_idx(
+           const moonolith::Storage<IDX> &rows,
+           const int &tensor_dim,
+           ElementVector &vec
+       )
+       {
+           if(use_add) {
+               add_tensor_product_idx(rows, tensor_dim, vec);
+           } else {
+               set_non_zero_tensor_product_idx(rows, tensor_dim, vec);
+           }
+       } 
 
         void fill(USparseMatrix &mat)
         {

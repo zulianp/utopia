@@ -255,6 +255,7 @@ namespace utopia {
             area.fill(element_wise.area);
             
             auto r = range(volumes);
+            assert(r.extent() == n_local_elems);
             
             std::vector<bool> remove(adapter.n_local_dofs(), false);
             auto cr = adapter.permutation()->implementation().col_range();
@@ -279,7 +280,7 @@ namespace utopia {
                         if(!approxeq(ratio, 1.0, 1e-2)) {
                             remove[i - r.begin()] = true;
                             
-                            const auto &dofs = adapter.element_dof_map()[i - r.begin()].global;
+                            const auto &dofs = adapter.element_dof_map()[i - r.begin()].dofs;
                             
                             for(auto d : dofs) {
                                 remove[d - cr.begin()] = true;
@@ -292,7 +293,7 @@ namespace utopia {
                             // std::cout << "=====================================\n";
                             // std::cout << i << ") " << volumes.get(i) << " == " << element_wise.area.get(i) << std::endl;
                             
-                            const auto &dofs = adapter.element_dof_map()[i - r.begin()].global;
+                            const auto &dofs = adapter.element_dof_map()[i - r.begin()].dofs;
                             
                             for(auto d : dofs) {
                                 element_wise.is_contact.set(d, 1.0);
@@ -450,8 +451,10 @@ namespace utopia {
                 fe->attach_quadrature_rule(&qrule);
                 
                 auto &JxW = fe->get_JxW();
-                
-                for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
+                    
+
+                std::size_t local_idx = 0;
+                for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it, ++local_idx) {
                     fe->reinit(*it);
                     
                     auto n_qp = qrule.n_points();
@@ -463,7 +466,7 @@ namespace utopia {
                         vol += JxW[qp];
                     }
                     
-                    volumes.set((*it)->id(), std::abs(vol));
+                    volumes.set(space.element_dof_map()[local_idx].element_dof, std::abs(vol));
                 }
             }
             
@@ -650,9 +653,9 @@ namespace utopia {
             auto &e_m = master.elem();
             auto &e_s = slave.elem();
             
-            auto &dofs_m = master.dofs().global;
-            auto &dofs_s = slave.dofs().global;
-            auto global_slave_id = slave.dofs().global_id;
+            auto &dofs_m = master.dofs().dofs;
+            auto &dofs_s = slave.dofs().dofs;
+            auto global_slave_dof = slave.dofs().element_dof;
             
             converter.convert_master(q_master, lm_q_master);
             converter.convert_slave(q_slave, lm_q_slave);
@@ -684,7 +687,7 @@ namespace utopia {
             data.D.insert(dofs_s, dofs_s, d_elmat);
             data.gap.insert(dofs_s, gap_vec);
             data.normal.insert_tensor_product_idx(dofs_s, Dim, normal_vec);
-            data.area.insert(global_slave_id, isect_area);
+            data.area.insert(global_slave_dof, isect_area);
             
             ///////////////////////////////////////////////////////
           

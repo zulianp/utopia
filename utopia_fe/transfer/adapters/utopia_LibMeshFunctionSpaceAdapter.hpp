@@ -33,15 +33,20 @@ namespace utopia {
             return *mesh_;
         }
 
-        inline std::vector<ElementDofMap> &element_dof_map() 
+        inline const moonolith::Storage<moonolith::Dofs> &element_dof_map() const
         {
             return dof_map_.element_dof_map();
         }
 
-        inline const std::vector<ElementDofMap> &element_dof_map() const
+        inline moonolith::Storage<moonolith::Dofs> &element_dof_map()
         {
             return dof_map_.element_dof_map();
         }
+
+        // inline const std::vector<ElementDofMap> &element_dof_map() const
+        // {
+        //     return dof_map_.element_dof_map();
+        // }
 
         inline std::vector<libMesh::dof_id_type> &handle_to_element_id()
         {
@@ -133,6 +138,8 @@ namespace utopia {
 
                 assert(found_side);
             }
+
+       
         }
 
         // void extract_surface_init(
@@ -221,48 +228,48 @@ namespace utopia {
             dof_map_.describe();
         }
 
-        void extract_surface_init(
-            const std::shared_ptr<libMesh::MeshBase> &mesh,
-            const libMesh::DofMap &dof_map,
-            const int var_num)
-        {
+        // void extract_surface_init(
+        //     const std::shared_ptr<libMesh::MeshBase> &mesh,
+        //     const libMesh::DofMap &dof_map,
+        //     const int var_num)
+        // {
 
-            Chrono c;
-            c.start();
+        //     Chrono c;
+        //     c.start();
 
-            auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
-            source_dof_map_ = utopia::make_ref(dof_map);
+        //     auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
+        //     source_dof_map_ = utopia::make_ref(dof_map);
 
-            mesh->get_boundary_info().sync(*b_mesh);
+        //     mesh->get_boundary_info().sync(*b_mesh);
 
-            es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
-            es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
+        //     es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
+        //     es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
 
-            libMesh::FEType fe_type = dof_map.variable_type(var_num);
-            auto &sys = es->get_system("boundary_sys");
-            auto b_var_num = sys.add_variable("lambda", fe_type); 
-            surf_dof_map_ = make_ref(sys.get_dof_map());
-            es->init();
+        //     libMesh::FEType fe_type = dof_map.variable_type(var_num);
+        //     auto &sys = es->get_system("boundary_sys");
+        //     auto b_var_num = sys.add_variable("lambda", fe_type); 
+        //     surf_dof_map_ = make_ref(sys.get_dof_map());
+        //     es->init();
 
-            c.stop();
+        //     c.stop();
 
-            std::cout << "libmesh get_boundary_info + eq system: " << c << std::endl;
+        //     std::cout << "libmesh get_boundary_info + eq system: " << c << std::endl;
 
-            init_aux(b_mesh, sys.get_dof_map(), b_var_num);
-            is_extracted_surface_ = true;
-            boundary_ids_workaround(*mesh);
+        //     init_aux(b_mesh, sys.get_dof_map(), b_var_num);
+        //     is_extracted_surface_ = true;
+        //     boundary_ids_workaround(*mesh);
 
-            //surf_mesh is extracted from vol_mesh
-            dof_map_.init_for_surface(
-                *mesh,
-                dof_map,
-                *b_mesh,
-                sys.get_dof_map(),
-                var_num,
-                b_var_num);
+        //     //surf_mesh is extracted from vol_mesh
+        //     dof_map_.init_for_surface(
+        //         *mesh,
+        //         dof_map,
+        //         *b_mesh,
+        //         sys.get_dof_map(),
+        //         var_num,
+        //         b_var_num);
 
-            dof_map_.describe();
-        }
+        //     dof_map_.describe();
+        // }
 
         static Integer tag(const ElementIter &e_it)
         {
@@ -399,6 +406,16 @@ namespace utopia {
         {
             return dof_map_.vector_permutation();
         }
+
+        // inline const moonolith::Storage<moonolith::Dofs> &element_dof_map() const
+        // {
+        //     return dof_map_.element_dof_map();
+        // }
+
+        // inline moonolith::Storage<moonolith::Dofs> &element_dof_map()
+        // {
+        //     return dof_map_.element_dof_map();
+        // }
 
         // void bundary_permutation_matrix(
         //     const libMesh::MeshBase &boundary_mesh,
@@ -621,19 +638,31 @@ namespace utopia {
         using super = moonolith::ElementAdapterBase<Bound, Collection>;
         using super::super;
 
-         inline const ElementDofMap &dofs() const
-         {
-            assert(dofs_);
-            return *dofs_;
-         }
+         // inline const ElementDofMap &dofs() const
+         // {
+         //    assert(dofs_);
+         //    return *dofs_;
+         // }
 
-        void set_dofs(const ElementDofMap * dofs)
+        // void set_dofs(const ElementDofMap * dofs)
+        // {
+        //     dofs_ = dofs;
+        // }
+
+        inline const moonolith::Dofs &dofs() const
         {
-            dofs_ = dofs;
+           assert(dofs_);
+           return *dofs_;
         }
 
+         void set_dofs(const moonolith::Dofs * dofs)
+         {
+             dofs_ = dofs;
+         }
+
     private:
-        const ElementDofMap * dofs_ = nullptr;
+        //const ElementDofMap * dofs_ = nullptr;
+        const moonolith::Dofs * dofs_ = nullptr;
     };  
 
 }

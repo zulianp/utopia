@@ -169,81 +169,82 @@ namespace utopia {
             return true;
         }
 
-        static bool build_global_trafo(
-            const libMesh::MeshBase &mesh,
-            const libMesh::DofMap &dof_map,
-            const UVector &elem_to_transform,
-            const double alpha,
-            USparseMatrix &mat,
-            const bool inverse = false
-            )
-        {
-            using SizeType = UTOPIA_SIZE_TYPE(USparseMatrix);
+        // static bool build_global_trafo(
+        //     const libMesh::MeshBase &mesh,
+        //     const libMesh::DofMap &dof_map,
+        //     const UVector &elem_to_transform,
+        //     const double alpha,
+        //     USparseMatrix &mat,
+        //     const bool inverse = false
+        //     )
+        // {
+        //     using SizeType = UTOPIA_SIZE_TYPE(USparseMatrix);
 
-            auto e_begin = elements_begin(mesh);
-            auto e_end   = elements_end(mesh);
+        //     auto e_begin = elements_begin(mesh);
+        //     auto e_end   = elements_end(mesh);
 
-            mat = sparse(
-                {
-                    dof_map.n_dofs(),
-                    dof_map.n_dofs() 
-                },
-                dof_map.get_n_nz(),
-                dof_map.get_n_oz()
-            );
+        //     mat = sparse(
+        //         {
+        //             dof_map.n_dofs(),
+        //             dof_map.n_dofs() 
+        //         },
+        //         dof_map.get_n_nz(),
+        //         dof_map.get_n_oz()
+        //     );
 
-            Read<UVector> r(elem_to_transform);
-            Write<USparseMatrix> w(mat);
+        //     Read<UVector> r(elem_to_transform);
+        //     Write<USparseMatrix> w(mat);
 
-            SizeType n_local = dof_map.n_local_dofs();
-            std::vector<bool> is_node_on_boundary(n_local, false);
+        //     SizeType n_local = dof_map.n_local_dofs();
+        //     std::vector<bool> is_node_on_boundary(n_local, false);
 
-            auto rr = row_range(mat);
+        //     auto rr = row_range(mat);
             
-            libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo, local_trafo_t;
-            std::vector<libMesh::dof_id_type> dofs;
+        //     libMesh::DenseMatrix<libMesh::Real> local_trafo, inv_trafo, local_trafo_t;
+        //     std::vector<libMesh::dof_id_type> dofs;
 
-            if(e_begin != e_end) {
-                assemble_local_trafo((*e_begin)->type(), alpha, local_trafo, inv_trafo);
+        //     if(e_begin != e_end) {
+        //         assemble_local_trafo((*e_begin)->type(), alpha, local_trafo, inv_trafo);
 
-                if(inverse) {
-                    inv_trafo.get_transpose(local_trafo_t);
-                } else {
-                    local_trafo.get_transpose(local_trafo_t);
-                }
+        //         if(inverse) {
+        //             inv_trafo.get_transpose(local_trafo_t);
+        //         } else {
+        //             local_trafo.get_transpose(local_trafo_t);
+        //         }
                 
-            }
+        //     }
 
-            for(auto it = e_begin; it != e_end; ++it) {
-                const auto * e = *it;
+        //     for(auto it = e_begin; it != e_end; ++it) {
+        //         const auto * e = *it;
 
-                if(elem_to_transform.get(e->id()) > 0.) {
-                    dof_map.dof_indices(e, dofs);
-                    mat.set_matrix(dofs, dofs, local_trafo_t.get_values());
+        //         if(elem_to_transform.get(e->id()) > 0.) {
+        //             dof_map.dof_indices(e, dofs);
+        //             mat.set_matrix(dofs, dofs, local_trafo_t.get_values());
 
-                    for(auto d : dofs) {
-                        if(rr.inside(d)) {
-                            is_node_on_boundary[d - rr.begin()] = true;
-                        }
-                    }
-                }   
-            }
+        //             for(auto d : dofs) {
+        //                 if(rr.inside(d)) {
+        //                     is_node_on_boundary[d - rr.begin()] = true;
+        //                 }
+        //             }
+        //         }   
+        //     }
 
-            for(SizeType i = 0; i < n_local; ++i) {
-                if(is_node_on_boundary[i]) {
-                    auto dof_I = i + rr.begin();
-                    mat.set(dof_I, dof_I, 1.);
-                }
-            }
+        //     for(SizeType i = 0; i < n_local; ++i) {
+        //         if(is_node_on_boundary[i]) {
+        //             auto dof_I = i + rr.begin();
+        //             mat.set(dof_I, dof_I, 1.);
+        //         }
+        //     }
 
-            return true;
-        }
+        //     return true;
+        // }
 
 
+        template<class EDofMap>
         static bool build_global_trafo(
             const libMesh::MeshBase &mesh,
             const SizeType n_local_dofs,
-            const std::vector<ElementDofMap> &dof_map,
+            const EDofMap &dof_map,
             const UVector &elem_to_transform,
             const double alpha,
             USparseMatrix &mat,
@@ -258,7 +259,7 @@ namespace utopia {
             SizeType nnz = 0;
             if(!dof_map.empty()) {
                 //estimate
-                nnz = dof_map[0].global.size() * 10;
+                nnz = dof_map[0].dofs.size() * 10;
             }
 
             mat = local_sparse(n_local_dofs, n_local_dofs, nnz);
@@ -289,10 +290,10 @@ namespace utopia {
             for(auto it = e_begin; it != e_end; ++it, ++idx) {
                 const auto * e = *it;
 
-                if(elem_to_transform.get(e->id()) > 0.) {
+                if(elem_to_transform.get(dof_map[idx].element_dof) > 0.) {
                     // dof_map.dof_indices(e, dofs);
 
-                    const auto &dofs = dof_map[idx].global;
+                    const auto &dofs = dof_map[idx].dofs;
                     mat.set_matrix(dofs, dofs, local_trafo_t.get_values());
 
                     for(auto d : dofs) {

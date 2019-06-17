@@ -202,6 +202,7 @@ namespace utopia {
 
                 const libMesh::Elem *elem = mesh.elem(global_element_id);
 
+
                 for(libMesh::dof_id_type j = 0; j != elem->n_nodes(); ++j) {
                     nodeIds.insert(elem->node(j));
                 }
@@ -256,6 +257,9 @@ namespace utopia {
                 const int type = elem->type();
 
                 //WRITE 7
+                long unique_id = elem->unique_id();
+                os << unique_id;
+
                 os << type << e_n_nodes;
 
                 for (int i = 0; i != e_n_nodes; ++i) {
@@ -348,11 +352,12 @@ namespace utopia {
                 //READ 7
 
                 int type, e_n_nodes;
-
+                long unique_id;
+                is >> unique_id;
                 is >> type >> e_n_nodes;
 
                 auto elem = libMesh::Elem::build(libMesh::ElemType(type)).release();
-
+                elem->set_unique_id() = unique_id;
 
                 int index;
 

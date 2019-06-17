@@ -55,6 +55,16 @@ namespace utopia {
             const ElementDofMapAdapter &to,
              USparseMatrix &mat);
 
+        inline const moonolith::Storage<moonolith::Dofs> &dofs() const {
+            return dof_map_.dofs();
+        }
+
+        inline moonolith::Storage<moonolith::Dofs> &dofs() {
+            return dof_map_.dofs();
+        }
+
+        inline SizeType n_local_dofs() const { return n_local_dofs_;}
+
     private:
         moonolith::Communicator comm_;
         SizeType n_local_dofs_;

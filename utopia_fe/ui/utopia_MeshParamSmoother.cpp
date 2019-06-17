@@ -237,26 +237,27 @@ namespace utopia {
 
     void MeshParamSmoother::apply(libMesh::MeshBase &mesh)
     {
-        const auto spatial_dim = mesh.spatial_dimension();
-        const auto mesh_dim    = mesh.mesh_dimension();
+        assert(false && "fixme");
+        // const auto spatial_dim = mesh.spatial_dimension();
+        // const auto mesh_dim    = mesh.mesh_dimension();
 
-        const bool is_surf = spatial_dim > mesh_dim;
+        // const bool is_surf = spatial_dim > mesh_dim;
 
-        LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
-        V.initialize();
+        // LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
+        // V.initialize();
 
-        LibMeshFunctionSpaceAdapter adapter;
+        // LibMeshFunctionSpaceAdapter adapter;
 
-        adapter.extract_surface_init(
-            make_ref(mesh),
-            V.dof_map(),
-            0
-        );
+        // adapter.extract_surface_init(
+        //     make_ref(mesh),
+        //     V.dof_map(),
+        //     0
+        // );
 
-        auto &surf_dof_map = adapter.surf_dof_map();
-        auto &surf_mesh = adapter.mesh();
+        // auto &surf_dof_map = adapter.surf_dof_map();
+        // auto &surf_mesh = adapter.mesh();
 
-        apply_aux(surf_mesh, surf_dof_map, *adapter.permutation(), V.dof_map(), mesh);
+        // apply_aux(surf_mesh, surf_dof_map, *adapter.permutation(), V.dof_map(), mesh);
     }
 
 }

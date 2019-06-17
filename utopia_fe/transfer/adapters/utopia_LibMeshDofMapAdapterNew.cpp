@@ -1,14 +1,23 @@
 #include "utopia_LibMeshDofMapAdapterNew.hpp"
 #include <cassert>
 
-// #define CHRONO_START() utopia::Chrono macro_chrono_; macro_chrono_.start();
-// #define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ << std::endl;}
+#define CHRONO_START() utopia::Chrono macro_chrono_; macro_chrono_.start();
+#define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ << std::endl;}
 
 namespace utopia {
 
     void ElementDofMapAdapter::make_permutation(const ElementDofMapAdapter &from, const ElementDofMapAdapter &to, USparseMatrix &mat)
     {
-        auto max_nnz = from.max_nnz_;
+
+        CHRONO_START();
+
+        using Scalar   = Traits<USparseMatrix>::Scalar;
+        using SizeType = Traits<USparseMatrix>::SizeType;
+
+        std::vector<SizeType> irows(1), icols(1);
+        std::vector<Scalar>   vals(1, 1.0);
+
+        auto max_nnz = from.max_nnz_; assert(max_nnz > 0);
         mat = local_sparse(to.n_local_dofs_, from.n_local_dofs_, max_nnz);
 
         std::size_t n_elems = from.dof_map_.n_elements();
@@ -24,12 +33,16 @@ namespace utopia {
             const auto n_from = from_dofs.size();
             const auto n_to   = to_dofs.size();
 
+            assert(n_from == n_to);
+
             for(std::size_t i = 0; i < n_to; ++i) {
-                for(std::size_t j = 0; j < n_from; ++j) {
-                    mat.set(to_dofs[i], from_dofs[j], 1.0);
-                }
+                irows[0] = to_dofs[i];
+                icols[0] = from_dofs[i];
+                mat.set_matrix(irows, icols, vals);
             }
         }
+
+        CHRONO_END("ElementDofMapAdapter::make_permutation");
     }
 
     void ElementDofMapAdapter::make_vector_permutation(
@@ -38,8 +51,17 @@ namespace utopia {
                const ElementDofMapAdapter &to,
                 USparseMatrix &mat)
     {
-        auto max_nnz = from.max_nnz_;
-        mat = local_sparse(to.n_local_dofs_ * dim, from.n_local_dofs_ * dim, max_nnz);
+
+        CHRONO_START();
+
+        using Scalar   = Traits<USparseMatrix>::Scalar;
+        using SizeType = Traits<USparseMatrix>::SizeType;
+
+        std::vector<SizeType> irows(1), icols(1);
+        std::vector<Scalar>   vals(1, 1.0);
+
+        auto max_nnz = from.max_nnz_; assert(max_nnz > 0);
+        mat = local_sparse(to.n_local_dofs_, from.n_local_dofs_ * dim, max_nnz);
 
         std::size_t n_elems = from.dof_map_.n_elements();
         
@@ -54,15 +76,18 @@ namespace utopia {
             const auto n_from = from_dofs.size();
             const auto n_to   = to_dofs.size();
 
-            for(std::size_t i = 0; i < n_to; ++i) {
-                for(std::size_t j = 0; j < n_from; ++j) {
+            assert(n_from == n_to);
 
-                    for(int d = 0; d < dim; ++d) {
-                        mat.set(to_dofs[i] + d, from_dofs[j] * dim + d, 1.0);
-                    }
+            for(std::size_t i = 0; i < n_to; ++i) {
+                for(int d = 0; d < dim; ++d) {
+                    irows[0] = to_dofs[i] + d;
+                    icols[0] = from_dofs[i] * dim + d;
+                    mat.set_matrix(irows, icols, vals);
                 }
             }
         }
+
+        CHRONO_END("ElementDofMapAdapter::make_vector_permutation");
     }
 
     void ElementDofMapAdapter::make_tensorize_permutation(
@@ -71,7 +96,14 @@ namespace utopia {
                 const ElementDofMapAdapter &to,
                  USparseMatrix &mat)
     {
-        auto max_nnz = from.max_nnz_;
+        using Scalar   = Traits<USparseMatrix>::Scalar;
+        using SizeType = Traits<USparseMatrix>::SizeType;
+
+        std::vector<SizeType> irows(1), icols(1);
+        std::vector<Scalar>   vals(1, 1.0);
+
+
+        auto max_nnz = from.max_nnz_; assert(max_nnz > 0);
         mat = local_sparse(to.n_local_dofs_ * dim, from.n_local_dofs_, max_nnz);
 
         std::size_t n_elems = from.dof_map_.n_elements();
@@ -87,12 +119,13 @@ namespace utopia {
             const auto n_from = from_dofs.size();
             const auto n_to   = to_dofs.size();
 
-            for(std::size_t i = 0; i < n_to; ++i) {
-                for(std::size_t j = 0; j < n_from; ++j) {
+            assert(n_from == n_to);
 
-                    for(int d = 0; d < dim; ++d) {
-                        mat.set(to_dofs[i] + d, from_dofs[j], 1.0);
-                    }
+            for(std::size_t i = 0; i < n_to; ++i) {
+                for(int d = 0; d < dim; ++d) {
+                    irows[0] = to_dofs[i] + d;
+                    icols[0] = from_dofs[i];
+                    mat.set_matrix(irows, icols, vals);
                 }
             }
         }
@@ -143,10 +176,10 @@ namespace utopia {
         const int var_num,
         const int surf_var_num)
     {
-        // CHRONO_START();
+        CHRONO_START();
 
         comm_ = vol_mesh.comm().get();
-        n_local_dofs_ = surf_dof_map.n_local_dofs();
+        n_local_dofs_ = volume_dof_map.n_local_dofs();
         max_nnz_ = max_nnz_x_row(surf_dof_map);
 
         //I do not think we need anything but 0 at the moment
@@ -168,8 +201,10 @@ namespace utopia {
             ++local_el_idx;
 
             auto &dof_object = dof_map_.dof_object(local_el_idx);
-            dof_object.global_idx = b_elem->id();
-            dof_object.block      = b_elem->subdomain_id();
+            
+            dof_object.global_idx  = b_elem->id();
+            // dof_object.element_dof = b_elem->id(); //FIXME not 
+            dof_object.block       = b_elem->subdomain_id();
 
             const libMesh::Elem * v_elem = b_elem->interior_parent();
 
@@ -213,11 +248,25 @@ namespace utopia {
             }
         }
 
-        // CHRONO_END("ElementDofMapAdapter::init_surf_to_vol");
+        long idx = 0;
+        long n_local_elems = surf_mesh.n_active_local_elem();
+
+        moonolith::Communicator comm(surf_mesh.comm().get());
+        comm.exscan(&n_local_elems, &idx, 1, moonolith::MPISum());
+
+        assert(idx < surf_mesh.n_active_elem());
+
+        for(long i = 0; i < n_local_elems; ++i) {
+            dof_map_.dof_object(i).element_dof = idx++;
+        }
+
+        CHRONO_END("ElementDofMapAdapter::init_surf_to_vol");
     }
 
     void ElementDofMapAdapter::make_element_node_map(ElementDofMapAdapter &out) const
     {
+        CHRONO_START();
+
         const auto n_elems = dof_map_.n_elements();
 
         out.comm_ = comm_;
@@ -244,6 +293,8 @@ namespace utopia {
                 d = dof_id++;
             }
         }
+
+        CHRONO_END("ElementDofMapAdapter::make_element_node_map");
     }
 
 }
