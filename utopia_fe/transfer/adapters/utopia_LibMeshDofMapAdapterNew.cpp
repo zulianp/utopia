@@ -1,8 +1,8 @@
 #include "utopia_LibMeshDofMapAdapterNew.hpp"
 #include <cassert>
 
-#define CHRONO_START() utopia::Chrono macro_chrono_; macro_chrono_.start();
-#define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ << std::endl;}
+// #define CHRONO_START() utopia::Chrono macro_chrono_; macro_chrono_.start();
+// #define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ << std::endl;}
 
 namespace utopia {
 
@@ -109,9 +109,8 @@ namespace utopia {
 
         //I do not think we need anything but 0 at the moment
         unsigned int comp = 0;
-        unsigned int sys_num   = dof_map.sys_number();
+        unsigned int sys_num  = dof_map.sys_number();
         std::vector<libMesh::dof_id_type> dof_indices;
-
 
         const auto n_elem = mesh.n_active_local_elem();
         dof_map_.resize(n_elem);
@@ -125,7 +124,7 @@ namespace utopia {
             auto &dof_object = dof_map_.dof_object(local_el_idx);
             dof_object.global_idx = elem_ptr->id();
             dof_object.block      = elem_ptr->subdomain_id();
-            
+
             dof_map.dof_indices(elem_ptr, dof_indices);
             auto n_dofs_x_el = dof_indices.size();
             dof_object.dofs.resize(n_dofs_x_el);
@@ -144,7 +143,7 @@ namespace utopia {
         const int var_num,
         const int surf_var_num)
     {
-        CHRONO_START();
+        // CHRONO_START();
 
         comm_ = vol_mesh.comm().get();
         n_local_dofs_ = surf_dof_map.n_local_dofs();
@@ -214,7 +213,7 @@ namespace utopia {
             }
         }
 
-        CHRONO_END("boundary_element_node_permutation_map");
+        // CHRONO_END("ElementDofMapAdapter::init_surf_to_vol");
     }
 
     void ElementDofMapAdapter::make_element_node_map(ElementDofMapAdapter &out) const
@@ -235,7 +234,7 @@ namespace utopia {
         SizeType dofs_begin = 0;
         out.comm_.exscan(&out.n_local_dofs_, &dofs_begin, 1, moonolith::MPISum());
 
-        std::size_t dof_id = dofs_begin;
+        SizeType dof_id = dofs_begin;
         for(std::size_t i = 0; i < n_elems; ++i) {
             const auto &dof_in = dof_map_.dof_object(i);
             auto &dof_out = out.dof_map_.dof_object(i);
