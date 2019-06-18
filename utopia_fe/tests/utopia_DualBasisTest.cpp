@@ -164,11 +164,11 @@ namespace utopia {
         auto order = 2;
 
         // test_dual_basis(libMesh::TRI6, dim, order, alpha);
-        // test_dual_basis(libMesh::QUAD4, dim, 1, alpha);
-        // test_dual_basis(libMesh::QUAD8, dim, 2, alpha);
+        test_dual_basis(libMesh::QUAD4, dim, 1, alpha);
+        test_dual_basis(libMesh::QUAD8, dim, 2, alpha);
 
-        // dim = 1;
-        // test_dual_basis(libMesh::EDGE3, dim, order, alpha);
+        dim = 1;
+        test_dual_basis(libMesh::EDGE3, dim, order, alpha);
 
         dim = 3;
         test_dual_basis(libMesh::TET10, dim, order, alpha);
@@ -185,6 +185,21 @@ namespace utopia {
         // weights.print();
         // std::cout << "------------------------\n";
         // trafo.print();
+
+
+
+        libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
+        DualBasis::build_trafo_and_weights(
+                   libMesh::EDGE3,
+                   2,
+                   1./5,
+                   trafo,
+                   inv_trafo,
+                   weights);
+
+        weights.print();
+        std::cout << "------------------------\n";
+        trafo.print();
     }
 }
 

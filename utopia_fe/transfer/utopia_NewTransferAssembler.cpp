@@ -81,9 +81,9 @@ namespace utopia {
                     const auto &D_e = algo.mass_matrix();
                     const auto &Q_e = algo.transformation();
 
-                    std::cout << "---------------------\n";
-                    D_e.describe(std::cout);
-                    std::cout << "---------------------\n";
+                    // std::cout << "---------------------\n";
+                    // D_e.describe(std::cout);
+                    // std::cout << "---------------------\n";
 
                     B.insert(dofs_s, dofs_m, B_e);
                     D.insert(dofs_s, dofs_s, D_e);
@@ -124,7 +124,7 @@ namespace utopia {
             moonolith::Communicator comm(master.comm().get());
 
             MasterAndSlaveAlgorithmT algo(comm,
-                moonolith::make_unique<LibMeshCollectionManagerT>(master.comm(), nullptr)
+                moonolith::make_unique<LibMeshCollectionManagerT>(master.comm(), nullptr, true)
             );
             
             algo.init_simple(
@@ -179,7 +179,8 @@ namespace utopia {
 
                 USparseMatrix D_tilde_inv = diag(d_inv);
                 USparseMatrix D_inv = Q * D_tilde_inv;
-                T = D_inv * B;
+                // T = D_inv * B;
+                T = D_tilde_inv * B;
 
                 B.implementation().set_name("b");
                 D.implementation().set_name("d");
