@@ -33,6 +33,11 @@ namespace utopia {
             const TransferOptions &opts = TransferOptions()
         );
 
+        inline std::shared_ptr<PseudoL2TransferOperator> build_operator() const
+        {
+            return std::make_shared<PseudoL2TransferOperator>(data.T);
+        }
+
         TransferData data;
     };
 }

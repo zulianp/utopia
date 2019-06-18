@@ -69,7 +69,7 @@ namespace utopia {
                         e_m,
                         m_m.fe_type(0).order,
                         e_s,
-                        m_m.fe_type(0).order
+                        m_s.fe_type(0).order
                     )
                 );
 
@@ -80,6 +80,10 @@ namespace utopia {
                     const auto &B_e = algo.coupling_matrix();
                     const auto &D_e = algo.mass_matrix();
                     const auto &Q_e = algo.transformation();
+
+                    std::cout << "---------------------\n";
+                    D_e.describe(std::cout);
+                    std::cout << "---------------------\n";
 
                     B.insert(dofs_s, dofs_m, B_e);
                     D.insert(dofs_s, dofs_s, D_e);
@@ -160,9 +164,35 @@ namespace utopia {
             assembler.D.finalize(n_slave_dofs, n_slave_dofs);
             assembler.Q.finalize(n_slave_dofs, n_slave_dofs);
 
-            assembler.B.fill(*data.B);
-            assembler.D.fill(*data.D);
-            assembler.Q.fill(*data.Q);
+            auto &B = *data.B;
+            auto &D = *data.D;
+            auto &Q = *data.Q;
+            auto &T = *data.T;
+
+            assembler.B.fill(B);
+            assembler.D.fill(D);
+            assembler.Q.fill(Q);
+
+            if(!empty(Q)) {
+                UVector d_inv = diag(D);
+                e_pseudo_inv(d_inv, d_inv, 1e-15);
+
+                USparseMatrix D_tilde_inv = diag(d_inv);
+                USparseMatrix D_inv = Q * D_tilde_inv;
+                T = D_inv * B;
+
+                B.implementation().set_name("b");
+                D.implementation().set_name("d");
+                Q.implementation().set_name("q");
+                T.implementation().set_name("t");
+
+                write("B.m", B);
+                write("D.m", D);
+                write("Q.m", Q);
+                write("T.m", T);
+
+                // normalize_rows(T);
+            }
 
             c.stop();
             logger() << "time MarsMeshTransfer::assemble: " << c  << std::endl;

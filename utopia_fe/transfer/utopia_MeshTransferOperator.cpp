@@ -35,6 +35,7 @@ namespace utopia {
         use_interpolation(false),
         nnz_x_row(0),
         output_path("./"),
+        discretization("legacy"),
         use_new_algo(false)
         {}
 
@@ -56,7 +57,7 @@ namespace utopia {
             os << "use_interpolation " << use_interpolation << std::endl;
             os << "nnz_x_row " << nnz_x_row << std::endl;
             os << "output_path " << output_path << std::endl;
-            os << "use_new_algo " << use_new_algo << std::endl;
+            os << "discretization " << discretization << std::endl;
         }
 
         inline void read(Input &is) override
@@ -77,9 +78,9 @@ namespace utopia {
             is.get("nnz-x-row", nnz_x_row);
             is.get("output-path", output_path);
 
-            std::string disc = "legacy";
-            is.get("discretization", disc);
-            use_new_algo = disc == "new";
+
+            is.get("discretization", discretization);
+            use_new_algo = discretization == "new";
         }
 
         bool normalize_rows;
@@ -98,6 +99,7 @@ namespace utopia {
         bool use_interpolation;
         long nnz_x_row;
         std::string output_path;
+        std::string discretization;
         bool use_new_algo;
     };
 
@@ -542,13 +544,15 @@ namespace utopia {
                 return false;
             }
 
-            if(params_->normalize_rows) {
-                auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
-                pseudo_l2_operator->init_from_coupling_operator(*new_assembler.data.B);
-                operator_ = pseudo_l2_operator;
-            } else {
-                operator_ = std::make_shared<PseudoL2TransferOperator>(new_assembler.data.B);
-            }
+            operator_ = new_assembler.build_operator();
+
+            // if(params_->normalize_rows) {
+            //     auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
+            //     pseudo_l2_operator->init_from_coupling_operator(*new_assembler.data.B);
+            //     operator_ = pseudo_l2_operator;
+            // } else {
+            //     operator_ = std::make_shared<PseudoL2TransferOperator>(new_assembler.data.B);
+            // }
 
             return true;
         }
