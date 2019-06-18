@@ -7,6 +7,7 @@
 #include "utopia_BidirectionalL2LocalAssembler.hpp"
 #include "utopia_MixedBidirectionalLocalAssembler.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_NewTransferAssembler.hpp"
 
 #include "libmesh/boundary_mesh.h"
 
@@ -33,7 +34,8 @@ namespace utopia {
         use_composite_bidirectional(false),
         use_interpolation(false),
         nnz_x_row(0),
-        output_path("./")
+        output_path("./"),
+        use_new_algo(false)
         {}
 
         void describe(std::ostream &os = std::cout) const
@@ -54,6 +56,7 @@ namespace utopia {
             os << "use_interpolation " << use_interpolation << std::endl;
             os << "nnz_x_row " << nnz_x_row << std::endl;
             os << "output_path " << output_path << std::endl;
+            os << "use_new_algo " << use_new_algo << std::endl;
         }
 
         inline void read(Input &is) override
@@ -73,6 +76,10 @@ namespace utopia {
             is.get("use-interpolation", use_interpolation);
             is.get("nnz-x-row", nnz_x_row);
             is.get("output-path", output_path);
+
+            std::string disc = "legacy";
+            is.get("discretization", disc);
+            use_new_algo = disc == "new";
         }
 
         bool normalize_rows;
@@ -91,6 +98,7 @@ namespace utopia {
         bool use_interpolation;
         long nnz_x_row;
         std::string output_path;
+        bool use_new_algo;
     };
 
     static const std::map<std::string, TransferOperatorType> &get_str_to_type()
@@ -527,6 +535,24 @@ namespace utopia {
 
     bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
     {
+        if(params_->use_new_algo) {
+            NewTransferAssembler new_assembler;
+
+            if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs)) {
+                return false;
+            }
+
+            if(params_->normalize_rows) {
+                auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
+                pseudo_l2_operator->init_from_coupling_operator(*new_assembler.data.B);
+                operator_ = pseudo_l2_operator;
+            } else {
+                operator_ = std::make_shared<PseudoL2TransferOperator>(new_assembler.data.B);
+            }
+
+            return true;
+        }
+
         //apply boundary filter
         if(params_->from_boundary) {
             auto b_from_mesh = std::make_shared<libMesh::BoundaryMesh>(from_mesh->comm(), from_mesh->mesh_dimension()-1);

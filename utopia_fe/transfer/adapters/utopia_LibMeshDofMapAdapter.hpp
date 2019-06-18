@@ -142,6 +142,15 @@ namespace utopia {
             // *vector_permutation_ = transpose(*vector_permutation_);
         }
 
+
+        void init(
+            libMesh::MeshBase &mesh,
+            const libMesh::DofMap &dof_map,
+            const int var_num)
+        {
+            dof_map_.init(mesh, dof_map, var_num);
+        }
+
         // void init_for_surface(
         //     libMesh::MeshBase &vol_mesh,
         //     const libMesh::DofMap &vol_dof_map,

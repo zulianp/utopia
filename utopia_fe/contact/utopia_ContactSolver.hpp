@@ -571,6 +571,8 @@ namespace utopia {
 
         void update_aux_system(UVector &x)
         {
+            // synchronize(x);
+            
             UVector s, unscaled_s;
             if(contact_stress_) {
                 contact_stress_->assemble(x, unscaled_s);

@@ -43,11 +43,6 @@ namespace utopia {
             return dof_map_.element_dof_map();
         }
 
-        // inline const std::vector<ElementDofMap> &element_dof_map() const
-        // {
-        //     return dof_map_.element_dof_map();
-        // }
-
         inline std::vector<libMesh::dof_id_type> &handle_to_element_id()
         {
             return handle_to_element_id_;
@@ -142,55 +137,11 @@ namespace utopia {
        
         }
 
-        // void extract_surface_init(
-        //     const std::shared_ptr<libMesh::MeshBase> &mesh,
-        //     const libMesh::DofMap &dof_map,
-        //     const int var_num)
-        // {
-        //     auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(mesh->comm(), mesh->mesh_dimension() - 1);
-
-        //     mesh->get_boundary_info().sync(*b_mesh);
-
-        //     es = utopia::make_unique<libMesh::EquationSystems>(*b_mesh);
-        //     es->add_system<libMesh::LinearImplicitSystem> ("boundary_sys");
-
-        //     libMesh::FEType fe_type = dof_map.variable_type(var_num);
-        //     auto &sys = es->get_system("boundary_sys");
-        //     auto b_var_num = sys.add_variable("lambda", fe_type); 
-        //     es->init();
-
-        //     init(b_mesh, sys.get_dof_map(), b_var_num);
-        //     is_extracted_surface_ = true;
-        //     boundary_ids_workaround(*mesh);
-
-        //     permutation_ = std::make_shared<USparseMatrix>();
-
-        //     bundary_permutation_map(
-        //         *b_mesh,
-        //         dof_map,
-        //         sys.get_dof_map(),
-        //         var_num,
-        //         0,
-        //         0,
-        //         0,
-        //         boundary_to_volume_map
-        //     );
-
-        //     bundary_permutation_matrix_from_map(
-        //         boundary_to_volume_map,
-        //         *permutation_
-        //     );
-
-        //     n_local_dofs_ =  sys.get_dof_map().n_local_dofs();
-        // }
-
-
         void extract_surface_init_for_contact(
             const std::shared_ptr<libMesh::MeshBase> &mesh,
             const libMesh::DofMap &dof_map,
             const int var_num)
         {
-
             Chrono c;
             c.start();
 
@@ -226,6 +177,33 @@ namespace utopia {
                 b_var_num);
 
             dof_map_.describe();
+        }
+
+
+        void init(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const libMesh::DofMap &dof_map,
+            const int var_num)
+        {
+            Chrono c;
+            c.start();
+
+            source_dof_map_ = utopia::make_ref(dof_map);
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+
+            init_aux(mesh, dof_map, var_num);
+            is_extracted_surface_ = false;
+
+            dof_map_.init(
+                *mesh,
+                dof_map,
+                var_num
+            );
+
+            dof_map_.describe();
+
+            c.stop();
+            std::cout << "LibMeshFunctionSpaceAdapter::init: " << c << std::endl;
         }
 
         // void extract_surface_init(

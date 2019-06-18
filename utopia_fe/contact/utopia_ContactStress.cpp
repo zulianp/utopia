@@ -21,6 +21,8 @@ namespace utopia {
         x_p1_ = ghosted(p1_dof_map.n_local_dofs(), p1_dof_map.n_dofs(), p1_dof_map.get_send_list());
         x_p1_ = VtoP1_ * x;
 
+        synchronize(x_p1_);
+
         UVector von_mises, normal_stress, sigma;
         ok = elast_->von_mises_stress(x_p1_, von_mises, 0);  assert(ok);
         ok = elast_->normal_stress(x_p1_, normal_stress, 1); assert(ok);

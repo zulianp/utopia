@@ -15,6 +15,8 @@
 #include "moonolith_elem_triangle.hpp"
 #include "moonolith_elem_quad.hpp"
 #include "moonolith_elem_segment.hpp"
+#include "moonolith_elem_tetrahedron.hpp"
+#include "moonolith_elem_hexahedron.hpp"
 
 #include "libmesh/point.h"
 #include "libmesh/elem.h"
@@ -875,6 +877,219 @@ namespace utopia {
        assert(false);
        std::cerr << " unsupported type" << std::endl;
        return nullptr;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<int CoDim>
+    void make(const libMesh::Elem &elem, const libMesh::FEType &type, std::shared_ptr< moonolith::Elem<double, 1, CoDim> > &e)
+    {
+        using moonolith::Segment;
+
+        if(is_edge(elem.type())) {
+
+             if(type.order == 2) {
+                 auto s = moonolith::make_unique<Segment<double, 2, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+
+             if(type.order == 1) {
+                 auto s = moonolith::make_unique<Segment<double, 1, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+        }
+
+        assert(false);
+        std::cerr << " unsupported type" << std::endl;
+    }
+
+
+    template<int CoDim>
+    void make(const libMesh::Elem &elem, const libMesh::FEType &type, std::shared_ptr< moonolith::Elem<double, 2, CoDim> > &e)
+    {
+        using moonolith::Triangle;
+        using moonolith::Quad;
+        
+        if(is_tri(elem.type())) {
+
+             if(type.order == 2) {
+                 auto s = moonolith::make_unique<Triangle<double, 2, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+
+             if(type.order == 1) {
+                 auto s = moonolith::make_unique<Triangle<double, 1, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+
+        } else if(is_quad(elem.type())) {
+
+             if(type.order == 2) {
+                 auto s = moonolith::make_unique<Quad<double, 2, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+
+             if(type.order == 1) {
+                 auto s = moonolith::make_unique<Quad<double, 1, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+
+        }
+
+        assert(false);
+    }
+
+
+
+
+
+
+    template<class E>
+    void make_tet_1(const libMesh::Elem &in, E &out)
+    {
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(0.0, 0.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(0));
+        ///////////////////////////
+
+        ref_p(0) = 1.0;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(1));
+
+        ///////////////////////////
+        ref_p(0) = 0.0;
+        ref_p(1) = 1.0;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(2));
+
+        ///////////////////////////
+        ref_p(1) = 0.0;
+        ref_p(2) = 1.0;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(3));
+    }
+
+    template<class E>
+    void make_tet_2(const libMesh::Elem &in, E &out)
+    {
+        make_tet_1(in, out);
+
+        //reverse engineer the ordering from ref points to physical points
+        libMesh::Point p(0.0, 0.0, 0.0);
+        libMesh::Point ref_p(0.5, 0.0, 0.0);
+
+        ///////////////////////////
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(4));
+
+        ///////////////////////////
+        // ref_p(0) = 0.5;
+        ref_p(1) = 0.5;
+        // ref_p(2) = 0.0;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(5));
+
+        ///////////////////////////
+        ref_p(0) = 0.0;
+        ref_p(1) = 0.5;
+        // ref_p(2) = 0.0;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(6));
+
+
+        ///////////////////////////
+        ref_p(0) = 0.0;
+        ref_p(1) = 0.0;
+        ref_p(2) = 0.5;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(7));
+
+
+        ///////////////////////////
+        ref_p(0) = 0.5;
+        // ref_p(1) = 0.0;
+        // ref_p(2) = 0.5;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(8));
+
+
+        ///////////////////////////
+        ref_p(0) = 0.0;
+        ref_p(1) = 0.5;
+        ref_p(2) = 0.5;
+        p = libMesh::FE<3, libMesh::LAGRANGE>::map(&in, ref_p);
+        make(p, out.node(9));
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Tetrahedron<double, 1, Dim> &out)
+    {
+        make_tet_1(in , out);
+    }
+
+    template<int Dim>
+    void make_element(const libMesh::Elem &in, moonolith::Tetrahedron<double, 2, Dim> &out)
+    {
+        make_tet_2(in , out);
+    }
+
+    template<int CoDim>
+    void make(const libMesh::Elem &elem, const libMesh::FEType &type, std::shared_ptr< moonolith::Elem<double, 3, CoDim> > &e)
+    {
+        using moonolith::Tetrahedron;
+        using moonolith::Hexahedron;
+        
+        if(is_tet(elem.type())) {
+
+             if(type.order == 2) {
+                 auto s = moonolith::make_unique<Tetrahedron<double, 2, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+
+             if(type.order == 1) {
+                 auto s = moonolith::make_unique<Tetrahedron<double, 1, CoDim>>();
+                 make_element(elem, *s);
+                 e = std::move(s);
+                 return;
+             }
+
+        } else if(is_hex(elem.type())) {
+
+             // if(type.order == 2) {
+             //     auto s = moonolith::make_unique<Hexahedron<double, 2, CoDim>>();
+             //     make_element(elem, *s);
+             //     e = std::move(s);
+             //     return;
+             // }
+
+             // if(type.order == 1) {
+             //     auto s = moonolith::make_unique<Hexahedron<double, 1, CoDim>>();
+             //     make_element(elem, *s);
+             //     e = std::move(s);
+             //     return;
+             // }
+
+        }
+
+        assert(false);
     }
 
 }
