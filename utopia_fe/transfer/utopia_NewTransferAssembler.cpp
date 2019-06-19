@@ -81,10 +81,6 @@ namespace utopia {
                     const auto &D_e = algo.mass_matrix();
                     const auto &Q_e = algo.transformation();
 
-                    // std::cout << "---------------------\n";
-                    // D_e.describe(std::cout);
-                    // std::cout << "---------------------\n";
-
                     B.insert(dofs_s, dofs_m, B_e);
                     D.insert(dofs_s, dofs_s, D_e);
                     Q.insert(dofs_s, dofs_s, Q_e);
@@ -138,12 +134,16 @@ namespace utopia {
                 moonolith::make_unique<LibMeshCollectionManagerT>(master.comm(), nullptr, true),
                 settings
             );
-            
-            algo.init_simple(
-                master,
-                slave,
-                0.0
-            );
+
+            if(opts.tags.empty()) {
+                algo.init_simple(
+                    master,
+                    slave,
+                    0.0
+                );
+            } else {
+                algo.init(master, slave, opts.tags, 0.0);
+            }
 
             c.stop();
             logger() << "init: " << c << std::endl;
@@ -190,19 +190,18 @@ namespace utopia {
                 e_pseudo_inv(d_inv, d_inv, 1e-15);
 
                 USparseMatrix D_tilde_inv = diag(d_inv);
-                USparseMatrix D_inv = Q * D_tilde_inv;
-                // T = D_inv * B;
-                T = D_tilde_inv * B;
+                USparseMatrix T_temp = D_tilde_inv * B;
+                T = Q * T_temp;
 
-                B.implementation().set_name("b");
-                D.implementation().set_name("d");
-                Q.implementation().set_name("q");
-                T.implementation().set_name("t");
+                // B.implementation().set_name("b");
+                // D.implementation().set_name("d");
+                // Q.implementation().set_name("q");
+                // T.implementation().set_name("t");
 
-                write("B.m", B);
-                write("D.m", D);
-                write("Q.m", Q);
-                write("T.m", T);
+                // write("B.m", B);
+                // write("D.m", D);
+                // write("Q.m", Q);
+                // write("T.m", T);
 
                 // normalize_rows(T);
             }

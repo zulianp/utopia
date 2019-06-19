@@ -30,7 +30,7 @@ if(MOONOLITH_DIR OR DEFINED ENV{MOONOLITH_DIR})
 endif()
 
 
-if(NOT MOONOLITH_FOUND)
+if(NOT MOONOLITH_FOUND AND FORCE_INSTALL_MOONOLITH)
     #Automatically download
     include(ExternalProject)
 
