@@ -129,8 +129,8 @@ namespace utopia {
                 //     "begin: search_and_compute ",
                 //     comm, std::cout);
 
-                settings.verbosity_level = 3;
-                settings.disable_redistribution = true;
+                settings.verbosity_level = 2;
+                // settings.disable_redistribution = true;
             }
 
 
