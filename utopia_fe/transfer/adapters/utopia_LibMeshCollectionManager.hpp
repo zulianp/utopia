@@ -35,7 +35,7 @@ namespace utopia {
         using Elem  = libMesh::Elem;
         using Point = libMesh::Point;
         using ElementIter = typename libMesh::MeshBase::const_element_iterator;
-        using Integer = libMesh::dof_id_type;
+        using Integer = moonolith::Integer;
 
         const libMesh::Parallel::Communicator &comm;
         const std::shared_ptr<ElementBlackList> black_list_;
@@ -405,6 +405,10 @@ namespace utopia {
             space->set_mesh(mesh_ptr);
 
             CHECK_STREAM_READ_END("serialize", is);
+
+
+            assert(n_elements == this->n_elements(*space));
+            assert(n_elements == std::distance(this->elements_begin(*space), this->elements_end(*space)));
             return space;
         }
 

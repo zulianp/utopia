@@ -122,9 +122,21 @@ namespace utopia {
             c.start();
 
             moonolith::Communicator comm(master.comm().get());
+            moonolith::SearchSettings settings;
+
+            if(Utopia::instance().verbose()) {
+                // moonolith::root_describe("---------------------------------------\n"
+                //     "begin: search_and_compute ",
+                //     comm, std::cout);
+
+                settings.verbosity_level = 3;
+                settings.disable_redistribution = true;
+            }
+
 
             MasterAndSlaveAlgorithmT algo(comm,
-                moonolith::make_unique<LibMeshCollectionManagerT>(master.comm(), nullptr, true)
+                moonolith::make_unique<LibMeshCollectionManagerT>(master.comm(), nullptr, true),
+                settings
             );
             
             algo.init_simple(

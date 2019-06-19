@@ -325,7 +325,7 @@ namespace utopia {
                     "begin: search_and_compute ",
                     comm, std::cout);
 
-                settings.verbosity_level = 2;
+                settings.verbosity_level = 3;
             }
 
             moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
