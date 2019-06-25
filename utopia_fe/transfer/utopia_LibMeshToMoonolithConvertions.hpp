@@ -17,9 +17,15 @@
 #include "moonolith_elem_segment.hpp"
 #include "moonolith_elem_tetrahedron.hpp"
 #include "moonolith_elem_hexahedron.hpp"
+#include "moonolith_sparse_matrix.hpp"
+#include "moonolith_matrix_inserter.hpp"
+#include "moonolith_mesh.hpp"
+
 
 #include "libmesh/point.h"
 #include "libmesh/elem.h"
+
+#include <unordered_map>
 
 namespace utopia {
 
@@ -1090,6 +1096,232 @@ namespace utopia {
         }
 
         assert(false);
+    }
+
+    inline void convert_matrix(const moonolith::SparseMatrix<double> &in, USparseMatrix &out)
+    {
+        auto nnz = in.local_max_entries_x_col();
+        
+        auto n_local_rows = in.local_rows();
+        auto n_local_cols = in.local_cols();
+
+        out = local_sparse(n_local_rows, n_local_cols, nnz);
+
+        {
+            Write<USparseMatrix> write(out);
+            for (auto it = in.iter(); it; ++it) {
+                out.set(it.row(), it.col(), *it);
+            }
+        }
+    }
+
+    inline void convert_matrix(const moonolith::MatrixInserter<double> &in, USparseMatrix &out)
+    {
+        convert_matrix(in.get(), out);
+    }
+
+
+    inline moonolith::ElemType convert(const libMesh::ElemType &type)
+    {
+        switch(type) {
+            case libMesh::EDGE2: return moonolith::EDGE2;
+            case libMesh::EDGE3: return moonolith::EDGE3;
+            case libMesh::TRI3:  return moonolith::TRI3;
+            case libMesh::TRI6:  return moonolith::TRI6;
+            case libMesh::QUAD4: return moonolith::QUAD4;
+            case libMesh::QUAD8: return moonolith::QUAD8;
+            case libMesh::TET4:  return moonolith::TET4;
+            case libMesh::TET10: return moonolith::TET10;
+            case libMesh::HEX8:  return moonolith::HEX8;
+            case libMesh::HEX27: return moonolith::HEX27;
+            default: {
+                assert(false);
+                return moonolith::INVALID;
+            }
+        }
+    }
+
+    inline moonolith::FEType convert(const libMesh::ElemType &type, const libMesh::FEType &fe_type)
+    {
+        switch(fe_type.order)
+        {
+            case libMesh::CONSTANT:
+            {
+                switch(type) {
+                    case libMesh::EDGE2: return moonolith::EDGE1;
+                    case libMesh::EDGE3: return moonolith::EDGE1;
+                    case libMesh::TRI3:  return moonolith::TRI1;
+                    case libMesh::TRI6:  return moonolith::TRI1;
+                    case libMesh::QUAD4: return moonolith::QUAD1;
+                    case libMesh::QUAD8: return moonolith::QUAD1;
+                    case libMesh::TET4:  return moonolith::TET1;
+                    case libMesh::TET10: return moonolith::TET1;
+                    case libMesh::HEX8:  return moonolith::HEX1;
+                    case libMesh::HEX27: return moonolith::HEX1;
+                   
+                    default: {
+                        assert(false);
+                        return moonolith::INVALID;
+                    }
+                }
+            }
+
+            case libMesh::FIRST:
+            {
+                switch(type) {
+                    case libMesh::EDGE2: return moonolith::EDGE2;
+                    case libMesh::EDGE3: return moonolith::EDGE2;
+                    case libMesh::TRI3:  return moonolith::TRI3;
+                    case libMesh::TRI6:  return moonolith::TRI3;
+                    case libMesh::QUAD4: return moonolith::QUAD4;
+                    case libMesh::QUAD8: return moonolith::QUAD4;
+                    case libMesh::TET4:  return moonolith::TET4;
+                    case libMesh::TET10: return moonolith::TET4;
+                    case libMesh::HEX8:  return moonolith::HEX8;
+                    case libMesh::HEX27: return moonolith::HEX8;
+                   
+                    default: {
+                        assert(false);
+                        return moonolith::INVALID;
+                    }
+                }
+            }
+
+            case libMesh::SECOND:
+            {
+                switch(type) {
+                    case libMesh::EDGE3: return moonolith::EDGE2;
+                    case libMesh::TRI6:  return moonolith::TRI3;
+                    case libMesh::QUAD8: return moonolith::QUAD4;
+                    case libMesh::TET10: return moonolith::TET4;
+                    case libMesh::HEX27: return moonolith::HEX8;
+                   
+                    default: {
+                        assert(false);
+                        return moonolith::INVALID;
+                    }
+                }
+            }
+
+            default: {
+                assert(false);
+                return moonolith::INVALID;
+            }
+
+        }
+    }
+
+    template<int Dim>
+    inline void convert(const libMesh::MeshBase &in, moonolith::Mesh<double, Dim> &out)
+    {
+        out.clear();
+        out.reserve(
+            in.n_active_local_elem(),
+            in.n_local_nodes()
+        );
+
+        std::unordered_map<libMesh::dof_id_type, moonolith::Integer> mapping;
+        moonolith::Integer node_idx = 0;
+
+        for(auto it = in.local_nodes_begin(); it != in.local_nodes_end(); ++it, ++node_idx) {
+            const auto &node = **it;
+            mapping[node.id()] = node_idx;
+            make(node, out.add_node());
+        }
+
+        for(auto it = elements_begin(in); it != elements_end(in); ++it) {
+            const auto &elem = **it;
+            auto &e = out.add_elem();
+            e.type  = convert(elem.type());
+            e.block = elem.subdomain_id();
+            e.is_affine = elem.has_affine_map();
+            e.global_idx = elem.unique_id();
+
+            const std::size_t nn = elem.n_nodes();
+            
+            e.nodes.resize(nn);
+
+            for(std::size_t i = 0; i < nn; ++i) {
+                const auto node_id = elem.node(i);
+
+                auto it = mapping.find(node_id);
+               
+                if(it == mapping.end()) {
+                    e.nodes[i] = node_idx;
+                    mapping[node_id] = node_idx++;
+                    make(elem.node_ref(i), out.add_node());
+                } else {
+                    e.nodes[i] = it->second;
+                }
+            }
+        }
+
+        out.finalize();
+    }
+
+    template<int Dim>
+    inline void convert(
+        const libMesh::MeshBase &in,
+        const libMesh::DofMap &dof_map,
+        unsigned int var_num,
+        moonolith::FunctionSpace<moonolith::Mesh<double, Dim>> &out,
+        unsigned int comp = 0 //I do not think we need anything but 0 at the moment
+        )
+    {
+        convert(in, out.mesh());
+
+        const auto n_local_dofs = dof_map.n_local_dofs();
+        
+        auto &out_dof_map = out.dof_map();
+        out_dof_map.set_n_local_dofs(n_local_dofs);
+        out_dof_map.set_max_nnz( max_nnz_x_row(dof_map) );
+
+        unsigned int sys_num  = dof_map.sys_number();
+        std::vector<libMesh::dof_id_type> dof_indices;
+
+        const auto n_elem = in.n_active_local_elem();
+        out_dof_map.resize(n_elem);
+
+        auto fe_type = dof_map.variable(var_num).type();
+
+        long idx = 0;
+        long n_local_elems = in.n_active_local_elem();
+
+        moonolith::Communicator comm(in.comm().get());
+        comm.exscan(&n_local_elems, &idx, 1, moonolith::MPISum());
+
+        assert(idx < in.n_active_elem());
+
+        for(long i = 0; i < n_local_elems; ++i) {
+            out_dof_map.dof_object(i).element_dof = idx++;
+        }
+
+        SizeType local_el_idx = -1;
+        for(const auto &elem_ptr : in.active_local_element_ptr_range())
+        {
+            ++local_el_idx;
+
+            auto &dof_object      = out_dof_map.dof_object(local_el_idx);
+            dof_object.global_idx = elem_ptr->id();
+            dof_object.block      = elem_ptr->subdomain_id();
+            dof_object.type       = convert(elem_ptr->type(), fe_type);
+
+            dof_map.dof_indices(elem_ptr, dof_indices);
+            auto n_dofs_x_el = dof_indices.size();
+            dof_object.dofs.resize(n_dofs_x_el);
+
+            for(std::size_t i = 0; i < n_dofs_x_el; ++i) {
+                const auto &node_ref = elem_ptr->node_ref(i);
+                const auto dof = node_ref.dof_number(
+                    sys_num,
+                    var_num,
+                    comp);
+
+                assert(dof == dof_indices[i]);
+
+                dof_object.dofs[i] = dof_indices[i];
+            }
+        }
     }
 
 }

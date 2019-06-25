@@ -721,6 +721,12 @@ namespace utopia {
         return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnz_x_row_or_col));
     }
 
+    template<typename T>
+    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size &s, T nnz_x_row_or_col)
+    {
+        return Factory<LocalNNZ<T>, 2>(s, LocalNNZ<T>(nnz_x_row_or_col));
+    }
+
     template<typename T, class... Args>
     inline auto local_sparse(
         const Size::SizeType rows,

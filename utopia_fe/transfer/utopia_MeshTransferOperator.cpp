@@ -36,7 +36,8 @@ namespace utopia {
         nnz_x_row(0),
         output_path("./"),
         discretization("legacy"),
-        use_new_algo(false)
+        use_new_algo(false),
+        use_convert_transfer(false)
         {}
 
         void describe(std::ostream &os = std::cout) const
@@ -81,6 +82,8 @@ namespace utopia {
 
             is.get("discretization", discretization);
             use_new_algo = discretization == "new";
+
+            is.get("use-convert-transfer", use_convert_transfer);
         }
 
         bool normalize_rows;
@@ -101,6 +104,7 @@ namespace utopia {
         std::string output_path;
         std::string discretization;
         bool use_new_algo;
+        bool use_convert_transfer;
     };
 
     static const std::map<std::string, TransferOperatorType> &get_str_to_type()
@@ -165,6 +169,7 @@ namespace utopia {
     void MeshTransferOperator::read(Input &is)
     {
         params_->read(is);
+        is.get("opts", opts);
     }
 
     void MeshTransferOperator::assemble_mass_matrix(
@@ -540,7 +545,7 @@ namespace utopia {
         if(params_->use_new_algo) {
             NewTransferAssembler new_assembler;
 
-            if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs)) {
+            if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts, params_->use_convert_transfer)) {
                 return false;
             }
 

@@ -8,6 +8,7 @@
 #include "utopia_NormalizeRows.hpp"
 #include "utopia_LibMeshShape.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_MaxRowNNZ.hpp"
 
 #include "moonolith_affine_transform.hpp"
 #include "moonolith_contact.hpp"
@@ -28,12 +29,27 @@
 #include "moonolith_l2_assembler.hpp"
 #include "moonolith_keast_quadrature_rule.hpp"
 #include "moonolith_gauss_quadrature_rule.hpp"
+#include "moonolith_par_l2_transfer.hpp"
 
 
 #include "utopia_LibMeshFunctionSpaceAdapter.hpp"
+#include "utopia_LibMeshToMoonolithConvertions.hpp"
 
 
 namespace utopia {
+
+    static void tensorize(const USparseMatrix &T_x, const SizeType n_var, USparseMatrix &T)
+    {
+        auto max_nnz = utopia::max_row_nnz(T_x);
+        T = local_sparse(local_size(T_x), max_nnz);
+
+        Write<USparseMatrix> w(T);
+        each_read(T_x, [&](const SizeType i, const SizeType j, const double value) {
+            for(SizeType k = 0; k < n_var; ++k) {
+                T.set(i + k, j + k, value);
+            }
+        });
+    }
 
     template<int Dim>
     class TransferAlgorithm {
@@ -76,7 +92,7 @@ namespace utopia {
                 if(algo.assemble(*master_elem, *slave_elem)) {
                     uint n_nodes_master = dofs_m.size();
                     uint n_nodes_slave  = dofs_s.size();
-                    
+
                     const auto &B_e = algo.coupling_matrix();
                     const auto &D_e = algo.mass_matrix();
                     const auto &Q_e = algo.transformation();
@@ -125,7 +141,7 @@ namespace utopia {
                 //     "begin: search_and_compute ",
                 //     comm, std::cout);
 
-                settings.verbosity_level = 2;
+                // settings.verbosity_level = 2;
                 // settings.disable_redistribution = true;
             }
 
@@ -152,7 +168,7 @@ namespace utopia {
             /////////////////// pair-wise method ///////////////
 
             c.start();
-            
+
             LocalAssembler assembler(comm);
             algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
                 if(assembler(master, slave)) {
@@ -191,7 +207,13 @@ namespace utopia {
 
                 USparseMatrix D_tilde_inv = diag(d_inv);
                 USparseMatrix T_temp = D_tilde_inv * B;
-                T = Q * T_temp;
+
+                if(opts.n_var == 1) {
+                    T = Q * T_temp;
+                } else {
+                    USparseMatrix T_x = Q * T_temp;
+                    tensorize(T_x, opts.n_var, T);
+                }
 
                 // B.implementation().set_name("b");
                 // D.implementation().set_name("d");
@@ -213,32 +235,168 @@ namespace utopia {
         }
     };
 
+    template<int Dim>
+    class ConvertTransferAlgorithm {
+    public:
+
+        template<class Transfer>
+        static void prepare_data(
+            const TransferOptions &opts,
+            Transfer &t,
+            TransferData &data)
+        {
+            auto &B = *data.B;
+            auto &D = *data.D;
+            auto &Q = *data.Q;
+            auto &T = *data.T;
+
+            convert_matrix(t.buffers.B.get(), B);
+            convert_matrix(t.buffers.D.get(), D);
+            convert_matrix(t.buffers.Q.get(), Q);
+
+            if(!empty(Q)) {
+                UVector d_inv = diag(D);
+                e_pseudo_inv(d_inv, d_inv, 1e-15);
+
+                USparseMatrix D_tilde_inv = diag(d_inv);
+                USparseMatrix T_temp = D_tilde_inv * B;
+
+                if(opts.n_var == 1) {
+                    T = Q * T_temp;
+                } else {
+                    USparseMatrix T_x = Q * T_temp;
+                    tensorize(T_x, opts.n_var, T);
+                }
+            }
+        }
+
+        static bool apply(
+            const libMesh::MeshBase &from_mesh,
+            const libMesh::DofMap   &from_dofs,
+            const libMesh::MeshBase &to_mesh,
+            const libMesh::DofMap   &to_dofs,
+            const TransferOptions &opts,
+            TransferData &data)
+        {
+            using MeshT = moonolith::Mesh<double, Dim>;
+            using FunctionSpaceT = moonolith::FunctionSpace<MeshT>;
+
+            moonolith::Communicator comm = from_mesh.comm().get();
+
+            auto master_mesh = std::make_shared<MeshT>(comm);
+            auto slave_mesh  = std::make_shared<MeshT>(comm);
+            
+            FunctionSpaceT master(master_mesh), slave(slave_mesh);
+
+            convert(from_mesh, from_dofs, opts.from_var_num, master);
+            convert(to_mesh,   to_dofs,   opts.to_var_num,   slave);
+
+            moonolith::Storage<double> meas_m, meas_s;
+
+            master_mesh->measure(meas_m);
+            slave_mesh->measure(meas_s);
+
+            // std::cout << "-----------------------------\n";
+            // moonolith::print(meas_m, std::cout);
+            // std::cout << "-----------------------------\n";
+            // moonolith::print(meas_s, std::cout);
+            // std::cout << "-----------------------------\n";
+
+            // {
+            //     moonolith::MatlabScripter script;
+            //     script.figure(comm.rank() + 1);
+            //     master_mesh->draw(script);
+            //     script.axis_equal();
+            //     script.save("master" + std::to_string(comm.rank()) + ".m");
+            // }
+
+            // {
+            //     moonolith::MatlabScripter script;
+            //     script.figure(comm.rank() + 1);
+            //     slave_mesh->draw(script);
+            //     script.axis_equal();
+            //     script.save("slave" + std::to_string(comm.rank()) + ".m");
+            // }
+
+
+            if(to_mesh.spatial_dimension() > to_mesh.mesh_dimension()) {
+                assert(Dim > 1);
+                moonolith::ParL2Transfer<double, Dim, Dim, moonolith::StaticMax<Dim-1, 1>::value> assembler(comm);
+               
+                if(opts.tags.empty()) {
+                    if(!assembler.assemble(master, slave)) {
+                        return false;
+                    }
+                } else {
+                    if(!assembler.assemble(master, slave, opts.tags)) {
+                        return false;
+                    }
+                }
+
+                prepare_data(opts, assembler, data);
+            } else {
+                moonolith::ParL2Transfer<double, Dim, Dim, Dim> assembler(comm);
+
+               if(opts.tags.empty()) {
+                   if(!assembler.assemble(master, slave)) {
+                       return false;
+                   }
+               } else {
+                   if(!assembler.assemble(master, slave, opts.tags)) {
+                       return false;
+                   }
+               }
+
+                prepare_data(opts, assembler, data);
+            }
+
+            return true;
+        }
+
+    };
 
     bool NewTransferAssembler::assemble(
         const std::shared_ptr<MeshBase> &from_mesh,
         const std::shared_ptr<DofMap>   &from_dofs,
         const std::shared_ptr<MeshBase> &to_mesh,
         const std::shared_ptr<DofMap>   &to_dofs,
-        const TransferOptions &opts
+        const TransferOptions &opts,
+        const bool use_convert_transfer
     )
     {
-        LibMeshFunctionSpaceAdapter from_adapter, to_adapter;
-        from_adapter.init(from_mesh, *from_dofs, opts.from_var_num);
-        to_adapter.init(to_mesh, *to_dofs, opts.to_var_num);
+        if(use_convert_transfer) {
+            auto spatial_dim = to_mesh->spatial_dimension();
+            bool has_intersection = false;
 
-        auto spatial_dim = to_mesh->spatial_dimension();
+            if(spatial_dim == 1) {
+                has_intersection = ConvertTransferAlgorithm<1>::apply(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            } else if(spatial_dim == 2) {
+                has_intersection = ConvertTransferAlgorithm<2>::apply(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            } else if(spatial_dim == 3) {
+                has_intersection = ConvertTransferAlgorithm<3>::apply(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            }
 
-        bool has_intersection = false;
+            return has_intersection;
 
-        if(spatial_dim == 1) {
-            has_intersection = TransferAlgorithm<1>::apply(from_adapter, to_adapter, opts, data);
-        } else if(spatial_dim == 2) {
-            has_intersection = TransferAlgorithm<2>::apply(from_adapter, to_adapter, opts, data);
-        } else if(spatial_dim == 3) {
-            has_intersection = TransferAlgorithm<3>::apply(from_adapter, to_adapter, opts, data);
+        } else {
+            LibMeshFunctionSpaceAdapter from_adapter, to_adapter;
+            from_adapter.init(from_mesh, *from_dofs, opts.from_var_num);
+            to_adapter.init(to_mesh, *to_dofs, opts.to_var_num);
+
+            auto spatial_dim = to_mesh->spatial_dimension();
+
+            bool has_intersection = false;
+
+            if(spatial_dim == 1) {
+                has_intersection = TransferAlgorithm<1>::apply(from_adapter, to_adapter, opts, data);
+            } else if(spatial_dim == 2) {
+                has_intersection = TransferAlgorithm<2>::apply(from_adapter, to_adapter, opts, data);
+            } else if(spatial_dim == 3) {
+                has_intersection = TransferAlgorithm<3>::apply(from_adapter, to_adapter, opts, data);
+            }
+
+            return has_intersection;
         }
-
-        return has_intersection;
     }
 }
 

@@ -136,6 +136,11 @@ namespace utopia {
                 }
             }
 
+            int block_override = -1;
+            is.get("block-override", block_override);
+
+            override_block(block_override, *mesh_);
+
             //build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
 
             scale_mesh(scale, *mesh_);
@@ -308,6 +313,17 @@ namespace utopia {
                 }
             }
         }
+
+
+        static void override_block(const int block, libMesh::MeshBase &mesh)
+        {
+            if(block <= 0) return;
+
+            for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
+                (*it)->subdomain_id() = block;
+            }
+        }
+
 
         static void shift_mesh(const double t[3], libMesh::MeshBase &mesh)
         {

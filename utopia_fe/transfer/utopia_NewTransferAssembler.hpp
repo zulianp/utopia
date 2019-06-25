@@ -30,7 +30,8 @@ namespace utopia {
             const std::shared_ptr<DofMap>   &from_dofs,
             const std::shared_ptr<MeshBase> &to_mesh,
             const std::shared_ptr<DofMap>   &to_dofs,
-            const TransferOptions &opts = TransferOptions()
+            const TransferOptions &opts = TransferOptions(),
+            const bool use_convert_transfer = false
         );
 
         inline std::shared_ptr<PseudoL2TransferOperator> build_operator() const
@@ -38,6 +39,7 @@ namespace utopia {
             return std::make_shared<PseudoL2TransferOperator>(data.T);
         }
 
+    private:
         TransferData data;
     };
 }

@@ -31,7 +31,6 @@ namespace utopia {
                 is.get("mesh", mesh_);
                 is.get("space", space_);
 
-
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
