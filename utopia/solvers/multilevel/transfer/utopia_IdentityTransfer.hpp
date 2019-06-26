@@ -68,6 +68,7 @@
         {
             // as all elements of the identity matrix are positive 
             x_new = x_pos; 
+            return true; 
         }
 
 
