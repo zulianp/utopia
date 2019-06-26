@@ -31,10 +31,8 @@
 #include "moonolith_gauss_quadrature_rule.hpp"
 #include "moonolith_par_l2_transfer.hpp"
 
-
 #include "utopia_LibMeshFunctionSpaceAdapter.hpp"
 #include "utopia_LibMeshToMoonolithConvertions.hpp"
-
 
 namespace utopia {
 
@@ -238,6 +236,8 @@ namespace utopia {
     template<int Dim>
     class ConvertTransferAlgorithm {
     public:
+        using MeshT = moonolith::Mesh<double, Dim>;
+        using FunctionSpaceT = moonolith::FunctionSpace<MeshT>;
 
         template<class Transfer>
         static void prepare_data(
@@ -278,9 +278,6 @@ namespace utopia {
             const TransferOptions &opts,
             TransferData &data)
         {
-            using MeshT = moonolith::Mesh<double, Dim>;
-            using FunctionSpaceT = moonolith::FunctionSpace<MeshT>;
-
             moonolith::Communicator comm = from_mesh.comm().get();
 
             auto master_mesh = std::make_shared<MeshT>(comm);
@@ -290,34 +287,6 @@ namespace utopia {
 
             convert(from_mesh, from_dofs, opts.from_var_num, master);
             convert(to_mesh,   to_dofs,   opts.to_var_num,   slave);
-
-            moonolith::Storage<double> meas_m, meas_s;
-
-            master_mesh->measure(meas_m);
-            slave_mesh->measure(meas_s);
-
-            // std::cout << "-----------------------------\n";
-            // moonolith::print(meas_m, std::cout);
-            // std::cout << "-----------------------------\n";
-            // moonolith::print(meas_s, std::cout);
-            // std::cout << "-----------------------------\n";
-
-            // {
-            //     moonolith::MatlabScripter script;
-            //     script.figure(comm.rank() + 1);
-            //     master_mesh->draw(script);
-            //     script.axis_equal();
-            //     script.save("master" + std::to_string(comm.rank()) + ".m");
-            // }
-
-            // {
-            //     moonolith::MatlabScripter script;
-            //     script.figure(comm.rank() + 1);
-            //     slave_mesh->draw(script);
-            //     script.axis_equal();
-            //     script.save("slave" + std::to_string(comm.rank()) + ".m");
-            // }
-
 
             if(to_mesh.spatial_dimension() > to_mesh.mesh_dimension()) {
                 assert(Dim > 1);
