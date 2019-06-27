@@ -280,6 +280,12 @@ namespace utopia {
         {
             moonolith::Communicator comm = from_mesh.comm().get();
 
+            comm.barrier();
+            
+            if(comm.is_root()) {
+                moonolith::logger() << "ConvertTransferAlgorithm: begin" << std::endl;
+            }
+
             auto master_mesh = std::make_shared<MeshT>(comm);
             auto slave_mesh  = std::make_shared<MeshT>(comm);
             
@@ -317,6 +323,12 @@ namespace utopia {
                }
 
                 prepare_data(opts, assembler, data);
+            }
+
+
+            comm.barrier();
+            if(comm.is_root()) {
+                moonolith::logger() << "ConvertTransferAlgorithm: end" << std::endl;
             }
 
             return true;
