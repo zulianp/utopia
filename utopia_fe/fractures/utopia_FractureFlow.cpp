@@ -1,5 +1,6 @@
 #include "utopia_FractureFlow.hpp"
 
+
 namespace utopia {
 
     FractureFlow::FractureFlow(libMesh::Parallel::Communicator &comm)
@@ -64,9 +65,35 @@ namespace utopia {
                 }
             }
 
+            is.get("post-processors", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    std::string type;
+                    in.get("type", type);
+
+                    if(type == "flux") {
+                        auto flux = std::make_shared<FluxPostProcessor<FunctionSpaceT, UVector>>();
+                       
+                        flux->sampler(sampler);
+                        flux->diffusion_tensor(diffusion_tensor);
+                        
+                        flux->read(in);
+
+                        post_processors_.push_back(flux);
+                    }
+
+                });
+            });
+
         } catch(const std::exception &ex) {
             std::cerr << ex.what() << std::endl;
             assert(false);
+        }
+    }
+
+    void FractureFlow::post_process()
+    {
+        for(auto pp : post_processors_) {
+            pp->describe();
         }
     }
 

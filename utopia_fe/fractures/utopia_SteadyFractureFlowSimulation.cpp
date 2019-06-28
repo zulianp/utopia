@@ -263,6 +263,9 @@ namespace utopia {
             ok = solve_monolithic();
         }
 
+        matrix->post_process();
+        fracture_network->post_process();
+
         c.stop();
         std::cout << "Solver time: " << c << std::endl;
         return ok;
