@@ -90,9 +90,10 @@ namespace utopia {
         }
     }
 
-    void FractureFlow::post_process()
+    void FractureFlow::post_process(const UVector &sol)
     {
         for(auto pp : post_processors_) {
+            pp->apply(space.space()[0], sol);
             pp->describe();
         }
     }

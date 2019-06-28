@@ -34,7 +34,7 @@ namespace utopia {
 
         std::vector< std::shared_ptr<PostProcessor<FunctionSpaceT, UVector>> > post_processors_; 
 
-        void post_process();
+        void post_process(const UVector &sol);
 
         void apply_weak_BC(USparseMatrix &A, UVector &b) const;
 

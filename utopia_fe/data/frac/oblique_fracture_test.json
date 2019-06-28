@@ -37,6 +37,12 @@
             "value": 0.1,
             "block": 3
          }
+      ],
+      "post-processors" : [
+         {
+            "type" : "flux",
+            "side" : 2
+         }
       ]
    },
    "slave": {
