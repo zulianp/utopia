@@ -33,6 +33,8 @@
 
 #include "utopia_LibMeshFunctionSpaceAdapter.hpp"
 #include "utopia_LibMeshToMoonolithConvertions.hpp"
+#include "utopia_moonolith_permutations.hpp"
+#include "utopia_NormalizeRows.hpp"
 
 namespace utopia {
 
@@ -48,6 +50,22 @@ namespace utopia {
             }
         });
     }
+
+
+    void TransferData::permute(const USparseMatrix &P, TransferData &out)
+    {
+        if(!empty(*B)) *out.B = P * *B;
+        if(!empty(*D)) *out.D = P * *D;
+        
+        if(!empty(*T)) *out.T = P * *T;
+
+
+        if(!empty(*Q)) {
+            *out.Q = P * *Q;
+            normalize_rows(*out.Q);
+        }
+    }
+
 
     template<int Dim>
     class TransferAlgorithm {
@@ -285,25 +303,126 @@ namespace utopia {
             TransferData &data)
         {
             moonolith::Communicator comm = from_mesh.comm().get();
-
-            comm.barrier();
-            
-            if(comm.is_root()) {
-                moonolith::logger() << "ConvertTransferAlgorithm: begin" << std::endl;
-            }
-
             auto master_mesh = std::make_shared<MeshT>(comm);
             auto slave_mesh  = std::make_shared<MeshT>(comm);
-            
+
             FunctionSpaceT master(master_mesh), slave(slave_mesh);
 
             convert(from_mesh, from_dofs, opts.from_var_num, master);
             convert(to_mesh,   to_dofs,   opts.to_var_num,   slave);
 
-            if(to_mesh.spatial_dimension() > to_mesh.mesh_dimension()) {
+            return apply(master, slave, opts, data);
+        }
+
+        template<class Transfer>
+        static void prepare_data_with_covering_check(
+            const TransferOptions &opts,
+            const FunctionSpaceT &in_slave,
+            const FunctionSpaceT &slave,
+            Transfer &t,
+            TransferData &data)
+        {
+            USparseMatrix permutation;
+
+            if(opts.n_var > 1) {
+                make_tensorize_permutation(opts.n_var, slave, in_slave, permutation);
+            } else {
+                make_permuation(slave, in_slave, permutation);
+            }
+
+            TransferData data_ew;
+
+            auto &B_ew = *data_ew.B;
+            auto &D_ew = *data_ew.D;
+            auto &Q_ew = *data_ew.Q;
+            // auto &T_ew = *data_ew.T;
+
+            convert_matrix(t.buffers.B.get(), B_ew);
+            convert_matrix(t.buffers.D.get(), D_ew);
+            convert_matrix(t.buffers.Q.get(), Q_ew);
+
+            data_ew.permute(permutation, data);
+        }
+
+        static bool apply_with_covering_check(
+            const FunctionSpaceT &master,
+            const FunctionSpaceT &in_slave,
+            const TransferOptions &opts,
+            TransferData &data)
+        {
+            FunctionSpaceT slave;
+            in_slave.separate_dofs(slave);
+
+            moonolith::Communicator comm = master.mesh().comm();
+
+            comm.barrier();
+
+            if(comm.is_root()) {
+                moonolith::logger() << "ConvertTransferAlgorithm:apply(...) begin" << std::endl;
+            }
+
+            if(slave.mesh().manifold_dim() > Dim) {
                 assert(Dim > 1);
                 moonolith::ParL2Transfer<double, Dim, Dim, moonolith::StaticMax<Dim-1, 1>::value> assembler(comm);
-               
+
+                if(opts.tags.empty()) {
+                    //change assemble with covering check
+                    if(!assembler.assemble(master, slave)) {
+                        return false;
+                    }
+                } else {
+                    //change assemble with covering check
+                    if(!assembler.assemble(master, slave, opts.tags)) {
+                        return false;
+                    }
+                }
+
+                prepare_data_with_covering_check(opts, in_slave, slave, assembler, data);
+            } else {
+                moonolith::ParL2Transfer<double, Dim, Dim, Dim> assembler(comm);
+
+                if(opts.tags.empty()) {
+                    //change assemble with covering check
+                    if(!assembler.assemble(master, slave)) {
+                        return false;
+                    }
+                } else {
+                    //change assemble with covering check
+                    if(!assembler.assemble(master, slave, opts.tags)) {
+                        return false;
+                    }
+                }
+
+                prepare_data_with_covering_check(opts, in_slave, slave, assembler, data);
+            }
+
+
+            comm.barrier();
+            if(comm.is_root()) {
+                moonolith::logger() << "ConvertTransferAlgorithm:apply(...) end" << std::endl;
+            }
+
+            return true;
+        }
+
+        static bool apply(
+            const FunctionSpaceT &master,
+            const FunctionSpaceT &slave,
+            const TransferOptions &opts,
+            TransferData &data)
+        {
+            moonolith::Communicator comm = master.mesh().comm();
+
+            comm.barrier();
+
+            if(comm.is_root()) {
+                moonolith::logger() << "ConvertTransferAlgorithm:apply(...) begin" << std::endl;
+            }
+
+            if(slave.mesh().manifold_dim() > Dim) {
+                assert(Dim > 1);
+                moonolith::ParL2Transfer<double, Dim, Dim, moonolith::StaticMax<Dim-1, 1>::value> assembler(comm);
+
                 if(opts.tags.empty()) {
                     if(!assembler.assemble(master, slave)) {
                         return false;
@@ -334,7 +453,7 @@ namespace utopia {
 
             comm.barrier();
             if(comm.is_root()) {
-                moonolith::logger() << "ConvertTransferAlgorithm: end" << std::endl;
+                moonolith::logger() << "ConvertTransferAlgorithm:apply(...) end" << std::endl;
             }
 
             return true;

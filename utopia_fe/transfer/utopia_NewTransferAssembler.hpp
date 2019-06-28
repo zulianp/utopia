@@ -15,6 +15,8 @@ namespace utopia {
             T(std::make_shared<USparseMatrix>())
         {}
 
+        void permute(const USparseMatrix &P, TransferData &out);
+        
         std::shared_ptr<USparseMatrix> B, D, Q, T;
     };
 

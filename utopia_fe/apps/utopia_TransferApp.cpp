@@ -80,6 +80,8 @@ namespace utopia {
             is.get("master", input_master);
             is.get("slave",  input_slave);
 
+            std::cout << "1) read fe spaces form disk" << std::endl;
+
             is.get("master-boundary", master_boundary);
             is.get("slave-boundary",  slave_boundary);
 
@@ -145,7 +147,11 @@ namespace utopia {
             return;
         }
 
+        std::cout << "2) assembling transfer operator..." << std::endl;
+
         bool ok = transfer_operator->assemble();
+
+        std::cout << "3) assembly of transfer operator DONE" << std::endl;
 
         if(!ok) {
             std::cerr << "[Error] unable to assemble operator" << std::endl;

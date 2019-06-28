@@ -1220,6 +1220,8 @@ namespace utopia {
             in.n_local_nodes()
         );
 
+        out.set_manifold_dim(in.mesh_dimension());
+
         std::unordered_map<libMesh::dof_id_type, moonolith::Integer> mapping;
         moonolith::Integer node_idx = 0;
 
