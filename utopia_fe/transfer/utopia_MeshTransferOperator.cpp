@@ -37,7 +37,8 @@ namespace utopia {
         output_path("./"),
         discretization("legacy"),
         use_new_algo(false),
-        use_convert_transfer(false)
+        use_convert_transfer(true),
+        remove_incomplete_intersections(false)
         {}
 
         void describe(std::ostream &os = std::cout) const
@@ -59,6 +60,7 @@ namespace utopia {
             os << "nnz_x_row " << nnz_x_row << std::endl;
             os << "output_path " << output_path << std::endl;
             os << "discretization " << discretization << std::endl;
+            os << "remove_incomplete_intersections: " << remove_incomplete_intersections << std::endl;
         }
 
         inline void read(Input &is) override
@@ -84,6 +86,7 @@ namespace utopia {
             use_new_algo = discretization == "new";
 
             is.get("use-convert-transfer", use_convert_transfer);
+            is.get("remove-incomplete-intersections", remove_incomplete_intersections);
         }
 
         bool normalize_rows;
@@ -105,6 +108,7 @@ namespace utopia {
         std::string discretization;
         bool use_new_algo;
         bool use_convert_transfer;
+        bool remove_incomplete_intersections;
     };
 
     static const std::map<std::string, TransferOperatorType> &get_str_to_type()
@@ -544,8 +548,10 @@ namespace utopia {
     {
         if(params_->use_new_algo) {
             NewTransferAssembler new_assembler;
+            new_assembler.use_convert_transfer(params_->use_convert_transfer);
+            new_assembler.remove_incomplete_intersections(params_->remove_incomplete_intersections);
 
-            if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts, params_->use_convert_transfer)) {
+            if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts)) {
                 return false;
             }
 

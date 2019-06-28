@@ -16,7 +16,7 @@ namespace utopia {
         {}
 
         void permute(const USparseMatrix &P, TransferData &out);
-        
+
         std::shared_ptr<USparseMatrix> B, D, Q, T;
     };
 
@@ -32,8 +32,7 @@ namespace utopia {
             const std::shared_ptr<DofMap>   &from_dofs,
             const std::shared_ptr<MeshBase> &to_mesh,
             const std::shared_ptr<DofMap>   &to_dofs,
-            const TransferOptions &opts = TransferOptions(),
-            const bool use_convert_transfer = false
+            const TransferOptions &opts = TransferOptions()
         );
 
         inline std::shared_ptr<PseudoL2TransferOperator> build_operator() const
@@ -41,8 +40,22 @@ namespace utopia {
             return std::make_shared<PseudoL2TransferOperator>(data.T);
         }
 
+        NewTransferAssembler() : use_convert_transfer_(true), remove_incomplete_intersections_(false) {}
+
+        inline void use_convert_transfer(const bool val)
+        {
+            use_convert_transfer_ = val;
+        }
+
+        inline void remove_incomplete_intersections(const bool val)
+        {
+            remove_incomplete_intersections_ = val;
+        }
+
     private:
         TransferData data;
+        bool use_convert_transfer_;
+        bool remove_incomplete_intersections_;
     };
 }
 
