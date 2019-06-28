@@ -200,7 +200,7 @@ namespace utopia {
             assembler.Q.fill(Q);
 
             if(!empty(Q)) {
-                UVector d_inv = diag(D);
+                UVector d_inv = sum(D, 1);
 
                 // write("d_inv.m", d_inv);
 
@@ -259,12 +259,8 @@ namespace utopia {
             convert_matrix(t.buffers.Q.get(), Q);
 
             if(!empty(Q)) {
-                // UVector d_inv = diag(D);
                 m_utopia_warning_once("using sum(D, 1) instead of diag(D)");
                 UVector d_inv = sum(D, 1);
-                // write("d_inv.m", d_inv);
-                // write("B.m", B);
-                // write("Q.m", Q);
 
                 e_pseudo_inv(d_inv, d_inv, 1e-12);
 
