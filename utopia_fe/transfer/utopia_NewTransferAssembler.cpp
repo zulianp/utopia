@@ -201,7 +201,10 @@ namespace utopia {
 
             if(!empty(Q)) {
                 UVector d_inv = diag(D);
-                e_pseudo_inv(d_inv, d_inv, 1e-15);
+
+                // write("d_inv.m", d_inv);
+
+                e_pseudo_inv(d_inv, d_inv, 1e-12);
 
                 USparseMatrix D_tilde_inv = diag(d_inv);
                 USparseMatrix T_temp = D_tilde_inv * B;
@@ -217,6 +220,7 @@ namespace utopia {
                 // D.implementation().set_name("d");
                 // Q.implementation().set_name("q");
                 // T.implementation().set_name("t");
+
 
                 // write("B.m", B);
                 // write("D.m", D);
@@ -255,8 +259,14 @@ namespace utopia {
             convert_matrix(t.buffers.Q.get(), Q);
 
             if(!empty(Q)) {
-                UVector d_inv = diag(D);
-                e_pseudo_inv(d_inv, d_inv, 1e-15);
+                // UVector d_inv = diag(D);
+                m_utopia_warning_once("using sum(D, 1) instead of diag(D)");
+                UVector d_inv = sum(D, 1);
+                // write("d_inv.m", d_inv);
+                // write("B.m", B);
+                // write("Q.m", Q);
+
+                e_pseudo_inv(d_inv, d_inv, 1e-12);
 
                 USparseMatrix D_tilde_inv = diag(d_inv);
                 USparseMatrix T_temp = D_tilde_inv * B;
