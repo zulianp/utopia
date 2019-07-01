@@ -95,8 +95,12 @@ namespace utopia {
             is.get("discretization", discretization);
 
             if(discretization != "legacy") {
-                // contact_ = utopia::make_unique<ContactAssembler>();
-                contact_ = utopia::make_unique<ConvertContactAssembler>();
+                
+                if(discretization == "bug") {
+                    contact_ = utopia::make_unique<ContactAssembler>();
+                } else {
+                    contact_ = utopia::make_unique<ConvertContactAssembler>();
+                }
             }
 
             is.get("qp-solver", [this](Input &in) {

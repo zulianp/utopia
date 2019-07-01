@@ -272,7 +272,7 @@ namespace utopia {
             
             node_wise.inv_mass_vector = sum(D_x, 1);
 
-            e_pseudo_inv(node_wise.inv_mass_vector, node_wise.inv_mass_vector, 1e-12);
+            e_pseudo_inv(node_wise.inv_mass_vector, node_wise.inv_mass_vector, 1e-15);
             USparseMatrix D_inv_x = diag(node_wise.inv_mass_vector);
 
             USparseMatrix T_temp_x = D_inv_x * B_x;
