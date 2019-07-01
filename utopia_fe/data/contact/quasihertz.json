@@ -8,8 +8,8 @@
 		"use-gmres" : true,
 		"outer-loop-tol" : 0.001,
 		"max-outer-loops" : 4,
-		"*discretization" : "new",
-		"discretization" : "bug",
+		"discretization" : "new",
+		"*discretization" : "bug",
 		"plot-gap" : true,
 		"mesh": {
 			"type": "file",

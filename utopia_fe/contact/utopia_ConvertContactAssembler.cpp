@@ -283,17 +283,15 @@ namespace utopia {
             tensorize(T_x, Dim, node_wise.T);
             tensorize(Q_x, Dim, node_wise.Q);
             tensorize(Q_inv_x, Dim, node_wise.Q_inv);
+            
             tensorize(Dim, node_wise.inv_mass_vector);
+            tensorize(Dim, node_wise.is_glue);
             
             normalize_rows(node_wise.T);
             node_wise.T += local_identity(local_size(node_wise.T));
             
-            // node_wise.gap    = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_gap);
-            // node_wise.normal = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_normal);
-
             node_wise.gap    = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_gap);
             node_wise.normal = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_normal);
-
 
             // elem_wise.write();
             // node_wise.write();
