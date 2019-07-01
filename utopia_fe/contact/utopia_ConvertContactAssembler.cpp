@@ -288,11 +288,15 @@ namespace utopia {
             normalize_rows(node_wise.T);
             node_wise.T += local_identity(local_size(node_wise.T));
             
-            node_wise.gap    = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_gap);
-            node_wise.normal = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_normal);
+            // node_wise.gap    = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_gap);
+            // node_wise.normal = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_normal);
+
+            node_wise.gap    = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_gap);
+            node_wise.normal = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_normal);
+
 
             // elem_wise.write();
-            node_wise.write();
+            // node_wise.write();
 
             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
 
