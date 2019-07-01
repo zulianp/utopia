@@ -25,7 +25,7 @@ namespace utopia {
         ReadAndWrite<UVector> w(t);
         auto r = range(t);
 
-        for(auto i = 0; i < n_var; i += n_var) {
+        for(auto i = r.begin(); i < r.end(); i += n_var) {
             const auto value = t.get(i);
 
             for(SizeType k = 1; k < n_var; ++k) {

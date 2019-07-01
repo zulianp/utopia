@@ -1121,6 +1121,31 @@ namespace utopia {
     }
 
 
+    inline void convert_tensor(const moonolith::SparseMatrix<double> &in, UVector &out)
+    {
+        auto nnz = in.local_max_entries_x_col();
+        
+        auto n_local_rows = in.local_rows();
+        auto n_local_cols = in.local_cols();
+
+        assert(n_local_cols == 1);
+
+        out = local_zeros(n_local_rows);
+
+        {
+            Write<UVector> write(out);
+            for (auto it = in.iter(); it; ++it) {
+                assert(it.col() == 0);
+                out.set(it.row(), *it);
+            }
+        }
+    }
+
+    inline void convert_tensor(const moonolith::MatrixInserter<double> &in, UVector &out)
+    {
+        convert_tensor(in.get(), out);
+    }
+
     inline moonolith::ElemType convert(const libMesh::ElemType &type)
     {
         switch(type) {
@@ -1406,9 +1431,12 @@ namespace utopia {
                  e.type       = side_ptr->type();
                  e.block      = in.get_boundary_info().boundary_id(elem_ptr, i);
                  e.is_affine  = side_ptr->has_affine_map();
-                 e.global_idx = side_ptr->id();
+                 // e.global_idx = side_ptr->id();
+
 
                  const std::size_t n_side_nodes = side_ptr->n_nodes();
+
+                 e.nodes.resize(n_side_nodes);
                  
                  for(std::size_t k = 0;  k < n_side_nodes; ++k) {
                     auto node_id = side_ptr->node(k);
@@ -1419,7 +1447,7 @@ namespace utopia {
                  ///////////////////////////// DOFMAP ///////////////////////////
 
                  auto &dof_object      = out_dof_map.dof_object(elem_idx);
-                 dof_object.global_idx = side_ptr->id();
+                 // dof_object.global_idx = side_ptr->id();
                  dof_object.block      = e.block   ;
                  dof_object.type       = convert(side_ptr->type(), fe_type);
 

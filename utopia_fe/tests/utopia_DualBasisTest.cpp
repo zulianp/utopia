@@ -200,6 +200,11 @@ namespace utopia {
         weights.print();
         std::cout << "------------------------\n";
         trafo.print();
+
+        std::cout << "------------------------\n";
+        inv_trafo.print();
+        std::cout << "------------------------\n";
+        trafo.print();
     }
 }
 

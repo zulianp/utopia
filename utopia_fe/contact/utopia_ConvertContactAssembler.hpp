@@ -12,9 +12,10 @@ namespace utopia {
 
     class ConvertContactTensors {
     public:
-
         USparseMatrix B, D, Q, Q_inv, T, orthogonal_trafo, complete_transformation;
         UVector inv_mass_vector;
+
+        bool write();
        
         UVector weighted_gap, gap;
         UVector weighted_normal, normal;

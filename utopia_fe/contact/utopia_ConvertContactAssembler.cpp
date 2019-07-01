@@ -32,6 +32,105 @@
 
 namespace utopia {
 
+
+    bool ConvertContactTensors::write()
+    {
+        if(!empty(B)) 
+        {
+            B.implementation().set_name("b");
+
+            utopia::write("B.m", B);
+        }
+
+        if(!empty(D)) 
+        {
+            D.implementation().set_name("d");
+
+            utopia::write("D.m", D);
+        }
+
+        if(!empty(Q)) 
+        {
+            Q.implementation().set_name("q");
+
+            utopia::write("Q.m", Q);
+        }
+
+        if(!empty(Q_inv)) 
+        {
+            Q_inv.implementation().set_name("q_inv");
+
+            utopia::write("Q_inv.m", Q_inv);
+        }
+
+        if(!empty(T)) 
+        {
+            T.implementation().set_name("t");
+
+            utopia::write("T.m", T);
+        }
+
+        if(!empty(inv_mass_vector)) 
+        {
+            inv_mass_vector.implementation().set_name("imv");
+
+            utopia::write("inv_mass_vector.m", inv_mass_vector);
+        }
+
+        if(!empty(weighted_gap)) 
+        {
+            weighted_gap.implementation().set_name("wg");
+
+            utopia::write("weighted_gap.m", weighted_gap);
+        }
+
+        if(!empty(gap)) 
+        {
+            gap.implementation().set_name("g");
+
+            utopia::write("gap.m", gap);
+        }
+
+        if(!empty(weighted_normal)) 
+        {
+            weighted_normal.implementation().set_name("wn");
+
+            utopia::write("weighted_normal.m", weighted_normal);
+        }
+
+        if(!empty(normal)) 
+        {
+            normal.implementation().set_name("n");
+
+            utopia::write("normal.m", normal);
+        }
+
+
+        if(!empty(is_contact)) 
+        {
+            is_contact.implementation().set_name("ic");
+
+            utopia::write("is_contact.m", is_contact);
+        }
+
+
+        if(!empty(is_glue)) 
+        {
+            is_glue.implementation().set_name("ig");
+
+            utopia::write("is_glue.m", is_glue);
+        }
+
+// orthogonal_trafo.implementation().set_name("o");
+// utopia::write("O.m", orthogonal_trafo);
+
+// complete_transformation.implementation().set_name("ct");
+// utopia::write("complete_transformation.m", complete_transformation);
+        return true;
+    }
+    
+
+
     class ConvertContactBuffers {
     public:
 
@@ -47,18 +146,75 @@ namespace utopia {
             convert_matrix(buffers.B,          element_wise.B);
             convert_matrix(buffers.D,          element_wise.D);
             convert_matrix(buffers.Q,          element_wise.Q);
-            // convert(buffers.Q_inv,      element_wise.Q_inv);
-            // convert_matrix(buffers.gap,        element_wise.gap);
-            // convert_matrix(buffers.normal,     element_wise.normal);
-            // convert_matrix(buffers.is_glue,    element_wise.is_glue);
-            // convert_matrix(buffers.is_contact, element_wise.is_contact);
+            convert_matrix(buffers.Q_inv,      element_wise.Q_inv);
+            
+            convert_tensor(buffers.gap,        element_wise.weighted_gap);
+            convert_tensor(buffers.normal,     element_wise.weighted_normal);
+            convert_tensor(buffers.is_glue,    element_wise.is_glue);
+            convert_tensor(buffers.is_contact, element_wise.is_contact);
 
             convert_to_node_wise(element_wise_space, element_wise, node_wise_space, *node_wise);
         }
 
         template<int Dim>
+        static void normalize_and_build_orthgonal_trafo(const SpaceT<Dim> &node_wise_space, ConvertContactTensors &node_wise)
+        {
+            node_wise.orthogonal_trafo = local_sparse(node_wise_space.dof_map().n_local_dofs(), node_wise_space.dof_map().n_local_dofs(), Dim);
+
+            moonolith::HouseholderTransformation<double, Dim> H;
+            auto &normal = node_wise.normal;
+
+            auto r = range(normal);
+
+            ReadAndWrite<UVector> rw_normal(normal);
+            Read<UVector> r_is_c(node_wise.is_contact);
+            Write<USparseMatrix> w_ot(node_wise.orthogonal_trafo);
+
+            moonolith::Vector<double, Dim> n, v;
+            for(auto i = r.begin(); i < r.end(); i += Dim) {
+                const bool is_contact = node_wise.is_contact.get(i);
+
+                if(is_contact) {
+                    for(int d = 0; d < Dim; ++d) {
+                        n[d] = normal.get(i + d);
+                    }
+
+                    auto len = length(n);
+                    assert(len > 0.0);
+
+                    n /= len;
+
+                    for(int d = 0; d < Dim; ++d) {
+                        normal.set(i + d, n[d]);
+                    }
+
+                    n.x -= 1.0;
+
+                    len = length(n);
+
+                    if(len == 0.0) {
+                        H.identity();
+                    } else {
+                        n /= len;
+                        H.init(n);
+                    }
+
+                } else {
+                    H.identity();
+                }
+
+                for(int d1 = 0; d1 < Dim; ++d1) {
+                    for(int d2 = 0; d2 < Dim; ++d2) {
+                        node_wise.orthogonal_trafo.set(i + d1, i + d2, H(d1, d2));
+                    }
+                }
+            }
+
+        }
+
+        template<int Dim>
         static void convert_to_node_wise(
-            const SpaceT<Dim> &elem_wise_space, const ConvertContactTensors &elem_wise,
+            const SpaceT<Dim> &elem_wise_space, ConvertContactTensors &elem_wise,
             const SpaceT<Dim> &node_wise_space, ConvertContactTensors &node_wise)
         {
             USparseMatrix perm, vector_perm;//, tensorize_perm;
@@ -76,30 +232,28 @@ namespace utopia {
                 vector_perm
             );
 
-            node_wise.gap        = perm * elem_wise.gap;
-            node_wise.is_glue    = perm * elem_wise.is_glue;
-            node_wise.is_contact = perm * elem_wise.is_contact;
+            node_wise.weighted_gap = perm * elem_wise.weighted_gap;
+            node_wise.is_glue      = perm * elem_wise.is_glue;
+            node_wise.is_contact   = perm * elem_wise.is_contact;
 
-            node_wise.normal     = vector_perm * elem_wise.normal;
+            node_wise.weighted_normal = vector_perm * elem_wise.weighted_normal;
 
             USparseMatrix B_x = perm * elem_wise.B * transpose(perm);
             USparseMatrix D_x = perm * elem_wise.D * transpose(perm);
             USparseMatrix Q_x = perm * elem_wise.Q * transpose(perm);
+
             USparseMatrix Q_inv_x = perm * elem_wise.Q_inv * transpose(perm);
 
-            normalize_rows(node_wise.Q);
-
-            static const double LARGE_VALUE = 1e6;
+            normalize_rows(Q_x);
+            normalize_rows(Q_inv_x);
 
             {
-                Write<UVector> w(node_wise.gap);
                 each_transform(node_wise.is_contact, node_wise.is_contact, [&node_wise](const SizeType i, const double value) -> double
                 {
                     if(value > 0.0) {
                         return 1.0;
                     } else {
-                        node_wise.gap.set(i, LARGE_VALUE);
-                        return false;
+                        return 0.0;
                     }
                 });
             }
@@ -110,85 +264,50 @@ namespace utopia {
                     if(value > 0.0) {
                         return 1.0;
                     } else {
-                        node_wise.gap.set(i, LARGE_VALUE);
-                        return false;
+                        return 0.0;
                     }
                 });
             }
 
-            {
-                node_wise.orthogonal_trafo = local_sparse(node_wise_space.dof_map().n_local_dofs(), node_wise_space.dof_map().n_local_dofs(), Dim);
-
-                moonolith::HouseholderTransformation<double, Dim> H;
-                auto &normal = node_wise.normal;
-
-                auto r = range(normal);
-
-                ReadAndWrite<UVector> rw_normal(normal);
-                Read<UVector> r_is_c(node_wise.is_contact);
-                Write<USparseMatrix> w_ot(node_wise.orthogonal_trafo);
-
-                moonolith::Vector<double, Dim> n, v;
-                for(auto i = r.begin(); i < r.end(); i += Dim) {
-                    const bool is_contact = node_wise.is_contact.get(i);
-
-                    if(is_contact) {
-                        for(int d = 0; d < Dim; ++d) {
-                            n[d] = normal.get(i + d);
-                        }
-
-                        auto len = length(n);
-                        assert(len > 0.0);
-
-                        n /= len;
-
-                        for(int d = 0; d < Dim; ++d) {
-                            normal.set(i + d, n[d]);
-                        }
-
-                        n.x -= 1.0;
-
-                        len = length(n);
-
-                        if(len == 0.0) {
-                            H.identity();
-                        } else {
-                            n /= len;
-                            H.init(n);
-                        }
-
-                    } else {
-                        H.identity();
-                    }
-
-                    for(int d1 = 0; d1 < Dim; ++d1) {
-                        for(int d2 = 0; d2 < Dim; ++d2) {
-                            node_wise.orthogonal_trafo.set(i + d1, i + d2, H(d1, d2));
-                        }
-                    }
-                }
-            }
-
+            
             node_wise.inv_mass_vector = sum(D_x, 1);
 
             e_pseudo_inv(node_wise.inv_mass_vector, node_wise.inv_mass_vector, 1e-12);
             USparseMatrix D_inv_x = diag(node_wise.inv_mass_vector);
 
             USparseMatrix T_temp_x = D_inv_x * B_x;
-            USparseMatrix T_x = node_wise.Q * T_temp_x;
+            USparseMatrix T_x = Q_x * T_temp_x;
 
+            tensorize(B_x, Dim, node_wise.B);
+            tensorize(D_x, Dim, node_wise.D);
             tensorize(T_x, Dim, node_wise.T);
-            tensorize(T_x, Dim, node_wise.T);
+            tensorize(Q_x, Dim, node_wise.Q);
             tensorize(Q_inv_x, Dim, node_wise.Q_inv);
             tensorize(Dim, node_wise.inv_mass_vector);
             
             normalize_rows(node_wise.T);
             node_wise.T += local_identity(local_size(node_wise.T));
             
-            node_wise.gap    = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_gap);
-            node_wise.normal = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_normal);
+            node_wise.gap    = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_gap);
+            node_wise.normal = e_mul(node_wise.inv_mass_vector, node_wise.Q_inv *  node_wise.weighted_normal);
+
+            // elem_wise.write();
+            node_wise.write();
+
+            normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
 
             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_trafo;
+
+            {
+                static const double LARGE_VALUE = 1e6;
+                Write<UVector> w(node_wise.gap);
+                each_read(node_wise.is_contact, [&node_wise](const SizeType i, const double value)
+                {
+                    if(value == 0.0) {
+                        node_wise.gap.set(i, LARGE_VALUE);
+                    }
+                });
+            }
         }
 
         ConvertContactTensors element_wise;
@@ -227,7 +346,7 @@ namespace utopia {
             SpaceT elem_wise_space;
             space.separate_dofs(elem_wise_space);
 
-            moonolith::ParContact<double, Dim> par_contact(comm);
+            moonolith::ParContact<double, Dim> par_contact(comm, Dim == 2);
 
             if(par_contact.assemble(
                 params.contact_pair_tags,

@@ -18,6 +18,7 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStress.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
+#include "utopia_ConvertContactAssembler.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -94,7 +95,8 @@ namespace utopia {
             is.get("discretization", discretization);
 
             if(discretization != "legacy") {
-                contact_ = utopia::make_unique<ContactAssembler>();
+                // contact_ = utopia::make_unique<ContactAssembler>();
+                contact_ = utopia::make_unique<ConvertContactAssembler>();
             }
 
             is.get("qp-solver", [this](Input &in) {
