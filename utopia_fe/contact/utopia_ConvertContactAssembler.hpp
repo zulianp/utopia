@@ -1,140 +1,125 @@
-// #ifndef UTOPIA_CONVERT_CONTACT_ASSEMBLER_HPP
-// #define UTOPIA_CONVERT_CONTACT_ASSEMBLER_HPP
+#ifndef UTOPIA_CONVERT_CONTACT_ASSEMBLER_HPP
+#define UTOPIA_CONVERT_CONTACT_ASSEMBLER_HPP
 
-// #include "utopia_LibMeshFunctionSpaceAdapter.hpp"
-// #include "utopia_IContact.hpp"
-// #include "utopia_NodeBlackLister.hpp"
-// #include "utopia_ContactAssembler.hpp"
+#include "utopia_LibMeshFunctionSpaceAdapter.hpp"
+#include "utopia_IContact.hpp"
+#include "utopia_NodeBlackLister.hpp"
+#include "utopia_ContactAssembler.hpp"
 
-// #include <cassert>
+#include <cassert>
 
-// namespace utopia {
+namespace utopia {
 
-//     class ContactTensors {
-//     public:
+    class ConvertContactTensors {
+    public:
 
-//         void convert(
-//             const USparseMatrix &perm,
-//             const USparseMatrix &vector_perm,
-//             ContactTensors &out) const;
+        USparseMatrix B, D, Q, Q_inv, T, orthogonal_trafo, complete_transformation;
+        UVector inv_mass_vector;
+       
+        UVector weighted_gap, gap;
+        UVector weighted_normal, normal;
+        UVector is_contact;
+        UVector is_glue;
+    };
 
-        
-//         void finalize(const SizeType spatial_dim, const bool normalize = true);
+    class ConvertContactAssembler final : public IContact {
+    public:
+        using IContact::assemble;
 
-//         static bool check_op(const USparseMatrix &T);
+        void read(Input &) override;
 
-//     // private:
-//         USparseMatrix B_x, D_x, Q_x;
+        bool assemble(
+            libMesh::MeshBase &mesh,
+            libMesh::DofMap &dof_map,
+            const ContactParams &params);
 
-//         USparseMatrix B, D, D_inv, Q, Q_inv, T, orthogonal_trafo, complete_transformation;
-//         UVector weighted_gap, gap;
-//         UVector weighted_normal, normal;
-//         UVector area;
-//         UVector is_contact;
-//         UVector is_glue;
-//         UVector inv_mass_vector;
+        bool init_no_contact(
+            const libMesh::MeshBase &mesh,
+            const libMesh::DofMap &dof_map);
 
-//         // Factorization<USparseMatrix, UVector> solver;
-//     };
+        //retro-compatiblity
+        inline bool assemble(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const std::shared_ptr<libMesh::DofMap> &dof_map,
+            const ContactParams &params) override
+        {
+            return assemble(*mesh, *dof_map, params);
+        }
 
-//     class ConvertContactAssembler final : public IContact {
-//     public:
-//         using IContact::assemble;
+        //retro-compatiblity
+        bool init_no_contact(
+            const std::shared_ptr<libMesh::MeshBase> &mesh,
+            const std::shared_ptr<libMesh::DofMap> &dof_map) override
+        {
+            return init_no_contact(*mesh, *dof_map);
+        }
 
-//         void read(Input &) override;
+        void couple(const UVector &in, UVector &out) const override;
+        void uncouple(const UVector &in, UVector &out) const override;
+        void couple(const USparseMatrix &in, USparseMatrix &out) const override;
 
-//         bool assemble(
-//             libMesh::MeshBase &mesh,
-//             libMesh::DofMap &dof_map,
-//             const ContactParams &params);
+        const UVector &gap() const override;
+        UVector &gap() override;
 
-//         bool init_no_contact(
-//             const libMesh::MeshBase &mesh,
-//             const libMesh::DofMap &dof_map);
+        inline void apply_orthogonal_trafo(const UVector &in, UVector &out) const override
+        {
+            assert(contact_tensors_);
+            out = contact_tensors_->orthogonal_trafo * in;
+        }
 
-//         //retro-compatiblity
-//         inline bool assemble(
-//             const std::shared_ptr<libMesh::MeshBase> &mesh,
-//             const std::shared_ptr<libMesh::DofMap> &dof_map,
-//             const ContactParams &params) override
-//         {
-//             return assemble(*mesh, *dof_map, params);
-//         }
-
-//         //retro-compatiblity
-//         bool init_no_contact(
-//             const std::shared_ptr<libMesh::MeshBase> &mesh,
-//             const std::shared_ptr<libMesh::DofMap> &dof_map) override
-//         {
-//             return init_no_contact(*mesh, *dof_map);
-//         }
-
-//         void couple(const UVector &in, UVector &out) const override;
-//         void uncouple(const UVector &in, UVector &out) const override;
-//         void couple(const USparseMatrix &in, USparseMatrix &out) const override;
-
-//         const UVector &gap() const override;
-//         UVector &gap() override;
-
-//         inline void apply_orthogonal_trafo(const UVector &in, UVector &out) const override
-//         {
-//             assert(contact_tensors_);
-//             out = contact_tensors_->orthogonal_trafo * in;
-//         }
-
-//         inline const USparseMatrix &orthogonal_trafo() const override
-//         {
-//             return contact_tensors_->orthogonal_trafo;
-//         }
+        inline const USparseMatrix &orthogonal_trafo() const override
+        {
+            return contact_tensors_->orthogonal_trafo;
+        }
             
-//         inline const UVector &normals() const override { 
-//             assert(contact_tensors_);
-//             return contact_tensors_->normal;
-//         }
+        inline const UVector &normals() const override { 
+            assert(contact_tensors_);
+            return contact_tensors_->normal;
+        }
 
-//         void remove_mass(const UVector &in, UVector &out) const override;
+        void remove_mass(const UVector &in, UVector &out) const override;
 
-//         inline const UVector &is_contact_node() const override { 
-//             assert(contact_tensors_);
-//             return contact_tensors_->is_contact;
-//         }
+        inline const UVector &is_contact_node() const override { 
+            assert(contact_tensors_);
+            return contact_tensors_->is_contact;
+        }
 
-//         inline const UVector &is_glue_node() const override { 
-//             assert(contact_tensors_);
-//             return contact_tensors_->is_glue;
-//         }
+        inline const UVector &is_glue_node() const override { 
+            assert(contact_tensors_);
+            return contact_tensors_->is_glue;
+        }
         
-//         inline bool initialized() const override
-//         {
-//             return static_cast<bool>(contact_tensors_);
-//         }
+        inline bool initialized() const override
+        {
+            return static_cast<bool>(contact_tensors_);
+        }
 
-//         inline bool has_contact() const override
-//         {
-//             return has_contact_;
-//         }
+        inline bool has_contact() const override
+        {
+            return has_contact_;
+        }
 
-//         inline bool has_glue() const override
-//         {
-//             return has_glue_;
-//         }
+        inline bool has_glue() const override
+        {
+            return has_glue_;
+        }
 
-//         ConvertContactAssembler() : has_contact_(false), has_glue_(false) {}
+        ConvertContactAssembler() : has_contact_(false), has_glue_(false) {}
 
-//         inline void print_debug_info() override
-//         {
+        inline void print_debug_info() override
+        {
 
-//         }
+        }
 
-//     private:
-//         std::shared_ptr<ContactTensors> contact_tensors_;
-//         bool has_contact_;
-//         bool has_glue_;
+    private:
+        std::shared_ptr<ConvertContactTensors> contact_tensors_;
+        bool has_contact_;
+        bool has_glue_;
 
-//         std::shared_ptr<ElementBlackList> black_list_;
-//     };
+        std::shared_ptr<ElementBlackList> black_list_;
+    };
 
 
-// }
+}
 
-// #endif //UTOPIA_CONVERT_CONTACT_ASSEMBLER_HPP
+#endif //UTOPIA_CONVERT_CONTACT_ASSEMBLER_HPP

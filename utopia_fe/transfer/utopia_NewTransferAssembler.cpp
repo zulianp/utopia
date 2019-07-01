@@ -8,7 +8,7 @@
 #include "utopia_NormalizeRows.hpp"
 #include "utopia_LibMeshShape.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
-#include "utopia_MaxRowNNZ.hpp"
+
 
 #include "moonolith_affine_transform.hpp"
 #include "moonolith_contact.hpp"
@@ -35,21 +35,10 @@
 #include "utopia_LibMeshToMoonolithConvertions.hpp"
 #include "utopia_moonolith_permutations.hpp"
 #include "utopia_NormalizeRows.hpp"
+#include "utopia_TransferUtils.hpp"
 
 namespace utopia {
 
-    static void tensorize(const USparseMatrix &T_x, const SizeType n_var, USparseMatrix &T)
-    {
-        auto max_nnz = utopia::max_row_nnz(T_x);
-        T = local_sparse(local_size(T_x), max_nnz);
-
-        Write<USparseMatrix> w(T);
-        each_read(T_x, [&](const SizeType i, const SizeType j, const double value) {
-            for(SizeType k = 0; k < n_var; ++k) {
-                T.set(i + k, j + k, value);
-            }
-        });
-    }
 
 
     void TransferData::permute(const USparseMatrix &P, TransferData &out)

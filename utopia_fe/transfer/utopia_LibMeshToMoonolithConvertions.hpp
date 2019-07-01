@@ -1276,6 +1276,7 @@ namespace utopia {
         
         auto &out_dof_map = out.dof_map();
         out_dof_map.set_n_local_dofs(n_local_dofs);
+        out_dof_map.set_n_dofs(dof_map.n_dofs());
         out_dof_map.set_max_nnz( max_nnz_x_row(dof_map) );
 
         unsigned int sys_num  = dof_map.sys_number();
@@ -1346,6 +1347,7 @@ namespace utopia {
         out_mesh.clear();
 
         out_dof_map.set_n_local_dofs(n_local_dofs);
+        out_dof_map.set_n_dofs(dof_map.n_dofs());
         out_dof_map.set_max_nnz( max_nnz_x_row(dof_map) );
 
         std::unordered_map<libMesh::dof_id_type, moonolith::Integer> mapping;
@@ -1424,8 +1426,8 @@ namespace utopia {
 
                  const std::size_t n_vol_nodes = elem_ptr->n_nodes();
 
-                 dof_object.nodes.clear();
-                 dof_object.nodes.reserve(n_nodes);
+                 dof_object.dofs.clear();
+                 dof_object.dofs.reserve(n_nodes);
 
                  for(std::size_t k = 0;  k < n_side_nodes; ++k) {
                     const auto &surf_node = side_ptr->node_ref(k);
@@ -1442,7 +1444,7 @@ namespace utopia {
                                                     comp
                                                 );
 
-                            dof_object.nodes.push_back(v_dof);
+                            dof_object.dofs.push_back(v_dof);
                             break;
                         }
                     }
