@@ -150,28 +150,30 @@ namespace utopia {
 
             if(plot_gap_) {
                 static int n_out = 0;
-                UVector gap = e_mul(contact_->is_contact_node(), contact_->gap());
-                UVector is_contact = contact_->is_contact_node();
-                UVector normals = contact_->normals();
+                UVector gap          = e_mul(contact_->is_contact_node(), contact_->gap());
+                // UVector gap          = contact_->gap();
+                UVector is_contact   = contact_->is_contact_node();
+                UVector normals      = contact_->normals();
                 UVector is_glue_node = contact_->is_glue_node();
 
-                write("gap" + std::to_string(n_out) + ".e",          V_->subspace(0), gap);
-                write("is_contact" + std::to_string(n_out) + ".e",   V_->subspace(0), is_contact);
-                write("normals" + std::to_string(n_out) + ".e",      V_->subspace(0), normals);
+                write("gap"        + std::to_string(n_out) + ".e", V_->subspace(0), gap);
+                write("is_contact" + std::to_string(n_out) + ".e", V_->subspace(0), is_contact);
+                write("normals"    + std::to_string(n_out) + ".e", V_->subspace(0), normals);
                 
-
                 if(!empty(is_glue_node)) {
                     write("is_glue_node" + std::to_string(n_out) + ".e", V_->subspace(0), is_glue_node);
                 }
 
-                
-                // plot_gap_ = false;
+                write("O"       + std::to_string(n_out) + ".m", contact_->orthogonal_trafo());
+                write("gap"     + std::to_string(n_out) + ".m", gap);
+                write("normals" + std::to_string(n_out) + ".m", normals);
+
                 n_out++;
             }
 
             deform_mesh(V_0.mesh(), V_0.dof_map(), -x);
 
-            auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
+            // auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
         }
 
         bool solve_steady()

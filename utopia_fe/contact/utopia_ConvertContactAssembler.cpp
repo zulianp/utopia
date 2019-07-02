@@ -32,6 +32,21 @@
 
 namespace utopia {
 
+    inline static bool check_op(const USparseMatrix &T)
+    {
+        UVector sum_T = sum(T, 1);
+        
+        bool ok = true;
+        each_read(sum_T, [&ok](const SizeType i, const double val) {
+            if(!approxeq(val, 0.0, 1e-1) && !approxeq(val, 1.0, 1e-1)) {
+                std::cerr << i << "] " << val << "\n";
+                ok = false;
+            }
+        });
+        
+        return ok;
+    }
+
 
     bool ConvertContactTensors::write()
     {
@@ -168,13 +183,14 @@ namespace utopia {
 
             ReadAndWrite<UVector> rw_normal(normal);
             Read<UVector> r_is_c(node_wise.is_contact);
-            Write<USparseMatrix> w_ot(node_wise.orthogonal_trafo);
+            Write<USparseMatrix> w_ot(node_wise.orthogonal_trafo, utopia::LOCAL);
 
-            moonolith::Vector<double, Dim> n, v;
+            moonolith::Vector<double, Dim> n;
             for(auto i = r.begin(); i < r.end(); i += Dim) {
                 const bool is_contact = node_wise.is_contact.get(i);
 
                 if(is_contact) {
+                    
                     for(int d = 0; d < Dim; ++d) {
                         n[d] = normal.get(i + d);
                     }
@@ -199,14 +215,20 @@ namespace utopia {
                         H.init(n);
                     }
 
-                } else {
-                    H.identity();
-                }
+                    assert(approxeq(std::abs(measure(H)), 1.0, 1e-8));
 
-                for(int d1 = 0; d1 < Dim; ++d1) {
-                    for(int d2 = 0; d2 < Dim; ++d2) {
-                        node_wise.orthogonal_trafo.set(i + d1, i + d2, H(d1, d2));
+                    for(int d1 = 0; d1 < Dim; ++d1) {
+                        for(int d2 = 0; d2 < Dim; ++d2) {
+                            node_wise.orthogonal_trafo.set(i + d1, i + d2, H(d1, d2));
+                        }
                     }
+
+                } else {
+
+                    for(int d1 = 0; d1 < Dim; ++d1) {
+                        node_wise.orthogonal_trafo.set(i + d1, i + d1, 1.0);
+                    }
+
                 }
             }
 
@@ -256,9 +278,7 @@ namespace utopia {
                         return 0.0;
                     }
                 });
-            }
 
-            {
                 each_transform(node_wise.is_glue, node_wise.is_glue, [&node_wise](const SizeType i, const double value) -> double
                 {
                     if(value > 0.0) {
@@ -269,7 +289,6 @@ namespace utopia {
                 });
             }
 
-            
             node_wise.inv_mass_vector = sum(D_x, 1);
 
             e_pseudo_inv(node_wise.inv_mass_vector, node_wise.inv_mass_vector, 1e-15);
@@ -278,16 +297,19 @@ namespace utopia {
             USparseMatrix T_temp_x = D_inv_x * B_x;
             USparseMatrix T_x = Q_x * T_temp_x;
 
-            tensorize(B_x, Dim, node_wise.B);
-            tensorize(D_x, Dim, node_wise.D);
-            tensorize(T_x, Dim, node_wise.T);
-            tensorize(Q_x, Dim, node_wise.Q);
+            tensorize(B_x,     Dim, node_wise.B);
+            tensorize(D_x,     Dim, node_wise.D);
+            tensorize(T_x,     Dim, node_wise.T);
+            tensorize(Q_x,     Dim, node_wise.Q);
             tensorize(Q_inv_x, Dim, node_wise.Q_inv);
             
             tensorize(Dim, node_wise.inv_mass_vector);
             tensorize(Dim, node_wise.is_glue);
             
             normalize_rows(node_wise.T);
+
+            assert(check_op(node_wise.T));
+
             node_wise.T += local_identity(local_size(node_wise.T));
             
             node_wise.gap    = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_gap);
@@ -298,7 +320,7 @@ namespace utopia {
 
             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
 
-            node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_trafo;
+            node_wise.complete_transformation = node_wise.orthogonal_trafo * node_wise.T;
 
             {
                 static const double LARGE_VALUE = 1e6;
