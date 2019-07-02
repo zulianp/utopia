@@ -290,6 +290,7 @@ namespace utopia {
             }
 
             node_wise.inv_mass_vector = sum(D_x, 1);
+            // node_wise.inv_mass_vector = diag(D_x);
 
             e_pseudo_inv(node_wise.inv_mass_vector, node_wise.inv_mass_vector, 1e-15);
             USparseMatrix D_inv_x = diag(node_wise.inv_mass_vector);
@@ -320,7 +321,8 @@ namespace utopia {
 
             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
 
-            node_wise.complete_transformation = node_wise.orthogonal_trafo * node_wise.T;
+            // node_wise.complete_transformation = node_wise.orthogonal_trafo * node_wise.T;
+            node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_trafo;
 
             {
                 static const double LARGE_VALUE = 1e6;
