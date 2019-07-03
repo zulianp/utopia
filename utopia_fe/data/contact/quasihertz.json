@@ -7,9 +7,9 @@
 		"is-steady" : true,
 		"use-gmres" : true,
 		"outer-loop-tol" : 0.00001,
-		"max-outer-loops" : 1,
-		"*discretization" : "new",
-		"discretization" : "bug",
+		"max-outer-loops" : 8,
+		"discretization" : "new",
+		"*discretization" : "bug",
 		"plot-gap" : true,
 		"mesh": {
 			"type": "file",

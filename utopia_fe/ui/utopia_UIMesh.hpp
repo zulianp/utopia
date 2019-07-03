@@ -41,11 +41,14 @@ namespace utopia {
             double scale = 1.;
             double shift[3] = {0. , 0., 0.};
 
+            bool full_order = true;
+
             std::string elem_type = "quad";
 
             is.get("type", mesh_type);
             is.get("elem-type", elem_type);
             is.get("order", order);
+            is.get("full-order", full_order);
             is.get("path", path);
 
             is.get("refinements", refinements);
@@ -156,7 +159,7 @@ namespace utopia {
             }
 
             if(mesh_type == "file" && order == 2) {
-                mesh_->all_second_order();
+                mesh_->all_second_order(full_order);
             }
 
             { 
