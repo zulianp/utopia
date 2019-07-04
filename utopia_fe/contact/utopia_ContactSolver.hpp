@@ -156,9 +156,23 @@ namespace utopia {
                 UVector normals      = contact_->normals();
                 UVector is_glue_node = contact_->is_glue_node();
 
+                auto dim = V_0.mesh().spatial_dimension();
+                UVector gap_vec = normals;
+
+                {
+                    Read<UVector> r(gap);
+
+                    each_transform(gap_vec, gap_vec, [&](const SizeType i, const double val) -> double {
+                        auto ind = (i / dim) * dim;
+                        return val * gap.get(ind);
+
+                    });
+                }
+
                 write("gap"        + std::to_string(n_out) + ".e", V_->subspace(0), gap);
                 write("is_contact" + std::to_string(n_out) + ".e", V_->subspace(0), is_contact);
                 write("normals"    + std::to_string(n_out) + ".e", V_->subspace(0), normals);
+                write("gap_vec"    + std::to_string(n_out) + ".e", V_->subspace(0), gap_vec);
                 
                 if(!empty(is_glue_node)) {
                     write("is_glue_node" + std::to_string(n_out) + ".e", V_->subspace(0), is_glue_node);

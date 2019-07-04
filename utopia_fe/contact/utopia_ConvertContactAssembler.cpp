@@ -43,6 +43,10 @@ namespace utopia {
                 ok = false;
             }
         });
+
+        if(!ok) {
+            write("T_bad.m", T);
+        }
         
         return ok;
     }
@@ -208,7 +212,7 @@ namespace utopia {
 
                     len = length(n);
 
-                    if(len == 0.0) {
+                    if(approxeq(len, 0.0, 1e-15)) {
                         H.identity();
                     } else {
                         n /= len;
@@ -266,8 +270,8 @@ namespace utopia {
 
             USparseMatrix Q_inv_x = perm * elem_wise.Q_inv * transpose(perm);
 
-            normalize_rows(Q_x);
-            normalize_rows(Q_inv_x);
+            normalize_rows(Q_x,     1e-15);
+            normalize_rows(Q_inv_x, 1e-15);
 
             {
                 each_transform(node_wise.is_contact, node_wise.is_contact, [&node_wise](const SizeType i, const double value) -> double
@@ -307,7 +311,7 @@ namespace utopia {
             tensorize(Dim, node_wise.inv_mass_vector);
             tensorize(Dim, node_wise.is_glue);
             
-            normalize_rows(node_wise.T);
+            // normalize_rows(node_wise.T, 1e-15);
 
             assert(check_op(node_wise.T));
 
@@ -493,10 +497,12 @@ namespace utopia {
     void ConvertContactAssembler::remove_mass(const UVector &in, UVector &out) const
     {
         if(!empty(contact_tensors_->Q_inv)) {
-            out = e_mul(
-                contact_tensors_->inv_mass_vector,
-                contact_tensors_->Q_inv * in
-            );
+            // out = e_mul(
+            //     contact_tensors_->inv_mass_vector,
+            //     contact_tensors_->Q_inv * in
+            // );
+
+            out = contact_tensors_->Q * e_mul(contact_tensors_->inv_mass_vector, in);
 
             return;
         }
