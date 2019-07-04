@@ -35,6 +35,14 @@ namespace utopia {
             const TransferOptions &opts = TransferOptions()
         );
 
+        bool surface_assemble(
+            const std::shared_ptr<MeshBase> &from_mesh,
+            const std::shared_ptr<DofMap>   &from_dofs,
+            const std::shared_ptr<MeshBase> &to_mesh,
+            const std::shared_ptr<DofMap>   &to_dofs,
+            const TransferOptions &opts = TransferOptions()
+        );
+
         inline std::shared_ptr<PseudoL2TransferOperator> build_operator() const
         {
             return std::make_shared<PseudoL2TransferOperator>(data.T);

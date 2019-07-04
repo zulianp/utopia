@@ -38,7 +38,8 @@ namespace utopia {
         discretization("legacy"),
         use_new_algo(false),
         use_convert_transfer(true),
-        remove_incomplete_intersections(false)
+        remove_incomplete_intersections(false),
+        surface_transfer(false)
         {}
 
         void describe(std::ostream &os = std::cout) const
@@ -87,6 +88,7 @@ namespace utopia {
 
             is.get("use-convert-transfer", use_convert_transfer);
             is.get("remove-incomplete-intersections", remove_incomplete_intersections);
+            is.get("surface-transfer", surface_transfer);
         }
 
         bool normalize_rows;
@@ -109,6 +111,7 @@ namespace utopia {
         bool use_new_algo;
         bool use_convert_transfer;
         bool remove_incomplete_intersections;
+        bool surface_transfer;
     };
 
     static const std::map<std::string, TransferOperatorType> &get_str_to_type()
@@ -551,8 +554,14 @@ namespace utopia {
             new_assembler.use_convert_transfer(params_->use_convert_transfer);
             new_assembler.remove_incomplete_intersections(params_->remove_incomplete_intersections);
 
-            if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts)) {
-                return false;
+            if(params_->surface_transfer) {
+                if(!new_assembler.surface_assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts)) {
+                    return false;
+                }
+            } else {
+                if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts)) {
+                    return false;
+                }
             }
 
             operator_ = new_assembler.build_operator();

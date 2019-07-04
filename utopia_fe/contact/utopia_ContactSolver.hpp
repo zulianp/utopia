@@ -151,19 +151,18 @@ namespace utopia {
             if(plot_gap_) {
                 static int n_out = 0;
                 UVector gap          = e_mul(contact_->is_contact_node(), contact_->gap());
-                // UVector gap          = contact_->gap();
                 UVector is_contact   = contact_->is_contact_node();
                 UVector normals      = contact_->normals();
                 UVector is_glue_node = contact_->is_glue_node();
+                UVector nx = contact_->orthogonal_trafo() * normals;
 
                 auto dim = V_0.mesh().spatial_dimension();
                 UVector gap_vec = normals;
 
                 {
                     Read<UVector> r(gap);
-
                     each_transform(gap_vec, gap_vec, [&](const SizeType i, const double val) -> double {
-                        auto ind = (i / dim) * dim;
+                        const auto ind = (i / dim) * dim;
                         return val * gap.get(ind);
 
                     });
@@ -173,6 +172,7 @@ namespace utopia {
                 write("is_contact" + std::to_string(n_out) + ".e", V_->subspace(0), is_contact);
                 write("normals"    + std::to_string(n_out) + ".e", V_->subspace(0), normals);
                 write("gap_vec"    + std::to_string(n_out) + ".e", V_->subspace(0), gap_vec);
+                write("nx"         + std::to_string(n_out) + ".e", V_->subspace(0), nx);
                 
                 if(!empty(is_glue_node)) {
                     write("is_glue_node" + std::to_string(n_out) + ".e", V_->subspace(0), is_glue_node);
@@ -181,7 +181,6 @@ namespace utopia {
                 write("O"       + std::to_string(n_out) + ".m", contact_->orthogonal_trafo());
                 write("gap"     + std::to_string(n_out) + ".m", gap);
                 write("normals" + std::to_string(n_out) + ".m", normals);
-
                 n_out++;
             }
 

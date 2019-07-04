@@ -283,7 +283,8 @@ namespace utopia {
             }
         }
 
-        static bool apply(
+        template<int DimMaster, int DimSlave>
+        static bool apply_aux(
             const FunctionSpaceT &master,
             const FunctionSpaceT &slave,
             const TransferOptions &opts,
@@ -291,46 +292,33 @@ namespace utopia {
         {
 
             moonolith::Communicator comm = master.mesh().comm();
-
             comm.barrier();
 
             if(comm.is_root()) {
                 moonolith::logger() << "ConvertTransferAlgorithm:apply(...) begin" << std::endl;
             }
 
-            if(slave.mesh().manifold_dim() > Dim) {
-                assert(Dim > 1);
-                moonolith::ParL2Transfer<double, Dim, Dim, moonolith::StaticMax<Dim-1, 1>::value> assembler(comm);
+            moonolith::ParL2Transfer<
+                double,
+                Dim,
+                moonolith::StaticMax<DimMaster, 1>::value,
+                moonolith::StaticMax<DimSlave, 1>::value
+            > assembler(comm);
 
-                if(opts.tags.empty()) {
-                    if(!assembler.assemble(master, slave)) {
-                        return false;
-                    }
-                } else {
-                    if(!assembler.assemble(master, slave, opts.tags)) {
-                        return false;
-                    }
+            if(opts.tags.empty()) {
+                if(!assembler.assemble(master, slave)) {
+                    return false;
                 }
-
-                prepare_data(opts, assembler, data);
             } else {
-                moonolith::ParL2Transfer<double, Dim, Dim, Dim> assembler(comm);
-
-               if(opts.tags.empty()) {
-                   if(!assembler.assemble(master, slave)) {
-                       return false;
-                   }
-               } else {
-                   if(!assembler.assemble(master, slave, opts.tags)) {
-                       return false;
-                   }
-               }
-
-                prepare_data(opts, assembler, data);
+                if(!assembler.assemble(master, slave, opts.tags)) {
+                    return false;
+                }
             }
 
+            prepare_data(opts, assembler, data);
 
             comm.barrier();
+            
             if(comm.is_root()) {
                 moonolith::logger() << "ConvertTransferAlgorithm:apply(...) end" << std::endl;
             }
@@ -338,6 +326,49 @@ namespace utopia {
             return true;
         }
 
+        static bool apply(
+            const FunctionSpaceT &master,
+            const FunctionSpaceT &slave,
+            const TransferOptions &opts,
+            TransferData &data)
+        {
+            if(slave.mesh().manifold_dim() < Dim) {
+                if(master.mesh().manifold_dim() < Dim) {
+                    //surf to surf
+                    assert(Dim > 1);
+                    return apply_aux<Dim-1, Dim-1>(master, slave, opts, data);
+                } else {
+                    //Vol 2 surf
+                    assert(Dim > 1);
+                    return apply_aux<Dim, Dim-1>(master, slave, opts, data);
+                }
+            } else {
+                //vol 2 vol
+                apply_aux<Dim, Dim>(master, slave, opts, data);
+            }
+
+            return true;
+        }
+
+        static bool surface_apply(
+            const libMesh::MeshBase &from_mesh,
+            const libMesh::DofMap   &from_dofs,
+            const libMesh::MeshBase &to_mesh,
+            const libMesh::DofMap   &to_dofs,
+            const TransferOptions &opts,
+            TransferData &data)
+        {
+            moonolith::Communicator comm = from_mesh.comm().get();
+            auto master_mesh = std::make_shared<MeshT>(comm);
+            auto slave_mesh  = std::make_shared<MeshT>(comm);
+
+            FunctionSpaceT master(master_mesh), slave(slave_mesh);
+
+            extract_trace_space(from_mesh, from_dofs, opts.from_var_num, master);
+            extract_trace_space(to_mesh,   to_dofs,   opts.to_var_num,   slave);
+
+            return apply(master, slave, opts, data);
+        }
 
         static bool apply(
             const libMesh::MeshBase &from_mesh,
@@ -496,8 +527,41 @@ namespace utopia {
 
             return apply_with_covering_check(master, slave, opts, data);
         }
-
     };
+
+    bool NewTransferAssembler::surface_assemble(
+        const std::shared_ptr<MeshBase> &from_mesh,
+        const std::shared_ptr<DofMap>   &from_dofs,
+        const std::shared_ptr<MeshBase> &to_mesh,
+        const std::shared_ptr<DofMap>   &to_dofs,
+        const TransferOptions &opts
+    )
+    {
+        auto spatial_dim = to_mesh->spatial_dimension();
+        bool has_intersection = false;
+
+        if(spatial_dim == 1) {
+            // if(remove_incomplete_intersections_) {
+            //     has_intersection = ConvertTransferAlgorithm<1>::apply_with_covering_check(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            // } else {
+                has_intersection = ConvertTransferAlgorithm<1>::surface_apply(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            // }
+        } else if(spatial_dim == 2) {
+            // if(remove_incomplete_intersections_) {
+            //     has_intersection = ConvertTransferAlgorithm<2>::apply_with_covering_check(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            // } else {
+                has_intersection = ConvertTransferAlgorithm<2>::surface_apply(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            // }
+        } else if(spatial_dim == 3) {
+            // if(remove_incomplete_intersections_) {
+            //     has_intersection = ConvertTransferAlgorithm<3>::apply_with_covering_check(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            // } else {
+                has_intersection = ConvertTransferAlgorithm<3>::surface_apply(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
+            // }
+        }
+
+        return has_intersection;
+    }
 
     bool NewTransferAssembler::assemble(
         const std::shared_ptr<MeshBase> &from_mesh,

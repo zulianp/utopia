@@ -294,13 +294,12 @@ namespace utopia {
             }
 
             node_wise.inv_mass_vector = sum(D_x, 1);
-            // node_wise.inv_mass_vector = diag(D_x);
 
             e_pseudo_inv(node_wise.inv_mass_vector, node_wise.inv_mass_vector, 1e-15);
             USparseMatrix D_inv_x = diag(node_wise.inv_mass_vector);
 
             USparseMatrix T_temp_x = D_inv_x * B_x;
-            USparseMatrix T_x = Q_x * T_temp_x;
+            USparseMatrix T_x      = Q_x * T_temp_x;
 
             tensorize(B_x,     Dim, node_wise.B);
             tensorize(D_x,     Dim, node_wise.D);
@@ -311,7 +310,7 @@ namespace utopia {
             tensorize(Dim, node_wise.inv_mass_vector);
             tensorize(Dim, node_wise.is_glue);
             
-            // normalize_rows(node_wise.T, 1e-15);
+            normalize_rows(node_wise.T, 1e-15);
 
             assert(check_op(node_wise.T));
 
@@ -324,8 +323,6 @@ namespace utopia {
             // node_wise.write();
 
             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
-
-            // node_wise.complete_transformation = node_wise.orthogonal_trafo * node_wise.T;
             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_trafo;
 
             {
@@ -496,14 +493,8 @@ namespace utopia {
 
     void ConvertContactAssembler::remove_mass(const UVector &in, UVector &out) const
     {
-        if(!empty(contact_tensors_->Q_inv)) {
-            // out = e_mul(
-            //     contact_tensors_->inv_mass_vector,
-            //     contact_tensors_->Q_inv * in
-            // );
-
+        if(!empty(contact_tensors_->Q)) {
             out = contact_tensors_->Q * e_mul(contact_tensors_->inv_mass_vector, in);
-
             return;
         }
 
