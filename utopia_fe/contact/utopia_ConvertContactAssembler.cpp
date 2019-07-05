@@ -320,7 +320,7 @@ namespace utopia {
             node_wise.normal = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_normal);
 
             // elem_wise.write();
-            // node_wise.write();
+            
 
             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_trafo;
@@ -335,6 +335,8 @@ namespace utopia {
                     }
                 });
             }
+
+            node_wise.write();
         }
 
         ConvertContactTensors element_wise;
@@ -369,6 +371,9 @@ namespace utopia {
             SpaceT space(mesh_ptr);
 
             extract_trace_space(mesh, dof_map, params.variable_number, space);
+            // moonolith::MatlabScripter script;
+            // mesh_ptr->draw(script);
+            // script.save("contact.m");
 
             SpaceT elem_wise_space;
             space.separate_dofs(elem_wise_space);
