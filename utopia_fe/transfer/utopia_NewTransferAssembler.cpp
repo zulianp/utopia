@@ -443,6 +443,8 @@ namespace utopia {
                     tensorize(T_x, opts.n_var, T);
                 }
             }
+
+            // write("T.m", T);
         }
 
         static bool apply_with_covering_check(
@@ -560,6 +562,8 @@ namespace utopia {
             // }
         }
 
+        // write("T.m", *data.T);
+
         return has_intersection;
     }
 
@@ -594,6 +598,8 @@ namespace utopia {
                     has_intersection = ConvertTransferAlgorithm<3>::apply(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
                 }
             }
+
+            // write("T.m", *data.T);
 
             return has_intersection;
 

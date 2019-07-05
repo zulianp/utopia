@@ -243,7 +243,7 @@ namespace utopia {
             const SpaceT<Dim> &elem_wise_space, ConvertContactTensors &elem_wise,
             const SpaceT<Dim> &node_wise_space, ConvertContactTensors &node_wise)
         {
-            USparseMatrix perm, vector_perm;//, tensorize_perm;
+            USparseMatrix perm, vector_perm;
 
             make_permutation(
                 elem_wise_space,
@@ -319,9 +319,6 @@ namespace utopia {
             node_wise.gap    = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_gap);
             node_wise.normal = node_wise.Q * e_mul(node_wise.inv_mass_vector, node_wise.weighted_normal);
 
-            // elem_wise.write();
-            
-
             normalize_and_build_orthgonal_trafo(node_wise_space, node_wise);
             node_wise.complete_transformation = node_wise.T * node_wise.orthogonal_trafo;
 
@@ -336,7 +333,7 @@ namespace utopia {
                 });
             }
 
-            node_wise.write();
+            // node_wise.write();
         }
 
         ConvertContactTensors element_wise;
@@ -392,6 +389,45 @@ namespace utopia {
                 return false;
             }
         }
+
+
+        //without dof separation
+        // static bool apply(const ContactParams &params,
+        //                   const std::shared_ptr<ElementBlackList> &black_list,
+        //                   libMesh::MeshBase &mesh,
+        //                   libMesh::DofMap &dof_map,
+        //                   ConvertContactBuffers &contact_data)
+        // {
+        //     using AlogrithmT = moonolith::SingleCollectionOneMasterOneSlaveAlgorithm<Dim, LibMeshFunctionSpaceAdapter>;
+        //     using Adapter    = typename AlogrithmT::Adapter;
+
+        //     moonolith::Communicator comm = mesh.comm().get();
+
+        //     auto mesh_ptr = std::make_shared<MeshT>(comm);
+        //     SpaceT space(mesh_ptr);
+
+        //     extract_trace_space(mesh, dof_map, params.variable_number, space);
+        //     // moonolith::MatlabScripter script;
+        //     // mesh_ptr->draw(script);
+        //     // script.save("contact.m");
+
+        //     // SpaceT elem_wise_space;
+        //     // space.separate_dofs(elem_wise_space);
+
+        //     moonolith::ParContact<double, Dim> par_contact(comm, Dim == 2);
+
+        //     if(par_contact.assemble(
+        //         params.contact_pair_tags,
+        //         space,
+        //         params.side_set_search_radius,
+        //         params.is_glue)
+        //     ) {
+        //         contact_data.finalize(par_contact.buffers, space, space);
+        //         return true;
+        //     } else {
+        //         return false;
+        //     }
+        // }
     };
 
     bool ConvertContactAssembler::assemble(
