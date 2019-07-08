@@ -132,7 +132,7 @@ namespace utopia {
             libMesh::DenseMatrix<libMesh::Real> &weights)
         {
 
-            if(order != 1) {
+            if(order != 1 && type != libMesh::HEX27 && type != libMesh::QUAD9) {
                 if(!DualBasis::assemble_local_trafo(type, alpha, trafo, inv_trafo)) {
                     assert(false);
                     return false;

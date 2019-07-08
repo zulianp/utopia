@@ -190,7 +190,7 @@ namespace utopia {
 
         libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         DualBasis::build_trafo_and_weights(
-                   libMesh::QUAD8,
+                   libMesh::HEX27,
                    2,
                    1./5,
                    trafo,
