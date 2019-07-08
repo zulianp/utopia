@@ -38,7 +38,7 @@ namespace utopia {
         assert(approxeq(n_nodes, sum_w, 1e-10));
 
         std::cout << "------------------------\n";
-        weights.print();
+        // weights.print();
 
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
@@ -190,7 +190,7 @@ namespace utopia {
 
         libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         DualBasis::build_trafo_and_weights(
-                   libMesh::TRI6,
+                   libMesh::QUAD8,
                    2,
                    1./5,
                    trafo,
