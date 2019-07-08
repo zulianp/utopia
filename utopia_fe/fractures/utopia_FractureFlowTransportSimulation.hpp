@@ -94,6 +94,7 @@ namespace utopia {
 
         bool preset_velocity_field_;
         bool use_bicgstab;
+        bool use_algebraic_stabilization;
 
         std::string transient_solve_strategy;
 

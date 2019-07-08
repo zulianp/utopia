@@ -72,7 +72,6 @@
       ]
    },
    "solve-strategy": "monolithic",
-   "normal-hydraulic-conductivity": [ { "value" : 2.0  }],
    "use-mg": "true",
    "mg-sweeps": "1",
    "mg-levels": "4",

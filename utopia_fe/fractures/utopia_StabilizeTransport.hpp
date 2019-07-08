@@ -13,8 +13,8 @@ namespace utopia {
         const USparseMatrix &A, 
         USparseMatrix &S)
     { 
-        using SizeType = Traits<USparseMatrix>::Scalar;
-        using Scalar   = Traits<USparseMatrix>::SizeType;
+        using Scalar   = Traits<USparseMatrix>::Scalar;
+        using SizeType = Traits<USparseMatrix>::SizeType;
 
         USparseMatrix A_t = transpose(A);
         auto ls = local_size(A);
@@ -25,18 +25,18 @@ namespace utopia {
             Read<USparseMatrix>  r(A_t);
             Write<USparseMatrix> w(S);
 
-            each_read(A, [&](const SizeType i, const SizeType j, Scalar value){
+            each_read(A, [&](const SizeType i, const SizeType j, Scalar value) {
                 if(i != j) {
                     const Scalar value_t = A_t.get(i, j);
                     Scalar max_val = std::max(value, value_t);
 
                     if(max_val > 0.0){
                         max_val *= -1.0;
-
                         S.set(i, j, max_val);
                     }
                 }
             });
+
         }
 
 
