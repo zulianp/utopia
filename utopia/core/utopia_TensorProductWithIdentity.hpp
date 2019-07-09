@@ -6,6 +6,8 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Factory.hpp"
 
+#include <algorithm>
+
 namespace utopia {
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
     class TensorProductWithIdentity {
