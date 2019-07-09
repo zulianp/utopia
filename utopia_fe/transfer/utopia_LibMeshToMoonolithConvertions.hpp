@@ -1159,6 +1159,8 @@ namespace utopia {
             case libMesh::TET10: return moonolith::TET10;
             case libMesh::HEX8:  return moonolith::HEX8;
             case libMesh::HEX27: return moonolith::HEX27;
+            case libMesh::QUADSHELL8: return moonolith::QUAD8;
+            case libMesh::QUADSHELL4: return moonolith::QUAD4;
             default: {
                 assert(false);
                 return moonolith::INVALID;
@@ -1183,6 +1185,8 @@ namespace utopia {
                     case libMesh::TET10: return moonolith::TET1;
                     case libMesh::HEX8:  return moonolith::HEX1;
                     case libMesh::HEX27: return moonolith::HEX1;
+                    case libMesh::QUADSHELL8: return moonolith::QUAD1;
+                    case libMesh::QUADSHELL4: return moonolith::QUAD1;
                    
                     default: {
                         assert(false);
@@ -1204,6 +1208,8 @@ namespace utopia {
                     case libMesh::TET10: return moonolith::TET4;
                     case libMesh::HEX8:  return moonolith::HEX8;
                     case libMesh::HEX27: return moonolith::HEX8;
+                    case libMesh::QUADSHELL8: return moonolith::QUAD4;
+                    case libMesh::QUADSHELL4: return moonolith::QUAD4;
                    
                     default: {
                         assert(false);
@@ -1220,6 +1226,8 @@ namespace utopia {
                     case libMesh::QUAD8: return moonolith::QUAD8;
                     case libMesh::TET10: return moonolith::TET10;
                     case libMesh::HEX27: return moonolith::HEX27;
+                    case libMesh::QUADSHELL8: return moonolith::QUAD8;
+                    // case libMesh::QUADSHELL9: return moonolith::QUAD9;
                    
                     default: {
                         assert(false);
