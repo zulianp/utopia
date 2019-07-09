@@ -131,8 +131,9 @@ namespace utopia {
             libMesh::DenseMatrix<libMesh::Real> &inv_trafo,
             libMesh::DenseMatrix<libMesh::Real> &weights)
         {
+            const bool is_higher_order_tp = type == libMesh::HEX27 || type == libMesh::QUAD9;
 
-            if(order != 1 && type != libMesh::HEX27 && type != libMesh::QUAD9) {
+            if(order != 1 && !is_higher_order_tp) {
                 if(!DualBasis::assemble_local_trafo(type, alpha, trafo, inv_trafo)) {
                     assert(false);
                     return false;
@@ -155,7 +156,9 @@ namespace utopia {
                 assemble_biorth_weights(
                     ref_elem,
                     order,
-                    weights);
+                    weights,
+                    !is_higher_order_tp
+                );
 
                 auto n = weights.n();
                 trafo.resize(n, n);

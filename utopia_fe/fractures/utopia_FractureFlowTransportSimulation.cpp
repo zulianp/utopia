@@ -1168,7 +1168,7 @@ namespace utopia {
             double outflow_val = sum(*pbfm * concentration);
             vals.push_back(outflow_val);
 
-            total_in_out_flow[idx++] += outflow_val;
+            total_in_out_flow[idx++] = outflow_val;
 
             std::cout << outflow_val;
 
