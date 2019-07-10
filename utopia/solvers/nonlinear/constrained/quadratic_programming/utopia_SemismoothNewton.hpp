@@ -242,7 +242,7 @@ namespace utopia {
                     } else {
                         //is_lower_bound
                         for (SizeType i = rr.begin(); i != rr.end(); i++) {
-                            if (d.get(i) <= active_set_tol_) {
+                            if (d.get(i) <= -active_set_tol_) {
                                 A_c.set(i, i, 1.0);
                                 active.set(i, 1.0);
 
