@@ -128,6 +128,10 @@ namespace utopia {
         auto eq_m = inner(matrix->diffusion_tensor * grad(u_m), ctx_fun(matrix->sampler) * grad(v_m)) * dX;
         auto eq_f = inner(fracture_network->diffusion_tensor  * grad(u_s), ctx_fun(fracture_network->sampler)  * grad(v_f)) * dX;
 
+        // auto eq_m = inner(grad(u_m), ctx_fun(matrix->sampler) * grad(v_m)) * dX;
+        // auto eq_f = inner(grad(u_s), ctx_fun(fracture_network->sampler)  * grad(v_f)) * dX;
+
+
         utopia::assemble(eq_m, A_m);
         utopia::assemble(eq_f, A_f);
 

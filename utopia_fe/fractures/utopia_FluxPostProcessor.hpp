@@ -8,6 +8,8 @@
 #include "utopia_libmesh_FunctionSpace.hpp"
 
 #include <memory>
+#include <vector>
+#include <fstream>
 
 namespace utopia {
 
@@ -16,7 +18,9 @@ namespace utopia {
     public:
         virtual ~PostProcessor() {}
         virtual void apply(FunctionSpace &V, const Vector &sol) = 0;
+        virtual void apply(FunctionSpace &V, const Vector &sol,  const Vector &other) = 0;
         virtual void describe(std::ostream &os = std::cout) const = 0;
+        virtual void export_values() const = 0;
     };
 
 
@@ -31,6 +35,11 @@ namespace utopia {
         void read(Input &in) override 
         {
             in.get("side", side_);
+            in.get("diffusivity", diffusivity_);
+
+            filename_ += std::to_string(side_) + ".txt";
+            in.get("file-name", filename_);
+
             assert(valid());
         }
 
@@ -61,6 +70,55 @@ namespace utopia {
             flux_ = e_mul(mass_vector_, weighted_flux_);
 
             write("flux_" + std::to_string(side_) + ".e", V, flux_);
+
+            const Scalar min_flux = min(flux_);
+            const Scalar max_flux = max(flux_);
+            const Scalar int_flux = sum(weighted_flux_);
+
+            std::cout << "flux(" << side_ << ") in [" << min_flux << ", " << max_flux << "], ";
+            std::cout << "int(flux): " << int_flux << std::endl;
+        }
+
+        void apply(FunctionSpace &V, const Vector &pressure, const Vector &concentration) override
+        {   
+            // auto u = trial(V);
+            // auto v = test(V);
+
+            // auto p = interpolate(pressure, u);
+            // auto c = interpolate(concentration, u);
+
+            // auto sampler_fun = ctx_fun(sampler_);
+
+            // auto vel = (sampler_fun * diffusion_tensor_) * grad(p);
+
+            // auto form = surface_integral(
+            //     inner( 
+            //         inner(vel, normal() ), c)
+            //     , side_
+            // );
+
+            // outflux_ = 0.0;
+            // assemble(form, outflux_);
+            // outflux_ = -outflux_;
+
+            if(empty(flow_matrix_)) {
+
+                auto c = trial(V);
+                auto q = test(V);
+
+                // auto sampler_fun = ctx_fun(sampler_);
+
+                auto p = interpolate(pressure, c);
+                auto vel = coeff(diffusivity_) * grad(p);
+                auto flow_form = surface_integral(inner(c * inner(vel, normal()), q), side_);
+
+                assemble(flow_form, flow_matrix_);
+                flow_matrix_ *= -1.0;
+            }
+
+            outflux_ = sum(flow_matrix_ * concentration);
+
+            all_outflux_.push_back(outflux_);
         }
 
         inline void sampler(const std::shared_ptr<UIFunction<double>> &s)
@@ -104,27 +162,47 @@ namespace utopia {
             return true;
         }
 
+        inline double outflux() const
+        {
+            return outflux_;
+        }
+
         FluxPostProcessor()
-        : side_(-1)
+        : side_(-1), outflux_(0.0), filename_("flux")
         {}
 
         void describe(std::ostream &os = std::cout) const override
         {
-            const Scalar min_flux = min(flux_);
-            const Scalar max_flux = max(flux_);
-            const Scalar int_flux = sum(weighted_flux_);
+            os << "ouflux(" << side_ << ") = " << outflux_ << std::endl;
+        }
 
-            os << "flux(" << side_ << ") in [" << min_flux << ", " << max_flux << "], ";
-            os << "int(flux): " << int_flux << std::endl;
+        void export_values() const override
+        {
+            std::ofstream os(filename_.c_str());
+            assert(os.good());
+
+            if(os.good()) {
+                for(auto f : all_outflux_) {
+                    os << f << "\n";
+                }
+            }
+
+            os.close();
         }
 
     private:
         Vector flux_;
         Vector weighted_flux_;
         Vector mass_vector_;
+        double outflux_;
+        double diffusivity_;
         std::shared_ptr<UIFunction<double>> sampler_;
         ElementMatrix diffusion_tensor_;
         int side_;
+        USparseMatrix flow_matrix_;
+
+        std::vector<double> all_outflux_;
+        std::string filename_;
     };
 
 }

@@ -98,6 +98,21 @@ namespace utopia {
         }
     }
 
+    void FractureFlow::post_process(LibMeshFunctionSpace &space, const UVector &pressure, const UVector &concentration)
+    {
+        for(auto pp : post_processors_) {
+            pp->apply(space, pressure, concentration);
+            pp->describe();
+        }
+    }
+
+   void FractureFlow::export_post_process()
+   {
+        for(auto pp : post_processors_) {
+            pp->export_values();
+        }
+   }
+
     void FractureFlow::apply_weak_BC(USparseMatrix &A, UVector &b) const
     {
         if(weak_BC_) {

@@ -84,6 +84,8 @@ namespace utopia {
 
             CSVWriter csv;
 
+            std::vector<std::shared_ptr<PostProcessor<LibMeshFunctionSpace, UVector>>> flux;
+
         };
 
         SteadyFractureFlowSimulation steady_flow_;

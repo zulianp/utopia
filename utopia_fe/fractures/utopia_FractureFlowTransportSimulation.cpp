@@ -113,7 +113,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_f.dof_map(), transport_f_.system_matrix, xkp1_f);
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
 
         utopia::convert(xkp1_m, *V_m.equation_system().solution);
         utopia::convert(xkp1_f, *V_f.equation_system().solution);
@@ -226,7 +227,8 @@ namespace utopia {
         UVector z = local_zeros(local_size(steady_flow_.B).get(0));
         UVector lagr = local_zeros(local_size(z));
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -322,7 +324,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -448,7 +451,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -560,6 +564,10 @@ namespace utopia {
 
         transport_f_.finalize();
         transport_m_.finalize();
+
+
+        steady_flow_.matrix->export_post_process();
+        steady_flow_.fracture_network->export_post_process();
 
         c.stop();
         std::cout << "Overall time: " << c << std::endl;
@@ -1177,6 +1185,16 @@ namespace utopia {
 
         std::cout << std::endl;
         csv.write_table_row(vals);
+
+        auto &C = space->space().last_subspace();
+        auto &P = flow.space.space().last_subspace();
+
+        UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list());
+        copy_values(C, pressure_w, P, aux_pressure);
+        synchronize(aux_pressure);
+
+
+        flow.post_process(C, aux_pressure, concentration);
     }
 
     void FractureFlowTransportSimulation::Transport::constrain_concentration(UVector &vec)
