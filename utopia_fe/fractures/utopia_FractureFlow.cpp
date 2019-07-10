@@ -79,6 +79,12 @@ namespace utopia {
                         flux->read(in);
 
                         post_processors_.push_back(flux);
+                    } else if(type == "avg") {
+                        auto flux = std::make_shared<AverageHeadPostProcessor<FunctionSpaceT, UVector>>();
+                                            
+                        flux->read(in);
+
+                        post_processors_.push_back(flux);
                     }
 
                 });

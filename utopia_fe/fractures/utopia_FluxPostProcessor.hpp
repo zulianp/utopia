@@ -25,6 +25,63 @@ namespace utopia {
 
 
     template<class FunctionSpace, class Vector>
+    class AverageHeadPostProcessor : public PostProcessor<FunctionSpace, Vector> {
+    public:
+        virtual ~AverageHeadPostProcessor() {}
+
+        AverageHeadPostProcessor() : average_(0.0)
+        {}
+
+        void read(Input &in) override 
+        {
+            in.get("side", side_);
+            // filename_ += std::to_string(side_) + ".txt";
+            // in.get("file-name", filename_);
+        }
+
+
+        void apply(FunctionSpace &V, const Vector &sol) override
+        {   
+            if(empty(mass_matrix_)) {
+                auto u = trial(V);
+                auto v = test(V);
+                auto form = surface_integral(inner(u, v), side_);
+               
+                utopia::assemble(form, mass_matrix_);
+
+                mass_ = sum(mass_matrix_);
+            }
+
+            average_ = sum(mass_matrix_ * sol);
+
+            export_values();
+        }
+
+        void apply(FunctionSpace &V, const Vector &sol,  const Vector &other) override
+        {
+
+        }
+
+        void describe(std::ostream &os = std::cout) const override
+        {
+
+        }
+
+        void export_values() const override
+        {
+            std::cout << "avg_" << side_ << " = " << average_ << ", " << (average_/mass_) << std::endl;
+        }
+
+
+        int side_;
+        USparseMatrix mass_matrix_;
+        double average_;
+        double mass_;
+        // std::string filename_;
+    };
+
+
+    template<class FunctionSpace, class Vector>
     class FluxPostProcessor final : public PostProcessor<FunctionSpace, Vector> {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
@@ -51,7 +108,8 @@ namespace utopia {
             auto p = interpolate(pressure, u);
             auto sampler_fun = ctx_fun(sampler_);
 
-            auto vel = (sampler_fun * diffusion_tensor_) * grad(p);
+            // auto vel = (sampler_fun * diffusion_tensor_) * grad(p);
+            auto vel = coeff(diffusivity_) * grad(p);
 
             auto form_1 = surface_integral(
                 inner( 
