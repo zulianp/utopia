@@ -113,8 +113,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_f.dof_map(), transport_f_.system_matrix, xkp1_f);
 
-        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
 
         utopia::convert(xkp1_m, *V_m.equation_system().solution);
         utopia::convert(xkp1_f, *V_f.equation_system().solution);
@@ -227,8 +227,8 @@ namespace utopia {
         UVector z = local_zeros(local_size(steady_flow_.B).get(0));
         UVector lagr = local_zeros(local_size(z));
 
-        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -324,8 +324,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
-        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -451,8 +451,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
-        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
