@@ -679,13 +679,13 @@ namespace utopia {
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Triangle<double, 1, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Tri3<double, Dim> &out)
     {
         make_triangle_1(in , out);
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Triangle<double, 2, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Tri6<double, Dim> &out)
     {
         make_triangle_2(in, out);
         out.set_affine(in.has_affine_map());
@@ -751,13 +751,13 @@ namespace utopia {
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Quad<double, 1, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Quad4<double, Dim> &out)
     {
         make_quad_1(in, out);
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Quad<double, 2, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Quad8<double, Dim> &out)
     {
         make_quad_2(in, out);
         out.set_affine(in.has_affine_map());
@@ -796,13 +796,13 @@ namespace utopia {
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Segment<double, 1, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Edge2<double, Dim> &out)
     {
         make_seg_1(in, out);
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Segment<double, 2, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Edge3<double, Dim> &out)
     {
         make_seg_2(in, out);
         out.set_affine(in.has_affine_map());
@@ -816,19 +816,20 @@ namespace utopia {
     template<>
     inline std::unique_ptr< moonolith::Shape<double, 1, 2> > make_shape<2>(const libMesh::Elem &elem, const libMesh::FEType &type)
     {
-        using moonolith::Segment;
+        using moonolith::Edge2;
+        using moonolith::Edge3;
 
         if(is_edge(elem.type())) {
 
              if(type.order == 2) {
-                 auto s = moonolith::make_unique< LMS< Segment<double, 2, 2> > >();
+                 auto s = moonolith::make_unique< LMS< Edge3<double, 2> > >();
                  make_element(elem, s->elem());
                  s->init();
                  return s;
              }
 
              if(type.order == 1) {
-                 auto s = moonolith::make_unique< LMS< Segment<double, 1, 2> > >();
+                 auto s = moonolith::make_unique< LMS< Edge2<double, 2> > >();
                  make_element(elem, s->elem());
                  s->init();
                  return s;
@@ -843,20 +844,22 @@ namespace utopia {
     template<>
     inline std::unique_ptr< moonolith::Shape<double, 2, 3> > make_shape<3>(const libMesh::Elem &elem, const libMesh::FEType &type)
     {
-       using moonolith::Triangle;
-       using moonolith::Quad;
+       using moonolith::Tri3;
+       using moonolith::Tri6;
+       using moonolith::Quad4;
+       using moonolith::Quad8;
       
        if(is_tri(elem.type())) {
 
             if(type.order == 2) {
-                auto s = moonolith::make_unique< LMS< Triangle<double, 2, 3> > >();
+                auto s = moonolith::make_unique< LMS< Tri6<double, 3> > >();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
             }
 
             if(type.order == 1) {
-                auto s = moonolith::make_unique< LMS< Triangle<double, 1, 3> > >();
+                auto s = moonolith::make_unique< LMS< Tri3<double, 3> > >();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
@@ -865,14 +868,14 @@ namespace utopia {
        } else if(is_quad(elem.type())) {
 
             if(type.order == 2) {
-                auto s = moonolith::make_unique< LMS< Quad<double, 2, 3> > >();
+                auto s = moonolith::make_unique< LMS< Quad8<double, 3> > >();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
             }
 
             if(type.order == 1) {
-                auto s = moonolith::make_unique< LMS< Quad<double, 1, 3> > >();
+                auto s = moonolith::make_unique< LMS< Quad4<double, 3> > >();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
@@ -890,19 +893,20 @@ namespace utopia {
     template<int CoDim>
     void make(const libMesh::Elem &elem, const libMesh::FEType &type, std::shared_ptr< moonolith::Elem<double, 1, CoDim> > &e)
     {
-        using moonolith::Segment;
+        using moonolith::Edge2;
+        using moonolith::Edge3;
 
         if(is_edge(elem.type())) {
 
              if(type.order == 2) {
-                 auto s = moonolith::make_unique<Segment<double, 2, CoDim>>();
+                 auto s = moonolith::make_unique<Edge3<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
              }
 
              if(type.order == 1) {
-                 auto s = moonolith::make_unique<Segment<double, 1, CoDim>>();
+                 auto s = moonolith::make_unique<Edge2<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
@@ -917,20 +921,22 @@ namespace utopia {
     template<int CoDim>
     void make(const libMesh::Elem &elem, const libMesh::FEType &type, std::shared_ptr< moonolith::Elem<double, 2, CoDim> > &e)
     {
-        using moonolith::Triangle;
-        using moonolith::Quad;
+        using moonolith::Tri3;
+        using moonolith::Tri6;
+        using moonolith::Quad4;
+        using moonolith::Quad8;
         
         if(is_tri(elem.type())) {
 
              if(type.order == 2) {
-                 auto s = moonolith::make_unique<Triangle<double, 2, CoDim>>();
+                 auto s = moonolith::make_unique<Tri6<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
              }
 
              if(type.order == 1) {
-                 auto s = moonolith::make_unique<Triangle<double, 1, CoDim>>();
+                 auto s = moonolith::make_unique<Tri3<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
@@ -939,14 +945,14 @@ namespace utopia {
         } else if(is_quad(elem.type())) {
 
              if(type.order == 2) {
-                 auto s = moonolith::make_unique<Quad<double, 2, CoDim>>();
+                 auto s = moonolith::make_unique<Quad8<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
              }
 
              if(type.order == 1) {
-                 auto s = moonolith::make_unique<Quad<double, 1, CoDim>>();
+                 auto s = moonolith::make_unique<Quad4<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
@@ -1044,13 +1050,13 @@ namespace utopia {
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Tetrahedron<double, 1, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Tet4<double, Dim> &out)
     {
         make_tet_1(in , out);
     }
 
     template<int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Tetrahedron<double, 2, Dim> &out)
+    void make_element(const libMesh::Elem &in, moonolith::Tet10<double, Dim> &out)
     {
         make_tet_2(in , out);
     }
@@ -1058,20 +1064,22 @@ namespace utopia {
     template<int CoDim>
     void make(const libMesh::Elem &elem, const libMesh::FEType &type, std::shared_ptr< moonolith::Elem<double, 3, CoDim> > &e)
     {
-        using moonolith::Tetrahedron;
-        using moonolith::Hexahedron;
+        using moonolith::Tet4;
+        using moonolith::Tet10;
+        using moonolith::Hex8;
+        using moonolith::Hex27;
         
         if(is_tet(elem.type())) {
 
              if(type.order == 2) {
-                 auto s = moonolith::make_unique<Tetrahedron<double, 2, CoDim>>();
+                 auto s = moonolith::make_unique<Tet10<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
              }
 
              if(type.order == 1) {
-                 auto s = moonolith::make_unique<Tetrahedron<double, 1, CoDim>>();
+                 auto s = moonolith::make_unique<Tet4<double, CoDim>>();
                  make_element(elem, *s);
                  e = std::move(s);
                  return;
