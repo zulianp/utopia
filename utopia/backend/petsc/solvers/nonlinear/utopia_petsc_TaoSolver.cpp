@@ -372,6 +372,7 @@ namespace utopia {
             TaoConvergedReason reason;
             TaoGetSolutionStatus(tao, &iterate, &f, &gnorm, &cnorm, &xdiff, &reason);
 
+
             // if(this->verbose()) {
             // std::cout << "iterate: " << iterate << std::endl;
             // std::cout << "f: " << f << std::endl;
@@ -386,6 +387,15 @@ namespace utopia {
             }
 
             return reason >= 0;
+        }
+
+        inline void get_sol_status(PetscInt & iterates, TaoConvergedReason & reason)
+        {
+            PetscReal f;
+            PetscReal gnorm;
+            PetscReal cnorm;
+            PetscReal xdiff;
+            TaoGetSolutionStatus(tao, &iterates, &f, &gnorm, &cnorm, &xdiff, &reason);
         }
 
         inline bool smooth(Vector &x)
@@ -453,7 +463,16 @@ namespace utopia {
     bool TaoSolver<Matrix, Vector>::solve(Function<Matrix, Vector> &fun, Vector &x)
     {
         init(fun, x);
-        return impl_->solve(x);
+        this->init_solver("Tao Solver", {""}); 
+        auto flg = impl_->solve(x);
+
+        PetscInt iterates; 
+        TaoConvergedReason reason; 
+
+        impl_->get_sol_status(iterates, reason); 
+        this->exit_solver(iterates, reason); 
+
+        return flg; 
     }
 
     template<class Matrix, class Vector>

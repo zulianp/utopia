@@ -97,6 +97,7 @@ protected:
         }
 
 
+
         /**
          * @brief      Exit of solver.
          *
