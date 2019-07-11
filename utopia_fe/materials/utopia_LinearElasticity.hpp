@@ -2,7 +2,7 @@
 #define UTOPIA_LINEAR_ELASTICITY_HPP
 
 #include "utopia_ElasticMaterial.hpp"
-#include "ui/utopia_UIScalarSampler.hpp"
+#include "utopia_UIScalarSampler.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia_libmesh.hpp"
