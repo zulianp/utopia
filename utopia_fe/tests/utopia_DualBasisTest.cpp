@@ -134,8 +134,9 @@ namespace utopia {
 
         T.left_multiply(trafo_t);
 
-        // std::cout << "------------------------\n";
-        // T.print();
+        std::cout << "------------------------\n";
+        T.print();
+        std::cout << "------------------------\n";
 
         double sum_T = 0.0;
         for(auto t : T.get_values()) {
@@ -143,6 +144,15 @@ namespace utopia {
         }
 
         assert(approxeq(n_nodes, sum_T, 1e-10));
+
+        for(int i = 0; i < n_nodes; ++i) {
+            double row_sum = 0.0;
+            for(int j = 0; j < n_nodes; ++j) {
+                row_sum += T(i, j);
+            }
+
+            assert(approxeq(row_sum, 1.0, 1e-10));
+        }
     }
 
     void DualBasisTest::run(Input &)
@@ -164,15 +174,15 @@ namespace utopia {
         auto order = 2;
 
         // test_dual_basis(libMesh::TRI6, dim, order, alpha);
-        test_dual_basis(libMesh::QUAD4, dim, 1, alpha);
-        test_dual_basis(libMesh::QUAD8, dim, 2, alpha);
-        test_dual_basis(libMesh::QUAD9, dim, 2, alpha);
+        // test_dual_basis(libMesh::QUAD4, dim, 1, alpha);
+        // test_dual_basis(libMesh::QUAD8, dim, 2, alpha);
+        // test_dual_basis(libMesh::QUAD9, dim, 2, alpha);
 
-        dim = 1;
-        test_dual_basis(libMesh::EDGE3, dim, order, alpha);
+        // dim = 1;
+        // test_dual_basis(libMesh::EDGE3, dim, order, alpha);
 
-        dim = 3;
-        test_dual_basis(libMesh::TET10, dim, order, alpha);
+        // dim = 3;
+        // test_dual_basis(libMesh::TET10, dim, order, alpha);
 
 
         dim = 3;
@@ -195,7 +205,7 @@ namespace utopia {
 
         libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         DualBasis::build_trafo_and_weights(
-                   libMesh::QUAD9,
+                   libMesh::HEX27,
                    2,
                    1./5,
                    trafo,

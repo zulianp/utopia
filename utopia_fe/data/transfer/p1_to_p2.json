@@ -1,0 +1,65 @@
+{
+    "transfer": {
+        "type": "l2-projection",
+        "function": "x*x + y*y + z*z",
+        "*function": 1.0,
+        "*function-type" : "constant",
+        "discretization" : "new",
+        "use-convert-transfer" : true,
+        "opts" : {
+            "coupling" : [
+                { 
+                    "master" : 1,
+                    "slave"  : 2
+                }
+            ]
+        },
+        "master": {
+            "mesh": {
+                "type": "square",
+                "elem-type": "tri",
+                "n-x": 5,
+                "n-y": 9,
+                "min-x": 0.0,
+                "min-y": 0.0,
+                "max-x": 1.0,
+                "max-y": 1.0,
+                "order" : 2,
+                "block-override" : 1
+            },
+            "space": {
+                "system-name" : "master",
+                "variables" : [
+                    {
+                        "name" : "u_m",
+                        "order" : 2
+                    }
+                ]
+            }
+        },
+        "slave": {
+            "mesh": {
+                "type": "square",
+                "elem-type": "tri",
+                "order": 1,
+                "n-x": 11,
+                "n-y": 5,
+                "min-x": 0.0,
+                "min-y": 0.0,
+                "max-x": 1.0,
+                "max-y": 1.0,
+                "order" : 2,
+                "block-override" : 2
+            },
+            "space": {
+                "system-name" : "slave",
+                "variables" : [
+                    {
+                        "name" : "u_s",
+                        "order" : 2
+                    }
+                ]
+            }
+        }
+    }
+}
