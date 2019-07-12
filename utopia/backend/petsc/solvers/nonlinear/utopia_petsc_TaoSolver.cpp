@@ -471,6 +471,7 @@ namespace utopia {
 
         impl_->get_sol_status(iterates, reason); 
         this->exit_solver(iterates, reason); 
+        this->print_statistics(iterates);
 
         return flg; 
     }
