@@ -16,15 +16,20 @@
         },
         "master": {
             "mesh": {
-                "type": "square",
-                "elem-type": "tri",
+                "*type": "square",
+                "*elem-type": "tri",
+                "type": "cube",
+                "elem-type": "tet",
                 "n-x": 5,
                 "n-y": 9,
                 "min-x": 0.0,
                 "min-y": 0.0,
+                "min-z": 0.0,
                 "max-x": 1.0,
                 "max-y": 1.0,
+                "max-z": 1.0,
                 "order" : 2,
+                "full-order" : true,
                 "block-override" : 1
             },
             "space": {
@@ -39,16 +44,20 @@
         },
         "slave": {
             "mesh": {
-                "type": "square",
-                "elem-type": "tri",
+                "*type": "square",
+                "type": "cube",
+                "elem-type": "hex",
                 "order": 1,
-                "n-x": 11,
+                "n-x": 3,
                 "n-y": 5,
                 "min-x": 0.0,
                 "min-y": 0.0,
+                "min-z": 0.0,
                 "max-x": 1.0,
                 "max-y": 1.0,
+                "max-z": 1.0,
                 "order" : 2,
+                "full-order" : true,
                 "block-override" : 2
             },
             "space": {

@@ -125,7 +125,7 @@ namespace utopia {
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
                         bb.min()(2) - span[2], bb.max()(2) + span[2],
-                        get_type(elem_type, order, 3)
+                        get_type(elem_type, order, 3, full_order)
                         );
 
                 } else {
@@ -134,7 +134,7 @@ namespace utopia {
                         n[0], n[1],
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
-                        get_type(elem_type, order, 2)
+                        get_type(elem_type, order, 2, full_order)
                         );
                 }
             }
@@ -218,7 +218,8 @@ namespace utopia {
         libMesh::ElemType get_type(
             const std::string &elem_type,
             const int order,
-            const int dim) const
+            const int dim,
+            const bool full_order = true) const
         {
             if(dim == 3) {
                 libMesh::ElemType type = libMesh::HEX8;
@@ -232,6 +233,8 @@ namespace utopia {
 
                     if(elem_type == "tet") {
                         type = libMesh::TET10;
+                    } else if(full_order) {
+                        type = libMesh::HEX27;
                     }
                 }
 
