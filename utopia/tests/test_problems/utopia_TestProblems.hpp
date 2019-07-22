@@ -11,6 +11,7 @@
 #include "utopia_QPwithConstraints.hpp"
 #include "utopia_UnconstrainedBenchmark.hpp"
 #include "utopia_Bratu1D.hpp"
+#include "utopia_Bratu2D.hpp"
 #include "utopia_ContinuousStirredTankReactor.hpp"
 
 

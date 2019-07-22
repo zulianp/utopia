@@ -22,16 +22,42 @@ namespace utopia
 
         void run()
         {
-            UTOPIA_RUN_TEST(TR_test);
-            UTOPIA_RUN_TEST(TR_constraint_test);
+            // UTOPIA_RUN_TEST(TR_test);
+            // UTOPIA_RUN_TEST(TR_constraint_test);
 
-            UTOPIA_RUN_TEST(newton_MG_test);
-            UTOPIA_RUN_TEST(FAS_test);
+            // UTOPIA_RUN_TEST(newton_MG_test);
+            // UTOPIA_RUN_TEST(FAS_test);
 
-            UTOPIA_RUN_TEST(RMTR_test);
-            UTOPIA_RUN_TEST(RMTR_inf_test);
-            UTOPIA_RUN_TEST(RMTR_inf_bound_test);
+            // UTOPIA_RUN_TEST(RMTR_test);
+            // UTOPIA_RUN_TEST(RMTR_inf_test);
+            // UTOPIA_RUN_TEST(RMTR_inf_bound_test);
+
+
+            UTOPIA_RUN_TEST(PETSC_test);
+
         }
+
+        void PETSC_test()
+        {
+            std::cout<<"----- petsc test.... \n"; 
+
+            Bratu2D<DSMatrixd, DVectord> fun(10);
+            DVectord x; 
+            fun.get_initial_guess(x); 
+
+            std::cout<<"here... \n"; 
+
+            auto subproblem = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord> >();
+            subproblem->atol(1e-14);
+            TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
+            tr_solver.atol(1e-9);
+            tr_solver.rtol(1e-10);
+            tr_solver.stol(1e-10);
+            tr_solver.verbose(true);
+            tr_solver.solve(fun, x);
+        }
+
+
 
 
         void TR_test()

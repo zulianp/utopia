@@ -329,6 +329,7 @@ namespace utopia
                 this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
                 this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
 
+                std::cout<<"TODO:: fix RMTR inf(non quasi) - projection of bounds..... \n"; 
 
                 // ------------------------ old version, incorect in case that projection has negative elements  -----------------
                 // this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
