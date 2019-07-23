@@ -41,8 +41,23 @@ namespace utopia
         {
             std::cout<<"----- petsc test.... \n"; 
 
-            auto n = 300; 
+            auto n = 150; 
 
+            // AppCtxBratu2D app_data; 
+            // app_data.lambda  = 1.0; 
+            // app_data.mms_solution = MMSSolution; 
+            // app_data.mms_forcing = MMSForcing;            
+
+
+            // DM da_coarse, da_fine; 
+            // DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,DMDA_STENCIL_STAR, n, n,PETSC_DECIDE,PETSC_DECIDE,1,1,NULL,NULL, &da_coarse);
+            // DMSetUp(da_coarse);
+            // DMDASetUniformCoordinates(da_coarse, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+            // DMRefine(da_coarse,PETSC_COMM_WORLD, &da_fine); 
+            // DMDestroy(&da_coarse); 
+
+
+            // Bratu2D<DSMatrixd, DVectord> fun(da_fine, app_data);
             Bratu2D<DSMatrixd, DVectord> fun(n, 1.0);
             DVectord x = fun.initial_guess(); 
             fun.describe(); 
@@ -59,7 +74,10 @@ namespace utopia
             tr_solver.verbose(true);
             // x = 0.0*x; 
             tr_solver.solve(fun, x);
+
+            std::cout<<"--- output to file --- \n"; 
             fun.output_to_VTK(x);
+            std::cout<<"--- done output to file --- \n"; 
         }
 
 
