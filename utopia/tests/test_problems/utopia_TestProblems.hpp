@@ -14,5 +14,6 @@
 #include "utopia_Bratu2D.hpp"
 #include "utopia_ContinuousStirredTankReactor.hpp"
 
+#include "utopia_Petsc2DMultilevelTestProblem.hpp"
 
 #endif

@@ -49,19 +49,18 @@ namespace utopia
             // app_data.mms_forcing = Bratu2DMMSForcing;            
 
 
-            // DM da_coarse, da_fine; 
-            // DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,DMDA_STENCIL_STAR, n, n,PETSC_DECIDE,PETSC_DECIDE,1,1,NULL,NULL, &da_coarse);
-            // DMSetUp(da_coarse);
-            // DMDASetUniformCoordinates(da_coarse, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-            // DMRefine(da_coarse,PETSC_COMM_WORLD, &da_fine); 
-            // DMDestroy(&da_coarse); 
+            Petsc2DMultilevelTestProblem<DSMatrixd, DVectord, Bratu2D<DSMatrixd, DVectord> > multilevel_problem(3, 3); 
 
+
+
+            auto fun = multilevel_problem.level_functions_[0];
 
             // Bratu2D<DSMatrixd, DVectord> fun(da_fine, app_data);
-            Bratu2D<DSMatrixd, DVectord> fun(n, 1.0);
-            DVectord x = fun.initial_guess(); 
-            fun.describe(); 
-            
+            // Bratu2D<DSMatrixd, DVectord> fun(n, 1.0);
+            // DVectord x = fun.initial_guess(); 
+            DVectord x = values(3*3, 1.0);
+
+
 
             auto subproblem = std::make_shared<utopia::Lanczos<DSMatrixd, DVectord> >();
             subproblem->pc_type("bjacobi"); 
@@ -74,9 +73,9 @@ namespace utopia
             tr_solver.verbose(true);
             
             // x = 0.0*x; 
-            tr_solver.solve(fun, x);
+            tr_solver.solve(*fun, x);
 
-            fun.output_to_VTK(x);
+            // fun.output_to_VTK(x);
         }
 
 
