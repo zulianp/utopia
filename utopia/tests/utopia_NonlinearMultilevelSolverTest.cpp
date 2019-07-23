@@ -41,20 +41,25 @@ namespace utopia
         {
             std::cout<<"----- petsc test.... \n"; 
 
-            Bratu2D<DSMatrixd, DVectord> fun(10);
-            DVectord x; 
-            fun.get_initial_guess(x); 
+            auto n = 300; 
 
-            std::cout<<"here... \n"; 
+            Bratu2D<DSMatrixd, DVectord> fun(n, 1.0);
+            DVectord x = fun.initial_guess(); 
+            fun.describe(); 
+            
 
-            auto subproblem = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord> >();
+            auto subproblem = std::make_shared<utopia::Lanczos<DSMatrixd, DVectord> >();
+            subproblem->pc_type("bjacobi"); 
             subproblem->atol(1e-14);
+            subproblem->max_it(100000);
             TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
-            tr_solver.atol(1e-9);
+            tr_solver.atol(1e-5);
             tr_solver.rtol(1e-10);
             tr_solver.stol(1e-10);
             tr_solver.verbose(true);
+            // x = 0.0*x; 
             tr_solver.solve(fun, x);
+            fun.output_to_VTK(x);
         }
 
 
