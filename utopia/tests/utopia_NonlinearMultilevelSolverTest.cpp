@@ -45,8 +45,8 @@ namespace utopia
 
             // AppCtxBratu2D app_data; 
             // app_data.lambda  = 1.0; 
-            // app_data.mms_solution = MMSSolution; 
-            // app_data.mms_forcing = MMSForcing;            
+            // app_data.mms_solution = Bratu2DMMSSolution; 
+            // app_data.mms_forcing = Bratu2DMMSForcing;            
 
 
             // DM da_coarse, da_fine; 
@@ -72,12 +72,11 @@ namespace utopia
             tr_solver.rtol(1e-10);
             tr_solver.stol(1e-10);
             tr_solver.verbose(true);
+            
             // x = 0.0*x; 
             tr_solver.solve(fun, x);
 
-            std::cout<<"--- output to file --- \n"; 
             fun.output_to_VTK(x);
-            std::cout<<"--- done output to file --- \n"; 
         }
 
 

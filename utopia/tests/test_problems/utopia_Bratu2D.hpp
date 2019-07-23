@@ -25,16 +25,16 @@ namespace utopia
       PetscErrorCode (*mms_forcing)(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);
     };
 
-    PetscErrorCode FormObjectiveLocal(DMDALocalInfo*,PetscScalar**,PetscReal*,AppCtxBratu2D*);
-    PetscErrorCode FormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtxBratu2D*);
-    PetscErrorCode FormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtxBratu2D*);
+    PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo*,PetscScalar**,PetscReal*,AppCtxBratu2D*);
+    PetscErrorCode Bratu2DFormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtxBratu2D*);
+    PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtxBratu2D*);
     
-    PetscErrorCode FormInitialGuess(DM,AppCtxBratu2D*,Vec);
-    PetscErrorCode FormExactSolution(DM,AppCtxBratu2D*,Vec);
-    PetscErrorCode MMSSolution(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);
-    PetscErrorCode MMSForcing(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);    
+    PetscErrorCode Bratu2DFormInitialGuess(DM,AppCtxBratu2D*,Vec);
+    PetscErrorCode Bratu2DFormExactSolution(DM,AppCtxBratu2D*,Vec);
+    PetscErrorCode Bratu2DMMSSolution(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);
+    PetscErrorCode Bratu2DMMSForcing(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);    
 
-    PetscErrorCode FormBCData(DM da,AppCtxBratu2D *user,Vec BC_marker, Vec BC_flag);
+    PetscErrorCode Bratu2DFormBCData(DM da,AppCtxBratu2D *user,Vec BC_marker, Vec BC_flag);
 
 
     template<typename Matrix, typename Vector>
@@ -51,8 +51,8 @@ namespace utopia
                 setup_(false)
         {
             application_context_.lambda  = (lambda > 0 && lambda < 6.8) ? lambda : 3.4; 
-            application_context_.mms_solution = MMSSolution; 
-            application_context_.mms_forcing = MMSForcing;
+            application_context_.mms_solution = Bratu2DMMSSolution; 
+            application_context_.mms_forcing = Bratu2DMMSForcing;
 
             this->create_DM();
             this->setup_SNES();
@@ -176,15 +176,15 @@ namespace utopia
             SNESCreate(PETSC_COMM_WORLD, &snes_); 
             SNESSetFromOptions(snes_);
             SNESSetDM(snes_, da_);
-            DMDASNESSetFunctionLocal(da_,INSERT_VALUES,(DMDASNESFunction)FormFunctionLocal,&application_context_);
-            DMDASNESSetJacobianLocal(da_,(DMDASNESJacobian)FormJacobianLocal,&application_context_);
-            DMDASNESSetObjectiveLocal(da_,(DMDASNESObjective)FormObjectiveLocal,&application_context_);
+            DMDASNESSetObjectiveLocal(da_,(DMDASNESObjective)Bratu2DFormObjectiveLocal,&application_context_);            
+            DMDASNESSetFunctionLocal(da_,INSERT_VALUES,(DMDASNESFunction)Bratu2DFormFunctionLocal,&application_context_);
+            DMDASNESSetJacobianLocal(da_,(DMDASNESJacobian)Bratu2DFormJacobianLocal,&application_context_);
             
             // preallocate vectors 
             DMCreateMatrix(da_, &snes_->jacobian);
             DMCreateMatrix(da_, &snes_->jacobian_pre);
             DMCreateGlobalVector(da_, &snes_->vec_sol);
-            FormInitialGuess(da_, &application_context_, snes_->vec_sol);
+            Bratu2DFormInitialGuess(da_, &application_context_, snes_->vec_sol);
         }
 
         void setup_application_context()
@@ -196,7 +196,7 @@ namespace utopia
             Vector bc_markers = local_values(n_loc, 0.0);
             Vector bc_values  = local_values(n_loc, 0.0); 
 
-            FormBCData(da_, &application_context_, raw_type(bc_markers), raw_type(bc_values)); 
+            Bratu2DFormBCData(da_, &application_context_, raw_type(bc_markers), raw_type(bc_values)); 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);
         }
 
