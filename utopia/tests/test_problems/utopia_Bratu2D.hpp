@@ -1,12 +1,11 @@
 #include "utopia.hpp"
-#include "utopia_UnconstrainedTestFunction.hpp"
+#include "utopia_TestFunctions.hpp"
 
 namespace utopia
 {
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Bratu2D  { }; 
 }
-
 
 #ifdef  WITH_PETSC
 #include <petscdm.h>
@@ -38,7 +37,7 @@ namespace utopia
 
 
     template<typename Matrix, typename Vector>
-    class Bratu2D<Matrix, Vector, PETSC> : public UnconstrainedExtendedTestFunction<Matrix, Vector>
+    class Bratu2D<Matrix, Vector, PETSC> final: virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
         public:
             typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
@@ -175,6 +174,33 @@ namespace utopia
             return application_context_.lambda; 
         }
 
+        virtual bool upper_bound(Vector & ub) const override
+        {   
+            PetscInt n; 
+            VecGetLocalSize(snes_->vec_sol, &n);
+            ub = local_values(n, 0.04); 
+            
+            return true; 
+        }
+
+        virtual bool lower_bound(Vector &lb) const override
+        {
+            PetscInt n; 
+            VecGetLocalSize(snes_->vec_sol, &n);
+            lb = local_values(n, -9e9); 
+
+            return true; 
+        }
+
+        virtual bool has_upper_bound() const override
+        {
+            return true;
+        }
+
+        virtual bool has_lower_bound() const override
+        {
+            return false;
+        }
 
     private:
         void create_DM()

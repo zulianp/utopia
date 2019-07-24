@@ -3,11 +3,8 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_NonlinSemismoothNewton.hpp"
-#include "utopia_FunctionBoxConstrained.hpp"
 #include "utopia_QuasiNewtonBound.hpp"
 #include "utopia_VariableBoundSolverInterface.hpp"
-
-
 
 #include "utopia_QPSolver.hpp"
 #include "utopia_SemismoothNewton.hpp"

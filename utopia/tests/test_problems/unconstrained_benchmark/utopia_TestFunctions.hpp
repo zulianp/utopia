@@ -12,13 +12,13 @@ namespace utopia
 
     // This function is used for implementation of test functions for unconstrained nonlinear benchmark
     template<class Matrix, class Vector>
-    class UnconstrainedTestFunctionInterface
+    class TestFunctionInterface
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        virtual ~UnconstrainedTestFunctionInterface() { }
+        virtual ~TestFunctionInterface() { }
 
         virtual Vector initial_guess() const = 0;
         virtual const Vector & exact_sol() const = 0;
@@ -57,7 +57,7 @@ namespace utopia
 
 
     template<class Matrix, class Vector>
-    class UnconstrainedTestFunction : public UnconstrainedTestFunctionInterface<Matrix, Vector>, public Function<Matrix, Vector>
+    class UnconstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public Function<Matrix, Vector>
     {
         public:
             DEF_UTOPIA_SCALAR(Matrix)
@@ -67,7 +67,7 @@ namespace utopia
     };
 
     template<class Matrix, class Vector>
-    class UnconstrainedExtendedTestFunction : public UnconstrainedTestFunctionInterface<Matrix, Vector>, public ExtendedFunction<Matrix, Vector>
+    class UnconstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public ExtendedFunction<Matrix, Vector>
     {
         public:
             DEF_UTOPIA_SCALAR(Matrix)
@@ -75,6 +75,39 @@ namespace utopia
 
         virtual ~UnconstrainedExtendedTestFunction() { }
     };  
+
+    template<class Matrix, class Vector>
+    class ConstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public Function<Matrix, Vector>
+    {
+        public:
+            DEF_UTOPIA_SCALAR(Matrix)
+            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
+        virtual ~ConstrainedTestFunction() { }
+
+        virtual bool upper_bound(Vector &/*ub*/) const = 0;
+        virtual bool lower_bound(Vector &/*lb*/) const = 0;
+
+        virtual bool has_upper_bound() const = 0;
+        virtual bool has_lower_bound() const = 0;        
+
+    };
+
+    template<class Matrix, class Vector>
+    class ConstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public ExtendedFunction<Matrix, Vector>
+    {
+        public:
+            DEF_UTOPIA_SCALAR(Matrix)
+            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
+        virtual ~ConstrainedExtendedTestFunction() { }
+
+        virtual bool upper_bound(Vector &/*ub*/) const = 0;
+        virtual bool lower_bound(Vector &/*lb*/) const = 0;   
+
+        virtual bool has_upper_bound() const = 0;
+        virtual bool has_lower_bound() const = 0;                     
+    };      
 
 }
 #endif //UTOPIA_UNCONSTRAINED_TEST_FUNCTIONS
