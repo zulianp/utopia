@@ -226,7 +226,9 @@ namespace utopia {
         }
 
         ~Impl()
-        {}
+        {
+            destroy();
+        }
 
         void init(MPI_Comm comm)
         {
