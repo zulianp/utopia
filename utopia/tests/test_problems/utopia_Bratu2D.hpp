@@ -46,7 +46,7 @@ namespace utopia
 
 
         Bratu2D(const SizeType & n,
-                const Scalar & lambda = 0.1):
+                const Scalar & lambda = 1.0):
                 n_(n), 
                 setup_(false)
         {
@@ -60,7 +60,7 @@ namespace utopia
             setup_ = true;
         }     
 
-        Bratu2D(const DM  & dm, const Scalar & lambda = 0.1):
+        Bratu2D(const DM  & dm, const Scalar & lambda = 1.0):
                 setup_(false)
         {
             application_context_.lambda  = (lambda > 0 && lambda < 6.8) ? lambda : 3.4; 

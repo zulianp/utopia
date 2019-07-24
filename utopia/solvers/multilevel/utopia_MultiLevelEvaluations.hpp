@@ -145,8 +145,8 @@ namespace utopia
             {
                 typename Traits<Vector>::Scalar energy = 0.0;
                 fun.value(x, energy);
-                // energy += dot(g_diff, s_global);
-                energy += dot(g_diff, x);
+                energy += dot(g_diff, s_global);
+                // energy += dot(g_diff, x);
                 return energy;
             }
     };
