@@ -45,11 +45,11 @@ namespace utopia
 
 
         Bratu2D(const SizeType & n,
-                const Scalar & lambda = 1.0):
+                const Scalar & lambda = 5.0):
                 n_(n), 
                 setup_(false)
         {
-            application_context_.lambda  = (lambda > 0 && lambda < 6.8) ? lambda : 3.4; 
+            application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
             application_context_.mms_solution = Bratu2DMMSSolution; 
             application_context_.mms_forcing = Bratu2DMMSForcing;
 
@@ -59,10 +59,10 @@ namespace utopia
             setup_ = true;
         }     
 
-        Bratu2D(const DM  & dm, const Scalar & lambda = 1.0):
+        Bratu2D(const DM  & dm, const Scalar & lambda = 5.0):
                 setup_(false)
         {
-            application_context_.lambda  = (lambda > 0 && lambda < 6.8) ? lambda : 3.4; 
+            application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
             application_context_.mms_solution = Bratu2DMMSSolution; 
             application_context_.mms_forcing = Bratu2DMMSForcing;
 
@@ -178,7 +178,7 @@ namespace utopia
         {   
             PetscInt n; 
             VecGetLocalSize(snes_->vec_sol, &n);
-            ub = local_values(n, 0.04); 
+            ub = local_values(n, 0.4); 
             
             return true; 
         }

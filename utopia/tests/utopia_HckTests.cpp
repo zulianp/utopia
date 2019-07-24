@@ -27,13 +27,16 @@ namespace utopia
 
         void run()
         {
+            // UTOPIA_RUN_TEST(newton_test);            
 
             // UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
 
-            // UTOPIA_RUN_TEST(TR_unconstrained);
+            UTOPIA_RUN_TEST(TR_unconstrained);
             UTOPIA_RUN_TEST(TR_constrained); 
 
+            // UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            // UTOPIA_RUN_TEST(QuasiTR_constrained);
 
 
             // UTOPIA_RUN_TEST(RMTR_unconstrained); 
@@ -92,12 +95,12 @@ namespace utopia
 
         void TR_unconstrained()
         {
-            Bratu2D<Matrix, Vector> fun(n_);
+            Bratu2D<Matrix, Vector> fun(n_, 5.0);
             Vector x = fun.initial_guess(); 
             fun.describe(); 
 
-            // auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+            auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
+            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
             subproblem->pc_type("bjacobi"); 
             subproblem->atol(1e-14);
             subproblem->max_it(100000);
@@ -110,20 +113,64 @@ namespace utopia
                 fun.output_to_VTK(x);
         }
 
-        void TR_constrained()
+        void newton_test()
         {
-            Bratu2D<Matrix, Vector> fun(n_);
+            Bratu2D<Matrix, Vector> fun(n_, 5.0);
             Vector x = fun.initial_guess(); 
             fun.describe(); 
 
-            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            // qp_solver->atol(1e-10);
-            // qp_solver->max_it(n_*n_);
-            // qp_solver->verbose(false); 
-
             auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
-            auto qp_solver =  std::make_shared<utopia::TaoQPSolver<Matrix, Vector> >(lsolver);
-            qp_solver->atol(1e-11);            
+            lsolver->pc_type("bjacobi"); 
+            
+            Newton<Matrix, Vector> solver(lsolver);
+            solver.read(input_params_); 
+            solver.solve(fun, x);
+
+            if(output_vtk_)
+                fun.output_to_VTK(x);
+        }
+
+        void QuasiTR_unconstrained()
+        {
+            Bratu2D<Matrix, Vector> fun(n_);
+            Vector x = fun.initial_guess(); 
+            SizeType memory_size = 5; 
+
+            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+            subproblem->atol(1e-14);
+            subproblem->max_it(100000);
+
+            auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);   
+            hess_approx->theta_min(1.0);
+            hess_approx->damping_tech(POWEL); 
+            hess_approx->scaling_tech(ADAPTIVE); 
+
+            QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
+            tr_solver.read(input_params_); 
+            tr_solver.max_it(5000);
+            tr_solver.delta0(10000);
+            tr_solver.solve(fun, x);
+
+            if(output_vtk_)
+                fun.output_to_VTK(x, "QuasiTRUnstrained.vtk");
+        }        
+
+
+        void TR_constrained()
+        {
+            Bratu2D<Matrix, Vector> fun(n_, 5.0);
+            Vector x = fun.initial_guess(); 
+            fun.describe(); 
+
+            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            qp_solver->atol(1e-10);
+            qp_solver->max_it(n_*n_);
+            qp_solver->verbose(false); 
+
+            // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
+            // auto qp_solver =  std::make_shared<utopia::TaoQPSolver<Matrix, Vector> >(lsolver);
+            // qp_solver->atol(1e-11);            
             
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
             
@@ -139,6 +186,39 @@ namespace utopia
             if(output_vtk_)
                 fun.output_to_VTK(x);
         }        
+
+
+
+        void QuasiTR_constrained()
+        {
+            Bratu2D<Matrix, Vector> fun(n_);
+            Vector x = fun.initial_guess(); 
+            SizeType memory_size = 10; 
+
+            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            qp_solver->atol(1e-10);
+            qp_solver->max_it(n_*n_);
+
+            auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);   
+            // hess_approx->theta_min(1.0);
+            // hess_approx->damping_tech(POWEL); 
+            // hess_approx->scaling_tech(ADAPTIVE); 
+
+            Vector ub, lb; 
+            fun.upper_bound(ub); 
+            fun.lower_bound(lb);             
+            auto box = make_box_constaints(make_ref(lb), make_ref(ub));       
+
+
+            QuasiTrustRegionVariableBound<Vector>  tr_solver(hess_approx, qp_solver);
+            tr_solver.set_box_constraints(box);
+            tr_solver.read(input_params_); 
+            tr_solver.delta0(0.01);
+            tr_solver.solve(fun, x);
+
+            if(output_vtk_)
+                fun.output_to_VTK(x, "QuasiTRConstrained.vtk");
+        }    
 
 
         void RMTR_unconstrained()
@@ -182,31 +262,6 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);
             rmtr->handle_equality_constraints();            
             rmtr->solve(x);
-
-
-
-        //     // Bratu2D<DSMatrixd, Vector> fun(da_fine);
-        //     // // Bratu2D<DSMatrixd, Vector> fun(n, 1.0);
-
-        //     Bratu2D<DSMatrixd, Vector> * fun_Bratu2D = dynamic_cast<Bratu2D<DSMatrixd, Vector> *>(fun.get());
-        //     Vector x = fun_Bratu2D->initial_guess(); 
-        //     fun_Bratu2D->describe(); 
-
-
-        //     auto subproblem = std::make_shared<utopia::Lanczos<DSMatrixd, Vector> >();
-        //     subproblem->pc_type("bjacobi"); 
-        //     subproblem->atol(1e-14);
-        //     subproblem->max_it(100000);
-        //     TrustRegion<DSMatrixd, Vector> tr_solver(subproblem);
-        //     tr_solver.atol(1e-5);
-        //     tr_solver.rtol(1e-10);
-        //     tr_solver.stol(1e-10);
-        //     tr_solver.verbose(true);
-            
-        //     // x = 0.0*x; 
-        //     tr_solver.solve(*fun_Bratu2D, x);
-
-        //     fun_Bratu2D->output_to_VTK(x);
         }
 
 
@@ -225,7 +280,7 @@ namespace utopia
     {
         UTOPIA_UNIT_TEST_BEGIN("HckTests");
         #ifdef  WITH_PETSC
-            HckTests<DSMatrixd, DVectord>(10, 2, 1.0, true, true).run();
+            HckTests<DSMatrixd, DVectord>(1000, 2, 1.0, true, true).run();
         #endif
         UTOPIA_UNIT_TEST_END("HckTests");
 
