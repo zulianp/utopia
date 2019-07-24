@@ -17,24 +17,24 @@ namespace utopia
 
 namespace utopia
 {
-    typedef struct AppCtxBratu2D AppCtxBratu2D;
-    struct AppCtxBratu2D 
+    typedef struct ParamsBratu2D ParamsBratu2D;
+    struct ParamsBratu2D 
     {
       PetscReal lambda;          /* test problem parameter */
-      PetscErrorCode (*mms_solution)(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);
-      PetscErrorCode (*mms_forcing)(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);
+      PetscErrorCode (*mms_solution)(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
+      PetscErrorCode (*mms_forcing)(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
     };
 
-    PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo*,PetscScalar**,PetscReal*,AppCtxBratu2D*);
-    PetscErrorCode Bratu2DFormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,AppCtxBratu2D*);
-    PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,AppCtxBratu2D*);
+    PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo*,PetscScalar**,PetscReal*,ParamsBratu2D*);
+    PetscErrorCode Bratu2DFormFunctionLocal(DMDALocalInfo*,PetscScalar**,PetscScalar**,ParamsBratu2D*);
+    PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,ParamsBratu2D*);
     
-    PetscErrorCode Bratu2DFormInitialGuess(DM,AppCtxBratu2D*,Vec);
-    PetscErrorCode Bratu2DFormExactSolution(DM,AppCtxBratu2D*,Vec);
-    PetscErrorCode Bratu2DMMSSolution(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);
-    PetscErrorCode Bratu2DMMSForcing(AppCtxBratu2D*,const DMDACoor2d*,PetscScalar*);    
+    PetscErrorCode Bratu2DFormInitialGuess(DM,ParamsBratu2D*,Vec);
+    PetscErrorCode Bratu2DFormExactSolution(DM,ParamsBratu2D*,Vec);
+    PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
+    PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);    
 
-    PetscErrorCode Bratu2DFormBCData(DM da,AppCtxBratu2D *user,Vec BC_marker, Vec BC_flag);
+    PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user,Vec BC_marker, Vec BC_flag);
 
 
     template<typename Matrix, typename Vector>
@@ -60,11 +60,13 @@ namespace utopia
             setup_ = true;
         }     
 
-        Bratu2D(const DM  & dm,
-                const AppCtxBratu2D & context):
+        Bratu2D(const DM  & dm, const Scalar & lambda = 0.1):
                 setup_(false)
         {
-            application_context_ = context; 
+            application_context_.lambda  = (lambda > 0 && lambda < 6.8) ? lambda : 3.4; 
+            application_context_.mms_solution = Bratu2DMMSSolution; 
+            application_context_.mms_forcing = Bratu2DMMSForcing;
+
             da_ = dm; 
             DMDAGetInfo(da_, 0, &n_, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -82,30 +84,30 @@ namespace utopia
             }
         }
 
-            virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
-            {
-                // initialization of gradient vector...
-                if(empty(g)){
-                    g  = local_zeros(local_size(x));;
-                }
-
-                SNESComputeFunction(snes_, raw_type(x), raw_type(g));
-
-                return true;
-            }
-                
-            virtual bool hessian(const Vector &x, Matrix &hessian) const override
-            {
-                SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,  snes_->jacobian);
-                wrap(snes_->jacobian, hessian);
-                return true;
+        virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        {
+            // initialization of gradient vector...
+            if(empty(g)){
+                g  = local_zeros(local_size(x));;
             }
 
-            virtual bool value(const Vector &x, typename Vector::Scalar &result) const override
-            {
-                SNESComputeObjective(snes_, raw_type(x), &result);
-                return true;
-            }
+            SNESComputeFunction(snes_, raw_type(x), raw_type(g));
+
+            return true;
+        }
+            
+        virtual bool hessian(const Vector &x, Matrix &hessian) const override
+        {
+            SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,  snes_->jacobian);
+            wrap(snes_->jacobian, hessian);
+            return true;
+        }
+
+        virtual bool value(const Vector &x, typename Vector::Scalar &result) const override
+        {
+            SNESComputeObjective(snes_, raw_type(x), &result);
+            return true;
+        }
 
 
         void output_to_VTK(const Vector & x, const std::string file_name = "Bratu2D.vtk")
@@ -163,6 +165,17 @@ namespace utopia
         }
 
 
+        virtual void lambda(const Scalar & lambda)
+        {
+            application_context_.lambda = lambda;
+        }
+
+        virtual Scalar lambda() const
+        {
+            return application_context_.lambda; 
+        }
+
+
     private:
         void create_DM()
         {
@@ -200,11 +213,12 @@ namespace utopia
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);
         }
 
+
     private:
         SizeType n_;  // global size
         bool setup_; 
 
-        AppCtxBratu2D application_context_; 
+        ParamsBratu2D application_context_; 
         DM da_;
         SNES snes_; 
 

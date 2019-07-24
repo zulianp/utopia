@@ -12,6 +12,9 @@ namespace utopia
     void runQuasiNewtonTest();
     void runPetscPseudoTransientContinuationTest(); 
 
+    // To be renamed ...
+    void runHckTest(); 
+
 }
 
 #endif //UTOPIA_SOLVER_TEST_HPP

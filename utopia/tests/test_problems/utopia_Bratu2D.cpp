@@ -3,7 +3,7 @@
 namespace utopia 
 {
 
-    PetscErrorCode Bratu2DFormFunctionLocal(DMDALocalInfo *info,PetscScalar **x,PetscScalar **f,AppCtxBratu2D *user)
+    PetscErrorCode Bratu2DFormFunctionLocal(DMDALocalInfo *info,PetscScalar **x,PetscScalar **f,ParamsBratu2D *user)
     {
       PetscErrorCode ierr;
       PetscInt       i,j;
@@ -52,7 +52,7 @@ namespace utopia
       PetscFunctionReturn(0);
     }
 
-PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo *info,PetscScalar **x,Mat jac,Mat jacpre,AppCtxBratu2D *user)
+PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo *info,PetscScalar **x,Mat jac,Mat jacpre,ParamsBratu2D *user)
 {
   PetscErrorCode ierr;
   PetscInt       i,j,k;
@@ -139,7 +139,7 @@ PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo *info,PetscScalar **x,Mat 
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,PetscReal *obj,AppCtxBratu2D *user)
+PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,PetscReal *obj,ParamsBratu2D *user)
 {
   PetscErrorCode ierr;
   PetscInt       i,j;
@@ -189,21 +189,21 @@ PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,Pet
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode Bratu2DMMSSolution(AppCtxBratu2D *user,const DMDACoor2d *c,PetscScalar *u)
+PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D *user,const DMDACoor2d *c,PetscScalar *u)
 {
     PetscReal x = PetscRealPart(c->x), y = PetscRealPart(c->y);
     u[0] = x*(1 - x)*y*(1 - y);
     return 0;
 }
 
-PetscErrorCode Bratu2DMMSForcing(AppCtxBratu2D *user,const DMDACoor2d *c,PetscScalar *f)
+PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D *user,const DMDACoor2d *c,PetscScalar *f)
 {
     PetscReal x = PetscRealPart(c->x), y = PetscRealPart(c->y);
     f[0] = 2*x*(1 - x) + 2*y*(1 - y) - user->lambda*std::exp(x*(1 - x)*y*(1 - y));
     return 0;    
 }
 
-PetscErrorCode Bratu2DFormExactSolution(DM da, AppCtxBratu2D *user, Vec U)
+PetscErrorCode Bratu2DFormExactSolution(DM da, ParamsBratu2D *user, Vec U)
 {
   DM             coordDA;
   Vec            coordinates;
@@ -229,7 +229,7 @@ PetscErrorCode Bratu2DFormExactSolution(DM da, AppCtxBratu2D *user, Vec U)
 }
 
 
-PetscErrorCode Bratu2DFormBCData(DM da,AppCtxBratu2D *user, Vec BC_flag, Vec BC_value)
+PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user, Vec BC_flag, Vec BC_value)
 {
   PetscInt       i,j,Mx,My,xs,ys,xm,ym;
   PetscErrorCode ierr;
@@ -285,7 +285,7 @@ PetscErrorCode Bratu2DFormBCData(DM da,AppCtxBratu2D *user, Vec BC_flag, Vec BC_
 }
 
 
-PetscErrorCode Bratu2DFormInitialGuess(DM da,AppCtxBratu2D *user,Vec X)
+PetscErrorCode Bratu2DFormInitialGuess(DM da,ParamsBratu2D *user,Vec X)
 {
   PetscInt       i,j,Mx,My,xs,ys,xm,ym;
   PetscErrorCode ierr;

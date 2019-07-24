@@ -3,6 +3,8 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
+#include <iomanip>
+#include <locale>
 
 
 namespace utopia
@@ -37,11 +39,20 @@ namespace utopia
 
         virtual void describe() const 
         {
+
             if(mpi_world_rank() == 0){
-                std::cout<< name() <<",   Globalsize:" << dim() << ",   parallel:  " << parallel() <<  ",   sol. known:"<< exact_sol_known() << "  \n"; 
+                std::cout<< name() <<",   Globalsize:";  
+                
+                std::string numWithCommas = std::to_string(dim());
+                int insertPosition = numWithCommas.length() - 3;
+                while (insertPosition > 0) {
+                    numWithCommas.insert(insertPosition, ",");
+                    insertPosition-=3;
+                }
+
+                std::cout<<numWithCommas << ",   parallel:  " << parallel() <<  ",   sol. known:"<< exact_sol_known() << "  \n"; 
             }
         }
-
     };
 
 

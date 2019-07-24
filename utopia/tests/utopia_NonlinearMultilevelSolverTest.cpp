@@ -22,64 +22,16 @@ namespace utopia
 
         void run()
         {
-            // UTOPIA_RUN_TEST(TR_test);
-            // UTOPIA_RUN_TEST(TR_constraint_test);
+            UTOPIA_RUN_TEST(TR_test);
+            UTOPIA_RUN_TEST(TR_constraint_test);
 
-            // UTOPIA_RUN_TEST(newton_MG_test);
-            // UTOPIA_RUN_TEST(FAS_test);
+            UTOPIA_RUN_TEST(newton_MG_test);
+            UTOPIA_RUN_TEST(FAS_test);
 
-            // UTOPIA_RUN_TEST(RMTR_test);
-            // UTOPIA_RUN_TEST(RMTR_inf_test);
-            // UTOPIA_RUN_TEST(RMTR_inf_bound_test);
-
-
-            UTOPIA_RUN_TEST(PETSC_test);
-
+            UTOPIA_RUN_TEST(RMTR_test);
+            UTOPIA_RUN_TEST(RMTR_inf_test);
+            UTOPIA_RUN_TEST(RMTR_inf_bound_test);
         }
-
-        void PETSC_test()
-        {
-            std::cout<<"----- petsc test.... \n"; 
-
-            auto n = 150; 
-
-            // AppCtxBratu2D app_data; 
-            // app_data.lambda  = 1.0; 
-            // app_data.mms_solution = Bratu2DMMSSolution; 
-            // app_data.mms_forcing = Bratu2DMMSForcing;            
-
-
-            Petsc2DMultilevelTestProblem<DSMatrixd, DVectord, Bratu2D<DSMatrixd, DVectord> > multilevel_problem(3, 3); 
-
-
-
-            auto fun = multilevel_problem.level_functions_[0];
-
-            // Bratu2D<DSMatrixd, DVectord> fun(da_fine, app_data);
-            // Bratu2D<DSMatrixd, DVectord> fun(n, 1.0);
-            // DVectord x = fun.initial_guess(); 
-            DVectord x = values(3*3, 1.0);
-
-
-
-            auto subproblem = std::make_shared<utopia::Lanczos<DSMatrixd, DVectord> >();
-            subproblem->pc_type("bjacobi"); 
-            subproblem->atol(1e-14);
-            subproblem->max_it(100000);
-            TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
-            tr_solver.atol(1e-5);
-            tr_solver.rtol(1e-10);
-            tr_solver.stol(1e-10);
-            tr_solver.verbose(true);
-            
-            // x = 0.0*x; 
-            tr_solver.solve(*fun, x);
-
-            // fun.output_to_VTK(x);
-        }
-
-
-
 
         void TR_test()
         {
