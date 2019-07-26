@@ -612,7 +612,8 @@ namespace utopia
 
             if(this->post_smoothing_steps()!=0)
             {
-                auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE : POST_SMOOTHING;
+                // auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE : POST_SMOOTHING;
+                auto post_smoothing_solve_type = POST_SMOOTHING;
                 this->local_tr_solve(level, post_smoothing_solve_type);
             }
 

@@ -178,7 +178,7 @@ namespace utopia
         {   
             PetscInt n; 
             VecGetLocalSize(snes_->vec_sol, &n);
-            ub = local_values(n, 0.4); 
+            ub = local_values(n, 0.45); 
             
             return true; 
         }

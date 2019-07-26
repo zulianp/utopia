@@ -29,11 +29,11 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(newton_test);            
 
-            // UTOPIA_RUN_TEST(STCG_test); 
+            UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
 
-            UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(TR_constrained); 
+            // UTOPIA_RUN_TEST(TR_unconstrained);
+            // UTOPIA_RUN_TEST(TR_constrained); 
 
             // UTOPIA_RUN_TEST(QuasiTR_unconstrained);
             // UTOPIA_RUN_TEST(QuasiTR_constrained);
@@ -76,7 +76,7 @@ namespace utopia
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
             QP_solver->atol(1e-10);
             QP_solver->max_it(n_*n_);
-            QP_solver->verbose(false); 
+            QP_solver->verbose(true); 
             QP_solver->current_radius(9e9); 
 
             QP_solve(QP_solver); 
@@ -280,7 +280,7 @@ namespace utopia
     {
         UTOPIA_UNIT_TEST_BEGIN("HckTests");
         #ifdef  WITH_PETSC
-            HckTests<DSMatrixd, DVectord>(1000, 2, 1.0, true, true).run();
+            HckTests<DSMatrixd, DVectord>(10, 2, 1.0, true, true).run();
         #endif
         UTOPIA_UNIT_TEST_END("HckTests");
 
