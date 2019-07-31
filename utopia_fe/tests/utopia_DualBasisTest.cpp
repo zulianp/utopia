@@ -134,9 +134,9 @@ namespace utopia {
 
         T.left_multiply(trafo_t);
 
-        std::cout << "------------------------\n";
-        T.print();
-        std::cout << "------------------------\n";
+        // std::cout << "------------------------\n";
+        // T.print();
+        // std::cout << "------------------------\n";
 
         double sum_T = 0.0;
         for(auto t : T.get_values()) {
@@ -203,10 +203,29 @@ namespace utopia {
 
 
 
+        // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
+        // DualBasis::build_trafo_and_weights(
+        //            libMesh::HEX27,
+        //            2,
+        //            1./5,
+        //            trafo,
+        //            inv_trafo,
+        //            weights);
+
+        // weights.print();
+        // std::cout << "------------------------\n";
+        // trafo.print();
+
+        // std::cout << "------------------------\n";
+        // inv_trafo.print();
+        // std::cout << "------------------------\n";
+        // trafo.print();
+
+
         libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         DualBasis::build_trafo_and_weights(
-                   libMesh::HEX27,
-                   2,
+                   libMesh::PRISM6,
+                   1,
                    1./5,
                    trafo,
                    inv_trafo,
