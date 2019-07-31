@@ -1301,7 +1301,7 @@ namespace utopia {
             e.nodes.resize(nn);
 
             for(std::size_t i = 0; i < nn; ++i) {
-                const auto node_id = elem.node(i);
+                const auto node_id = elem.node_id(i);
 
                 auto it = mapping.find(node_id);
                
@@ -1428,7 +1428,7 @@ namespace utopia {
 
                 for(std::size_t k = 0;  k < n_side_nodes; ++k) {
 
-                    auto node_id = side_ptr->node(k);
+                    auto node_id = side_ptr->node_id(k);
 
                     auto it = mapping.find(node_id);
 
@@ -1473,7 +1473,7 @@ namespace utopia {
                  e.nodes.resize(n_side_nodes);
                  
                  for(std::size_t k = 0;  k < n_side_nodes; ++k) {
-                    auto node_id = side_ptr->node(k);
+                    auto node_id = side_ptr->node_id(k);
                     auto it = mapping.find(node_id); assert(it != mapping.end());
                     e.nodes[k] = it->second;
                  }

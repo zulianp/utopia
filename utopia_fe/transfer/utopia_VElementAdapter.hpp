@@ -55,7 +55,7 @@ template<int Dimension>
 
             std::array<double, Dimension> p_a;
             for (libMesh::dof_id_type i = 0; i < e->n_nodes(); ++i) {
-                const libMesh::Point &p = fe.node(e->node(i));
+                const libMesh::Point &p = fe.node(e->node_id(i));
                 for(int d = 0; d < Dimension; ++d) {
                     p_a[d] = p(d);
                 }

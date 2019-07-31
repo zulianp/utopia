@@ -49,7 +49,7 @@ namespace utopia {
 
             for(uint side = 0; side < e->n_sides(); ++side) {
 
-                libMesh::UniquePtr<libMesh::Elem> s = e->side(side);
+                libMesh::UniquePtr<libMesh::Elem> s = e->build_side_ptr(side);
 
 
                 if(!s->on_boundary()) continue;
