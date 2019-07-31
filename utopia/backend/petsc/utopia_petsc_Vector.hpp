@@ -8,6 +8,7 @@
 #include "utopia_Range.hpp"
 #include "utopia_Writable.hpp"
 #include "petscvec.h"
+#include "utopia_petsc_Base.hpp"
 #include "utopia_make_unique.hpp"
 
 #include <map>

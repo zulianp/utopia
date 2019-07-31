@@ -7,6 +7,7 @@
 #include "utopia_Factory.hpp"
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_petsc_Base.hpp"
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>

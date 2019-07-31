@@ -185,8 +185,11 @@ namespace utopia {
         // test_dual_basis(libMesh::TET10, dim, order, alpha);
 
 
+        // dim = 3;
+        // test_dual_basis(libMesh::HEX27, dim, order, alpha);
+
         dim = 3;
-        test_dual_basis(libMesh::HEX27, dim, order, alpha);
+        test_dual_basis(libMesh::PRISM6, dim, 1, alpha);
 
         // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         // DualBasis::build_trafo_and_weights(

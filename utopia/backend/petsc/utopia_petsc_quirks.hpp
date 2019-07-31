@@ -3,6 +3,7 @@
 
 #include "petscvec.h"
 #include "utopia_Config.hpp"
+#include "utopia_petsc_Base.hpp"
 
 
     //Weird name changing in minor versions

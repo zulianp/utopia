@@ -4,6 +4,7 @@
 #include "utopia_petsc_Error.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_petsc_Base.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Range.hpp"
 
