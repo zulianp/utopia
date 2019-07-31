@@ -1,0 +1,48 @@
+function [dt] =shear_zone_grid(path)
+d = load(path);
+d = d';
+d = d(:);
+
+ntot = length(d);
+n = ntot/3;
+
+x = d(1:n);
+y = d((n+1):(2*n));
+z = d((2*n+1):(3*n));
+
+dt = delaunayTriangulation(x,y);
+tri = dt(:,:);
+
+
+
+% tri = delaunay(x,y);
+close all; trimesh(tri, x, y, z); axis equal; axis tight;
+
+% delEdges = dt.edges();
+% 
+% numpts = length(x);
+% validx = delEdges(:,1) <= numpts;
+% validy = delEdges(:,2) <= numpts;
+% 
+% boundaryEdges = delEdges((validx & validy), :)';
+% hold on;
+% xb = x(boundaryEdges);
+% yb = y(boundaryEdges);
+% clf;
+% triplot(tri,x,y);
+% axis equal;
+% hold on;
+% plot(x,y,'*r');
+% plot(xb,yb, '-r');
+
+
+% fault layer
+% TR = triangulation(tri, [x'; y'; z']');
+% stlwrite(TR,'shear-zone.stl','text')
+% 
+% % bottom layer
+% bottom = ones(size(z)) * min(z);
+% TR = triangulation(tri, [x'; y'; bottom']');
+% stlwrite(TR,'flat-zone.stl','text')
+
+end
