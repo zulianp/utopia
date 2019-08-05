@@ -117,13 +117,17 @@ namespace utopia {
             case KSP_DIVERGED_INDEFINITE_PC: { return "KSP_DIVERGED_INDEFINITE_PC"; }
             case KSP_DIVERGED_NANORINF: { return "KSP_DIVERGED_NANORINF"; }
             case KSP_DIVERGED_INDEFINITE_MAT: { return "KSP_DIVERGED_INDEFINITE_MAT"; }
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,11,0)
             case KSP_DIVERGED_PCSETUP_FAILED: { return "KSP_DIVERGED_PCSETUP_FAILED"; }
+#else
+            case KSP_DIVERGED_PC_FAILED: { return "KSP_DIVERGED_PCSETUP_FAILED"; }
+#endif
             case KSP_CONVERGED_ITERATING: { return "KSP_CONVERGED_ITERATING"; }
 
             default: {
                 return "unknown code";
             }
-        }   
+        }
     }
 
     //explicit

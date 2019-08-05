@@ -17,96 +17,96 @@
 namespace utopia
 {
     template<class Vector>
-    class QuasiNewtonBound :    public QuasiNewtonBase<Vector>, 
+    class QuasiNewtonBound :    public QuasiNewtonBase<Vector>,
                                 public VariableBoundSolverInterface<Vector>
 
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
-        
+
         typedef utopia::LSStrategy<Vector>                      LSStrategy;
         typedef utopia::HessianApproximation<Vector>            HessianApproximation;
 
         typedef utopia::MatrixFreeQPSolver<Vector>           QPSolver;
-        
-        
+
+
     public:
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
                             const std::shared_ptr <QPSolver> &linear_solver):
                             QuasiNewtonBase<Vector>(hessian_approx, linear_solver)
         {
-            
+
         }
-        
+
         bool solve(FunctionBase<Vector> &fun, Vector &x) override
         {
             using namespace utopia;
-            
-            Vector g, s, y; 
-            
+
+            Vector g, s, y;
+
             Scalar g_norm, r_norm, g0_norm, s_norm=1;
             SizeType it = 0;
 
-            Scalar alpha = 1.0; 
+            Scalar alpha = 1.0;
             bool converged = false;
 
-            this->make_iterate_feasible(x); 
-            
+            this->make_iterate_feasible(x);
+
             fun.gradient(x, g);
             g0_norm = norm2(g);
-            
+
             if(this->verbose_) {
                 this->init_solver("QUASI NEWTON BOUND", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
                 PrintInfo::print_iter_status(it, {g0_norm, s_norm});
             }
-            it++; 
-            
-            this->initialize_approximation(); 
-            auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
+            it++;
+
+            this->initialize_approximation();
+            auto multiplication_action = this->hessian_approx_strategy_->build_apply_H();
 
             while(!converged)
             {
                 if(QPSolver * qp_solver = dynamic_cast<QPSolver*>(this->linear_solver().get()))
                 {
                     auto box = this->build_correction_constraints(x);
-                    qp_solver->set_box_constraints(box); 
-                    s = 0*x; 
-                    qp_solver->solve(*multiplication_action, -1.0*g, s);      
+                    qp_solver->set_box_constraints(box);
+                    s = 0*x;
+                    qp_solver->solve(*multiplication_action, -1.0*g, s);
                 }
                 else
                 {
-                    utopia_error("utopia::QuasiNewtonBound: MF solver which is not QPSolver is not suported at the moment... \n"); 
+                    utopia_error("utopia::QuasiNewtonBound: MF solver which is not QPSolver is not suported at the moment... \n");
                 }
 
-                alpha = this->get_alpha(fun, g, x, s); 
-                s *= alpha; 
+                alpha = this->get_alpha(fun, g, x, s);
+                s *= alpha;
 
-                x = x + s; 
-                this->make_iterate_feasible(x); 
+                x = x + s;
+                this->make_iterate_feasible(x);
 
-                y = g; 
+                y = g;
                 fun.gradient(x, g);
 
                 // norms needed for convergence check
-                g_norm = this->criticality_measure_infty(x, g); 
+                g_norm = this->criticality_measure_infty(x, g);
                 s_norm = norm2(s);
                 r_norm = g_norm/g0_norm;
 
                 // diff between fresh and old grad...
-                y = g - y; 
+                y = g - y;
                 this->update(s, y);
 
                 // print iteration status on every iteration
                 if(this->verbose_)
                     PrintInfo::print_iter_status(it, {g_norm, r_norm,  s_norm, alpha});
-                
+
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, 9e9, s_norm);
-                
+
                 it++;
             }
 
-            this->print_statistics(it); 
+            this->print_statistics(it);
             return true;
         }
 

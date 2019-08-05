@@ -32,7 +32,7 @@ namespace utopia {
         inline int dim() const
         {
             return dim_;
-        } 
+        }
 
         inline const Operation &operation() const
         {
@@ -67,7 +67,7 @@ namespace utopia {
 
     template<class Expr, class Operation>
     inline Size size(const TensorReduce<Expr, Operation> &expr)
-    {   
+    {
         static_assert(Expr::Order == 2, "only supported for matrices");
         Size s = size(expr.expr());
         return { s.get(!expr.dim()) };

@@ -29,12 +29,12 @@ namespace  utopia
 
         virtual void read(Input &in) override
         {
-            Preconditioner<Vector>::read(in); 
+            Preconditioner<Vector>::read(in);
         }
-        
+
         virtual void print_usage(std::ostream &os) const override
-        { 
-            Preconditioner<Vector>::print_usage(os); 
+        {
+            Preconditioner<Vector>::print_usage(os);
         }
 
         /**

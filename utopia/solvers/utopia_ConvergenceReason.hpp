@@ -3,21 +3,21 @@
 
 
 #include <iomanip>
-#include <limits> 
-#include <chrono> 
-#include <string>  
-    
-namespace utopia 
+#include <limits>
+#include <chrono>
+#include <string>
+
+namespace utopia
 {
     /**
-     * @brief      The class helping to print-out information about solver: initialization messages, prinitning iteration status, time-stats and exit/convergance messages. 
-     *             It also helps pass solution and informations about solve back into FEM packages. 
+     * @brief      The class helping to print-out information about solver: initialization messages, prinitning iteration status, time-stats and exit/convergance messages.
+     *             It also helps pass solution and informations about solve back into FEM packages.
      */
     class ConvergenceReason {
         typedef double Scalar;
     public:
-        
-        // TODO:  put all reasons here ... 
+
+        // TODO:  put all reasons here ...
         static void exitMessage(const long &num_it, const int &convergence_reason)
         {
             if(mpi_world_rank() == 0)
@@ -29,7 +29,7 @@ namespace utopia
                 }
                 if(convergence_reason == DIVERGED_MAX_IT )
                 {
-                    std::cerr << "\033[1;31m [Error] Maximum number of iteration reached (" << num_it << "). \033[0m\n"; 
+                    std::cerr << "\033[1;31m [Error] Maximum number of iteration reached (" << num_it << "). \033[0m\n";
                 }
                 else if(convergence_reason == CONVERGED_SNORM_RELATIVE)
                 {
@@ -65,7 +65,7 @@ namespace utopia
                 }
                 else if(convergence_reason == DIVERGED_MAX_IT )
                 {
-                    std::cerr << "\033[1;31m [Error] Nonlinear solver: Maximum number of iteration reached (" << num_it << "). \033[0m\n"; 
+                    std::cerr << "\033[1;31m [Error] Nonlinear solver: Maximum number of iteration reached (" << num_it << "). \033[0m\n";
                 }
                 else if(convergence_reason == CONVERGED_SNORM_RELATIVE)
                 {
@@ -82,11 +82,11 @@ namespace utopia
                 else if(convergence_reason == CONVERGED_FNORM_RELATIVE)
                 {
                     std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", (|| F ||/|| F_0|| < atol). \033[0m\n";
-                }            
+                }
                 else if(convergence_reason == CONVERGED_FNORM_ABS)
                 {
                     std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", (|| F || < atol). \033[0m\n";
-                }                        
+                }
                 else if(convergence_reason < 0)
                 {
                     std::cerr << "\033[1;31m [Error] NonlinearSolver stopped at iteration " << num_it << " . \033[0m\n";
@@ -98,7 +98,7 @@ namespace utopia
             }
         }
 
-        // success 
+        // success
         static const int CONVERGED_FNORM_ABS          = 2;   /* ||g|| < atol */
         static const int CONVERGED_FNORM_RELATIVE     = 3;   /* ||g|| < rtol*||g_0|| */
         static const int CONVERGED_SNORM_RELATIVE     = 4;   /* Newton computed step size small; || delta x || < stol || x ||*/
@@ -137,12 +137,12 @@ namespace utopia
                 "KSP_DIVERGED_NANORINF",
                 "KSP_DIVERGED_INDEFINITE_MAT",
                 "KSP_DIVERGED_PCSETUP_FAILED"
-            };   
+            };
 
             return string_reason[std::abs(reason)];
         }
 
-    private: 
+    private:
         ConvergenceReason()
         {
 

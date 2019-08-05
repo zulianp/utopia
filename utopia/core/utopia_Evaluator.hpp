@@ -65,7 +65,7 @@ namespace utopia {
         static void eval(const InPlace<Left, Right, Operation> &expr)
         {
             Eval<InPlace<Left, Right, Operation>, Traits>::apply(expr);
-        }      
+        }
     };
 }
 

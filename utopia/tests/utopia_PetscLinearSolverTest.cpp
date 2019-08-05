@@ -23,10 +23,10 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_block_mg_exp);
             UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_mg_exp);
-            UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
+            UTOPIA_RUN_TEST(petsc_superlu_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
-            UTOPIA_RUN_TEST(petsc_st_cg_mg); 
+            UTOPIA_RUN_TEST(petsc_st_cg_mg);
 
 #endif //PETSC_HAVE_MUMPS
         }
@@ -153,7 +153,7 @@ namespace utopia {
             //  init
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
@@ -220,6 +220,13 @@ namespace utopia {
             DVectord sol = zeros(_n);
 
             GMRES<DMatrixd, DVectord> gmres;
+            gmres.pc_type(PCBJACOBI);
+
+            gmres.number_of_subdomains(mpi_world_size());
+            gmres.update(std::make_shared<DMatrixd>(mat));
+            gmres.sub_ksp_pc_type(KSPPREONLY, PCILU);
+
+            gmres.verbose(false);
             gmres.solve(mat, rhs, sol);
 
             DVectord expected = zeros(_n);
@@ -313,7 +320,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             //choose smoother
@@ -336,7 +343,7 @@ namespace utopia {
 
             //CG with diagonal preconditioner
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
-            
+
             x_0 = rhs;
             cg.solve(A, rhs, x_0);
 
@@ -394,7 +401,7 @@ namespace utopia {
             utopia_test_assert( approxeq(A*x, rhs, 1e-6) );
         }
 
-        void petsc_superlu_cg_mg()
+        void petsc_superlu_mg()
         {
             const bool verbose = false;
             DVectord rhs;
@@ -421,10 +428,12 @@ namespace utopia {
             interpolation_operators.push_back(make_ref(I_3));
 
             //  init
-            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+
 #ifdef PETSC_HAVE_SUPERLU_DIST
-            direct_solver->set_type(SUPERLU_DIST_TAG, LU_DECOMPOSITION_TAG);
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >(MATSOLVERSUPERLU_DIST, PCLU);
 #else
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+
             if(mpi_world_size() > 1) {
                 if(mpi_world_rank() == 0) {
                     std::cerr << "[Error] Direct solver does not work in parallel compile with SuperLU" << std::endl;
@@ -432,6 +441,8 @@ namespace utopia {
                 return;
             }
 #endif //PETSC_HAVE_SUPERLU_DIST
+
+            // direct_solver->describe(std::cout);
 
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
@@ -471,7 +482,7 @@ namespace utopia {
             double diff = norm2(rhs - A * x_0);
 
             if(diff > 1e-6) {
-                utopia_error("petsc_superlu_cg_mg fails. Known problem that needs to be fixed!");
+                utopia_error("petsc_superlu_mg fails. Known problem that needs to be fixed!");
             }
             // utopia_test_assert( diff < 1e-6 );
         }
@@ -491,7 +502,7 @@ namespace utopia {
             rhs = local_values(local_size(A).get(0), 13.0);
 
             auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-            cholesky_factorization->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
+            cholesky_factorization->set_type(Solver::petsc(), Solver::lu_decomposition());
 
             if(!cholesky_factorization->solve(A, rhs, x)) {
                 utopia_test_assert(false && "failed to solve");
@@ -533,7 +544,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 
 #ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
 #endif //PETSC_HAVE_MUMPS
 
             //choose smoother
@@ -562,7 +573,7 @@ namespace utopia {
             x_0 = zeros(A.size().get(0));
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
             cg.solve(A, -1.0 * rhs, x_0);
-            
+
 
             //CG with multigrid preconditioner
             x_0 = zeros(A.size().get(0));
@@ -579,8 +590,8 @@ namespace utopia {
             // multigrid.solve(rhs, x_0);
 
             //! [MG solve example]
-        }        
-    
+        }
+
 
         PetscLinearSolverTest()
         : _n(10) { }

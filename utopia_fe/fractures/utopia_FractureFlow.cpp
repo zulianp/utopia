@@ -2,118 +2,145 @@
 
 namespace utopia {
 
-	FractureFlow::FractureFlow(libMesh::Parallel::Communicator &comm)
-	: mesh(comm), space(make_ref(mesh))
-	{}
+    FractureFlow::FractureFlow(libMesh::Parallel::Communicator &comm)
+    : mesh(comm), space(make_ref(mesh))
+    {}
 
-	void FractureFlow::read(Input &is)
-	{
-		try {
-			is.get("mesh", mesh);
-			is.get("space", space);
+    void FractureFlow::read(Input &is)
+    {
+        try {
+            is.get("mesh", mesh);
+            is.get("space", space);
 
-			auto grid_sampler = std::make_shared<UIScalarSampler<double>>();
-			is.get("sampler", *grid_sampler);
+            auto grid_sampler = std::make_shared<UIScalarSampler<double>>();
+            is.get("sampler", *grid_sampler);
 
-			if(!grid_sampler->empty()) {
-				sampler = grid_sampler;
-			} else {
-				sampler = std::make_shared<UIConstantFunction<double>>(1.);
-			}
 
-			forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
-			is.get("forcing-function", *forcing_function);
+            if(!grid_sampler->empty()) {
+                sampler = grid_sampler;
+            } else {
+                auto subdomain_fun = utopia::make_unique<UISubdomainFunction<double>>();
 
-	            //material parameters
-			double diffusivity = 1.;
-			double diffusivities[3] = {1., 1., 1.};
+                is.get("diffusivity-blocks", *subdomain_fun);
 
-			is.get("diffusivity", diffusivity);
-			is.get("diffusivity-x", diffusivities[0]);
-			is.get("diffusivity-y", diffusivities[1]);
-			is.get("diffusivity-z", diffusivities[2]);
+                if(!subdomain_fun->good()) {
+                    sampler = std::make_shared<UIConstantFunction<double>>(1.);
+                } else {
 
-			int dim = space.subspace(0).mesh().spatial_dimension();
+                    if(!subdomain_fun->has_default()) {
+                        subdomain_fun->set_default(utopia::make_unique<UIConstantFunction<double>>(1.));
+                    }
 
-			diffusion_tensor = identity(dim, dim);
+                    sampler = std::move(subdomain_fun);
+                }
+            }
 
-			{
-				Write<ElementMatrix> w(diffusion_tensor);
-				for(int i = 0; i < dim; ++i) {
-					diffusion_tensor.set(i, i, diffusivities[i] * diffusivity);
-				}
-			}
+            forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
+            is.get("forcing-function", *forcing_function);
 
-		} catch(const std::exception &ex) {
-			std::cerr << ex.what() << std::endl;
-			assert(false);
-		}
-	}
 
-	bool FractureFlow::empty() const
-	{
-		return mesh.empty();
-	}
+            is.get("weak-bc", [this](Input &in) {
+                weak_BC_ = std::make_shared<WeakDirichletBoundaryConditions<FunctionSpaceT, USparseMatrix, UVector> >(space.subspace(0));
+                weak_BC_->read(in);
+            });
 
-	void FractureFlow::describe(std::ostream &os) const
-	{
-		os << "-----------------------------------\n";
-	        // mesh.describe(os);
-	        // space.describe(os);
-	        // forcing_function.describe(os);
-		os << "permeability: " << std::endl;
+                //material parameters
+            double diffusivity = 1.;
+            double diffusivities[3] = {1., 1., 1.};
 
-		{
-			int dim = size(diffusion_tensor).get(0);
-			Read<ElementMatrix> w(diffusion_tensor);
-			for(int i = 0; i < dim; ++i) {
-				os << diffusion_tensor.get(i, i) << " ";
-			}
-		}
+            is.get("diffusivity", diffusivity);
+            is.get("diffusivity-x", diffusivities[0]);
+            is.get("diffusivity-y", diffusivities[1]);
+            is.get("diffusivity-z", diffusivities[2]);
 
-		os << "\n";
-		os << "-----------------------------------\n";
-	}
+            int dim = space.subspace(0).mesh().spatial_dimension();
 
-	FractureFlowAuxSystem::FractureFlowAuxSystem(LibMeshFunctionSpace &V, const std::string &name)
-	: aux_( V.equation_systems().add_system<libMesh::LinearImplicitSystem>("aux") )
-	{
-	    var_nums_.push_back( aux_.add_variable(name, libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
-	    aux_.init();
-	}
+            diffusion_tensor = identity(dim, dim);
 
-	void FractureFlowAuxSystem::sample(const std::shared_ptr<UIFunction<double>> &sampler)
-	{
-	    LibMeshFunctionSpace V_aperture(aux_, var_nums_[0]);
-	    V_aperture.initialize();
+            {
+                Write<ElementMatrix> w(diffusion_tensor);
+                for(int i = 0; i < dim; ++i) {
+                    diffusion_tensor.set(i, i, diffusivities[i] * diffusivity);
+                }
+            }
 
-	    auto &dof_map = V_aperture.dof_map();
+        } catch(const std::exception &ex) {
+            std::cerr << ex.what() << std::endl;
+            assert(false);
+        }
+    }
 
-	    sampled = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-	    // sampled = local_zeros(dof_map.n_local_dofs());
+    void FractureFlow::apply_weak_BC(USparseMatrix &A, UVector &b) const
+    {
+        if(weak_BC_) {
+            weak_BC_->apply(A, b);
+        }
+    }
 
-	    auto constant_sampler = std::dynamic_pointer_cast<UIConstantFunction<double>>(sampler);
+    bool FractureFlow::empty() const
+    {
+        return mesh.empty();
+    }
 
-	    if(constant_sampler) {
-	        sampled.set(constant_sampler->value());
-	    } else {
-	        auto u = trial(V_aperture);
-	        auto v = test(V_aperture);
+    void FractureFlow::describe(std::ostream &os) const
+    {
+        os << "-----------------------------------\n";
+            // mesh.describe(os);
+            // space.describe(os);
+            // forcing_function.describe(os);
+        os << "permeability: " << std::endl;
 
-	        auto lform = inner(ctx_fun(sampler), v) * dX;
+        {
+            int dim = size(diffusion_tensor).get(0);
+            Read<ElementMatrix> w(diffusion_tensor);
+            for(int i = 0; i < dim; ++i) {
+                os << diffusion_tensor.get(i, i) << " ";
+            }
+        }
 
-	        UVector aperture_h = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-	        utopia::assemble(lform, aperture_h);
+        os << "\n";
+        os << "-----------------------------------\n";
+    }
 
-	        USparseMatrix mass_mat;
-	        utopia::assemble(inner(u, v) * dX, mass_mat);
-	        UVector d_inv = 1./sum(mass_mat, 1);
-	        sampled = e_mul(d_inv, aperture_h);
-	    }
+    FractureFlowAuxSystem::FractureFlowAuxSystem(LibMeshFunctionSpace &V, const std::string &name)
+    : aux_( V.equation_systems().add_system<libMesh::LinearImplicitSystem>("aux") )
+    {
+        var_nums_.push_back( aux_.add_variable(name, libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+        aux_.init();
+    }
 
-	    utopia::convert(sampled, *aux_.solution);
-	    aux_.solution->close();
-	}
+    void FractureFlowAuxSystem::sample(const std::shared_ptr<UIFunction<double>> &sampler)
+    {
+        LibMeshFunctionSpace V_aperture(aux_, var_nums_[0]);
+        V_aperture.initialize();
+
+        auto &dof_map = V_aperture.dof_map();
+
+        sampled = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        // sampled = local_zeros(dof_map.n_local_dofs());
+
+        auto constant_sampler = std::dynamic_pointer_cast<UIConstantFunction<double>>(sampler);
+
+        if(constant_sampler) {
+            sampled.set(constant_sampler->value());
+        } else {
+            auto u = trial(V_aperture);
+            auto v = test(V_aperture);
+
+            auto lform = inner(ctx_fun(sampler), v) * dX;
+
+            UVector aperture_h = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            utopia::assemble(lform, aperture_h);
+
+            USparseMatrix mass_mat;
+            utopia::assemble(inner(u, v) * dX, mass_mat);
+            UVector d_inv = 1./sum(mass_mat, 1);
+            sampled = e_mul(d_inv, aperture_h);
+        }
+
+        utopia::convert(sampled, *aux_.solution);
+        aux_.solution->close();
+    }
 
 
 }

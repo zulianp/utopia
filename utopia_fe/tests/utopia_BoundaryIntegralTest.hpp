@@ -1,13 +1,22 @@
 #ifndef UTOPIA_BOUNDARY_INTEGRAL_TEST_HPP
-#define UTOPIA_BOUNDARY_INTEGRAL_TEST_HPP 
+#define UTOPIA_BOUNDARY_INTEGRAL_TEST_HPP
 
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_FETest.hpp"
+#include <string>
+
 
 namespace utopia {
-	void run_boundary_integral_test(libMesh::LibMeshInit &init);	
+
+    class BoundaryIntegralTest final : public FETest {
+    public:
+        void run(Input &in) override;
+
+        inline static std::string command()
+        {
+            return "bit";
+        }
+    };
+
 }
 
 #endif //UTOPIA_BOUNDARY_INTEGRAL_TEST_HPP
-

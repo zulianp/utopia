@@ -14,7 +14,7 @@
 namespace utopia
 {
     // since $F = - \nabla f(x)$
-    // TODO:: add scaling matrices into evaluations 
+    // TODO:: add scaling matrices into evaluations
     template<class Matrix, class Vector>
     class ODEFormFunction final: public Function<Matrix, Vector>
     {
@@ -32,27 +32,27 @@ namespace utopia
 
         bool value(const Vector &/*point*/, Scalar & value) const override
         {
-            value = 0; 
+            value = 0;
             return false; // should not be necessary
             // TODO:: think about using Normal eq. function
         }
 
         bool gradient(const Vector & x, Vector &g) const override
         {
-            fun_->gradient(x, g); 
-            g = -1.0 * g; 
-            return true; 
+            fun_->gradient(x, g);
+            g = -1.0 * g;
+            return true;
         }
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            fun_->hessian(x, H); 
-            H = -1.0 * H; 
-            return true; 
+            fun_->hessian(x, H);
+            H = -1.0 * H;
+            return true;
         }
 
         private:
-            std::shared_ptr<Fun> fun_;   
+            std::shared_ptr<Fun> fun_;
     };
 
 
@@ -63,20 +63,20 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
-        typedef utopia::LSStrategy<Vector>                  LSStrategy; 
+        typedef utopia::LSStrategy<Vector>                  LSStrategy;
 
-        using NewtonBase<Matrix, Vector>::print_statistics; 
+        using NewtonBase<Matrix, Vector>::print_statistics;
 
 
     public:
        AffineSimilarity(    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
-                            NewtonBase<Matrix, Vector>(linear_solver), 
+                            NewtonBase<Matrix, Vector>(linear_solver),
                             tau_max_(1e9),
-                            tau_min_(1e-9), 
-                            alpha_treshold_(1e-10), 
+                            tau_min_(1e-9),
+                            alpha_treshold_(1e-10),
                             max_inner_it_(5)
                             {
-                                verbosity_level_ =  VERBOSITY_LEVEL_NORMAL; 
+                                verbosity_level_ =  VERBOSITY_LEVEL_NORMAL;
                             }
 
 
@@ -92,8 +92,8 @@ namespace utopia
 
         void print_usage(std::ostream &os) const override
         {
-            NewtonBase<Matrix, Vector>::print_usage(os); 
-            
+            NewtonBase<Matrix, Vector>::print_usage(os);
+
         }
 
 
@@ -102,35 +102,35 @@ namespace utopia
            using namespace utopia;
 
             std::shared_ptr<Function<Matrix, Vector> > fun_grad_ptr_(&fun_grad, [](Function<Matrix, Vector>*){});
-            ODEFormFunction<Matrix, Vector> fun(fun_grad_ptr_); 
+            ODEFormFunction<Matrix, Vector> fun(fun_grad_ptr_);
 
-            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0; 
-            SizeType it_inner = 0; 
+            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0;
+            SizeType it_inner = 0;
 
-            Vector g, s, g_new; 
-            s = 0 * x; 
-            g_new= 0*x; 
-            Matrix H; 
+            Vector g, s, g_new;
+            s = 0 * x;
+            g_new= 0*x;
+            Matrix H;
 
-            fun.gradient(x, g); 
-            g_norm = norm2(g); 
+            fun.gradient(x, g);
+            g_norm = norm2(g);
 
-            fun.hessian(x, H); 
+            fun.hessian(x, H);
 
             if(empty(I_)){
-                
+
                 if(this->verbose())
                 {
                     std::cout<<"mass matrix not set, using Identity matrix ... \n";
                 }
 
-                I_  = local_identity(local_size(H).get(0), local_size(H).get(1)); 
+                I_  = local_identity(local_size(H).get(0), local_size(H).get(1));
             }
 
-            Scalar  tau = 1./g_norm; 
+            Scalar  tau = 1./g_norm;
 
-            bool converged = false; 
-            SizeType it = 0; 
+            bool converged = false;
+            SizeType it = 0;
 
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
@@ -138,37 +138,37 @@ namespace utopia
                 PrintInfo::print_iter_status(it, {g_norm, 0, tau});
             }
 
-            it++; 
+            it++;
 
             while(!converged)
-            {   
+            {
                 // to be investigated
-                Matrix A = I_ - tau * H; 
-                s = 0*x; 
+                Matrix A = I_ - tau * H;
+                s = 0*x;
                 this->linear_solve(A, g, s);
 
-                Vector x_trial = x + tau * s; 
-                s_norm = norm2(s); 
+                Vector x_trial = x + tau * s;
+                s_norm = norm2(s);
 
-                fun.gradient(x_trial, g_new); 
-                g_norm_old = g_norm; 
-                g_norm = norm2(g_new); 
+                fun.gradient(x_trial, g_new);
+                g_norm_old = g_norm;
+                g_norm = norm2(g_new);
 
 
-                tau = estimate_tau(g_new, g, s, tau, s_norm); 
+                tau = estimate_tau(g_new, g, s, tau, s_norm);
 
-                if(norm2(g_new) < norm2(g))
+                if(norm_l2(g_new) < norm_l2(g))
                 {
-                    x = x_trial; 
-                    g = g_new; 
-                    fun.hessian(x, H); 
-                    // tau = estimate_tau(g_new, g, s, tau, s_norm); 
+                    x = x_trial;
+                    g = g_new;
+                    fun.hessian(x, H);
+                    // tau = estimate_tau(g_new, g, s, tau, s_norm);
                 }
                 else
                 {
-                    g_norm = g_norm_old; 
-                    // bool converged_inner = false; 
-                    it_inner = 0; 
+                    g_norm = g_norm_old;
+                    // bool converged_inner = false;
+                    it_inner = 0;
                 }
 
 
@@ -191,17 +191,17 @@ namespace utopia
 
         void set_max_inner_it(const SizeType & max_it)
         {
-            max_inner_it_ = max_it; 
+            max_inner_it_ = max_it;
         }
 
-        VerbosityLevel verbosity_level() const 
+        VerbosityLevel verbosity_level() const
         {
-            return verbosity_level_; 
+            return verbosity_level_;
         }
 
         void verbosity_level(const VerbosityLevel & verbose_level )
         {
-            verbosity_level_ = this->verbose() ? verbose_level : VERBOSITY_LEVEL_QUIET;  
+            verbosity_level_ = this->verbose() ? verbose_level : VERBOSITY_LEVEL_QUIET;
         }
 
 
@@ -212,56 +212,61 @@ namespace utopia
         void tau_min(const Scalar & tau_min)  { tau_min_ = tau_min; }
 
     protected:
-        virtual void print_statistics(  const SizeType & it, const Scalar & g_norm, 
-                                        const Scalar & tau,  const SizeType & it_inner) 
+        virtual void print_statistics(  const SizeType & it, const Scalar & g_norm,
+                                        const Scalar & tau,  const SizeType & it_inner)
         {
             auto rmtr_data_path = Utopia::instance().get("af_data_path");
             if(!rmtr_data_path.empty())
             {
-                CSVWriter writer; 
+                CSVWriter writer;
                 if (mpi_world_rank() == 0)
                 {
                     if(!writer.file_exists(rmtr_data_path))
                     {
-                        writer.open_file(rmtr_data_path); 
-                        writer.write_table_row<std::string>({"it", "g", "tau", "it_inner"}); 
+                        writer.open_file(rmtr_data_path);
+                        writer.write_table_row<std::string>({"it", "g", "tau", "it_inner"});
                     }
                     else
-                        writer.open_file(rmtr_data_path); 
+                        writer.open_file(rmtr_data_path);
 
-                    writer.write_table_row<Scalar>({Scalar(it), g_norm, tau, Scalar(it_inner)}); 
-                    writer.close_file(); 
+                    writer.write_table_row<Scalar>({Scalar(it), g_norm, tau, Scalar(it_inner)});
+                    writer.close_file();
                 }
             }
         }
 
-    
+
     public:
         void set_mass_matrix(const Matrix & M)
         {
-            I_ = M; 
+            I_ = M;
         }
 
 
-    private: 
+    private:
         Scalar estimate_tau(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
-        {   
+        {
             Scalar s_norm2 = norm_l2_2(s);
 
-            Scalar nom = dot(g, s) - s_norm2; 
-            Scalar denom = dot(g_new, s) - s_norm2; 
+            Scalar nom = dot(g, s) - s_norm2;
+            Scalar denom = dot(g_new, s) - s_norm2;
 
-            Scalar tau_new = tau/2.0 * std::abs(nom/denom); 
-            // bool flg = this->clamp_tau(tau_new); 
-            this->clamp_tau(tau_new); 
-            
-            return tau_new; 
+            Scalar tau_new = tau/2.0 * std::abs(nom/denom);
+            // bool flg = this->clamp_tau(tau_new);
+            this->clamp_tau(tau_new);
+
+            return tau_new;
         }
 
 
         Scalar norm_l2_2(const Vector & s)
-        {   
-            return dot(s, I_*s); 
+        {
+            return dot(s, I_*s);
+        }
+
+        Scalar norm_l2(const Vector & s)
+        {
+            return std::sqrt(norm_l2_2(s));
         }
 
 
@@ -269,41 +274,41 @@ namespace utopia
         {
             if(std::isinf(tau) || tau > tau_max_ )
             {
-                tau = tau_max_;        
-                return true; 
+                tau = tau_max_;
+                return true;
             }
             else if (std::isnan(tau))
             {
-                tau = tau_max_;        
-                return true; 
+                tau = tau_max_;
+                return true;
             }
             else if (tau ==0 || tau < tau_min_) // check this out...
             {
                 tau  = tau_min_;
-                return true; 
+                return true;
             }
             else{
-                return false; 
+                return false;
             }
         }
 
 
         bool residual_monotonicity_test(const Vector & g_trial, const Vector & g_old)
         {
-            return (norm2(g_trial) < norm2(g_old)) ? true : false; 
+            return (norm_l2(g_trial) < norm_l2(g_old)) ? true : false;
         }
 
 
     private:
-        VerbosityLevel verbosity_level_;   // verbosity level 
+        VerbosityLevel verbosity_level_;   // verbosity level
 
-        Scalar tau_max_;            // clamping values of tau to prevent infty 
-        Scalar tau_min_;            // clamping values of tau to prevent devision by zero 
+        Scalar tau_max_;            // clamping values of tau to prevent infty
+        Scalar tau_min_;            // clamping values of tau to prevent devision by zero
 
         Scalar alpha_treshold_;     // treshold on scaling
-        SizeType max_inner_it_; 
+        SizeType max_inner_it_;
 
-        Matrix I_; 
+        Matrix I_;
 
     };
 

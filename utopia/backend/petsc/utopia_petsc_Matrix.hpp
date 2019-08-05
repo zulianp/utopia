@@ -13,91 +13,91 @@
 #include <memory>
 
 namespace utopia {
-	class PetscMatrixMemory {
-	public:
-		PetscMatrixMemory(const MPI_Comm comm = PETSC_COMM_WORLD)
-		: owner_(true)
-		{
-			MatCreate(comm, &_mat);
-		}
-		
-		PetscMatrixMemory(Mat &mat, const bool owner = false)
-		: _mat(mat), owner_(owner) { }
-		
-		~PetscMatrixMemory()
-		{
-			destroy();
-		}
+    class PetscMatrixMemory {
+    public:
+        PetscMatrixMemory(const MPI_Comm comm = PETSC_COMM_WORLD)
+        : owner_(true)
+        {
+            MatCreate(comm, &_mat);
+        }
 
-		inline void destroy()
-		{
-			if(owner_) {
-				MatDestroy(&_mat);
-			}
-		}
-		
-		inline Mat &implementation() {
-			return _mat;
-		}
-		
-		inline const Mat &implementation() const {
+        PetscMatrixMemory(Mat &mat, const bool owner = false)
+        : _mat(mat), owner_(owner) { }
+
+        ~PetscMatrixMemory()
+        {
+            destroy();
+        }
+
+        inline void destroy()
+        {
+            if(owner_) {
+                MatDestroy(&_mat);
+            }
+        }
+
+        inline Mat &implementation() {
+            return _mat;
+        }
+
+        inline const Mat &implementation() const {
             assert(_mat != nullptr);
-			return _mat;
-		}
-		
-		//MAT_DO_NOT_COPY_VALUES or MAT_COPY_VALUES, cause it to copy the numerical values in the matrix MAT_SHARE_NONZERO_PATTERN
-		inline void duplicate(PetscMatrixMemory &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
-			// if(other.owner_) {
-				// MatDestroy(&other._mat);
-			// }
+            return _mat;
+        }
 
-			other.destroy();
-			
-			PetscErrorHandler::Check(MatDuplicate(_mat, opt, &other._mat));
-		}
-		
-		inline void convert(PetscMatrixMemory &other, MatType newtype) {
-			//MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
-			PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
-		}
-		
-		inline void convert(MatType newtype) {
-			//MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
-			PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
-		}
-		
-		PetscMatrixMemory(const PetscMatrixMemory &other)
-		: owner_(true)
-		{
-			PetscErrorHandler::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
-		}
-		
-		inline MPI_Comm communicator() const {
-			MPI_Comm comm = PetscObjectComm((PetscObject) implementation());
-			assert(comm != MPI_COMM_NULL);
-			return comm;
-		}
-		
-		void set_owner(const bool owner)
-		{
-			owner_ = owner;
-		}
+        //MAT_DO_NOT_COPY_VALUES or MAT_COPY_VALUES, cause it to copy the numerical values in the matrix MAT_SHARE_NONZERO_PATTERN
+        inline void duplicate(PetscMatrixMemory &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
+            // if(other.owner_) {
+                // MatDestroy(&other._mat);
+            // }
 
-		inline bool is_owner() const
-		{
-			return owner_;
-		}
-		
-	private:
-		Mat _mat;
-		bool owner_;
-	};
-	
-	class PetscMatrix {
-	public:
-		Mat &implementation() {
-			return wrapper_->implementation();
-		}
+            other.destroy();
+
+            PetscErrorHandler::Check(MatDuplicate(_mat, opt, &other._mat));
+        }
+
+        inline void convert(PetscMatrixMemory &other, MatType newtype) {
+            //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
+            PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
+        }
+
+        inline void convert(MatType newtype) {
+            //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
+            PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
+        }
+
+        PetscMatrixMemory(const PetscMatrixMemory &other)
+        : owner_(true)
+        {
+            PetscErrorHandler::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
+        }
+
+        inline MPI_Comm communicator() const {
+            MPI_Comm comm = PetscObjectComm((PetscObject) implementation());
+            assert(comm != MPI_COMM_NULL);
+            return comm;
+        }
+
+        void set_owner(const bool owner)
+        {
+            owner_ = owner;
+        }
+
+        inline bool is_owner() const
+        {
+            return owner_;
+        }
+
+    private:
+        Mat _mat;
+        bool owner_;
+    };
+
+    class PetscMatrix {
+    public:
+        Mat &implementation() {
+            return wrapper_->implementation();
+        }
 
         inline MatType type() const
         {
@@ -119,120 +119,120 @@ namespace utopia {
         {
             PetscObjectSetName((PetscObject)implementation(), name.c_str());
         }
-		
-		void wrap(Mat &mat)
-		{
-			wrapper_ = std::make_shared<PetscMatrixMemory>(mat, false);
-		}
-		
-		const Mat &implementation() const {
-			return wrapper_->implementation();
-		}
-		
-		PetscMatrix(const MPI_Comm comm = PETSC_COMM_WORLD) {
-			using std::make_shared;
-			wrapper_ = make_shared<PetscMatrixMemory>(comm);
-		}
 
-		PetscMatrix(PetscMatrix &&other) 
-		: wrapper_(std::move(other.wrapper_))	
-		{}
-		
-		PetscMatrix(const PetscMatrix &other) {
-			using std::make_shared;
-           
+        void wrap(Mat &mat)
+        {
+            wrapper_ = std::make_shared<PetscMatrixMemory>(mat, false);
+        }
+
+        const Mat &implementation() const {
+            return wrapper_->implementation();
+        }
+
+        PetscMatrix(const MPI_Comm comm = PETSC_COMM_WORLD) {
+            using std::make_shared;
+            wrapper_ = make_shared<PetscMatrixMemory>(comm);
+        }
+
+        PetscMatrix(PetscMatrix &&other)
+        : wrapper_(std::move(other.wrapper_))
+        {}
+
+        PetscMatrix(const PetscMatrix &other) {
+            using std::make_shared;
+
             if(other.empty()) {
                 wrapper_ = make_shared<PetscMatrixMemory>(other.communicator());
                 return;
             }
 
-			wrapper_ = make_shared<PetscMatrixMemory>();
-			other.wrapper_->duplicate(*wrapper_);
-		}
-		
-		PetscMatrix &operator=(const PetscMatrix &other) {
-			if(wrapper_ == other.wrapper_) return *this;
+            wrapper_ = make_shared<PetscMatrixMemory>();
+            other.wrapper_->duplicate(*wrapper_);
+        }
+
+        PetscMatrix &operator=(const PetscMatrix &other) {
+            if(wrapper_ == other.wrapper_) return *this;
 
             if(other.empty()) {
                 clear();
                 return *this;
             }
-			
-			wrapper_ = std::make_shared<PetscMatrixMemory>();
-			other.wrapper_->duplicate(*wrapper_);
-			return *this;
-		}
-		
-		PetscMatrix &operator=(PetscMatrix &&other) {
-			if(wrapper_ == other.wrapper_) return *this;
-			
-			this->wrapper_ = other.wrapper_;
-			other.wrapper_ = nullptr;
-			return *this;
-		}
-		
-		inline void describe() const {
+
+            wrapper_ = std::make_shared<PetscMatrixMemory>();
+            other.wrapper_->duplicate(*wrapper_);
+            return *this;
+        }
+
+        PetscMatrix &operator=(PetscMatrix &&other) {
+            if(wrapper_ == other.wrapper_) return *this;
+
+            this->wrapper_ = other.wrapper_;
+            other.wrapper_ = nullptr;
+            return *this;
+        }
+
+        inline void describe() const {
             if(empty()) {
                 std::cout << "Empty" << std::endl;
             }
 
-			MatView(wrapper_->implementation(), PETSC_VIEWER_STDOUT_(communicator()));
-		}
-		
-		inline MPI_Comm communicator() const {
-			return wrapper_->communicator();
-		}
-		
-		inline Size size() const
-		{
-			PetscInt rows, cols;
-			check_error( MatGetSize(implementation(), &rows, &cols) );
-			return {rows, cols};
-		}
-		
-		inline Size local_size() const
-		{
-			PetscInt rows, cols;
-			check_error( MatGetLocalSize(implementation(), &rows, &cols) );
-			return {rows, cols};
-		}
-		
-		inline PetscScalar get(const PetscInt row, const PetscInt col) const
-		{
-			PetscScalar value;
-			check_error( MatGetValues(implementation(), 1, &row, 1, &col, &value) );
-			return value;
-		}
-		
-		inline void set(const PetscInt row, const PetscInt col, PetscScalar value) {
-            assert(row_range().inside(row));
-			// check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
-            check_error( MatSetValue(implementation(), row, col, value, INSERT_VALUES) );
-		}
+            MatView(wrapper_->implementation(), PETSC_VIEWER_STDOUT_(communicator()));
+        }
 
-		inline void add(const PetscInt row, const PetscInt col, PetscScalar value) {
+        inline MPI_Comm communicator() const {
+            return wrapper_->communicator();
+        }
+
+        inline Size size() const
+        {
+            PetscInt rows, cols;
+            check_error( MatGetSize(implementation(), &rows, &cols) );
+            return {rows, cols};
+        }
+
+        inline Size local_size() const
+        {
+            PetscInt rows, cols;
+            check_error( MatGetLocalSize(implementation(), &rows, &cols) );
+            return {rows, cols};
+        }
+
+        inline PetscScalar get(const PetscInt row, const PetscInt col) const
+        {
+            PetscScalar value;
+            check_error( MatGetValues(implementation(), 1, &row, 1, &col, &value) );
+            return value;
+        }
+
+        inline void set(const PetscInt row, const PetscInt col, PetscScalar value) {
             assert(row_range().inside(row));
-			// check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
+            // check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
+            check_error( MatSetValue(implementation(), row, col, value, INSERT_VALUES) );
+        }
+
+        inline void add(const PetscInt row, const PetscInt col, PetscScalar value) {
+            assert(row_range().inside(row));
+            // check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
             check_error( MatSetValue(implementation(), row, col, value, ADD_VALUES) );
-		}
-		
-		void add_matrix(const std::vector<PetscInt> &rows,
-						const std::vector<PetscInt> &cols,
-						const std::vector<PetscScalar> &values);
-		
-		void set_matrix(const std::vector<PetscInt> &rows,
-						const std::vector<PetscInt> &cols,
-						const std::vector<PetscScalar> &values);
-		
-		inline void write_lock() { }
-		
-		inline void write_unlock() {
-			check_error( MatAssemblyBegin(implementation(), MAT_FINAL_ASSEMBLY) );
-			check_error( MatAssemblyEnd(implementation(),   MAT_FINAL_ASSEMBLY) );
-		}
-		
-		inline void read_lock() { }
-		inline void read_unlock() { }
+        }
+
+        void add_matrix(const std::vector<PetscInt> &rows,
+                        const std::vector<PetscInt> &cols,
+                        const std::vector<PetscScalar> &values);
+
+        void set_matrix(const std::vector<PetscInt> &rows,
+                        const std::vector<PetscInt> &cols,
+                        const std::vector<PetscScalar> &values);
+
+        inline void write_lock() { }
+
+        inline void write_unlock() {
+            check_error( MatAssemblyBegin(implementation(), MAT_FINAL_ASSEMBLY) );
+            check_error( MatAssemblyEnd(implementation(),   MAT_FINAL_ASSEMBLY) );
+        }
+
+        inline void read_lock() { }
+        inline void read_unlock() { }
 
         void dense_init(
             MPI_Comm comm,
@@ -290,9 +290,9 @@ namespace utopia {
 
         inline PetscScalar trace() const
         {
-        	PetscScalar ret;
-        	check_error( MatGetTrace(implementation(), &ret) );
-        	return ret;
+            PetscScalar ret;
+            check_error( MatGetTrace(implementation(), &ret) );
+            return ret;
         }
 
         PetscScalar sum() const;
@@ -307,9 +307,9 @@ namespace utopia {
 
         inline PetscReal norm2() const
         {
-        	PetscReal val;
-        	MatNorm(implementation(), NORM_FROBENIUS, &val);
-        	return val;
+            PetscReal val;
+            MatNorm(implementation(), NORM_FROBENIUS, &val);
+            return val;
         }
 
         inline PetscReal norm_infty() const
@@ -317,24 +317,24 @@ namespace utopia {
             PetscReal val;
             MatNorm(implementation(), NORM_INFINITY, &val);
             return val;
-        }        
+        }
 
         bool is_mpi() const;
         bool is_nan_or_inf() const;
-        
+
         inline bool is_owner() const
         {
-        	if(wrapper_) {
-        		return wrapper_->is_owner();
-        	} else {
-        		return false;
-        	}
+            if(wrapper_) {
+                return wrapper_->is_owner();
+            } else {
+                return false;
+            }
         }
 
 
         inline void scale(const PetscScalar factor)
         {
-        	check_error( MatScale(implementation(), factor) );
+            check_error( MatScale(implementation(), factor) );
         }
 
         //petsc says that it is correct only for square matrices
@@ -345,39 +345,39 @@ namespace utopia {
 
         inline void diag_shift(const PetscScalar factor)
         {
-        	check_error( MatShift(implementation(), factor) );
+            check_error( MatShift(implementation(), factor) );
         }
 
         void dense_init_diag(MatType dense_type, const PetscVector &diag);
         void matij_init_diag(const PetscVector &diag);
 
         void dense_init_values(
-        	MPI_Comm comm,
-        	MatType dense_type,
-        	PetscInt local_rows,
-        	PetscInt local_cols,
-        	PetscInt global_rows,
-        	PetscInt global_cols,
-        	PetscScalar value
+            MPI_Comm comm,
+            MatType dense_type,
+            PetscInt local_rows,
+            PetscInt local_cols,
+            PetscInt global_rows,
+            PetscInt global_cols,
+            PetscScalar value
         );
-       
+
         void dense_init_identity(
-        	MPI_Comm comm,
-        	MatType dense_type,
-        	PetscInt local_rows,
-        	PetscInt local_cols,
-        	PetscInt global_rows,
-        	PetscInt global_cols,
-        	PetscScalar scale_factor);
+            MPI_Comm comm,
+            MatType dense_type,
+            PetscInt local_rows,
+            PetscInt local_cols,
+            PetscInt global_rows,
+            PetscInt global_cols,
+            PetscScalar scale_factor);
 
         void matij_init_identity(
-        	MPI_Comm comm,
-        	MatType sparse_type,
-        	PetscInt local_rows,
-        	PetscInt local_cols,
-        	PetscInt global_rows,
-        	PetscInt global_cols,
-        	PetscScalar scale_factor);
+            MPI_Comm comm,
+            MatType sparse_type,
+            PetscInt local_rows,
+            PetscInt local_cols,
+            PetscInt global_rows,
+            PetscInt global_cols,
+            PetscScalar scale_factor);
 
         // void matij_init_identity(
         // 	MPI_Comm comm,
@@ -398,46 +398,46 @@ namespace utopia {
         // );
 
         void matij_init(
-        	MPI_Comm comm,
-        	MatType type,
-        	PetscInt rows_local,
-        	PetscInt cols_local,
-        	PetscInt rows_global,
-        	PetscInt cols_global,
-        	PetscInt d_nnz,
-        	PetscInt o_nnz
+            MPI_Comm comm,
+            MatType type,
+            PetscInt rows_local,
+            PetscInt cols_local,
+            PetscInt rows_global,
+            PetscInt cols_global,
+            PetscInt d_nnz,
+            PetscInt o_nnz
         );
 
      //    void matij_init(
-    	// 	MPI_Comm comm,
-    	// 	PetscInt rows_local,
-    	// 	PetscInt cols_local,
-    	// 	PetscInt rows_global,
-    	// 	PetscInt cols_global,
-    	// 	const std::vector<PetscInt> &d_nnz,
-    	// 	const std::vector<PetscInt> &o_nnz
-    	// );
+        // 	MPI_Comm comm,
+        // 	PetscInt rows_local,
+        // 	PetscInt cols_local,
+        // 	PetscInt rows_global,
+        // 	PetscInt cols_global,
+        // 	const std::vector<PetscInt> &d_nnz,
+        // 	const std::vector<PetscInt> &o_nnz
+        // );
 
         void matij_init(
-       		MPI_Comm comm,
-       		MatType type,
-       		PetscInt rows_local,
-       		PetscInt cols_local,
-       		PetscInt rows_global,
-       		PetscInt cols_global,
-       		const std::vector<PetscInt> &d_nnz,
-       		const std::vector<PetscInt> &o_nnz
-       	);
+               MPI_Comm comm,
+               MatType type,
+               PetscInt rows_local,
+               PetscInt cols_local,
+               PetscInt rows_global,
+               PetscInt cols_global,
+               const std::vector<PetscInt> &d_nnz,
+               const std::vector<PetscInt> &o_nnz
+           );
 
          void mat_baij_init(
-        	MPI_Comm comm,
-        	PetscInt rows_local,
-        	PetscInt cols_local,
-        	PetscInt rows_global,
-        	PetscInt cols_global,
-        	PetscInt d_nnz,
-        	PetscInt o_nnz,
-        	PetscInt block_size
+            MPI_Comm comm,
+            PetscInt rows_local,
+            PetscInt cols_local,
+            PetscInt rows_global,
+            PetscInt cols_global,
+            PetscInt d_nnz,
+            PetscInt o_nnz,
+            PetscInt block_size
         );
 
          void nest(
@@ -459,47 +459,47 @@ namespace utopia {
         //  	PetscInt d_nnz,
         //  	PetscInt o_nnz
         // );
-        
-		inline void destroy()
-		{
-			wrapper_->destroy();
-		}
 
-		void inverse(PetscMatrix &result) const;
+        inline void destroy()
+        {
+            wrapper_->destroy();
+        }
 
-		void mult(const PetscVector &vec, PetscVector &result) const;
+        void inverse(PetscMatrix &result) const;
+
+        void mult(const PetscVector &vec, PetscVector &result) const;
 
         //tranpose(*this) * vec
-		void mult_t(const PetscVector &vec, PetscVector &result) const;
-		void mult(const PetscMatrix &mat, PetscMatrix &result) const;
+        void mult_t(const PetscVector &vec, PetscVector &result) const;
+        void mult(const PetscMatrix &mat, PetscMatrix &result) const;
 
         //tranpose(*this) * mat
-		void mult_t(const PetscMatrix &mat, PetscMatrix &result) const;
-		void mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const;
+        void mult_t(const PetscMatrix &mat, PetscMatrix &result) const;
+        void mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const;
 
-		///result = v2 + this * v1
-		void mult_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
-		void mult_t_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
+        ///result = v2 + this * v1
+        void mult_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
+        void mult_t_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
 
 
-		///this is y
-		void axpy(const PetscScalar alpha, const PetscMatrix &x);
+        ///this is y
+        void axpy(const PetscScalar alpha, const PetscMatrix &x);
 
-		void convert_to_mat_baij(const PetscInt block_size);
+        void convert_to_mat_baij(const PetscInt block_size);
 
-		bool is_initialized_as( MPI_Comm comm, MatType dense_type, PetscInt local_rows, PetscInt local_cols, PetscInt global_rows, PetscInt global_cols); 
+        bool is_initialized_as( MPI_Comm comm, MatType dense_type, PetscInt local_rows, PetscInt local_cols, PetscInt global_rows, PetscInt global_cols);
         bool empty() const;
 
         bool has_type(VecType type) const;
         bool same_type(const PetscMatrix &other) const;
         bool is_cuda() const;
-	private:
-		std::shared_ptr<PetscMatrixMemory> wrapper_;
-		
-		inline static bool check_error(const PetscInt err)
-		{
-			return PetscErrorHandler::Check(err);
-		}
+    private:
+        std::shared_ptr<PetscMatrixMemory> wrapper_;
+
+        inline static bool check_error(const PetscInt err)
+        {
+            return PetscErrorHandler::Check(err);
+        }
 
         void select_aux(const std::vector<PetscInt> &row_index,
                         const std::vector<PetscInt> &col_index,
@@ -512,13 +512,13 @@ namespace utopia {
                 const Range &local_col_range,
                 PetscMatrix &result) const;
 
-      	
-      	VecType compatible_cuda_vec_type() const;
 
-      	//y = A * x;
-      	bool create_vecs(Vec *x, Vec *y) const;
+          VecType compatible_cuda_vec_type() const;
 
-	};
+          //y = A * x;
+          bool create_vecs(Vec *x, Vec *y) const;
+
+    };
 }
 
 #endif //UTOPIA_UTOPIA_PETSCMATRIX_H

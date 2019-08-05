@@ -115,7 +115,7 @@ namespace utopia {
             UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).multiply(
-                result, 
+                result,
                 true,
                 Eval<Right, Traits>::apply(expr.expr().right()),
                 true,

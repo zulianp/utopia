@@ -137,7 +137,7 @@ namespace utopia {
     {
         if(implementation() == result.implementation()) {
             auto s = size();
-            
+
             if(s.get(0) == s.get(1)) {
                 result.transpose();
             } else {
@@ -508,7 +508,7 @@ namespace utopia {
     }
 
     void PetscMatrix::get_col(PetscVector &result, const PetscInt id) const
-    {        
+    {
         auto gs = size();
 
         result.destroy();
@@ -577,7 +577,7 @@ namespace utopia {
             check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &implementation()) );
         } else {
             Mat temp = nullptr;
-            
+
             check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &temp) );
             check_error( MatConvert(temp, type_override(), MAT_INITIAL_MATRIX, &implementation()) );
             check_error(  MatDestroy(&temp) );
@@ -706,9 +706,9 @@ namespace utopia {
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
 
-        // otherwise global_cols gives -1, as it should be determined... 
-        MatGetSize(implementation(), &global_rows, &global_cols); 
-        const PetscInt r_end = PetscMin(r.end(), global_cols); 
+        // otherwise global_cols gives -1, as it should be determined...
+        MatGetSize(implementation(), &global_rows, &global_cols);
+        const PetscInt r_end = PetscMin(r.end(), global_cols);
 
         for(PetscInt i = r_begin; i < r_end; ++i) {
             set(i, i, scale_factor);
@@ -933,6 +933,11 @@ namespace utopia {
            );
 
         check_error( MatZeroEntries(I.implementation()) );
+
+        //initialization
+        I.write_lock();
+        I.write_unlock();
+
         check_error( MatShift(I.implementation(), 1.) );
 
         result.dense_init(
@@ -1100,8 +1105,13 @@ namespace utopia {
             create_vecs(nullptr, &result.implementation());
         } else {
             Size gs = size();
-            Size ls = local_size();
-            VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
+            if(gs.get(0) != result.size()) {
+                result.destroy();
+                // MatCreateVecs(implementation(), nullptr, &result.implementation());
+                create_vecs(nullptr, &result.implementation());
+            }
+
+            assert(local_size().get(0) == result.local_size());
         }
 
         check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
@@ -1140,33 +1150,33 @@ namespace utopia {
     void PetscMatrix::mult(const PetscMatrix &mat, PetscMatrix &result) const
     {
         PetscBool      flg;
-        // this is very unefficient hack, but still better than fail... 
+        // this is very unefficient hack, but still better than fail...
         PetscObjectTypeCompareAny((PetscObject)mat.implementation(),&flg,MATMPIDENSE,NULL);
         if (flg)
         {
             if(mat.implementation() != result.implementation() && implementation() != result.implementation())
             {
                 result.destroy();
-                Mat temp; 
-                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                Mat temp;
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp);
                 MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
-                MatDestroy(&temp); 
+                MatDestroy(&temp);
             }
-            else 
+            else
             {
-                PetscMatrix temp2; 
-                temp2.destroy(); 
+                PetscMatrix temp2;
+                temp2.destroy();
 
-                Mat temp; 
-                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                Mat temp;
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp);
                 MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp2.implementation());
-                MatDestroy(&temp); 
+                MatDestroy(&temp);
                 result = std::move(temp2);
-            }                
+            }
         }
         else
         {
-            if(mat.implementation() != result.implementation() && implementation() != result.implementation()) 
+            if(mat.implementation() != result.implementation() && implementation() != result.implementation())
             {
                 result.destroy();
                 MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
@@ -1187,7 +1197,7 @@ namespace utopia {
             MatMultAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
             result = std::move(temp);
         } else {
-            result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+            result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
         }
     }
@@ -1200,7 +1210,7 @@ namespace utopia {
             MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
             result = std::move(temp);
         } else {
-            result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+            result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
         }
     }
@@ -1306,7 +1316,7 @@ namespace utopia {
 
         // } else {
 
-        	MatCreateVecs(implementation(), x, y);
+            MatCreateVecs(implementation(), x, y);
         // }
 
         return true;

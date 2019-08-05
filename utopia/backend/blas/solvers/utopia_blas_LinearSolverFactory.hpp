@@ -1,5 +1,5 @@
 #ifndef UTOPIA_BLAS_LINEAR_SOLVER_FACTORY_HPP
-#define UTOPIA_BLAS_LINEAR_SOLVER_FACTORY_HPP 
+#define UTOPIA_BLAS_LINEAR_SOLVER_FACTORY_HPP
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
@@ -22,50 +22,50 @@
 
 namespace utopia {
 
-	// -------------------------------------------BLAS------------------------------------------
-		template<typename Matrix, typename Vector>
-		class LinearSolverFactory<Matrix, Vector, BLAS> {
-			public: 
-				typedef utopia::LinearSolver<Matrix, Vector> LinearSolverT;
-				typedef std::shared_ptr<LinearSolverT>  LinearSolverPtr;
-				typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
+    // -------------------------------------------BLAS------------------------------------------
+        template<typename Matrix, typename Vector>
+        class LinearSolverFactory<Matrix, Vector, BLAS> {
+            public:
+                typedef utopia::LinearSolver<Matrix, Vector> LinearSolverT;
+                typedef std::shared_ptr<LinearSolverT>  LinearSolverPtr;
+                typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
 
-				template<class Alg>
-				using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;
-				std::map<std::string, std::shared_ptr<FactoryMethodT> > solvers_;
+                template<class Alg>
+                using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;
+                std::map<std::string, std::shared_ptr<FactoryMethodT> > solvers_;
 
 
-				inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
-				{
-					auto it = instance().solvers_.find(tag);
-					if(it == instance().solvers_.end()) {
-						return std::make_shared<ConjugateGradient<Matrix, Vector> >();
-					} else {
-						return LinearSolverPtr(it->second->make());
-					}
-				}
+                inline static LinearSolverPtr new_linear_solver(const SolverType &tag)
+                {
+                    auto it = instance().solvers_.find(tag);
+                    if(it == instance().solvers_.end()) {
+                        return std::make_shared<ConjugateGradient<Matrix, Vector> >();
+                    } else {
+                        return LinearSolverPtr(it->second->make());
+                    }
+                }
 
-			private:
+            private:
 
-				inline static const LinearSolverFactory &instance()
-				{
-					static LinearSolverFactory instance_;
-					return instance_;
-				}
+                inline static const LinearSolverFactory &instance()
+                {
+                    static LinearSolverFactory instance_;
+                    return instance_;
+                }
 
-				LinearSolverFactory()
-				{
-					init();
-				}
+                LinearSolverFactory()
+                {
+                    init();
+                }
 
-				void init()
-				{
-	#ifdef WITH_LAPACK
-						solvers_[DIRECT_TAG] = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
-						solvers_[AUTO_TAG]   = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
-	#endif //WITH_LAPACK
-				}
-		};
+                void init()
+                {
+    #ifdef WITH_LAPACK
+                        solvers_[Solver::direct()]    = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
+                        solvers_[Solver::automatic()] = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
+    #endif //WITH_LAPACK
+                }
+        };
 }
 
 #endif //UTOPIA_BLAS_LINEAR_SOLVER_FACTORY_HPP

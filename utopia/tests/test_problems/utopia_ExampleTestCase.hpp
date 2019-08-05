@@ -1,6 +1,6 @@
 /*! \file utopia_ExampleTestCase.hpp
-     Nonlinear Semismooth Newton method 
-     Created by Alena Kopanicakova 
+     Nonlinear Semismooth Newton method
+     Created by Alena Kopanicakova
 */
 
 #ifndef UTOPIA_SOLVER_EXAMPLE_TEST_CASE_HPP
@@ -10,16 +10,16 @@
 #include <vector>
 
 
-namespace utopia 
+namespace utopia
 {
     /**
-     * @brief      Example of assembly 2D Laplace problems. 
+     * @brief      Example of assembly 2D Laplace problems.
      *
-     * @tparam     Matrix 
-     * @tparam     Vector 
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class ExampleTestCase  
+    class ExampleTestCase
     {
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
@@ -28,11 +28,11 @@ namespace utopia
         ExampleTestCase()
         {
         }
-      
+
       /**
-       * @brief      Assembles 
+       * @brief      Assembles
        *
-       * @param[in]  N     The problem size. 
+       * @param[in]  N     The problem size.
        */
       void assembly(SizeType N)
       {
@@ -43,12 +43,12 @@ namespace utopia
                 Write<Matrix> w(A);
                 Range rr = row_range(A);
 
-                
+
                 for (SizeType i = rr.begin(); i != rr.end(); i++) {
                     const SizeType ip1 = i+1;
                     const Scalar inv2h = (1 / (h * h));
 
-                    // diag 
+                    // diag
                     A.set(i, i, 2.0 * inv2h);
 
                     // upper diag
@@ -81,7 +81,7 @@ namespace utopia
             {
                 Write<Matrix> w (B);
                 Range B_range = row_range(B);
-                if(B_range.begin() == 0)    B.set(0,0, 0); 
+                if(B_range.begin() == 0)    B.set(0,0, 0);
                 if(B_range.end() == N)    B.set(N - 1, N - 1, 0);
             }
 
@@ -101,14 +101,14 @@ namespace utopia
             }
         }
 
-    
+
 
     /**
      * @brief      Gets the operators ( )
      *
-     * @param[in]  N         The problem size. 
+     * @param[in]  N         The problem size.
      * @param      A_out     The stifness matrix.
-     * @param      B_out     The 
+     * @param      B_out     The
      * @param      upbo_out  The upper bound.
      */
     void getOperators(const SizeType N, Matrix &A_out, Matrix &B_out, Vector &upbo_out)
@@ -121,9 +121,9 @@ namespace utopia
 
 
     private:
-        Matrix A; /*!< Laplacian  */  
-        Matrix B; /*!< Boundary operator  */  
-        Vector upbo; /*!< Constraints  */  
+        Matrix A; /*!< Laplacian  */
+        Matrix B; /*!< Boundary operator  */
+        Vector upbo; /*!< Constraints  */
     };
 
 }

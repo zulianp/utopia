@@ -158,12 +158,12 @@ namespace utopia {
             return x * x;
         }
     };
-    
-    
+
+
     class Pow {
     public:
         std::string getClass() const { return "Pow"; }
-        
+
         template<typename T>
         inline T apply(const T &x) const {
             return std::pow(x,a_);
@@ -246,7 +246,7 @@ namespace utopia {
     class Reciprocal {
     public:
         typedef T Scalar;
-        
+
         std::string getClass() const { return "Reciprocal"; }
 
         template<typename T2>
@@ -271,7 +271,7 @@ namespace utopia {
         template<typename T>
         inline static T apply(const T &left, const T &right) {
             using std::min;
-            
+
             return min(left, right);
         }
     };
@@ -296,7 +296,50 @@ namespace utopia {
         }
     };
 
-    
+    template<typename T>
+    class IsNonZero {
+    public:
+        std::string getClass() const { return "IsNonZero"; }
+
+        IsNonZero(const T tol = 0.)
+        : tol_(tol)
+        {}
+
+        template<typename TOther>
+        inline TOther apply(const TOther &x) const {
+            using std::abs;
+            return abs(x) > tol_;
+        }
+
+    private:
+        T tol_;
+    };
+
+    template<typename T>
+    class PlusIsNonZero {
+    public:
+        PlusIsNonZero(const T tol = 0.)
+        : is_non_zero_(tol)
+        {}
+
+        template<typename TOther>
+        inline TOther apply(const TOther &x, const TOther &y) const {
+            return is_non_zero_.apply(x) + is_non_zero_.apply(y);
+        }
+
+        inline const IsNonZero<T> &is_non_zero() const
+        {
+            return is_non_zero_;
+        }
+
+        std::string getClass() const { return "PlusIsNonZero"; }
+
+    private:
+        IsNonZero<T> is_non_zero_;
+
+    };
+
+
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP

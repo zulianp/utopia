@@ -176,7 +176,7 @@ namespace utopia {
                     Eval<WTensor,  Traits>::apply(expr.expr())
                     );
 
-			UTOPIA_TRACE_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };

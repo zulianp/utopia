@@ -10,256 +10,271 @@
 #include <memory>
 
 namespace utopia {
-	template<class Mesh>
-	class UIMesh {};// final : public Configurable { };
+    template<class Mesh>
+    class UIMesh {};// final : public Configurable { };
 
-	template<>
-	class UIMesh<libMesh::DistributedMesh> : public Configurable {
-	public:
-		template<class... Args>
-		UIMesh(Args &&...args)
-		: mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
-		{}
+    template<>
+    class UIMesh<libMesh::DistributedMesh> : public Configurable {
+    public:
+        template<class... Args>
+        UIMesh(Args &&...args)
+        : mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
+        {}
 
-		void read(Input &is) override {
-			std::string mesh_type = "square";
-			std::string path = "";
-	
-			empty_ = false;
+        void read(Input &is) override {
+            std::string mesh_type = "square";
+            std::string path = "";
 
-			int refinements = 0;
-			
-			double span[3] = { 0., 0., 0. };
+            empty_ = false;
 
-			double min_coords[3] = {0., 0., 0.};
-			double max_coords[3] = {1., 1., 1.};
+            int refinements = 0;
 
-			int n[3] = {5, 5, 5};
+            double span[3] = { 0., 0., 0. };
 
-			double scale = 1.;
+            double min_coords[3] = {0., 0., 0.};
+            double max_coords[3] = {1., 1., 1.};
 
-			std::string elem_type = "quad";
+            int n[3] = {5, 5, 5};
 
-			is.get("type", mesh_type);
-			is.get("elem-type", elem_type);
-			is.get("order", order);
-			is.get("path", path);
+            double scale = 1.;
+            double shift[3] = {0. , 0., 0.};
 
-			is.get("refinements", refinements);
-			
-			is.get("span-x", span[0]);
-			is.get("span-y", span[1]);
-			is.get("span-z", span[2]);
-			
-			is.get("min-x", min_coords[0]);
-			is.get("min-y", min_coords[1]);
-			is.get("min-z", min_coords[2]);
+            std::string elem_type = "quad";
 
-			is.get("max-x", max_coords[0]);
-			is.get("max-y", max_coords[1]);
-			is.get("max-z", max_coords[2]);
+            is.get("type", mesh_type);
+            is.get("elem-type", elem_type);
+            is.get("order", order);
+            is.get("path", path);
 
-			is.get("n-x", n[0]);
-			is.get("n-y", n[1]);
-			is.get("n-z", n[2]);
+            is.get("refinements", refinements);
 
-			is.get("scale", scale);
+            is.get("span-x", span[0]);
+            is.get("span-y", span[1]);
+            is.get("span-z", span[2]);
+
+            is.get("min-x", min_coords[0]);
+            is.get("min-y", min_coords[1]);
+            is.get("min-z", min_coords[2]);
+
+            is.get("max-x", max_coords[0]);
+            is.get("max-y", max_coords[1]);
+            is.get("max-z", max_coords[2]);
+
+            is.get("n-x", n[0]);
+            is.get("n-y", n[1]);
+            is.get("n-z", n[2]);
+
+            is.get("scale", scale);
+            is.get("shift-x", shift[0]);
+            is.get("shift-y", shift[1]);
+            is.get("shift-z", shift[2]);
 
 
-			if(mesh_type == "file") {
-				mesh_->read(path);
-			} else if(mesh_type == "line") {
-				libMesh::MeshTools::Generation::build_line(
-					*mesh_, n[0], min_coords[0], max_coords[0], get_type(elem_type, order, 1)
-				);
-			} else if(mesh_type == "square") {
-				libMesh::MeshTools::Generation::build_square(*mesh_,
-					n[0], n[1],
-					min_coords[0], max_coords[0],
-					min_coords[1], max_coords[1],
-					get_type(elem_type, order, 2)
-					);
-			} else if(mesh_type == "cube") {
-				libMesh::MeshTools::Generation::build_cube(*mesh_,
-					n[0], n[1], n[2],
-					min_coords[0], max_coords[0],
-					min_coords[1], max_coords[1],
-					min_coords[2], max_coords[2],
-					get_type(elem_type, order, 3)
-					);
-			} else if(mesh_type == "sphere") {
+            if(mesh_type == "file") {
+                mesh_->read(path);
+            } else if(mesh_type == "line") {
+                libMesh::MeshTools::Generation::build_line(
+                    *mesh_, n[0], min_coords[0], max_coords[0], get_type(elem_type, order, 1)
+                );
+            } else if(mesh_type == "square") {
+                libMesh::MeshTools::Generation::build_square(*mesh_,
+                    n[0], n[1],
+                    min_coords[0], max_coords[0],
+                    min_coords[1], max_coords[1],
+                    get_type(elem_type, order, 2)
+                    );
+            } else if(mesh_type == "cube") {
+                libMesh::MeshTools::Generation::build_cube(*mesh_,
+                    n[0], n[1], n[2],
+                    min_coords[0], max_coords[0],
+                    min_coords[1], max_coords[1],
+                    min_coords[2], max_coords[2],
+                    get_type(elem_type, order, 3)
+                    );
+            } else if(mesh_type == "sphere") {
 
-				double radius = 1.;
-				int sphere_refine = 2;
+                double radius = 1.;
+                int sphere_refine = 2;
 
-				is.get("radius", radius);
-				is.get("sphere-refine", sphere_refine);
+                is.get("radius", radius);
+                is.get("sphere-refine", sphere_refine);
 
-				libMesh::MeshTools::Generation::build_sphere(*mesh_,
-					radius,
-					sphere_refine,//const unsigned int nr = 2,
-					get_type(elem_type, order, 3)
-					//const unsigned int 	n_smooth = 2,
-					// const bool 	flat = true 
-				);
+                libMesh::MeshTools::Generation::build_sphere(*mesh_,
+                    radius,
+                    sphere_refine,//const unsigned int nr = 2,
+                    get_type(elem_type, order, 3)
+                    //const unsigned int 	n_smooth = 2,
+                    // const bool 	flat = true
+                );
 
-			} else if(mesh_type == "aabb") {
-				libMesh::DistributedMesh temp_mesh(mesh_->comm());
-				temp_mesh.read(path);
+            } else if(mesh_type == "aabb") {
+                libMesh::DistributedMesh temp_mesh(mesh_->comm());
+                temp_mesh.read(path);
 
-				auto bb = bounding_box(temp_mesh);
+                auto bb = bounding_box(temp_mesh);
 
-				if(temp_mesh.spatial_dimension() == 3) {
-					libMesh::MeshTools::Generation::build_cube(
-						*mesh_,
-						n[0], n[1], n[2],
-						bb.min()(0) - span[0], bb.max()(0) + span[0],
-						bb.min()(1) - span[1], bb.max()(1) + span[1],
-						bb.min()(2) - span[2], bb.max()(2) + span[2],
-						get_type(elem_type, order, 3)
-						);
+                if(temp_mesh.spatial_dimension() == 3) {
+                    libMesh::MeshTools::Generation::build_cube(
+                        *mesh_,
+                        n[0], n[1], n[2],
+                        bb.min()(0) - span[0], bb.max()(0) + span[0],
+                        bb.min()(1) - span[1], bb.max()(1) + span[1],
+                        bb.min()(2) - span[2], bb.max()(2) + span[2],
+                        get_type(elem_type, order, 3)
+                        );
 
-				} else {
-					libMesh::MeshTools::Generation::build_square(
-						*mesh_,
-						n[0], n[1],
-						bb.min()(0) - span[0], bb.max()(0) + span[0],
-						bb.min()(1) - span[1], bb.max()(1) + span[1],
-						get_type(elem_type, order, 2)
-						);
-				}
-			}
+                } else {
+                    libMesh::MeshTools::Generation::build_square(
+                        *mesh_,
+                        n[0], n[1],
+                        bb.min()(0) - span[0], bb.max()(0) + span[0],
+                        bb.min()(1) - span[1], bb.max()(1) + span[1],
+                        get_type(elem_type, order, 2)
+                        );
+                }
+            }
 
-			//build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
+            //build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
 
-			scale_mesh(scale, *mesh_);
+            scale_mesh(scale, *mesh_);
+            shift_mesh(shift, *mesh_);
 
-			refine(refinements, *mesh_);
+            refine(refinements, *mesh_);
 
-			bool convert_to_triangles = false;
-			is.get("convert-to-triangles", convert_to_triangles);
+            bool convert_to_triangles = false;
+            is.get("convert-to-triangles", convert_to_triangles);
 
-			if(convert_to_triangles) {
-				libMesh::MeshTools::Modification::all_tri(*mesh_);
-			}
+            if(convert_to_triangles) {
+                libMesh::MeshTools::Modification::all_tri(*mesh_);
+            }
 
-			if(mesh_type == "file" && order == 2) {
-				mesh_->all_second_order();
-			}
-		}
+            if(mesh_type == "file" && order == 2) {
+                mesh_->all_second_order();
+            }
+        }
 
-		inline libMesh::DistributedMesh &mesh()
-		{
-			assert(mesh_);
-			return *mesh_;
-		}
+        inline libMesh::DistributedMesh &mesh()
+        {
+            assert(mesh_);
+            return *mesh_;
+        }
 
-		inline std::shared_ptr<libMesh::DistributedMesh> mesh_ptr()
-		{
-			return mesh_;
-		}
+        inline std::shared_ptr<libMesh::DistributedMesh> mesh_ptr()
+        {
+            return mesh_;
+        }
 
-		inline bool empty() const {
-			return empty_;
-		}
+        inline bool empty() const {
+            return empty_;
+        }
 
-	private:
-		int order = 1;
-		std::shared_ptr<libMesh::DistributedMesh> mesh_;
-		bool empty_;
+    private:
+        int order = 1;
+        std::shared_ptr<libMesh::DistributedMesh> mesh_;
+        bool empty_;
 
-		////////////////////////////////////////////////
+        ////////////////////////////////////////////////
 
-		libMesh::ElemType get_type(
-			const std::string &elem_type,
-			const int order,
-			const int dim) const
-		{
-		    if(dim == 3) {
-		        libMesh::ElemType type = libMesh::HEX8;
+        libMesh::ElemType get_type(
+            const std::string &elem_type,
+            const int order,
+            const int dim) const
+        {
+            if(dim == 3) {
+                libMesh::ElemType type = libMesh::HEX8;
 
-		        if(elem_type == "tet") {
-		            type = libMesh::TET4;
-		        }
+                if(elem_type == "tet") {
+                    type = libMesh::TET4;
+                }
 
-		        if(order == 2) {
-		            type = libMesh::HEX20;
+                if(order == 2) {
+                    type = libMesh::HEX20;
 
-		            if(elem_type == "tet") {
-		                type = libMesh::TET10;
-		            }
-		        }
+                    if(elem_type == "tet") {
+                        type = libMesh::TET10;
+                    }
+                }
 
-		        if(elem_type == "prism") {
-		        	type = libMesh::PRISM6;
+                if(elem_type == "prism") {
+                    type = libMesh::PRISM6;
 
-		        	if(order == 2) {
-		        		type = libMesh::PRISM15;
-		        	}
-		        }
+                    if(order == 2) {
+                        type = libMesh::PRISM15;
+                    }
+                }
 
-		        if(elem_type == "pyramid") {
-		        	type = libMesh::PYRAMID5;
+                if(elem_type == "pyramid") {
+                    type = libMesh::PYRAMID5;
 
-		        	if(order == 2) {
-		        		type = libMesh::PYRAMID13;
-		        	}
-		        }
+                    if(order == 2) {
+                        type = libMesh::PYRAMID13;
+                    }
+                }
 
-		        return type;
+                return type;
 
-		    } else if(dim == 2) {
-		        libMesh::ElemType type = libMesh::QUAD4;
+            } else if(dim == 2) {
+                libMesh::ElemType type = libMesh::QUAD4;
 
-		        if(elem_type == "tri") {
-		            type = libMesh::TRI3;
-		        }
-		        
-		        if(order == 2) {
-		            type = libMesh::QUAD8;
+                if(elem_type == "tri") {
+                    type = libMesh::TRI3;
+                }
 
-		            if(elem_type == "tri") {
-		                type = libMesh::TRI6;
-		            }
-		        }
+                if(order == 2) {
+                    type = libMesh::QUAD8;
 
-		        return type;
-		    } else if(dim == 1) {
-		    	libMesh::ElemType type = libMesh::EDGE2;
+                    if(elem_type == "tri") {
+                        type = libMesh::TRI6;
+                    }
+                }
 
-		    	if(order == 2) {
-		    		type = libMesh::EDGE4;
-		    	}
+                return type;
+            } else if(dim == 1) {
+                libMesh::ElemType type = libMesh::EDGE2;
 
-		    	return type;
-		    }
+                if(order == 2) {
+                    type = libMesh::EDGE4;
+                }
 
-		    return libMesh::TRI3;
-		}
+                return type;
+            }
 
-		static void refine(const int n_refs, libMesh::MeshBase &mesh)
-		{
-		    if(n_refs <= 0) return;
-		    
-		    libMesh::MeshRefinement mesh_refinement(mesh);
-		    mesh_refinement.make_flags_parallel_consistent();
-		    mesh_refinement.uniformly_refine(n_refs);
-		}
+            return libMesh::TRI3;
+        }
 
-		static void scale_mesh(const double &scale_factor, libMesh::MeshBase &mesh)
-		{
-			if(scale_factor == 1.) return;
-			assert(scale_factor > 0.);
+        static void refine(const int n_refs, libMesh::MeshBase &mesh)
+        {
+            if(n_refs <= 0) return;
 
-			// for(auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
-			for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
+            libMesh::MeshRefinement mesh_refinement(mesh);
+            mesh_refinement.make_flags_parallel_consistent();
+            mesh_refinement.uniformly_refine(n_refs);
+        }
 
-				for(int i = 0; i < LIBMESH_DIM; ++i) {
-					(**it)(i) *= scale_factor;
-				}
-			}
-		}
-	};
+        static void scale_mesh(const double &scale_factor, libMesh::MeshBase &mesh)
+        {
+            if(scale_factor == 1.) return;
+            assert(scale_factor > 0.);
+
+            for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
+
+                for(int i = 0; i < LIBMESH_DIM; ++i) {
+                    (**it)(i) *= scale_factor;
+                }
+            }
+        }
+
+        static void shift_mesh(const double t[3], libMesh::MeshBase &mesh)
+        {
+            if(0. == t[0] && 0. == t[1] && 0. == t[2]) return;
+
+            for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
+                for(int i = 0; i < LIBMESH_DIM; ++i) {
+                    (**it)(i) += t[i];
+                }
+            }
+        }
+    };
 }
 
 

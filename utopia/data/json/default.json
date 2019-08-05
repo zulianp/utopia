@@ -24,7 +24,8 @@
             "atol"    : 1e-16,
             "rtol"    : 1e-8,
             "stol"    : 1e-16,
-            "max-it" : 1000
+            "max-it" : 1000,
+            "solver_package" : "petsc"
         }
     }
 }

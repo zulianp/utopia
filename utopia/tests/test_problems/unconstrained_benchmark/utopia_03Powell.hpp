@@ -8,15 +8,15 @@
 
 namespace utopia
 {
-   
+
  template<class Matrix, class Vector>
-    class Powell03 final: public UnconstrainedTestFunction<Matrix, Vector> 
+    class Powell03 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        Powell03() 
+        Powell03()
         {
             assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
@@ -26,32 +26,32 @@ namespace utopia
             {
                 const Write<Vector> write1(x_init_);
                 const Write<Vector> write2(x_exact_);
-                
+
                 x_init_.set(0, 0.0);
                 x_init_.set(1, 1.0);
 
                 x_exact_.set(0, 1.09815933e-5);
-                x_exact_.set(1, 9.106146738);                
+                x_exact_.set(1, 9.106146738);
             }
 
         }
-        
+
         std::string name() const override
         {
-            return "Powell badly scaled"; 
+            return "Powell badly scaled";
         }
 
         SizeType dim() const override
         {
-            return 2.0; 
+            return 2.0;
         }
 
 
-        bool value(const Vector &point, typename Vector::Scalar &result) const override 
+        bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 2);
@@ -61,20 +61,20 @@ namespace utopia
             const Scalar x = point.get(0);
             const Scalar y = point.get(1);
 
-            Scalar a = ((10000.0 * x * y) -1.0); 
-            Scalar b = std::exp(-x) + std::exp(-y) - 1.0001; 
+            Scalar a = ((10000.0 * x * y) -1.0);
+            Scalar b = std::exp(-x) + std::exp(-y) - 1.0001;
 
-            result = a*a + b*b; 
+            result = a*a + b*b;
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &result) const override 
+        bool gradient(const Vector &point, Vector &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
-            
+
             assert(point.size().get(0) == 2);
             result = zeros(2);
 
@@ -90,7 +90,7 @@ namespace utopia
 
             Scalar f2 = std::exp(-x) + std::exp(-y) - 1.0001;
             Scalar df2dx1 = -std::exp(-x);
-            Scalar df2dx2 = -std::exp(-y);            
+            Scalar df2dx2 = -std::exp(-y);
 
             Scalar a = (2.0 * f1 * df1dx1) + (2.0 * f2 * df2dx1);
             Scalar b = (2.0 * f1 * df1dx2) + (2.0 * f2 * df2dx2);
@@ -101,11 +101,11 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override 
+        bool hessian(const Vector &point, Matrix &result) const override
         {
             if( mpi_world_size() > 1){
-                utopia_error("Function is not supported in parallel... \n"); 
-                return false; 
+                utopia_error("Function is not supported in parallel... \n");
+                return false;
             }
 
             assert(point.size().get(0) == 2);
@@ -125,7 +125,7 @@ namespace utopia
 
             const Scalar f2 = std::exp(-x) + std::exp(-y) - 1.0001;
             const Scalar df2dx1 = -std::exp(-x);
-            const Scalar df2dx2 = -std::exp(-y);            
+            const Scalar df2dx2 = -std::exp(-y);
 
             const Scalar d2f2dx11 = std::exp(-x);
             const Scalar d2f2dx22 = std::exp(-y);
@@ -143,23 +143,23 @@ namespace utopia
 
         Vector initial_guess() const override
         {
-            return x_init_; 
+            return x_init_;
         }
 
         const Vector & exact_sol() const override
         {
-            return x_exact_; 
+            return x_exact_;
         }
 
         Scalar min_function_value() const override
         {
-            return 0; 
+            return 0;
         }
 
 
-    private: 
-        Vector x_init_; 
-        Vector x_exact_; 
+    private:
+        Vector x_init_;
+        Vector x_exact_;
 
     };
 }

@@ -93,7 +93,7 @@
          */
          bool boolean_restrict_or(const Vector &x, Vector &x_new) override
         {
-        	assert(false && "implement me");
+            assert(false && "implement me");
             // static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
 
             // // x_new = local_zeros(local_size(*_R).get(0));
@@ -171,10 +171,10 @@
             assert(_Pr || _I);
 
             if(!_Pr) {
-            	return restrict(x, x_new);
+                return restrict(x, x_new);
             } else {
-            	x_new = *_Pr * x;
-        	}
+                x_new = *_Pr * x;
+            }
             return true;
         }
 
@@ -186,7 +186,7 @@
 
         Scalar projection_inf_norm() const override
         {
-        	m_utopia_warning_once("projection_inf_norm not implemented properly");
+            m_utopia_warning_once("projection_inf_norm not implemented properly");
             return norm_infty(transpose(*_I));
         }
 

@@ -5,104 +5,104 @@
 
 namespace utopia {
 
-	static void laplacian_test(LibMeshFunctionSpace &V)
-	{
-		UVector x = local_values(V.dof_map().n_local_dofs(), 10.);
-		auto rhs = coeff(1.);
+    static void laplacian_test(LibMeshFunctionSpace &V)
+    {
+        UVector x = local_values(V.dof_map().n_local_dofs(), 10.);
+        auto rhs = coeff(1.);
 
-		auto u  = trial(V);
-		auto v  = test(V);
+        auto u  = trial(V);
+        auto v  = test(V);
 
-		auto uk = interpolate(x, u);
+        auto uk = interpolate(x, u);
 
-		auto f1 = 0.5 * inner(grad(uk), grad(uk)) * dX;
-		auto f2 = inner(rhs, uk) * dX;
+        auto f1 = 0.5 * inner(grad(uk), grad(uk)) * dX;
+        auto f2 = inner(rhs, uk) * dX;
 
-		double energy1 = -1.;
-		utopia::assemble(f1, energy1);
+        double energy1 = -1.;
+        utopia::assemble(f1, energy1);
 
-		double energy2 = -1.;
-		utopia::assemble(f2, energy2);
+        double energy2 = -1.;
+        utopia::assemble(f2, energy2);
 
-		double energy = energy1 - energy2;
+        double energy = energy1 - energy2;
 
-		utopia_test_assert(std::abs(energy1) < 1e-8);
+        utopia_test_assert(std::abs(energy1) < 1e-8);
 
-		std::cout << std::abs(energy) << std::endl;
+        std::cout << std::abs(energy) << std::endl;
 
-		USparseMatrix H;
-		UVector g;
+        USparseMatrix H;
+        UVector g;
 
-		utopia::assemble(inner(grad(u), grad(v)) * dX == inner(rhs, v) * dX, H, g);
-		apply_boundary_conditions(V.dof_map(), H, g);
+        utopia::assemble(inner(grad(u), grad(v)) * dX == inner(rhs, v) * dX, H, g);
+        apply_boundary_conditions(V.dof_map(), H, g);
 
-		Factorization<USparseMatrix, UVector> solver;
-		solver.solve(H, g, x);
+        Factorization<USparseMatrix, UVector> solver;
+        solver.solve(H, g, x);
 
-		double energy_after = -1.;
-		utopia::assemble(
-			// inner_volume_only_integral(
-			integral(
-				0.5 * inner(grad(uk), grad(uk)) - inner(rhs, uk)
-			), 
-			energy_after
-		);
+        double energy_after = -1.;
+        utopia::assemble(
+            // inner_volume_only_integral(
+            integral(
+                0.5 * inner(grad(uk), grad(uk)) - inner(rhs, uk)
+            ),
+            energy_after
+        );
 
-		utopia_test_assert(std::abs(energy) > std::abs(energy_after));
-		std::cout << std::abs(energy_after) << std::endl;
+        utopia_test_assert(std::abs(energy) > std::abs(energy_after));
+        // std::cout << std::abs(energy_after) << std::endl;
 
-		write("test.e", V, x);
-	}
+        // write("test.e", V, x);
+    }
 
-	static void area_test(LibMeshFunctionSpace &V)
-	{
-		auto &dof_map = V.dof_map();
-		auto u = trial(V);
-		UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());		
-		x.set(1.);
-		
-		double area = -1.;
-		
-		utopia::assemble(
-			surface_integral(interpolate(x, u), 0),
-			area
-		);
+    static void area_test(LibMeshFunctionSpace &V)
+    {
+        auto &dof_map = V.dof_map();
+        auto u = trial(V);
+        UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        x.set(1.);
 
-		std::cout << "area: " << area << std::endl;
-	}
+        double area = -1.;
 
-	void run_energy_test(libMesh::LibMeshInit &init)
-	{
-		libMesh::DistributedMesh mesh(init.comm());
+        utopia::assemble(
+            surface_integral(interpolate(x, u), 0),
+            area
+        );
 
-		int n = 10;
-		libMesh::MeshTools::Generation::build_square(
-			mesh,
-			n,  n,
-			0., 1.,
-			0., 1.,
-			libMesh::QUAD4
-		);
+        std::cout << "area: " << area << std::endl;
+    }
 
-		LibMeshFunctionSpace V(mesh); 
+    void EnergyTest::run(Input &in)
+    {
+        libMesh::DistributedMesh mesh(this->comm());
 
-		auto u = trial(V);
-		init_constraints( constraints(
-			boundary_conditions(u == coeff(0), {1, 3}),
-			// boundary_conditions(u == coeff(1), {0, 2})
-			boundary_conditions(u == coeff(0), {0, 2})
-		));
-		
+        int n = 10;
+        libMesh::MeshTools::Generation::build_square(
+            mesh,
+            n,  n,
+            0., 1.,
+            0., 1.,
+            libMesh::QUAD4
+        );
 
-		V.initialize();
+        LibMeshFunctionSpace V(mesh);
+
+        auto u = trial(V);
+        init_constraints( constraints(
+            boundary_conditions(u == coeff(0), {1, 3}),
+            // boundary_conditions(u == coeff(1), {0, 2})
+            boundary_conditions(u == coeff(0), {0, 2})
+        ));
 
 
-		//////////////////////////////////////////
-		//////////////////////////////////////////
+        V.initialize();
 
-		laplacian_test(V);
-		area_test(V);
 
-		//////////////////////////////////////////
-	}
+        //////////////////////////////////////////
+        //////////////////////////////////////////
+
+        laplacian_test(V);
+        area_test(V);
+
+        //////////////////////////////////////////
+    }
 }

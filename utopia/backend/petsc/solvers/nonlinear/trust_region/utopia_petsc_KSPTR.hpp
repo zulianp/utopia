@@ -5,18 +5,18 @@
 
 namespace utopia
 {
-	/**
-	 * @brief      Interface to use petsc KSP in TR context \n
-	 *				There are 5 different possibilities, grouped as follows: \n
-	 *				1. gltr, stcg, nash, qcg: \n
-	 										Uses preconditioned conjugate gradient to compute an approximate minimizer of the quadratic function.  \n
-											\f$ q(s) = g^T * s + .5 * s^T * H * s   \f$  \n
-											subject to  \f$ || s || <= delta  \f$ \n
-					2. cgne				: \n
-											Applies the preconditioned conjugate gradient method to the normal equations without explicitly forming A^t*A. \n
-										  	Therefore, it's very suitable to use in combination with TR_NormalEquation, LeastSquaresFunction and solution method: dogleg \n
-										  	Note, that CGNE is a general-purpose non-symmetric method. \n
-	 */
+    /**
+     * @brief      Interface to use petsc KSP in TR context \n
+     *				There are 5 different possibilities, grouped as follows: \n
+     *				1. gltr, stcg, nash, qcg: \n
+                                             Uses preconditioned conjugate gradient to compute an approximate minimizer of the quadratic function.  \n
+                                            \f$ q(s) = g^T * s + .5 * s^T * H * s   \f$  \n
+                                            subject to  \f$ || s || <= delta  \f$ \n
+                    2. cgne				: \n
+                                            Applies the preconditioned conjugate gradient method to the normal equations without explicitly forming A^t*A. \n
+                                              Therefore, it's very suitable to use in combination with TR_NormalEquation, LeastSquaresFunction and solution method: dogleg \n
+                                              Note, that CGNE is a general-purpose non-symmetric method. \n
+     */
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class KSP_TR {};
 
@@ -24,28 +24,28 @@ namespace utopia
     template<typename Matrix, typename Vector>
     class KSP_TR<Matrix, Vector, PETSC>: public TRSubproblem<Matrix, Vector>
     {
-		typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector) Scalar;
 
-		typedef utopia::KSPSolver<Matrix, Vector> KSPSolver;
-		typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
-		
+        typedef utopia::KSPSolver<Matrix, Vector> KSPSolver;
+        typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
+
         typedef utopia::Preconditioner<Vector> Preconditioner;
-		typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
+        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
 
-		static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
+        static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
 
-    	KSP_TR(): TRSubproblem()//,{"stcg", "nash", "cgne", "gltr", "qcg"})
+        KSP_TR(): TRSubproblem()//,{"stcg", "nash", "cgne", "gltr", "qcg"})
         {
-        	ksp_.ksp_type("stcg");
-        	ksp_.pc_type("jacobi");
+            ksp_.ksp_type("stcg");
+            ksp_.pc_type("jacobi");
         }
 
         KSP_TR(const std::string type, const std::string pc_type = "jacobi"): TRSubproblem()
         {
-        	ksp_.pc_type(pc_type);
-        	ksp_.ksp_type(type);
+            ksp_.pc_type(pc_type);
+            ksp_.ksp_type(type);
         }
 
 
@@ -55,8 +55,8 @@ namespace utopia
         {
             TRSubproblem::read(in);
 
-            std::string pc_type_aux; 
-            std::string ksp_type_aux; 
+            std::string pc_type_aux;
+            std::string ksp_type_aux;
 
             in.get("pc_type", pc_type_aux);
             in.get("ksp_type", ksp_type_aux);
@@ -66,12 +66,12 @@ namespace utopia
 
         }
 
-        virtual void ksp_type(const std::string & type) 
+        virtual void ksp_type(const std::string & type)
         {
             ksp_.ksp_type(type);
         }
 
-        virtual void pc_type(const std::string & type) 
+        virtual void pc_type(const std::string & type)
         {
             ksp_.pc_type(type);
         }
@@ -81,29 +81,29 @@ namespace utopia
         {
             TRSubproblem::print_usage(os);
 
-            this->print_param_usage(os, "pc_type", "string", "Type of petsc preconditioner.", "jacobi"); 
-            this->print_param_usage(os, "ksp_type", "string", "Type of ksp solver to be used.", "stcg"); 
+            this->print_param_usage(os, "pc_type", "string", "Type of petsc preconditioner.", "jacobi");
+            this->print_param_usage(os, "ksp_type", "string", "Type of ksp solver to be used.", "stcg");
         }
 
-	public:
+    public:
         virtual KSP_TR<Matrix, Vector, PETSC>* clone() const override {
-        	return new KSP_TR<Matrix, Vector, PETSC>(*this);
+            return new KSP_TR<Matrix, Vector, PETSC>(*this);
         }
 
         virtual bool apply(const Vector &b, Vector &x) override
-    	{
-    		ksp_.apply(b, x);
-    		return true;
-    	}
+        {
+            ksp_.apply(b, x);
+            return true;
+        }
 
-	    /**
-	     * @brief      Update function.
-	     */
-	    virtual void update(const std::shared_ptr<const Matrix> &op) override
-	    {
-	         ksp_.update(op);
-	         set_ksp_options(ksp_.implementation());
-	    }
+        /**
+         * @brief      Update function.
+         */
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        {
+             ksp_.update(op);
+             set_ksp_options(ksp_.implementation());
+        }
 
 
         virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
@@ -112,52 +112,52 @@ namespace utopia
         }
 
 
-	private:
+    private:
 
-	   	/**
-	     * @brief      Sets the default options for PETSC KSP solver. \n
-	     *             Default: ST-CG
-	     *
-	     * @param      ksp   The ksp
-	     */
-	    void set_ksp_options(KSP & ksp)
-	    {
-	    	PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
-	    	ierr = KSPSetFromOptions(ksp);
+           /**
+         * @brief      Sets the default options for PETSC KSP solver. \n
+         *             Default: ST-CG
+         *
+         * @param      ksp   The ksp
+         */
+        void set_ksp_options(KSP & ksp)
+        {
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+            ierr = KSPSetFromOptions(ksp);
 
-	        ierr = KSPSetType(ksp, ksp_.ksp_type().c_str());
-	        ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+            ierr = KSPSetType(ksp, ksp_.ksp_type().c_str());
+            ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
 
-	        if(!ksp_.get_preconditioner())
-	        {
-	            PC pc;
-	            ierr = KSPGetPC(ksp, &pc);
-	            ierr = PCSetType(pc, ksp_.pc_type().c_str());
-	        }
+            if(!ksp_.get_preconditioner())
+            {
+                PC pc;
+                ierr = KSPGetPC(ksp, &pc);
+                ierr = PCSetType(pc, ksp_.pc_type().c_str());
+            }
 
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)
-			if(ksp_.ksp_type() == "qcg")
-				ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius());
-		    else if(ksp_.ksp_type() == "gltr")
-		        ierr = KSPGLTRSetRadius(ksp, this->current_radius());
-			else if(ksp_.ksp_type() == "nash")
-		        ierr = KSPNASHSetRadius(ksp, this->current_radius());
-			else
-		        ierr = KSPSTCGSetRadius(ksp, this->current_radius());
+            if(ksp_.ksp_type() == "qcg")
+                ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius());
+            else if(ksp_.ksp_type() == "gltr")
+                ierr = KSPGLTRSetRadius(ksp, this->current_radius());
+            else if(ksp_.ksp_type() == "nash")
+                ierr = KSPNASHSetRadius(ksp, this->current_radius());
+            else
+                ierr = KSPSTCGSetRadius(ksp, this->current_radius());
 #else
-		    KSPCGSetRadius(ksp, this->current_radius());
+            KSPCGSetRadius(ksp, this->current_radius());
 #endif
-	        ierr = KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT,  this->max_it());
-	    }
+            ierr = KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT,  this->max_it());
+        }
 
     protected:
-        KSPSolver ksp_; 
+        KSPSolver ksp_;
     };
 
     template<typename Matrix, typename Vector>
     class SteihaugToint<Matrix, Vector, PETSC> final: public KSP_TR<Matrix, Vector, PETSC> {
 
-    	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
+        static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
         SteihaugToint(const std::string &preconditioner = "jacobi")
@@ -168,7 +168,7 @@ namespace utopia
         }
 
         SteihaugToint<Matrix, Vector, PETSC>* clone() const override {
-        	return new SteihaugToint<Matrix, Vector, PETSC>(*this);
+            return new SteihaugToint<Matrix, Vector, PETSC>(*this);
         }
 
     };
@@ -179,7 +179,7 @@ namespace utopia
     template<typename Matrix, typename Vector>
     class Nash<Matrix, Vector, PETSC> final: public KSP_TR<Matrix, Vector, PETSC> {
 
-    	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
+        static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
         Nash(const std::string &preconditioner = "jacobi")
@@ -190,18 +190,18 @@ namespace utopia
         }
 
         Nash<Matrix, Vector, PETSC>* clone() const override {
-        	return new Nash<Matrix, Vector, PETSC>(*this);
+            return new Nash<Matrix, Vector, PETSC>(*this);
         }
     };
 
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class Lanczos {};
 
-   	template<typename Matrix, typename Vector>
+       template<typename Matrix, typename Vector>
     class Lanczos<Matrix, Vector, PETSC> final: public KSP_TR<Matrix, Vector, PETSC> {
 
-    	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
-    
+        static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
+
     public:
         Lanczos(const std::string &preconditioner = "jacobi")
         : KSP_TR<Matrix, Vector, PETSC>()
@@ -211,7 +211,7 @@ namespace utopia
         }
 
         Lanczos<Matrix, Vector, PETSC>* clone() const override {
-        	return new Lanczos<Matrix, Vector, PETSC>(*this);
+            return new Lanczos<Matrix, Vector, PETSC>(*this);
         }
 
     };
@@ -222,17 +222,17 @@ namespace utopia
     template<typename Matrix, typename Vector>
     class CGNE<Matrix, Vector, PETSC> final: public KSP_TR<Matrix, Vector, PETSC> {
 
-    	static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
-    
+        static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
+
     public:
         CGNE(const std::string &preconditioner = "jacobi"): KSP_TR<Matrix, Vector, PETSC>()
         {
             this->ksp_.pc_type(preconditioner);
-            this->ksp_.ksp_type("cgne");            
+            this->ksp_.ksp_type("cgne");
         }
 
         CGNE<Matrix, Vector, PETSC>* clone() const override {
-        	return new CGNE<Matrix, Vector, PETSC>(*this);
+            return new CGNE<Matrix, Vector, PETSC>(*this);
         }
 
     };

@@ -10,7 +10,7 @@ RUN apk add --no-cache \
 
 #############################################################################
 
-RUN cd /tmp/ && curl -L http://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1.tar.gz | tar xz 
+RUN cd /tmp/ && curl -L http://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1.tar.gz | tar xz
 RUN cd /tmp/ && cd `ls | grep mpich` && \
     ./configure --prefix=/opt/mpich
 
@@ -40,9 +40,9 @@ RUN cd trilinos_cloned && mkdir build && cd build && \
       -DTpetraCore_ENABLE_EXPLICIT_INSTANTIATION=ON \
       -DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
       -DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON \
-      -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON 
+      -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON
 
-      
+
 RUN cd trilinos_cloned && cd build && make && make install
 
 ENV TRILINOS_DIR /opt/trilinos

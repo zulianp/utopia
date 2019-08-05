@@ -1,9 +1,11 @@
 <transfer>
 	<!-- <type>approx-l2-projection</type> -->
 	<!-- <type>interpolation</type> -->
-	<type>l2-projection</type>
-	<biorth-basis>0</biorth-basis>
-	<function>-z</function>
+	<!-- <type>l2-projection</type> -->
+
+	<type>pseudo-l2-projection</type>
+	<function>-x</function>
+	<!-- <write-operators-to-disk>true</write-operators-to-disk> -->
 	<!-- <enumerate-nodes>true</enumerate-nodes> -->
 
 	<!-- <force-shell>true</force-shell> -->
@@ -17,9 +19,9 @@
 			<type>cube</type>
 			<elem-type>hex</elem-type>
 			<order>1</order>			
-			<n-x>16</n-x>
-			<n-y>80</n-y>
-			<n-z>180</n-z>
+			<n-x>4</n-x>
+			<n-y>10</n-y>
+			<n-z>10</n-z>
 
 			<min-x>0.</min-x>
 			<min-y>0.</min-y>
@@ -29,7 +31,8 @@
 			<max-y>5.</max-y>
 			<max-z>10.</max-z>
 		</mesh>
-		<space></space>
+		<space>
+		</space>
 	</master>
 
 	<!-- SLAVE -->
@@ -37,10 +40,10 @@
 		<mesh>
 			<type>cube</type>
 			<elem-type>hex</elem-type>
-			<order>1</order>			
-			<n-x>16</n-x>
-			<n-y>80</n-y>
-			<n-z>180</n-z>
+			<order>2</order>			
+			<n-x>8</n-x>
+			<n-y>20</n-y>
+			<n-z>20</n-z>
 
 			<min-x>0.</min-x>
 			<min-y>0.</min-y>
@@ -50,7 +53,13 @@
 			<max-y>5.</max-y>
 			<max-z>10.</max-z>
 		</mesh>
-		<space></space>
+		<space>
+			<variables>
+				<entry>
+					<order>2</order>
+				</entry>
+			</variables>
+		</space>
 	</slave>
 	
 </transfer>

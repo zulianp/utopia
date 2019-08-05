@@ -1,7 +1,7 @@
 #ifndef UTOPIA_TRANSFER_APP
 #define UTOPIA_TRANSFER_APP
 
-#include "utopia_App.hpp"
+#include "utopia_FEApp.hpp"
 #include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_libmesh.hpp"
@@ -11,34 +11,32 @@
 
 
 namespace utopia {
-	class LocalAssembler;
-	class Local2Global;
+    class LocalAssembler;
+    class Local2Global;
 
-	class TransferApp final : public App {
-	public:
-		class InputSpace;
+    class TransferApp final : public FEApp {
+    public:
+        class InputSpace;
 
-		~TransferApp();
-		TransferApp();
+        ~TransferApp();
+        TransferApp();
 
-		void init(libMesh::LibMeshInit &init);
-		void run(const std::string &conf_file_path);
+        void run(Input &in) override;
 
-		static std::string command() { return "-transfer"; }
+        static std::string command() { return "-transfer"; }
 
-	private:
-		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
+    private:
 
 #ifdef WITH_TINY_EXPR
-		std::shared_ptr<SymbolicFunction> fun;
+        std::shared_ptr<SymbolicFunction> fun;
 #else
-		std::shared_ptr<ConstantCoefficient<double, 0>> fun;
+        std::shared_ptr<ConstantCoefficient<double, 0>> fun;
 #endif //WITH_TINY_EXPR
 
-		bool fun_is_constant;
-		bool write_operators_to_disk;
+        bool fun_is_constant;
+        bool write_operators_to_disk;
 
-	};
+    };
 }
 
 

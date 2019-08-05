@@ -1,15 +1,15 @@
-// /*   Example building stiffness matrix and right hand side for a Poisson equation 
+// /*   Example building stiffness matrix and right hand side for a Poisson equation
 //  using nodal (Hgrad) elements.
- 
+
 //  div grad u = f in Omega
 //  u = 0 on Gamma
- 
+
 //  Discrete linear system for nodal coefficients(x):
 //  Kx = b
- 
+
 //  K - HGrad stiffness matrix
 //  b - right hand side vector
- 
+
 //  int NX              - num intervals in x direction (assumed box domain, 0,1)
 //  int NY              - num intervals in y direction (assumed box domain, 0,1)
 //  int NZ              - num intervals in z direction (assumed box domain, 0,1)
@@ -117,11 +117,11 @@
 //           outStream = Teuchos::rcp(&std::cout, false);
 //         else
 //           outStream = Teuchos::rcp(&bhs, false);
-        
+
 //         // Save the format state of the original std::cout.
 //         Teuchos::oblackholestream oldFormatState;
 //         oldFormatState.copyfmt(std::cout);
-        
+
 //         *outStream \
 //         << "===============================================================================\n" \
 //         << "|                                                                             |\n" \
@@ -129,48 +129,48 @@
 //         << "|                   Poisson Equation on Hexahedral Mesh                       |\n" \
 //         << "|                                                                             |\n" \
 //         << "===============================================================================\n";
-        
-        
+
+
 //         // ************************************ GET INPUTS **************************************
-        
+
 //         int NX            = atoi(argv[1]);  // num intervals in x direction (assumed box domain, 0,1)
 //         int NY            = atoi(argv[2]);  // num intervals in y direction (assumed box domain, 0,1)
 //         int NZ            = atoi(argv[3]);  // num intervals in z direction (assumed box domain, 0,1)
-        
+
 //         // *********************************** CELL TOPOLOGY **********************************
-        
+
 //         // Get cell topology for base hexahedron
 //         CellTopology hex_8(shards::getCellTopologyData<shards::Hexahedron<8> >() );
-        
+
 //         // Get dimensions
 //         int numNodesPerElem = hex_8.getNodeCount();
 //         int spaceDim = hex_8.getDimension();
-        
+
 //         // *********************************** GENERATE MESH ************************************
-        
+
 //         *outStream << "Generating mesh ... \n\n";
-        
+
 //         *outStream << "   NX" << "   NY" << "   NZ\n";
 //         *outStream << std::setw(5) << NX <<
 //         std::setw(5) << NY <<
 //         std::setw(5) << NZ << "\n\n";
-        
+
 //         // Print mesh information
 //         int numElems = NX*NY*NZ;
 //         int numNodes = (NX+1)*(NY+1)*(NZ+1);
 //         *outStream << " Number of Elements: " << numElems << " \n";
 //         *outStream << "    Number of Nodes: " << numNodes << " \n\n";
-        
+
 //         // Cube
 //         double leftX = 0.0, rightX = 1.0;
 //         double leftY = 0.0, rightY = 1.0;
 //         double leftZ = 0.0, rightZ = 1.0;
-        
+
 //         // Mesh spacing
 //         double hx = (rightX-leftX)/((double)NX);
 //         double hy = (rightY-leftY)/((double)NY);
 //         double hz = (rightZ-leftZ)/((double)NZ);
-        
+
 //         // Get nodal coordinates
 //         // FieldContainer<double> nodeCoord(numNodes, spaceDim);
 //         // FieldContainer<int> nodeOnBoundary(numNodes);
@@ -204,7 +204,7 @@
 //         }
 //         fcoordout.close();
 // #endif
-        
+
 //         // Element to Node map
 //         //FieldContainer<int> elemToNode(numElems, numNodesPerElem);
 //         Kokkos::DynRankView<int,DeviceSpaceType> elemToNode("elemToNode",numElems, numNodesPerElem);
@@ -240,54 +240,54 @@
 //         }
 //         fe2nout.close();
 // #endif
-        
-        
+
+
 //         // ************************************ CUBATURE **************************************
-        
+
 //         *outStream << "Getting cubature ... \n\n";
-        
+
 //         // Get numerical integration points and weights
 //         DefaultCubatureFactory  cubFactory;
-        
+
 //         //auto cubature = DefaultCubatureFactory::create<DeviceSpaceType,ValueType,ValueType>(cellTopo, order);
-        
+
 //         int cubDegree = 2;
 //         auto hexCub = cubFactory.create<DeviceSpaceType,ValueType,ValueType>(hex_8, cubDegree);
-        
+
 //         int cubDim       = hexCub->getDimension();
 //         int numCubPoints = hexCub->getNumPoints();
-        
+
 //         //FieldContainer<double> cubPoints(numCubPoints, cubDim);
 //         //FieldContainer<double> cubWeights(numCubPoints);
 //         DynRankView cubPoints("cubPoints",numCubPoints, cubDim);
 //         DynRankView cubWeights("cubWeights",numCubPoints);
-        
+
 //         hexCub->getCubature(cubPoints, cubWeights);
-        
-        
+
+
 //         // ************************************** BASIS ***************************************
-        
+
 //         *outStream << "Getting basis ... \n\n";
-        
+
 //         // Define basis
 //         Basis_HGRAD_HEX_C1_FEM<DeviceSpaceType, double, double> hexHGradBasis;
-        
+
 //         //    Basis_HGRAD_HEX_C1_FEM<double, FieldContainer<double> > hexHGradBasis;
 //         int numFieldsG = hexHGradBasis.getCardinality();
 //         DynRankView hexGVals("hexGVals",numFieldsG, numCubPoints);
 //         DynRankView hexGrads("hexGrads",numFieldsG, numCubPoints, spaceDim);
-        
+
 //         // Evaluate basis values and gradients at cubature points
 //         hexHGradBasis.getValues(hexGVals, cubPoints, OPERATOR_VALUE);
 //         hexHGradBasis.getValues(hexGrads, cubPoints, OPERATOR_GRAD);
-        
-        
+
+
 //         // ******** LOOP OVER ELEMENTS TO CREATE LOCAL STIFFNESS MATRIX *************
-        
+
 //         *outStream << "Building stiffness matrix and right hand side ... \n\n";
-        
+
 //         // Settings and data structures for mass and stiffness matrices
-        
+
 //         // Container for nodes
 //         DynRankView hexNodes("hexNodes",numElems, numNodesPerElem, spaceDim);
 //         // Containers for Jacobian
@@ -313,8 +313,8 @@
 //         Teuchos::RCP<const map_type> globalMapG = Teuchos::rcp(new map_type(numNodes, indexBase, Comm));
 //         Teuchos::RCP<matrix_type> StiffMatrix = Teuchos::rcp(new matrix_type(globalMapG, numFieldsG));
 //         Teuchos::RCP<vec_type> rhs = Teuchos::rcp(new vec_type(globalMapG, false));
-        
-        
+
+
 
 //         Kokkos::parallel_for(numElems, KOKKOS_LAMBDA(int k) {
 //         // *** Element loop ***
@@ -337,7 +337,7 @@
 
 //         // compute weighted measure
 //         fst::computeCellMeasure<double>(weightedMeasure, hexJacobDet, cubWeights);
-        
+
 
 //         // multiply values with weighted measure
 //         fst::multiplyMeasure<double>(hexGradsTransformedWeighted,
@@ -383,7 +383,7 @@
 //           ///
 //           for (int row = 0; row < numFieldsG; row++){
 //               for (int col = 0; col < numFieldsG; col++){
-                 
+
 //                   int rowIndex = elemToNode(k, row);
 //                   int colIndex = elemToNode(k, col);
 
@@ -409,10 +409,10 @@
 //             const  double val = -localRHS(k, row);
 
 //             //ATTENTION local index (second index because multivec)
-//             local_vec(rowIndex, 0) = val; 
+//             local_vec(rowIndex, 0) = val;
 //         }
 //       });
-        
+
 //         // Assemble global matrices
 //         StiffMatrix->globalAssemble(); StiffMatrix->fillComplete();
 //         //   rhs->globalAssemble();
@@ -432,15 +432,15 @@
 //             rhs->replaceGlobalValue(rowindex, val );
 //           }
 //         }
-        
+
 //         /*#ifdef DUMP_DATA
 //          // Dump matrices to disk
 //          EpetraExt::RowMatrixToMatlabFile("stiff_matrix.dat",StiffMatrix);
 //          EpetraExt::MultiVectorToMatrixMarketFile("rhs_vector.dat",rhs,0,0,false);
 //          #endif*/
-        
+
 //         std::cout << "End Result: TEST PASSED\n";
-        
+
 //         // reset format state of std::cout
 //         std::cout.copyfmt(oldFormatState);
 //       }

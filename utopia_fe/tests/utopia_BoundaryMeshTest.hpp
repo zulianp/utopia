@@ -2,18 +2,23 @@
 #define UTOPIA_BOUNDARY_MESH_TEST_HPP
 
 #include "utopia_fe_base.hpp"
-
-
-
-namespace libMesh {
-	class LibMeshInit;
-}
+#include "utopia_FETest.hpp"
+#include <string>
 
 
 namespace utopia {
-	void run_boundary_mesh_test(libMesh::LibMeshInit &init);
-}
 
+    class BoundaryMeshTest final : public FETest {
+    public:
+        void run(Input &in) override;
+
+        inline static std::string command()
+        {
+            return "bit";
+        }
+    };
+
+}
 
 
 #endif //UTOPIA_BOUNDARY_MESH_TEST_HPP

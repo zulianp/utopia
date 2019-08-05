@@ -116,7 +116,7 @@ namespace utopia {
                     col_range(expr.right())
             );
 
-			UTOPIA_TRACE_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };

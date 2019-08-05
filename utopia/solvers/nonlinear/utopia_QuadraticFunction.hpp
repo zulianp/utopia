@@ -14,7 +14,7 @@ namespace utopia {
         {
             assert(H);
             assert(rhs);
-            
+
             this->data()->H = H;
         }
 
@@ -26,7 +26,7 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            value = 0.5 * dot(x, (*this->data()->H) * x) - dot(x,  *rhs_);
+            value = 0.5 * dot(x, (*this->data()->H) * x) - dot(x, *rhs_);
             return true;
         }
 
@@ -38,12 +38,16 @@ namespace utopia {
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
+            UTOPIA_UNUSED(x);
             H = *this->data()->H;
             return true;
         }
 
         bool hessian(const Vector &x, Matrix &result, Matrix &prec) const override
         {
+            UTOPIA_UNUSED(x);
+            UTOPIA_UNUSED(result);
+            UTOPIA_UNUSED(prec);
             return false;
         }
 
@@ -54,6 +58,7 @@ namespace utopia {
 
         bool update(const Vector &x) override
         {
+            UTOPIA_UNUSED(x);
             return true;
         }
 

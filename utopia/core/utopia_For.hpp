@@ -6,45 +6,45 @@
 
 namespace utopia {
 
-	template<std::size_t Unroll = 32>
-	class For {
-	public:
-		template<typename F>
-		inline static void apply(
-			const std::size_t &begin, 
-			const std::size_t &end, 
-			F f)
-		{	
+    template<std::size_t Unroll = 32>
+    class For {
+    public:
+        template<typename F>
+        inline static void apply(
+            const std::size_t &begin,
+            const std::size_t &end,
+            F f)
+        {
 
-			for(auto i = begin; i < end; ++i) {
-				f(i);
-			}
-			
-			// const auto r = end - begin;
-			// auto i = begin;
+            for(auto i = begin; i < end; ++i) {
+                f(i);
+            }
 
-			// if(r < Unroll) {
-			// 	for(; i < end; ++i) {
-			// 		f(i);
-			// 	}
+            // const auto r = end - begin;
+            // auto i = begin;
 
-			// 	return;
-			// }
+            // if(r < Unroll) {
+            // 	for(; i < end; ++i) {
+            // 		f(i);
+            // 	}
 
-			// auto u_end = begin + (r/Unroll) * Unroll;
+            // 	return;
+            // }
 
-			// for(; i < u_end; i += Unroll) {
-			// 	for(std::size_t k = 0; k < Unroll; ++k) {
-			// 		auto idx = i + k;
-			// 		f(idx);
-			// 	}
-			// }
+            // auto u_end = begin + (r/Unroll) * Unroll;
 
-			// for(; i < end; ++i) {
-			// 	f(i);
-			// }
-		}
-	};
+            // for(; i < u_end; i += Unroll) {
+            // 	for(std::size_t k = 0; k < Unroll; ++k) {
+            // 		auto idx = i + k;
+            // 		f(idx);
+            // 	}
+            // }
+
+            // for(; i < end; ++i) {
+            // 	f(i);
+            // }
+        }
+    };
 }
 
 #endif //UTOPIA_FOR_HPP

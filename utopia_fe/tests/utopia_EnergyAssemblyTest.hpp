@@ -1,13 +1,25 @@
 #ifndef UTOPIA_FE_ENERGY_ASSEMBLY_TEST_HPP
 #define UTOPIA_FE_ENERGY_ASSEMBLY_TEST_HPP
 
-namespace libMesh {
-	class LibMeshInit;
+#include "utopia_fe_base.hpp"
+#include "utopia_FETest.hpp"
+#include <string>
+
+
+namespace utopia {
+
+    class EnergyTest final : public FETest {
+    public:
+        void run(Input &in) override;
+
+        inline static std::string command()
+        {
+            return "energy";
+        }
+    };
+
 }
 
-namespace utopia 
-{
-	void run_energy_test(libMesh::LibMeshInit &init);
-}
+
 
 #endif //UTOPIA_FE_ENERGY_ASSEMBLY_TEST_HPP
