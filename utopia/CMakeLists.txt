@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 3.8.1)
 
 project(utopia)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "Choose the type of build, options are: Debug Release
+RelWithDebInfo MinSizeRel."
+      FORCE)
+
+    message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
+endif(NOT CMAKE_BUILD_TYPE)
+
 #To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 

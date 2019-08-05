@@ -45,15 +45,24 @@ namespace utopia {
 
         auto sigma = trial(W);
         auto tau   = test(W);
+        
+        auto tau_x = test(W[0]);
+        auto tau_y = test(W[1]);
 
-        auto a   = inner(sigma, tau) * dX;
-        auto b   = inner(div(sigma), v) * dX;
+        //
+        auto a   = -(inner(sigma, tau) * dX);
         auto b_t = inner(u, div(tau)) * dX;
+
+        auto b   = inner(div(sigma), v) * dX;
+
 
         auto bilinear_form = a + b + b_t;
 
-        auto f = inner(coeff(0.0), v) * dX;
-        auto linear_form = f;
+        auto fv   = inner(coeff(0.0), v) * dX;
+
+        auto ftau = inner(coeff(0.0), tau_x) * dX + inner(coeff(0.0), tau_y) * dX;
+
+        auto linear_form = fv + ftau;
 
         USparseMatrix A;
         UVector rhs, x;
@@ -65,7 +74,6 @@ namespace utopia {
         apply_boundary_conditions(V.dof_map(), A, rhs);
 
         write("A.m", A);
-
 
         x = local_zeros(local_size(rhs));
 
