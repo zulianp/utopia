@@ -80,7 +80,21 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
         ${MOONOLITH_INSTALL_DIR}/include/kernels
         )
 
-    include(${MOONOLITH_INSTALL_DIR}/config/moonolith_config.cmake)
+    LIST(APPEND MOONOLITH_LIBRARIES
+    -L/Users/zulianp/Desktop/code/installations/par_moonolith/lib
+    "-lpar_moonolith_mesh" 
+    "-lpar_moonolith_spatial_hashing" 
+    "-lmoonolith_opencl" 
+    "-lpar_moonolith_intersection" 
+    "-lpar_moonolith_tree" 
+    "-lpar_moonolith_mpi" 
+    "-lpar_moonolith_utils" 
+    "-lpar_moonolith_core" 
+    "-lpar_moonolith_visual"  
+    "/opt/local/lib/mpich-mp/libmpicxx.dylib" 
+    "/opt/local/lib/mpich-mp/libmpi.dylib" 
+    "/opt/local/lib/mpich-mp/libpmpi.dylib"  
+    )
 
     set(MOONOLITH_FOUND TRUE)
 
