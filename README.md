@@ -142,7 +142,7 @@ https://join.slack.com/t/ics-utopia/signup
 
 
 ## Citing Utopia
-If you use Utopia for your research you can use the following bibtex entry to cite us
+If you use Utopia for your research please use the following bibtex entry (or equivalent) to cite us
 
 ```bibtex
 @misc{utopiagit,
