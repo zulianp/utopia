@@ -12,6 +12,7 @@
 #include "utopia_ElasticityApp.hpp"
 #include "utopia_WearApp.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_MixedPoissonApp.hpp"
 
 #include <iostream>
 
@@ -79,5 +80,6 @@ namespace utopia {
         add_app(SmoothApp::command(),                utopia::make_unique<SmoothApp>());
         add_app(ElasticityApp::command(),            utopia::make_unique<ElasticityApp>());
         add_app(WearApp::command(),                  utopia::make_unique<WearApp>());
+        add_app(MixedPoissonApp::command(),          utopia::make_unique<MixedPoissonApp>());
     }
 }
