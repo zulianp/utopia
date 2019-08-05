@@ -30,7 +30,7 @@ if(MOONOLITH_DIR OR DEFINED ENV{MOONOLITH_DIR})
 endif()
 
 
-if(NOT MOONOLITH_FOUND)
+if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     #Automatically download
     include(ExternalProject)
 
@@ -80,16 +80,21 @@ if(NOT MOONOLITH_FOUND)
         ${MOONOLITH_INSTALL_DIR}/include/kernels
         )
 
-    set(MOONOLITH_LIBRARIES "")
-    list(APPEND MOONOLITH_LIBRARIES
-        "-L${MOONOLITH_INSTALL_DIR}/lib"
-        "-lmoonolith_opencl"
-        "-lpar_moonolith"
-        "-lpar_moonolith_intersection"
-        "-lpar_moonolith_mpi"
-        "-lpar_moonolith_tree"
-        "-lpar_moonolith_utils"
-        )
+    LIST(APPEND MOONOLITH_LIBRARIES
+    -L/Users/zulianp/Desktop/code/installations/par_moonolith/lib
+    "-lpar_moonolith_mesh" 
+    "-lpar_moonolith_spatial_hashing" 
+    "-lmoonolith_opencl" 
+    "-lpar_moonolith_intersection" 
+    "-lpar_moonolith_tree" 
+    "-lpar_moonolith_mpi" 
+    "-lpar_moonolith_utils" 
+    "-lpar_moonolith_core" 
+    "-lpar_moonolith_visual"  
+    "/opt/local/lib/mpich-mp/libmpicxx.dylib" 
+    "/opt/local/lib/mpich-mp/libmpi.dylib" 
+    "/opt/local/lib/mpich-mp/libpmpi.dylib"  
+    )
 
     set(MOONOLITH_FOUND TRUE)
 
