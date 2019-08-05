@@ -80,16 +80,7 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
         ${MOONOLITH_INSTALL_DIR}/include/kernels
         )
 
-    set(MOONOLITH_LIBRARIES "")
-    list(APPEND MOONOLITH_LIBRARIES
-        "-L${MOONOLITH_INSTALL_DIR}/lib"
-        "-lmoonolith_opencl"
-        "-lpar_moonolith"
-        "-lpar_moonolith_intersection"
-        "-lpar_moonolith_mpi"
-        "-lpar_moonolith_tree"
-        "-lpar_moonolith_utils"
-        )
+    include(${MOONOLITH_INSTALL_DIR}/config/moonolith_config.cmake)
 
     set(MOONOLITH_FOUND TRUE)
 
