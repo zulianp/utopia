@@ -234,7 +234,7 @@ namespace utopia {
                     // exit(0);
 
                     for(int i = 0; i < side_ptr->n_nodes(); ++i) {
-                        const auto dof = side_ptr->node(i);
+                        const auto dof = side_ptr->node_id(i);
                         if(!vr.inside(dof)) continue;
 
                         Point2 ref_point;

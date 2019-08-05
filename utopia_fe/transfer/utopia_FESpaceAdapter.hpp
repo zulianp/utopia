@@ -242,7 +242,7 @@ namespace utopia {
 
             for(libMesh::dof_id_type j = 0; j != elem->n_nodes(); ++j) {
 
-                nodeIds.insert(elem->node(j));
+                nodeIds.insert(elem->node_id(j));
 
 
             }
@@ -303,7 +303,7 @@ namespace utopia {
 
             for (int i = 0; i != e_n_nodes; ++i) {
 
-                auto it = mapping.find(elem->node(i));
+                auto it = mapping.find(elem->node_id(i));
 
                 assert(it != mapping.end());
 

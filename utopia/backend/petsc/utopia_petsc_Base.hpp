@@ -2,6 +2,7 @@
 #define UTOPIA_PETSC_BASE_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Config.hpp"
 #include "petscversion.h"
 
 #ifdef WITH_PETSC

@@ -38,7 +38,7 @@ namespace utopia {
         {
             std::array<double, Dimension> p_a;
             for (libMesh::dof_id_type i = 0; i < e.n_nodes(); ++i) {
-                const libMesh::Point &p = mesh.node(e.node(i));
+                const libMesh::Point &p = mesh.node(e.node_id(i));
                 for(int d = 0; d < Dimension; ++d) {
                     p_a[d] = p(d);
                 }
@@ -229,7 +229,7 @@ namespace utopia {
                         auto elem = libMesh::Elem::build(libMesh::ElemType(e.type())).release();
 
                         for(int ii = 0; ii != e.n_nodes(); ++ii) {
-                            elem->set_node(ii) = coarse_mesh.node_ptr(e.node(ii) + node_offsets[sub_index]);
+                            elem->set_node(ii) = coarse_mesh.node_ptr(e.node_id(ii) + node_offsets[sub_index]);
                         }
 
                         // elem->set_id(e.id() + element_offsets[sub_index]);
@@ -289,7 +289,7 @@ namespace utopia {
                         auto elem = libMesh::Elem::build(libMesh::ElemType(e.type())).release();
 
                         for(int ii = 0; ii != e.n_nodes(); ++ii) {
-                            elem->set_node(ii) = coarse_mesh.node_ptr(e.node(ii) + node_id_offset);
+                            elem->set_node(ii) = coarse_mesh.node_ptr(e.node_id(ii) + node_id_offset);
                         }
 
                         elem->set_id(element_id++);
