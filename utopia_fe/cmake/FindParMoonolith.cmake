@@ -90,7 +90,7 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     "-lpar_moonolith_mpi" 
     "-lpar_moonolith_utils" 
     "-lpar_moonolith_core" 
-    "-lpar_moonolith_visual"  
+    "-lpar_moonolith_visual"
     )
 
     set(MOONOLITH_FOUND TRUE)

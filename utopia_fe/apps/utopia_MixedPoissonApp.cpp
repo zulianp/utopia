@@ -56,16 +56,17 @@ namespace utopia {
         auto w = test(W);
         
 
-        //Arif Masud and Thomas JR Hughes. A stabilized mixed finite element method for darcy flow
+       
+
+        auto bilinear_form = (inner(v, w)      * dX) -
+                             (inner(p, div(w)) * dX) +
+                             (inner(div(v), q) * dX);
+
+         //Arif Masud and Thomas JR Hughes. A stabilized mixed finite element method for darcy flow
         auto stab = 0.5 * (
             inner(grad(p), grad(q)) * dX - inner(v, w)       * dX + 
             inner(v, grad(q))       * dX - inner(grad(p), w) * dX
         );
-
-        auto bilinear_form = (inner(v, w)    * dX) -
-                             (inner(p, div(w))   * dX) +
-                             (inner(div(v), q) * dX) +
-                              stab;
 
         // auto fv   = inner(coeff(0.0), v) * dX;
         // auto ftau = inner(coeff(0.0), tau_x) * dX + inner(coeff(0.0), tau_y) * dX;
@@ -76,22 +77,13 @@ namespace utopia {
 
         x = local_zeros(V.dof_map().n_local_dofs());
         forcing_function.eval(x, rhs);
-
-        // write("f.m", rhs);
-        rhs *= -1.0;
+        // rhs *= -1.0;
 
         double norm_rhs = norm2(rhs);
         std::cout << norm_rhs << std::endl;
 
-        // assemble(bilinear_form == linear_form, A, rhs);
-        assemble(bilinear_form, A);
-
-        // write("A_neu.m", A);
-
+        assemble(bilinear_form + stab, A);
         apply_boundary_conditions(V.dof_map(), A, rhs);
-
-        // write("A.m", A);
-
 
         Factorization<USparseMatrix, UVector>().solve(A, rhs, x);
 
