@@ -60,9 +60,7 @@ namespace utopia {
 
         typedef typename Traits<Coefficient>::Scalar Scalar;
 
-        enum {
-            Order = Traits<Coefficient>::Order
-        };
+        static const int Order = Traits<Coefficient>::Order;
 
         template<class Coeff>
         Interpolate(Coeff &&coeff, Fun &fun)
