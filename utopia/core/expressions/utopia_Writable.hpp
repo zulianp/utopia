@@ -142,7 +142,7 @@ namespace utopia {
                 const auto i_offset = i * n_cols;
                 for(std::size_t j = 0; j < n_cols; ++j) {
                     ir[0] = rows[i];
-                    ic[0] = cols[i];
+                    ic[0] = cols[j];
                     v[0]  = values[i_offset + j];
                    
                     Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(

@@ -19,6 +19,7 @@
 
 
 #include <cassert>
+#include <iostream>
 
 namespace utopia {
 
@@ -79,7 +80,11 @@ namespace utopia {
         Tpetra::finalize();
 #endif //WITH_TRILINOS
 
-        return  instance().exit_code_;
+        if(instance().exit_code_ != EXIT_SUCCESS) {
+            std::cerr << "[Warning] exiting with code: " << instance().exit_code_ << std::endl;
+        }
+
+        return instance().exit_code_;
     }
 
     Utopia &Utopia::instance()
