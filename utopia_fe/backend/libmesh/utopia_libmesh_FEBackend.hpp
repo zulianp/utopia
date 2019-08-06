@@ -2154,6 +2154,16 @@ namespace utopia {
             return div(f.coefficient(), f.fun(), ctx);
         }
 
+         static auto div(
+            const Interpolate<
+                        UVector,
+                        TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>
+                        > &f, AssemblyContext<LIBMESH_TAG> &ctx) ->  std::vector<double> 
+                            // std::vector<TensorValueT> 
+        {
+            return div(f.coefficient(), f.fun(), ctx);
+        }
+
         template<class Tensor>
         static std::vector<Matrix> 
         // static std::vector<TensorValueT> 

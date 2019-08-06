@@ -56,21 +56,20 @@ namespace utopia {
         auto w = test(W);
         
 
-       
+        // does not work
+        // auto bilinear_form = (inner(v, w)      * dX) -
+        //                      (inner(p, div(w)) * dX) +
+        //                      (inner(div(v), q) * dX);
 
-        auto bilinear_form = (inner(v, w)      * dX) -
-                             (inner(p, div(w)) * dX) +
-                             (inner(div(v), q) * dX);
+        auto bilinear_form = (inner(v, w)      * dX)  +
+                             (inner(grad(p), w) * dX) -
+                             (inner(v, grad(q)) * dX);
 
          //Arif Masud and Thomas JR Hughes. A stabilized mixed finite element method for darcy flow
         auto stab = 0.5 * (
             inner(grad(p), grad(q)) * dX - inner(v, w)       * dX + 
             inner(v, grad(q))       * dX - inner(grad(p), w) * dX
         );
-
-        // auto fv   = inner(coeff(0.0), v) * dX;
-        // auto ftau = inner(coeff(0.0), tau_x) * dX + inner(coeff(0.0), tau_y) * dX;
-        // auto linear_form = fv + ftau;
 
         USparseMatrix A;
         UVector rhs, x;
@@ -90,10 +89,10 @@ namespace utopia {
         write("rhs.e", V, rhs);
         write("sol.e", V, x);
 
-        // auto sigma_h = interpolate(x, sigma);
-        // double measure_div = -1.0;
+        auto v_h = interpolate(x, v);
+        double measure_div = -1.0;
 
-        // assemble(div(sigma) * dX, measure_div);
-        // std::cout <<  "measure_div: " << measure_div << std::endl;
+        assemble(div(v_h) * dX, measure_div);
+        std::cout <<  "measure_div: " << measure_div << std::endl;
     }
 }

@@ -81,7 +81,7 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
         )
 
     LIST(APPEND MOONOLITH_LIBRARIES
-    -L/Users/zulianp/Desktop/code/installations/par_moonolith/lib
+    -L${MOONOLITH_INSTALL_DIR}/lib
     "-lpar_moonolith_mesh" 
     "-lpar_moonolith_spatial_hashing" 
     "-lmoonolith_opencl" 
