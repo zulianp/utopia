@@ -91,9 +91,6 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     "-lpar_moonolith_utils" 
     "-lpar_moonolith_core" 
     "-lpar_moonolith_visual"  
-    "/opt/local/lib/mpich-mp/libmpicxx.dylib" 
-    "/opt/local/lib/mpich-mp/libmpi.dylib" 
-    "/opt/local/lib/mpich-mp/libpmpi.dylib"  
     )
 
     set(MOONOLITH_FOUND TRUE)

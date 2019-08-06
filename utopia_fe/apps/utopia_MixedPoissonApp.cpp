@@ -49,27 +49,23 @@ namespace utopia {
         auto &V = M.subspace(0);
         auto W  = M.subspace(1, dim + 1);
 
-        auto u = trial(V);
-        auto v = test(V);
+        auto p = trial(V);
+        auto q = test(V);
 
-        auto sigma = trial(W);
-        auto tau   = test(W);
+        auto v = trial(W);
+        auto w = test(W);
         
-        auto tau_x = test(W[0]);
-        auto tau_y = test(W[1]);
-
-        //
-        auto a   = (inner(sigma, tau) * dX);
-        auto b_t = inner(grad(u), tau) * dX; 
-        auto b   = inner(sigma, grad(v)) * dX; // negative sign must be considered for the rhs
 
         //Arif Masud and Thomas JR Hughes. A stabilized mixed finite element method for darcy flow
         auto stab = 0.5 * (
-            inner(grad(u), grad(v)) * dX - inner(sigma, tau) * dX + 
-            inner(sigma, grad(v)) * dX   - inner(grad(u), tau) * dX
+            inner(grad(p), grad(q)) * dX - inner(v, w)       * dX + 
+            inner(v, grad(q))       * dX - inner(grad(p), w) * dX
         );
 
-        auto bilinear_form = a + b + b_t + stab;
+        auto bilinear_form = (inner(v, w)    * dX) -
+                             (inner(p, div(w))   * dX) +
+                             (inner(div(v), q) * dX) +
+                              stab;
 
         // auto fv   = inner(coeff(0.0), v) * dX;
         // auto ftau = inner(coeff(0.0), tau_x) * dX + inner(coeff(0.0), tau_y) * dX;
@@ -87,21 +83,25 @@ namespace utopia {
         double norm_rhs = norm2(rhs);
         std::cout << norm_rhs << std::endl;
 
-
         // assemble(bilinear_form == linear_form, A, rhs);
         assemble(bilinear_form, A);
 
-        write("A_neu.m", A);
+        // write("A_neu.m", A);
 
         apply_boundary_conditions(V.dof_map(), A, rhs);
 
-        write("A.m", A);
+        // write("A.m", A);
 
-        
 
         Factorization<USparseMatrix, UVector>().solve(A, rhs, x);
 
         write("rhs.e", V, rhs);
         write("sol.e", V, x);
+
+        // auto sigma_h = interpolate(x, sigma);
+        // double measure_div = -1.0;
+
+        // assemble(div(sigma) * dX, measure_div);
+        // std::cout <<  "measure_div: " << measure_div << std::endl;
     }
 }
