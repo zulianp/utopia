@@ -12,7 +12,7 @@
 
 namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
-    class UIMaterial final : public ElasticMaterial<Matrix, Vector>, public Configurable {
+    class UIMaterial final : public ElasticMaterial<Matrix, Vector> {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
 

@@ -125,6 +125,7 @@ endmacro(add_utopiafe_module)
 list(APPEND UTOPIA_FE_MODULES
     tests
     apps
+    multiphysics
     fractures
     wear
     ui
