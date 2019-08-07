@@ -40,6 +40,12 @@ namespace utopia {
             return ok;
         }
 
+        EmbeddedModel(libMesh::Parallel::Communicator &comm)
+        : mesh_(comm), space_(make_ref(mesh_))
+        {}
+
+    private:
+
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<FunctionSpaceT>  space_;
         std::shared_ptr<Model<Matrix, Vector>> model_;

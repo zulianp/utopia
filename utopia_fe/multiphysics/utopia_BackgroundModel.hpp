@@ -59,6 +59,11 @@ namespace utopia {
             // operator_ = new_assembler.build_operator();
         }
 
+        BackgroundModel(libMesh::Parallel::Communicator &comm)
+        : mesh_(comm), space_(make_ref(mesh_))
+        {}
+
+    private:
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<FunctionSpaceT>  space_;
         std::shared_ptr<Model<Matrix, Vector>> model_;

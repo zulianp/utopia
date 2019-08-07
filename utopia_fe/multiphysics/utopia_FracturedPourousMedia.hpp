@@ -18,7 +18,13 @@ namespace utopia {
         void read(Input &in) override
         {
             in.get("pourous-matrix",   pourous_matrix_);
-            in.get("fracture-network", fracture_network_);
+            in.get("fracture-networks", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    auto dfn = std::make_shared<EmbeddedModel>(this->comm_);
+                    dfn->read(in);
+                    fracture_network_.push_back(dfn);
+                });;
+            });
         }
 
         inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
@@ -26,9 +32,14 @@ namespace utopia {
             return false;
         }
 
+        FracturedPourousMedia(libMesh::Parallel::Communicator &comm)
+        : comm_(comm), pourous_matrix_(comm)
+        {}
+
     private:
+        libMesh::Parallel::Communicator &comm_;
         BackgroundModel pourous_matrix_;
-        EmbeddedModel   fracture_network_;
+        std::vector<std::shared_ptr<EmbeddedModel>> fracture_network_;
     };
     
 }
