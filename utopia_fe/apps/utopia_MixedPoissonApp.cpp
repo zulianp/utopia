@@ -56,7 +56,7 @@ namespace utopia {
         auto w = test(W);
         
 
-        // does not work
+        // does not work for some reason
         // auto bilinear_form = (inner(v, w)      * dX) -
         //                      (inner(p, div(w)) * dX) +
         //                      (inner(div(v), q) * dX);
@@ -76,7 +76,6 @@ namespace utopia {
 
         x = local_zeros(V.dof_map().n_local_dofs());
         forcing_function.eval(x, rhs);
-        // rhs *= -1.0;
 
         double norm_rhs = norm2(rhs);
         std::cout << norm_rhs << std::endl;
@@ -90,9 +89,12 @@ namespace utopia {
         write("sol.e", V, x);
 
         auto v_h = interpolate(x, v);
-        double measure_div = -1.0;
+        UVector divergence_v;
 
-        assemble(div(v_h) * dX, measure_div);
+        assemble(inner(div(v_h), q) * dX, divergence_v);
+        double measure_div = sum(divergence_v);
         std::cout <<  "measure_div: " << measure_div << std::endl;
+
+        write("div.e", V, divergence_v);
     }
 }

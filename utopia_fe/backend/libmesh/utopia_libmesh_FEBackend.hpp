@@ -1833,10 +1833,10 @@ namespace utopia {
             FunctionType &ret)
         {
             const auto &sub_0 = space[0];
-            ret.resize(fe_object[sub_0.subspace_id()]->get_phi().size());
+            ret.resize(fe_object[sub_0.subspace_id()]->get_dphi().size());
 
             assert(!fe_object.empty());
-            const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
+            const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_dphi()[0].size();
             const uint dim = space[0].mesh().spatial_dimension();
 
 
