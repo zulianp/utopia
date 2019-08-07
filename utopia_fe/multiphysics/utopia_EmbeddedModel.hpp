@@ -26,6 +26,7 @@ namespace utopia {
 
             //FIXME
             model_ = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+            model_->read(in);
 
         }
 
