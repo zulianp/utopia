@@ -83,7 +83,7 @@ namespace utopia {
             const auto &T = *mortar_matrix();
             x += T * x;
 
-            x = is_constrained_;
+            // x = is_constrained_;
         }
 
         inline std::shared_ptr<Matrix> mortar_matrix()
@@ -138,6 +138,7 @@ namespace utopia {
 
             if(!flow_model_->assemble_hessian_and_gradient(x, hessian, gradient)) return false;
             if(mortar_.empty()) return true;
+            
             mortar_.constrain_system(hessian, gradient);
             return true;
         }
@@ -145,6 +146,7 @@ namespace utopia {
         inline void disassemble_flow(Vector &x)
         {
             if(mortar_.empty()) return;
+
             mortar_.unconstrain_solution(x);
         }
 
