@@ -243,7 +243,7 @@ namespace utopia {
 
             apply_boundary_conditions(dof_map_m, *A_m, *rhs_m);
 
-            if(assembly_strategy_ == "static-condenstation") {
+            if(assembly_strategy_ == "static-condensation") {
                 A   = *A_m;
                 rhs = *rhs_m;
 
@@ -288,7 +288,7 @@ namespace utopia {
 
         inline void disassemble_flow(const Vector &x)
         {
-            if(assembly_strategy_ == "static-condenstation") {
+            if(assembly_strategy_ == "static-condensation") {
                 *x_m = x;
 
                 const std::size_t n_dfn = fracture_network_.size();

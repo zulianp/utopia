@@ -3,14 +3,15 @@
     "pourous-matrix" : {
         "mesh" : {
             "type" : "file",
-            "path" : "../data/frac/matrix_hydrocoin.e"
+            "path" : "../data/frac/matrix_hydrocoin.e",
+            "order" : 2
         },
         "space" : {
             "system-name" : "pourous-matrix",
             "variables" : [
                 {
                     "name"  : "u_m",
-                    "order" : 1
+                    "order" : 2
                 }
             ],
             "boundary-conditions" : [
@@ -29,14 +30,15 @@
             "mesh" : {
                 "type" : "file",
                 "path" : "../data/frac/fracture_hydrocoin.e",
-                "refinements" : 2
+                "refinements" : 0,
+                "order" : 2
             },
             "space" : {
                 "system-name" : "fracture-network",
                 "variables" : [
                     {
                         "name"  : "u_f",
-                        "order" : 1
+                        "order" : 2
                     }
                 ]
             },
@@ -61,5 +63,5 @@
         }
     ],
 
-    "assembly-strategy" : "static-condenstation"
+    "assembly-strategy" : "static-condensation"
 }
