@@ -290,6 +290,7 @@ namespace utopia {
         {
             if(assembly_strategy_ == "static-condensation") {
                 *x_m = x;
+                pourous_matrix_.disassemble_flow(*x_m);
 
                 const std::size_t n_dfn = fracture_network_.size();
 

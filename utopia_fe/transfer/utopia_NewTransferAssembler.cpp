@@ -370,6 +370,46 @@ namespace utopia {
             return apply(master, slave, opts, data);
         }
 
+        static bool surface_apply(
+            const libMesh::MeshBase &lm_mesh,
+            const libMesh::DofMap   &lm_dofs,
+            const TransferOptions &opts,
+            TransferData &data)
+        {
+            moonolith::Communicator comm = lm_mesh.comm().get();
+            auto mesh = std::make_shared<MeshT>(comm);
+
+            FunctionSpaceT space(mesh);
+            extract_trace_space(lm_mesh, lm_dofs, opts.from_var_num, space);
+
+            comm.barrier();
+
+            if(comm.is_root()) {
+                moonolith::logger() << "ConvertTransferAlgorithm:surface_apply(...) begin" << std::endl;
+            }
+
+            moonolith::ParL2Transfer<
+                double,
+                Dim,
+                moonolith::StaticMax<Dim-1, 1>::value,
+                moonolith::StaticMax<Dim-1, 1>::value
+            > assembler(comm);
+
+            if(!assembler.assemble(space, opts.tags)) {
+                return false;
+            }
+
+            prepare_data(opts, assembler, data);
+
+            comm.barrier();
+            
+            if(comm.is_root()) {
+                moonolith::logger() << "ConvertTransferAlgorithm:surface_apply(...) end" << std::endl;
+            }
+
+            return true;
+        }
+
         static bool apply(
             const libMesh::MeshBase &from_mesh,
             const libMesh::DofMap   &from_dofs,
@@ -653,6 +693,27 @@ namespace utopia {
             } else {
                 has_intersection = ConvertTransferAlgorithm<3>::apply(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
             }
+        }
+
+        return has_intersection;
+    }
+
+
+    bool NewTransferAssembler::surface_assemble(
+        const MeshBase &mesh,
+        const DofMap   &dofs,
+        const TransferOptions &opts
+    )
+    {
+        auto spatial_dim = mesh.spatial_dimension();
+        bool has_intersection = false;
+
+        if(spatial_dim == 1) {
+            has_intersection = ConvertTransferAlgorithm<1>::surface_apply(mesh, dofs, opts, data);
+        } else if(spatial_dim == 2) {
+            has_intersection = ConvertTransferAlgorithm<2>::surface_apply(mesh, dofs, opts, data);
+        } else if(spatial_dim == 3) {
+            has_intersection = ConvertTransferAlgorithm<3>::surface_apply(mesh, dofs, opts, data);
         }
 
         return has_intersection;
