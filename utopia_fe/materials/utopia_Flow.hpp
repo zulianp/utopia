@@ -159,6 +159,8 @@ namespace utopia {
                     diffusion_tensor_.set(i, i, permeabilities[i]);
                 }
             }
+
+            std::cout << "permeability: " << constant_permeability << std::endl;
         }
     };
 

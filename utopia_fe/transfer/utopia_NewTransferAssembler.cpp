@@ -623,5 +623,39 @@ namespace utopia {
             return has_intersection;
         }
     }
+
+    bool NewTransferAssembler::assemble(
+        const MeshBase &from_mesh,
+        const DofMap   &from_dofs,
+        const MeshBase &to_mesh,
+        const DofMap   &to_dofs,
+        const TransferOptions &opts
+    )
+    {
+        auto spatial_dim = to_mesh.spatial_dimension();
+        bool has_intersection = false;
+
+        if(spatial_dim == 1) {
+            if(remove_incomplete_intersections_) {
+                has_intersection = ConvertTransferAlgorithm<1>::apply_with_covering_check(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
+            } else {
+                has_intersection = ConvertTransferAlgorithm<1>::apply(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
+            }
+        } else if(spatial_dim == 2) {
+            if(remove_incomplete_intersections_) {
+                has_intersection = ConvertTransferAlgorithm<2>::apply_with_covering_check(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
+            } else {
+                has_intersection = ConvertTransferAlgorithm<2>::apply(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
+            }
+        } else if(spatial_dim == 3) {
+            if(remove_incomplete_intersections_) {
+                has_intersection = ConvertTransferAlgorithm<3>::apply_with_covering_check(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
+            } else {
+                has_intersection = ConvertTransferAlgorithm<3>::apply(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
+            }
+        }
+
+        return has_intersection;
+    }
 }
 

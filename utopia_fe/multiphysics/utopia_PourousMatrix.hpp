@@ -1,7 +1,7 @@
 #ifndef UTOPIA_BACKGROUND_MODEL_HPP
 #define UTOPIA_BACKGROUND_MODEL_HPP
 
-#include "utopia_Model.hpp"
+#include "utopia_FEModel.hpp"
 #include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMesh.hpp"
 #include "utopia_Flow.hpp"
@@ -13,7 +13,7 @@
 namespace utopia {
 
     template<class Matrix, class Vector>
-    class BackgroundModel final : public Model<Matrix, Vector> {
+    class PourousMatrix final : /*public FEModel<LibMeshFunctionSpace, Matrix, Vector> */ public Configurable  {
     public:
         typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
         typedef utopia::Traits<FunctionSpaceT> TraitsT;
@@ -25,16 +25,15 @@ namespace utopia {
             in.get("space", space_);
 
             //FIXME
-            model_ = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
-            model_->read(in);
-
+            flow_model_ = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+            flow_model_->read(in);
         }
 
-        inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+        inline bool assemble_flow(const Vector &x, Matrix &hessian, Vector &gradient)
         {
-            assert(model_);
+            assert(flow_model_);
 
-            bool ok = model_->assemble_hessian_and_gradient(x, hessian, gradient);
+            bool ok = flow_model_->assemble_hessian_and_gradient(x, hessian, gradient);
 
             //TODO handle non-conformities
 
@@ -60,14 +59,24 @@ namespace utopia {
             // operator_ = new_assembler.build_operator();
         }
 
-        BackgroundModel(libMesh::Parallel::Communicator &comm)
+        inline FunctionSpaceT &space()
+        {
+            return space_.space().subspace(0);
+        }
+
+        inline const FunctionSpaceT &space() const
+        {
+            return space_.space().subspace(0);
+        }
+
+        PourousMatrix(libMesh::Parallel::Communicator &comm)
         : mesh_(comm), space_(make_ref(mesh_))
         {}
 
     private:
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<FunctionSpaceT>  space_;
-        std::shared_ptr<Model<Matrix, Vector>> model_;
+        std::shared_ptr<Model<Matrix, Vector>> flow_model_;
         //TODO add Mortar here
     };
 
