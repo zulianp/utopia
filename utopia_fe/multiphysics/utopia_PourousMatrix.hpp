@@ -76,13 +76,13 @@ namespace utopia {
                 }
             );
 
-            *mortar_matrix_ += local_identity(local_size(*mortar_matrix_));
-
             if(export_constrained_) {
                 write("constrained.e",   space, is_constrained_);
                 write("unconstrained.e", space, is_unconstrained_);
                 write("T.m", *mortar_matrix_);
             }
+
+            *mortar_matrix_ += local_identity(local_size(*mortar_matrix_));
 
             return true;
         }

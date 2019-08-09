@@ -387,15 +387,17 @@ namespace utopia {
             if(comm.is_root()) {
                 moonolith::logger() << "ConvertTransferAlgorithm:surface_apply(...) begin" << std::endl;
             }
+            
+            static const int ManifoldDim = moonolith::StaticMax<Dim-1, 1>::value;
 
             moonolith::ParL2Transfer<
                 double,
                 Dim,
-                moonolith::StaticMax<Dim-1, 1>::value,
-                moonolith::StaticMax<Dim-1, 1>::value
+                ManifoldDim,
+                ManifoldDim
             > assembler(comm);
 
-            if(!assembler.assemble(space, opts.tags)) {
+            if(!assembler.assemble(space, opts.tags, 1e-8)) {
                 return false;
             }
 
@@ -697,7 +699,6 @@ namespace utopia {
 
         return has_intersection;
     }
-
 
     bool NewTransferAssembler::surface_assemble(
         const MeshBase &mesh,
