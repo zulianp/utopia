@@ -225,6 +225,7 @@ namespace utopia {
 
             disassemble_flow(x);
 
+            pourous_matrix_.post_process_flow(*x_m_);
 
             export_flow();
             return true;
@@ -232,48 +233,48 @@ namespace utopia {
 
         inline bool assemble_flow(Matrix &A, Vector &rhs)
         {
-            A_m   = std::make_shared<Matrix>();
-            rhs_m = std::make_shared<Vector>(); 
-            x_m   = std::make_shared<Vector>(); 
+            A_m_   = std::make_shared<Matrix>();
+            rhs_m_ = std::make_shared<Vector>(); 
+            x_m_   = std::make_shared<Vector>(); 
 
             auto &dof_map_m = pourous_matrix_.space().dof_map();
 
-            *x_m = local_zeros(dof_map_m.n_local_dofs());
-            pourous_matrix_.assemble_flow(*x_m, *A_m, *rhs_m);
+            *x_m_ = local_zeros(dof_map_m.n_local_dofs());
+            pourous_matrix_.assemble_flow(*x_m_, *A_m_, *rhs_m_);
 
-            apply_boundary_conditions(dof_map_m, *A_m, *rhs_m);
+            apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
 
             if(assembly_strategy_ == "static-condensation") {
-                A   = *A_m;
-                rhs = *rhs_m;
+                A   = *A_m_;
+                rhs = *rhs_m_;
 
                 const std::size_t n_dfn = fracture_network_.size();
 
                 assert(n_dfn == lagrange_multiplier_.size());
 
-                A_f.resize(n_dfn);
-                rhs_f.resize(n_dfn);
-                x_f.resize(n_dfn);
+                A_f_.resize(n_dfn);
+                rhs_f_.resize(n_dfn);
+                x_f_.resize(n_dfn);
 
                 for(std::size_t i = 0; i < n_dfn; ++i) {
                     
                     auto dfn = fracture_network_[i];
                     auto &dof_map_f = dfn->space().dof_map();
 
-                    A_f[i]   = std::make_shared<Matrix>();
-                    x_f[i]   = std::make_shared<Vector>();
-                    rhs_f[i] = std::make_shared<Vector>();
+                    A_f_[i]   = std::make_shared<Matrix>();
+                    x_f_[i]   = std::make_shared<Vector>();
+                    rhs_f_[i] = std::make_shared<Vector>();
 
-                    *x_f[i] = local_zeros(dof_map_f.n_local_dofs());
-                    dfn->assemble_flow(*x_f[i], *A_f[i], *rhs_f[i]);
+                    *x_f_[i] = local_zeros(dof_map_f.n_local_dofs());
+                    dfn->assemble_flow(*x_f_[i], *A_f_[i], *rhs_f_[i]);
 
-                    apply_boundary_conditions(dof_map_f, *A_f[i], *rhs_f[i]);
+                    apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
 
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
 
-                    Matrix A_temp = transpose(*T) * (*A_f[i]) * (*T);
+                    Matrix A_temp = transpose(*T) * (*A_f_[i]) * (*T);
                     A += A_temp;
-                    rhs += transpose(*T) * (*rhs_f[i]);
+                    rhs += transpose(*T) * (*rhs_f_[i]);
                 }
 
             } else //if(assembly_strategy_ == "monolithic") 
@@ -289,14 +290,14 @@ namespace utopia {
         inline void disassemble_flow(const Vector &x)
         {
             if(assembly_strategy_ == "static-condensation") {
-                *x_m = x;
-                pourous_matrix_.disassemble_flow(*x_m);
+                *x_m_ = x;
+                pourous_matrix_.disassemble_flow(*x_m_);
 
                 const std::size_t n_dfn = fracture_network_.size();
 
                 for(std::size_t i = 0; i < n_dfn; ++i) {
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
-                    *x_f[i] = (*T) * x;
+                    *x_f_[i] = (*T) * x;
                 }
             }  else //if(assembly_strategy_ == "monolithic") 
             {
@@ -306,12 +307,12 @@ namespace utopia {
 
         inline bool export_flow()
         {
-            write("porous_matrix.e", pourous_matrix_.space(), *x_m);
+            write("porous_matrix.e", pourous_matrix_.space(), *x_m_);
 
             const std::size_t n_dfn = fracture_network_.size();
 
             for(std::size_t i = 0; i < n_dfn; ++i) {
-                write("fracture_network_" + std::to_string(i) + ".e", fracture_network_[i]->space(), *x_f[i]);
+                write("fracture_network_" + std::to_string(i) + ".e", fracture_network_[i]->space(), *x_f_[i]);
             }
 
             return true;
@@ -327,13 +328,13 @@ namespace utopia {
         std::vector<std::shared_ptr<DiscreteFractureNetwork>> fracture_network_;
         std::vector<std::shared_ptr<LagrangeMultiplier>> lagrange_multiplier_;
 
-        std::shared_ptr<Matrix> A_m;
-        std::shared_ptr<Vector> rhs_m;
-        std::shared_ptr<Vector> x_m;
+        std::shared_ptr<Matrix> A_m_;
+        std::shared_ptr<Vector> rhs_m_;
+        std::shared_ptr<Vector> x_m_;
 
-        std::vector<std::shared_ptr<Matrix>> A_f;
-        std::vector<std::shared_ptr<Vector>> rhs_f;
-        std::vector<std::shared_ptr<Vector>> x_f;
+        std::vector<std::shared_ptr<Matrix>> A_f_;
+        std::vector<std::shared_ptr<Vector>> rhs_f_;
+        std::vector<std::shared_ptr<Vector>> x_f_;
 
         std::string assembly_strategy_;
         bool use_mg_;

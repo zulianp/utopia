@@ -92,7 +92,8 @@ namespace utopia {
         void read(Input &in) override 
         {
             in.get("side", side_);
-            in.get("diffusivity", diffusivity_);
+            in.get("diffusivity",  diffusivity_);
+            in.get("permeability", diffusivity_);
 
             filename_ += std::to_string(side_) + ".txt";
             in.get("file-name", filename_);
@@ -226,7 +227,7 @@ namespace utopia {
         }
 
         FluxPostProcessor()
-        : side_(-1), outflux_(0.0), filename_("flux")
+        : side_(-1), outflux_(0.0), filename_("flux"), sampler_(std::make_shared<UIConstantFunction<Scalar>>(1.))
         {}
 
         void describe(std::ostream &os = std::cout) const override
@@ -249,18 +250,21 @@ namespace utopia {
         }
 
     private:
+
+        int side_;
+        double outflux_;
+        double diffusivity_;
+        std::string filename_;
+
         Vector flux_;
         Vector weighted_flux_;
         Vector mass_vector_;
-        double outflux_;
-        double diffusivity_;
+       
         std::shared_ptr<UIFunction<double>> sampler_;
         ElementMatrix diffusion_tensor_;
-        int side_;
         USparseMatrix flow_matrix_;
 
         std::vector<double> all_outflux_;
-        std::string filename_;
     };
 
 }

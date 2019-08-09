@@ -7,6 +7,7 @@
 #include "utopia_Flow.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_NewTransferAssembler.hpp"
+#include "utopia_FluxPostProcessor.hpp"
 
 #include "libmesh/parallel_mesh.h"
 
@@ -129,18 +130,65 @@ namespace utopia {
         bool export_constrained_;
     };
 
+    template<class Matrix, class Vector>
+    class PostProcessable : public virtual Configurable {
+    public:
+        using FunctionSpaceT = utopia::LibMeshFunctionSpace;
+        using PostProcessor  = utopia::PostProcessor<FunctionSpaceT, Vector>;
+
+        virtual ~PostProcessable() {}
+
+        virtual void read(Input &in) override {
+
+            in.get("post-processors", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    std::string type;
+                    in.get("type", type);
+
+                    if(type == "flux") {
+                        auto flux = std::make_shared<FluxPostProcessor<FunctionSpaceT, UVector>>();    
+                        flux->read(in);
+
+                        post_processors_.push_back(flux);
+
+                    } else if(type == "avg") {
+                        auto flux = std::make_shared<AverageHeadPostProcessor<FunctionSpaceT, UVector>>();              
+                        flux->read(in);
+
+                        post_processors_.push_back(flux);
+                    }
+                });
+            });
+
+        }
+
+        virtual void post_process(FunctionSpaceT &space, const Vector &x)
+        {
+            for(auto pp : post_processors_) {
+                pp->apply(space, x);
+            }
+        }
+
+    private:
+        std::vector<std::shared_ptr<PostProcessor>> post_processors_;
+    };
+
 
     template<class Matrix, class Vector>
-    class PourousMatrix final : /*public FEModel<LibMeshFunctionSpace, Matrix, Vector> */ public Configurable  {
+    class PourousMatrix final : /*public FEModel<LibMeshFunctionSpace, Matrix, Vector> */ public PostProcessable<Matrix, Vector>  {
     public:
         typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
         typedef utopia::Traits<FunctionSpaceT> TraitsT;
         typedef typename TraitsT::Matrix ElementMatrix;
 
         using Mortar = utopia::Mortar<Matrix, Vector>;
+        using Super  = utopia::PostProcessable<Matrix, Vector>;
+        
 
         void read(Input &in) override
         {
+            Super::read(in);
+
             in.get("mesh", mesh_);
             in.get("space", space_);
 
@@ -176,6 +224,11 @@ namespace utopia {
             mortar_.init(space());
         }
 
+        inline void post_process_flow(const Vector &x)
+        {
+            Super::post_process(space(), x);
+        }
+
         inline FunctionSpaceT &space()
         {
             return space_.space().subspace(0);
@@ -195,7 +248,7 @@ namespace utopia {
         UIFunctionSpace<FunctionSpaceT>  space_;
         std::shared_ptr<Model<Matrix, Vector>> flow_model_;
         Mortar mortar_;
-        //TODO add Mortar here
+        
     };
 
 }
