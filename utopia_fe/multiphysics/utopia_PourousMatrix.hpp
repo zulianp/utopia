@@ -25,6 +25,7 @@ namespace utopia {
         void read(Input &in) override
         {
             opts.read(in);
+            in.get("export-constrained", export_constrained_);
         }
 
         bool init(FunctionSpaceT &space)
@@ -48,11 +49,25 @@ namespace utopia {
             is_constrained_ = sum(*mortar_matrix_, 1);
             is_unconstrained_ = is_constrained_;
 
+            //create a clean boolean vector
+
+            each_transform(
+                is_constrained_,
+                is_constrained_, 
+                [](const SizeType i, const Scalar val) -> Scalar {
+                    if(val > 0.99) {
+                        return 1.0;
+                    } else {
+                        return 0.0;
+                    }
+                }
+            );
+
             each_transform(
                 is_unconstrained_,
                 is_unconstrained_, 
                 [](const SizeType i, const Scalar val) -> Scalar {
-                    if(val > 0.9) {
+                    if(val > 0.99) {
                         return 0.0;
                     } else {
                         return 1.0;
@@ -60,8 +75,14 @@ namespace utopia {
                 }
             );
 
-            // disp(is_constrained_);
-            // disp(is_unconstrained_);
+            *mortar_matrix_ += local_identity(local_size(*mortar_matrix_));
+
+            if(export_constrained_) {
+                write("constrained.e",   space, is_constrained_);
+                write("unconstrained.e", space, is_unconstrained_);
+                write("T.m", *mortar_matrix_);
+            }
+
             return true;
         }
 
@@ -69,21 +90,16 @@ namespace utopia {
         {
             const auto &T = *mortar_matrix();
 
-            Matrix slave_A = transpose(T) * A * T;
-            Vector slave_b = transpose(T) * b;
+            A = transpose(T) * A * T;
+            b = transpose(T) * b;
             
-            A += slave_A;
-            b += slave_b;
-
             set_zero_rows(A, is_constrained_, 1.0);
             b = e_mul(is_unconstrained_, b);
         }
 
         void unconstrain_solution(Vector &x) {
             const auto &T = *mortar_matrix();
-            x += T * x;
-
-            // x = is_constrained_;
+            x = T * x;
         }
 
         inline std::shared_ptr<Matrix> mortar_matrix()
@@ -101,11 +117,16 @@ namespace utopia {
             return empty_;
         }
 
+        Mortar()
+        : export_constrained_(false)
+        {}
+
     private:
         TransferOptions opts;
         std::shared_ptr<Matrix> mortar_matrix_;
         Vector is_constrained_, is_unconstrained_;
         bool empty_;
+        bool export_constrained_;
     };
 
 
