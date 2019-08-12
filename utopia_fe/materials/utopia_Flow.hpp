@@ -113,7 +113,46 @@ namespace utopia {
 
             c.stop();
             std::cout << "Flow assemly time: " << c << std::endl;
+
+            assemble_lower_dimensional_features(x, hessian, gradient);
+
             return true;
+        }
+
+        inline bool assemble_lower_dimensional_features(const Vector &x, Matrix &hessian, Vector &gradient)
+        {
+            if(lower_dimensional_tags_.empty()) {
+                return true;
+            }
+
+            Chrono c;
+            c.start();
+
+            auto u = trial(space_);
+            auto v = test(space_);
+
+            const std::size_t n = lower_dimensional_tags_.size();
+
+            Matrix trace_hessian;
+            for(std::size_t i = 0; i < n; ++i) {
+                auto side = lower_dimensional_tags_[i];
+
+                auto bilinear_form = surface_integral( 
+                    inner(
+                    /* diffusion_tensor_ * */ 
+                    grad(u), 
+                    ctx_fun(lower_dimensional_permeability_[i]) * grad(v)),
+                    side
+                );
+
+                utopia::assemble(bilinear_form, trace_hessian);
+                hessian += trace_hessian;
+            }
+
+
+            c.stop();
+            std::cout << "Flow assemly (sub-dimensional) time: " << c << std::endl;
+            return false;
         }
 
         inline bool is_linear() const override { return true; }
@@ -125,6 +164,28 @@ namespace utopia {
             read_permeability_tensor(in);
             in.get("permeability-function", permeability_);
             in.get("forcing-function", forcing_function_);
+
+            lower_dimensional_tags_.clear();
+            lower_dimensional_tags_.clear();
+
+            in.get("lower-dimensional-permeability", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    int tag = -1;
+
+                    Scalar value = 1.0;
+                    in.get("value", value);
+                    in.get("side", tag);
+                    
+                    if(tag != -1) {
+                        auto fun = std::make_shared<UIConstantFunction<Scalar>>(value);
+
+                        lower_dimensional_permeability_.push_back(fun);
+                        lower_dimensional_tags_.push_back(tag);
+                    } else {
+                        std::cerr << "[Error] malformed input for lower-dimensional-permeability!" << std::endl;
+                    }
+                });
+            });
         }
 
     private:
@@ -133,6 +194,10 @@ namespace utopia {
 
         UIScalarFunction<Scalar> permeability_;
         ElementMatrix diffusion_tensor_;
+
+        std::vector< std::shared_ptr<UIFunction<Scalar>> > lower_dimensional_permeability_;
+        std::vector<int> lower_dimensional_tags_;
+
 
         void read_permeability_tensor(Input &in)
         {
