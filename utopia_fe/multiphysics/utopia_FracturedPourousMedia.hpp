@@ -298,6 +298,7 @@ namespace utopia {
                 for(std::size_t i = 0; i < n_dfn; ++i) {
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
                     *x_f_[i] = (*T) * x;
+                    fracture_network_[i]->disassemble_flow(*x_f_[i]);
                 }
             }  else //if(assembly_strategy_ == "monolithic") 
             {

@@ -6,26 +6,26 @@
 
 namespace utopia {
 
-    class TransferData {
-    public:
-        TransferData() : 
-            B(std::make_shared<USparseMatrix>()),
-            D(std::make_shared<USparseMatrix>()),
-            Q(std::make_shared<USparseMatrix>()),
-            T(std::make_shared<USparseMatrix>())
-        {}
-
-        void permute(const USparseMatrix &P, TransferData &out);
-
-        std::shared_ptr<USparseMatrix> B, D, Q, T;
-    };
-
     class NewTransferAssembler {
     public:
         using FunctionSpace = utopia::LibMeshFunctionSpace;
         using SparseMatrix  = utopia::USparseMatrix;
         using MeshBase      = libMesh::MeshBase;
         using DofMap        = libMesh::DofMap;
+
+        class TransferData {
+        public:
+            TransferData() : 
+                B(std::make_shared<USparseMatrix>()),
+                D(std::make_shared<USparseMatrix>()),
+                Q(std::make_shared<USparseMatrix>()),
+                T(std::make_shared<USparseMatrix>())
+            {}
+
+            void permute(const USparseMatrix &P, TransferData &out);
+
+            std::shared_ptr<USparseMatrix> B, D, Q, T;
+        };
 
         bool assemble(
             const std::shared_ptr<MeshBase> &from_mesh,

@@ -119,7 +119,7 @@ namespace utopia {
         }
 
         Mortar()
-        : export_constrained_(false)
+        : empty_(true), export_constrained_(false)
         {}
 
     private:

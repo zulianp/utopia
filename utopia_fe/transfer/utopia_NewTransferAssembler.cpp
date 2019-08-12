@@ -39,9 +39,7 @@
 
 namespace utopia {
 
-
-
-    void TransferData::permute(const USparseMatrix &P, TransferData &out)
+    void NewTransferAssembler::TransferData::permute(const USparseMatrix &P, TransferData &out)
     {
         if(!empty(*B)) *out.B = P * *B;
         if(!empty(*D)) *out.D = P * *D * transpose(P);
@@ -54,6 +52,8 @@ namespace utopia {
             normalize_rows(*out.Q);
         }
     }
+
+    using TransferDataT = utopia::NewTransferAssembler::TransferData;
 
 
     template<int Dim>
@@ -133,7 +133,7 @@ namespace utopia {
             LibMeshFunctionSpaceAdapter &master,
             LibMeshFunctionSpaceAdapter &slave,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
             Chrono c;
             c.start();
@@ -254,7 +254,7 @@ namespace utopia {
         static void prepare_data(
             const TransferOptions &opts,
             Transfer &t,
-            TransferData &data)
+            TransferDataT &data)
         {
             auto &B = *data.B;
             auto &D = *data.D;
@@ -288,7 +288,7 @@ namespace utopia {
             const FunctionSpaceT &master,
             const FunctionSpaceT &slave,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
 
             moonolith::Communicator comm = master.mesh().comm();
@@ -330,7 +330,7 @@ namespace utopia {
             const FunctionSpaceT &master,
             const FunctionSpaceT &slave,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
             if(slave.mesh().manifold_dim() < Dim) {
                 if(master.mesh().manifold_dim() < Dim) {
@@ -356,7 +356,7 @@ namespace utopia {
             const libMesh::MeshBase &to_mesh,
             const libMesh::DofMap   &to_dofs,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
             moonolith::Communicator comm = from_mesh.comm().get();
             auto master_mesh = std::make_shared<MeshT>(comm);
@@ -374,7 +374,7 @@ namespace utopia {
             const libMesh::MeshBase &lm_mesh,
             const libMesh::DofMap   &lm_dofs,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
             moonolith::Communicator comm = lm_mesh.comm().get();
             auto mesh = std::make_shared<MeshT>(comm);
@@ -418,7 +418,7 @@ namespace utopia {
             const libMesh::MeshBase &to_mesh,
             const libMesh::DofMap   &to_dofs,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
             moonolith::Communicator comm = from_mesh.comm().get();
             auto master_mesh = std::make_shared<MeshT>(comm);
@@ -438,7 +438,7 @@ namespace utopia {
             const FunctionSpaceT &in_slave,
             const FunctionSpaceT &slave,
             Transfer &t,
-            TransferData &data)
+            TransferDataT &data)
         {
 
             {
@@ -450,7 +450,7 @@ namespace utopia {
                     make_permutation(slave, in_slave, permutation);
                 }
 
-                TransferData data_ew;
+                TransferDataT data_ew;
 
                 auto &B_ew = *data_ew.B;
                 auto &D_ew = *data_ew.D;
@@ -493,7 +493,7 @@ namespace utopia {
             const FunctionSpaceT &master,
             const FunctionSpaceT &in_slave,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
             FunctionSpaceT slave;
             in_slave.separate_dofs(slave);
@@ -558,7 +558,7 @@ namespace utopia {
             const libMesh::MeshBase &to_mesh,
             const libMesh::DofMap   &to_dofs,
             const TransferOptions &opts,
-            TransferData &data)
+            TransferDataT &data)
         {
             moonolith::Communicator comm = from_mesh.comm().get();
             auto master_mesh = std::make_shared<MeshT>(comm);
