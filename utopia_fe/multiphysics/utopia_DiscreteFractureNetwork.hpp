@@ -88,14 +88,19 @@ namespace utopia {
             return true;
         }
 
-        void constrain_system(Matrix &A, Vector &b)
+        void constrain_system(Matrix &A, Vector &b, const bool identity_on_constrained_dofs = false)
         {
             const auto &T = *coupling_matrix();
 
             A = transpose(T) * A * T;
             b = transpose(T) * b;
             
-            set_zero_rows(A, is_constrained_, 1.0);
+            if(identity_on_constrained_dofs) {
+                set_zero_rows(A, is_constrained_, 1.0);
+            } else {
+                set_zero_rows(A, is_constrained_, 0.0);
+            }
+
             b = e_mul(is_unconstrained_, b);
         }
 
@@ -148,7 +153,7 @@ namespace utopia {
             flow_model_ = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
             flow_model_->read(in);
 
-            in.get("coupling", coupling_);
+            in.get("intersection", coupling_);
 
             init();
         }
