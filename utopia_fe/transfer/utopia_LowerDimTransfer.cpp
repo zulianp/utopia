@@ -141,7 +141,6 @@ namespace utopia {
         }
     };
 
-   
     bool LowerDimTransfer::assemble(
         const MeshBase &mesh,
         const DofMap   &dofs,
@@ -151,14 +150,12 @@ namespace utopia {
         auto spatial_dim = mesh.spatial_dimension();
         bool has_intersection = false;
 
-        // if(spatial_dim == 1) {
-        //     has_intersection = LowerDimTransferAlgorithm<1>::surface_apply(mesh, dofs, opts, data);
-        // } else 
         if(spatial_dim == 2) {
             has_intersection = LowerDimTransferAlgorithm<2>::apply(mesh, dofs, opts, data);
         } else if(spatial_dim == 3) {
-            // has_intersection = LowerDimTransferAlgorithm<3>::apply(mesh, dofs, opts, data);
-            assert(false && "implement me");
+            has_intersection = LowerDimTransferAlgorithm<3>::apply(mesh, dofs, opts, data);
+        } else {
+            assert(false && "cannot be used with this dimension");
         }
 
         return has_intersection;
