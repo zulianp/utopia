@@ -148,6 +148,7 @@ namespace utopia {
         {
             in.get("mesh", mesh_);
             in.get("space", space_);
+            in.get("identity-on-constrained-dofs", identity_on_constrained_dofs_);
 
             //FIXME
             flow_model_ = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
@@ -166,7 +167,7 @@ namespace utopia {
 
             if(coupling_.empty()) return true;
 
-            coupling_.constrain_system(hessian, gradient);
+            coupling_.constrain_system(hessian, gradient, identity_on_constrained_dofs_);
             return true;
         }
 
@@ -178,7 +179,7 @@ namespace utopia {
         }
 
         DiscreteFractureNetwork(libMesh::Parallel::Communicator &comm)
-        : mesh_(comm), space_(make_ref(mesh_))
+        : mesh_(comm), space_(make_ref(mesh_)), identity_on_constrained_dofs_(false)
         {}
 
         inline FunctionSpaceT &space()
@@ -195,6 +196,41 @@ namespace utopia {
         {
             coupling_.init(space());
         }
+
+        bool compute_flow()
+        {
+            auto &dof_map = space().dof_map();
+            
+            Matrix A;
+            Vector rhs;
+            Vector x = local_zeros(dof_map.n_local_dofs());
+
+            if(!assemble_flow(x, A, rhs)) {
+                std::cerr << "[Error] failed to assemble" << std::endl;
+                return false;
+            }
+
+            apply_boundary_conditions(dof_map, A, rhs);
+
+            Factorization<Matrix, Vector> solver;
+            
+            if(!solver.solve(A, rhs, x)) {
+                std::cerr << "[Error] failed to solve" << std::endl;
+                write("A.m", A);
+                write("b.m", rhs);
+                return false;
+            }
+
+            disassemble_flow(x);
+            return export_flow(x);
+        }
+
+        inline bool export_flow(Vector &x)
+        {
+            const std::string name = space().equation_system().name();
+            write(name + ".e", space(), x);
+            return true;
+        }
         
     private:
 
@@ -202,6 +238,7 @@ namespace utopia {
         UIFunctionSpace<FunctionSpaceT>  space_;
         std::shared_ptr<Model<Matrix, Vector>> flow_model_;
         FractureCoupling<Matrix, Vector> coupling_;
+        bool identity_on_constrained_dofs_;
     };
 
 }

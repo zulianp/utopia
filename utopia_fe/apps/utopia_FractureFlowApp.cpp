@@ -24,9 +24,19 @@ namespace utopia {
                 sim.run();
             }
         } else if(version == 2) {
-            FracturedPourousMedia<USparseMatrix, UVector> fpm(comm());
-            fpm.read(in);
-            fpm.compute_flow();
+
+            std::string flow_type;
+            in.get("flow-type", flow_type);
+
+            if(flow_type == "dfn-only") {
+                DiscreteFractureNetwork<USparseMatrix, UVector> dfn(comm());
+                in.get("fracture-network", dfn);
+                dfn.compute_flow();
+            } else {
+                FracturedPourousMedia<USparseMatrix, UVector> fpm(comm());
+                fpm.read(in);
+                fpm.compute_flow();
+            }
         }
     }
 }
