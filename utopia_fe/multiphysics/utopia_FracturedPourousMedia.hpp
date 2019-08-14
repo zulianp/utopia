@@ -279,6 +279,7 @@ namespace utopia {
 
             } else //if(assembly_strategy_ == "monolithic") 
             {
+                std::cerr << "[Error] in assemble_flow; assembly-strategy = " << assembly_strategy_ << " not supported yet" << std::endl;
                 assert(false && "TODO");
                 return false;
             }
@@ -302,6 +303,7 @@ namespace utopia {
                 }
             }  else //if(assembly_strategy_ == "monolithic") 
             {
+                std::cerr << "[Error] in disassemble_flow; assembly-strategy = " << assembly_strategy_ << " not supported yet" << std::endl;
                 assert(false && "TODO");
             }
         }

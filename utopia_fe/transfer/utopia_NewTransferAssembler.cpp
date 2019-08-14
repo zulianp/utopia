@@ -30,6 +30,7 @@
 #include "moonolith_keast_quadrature_rule.hpp"
 #include "moonolith_gauss_quadrature_rule.hpp"
 #include "moonolith_par_l2_transfer.hpp"
+#include "moonolith_par_volume_surface_l2_transfer.hpp"
 
 #include "utopia_LibMeshFunctionSpaceAdapter.hpp"
 #include "utopia_LibMeshToMoonolithConvertions.hpp"
@@ -284,6 +285,113 @@ namespace utopia {
         }
 
         template<int DimMaster, int DimSlave>
+        class ApplyAux {
+        public:
+
+            static bool apply(
+                const FunctionSpaceT &master,
+                const FunctionSpaceT &slave,
+                const TransferOptions &opts,
+                TransferDataT &data)
+            {
+
+                moonolith::Communicator comm = master.mesh().comm();
+                comm.barrier();
+
+                if(comm.is_root()) {
+                    moonolith::logger() << "ConvertTransferAlgorithm:apply(...) begin" << std::endl;
+                }
+
+                moonolith::ParL2Transfer<
+                    double,
+                    Dim,
+                    moonolith::StaticMax<DimMaster, 1>::value,
+                    moonolith::StaticMax<DimSlave, 1>::value
+                > assembler(comm);
+
+                if(opts.tags.empty()) {
+                    if(!assembler.assemble(master, slave)) {
+                        return false;
+                    }
+                } else {
+                    if(!assembler.assemble(master, slave, opts.tags)) {
+                        return false;
+                    }
+                }
+
+                prepare_data(opts, assembler, data);
+
+                comm.barrier();
+                
+                if(comm.is_root()) {
+                    moonolith::logger() << "ConvertTransferAlgorithm:apply(...) end" << std::endl;
+                }
+
+                return true;
+            }
+
+        };
+
+        template<int DimMaster>
+        class ApplyAux<DimMaster, DimMaster-1> {
+        public:
+
+            static bool apply(
+                const FunctionSpaceT &master,
+                const FunctionSpaceT &slave,
+                const TransferOptions &opts,
+                TransferDataT &data)
+            {
+
+                moonolith::Communicator comm = master.mesh().comm();
+                comm.barrier();
+
+                if(comm.is_root()) {
+                    moonolith::logger() << "ConvertTransferAlgorithm::apply(...)/Vol2Surf begin" << std::endl;
+                }
+
+                moonolith::ParVolumeSurfaceL2Transfer<double, Dim> assembler(comm);
+
+                if(opts.tags.empty()) {
+                    if(!assembler.assemble(master, slave)) {
+                        return false;
+                    }
+                } else {
+                    // if(!assembler.assemble(master, slave, opts.tags)) {
+                    //     return false;
+                    // }
+
+                    assert(false && "implement me!!!");
+                }
+
+                prepare_data(opts, assembler, data);
+
+                comm.barrier();
+                
+                if(comm.is_root()) {
+                    moonolith::logger() << "ConvertTransferAlgorithm:apply(...)/Vol2Surf end" << std::endl;
+                }
+
+                return true;
+            }
+        };
+
+        template<>
+        class ApplyAux<1, 0> {
+        public:
+
+            static bool apply(
+                const FunctionSpaceT &master,
+                const FunctionSpaceT &slave,
+                const TransferOptions &opts,
+                TransferDataT &data)
+            {
+                assert(false && "invalid dimensions");
+                return false;
+            }
+        };
+
+        template<int DimMaster, int DimSlave>
         static bool apply_aux(
             const FunctionSpaceT &master,
             const FunctionSpaceT &slave,
@@ -291,39 +399,7 @@ namespace utopia {
             TransferDataT &data)
         {
 
-            moonolith::Communicator comm = master.mesh().comm();
-            comm.barrier();
-
-            if(comm.is_root()) {
-                moonolith::logger() << "ConvertTransferAlgorithm:apply(...) begin" << std::endl;
-            }
-
-            moonolith::ParL2Transfer<
-                double,
-                Dim,
-                moonolith::StaticMax<DimMaster, 1>::value,
-                moonolith::StaticMax<DimSlave, 1>::value
-            > assembler(comm);
-
-            if(opts.tags.empty()) {
-                if(!assembler.assemble(master, slave)) {
-                    return false;
-                }
-            } else {
-                if(!assembler.assemble(master, slave, opts.tags)) {
-                    return false;
-                }
-            }
-
-            prepare_data(opts, assembler, data);
-
-            comm.barrier();
-            
-            if(comm.is_root()) {
-                moonolith::logger() << "ConvertTransferAlgorithm:apply(...) end" << std::endl;
-            }
-
-            return true;
+            return ApplyAux<DimMaster, DimSlave>::apply(master, slave, opts, data);
         }
 
         static bool apply(
