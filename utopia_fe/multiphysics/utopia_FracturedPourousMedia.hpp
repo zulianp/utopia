@@ -308,12 +308,12 @@ namespace utopia {
 
         inline bool export_flow()
         {
-            write("porous_matrix.e", pourous_matrix_.space(), *x_m_);
+            write(pourous_matrix_.space().equation_system().name() + ".e", pourous_matrix_.space(), *x_m_);
 
             const std::size_t n_dfn = fracture_network_.size();
 
             for(std::size_t i = 0; i < n_dfn; ++i) {
-                write("fracture_network_" + std::to_string(i) + ".e", fracture_network_[i]->space(), *x_f_[i]);
+                write(fracture_network_[i]->space().equation_system().name() + ".e", fracture_network_[i]->space(), *x_f_[i]);
             }
 
             return true;
