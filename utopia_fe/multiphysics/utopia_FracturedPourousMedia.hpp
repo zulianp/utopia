@@ -365,19 +365,13 @@ namespace utopia {
                     *x_f_[i] = local_zeros(dof_map_f.n_local_dofs());
                     dfn->assemble_flow(*x_f_[i], *A_f_[i], *rhs_f_[i]);
 
-                    // if(remove_constrained_dofs_) {
-                    //     remove_constrained_dofs(dof_map_f, *A_f_[i], *rhs_f_[i]);
-                    // } else {
-                        apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
-                    // }
+                    // apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+
+                    if(remove_constrained_dofs_) {
+                        remove_constrained_dofs(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    }
 
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
-
-                    // if(remove_constrained_dofs_) {
-                    //     //this is a hacky way to handle the issue of nodes that have both Dirichlet and Mortar conds
-                    //     std::cout << "[Status] removing constrained dofs (not proper)" << std::endl;
-                    //     remove_constrained_dofs(dof_map_f, *T);
-                    // }
 
                     Matrix A_temp = transpose(*T) * (*A_f_[i]) * (*T);
                     A += A_temp;
