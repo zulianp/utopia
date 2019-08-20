@@ -11,6 +11,102 @@
 
 namespace utopia {
 
+    void remove_constrained_dofs(libMesh::DofMap &dof_map, USparseMatrix &mat, UVector &vec)
+    {
+        if(utopia::Utopia::instance().verbose()) {
+            std::cout << "apply_boundary_conditions begin: "  << std::endl;
+        }
+
+        Chrono c;
+        c.start();
+
+        assert(!empty(mat));
+        assert(!empty(vec));
+
+        using SizeType = Traits<UVector>::SizeType;
+
+        const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+
+        Size ls = local_size(mat);
+        Size s = size(mat);
+
+        std::vector<SizeType> index;
+
+        Range rr = range(vec);
+
+        if(has_constaints) {
+            for(SizeType i = rr.begin(); i < rr.end(); ++i) {
+                if( dof_map.is_constrained_dof(i) ) {
+                    index.push_back(i);
+                }
+            }
+        }
+
+        set_zero_rows(mat, index, 0.);
+
+        Write<UVector> w_v(vec);
+
+        if(has_constaints) {
+            libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+            Range r = range(vec);
+            for(SizeType i = r.begin(); i < r.end(); ++i) {
+                if(dof_map.is_constrained_dof(i)) {
+                    // auto valpos = rhs_values.find(i);
+                    vec.set(i, 0.0);
+                }
+            }
+        }
+
+        c.stop();
+
+        if(utopia::Utopia::instance().verbose()) {
+            std::cout << "apply_boundary_conditions end: " << c << std::endl;
+        }
+    }
+
+    void remove_constrained_dofs(libMesh::DofMap &dof_map, USparseMatrix &mat)
+    {
+        if(utopia::Utopia::instance().verbose()) {
+            std::cout << "apply_boundary_conditions begin: "  << std::endl;
+        }
+
+        Chrono c;
+        c.start();
+
+        assert(!empty(mat));
+        assert(!empty(vec));
+
+        using SizeType = Traits<UVector>::SizeType;
+
+        const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+
+        Size ls = local_size(mat);
+        Size s = size(mat);
+
+        std::vector<SizeType> index;
+
+        Range rr = row_range(mat);
+
+        if(has_constaints) {
+            for(SizeType i = rr.begin(); i < rr.end(); ++i) {
+                if( dof_map.is_constrained_dof(i) ) {
+                    index.push_back(i);
+                }
+            }
+        }
+
+        set_zero_rows(mat, index, 0.);
+
+        c.stop();
+
+        if(utopia::Utopia::instance().verbose()) {
+            std::cout << "apply_boundary_conditions end: " << c << std::endl;
+        }
+    }
+
     template<class Matrix, class Vector>
     class LagrangeMultiplier : public Configurable {
     public:
@@ -196,6 +292,7 @@ namespace utopia {
             });
 
             in.get("assembly-strategy", assembly_strategy_);
+            in.get("remove-constrained-dofs", remove_constrained_dofs_);
 
             std::cout << "n fracture networks " << fracture_network_.size() << std::endl;
 
@@ -268,14 +365,26 @@ namespace utopia {
                     *x_f_[i] = local_zeros(dof_map_f.n_local_dofs());
                     dfn->assemble_flow(*x_f_[i], *A_f_[i], *rhs_f_[i]);
 
-                    apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    // if(remove_constrained_dofs_) {
+                    //     remove_constrained_dofs(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    // } else {
+                        apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    // }
 
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
+
+                    // if(remove_constrained_dofs_) {
+                    //     //this is a hacky way to handle the issue of nodes that have both Dirichlet and Mortar conds
+                    //     std::cout << "[Status] removing constrained dofs (not proper)" << std::endl;
+                    //     remove_constrained_dofs(dof_map_f, *T);
+                    // }
 
                     Matrix A_temp = transpose(*T) * (*A_f_[i]) * (*T);
                     A += A_temp;
                     rhs += transpose(*T) * (*rhs_f_[i]);
                 }
+
+                apply_boundary_conditions(dof_map_m, A, rhs);
 
             } else //if(assembly_strategy_ == "monolithic") 
             {
@@ -322,7 +431,7 @@ namespace utopia {
         }
 
         FracturedPourousMedia(libMesh::Parallel::Communicator &comm)
-        : comm_(comm), pourous_matrix_(comm), assembly_strategy_("monolithic"), use_mg_(false)
+        : comm_(comm), pourous_matrix_(comm), assembly_strategy_("monolithic"), use_mg_(false), remove_constrained_dofs_(false)
         {}
 
     private:
@@ -341,6 +450,7 @@ namespace utopia {
 
         std::string assembly_strategy_;
         bool use_mg_;
+        bool remove_constrained_dofs_;
     };
     
 }
