@@ -76,7 +76,6 @@ namespace utopia {
         c.start();
 
         assert(!empty(mat));
-        assert(!empty(vec));
 
         using SizeType = Traits<UVector>::SizeType;
 
