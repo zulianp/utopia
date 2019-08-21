@@ -329,8 +329,8 @@ namespace utopia {
 
     };
 
-    template<int Dim, int DimMaster>
-    class ApplyAux<Dim, DimMaster, DimMaster-1> final {
+    template<int Dim>
+    class ApplyAuxLowerDim {
     public:
         using MeshT = moonolith::Mesh<double, Dim>;
         using FunctionSpaceT = moonolith::FunctionSpace<MeshT>;
@@ -375,11 +375,10 @@ namespace utopia {
         }
     };
 
-    template<int Dim>
-    class ApplyAux<Dim, 1, 0> final {
+    template<>
+    class ApplyAux<1, 1, 0> final {
     public:
-
-        using MeshT = moonolith::Mesh<double, Dim>;
+        using MeshT = moonolith::Mesh<double, 1>;
         using FunctionSpaceT = moonolith::FunctionSpace<MeshT>;
 
         static bool apply(
@@ -392,6 +391,9 @@ namespace utopia {
             return false;
         }
     };
+
+    template<> class ApplyAux<2, 2, 1> final : public ApplyAuxLowerDim<2> {};
+    template<> class ApplyAux<3, 3, 2> final : public ApplyAuxLowerDim<3> {};
 
     template<int Dim>
     class ConvertTransferAlgorithm {
