@@ -50,8 +50,8 @@ namespace utopia
                 setup_(false)
         {
             application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
-            application_context_.mms_solution = Bratu2DMMSSolution; 
-            application_context_.mms_forcing = Bratu2DMMSForcing;
+            application_context_.mms_solution   = Bratu2DMMSSolution; 
+            application_context_.mms_forcing    = Bratu2DMMSForcing;
 
             this->create_DM();
             this->setup_SNES();
@@ -63,10 +63,11 @@ namespace utopia
                 setup_(false)
         {
             application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
-            application_context_.mms_solution = Bratu2DMMSSolution; 
-            application_context_.mms_forcing = Bratu2DMMSForcing;
+            application_context_.mms_solution   = Bratu2DMMSSolution; 
+            application_context_.mms_forcing    = Bratu2DMMSForcing;
 
             da_ = dm; 
+            // necessary to provide reasonable global dimension 
             DMDAGetInfo(da_, 0, &n_, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
             this->setup_SNES();
@@ -97,8 +98,11 @@ namespace utopia
             
         virtual bool hessian(const Vector &x, Matrix &hessian) const override
         {
-            SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,  snes_->jacobian);
             wrap(snes_->jacobian, hessian);
+
+            SNESComputeJacobian(snes_, raw_type(x), raw_type(hessian),  raw_type(hessian));
+
+            
             return true;
         }
 
@@ -219,7 +223,7 @@ namespace utopia
             DMDASNESSetFunctionLocal(da_,INSERT_VALUES,(DMDASNESFunction)Bratu2DFormFunctionLocal,&application_context_);
             DMDASNESSetJacobianLocal(da_,(DMDASNESJacobian)Bratu2DFormJacobianLocal,&application_context_);
             
-            // preallocate vectors 
+            // preallocate matrices/vectors 
             DMCreateMatrix(da_, &snes_->jacobian);
             DMCreateMatrix(da_, &snes_->jacobian_pre);
             DMCreateGlobalVector(da_, &snes_->vec_sol);

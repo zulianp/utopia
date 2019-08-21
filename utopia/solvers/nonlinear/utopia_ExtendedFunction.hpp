@@ -17,7 +17,8 @@ namespace utopia
     class ExtendedFunction : public Function<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~ExtendedFunction() { }
 
@@ -28,7 +29,19 @@ namespace utopia
                 _rhs(rhs),
                 _eq_constrains_flg(bc_marker)
         {
+            Vector ones = local_values(local_size(_eq_constrains_flg).get(0), 1.0); 
+            _eq_constraints_mask_matrix_ = diag(ones - _eq_constrains_flg); 
 
+            {
+                Read<Vector> r(_eq_constrains_flg);
+
+                Range range_w = range(_eq_constrains_flg);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                {
+                    if(_eq_constrains_flg.get(i) == 1)
+                        indices_eq_constraints_.push_back(i);
+                }
+            }              
         }
 
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const override = 0;
@@ -101,6 +114,12 @@ namespace utopia
             return true;
         }
 
+        inline const std::vector<SizeType> & get_indices_related_to_BC()
+        {
+            return indices_eq_constraints_; 
+        }
+
+
         const Vector &get_eq_constrains_flg() const
         {
             return _eq_constrains_flg;
@@ -108,15 +127,43 @@ namespace utopia
 
         virtual bool set_equality_constrains(const Vector &eq_constrains_flg, const Vector &x_in)
         {
-            _x_eq_values             =  x_in;
+            _x_eq_values        =  x_in;
             _eq_constrains_flg  = eq_constrains_flg;
+
+            Vector ones = local_values(local_size(_eq_constrains_flg).get(0), 1.0); 
+            _eq_constraints_mask_matrix_ = diag(ones - _eq_constrains_flg); 
+
+            {
+                Read<Vector> r(_eq_constrains_flg);
+
+                Range range_w = range(_eq_constrains_flg);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                {
+                    if(_eq_constrains_flg.get(i) == 1)
+                        indices_eq_constraints_.push_back(i);
+                }
+            }            
+
             return true;
         }
+
+
+        virtual bool zero_contribution_to_equality_constrains(Vector & x)
+        {
+            x = _eq_constraints_mask_matrix_ * x; 
+            return true;
+        }
+
+
+
 
      protected:
         Vector _x_eq_values;
         Vector _rhs;
         Vector _eq_constrains_flg;
+        
+        Matrix _eq_constraints_mask_matrix_; 
+        std::vector<SizeType> indices_eq_constraints_; 
 
 
     };

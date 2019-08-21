@@ -669,12 +669,12 @@ namespace utopia {
                 ierr = KSPSolve(ksp_, raw_type(b), raw_type(x)); assert(ierr == 0);
                 ierr = KSPGetConvergedReason(ksp_, &reason);     assert(ierr == 0);
 
-                if(reason < 0) {
+                // if(reason < 0) {
 
-                    utopia_warning(
-                        "ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) +
-                        " ksp_type=" + ksp_type() + " pc_type=" + pc_type() + " solver_package=" + solver_package());
-                }
+                //     utopia_warning(
+                //         "ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) +
+                //         " ksp_type=" + ksp_type() + " pc_type=" + pc_type() + " solver_package=" + solver_package());
+                // }
 
                 return reason >= 0;
             }

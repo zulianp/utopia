@@ -29,7 +29,7 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(newton_test);            
 
-            UTOPIA_RUN_TEST(STCG_test); 
+            // UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
 
             // UTOPIA_RUN_TEST(TR_unconstrained);
@@ -39,7 +39,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(QuasiTR_constrained);
 
 
-            // UTOPIA_RUN_TEST(RMTR_unconstrained); 
+            UTOPIA_RUN_TEST(RMTR_unconstrained); 
         }
 
         template<class QPSolverTemp>
@@ -223,7 +223,9 @@ namespace utopia
 
         void RMTR_unconstrained()
         {
-            auto n_coarse = 50; 
+            // auto n_coarse = 50; 
+            auto n_coarse = n_; 
+
             Petsc2DMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > multilevel_problem(n_levels_, n_coarse); 
 
             auto fun = multilevel_problem.level_functions_[n_levels_-1];
@@ -232,24 +234,30 @@ namespace utopia
             fun_Bratu2D->describe(); 
 
             auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-            tr_strategy_coarse->pc_type("bjacobi"); 
+            tr_strategy_coarse->pc_type("jacobi"); 
             tr_strategy_coarse->atol(1e-14);
-            tr_strategy_coarse->max_it(100000);
 
-            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
             tr_strategy_fine->pc_type("jacobi"); 
             tr_strategy_fine->atol(1e-14);
-            tr_strategy_fine->max_it(2);
 
+            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
             auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+
+            
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
             rmtr->set_fine_tr_strategy(tr_strategy_fine);                        
 
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
 
             rmtr->max_it(1000);
-            rmtr->max_coarse_it(1);
+            rmtr->max_coarse_it(2);
+            rmtr->max_QP_coarse_it(100);
+
             rmtr->max_smoothing_it(1);
+            rmtr->max_QP_smoothing_it(3); 
+
+
             rmtr->delta0(1e9);
             rmtr->atol(1e-6);
             rmtr->rtol(1e-10);
@@ -257,8 +265,8 @@ namespace utopia
             rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(verbose_);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
             rmtr->set_functions( multilevel_problem.level_functions_);
             rmtr->handle_equality_constraints();            
             rmtr->solve(x);
@@ -280,7 +288,11 @@ namespace utopia
     {
         UTOPIA_UNIT_TEST_BEGIN("HckTests");
         #ifdef  WITH_PETSC
-            HckTests<DSMatrixd, DVectord>(10, 2, 1.0, true, true).run();
+
+            auto n_levels = 4; 
+            auto coarse_dofs = 125; 
+
+            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
         #endif
         UTOPIA_UNIT_TEST_END("HckTests");
 

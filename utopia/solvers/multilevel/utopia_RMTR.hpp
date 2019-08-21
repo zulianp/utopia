@@ -333,8 +333,9 @@ namespace utopia
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level] = local_zeros(local_size(memory_.x[fine_level]));
 
-            if(!skip_BC_checks())
+            if(!skip_BC_checks()){
                 this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]);
+            }
 
             this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]);
             this->function(fine_level).value(memory_.x[fine_level], energy);
@@ -422,8 +423,9 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            if(this->pre_smoothing_steps()!=0)
+            if(this->pre_smoothing_steps()!=0){
                 converged = this->local_tr_solve(level, PRE_SMOOTHING);
+            }
             else
                 converged = false;
 
@@ -470,14 +472,17 @@ namespace utopia
 
             if(!skip_BC_checks())
             {
-                if(CONSISTENCY_LEVEL != GALERKIN)
+                if(CONSISTENCY_LEVEL != GALERKIN){
                     this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]);
+                }
             }
 
-            if(this->check_grad_smoothness())
+            if(this->check_grad_smoothness()){
                 smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1);
-            else
+            }
+            else{
                 smoothness_flg = true;
+            }
 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
@@ -496,8 +501,9 @@ namespace utopia
 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                    if(!skip_BC_checks())
+                    if(!skip_BC_checks()){
                         this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]);
+                    }
 
                     this->function(level-1).hessian(memory_.x[level-1], memory_.H[level-1]);
                     memory_.H_diff[level-1] -=  memory_.H[level-1];
@@ -637,7 +643,8 @@ namespace utopia
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0;
             bool make_grad_updates = true, /*make_hess_updates = true,*/ converged = false, delta_converged = false;
 
-            const bool exact_solve_flg = (solve_type >0) ? true : false;
+            const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
+            // std::cout<<"solve_type: "<< solve_type << "    exact_solve_flg: "<< exact_solve_flg << "  \n"; 
 
 
             this->initialize_local_solve(level, solve_type);
@@ -645,7 +652,9 @@ namespace utopia
 
             // should be neccessary just first time, we enter given level
             if(empty(memory_.s[level]))
-                 memory_.s[level] = local_zeros(local_size(memory_.x[level]));
+            {
+                memory_.s[level] = local_zeros(local_size(memory_.x[level]));
+            }
 
             // important, as this can be postsmoothing
             this->compute_s_global(level, memory_.s_working[level]);
@@ -1022,10 +1031,13 @@ namespace utopia
         {
             // this params should not be as hardcodded as they are...
             _tr_subproblems[level]->atol(1e-16);
-            if(flg)
+            
+            if(flg){
                 _tr_subproblems[level]->max_it(_max_QP_coarse_it);
-            else
+            }
+            else{
                 _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
+            }
 
             _tr_subproblems[level]->current_radius(memory_.delta[level]);
             _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
@@ -1049,10 +1061,12 @@ namespace utopia
          */
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
         {
-            if(level < this->n_levels()-1)
+            if(level < this->n_levels()-1){
                 return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
-            else
+            }
+            else{
                 return fun.hessian(memory_.x[level], memory_.H[level]);
+            }
         }
 
 
