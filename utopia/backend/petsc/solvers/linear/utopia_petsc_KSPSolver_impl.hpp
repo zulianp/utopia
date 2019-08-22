@@ -339,7 +339,9 @@ namespace utopia {
                 PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 
                 ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(mat)); assert(ierr == 0);
-                ierr = KSPSetUp(ksp_);                                      assert(ierr == 0);
+
+                // should not be necessary
+                // ierr = KSPSetUp(ksp_);                                      assert(ierr == 0);
             }
 
             void update(const Matrix &mat, const Matrix &prec)
@@ -347,7 +349,9 @@ namespace utopia {
                 PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 
                 ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(prec)); assert(ierr == 0);
-                ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
+
+                // should not be necessary                
+                // ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
             }
 
             bool smooth(const SizeType sweeps,
