@@ -384,8 +384,9 @@ namespace utopia
                 if(this->verbose() && mpi_world_rank() == 0)
                 {
                     std::cout << red_;
-                    if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL)
-                        this->init_solver("RMTR OUTER SOLVE", {" it. ", "|| g ||", "   E "});
+                    if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL){
+                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||", "   E "});
+                    }
 
                     PrintInfo::print_iter_status(_it_global, {r_norm, energy});
                     std::cout << def_;
@@ -603,7 +604,7 @@ namespace utopia
                 {
                     // just to see what is being printed
                     std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level);
-                    this->init_solver(status, {" it. ", "g_norm",  "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"});
+                    this->print_init_message(status, {" it. ", "g_norm",  "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"});
                     PrintInfo::print_iter_status(_it_global, {g_norm, E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], coarse_corr_taken });
                 }
             }
@@ -1038,6 +1039,7 @@ namespace utopia
             else{
                 _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
             }
+            // _tr_subproblems[level]->verbose("true"); 
 
             _tr_subproblems[level]->current_radius(memory_.delta[level]);
             _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
@@ -1151,13 +1153,13 @@ namespace utopia
                 {
                     std::cout << yellow_;
                     std::string solver_type = "COARSE SOLVE:: " + std::to_string(level);
-                    this->init_solver(solver_type, {" it. ", "|| g ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "});
+                    this->print_init_message(solver_type, {" it. ", "|| g ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "});
                 }
                 else
                 {
                     std::cout << green_;
                     std::string solver_type = "SMOOTHER:  " + std::to_string(level);
-                    this->init_solver(solver_type, {" it. ", "|| g ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "});
+                    this->print_init_message(solver_type, {" it. ", "|| g ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "});
                 }
             }
         }

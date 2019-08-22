@@ -234,7 +234,7 @@ namespace utopia
             fun_Bratu2D->describe(); 
 
             auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-            tr_strategy_coarse->pc_type("jacobi"); 
+            tr_strategy_coarse->pc_type("lu"); 
             tr_strategy_coarse->atol(1e-14);
 
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
@@ -242,7 +242,7 @@ namespace utopia
             tr_strategy_fine->atol(1e-14);
 
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
 
             
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -250,12 +250,12 @@ namespace utopia
 
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
 
-            rmtr->max_it(1000);
-            rmtr->max_coarse_it(2);
-            rmtr->max_QP_coarse_it(100);
+            rmtr->max_it(10);
+            rmtr->max_coarse_it(3);
+            rmtr->max_QP_coarse_it(300);
 
-            rmtr->max_smoothing_it(1);
-            rmtr->max_QP_smoothing_it(3); 
+            rmtr->max_smoothing_it(2);
+            rmtr->max_QP_smoothing_it(20); 
 
 
             rmtr->delta0(1e9);
@@ -265,8 +265,8 @@ namespace utopia
             rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(verbose_);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
             rmtr->set_functions( multilevel_problem.level_functions_);
             rmtr->handle_equality_constraints();            
             rmtr->solve(x);

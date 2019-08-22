@@ -92,7 +92,7 @@ namespace utopia
 
         virtual bool apply(const Vector &b, Vector &x) override
         {
-            ksp_.apply(b, x);
+            ksp_.apply(b, x);   
             return true;
         }
 
@@ -101,14 +101,45 @@ namespace utopia
          */
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
-             ksp_.update(op);
-             set_ksp_options(ksp_.implementation());
+            ksp_.update(op);
+            set_ksp_options(ksp_.implementation());
         }
 
 
         virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
         {
             ksp_.set_preconditioner(precond);
+        }
+
+        // necessary, as ksp_ is resetting options with every apply... 
+        virtual void atol(const Scalar & atol_in) //override
+        {
+            TRSubproblem::atol(atol_in); 
+            ksp_.atol(atol_in); 
+        }
+
+        virtual void stol(const Scalar & stol_in) //override
+        {
+            TRSubproblem::stol(stol_in); 
+            ksp_.stol(stol_in); 
+        }
+
+        virtual void rtol(const Scalar & rtol_in)// override
+        {
+            TRSubproblem::rtol(rtol_in); 
+            ksp_.rtol(rtol_in); 
+        }
+
+        virtual void max_it(const SizeType & max_it_in) //override
+        {
+            TRSubproblem::max_it(max_it_in); 
+            ksp_.max_it(max_it_in); 
+        }   
+
+        virtual void verbose(const bool & verbose_in) 
+        {
+            TRSubproblem::verbose(verbose_in); 
+            ksp_.verbose(verbose_in); 
         }
 
 
@@ -147,8 +178,16 @@ namespace utopia
 #else
             KSPCGSetRadius(ksp, this->current_radius());
 #endif
-            ierr = KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT,  this->max_it());
+            ierr = KSPSetTolerances(ksp, TRSubproblem::rtol(), TRSubproblem::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());
+
+            ksp_.rtol(TRSubproblem::rtol()); 
+            ksp_.atol(TRSubproblem::atol()); 
+            ksp_.stol(TRSubproblem::stol()); 
+            ksp_.max_it(TRSubproblem::max_it());
+            ksp_.verbose(TRSubproblem::verbose()); 
+            
         }
+
 
     protected:
         KSPSolver ksp_;

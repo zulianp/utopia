@@ -89,11 +89,19 @@ protected:
          */
         virtual void init_solver(const std::string &method, const std::vector<std::string> status_variables) override
         {
-            if(mpi_world_rank() == 0 && verbose_)
-                PrintInfo::print_init(method, status_variables);
+            if(mpi_world_rank() == 0 && verbose_){
+                this->print_init_message(method, status_variables);
+            }
 
             this->solution_status_.clear();
             _time.start();
+        }
+
+        virtual void print_init_message(const std::string &method, const std::vector<std::string> status_variables)
+        {
+            if(mpi_world_rank() == 0 && verbose_){
+                PrintInfo::print_init(method, status_variables);
+            }
         }
 
 
