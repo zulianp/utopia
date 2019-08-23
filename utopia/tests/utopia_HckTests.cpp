@@ -250,11 +250,12 @@ namespace utopia
 
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
 
-            rmtr->max_it(1);
+            rmtr->max_it(0);
             rmtr->max_coarse_it(2);
             rmtr->max_QP_coarse_it(300);
 
-            rmtr->max_smoothing_it(1);
+            rmtr->pre_smoothing_steps(1);
+            rmtr->post_smoothing_steps(1);
             rmtr->max_QP_smoothing_it(2); 
 
 
