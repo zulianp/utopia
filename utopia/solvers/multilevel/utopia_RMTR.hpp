@@ -564,8 +564,10 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 //                       building trial point from coarse level
                 //----------------------------------------------------------------------------
+                // this line to be removed
                 memory_.s[level-1] = memory_.x[level-1] - memory_.x_0[level-1];
-                coarse_reduction -= this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1);
+                coarse_reduction -= memory_.energy[level-1]; 
+
 
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
 
@@ -690,6 +692,9 @@ namespace utopia
                 else
                 {
                     this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+                }
+
+                if(solve_type != POST_SMOOTHING){
                     memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
                 }
             }
