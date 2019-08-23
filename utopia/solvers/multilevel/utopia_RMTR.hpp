@@ -24,6 +24,8 @@ namespace utopia
                             POST_SMOOTHING = 2,
                             COARSE_SOLVE   = 0};
 
+    enum NormSchedule{  ALWAYS = 1,
+                        OUTER_CYCLE = 2};
 
 
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
@@ -67,6 +69,7 @@ namespace utopia
                 _hessian_update_delta(0.15),
                 _hessian_update_eta(0.5),
                 _verbosity_level(VERBOSITY_LEVEL_NORMAL),
+                _norm_schedule(ALWAYS), 
                 red_(FG_LIGHT_MAGENTA),
                 def_(FG_DEFAULT),
                 yellow_(FG_LIGHT_YELLOW),
@@ -96,6 +99,10 @@ namespace utopia
 
             in.get("hessian_update_delta", _hessian_update_delta);
             in.get("hessian_update_eta", _hessian_update_eta);
+
+            // TODO:: introduce 
+            // in.get("norm_schedule", _norm_schedule); 
+
             // in.get("verbosity_level", _verbosity_level);
 
             const auto n_subproblems = _tr_subproblems.size();
@@ -131,6 +138,8 @@ namespace utopia
 
             this->print_param_usage(os, "coarse-QPSolver", "TRSubproblem", "Input parameters for fine level QP solvers.", "-");
             this->print_param_usage(os, "fine-QPSolver", "TRSubproblem", "Input parameters for coarse level QP solver.", "-");
+
+            // this->print_param_usage(os, "norm_schedule", "NormSchedules", "Specifies how often to compute norms.", "ALWAYS");
         }
 
 
@@ -144,6 +153,16 @@ namespace utopia
 
             _verbosity_level = this->verbose() ? level : VERBOSITY_LEVEL_QUIET;
         }
+
+        virtual NormSchedule norm_schedule() const
+        {
+            return _norm_schedule;
+        }
+
+        virtual void norm_schedule(const NormSchedule & schedule)
+        {
+            _norm_schedule = schedule; 
+        }        
 
 
         virtual void set_grad_smoothess_termination(const Scalar & grad_smoothess_termination)
@@ -338,7 +357,6 @@ namespace utopia
                 this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]);
             }
 
-            std::cout<<"--- function gradient  \n"; 
             this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]);
             this->function(fine_level).value(memory_.x[fine_level], memory_.energy[fine_level]);
 
@@ -351,7 +369,7 @@ namespace utopia
             {
                 std::cout << red_;
                 std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(fine_local_size);
-                this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
+                this->init_solver(name_id, {" it. ", "|| g ||", "|| g ||/|| g_0|", "   E "});
 
                 PrintInfo::print_iter_status(_it_global, {r0_norm, memory_.energy[fine_level]});
                 std::cout << def_;
@@ -375,7 +393,6 @@ namespace utopia
                     }
                 #endif
 
-                std::cout<<"--- function gradient  \n"; 
                 this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]);
                 this->function(fine_level).value(memory_.x[fine_level], memory_.energy[fine_level]);
 
@@ -446,7 +463,6 @@ namespace utopia
                 this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
             }
 
-
             if(level == this->n_levels()-1)
             {
                 converged =  this->criticality_measure_termination(this->criticality_measure(level));
@@ -473,7 +489,6 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   first order coarse level objective managment
             //----------------------------------------------------------------------------
-            std::cout<<"--- function gradient  \n"; 
             this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
 
 
@@ -558,9 +573,7 @@ namespace utopia
                     this->zero_correction_related_to_equality_constrain(this->function(level), memory_.s[level]);
                 }
 
-
                 E_old = memory_.energy[level]; 
-
 
                 // new test for dbg mode
                 memory_.x[level] += memory_.s[level];
@@ -573,8 +586,9 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 ared = E_old - E_new;
                 rho = ared / coarse_reduction;
-                if(coarse_reduction<=0)
+                if(coarse_reduction<=0){
                     rho = 0;
+                }
 
                 Scalar coarse_corr_taken = 0;
                 if(rho > this->rho_tol())
@@ -747,7 +761,12 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 delta_converged = this->delta_update(rho, level, memory_.s_working[level]);
 
-                // can be more efficient, see line below 
+                if(_norm_schedule==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
+                {
+                    make_grad_updates = false; 
+                }
+
+                // can be more efficient, see commented line below 
                 make_hess_updates =   make_grad_updates; 
 
                 if(make_grad_updates)
@@ -969,6 +988,43 @@ namespace utopia
             return this->criticality_measure_termination(g_norm);
         }
 
+
+        /**
+         * @brief      Checks for termination due to max it 
+         *
+         * @param[in]  it_success  Number of succesfull iterations on given level
+         * @param[in]  g_norm      Norm of gradient
+         * @param[in]  level       The level
+         * @param[in]  delta       The delta
+         *
+         */
+        virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
+        {
+            // coarse one
+            if(level == 0 && (it_success >= _max_coarse_it))
+            {
+                return true;
+            }
+            // every other level
+            else if (level > 0 && solve_type == PRE_SMOOTHING)
+            {
+                if(it_success >= this->pre_smoothing_steps() || it >= this->max_smoothing_it())
+                {
+                    return true;
+                }
+            }
+            else if (level > 0 && solve_type == POST_SMOOTHING)
+            {
+                if(it_success >= this->post_smoothing_steps() || it >= this->max_smoothing_it())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
         /**
          * @brief      THis check guarantees that iterates at a lower level remain in the TR radius defined at the finer level
          *
@@ -1112,7 +1168,6 @@ namespace utopia
          */
         virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
-            std::cout<<"grad computation, level: "<< level << "  \n"; 
             if(level < this->n_levels()-1)
             {
                 return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
@@ -1215,6 +1270,7 @@ namespace utopia
         Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
 
         VerbosityLevel                  _verbosity_level;
+        NormSchedule                    _norm_schedule; 
 
         ColorModifier red_;
         ColorModifier def_;

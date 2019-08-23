@@ -250,14 +250,16 @@ namespace utopia
 
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
 
-            rmtr->max_it(0);
+            rmtr->max_it(1);
             rmtr->max_coarse_it(2);
             rmtr->max_QP_coarse_it(300);
 
             rmtr->pre_smoothing_steps(1);
             rmtr->post_smoothing_steps(1);
+            rmtr->max_smoothing_it(1); 
             rmtr->max_QP_smoothing_it(2); 
 
+            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
 
             rmtr->delta0(1e9);
             rmtr->atol(1e-6);
@@ -266,8 +268,8 @@ namespace utopia
             rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(verbose_);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
             rmtr->set_functions( multilevel_problem.level_functions_);
             rmtr->handle_equality_constraints();            
             rmtr->solve(x);
