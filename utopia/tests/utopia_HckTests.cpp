@@ -242,7 +242,7 @@ namespace utopia
             tr_strategy_fine->atol(1e-14);
 
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
             
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -250,12 +250,12 @@ namespace utopia
 
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
 
-            rmtr->max_it(10);
-            rmtr->max_coarse_it(3);
+            rmtr->max_it(1);
+            rmtr->max_coarse_it(2);
             rmtr->max_QP_coarse_it(300);
 
-            rmtr->max_smoothing_it(2);
-            rmtr->max_QP_smoothing_it(20); 
+            rmtr->max_smoothing_it(1);
+            rmtr->max_QP_smoothing_it(2); 
 
 
             rmtr->delta0(1e9);
