@@ -46,9 +46,10 @@ namespace utopia
 
                 delta.resize(n_levels);
                 energy.resize(n_levels); 
+                gnorm.resize(n_levels); 
             }
 
-        std::vector<Scalar> delta, energy;
+        std::vector<Scalar> delta, energy, gnorm;
         std::vector<Vector> x, x_0, g, g_diff, s, s_working;
         std::vector<Matrix> H, H_diff;
     };

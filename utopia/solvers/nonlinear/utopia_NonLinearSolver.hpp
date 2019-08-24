@@ -97,7 +97,7 @@ protected:
             _time.start();
         }
 
-        virtual void print_init_message(const std::string &method, const std::vector<std::string> status_variables)
+        virtual void print_init_message(const std::string &method, const std::vector<std::string> status_variables) //override
         {
             if(mpi_world_rank() == 0 && verbose_){
                 PrintInfo::print_init(method, status_variables);

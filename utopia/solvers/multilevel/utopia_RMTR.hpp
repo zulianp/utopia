@@ -332,10 +332,8 @@ namespace utopia
             if(!this->check_initialization())
                 return false;
 
-
             bool converged = false;
             SizeType fine_level = this->n_levels()-1;
-            Scalar r_norm, r0_norm, rel_norm;
 
 
             //-------------- INITIALIZATIONS ---------------
@@ -355,12 +353,13 @@ namespace utopia
 
             if(!skip_BC_checks()){
                 this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]);
+                this->handle_equality_constraints();    
             }
 
             this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]);
             this->function(fine_level).value(memory_.x[fine_level], memory_.energy[fine_level]);
 
-            r0_norm = this->criticality_measure(fine_level);
+            memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
             _it_global = 0;
 
             //----------------------------------------------
@@ -369,9 +368,9 @@ namespace utopia
             {
                 std::cout << red_;
                 std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(fine_local_size);
-                this->init_solver(name_id, {" it. ", "|| g ||", "|| g ||/|| g_0|", "   E "});
+                this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
 
-                PrintInfo::print_iter_status(_it_global, {r0_norm, memory_.energy[fine_level]});
+                PrintInfo::print_iter_status(_it_global, {memory_.gnorm[fine_level], memory_.energy[fine_level]});
                 std::cout << def_;
             }
 
@@ -396,8 +395,7 @@ namespace utopia
                 this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]);
                 this->function(fine_level).value(memory_.x[fine_level], memory_.energy[fine_level]);
 
-                r_norm = this->criticality_measure(fine_level);
-                rel_norm = r_norm/r0_norm;
+                memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
 
                 _it_global++;
 
@@ -405,15 +403,15 @@ namespace utopia
                 {
                     std::cout << red_;
                     if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL){
-                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||", "|| g ||/|| g_0|" , "   E "});
+                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||",  "   E "});
                     }
 
-                    PrintInfo::print_iter_status(_it_global, {r_norm, rel_norm,  memory_.energy[fine_level]});
+                    PrintInfo::print_iter_status(_it_global, {memory_.gnorm[fine_level],  memory_.energy[fine_level]});
                     std::cout << def_;
                 }
 
                 // check convergence
-                converged = this->check_global_convergence(_it_global, r_norm, rel_norm, memory_.delta[fine_level]);
+                converged = this->check_global_convergence(_it_global, memory_.gnorm[fine_level], 9e9, memory_.delta[fine_level]);
             }
 
             // benchmarking
@@ -663,7 +661,7 @@ namespace utopia
         virtual bool local_tr_solve(const SizeType & level, const LocalSolveType & solve_type)
         {
             SizeType it_success = 0, it = 0;
-            Scalar ared = 0. , pred = 0., rho = 0., energy_new=9e9, g_norm=1.0;
+            Scalar ared = 0. , pred = 0., rho = 0., energy_new=9e9;
             bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false;
 
             const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
@@ -697,17 +695,17 @@ namespace utopia
                 if(solve_type != POST_SMOOTHING){
                     memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
                 }
+
+                memory_.gnorm[level] = this->criticality_measure(level);
             }
 
-            
-            g_norm = this->criticality_measure(level);
 
-            converged  = this->check_local_convergence(it, it_success,  g_norm, level, memory_.delta[level], solve_type);
+            converged  = this->check_local_convergence(it, it_success,  memory_.gnorm[level], level, memory_.delta[level], solve_type);
 
             if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 this->print_level_info(level);
-                PrintInfo::print_iter_status(0, {g_norm,  memory_.energy[level], ared, pred, rho, memory_.delta[level] });
+                PrintInfo::print_iter_status(0, {memory_.gnorm[level],  memory_.energy[level], ared, pred, rho, memory_.delta[level] });
             }
 
             it++;
@@ -778,7 +776,7 @@ namespace utopia
                 {
                     Vector g_old = memory_.g[level];
                     this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
-                    g_norm = this->criticality_measure(level);
+                    memory_.gnorm[level] = this->criticality_measure(level);
 
                     // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
                 }
@@ -789,13 +787,13 @@ namespace utopia
 
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
-                    PrintInfo::print_iter_status(it, {g_norm, memory_.energy[level], ared, pred, rho, memory_.delta[level]});
+                    PrintInfo::print_iter_status(it, {memory_.gnorm[level], memory_.energy[level], ared, pred, rho, memory_.delta[level]});
                 }
 
-                converged  = (delta_converged  == true) ? true : this->check_local_convergence(it, it_success,  g_norm, level, memory_.delta[level], solve_type);
+                converged  = (delta_converged  == true) ? true : this->check_local_convergence(it, it_success,  memory_.gnorm[level], level, memory_.delta[level], solve_type);
 
                 if(level == this->n_levels()-1){
-                    converged  = (converged  == true || g_norm < this->atol()) ? true : false;
+                    converged  = (converged  == true || memory_.gnorm[level] < this->atol()) ? true : false;
                 }
 
                 it++;
@@ -807,7 +805,7 @@ namespace utopia
             }
 
 
-            bool level_quit = ((this->criticality_measure_termination(g_norm) == true) || delta_converged) ? true : false;
+            bool level_quit = ((this->criticality_measure_termination(memory_.gnorm[level]) == true) || delta_converged) ? true : false;
             return level_quit;
         }
 
@@ -844,8 +842,9 @@ namespace utopia
             memory_.init(this->n_levels());
 
             // init deltas to some default value...
-            for(Scalar l = 0; l < this->n_levels(); l ++)
+            for(Scalar l = 0; l < this->n_levels(); l ++){
                 memory_.delta[l] = this->delta0();
+            }
 
         }
 

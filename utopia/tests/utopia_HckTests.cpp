@@ -244,12 +244,15 @@ namespace utopia
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
             auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
-            
+            // Set TR-QP strategies 
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
             rmtr->set_fine_tr_strategy(tr_strategy_fine);                        
 
+            // Transfers and objective functions
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
+            rmtr->set_functions( multilevel_problem.level_functions_);    
 
+            // Parameters 
             rmtr->max_it(1);
             rmtr->max_coarse_it(2);
             rmtr->max_QP_coarse_it(300);
@@ -270,8 +273,8 @@ namespace utopia
             rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-            rmtr->set_functions( multilevel_problem.level_functions_);
-            rmtr->handle_equality_constraints();            
+                
+            // Solve 
             rmtr->solve(x);
         }
 
