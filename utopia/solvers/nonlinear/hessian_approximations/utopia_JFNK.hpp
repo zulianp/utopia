@@ -51,7 +51,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_Hinv(const Vector & g, Vector & q) const override
+            bool apply_Hinv(const Vector & /*g*/, Vector & /*q*/) const override
             {
                 utopia_error("utopia::JFNK::apply_Hinv:: not supported... \n");
                 return false;

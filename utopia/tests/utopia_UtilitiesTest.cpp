@@ -138,7 +138,7 @@ namespace utopia {
             Matrix m1 = identity(3, 3);
             View<Matrix> view = m1.range(0, 1, 0, 3);
             Matrix m2 = view;
-            each_read(m2, [](SizeType x, SizeType y, double entry) {
+            each_read(m2, [](SizeType /*x*/, SizeType y, double entry) {
                 utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
             });
 
@@ -154,7 +154,7 @@ namespace utopia {
             });
 
             Matrix diff = m1 - m3;
-            each_read(diff, [](SizeType x, SizeType y, double entry) {
+            each_read(diff, [](SizeType /*x*/, SizeType /*y*/, double entry) {
                 utopia_test_assert(approxeq(0.0, entry));
             });
 

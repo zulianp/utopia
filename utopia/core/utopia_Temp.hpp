@@ -64,7 +64,7 @@ namespace utopia
     class EvalVecUniqueSortSerial
     {
         public:
-            static void apply(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)
+            static void apply(const Wrapper<Vector, 1> &/*x*/, Wrapper<Vector, 1> & /*sorted */, const int /*used_values */ )
             {
                 static_assert(Traits<Vector>::Backend==PETSC, "EvalVecUniqueSortSerial implemented just for petsc backend.");
             }
@@ -88,7 +88,7 @@ namespace utopia
     class ChopSmallerThan
     {
         public:
-            static void apply(const Wrapper<Matrix, 2> &x, const double & eps)
+            static void apply(const Wrapper<Matrix, 2> &/*x*/, const double & /*eps*/)
             {
                 static_assert(Traits<Matrix>::Backend==PETSC, "ChopSmallerThan implemented just for petsc backend.");
             }
@@ -99,7 +99,7 @@ namespace utopia
     class ChopBiggerThan
     {
         public:
-            static void apply(const Wrapper<Matrix, 2> &x, const double & eps)
+            static void apply(const Wrapper<Matrix, 2> & /*x*/, const double & /*eps*/)
             {
                 static_assert(Traits<Matrix>::Backend==PETSC, "ChopBiggerThan implemented just for petsc backend.");
             }

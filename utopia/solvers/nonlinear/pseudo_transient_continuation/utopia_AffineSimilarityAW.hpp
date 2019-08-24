@@ -327,7 +327,7 @@ namespace utopia
 
 
     private: 
-        Scalar estimate_tau(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
@@ -346,7 +346,7 @@ namespace utopia
             return tau_new; 
         }
 
-        Scalar estimate_tau_inexact(const Vector & g_new, const Vector & g, const Vector & s, const Vector & r,  const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau_inexact(const Vector & g_new, const Vector & g, const Vector & s, const Vector & r,  const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
@@ -365,7 +365,7 @@ namespace utopia
         }        
 
 
-        Scalar estimate_mu(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_mu(const Vector & /*g_new*/, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
@@ -376,7 +376,7 @@ namespace utopia
         }
 
 
-        Scalar estimate_mu_inexact(const Vector & g_new, const Vector & g, const Vector & s,  const Vector & r, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_mu_inexact(const Vector & /*g_new*/, const Vector & g, const Vector & s,  const Vector & r, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
             Scalar r_norm = dot(r, I_*s);

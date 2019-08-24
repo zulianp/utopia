@@ -85,12 +85,12 @@ namespace utopia
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
 
-        virtual void read(Input &in) override
+        virtual void read(Input &/*in*/) override
         {
 
         }
 
-        virtual void print_usage(std::ostream &os) const override
+        virtual void print_usage(std::ostream & /*os*/) const override
         {
 
         }

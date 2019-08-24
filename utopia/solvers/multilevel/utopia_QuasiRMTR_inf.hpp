@@ -386,7 +386,7 @@ namespace utopia
             }
         }
 
-        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) override
+        virtual bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) override
         {
             return false;
         }
@@ -400,7 +400,7 @@ namespace utopia
          * @param[in]  s_global   Sum of all corrections on given level
          * @param      converged  convergence flag
          */
-        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) override
+        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & /*s_global*/) override
         {
             Scalar intermediate_delta;
 
@@ -497,18 +497,18 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
         {
             Scalar radius = this->memory_.delta[level];
 
             // first we need to prepare box of intersection of level constraints with tr. constraints
             Vector l = constraints_memory_.active_lower[level] - this->memory_.x[level];
-            each_transform(l, l, [radius](const SizeType i, const Scalar val) -> Scalar {
+            each_transform(l, l, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
                 return (val >= -1*radius)  ? val : -1 * radius;  }
             );
 
             Vector u =  constraints_memory_.active_upper[level] - this->memory_.x[level];
-            each_transform(u, u, [radius](const SizeType i, const Scalar val) -> Scalar {
+            each_transform(u, u, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
               return (val <= radius)  ? val : radius; }
             );
 

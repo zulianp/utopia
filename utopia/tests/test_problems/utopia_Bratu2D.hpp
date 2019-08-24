@@ -57,6 +57,9 @@ namespace utopia
             this->setup_SNES();
             this->setup_application_context(); 
             setup_ = true;
+
+            // TD::fix this
+            exact_sol_  = zeros(1, 0); 
         }     
 
         Bratu2D(const DM  & dm, const Scalar & lambda = 5.0):
@@ -73,6 +76,9 @@ namespace utopia
             this->setup_SNES();
             this->setup_application_context(); 
             setup_ = true;
+
+            // TODO::find out exact solution - should be possible to compute
+            exact_sol_  = zeros(1, 0); 
         }     
 
         ~Bratu2D()
@@ -115,11 +121,10 @@ namespace utopia
 
         void output_to_VTK(const Vector & x, const std::string file_name = "Bratu2D.vtk")
         {
-          PetscErrorCode ierr;
           PetscViewer       viewer;
 
           PetscViewerASCIIOpen(PETSC_COMM_WORLD, file_name.c_str(), &viewer);
-          PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_VTK);
+          PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_VTK);
           DMView(da_, viewer);
           PetscObjectSetName((PetscObject)raw_type(x), "x");
           VecView(raw_type(x), viewer);
@@ -136,8 +141,7 @@ namespace utopia
         
         virtual const Vector & exact_sol() const override
         {
-            Vector empty; 
-            return empty; 
+            return exact_sol_; 
         }
         
 
@@ -251,6 +255,8 @@ namespace utopia
         ParamsBratu2D application_context_; 
         DM da_;
         SNES snes_; 
+
+        Vector exact_sol_; 
 
     };
 }

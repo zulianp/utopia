@@ -45,7 +45,7 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override {
+        bool hessian(const Vector &/*point*/, Matrix &result) const override {
 
             result = zeros(2, 2);
 

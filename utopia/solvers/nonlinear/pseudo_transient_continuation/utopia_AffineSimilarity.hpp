@@ -431,7 +431,7 @@ namespace utopia
 
 
         // scaled by Amrein and Wihler formula
-        Scalar estimate_tau2(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau2(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
@@ -444,7 +444,7 @@ namespace utopia
 
 
         // scaled by Amrein and Wihler negative  formula
-        Scalar estimate_tau3(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau3(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 

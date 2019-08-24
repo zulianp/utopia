@@ -91,7 +91,7 @@
          * @param      x_new
          *
          */
-         bool boolean_restrict_or(const Vector &x, Vector &x_new) override
+         bool boolean_restrict_or(const Vector &/*x*/, Vector & /*x_new*/) override
         {
             assert(false && "implement me");
             // static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;

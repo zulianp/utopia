@@ -76,7 +76,7 @@ namespace utopia {
                 if(i == mpi_world_rank()) {
                     os_ << std::flush;
 
-                    each_read(v, [this](const SizeType i, const Scalar val) {
+                    each_read(v, [this](const SizeType /*i*/, const Scalar val) {
                         os_ << val << " ";
                     });
 

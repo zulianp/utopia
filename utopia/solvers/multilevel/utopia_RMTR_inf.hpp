@@ -68,7 +68,7 @@ namespace utopia
             {
                 in.get("coarse-QPSolver", *_tr_subproblems[0]);
 
-                for(auto i=1; i < _tr_subproblems.size(); i++)
+                for(auto i=1; i < static_cast<SizeType>(_tr_subproblems.size()); i++)
                     in.get("fine-QPSolver", *_tr_subproblems[i]);
             }
         }
@@ -117,7 +117,7 @@ namespace utopia
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(_tr_subproblems.size() != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
                 _tr_subproblems.resize(this->n_levels());
 
             _tr_subproblems[0] = strategy;
@@ -127,11 +127,11 @@ namespace utopia
 
         bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(_tr_subproblems.size() != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
                 _tr_subproblems.resize(this->n_levels());
 
             // starting from level 1 ....
-            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l)
+            for(auto l = 1; l != static_cast<SizeType>(_tr_subproblems.size()); ++l)
                 _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
 
 
@@ -140,7 +140,7 @@ namespace utopia
 
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
         {
-            if(strategies.size() != this->n_levels()){
+            if(static_cast<SizeType>(strategies.size()) != this->n_levels()){
                 utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n");
             }
 
@@ -304,7 +304,7 @@ namespace utopia
          * @param[in]  s_global   Sum of all corrections on given level
          * @param      converged  convergence flag
          */
-        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) override
+        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & /*s_global*/) override
         {
             Scalar intermediate_delta;
 
@@ -397,19 +397,19 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
         {
             Scalar radius = this->memory_.delta[level];
 
             // first we need to prepare box of intersection of level constraints with tr. constraints
             Vector l = constraints_memory_.active_lower[level] - this->memory_.x[level];
-            each_transform(l, l, [radius](const SizeType i, const Scalar val) -> Scalar {
+            each_transform(l, l, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
                 return (val >= -1*radius)  ? val : -1 * radius;  }
             );
 
 
             Vector u =  constraints_memory_.active_upper[level] - this->memory_.x[level];
-            each_transform(u, u, [radius](const SizeType i, const Scalar val) -> Scalar {
+            each_transform(u, u, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
               return (val <= radius)  ? val : radius; }
             );
 

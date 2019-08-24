@@ -170,13 +170,13 @@ namespace utopia
         // }
 
 
-        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) override
+        virtual bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) override
         {
             return false;
         }
 
 
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
         {
             // this->_tr_subproblems[level]->atol(1e-16);
             // if(flg)

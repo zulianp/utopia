@@ -15,12 +15,12 @@ namespace utopia
             {
                 typename utopia::Traits<Vector>::SizeType n =  vectors.size();
 
-                if(n!=results.size())
+                if(n!=static_cast<SizeType>(results.size()))
                     results.resize(n);
 
                 std::vector<Vec> vecs(n);
 
-                for(auto i=0; i < vectors.size(); i++)
+                for(auto i=0; i < static_cast<SizeType>(vectors.size()); i++)
                     vecs[i]=(raw_type(*vectors[i]));
 
                  VecMDot(v1.implementation().implementation(), n, vecs.data(), results.data());
@@ -29,7 +29,7 @@ namespace utopia
             static void apply(const Wrapper<Vector, 1> &v1, const std::vector<Wrapper<Vector, 1> > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
             {
                 std::vector<Vec> vecs;
-                for(auto i=0; i < vectors.size(); i++)
+                for(auto i=0; i < static_cast<SizeType>(vectors.size()); i++)
                 {
                     if(!empty(vectors[i]))
                         vecs.push_back(raw_type(vectors[i]));

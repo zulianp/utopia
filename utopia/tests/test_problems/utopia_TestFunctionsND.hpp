@@ -168,7 +168,7 @@ namespace utopia {
             return true;
         }
 
-        virtual bool hessian(const Vector &point, Matrix &result) const override {
+        virtual bool hessian(const Vector &/*point*/, Matrix &result) const override {
             result = A;
             return true;
         }
@@ -193,7 +193,10 @@ namespace utopia {
                                                                         A_(H),
                                                                         B_(B),
                                                                         ub_(ub)
-        { }
+        { 
+            // to be figured out
+            exact_sol_ = zeros(1); 
+        }
 
         virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
             Scalar val = dot(point, A_ * point);
@@ -208,7 +211,7 @@ namespace utopia {
             return true;
         }
 
-        virtual bool hessian(const Vector &point, Matrix &result) const override {
+        virtual bool hessian(const Vector &/*point*/, Matrix &result) const override {
             result = A_;
             return true;
         }
@@ -241,8 +244,7 @@ namespace utopia {
         
         virtual const Vector & exact_sol() const override
         {
-            Vector empty; 
-            return empty; 
+            return exact_sol_; 
         }
         
 
@@ -277,6 +279,7 @@ namespace utopia {
             Matrix A_; /*!< Hessian */
             Matrix B_; /*!< boundary operator */
             const Vector ub_;
+            Vector exact_sol_; 
     };
 
 

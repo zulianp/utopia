@@ -19,8 +19,8 @@ namespace utopia
     class Rosenbrock01 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
         Rosenbrock01()
         {

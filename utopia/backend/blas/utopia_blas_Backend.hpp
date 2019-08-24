@@ -305,7 +305,7 @@ namespace utopia {
 
             if (left.rows() != right.rows() || left.cols() != right.cols()) return false;
 
-            for (SizeType r = 0; r != left.rows(); ++r) {
+            for (auto r = 0; r != left.rows(); ++r) {
                 const SizeType boundaryl = left.rowptr()[r + 1];
                 const SizeType boundaryr = right.rowptr()[r + 1];
 

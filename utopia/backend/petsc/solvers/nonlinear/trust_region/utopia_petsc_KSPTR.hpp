@@ -24,7 +24,8 @@ namespace utopia
     template<typename Matrix, typename Vector>
     class KSP_TR<Matrix, Vector, PETSC>: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
         typedef utopia::KSPSolver<Matrix, Vector> KSPSolver;
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
@@ -112,31 +113,31 @@ namespace utopia
         }
 
         // necessary, as ksp_ is resetting options with every apply... 
-        virtual void atol(const Scalar & atol_in) //override
+        virtual void atol(const Scalar & atol_in) override
         {
             TRSubproblem::atol(atol_in); 
             ksp_.atol(atol_in); 
         }
 
-        virtual void stol(const Scalar & stol_in) //override
+        virtual void stol(const Scalar & stol_in)  override
         {
             TRSubproblem::stol(stol_in); 
             ksp_.stol(stol_in); 
         }
 
-        virtual void rtol(const Scalar & rtol_in)// override
+        virtual void rtol(const Scalar & rtol_in) override
         {
             TRSubproblem::rtol(rtol_in); 
             ksp_.rtol(rtol_in); 
         }
 
-        virtual void max_it(const SizeType & max_it_in) //override
+        virtual void max_it(const SizeType & max_it_in) override
         {
             TRSubproblem::max_it(max_it_in); 
             ksp_.max_it(max_it_in); 
         }   
 
-        virtual void verbose(const bool & verbose_in) 
+        virtual void verbose(const bool & verbose_in) override
         {
             TRSubproblem::verbose(verbose_in); 
             ksp_.verbose(verbose_in); 

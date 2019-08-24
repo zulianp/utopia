@@ -116,7 +116,7 @@ namespace utopia
             std::shared_ptr<Function<Matrix, Vector> > fun_grad_ptr_(&fun_grad, [](Function<Matrix, Vector>*){});
             DAEFormFunction<Matrix, Vector> fun(fun_grad_ptr_); 
 
-            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0, L, tau_old, rho; 
+            Scalar g_norm=0.0, g_norm_old=0.0, s_norm=0.0, tau_old, rho; 
             SizeType it_inner = 0; 
 
             bool AS_form_used; 
@@ -425,7 +425,7 @@ namespace utopia
         }
 
 
-        Scalar estimate_tau_PDE(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau_PDE(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
@@ -446,7 +446,7 @@ namespace utopia
         }
 
 
-        Scalar estimate_tau_alg(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau_alg(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
 
             Scalar s_norm2 = norm2(s);
@@ -469,7 +469,7 @@ namespace utopia
 
     
 
-        Scalar estimate_tau_inexact(const Vector & g_new, const Vector & g, const Vector & s, const Vector & r,  const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau_inexact(const Vector & g_new, const Vector & g, const Vector & s, const Vector & r,  const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
@@ -488,7 +488,7 @@ namespace utopia
         }        
 
 
-        Scalar estimate_mu(const Vector & g_new, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_mu(const Vector & /*g_new*/, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
 
@@ -510,7 +510,7 @@ namespace utopia
         }
 
 
-        Scalar estimate_mu_inexact(const Vector & g_new, const Vector & g, const Vector & s,  const Vector & r, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_mu_inexact(const Vector & /*g_new*/, const Vector & g, const Vector & s,  const Vector & r, const Scalar & tau, const Scalar & /*s_norm*/)
         {   
             Scalar s_norm2 = norm_l2_2(s);
             Scalar r_norm = dot(r, I_*s);

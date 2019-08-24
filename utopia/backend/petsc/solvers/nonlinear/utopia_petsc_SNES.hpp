@@ -194,7 +194,7 @@ namespace utopia
             if(this->verbose()) {
                 SNESMonitorSet(
                                snes,
-                               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode
+                               [](SNES /*snes*/, PetscInt iter, PetscReal res, void*) -> PetscErrorCode
                                {
                                    if(mpi_world_rank() == 0)
                                         std::cout<<iter << "       "<< res << "      \n";
@@ -305,7 +305,7 @@ namespace utopia
             SNESSetFunction( snes,
                             raw_type(residual),
                             // FormGradient,
-                            [](SNES snes, Vec x, Vec res, void *ctx)-> PetscErrorCode
+                            [](SNES /*snes*/, Vec x, Vec res, void *ctx)-> PetscErrorCode
                             {
                                 Function * fun = static_cast<Function *>(ctx);
 
@@ -321,7 +321,7 @@ namespace utopia
             // hessian
             SNESSetJacobian( snes,  snes->jacobian,  snes->jacobian_pre,
                             // FormHessian,
-                            [](SNES snes, Vec x, Mat jac, Mat prec, void *ctx)-> PetscErrorCode
+                            [](SNES snes, Vec x, Mat /*jac*/, Mat /*prec*/, void *ctx)-> PetscErrorCode
                             {
                                 Function * fun = static_cast<Function *>(ctx);
 

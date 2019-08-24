@@ -189,7 +189,7 @@ PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,Pet
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D *user,const DMDACoor2d *c,PetscScalar *u)
+PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D * /*user*/,const DMDACoor2d *c,PetscScalar *u)
 {
     // not ture for this one 
     PetscReal x = PetscRealPart(c->x), y = PetscRealPart(c->y);
@@ -197,10 +197,9 @@ PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D *user,const DMDACoor2d *c,PetscS
     return 0;
 }
 
-PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D *user,const DMDACoor2d *c,PetscScalar *f)
+PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D * /*user*/,const DMDACoor2d * /*c*/, PetscScalar *f)
 {
-    //PetscReal x = PetscRealPart(c->x), y = PetscRealPart(c->y);
-    f[0] =0.0; // 2*x*(1 - x) + 2*y*(1 - y) - user->lambda*std::exp(x*(1 - x)*y*(1 - y));
+    f[0] = 0.0; 
     return 0;    
 }
 

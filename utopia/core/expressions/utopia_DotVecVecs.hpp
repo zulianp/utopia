@@ -94,7 +94,7 @@ namespace utopia
     template< class Vector>
     void dots(const Wrapper<Vector, 1> &v11,const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21,const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2, const Wrapper<Vector, 1> &v31,const Wrapper<Vector, 1> &v32, typename utopia::Traits<Vector>::Scalar & result3)
     {
-        EvalDots<Vector>::apply(v11, v12, result1, v21, v22, result2, v21, v22, result3);
+        EvalDots<Vector>::apply(v11, v12, result1, v21, v22, result2, v31, v32, result3);
     }
 
 

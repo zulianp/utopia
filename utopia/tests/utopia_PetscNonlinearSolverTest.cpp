@@ -178,7 +178,7 @@ namespace utopia
             DVectord rhs  = values(n, 3.);
 
             DVectord lambda, d;
-            F f = [&lambda, &d, &upbo](const DSMatrixd &H, const DVectord &g, const DVectord &x, DVectord &active, DVectord &value)
+            F f = [&lambda, &d, &upbo](const DSMatrixd &H, const DVectord &/*g*/, const DVectord &x, DVectord &active, DVectord &value)
             {
                 lambda = (upbo - H * x);
                 d = lambda + (x - upbo);

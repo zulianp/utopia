@@ -151,7 +151,7 @@ namespace utopia
         }
 
 
-        bool multiplicative_cycle(const SizeType & l)
+        bool multiplicative_cycle(const SizeType & /*l*/)
         {
             for(auto l = this->n_levels()-1; l > 0; l--)
             {

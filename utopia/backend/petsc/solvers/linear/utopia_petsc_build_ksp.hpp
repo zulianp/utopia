@@ -75,7 +75,7 @@ namespace utopia {
             ksp->max_it = iterative_solver->max_it();
         }
 
-        std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine = [lin_solver](const Mat &A, const Mat & P, const Vec &b, Vec & x)
+        std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine = [lin_solver](const Mat &A, const Mat & /*P*/, const Vec &b, Vec & x)
         {
             assert(lin_solver);
 
@@ -97,7 +97,7 @@ namespace utopia {
         std::function< void(const PetscReal &, const PetscReal &,
                             const PetscReal &, const PetscInt &) > tol_routine = [lin_solver](const PetscReal & rtol,
                                                                                                const PetscReal & abstol,
-                                                                                               const PetscReal & dtol,
+                                                                                               const PetscReal & /*dtol*/,
                                                                                                const PetscInt & maxits)
         {
             assert(lin_solver);

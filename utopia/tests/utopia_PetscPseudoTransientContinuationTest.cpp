@@ -115,7 +115,7 @@ namespace utopia
 
 
 
-            for(auto i=0; i < vec_tau.size(); i++)
+            for(size_t i=0; i < vec_tau.size(); i++)
             {
                 x = x0; 
                 solver.tau_init(vec_tau[i]); 

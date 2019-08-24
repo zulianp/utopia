@@ -175,7 +175,7 @@
     //----------------------------------------------------------------------------
     //      tr. radius update 
     //----------------------------------------------------------------------------
-          delta_update(rho, p_k, delta); 
+          delta_update(rho, p_k, delta, false); 
           it++; 
         }
         return false;
@@ -192,7 +192,7 @@
       *
       * @return    
       */
-    virtual void delta_update(const Scalar &rho, const Vector &p_k, Scalar &delta, const bool flg=false) override
+    virtual void delta_update(const Scalar &rho, const Vector &/*p_k*/, Scalar &delta, const bool /*flg=false*/) override
     {
         if(rho < this->eta1())
         {

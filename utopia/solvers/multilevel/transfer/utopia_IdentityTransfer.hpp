@@ -64,7 +64,7 @@
             return true;
         }
 
-        bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override
+        bool project_down_positive_negative(const Vector &x_pos, const Vector & /*x_neg*/, Vector &x_new) override
         {
             // as all elements of the identity matrix are positive 
             x_new = x_pos; 

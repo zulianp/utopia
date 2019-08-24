@@ -85,7 +85,7 @@ namespace utopia {
         {
             level_functions_.clear();
 
-            if(this->n_levels() != level_functions.size()){
+            if(this->n_levels() != static_cast<SizeType>(level_functions.size())){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and level_functions do not match. \n");
             }
 
@@ -108,7 +108,7 @@ namespace utopia {
                 utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
@@ -136,7 +136,7 @@ namespace utopia {
                 utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
@@ -306,7 +306,7 @@ namespace utopia {
 
         inline Fun &function(const SizeType level)
         {
-            assert(level < level_functions_.size());
+            assert(level < static_cast<SizeType>(level_functions_.size()));
             assert(level_functions_[level]);
 
             return *level_functions_[level];

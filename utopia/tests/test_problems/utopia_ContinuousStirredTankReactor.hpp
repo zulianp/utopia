@@ -130,7 +130,7 @@ namespace utopia
                 const Scalar x1 = x.get(0);
                 const Scalar x2 = x.get(1);
                 const Scalar x3 = x.get(2);
-                const Scalar x4 = x.get(3);
+                // const Scalar x4 = x.get(3);
 
                 H.set(0, 0, (v_)+ (V_*k1_*x2));
                 H.set(0, 1, V_*k1_*x1);

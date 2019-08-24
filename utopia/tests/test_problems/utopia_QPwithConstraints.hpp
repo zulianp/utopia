@@ -57,7 +57,7 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override
+        bool hessian(const Vector & /*x*/, Matrix &H) const override
         {
             H = A_;
             return true;

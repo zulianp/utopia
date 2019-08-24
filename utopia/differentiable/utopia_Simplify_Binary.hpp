@@ -76,7 +76,7 @@ namespace utopia {
     public:
         typedef typename Simplify<Expr>::Type Type;
 
-        static const UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Identity, Order> &right, const EMultiplies &)
+        static const UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Identity, Order> &/*right*/, const EMultiplies &)
         {
             return Simplify<Expr>::make(left);
         }
@@ -87,7 +87,7 @@ namespace utopia {
     public:
         typedef typename Simplify<Expr>::Type Type;
 
-        static UTOPIA_STORE_CONST(Type) make(const Factory<Identity, Order> &left, const Expr &right, const EMultiplies &)
+        static UTOPIA_STORE_CONST(Type) make(const Factory<Identity, Order> &/*left*/, const Expr &right, const EMultiplies &)
         {
             return Simplify<Expr>::make(right);
         }
@@ -98,7 +98,7 @@ namespace utopia {
     public:
         typedef utopia::Factory<Zeros, Order> Type;
 
-        static UTOPIA_STORE_CONST(Type) make(const Factory<Zeros, Order> &left, const Expr &right, const EMultiplies &)
+        static UTOPIA_STORE_CONST(Type) make(const Factory<Zeros, Order> &left, const Expr & /*right*/, const EMultiplies &)
         {
             return left;
         }
@@ -109,7 +109,7 @@ namespace utopia {
     public:
         typedef utopia::Factory<Zeros, Order> Type;
 
-        static UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Zeros, Order> &right, const EMultiplies &)
+        static UTOPIA_STORE_CONST(Type) make(const Expr & /*left*/, const Factory<Zeros, Order> &right, const EMultiplies &)
         {
             return right;
         }
@@ -125,7 +125,7 @@ namespace utopia {
     public:
         typedef typename Simplify<Expr>::Type Type;
 
-        static const UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Identity, Order> &right, const Multiplies &)
+        static const UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Identity, Order> &/*right*/, const Multiplies &)
         {
             return Simplify<Expr>::make(left);
         }
@@ -136,7 +136,7 @@ namespace utopia {
     public:
         typedef typename Simplify<Expr>::Type Type;
 
-        static UTOPIA_STORE_CONST(Type) make(const Factory<Identity, Order> &left, const Expr &right, const Multiplies &)
+        static UTOPIA_STORE_CONST(Type) make(const Factory<Identity, Order> &/*left*/, const Expr &right, const Multiplies &)
         {
             return Simplify<Expr>::make(right);
         }
@@ -147,7 +147,7 @@ namespace utopia {
     public:
         typedef utopia::Factory<Zeros, Order> Type;
 
-        static UTOPIA_STORE_CONST(Type) make(const Factory<Zeros, Order> &left, const Expr &right, const Multiplies &)
+        static UTOPIA_STORE_CONST(Type) make(const Factory<Zeros, Order> &left, const Expr & /*right*/, const Multiplies &)
         {
             return left;
         }
@@ -158,7 +158,7 @@ namespace utopia {
     public:
         typedef utopia::Factory<Zeros, Order> Type;
 
-        static UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Zeros, Order> &right, const Multiplies &)
+        static UTOPIA_STORE_CONST(Type) make(const Expr & /*left*/, const Factory<Zeros, Order> &right, const Multiplies &)
         {
             return right;
         }

@@ -269,7 +269,7 @@ namespace utopia
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(_tr_subproblems.size() != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
                 _tr_subproblems.resize(this->n_levels());
 
             _tr_subproblems[0] = strategy;
@@ -279,11 +279,11 @@ namespace utopia
 
         bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(_tr_subproblems.size() != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
                 _tr_subproblems.resize(this->n_levels());
 
             // starting from level 1 ....
-            for(std::size_t l = 1; l != this->n_levels(); ++l)
+            for(auto l = 1; l != this->n_levels(); ++l)
                 _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
 
 
@@ -293,7 +293,7 @@ namespace utopia
 
         bool set_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy, const SizeType & level)
         {
-            if(_tr_subproblems.size() != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
                 _tr_subproblems.resize(this->n_levels());
 
             if(level <= this->n_levels())
@@ -310,7 +310,7 @@ namespace utopia
 
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
         {
-            if(strategies.size() != this->n_levels()){
+            if(static_cast<SizeType>(strategies.size()) != this->n_levels()){
                 utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n");
             }
 
@@ -815,11 +815,11 @@ namespace utopia
 
         virtual bool check_initialization()
         {
-            if(this->level_functions_.size() != this->n_levels()){
+            if(static_cast<SizeType>(this->level_functions_.size()) != this->n_levels()){
                 utopia_error("utopia::RMTR:: number of level Functions and levels not equal. \n");
                 return false;
             }
-            if(this->transfers_.size() + 1 != this->n_levels()){
+            if(static_cast<SizeType>(this->transfers_.size()) + 1 != this->n_levels()){
                 utopia_error("utopia::RMTR:: number of transfers and levels not equal. \n");
                 return false;
             }
@@ -832,7 +832,7 @@ namespace utopia
             return true;
         }
 
-        virtual bool check_feasibility(const SizeType & level )
+        virtual bool check_feasibility(const SizeType & /*level */ )
         {
             return false;
         }
@@ -911,13 +911,13 @@ namespace utopia
         }
 
 
-        virtual bool update_level(const SizeType & level)
+        virtual bool update_level(const SizeType & /*level*/)
         {
             return false;
         }
 
 
-        virtual void initialize_local_solve(const SizeType & level, const LocalSolveType & solve_type)
+        virtual void initialize_local_solve(const SizeType & /*level*/, const LocalSolveType & /*solve_type*/)
         {
 
 

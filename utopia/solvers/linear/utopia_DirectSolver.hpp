@@ -20,12 +20,12 @@ namespace utopia
             return this->solve(*this->get_operator(), rhs, sol);
         }
 
-        virtual void read(Input &in) override
+        virtual void read(Input &/*in*/) override
         {
 
         }
 
-        virtual void print_usage(std::ostream &os) const override
+        virtual void print_usage(std::ostream & /*os*/) const override
         {
 
         }

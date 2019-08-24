@@ -219,12 +219,10 @@ namespace utopia
 
             bool apply_H(const Vector & v , Vector & result) const  override
             {   
-                this-apply_H_new(v, result); 
+                return this-apply_H_new(v, result); 
 
                 // debugging 
                 // this->apply_H_slow(v, result); 
-
-                return true;
             }
 
             // version used for debugging purposes 

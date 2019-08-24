@@ -689,7 +689,7 @@ namespace utopia {
             }
         }
 
-        each_read(a, [](const SizeType i, const SizeType j, const double value) {
+        each_read(a, [](const SizeType i, const SizeType /*j*/, const double value) {
             utopia_test_assert(approxeq(i, value));
         });
     }
@@ -1220,7 +1220,7 @@ namespace utopia {
         {
             Write<DSMatrixd> w_m(M);
             auto r = row_range(M);
-            auto c = col_range(M);
+            // auto c = col_range(M);
 
             for(auto i = r.begin(); i != r.end(); ++i)
             {

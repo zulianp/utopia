@@ -217,7 +217,7 @@ namespace utopia
 				std::cout<<"--------------------------------------------------------- \n";
 			}
 
-	    	for(auto i =0; i < test_functions.size(); i++)
+	    	for(size_t i =0; i < test_functions.size(); i++)
 	    	// for(auto i =0; i < 1; i++)
 	    	{
 				Vector x_init = test_functions[i]->initial_guess(); 
@@ -228,7 +228,7 @@ namespace utopia
 				
 				const auto dim = test_functions[i]->dim(); 
 				const auto num_its = sol_status.iterates; 
-				const auto conv_reason = sol_status.reason; 
+				// const auto conv_reason = sol_status.reason; 
 
 				if(exp_verbose)
 				{

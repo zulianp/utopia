@@ -232,7 +232,7 @@ namespace  utopia
             {
                 SizeType local_feasible_set = 0;
 
-                    each_read(feasible_set, [&local_feasible_set](const SizeType i, const Scalar value)
+                    each_read(feasible_set, [&local_feasible_set](const SizeType /*i*/, const Scalar value)
                     {
                         if(approxeq(value, 1.0))
                             local_feasible_set++;
