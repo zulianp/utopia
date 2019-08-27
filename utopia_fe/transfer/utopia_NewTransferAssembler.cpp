@@ -37,6 +37,7 @@
 #include "utopia_moonolith_permutations.hpp"
 #include "utopia_NormalizeRows.hpp"
 #include "utopia_TransferUtils.hpp"
+#include "utopia_Adaptivity.hpp"
 
 namespace utopia {
 
@@ -674,6 +675,19 @@ namespace utopia {
         auto spatial_dim = to_mesh->spatial_dimension();
         bool has_intersection = false;
 
+        std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
+
+        if(handle_adaptive_refinement_) {
+            Adaptivity a;
+            a.constraint_matrix(*from_mesh, *from_dofs, opts.from_var_num, *data.constraint_matrix_from);
+            a.constraint_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   *data.constraint_matrix_to);
+
+            disp("from");
+            disp(*data.constraint_matrix_from);
+            disp("to");
+            disp(*data.constraint_matrix_to);
+        }
+
         if(spatial_dim == 1) {
             // if(remove_incomplete_intersections_) {
             //     has_intersection = ConvertTransferAlgorithm<1>::apply_with_covering_check(*from_mesh, *from_dofs, *to_mesh, *to_dofs, opts, data);
@@ -706,7 +720,22 @@ namespace utopia {
         const std::shared_ptr<DofMap>   &to_dofs,
         const TransferOptions &opts
     )
-    {
+    {   
+
+        std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
+
+        if(handle_adaptive_refinement_) {
+            Adaptivity a;
+            a.constraint_matrix(*from_mesh, *from_dofs, opts.from_var_num, *data.constraint_matrix_from);
+            a.constraint_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   *data.constraint_matrix_to);
+
+            disp("from");
+            disp(*data.constraint_matrix_from);
+            disp("to");
+            disp(*data.constraint_matrix_to);
+        }
+
+
         if(use_convert_transfer_) {
             auto spatial_dim = to_mesh->spatial_dimension();
             bool has_intersection = false;
@@ -767,6 +796,19 @@ namespace utopia {
         auto spatial_dim = to_mesh.spatial_dimension();
         bool has_intersection = false;
 
+        std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
+
+        if(handle_adaptive_refinement_) {
+            Adaptivity a;
+            a.constraint_matrix(from_mesh, from_dofs, opts.from_var_num, *data.constraint_matrix_from);
+            a.constraint_matrix(to_mesh,   to_dofs,   opts.to_var_num,   *data.constraint_matrix_to);
+
+            disp("from");
+            disp(*data.constraint_matrix_from);
+            disp("to");
+            disp(*data.constraint_matrix_to);
+        }
+
         if(spatial_dim == 1) {
             if(remove_incomplete_intersections_) {
                 has_intersection = ConvertTransferAlgorithm<1>::apply_with_covering_check(from_mesh, from_dofs, to_mesh, to_dofs, opts, data);
@@ -796,6 +838,17 @@ namespace utopia {
         const TransferOptions &opts
     )
     {
+        if(handle_adaptive_refinement_) {
+            Adaptivity a;
+            a.constraint_matrix(mesh, dofs, opts.from_var_num, *data.constraint_matrix_from);
+            a.constraint_matrix(mesh, dofs, opts.to_var_num,   *data.constraint_matrix_to);
+
+            disp("from");
+            disp(*data.constraint_matrix_from);
+            disp("to");
+            disp(*data.constraint_matrix_to);
+        }
+
         auto spatial_dim = mesh.spatial_dimension();
         bool has_intersection = false;
 

@@ -73,6 +73,9 @@ namespace utopia
 
             slepc.get_real_eigenpair(1, iegr, vr);
 
+            auto e = cond(A);
+            // std::cout << "e: " << e << std::endl;
+
         }
 
         void petsc_slepc_generalized_eigen_test()

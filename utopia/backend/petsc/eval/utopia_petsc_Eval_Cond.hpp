@@ -11,16 +11,16 @@ namespace utopia {
     class Cond<Matrix, PETSC> {
     public:
         using Scalar = UTOPIA_SCALAR(Matrix);
-        using Vector = UTOPIA_VECTOR(Matrix);
+        using Vector = utopia::Wrapper<UTOPIA_VECTOR(Matrix), 1>;
 
         static Scalar apply(const Matrix &H)
         {
-            SlepcSolver<Matrix, Vector> slepc;
-            slepc.solver_type("arpack");
+            SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> slepc;
+            // slepc.solver_type("lapack");
             slepc.portion_of_spectrum("smallest_real");
             slepc.number_of_eigenvalues(1);
             slepc.solve(H);
-            
+
             Scalar small = 0, large = 0;
 
             Vector eigenvector;

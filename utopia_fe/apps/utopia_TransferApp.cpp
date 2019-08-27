@@ -19,6 +19,33 @@
 
 namespace utopia {
 
+    void random_refine(
+        const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
+        const int refinement_loops
+        )
+    {
+
+        libMesh::MeshRefinement mesh_refinement(*mesh);
+
+        for(int i = 0; i < refinement_loops; ++i) {
+            mesh_refinement.clean_refinement_flags();
+
+            for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
+                auto val = i % 2 == 1;
+                if(val) {
+                    (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+                }
+            }
+
+            mesh_refinement.make_flags_parallel_consistent();
+            mesh_refinement.refine_elements();
+            mesh_refinement.test_level_one(true);
+        }
+
+        // mesh_refinement.clean_refinement_flags();
+        mesh->prepare_for_use();
+    }
+
     class TransferApp::InputSpace : public Configurable {
     public:
         InputSpace(libMesh::Parallel::Communicator &comm)
@@ -29,6 +56,15 @@ namespace utopia {
         {
             try {
                 is.get("mesh", mesh_);
+
+                bool must_random_refine = false;
+                is.get("random-refine", must_random_refine);
+
+                if(must_random_refine) {
+                    random_refine(mesh_.mesh_ptr(), 1);
+                }
+
+
                 is.get("space", space_);
 
             } catch(const std::exception &ex) {
@@ -74,6 +110,7 @@ namespace utopia {
         std::shared_ptr<LibMeshFunctionSpace> master_actual_space, slave_actual_space;
 
         std::shared_ptr<MeshTransferOperator> transfer_operator;
+
 
         in.get("transfer", [&](Input &is) {
             //get spaces
