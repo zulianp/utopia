@@ -110,6 +110,7 @@ namespace utopia {
     class LagrangeMultiplier : public Configurable {
     public:
         using FunctionSpace = LibMeshFunctionSpace;
+        using Scalar = UTOPIA_SCALAR(Vector);
 
         void read(Input &in) override
         {
@@ -262,22 +263,58 @@ namespace utopia {
 
     };
 
+    template<class Matrix>
+    class MatrixPostProcessor : public Configurable {
+    public:
+        virtual ~MatrixPostProcessor() {}
+        virtual void post_process(const Matrix &mat) = 0;
+    };
+
+    template<class Matrix>
+    class MatrixExporter final : public MatrixPostProcessor<Matrix> {
+    public:
+        inline void post_process(const Matrix &mat) override
+        {
+            write(path_, mat);
+        }
+
+        inline void read(Input &in) override
+        {
+            // in.get("name", name_);
+            in.get("path", path_);
+        }
+
+        MatrixExporter()
+        : path_("./mat.m")//, name_("A")
+        {}
+
+    private:
+        std::string path_;
+        // std::string name_;
+    };
+
     template<class Matrix, class Vector>
     class FracturedPourousMedia : /*public Model<Matrix, Vector>*/ public Configurable {
     public:
         using PourousMatrix           = utopia::PourousMatrix<Matrix, Vector>;
         using DiscreteFractureNetwork = utopia::DiscreteFractureNetwork<Matrix, Vector>;
         using LagrangeMultiplier      = utopia::LagrangeMultiplier<Matrix, Vector>;
+        using Scalar = UTOPIA_SCALAR(Vector);
 
         void read(Input &in) override
         {
-            //read in the matrix model
+            in.get("rescale", rescale_);
+            pourous_matrix_.rescale(rescale_);
+
+            //read in the matrix model   
             in.get("pourous-matrix",   pourous_matrix_);
-    
+            
             //read in the fracture-network models (1 or more)
             in.get("fracture-networks", [this](Input &in) {
                 in.get_all([this](Input &in) {
                     auto dfn = std::make_shared<DiscreteFractureNetwork>(this->comm_);
+                    dfn->rescale(rescale_);
+
                     dfn->read(in);
                     fracture_network_.push_back(dfn);
 
@@ -295,6 +332,20 @@ namespace utopia {
 
             std::cout << "n fracture networks " << fracture_network_.size() << std::endl;
 
+            in.get("matrix-processors", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    std::string type;
+                    in.get("type", type);
+
+                    if(type == "export") {
+                        auto exporter = std::make_shared<MatrixExporter<Matrix>>();
+                        exporter->read(in);
+                        matrix_processors_.push_back(std::move(exporter));
+                    }
+
+                    //other post-processors....
+                });
+            });
         }
 
         inline bool compute_flow()
@@ -364,7 +415,7 @@ namespace utopia {
                     *x_f_[i] = local_zeros(dof_map_f.n_local_dofs());
                     dfn->assemble_flow(*x_f_[i], *A_f_[i], *rhs_f_[i]);
 
-                    // apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
 
                     if(remove_constrained_dofs_) {
                         remove_constrained_dofs(dof_map_f, *A_f_[i], *rhs_f_[i]);
@@ -386,6 +437,10 @@ namespace utopia {
                 return false;
             }
 
+            rename("A", A);
+            for(auto p : matrix_processors_) {
+                p->post_process(A);
+            }
 
             return true;
         }
@@ -424,7 +479,7 @@ namespace utopia {
         }
 
         FracturedPourousMedia(libMesh::Parallel::Communicator &comm)
-        : comm_(comm), pourous_matrix_(comm), assembly_strategy_("monolithic"), use_mg_(false), remove_constrained_dofs_(false)
+        : comm_(comm), pourous_matrix_(comm), assembly_strategy_("static-condensation"), use_mg_(false), remove_constrained_dofs_(false), rescale_(1.0)
         {}
 
     private:
@@ -444,6 +499,10 @@ namespace utopia {
         std::string assembly_strategy_;
         bool use_mg_;
         bool remove_constrained_dofs_;
+        Scalar rescale_;
+
+        std::vector<std::shared_ptr<MatrixPostProcessor<Matrix>> > matrix_processors_;
+
     };
     
 }

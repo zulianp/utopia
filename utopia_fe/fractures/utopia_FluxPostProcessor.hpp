@@ -27,9 +27,11 @@ namespace utopia {
     template<class FunctionSpace, class Vector>
     class AverageHeadPostProcessor : public PostProcessor<FunctionSpace, Vector> {
     public:
+        using Scalar = UTOPIA_SCALAR(Vector);
+
         virtual ~AverageHeadPostProcessor() {}
 
-        AverageHeadPostProcessor() : average_(0.0)
+        AverageHeadPostProcessor() : average_(0.0), rescale_(1.0)
         {}
 
         void read(Input &in) override 
@@ -72,12 +74,17 @@ namespace utopia {
             std::cout << "avg_" << side_ << " = " << average_ << ", " << (average_/mass_) << std::endl;
         }
 
+        inline void rescale(const Scalar rescale)
+        {
+            rescale_ = rescale;
+        }
 
         int side_;
         USparseMatrix mass_matrix_;
         double average_;
         double mass_;
         // std::string filename_;
+        Scalar rescale_;
     };
 
 
@@ -110,7 +117,7 @@ namespace utopia {
             auto sampler_fun = ctx_fun(sampler_);
 
             // auto vel = (sampler_fun * diffusion_tensor_) * grad(p);
-            auto vel = coeff(diffusivity_) * grad(p);
+            auto vel = coeff(diffusivity_/rescale_) * grad(p);
 
             auto form_1 = surface_integral(
                 inner( 
@@ -168,7 +175,7 @@ namespace utopia {
                 // auto sampler_fun = ctx_fun(sampler_);
 
                 auto p = interpolate(pressure, c);
-                auto vel = coeff(diffusivity_) * grad(p);
+                auto vel = coeff(diffusivity_/rescale_) * grad(p);
                 auto flow_form = surface_integral(inner(c * inner(vel, normal()), q), side_);
 
                 assemble(flow_form, flow_matrix_);
@@ -227,7 +234,7 @@ namespace utopia {
         }
 
         FluxPostProcessor()
-        : side_(-1), outflux_(0.0), filename_("flux"), sampler_(std::make_shared<UIConstantFunction<Scalar>>(1.))
+        : side_(-1), outflux_(0.0), filename_("flux"), sampler_(std::make_shared<UIConstantFunction<Scalar>>(1.)), rescale_(1.0)
         {}
 
         void describe(std::ostream &os = std::cout) const override
@@ -249,6 +256,11 @@ namespace utopia {
             os.close();
         }
 
+        inline void rescale(const Scalar rescale)
+        {
+            rescale_ = rescale;
+        }
+
     private:
 
         int side_;
@@ -265,6 +277,7 @@ namespace utopia {
         USparseMatrix flow_matrix_;
 
         std::vector<double> all_outflux_;
+        Scalar rescale_;
     };
 
 }

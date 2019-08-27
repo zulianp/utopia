@@ -135,6 +135,7 @@ namespace utopia {
     public:
         using FunctionSpaceT = utopia::LibMeshFunctionSpace;
         using PostProcessor  = utopia::PostProcessor<FunctionSpaceT, Vector>;
+        using Scalar = UTOPIA_SCALAR(Vector);
 
         virtual ~PostProcessable() {}
 
@@ -146,13 +147,15 @@ namespace utopia {
                     in.get("type", type);
 
                     if(type == "flux") {
-                        auto flux = std::make_shared<FluxPostProcessor<FunctionSpaceT, UVector>>();    
+                        auto flux = std::make_shared<FluxPostProcessor<FunctionSpaceT, UVector>>();
+                        flux->rescale(rescale());
                         flux->read(in);
 
                         post_processors_.push_back(flux);
 
                     } else if(type == "avg") {
                         auto flux = std::make_shared<AverageHeadPostProcessor<FunctionSpaceT, UVector>>();              
+                        flux->rescale(rescale());
                         flux->read(in);
 
                         post_processors_.push_back(flux);
@@ -169,8 +172,20 @@ namespace utopia {
             }
         }
 
+        inline void rescale(const Scalar rescale)
+        {
+            rescale_ = rescale;
+        }
+
+        inline Scalar rescale() const { return rescale_; }
+
+        PostProcessable()
+        : rescale_(1.0)
+        {}
+
     private:
         std::vector<std::shared_ptr<PostProcessor>> post_processors_;
+        Scalar rescale_;
     };
 
 
@@ -183,6 +198,7 @@ namespace utopia {
 
         using Mortar = utopia::Mortar<Matrix, Vector>;
         using Super  = utopia::PostProcessable<Matrix, Vector>;
+        using Scalar = UTOPIA_STORE(Vector);
         
 
         void read(Input &in) override
@@ -193,8 +209,10 @@ namespace utopia {
             in.get("space", space_);
 
             //FIXME allow also other models
-            flow_model_ = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
-            flow_model_->read(in);
+            auto flow = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+            flow->rescale(this->rescale());
+            flow->read(in);
+            flow_model_ = flow;
 
             in.get("mortar", mortar_);
 
@@ -248,7 +266,6 @@ namespace utopia {
         UIFunctionSpace<FunctionSpaceT>  space_;
         std::shared_ptr<Model<Matrix, Vector>> flow_model_;
         Mortar mortar_;
-        
     };
 
 }

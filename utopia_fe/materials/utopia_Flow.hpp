@@ -90,7 +90,7 @@ namespace utopia {
         typedef typename TraitsT::Matrix ElementMatrix;
 
         Flow(FunctionSpace &space)
-        : space_(space), forcing_function_(space)
+        : space_(space), forcing_function_(space), rescale_(1.0)
         {}
 
         inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
@@ -102,19 +102,29 @@ namespace utopia {
             auto v = test(space_);
 
             auto bilinear_form = inner(
-                diffusion_tensor_ * grad(u), 
-                ctx_fun(permeability_.sampler()) * grad(v)) * dX;
+                    diffusion_tensor_ * grad(u), 
+                    ctx_fun(permeability_.sampler()) * grad(v)
+                ) * dX;
 
             utopia::assemble(bilinear_form, hessian);
             forcing_function_.eval(x, gradient);
 
             //for newton methods
-            gradient -= hessian * x;
+            // gradient -= hessian * x;
+
+            if(rescale_ != 1.0) {
+                hessian *= rescale_;
+                gradient *= rescale_;
+            }
 
             c.stop();
             std::cout << "Flow assemly time: " << c << std::endl;
 
             assemble_lower_dimensional_features(x, hessian, gradient);
+
+            const Scalar sum_g = sum(gradient);
+            std::cout << "sum_g: " << sum_g << std::endl;
+
 
             return true;
         }
@@ -146,6 +156,11 @@ namespace utopia {
                 );
 
                 utopia::assemble(bilinear_form, trace_hessian);
+
+                if(rescale_ != 1.0) {
+                    trace_hessian *= rescale_;
+                }
+
                 hessian += trace_hessian;
             }
 
@@ -188,6 +203,11 @@ namespace utopia {
             });
         }
 
+        inline void rescale(const Scalar rescale)
+        {
+            rescale_ = rescale;
+        }
+
     private:
         FunctionSpace &space_;
         UIForcingFunction<FunctionSpace, Vector> forcing_function_;
@@ -197,6 +217,7 @@ namespace utopia {
 
         std::vector< std::shared_ptr<UIFunction<Scalar>> > lower_dimensional_permeability_;
         std::vector<int> lower_dimensional_tags_;
+        Scalar rescale_;
 
 
         void read_permeability_tensor(Input &in)
@@ -214,7 +235,7 @@ namespace utopia {
             in.get("permeability-y", permeabilities[1]);
             in.get("permeability-z", permeabilities[2]);
 
-            int dim = space_.mesh().spatial_dimension();
+            const int dim = space_.mesh().spatial_dimension();
 
             diffusion_tensor_ = identity(dim, dim);
 
@@ -225,7 +246,13 @@ namespace utopia {
                 }
             }
 
-            std::cout << "permeability: " << constant_permeability << std::endl;
+            std::cout << "global permeabilty tensor: ";
+
+            for(int i = 0; i < dim; ++i) {
+                std::cout << permeabilities[i] << " ";
+            }
+
+            std::cout << std::endl;
         }
     };
 

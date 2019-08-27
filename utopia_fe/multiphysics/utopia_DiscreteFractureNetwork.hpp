@@ -143,6 +143,7 @@ namespace utopia {
         typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
         typedef utopia::Traits<FunctionSpaceT> TraitsT;
         typedef typename TraitsT::Matrix ElementMatrix;
+        using Scalar = UTOPIA_SCALAR(Vector);
 
         void read(Input &in) override
         {
@@ -151,8 +152,10 @@ namespace utopia {
             in.get("identity-on-constrained-dofs", identity_on_constrained_dofs_);
 
             //FIXME
-            flow_model_ = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
-            flow_model_->read(in);
+            auto flow = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+            flow->rescale(rescale_);
+            flow->read(in);
+            flow_model_ = flow;
 
             in.get("intersection", coupling_);
 
@@ -179,7 +182,7 @@ namespace utopia {
         }
 
         DiscreteFractureNetwork(libMesh::Parallel::Communicator &comm)
-        : mesh_(comm), space_(make_ref(mesh_)), identity_on_constrained_dofs_(false)
+        : mesh_(comm), space_(make_ref(mesh_)), identity_on_constrained_dofs_(false), rescale_(1)
         {}
 
         inline FunctionSpaceT &space()
@@ -231,6 +234,12 @@ namespace utopia {
             write(name + ".e", space(), x);
             return true;
         }
+
+        inline void rescale(const Scalar rescale)
+        {
+            rescale_ = rescale;
+        }
+
         
     private:
 
@@ -239,6 +248,7 @@ namespace utopia {
         std::shared_ptr<Model<Matrix, Vector>> flow_model_;
         FractureCoupling<Matrix, Vector> coupling_;
         bool identity_on_constrained_dofs_;
+        Scalar rescale_;
     };
 
 }
