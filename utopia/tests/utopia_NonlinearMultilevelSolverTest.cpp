@@ -218,7 +218,8 @@ namespace utopia
 
             rmtr->max_it(50);
             rmtr->max_coarse_it(1);
-            rmtr->max_smoothing_it(3);
+            rmtr->max_sucessful_smoothing_it(3);
+            
             rmtr->delta0(10);
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
@@ -268,7 +269,7 @@ namespace utopia
 
             rmtr->max_it(1000);
             rmtr->max_coarse_it(1);
-            rmtr->max_smoothing_it(1);
+            rmtr->max_sucessful_smoothing_it(1);
             rmtr->delta0(1);
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
@@ -327,7 +328,7 @@ namespace utopia
 
             rmtr->max_it(1000);
             rmtr->max_coarse_it(1);
-            rmtr->max_smoothing_it(1);
+            rmtr->max_sucessful_smoothing_it(1);
             rmtr->delta0(1);
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);

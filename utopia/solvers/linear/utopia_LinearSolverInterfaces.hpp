@@ -68,6 +68,16 @@ namespace utopia {
             static_assert(Backend < HOMEMADE, "CholeskyDecomposition not implemented for this backend");
         }
     };
+
+    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    class RedundantLinearSolver {
+    public:
+        RedundantLinearSolver() {
+            static_assert(Backend < HOMEMADE, "RedundantLinearSolver not implemented for this backend");
+        }
+
+    };
+
 }
 
 #endif //UTOPIA_LINEAR_SOLVERS_INTERFACES_HPP

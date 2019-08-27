@@ -59,7 +59,8 @@ namespace utopia
                 _it_global(0),
                 _skip_BC_checks(false),
                 _max_coarse_it(2),
-                _max_smoothing_it(1),
+                _max_sucessful_smoothing_it(1),
+                _max_sucessful_coarse_it(1),
                 _max_QP_smoothing_it(5),
                 _max_QP_coarse_it(50),
                 _eps_delta_termination(0.001),
@@ -88,7 +89,8 @@ namespace utopia
 
             in.get("skip_BC_checks", _skip_BC_checks);
             in.get("max_coarse_it", _max_coarse_it);
-            in.get("max_smoothing_it", _max_smoothing_it);
+            in.get("max_sucessful_smoothing_it", _max_sucessful_smoothing_it);
+            in.get("max_sucessful_coarse_it", _max_sucessful_coarse_it);
             in.get("max_QP_smoothing_it", _max_QP_smoothing_it);
             in.get("max_QP_coarse_it", _max_QP_coarse_it);
 
@@ -123,7 +125,9 @@ namespace utopia
 
             this->print_param_usage(os, "skip_BC_checks", "bool", "Skip treatment of BC conditions.", "false");
             this->print_param_usage(os, "max_coarse_it", "int", "Maximum number of coarse iterations.", "2");
-            this->print_param_usage(os, "max_smoothing_it", "int", "Maximum number of smoothing steps.", "1");
+            this->print_param_usage(os, "max_sucessful_smoothing_it", "int", "Maximum number of smoothing steps.", "1");
+            this->print_param_usage(os, "max_sucessful_coarse_it", "int", "Maximum number of corse iterations.", "1");
+
             this->print_param_usage(os, "max_QP_smoothing_it", "int", "Maximum number of iterations for fine level QP solver.", "5");
             this->print_param_usage(os, "max_QP_coarse_it", "int", "Maximum number of iterations for coarse level QP solver.", "50");
 
@@ -205,10 +209,17 @@ namespace utopia
 
         // this parameter define total number of smoothing its - sucessful and unsuccessful
         // while pre_smooting and post_smoothing count just sucessful iterations
-        virtual void max_smoothing_it(const SizeType & max_smoothing_it)
+        virtual void max_sucessful_smoothing_it(const SizeType & max_sucessful_smoothing_it)
         {
-            _max_smoothing_it = max_smoothing_it;
+            _max_sucessful_smoothing_it = max_sucessful_smoothing_it;
         }
+
+
+        virtual void max_sucessful_coarse_it(const SizeType & max_sucessful_coarse_it)
+        {
+            _max_sucessful_coarse_it = max_sucessful_coarse_it;
+        }        
+
 
         virtual SizeType max_coarse_it() const
         {
@@ -216,10 +227,15 @@ namespace utopia
         }
 
 
-        virtual SizeType max_smoothing_it() const
+        virtual SizeType max_sucessful_smoothing_it() const
         {
-            return _max_smoothing_it;
+            return _max_sucessful_smoothing_it;
         }
+
+        virtual SizeType max_sucessful_coarse_it() const
+        {
+            return _max_sucessful_coarse_it;
+        }        
 
 
         virtual void max_QP_smoothing_it(const SizeType & num_it)
@@ -971,21 +987,23 @@ namespace utopia
         virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
         {
             // coarse one
-            if(level == 0 && (it_success >= _max_coarse_it))
-            {
-                return true;
-            }
-            // every other level
-            else if (level > 0 && solve_type == PRE_SMOOTHING)
-            {
-                if(it_success >= this->pre_smoothing_steps() || it >= this->max_smoothing_it())
-                    return true;
-            }
-            else if (level > 0 && solve_type == POST_SMOOTHING)
-            {
-                if(it_success >= this->post_smoothing_steps() || it >= this->max_smoothing_it())
-                    return true;
-            }
+            // if(level == 0 && (it_success >= this->max_sucessful_smoothing_it() || it >= _max_coarse_it))
+            // {
+            //     return true;
+            // }
+            // // every other level
+            // else if (level > 0 && solve_type == PRE_SMOOTHING)
+            // {
+            //     if(it >= this->pre_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
+            //         return true;
+            // }
+            // else if (level > 0 && solve_type == POST_SMOOTHING)
+            // {
+            //     if(it >= this->post_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
+            //         return true;
+            // }
+            if(check_iter_convergence(it, it_success, level, solve_type))
+                return true; 
             else if(delta < this->delta_min())
                 return true;
 
@@ -1005,21 +1023,21 @@ namespace utopia
         virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
         {
             // coarse one
-            if(level == 0 && (it_success >= _max_coarse_it))
+            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= _max_coarse_it))
             {
                 return true;
             }
             // every other level
             else if (level > 0 && solve_type == PRE_SMOOTHING)
             {
-                if(it_success >= this->pre_smoothing_steps() || it >= this->max_smoothing_it())
+                if(it >= this->pre_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
                 {
                     return true;
                 }
             }
             else if (level > 0 && solve_type == POST_SMOOTHING)
             {
-                if(it_success >= this->post_smoothing_steps() || it >= this->max_smoothing_it())
+                if(it >= this->post_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
                 {
                     return true;
                 }
@@ -1258,7 +1276,8 @@ namespace utopia
         bool                            _skip_BC_checks;
 
         SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
-        SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
+        SizeType                        _max_sucessful_smoothing_it;          /** * max smoothing iterations  */
+        SizeType                        _max_sucessful_coarse_it;          /** * max smoothing iterations  */
 
         SizeType                        _max_QP_smoothing_it;
         SizeType                        _max_QP_coarse_it;

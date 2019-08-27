@@ -241,6 +241,11 @@ namespace utopia
             tr_strategy_fine->pc_type("jacobi"); 
             tr_strategy_fine->atol(1e-14);
 
+            // tr_strategy_fine->pc_type("jacobi"); 
+            // tr_strategy_fine->atol(1e-14);
+
+
+
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
             auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
@@ -254,14 +259,17 @@ namespace utopia
 
             // Parameters 
             rmtr->max_it(1);
+
             rmtr->max_coarse_it(2);
+            rmtr->max_sucessful_coarse_it(1); 
             rmtr->max_QP_coarse_it(300);
 
-            rmtr->pre_smoothing_steps(1);
-            rmtr->post_smoothing_steps(1);
-            rmtr->max_smoothing_it(1); 
-            rmtr->max_QP_smoothing_it(2); 
-
+            rmtr->pre_smoothing_steps(10);
+            rmtr->post_smoothing_steps(10);
+            rmtr->max_sucessful_smoothing_it(2);            
+            rmtr->max_QP_smoothing_it(2);             
+             
+ 
             rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
 
             rmtr->delta0(1e9);
