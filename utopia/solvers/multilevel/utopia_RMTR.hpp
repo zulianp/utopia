@@ -285,8 +285,9 @@ namespace utopia
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
                 _tr_subproblems.resize(this->n_levels());
+            }
 
             _tr_subproblems[0] = strategy;
 
@@ -295,13 +296,14 @@ namespace utopia
 
         bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
                 _tr_subproblems.resize(this->n_levels());
+            }
 
             // starting from level 1 ....
-            for(auto l = 1; l != this->n_levels(); ++l)
+            for(auto l = 1; l != this->n_levels(); ++l){
                 _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
-
+            }
 
             return true;
         }
@@ -606,10 +608,10 @@ namespace utopia
                     rho = 0;
                 }
 
-                Scalar coarse_corr_taken = 0;
+                bool coarse_corr_taken = false;
                 if(rho > this->rho_tol())
                 {
-                    coarse_corr_taken = 1;
+                    coarse_corr_taken = true;
                     memory_.energy[level] = E_new; 
                 }
                 else
@@ -641,7 +643,7 @@ namespace utopia
                     // just to see what is being printed
                     std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level);
                     this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"});
-                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], coarse_corr_taken });
+                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], Scalar(coarse_corr_taken) });
                 }
             }
             else if(mpi_world_rank() ==0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
@@ -986,22 +988,6 @@ namespace utopia
          */
         virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
         {
-            // coarse one
-            // if(level == 0 && (it_success >= this->max_sucessful_smoothing_it() || it >= _max_coarse_it))
-            // {
-            //     return true;
-            // }
-            // // every other level
-            // else if (level > 0 && solve_type == PRE_SMOOTHING)
-            // {
-            //     if(it >= this->pre_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
-            //         return true;
-            // }
-            // else if (level > 0 && solve_type == POST_SMOOTHING)
-            // {
-            //     if(it >= this->post_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
-            //         return true;
-            // }
             if(check_iter_convergence(it, it_success, level, solve_type))
                 return true; 
             else if(delta < this->delta_min())

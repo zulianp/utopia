@@ -262,6 +262,37 @@ namespace utopia {
                 ierr =  PCFactorGetMatSolverType(this_pc, &stype); assert(ierr == 0);
                 ierr =  PCFactorSetMatSolverType(other_pc, stype); assert(ierr == 0);
 #endif
+
+                PetscBool flg_is_redundant; 
+                PetscObjectTypeCompare((PetscObject)other_pc, PCREDUNDANT, &flg_is_redundant);
+
+                if(flg_is_redundant)
+                {
+                    // there is no function to get number, so it can not be coppied....
+                    // PCRedundantSetNumber(other_pc, number); 
+
+                    // let us copy at least ksp and pc types
+
+                    // setting up inner solver 
+                    KSP inner_ksp_other, inner_ksp_this;
+                    PCRedundantGetKSP(other_pc, &inner_ksp_other); 
+                    PCRedundantGetKSP(this_pc, &inner_ksp_this); 
+
+                    KSPType inner_ksp_type;
+                    KSPGetType(inner_ksp_this, &inner_ksp_type); 
+                    KSPSetType(inner_ksp_other, inner_ksp_type); 
+
+                    PC innner_PC_this, innner_PC_other; 
+                    KSPGetPC(inner_ksp_this, &innner_PC_this); 
+                    KSPGetPC(inner_ksp_other, &innner_PC_other); 
+
+                    PCType inner_pc_type; 
+                    PCGetType(innner_PC_this, &inner_pc_type); 
+                    PCSetType(innner_PC_other, inner_pc_type); 
+                }
+
+
+
             }
 
             void copy_settings_from(const Impl &other)
