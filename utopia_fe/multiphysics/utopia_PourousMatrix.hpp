@@ -148,14 +148,14 @@ namespace utopia {
 
                     if(type == "flux") {
                         auto flux = std::make_shared<FluxPostProcessor<FunctionSpaceT, UVector>>();
-                        flux->rescale(rescale());
+                        // flux->rescale(rescale());
                         flux->read(in);
 
                         post_processors_.push_back(flux);
 
                     } else if(type == "avg") {
                         auto flux = std::make_shared<AverageHeadPostProcessor<FunctionSpaceT, UVector>>();              
-                        flux->rescale(rescale());
+                        // flux->rescale(rescale());
                         flux->read(in);
 
                         post_processors_.push_back(flux);
