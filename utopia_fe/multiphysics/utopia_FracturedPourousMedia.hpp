@@ -293,6 +293,30 @@ namespace utopia {
         // std::string name_;
     };
 
+    template<class Matrix>
+    class ConditionNumberPrinter final : public MatrixPostProcessor<Matrix> {
+    public:
+
+        inline void post_process(const Matrix &mat) override
+        {
+            std::cout << "condition-number: ";
+#ifdef WITH_SLEPC
+            auto c = cond(mat);
+            std::cout << c << std::endl;
+#else
+            std::cout << "[not computed, missing library]" << std::endl;
+#endif //WITH_SLEPC
+        }
+
+        inline void read(Input &) override
+        {
+        }
+
+        ConditionNumberPrinter()
+        {}
+
+    };
+
     template<class Matrix, class Vector>
     class FracturedPourousMedia : /*public Model<Matrix, Vector>*/ public Configurable {
     public:
@@ -341,6 +365,8 @@ namespace utopia {
                         auto exporter = std::make_shared<MatrixExporter<Matrix>>();
                         exporter->read(in);
                         matrix_processors_.push_back(std::move(exporter));
+                    } else if(type == "condition-number") {
+                        matrix_processors_.push_back(std::make_shared<ConditionNumberPrinter<Matrix>>());
                     }
 
                     //other post-processors....
