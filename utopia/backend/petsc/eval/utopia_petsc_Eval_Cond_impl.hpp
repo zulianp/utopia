@@ -20,8 +20,18 @@ namespace utopia {
         Vector eigenvector;
         
         SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> slepc;
-        // slepc.solver_type("lapack");
+        
+#ifdef SLEPC_HAVE_ARPACK    
         slepc.solver_type("arpack");
+#else
+    #ifdef SLEPC_HAVE_TRLAN
+        slepc.solver_type("trlan");
+    #else
+        #ifdef SLEPC_HAVE_PRIMME
+        slepc.solver_type("primme");
+        #endif
+    #endif 
+#endif        
         slepc.number_of_eigenvalues(1);
 
         //small eig

@@ -2,6 +2,24 @@ cmake_minimum_required(VERSION 3.8.1)
 
 project(utopia)
 
+set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
+
+#################################################################################
+######################### UTOPIA VERSION INFORMATION ############################
+#################################################################################
+
+include(UtopiaGitVersion)
+set(UTOPIA_VERSION_MAJOR 0)
+set(UTOPIA_VERSION_MINOR 1)
+set(UTOPIA_VERSION_PATCH 0)
+set(UTOPIA_VERSION "${UTOPIA_VERSION_MAJOR}.${UTOPIA_VERSION_MINOR}.${UTOPIA_VERSION_PATCH}")
+#################################################################################
+
+
+
+
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING
       "Choose the type of build, options are: Debug Release
@@ -102,8 +120,7 @@ if(ENABLE_CXX14_FEATURES)
     SET(WITH_CPP14 TRUE)
 endif()
 
-set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
+
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
@@ -316,6 +333,7 @@ list(APPEND UTOPIA_SOURCES
 
 # config is created based on the successful backend compilations
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
+configure_file(${UTOPIA_ROOT_PATH}/utopia_Version.hpp.in ${CMAKE_BINARY_DIR}/utopia_Version.hpp)
 
 
 #########################################################
