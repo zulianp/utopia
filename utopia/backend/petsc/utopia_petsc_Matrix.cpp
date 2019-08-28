@@ -1262,6 +1262,11 @@ namespace utopia {
          block_size
          );
 
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+        temp.write_lock();
+        temp.write_unlock();
+#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+
         check_error( MatCopy(implementation(), temp.implementation(), DIFFERENT_NONZERO_PATTERN) );
 
         *this = std::move(temp);
