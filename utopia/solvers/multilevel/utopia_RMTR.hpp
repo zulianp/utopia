@@ -632,12 +632,6 @@ namespace utopia
                 }
 
 
-                // terminate, since TR rad. does not allow to take more corrections on given level
-                if(converged==true){
-                    return true;
-                }
-
-
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
                     // just to see what is being printed
@@ -645,6 +639,12 @@ namespace utopia
                     this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"});
                     PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], Scalar(coarse_corr_taken) });
                 }
+
+                // terminate, since TR rad. does not allow to take more corrections on given level
+                if(converged==true){
+                    return true;
+                }
+
             }
             else if(mpi_world_rank() ==0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
@@ -685,7 +685,6 @@ namespace utopia
             const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
             // std::cout<<"solve_type: "<< solve_type << "    exact_solve_flg: "<< exact_solve_flg << "  \n"; 
 
-
             this->initialize_local_solve(level, solve_type);
 
 
@@ -716,7 +715,6 @@ namespace utopia
 
                 memory_.gnorm[level] = this->criticality_measure(level);
             }
-
 
             converged  = this->check_local_convergence(it, it_success,  memory_.gnorm[level], level, memory_.delta[level], solve_type);
 
@@ -913,7 +911,7 @@ namespace utopia
                 bool converged = this->delta_termination(corr_norm, level+1);
 
                 if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0){
-                    std::cout<<"termination  due to small radius on level: "<< level+1 << ". \n";
+                    std::cout<<"termination  due to small radius on level: "<< level << ". \n";
                 }
 
                 corr_norm = memory_.delta[level+1] - corr_norm;
