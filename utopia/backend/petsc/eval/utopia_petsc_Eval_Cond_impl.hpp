@@ -21,7 +21,7 @@ namespace utopia {
         
         SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> slepc;
         // slepc.solver_type("lapack");
-        // slepc.solver_type("arpack");
+        slepc.solver_type("arpack");
         slepc.number_of_eigenvalues(1);
 
         //small eig
