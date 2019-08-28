@@ -20,7 +20,8 @@ namespace utopia {
         Vector eigenvector;
         
         SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> slepc;
-        slepc.solver_type("lapack");
+        // slepc.solver_type("lapack");
+        // slepc.solver_type("arpack");
         slepc.number_of_eigenvalues(1);
 
         //small eig
@@ -32,6 +33,8 @@ namespace utopia {
         slepc.portion_of_spectrum("largest_real");
         slepc.solve(H);
         slepc.get_real_eigenpair(0, large, eigenvector);
+
+        // std::cout << "small: " << small << ", large: " << large << std::endl;
         return large/small;
     }
 }

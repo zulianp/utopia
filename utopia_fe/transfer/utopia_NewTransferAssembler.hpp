@@ -65,7 +65,7 @@ namespace utopia {
             return std::make_shared<PseudoL2TransferOperator>(data.T);
         }
 
-        NewTransferAssembler() : use_convert_transfer_(true), remove_incomplete_intersections_(false) {}
+        NewTransferAssembler() : use_convert_transfer_(true), remove_incomplete_intersections_(false), handle_adaptive_refinement_(false) {}
 
         inline void use_convert_transfer(const bool val)
         {

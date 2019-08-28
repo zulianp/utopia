@@ -318,6 +318,127 @@ namespace utopia {
     };
 
     template<class Matrix, class Vector>
+    class DFMReport final : public MatrixPostProcessor<Matrix> {
+    public:
+        using Scalar   = UTOPIA_SCALAR(Vector);
+        using SizeType = UTOPIA_SIZE_TYPE(Vector);
+
+        inline void post_process(const Matrix &mat) override
+        {
+            std::cout << "condition-number: ";
+#ifdef WITH_SLEPC
+            condition_number_= cond(mat);
+            std::cout << condition_number_ << std::endl;
+#else
+            std::cout << "[not computed, missing library]" << std::endl;
+#endif //WITH_SLEPC
+
+            n_dofs_ = size(mat).get(0);
+        }
+
+        inline void read(Input &in) override
+        {
+            in.get("path", path_);
+            in.get("print-header", print_header_);
+        }
+
+        DFMReport()
+        : path_("report.csv"), print_header_(true), condition_number_(-1), n_dofs_(-1)
+        {}
+
+        bool save() const
+        {
+            std::ofstream os(path_.c_str());
+
+            if(!os.good()) {
+                os.close();
+                return false;
+            } 
+
+            if(print_header_) {
+                os << "n_dofs,cond_num";
+
+                for(const auto &s : stats_) {
+                    os << ",";
+                    s.print_header(os);
+                }
+
+                os << "\n";
+            }
+
+            os << n_dofs_ << "," << condition_number_ ;
+            
+            for(const auto &s : stats_) {
+                os << ",";
+                s.print(os);
+            }
+           
+            os << "\n";
+
+            os.close();
+            return true;
+        }
+
+        void add_stat(const LibMeshFunctionSpace &space, const Matrix &mat)
+        {
+            Stats s;
+            s.name = space.equation_system().name();
+
+            auto it = space.mesh().active_local_elements_begin();
+            if(it != space.mesh().active_local_elements_end()) {
+                s.element_type = libMesh::Utility::enum_to_string((*it)->type());
+            }
+            s.n_dofs = space.dof_map().n_dofs();
+            s.n_elements = space.mesh().n_active_elem();
+            s.nnz = nnz(mat);
+
+            stats_.push_back(s);
+        }
+
+        ~DFMReport() {}
+
+    private:
+        std::string path_;
+        bool print_header_;
+        Scalar condition_number_;
+        SizeType n_dofs_;
+        SizeType nnz_;
+
+        class Stats {
+        public:
+
+            void print_header(std::ostream &os) const
+            {
+                os << "elem_type_" << name << ",";
+                os << "n_dofs_" << name << ",";
+                os << "n_elements_" << name << ",";
+                os << "nnz_" << name;
+            }
+
+            void print(std::ostream &os) const
+            {
+                os << element_type << ",";
+                os << n_dofs << ",";
+                os << n_elements << ",";
+                os << nnz;
+            }
+
+            std::string name;
+            std::string element_type;
+
+            SizeType n_dofs;
+            SizeType n_elements;
+            SizeType nnz;
+
+            Stats() : name("undefined"), element_type("undefined"), n_dofs(-1), n_elements(-1), nnz(-1) {}
+        };
+
+
+        std::vector<Stats> stats_;
+
+    };
+
+    template<class Matrix, class Vector>
     class FracturedPourousMedia : /*public Model<Matrix, Vector>*/ public Configurable {
     public:
         using PourousMatrix           = utopia::PourousMatrix<Matrix, Vector>;
@@ -372,6 +493,13 @@ namespace utopia {
                     //other post-processors....
                 });
             });
+
+            in.get("report", [this](Input &in) {
+                report_ = std::make_shared<DFMReport<Matrix, Vector>>();
+                report_->read(in);
+
+                // matrix_processors_.push_back(report_);
+            });
         }
 
         inline bool compute_flow()
@@ -417,6 +545,10 @@ namespace utopia {
 
             apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
 
+            if(report_) {
+                report_->add_stat(pourous_matrix_.space(), *A_m_);
+            }
+
             if(assembly_strategy_ == "static-condensation") {
                 A   = *A_m_;
                 rhs = *rhs_m_;
@@ -443,6 +575,10 @@ namespace utopia {
 
                     apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
 
+                    if(report_) {
+                        report_->add_stat(dfn->space(), *A_f_[i]);
+                    }
+
                     if(remove_constrained_dofs_) {
                         remove_constrained_dofs(dof_map_f, *A_f_[i], *rhs_f_[i]);
                     }
@@ -466,6 +602,10 @@ namespace utopia {
             rename("A", A);
             for(auto p : matrix_processors_) {
                 p->post_process(A);
+            }
+
+            if(report_) {
+                report_->post_process(A);
             }
 
             return true;
@@ -501,6 +641,10 @@ namespace utopia {
                 write(fracture_network_[i]->space().equation_system().name() + ".e", fracture_network_[i]->space(), *x_f_[i]);
             }
 
+            if(report_) {
+                report_->save();
+            }
+
             return true;
         }
 
@@ -528,6 +672,7 @@ namespace utopia {
         Scalar rescale_;
 
         std::vector<std::shared_ptr<MatrixPostProcessor<Matrix>> > matrix_processors_;
+        std::shared_ptr<DFMReport<Matrix, Vector>> report_;
 
     };
     
