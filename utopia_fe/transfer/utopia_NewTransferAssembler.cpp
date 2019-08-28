@@ -287,12 +287,12 @@ namespace utopia {
             if(!empty(cm_from)) {
                 B = transpose(cm_to) * B * (cm_from);
             } else {
-                B = cm_to * D;
+                B = transpose(cm_to) * D;
             }
 
         } else {
             if(!empty(cm_from)) {
-                B = transpose(B) * (cm_from);
+                B = B * (cm_from);
             }
         }
     }
