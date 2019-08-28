@@ -246,6 +246,57 @@ namespace utopia {
         }
     };
 
+
+    // static void handle_adaptivity(
+    //     TransferDataT &data)
+    // {
+    //     auto &cm_from = *data.constraint_matrix_from;
+    //     auto &cm_to = *data.constraint_matrix_to;
+
+    //     auto &D = *data.D;
+    //     auto &B = *data.B;
+
+    //     if(!empty(cm_to)) {
+    //         D = cm_to * D * transpose(cm_to);
+
+    //         if(!empty(cm_from)) {
+    //             B = cm_to * B * transpose(cm_from);
+    //         } else {
+    //             B = cm_to * D;
+    //         }
+
+    //     } else {
+    //         if(!empty(cm_from)) {
+    //             B = B * transpose(cm_from);
+    //         }
+    //     }
+    // }
+
+    static void handle_adaptivity(
+        TransferDataT &data)
+    {
+        auto &cm_from = *data.constraint_matrix_from;
+        auto &cm_to = *data.constraint_matrix_to;
+
+        auto &D = *data.D;
+        auto &B = *data.B;
+
+        if(!empty(cm_to)) {
+            D = transpose(cm_to) * D * (cm_to);
+
+            if(!empty(cm_from)) {
+                B = transpose(cm_to) * B * (cm_from);
+            } else {
+                B = cm_to * D;
+            }
+
+        } else {
+            if(!empty(cm_from)) {
+                B = transpose(B) * (cm_from);
+            }
+        }
+    }
+
     template<class Transfer>
     static void prepare_data(
         const TransferOptions &opts,
@@ -263,6 +314,9 @@ namespace utopia {
 
         if(!empty(Q)) {
             m_utopia_warning_once("using sum(D, 1) instead of diag(D)");
+
+            handle_adaptivity(data);
+
             UVector d_inv = sum(D, 1);
 
             e_pseudo_inv(d_inv, d_inv, 1e-12);

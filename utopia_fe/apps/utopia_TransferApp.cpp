@@ -30,8 +30,9 @@ namespace utopia {
         for(int i = 0; i < refinement_loops; ++i) {
             mesh_refinement.clean_refinement_flags();
 
-            for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
-                auto val = i % 2 == 1;
+            int idx = 0;
+            for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it, ++idx) {
+                auto val = idx % 2 == 1;
                 if(val) {
                     (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
                 }
