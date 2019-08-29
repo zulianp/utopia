@@ -224,7 +224,6 @@ namespace utopia
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
             rmtr->set_grad_smoothess_termination(0.000001);
-            rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(problem.verbose);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -274,7 +273,6 @@ namespace utopia
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
             rmtr->set_grad_smoothess_termination(0.000001);
-            rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(problem.verbose);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -333,7 +331,6 @@ namespace utopia
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
             rmtr->set_grad_smoothess_termination(0.000001);
-            rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(problem.verbose);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);

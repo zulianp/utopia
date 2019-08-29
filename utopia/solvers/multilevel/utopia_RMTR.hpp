@@ -66,7 +66,6 @@ namespace utopia
                 _eps_delta_termination(0.001),
                 _grad_smoothess_termination(0.5),
                 _check_gradient_smoothness(true),
-                _eps_grad_termination(1e-8),
                 _hessian_update_delta(0.15),
                 _hessian_update_eta(0.5),
                 _verbosity_level(VERBOSITY_LEVEL_NORMAL),
@@ -97,7 +96,6 @@ namespace utopia
             in.get("eps_delta_termination", _eps_delta_termination);
             in.get("grad_smoothess_termination", _grad_smoothess_termination);
             in.get("check_gradient_smoothness", _check_gradient_smoothness);
-            in.get("eps_grad_termination", _eps_grad_termination);
 
             in.get("hessian_update_delta", _hessian_update_delta);
             in.get("hessian_update_eta", _hessian_update_eta);
@@ -134,7 +132,6 @@ namespace utopia
             this->print_param_usage(os, "eps_delta_termination", "real", "Constant used for quiting recursion based on size of tr. radius.", "0.001");
             this->print_param_usage(os, "grad_smoothess_termination", "real", "Constant used for quiting recursion based on smoothness of the gradient on given level.", "0.5");
             this->print_param_usage(os, "check_gradient_smoothness", "real", "Flag turning on/off check for gradient smoothiness.", "true");
-            this->print_param_usage(os, "eps_grad_termination", "real", "Constant used for quiting recursion based on smoothness of the gradient on given level.", "1e-8");
 
             this->print_param_usage(os, "hessian_update_delta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.15");
             this->print_param_usage(os, "hessian_update_eta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.5");
@@ -194,11 +191,6 @@ namespace utopia
 
         virtual std::string name() override { return "RMTR";  }
 
-
-        virtual void set_eps_grad_termination(const Scalar & eps_grad_termination)
-        {
-            _eps_grad_termination = eps_grad_termination;
-        }
 
 
         virtual void max_coarse_it(const SizeType & max_coarse_it)
@@ -365,6 +357,7 @@ namespace utopia
             this->init_memory(fine_local_size);
 
             // initialize();
+
 
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level] = local_zeros(local_size(memory_.x[fine_level]));
@@ -1054,7 +1047,7 @@ namespace utopia
          */
         virtual bool criticality_measure_termination(const Scalar & g_norm)
         {
-            return (g_norm < _eps_grad_termination) ? true : false;
+            return (g_norm < this->atol()) ? true : false;
         }
 
 
@@ -1180,7 +1173,6 @@ namespace utopia
             }
             else
             {
-                // std::cout<<"--- fine level gradient eval.... \n";
                 return fun.gradient(memory_.x[level], memory_.g[level]);
             }
         }
@@ -1271,7 +1263,6 @@ namespace utopia
 
         Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
         bool                           _check_gradient_smoothness;
-        Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
 
         Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
         Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
