@@ -366,6 +366,7 @@ namespace utopia {
                 os << "\n";
             }
 
+            os << std::setprecision(9);
             os << n_dofs_ << "," << condition_number_ ;
             
             for(const auto &s : stats_) {
