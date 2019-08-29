@@ -15,10 +15,7 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(PTC_small_test);
             // UTOPIA_RUN_TEST(ASTRUM_small_test);
-
-
-            UTOPIA_RUN_TEST(CSR_test_paper); 
-
+            // UTOPIA_RUN_TEST(CSR_test_paper); 
             // UTOPIA_RUN_TEST(affine_similarity_stiff_test);
         }
 
