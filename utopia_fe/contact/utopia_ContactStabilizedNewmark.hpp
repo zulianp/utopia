@@ -16,7 +16,9 @@ namespace utopia {
     class ContactStabilizedNewmark : public ContactSolver<Matrix, Vector> {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
-        typedef typename ContactSolver<Matrix, Vector>::FunctionSpaceT FunctionSpaceT;
+        using super = ContactSolver<Matrix, Vector>;
+        using FunctionSpaceT = typename super::FunctionSpaceT;
+        using ContactT       = typename super::ContactT;
 
         ContactStabilizedNewmark(
             const std::shared_ptr<FunctionSpaceT> &V,
@@ -39,9 +41,9 @@ namespace utopia {
             if(is_new_time_step_) {
                 //copy for time-adaptivity for changing the predictor for different dt
 
-                O_copy_   = this->contact().orthogonal_trafo;
-                // O_copy_   = this->contact().complete_transformation;
-                gap_copy_ = this->contact().gap;
+                O_copy_   = this->contact().orthogonal_trafo();
+                // O_copy_   = this->contact().complete_transformation();
+                gap_copy_ = this->contact().gap();
                 update_predictor();
 
                 is_new_time_step_ = false;

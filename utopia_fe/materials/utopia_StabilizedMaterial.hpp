@@ -11,9 +11,12 @@ namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
     class StabilizedMaterial final : public ElasticMaterial<Matrix, Vector> {
     public:
+        using Scalar = UTOPIA_SCALAR(Vector);
+
         enum StabilizationType {
             L2 = 0,
-            H1 = 1
+            H1 = 1,
+            L2_LUMPED = 2
         };
 
         StabilizedMaterial(
@@ -33,7 +36,9 @@ namespace utopia {
         {
             if(type == "L2" || type == "l2") {
                 type_ = L2;
-            } else  {
+            } else  if(type == "L2_LUMPED" || type == "l2_lumped") {
+                type_ = L2_LUMPED;
+            } else {
                 type_ = H1;
             }
         }
@@ -54,11 +59,19 @@ namespace utopia {
                         utopia::assemble(inner(u, v) * dX, stab_);
                         break;
                     }
-
+                    case L2_LUMPED:
+                    {
+                        Matrix temp;
+                        utopia::assemble(inner(u, v) * dX, temp);
+                        Vector d = sum(temp, 1);
+                        stab_ = diag(d);
+                        break;
+                    }
                     default: {
                         utopia::assemble(inner(grad(u), grad(v)) * dX, stab_);
                         break;
                     }
+
                 }
 
                 stab_ *= stabilization_mag_;
@@ -70,6 +83,15 @@ namespace utopia {
 
         bool stress(const Vector &x, Vector &result) override {
             return material_->stress(x, result);
+        }
+
+        inline Scalar rescaling() const override
+        {
+            return material_->rescaling();
+        }
+
+        inline void rescaling(const Scalar &value) override {
+            material_->rescaling(value);
         }
 
     private:

@@ -1,0 +1,39 @@
+{
+	"transfer": {
+		"type": "l2-projection",
+		"function": "sin(2*x*x) + cos(2*y*y) + sin(z*z)",
+		"*function-type" : "constant",
+		"master": {
+			"mesh": {
+				"type": "file",
+				"path" : "../data/transfer/heart2-1.e",
+				"*refinements" : 1
+
+			},
+			"space": {
+				"system-name" : "master",
+				"variables" : [
+					{
+						"name" : "u_m",
+						"order" : 1
+					}
+				]
+			}
+		},
+		"slave": {
+			"mesh": {
+				"type": "file",
+				"path" : "../data/transfer/heart2.e"
+			},
+			"space": {
+				"system-name" : "slave",
+				"variables" : [
+					{
+						"name" : "u_s",
+						"order" : 1
+					}
+				]
+			}
+		}
+	}
+}

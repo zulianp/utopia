@@ -42,9 +42,6 @@ namespace utopia {
         const LibMeshFunctionSpace &to,
         UVector &to_vector);
 
-
-    std::size_t max_nnz_x_row(const LibMeshFunctionSpace &space);
-
 }
 
 #endif //UTOPIA_FRACTURE_FLOW_UTILS_HPP

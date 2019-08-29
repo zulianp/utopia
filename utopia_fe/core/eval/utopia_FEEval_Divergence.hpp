@@ -11,14 +11,11 @@ namespace utopia {
     class FEEval<Divergence<Tensor>, Traits, Backend, IsQuadData> {
     public:
         typedef utopia::Divergence<Tensor> Expr;
-        typedef typename Traits::DivergenceType DivergenceT;
 
-        template<template<class> class Function, class Spaces>
         inline static auto apply(
-            const Divergence< Function<ProductFunctionSpace<Spaces> > > &expr,
-            AssemblyContext<Backend> &ctx) -> DivergenceT
+            const Divergence<Tensor> &expr,
+            AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::div(expr.expr(), ctx) )
         {
-            const auto & space_ptr = expr.expr().space_ptr();
             return FEBackend<Backend>::div(expr.expr(), ctx);
         }
     };

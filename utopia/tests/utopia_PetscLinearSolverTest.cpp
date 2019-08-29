@@ -20,7 +20,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_mg);
             UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_1D);
-            UTOPIA_RUN_TEST(petsc_block_mg_exp);
+            UTOPIA_RUN_TEST(petsc_block_mg_exp);  //petsc 3.11.3 ERROR here
             UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_mg_exp);
             UTOPIA_RUN_TEST(petsc_superlu_mg);

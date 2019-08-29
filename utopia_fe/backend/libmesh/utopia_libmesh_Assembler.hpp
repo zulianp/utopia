@@ -22,7 +22,7 @@ namespace utopia {
         }
 
         template<class Expr>
-        bool assemble(const Expr &expr, Scalar &val)
+        bool assemble(/*const*/ Expr &expr, Scalar &val)
         {
             //perf
             Chrono c;
@@ -73,7 +73,7 @@ namespace utopia {
 
 
         template<class Expr>
-        bool assemble(const Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)
+        bool assemble(/*const*/ Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)
         {
             //perf
             Chrono c;
@@ -163,7 +163,7 @@ namespace utopia {
 
 
         template<class Expr>
-        bool assemble(const Expr &expr, GlobalMatrix &mat)
+        bool assemble(/*const*/ Expr &expr, GlobalMatrix &mat)
         {
             //perf
             Chrono c;
@@ -238,7 +238,7 @@ namespace utopia {
 
 
         template<class Expr>
-        bool assemble(const Expr &expr, GlobalVector &vec, const bool apply_constraints = false)
+        bool assemble(/*const*/ Expr &expr, GlobalVector &vec, const bool apply_constraints = false)
         {
 
             //perf

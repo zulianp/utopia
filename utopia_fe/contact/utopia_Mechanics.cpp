@@ -191,15 +191,18 @@ namespace utopia {
     {
         auto s = local_size(old.internal_force);
 
-        const USparseMatrix &T = contact.complete_transformation;
+        // const USparseMatrix &T = contact.complete_transformation;
         const USparseMatrix &K = mech_ctx.stiffness_matrix;
         const UVector rhs = current.external_force;// - old.internal_force;
 
         UVector sol_c = local_zeros(s);
-        UVector rhs_c = transpose(T) * rhs;
-        USparseMatrix K_c  = transpose(T) * K * T;
+        UVector rhs_c;// = transpose(T) * rhs;
+        USparseMatrix K_c;//  = transpose(T) * K * T;
 
-        bool solved = solve(K_c, mech_ctx.inverse_mass_vector, rhs_c, contact.gap, friction, sol_c);
+        contact.couple(rhs, rhs_c);
+        contact.couple(K, K_c);
+
+        bool solved = solve(K_c, mech_ctx.inverse_mass_vector, rhs_c, contact.gap(), friction, sol_c);
 
         if(!solved) {
             std::cerr << "[Error] unable to solve non-linear system" << std::endl;
@@ -207,7 +210,8 @@ namespace utopia {
 
         assert(solved);
 
-        current.displacement_increment = T * sol_c;
+        // current.displacement_increment = T * sol_c;
+        contact.uncouple(sol_c, current.displacement_increment);
         current.displacement = old.displacement + current.displacement_increment;
         current.internal_force = K * current.displacement_increment;
         current.t = old.t + dt;
@@ -216,8 +220,8 @@ namespace utopia {
         // current.stress = T * (rhs_c - K_c * sol_c);
 
         // current.stress = e_mul(contact.inv_mass_vector, (current.external_force - current.internal_force));
-        current.stress = contact.inv_mass_matrix * (current.external_force - current.internal_force);
-
+        // current.stress = e_mul(contact.inv_mass_vector(), (current.external_force - current.internal_force));
+        contact.remove_mass((current.external_force - current.internal_force), current.stress);
         //FIXME find other way
         apply_zero_boundary_conditions(dof_map, current.internal_force);
         apply_zero_boundary_conditions(dof_map, current.stress);

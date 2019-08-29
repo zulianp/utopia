@@ -151,8 +151,8 @@ namespace utopia {
         QMortar &q_trial,
         QMortar &q_test)
     {
-        assert(trial.n_nodes() == 2);
-        assert(test.n_nodes()  == 2);
+        // assert(trial.n_nodes() == 2);
+        // assert(test.n_nodes()  == 2);
 
         //FIXME some computations can be avoided
 

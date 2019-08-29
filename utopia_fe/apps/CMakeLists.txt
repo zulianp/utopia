@@ -18,5 +18,6 @@ add_utopiafe_module(utopia_fe_apps
     utopia_fe_functions
     utopia_fe_fractures
     utopia_fe_wear
+    utopia_fe_multiphysics
 )
 

@@ -12,6 +12,7 @@
 #include "utopia_petsc_SerialVector.hpp"
 
 #include "utopia_Base.hpp"
+#include "utopia_petsc_Base.hpp"
 
 #include "petscsys.h"
 #include "petscmat.h"

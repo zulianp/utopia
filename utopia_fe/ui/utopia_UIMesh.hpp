@@ -6,6 +6,8 @@
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_modification.h"
+#include "utopia_UIMorph.hpp"
+#include "utopia_MeshParamSmoother.hpp"
 
 #include <memory>
 
@@ -39,11 +41,14 @@ namespace utopia {
             double scale = 1.;
             double shift[3] = {0. , 0., 0.};
 
+            bool full_order = true;
+
             std::string elem_type = "quad";
 
             is.get("type", mesh_type);
             is.get("elem-type", elem_type);
             is.get("order", order);
+            is.get("full-order", full_order);
             is.get("path", path);
 
             is.get("refinements", refinements);
@@ -120,7 +125,7 @@ namespace utopia {
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
                         bb.min()(2) - span[2], bb.max()(2) + span[2],
-                        get_type(elem_type, order, 3)
+                        get_type(elem_type, order, 3, full_order)
                         );
 
                 } else {
@@ -129,10 +134,15 @@ namespace utopia {
                         n[0], n[1],
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
-                        get_type(elem_type, order, 2)
+                        get_type(elem_type, order, 2, full_order)
                         );
                 }
             }
+
+            int block_override = -1;
+            is.get("block-override", block_override);
+
+            override_block(block_override, *mesh_);
 
             //build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
 
@@ -149,8 +159,38 @@ namespace utopia {
             }
 
             if(mesh_type == "file" && order == 2) {
-                mesh_->all_second_order();
+                mesh_->all_second_order(full_order);
             }
+
+            { 
+                //single morph
+                UIMorph<libMesh::DistributedMesh> morph;
+                is.get("morph", morph);
+                
+                if(morph.is_valid()) {
+                    morph.apply(*mesh_);
+                }
+            }
+
+            // is.get("improve-smoothness", [this](Input &is) {
+            //     MeshParamSmoother smoother;
+            //     smoother.read(is);
+            //     smoother.apply(*mesh_);
+            // });
+
+            //multi morph
+            is.get("morphs", [this](Input &is) {
+                is.get_all([this](Input &is) {
+
+                    UIMorph<libMesh::DistributedMesh> morph;
+                    morph.read(is);
+                    
+                    if(morph.is_valid()) {
+                        morph.apply(*mesh_);
+                    }
+                    
+                });
+            });
         }
 
         inline libMesh::DistributedMesh &mesh()
@@ -178,7 +218,8 @@ namespace utopia {
         libMesh::ElemType get_type(
             const std::string &elem_type,
             const int order,
-            const int dim) const
+            const int dim,
+            const bool full_order = true) const
         {
             if(dim == 3) {
                 libMesh::ElemType type = libMesh::HEX8;
@@ -192,7 +233,13 @@ namespace utopia {
 
                     if(elem_type == "tet") {
                         type = libMesh::TET10;
+                    } else if(full_order) {
+                        type = libMesh::HEX27;
                     }
+                }
+
+                if(order == 3) {
+                    type = libMesh::HEX27;
                 }
 
                 if(elem_type == "prism") {
@@ -228,12 +275,21 @@ namespace utopia {
                     }
                 }
 
+                if(order == 3) {
+                    type = libMesh::QUAD9;
+
+                     if(elem_type == "tri") {
+                        assert(false);
+                        // type = libMesh::TRI6;
+                    }
+                }
+
                 return type;
             } else if(dim == 1) {
                 libMesh::ElemType type = libMesh::EDGE2;
 
                 if(order == 2) {
-                    type = libMesh::EDGE4;
+                    type = libMesh::EDGE3;
                 }
 
                 return type;
@@ -263,6 +319,17 @@ namespace utopia {
                 }
             }
         }
+
+
+        static void override_block(const int block, libMesh::MeshBase &mesh)
+        {
+            if(block <= 0) return;
+
+            for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
+                (*it)->subdomain_id() = block;
+            }
+        }
+
 
         static void shift_mesh(const double t[3], libMesh::MeshBase &mesh)
         {

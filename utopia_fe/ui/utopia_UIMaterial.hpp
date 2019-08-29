@@ -12,7 +12,7 @@
 
 namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
-    class UIMaterial final : public ElasticMaterial<Matrix, Vector>, public Configurable {
+    class UIMaterial final : public ElasticMaterial<Matrix, Vector> {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
 
@@ -25,29 +25,33 @@ namespace utopia {
             std::string material = "LinearElasticity";
             std::string stabilization = "none";
             Scalar stabilization_mag = 0.0001;
+            Scalar rescaling = 1.0;
 
             is.get("material", material);
             is.get("stabilization", stabilization);
             is.get("stabilization-mag", stabilization_mag);
-
-            LameeParameters params;
             is.get("parameters", params);
+            is.get("rescaling", rescaling);
 
             params.describe(std::cout);
 
             if(material == "NeoHookean") {
-                material_ = std::make_shared<NeoHookean<decltype(V_), Matrix, Vector>>(V_, params);
+                std::cout << "Using: NeoHookean" << std::endl;
+                material_ = std::make_shared<NeoHookean<FunctionSpace, Matrix, Vector>>(V_, params);
             } else if(material == "SaintVenantKirchoff") {
-                material_ = std::make_shared<SaintVenantKirchoff<decltype(V_), Matrix, Vector>>(V_, params);
+                std::cout << "Using: SaintVenantKirchoff" << std::endl;
+                material_ = std::make_shared<SaintVenantKirchoff<FunctionSpace, Matrix, Vector>>(V_, params);
             } else /*if(material == "LinearElasticity")*/ {
-                material_ = std::make_shared<LinearElasticity<decltype(V_), Matrix, Vector>>(V_, params);
+                material_ = std::make_shared<LinearElasticity<FunctionSpace, Matrix, Vector>>(V_, params);
             }
 
             if(stabilization != "none") {
                 std::cout << "using stabilization: " << stabilization << " mag: " << stabilization_mag << std::endl;
-                // StabilizedMaterial<decltype(V_), Matrix, Vector> sm(V_, stabilization_mag, material_, stabilization);
-                material_ = std::make_shared<StabilizedMaterial<decltype(V_), Matrix, Vector>>(V_, stabilization_mag, material_, stabilization);
+                // StabilizedMaterial<FunctionSpace, Matrix, Vector> sm(V_, stabilization_mag, material_, stabilization);
+                material_ = std::make_shared<StabilizedMaterial<FunctionSpace, Matrix, Vector>>(V_, stabilization_mag, material_, stabilization);
             }
+
+            material_->rescaling(rescaling);
         }
 
         inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
@@ -71,6 +75,8 @@ namespace utopia {
         }
 
         inline bool is_linear() const override { assert(material_); return material_->is_linear(); }
+
+        LameeParameters params;
 
     private:
         FunctionSpace &V_;

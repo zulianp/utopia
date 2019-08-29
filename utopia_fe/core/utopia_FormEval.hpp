@@ -2,6 +2,7 @@
 #define UTOPIA_FORM_EVAL_HPP
 
 #include "utopia_Traits.hpp"
+#include <iostream>
 
 namespace utopia {
     template<class Form, int BAKEND_FLAG>

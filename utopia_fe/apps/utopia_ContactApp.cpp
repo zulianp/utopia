@@ -18,21 +18,20 @@
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
+#include "utopia_ContactStress.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
 namespace utopia {
 
-
-
-
-    class SimulationInput : public Configurable {
+    class ContactAppInput : public Configurable {
     public:
         using ProductSpaceT    = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
         using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
-        using ForcingFunctionT = UIForcingFunction<ProductSpaceT, UVector>;
+        using ForcingFunctionT = utopia::UIForcingFunction<ProductSpaceT, UVector>;
+        using ContactStressT   = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, USparseMatrix, UVector>;
 
-        SimulationInput(libMesh::Parallel::Communicator &comm) :
+        ContactAppInput(libMesh::Parallel::Communicator &comm) :
         mesh_(comm),
         space_(make_ref(mesh_)),
         dt_(0.1),
@@ -40,7 +39,10 @@ namespace utopia {
         use_newton(false),
         export_results(true),
         is_steady(false),
-        use_gmres(false) {}
+        use_gmres(false),
+        outer_loop_tol(1e-3),
+        max_outer_loops(1),
+        plot_gap(false) {}
 
         void read(Input &is) override
         {
@@ -61,6 +63,13 @@ namespace utopia {
                 is.get("use-ssnewton", use_newton);
                 is.get("is-steady", is_steady);
                 is.get("use-gmres", use_gmres);
+                is.get("outer-loop-tol", outer_loop_tol);
+                is.get("max-outer-loops", max_outer_loops);
+                is.get("plot-gap", plot_gap);
+
+                is.get("contact-stress", [this, &model](Input &in) {
+                    contact_stress_ = std::make_shared<ContactStressT>(space_.space(), model->params);
+                });
 
                 assert(model->good());
 
@@ -126,11 +135,13 @@ namespace utopia {
             os << is_steady << std::endl;
         }
 
+        std::shared_ptr< ContactStressT > contact_stress_;
     private:
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<LibMeshFunctionSpace> space_;
         UIContactParams params_;
         std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model_;
+        
         double dt_;
         bool use_amg_;
     public:
@@ -138,12 +149,15 @@ namespace utopia {
         bool export_results;
         bool is_steady;
         bool use_gmres;
+        double outer_loop_tol;
+        int max_outer_loops;
+        bool plot_gap;
 
         std::shared_ptr< QPSolver<USparseMatrix, UVector> > qp_solver;
     };
 
 
-    static void solve_steady(SimulationInput &sim_in)
+    static void solve_steady(ContactAppInput &sim_in, Input &in)
     {
         typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
 
@@ -151,12 +165,17 @@ namespace utopia {
 
         auto qp_solver = sim_in.qp_solver;
 
-
         ContactSolverT sc(
             make_ref(sim_in.space()),
             sim_in.model(),
             params.contact_params
         );
+
+        in.get("contact-problem", sc);
+
+        if(sim_in.contact_stress_) {
+            sc.set_contact_stress(sim_in.contact_stress_);
+        }
 
         if(sim_in.export_results) {
             sc.export_results(true);
@@ -166,8 +185,9 @@ namespace utopia {
             sc.set_qp_solver(qp_solver);
         }
 
-        sc.set_tol(1e-3);
-        sc.set_max_outer_loops(30);
+        // sc.plot_gap(sim_in.plot_gap);
+        // sc.set_tol(sim_in.outer_loop_tol);
+        // sc.set_max_outer_loops(sim_in.max_outer_loops);
         sc.set_use_ssn(sim_in.use_newton);
 
         if(sim_in.use_gmres) {
@@ -197,7 +217,7 @@ namespace utopia {
 
     }
 
-    static void solve_transient(SimulationInput &sim_in)
+    static void solve_transient(ContactAppInput &sim_in, Input &in)
     {
         typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> ContactSolverT;
 
@@ -210,11 +230,17 @@ namespace utopia {
             params.contact_params
         );
 
+        in.get("contact-problem", sc);
+
+        if(sim_in.contact_stress_) {
+            sc.set_contact_stress(sim_in.contact_stress_);
+        }
+
         if(sim_in.export_results) {
             sc.export_results(true);
         }
 
-        sc.set_tol(1e-3);
+        sc.set_tol(sim_in.outer_loop_tol);
         sc.set_max_outer_loops(30);
         sc.set_use_ssn(sim_in.use_newton);
 
@@ -247,14 +273,14 @@ namespace utopia {
 
     void ContactApp::run(Input &in)
     {
-        SimulationInput sim_in(comm());
+        ContactAppInput sim_in(comm());
         in.get("contact-problem", sim_in);
         sim_in.describe(std::cout);
 
         if(sim_in.is_steady) {
-            solve_steady(sim_in);
+            solve_steady(sim_in, in);
         } else {
-            solve_transient(sim_in);
+            solve_transient(sim_in, in);
         }
     }
 }

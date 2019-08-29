@@ -223,11 +223,34 @@ namespace utopia {
         _Scalar _values;
     };
 
+    template<typename SizeType>
+    class NNZXRow {
+    public:
+        NNZXRow(const std::vector<SizeType> &d_nnz, const std::vector<SizeType> &o_nnz)
+        : d_nnz(d_nnz), o_nnz(o_nnz)
+        {}
+
+        const std::vector<SizeType> &d_nnz, &o_nnz;
+    };
+
+    template<typename SizeType>
+    class FactoryTraits< NNZXRow<SizeType> > {
+    public:
+        typedef double Scalar;
+
+        static constexpr const char * getClass()
+        {
+            return "NNZXRow";
+        }
+
+        enum {
+            FILL_TYPE = FillType::SPARSE
+        };
+    };
 
     template<typename T>
     class LocalNNZ {
     public:
-
 
         LocalNNZ()  {};
         LocalNNZ(T nnz) : _nnz(nnz) {};
@@ -599,6 +622,15 @@ namespace utopia {
         return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
     }
 
+    template<typename SizeType>
+    inline Factory<NNZXRow<SizeType>, 2> sparse(
+        const Size &gs,
+        const std::vector<SizeType> &d_nnz,
+        const std::vector<SizeType> &o_nnz)
+    {
+        return Factory<NNZXRow<SizeType>, 2>(gs, NNZXRow<SizeType>(d_nnz, o_nnz));
+    }
+
     template<typename _SizeType, typename _IntType, typename _Scalar>
     inline Factory<CRS<_SizeType, _IntType, _Scalar>, 2> crs(const Size::SizeType rows, const Size::SizeType cols, _SizeType &rowPtr, _IntType &crs_columns, _Scalar &values)
     {
@@ -687,6 +719,12 @@ namespace utopia {
     inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
         return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnz_x_row_or_col));
+    }
+
+    template<typename T>
+    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size &s, T nnz_x_row_or_col)
+    {
+        return Factory<LocalNNZ<T>, 2>(s, LocalNNZ<T>(nnz_x_row_or_col));
     }
 
     template<typename T, class... Args>

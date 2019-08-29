@@ -5,7 +5,6 @@
 		"use-ssnewton": false,
 		"dt": 0.2,
 		"is-steady" : true,
-		"*use-gmres" : true,
 		"qp-solver" : {
 			"backend" : "petsc",
 			"type" : "tron",
@@ -17,25 +16,29 @@
 		},
 		"mesh": {
 			"type": "file",
-			"*0path" : "../data/contact/contact_cubes.e",
-			"**path"   : "../data/contact/pseudo-signorini.e",
-			"*path"   : "../data/contact/pseudo-signorini-refined.e",
-			"**path"   : "../data/contact/pseudo-signorini-refined-twice.e",
-			"path" : "../data/contact/pseudo-signorini-coarse-slave-3.e",
-			"refinements" : 0
+			"path_1" : "../data/contact/contact_cubes.e",
+			"path"   : "../data/contact/pseudo-signorini.e",
+			"path_3"   : "../data/contact/pseudo-signorini-refined.e",
+			"path_4"   : "../data/contact/pseudo-signorini-refined-twice.e",
+			"path_5" : "../data/contact/pseudo-signorini-coarse-slave-3.e",
+			"refinements" : 0,
+			"order" : 2
 
 		},
 		"space": {
 			"system-name": "contact_sol",
 			"variables": [
 				{
-					"name": "disp_x"
+					"name": "disp_x",
+					"order" : 2
 				},
 				{
-					"name": "disp_y"
+					"name": "disp_y",
+					"order" : 2
 				},
 				{
-					"name": "disp_z"
+					"name": "disp_z",
+					"order" : 2
 				}
 			],
 			"boundary-conditions": [

@@ -199,12 +199,31 @@ namespace utopia {
 
     template<class Expr>
     bool assemble(
+        Expr &expr,
+        double &val)
+    {
+        return LibMeshAssembler().assemble(expr, val);
+    }
+
+    template<class Expr>
+    bool assemble(
         const Expr &expr,
         USparseMatrix &mat,
         const bool first = true)
     {
         return LibMeshAssembler().assemble(expr, mat);
     }
+
+
+    template<class Expr>
+    bool assemble(
+        Expr &expr,
+        USparseMatrix &mat,
+        const bool first = true)
+    {
+        return LibMeshAssembler().assemble(expr, mat);
+    }
+
 
 
     template<class Expr, typename T>
@@ -240,6 +259,15 @@ namespace utopia {
         return LibMeshAssembler().assemble(expr, vec);
     }
 
+    template<class Expr>
+    bool assemble(
+        Expr &expr,
+        UVector &vec,
+        const bool first = true)
+    {
+        return LibMeshAssembler().assemble(expr, vec);
+    }
+
     template<class... Eqs>
     bool assemble(const Equations<Eqs...> &eqs, USparseMatrix &mat, UVector &vec)
     {
@@ -253,6 +281,17 @@ namespace utopia {
         return assemble(equations(equation), mat, vec);
     }
 
+    template<class FunctionSpaceT>
+    bool assemble(EquationIntegrator<FunctionSpaceT> &equation, USparseMatrix &mat, UVector &vec)
+    {
+        return LibMeshAssembler().assemble(equation, mat, vec);
+    }
+
+    template<class FunctionSpaceT>
+    bool assemble(const EquationIntegrator<FunctionSpaceT> &equation, USparseMatrix &mat, UVector &vec)
+    {
+        return LibMeshAssembler().assemble(equation, mat, vec);
+    }
 
     template<class Expr>
     void init_constraints(const Expr &expr)

@@ -73,7 +73,7 @@ namespace utopia {
         void contained_points(const libMesh::Elem &trial,   const libMesh::QBase &q, std::vector<int> &index);
         void contained_points_2(const libMesh::Elem &trial, const libMesh::QBase &q, std::vector<int> &index);
         void contained_points_3(const libMesh::Elem &trial, const libMesh::QBase &q, std::vector<int> &index) const;
-
+        void contained_points_non_affine(const Elem &trial, const libMesh::QBase &q, std::vector<int> &index, std::vector<libMesh::Point> &trial_ref_points) const;
         void assemble(libMesh::FEBase &trial, libMesh::FEBase &test, Matrix &mat) const;
     };
 }

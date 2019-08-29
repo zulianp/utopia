@@ -49,31 +49,32 @@ namespace utopia
 			UTOPIA_RUN_TEST(rosenbrock_test); 
 		}
 
+        void petsc_slepc_eigen_test()
+        {
 
+            DSMatrixd A = sparse(_n, _n, 3);
+            assemble_laplacian_1D(_n, A);
 
-		void petsc_slepc_eigen_test()
-		{
+            bool verbose = false;
 
-			DSMatrixd A = sparse(_n, _n, 3);
-			assemble_laplacian_1D(_n, A);
+            SlepcSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc;
 
-			bool verbose = false; 
+            slepc.portion_of_spectrum("smallest_real");
+            slepc.verbose(verbose);
+            slepc.solve(A);
+            slepc.print_eigenpairs();
 
-			SlepcSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+            PetscScalar iegr, eigi;
+            DVectord vr, vi;
 
-			slepc.portion_of_spectrum("smallest_real"); 
-			slepc.verbose(verbose); 
-			slepc.solve(A); 
-			slepc.print_eigenpairs(); 
+            slepc.get_eigenpairs(0, iegr, eigi, vr, vi);
 
-			PetscScalar iegr, eigi; 
-			DVectord vr, vi; 
+            slepc.get_real_eigenpair(1, iegr, vr);
 
-			slepc.get_eigenpairs(0, iegr, eigi, vr, vi); 
+            auto e = cond(A);
+            // std::cout << "e: " << e << std::endl;
 
-			slepc.get_real_eigenpair(1, iegr, vr); 
-
-		}
+        }
 
 		void petsc_slepc_generalized_eigen_test()
 		{
@@ -246,18 +247,14 @@ namespace utopia
 			solver.solve(fun, x); 
 			utopia_test_assert(approxeq(x, expected_woods, 1e-8));
 
-
 			const SizeType n = 100; 
 
 			MildStiffExample<DMatrixd, DVectord> fun_stiff(n); 
 			DVectord x_stiff; 
 			fun_stiff.get_initial_guess(x_stiff); 
 			solver.solve(fun_stiff, x_stiff); 
-
-
-			exit(0); 
-
 		}
+		
 
 		void lm_test()
 		{

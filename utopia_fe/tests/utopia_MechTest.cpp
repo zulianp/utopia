@@ -121,7 +121,7 @@ namespace utopia {
         ContactParams contact_params;
         contact_params.contact_pair_tags = {{2, 1}};
         contact_params.search_radius = 0.2;
-        if(!contact.init(mesh, make_ref(Vx.dof_map()), contact_params)) {
+        if(!contact.assemble(mesh, make_ref(Vx.dof_map()), contact_params)) {
             std::cerr << "[Error] contact failed" << std::endl;
         }
 

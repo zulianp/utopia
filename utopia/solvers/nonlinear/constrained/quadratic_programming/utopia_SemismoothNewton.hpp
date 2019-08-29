@@ -19,8 +19,109 @@ namespace utopia {
 
     public:
 
+        class ActiveTol {
+        public:
+            virtual ~ActiveTol() {}
+
+            ActiveTol(const Scalar tol)
+            : tol_(tol)
+            {}
+
+            inline Scalar tol() const
+            {
+                return tol_;
+            }
+
+            Scalar &get()
+            {
+                return tol_;
+            }
+
+            inline void set(const Scalar tol)
+            {
+                tol_ = tol;
+            }
+
+            virtual Scalar tol(const SizeType i) const
+            {
+                UTOPIA_UNUSED(i);
+                return tol_;
+            }
+
+            virtual void set_range(const Range &r) 
+            {
+                UTOPIA_UNUSED(r);
+            }
+
+            virtual void became_active(const SizeType i) {
+                UTOPIA_UNUSED(i);
+            }
+
+            virtual void became_inactive(const SizeType i) {
+                UTOPIA_UNUSED(i);
+            }
+
+
+        private:
+            Scalar tol_;
+        };  
+
+        class AdaptiveActiveTol final : public ActiveTol {
+        public:
+            using ActiveTol::tol;
+
+            AdaptiveActiveTol(const Scalar tol, const Range &r)
+            : ActiveTol(tol), adaptive_tol_(r.extent(), tol), is_active_(r.extent(), false), r_begin_(r.begin())
+            {}
+
+            AdaptiveActiveTol(const Scalar tol)
+            : ActiveTol(tol), adaptive_tol_(1, tol), r_begin_(0)
+            {}
+
+            Scalar tol(const SizeType i) const override
+            {
+                assert(i < SizeType(adaptive_tol_.size()));
+                return adaptive_tol_[i - r_begin_];
+            }
+
+            void set_range(const Range &r) override
+            {
+                r_begin_ = r.begin();
+                adaptive_tol_.resize(r.extent());
+                is_active_.resize(r.extent());
+                clear();
+            }
+
+            //make it stickier everytime it becomes active
+            void became_active(const SizeType i) override
+            {
+                auto idx = i - r_begin_;
+                if(!is_active_[idx]) {
+                    adaptive_tol_[idx] *= 2.0;
+                    is_active_[idx] = true;
+                }
+            }
+
+            void became_inactive(const SizeType i) override {
+                is_active_[i - r_begin_] = false;
+            }
+
+            void clear()
+            {
+                std::fill(adaptive_tol_.begin(), adaptive_tol_.end(), tol());
+                std::fill(is_active_.begin(),    is_active_.end(),    false);
+            }
+
+        private:
+            std::vector<Scalar> adaptive_tol_;
+            std::vector<bool> is_active_;
+            SizeType r_begin_;
+        };  
+
         SemismoothNewton(const std::shared_ptr <Solver> &linear_solver) :
-        linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
+        linear_solver_(linear_solver),
+        active_set_tol_(utopia::make_unique<ActiveTol>(1e-15)),
+        linear_solve_zero_initial_guess_(true)
         {
 
         }
@@ -45,7 +146,7 @@ namespace utopia {
 
         inline void set_active_set_tol(const Scalar tol)
         {
-            active_set_tol_ = tol;
+            active_set_tol_->set(tol);
         }
 
         void set_linear_solver(const std::shared_ptr<Solver > &ls)
@@ -56,7 +157,15 @@ namespace utopia {
         void read(Input &in) override
         {
             QPSolver<Matrix, Vector>::read(in);
-            in.get("active_set_tol", active_set_tol_);
+            bool use_adaptive_tol = false;
+            in.get("use-adaptive-tol", use_adaptive_tol);
+
+            if(use_adaptive_tol) {
+                auto temp_tol = active_set_tol_->tol();
+                active_set_tol_ = utopia::make_unique<AdaptiveActiveTol>(temp_tol);
+            }
+
+            in.get("active_set_tol", active_set_tol_->get());
             in.get("linear_solve_zero_initial_guess", linear_solve_zero_initial_guess_);
         }
 
@@ -67,9 +176,6 @@ namespace utopia {
             this->print_param_usage(os, "active_set_tol", "double", "Numerical tolerance.", "1e-15");
             this->print_param_usage(os, "linear_solve_zero_initial_guess", "bool", "Flag to reset initial guess for each linear solve.", "true");
         }
-
-
-
 
         bool solve(const Matrix &A, const Vector &b, Vector &x)  override
         {
@@ -162,7 +268,7 @@ namespace utopia {
             Vector d = diag(A);
 
             bool ret = true;
-            each_read(d, [&ret](const SizeType /*i*/, const Scalar val) {
+            each_read(d, [&ret](const SizeType i, const Scalar val) {
                 if(std::abs(val) < 1e-16) {
                     ret = false;
                     std::cerr << "[Error] zero element on diagonal" << std::endl;
@@ -183,6 +289,8 @@ namespace utopia {
             } else {
                 g = this->get_lower_bound();
             }
+
+            active_set_tol_->set_range(range(g));
 
             const SizeType local_N = local_size(x_new).get(0);
 
@@ -227,14 +335,18 @@ namespace utopia {
 
                     if(is_upper_bound) {
                         for (SizeType i = rr.begin(); i != rr.end(); i++) {
-                            if (d.get(i) >= -active_set_tol_) {
+                            if (d.get(i) >= -active_set_tol_->tol(i)) {
                                 A_c.set(i, i, 1.0);
                                 active.set(i, 1.0);
+
+                                active_set_tol_->became_active(i);
 
                                 I_c.set(i, i, 0.0);
                             } else {
                                 I_c.set(i, i, 1.0);
                                 active.set(i, 0.0);
+
+                                active_set_tol_->became_inactive(i);
 
                                 A_c.set(i, i, 0.0);
                             }
@@ -242,14 +354,18 @@ namespace utopia {
                     } else {
                         //is_lower_bound
                         for (SizeType i = rr.begin(); i != rr.end(); i++) {
-                            if (d.get(i) <= -active_set_tol_) {
+                            if (d.get(i) <= active_set_tol_->tol(i)) {
                                 A_c.set(i, i, 1.0);
                                 active.set(i, 1.0);
+
+                                active_set_tol_->became_active(i);
 
                                 I_c.set(i, i, 0.0);
                             } else {
                                 I_c.set(i, i, 1.0);
                                 active.set(i, 0.0);
+
+                                active_set_tol_->became_inactive(i);
 
                                 A_c.set(i, i, 0.0);
                             }
@@ -346,6 +462,8 @@ namespace utopia {
             const Vector &lb = this->get_lower_bound();
             const Vector &ub = this->get_upper_bound();
 
+            active_set_tol_->set_range(range(ub));
+
             Vector lambda_p = local_zeros(n);
             Vector lambda_m = local_zeros(n);
 
@@ -392,17 +510,21 @@ namespace utopia {
                     Range rr = row_range(A_c_p);
                     for (SizeType i = rr.begin(); i != rr.end(); i++)
                     {
-                        if (d_p.get(i) >= -active_set_tol_) {
+                        if (d_p.get(i) >= -active_set_tol_->tol(i)) {
                             A_c_p.set(i, i, 1.0);
 
                             active_p.set(i, 1.0);
                             active_m.set(i, 0.0);
 
-                        } else if(d_m.get(i) <= active_set_tol_) {
+                            active_set_tol_->became_active(i);
+
+                        } else if(d_m.get(i) <= active_set_tol_->tol(i)) {
                             A_c_m.set(i, i, 1.0);
 
                             active_m.set(i, 1.0);
                             active_p.set(i, 0.0);
+
+                            active_set_tol_->became_active(i);
 
                         } else {
                             A_c_m.set(i, i, 0.0);
@@ -410,6 +532,8 @@ namespace utopia {
 
                             active_m.set(i, 0.0);
                             active_p.set(i, 0.0);
+
+                            active_set_tol_->became_inactive(i);
                         }
                     }
                 }
@@ -463,12 +587,12 @@ namespace utopia {
             }
 
             assert(check_constraints(x, true));
-            assert(check_non_negative(lambda_p, true));
+            // assert(check_non_negative(lambda_p, true));
             return true;
         }
 
         std::shared_ptr <Solver>        linear_solver_;
-        Scalar active_set_tol_;
+        std::unique_ptr<ActiveTol> active_set_tol_;
         bool linear_solve_zero_initial_guess_;
     };
 

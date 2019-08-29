@@ -1,6 +1,7 @@
 #include "utopia_FractureFlowTransportSimulation.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_FractureFlowUtils.hpp"
+#include "utopia_StabilizeTransport.hpp"
 
 #include <iostream>
 
@@ -32,8 +33,8 @@ namespace utopia {
         in.get("preset-velocity-field", preset_velocity_field_);
         in.get("transient-solve-strategy", transient_solve_strategy);
         in.get("use-bicgstab", use_bicgstab);
+        in.get("use-algebraic-stabilization", use_algebraic_stabilization);
     }
-
 
     void FractureFlowTransportSimulation::write_result_csv(const USparseMatrix &A)
     {
@@ -113,6 +114,7 @@ namespace utopia {
         apply_boundary_conditions(V_f.dof_map(), transport_f_.system_matrix, xkp1_f);
 
         libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
 
         utopia::convert(xkp1_m, *V_m.equation_system().solution);
         utopia::convert(xkp1_f, *V_f.equation_system().solution);
@@ -226,6 +228,7 @@ namespace utopia {
         UVector lagr = local_zeros(local_size(z));
 
         libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -317,9 +320,12 @@ namespace utopia {
         USparseMatrix S = A_m + transpose(T) * A_f * T;
         UVector rhs     = rhs_m + transpose(T) * rhs_f;
 
+        // stabilize_transport(S);
+
         apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
         libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -362,8 +368,145 @@ namespace utopia {
             apply_boundary_conditions(V_m.dof_map(), rhs);
 
             op->apply(rhs, x_m);
+
+            //stabilize_coefficient(u, u_dot, StabMatrix, MassMatrix, u_stabilization);
             x_f = T * x_m;
 
+            //use u_stabilization
+
+            transport_f_.post_process_time_step(t, *steady_flow_.fracture_network);
+            transport_m_.post_process_time_step(t, *steady_flow_.matrix);
+
+            utopia::convert(x_m, *V_m.equation_system().solution);
+            V_m.equation_system().solution->close();
+
+            utopia::convert(x_f, *V_f.equation_system().solution);
+            V_f.equation_system().solution->close();
+
+            io_m.write_timestep("transient.e",   V_m.equation_systems(), ++n_timesteps, t);
+            io_f.write_timestep("transient_f.e", V_f.equation_systems(), ++n_timesteps, t);
+        }
+
+        write_result_csv(A_m);
+    }
+
+    void FractureFlowTransportSimulation::compute_transport_with_algebraic_stabilization()
+    {
+        transport_f_.init(steady_flow_.x_f, *steady_flow_.fracture_network);
+        transport_m_.init(steady_flow_.x_m, *steady_flow_.matrix);
+
+        transport_f_.assemble_for_stabilized_system(*steady_flow_.fracture_network);
+        transport_m_.assemble_for_stabilized_system(*steady_flow_.matrix);
+
+        const double dt = transport_m_.dt;
+        bool dt_is_larger_than_one = dt > 1.0;
+
+        auto &V_m = transport_m_.space->space().last_subspace();
+        auto &V_f = transport_f_.space->space().last_subspace();
+
+        UVector &x_m = transport_m_.concentration;
+        UVector &x_f = transport_f_.concentration;
+
+        UVector rhs_m = local_zeros(local_size(x_m));
+        UVector rhs_f = local_zeros(local_size(x_f));
+
+        USparseMatrix &A_m = transport_m_.system_matrix;
+        USparseMatrix &A_f = transport_f_.system_matrix;
+
+        USparseMatrix M_m = diag(transport_m_.mass_vector);
+        USparseMatrix M_f = diag(transport_f_.mass_vector);
+
+      
+
+        apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
+        apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
+
+        const auto &T = steady_flow_.T;
+
+        assert(!empty(T));
+
+        USparseMatrix S_stab = A_m   + transpose(T) * A_f * T;
+        USparseMatrix M      = M_m   + transpose(T) * M_f * T;
+        UVector rhs          = rhs_m + transpose(T) * rhs_f;
+
+        USparseMatrix stab;
+        transport_stabilization(S_stab, stab);
+        
+        S_stab += stab;
+
+        if(steady_flow_.write_operators_to_disk) {
+            write("G_m_neu.m", A_m);
+            write("G_f_neu.m", A_f);
+            write("S_stab.m", S_stab);
+            write("stab.m", stab);
+        }
+
+        USparseMatrix S;
+        
+        if(dt_is_larger_than_one) {
+            S = (1./dt) * M + S_stab;
+        } else {
+            S = M + dt * S_stab;
+        }
+
+        apply_boundary_conditions(V_m.dof_map(), S, rhs);
+
+        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        utopia::convert(x_m, *V_m.equation_system().solution);
+
+        V_m.equation_system().solution->close();
+        io_m.write_timestep("transient.e", V_m.equation_systems(), 1, 0);
+
+        utopia::convert(x_f, *V_f.equation_system().solution);
+        V_f.equation_system().solution->close();
+        io_f.write_timestep("transient_f.e", V_f.equation_systems(), 1, 0);
+
+        std::unique_ptr<LinearSolver<USparseMatrix, UVector>> op;
+        if(use_bicgstab) {
+            op = utopia::make_unique<BiCGStab<USparseMatrix, UVector>>();
+        } else {
+            auto fact = utopia::make_unique<Factorization<USparseMatrix, UVector>>();
+            fact->describe(std::cout);
+            op = std::move(fact);
+        }
+
+        op->update(make_ref(S));
+
+        int n_timesteps = 1;
+        
+        const double simulation_time = transport_m_.simulation_time;
+
+        transport_f_.post_process_time_step(0., *steady_flow_.fracture_network);
+        transport_m_.post_process_time_step(0., *steady_flow_.matrix);
+
+        for(double t = dt; t < simulation_time; t += dt) {
+            transport_m_.add_mass(x_m, rhs_m);
+            transport_f_.add_mass(x_f, rhs_f);
+
+            if(dt_is_larger_than_one) {
+                rhs_m *= 1./dt;
+                rhs_f *= 1./dt;
+
+                rhs_m += transport_m_.f;
+                rhs_f += transport_f_.f;
+            } else {
+                rhs_m += dt * transport_m_.f;
+                rhs_f += dt * transport_f_.f;
+            }
+
+            transport_m_.constrain_concentration(rhs_m);
+            transport_f_.constrain_concentration(rhs_f);
+
+            rhs = rhs_m + transpose(T) * rhs_f;
+            apply_boundary_conditions(V_m.dof_map(), rhs);
+
+            op->apply(rhs, x_m);
+
+            //stabilize_coefficient(u, u_dot, StabMatrix, MassMatrix, u_stabilization);
+            x_f = T * x_m;
+
+            //use u_stabilization
             transport_f_.post_process_time_step(t, *steady_flow_.fracture_network);
             transport_m_.post_process_time_step(t, *steady_flow_.matrix);
 
@@ -386,7 +529,13 @@ namespace utopia {
             std::cout << "[Status] compute_transport_separate" << std::endl;
             compute_transport_separate();
         } else if(steady_flow_.solve_strategy == "static-condensation") {
-            compute_transport_monolithic_static_condenstation();
+            
+            if(use_algebraic_stabilization) {
+                compute_transport_with_algebraic_stabilization();
+            } else {
+                compute_transport_monolithic_static_condenstation();
+            }
+
         } else {
             std::cout << "[Status] compute_transport_monolithic" << std::endl;
             compute_transport_monolithic();
@@ -415,6 +564,10 @@ namespace utopia {
 
         transport_f_.finalize();
         transport_m_.finalize();
+
+
+        steady_flow_.matrix->export_post_process();
+        steady_flow_.fracture_network->export_post_process();
 
         c.stop();
         std::cout << "Overall time: " << c << std::endl;
@@ -910,6 +1063,94 @@ namespace utopia {
         }
     }
 
+
+    void FractureFlowTransportSimulation::Transport::assemble_for_stabilized_system(FractureFlow &flow)
+    {
+        const int dim = space->subspace(0).mesh().spatial_dimension();
+
+        auto &C = space->space().subspace(0);
+        auto &mesh = C.mesh();
+        auto &dof_map = C.dof_map();
+
+        std::cout << C.dof_map().n_variables() << std::endl;
+
+        auto c = trial(C);
+        auto q = test(C);
+        auto ph = interpolate(pressure_w, c);
+
+        auto sampler_fun = ctx_fun(flow.sampler);
+
+        auto vel = sampler_fun * flow.diffusion_tensor * grad(ph);
+        auto b_form = (inner(inner(-grad(c), vel), q) * dX);
+
+        utopia::assemble(b_form, gradient_matrix);
+
+        for(auto block : concentration_blocks) {
+            auto c_form = integral(inner(ctx_fun(porosity) * c, q), block);
+            auto temp_matrix = std::make_shared<USparseMatrix>();
+            utopia::assemble(c_form, *temp_matrix);
+            partial_concentration_matrix.push_back(temp_matrix);
+        }
+
+        for(auto tag : in_out_flow) {
+            // auto flow_form = surface_integral(inner(vel * c, normal() * q), tag);
+            auto flow_form = surface_integral(inner(c * inner(vel, normal()), q), tag);
+            // auto flow_form = -surface_integral(inner(c, q), tag);
+
+            auto temp_boundary_flow_matrix = std::make_shared<USparseMatrix>();
+            partial_boundary_flow_matrix.push_back(temp_boundary_flow_matrix);
+
+            utopia::assemble(flow_form, *temp_boundary_flow_matrix);
+            (*temp_boundary_flow_matrix) *= -1.0;
+
+            if(empty(boundary_flow_matrix)) {
+                boundary_flow_matrix = *temp_boundary_flow_matrix;
+            } else {
+                boundary_flow_matrix += *temp_boundary_flow_matrix;
+            }
+
+            std::cout << "boundary flow at " << tag << std::endl;
+        }
+
+        if(!empty(boundary_flow_matrix) && 0.0 != boundary_factor) {
+            gradient_matrix -= boundary_factor * boundary_flow_matrix;
+        }
+
+        system_matrix = gradient_matrix;
+
+        UVector c0;
+
+        if(!box_min.empty() && !box_max.empty()) {
+            auto IV = boxed_fun(box_min, box_max,
+                [](const std::vector<double> &x) -> double {
+                    return 10.;
+                }
+            );
+
+            auto l_form = inner(ctx_fun(IV), q) * dX;
+
+            UVector M_x_c0;
+            utopia::assemble(l_form, M_x_c0);
+            c0 = e_mul(M_x_c0, 1./mass_vector);
+        } else {
+            c0 = local_zeros(C.dof_map().n_local_dofs());
+        }
+
+        copy_values(C, c0, C, concentration);
+        synchronize(concentration);
+
+        f = local_zeros(local_size(concentration));
+
+        UVector ff;
+
+        if(forcing_function) {
+            forcing_function->eval(concentration, ff);
+            f += ff;
+            double norm_f = norm2(f);
+            std::cout << "norm_f " << norm_f << std::endl;
+        }
+    }
+
     void FractureFlowTransportSimulation::Transport::post_process_time_step(const double t, FractureFlow &flow)
     {
         std::vector<double> vals = { t };
@@ -935,7 +1176,7 @@ namespace utopia {
             double outflow_val = sum(*pbfm * concentration);
             vals.push_back(outflow_val);
 
-            total_in_out_flow[idx++] += outflow_val;
+            total_in_out_flow[idx++] = outflow_val;
 
             std::cout << outflow_val;
 
@@ -944,6 +1185,16 @@ namespace utopia {
 
         std::cout << std::endl;
         csv.write_table_row(vals);
+
+        auto &C = space->space().last_subspace();
+        auto &P = flow.space.space().last_subspace();
+
+        UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list());
+        copy_values(C, pressure_w, P, aux_pressure);
+        synchronize(aux_pressure);
+
+
+        flow.post_process(C, aux_pressure, concentration);
     }
 
     void FractureFlowTransportSimulation::Transport::constrain_concentration(UVector &vec)

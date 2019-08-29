@@ -15,6 +15,7 @@ namespace utopia {
         void compute_transport_separate();
         void compute_transport_monolithic();
         void compute_transport_monolithic_static_condenstation();
+        void compute_transport_with_algebraic_stabilization();
         void append_aux_systems();
         void write_output();
         void compute_upwind_operator();
@@ -40,6 +41,7 @@ namespace utopia {
             void read(Input &in) override;
             void constrain_concentration(UVector &vec);
             void assemble_aux_quantities(FractureFlow &flow);
+            void assemble_for_stabilized_system(FractureFlow &flow);
 
             void post_process_time_step(const double t, FractureFlow &flow);
 
@@ -82,6 +84,8 @@ namespace utopia {
 
             CSVWriter csv;
 
+            std::vector<std::shared_ptr<PostProcessor<LibMeshFunctionSpace, UVector>>> flux;
+
         };
 
         SteadyFractureFlowSimulation steady_flow_;
@@ -92,6 +96,7 @@ namespace utopia {
 
         bool preset_velocity_field_;
         bool use_bicgstab;
+        bool use_algebraic_stabilization;
 
         std::string transient_solve_strategy;
 

@@ -4,18 +4,28 @@
 #include "utopia_Project.hpp"
 #include "MortarAssemble.hpp"
 
+#include "moonolith_shape.hpp"
+#include "moonolith_ray.hpp"
+
 #include <libmesh/fe_type.h>
 #include <libmesh/fe.h>
 
 namespace utopia {
     template<typename Scalar, int Dim>
-    class LibMeshShape : public Shape<Scalar, Dim> {
+    class LibMeshShape : public moonolith::Shape<Scalar, Dim-1, Dim> {
     public:
-        using Vector = utopia::Vector<Scalar, Dim>;
+        using Vector  = utopia::Vector<Scalar, Dim>;
+        using CoPoint = moonolith::Vector<Scalar, Dim>;
+        using Point   = moonolith::Vector<Scalar, Dim-1>;
+        using Ray     = moonolith::Ray<Scalar, Dim>;
+        using super   = moonolith::Shape<Scalar, Dim-1, Dim>;
+
+        using super::intersect;
+
         virtual ~LibMeshShape() {}
 
         LibMeshShape(const libMesh::Elem &elem, const libMesh::FEType type, const bool use_newton = true)
-        : elem_(elem), type_(type), q_(Dim), max_iter_(100), tol_(1e-14), use_newton_(use_newton), verbose_(false)
+        : elem_(elem), type_(type), q_(Dim), max_iter_(8000), tol_(1e-8), accept_tol_(1e-6), use_newton_(use_newton), verbose_(false)
         {
             init();
         }
@@ -25,83 +35,29 @@ namespace utopia {
             verbose_ = val;
         }
 
-        inline bool intersect(const Ray<Scalar, Dim> &ray,
-                              Scalar &t) override
+        inline bool intersect(
+            const moonolith::Ray<Scalar, Dim> &ray,
+            Scalar &t,
+            Point &x) override
         {
+            bool success = false;
             if(use_newton_) {
-                return intersect_newton(ray, t);
+                success = intersect_newton(ray, t);
             } else {
-                return intersect_gradient_descent(ray, t);
+                success = intersect_gradient_descent(ray, t);
             }
+
+            ref(x);
+            return success;
         }
 
-        inline void ref(Vector &ref_point) const
+        inline void ref(Point &ref_point) const
         {
             Read<Vectord> r_(x_ref_);
-
+            
             for(int d = 0; d < Dim-1; ++d) {
                 ref_point[d] = x_ref_.get(d);
             }
-
-            ref_point[Dim-1] = 0.;
-        }
-
-
-        inline bool make_quadrature(
-            const Vector &ray_dir,
-            const std::vector<Vector>  &composite_q_points,
-            const std::vector<Scalar>  &composite_q_weights,
-            QMortar &q
-        )
-        {
-            std::vector<Scalar> gap;
-            return make_quadrature(
-                ray_dir,
-                composite_q_points,
-                composite_q_weights,
-                q,
-                gap);
-        }
-
-        inline bool make_quadrature(
-            const Vector &ray_dir,
-            const std::vector<Vector>  &composite_q_points,
-            const std::vector<Scalar>  &composite_q_weights,
-            QMortar &q,
-            std::vector<Scalar> &gap
-        )
-        {
-            Ray<Scalar, Dim> ray;
-            ray.dir = ray_dir;
-
-            const std::size_t n_qp = composite_q_weights.size();
-            q.resize(n_qp);
-            gap.resize(n_qp);
-
-            Vector ref_point;
-            for(std::size_t i = 0; i < n_qp; ++i) {
-                q.get_weights()[i] = composite_q_weights[i];
-
-                ray.o = composite_q_points[i];
-
-                Scalar t = 0.;
-
-                if(!intersect(ray, t)) {
-                    std::cerr << "[Error] now what?!" << std::endl;
-                    assert(false);
-                    return false;
-                }
-
-                gap[i] = t;
-
-                ref(ref_point);
-
-                for(int d = 0; d < Dim; ++d) {
-                    q.get_points()[i](d) = ref_point[d];
-                }
-            }
-
-            return true;
         }
 
     private:
@@ -117,7 +73,7 @@ namespace utopia {
         LUDecomposition<Matrixd, Vectord> solver_;
 
         int max_iter_;
-        Scalar tol_;
+        Scalar tol_, accept_tol_;
         bool use_newton_;
         bool verbose_;
 
@@ -127,6 +83,14 @@ namespace utopia {
             const auto &xyz = fe_->get_xyz();
             for(int i = 0; i < Dim; ++i) {
                 x.set(i, xyz[0](i));
+            }
+        }
+
+        inline void get_point(CoPoint &x) const
+        {
+            const auto &xyz = fe_->get_xyz();
+            for(int i = 0; i < Dim; ++i) {
+                x[i] = xyz[0](i);
             }
         }
 
@@ -224,7 +188,51 @@ namespace utopia {
             H_fe_ = zeros(Dim-1, Dim-1);
         }
 
-        bool intersect_gradient_descent(const Ray<Scalar, Dim> &ray,
+
+        void set_initial_guess(
+            const Ray &ray,
+            Scalar &t
+            )
+        {
+            // if(t != 0.) 
+            {
+
+                Write<Vectord> w_x(x_ref_), w_u(u_);
+
+                auto p = ray.o + t * ray.dir;
+                libMesh::Point guess;
+                for(int i = 0; i < Dim; ++i) {
+                    guess(i) = p[i];
+                }
+
+                auto ref = libMesh::FE<Dim-1, libMesh::LAGRANGE>::inverse_map(&elem_, guess, 1e-12);
+  
+                for(int i = 0; i < Dim - 1; ++i) {
+                    x_ref_.set(i, ref(i));
+                    u_.set(i, ref(i));
+                }
+
+
+                guess = libMesh::FE<Dim-1, libMesh::LAGRANGE>::map(&elem_, ref);
+                for(int i = 0; i < Dim; ++i) {
+                    p[i] = guess(i);
+
+                }
+
+                t = dot(p - ray.o, ray.dir);
+                u_.set(Dim-1, t);
+
+            } 
+
+            // else {
+
+            //     //valid initial guess
+            //     x_ref_.set(0.);
+            //     u_.set(0.);
+            // }
+        }
+
+        bool intersect_gradient_descent(const Ray &ray,
                                         Scalar &t)
         {
             {
@@ -236,9 +244,8 @@ namespace utopia {
                 }
             }
 
-            //valid initial guess
-            x_ref_.set(0.);
-            u_.set(0.);
+            set_initial_guess(ray, t);
+            
 
             Scalar g_2 = 0.;
             Scalar nn = dot(n_, n_);
@@ -252,8 +259,8 @@ namespace utopia {
                 get_point(x_);
                 get_jacobian(J_);
 
-                JtJ_ = transpose(J_) * J_;
-                Jtn_ = transpose(J_) * n_;
+                // JtJ_ = transpose(J_) * J_;
+                // Jtn_ = transpose(J_) * n_;
 
                 r_ = p_ + t * n_;
 
@@ -291,8 +298,8 @@ namespace utopia {
                 if(verbose_) { std::cout << "gradient_descent: iter: " << i << " " << norm_g << std::endl; }
 
                 if(norm_g_prev < norm_g) {
-                    std::cout << "diverged" << std::endl;
-                    return false;
+                    std::cout << "diverged " << norm_g_prev << " < " << norm_g << std::endl;
+                    // return false;
                 }
 
                 if(norm_g <= tol_) {
@@ -302,10 +309,10 @@ namespace utopia {
                 norm_g_prev = norm_g;
             }
 
-            return false;
+            return norm_g_prev < accept_tol_;
         }
 
-        bool intersect_newton(const Ray<Scalar, Dim> &ray,
+        bool intersect_newton(const Ray &ray,
                                         Scalar &t)
         {
             {
@@ -318,8 +325,7 @@ namespace utopia {
             }
 
             //valid initial guess
-            x_ref_.set(0.);
-            u_.set(0.);
+            set_initial_guess(ray, t);
 
             Scalar g_2 = 0.;
             Scalar nn = dot(n_, n_);
@@ -363,8 +369,8 @@ namespace utopia {
                 if(verbose_) { std::cout << "newton: iter: " << i << " " << norm_g << std::endl; }
 
                 if(norm_g_prev < norm_g) {
-                    std::cout << "diverged" << std::endl;
-                    return false;
+                    std::cout << "diverged " << norm_g_prev << " < " << norm_g << std::endl;
+                    // return false;
                 }
 
                 if(norm_g <= tol_) {
@@ -451,7 +457,7 @@ namespace utopia {
                 norm_g_prev = norm_g;
             }
 
-            return false;
+            return norm_g_prev < accept_tol_;
         }
 
 
@@ -469,27 +475,6 @@ namespace utopia {
         }
 
     };
-
-    template<typename Scalar, int Dim>
-    class LibMeshSideShape final : public Shape<Scalar, Dim> {
-    public:
-        LibMeshSideShape(const libMesh::Elem &elem, const libMesh::FEType type, const int side)
-        : elem_(elem), type_(type), side_(side)
-        {}
-
-        bool intersect(
-                       const Ray<Scalar, Dim> &ray,
-                       Scalar &t) override
-        {
-            return false;
-        }
-
-    private:
-        const libMesh::Elem &elem_;
-        libMesh::FEType type_;
-        int side_;
-    };
-
 
 
 }

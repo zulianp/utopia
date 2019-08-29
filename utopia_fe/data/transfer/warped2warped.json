@@ -1,0 +1,53 @@
+{
+    "transfer": {
+        "type": "approx-l2-projection",
+        "function": "x*x + y*y",
+        "*function-type" : "constant",
+        "write-operators-to-disk" : true,
+        "*quad-order-approx" : 24,
+        "quad-order-approx" : 36,
+        "*normalize" : true,
+        "slave": {
+            "mesh": {
+                "type": "file",
+                "path" : "../data/transfer/circle.e",
+                "order" : 2,
+                "morph" : {
+                    "type" : "circle",
+                    "radius" : 1
+                },
+                "refinements" : 1
+            },
+            "space": {
+                "system-name" : "slave",
+                "variables" : [
+                    {
+                        "name" : "u",
+                        "order" : 2
+                    }
+                ]
+            }
+        },
+        "master": {
+            "mesh": {
+                "type": "file",
+                "path" : "../data/transfer/circle.e",
+                "order" : 2,
+                "morph" : {
+                    "type" : "circle",
+                    "radius" : 1
+                },
+                "refinements" : 3
+            },
+            "space": {
+                "system-name" : "master",
+                "variables" : [
+                    {
+                        "name" : "u",
+                        "order" : 2
+                    }
+                ]
+            }
+        }
+    }
+}

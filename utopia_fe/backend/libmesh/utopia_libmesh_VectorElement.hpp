@@ -14,9 +14,29 @@ namespace utopia {
         : grad_flag(false)
         {}
 
+        template<class Matrix>
+        void make_dual(const Matrix &weights)
+        {
+            auto n_fun = grad.size();
+            auto n_qp = grad[0].size();
+
+            dual_grad.resize(n_fun);
+
+            for(uint i = 0; i < n_fun; ++i) {
+                dual_grad[i].resize(n_qp);
+
+                for(uint k = 0; k < n_qp; ++k) {
+                    dual_grad[i][k] = grad[0][k] * weights(i, 0); 
+                    for(uint j = 1; j < n_fun; ++j) {
+                        dual_grad[i][k] += grad[j][k] * weights(i, j); 
+                    }
+                }
+            }
+        }
+
         void init_grad(std::vector< std::unique_ptr<FE> > &fe_object)
         {
-            const std::size_t n_quad_points = fe_object[start_var]->get_phi()[0].size();
+            const std::size_t n_quad_points = fe_object[start_var]->get_dphi()[0].size();
 
             uint n_shape_functions = 0;
             for(uint i = 0; i < n_vars; ++i) {
@@ -81,6 +101,7 @@ namespace utopia {
         std::size_t start_var;
         std::size_t n_vars;
         JacobianType grad;
+        JacobianType dual_grad;
     };
 }
 

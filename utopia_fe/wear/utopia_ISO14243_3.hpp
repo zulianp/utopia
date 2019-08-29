@@ -80,6 +80,8 @@ namespace utopia {
 
         //degrees
         double tibial_int_ext_rotation_;
+        double tibial_rotation_offset_;
+        int tibial_rotation_offset_axis_;
 
 
         double dt_;

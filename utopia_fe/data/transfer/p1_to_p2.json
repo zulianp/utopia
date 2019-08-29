@@ -1,0 +1,77 @@
+{
+    "transfer": {
+        "type": "l2-projection",
+        "function": "x*x + y*y + z*z",
+        "*function": 1.0,
+        "*function-type" : "constant",
+        "discretization" : "new",
+        "use-convert-transfer" : true,
+        "opts" : {
+            "coupling" : [
+                { 
+                    "master" : 1,
+                    "slave"  : 2
+                }
+            ]
+        },
+        "master": {
+            "mesh": {
+                "*type": "square",
+                "*elem-type": "tri",
+                "type": "cube",
+                "elem-type": "tet",
+                "n-x": 2,
+                "n-y": 3,
+                "n-z": 2,
+                "min-x": 0.0,
+                "min-y": 0.0,
+                "min-z": 0.0,
+                "max-x": 1.0,
+                "max-y": 1.0,
+                "max-z": 1.0,
+                "order" : 2,
+                "full-order" : true,
+                "block-override" : 1
+            },
+            "space": {
+                "system-name" : "master",
+                "variables" : [
+                    {
+                        "name" : "u_m",
+                        "order" : 2
+                    }
+                ]
+            }
+        },
+        "slave": {
+            "mesh": {
+                "type": "cube",
+                "*type": "square",
+                "*elem-type": "tri",
+                "elem-type": "hex",
+                "order": 2,
+                "n-x": 1,
+                "n-y": 2,
+                "n-z": 2,
+                "min-x": 0.0,
+                "min-y": 0.0,
+                "min-z": 0.0,
+                "max-x": 1.0,
+                "max-y": 1.0,
+                "max-z": 1.0,
+                "order" : 2,
+                "full-order" : true,
+                "block-override" : 2
+            },
+            "space": {
+                "system-name" : "slave",
+                "variables" : [
+                    {
+                        "name" : "u_s",
+                        "order" : 2
+                    }
+                ]
+            }
+        }
+    }
+}

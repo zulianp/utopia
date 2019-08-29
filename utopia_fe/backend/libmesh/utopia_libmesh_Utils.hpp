@@ -76,7 +76,8 @@ namespace utopia {
             case TET4:  	 return TRI3;
             case TET10: 	 return TRI6;
             case HEX8:  	 return QUAD4;
-            case HEX20: 	 return QUAD8; //maybe
+            case HEX20: 	 return QUAD8; 
+            case HEX27:      return QUAD9;
             case EDGE2:      return NODEELEM;
             case EDGE3:      return NODEELEM;
             case EDGE4:      return NODEELEM;

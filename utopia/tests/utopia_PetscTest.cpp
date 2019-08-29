@@ -4,6 +4,7 @@
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_Device.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
+#include "utopia_ZeroRowsToIdentity.hpp"
 
 namespace utopia {
 
@@ -711,6 +712,23 @@ namespace utopia {
         utopia_test_assert(approxeq(expected, ABC));
     }
 
+    void petsc_test_rart()
+    {
+        const int n = mpi_world_size() * 4;
+        const int m = mpi_world_size() * 3;
+
+        DSMatrixd R = identity(m, n);
+        DSMatrixd A = identity(n, n);
+        DSMatrixd C = identity(n, m);
+        DSMatrixd RARt, ABC;
+
+        RARt = R * A * transpose(R);
+        ABC = R * A * C;
+
+        DSMatrixd expected = identity(m, m);
+        utopia_test_assert(approxeq(expected, RARt));
+        utopia_test_assert(approxeq(expected, ABC));
+    }
 
     void petsc_matrix_composition()
     {
@@ -723,7 +741,6 @@ namespace utopia {
         DVectord expected = values(n, 0.9 * 2.);
         utopia_test_assert(approxeq(expected, res));
     }
-
 
     template<class Tensor, int Order>
     utopia::Wrapper<Tensor, Order> &to_wrapper(utopia::Wrapper<Tensor, Order> &t)
@@ -1245,6 +1262,17 @@ namespace utopia {
         utopia_test_assert(approxeq(M_p, M));        
     }
 
+    void petsc_zero_rows_to_id()
+    {   
+        SizeType n = 4;
+
+        DSMatrixd m = 2.*local_identity(n, n);
+        m *= 0.;
+
+        zero_rows_to_identity(m, 1e-10);
+
+        disp(m);
+    }
 
 
     #endif //WITH_PETSC;
@@ -1286,6 +1314,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
         UTOPIA_RUN_TEST(petsc_matrix_composition);
         UTOPIA_RUN_TEST(petsc_test_ptap);
+        UTOPIA_RUN_TEST(petsc_test_rart);
         UTOPIA_RUN_TEST(petsc_new_eval);
         UTOPIA_RUN_TEST(petsc_tensor_reduction);
         UTOPIA_RUN_TEST(petsc_precond);
@@ -1296,6 +1325,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_dense_mat_mult_test);
         UTOPIA_RUN_TEST(petsc_norm_test);
         UTOPIA_RUN_TEST(petsc_chop_test); 
+        UTOPIA_RUN_TEST(petsc_zero_rows_to_id);
 
 
         //serial tests

@@ -7,6 +7,7 @@
 #include "utopia_Factory.hpp"
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_petsc_Base.hpp"
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>
@@ -417,6 +418,7 @@ namespace utopia {
         static void mat_mult_add(PetscVector &result, const PetscMatrix &m, const PetscVector &right, const PetscVector &left);
         static void mat_mult_t_add(PetscVector &result, const PetscMatrix &m, const PetscVector &right, const PetscVector &left);
         static void triple_product_ptap(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &);
+        static void triple_product_rart(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &);
         static void triple_product(PetscMatrix &result, const PetscMatrix &, const PetscMatrix &, const PetscMatrix &);
 
 
@@ -660,12 +662,15 @@ namespace utopia {
         //unused
         static void vec_to_mat(Matrix &m, const Vector &v, const bool transpose);
 
+     
+        static void apply_args(const PetscArgs &args, Matrix &m);
+        static void apply_args(const PetscArgs &args, Vector &m);
+
+    public:
         inline static MPI_Comm default_communicator() {
             return PETSC_COMM_WORLD;
         }
 
-        static void apply_args(const PetscArgs &args, Matrix &m);
-        static void apply_args(const PetscArgs &args, Vector &m);
     };
 
     template<>

@@ -109,6 +109,52 @@ namespace utopia {
             Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows, columns, values);
         }
 
+        // template<class Rows, class Cols, class Values>
+        // inline void set_matrix(const Rows &rows, Cols &cols, const Values &values)
+        // {
+        //     assert_enabled(is_write_locked());
+        //     // Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows, columns, values);
+
+        //     auto n_rows = rows.size();
+        //     auto n_cols = cols.size();
+
+        //     for(std::size_t i = 0; i < n_rows; ++i) {
+        //         const auto i_offset = i * n_cols;
+        //         for(std::size_t j = 0; j < n_cols; ++j) {
+        //             this->set(rows[i], cols[j], values[i_offset + j]);
+        //         }
+        //     }
+        // }
+
+        
+        template<class Rows, class Cols, class Values>
+        inline void set_matrix(const Rows &rows, Cols &cols, const Values &values)
+        {
+            assert_enabled(is_write_locked());
+
+            auto n_rows = rows.size();
+            auto n_cols = cols.size();
+
+            std::vector<SizeType> ir(1), ic(1);
+            std::vector<Scalar> v(1);
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                const auto i_offset = i * n_cols;
+                for(std::size_t j = 0; j < n_cols; ++j) {
+                    ir[0] = rows[i];
+                    ic[0] = cols[j];
+                    v[0]  = values[i_offset + j];
+                   
+                    Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(
+                        derived().implementation(),
+                        ir,
+                        ic,
+                        v
+                    );
+                }
+            }
+        }
+
         template<typename RowT, typename ColT, typename ScalarT>
         inline void set_matrix(std::initializer_list<RowT> rows, std::initializer_list<ColT> cols, std::initializer_list<ScalarT> values)
         {
@@ -283,6 +329,33 @@ namespace utopia {
 
         WriteMode mode_;
     };
+
+    template<class T, int Order>
+    class Write< std::vector<Wrapper<T, Order> > > {
+    public:
+        using Tensors = std::vector<Wrapper<T, Order> >;
+        using Scalar  = typename Traits<T>::Scalar;
+        
+
+        Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
+        : tensors_(tensors), mode_(mode)
+        {
+            for(auto &t : tensors_) {
+                Backend<Scalar, Traits<T>::Backend>::write_lock(t.implementation(), mode_);
+            }
+        }
+
+        ~Write()
+        {
+            for(auto &t : tensors_) {
+                Backend<Scalar, Traits<T>::Backend>::write_unlock(t.implementation(), mode_);
+            }
+        }
+
+        Tensors &tensors_;
+        WriteMode mode_;
+    };
+
 }
 
 #endif //UTOPIA_UTOPIA_WRITABLE_HPP

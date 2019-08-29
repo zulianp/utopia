@@ -10,11 +10,15 @@
 #include "utopia.hpp"
 #include "utopia_materials.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_ContactAssembler.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_LibMeshBackend.hpp"
+#include "utopia_ContactStress.hpp"
+#include "utopia_polymorphic_QPSolver.hpp"
+#include "utopia_ConvertContactAssembler.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -23,16 +27,19 @@
 
 #include <memory>
 #include <fstream>
+#include <cassert>
 
 namespace utopia {
 
     template<class Matrix, class Vector>
-    class ContactSolver {
+    class ContactSolver : public Configurable {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
         typedef libMesh::Nemesis_IO Exporter;
-        // typedef libMesh::ExodusII_IO Exporter;
+        // using ContactT = utopia::ContactAssembler;
+        using ContactT = utopia::IContact;
+        using ContactStressT = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, Matrix, Vector>;
 
         ContactSolver(
             const std::shared_ptr<FunctionSpaceT> &V,
@@ -47,7 +54,7 @@ namespace utopia {
           force_direct_solver_(false),
           bypass_contact_(false),
           exit_on_contact_solve_failure_(true),
-          sol_to_gap_on_contact_bdr_(false),
+          plot_gap_(false),
           max_outer_loops_(20),
           use_ssn_(false),
           use_pg_(false),
@@ -55,6 +62,8 @@ namespace utopia {
           export_results_(false),
           aux_system_num_(-1)
         {
+            contact_ = utopia::make_unique<Contact>();
+
             io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
             output_path_ = utopia::Utopia::instance().get("output_path");
@@ -77,7 +86,32 @@ namespace utopia {
             auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
             tao->tao_type("tron");
             tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
-            qp_solver_ = tao;
+            qp_solver_ = tao;            
+        }
+
+        virtual void read(Input &is) override {
+
+            std::string discretization = "legacy";
+            is.get("discretization", discretization);
+
+            if(discretization != "legacy") {
+                
+                if(discretization == "bug") {
+                    contact_ = utopia::make_unique<ContactAssembler>();
+                } else {
+                    contact_ = utopia::make_unique<ConvertContactAssembler>();
+                }
+            }
+
+            is.get("qp-solver", [this](Input &in) {
+                this->qp_solver_ = std::make_shared<PolymorphicQPSolver<USparseMatrix, UVector>>();
+                this->qp_solver_->read(in);
+            });
+
+            is.get("outer-loop-tol", tol_);
+            is.get("max-outer-loops", max_outer_loops_);
+            is.get("plot-gap", plot_gap_);
+            is.get("contact", *contact_);
         }
 
         void set_tol(const Scalar tol)
@@ -97,8 +131,8 @@ namespace utopia {
             auto &V_0 = V_->subspace(0);
 
             if(bypass_contact_) {
-                if(!contact_.initialized) {
-                    contact_.init_no_contact(
+                if(!contact_->initialized()) {
+                    contact_->init_no_contact(
                         utopia::make_ref(V_0.mesh()),
                         utopia::make_ref(V_0.dof_map()));
                 }
@@ -108,19 +142,51 @@ namespace utopia {
 
             deform_mesh(V_0.mesh(), V_0.dof_map(), x);
 
-            contact_.init(
+            contact_->assemble(
                 utopia::make_ref(V_0.mesh()),
                 utopia::make_ref(V_0.dof_map()),
                 params_
             );
 
+            if(plot_gap_) {
+                static int n_out = 0;
+                UVector gap          = e_mul(contact_->is_contact_node(), contact_->gap());
+                UVector is_contact   = contact_->is_contact_node();
+                UVector normals      = contact_->normals();
+                UVector is_glue_node = contact_->is_glue_node();
+                UVector nx = contact_->orthogonal_trafo() * normals;
+
+                auto dim = V_0.mesh().spatial_dimension();
+                UVector gap_vec = normals;
+
+                {
+                    Read<UVector> r(gap);
+                    each_transform(gap_vec, gap_vec, [&](const SizeType i, const double val) -> double {
+                        const auto ind = (i / dim) * dim;
+                        return val * gap.get(ind);
+
+                    });
+                }
+
+                write("gap"        + std::to_string(n_out) + ".e", V_->subspace(0), gap);
+                write("is_contact" + std::to_string(n_out) + ".e", V_->subspace(0), is_contact);
+                write("normals"    + std::to_string(n_out) + ".e", V_->subspace(0), normals);
+                write("gap_vec"    + std::to_string(n_out) + ".e", V_->subspace(0), gap_vec);
+                write("nx"         + std::to_string(n_out) + ".e", V_->subspace(0), nx);
+                
+                if(!empty(is_glue_node)) {
+                    write("is_glue_node" + std::to_string(n_out) + ".e", V_->subspace(0), is_glue_node);
+                }
+
+                write("O"       + std::to_string(n_out) + ".m", contact_->orthogonal_trafo());
+                write("gap"     + std::to_string(n_out) + ".m", gap);
+                write("normals" + std::to_string(n_out) + ".m", normals);
+                n_out++;
+            }
+
             deform_mesh(V_0.mesh(), V_0.dof_map(), -x);
 
-            auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
-
-            if(mg) {
-                mg->update_contact(contact_);
-            }
+            // auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
         }
 
         bool solve_steady()
@@ -133,7 +199,12 @@ namespace utopia {
             }
 
             if(export_results_) {
+
+                // if(plot_gap_) {
+                //     convert(contact_->gap(), *V_->subspace(0).equation_system().solution);
+                // } else {
                 convert(x_, *V_->subspace(0).equation_system().solution);
+                // }
 
                 create_aux_system();
                 update_aux_system(x_);
@@ -150,7 +221,6 @@ namespace utopia {
             initialize();
 
             n_exports = 0;
-
 
             if(export_results_) {
                 convert(x_, *V_->subspace(0).equation_system().solution);
@@ -170,8 +240,6 @@ namespace utopia {
                     convert(x_, *V_->subspace(0).equation_system().solution);
                     io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
                 }
-
-
 
                 ++n_exports;
                 std::cout << "-------------------------------------"<< std::endl;
@@ -204,15 +272,14 @@ namespace utopia {
 
                     ++n_exports;
 
-                    std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
+                    std::cout << "outer_loop: " << (i + 1) << "/" << max_outer_loops_ << " diff: " << diff << std::endl;
                     if(diff < tol_) {
                         std::cout << "terminated at iteration " << i << " with diff " << diff << " <  " << tol_ << std::endl;
                         break;
                     } else {
                         if(i + 1 == max_outer_loops_) {
                             std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance " << tol_ << std::endl;
-                            // assert(false);
-                            return false;
+                            return true;
                         }
                     }
 
@@ -234,7 +301,6 @@ namespace utopia {
             while(!converged) {
 
                 if(!step()) return false;
-                // if(material_->is_linear()) { break; }
 
                 const double norm_inc = norm2(inc_c_);
                 converged = norm_inc < tol_;
@@ -257,63 +323,16 @@ namespace utopia {
             return material_->assemble_hessian_and_gradient(x, hessian, gradient);
         }
 
-        // bool write_text(const std::string &path, const Matrix &mat)
-        // {
-        // 	int size = utopia::comm_size(mat);
-        // 	int rank = utopia::comm_rank(mat);
-
-        // 	int nnz = 0;
-        // 	for(SizeType r = 0; r < size; ++r) {
-        // 		if(r == 0) {
-        // 			nnz = 0;
-        // 			each_read(mat, [&nnz](const SizeType, const SizeType, const Scalar) {
-        // 				++nnz;
-        // 			});
-
-        // 			MPI_Allreduce( MPI_IN_PLACE, &nnz, 1, MPI_INT, MPI_SUM, comm );
-        // 		}
-
-        // 		if(r == rank) {
-        // 			std::ofstream os;
-
-        // 			if(r == 0) {
-        // 				os.open(path);
-        // 				Size s = size(mat);
-        // 				os << s.get(0) << " " << nnz << "\n";
-        // 			} else {
-        // 				os.open(path, std::ofstream::out | std::ofstream::app);
-        // 			}
-
-        // 			if(!os.good()) {
-        // 				std::cerr << "invalid path: " << path << std::endl;
-        // 				continue;
-        // 			}
-
-        // 			each_read(mat, [&os](const SizeType i, const SizeType j, const Scalar value) {
-        // 				os << i << " " << j << " " << value << "\n";
-        // 			});
-
-        // 			os.flush();
-        // 			os.close();
-        // 		}
-
-        // 		MPI_Barrier(comm);
-        // 	}
-
-        // 	return true;
-        // }
-
-
         void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
         {
-            if(linear_solver_ && !contact_.has_contact()) {
+            if(linear_solver_ && !contact_->has_contact()) {
                 linear_solver_->solve(lhs, rhs, inc_c_);
                 return;
             }
 
-            if(sol_to_gap_on_contact_bdr_) {
-                inc_c = e_mul(contact_.is_contact_node, *box_c.upper_bound());
-            }
+            // if(plot_gap_) {
+            //     inc_c = e_mul(contact_->is_contact_node(), *box_c.upper_bound());
+            // }
 
             Chrono c;
             c.start();
@@ -329,7 +348,7 @@ namespace utopia {
         bool step()
         {
             assert(x_.implementation().has_ghosts());
-            synchronize(x_);//.implementation().update_ghosts();
+            synchronize(x_);
 
             if(contact_is_outdated_) {
 #ifdef WITH_PETSC
@@ -346,6 +365,11 @@ namespace utopia {
 #endif //WITH_PETSC
             }
 
+            //maybe apply boundary conditions here???
+            if(material_->is_linear()) {
+                apply_boundary_conditions(V_->subspace(0).dof_map(), x_);
+            }
+
             if(!assemble_hessian_and_gradient(x_, H_, g_)) {
                 assert(false);
                 return false;
@@ -355,31 +379,50 @@ namespace utopia {
             std::cout << "norm_g: " << norm_g << std::endl;
 
             //handle transformations
-            const auto &T = contact_.complete_transformation;
+            contact_->couple(g_, gc_);
 
-            gc_ = transpose(T) * g_;
             //change sign to negative gradient
             gc_ *= -1.;
-            Hc_ = transpose(T) * H_ * T;
+            contact_->couple(H_, Hc_);
 
 
             std::cout << "applying bc.... " << std::flush;
             apply_boundary_conditions(V_->subspace(0).dof_map(), Hc_, gc_);
 
-            // write("A.m", Hc_);
-            // write("b.m", gc_);
 
-            if(!first_) {
+            if(!first_ || material_->is_linear()) {
                 apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
-            }
+            } 
 
             std::cout << "done" << std::endl;
 
             inc_c_ *= 0.;
-            qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)), inc_c_);
+
+            if(contact_->has_glue()) {  
+                auto constr = make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_));
+                constr.fill_empty_bounds();
+
+                auto &u = *constr.upper_bound();
+                auto &l = *constr.lower_bound();
+
+                Write<UVector> wu(u), wl(l);
+                each_read(contact_->is_glue_node(), [&constr, &l, &u](const SizeType i, const double val) {
+                    if(val > 1e-8) {
+                        u.set(i, 0.0);
+                        l.set(i, 0.0);
+                    }   
+                });
+
+                qp_solve(Hc_, gc_, constr, inc_c_);
+            } else {
+                qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_)), inc_c_);
+            }
 
             xc_ += inc_c_;
-            x_ += T * inc_c_;
+
+            UVector inc;
+            contact_->uncouple(inc_c_, inc);
+            x_ += inc;
 
             first_ = false;
             return true;
@@ -406,9 +449,10 @@ namespace utopia {
 
         }
 
-        const Contact &contact() const
+        const ContactT &contact() const
         {
-            return contact_;
+            assert(contact_);
+            return *contact_;
         }
 
         ElasticMaterial<Matrix, Vector> &material()
@@ -497,8 +541,8 @@ namespace utopia {
             exit_on_contact_solve_failure_ = val;
         }
 
-        void set_sol_to_gap_on_contact_bdr(const bool val) {
-            sol_to_gap_on_contact_bdr_ = val;
+        void plot_gap(const bool val) {
+            plot_gap_ = val;
         }
 
         virtual bool stress(const Vector &x, Vector &result) {
@@ -548,20 +592,22 @@ namespace utopia {
 
         void update_aux_system(UVector &x)
         {
+            // synchronize(x);
+            
             UVector s, unscaled_s;
-            stress(x, s);
+            if(contact_stress_) {
+                contact_stress_->assemble(x, unscaled_s);
+                // contact_->apply_orthogonal_trafo(s, unscaled_s);
+            } else {
+                stress(x, s);
+                contact_->remove_mass(s, unscaled_s);
+            }
 
             auto &V0 = V_->subspace(0);
             auto &es = V0.equation_systems();
-
             auto &aux = es.get_system<libMesh::LinearImplicitSystem>("contact_aux");
 
-            // unscaled_s = local_zeros(local_size(s));
-            // aux_inv_mass_matrix_->apply(s, unscaled_s);
-            // unscaled_s = e_mul(aux_inv_mass_vector_, s);
-            unscaled_s = e_mul(contact_.inv_mass_vector, s);
             utopia::convert(unscaled_s, *aux.solution);
-            // utopia::convert(s, *aux.solution);
             aux.solution->close();
 
             double max_s = utopia::max(unscaled_s);
@@ -576,6 +622,22 @@ namespace utopia {
             qp_solver_ = qp_solver;
         }
 
+        inline QPSolver<Matrix, Vector> &qp_solver()
+        {
+            assert(qp_solver_);
+            return *qp_solver_;
+        }
+
+        inline const QPSolver<Matrix, Vector> &qp_solver() const
+        {
+            assert(qp_solver_);
+            return *qp_solver_;
+        }
+
+        inline void set_contact_stress(const std::shared_ptr<ContactStressT> &stress)
+        {
+            contact_stress_ = stress;
+        }
 
     private:
         std::shared_ptr<FunctionSpaceT> V_;
@@ -600,7 +662,7 @@ namespace utopia {
         Vector xc_;
         Vector rhs_;
 
-        Contact contact_;
+        std::unique_ptr<IContact> contact_;
 
         Vector inactive_set_;
         Vector active_set_;
@@ -616,7 +678,7 @@ namespace utopia {
         bool force_direct_solver_;
         bool bypass_contact_;
         bool exit_on_contact_solve_failure_;
-        bool sol_to_gap_on_contact_bdr_;
+        bool plot_gap_;
 
         int max_outer_loops_;
 
@@ -631,6 +693,7 @@ namespace utopia {
         std::unique_ptr<LinearSolver<USparseMatrix, UVector>> aux_inv_mass_matrix_;
 
         std::shared_ptr<QPSolver<Matrix, Vector>> qp_solver_;
+        std::shared_ptr<ContactStressT> contact_stress_;
     };
 
     void run_steady_contact(libMesh::LibMeshInit &init);

@@ -281,8 +281,8 @@ namespace utopia
             rmtr->set_grad_smoothess_termination(0.000001);
 
             rmtr->verbose(verbose_);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
                 
             // Solve 
             rmtr->solve(x);

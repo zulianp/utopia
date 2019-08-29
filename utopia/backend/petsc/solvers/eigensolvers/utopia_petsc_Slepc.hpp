@@ -3,6 +3,8 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_EigenSolver.hpp"
+#include "utopia_petsc_Types.hpp"
+#include "utopia_Wrapper.hpp"
 #include <slepceps.h>
 
 namespace utopia

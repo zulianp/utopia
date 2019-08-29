@@ -3,6 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include <string>
 
 namespace utopia {
 

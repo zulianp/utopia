@@ -55,7 +55,7 @@ template<int Dimension>
 
             std::array<double, Dimension> p_a;
             for (libMesh::dof_id_type i = 0; i < e->n_nodes(); ++i) {
-                const libMesh::Point &p = fe.node(e->node(i));
+                const libMesh::Point &p = fe.node(e->node_id(i));
                 for(int d = 0; d < Dimension; ++d) {
                     p_a[d] = p(d);
                 }
@@ -99,15 +99,10 @@ template<int Dimension>
             return element_;
         }
 
-
         libMesh::Elem * get()
         {
             assert(fe_);
-
-            //std::cout<<"I AM IN GET"<<std::endl;
-
             assert(element_ < fe_->n_local_elem());
-
             return fe_->elem(element_);
         }
 
@@ -117,17 +112,14 @@ template<int Dimension>
             return fe_->elem(element_);
         }
 
-
         inline const  libMesh::MeshBase  &space() const
         {
             assert(fe_);
             return *fe_;
         }
 
-
         void set_dof_map(std::vector<long> * ptr)
         {
-
             dof_map_ = ptr;
         }
 
@@ -137,10 +129,8 @@ template<int Dimension>
             return *dof_map_;
         }
 
-
-         void set_dof_map_reverse(std::vector<long> * ptr)
+        void set_dof_map_reverse(std::vector<long> * ptr)
         {
-
             dof_map_reverse_ = ptr;
         }
 

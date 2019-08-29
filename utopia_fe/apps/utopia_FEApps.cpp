@@ -8,7 +8,11 @@
 #include "utopia_EikonalApp.hpp"
 #include "utopia_LeastSquaresHelmholtzApp.hpp"
 #include "utopia_PoissonApp.hpp"
+#include "utopia_SmoothApp.hpp"
+#include "utopia_ElasticityApp.hpp"
+#include "utopia_WearApp.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_MixedPoissonApp.hpp"
 
 #include <iostream>
 
@@ -72,6 +76,10 @@ namespace utopia {
         add_app(Grid2MeshTransferApp::command(), 	 utopia::make_unique<Grid2MeshTransferApp>());
         add_app(EikonalApp::command(), 			 	 utopia::make_unique<EikonalApp>());
         add_app(LeastSquaresHelmholtzApp::command(), utopia::make_unique<LeastSquaresHelmholtzApp>());
-        add_app(PoissonApp::command(), utopia::make_unique<PoissonApp>());
+        add_app(PoissonApp::command(),               utopia::make_unique<PoissonApp>());
+        add_app(SmoothApp::command(),                utopia::make_unique<SmoothApp>());
+        add_app(ElasticityApp::command(),            utopia::make_unique<ElasticityApp>());
+        add_app(WearApp::command(),                  utopia::make_unique<WearApp>());
+        add_app(MixedPoissonApp::command(),          utopia::make_unique<MixedPoissonApp>());
     }
 }

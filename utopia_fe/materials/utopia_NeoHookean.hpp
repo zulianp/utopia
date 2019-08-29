@@ -10,12 +10,12 @@ namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
     class NeoHookean : public HyperElasticMaterial<Matrix, Vector> {
     public:
+        using Scalar = UTOPIA_SCALAR(Vector);
 
         NeoHookean(FunctionSpace &V, const LameeParameters &params)
-        : V_(V), params_(params)
+        : V_(V), params_(params), rescaling_(1.0)
         {}
 
-        // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         {
             auto mu     = params_.var_mu();
@@ -31,10 +31,10 @@ namespace utopia {
             auto F_inv_t = transpose(F_inv);
             auto J       = det(F);
 
-            auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+            auto P = (rescaling_ * mu) * (F - F_inv_t) + ((rescaling_ * lambda) * logn(J)) * F_inv_t;
 
-            auto stress_lin = mu * grad(u)
-            -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
+            auto stress_lin = (rescaling_ * mu) * grad(u)
+            - (rescaling_ * (lambda * logn(J) - mu)) * F_inv_t * transpose(grad(u)) * F_inv_t
             + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
             auto l_form = inner(P, grad(v)) * dX;
@@ -42,8 +42,7 @@ namespace utopia {
 
             return assemble(b_form == l_form, hessian, gradient);
         }
-
-
+        
         bool stress(const Vector &x, Vector &result) override {
 
             auto mu     = params_.var_mu();
@@ -58,15 +57,26 @@ namespace utopia {
             auto F_inv_t = transpose(F_inv);
             auto J       = det(F);
 
-            auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+            auto P = (rescaling_ * mu) * (F - F_inv_t) + ((rescaling_ * lambda) * logn(J)) * F_inv_t;
 
             auto l_form = inner(P, grad(v)) * dX;
             return assemble(l_form, result);
         }
 
+        inline Scalar rescaling() const override
+        {
+            return rescaling_;
+        }
+
+        inline void rescaling(const Scalar &value) override {
+            rescaling_ = value;
+        }
+
+
     private:
         FunctionSpace &V_;
         LameeParameters params_;
+        Scalar rescaling_;
     };
 }
 
