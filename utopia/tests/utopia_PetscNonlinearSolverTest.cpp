@@ -479,15 +479,15 @@ namespace utopia
             homemade_ss_newton.solve(A, b, hm_x_0);
 
 
-            // x_0.implementation().set_name("x");
-            // hm_x_0.implementation().set_name("y");
+            rename("x", x_0);
+            rename("y", hm_x_0);
 
 
             x_0 *= 1./scale_factor;
             hm_x_0 *= 1./scale_factor;
 
-            // write("x_p.m", x_0);
-            // write("x_u.m", hm_x_0);
+            write("x_p.m", x_0);
+            write("x_u.m", hm_x_0);
 
             if(!approxeq(x_0, hm_x_0, 1e-14)) {
                 DVectord diff = hm_x_0 - x_0;
