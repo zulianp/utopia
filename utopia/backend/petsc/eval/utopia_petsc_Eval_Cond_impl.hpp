@@ -38,7 +38,7 @@ namespace utopia {
 
         //small eig
         slepc.portion_of_spectrum("smallest_real");
-        slepc.max_it(10000);
+        slepc.max_it(40000);
         // slepc.portion_of_spectrum("smallest_magnitude");
         slepc.solve(H);        
         slepc.get_real_eigenpair(0, small, eigenvector);
