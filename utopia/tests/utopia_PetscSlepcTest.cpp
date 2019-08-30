@@ -61,6 +61,7 @@ namespace utopia
 
             slepc.portion_of_spectrum("smallest_real");
             slepc.verbose(verbose);
+            slepc.number_of_eigenvalues(2);
             slepc.solve(A);
             slepc.print_eigenpairs();
 
@@ -68,12 +69,10 @@ namespace utopia
             DVectord vr, vi;
 
             slepc.get_eigenpairs(0, iegr, eigi, vr, vi);
-
             slepc.get_real_eigenpair(1, iegr, vr);
 
             auto e = cond(A);
             std::cout << "e: " << e << std::endl;
-
         }
 
 		void petsc_slepc_generalized_eigen_test()
@@ -90,6 +89,7 @@ namespace utopia
 			slepc.verbose(verbose); 
 			slepc.problem_type("generalized_hermitian");
 			slepc.solver_type("krylovschur"); 
+			slepc.number_of_eigenvalues(2);
 			slepc.solve(A, B); 
 			slepc.print_eigenpairs(); 
 
