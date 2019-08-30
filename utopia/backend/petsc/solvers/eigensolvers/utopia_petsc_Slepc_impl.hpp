@@ -221,7 +221,7 @@ namespace utopia {
         if(!solved_)
         {
             std::cerr << "[Warning] You need to solve (or let the solver converge) before querying the eigenpairs.... \n";
-            // return;
+            return;
         }
 
         PetscInt nconv;
@@ -238,15 +238,12 @@ namespace utopia {
 
         EPSGetConverged(eps_, &nconv);
 
-
-        // if (i < nconv)
-        // 
         if (i >= nconv) {
             std::cerr << "[Warning] requested eigen pair was not resolved up to required accuracy\n";
             
+        } else {
+            EPSGetEigenpair(eps_, i, &iegr, nullptr, raw_type(vr), nullptr);
         }
-
-        EPSGetEigenpair(eps_, i, &iegr, nullptr, raw_type(vr), nullptr);
     }
 
     template<typename Matrix, typename Vector>

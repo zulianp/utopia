@@ -5,6 +5,7 @@
 #include "utopia_EigenSolver.hpp"
 #include "utopia_Wrapper.hpp"
 #include "utopia_Clonable.hpp"
+#include "utopia_Traits.hpp"
 
 #include <vector>
 #include <string>
@@ -12,7 +13,7 @@
 #include <slepceps.h>
 
 namespace utopia {
-    
+
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class SlepcSolver;
 
