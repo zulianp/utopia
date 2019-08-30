@@ -1,7 +1,7 @@
 #ifndef UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES
 #define UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES
 
-    #include "utopia_UnconstrainedTestFunction.hpp"
+    #include "utopia_TestFunctions.hpp"
 
     // Ordering of function follows paper:
     // More, Garbow, Hillstrom - Testing unconstrained optimization software - Unconstrained minimization section

@@ -200,7 +200,7 @@
       }
 
 
-      void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &linear_solver) override
+      void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > & /*linear_solver*/) override
       {
           utopia_error("TrustRegion:: do not use set_linear solver. Use set_trust_region_strateg... \n");
       }

@@ -354,6 +354,13 @@ namespace utopia {
         check_error( MatZeroRows(A.implementation(), index.size(), &index[0], 1.0, x.implementation(), rhs.implementation()) );
     }
 
+
+    void PetscBackend::chop(PetscMatrix & A, const PetscScalar & eps)
+    {
+        MatChop(A.implementation(), eps); 
+    }
+
+
     // read vector
     bool PetscBackend::read(const std::string &path, PetscVector &vec, const PetscArgs &args)
     {

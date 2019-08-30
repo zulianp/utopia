@@ -22,6 +22,7 @@
 #include "utopia_petsc_EvalDotVecVecs.hpp"
 #include "utopia_petsc_EvalMatGetCol.hpp"
 #include "utopia_petsc_Eval_VecUniqueSortSerial.hpp"
+#include "utopia_petsc_Eval_Chop.hpp"
 
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"

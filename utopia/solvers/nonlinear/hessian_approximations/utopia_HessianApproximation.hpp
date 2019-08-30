@@ -24,8 +24,9 @@ public:
 
     virtual ~HessianApproximation() { }
 
-    virtual void initialize() = 0;
-    virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;
+    virtual void initialize(const Vector & /*x_k*/, const Vector & /* g */) = 0;
+
+    virtual bool update(const Vector & /* s  */, const Vector &  /* y */ , const Vector &  /* x */ , const Vector &  /* g */ ) = 0;
     virtual void reset() = 0;
 
     virtual HessianApproximation<Vector> * clone() const override = 0;
@@ -33,6 +34,7 @@ public:
     // applications of inverse of Hessian
     virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
     virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0;
+
 
 
     virtual void read(Input &in) override

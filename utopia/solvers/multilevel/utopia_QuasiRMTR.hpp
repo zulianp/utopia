@@ -158,7 +158,10 @@ namespace utopia
         virtual void init_memory(const SizeType & fine_local_size) override
         {
             RMTR::init_memory(fine_local_size);
-            hessian_approxs_[this->n_levels() - 1 ]->initialize();
+            std::cout<<"----- QUasiRMTR: - verify ..... \n"; 
+
+            SizeType fine_lev=this->n_levels() - 1; 
+            hessian_approxs_[fine_lev]->initialize(this->memory_.x[fine_lev], this->memory_.g[fine_lev]);
         }
 
         // virtual void init_level(const SizeType & level) override
@@ -167,13 +170,13 @@ namespace utopia
         // }
 
 
-        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) override
+        virtual bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) override
         {
             return false;
         }
 
 
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
         {
             // this->_tr_subproblems[level]->atol(1e-16);
             // if(flg)
@@ -205,7 +208,7 @@ namespace utopia
             // swap back....
             this->memory_.g[level] = grad_old;
 
-            hessian_approxs_[level]->update(this->memory_.s[level], y);
+            hessian_approxs_[level]->update(this->memory_.s[level], y, this->memory_.x[level], this->memory_.g[level]);
 
             return true;
         }
@@ -219,7 +222,7 @@ namespace utopia
                 if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
                 {
                     hessian_approxs_[level]->reset();
-                    hessian_approxs_[level]->initialize();
+                    hessian_approxs_[level]->initialize(this->memory_.x[level], this->memory_.g[level]);                    
                 }
             }
         }

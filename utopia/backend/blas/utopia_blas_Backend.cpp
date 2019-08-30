@@ -749,7 +749,7 @@ namespace utopia {
         axpy(result, 1., right);
     }
 
-    void BLASBackend::apply_binary(Matrix &result, const Matrix &left, const Minus &op, const Matrix &right)
+    void BLASBackend::apply_binary(Matrix &result, const Matrix &left, const Minus & , const Matrix &right)
     {
         result = left;
         axpy(result, -1., right);

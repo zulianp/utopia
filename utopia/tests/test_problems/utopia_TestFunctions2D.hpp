@@ -45,7 +45,7 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override {
+        bool hessian(const Vector &/*point*/, Matrix &result) const override {
 
             result = zeros(2, 2);
 
@@ -113,11 +113,10 @@ namespace utopia
             H.set(0, 0, 2.0 * x1);
             H.set(0, 1, -1.0);
             H.set(1, 0, 1.0);
-            H.set(1, 1, pi/2 * std::sin(pi/2*x2));
+            H.set(1, 1, pi/2. * std::sin(pi/2.*x2));
             return true;
         }
     };
-
 }
 
 #endif //UTOPIA_SOLVER_TESTFUNCTIONS2D_HPP

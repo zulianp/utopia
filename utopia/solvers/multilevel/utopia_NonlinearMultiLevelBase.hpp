@@ -85,7 +85,7 @@ namespace utopia {
         {
             level_functions_.clear();
 
-            if(this->n_levels() != level_functions.size()){
+            if(this->n_levels() != static_cast<SizeType>(level_functions.size())){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and level_functions do not match. \n");
             }
 
@@ -108,7 +108,7 @@ namespace utopia {
                 utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
@@ -136,7 +136,7 @@ namespace utopia {
                 utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
@@ -168,21 +168,40 @@ namespace utopia {
                 std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: Local sizes do not match. \n";
             }
 
+            // old - slow version
+            // {
+            //     Write<Vector> w(x);
+            //     Read<Vector>  r_id(bc_ids);
+            //     Read<Vector>  r_val(bc_values);
+
+            //     Range range_w = range(x);
+            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+            //     {
+            //         Scalar id = bc_ids.get(i);
+            //         Scalar value = bc_values.get(i);
+
+            //         if(id == 1)
+            //             x.set(i, value);
+            //     }
+            // }
+
+            Vector x_old = x; 
+
             {
-                Write<Vector> w(x);
-                Read<Vector>  r_id(bc_ids);
-                Read<Vector>  r_val(bc_values);
+                Read<Vector> r_ub(bc_ids), r_lb(bc_values), r_old(x_old);
+                Write<Vector> wv(x);
 
-                Range range_w = range(x);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                each_write(x, [&bc_ids, &bc_values, &x_old](const SizeType i) -> double 
                 {
-                    Scalar id = bc_ids.get(i);
-                    Scalar value = bc_values.get(i);
-
-                    if(id == 1)
-                        x.set(i, value);
-                }
+                    Scalar id = bc_ids.get(i); Scalar value =  bc_values.get(i); Scalar x_old_val = x_old.get(i); 
+                        if(id == 1)
+                            return value;
+                        else
+                            return x_old_val; 
+                } );
             }
+
+
 
             return true;
         }
@@ -196,20 +215,26 @@ namespace utopia {
          */
         virtual bool zero_correction_related_to_equality_constrain(Fun & fun, Vector & c)
         {
-            Vector bc;
-            fun.get_eq_constrains_flg(bc);
+            // older/slower version
+            // Vector bc;
+            // fun.get_eq_constrains_flg(bc);
 
-            {
-                Write<Vector> w(c);
-                Read<Vector> r(bc);
+            // {
+            //     Write<Vector> w(c);
+            //     Read<Vector> r(bc);
 
-                Range range_w = range(c);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    if(bc.get(i) == 1)
-                        c.set(i, 0);
-                }
-            }
+            //     Range range_w = range(c);
+            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+            //     {
+            //         if(bc.get(i) == 1)
+            //             c.set(i, 0);
+            //     }
+            // }
+
+
+            fun.zero_contribution_to_equality_constrains(c); 
+
+
             return true;
         }
 
@@ -223,35 +248,41 @@ namespace utopia {
          */
         virtual bool zero_correction_related_to_equality_constrain_mat(Fun & fun, Matrix & M)
         {
-            Vector bc;
-            fun.get_eq_constrains_flg(bc);
-            std::vector<SizeType> index;
+            // Vector bc;
+            // fun.get_eq_constrains_flg(bc);
+            const std::vector<SizeType> & index = fun.get_indices_related_to_BC(); 
 
-            {
-                Read<Vector> r(bc);
+            // {
+            //     Read<Vector> r(bc);
 
-                Range range_w = range(bc);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    if(bc.get(i) == 1)
-                        index.push_back(i);
-                }
-            }
+            //     Range range_w = range(bc);
+            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+            //     {
+            //         if(bc.get(i) == 1)
+            //             index.push_back(i);
+            //     }
+            // }
+
+            // hopefully simplification/faster solution 
+            //fun.get_indices_related_to_BC(index); 
 
             set_zero_rows(M, index, 1.);
 
-            // horible solution....
-            {
-                ReadAndWrite<Matrix> w(M);
-                Range r = row_range(M);
+            // // horible solution....
+            // // do we actually need that?? set_zero_rows should put one on diagonal
+            // {
+            //     ReadAndWrite<Matrix> w(M);
+            //     Range r = row_range(M);
 
-                //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                {
-                    if(std::abs(M.get(i,i)) < 1e-15)
-                        M.set(i, i, 1.0);
-                }
-            }
+            //     //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
+            //     for(SizeType i = r.begin(); i != r.end(); ++i)
+            //     {
+            //         if(std::abs(M.get(i,i)) < 1e-15){
+            //             std::cout<<"--- yes, something got used.... \n"; 
+            //             M.set(i, i, 1.0);
+            //         }
+            //     }
+            // }
 
 
             return true;
@@ -275,7 +306,7 @@ namespace utopia {
 
         inline Fun &function(const SizeType level)
         {
-            assert(level < level_functions_.size());
+            assert(level < static_cast<SizeType>(level_functions_.size()));
             assert(level_functions_[level]);
 
             return *level_functions_[level];

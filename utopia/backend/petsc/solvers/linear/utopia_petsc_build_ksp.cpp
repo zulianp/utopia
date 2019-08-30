@@ -3,7 +3,7 @@
 
 #undef __FUNCT__
 #define __FUNCT__ "KSPSetUp_UTOPIA"
-static PetscErrorCode KSPSetUp_UTOPIA(KSP ksp)
+static PetscErrorCode KSPSetUp_UTOPIA(KSP /*ksp*/)
 {
   PetscFunctionBegin;
 
@@ -89,7 +89,7 @@ PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
 
 #undef __FUNCT__
 #define __FUNCT__ "KSPView_UTOPIA"
-PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
+PetscErrorCode KSPView_UTOPIA(KSP /*ksp*/,PetscViewer viewer)
 {
 
   PetscFunctionBegin;
@@ -105,7 +105,7 @@ PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
 
 #undef __FUNCT__
 #define __FUNCT__ "KSPSetFromOptions_UTOPIA"
-PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject,KSP ksp)
+PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems * /*PetscOptionsObject*/,KSP /*ksp*/)
 {
   PetscFunctionBegin;
   // PetscErrorCode ierr;

@@ -27,6 +27,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
             UTOPIA_RUN_TEST(petsc_st_cg_mg);
+            UTOPIA_RUN_TEST(petsc_redundant_test); 
 
 #endif //PETSC_HAVE_MUMPS
         }
@@ -233,6 +234,27 @@ namespace utopia {
             utopia_test_assert(approxeq(expected, sol));
         }
 
+
+        void petsc_redundant_test()
+        {
+            DSMatrixd mat = identity(_n, _n);
+            DVectord rhs = zeros(_n);
+            DVectord sol = zeros(_n);
+
+            auto solver = std::make_shared<utopia::RedundantLinearSolver<DSMatrixd, DVectord> >();
+            solver->number_of_parallel_solves(mpi_world_size()); 
+            // solver->number_of_parallel_solves(1); 
+            solver->ksp_type("gmres"); 
+            solver->pc_type("lu"); 
+
+            solver->verbose(false);
+            solver->solve(mat, rhs, sol);
+
+            DVectord expected = zeros(_n);
+            utopia_test_assert(approxeq(expected, sol));
+        }
+
+
         template<class MultigridT>
         void test_block_mg(MultigridT &multigrid, const bool verbose = false)
         {
@@ -432,7 +454,7 @@ namespace utopia {
 #ifdef PETSC_HAVE_SUPERLU_DIST
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >(MATSOLVERSUPERLU_DIST, PCLU);
 #else
-            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >(MATSOLVERPETSC, PCLU);
 
             if(mpi_world_size() > 1) {
                 if(mpi_world_rank() == 0) {

@@ -33,7 +33,6 @@ namespace utopia
             UTOPIA_RUN_TEST(RMTR_inf_bound_test);
         }
 
-
         void TR_test()
         {
             Bratu1D<DSMatrixd, DVectord> fun(problem.n_coarse);
@@ -219,12 +218,12 @@ namespace utopia
 
             rmtr->max_it(50);
             rmtr->max_coarse_it(1);
-            rmtr->max_smoothing_it(3);
+            rmtr->max_sucessful_smoothing_it(3);
+            
             rmtr->delta0(10);
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
             rmtr->set_grad_smoothess_termination(0.000001);
-            rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(problem.verbose);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -269,12 +268,11 @@ namespace utopia
 
             rmtr->max_it(1000);
             rmtr->max_coarse_it(1);
-            rmtr->max_smoothing_it(1);
+            rmtr->max_sucessful_smoothing_it(1);
             rmtr->delta0(1);
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
             rmtr->set_grad_smoothess_termination(0.000001);
-            rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(problem.verbose);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -328,12 +326,11 @@ namespace utopia
 
             rmtr->max_it(1000);
             rmtr->max_coarse_it(1);
-            rmtr->max_smoothing_it(1);
+            rmtr->max_sucessful_smoothing_it(1);
             rmtr->delta0(1);
             rmtr->atol(1e-5);
             rmtr->rtol(1e-10);
             rmtr->set_grad_smoothess_termination(0.000001);
-            rmtr->set_eps_grad_termination(1e-7);
 
             rmtr->verbose(problem.verbose);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);

@@ -1,15 +1,10 @@
-//
-// Created by Alessandro Rigazzi on 28/05/15.
-//
-
-
 #ifndef UTOPIA_SOLVER_TESTFUNCTIONSND_HPP
 #define UTOPIA_SOLVER_TESTFUNCTIONSND_HPP
 
 #include <vector>
 #include "utopia_Function.hpp"
 #include "utopia_Core.hpp"
-
+#include "utopia_TestFunctions.hpp"
 
 namespace utopia {
 
@@ -157,7 +152,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QuadraticFunctionBoundary : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
+        typedef UTOPIA_SCALAR(DVectord) Scalar;
 
         virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
             Scalar val = dot(point, A * point);
@@ -172,7 +168,7 @@ namespace utopia {
             return true;
         }
 
-        virtual bool hessian(const Vector &point, Matrix &result) const override {
+        virtual bool hessian(const Vector &/*point*/, Matrix &result) const override {
             result = A;
             return true;
         }
@@ -187,16 +183,20 @@ namespace utopia {
 
     // Quadratic function class
     template<class Matrix, class Vector>
-    class QuadraticFunctionConstrained : public FunctionBoxConstrained<Matrix, Vector> {
+    class QuadraticFunctionConstrained : public ConstrainedTestFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
+        typedef UTOPIA_SCALAR(DVectord) Scalar;
 
         QuadraticFunctionConstrained(Vector & b, Matrix & H, Matrix & B, Vector & ub):
                                                                         b_(b),
                                                                         A_(H),
                                                                         B_(B),
                                                                         ub_(ub)
-        { }
+        { 
+            // to be figured out
+            exact_sol_ = zeros(1); 
+        }
 
         virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
             Scalar val = dot(point, A_ * point);
@@ -211,7 +211,7 @@ namespace utopia {
             return true;
         }
 
-        virtual bool hessian(const Vector &point, Matrix &result) const override {
+        virtual bool hessian(const Vector &/*point*/, Matrix &result) const override {
             result = A_;
             return true;
         }
@@ -226,11 +226,60 @@ namespace utopia {
             return false;
         }
 
+        virtual bool has_upper_bound() const override
+        {
+            return true;
+        }
+
+        virtual bool has_lower_bound() const override
+        {
+            return false;
+        }
+
+
+        virtual Vector initial_guess() const override
+        {   
+            return (0 * b_);
+        }
+        
+        virtual const Vector & exact_sol() const override
+        {
+            return exact_sol_; 
+        }
+        
+
+        virtual Scalar min_function_value() const override
+        {   
+            // not known
+            return 0.0; 
+        }
+
+        virtual std::string name() const override
+        {
+            return "Quadratic";
+        }
+        
+        virtual SizeType dim() const override
+        {
+            return size(b_).get(0); 
+        }
+
+        virtual bool exact_sol_known() const override
+        {
+            return false;
+        }
+
+        virtual bool parallel() const override
+        {
+            return true;
+        }
+
         private:
             const Vector b_;
             Matrix A_; /*!< Hessian */
             Matrix B_; /*!< boundary operator */
             const Vector ub_;
+            Vector exact_sol_; 
     };
 
 

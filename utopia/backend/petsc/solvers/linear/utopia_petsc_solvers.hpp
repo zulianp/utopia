@@ -17,5 +17,6 @@
 
 #include "utopia_petsc_Multigrid.hpp"
 #include "utopia_petsc_GMRES.hpp"
+#include "utopia_petsc_RedundantLinearSolver.hpp"
 
 #endif //UTOPIA_PETSC_SOLVERS_HPP

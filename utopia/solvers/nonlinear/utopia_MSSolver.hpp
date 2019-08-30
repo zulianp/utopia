@@ -26,7 +26,7 @@ namespace utopia
         virtual void gradient(Function<Matrix, Vector> &function, const Vector &x, Vector &gradient) = 0;
         virtual Scalar norm(const Vector &x) const = 0;
         virtual Scalar dot(const Vector &left, const Vector &right) const = 0;
-        virtual void update(const std::shared_ptr<Matrix> &mat) {}
+        virtual void update(const std::shared_ptr<Matrix> & /*mat*/) {}
         virtual void transform_gradient(Vector &in, Vector &out) = 0;
         virtual bool needs_hessian() const { return true; }
     };
@@ -322,7 +322,7 @@ namespace utopia
         radius0_(3.),
         T1_([this](const Scalar &radius) -> Scalar { return radius/radius0_; }),
         T2_([](const Scalar &radius) -> Scalar { return 0.35 * radius; }),
-        G_([](const Scalar &radius, const Scalar &radius0) -> Scalar { return radius0; }),
+        G_([](const Scalar &/*radius*/, const Scalar &radius0) -> Scalar { return radius0; }),
         norm_type_(L2_NORM),
         convex_hull_n_gradients_(2)
         {
@@ -350,7 +350,7 @@ namespace utopia
                const Vector &right_in,
                const Vector &dir,
                const Scalar &tol,
-               const Scalar &step_size, //not needed
+               const Scalar &/*step_size*/, //not needed
                const Scalar &val_left_in,
                const Scalar &val_right_in,
                Vector &h_g)
@@ -566,7 +566,7 @@ namespace utopia
                             } else {
                                 convex_hull_solver_->solve(*normed, a_norm2, gradients_, b_g);
 
-                                if(gradients_.size() >= convex_hull_n_gradients_) {
+                                if(static_cast<SizeType>(gradients_.size()) >= convex_hull_n_gradients_) {
                                     gradients_.erase(gradients_.begin());
                                 }
                             }

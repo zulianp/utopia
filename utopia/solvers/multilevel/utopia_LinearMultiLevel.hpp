@@ -67,7 +67,7 @@ namespace utopia
             if(this->n_levels() <= 0){
                 this->n_levels(interpolation_operators.size() + 1);
             }
-            else if(this->n_levels() != interpolation_operators.size() + 1){
+            else if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
             }
 

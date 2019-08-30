@@ -114,17 +114,21 @@ namespace utopia
 
       bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc) const
       {
-          Pc = local_values(local_size(x).get(0), 1.0);
-          {
-              Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-              Write<Vector> wv(Pc);
+        // if(empty(Pc) || (local_size(x).get(0)!= local_size(Pc).get(0)))
+        // {
+          Pc = 0.0*x; 
+        // }
+        
+        {
+          Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+          Write<Vector> wv(Pc);
 
-              each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double {
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);
-                          if(li >= xi)
-                            return li;
-                          else
-                            return (ui <= xi) ? ui : xi; }   );
+          each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double {
+                      Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);
+                      if(li >= xi)
+                        return li;
+                      else
+                        return (ui <= xi) ? ui : xi; }   );
           }
 
           return true;

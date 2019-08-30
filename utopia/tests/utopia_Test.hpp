@@ -40,7 +40,6 @@ namespace utopia
         run_selection_test();
         run_ui_test();
 
-
         runGenericSolversTest();
         runPetscNonlinearSolversTest();
         runPetscLinearSolversTest();
@@ -48,7 +47,7 @@ namespace utopia
         runQuasiNewtonTest();
 
         runNonlinearMultilevelSolverTest();
-
+        runPetscPseudoTransientContinuationTest(); 
 
         run_qp_solver_test();
 
@@ -93,10 +92,13 @@ namespace utopia
                    runPetscLinearSolversTest();
                 else if (token == "solvers_slepc")
                    runPetscSlepcSolversTest();
-                else if(token == "nonlinear_multilevel")
+                else 
+                    if(token == "nonlinear_multilevel")
                     runNonlinearMultilevelSolverTest();
                 else if(token =="quasi_newton")
                     runQuasiNewtonTest();
+                else if(token =="hck")
+                    runHckTest();                
                 // else if (token == "performance")
                     // run_performance_test();
                 else if (token == "algebra")
@@ -127,7 +129,9 @@ namespace utopia
                     run_qp_solver_test();
                 }else if(token == "uncon_bench") {
                     run_unconstrained_optimization_benchmark();
-                }
+                }else if(token == "pseudo_continuation") {
+                    runPetscPseudoTransientContinuationTest();
+                }                                
             }
         }
 

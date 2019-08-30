@@ -14,8 +14,9 @@ namespace utopia
             {
                 typename utopia::Traits<Vector>::SizeType n =  vectors.size();
 
-                if(n!=results.size())
+                if(n!=results.size()){
                     results.resize(n);
+                }
 
                 for(auto i = 0; i < n; i++)
                     results[i] = dot(v1, *(vectors[i]));
@@ -25,12 +26,26 @@ namespace utopia
             {
                 typename utopia::Traits<Vector>::SizeType n =  vectors.size();
 
-                if(n!=results.size())
+                if(n!=results.size()){
                     results.resize(n);
+                }
 
                 for(auto i = 0; i < n; i++)
                     results[i] = dot(v1, (vectors[i]));
             }
+
+            static void apply(const Wrapper<Vector, 1> &v11, const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21, const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2)
+            {
+                result1 = dot(v11, v12);
+                result2 = dot(v21, v22);
+            }  
+
+            static void apply(const Wrapper<Vector, 1> &v11, const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21, const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2, const Wrapper<Vector, 1> &v31,const Wrapper<Vector, 1> &v32, typename utopia::Traits<Vector>::Scalar & result3)
+            {
+                result1 = dot(v11, v12);
+                result2 = dot(v21, v22);
+                result3 = dot(v31, v32);
+            }                        
     };
 
 
@@ -68,6 +83,19 @@ namespace utopia
         EvalDots<Vector>::apply(v1, vectors, results);
     }
 
+
+    template< class Vector>
+    void dots(const Wrapper<Vector, 1> &v11,const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21,const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2)
+    {
+        EvalDots<Vector>::apply(v11, v12, result1, v21, v22, result2);
+    }
+
+
+    template< class Vector>
+    void dots(const Wrapper<Vector, 1> &v11,const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21,const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2, const Wrapper<Vector, 1> &v31,const Wrapper<Vector, 1> &v32, typename utopia::Traits<Vector>::Scalar & result3)
+    {
+        EvalDots<Vector>::apply(v11, v12, result1, v21, v22, result2, v31, v32, result3);
+    }
 
 
     template< class Vector>

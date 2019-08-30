@@ -61,7 +61,7 @@ namespace utopia
             }
             it++;
 
-            this->initialize_approximation();
+            this->initialize_approximation(x, g);
             auto multiplication_action = this->hessian_approx_strategy_->build_apply_H();
 
             while(!converged)
@@ -94,7 +94,7 @@ namespace utopia
 
                 // diff between fresh and old grad...
                 y = g - y;
-                this->update(s, y);
+                this->update(s, y, x, g);
 
                 // print iteration status on every iteration
                 if(this->verbose_)

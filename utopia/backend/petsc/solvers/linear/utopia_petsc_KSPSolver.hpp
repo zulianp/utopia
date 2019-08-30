@@ -66,12 +66,12 @@ namespace utopia {
          *
          * @param[in]  pc_type  The type of direct solver.
          */
-        void pc_type(const std::string &pc_type);
+        virtual void pc_type(const std::string &pc_type);
 
         /**
          * @brief      Sets KSP type
          */
-        void ksp_type(const std::string & ksp_type);
+        virtual void ksp_type(const std::string & ksp_type);
 
         /**
          * @brief      Sets solver package for choice of direct solver.
