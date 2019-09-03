@@ -67,7 +67,6 @@ if(PETSC_FOUND)
         .
         eval
         solvers
-        solvers/eigensolvers
         solvers/linear
         solvers/multilevel
         solvers/nonlinear
@@ -77,6 +76,13 @@ if(PETSC_FOUND)
         solvers/nonlinear/trust_region
         solvers/nonlinear/line_search
         )
+
+    if(WITH_SLEPC)
+        list(APPEND PETSC_MODULES
+            solvers/eigensolvers
+        )
+
+    endif()
 
     if(ENABLE_PASSO_EXTENSIONS)
         list(APPEND PETSC_MODULES
