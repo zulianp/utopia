@@ -32,8 +32,8 @@ namespace utopia
             // UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
 
-            // UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(Poisson_test); 
+            UTOPIA_RUN_TEST(TR_unconstrained);
+            // UTOPIA_RUN_TEST(Poisson_test); 
 
 
             // UTOPIA_RUN_TEST(TR_constrained); 
@@ -98,62 +98,67 @@ namespace utopia
 
         void Poisson_test()
         {
-            // Poisson3D<Matrix, Vector> fun(50);
+            Poisson3D<Matrix, Vector> fun(50);
+
+            Vector b; 
+
+            Matrix H; 
+            Vector x = fun.initial_guess(); 
+            fun.gradient(x, b); 
+
+            auto sumf = sum(b); 
+            std::cout<<"sumf: "<< sumf << "  \n"; 
+
+            fun.describe(); 
+
+            auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "bjacobi", false);
+   
+            // auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
+            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+            // subproblem->pc_type("bjacobi"); 
+
+            subproblem->atol(1e-14);
+            subproblem->max_it(100000);
+            
+            TrustRegion<Matrix, Vector> tr_solver(subproblem);
+            tr_solver.read(input_params_); 
+            tr_solver.delta0(1e9); 
+            tr_solver.solve(fun, x);
+
+
+
+            // PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_); 
+
+            // auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
+            // Poisson3D<Matrix, Vector> * fun = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
 
             // Vector b; 
             // Matrix H; 
-            // Vector x = fun.initial_guess(); 
-
-            // fun.describe(); 
-
-            // auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "bjacobi");
-   
-            // // auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            // // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-            // // subproblem->pc_type("bjacobi"); 
-
-            // subproblem->atol(1e-14);
-            // subproblem->max_it(100000);
-            
-            // TrustRegion<Matrix, Vector> tr_solver(subproblem);
-            // tr_solver.read(input_params_); 
-            // tr_solver.delta0(0.0001); 
-            // tr_solver.solve(fun, x);
+            // Vector x = fun->initial_guess(); 
+            // fun->gradient(x, b); 
+            // fun->hessian(x, H); 
+            // fun->describe(); 
 
 
-
-            PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_); 
-
-            auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
-            Poisson3D<Matrix, Vector> * fun = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
-
-            Vector b; 
-            Matrix H; 
-            Vector x = fun->initial_guess(); 
-            fun->gradient(x, b); 
-            fun->hessian(x, H); 
-            fun->describe(); 
+            // auto direct_solver = std::make_shared<utopia::RedundantLinearSolver<Matrix, Vector> >();
+            // direct_solver->number_of_parallel_solves(mpi_world_size()); 
+            // // auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >();
 
 
-            auto direct_solver = std::make_shared<utopia::RedundantLinearSolver<Matrix, Vector> >();
-            direct_solver->number_of_parallel_solves(mpi_world_size()); 
-            // auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >();
-
-
-            // auto smoother      = std::make_shared<PointJacobi<Matrix, Vector>>();
-            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-            Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
-            multigrid.set_transfer_operators(multilevel_problem.transfers_);
-            multigrid.update(make_ref(H));
+            // // auto smoother      = std::make_shared<PointJacobi<Matrix, Vector>>();
+            // auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+            // Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
+            // multigrid.set_transfer_operators(multilevel_problem.transfers_);
+            // multigrid.update(make_ref(H));
 
 
 
-            multigrid.verbose(true);
-            multigrid.apply(b, x);            
+            // multigrid.verbose(true);
+            // multigrid.apply(b, x);            
 
 
-            // if(output_vtk_)
-            //     fun.output_to_VTK(x);
+            if(output_vtk_)
+                fun.output_to_VTK(x);
         }
 
 
@@ -307,7 +312,7 @@ namespace utopia
 
 
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            tr_strategy_fine->pc_type("jacobi"); 
+            tr_strategy_fine->pc_type("sor"); 
             tr_strategy_fine->atol(1e-14);
 
             // tr_strategy_fine->pc_type("jacobi"); 
@@ -371,7 +376,7 @@ namespace utopia
         #ifdef  WITH_PETSC
 
             auto n_levels = 4; 
-            auto coarse_dofs = 5; 
+            auto coarse_dofs = 25; 
 
             HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
         #endif

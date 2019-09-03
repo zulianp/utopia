@@ -397,15 +397,18 @@ namespace utopia
               for (j=ys; j<ys+ym; j++) {
                 for (i=xs; i<xs+xm; i++) {
                   for (d=0; d<dof; d++) {
-
                     if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
-                        array[k][j][i][d] = 0.0; 
+
+                        double x = i*Hx; 
+                        double y = j*Hy; 
+                        double z = k*Hz; 
+
+                        array[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
                     }
                     else
                     {
-                        array[k][j][i][d] = -8.0 * (Hx * Hy * Hz);
+                        array[k][j][i][d] = -12.0 * (Hx * Hy * Hz);
                     }
-
                   }
                 }
               }
