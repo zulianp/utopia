@@ -19,6 +19,22 @@
 
 namespace utopia {
 
+    void refine_0(const std::shared_ptr<libMesh::UnstructuredMesh> &mesh)
+    {
+        libMesh::MeshRefinement mesh_refinement(*mesh);
+        auto e_it = elements_begin(*mesh);
+
+        if(e_it != elements_end(*mesh)) {
+            (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+        }
+
+        mesh_refinement.make_flags_parallel_consistent();
+        mesh_refinement.refine_elements();
+        mesh_refinement.test_level_one(true);
+
+        mesh->prepare_for_use();
+    }
+
     void random_refine(
         const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
         const int refinement_loops
@@ -58,8 +74,15 @@ namespace utopia {
             try {
                 is.get("mesh", mesh_);
 
+                bool must_refine_0 = false;
+                is.get("refine-0", must_refine_0);
+
                 bool must_random_refine = false;
                 is.get("random-refine", must_random_refine);
+
+                if(must_refine_0) {
+                    refine_0(mesh_.mesh_ptr());
+                }
 
                 if(must_random_refine) {
                     random_refine(mesh_.mesh_ptr(), 1);
