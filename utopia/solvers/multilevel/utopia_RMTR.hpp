@@ -586,7 +586,6 @@ namespace utopia
 
                 E_old = memory_.energy[level]; 
 
-                // new test for dbg mode
                 memory_.x[level] += memory_.s[level];
 
                 this->compute_s_global(level, memory_.s_working[level]);
@@ -1123,6 +1122,10 @@ namespace utopia
 
             _tr_subproblems[level]->current_radius(memory_.delta[level]);
             _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
+
+            // auto s_corr = memory_.s[level]; 
+            // std::cout<<"s_corr: "<< norm2(s_corr) << "  \n"; 
+
 
             return true;
         }

@@ -1,0 +1,431 @@
+#include "utopia.hpp"
+#include "utopia_TestFunctions.hpp"
+
+namespace utopia
+{
+    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    class Poisson3D  { }; 
+}
+
+#ifdef  WITH_PETSC
+#include <petscdm.h>
+#include <petscdmda.h>
+#include <petscsnes.h>
+#include <petscmatlab.h>
+#include <petsc/private/snesimpl.h> /* For SNES_Solve event */
+
+namespace utopia
+{
+
+    template<typename Matrix, typename Vector>
+    class Poisson3D<Matrix, Vector, PETSC> final: virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
+    {
+        public:
+            typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
+            typedef UTOPIA_SCALAR(DVectord) Scalar;
+
+
+        Poisson3D(const SizeType & n):
+                n_(n), 
+                setup_(false)
+        {
+
+            this->create_DM();
+            this->setup_SNES();
+            this->setup_application_context(); 
+            setup_ = true;
+
+            // TD::fix this
+            exact_sol_  = zeros(1, 0); 
+        }     
+
+        Poisson3D(const DM  & dm):
+                 setup_(false)
+        {
+
+            da_ = dm; 
+            // necessary to provide reasonable global dimension 
+            DMDAGetInfo(da_, 0, &n_, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+            this->setup_SNES();
+            this->setup_application_context(); 
+            setup_ = true;
+
+            // TODO::find out exact solution - should be possible to compute
+            exact_sol_  = zeros(1, 0); 
+        }     
+
+        ~Poisson3D()
+        {
+            if(setup_)
+            {
+                DMDestroy(&da_);
+                SNESDestroy(&snes_);
+            }
+        }
+
+        virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        {
+            // initialization of gradient vector...
+            if(empty(g)){
+                g  = local_zeros(local_size(x));;
+            }
+
+            MatMultAdd(snes_->jacobian, raw_type(x), snes_->vec_rhs, raw_type(g)); 
+
+            return true;
+        }
+            
+        virtual bool hessian(const Vector & /*x*/, Matrix &hessian) const override
+        {
+            wrap(snes_->jacobian, hessian);
+            
+            return true;
+        }
+
+        virtual bool value(const Vector &x, typename Vector::Scalar &result) const override
+        {
+            Vector res1 = 0.0*x;  
+            Vector res2; 
+            convert(snes_->vec_rhs, res2); 
+
+            MatMult(snes_->jacobian, raw_type(x), raw_type(res1)); 
+            result = 0.5* dot(res1, x) + dot(res2, x); 
+
+
+            return true;
+        }
+
+
+        void output_to_VTK(const Vector & x, const std::string file_name = "Poisson3D.vtk")
+        {
+          PetscViewer       viewer;
+
+          PetscViewerASCIIOpen(PETSC_COMM_WORLD, file_name.c_str(), &viewer);
+          PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_VTK);
+          DMView(da_, viewer);
+          PetscObjectSetName((PetscObject)raw_type(x), "x");
+          VecView(raw_type(x), viewer);
+          PetscViewerDestroy(&viewer);
+        }
+
+
+        virtual Vector initial_guess() const override
+        {   
+            Vector x_utopia; 
+            convert(snes_->vec_sol, x_utopia); 
+            return x_utopia; 
+        }
+        
+        virtual const Vector & exact_sol() const override
+        {
+            return exact_sol_; 
+        }
+        
+
+        virtual Scalar min_function_value() const override
+        {   
+            // depends on the solution to which we converged to 
+            return -1.012; 
+        }
+
+        virtual std::string name() const override
+        {
+            return "Poisson3D";
+        }
+        
+        virtual SizeType dim() const override
+        {
+            return n_*n_*n_; 
+        }
+
+        virtual bool exact_sol_known() const override
+        {
+            return true;
+        }
+
+        virtual bool parallel() const override
+        {
+            return true;
+        }
+
+        virtual bool upper_bound(Vector & ub) const override
+        {   
+            PetscInt n; 
+            VecGetLocalSize(snes_->vec_sol, &n);
+            ub = local_values(n, 0.45); 
+            
+            return true; 
+        }
+
+        virtual bool lower_bound(Vector &lb) const override
+        {
+            PetscInt n; 
+            VecGetLocalSize(snes_->vec_sol, &n);
+            lb = local_values(n, -9e9); 
+
+            return true; 
+        }
+
+        virtual bool has_upper_bound() const override
+        {
+            return false;
+        }
+
+        virtual bool has_lower_bound() const override
+        {
+            return false;
+        }
+
+    private:
+        void create_DM()
+        {
+
+            DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_STAR, n_, n_, n_, PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,0,0,0, &da_);
+            DMSetUp(da_);
+            DMDASetUniformCoordinates(da_, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+            DMDASetInterpolationType(da_, DMDA_Q0);
+        }
+
+        bool setup_SNES()
+        {
+            SNESCreate(PETSC_COMM_WORLD, &snes_); 
+            SNESSetFromOptions(snes_);
+            SNESSetDM(snes_, da_);
+
+            // preallocate matrices/vectors 
+            DMCreateMatrix(da_, &snes_->jacobian);
+            DMCreateGlobalVector(da_, &snes_->vec_sol);
+            DMCreateGlobalVector(da_, &snes_->vec_rhs);
+    
+            return false; 
+        }
+
+        void setup_application_context()
+        {
+            this->build_rhs(); 
+            this->build_init_guess(); 
+            this->build_hessian(); 
+
+            PetscInt n_loc; 
+            VecGetLocalSize(snes_->vec_sol, &n_loc); 
+            Vector bc_markers = local_values(n_loc, 0.0);
+            Vector bc_values  = local_values(n_loc, 0.0); 
+
+            this->form_BC_marker(bc_markers); 
+            ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);
+
+            const std::vector<SizeType> & index = this->get_indices_related_to_BC(); 
+
+            Matrix Hessian; 
+            wrap(snes_->jacobian, Hessian);
+            set_zero_rows(Hessian, index, 1.);
+        }
+
+
+    private: 
+
+        bool build_hessian()
+        {
+
+            PetscErrorCode ierr;
+
+            PetscInt       dof,i,j,k,d,mx,my,mz,xm,ym,zm,xs,ys,zs,num, numi, numj, numk;
+            PetscScalar    v[7],Hx,Hy,Hz,HyHzdHx,HxHzdHy,HxHydHz;
+            MatStencil     row, col[7];
+
+
+            ierr    = DMDAGetInfo(da_, 0, &mx, &my, &mz, 0, 0, 0, &dof, 0, 0, 0, 0, 0);CHKERRQ(ierr);
+            Hx      = 1.0 / (PetscReal)(mx);
+            Hy      = 1.0 / (PetscReal)(my);
+            Hz      = 1.0 / (PetscReal)(mz);
+            HyHzdHx = Hy*Hz/Hx;
+            HxHzdHy = Hx*Hz/Hy;
+            HxHydHz = Hx*Hy/Hz;
+            
+            ierr    = DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);CHKERRQ(ierr);
+              for (k=zs; k<zs+zm; k++) {
+                for (j=ys; j<ys+ym; j++) {
+                  for (i=xs; i<xs+xm; i++) {
+                    for (d=0; d<dof; d++) {
+                      row.i = i; row.j = j; row.k = k; row.c = d;
+                      if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+                        num = 0; numi=0; numj=0; numk=0;
+                        if (k!=0) {
+                          v[num]     = -HxHydHz;
+                          col[num].i = i;
+                          col[num].j = j;
+                          col[num].k = k-1;
+                          col[num].c = d;
+                          num++; numk++;
+                        }
+                        if (j!=0) {
+                          v[num]     = -HxHzdHy;
+                          col[num].i = i;
+                          col[num].j = j-1;
+                          col[num].k = k;
+                          col[num].c = d;
+                          num++; numj++;
+                          }
+                        if (i!=0) {
+                          v[num]     = -HyHzdHx;
+                          col[num].i = i-1;
+                          col[num].j = j;
+                          col[num].k = k;
+                          col[num].c = d;
+                          num++; numi++;
+                        }
+                        if (i!=mx-1) {
+                          v[num]     = -HyHzdHx;
+                          col[num].i = i+1;
+                          col[num].j = j;
+                          col[num].k = k;
+                          col[num].c = d;
+                          num++; numi++;
+                        }
+                        if (j!=my-1) {
+                          v[num]     = -HxHzdHy;
+                          col[num].i = i;
+                          col[num].j = j+1;
+                          col[num].k = k;
+                          col[num].c = d;
+                          num++; numj++;
+                        }
+                        if (k!=mz-1) {
+                          v[num]     = -HxHydHz;
+                          col[num].i = i;
+                          col[num].j = j;
+                          col[num].k = k+1;
+                          col[num].c = d;
+                          num++; numk++;
+                        }
+                        v[num]     = (PetscReal)(numk)*HxHydHz + (PetscReal)(numj)*HxHzdHy + (PetscReal)(numi)*HyHzdHx;
+                        col[num].i = i;   col[num].j = j;   col[num].k = k; col[num].c = d;
+                        num++;
+                        ierr = MatSetValuesStencil(snes_->jacobian, 1,&row,num,col,v,INSERT_VALUES);CHKERRQ(ierr);
+                      } else {
+                        v[0] = -HxHydHz;                          col[0].i = i;   col[0].j = j;   col[0].k = k-1; col[0].c = d;
+                        v[1] = -HxHzdHy;                          col[1].i = i;   col[1].j = j-1; col[1].k = k;   col[1].c = d;
+                        v[2] = -HyHzdHx;                          col[2].i = i-1; col[2].j = j;   col[2].k = k;   col[2].c = d;
+                        v[3] = 2.0*(HyHzdHx + HxHzdHy + HxHydHz); col[3].i = i;   col[3].j = j;   col[3].k = k;   col[3].c = d;
+                        v[4] = -HyHzdHx;                          col[4].i = i+1; col[4].j = j;   col[4].k = k;   col[4].c = d;
+                        v[5] = -HxHzdHy;                          col[5].i = i;   col[5].j = j+1; col[5].k = k;   col[5].c = d;
+                        v[6] = -HxHydHz;                          col[6].i = i;   col[6].j = j;   col[6].k = k+1; col[6].c = d;
+                        ierr = MatSetValuesStencil(snes_->jacobian, 1,&row,7,col,v,INSERT_VALUES);CHKERRQ(ierr);
+                      }
+                    }
+                  }
+                }
+              }
+              ierr = MatAssemblyBegin(snes_->jacobian, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+              ierr = MatAssemblyEnd(snes_->jacobian, MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+
+            return true; 
+        }
+
+
+        void form_BC_marker(Vector & bc_marker)
+        {
+            PetscInt       d,dof,i,j,k,mx,my,mz,xm,ym,zm,xs,ys,zs;
+            PetscScalar    ****array;
+
+            DMDAGetInfo(da_, 0, &mx, &my, &mz, 0,0,0,&dof,0,0,0,0,0);
+
+            DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);
+            DMDAVecGetArrayDOF(da_, raw_type(bc_marker), &array);
+            for (k=zs; k<zs+zm; k++) {
+                for (j=ys; j<ys+ym; j++) {
+                    for (i=xs; i<xs+xm; i++) {
+                        for (d=0; d<dof; d++) {
+                            if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) 
+                            {
+                                array[k][j][i][d] = 1.0; 
+                            }
+                            else
+                            {
+                                array[k][j][i][d] = 0.0; 
+                            }
+                        }
+                    }
+                }
+            }
+
+            DMDAVecRestoreArrayDOF(da_, raw_type(bc_marker), &array);
+            VecAssemblyBegin(raw_type(bc_marker));
+            VecAssemblyEnd(raw_type(bc_marker));    
+        }
+
+
+        void build_init_guess()
+        {
+            PetscInt       d,dof,i,j,k,mx,my,mz,xm,ym,zm,xs,ys,zs;
+            PetscScalar    ****array;
+
+            DMDAGetInfo(da_, 0, &mx, &my, &mz, 0,0,0,&dof,0,0,0,0,0);
+
+            DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);
+            DMDAVecGetArrayDOF(da_, snes_->vec_sol, &array);
+            for (k=zs; k<zs+zm; k++) {
+              for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                  for (d=0; d<dof; d++) {
+                        array[k][j][i][d] = 0.0; 
+                  }
+                }
+              }
+            }
+            DMDAVecRestoreArrayDOF(da_, snes_->vec_sol, &array);
+            VecAssemblyBegin(snes_->vec_sol);
+            VecAssemblyEnd(snes_->vec_sol);            
+        }
+
+        void build_rhs()
+        {
+            PetscInt       d,dof,i,j,k,mx,my,mz,xm,ym,zm,xs,ys,zs;
+            PetscScalar    ****array;
+            PetscScalar    Hx,Hy,Hz;
+
+            DMDAGetInfo(da_, 0, &mx, &my, &mz, 0,0,0,&dof,0,0,0,0,0);
+
+            DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);
+            Hx   = 1.0 / (PetscReal)(mx);
+            Hy   = 1.0 / (PetscReal)(my);
+            Hz   = 1.0 / (PetscReal)(mz);
+
+            DMDAVecGetArrayDOF(da_, snes_->vec_rhs, &array);
+            for (k=zs; k<zs+zm; k++) {
+              for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                  for (d=0; d<dof; d++) {
+
+                    if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+                        array[k][j][i][d] = 0.0; 
+                    }
+                    else
+                    {
+                        array[k][j][i][d] = -8.0 * (Hx * Hy * Hz);
+                    }
+
+                  }
+                }
+              }
+            }
+            DMDAVecRestoreArrayDOF(da_, snes_->vec_rhs, &array);
+            VecAssemblyBegin(snes_->vec_rhs);
+            VecAssemblyEnd(snes_->vec_rhs);            
+        }
+
+
+    private:
+        SizeType n_; 
+        bool setup_; 
+
+        DM da_;
+        SNES snes_; 
+
+        Vector exact_sol_; 
+
+    };
+}
+
+#endif //WITH_PETSC

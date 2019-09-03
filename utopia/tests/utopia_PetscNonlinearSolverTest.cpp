@@ -40,7 +40,7 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_gss_newton_test);
             UTOPIA_RUN_TEST(petsc_newton_test);
             UTOPIA_RUN_TEST(petsc_newton_rosenbrock_test);
-            // UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test); //petsc 3.11.3 ERROR here
+            UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test); //petsc 3.11.3 ERROR here
             UTOPIA_RUN_TEST(petsc_sparse_nonlinear_semismooth_newton_test);
             UTOPIA_RUN_TEST(petsc_direct_solver_newton_test);
             UTOPIA_RUN_TEST(petsc_newton_test_out_info);
@@ -48,7 +48,7 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_newton_petsc_cg_test);
             UTOPIA_RUN_TEST(petsc_tr_rr_test);
             UTOPIA_RUN_TEST(petsc_snes_test); //petsc 3.11.3 ERROR here
-            // UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); //petsc 3.11.3 ERROR here
+            UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); //petsc 3.11.3 ERROR here
             // UTOPIA_RUN_TEST(affine_similarity_small_test);
             // UTOPIA_RUN_TEST(affine_similarity_stiff_test);
         }
@@ -350,7 +350,7 @@ namespace utopia
             SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> petsc_ss_newton(lsolver);
             SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> homemade_ss_newton(lsolver);
             InputParameters hm_params;
-            hm_params.set("use-adaptive-tol", true);
+            // hm_params.set("use-adaptive-tol", true);
             homemade_ss_newton.read(hm_params);
 
             // initial guess
