@@ -461,6 +461,9 @@ namespace utopia
                 converged = false;
             }
 
+            return true; 
+
+
             // making sure that correction does not exceed tr radius ...
             if(converged){
                 return true;
@@ -782,6 +785,7 @@ namespace utopia
 
                 if(make_grad_updates)
                 {
+                    std::cout<<"grad updated... \n"; 
                     Vector g_old = memory_.g[level];
                     this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
                     memory_.gnorm[level] = this->criticality_measure(level);
@@ -792,6 +796,8 @@ namespace utopia
                 // {
                 //     make_hess_updates = false;  
                 // }
+
+                std::cout<<"E_new "<< energy_new  << "  \n"; 
 
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
@@ -1123,8 +1129,8 @@ namespace utopia
             _tr_subproblems[level]->current_radius(memory_.delta[level]);
             _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
 
-            // auto s_corr = memory_.s[level]; 
-            // std::cout<<"s_corr: "<< norm2(s_corr) << "  \n"; 
+            auto s_corr = memory_.s[level]; 
+            std::cout<<"s_corr: "<< norm2(s_corr) << "  \n"; 
 
 
             return true;

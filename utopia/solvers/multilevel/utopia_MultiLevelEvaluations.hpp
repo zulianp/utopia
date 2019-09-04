@@ -148,8 +148,8 @@ namespace utopia
 
                 std::cout<<"energy: "<< energy << "  \n"; 
 
-                energy += dot(g_diff, s_global);
-                // energy += dot(g_diff, x);
+                // energy += dot(g_diff, s_global);
+                energy += dot(g_diff, x);
                 return energy;
             }
     };

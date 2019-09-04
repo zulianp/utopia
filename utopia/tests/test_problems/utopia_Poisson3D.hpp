@@ -72,6 +72,9 @@ namespace utopia
             }
 
             MatMultAdd(snes_->jacobian, raw_type(x), snes_->vec_rhs, raw_type(g)); 
+            remove_BC_contrib(g); 
+
+            // disp(g);
 
             return true;
         }
@@ -89,7 +92,9 @@ namespace utopia
             Vector res2; 
             convert(snes_->vec_rhs, res2); 
 
-            MatMult(snes_->jacobian, raw_type(x), raw_type(res1)); 
+            // MatMult(snes_->jacobian, raw_type(x), raw_type(res1)); 
+            MatMult(raw_type(A_no_bc_), raw_type(x), raw_type(res1)); 
+            
             result = 0.5* dot(res1, x) + dot(res2, x); 
 
 
@@ -125,8 +130,7 @@ namespace utopia
 
         virtual Scalar min_function_value() const override
         {   
-            // depends on the solution to which we converged to 
-            return -1.012; 
+            return -1.013634375000014e+01; 
         }
 
         virtual std::string name() const override
@@ -212,13 +216,16 @@ namespace utopia
             Vector bc_markers = local_values(n_loc, 0.0);
             Vector bc_values  = local_values(n_loc, 0.0); 
 
-            this->form_BC_marker(bc_markers); 
+            this->form_BC_marker(bc_markers, bc_values); 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);
 
             const std::vector<SizeType> & index = this->get_indices_related_to_BC(); 
 
             Matrix Hessian; 
             wrap(snes_->jacobian, Hessian);
+
+            A_no_bc_ = Hessian; 
+
             set_zero_rows(Hessian, index, 1.);
         }
 
@@ -324,35 +331,53 @@ namespace utopia
         }
 
 
-        void form_BC_marker(Vector & bc_marker)
+        void form_BC_marker(Vector & bc_marker, Vector & bc_values)
         {
             PetscInt       d,dof,i,j,k,mx,my,mz,xm,ym,zm,xs,ys,zs;
-            PetscScalar    ****array;
+            PetscScalar    ****array_marker;
+            PetscScalar    ****array_values;
 
             DMDAGetInfo(da_, 0, &mx, &my, &mz, 0,0,0,&dof,0,0,0,0,0);
 
+            PetscScalar Hx   = 1.0 / (PetscReal)(mx);
+            PetscScalar Hy   = 1.0 / (PetscReal)(my);
+            PetscScalar Hz   = 1.0 / (PetscReal)(mz);                    
+
             DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);
-            DMDAVecGetArrayDOF(da_, raw_type(bc_marker), &array);
+            DMDAVecGetArrayDOF(da_, raw_type(bc_marker), &array_marker);
+            DMDAVecGetArrayDOF(da_, raw_type(bc_values), &array_values);
+
             for (k=zs; k<zs+zm; k++) {
                 for (j=ys; j<ys+ym; j++) {
                     for (i=xs; i<xs+xm; i++) {
                         for (d=0; d<dof; d++) {
                             if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) 
                             {
-                                array[k][j][i][d] = 1.0; 
+                                array_marker[k][j][i][d] = 1.0; 
+
+                                PetscScalar x = i*Hx; 
+                                PetscScalar y = j*Hy; 
+                                PetscScalar z = k*Hz; 
+
+                                array_values[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
                             }
                             else
                             {
-                                array[k][j][i][d] = 0.0; 
+                                array_marker[k][j][i][d] = 0.0; 
+                                array_values[k][j][i][d] = 0.0; 
                             }
                         }
                     }
                 }
             }
 
-            DMDAVecRestoreArrayDOF(da_, raw_type(bc_marker), &array);
+            DMDAVecRestoreArrayDOF(da_, raw_type(bc_marker), &array_marker);
             VecAssemblyBegin(raw_type(bc_marker));
             VecAssemblyEnd(raw_type(bc_marker));    
+
+            DMDAVecRestoreArrayDOF(da_, raw_type(bc_values), &array_values);
+            VecAssemblyBegin(raw_type(bc_values));
+            VecAssemblyEnd(raw_type(bc_values));                
         }
 
 
@@ -363,13 +388,28 @@ namespace utopia
 
             DMDAGetInfo(da_, 0, &mx, &my, &mz, 0,0,0,&dof,0,0,0,0,0);
 
+            PetscScalar Hx   = 1.0 / (PetscReal)(mx);
+            PetscScalar Hy   = 1.0 / (PetscReal)(my);
+            PetscScalar Hz   = 1.0 / (PetscReal)(mz);            
+
             DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);
             DMDAVecGetArrayDOF(da_, snes_->vec_sol, &array);
             for (k=zs; k<zs+zm; k++) {
               for (j=ys; j<ys+ym; j++) {
                 for (i=xs; i<xs+xm; i++) {
                   for (d=0; d<dof; d++) {
+                    if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+
+                        PetscScalar x = i*Hx; 
+                        PetscScalar y = j*Hy; 
+                        PetscScalar z = k*Hz; 
+
+                        array[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
+                    }
+                    else
+                    {
                         array[k][j][i][d] = 0.0; 
+                    }
                   }
                 }
               }
@@ -378,6 +418,7 @@ namespace utopia
             VecAssemblyBegin(snes_->vec_sol);
             VecAssemblyEnd(snes_->vec_sol);            
         }
+
 
         void build_rhs()
         {
@@ -397,15 +438,15 @@ namespace utopia
               for (j=ys; j<ys+ym; j++) {
                 for (i=xs; i<xs+xm; i++) {
                   for (d=0; d<dof; d++) {
-                    if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+                    // if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
 
-                        double x = i*Hx; 
-                        double y = j*Hy; 
-                        double z = k*Hz; 
+                    //     double x = i*Hx; 
+                    //     double y = j*Hy; 
+                    //     double z = k*Hz; 
 
-                        array[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
-                    }
-                    else
+                    //     array[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
+                    // }
+                    // else
                     {
                         array[k][j][i][d] = -12.0 * (Hx * Hy * Hz);
                     }
@@ -413,10 +454,40 @@ namespace utopia
                 }
               }
             }
+
             DMDAVecRestoreArrayDOF(da_, snes_->vec_rhs, &array);
             VecAssemblyBegin(snes_->vec_rhs);
             VecAssemblyEnd(snes_->vec_rhs);            
         }
+
+
+
+        void remove_BC_contrib(Vector & x) const 
+        {
+            PetscInt       d,dof,i,j,k,mx,my,mz,xm,ym,zm,xs,ys,zs;
+            PetscScalar    ****array;
+
+            DMDAGetInfo(da_, 0, &mx, &my, &mz, 0,0,0,&dof,0,0,0,0,0);
+            DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);
+            DMDAVecGetArrayDOF(da_, raw_type(x), &array);
+            for (k=zs; k<zs+zm; k++) {
+              for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                  for (d=0; d<dof; d++) {
+                    if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) 
+                    {
+                        array[k][j][i][d] = 0.0; 
+                    }
+                  }
+                }
+              }
+            }
+
+            DMDAVecRestoreArrayDOF(da_, raw_type(x), &array);
+            VecAssemblyBegin(raw_type(x));
+            VecAssemblyEnd(raw_type(x));            
+        }
+
 
 
     private:
@@ -427,6 +498,7 @@ namespace utopia
         SNES snes_; 
 
         Vector exact_sol_; 
+        Matrix A_no_bc_; 
 
     };
 }
