@@ -17,10 +17,9 @@ namespace utopia
             typedef UTOPIA_SCALAR(DVectord) Scalar;
 
 
-        PetscMultilevelTestProblem(const SizeType dimension, const SizeType &n_levels = 2, const SizeType & n_coarse = 10, bool remove_BC_contributions = false):
+        PetscMultilevelTestProblem(const SizeType dimension, const SizeType &n_levels = 2, const SizeType & n_coarse = 10):
             n_levels_(n_levels),
-            n_coarse_(n_coarse),
-            remove_BC_contributions_(remove_BC_contributions)
+            n_coarse_(n_coarse)
         {
             std::vector<DM> dms_; 
             dms_.resize(n_levels); 
@@ -54,7 +53,7 @@ namespace utopia
                 Matrix I_u; 
                 DMCreateInterpolation(dms_[l-1], dms_[l], &I, 0);
                 wrap(I, I_u);
-                transfers_.push_back( std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I_u)) );
+                transfers_.push_back( std::make_shared<IPTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I_u)) );
                 MatDestroy(&I);
             }
 
@@ -62,7 +61,8 @@ namespace utopia
             {
                 auto fun = std::make_shared<ProblemType >(dms_[l]);
                 level_functions_[l] = fun;           
-            }                
+            }      
+
 
         }     
 
@@ -75,7 +75,6 @@ namespace utopia
 
         SizeType n_levels_;
         SizeType n_coarse_;
-        bool remove_BC_contributions_;
 
         std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_;
         std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_; 

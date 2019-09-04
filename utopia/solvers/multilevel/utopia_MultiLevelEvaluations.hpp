@@ -24,18 +24,90 @@ namespace utopia
       static const bool value = true;
     };
 
-//  --------------------------------------------- Hessians ---------------------------------------------------------------------------
 
     template<typename Matrix, typename Vector, MultiLevelCoherence MC>
     class MultilevelHessianEval;
 
+    template<typename Matrix, typename Vector, MultiLevelCoherence MC>
+    class MultilevelGradientEval;
+
+
+    template<typename Matrix, typename Vector, MultiLevelCoherence MC>
+    class MultilevelEnergyEval;
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////// First order///////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     template<typename Matrix, typename Vector>
-    class MultilevelHessianEval<Matrix, Vector, GALERKIN>
+    class MultilevelEnergyEval<Matrix, Vector, FIRST_ORDER>
     {
         public:
-           inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/, Matrix & H, const Matrix & H_diff)
+            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & /*H_diff*/)
             {
-                H = H_diff;
+                typename Traits<Vector>::Scalar energy = 0.0;
+                fun.value(x, energy);
+                energy += dot(g_diff, x);
+                return energy;
+            }
+    };
+
+
+    template<typename Matrix, typename Vector>
+    class MultilevelGradientEval<Matrix, Vector, FIRST_ORDER>
+    {
+        public:
+            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & /*H_diff*/)
+            {
+                fun.gradient(x, g);
+                g += g_diff;
+                return true;
+            }
+    };
+
+
+    template<typename Matrix, typename Vector>
+    class MultilevelHessianEval<Matrix, Vector, FIRST_ORDER>
+    {
+        public:
+           inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Matrix & H, const Matrix & /*H_diff*/)
+            {
+                fun.hessian(x, H);
+                return true;
+            }
+    };
+
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////// Second order///////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+
+    template<typename Matrix, typename Vector>
+    class MultilevelEnergyEval<Matrix, Vector, SECOND_ORDER>
+    {
+        public:
+            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & H_diff)
+            {
+                typename Traits<Vector>::Scalar energy = 0.0;
+                fun.value(x, energy);
+                energy += dot(g_diff, x);
+                energy += (0.5 * dot(H_diff * x, x));
+                return energy;
+            }
+    };
+
+    template<typename Matrix, typename Vector>
+    class MultilevelGradientEval<Matrix, Vector, SECOND_ORDER>
+    {
+        public:
+            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff)
+            {
+                fun.gradient(x, g);
+                g += g_diff;
+                g += (H_diff * x);
                 return true;
             }
     };
@@ -53,106 +125,54 @@ namespace utopia
             }
     };
 
-    template<typename Matrix, typename Vector>
-    class MultilevelHessianEval<Matrix, Vector, FIRST_ORDER>
-    {
-        public:
-           inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Matrix & H, const Matrix & /*H_diff*/)
-            {
-                fun.hessian(x, H);
-                return true;
-            }
-    };
 
 
-//  --------------------------------------------- Gradients ---------------------------------------------------------------------------
-
-    template<typename Matrix, typename Vector, MultiLevelCoherence MC>
-    class MultilevelGradientEval;
-
-    template<typename Matrix, typename Vector>
-    class MultilevelGradientEval<Matrix, Vector, GALERKIN>
-    {
-        public:
-            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
-                g = g_diff + H_diff * s_global;
-                return true;
-            }
-    };
-
-
-    template<typename Matrix, typename Vector>
-    class MultilevelGradientEval<Matrix, Vector, SECOND_ORDER>
-    {
-        public:
-            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
-                fun.gradient(x, g);
-                g += g_diff + H_diff * s_global;
-                return true;
-            }
-    };
-
-    template<typename Matrix, typename Vector>
-    class MultilevelGradientEval<Matrix, Vector, FIRST_ORDER>
-    {
-        public:
-            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & /*s_global*/)
-            {
-                fun.gradient(x, g);
-                g += g_diff;
-                return true;
-            }
-    };
-
-
-
-//  --------------------------------------------- Energies ---------------------------------------------------------------------------
-
-    template<typename Matrix, typename Vector, MultiLevelCoherence MC>
-    class MultilevelEnergyEval;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////// Galerkin   ///////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
 
     template<typename Matrix, typename Vector>
     class MultilevelEnergyEval<Matrix, Vector, GALERKIN>
     {
         public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
+            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & x, const Vector & g_diff, const Matrix & H_diff)
             {
-                return (dot(g_diff, s_global) + 0.5 * dot(H_diff * s_global, s_global));
+                typename Traits<Vector>::Scalar energy =  (0.5 * dot(H_diff * x, x)); 
+                energy +=  dot(g_diff, x); 
+
+                return energy; 
             }
     };
 
 
     template<typename Matrix, typename Vector>
-    class MultilevelEnergyEval<Matrix, Vector, SECOND_ORDER>
+    class MultilevelGradientEval<Matrix, Vector, GALERKIN>
     {
         public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
+            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff)
             {
-                typename Traits<Vector>::Scalar energy = 0.0;
-                fun.value(x, energy);
-                energy += dot(g_diff, s_global) + 0.5 * dot(H_diff * s_global, s_global);
-                return energy;
+                g = (H_diff * x);
+                g += g_diff;
+
+                return true;
             }
     };
+
+
 
     template<typename Matrix, typename Vector>
-    class MultilevelEnergyEval<Matrix, Vector, FIRST_ORDER>
+    class MultilevelHessianEval<Matrix, Vector, GALERKIN>
     {
         public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & s_global)
+           inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/, Matrix & H, const Matrix & H_diff)
             {
-                typename Traits<Vector>::Scalar energy = 0.0;
-                fun.value(x, energy);
-
-                std::cout<<"energy: "<< energy << "  \n"; 
-
-                // energy += dot(g_diff, s_global);
-                energy += dot(g_diff, x);
-                return energy;
+                H = H_diff;
+                return true;
             }
     };
+
+
+
 
 
 

@@ -33,7 +33,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(MPGRP); 
 
             // UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(Poisson_test); 
+            // UTOPIA_RUN_TEST(Poisson_test); 
 
 
             // UTOPIA_RUN_TEST(TR_constrained); 
@@ -43,7 +43,7 @@ namespace utopia
 
 
             // // UTOPIA_RUN_TEST(RMTR_unconstrained); 
-            // UTOPIA_RUN_TEST(RMTR_l2_linear); 
+            UTOPIA_RUN_TEST(RMTR_l2_linear); 
 
         }
 
@@ -360,8 +360,6 @@ namespace utopia
 
         void RMTR_l2_linear()
         {
-            // auto n_coarse = 50; 
-            auto n_coarse = n_; 
 
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_); 
 
@@ -370,21 +368,22 @@ namespace utopia
             Vector x = fun_Poisson3D->initial_guess(); 
             fun_Poisson3D->describe(); 
 
-            auto tr_strategy_coarse = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            tr_strategy_coarse->pc_type("lu"); 
+            // auto tr_strategy_coarse = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
+            // tr_strategy_coarse->pc_type("lu"); 
+            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
             tr_strategy_coarse->atol(1e-14); 
 
 
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            tr_strategy_fine->pc_type("none"); 
+            tr_strategy_fine->pc_type("sor"); 
             tr_strategy_fine->atol(1e-14);
 
             // tr_strategy_fine->pc_type("jacobi"); 
             // tr_strategy_fine->atol(1e-14);
 
 
-            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
 
             // Set TR-QP strategies 
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -395,7 +394,7 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);    
 
             // Parameters 
-            rmtr->max_it(0);
+            rmtr->max_it(7);
 
             rmtr->max_coarse_it(1);
             rmtr->max_sucessful_coarse_it(1); 
@@ -403,16 +402,16 @@ namespace utopia
 
             rmtr->pre_smoothing_steps(10);
             rmtr->post_smoothing_steps(10);
-            rmtr->max_sucessful_smoothing_it(10);            
-            rmtr->max_QP_smoothing_it(1);             
+            rmtr->max_sucessful_smoothing_it(1);            
+            rmtr->max_QP_smoothing_it(1);            
              
  
-            // rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
 
             rmtr->delta0(1e9);
             rmtr->atol(1e-6);
             rmtr->rtol(1e-10);
-            rmtr->set_grad_smoothess_termination(0.000001);
+            rmtr->set_grad_smoothess_termination(1e-7);
 
             rmtr->verbose(verbose_);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -422,8 +421,8 @@ namespace utopia
             rmtr->solve(x);
 
 
-            if(output_vtk_)
-                fun_Poisson3D->output_to_VTK(x, "RMTR_output.vtk");            
+            // if(output_vtk_)
+            //     fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");            
         }
 
 
@@ -443,6 +442,9 @@ namespace utopia
     {
         UTOPIA_UNIT_TEST_BEGIN("HckTests");
         #ifdef  WITH_PETSC
+
+            // auto n_levels = 4; 
+            // auto coarse_dofs = 20; 
 
             auto n_levels = 2; 
             auto coarse_dofs = 5; 

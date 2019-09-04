@@ -269,7 +269,6 @@ namespace utopia
             for(SizeType i = 0; i < L-1; ++i) {
                 const auto &flags = this->function(i+1).get_eq_constrains_flg();
                 assert(!empty(flags));
-
                 this->transfer(i).handle_equality_constraints(flags);
             }
         }
@@ -347,16 +346,8 @@ namespace utopia
 
 
             //-------------- INITIALIZATIONS ---------------
-            if(!skip_BC_checks()){
-                this->function(fine_level).get_eq_constrains_values(x_h);
-            }
-
             SizeType fine_local_size = local_size(x_h).get(0);
-
-            // this->status_.clear();
             this->init_memory(fine_local_size);
-
-            // initialize();
 
 
             memory_.x[fine_level] = x_h;
@@ -461,8 +452,6 @@ namespace utopia
                 converged = false;
             }
 
-            return true; 
-
 
             // making sure that correction does not exceed tr radius ...
             if(converged){
@@ -494,14 +483,17 @@ namespace utopia
             }
 
             //----------------------------------------------------------------------------
-            //                  initializing coarse level (deltas, constraints, hessian approx, ...)
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
             //----------------------------------------------------------------------------
             this->init_level(level-1);
 
             //----------------------------------------------------------------------------
-            //                   first order coarse level objective managment
+            //                  first order coarse level objective managment
             //----------------------------------------------------------------------------
-            this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
+            if(CONSISTENCY_LEVEL != GALERKIN)
+            {
+                this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
+            }
 
 
             if(!skip_BC_checks())
@@ -511,7 +503,7 @@ namespace utopia
                 }
             }
 
-            if(this->check_grad_smoothness()){
+            if(this->check_grad_smoothness() && CONSISTENCY_LEVEL != GALERKIN){
                 smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1);
             }
             else{
@@ -524,11 +516,13 @@ namespace utopia
                 memory_.g_diff[level-1] -= memory_.g[level-1];
             }
 
+
             //----------------------------------------------------------------------------
             //                   second order coarse level objective managment
             //----------------------------------------------------------------------------
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
+
                 this->get_multilevel_hessian(this->function(level), level);
                 this->transfer(level-1).restrict(memory_.H[level], memory_.H_diff[level-1]);
 
@@ -547,7 +541,6 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   additional coarse level initialization...
             //----------------------------------------------------------------------------
-
             memory_.x_0[level-1]    = memory_.x[level-1];
             memory_.s[level-1]      = local_zeros(local_size(memory_.x[level-1]));
 
@@ -576,10 +569,9 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 //                       building trial point from coarse level
                 //----------------------------------------------------------------------------
-                // this line to be removed
+               
                 memory_.s[level-1] = memory_.x[level-1] - memory_.x_0[level-1];
                 coarse_reduction -= memory_.energy[level-1]; 
-
 
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
 
@@ -693,23 +685,45 @@ namespace utopia
             this->compute_s_global(level, memory_.s_working[level]);
 
 
-            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
+
+            if(CONSISTENCY_LEVEL == FIRST_ORDER)
             {
-                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
+                if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
                 {
-                    memory_.g[level] += memory_.g_diff[level]; 
-                }
-                else
-                {
-                    this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
-                }
+                    if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
+                    {
+                        memory_.g[level] += memory_.g_diff[level]; 
+                    }
+                    else
+                    {
+                        this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+                    }
 
-                if(solve_type != POST_SMOOTHING){
-                    memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
-                }
+                    if(solve_type != POST_SMOOTHING){
+                        memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
+                    }
 
+                    memory_.gnorm[level] = this->criticality_measure(level);
+                }
+            }
+            // TODO:: verify.... 
+            else if(CONSISTENCY_LEVEL == GALERKIN)
+            {
+                this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+                memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
                 memory_.gnorm[level] = this->criticality_measure(level);
             }
+            else
+            {
+                // std::cout<<"---------- errror, second order not done yet... \n"; 
+                this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+                memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
+                memory_.gnorm[level] = this->criticality_measure(level);
+            }
+
+
+
+
 
             converged  = this->check_local_convergence(it, it_success,  memory_.gnorm[level], level, memory_.delta[level], solve_type);
 
@@ -731,8 +745,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //     solving constrained system to get correction and  building trial point
             //----------------------------------------------------------------------------
-                // correction needs to get prepared
-                memory_.s[level] *= 0.0;
+                // obtain correction
                 this->solve_qp_subproblem(level, exact_solve_flg);
 
                 // predicted reduction based on model
@@ -785,8 +798,8 @@ namespace utopia
 
                 if(make_grad_updates)
                 {
-                    std::cout<<"grad updated... \n"; 
-                    Vector g_old = memory_.g[level];
+                    // std::cout<<"grad updated... \n"; 
+                    // Vector g_old = memory_.g[level];
                     this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
                     memory_.gnorm[level] = this->criticality_measure(level);
 
@@ -797,7 +810,6 @@ namespace utopia
                 //     make_hess_updates = false;  
                 // }
 
-                std::cout<<"E_new "<< energy_new  << "  \n"; 
 
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
@@ -1126,11 +1138,12 @@ namespace utopia
             }
             // _tr_subproblems[level]->verbose("true"); 
 
+            memory_.s[level] *= 0.0; 
             _tr_subproblems[level]->current_radius(memory_.delta[level]);
             _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
 
-            auto s_corr = memory_.s[level]; 
-            std::cout<<"s_corr: "<< norm2(s_corr) << "  \n"; 
+            // auto s_corr = memory_.s[level]; 
+            // std::cout<<"s_corr: "<< norm2(s_corr) << "  \n"; 
 
 
             return true;
@@ -1178,7 +1191,7 @@ namespace utopia
         {
             if(level < this->n_levels()-1)
             {
-                return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+                return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level]);
             }
             else
             {
@@ -1202,7 +1215,7 @@ namespace utopia
         {
             if(level < this->n_levels()-1)
             {
-                return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+                return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level]);
             }
             else
             {
