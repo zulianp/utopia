@@ -6,12 +6,14 @@
 #include "utopia_ExampleTestCase.hpp"
 #include "utopia_ExampleTestCase2.hpp"
 #include "utopia_AutoDiffProblem.hpp"
-#include "utopia_UnconstrainedTestFunction.hpp"
+#include "utopia_TestFunctions.hpp"
 #include "utopia_RastriginTestFunction.hpp"
 #include "utopia_QPwithConstraints.hpp"
-
 #include "utopia_UnconstrainedBenchmark.hpp"
-
 #include "utopia_Bratu1D.hpp"
+#include "utopia_Bratu2D.hpp"
+#include "utopia_ContinuousStirredTankReactor.hpp"
+
+#include "utopia_Petsc2DMultilevelTestProblem.hpp"
 
 #endif

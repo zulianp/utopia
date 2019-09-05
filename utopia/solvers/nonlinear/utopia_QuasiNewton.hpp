@@ -57,7 +57,7 @@ namespace utopia
             }
             it++;
 
-            this->initialize_approximation();
+            this->initialize_approximation(x, g); 
 
             while(!converged)
             {
@@ -78,7 +78,7 @@ namespace utopia
 
                 // diff between fresh and old grad...
                 y = g - y;
-                this->update(s, y);
+                this->update(s, y, x, g);
 
                 // print iteration status on every iteration
                 if(this->verbose_)

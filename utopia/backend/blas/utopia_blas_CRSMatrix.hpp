@@ -146,7 +146,7 @@ namespace utopia {
         inline const Scalar &at(const SizeType index) const
         {
             assert(!editing_);
-            assert(index < entries_.size());
+            assert(index < static_cast<SizeType>(entries_.size()));
             return entries_[index];
         }
 
@@ -236,7 +236,7 @@ namespace utopia {
             assert(find(i, j) == index);
 
             if(index != INVALID_INDEX) {
-                assert(index < entries_.size());
+                assert(index < static_cast<SizeType>(entries_.size()));
                 entries_[index] = value;
                 return;
             }

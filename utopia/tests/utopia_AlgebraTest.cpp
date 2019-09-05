@@ -112,7 +112,7 @@ namespace utopia {
             m3 = m2 * m3;
             m3 = m1 * m3;
 
-            each_read(m3, [](SizeType x, SizeType y, double entry) {
+            each_read(m3, [](SizeType x, SizeType /*y*/, double entry) {
                 if (x == 0) {
                     utopia_test_assert(entry == 192);
                 } else {

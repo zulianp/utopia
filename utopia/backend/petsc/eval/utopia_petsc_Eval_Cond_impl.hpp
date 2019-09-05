@@ -20,32 +20,38 @@ namespace utopia {
         Vector eigenvector;
         
         SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> slepc;
-        
+
 #ifdef SLEPC_HAVE_ARPACK    
         slepc.solver_type("arpack");
 #else
-    #ifdef SLEPC_HAVE_TRLAN
-        slepc.solver_type("trlan");
-    #else
-        #ifdef SLEPC_HAVE_PRIMME
+    #ifdef SLEPC_HAVE_PRIMME
         slepc.solver_type("primme");
-        #endif
-    #endif 
-#endif        
+    #else
+        #ifdef SLEPC_HAVE_TRLAN
+        slepc.solver_type("trlan");
+        #endif 
+    #endif
+#endif     
+    
+        slepc.problem_type("non_hermitian");
         slepc.number_of_eigenvalues(1);
 
         //small eig
         slepc.portion_of_spectrum("smallest_real");
+        slepc.max_it(40000);
+        // slepc.portion_of_spectrum("smallest_magnitude");
         slepc.solve(H);        
         slepc.get_real_eigenpair(0, small, eigenvector);
         
         //large eig
         slepc.portion_of_spectrum("largest_real");
+        // slepc.portion_of_spectrum("largest_magnitude");
         slepc.solve(H);
         slepc.get_real_eigenpair(0, large, eigenvector);
 
-        // std::cout << "small: " << small << ", large: " << large << std::endl;
-        return large/small;
+        const Scalar result = large/small;
+        // std::cout << "small: " << small << ", large: " << large << ", cond: " << result << std::endl;
+        return result;
     }
 }
 

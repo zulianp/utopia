@@ -1,15 +1,9 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2016-09-10
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-06
-*/
 #ifndef UTOPIA_QP_WITH_CONSTRAINTS
 #define UTOPIA_QP_WITH_CONSTRAINTS
 
 #include <vector>
 #include <assert.h>
-#include "utopia_Function.hpp"
+#include "utopia_TestFunctions.hpp"
 
 
 namespace utopia
@@ -19,10 +13,11 @@ namespace utopia
      * @brief      QP example with constraints
      */
     template<class Matrix, class Vector>
-    class QPwithConstraints : public FunctionBoxConstrained<Matrix, Vector>
+    class QPwithConstraints : public ConstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
+        typedef UTOPIA_SCALAR(DVectord) Scalar;
 
         ~QPwithConstraints(){}
 
@@ -62,7 +57,7 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override
+        bool hessian(const Vector & /*x*/, Matrix &H) const override
         {
             H = A_;
             return true;
@@ -98,12 +93,16 @@ namespace utopia
             return true;
         }
 
-
-
-        Vector initial_guess()
+        bool has_upper_bound() const override
         {
-            return (0 * rhs_);
+            return true;
         }
+
+        bool has_lower_bound() const override
+        {
+            return true;
+        }
+
 
         std::vector<Matrix> & interpolation_operators()
         {
@@ -114,6 +113,45 @@ namespace utopia
         {
             return rhs_;
         }
+
+        virtual Vector initial_guess() const override
+        {   
+            return (0 * rhs_);
+        }
+        
+        virtual const Vector & exact_sol() const override
+        {
+            Vector empty; 
+            return empty; 
+        }
+        
+
+        virtual Scalar min_function_value() const override
+        {   
+            // not known
+            return 0.0; 
+        }
+
+        virtual std::string name() const override
+        {
+            return "Laplace2D";
+        }
+        
+        virtual SizeType dim() const override
+        {
+            return size(rhs_).get(0); 
+        }
+
+        virtual bool exact_sol_known() const override
+        {
+            return false;
+        }
+
+        virtual bool parallel() const override
+        {
+            return true;
+        }
+
 
     private:
         Matrix A_;

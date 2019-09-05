@@ -143,6 +143,7 @@ namespace utopia {
         static void set_zero_rows(PetscMatrix &Mat_A, const std::vector<PetscInt> &index, const Scalar diag = 0.);
         static void apply_BC_to_system(PetscMatrix & A, PetscVector& x, PetscVector& rhs, const std::vector<PetscInt> &index);
 
+        static void chop(PetscMatrix & A, const PetscScalar & eps);
 
         //[builders]
         template<class Tensor>

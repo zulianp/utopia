@@ -49,7 +49,7 @@ namespace utopia {
     class Traits< Differentiable<Expr> > : public Traits<Expr> {};
 
     template<class Expr>
-    constexpr int is_differentiable(const Expr &expr)
+    constexpr int is_differentiable(const Expr &/*expr*/)
     {
         return TreeProperties<Expr>::has_differentiable_sub_tree;
     }

@@ -105,8 +105,9 @@ namespace utopia
             g_norm = norm2(g);
             z = g_norm * g_norm;
 
-            if(this->verbose())
+            if(this->verbose()){
               this->init_solver(" ST-CG ", {"it. ", "||r||" });
+            }
 
             bool converged = false;
 
@@ -142,8 +143,9 @@ namespace utopia
 
                 g_norm = std::sqrt(z);
 
-                if(this->verbose())
+                if(this->verbose()){
                     PrintInfo::print_iter_status(it, {g_norm});
+                }
 
                 converged = this->check_convergence(it, g_norm, 1, 1);
                 it++;
@@ -166,7 +168,9 @@ namespace utopia
 
             this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
             if(this->verbose())
+            {
                 PrintInfo::print_iter_status(it, {g_norm});
+            }
             it++;
 
             v_k = local_zeros(local_size(g));
@@ -187,15 +191,23 @@ namespace utopia
             {
                 Scalar alpha_termination;
                 if(r2 >= g_norm)
+                {
                     alpha_termination = 1.0;  		// grad. step is inside of tr boundary, just take it
+                }
                 else
+                {
                     alpha_termination = std::sqrt(r2/g_norm);  // grad. step is outside of tr boundary, project on the boundary
+                }
 
                 if(std::isfinite(alpha_termination))
+                {
                     s_k -= alpha_termination * r;
+                }
 
                 if(this->verbose() && mpi_world_rank()==0)
+                {
                     std::cout<<"termination due to p_norm being nans/infs... \n";
+                }
 
                 this->check_convergence(it, g_norm, 1, 1e-15);
 
@@ -215,10 +227,14 @@ namespace utopia
                     Scalar tau = (std::sqrt(term1) - sMp)/p_norm;
 
                     if(std::isfinite(tau))
+                    {
                         s_k += tau * p_k;
+                    }
 
                     if(this->verbose() && mpi_world_rank()==0)
+                    {
                         std::cout<<"termination due to indefinite direction... \n";
+                    }
 
                     this->check_convergence(it, g_norm, 1, 1e-15);
 
@@ -237,10 +253,13 @@ namespace utopia
                     Scalar tau = (std::sqrt(term1) - sMp)/p_norm;
 
                     if(std::isfinite(tau))
+                    {
                         s_k += tau * p_k;
+                    }
 
-                    if(this->verbose() && mpi_world_rank()==0)
+                    if(this->verbose() && mpi_world_rank()==0){
                         std::cout<<"termination due to correction exceeding TR radius... \n";
+                    }
 
                     this->check_convergence(it, g_norm, 1, 1e-15);
 
@@ -248,9 +267,13 @@ namespace utopia
                 }
 
                 if(std::isfinite(alpha))
+                {
                     s_k += alpha * p_k;
+                }
                 else
+                {
                     return false;
+                }
 
                 r += alpha * B_p_k;
 
@@ -269,17 +292,20 @@ namespace utopia
                 p_k = betta * p_k - v_k;
 
                 // updating norms recursively  - see TR book
-                sMp = (betta * sMp) + (alpha * p_norm);
+                sMp = betta * ( sMp + (alpha * p_norm));
                 p_norm = g_v_prod_new + (betta*betta * p_norm);
                 s_norm = s_norm_new;
 
                 g_norm = norm2(r);
 
-                if(this->verbose())
+                if(this->verbose()){
                     PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});
+                }
 
                 if(!std::isfinite(g_norm))
+                {
                     return false;
+                }
 
                 converged = this->check_convergence(it, g_norm, 1, 1);
                 it++;

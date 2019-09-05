@@ -64,18 +64,60 @@ namespace utopia
     class EvalVecUniqueSortSerial
     {
         public:
-            static void apply(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)
+            static void apply(const Wrapper<Vector, 1> &/*x*/, Wrapper<Vector, 1> & /*sorted */, const int /*used_values */ )
             {
                 static_assert(Traits<Vector>::Backend==PETSC, "EvalVecUniqueSortSerial implemented just for petsc backend.");
             }
     };
-
 
     template<class Vector>
     void vec_unique_sort_serial(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)
     {
         EvalVecUniqueSortSerial<Vector>::apply(x, sorted, used_values);
     }
+
+
+    template<class Matrix>
+    void chop_abs(Wrapper<Matrix, 2> &A, const double eps)
+    {
+        Backend<typename Traits<Matrix>::Scalar, Traits<Matrix>::Backend>::Instance().chop(A.implementation(), eps);
+    }
+
+
+    template<class Matrix, int Backend = Traits<Matrix>::Backend>
+    class ChopSmallerThan
+    {
+        public:
+            static void apply(const Wrapper<Matrix, 2> &/*x*/, const double & /*eps*/)
+            {
+                static_assert(Traits<Matrix>::Backend==PETSC, "ChopSmallerThan implemented just for petsc backend.");
+            }
+    };
+
+
+    template<class Matrix, int Backend = Traits<Matrix>::Backend>
+    class ChopBiggerThan
+    {
+        public:
+            static void apply(const Wrapper<Matrix, 2> & /*x*/, const double & /*eps*/)
+            {
+                static_assert(Traits<Matrix>::Backend==PETSC, "ChopBiggerThan implemented just for petsc backend.");
+            }
+    };
+
+
+    template<class Matrix>
+    void chop_smaller_than(Wrapper<Matrix, 2> &A, const double eps)
+    {
+        ChopSmallerThan<Matrix>::apply(A, eps);
+    }    
+
+
+    template<class Matrix>
+    void chop_bigger_than(Wrapper<Matrix, 2> &A, const double eps)
+    {
+        ChopBiggerThan<Matrix>::apply(A, eps);
+    }    
 
 
 }

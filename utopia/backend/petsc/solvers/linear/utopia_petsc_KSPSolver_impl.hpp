@@ -262,6 +262,37 @@ namespace utopia {
                 ierr =  PCFactorGetMatSolverType(this_pc, &stype); assert(ierr == 0);
                 ierr =  PCFactorSetMatSolverType(other_pc, stype); assert(ierr == 0);
 #endif
+
+                PetscBool flg_is_redundant; 
+                PetscObjectTypeCompare((PetscObject)other_pc, PCREDUNDANT, &flg_is_redundant);
+
+                if(flg_is_redundant)
+                {
+                    // there is no function to get number, so it can not be coppied....
+                    // PCRedundantSetNumber(other_pc, number); 
+
+                    // let us copy at least ksp and pc types
+
+                    // setting up inner solver 
+                    KSP inner_ksp_other, inner_ksp_this;
+                    PCRedundantGetKSP(other_pc, &inner_ksp_other); 
+                    PCRedundantGetKSP(this_pc, &inner_ksp_this); 
+
+                    KSPType inner_ksp_type;
+                    KSPGetType(inner_ksp_this, &inner_ksp_type); 
+                    KSPSetType(inner_ksp_other, inner_ksp_type); 
+
+                    PC innner_PC_this, innner_PC_other; 
+                    KSPGetPC(inner_ksp_this, &innner_PC_this); 
+                    KSPGetPC(inner_ksp_other, &innner_PC_other); 
+
+                    PCType inner_pc_type; 
+                    PCGetType(innner_PC_this, &inner_pc_type); 
+                    PCSetType(innner_PC_other, inner_pc_type); 
+                }
+
+
+
             }
 
             void copy_settings_from(const Impl &other)
@@ -339,7 +370,9 @@ namespace utopia {
                 PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 
                 ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(mat)); assert(ierr == 0);
-                ierr = KSPSetUp(ksp_);                                      assert(ierr == 0);
+
+                // should not be necessary
+                // ierr = KSPSetUp(ksp_);                                      assert(ierr == 0);
             }
 
             void update(const Matrix &mat, const Matrix &prec)
@@ -347,7 +380,9 @@ namespace utopia {
                 PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 
                 ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(prec)); assert(ierr == 0);
-                ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
+
+                // should not be necessary                
+                // ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
             }
 
             bool smooth(const SizeType sweeps,
@@ -669,12 +704,12 @@ namespace utopia {
                 ierr = KSPSolve(ksp_, raw_type(b), raw_type(x)); assert(ierr == 0);
                 ierr = KSPGetConvergedReason(ksp_, &reason);     assert(ierr == 0);
 
-                if(reason < 0) {
+                // if(reason < 0) {
 
-                    utopia_warning(
-                        "ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) +
-                        " ksp_type=" + ksp_type() + " pc_type=" + pc_type() + " solver_package=" + solver_package());
-                }
+                //     utopia_warning(
+                //         "ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) +
+                //         " ksp_type=" + ksp_type() + " pc_type=" + pc_type() + " solver_package=" + solver_package());
+                // }
 
                 return reason >= 0;
             }

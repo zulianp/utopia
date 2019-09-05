@@ -47,7 +47,7 @@ namespace utopia
             return false;
         }
 
-        virtual bool initialize_hessian(Matrix &/*H*/, Matrix &H_pre) const
+        virtual bool initialize_hessian(Matrix &/*H*/, Matrix & /*H_pre*/) const
         {
             return false;
         }

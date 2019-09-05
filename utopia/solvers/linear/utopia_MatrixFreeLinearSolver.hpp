@@ -16,8 +16,8 @@ namespace  utopia
 
             virtual MatrixFreeLinearSolver * clone() const =0;
 
-            virtual void read(Input &in) override{ }
-            virtual void print_usage(std::ostream &os) const override{ }
+            virtual void read(Input &/*in*/) override{ }
+            virtual void print_usage(std::ostream & /*os*/) const override{ }
     };
 
 
@@ -49,7 +49,7 @@ namespace  utopia
                 precond_ = precond;
             }
 
-            bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
+            bool solve(const Operator<Vector> &/*A*/, const Vector &rhs, Vector &sol) override
             {
                 if(precond_){
                     precond_->apply(rhs, sol);

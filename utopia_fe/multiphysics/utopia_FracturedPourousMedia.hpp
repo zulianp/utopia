@@ -116,6 +116,7 @@ namespace utopia {
         {
             in.get("type", type_);
             in.get("use-interpolation", use_interpolation_);
+            opts_.read(in);
             
             if(is_dual()) {
                 space_ = nullptr;
@@ -163,7 +164,10 @@ namespace utopia {
                     pourous_matrix.mesh(),
                     pourous_matrix.dof_map(), 
                     fracture_newtork.mesh(),
-                    fracture_newtork.dof_map())) {
+                    fracture_newtork.dof_map()
+                    , opts_
+                    )) 
+                {
                     return false;
                 }
 
@@ -260,6 +264,8 @@ namespace utopia {
 
         std::shared_ptr<Matrix> coupling_matrix_t_;
         std::shared_ptr<Matrix> mass_matrix_t_;
+
+        TransferOptions opts_;
 
     };
 
@@ -366,6 +372,7 @@ namespace utopia {
                 os << "\n";
             }
 
+            os << std::setprecision(9);
             os << n_dofs_ << "," << condition_number_ ;
             
             for(const auto &s : stats_) {
@@ -468,7 +475,7 @@ namespace utopia {
                     in.get("multiplier", *lm);
                     lagrange_multiplier_.push_back(lm);
 
-                    lm->init(pourous_matrix_.space(), dfn->space());
+                    // lm->init(pourous_matrix_.space(), dfn->space());
                 });;
             });
 
@@ -502,10 +509,30 @@ namespace utopia {
             });
         }
 
+        inline bool init()
+        {
+            const std::size_t n_dfn = fracture_network_.size();
+
+            assert(n_dfn == lagrange_multiplier_.size());
+
+            for(std::size_t i = 0; i < n_dfn; ++i) {
+                if(!lagrange_multiplier_[i]->init(pourous_matrix_.space(), fracture_network_[i]->space())) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         inline bool compute_flow()
         {
             Matrix A;
             Vector rhs;
+
+            if(!init()) {
+                std::cerr << "[Error] failed to init Lagrange multiplier" << std::endl;
+                return false;
+            }
 
             if(!assemble_flow(A, rhs)) {
                 std::cerr << "[Error] failed to assemble" << std::endl;

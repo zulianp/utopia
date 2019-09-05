@@ -308,7 +308,7 @@ namespace utopia {
         Matrixd d_mat = values(3, 3, 2.);
 
         SizeType n_vals = 0;
-        each_read(d_mat, [&n_vals](const SizeType i, const SizeType j, const double v) {
+        each_read(d_mat, [&n_vals](const SizeType /*i*/, const SizeType /*j*/, const double v) {
             utopia_test_assert(approxeq(2., v));
             ++n_vals;
         });

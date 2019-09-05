@@ -27,7 +27,7 @@ namespace utopia
                 return new BFGS<Matrix, Vector>(*this);
             }
 
-            void initialize() override
+            void initialize(const Vector &  /* x */ , const Vector &  /* g */ ) override
             {
                 current_it_ = 0;
                 this->initialized(true);
@@ -45,7 +45,7 @@ namespace utopia
                     H_prev_inv_ = local_identity(local_size(H_prev_inv_));
             }
 
-            bool update(const Vector & s_in, const Vector & y_in ) override
+            bool update(const Vector & s_in, const Vector & y_in, const Vector &  /* x */ , const Vector &  /* g */  ) override
             {
                 if(!this->initialized())
                 {

@@ -80,6 +80,18 @@
          */
         virtual bool project_down(const Vector &x, Vector &x_new) const = 0;
 
+        /**
+         * @brief      Splits projection operator into positive and negative part and then transfers them separatelly, so we end up with
+         *            \f$  x_{new} = (P_+ * x_+) + (P_- * x_-)  \f$
+         *            
+         * @param[in]  x
+         * @param      x_new
+         *
+         */
+        virtual bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) = 0;
+
+
+
         //FIXME
         virtual Scalar interpolation_inf_norm() const = 0;
         virtual Scalar projection_inf_norm()    const = 0;

@@ -16,6 +16,76 @@
 namespace utopia {
 
     template<class Matrix, class Vector>
+    class GradientRecovery {
+    public:
+
+        void init(){}
+
+        void recover()
+        {
+            // m_utopia_status("FractureFlowTransportSimulation::Transport::assemble_aux_quantities begin");
+            // Chrono chrono; chrono.start();
+
+            // auto &C = space->subspace(0);
+            // const int dim = C.mesh().spatial_dimension();
+
+            // auto &P = aux_space.subspace(0);
+            // auto W = aux_space.subspace(1, dim + 1);
+
+            // auto p = trial(P);
+            // auto u = trial(W);
+            // auto v = test(W);
+
+            // UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list());
+            // copy_values(C, pressure_w, P, aux_pressure);
+            // synchronize(aux_pressure);
+
+            // auto ph = interpolate(aux_pressure, p);
+
+            // //FIXME If do not put paranthesis it gives priority to the minus instead of multiplication
+            // //and there is a bug with the unary -dot(a, b) apparently
+            // auto l_form = -(
+            //          inner(
+            //              flow.diffusion_tensor * grad(ph),
+            //              ctx_fun(flow.sampler) * v
+            //          ) * dX
+            // );
+
+            // auto b_form = inner(trial(aux_space), test(aux_space)) * dX;
+
+            // USparseMatrix aux_mass_matrix;
+            // UVector M_x_v;
+            // utopia::assemble(l_form, M_x_v);
+            // utopia::assemble(b_form, aux_mass_matrix);
+
+            // UVector aux_values = local_zeros(local_size(M_x_v));
+
+            // //this mass vector contains also the porosity
+            // copy_values(C, mass_vector, aux_space.subspace(dim + 1), M_x_v);
+
+            // if(lump_mass_matrix) {
+            //     UVector aux_mass_vector = sum(aux_mass_matrix, 1);
+            //     aux_values = e_mul(M_x_v, 1./aux_mass_vector);
+            // } else {
+            //     GMRES<USparseMatrix, UVector>("bjacobi").solve(aux_mass_matrix, M_x_v, aux_values);
+            // }
+
+            // copy_values(C, pressure_w, P, aux_values);
+
+            // utopia::convert(aux_values, *P.equation_system().solution);
+            // P.equation_system().solution->close();
+
+
+            // m_utopia_status("FractureFlowTransportSimulation::Transport::assemble_aux_quantities end");
+            // chrono.stop();
+
+            // std::cout << chrono << std::endl;
+        }
+
+        ProductFunctionSpace<LibMeshFunctionSpace> grad_space_;
+    };
+
+    template<class Matrix, class Vector>
     class Mortar : public Configurable {
     public:
 

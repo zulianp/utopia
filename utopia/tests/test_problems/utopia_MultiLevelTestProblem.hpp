@@ -114,7 +114,7 @@ namespace utopia {
             disp("----------------------------------");
         }
 
-        void write_matlab(const std::string &folder)
+        void write_matlab(const std::string & /*folder*/)
         {
             SizeType i = 0;
             for(auto I_ptr : interpolators) {

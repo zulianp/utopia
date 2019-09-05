@@ -226,6 +226,24 @@
                 return true;
             }
 
+            bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override
+            {
+                if(empty(P_pos_))
+                {
+                    P_pos_ = *_Pr;
+                    chop_smaller_than(P_pos_, 1e-13); 
+                }
+
+                if(empty(P_neg_))
+                {
+                    P_neg_ = (*_Pr); 
+                    chop_bigger_than(P_neg_, -1e-13); 
+                }
+                    
+                x_new = (P_pos_*x_pos) + (P_neg_*x_neg); 
+                return true; 
+            }
+
             const Matrix &I() const
             {
                 return *_I;
@@ -254,6 +272,8 @@
         private:
             std::shared_ptr<Matrix> _I, _R; // _P;
             std::shared_ptr<Matrix> _Pr;
+            Matrix P_pos_; 
+            Matrix P_neg_; 
     };
 
 }

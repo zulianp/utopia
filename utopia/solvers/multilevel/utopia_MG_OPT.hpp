@@ -31,7 +31,7 @@ namespace utopia
 
     public:
 
-        bool solve(Vector & x_h) override
+        bool solve(Vector & /*x_h*/) override
         {
             utopia_error("MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) instead .... \n");
             return false;
@@ -55,7 +55,7 @@ namespace utopia
         }
 
 
-        void init_memory(const SizeType & fine_local_size) override
+        void init_memory(const SizeType & /*fine_local_size*/) override
         {
             std::cout<<"-------- to be done \n";
         }
@@ -226,7 +226,7 @@ namespace utopia
          *
          * @return
          */
-        bool smoothing(Fun &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
+        bool smoothing(Fun &fun,  Vector &x, const Vector &rhs, const SizeType & /*nu = 1*/)
         {
             _smoother->max_it(1);
             _smoother->verbose(true);

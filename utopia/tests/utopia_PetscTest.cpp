@@ -3,6 +3,7 @@
 #include "test_problems/utopia_TestFunctionsND.hpp"
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_Device.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_ZeroRowsToIdentity.hpp"
 
 namespace utopia {
@@ -689,7 +690,7 @@ namespace utopia {
             }
         }
 
-        each_read(a, [](const SizeType i, const SizeType j, const double value) {
+        each_read(a, [](const SizeType i, const SizeType /*j*/, const double value) {
             utopia_test_assert(approxeq(i, value));
         });
     }
@@ -1180,9 +1181,6 @@ namespace utopia {
     }
 
 
-
-
-
     void petsc_get_col_test()
     {
         auto n = 10;
@@ -1229,6 +1227,39 @@ namespace utopia {
         DMatrixd C = A*B;
 
         utopia_test_assert(approxeq(norm_infty(C), 500));
+    }
+
+    void petsc_chop_test()
+    {
+        auto n = 10;
+
+        DSMatrixd M = local_identity(n, n);
+        {
+            Write<DSMatrixd> w_m(M);
+            auto r = row_range(M);
+            // auto c = col_range(M);
+
+            for(auto i = r.begin(); i != r.end(); ++i)
+            {
+                if(i < 5)
+                {
+                    M.set(i, i, 1.0);
+                }
+                else
+                {
+                    M.set(i,i, -1.0); 
+                }
+            }
+        }
+
+        DSMatrixd M_p = M; 
+        DSMatrixd M_n = M;  
+
+        chop_smaller_than(M_p, 1e-15); 
+        chop_bigger_than(M_n, 1e-15); 
+
+        M_p += M_n; 
+        utopia_test_assert(approxeq(M_p, M));        
     }
 
     void petsc_zero_rows_to_id()
@@ -1293,6 +1324,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_get_col_test);
         UTOPIA_RUN_TEST(petsc_dense_mat_mult_test);
         UTOPIA_RUN_TEST(petsc_norm_test);
+        UTOPIA_RUN_TEST(petsc_chop_test); 
         UTOPIA_RUN_TEST(petsc_zero_rows_to_id);
 
 
