@@ -81,7 +81,12 @@ namespace utopia
             
         virtual bool hessian(const Vector & /*x*/, Matrix &hessian) const override
         {
-            wrap(snes_->jacobian, hessian);
+            // YES, wrap is more effiicient, but we do not want to own matrix .... 
+            // as RMTR, needs to modify hessian ... 
+            // wrap(snes_->jacobian, hessian);
+
+
+            convert(snes_->jacobian, hessian); 
             
             return true;
         }

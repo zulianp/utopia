@@ -381,9 +381,9 @@ namespace utopia
             // tr_strategy_fine->pc_type("jacobi"); 
             // tr_strategy_fine->atol(1e-14);
 
-
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
 
             // Set TR-QP strategies 
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -394,15 +394,16 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);    
 
             // Parameters 
-            rmtr->max_it(10);
+            rmtr->max_it(4);
 
-            rmtr->max_coarse_it(1);
+            rmtr->max_coarse_it(2);
             rmtr->max_sucessful_coarse_it(1); 
             rmtr->max_QP_coarse_it(300);
 
+
             rmtr->pre_smoothing_steps(10);
             rmtr->post_smoothing_steps(10);
-            rmtr->max_sucessful_smoothing_it(1);            
+            rmtr->max_sucessful_smoothing_it(2);            
             rmtr->max_QP_smoothing_it(1);            
              
  
@@ -414,7 +415,7 @@ namespace utopia
             rmtr->set_grad_smoothess_termination(1e-7);
 
             rmtr->verbose(verbose_);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);s
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
                 
             // Solve 
@@ -447,7 +448,7 @@ namespace utopia
             // auto coarse_dofs = 20; 
 
             auto n_levels = 4; 
-            auto coarse_dofs = 20; 
+            auto coarse_dofs = 10; 
 
             HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
         #endif

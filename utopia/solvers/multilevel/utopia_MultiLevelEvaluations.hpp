@@ -44,7 +44,7 @@ namespace utopia
     class MultilevelEnergyEval<Matrix, Vector, FIRST_ORDER>
     {
         public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & s_global)
+            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & /*s_global*/)
             {
                 typename Traits<Vector>::Scalar energy = 0.0;
                 fun.value(x, energy);
@@ -58,7 +58,7 @@ namespace utopia
     class MultilevelGradientEval<Matrix, Vector, FIRST_ORDER>
     {
         public:
-            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & s_global)
+            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector &  /*s_global*/)
             {
                 fun.gradient(x, g);
                 g += g_diff;
@@ -93,7 +93,8 @@ namespace utopia
             {
                 typename Traits<Vector>::Scalar energy = 0.0;
                 fun.value(x, energy);
-                energy += dot(g_diff, x) + (0.5 * dot(H_diff * x, x)); 
+                energy += (0.5 * dot(H_diff * s_global, s_global)) + dot(g_diff, s_global); 
+
                 return energy;
             }
     };
@@ -105,7 +106,8 @@ namespace utopia
             inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
             {
                 fun.gradient(x, g);
-                g += g_diff + (H_diff * x); 
+                g += g_diff + (H_diff * s_global); 
+                
                 return true;
             }
     };
@@ -119,6 +121,7 @@ namespace utopia
             {
                 fun.hessian(x, H);
                 H += H_diff;
+                                
                 return true;
             }
     };
@@ -162,9 +165,6 @@ namespace utopia
                 return true;
             }
     };
-
-
-
 
 
 
