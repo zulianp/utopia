@@ -394,7 +394,7 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);    
 
             // Parameters 
-            rmtr->max_it(7);
+            rmtr->max_it(10);
 
             rmtr->max_coarse_it(1);
             rmtr->max_sucessful_coarse_it(1); 
@@ -414,8 +414,8 @@ namespace utopia
             rmtr->set_grad_smoothess_termination(1e-7);
 
             rmtr->verbose(verbose_);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
                 
             // Solve 
             rmtr->solve(x);
@@ -446,8 +446,8 @@ namespace utopia
             // auto n_levels = 4; 
             // auto coarse_dofs = 20; 
 
-            auto n_levels = 2; 
-            auto coarse_dofs = 5; 
+            auto n_levels = 4; 
+            auto coarse_dofs = 20; 
 
             HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
         #endif
