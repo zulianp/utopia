@@ -73,16 +73,16 @@ namespace utopia {
         }
     }
     
-    void Adaptivity::constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M)
+    void Adaptivity::constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S)
     {
         const auto & mesh = V.mesh();
         unsigned int var_num = V.subspace_id();
         
         auto & dof_map = V.dof_map();
-        constraint_matrix(mesh, dof_map, var_num, M);
+        constraint_matrix(mesh, dof_map, var_num, M, S);
     }
 
-    void Adaptivity::constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M)
+    void Adaptivity::constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S)
     {
         //LOG_SCOPE_IF("build_constraint_matrix()", "DofMap", !called_recursively);
         
@@ -104,6 +104,8 @@ namespace utopia {
         
         M = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), 30);
         
+        S = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), 30);
+        
         
         std::vector<libMesh::dof_id_type> elem_dofs;
         
@@ -124,7 +126,7 @@ namespace utopia {
         
         libMesh::DenseMatrix<libMesh::Number> C;
         
-        Write<USparseMatrix> w(M);
+        Write<USparseMatrix> w(M), w_2(S);
         
         for ( ; el != end_el; ++el)
         {
@@ -218,6 +220,9 @@ namespace utopia {
                 if (dof_map.is_constrained_dof(elem_dofs[i]))
                 {
                     // If the DOF is constrained
+                    
+                    S.set (elem_dofs[i],elem_dofs[i],0.0);
+                    
                     auto pos = dof_constraints_.find(elem_dofs[i]);
                     
                     libmesh_assert (pos != dof_constraints_.end());
@@ -234,6 +239,8 @@ namespace utopia {
                     if (elem_dofs[j] == item.first){
                         C(i,j) = item.second;
                         M.set (elem_dofs[i],elem_dofs[j],item.second);
+                        auto value = -1.0*item.second;
+                        S.set (elem_dofs[i],elem_dofs[j],item.second);
                     }
                     
                 }
