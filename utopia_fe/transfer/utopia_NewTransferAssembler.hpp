@@ -21,13 +21,16 @@ namespace utopia {
                 Q(std::make_shared<USparseMatrix>()),
                 T(std::make_shared<USparseMatrix>()),
                 constraint_matrix_from(std::make_shared<USparseMatrix>()),
-                constraint_matrix_to(std::make_shared<USparseMatrix>())
+                constraint_matrix_to(std::make_shared<USparseMatrix>()),
+                hanging_node_split_from(std::make_shared<USparseMatrix>()),
+                hanging_node_split_to(std::make_shared<USparseMatrix>())
             {}
 
             void permute(const USparseMatrix &P, TransferData &out);
 
             std::shared_ptr<USparseMatrix> B, D, Q, T;
             std::shared_ptr<USparseMatrix> constraint_matrix_from, constraint_matrix_to;
+            std::shared_ptr<USparseMatrix> hanging_node_split_from, hanging_node_split_to;
         };
 
         bool assemble(
