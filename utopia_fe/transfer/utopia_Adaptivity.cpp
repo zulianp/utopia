@@ -242,7 +242,6 @@ namespace utopia {
                         auto value = -1.0*item.second;
                         S.set (elem_dofs[i],elem_dofs[j],item.second);
                     }
-                    
                 }
                 else
                 {
