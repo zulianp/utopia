@@ -115,16 +115,16 @@ namespace utopia {
             }
 
             auto op = mortar_assembler.build_operator();
-            mortar_matrix_ = op->matrix();
+            transfer_matrix_ = op->matrix();
 
-            is_constrained_ = sum(*mortar_matrix_, 1);
+            is_constrained_ = sum(*transfer_matrix_, 1);
             is_unconstrained_ = is_constrained_;
 
             //create a clean boolean vector
 
             each_transform(
                 is_constrained_,
-                is_constrained_, 
+                is_constrained_,
                 [](const SizeType i, const Scalar val) -> Scalar {
                     if(val > 0.99) {
                         return 1.0;
@@ -136,7 +136,7 @@ namespace utopia {
 
             each_transform(
                 is_unconstrained_,
-                is_unconstrained_, 
+                is_unconstrained_,
                 [](const SizeType i, const Scalar val) -> Scalar {
                     if(val > 0.99) {
                         return 0.0;
@@ -149,11 +149,11 @@ namespace utopia {
             if(export_constrained_) {
                 write("constrained.e",   space, is_constrained_);
                 write("unconstrained.e", space, is_unconstrained_);
-                write("T.m", *mortar_matrix_);
+                write("T.m", *transfer_matrix_);
             }
 
-            *mortar_matrix_ += local_identity(local_size(*mortar_matrix_));
-
+            mortar_matrix_  = std::make_shared<USparseMatrix>();
+            *mortar_matrix_ = *transfer_matrix_ + local_identity(local_size(*transfer_matrix_));
             return true;
         }
 
@@ -163,7 +163,7 @@ namespace utopia {
 
             A = transpose(T) * A * T;
             b = transpose(T) * b;
-            
+
             set_zero_rows(A, is_constrained_, 1.0);
             b = e_mul(is_unconstrained_, b);
         }
@@ -183,9 +183,19 @@ namespace utopia {
             return mortar_matrix_;
         }
 
+        inline std::shared_ptr<const Matrix> transfer_matrix() const
+        {
+            return transfer_matrix_;
+        }
+
         inline bool empty() const
         {
             return empty_;
+        }
+
+        inline const Vector &is_constrained() const
+        {
+            return is_constrained_;
         }
 
         Mortar()
@@ -195,6 +205,7 @@ namespace utopia {
     private:
         TransferOptions opts;
         std::shared_ptr<Matrix> mortar_matrix_;
+        std::shared_ptr<Matrix> transfer_matrix_;
         Vector is_constrained_, is_unconstrained_;
         bool empty_;
         bool export_constrained_;
@@ -224,7 +235,7 @@ namespace utopia {
                         post_processors_.push_back(flux);
 
                     } else if(type == "avg") {
-                        auto flux = std::make_shared<AverageHeadPostProcessor<FunctionSpaceT, UVector>>();              
+                        auto flux = std::make_shared<AverageHeadPostProcessor<FunctionSpaceT, UVector>>();
                         // flux->rescale(rescale());
                         flux->read(in);
 
@@ -269,7 +280,7 @@ namespace utopia {
         using Mortar = utopia::Mortar<Matrix, Vector>;
         using Super  = utopia::PostProcessable<Matrix, Vector>;
         using Scalar = UTOPIA_STORE(Vector);
-        
+
 
         void read(Input &in) override
         {
@@ -295,7 +306,7 @@ namespace utopia {
 
             if(!flow_model_->assemble_hessian_and_gradient(x, hessian, gradient)) return false;
             if(mortar_.empty()) return true;
-            
+
             mortar_.constrain_system(hessian, gradient);
             return true;
         }
@@ -325,6 +336,11 @@ namespace utopia {
         inline const FunctionSpaceT &space() const
         {
             return space_.space().subspace(0);
+        }
+
+        inline bool has_mortar_constraints() const
+        {
+            return !mortar_.empty();
         }
 
         PourousMatrix(libMesh::Parallel::Communicator &comm)

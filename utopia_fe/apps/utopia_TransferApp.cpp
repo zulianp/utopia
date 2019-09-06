@@ -80,12 +80,15 @@ namespace utopia {
                 bool must_random_refine = false;
                 is.get("random-refine", must_random_refine);
 
+                int n_refinements = 1;
+                is.get("refinements", n_refinements);
+
                 if(must_refine_0) {
                     refine_0(mesh_.mesh_ptr());
                 }
 
                 if(must_random_refine) {
-                    random_refine(mesh_.mesh_ptr(), 1);
+                    random_refine(mesh_.mesh_ptr(), n_refinements);
                 }
 
 
