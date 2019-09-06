@@ -156,14 +156,57 @@ namespace utopia {
         }
 
 
+
+        void ProjectedGS_QR()
+        {
+
+            std::cout<<"----------- Ciao Hardik ------------  \n"; 
+
+            Vector rhs;
+            Matrix A, R, Q; 
+
+            const std::string data_path = Utopia::instance().get("data_path");
+
+            read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
+            read(data_path + "/laplace/matrices_for_petsc/f_A", A);
+            read(data_path + "/laplace/matrices_for_petsc/I_2", R);
+            read(data_path + "/laplace/matrices_for_petsc/I_3", Q);
+
+
+            Vector x = local_values(local_size(rhs).get(0), 0.0);
+
+
+            auto solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+
+            Vector upper_bound = local_values(local_size(rhs).get(0), 9e9);
+            Vector lower_bound  = local_values(local_size(rhs).get(0), -9e9);
+
+            solver->max_it(10);
+            solver->verbose(true);
+
+            solver->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
+
+            solver->solve(A, rhs, x); 
+
+        }
+
+
+
+
+
+
         void run()
         {
             print_backend_info();
 
-            UTOPIA_RUN_TEST(pg_test);
-            UTOPIA_RUN_TEST(pcg_test);
-            UTOPIA_RUN_TEST(ngs_test);
-            UTOPIA_RUN_TEST(MPRGP_test); 
+            // UTOPIA_RUN_TEST(pg_test);
+            // UTOPIA_RUN_TEST(pcg_test);
+            // UTOPIA_RUN_TEST(ngs_test);
+            // UTOPIA_RUN_TEST(MPRGP_test); 
+
+
+            UTOPIA_RUN_TEST(ProjectedGS_QR); 
+
         }
 
         QPSolverTest() : n(20) {}
@@ -171,6 +214,8 @@ namespace utopia {
         SizeType n = 20;
         bool verbose = false;
     };
+
+
 
 
     //FIXME merge with the other once it is poperly implemented

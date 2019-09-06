@@ -19,7 +19,6 @@ namespace utopia
         verbose_(verbose),
         output_vtk_(output_flg)
         {
-
             input_params_.set("atol", 1e-7);
             input_params_.set("rtol", 1e-10);
             input_params_.set("stol", 1e-10);        
@@ -40,22 +39,22 @@ namespace utopia
 
         void run()
         {
-            UTOPIA_RUN_TEST(newton_test);            
+            // UTOPIA_RUN_TEST(newton_test);            
 
             // UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
 
             UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(TR_constrained); 
+            // UTOPIA_RUN_TEST(TR_constrained); 
             
-            UTOPIA_RUN_TEST(Poisson_test); 
+            // UTOPIA_RUN_TEST(Poisson_test); 
 
-            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
-            UTOPIA_RUN_TEST(QuasiTR_constrained);
+            // UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            // UTOPIA_RUN_TEST(QuasiTR_constrained);
 
 
-            UTOPIA_RUN_TEST(RMTR_unconstrained); 
-            UTOPIA_RUN_TEST(RMTR_l2_linear); 
+            // UTOPIA_RUN_TEST(RMTR_unconstrained); 
+            // UTOPIA_RUN_TEST(RMTR_l2_linear); 
         }
 
         template<class QPSolverTemp>
@@ -160,20 +159,23 @@ namespace utopia
 
         void TR_unconstrained()
         {
-            Bratu2D<Matrix, Vector> fun(n_, 5.0);
+            Bratu2D<Matrix, Vector> fun(100, 5.0);
             Vector x = fun.initial_guess(); 
             
             if(verbose_)
                 fun.describe(); 
 
-            auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+            auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", false);
             
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_); 
+            // tr_solver.verbose(true);
+            tr_solver.solve(fun, x); 
 
             if(output_vtk_)
                 fun.output_to_VTK(x);
         }
+
 
         void newton_test()
         {
@@ -386,7 +388,7 @@ namespace utopia
             // auto n_levels = 4; 
             // auto coarse_dofs = 100; 
 
-            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, false, false).run();
+            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
         #endif
         UTOPIA_UNIT_TEST_END("HckTests");
 

@@ -49,8 +49,6 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_tr_rr_test);
             UTOPIA_RUN_TEST(petsc_snes_test); //petsc 3.11.3 ERROR here
             UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); //petsc 3.11.3 ERROR here
-            // UTOPIA_RUN_TEST(affine_similarity_small_test);
-            // UTOPIA_RUN_TEST(affine_similarity_stiff_test);
         }
 
         void petsc_ngs_test()
