@@ -4,10 +4,37 @@
 #include "libmesh/fe_interface.h"
 
 namespace utopia {
+
+    void Adaptivity::compute_all_constraints(
+        const libMesh::MeshBase &mesh,
+        const libMesh::DofMap &dof_map,
+        libMesh::DofConstraints &constraints)
+    {
+        using uint = unsigned int;
+        auto el = mesh.active_local_elements_begin();
+        
+        const auto end_el = mesh.active_local_elements_end();
+        
+        for(; el != end_el; ++el) {
+            const auto * elem = *el;
+            auto * ele = *el;
+
+            libmesh_assert (mesh.is_prepared());
+            
+            uint n_vars = dof_map.n_variables();
+            for(uint var_num = 0; var_num < n_vars; ++var_num) {
+                compute_constraints(constraints, dof_map, var_num, elem, mesh.mesh_dimension());
+            }
+        }
+
+        std::cout << "--------------------------------------------------\n";
+        std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
+        std::cout << "--------------------------------------------------\n";
+    }
     
     void Adaptivity::assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num)
     {
-        std::cout<<"Adaptivity::AssembleConstraint"<<std::endl;
+        // std::cout<<"Adaptivity::AssembleConstraint"<<std::endl;
         
         // Get a constant reference to the mesh object.
         
@@ -22,55 +49,22 @@ namespace utopia {
         
         for ( ; el != end_el; ++el)
         {
-            
             const auto * elem = *el;
             
             auto * ele = *el;
-            
-            // parallel_object_only();
-            
-            std::cout<<"Adaptivity::AssembleConstraint::createdof_constraints_"<<std::endl;
-            
             libmesh_assert (mesh.is_prepared());
             
-            // We might get constraint equations from AMR hanging nodes in 2D/3D
-            // or from boundary conditions in any dimension
-            const bool possible_local_constraints = false
-            || !mesh.n_elem()
-#ifdef LIBMESH_ENABLE_AMR
-            || mesh.mesh_dimension() > 1
-#endif
-            ;
-            
-            // Even if we don't have constraints, another processor might.
-            bool possible_global_constraints = possible_local_constraints;
-#if defined(LIBMESH_ENABLE_AMR)
-            libmesh_assert(dof_map.comm().verify(mesh.is_serial()));
-            
-            dof_map.comm().max(possible_global_constraints);
-#endif
-            
-            // if (!possible_global_constraints)
-            // {
-            //   #ifdef LIBMESH_ENABLE_CONSTRAINTS
-            //   dof_constraints_.clear();
-            //   #endif
-            
-            //   return;
-            //  }
-            
-            // ConstElemRange range (mesh.local_elements_begin(),
-            //                       mesh.local_elements_end());
-            
-            // dof_constraints_.clear();
-            
-            
+
             for (unsigned int var_num=0; var_num<dof_map.n_variables();
-                 ++var_num)
-            compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension());
+                 ++var_num) {
+                compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension());
+            }
             
-            std::cout<<"dof_constraints_"<<dof_constraints_.size()<<std::endl;
         }
+
+        std::cout << "--------------------------------------------------\n";
+        std::cout<< "[Adaptivity::assemble_constraint] n_constraints: " << dof_constraints_.size() << std::endl;
+        std::cout << "--------------------------------------------------\n";
     }
     
     void Adaptivity::constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S)
@@ -86,7 +80,7 @@ namespace utopia {
     {
         //LOG_SCOPE_IF("build_constraint_matrix()", "DofMap", !called_recursively);
         
-        std::cout<<"rintMatrix::constraint_matrix"<<dof_constraints_.size()<<std::endl;
+        // std::cout<<"rintMatrix::constraint_matrix"<<dof_constraints_.size()<<std::endl;
         assemble_constraint(mesh, dof_map, var_num);
         
         // Create a set containing the DOFs we already depend on
@@ -96,11 +90,11 @@ namespace utopia {
         
         //const DofMap & dof_map = _fe_problem.getNonlinearSystemBase().dofMap();
         
-        std::cout<<"begin"<<*dof_map.get_n_nz().begin()<<std::endl;
+        // std::cout<<"begin"<<*dof_map.get_n_nz().begin()<<std::endl;
         
-        std::cout<<"end"<<*dof_map.get_n_nz().end()<<std::endl;
+        // std::cout<<"end"<<*dof_map.get_n_nz().end()<<std::endl;
         
-        std::cout<<"size"<<dof_map.get_n_nz().size()<<std::endl;
+        // std::cout<<"size"<<dof_map.get_n_nz().size()<<std::endl;
         
         M = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), 30);
         
@@ -146,7 +140,7 @@ namespace utopia {
             
             bool we_have_constraints = false;
             
-            std::cout<<"CREATE constraint_matrix"<<std::endl;
+            // std::cout<<"CREATE constraint_matrix"<<std::endl;
             
             // Next insert any other dofs the current dofs might be constrained
             // in terms of.  Note that in this case we may not be done: Those
@@ -155,7 +149,7 @@ namespace utopia {
             // degrees of freedom.
             for (const auto & dof : elem_dofs){
                 
-                std::cout<<"elem_dofs.size()"<<elem_dofs.size()<<"and constraint"<<dof_map.is_constrained_dof(dof)<<std::endl;
+                // std::cout<<"elem_dofs.size()"<<elem_dofs.size()<<"and constraint"<<dof_map.is_constrained_dof(dof)<<std::endl;
                 
                 if (dof_map.is_constrained_dof(dof))
                 {
@@ -163,7 +157,7 @@ namespace utopia {
                     
                     // If the DOF is constrained
                     
-                    std::cout<<"dof_map.is_constrained_dof(dof)"<<dof_map.is_constrained_dof(dof)<<std::endl;
+                    // std::cout<<"dof_map.is_constrained_dof(dof)"<<dof_map.is_constrained_dof(dof)<<std::endl;
                     
                     auto pos = dof_constraints_.find(dof);
                     
@@ -273,7 +267,7 @@ namespace utopia {
         if (mesh_dim == 1)
         return;
         
-        std::cout<<"lagrange_compute_constraints libmesh mio prima:"<<constraints.size()<<std::endl;
+        // std::cout<<"lagrange_compute_constraints libmesh mio prima:"<<constraints.size()<<std::endl;
         libmesh_assert(elem);
         
         // Only constrain active and ancestor elements
@@ -300,9 +294,9 @@ namespace utopia {
             
             //std::cout<<"parent->id()"<<parent->id()<<std::endl;
             
-            std::cout<<"elem->neighbor_ptr(s)->level()"<<elem->neighbor_ptr(s)->level()<<std::endl;
+            // std::cout<<"elem->neighbor_ptr(s)->level()"<<elem->neighbor_ptr(s)->level()<<std::endl;
             
-            std::cout<<"elem->level()"<<elem->level()<<std::endl;
+            // std::cout<<"elem->level()"<<elem->level()<<std::endl;
             
             // This can't happen...  Only level-0 elements have nullptr
             // parents, and no level-0 elements can be at a higher
@@ -368,7 +362,7 @@ namespace utopia {
                     //std::cout<<"dof_map.is_constrained_dof(my_dof_g)"<<dof_map.is_constrained_dof(my_dof_g)<<std::endl;
                     
                     constraint_row = &(constraints[my_dof_g]);
-                    libmesh_assert(constraint_row->empty());
+                    // libmesh_assert(constraint_row->empty());
                 }
                 
                 // The support point of the DOF
@@ -401,11 +395,11 @@ namespace utopia {
                         (std::abs(their_dof_value) < .999))
                     {
                         
-                        std::cout<<"their_dof_g=>"<< their_dof_g <<std::endl;
-                        std::cout<<"their_dof_value=>"<< their_dof_value <<std::endl;
+                        // std::cout<<"their_dof_g=>"<< their_dof_g <<std::endl;
+                        // std::cout<<"their_dof_value=>"<< their_dof_value <<std::endl;
                         
-                        std::cout<<"elem->id()"<<elem->id()<<std::endl;
-                        std::cout<<"parent->id()"<<parent->id()<<std::endl;
+                        // std::cout<<"elem->id()"<<elem->id()<<std::endl;
+                        // std::cout<<"parent->id()"<<parent->id()<<std::endl;
                         
                         
                         constraint_row->insert(std::make_pair (their_dof_g,
@@ -421,7 +415,7 @@ namespace utopia {
             }
         }
         
-        std::cout<<"lagrange_compute_constraints libmesh mio dopo:"<<constraints.size()<<std::endl;
+        // std::cout<<"lagrange_compute_constraints libmesh mio dopo:"<<constraints.size()<<std::endl;
         
         // dof_map.printdof_constraints_();
     } // lagrange_compute_constraints()

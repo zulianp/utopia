@@ -149,7 +149,9 @@ namespace utopia {
             if(export_constrained_) {
                 write("constrained.e",   space, is_constrained_);
                 write("unconstrained.e", space, is_unconstrained_);
-                write("T.m", *transfer_matrix_);
+                
+                rename("m", *transfer_matrix_);
+                write("M.m", *transfer_matrix_);
             }
 
             mortar_matrix_  = std::make_shared<USparseMatrix>();
@@ -198,6 +200,22 @@ namespace utopia {
             return is_constrained_;
         }
 
+        inline void compute_mortar_matrix_without_slave_dofs()
+        {
+            mortar_matrix_without_slave_dofs_  = std::make_shared<USparseMatrix>();
+            *mortar_matrix_without_slave_dofs_ = *transfer_matrix_ + USparseMatrix(diag(is_unconstrained_));
+        }
+
+        inline std::shared_ptr<Matrix> mortar_matrix_without_slave_dofs()
+        {
+            return mortar_matrix_without_slave_dofs_;
+        }
+
+        inline std::shared_ptr<const Matrix> mortar_matrix_without_slave_dofs() const
+        {
+            return mortar_matrix_without_slave_dofs_;
+        }
+
         Mortar()
         : empty_(true), export_constrained_(false)
         {}
@@ -206,6 +224,7 @@ namespace utopia {
         TransferOptions opts;
         std::shared_ptr<Matrix> mortar_matrix_;
         std::shared_ptr<Matrix> transfer_matrix_;
+        std::shared_ptr<Matrix> mortar_matrix_without_slave_dofs_;
         Vector is_constrained_, is_unconstrained_;
         bool empty_;
         bool export_constrained_;
@@ -341,6 +360,11 @@ namespace utopia {
         inline bool has_mortar_constraints() const
         {
             return !mortar_.empty();
+        }
+
+        Mortar &mortar()
+        {
+            return mortar_;
         }
 
         PourousMatrix(libMesh::Parallel::Communicator &comm)

@@ -2,6 +2,7 @@
 #define UTOPIA_LIBMESH_ASSEMBLER_HPP
 
 #include "utopia_libmesh_AssemblyContext.hpp"
+#include "utopia_Adaptivity.hpp"
 
 namespace utopia {
     class LibMeshAssembler {
@@ -72,6 +73,8 @@ namespace utopia {
         }
 
 
+
+
         template<class Expr>
         bool assemble(/*const*/ Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)
         {
@@ -111,6 +114,14 @@ namespace utopia {
             // 	vec.set(0.);
             // }
 
+
+            libMesh::DofConstraints constraints;
+            Adaptivity::compute_all_constraints(
+                m,
+                dof_map,
+                constraints
+            );
+
             {
                 Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
                 Write<GlobalVector> w_v(temp_vec, utopia::GLOBAL_ADD);
@@ -120,6 +131,7 @@ namespace utopia {
 
                 init_context_on(expr, (*elements_begin(m))->id());
 
+                std::vector<libMesh::dof_id_type> dof_indices;
                 for(auto it = elements_begin(m); it != elements_end(m); ++it) {
                     if(it != elements_begin(m)) {
                         reinit_context_on(expr, (*it)->id());
@@ -131,12 +143,26 @@ namespace utopia {
                     FormEvaluator<LIBMESH_TAG> eval;
                     eval.eval(expr, el_mat, el_vec, ctx_);
 
-                    std::vector<libMesh::dof_id_type> dof_indices;
+                    
                     dof_map.dof_indices(*it, dof_indices);
 
                     if(ctx_.has_assembled()) {
                         if(apply_constraints) {
-                            dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+                            dof_map.heterogenously_constrain_element_matrix_and_vector(
+                                el_mat.implementation(),
+                                el_vec.implementation(),
+                                dof_indices
+                            );
+
+                        } else {
+                            Adaptivity::constrain_matrix_and_vector(
+                                *it,
+                                dof_map,
+                                constraints,
+                                el_mat.implementation(),
+                                el_vec.implementation(),
+                                dof_indices
+                            );
                         }
 
                         add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
@@ -180,6 +206,14 @@ namespace utopia {
 
             auto s_m = size(mat);
 
+
+            libMesh::DofConstraints constraints;
+            Adaptivity::compute_all_constraints(
+                m,
+                dof_map,
+                constraints
+            );
+
             //FIXME trilinos backend is buggy
             if(GlobalMatrix::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
                 SizeType nnz_x_row = 0;
@@ -218,6 +252,8 @@ namespace utopia {
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
 
+                        Adaptivity::constrain_matrix(*it, dof_map, constraints, el_mat.implementation(), dof_indices);
+
                         if(ctx_.has_assembled()) {
                             add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
                         }
@@ -241,6 +277,8 @@ namespace utopia {
         bool assemble(/*const*/ Expr &expr, GlobalVector &vec, const bool apply_constraints = false)
         {
 
+
+
             //perf
             Chrono c;
             c.start();
@@ -263,6 +301,14 @@ namespace utopia {
             // 	vec *= 0.;
             // }
 
+            libMesh::DofConstraints constraints;
+            Adaptivity::compute_all_constraints(
+                m,
+                dof_map,
+                constraints
+            );
+
+
             {
                 Write<GlobalVector> w_v(temp_vec, utopia::GLOBAL_ADD);
                 ElementVector el_vec;
@@ -282,6 +328,8 @@ namespace utopia {
 
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
+
+                        Adaptivity::constrain_vector(*it, dof_map, constraints, el_vec.implementation(), dof_indices);
 
                         if(ctx_.has_assembled()) {
                             add_vector(el_vec.implementation(), dof_indices, temp_vec);
