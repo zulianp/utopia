@@ -54,9 +54,7 @@ namespace utopia {
             for(const auto &dof : dof_indices){
                 if(dof_map.is_constrained_dof(dof)) {
                     auto pos = dof_constraints.find(dof);
-
                     if(pos == dof_constraints.end()) continue;
-                    // assert(pos != dof_constraints.end());
 
                     const auto &constraint_row = pos->second;
 
@@ -81,10 +79,10 @@ namespace utopia {
                                    dof_set.begin(), dof_set.end());
 
                 mat.resize(old_size, static_cast<unsigned int>(dof_indices.size()));
+                mat.zero();
 
                 for(unsigned int i=0; i != old_size; i++) {
                     if (dof_map.is_constrained_dof(dof_indices[i])) {
-
                         auto pos = dof_constraints.find(dof_indices[i]);
 
                         if(pos == dof_constraints.end()) {
@@ -99,7 +97,7 @@ namespace utopia {
 
                             for (unsigned int j=0; j != n_elem_dofs; j++) {
                                 if (dof_indices[j] == item.first){
-                                    mat(i,j) = item.second;
+                                    mat(i, j) = item.second;
                                 }
                             }
                         }
