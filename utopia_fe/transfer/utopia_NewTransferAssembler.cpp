@@ -414,7 +414,7 @@ namespace utopia {
                 // if(!assembler.assemble(master, slave, opts.tags)) {
                 //     return false;
                 // }
-
+                std::cerr << "[Error] not implemented" << std::endl;
                 assert(false && "implement me!!!");
             }
 
