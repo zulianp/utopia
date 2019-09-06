@@ -84,13 +84,12 @@ namespace utopia {
         this->init_solver(method, {"it", "|g|"});
 
 
-        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr)
-        {
+        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr) {
             PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
             fun_petsc->getSNES(snes);
-        }
-        else
+        } else {
             setup_assembly_routines(snes, fun, x);
+        }
 
         set_snes_options(snes, this->atol(), this->rtol(), this->stol(), this->max_it());
         set_ksp(snes);
@@ -265,6 +264,22 @@ namespace utopia {
         SNESCreate(comm, &snes);
         fun.data()->init();
 
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+        if(!fun.initialize_hessian(*fun.data()->H, *fun.data()->H_pre)) {
+            utopia_error("SNESSolver requires Function::initialize_hessian to be implemented, for petsc version >= 3.11.0");
+            assert(false);
+            // return false;
+        }
+
+#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+
+        auto mat      = fun.data()->H;
+        auto prec_mat = fun.data()->H_pre;
+
+        if(!fun.has_preconditioner()) {
+            prec_mat = mat;
+        }
+
         // energy
         SNESSetObjective(
             snes,
@@ -303,8 +318,8 @@ namespace utopia {
         // hessian
         SNESSetJacobian(
             snes,
-            raw_type(*fun.data()->H),
-            raw_type(*fun.data()->H_pre),
+            raw_type(*mat),
+            raw_type(*prec_mat),
             // FormHessian,
             [](SNES snes, Vec x, Mat /*jac*/, Mat /*prec*/, void *ctx)-> PetscErrorCode
             {

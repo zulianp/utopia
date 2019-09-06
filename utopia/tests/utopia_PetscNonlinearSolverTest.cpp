@@ -394,7 +394,7 @@ namespace utopia
                 DVectord diff = hm_x_0 - x_0;
             // 	disp(diff);
                 double norm_diff = norm2(diff)/double(norm2(hm_x_0));
-                std::cout << "norm_diff: " << std::to_string(norm_diff) << std::endl;
+                // std::cout << "norm_diff: " << std::to_string(norm_diff) << std::endl;
             }
 
             utopia_test_assert(approxeq(x_0, hm_x_0, 1e-8));

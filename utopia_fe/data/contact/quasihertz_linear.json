@@ -6,6 +6,7 @@
         "is-steady" : true,
         "use-gmres" : true,
         "discretization" : "new",
+        "outer-loop-tol" : 1.0,
         "mesh": {
             "type": "file",
             "path_0" : "../data/contact/contact_cubes.e",

@@ -19,32 +19,43 @@ namespace utopia
         verbose_(verbose),
         output_vtk_(output_flg)
         {
+
             input_params_.set("atol", 1e-7);
             input_params_.set("rtol", 1e-10);
             input_params_.set("stol", 1e-10);        
             input_params_.set("verbose", verbose_); 
+            input_params_.set("max-it", 10); 
+
+            // RMTR specific parameters 
+            input_params_.set("max_coarse_it", 2); 
+            input_params_.set("max_sucessful_coarse_it", 1); 
+            input_params_.set("max_QP_coarse_it", 300);             
+            input_params_.set("pre_smoothing_steps", 10); 
+            input_params_.set("post_smoothing_steps", 10); 
+            input_params_.set("max_sucessful_smoothing_it", 1);   
+            input_params_.set("max_QP_smoothing_it", 1);   
+            input_params_.set("delta0", 1);   
+            input_params_.set("grad_smoothess_termination", 1e-8);      
         }
 
         void run()
         {
-            // UTOPIA_RUN_TEST(newton_test);            
+            UTOPIA_RUN_TEST(newton_test);            
 
             // UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
 
-            // UTOPIA_RUN_TEST(TR_unconstrained);
-            // UTOPIA_RUN_TEST(Poisson_test); 
+            UTOPIA_RUN_TEST(TR_unconstrained);
+            UTOPIA_RUN_TEST(TR_constrained); 
+            
+            UTOPIA_RUN_TEST(Poisson_test); 
+
+            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            UTOPIA_RUN_TEST(QuasiTR_constrained);
 
 
-            // UTOPIA_RUN_TEST(TR_constrained); 
-
-            // UTOPIA_RUN_TEST(QuasiTR_unconstrained);
-            // UTOPIA_RUN_TEST(QuasiTR_constrained);
-
-
-            // // UTOPIA_RUN_TEST(RMTR_unconstrained); 
+            UTOPIA_RUN_TEST(RMTR_unconstrained); 
             UTOPIA_RUN_TEST(RMTR_l2_linear); 
-
         }
 
         template<class QPSolverTemp>
@@ -104,16 +115,11 @@ namespace utopia
             Vector b; 
             Matrix H; 
             Vector x = fun.initial_guess(); 
-            fun.describe(); 
-
-            // disp(x); 
+            
+            if(verbose_)
+                fun.describe(); 
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
-   
-            // auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-            // subproblem->pc_type("bjacobi"); 
-
             subproblem->atol(1e-14);
             subproblem->max_it(1000);
             
@@ -124,33 +130,27 @@ namespace utopia
             tr_solver.solve(fun, x);
 
 
-            // PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_); 
+            PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_); 
 
-            // auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
-            // Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
-
-
-            // x = fun_Laplace->initial_guess(); 
-            // fun_Laplace->gradient(x, b); 
-            // fun_Laplace->hessian(x, H); 
-            // fun_Laplace->describe(); 
+            auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
+            Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
 
 
-            // auto direct_solver = std::make_shared<utopia::RedundantLinearSolver<Matrix, Vector> >();
-            // direct_solver->number_of_parallel_solves(mpi_world_size()); 
-            // // auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >();
+            x = fun_Laplace->initial_guess(); 
+            fun_Laplace->gradient(x, b); 
+            fun_Laplace->hessian(x, H); 
 
 
-            // // auto smoother      = std::make_shared<PointJacobi<Matrix, Vector>>();
-            // auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-            // Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
-            // multigrid.set_transfer_operators(multilevel_problem.transfers_);
-            // multigrid.update(make_ref(H));
+            auto direct_solver = std::make_shared<utopia::RedundantLinearSolver<Matrix, Vector> >();
+            direct_solver->number_of_parallel_solves(mpi_world_size()); 
 
-
-
-            // multigrid.verbose(true);
-            // multigrid.apply(b, x);            
+            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+            
+            Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
+            multigrid.set_transfer_operators(multilevel_problem.transfers_);
+            multigrid.update(make_ref(H));
+            multigrid.read(input_params_);
+            multigrid.apply(b, x);            
 
 
             if(output_vtk_)
@@ -158,27 +158,18 @@ namespace utopia
         }
 
 
-
         void TR_unconstrained()
         {
             Bratu2D<Matrix, Vector> fun(n_, 5.0);
             Vector x = fun.initial_guess(); 
-            fun.describe(); 
-
+            
+            if(verbose_)
+                fun.describe(); 
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-
-            // auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-            // subproblem->pc_type("bjacobi"); 
-
-            subproblem->atol(1e-14);
-            subproblem->max_it(100000);
             
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_); 
-            tr_solver.delta0(0.001); 
-            tr_solver.solve(fun, x);
 
             if(output_vtk_)
                 fun.output_to_VTK(x);
@@ -188,7 +179,9 @@ namespace utopia
         {
             Bratu2D<Matrix, Vector> fun(n_, 5.0);
             Vector x = fun.initial_guess(); 
-            fun.describe(); 
+            
+            if(verbose_)
+                fun.describe(); 
 
             auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
             lsolver->pc_type("bjacobi"); 
@@ -219,8 +212,6 @@ namespace utopia
 
             QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
             tr_solver.read(input_params_); 
-            tr_solver.max_it(5000);
-            tr_solver.delta0(10000);
             tr_solver.solve(fun, x);
 
             if(output_vtk_)
@@ -232,17 +223,16 @@ namespace utopia
         {
             Bratu2D<Matrix, Vector> fun(n_, 5.0);
             Vector x = fun.initial_guess(); 
-            fun.describe(); 
+            
+            if(verbose_)
+                fun.describe(); 
 
             auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             qp_solver->atol(1e-10);
             qp_solver->max_it(n_*n_);
             qp_solver->verbose(false); 
+       
 
-            // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
-            // auto qp_solver =  std::make_shared<utopia::TaoQPSolver<Matrix, Vector> >(lsolver);
-            // qp_solver->atol(1e-11);            
-            
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
             
             Vector ub, lb; 
@@ -257,8 +247,6 @@ namespace utopia
             if(output_vtk_)
                 fun.output_to_VTK(x);
         }        
-
-
 
         void QuasiTR_constrained()
         {
@@ -294,29 +282,21 @@ namespace utopia
 
         void RMTR_unconstrained()
         {
-            // auto n_coarse = 50; 
-            auto n_coarse = n_; 
-
-            PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > multilevel_problem(2, n_levels_, n_coarse); 
+            PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > multilevel_problem(2, n_levels_, n_); 
 
             auto fun = multilevel_problem.level_functions_[n_levels_-1];
             Bratu2D<Matrix, Vector> * fun_Bratu2D = dynamic_cast<Bratu2D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Bratu2D->initial_guess(); 
-            fun_Bratu2D->describe(); 
 
-            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu");
+            if(verbose_)
+                fun_Bratu2D->describe(); 
 
-
-            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            tr_strategy_fine->pc_type("none"); 
-            tr_strategy_fine->atol(1e-14);
-
-            // tr_strategy_fine->pc_type("jacobi"); 
-            // tr_strategy_fine->atol(1e-14);
+            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
 
 
-            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
 
             // Set TR-QP strategies 
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -326,29 +306,11 @@ namespace utopia
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
             rmtr->set_functions( multilevel_problem.level_functions_);    
 
-            // Parameters 
-            rmtr->max_it(4);
-
-            rmtr->max_coarse_it(1);
-            rmtr->max_sucessful_coarse_it(1); 
-            rmtr->max_QP_coarse_it(300);
-
-            rmtr->pre_smoothing_steps(10);
-            rmtr->post_smoothing_steps(10);
-            rmtr->max_sucessful_smoothing_it(1);            
-            rmtr->max_QP_smoothing_it(1);             
-             
  
-            // rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
-
-            rmtr->delta0(1e9);
-            rmtr->atol(1e-6);
-            rmtr->rtol(1e-10);
-            rmtr->set_grad_smoothess_termination(0.000001);
-
-            rmtr->verbose(verbose_);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->read(input_params_); 
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
                 
             // Solve 
             rmtr->solve(x);
@@ -366,24 +328,18 @@ namespace utopia
             auto fun = multilevel_problem.level_functions_[n_levels_-1];
             Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Poisson3D->initial_guess(); 
-            fun_Poisson3D->describe(); 
 
-            // auto tr_strategy_coarse = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            // tr_strategy_coarse->pc_type("lu"); 
+            if(verbose_)
+                fun_Poisson3D->describe(); 
+
+
             auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-            tr_strategy_coarse->atol(1e-14); 
+            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
+            
 
-
-            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            tr_strategy_fine->pc_type("sor"); 
-            tr_strategy_fine->atol(1e-14);
-
-            // tr_strategy_fine->pc_type("jacobi"); 
-            // tr_strategy_fine->atol(1e-14);
-
-            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
             // Set TR-QP strategies 
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -393,39 +349,19 @@ namespace utopia
             rmtr->set_transfer_operators(multilevel_problem.transfers_);
             rmtr->set_functions( multilevel_problem.level_functions_);    
 
-            // Parameters 
-            rmtr->max_it(4);
 
-            rmtr->max_coarse_it(2);
-            rmtr->max_sucessful_coarse_it(1); 
-            rmtr->max_QP_coarse_it(300);
-
-
-            rmtr->pre_smoothing_steps(10);
-            rmtr->post_smoothing_steps(10);
-            rmtr->max_sucessful_smoothing_it(2);            
-            rmtr->max_QP_smoothing_it(1);            
-             
- 
             rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
-
-            rmtr->delta0(1e9);
-            rmtr->atol(1e-6);
-            rmtr->rtol(1e-10);
-            rmtr->set_grad_smoothess_termination(1e-7);
-
-            rmtr->verbose(verbose_);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);s
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            rmtr->read(input_params_); 
                 
             // Solve 
             rmtr->solve(x);
 
 
-            // if(output_vtk_)
-            //     fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");            
+            if(output_vtk_)
+                fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");            
         }
-
 
 
     private: 
@@ -444,13 +380,13 @@ namespace utopia
         UTOPIA_UNIT_TEST_BEGIN("HckTests");
         #ifdef  WITH_PETSC
 
+            auto n_levels = 3; 
+            auto coarse_dofs = 5; 
+
             // auto n_levels = 4; 
-            // auto coarse_dofs = 20; 
+            // auto coarse_dofs = 100; 
 
-            auto n_levels = 4; 
-            auto coarse_dofs = 10; 
-
-            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
+            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, false, false).run();
         #endif
         UTOPIA_UNIT_TEST_END("HckTests");
 

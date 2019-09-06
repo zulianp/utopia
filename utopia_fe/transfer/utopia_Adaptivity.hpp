@@ -12,8 +12,8 @@ namespace utopia {
 
     class Adaptivity {
     public:
-        void constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M);
-        void constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M);
+        void constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S);
+        void constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S);
 
     private:
         libMesh::DofConstraints dof_constraints_;

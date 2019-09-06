@@ -29,7 +29,7 @@ namespace utopia
     PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,ParamsBratu2D*);
     
     PetscErrorCode Bratu2DFormInitialGuess(DM,ParamsBratu2D*,Vec);
-    PetscErrorCode Bratu2DFormExactSolution(DM,ParamsBratu2D*,Vec);
+    // PetscErrorCode Bratu2DFormExactSolution(DM,ParamsBratu2D*,Vec);
     PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
     PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);    
 
@@ -45,7 +45,7 @@ namespace utopia
 
 
         Bratu2D(const SizeType & n,
-                const Scalar & lambda = 5.0):
+                const Scalar & lambda = 1.0):
                 n_(n), 
                 setup_(false)
         {
@@ -99,15 +99,18 @@ namespace utopia
 
             SNESComputeFunction(snes_, raw_type(x), raw_type(g));
 
+            // remove BC from gradient... 
+
             return true;
         }
             
         virtual bool hessian(const Vector &x, Matrix &hessian) const override
         {
-            wrap(snes_->jacobian, hessian);
+            
+            SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian, snes_->jacobian);
 
-            SNESComputeJacobian(snes_, raw_type(x), raw_type(hessian),  raw_type(hessian));
-
+            // yes, wrap would be nicer, but lets not use it ...
+            convert(snes_->jacobian, hessian); 
             
             return true;
         }

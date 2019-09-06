@@ -26,7 +26,6 @@ namespace utopia
 
 
         public:
-
             LBFGS(const SizeType & m):  m_(m), 
                                         current_m_(0), 
                                         theta_(1.0), 
@@ -509,9 +508,9 @@ namespace utopia
                 bool skip_update = false; 
                 if(dot(y,s) < skip_update_treshold_)
                 {
-                    if(mpi_world_rank()==0){
-                        utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
-                    }
+                    // if(mpi_world_rank()==0){
+                    //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
+                    // }
 
                     skip_update = true; 
                 }                

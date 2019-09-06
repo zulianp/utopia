@@ -53,7 +53,8 @@ namespace utopia
                 Matrix I_u; 
                 DMCreateInterpolation(dms_[l-1], dms_[l], &I, 0);
                 wrap(I, I_u);
-                transfers_.push_back( std::make_shared<IPTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I_u)) );
+                // transfers_.push_back( std::make_shared<IPTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I_u)) );
+                transfers_.push_back( std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I_u)) );
                 MatDestroy(&I);
             }
 

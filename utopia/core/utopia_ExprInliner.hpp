@@ -215,7 +215,7 @@ namespace utopia {
         }
 
         template<class Tensor>
-        inline static Scalar eval_at(const Wrapper<Tensor, 1> &expr, const SizeType i, const SizeType j)
+        inline static Scalar eval_at(const Wrapper<Tensor, 1> &expr, const SizeType i, const SizeType /*j*/)
         {
             assert(j == 0 && "Trying to access tensor of order 1 like an order 2 one.");
             return expr.get(i);

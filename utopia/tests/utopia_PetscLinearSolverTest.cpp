@@ -228,7 +228,7 @@ namespace utopia {
             gmres.sub_ksp_pc_type(KSPPREONLY, PCILU);
 
             gmres.verbose(false);
-            gmres.solve(mat, rhs, sol);
+            gmres.apply(rhs, sol);
 
             DVectord expected = zeros(_n);
             utopia_test_assert(approxeq(expected, sol));

@@ -4,7 +4,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_TestFunctions.hpp"
-
+#include "utopia_Traits.hpp"
 
 namespace utopia
 {
@@ -85,7 +85,8 @@ namespace utopia
 
             assert(point.size().get(0) == this->dim());
 
-            result = zeros(this->dim(), this->dim());
+            if(empty(result))
+                result = zeros(this->dim(), this->dim());
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);
@@ -98,6 +99,14 @@ namespace utopia
             result.set(0, 1, mixed);
             result.set(1, 0, mixed);
             result.set(1, 1, 200.0);
+            return true;
+        }
+
+        bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
+        {
+            UTOPIA_UNUSED(H_pre);
+
+            H = zeros(this->dim(), this->dim());
             return true;
         }
 

@@ -161,15 +161,17 @@ namespace utopia
     private:
         Scalar norm_l2_2(const Vector & s)
         {   
-            return dot(s, I_*s); 
+            if(empty(I_)) {
+                return dot(s, s);
+            } else {
+                return dot(s, I_*s); 
+            }
         }
 
         Scalar norm_l2(const Vector & s)
         {   
             return std::sqrt(norm_l2_2(s)); 
         }
-
-
 
     private:
         Scalar tau_max_; 

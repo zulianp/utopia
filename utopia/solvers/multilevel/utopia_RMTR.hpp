@@ -707,7 +707,7 @@ namespace utopia
                     else if(CONSISTENCY_LEVEL == SECOND_ORDER)
                     {
                         memory_.g[level] += memory_.g_diff[level]; 
-                        
+
                         // memory_.H[level] = memory_.H[level] + memory_.H_diff[level]; 
                         memory_.H[level] += memory_.H_diff[level]; 
                         make_hess_updates = false;                
@@ -1100,7 +1100,6 @@ namespace utopia
         {
             Scalar Rg_norm, g_norm;
             norms2(g_restricted, g_coarse, Rg_norm, g_norm);
-
             return (Rg_norm >= _grad_smoothess_termination * g_norm) ? true : false;
         }
 
@@ -1151,10 +1150,11 @@ namespace utopia
                 _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
             }
 
-            memory_.s[level] *= 0.0; 
+            memory_.s[level] = local_zeros(local_size(memory_.g[level]). get(0)); 
+            
             _tr_subproblems[level]->current_radius(memory_.delta[level]);
             _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
-
+            
             return true;
         }
 
