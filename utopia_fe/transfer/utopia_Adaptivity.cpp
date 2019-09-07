@@ -35,20 +35,21 @@ namespace utopia {
             
             // We might get constraint equations from AMR hanging nodes in 2D/3D
             // or from boundary conditions in any dimension
-            const bool possible_local_constraints = false
-            || !mesh.n_elem()
-#ifdef LIBMESH_ENABLE_AMR
-            || mesh.mesh_dimension() > 1
-#endif
-            ;
-            
+            // const bool possible_local_constraints = false
+            // || !mesh.n_elem()
+            // #ifdef LIBMESH_ENABLE_AMR
+            //             || mesh.mesh_dimension() > 1
+            // #endif
+            //             ;
+                        
             // Even if we don't have constraints, another processor might.
-            bool possible_global_constraints = possible_local_constraints;
-#if defined(LIBMESH_ENABLE_AMR)
-            libmesh_assert(dof_map.comm().verify(mesh.is_serial()));
-            
-            dof_map.comm().max(possible_global_constraints);
-#endif
+            //bool possible_global_constraints = possible_local_constraints;
+
+            // #if defined(LIBMESH_ENABLE_AMR)
+            //             libmesh_assert(dof_map.comm().verify(mesh.is_serial()));
+                        
+            //             dof_map.comm().max(possible_global_constraints);
+            // #endif
             
             // if (!possible_global_constraints)
             // {
@@ -108,6 +109,8 @@ namespace utopia {
         
         
         std::vector<libMesh::dof_id_type> elem_dofs;
+        std::vector<libMesh::dof_id_type> I(1,0), J(1,0);
+        std::vector<double> V(1, 0);
         
         auto      el     = mesh.active_local_elements_begin();
         
@@ -126,7 +129,7 @@ namespace utopia {
         
         libMesh::DenseMatrix<libMesh::Number> C;
         
-        Write<USparseMatrix> w(M), w_2(S);
+        Write<USparseMatrix> w(M, utopia::GLOBAL_INSERT), w_2(S, utopia::GLOBAL_INSERT);
         
         for ( ; el != end_el; ++el)
         {
@@ -220,8 +223,13 @@ namespace utopia {
                 if (dof_map.is_constrained_dof(elem_dofs[i]))
                 {
                     // If the DOF is constrained
-                    
-                    S.set (elem_dofs[i],elem_dofs[i],0.0);
+
+                    I[0] = elem_dofs[i];
+                    J[0] = elem_dofs[i];
+                    V[0] = 0.0;
+
+                    //S.set (elem_dofs[i],elem_dofs[i],0.0);
+                    S.set_matrix(I, J, V);
                     
                     auto pos = dof_constraints_.find(elem_dofs[i]);
                     
@@ -238,15 +246,25 @@ namespace utopia {
                          j != n_elem_dofs; j++)
                     if (elem_dofs[j] == item.first){
                         C(i,j) = item.second;
-                        M.set (elem_dofs[i],elem_dofs[j],item.second);
-                        auto value = -1.0*item.second;
-                        S.set (elem_dofs[i],elem_dofs[j],item.second);
+                        I[0] = elem_dofs[i];
+                        J[0] = elem_dofs[j];
+                        V[0] = item.second;
+
+                         M.set_matrix(I, J, V);
+                         S.set_matrix(I, J, V);
+
+                        // M.set (elem_dofs[i],elem_dofs[j],item.second);
+                        // auto value = -1.0*item.second;
+                        // S.set (elem_dofs[i],elem_dofs[j],item.second);
                     }
                 }
                 else
                 {
                     C(i,i) = 1.;
-                    M.set (elem_dofs[i],elem_dofs[i],1.0);
+                    I[0] = elem_dofs[i];
+                    J[0] = elem_dofs[i];
+                    V[0] = 1.0;
+                    M.set_matrix(I,J,V);
                 }
             }
             // std::cout<<"current_elem_MOOSE: "<<ele[0]<<std::endl;
@@ -367,7 +385,7 @@ namespace utopia {
                     //std::cout<<"dof_map.is_constrained_dof(my_dof_g)"<<dof_map.is_constrained_dof(my_dof_g)<<std::endl;
                     
                     constraint_row = &(constraints[my_dof_g]);
-                    libmesh_assert(constraint_row->empty());
+                    //libmesh_assert(constraint_row->empty());
                 }
                 
                 // The support point of the DOF
