@@ -255,8 +255,6 @@ namespace utopia {
 
         if(!empty(cm_to)) {
             D = transpose(cm_to) * D * (cm_to);
-            auto test = transpose(cm_to) * D * (cm_to);
-
 //            rename("d", D);
 //            write("D.m", D);
 //            rename("cm", cm_to);
@@ -269,7 +267,16 @@ namespace utopia {
             }
 
         } else {
+         
             if(!empty(cm_from)) {
+               
+                rename("b", B);
+                write("B.m", B);
+
+                rename("cm", cm_from);
+                write("CM.m", cm_from);
+
+
                 B = B * (cm_from);
             }
         }
@@ -283,8 +290,8 @@ namespace utopia {
         
         temp_T += post_constraint_matrix_to * temp_T;
             
-//        rename("tc", temp_T);
-//        write("TC.m", temp_T);
+        rename("tc", temp_T);
+        write("TC.m", temp_T);
 //
 //        rename("hn", post_constraint_matrix_to);
 //        write("HN.m", post_constraint_matrix_to);
@@ -324,6 +331,9 @@ namespace utopia {
             } else {
                 tensorize(T_x, opts.n_var, T);
             }
+
+            rename("t", T);
+            write("T.m", T);
         }
     }
 
@@ -730,10 +740,10 @@ namespace utopia {
             a.constraint_matrix(*from_mesh, *from_dofs, opts.from_var_num, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
             a.constraint_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
-            disp("from");
-            disp(*data.constraint_matrix_from);
-            disp("to");
-            disp(*data.constraint_matrix_to);
+            // disp("from");
+            // disp(*data.constraint_matrix_from);
+            // disp("to");
+            // disp(*data.constraint_matrix_to);
         }
 
         if(spatial_dim == 1) {
@@ -854,10 +864,10 @@ namespace utopia {
             a.constraint_matrix(to_mesh,to_dofs,opts.to_var_num,
                 *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
-            disp("from");
-            disp(*data.constraint_matrix_from);
-            disp("to");
-            disp(*data.constraint_matrix_to);
+            // disp("from");
+            // disp(*data.constraint_matrix_from);
+            // disp("to");
+            // disp(*data.constraint_matrix_to);
         }
 
         if(spatial_dim == 1) {
@@ -896,10 +906,10 @@ namespace utopia {
             a.constraint_matrix(mesh, dofs, opts.to_var_num,
                                 *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
-            disp("from");
-            disp(*data.constraint_matrix_from);
-            disp("to");
-            disp(*data.constraint_matrix_to);
+            // disp("from");
+            // disp(*data.constraint_matrix_from);
+            // disp("to");
+            // disp(*data.constraint_matrix_to);
         }
 
         auto spatial_dim = mesh.spatial_dimension();

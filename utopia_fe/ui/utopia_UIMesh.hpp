@@ -12,6 +12,51 @@
 #include <memory>
 
 namespace utopia {
+
+    inline void refine_0(libMesh::UnstructuredMesh &mesh)
+    {
+        libMesh::MeshRefinement mesh_refinement(mesh);
+        auto e_it = elements_begin(mesh);
+
+        if(e_it != elements_end(mesh)) {
+            (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+        }
+
+        mesh_refinement.make_flags_parallel_consistent();
+        mesh_refinement.refine_elements();
+        mesh_refinement.test_level_one(true);
+
+        mesh.prepare_for_use();
+    }
+
+    inline void random_refine(
+        libMesh::UnstructuredMesh &mesh,
+        const int refinement_loops
+        )
+    {
+
+        libMesh::MeshRefinement mesh_refinement(mesh);
+
+        for(int i = 0; i < refinement_loops; ++i) {
+            mesh_refinement.clean_refinement_flags();
+
+            int idx = 0;
+            for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it, ++idx) {
+                auto val = idx % 2 == 1;
+                if(val) {
+                    (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+                }
+            }
+
+            mesh_refinement.make_flags_parallel_consistent();
+            mesh_refinement.refine_elements();
+            mesh_refinement.test_level_one(true);
+        }
+
+        // mesh_refinement.clean_refinement_flags();
+        mesh.prepare_for_use();
+    }
+
     template<class Mesh>
     class UIMesh {};// final : public Configurable { };
 
@@ -191,6 +236,25 @@ namespace utopia {
                     
                 });
             });
+
+
+            bool must_refine_0 = false;
+            is.get("refine-0", must_refine_0);
+
+            bool must_random_refine = false;
+            is.get("random-refine", must_random_refine);
+
+            int n_random_refinements = 1;
+            is.get("random-refinements", n_random_refinements);
+
+            if(must_refine_0) {
+                refine_0(*mesh_);
+            }
+
+            if(must_random_refine) {
+                random_refine(*mesh_, n_random_refinements);
+            }
+
         }
 
         inline libMesh::DistributedMesh &mesh()

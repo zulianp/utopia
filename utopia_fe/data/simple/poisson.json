@@ -1,7 +1,10 @@
 {
     "mesh": {
         "type": "square",
-        "refinements" : 4
+        "n-x" : 10,
+        "n-y" : 10,
+        "refinements" : 0,
+        "random-refine" : false
     },
     "space": {
         "system-name" : "poisson",
@@ -17,7 +20,7 @@
                 "type"  : "expr",
                 "value" : "sin(5*y)^2"
             },
-             {
+            {
                 "side"  : 3,
                 "type"  : "expr",
                 "value" : "sin(1.0-y)^2"
