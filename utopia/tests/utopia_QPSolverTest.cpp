@@ -167,26 +167,37 @@ namespace utopia {
 
             const std::string data_path = Utopia::instance().get("data_path");
 
-            read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
-            read(data_path + "/laplace/matrices_for_petsc/f_A", A);
-            read(data_path + "/laplace/matrices_for_petsc/I_2", R);
-            read(data_path + "/laplace/matrices_for_petsc/I_3", Q);
+            read(data_path + "/forQR/b", rhs);
+            read(data_path + "/forQR/A", A);            
+            read(data_path + "/forQR/Q", Q);
+            read(data_path + "/forQR/R", R);
 
+            R = transpose(R);
 
+            //Matrix QtAQ = transpose(Q)*A*Q;
+            //Vector Qtrhs = transpose(Q)*rhs;
+            //disp(rhs);
+            //disp(A);
+            
             Vector x = local_values(local_size(rhs).get(0), 0.0);
 
 
-            auto solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            auto solver = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
 
-            Vector upper_bound = local_values(local_size(rhs).get(0), 9e9);
-            Vector lower_bound  = local_values(local_size(rhs).get(0), -9e9);
+            Vector upper_bound = local_values(local_size(rhs).get(0), 0);
+            Vector lower_bound  = local_values(local_size(rhs).get(0), 0);
 
-            solver->max_it(10);
+            solver->max_it(15000);
+            solver->stol(1e-15);
             solver->verbose(true);
 
             solver->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
+            solver->set_R(R);
 
             solver->solve(A, rhs, x); 
+
+
+            disp(x);
 
         }
 

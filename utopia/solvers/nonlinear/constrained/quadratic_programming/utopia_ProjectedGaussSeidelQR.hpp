@@ -1,0 +1,210 @@
+#ifndef UTOPIA_PROJECTED_GAUSS_SEIDEL_QR_HPP
+#define UTOPIA_PROJECTED_GAUSS_SEIDEL_QR_HPP
+
+#include "utopia_ForwardDeclarations.hpp"
+#include "utopia_BoxConstraints.hpp"
+#include "utopia_IterativeSolver.hpp"
+#include "utopia_Smoother.hpp"
+#include "utopia_QPSolver.hpp"
+#include "utopia_RowView.hpp"
+#include "utopia_ProjectedGaussSeidel.hpp"
+#include <cmath>
+
+namespace utopia {
+    //slow and innefficient implementation just for testing
+    template<class Matrix, class Vector>
+    class ProjectedGaussSeidelQR : public ProjectedGaussSeidel<Matrix, Vector>
+    {
+    public:
+
+        DEF_UTOPIA_SCALAR(Matrix)
+
+        ProjectedGaussSeidelQR()
+        : use_line_search_(false), n_local_sweeps_(3)
+        {
+            ProjectedGaussSeidel<Matrix, Vector>::use_line_search(false);
+
+        }
+
+        ProjectedGaussSeidelQR(const ProjectedGaussSeidelQR &) = default;
+
+        inline ProjectedGaussSeidelQR * clone() const override
+        {
+            auto ptr = new ProjectedGaussSeidelQR(*this);
+            ptr->set_box_constraints(this->get_box_constraints());
+            return ptr;
+        }
+
+
+        void read(Input &in) override
+        {
+            QPSolver<Matrix, Vector>::read(in);
+            Smoother<Matrix, Vector>::read(in);
+
+            in.get("use_line_search", use_line_search_);
+            in.get("n_local_sweeps", n_local_sweeps_);
+        }
+
+        void set_R(const Matrix &R){
+            R_ = R;
+        }
+
+
+        void print_usage(std::ostream &os) const override
+        {
+            QPSolver<Matrix, Vector>::print_usage(os);
+            Smoother<Matrix, Vector>::print_usage(os);
+
+            this->print_param_usage(os, "use_line_search", "bool", "Determines if line-search should be used.", "true");
+            this->print_param_usage(os, "n_local_sweeps", "int", "Number of local sweeps.", "3");
+        }
+
+        bool step(const Matrix &A, const Vector &b, Vector &x) override
+        {
+            r = b - A * x;
+
+
+            //localize gap function for correction
+            g = this->get_upper_bound() - x;
+            l = this->get_lower_bound() - x;
+
+            c *= 0.;
+            Scalar g_i, l_i;
+            Range rr = row_range(A);
+            {
+
+                ReadAndWrite<Vector> rw_c(c);
+                Read<Vector> r_r(r), r_d_inv(d_inv), r_g(g), r_l(l);
+                Read<Matrix> r_A(A);
+                Read<Matrix> r_R(R_);                
+
+                SizeType n_rows = local_size(R_).get(0); 
+                //SizeType n_cols = local_size(R_).get(1); 
+
+                //std::cout<<"n_cols: "<< this->n_local_sweeps() << "   n_rows: "<< n_rows << "  \n";
+
+                for(SizeType il = 0; il < this->n_local_sweeps(); ++il) 
+                {
+                    for(auto i = rr.begin(); i != rr.end(); ++i) 
+                    {
+                        RowView<const Matrix> row_view(A, i);
+                        decltype(i) n_values = row_view.n_values();
+
+                        auto s = r.get(i);
+                        
+                        for(auto index = 0; index < n_values; ++index) 
+                        {
+                            const decltype(i) j = row_view.col(index);
+                            const auto a_ij = row_view.get(index);
+
+                            if(rr.inside(j) && i != j) 
+                            {
+                                s -= a_ij * c.get(j);
+                            }
+                        }
+
+                        //update correction
+                        c.set(i, d_inv.get(i)*s);
+
+                        if  (i < n_rows)
+                        {
+                            RowView<const Matrix> row_viewR(R_, i);     
+                            decltype(i) nnz_R = row_viewR.n_values();
+
+                            Scalar r_sum = 0.0;
+                            Scalar r_ii = 0.0; 
+                            for(auto index = 0; index < nnz_R; ++index) 
+                            {
+                                r_ii = 0.0; 
+                                const decltype(i) j = row_viewR.col(index);
+                                const auto r_ij = row_viewR.get(index);
+
+                                //if(rr.inside(j) && i != j) 
+                                //{
+                                //std::cout << "i:" << i <<"\tj:" << j << std::endl;
+                                if(j < i)
+                                {
+                                    //        std::cout << "i:" << i <<"\tj:" << j << std::endl;
+                                    r_sum -= r_ij * c.get(j);
+                                }
+                                else if(i == j)
+                                {
+                                    r_ii = r_ij;
+                                }
+                            }
+    
+                            //std::cout <<"i:" << i << "\trow_ii:" << r_ii << std::endl;
+
+                            g_i = (g.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+                            l_i = (l.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+
+                            //update correction
+                            c.set(i, std::max(std::min( d_inv.get(i) * s, g_i), l_i ));
+                        }   
+
+
+                        //std::cout << "row_sum:" << r_sum << std::endl;
+                    }
+                }
+            }
+
+
+
+            x += c;
+            return true;
+        }
+
+        void init(const Matrix &A)
+        {
+            d = diag(A);
+            d_inv = 1./d;
+            c = local_zeros(local_size(A).get(0));
+
+            if(use_line_search_) {
+                inactive_set_ = local_zeros(local_size(c));
+            }
+        }
+
+
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        {
+            IterativeSolver<Matrix, Vector>::update(op);
+            init(*op);
+        }
+
+
+
+        void use_line_search(const bool val)
+        {
+            use_line_search_ = val;
+        }
+
+        inline SizeType n_local_sweeps() const
+        {
+            return n_local_sweeps_;
+        }
+
+        inline void n_local_sweeps(const SizeType n_local_sweeps)
+        {
+            n_local_sweeps_ = n_local_sweeps;
+        }
+
+        inline void use_symmetric_sweep(const bool use_symmetric_sweep)
+        {
+            use_symmetric_sweep_ = use_symmetric_sweep;
+        }
+
+
+    private:
+        bool use_line_search_;
+        bool use_symmetric_sweep_;
+        SizeType n_local_sweeps_;
+
+        Vector r, d, g,l ,c, d_inv, x_old, descent_dir;
+        Vector inactive_set_;
+        Vector is_c_;
+        Matrix R_;
+    };
+}
+
+#endif //UTOPIA_PROJECTED_GAUSS_SEIDEL_QR_HPP

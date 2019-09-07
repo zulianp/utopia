@@ -84,7 +84,7 @@ namespace utopia {
 
             x_old = x;
             bool converged = false;
-            const SizeType check_s_norm_each = 5;
+            const SizeType check_s_norm_each = 1;
 
             int iteration = 0;
             while(!converged) {
@@ -110,7 +110,6 @@ namespace utopia {
 
                 x_old = x;
             }
-
             return converged;
         }
 
@@ -199,7 +198,7 @@ namespace utopia {
             return true;
         }
 
-        bool step(const Matrix &A, const Vector &b, Vector &x)
+        virtual bool step(const Matrix &A, const Vector &b, Vector &x)
         {
             r = b - A * x;
             //localize gap function for correction
