@@ -162,42 +162,85 @@ namespace utopia {
 
             std::cout<<"----------- Ciao Hardik ------------  \n"; 
 
-            Vector rhs;
-            Matrix A, R, Q; 
+            Vector rhs, x;
+            Matrix A, R, Q, I; 
 
             const std::string data_path = Utopia::instance().get("data_path");
 
             read(data_path + "/forQR/b", rhs);
+            read(data_path + "/forQR/x", x);
             read(data_path + "/forQR/A", A);            
             read(data_path + "/forQR/Q", Q);
             read(data_path + "/forQR/R", R);
+            read(data_path + "/forQR/I", I);
 
-            R = transpose(R);
 
-            //Matrix QtAQ = transpose(Q)*A*Q;
-            //Vector Qtrhs = transpose(Q)*rhs;
+            // chop_abs(Q, 1e-4); 
+
+
+            std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
+            std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
+            std::cout<<"R: "<< local_size(R).get(0) << "  ,  "<<local_size(R).get(1) <<   "  \n"; 
+            std::cout<<"I: "<< local_size(I).get(0) << "  \n"; 
+            std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
+
+
+            R = transpose(R);   
+
+
+            Matrix QtAQ = transpose(Q)*A*Q;
+            Vector Qtrhs = transpose(Q)*rhs;
+            Vector Qtx = transpose(Q) * x; 
+
+
             //disp(rhs);
             //disp(A);
             
-            Vector x = local_values(local_size(rhs).get(0), 0.0);
+            // Vector x = local_values(local_size(rhs).get(0), 0.0);
 
 
-            auto solver = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto smoother = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
 
             Vector upper_bound = local_values(local_size(rhs).get(0), 0);
             Vector lower_bound  = local_values(local_size(rhs).get(0), 0);
 
-            solver->max_it(15000);
-            solver->stol(1e-15);
-            solver->verbose(true);
+            // smoother->max_it(2);
+            // smoother->stol(1e-14);
+            // smoother->verbose(true);
 
-            solver->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
-            solver->set_R(R);
+            // smoother->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
+            // smoother->set_R(R);
+            // smoother->solve(A, rhs, x); 
 
-            solver->solve(A, rhs, x); 
+
+            // MG test starts here...
+            std::vector<std::shared_ptr <Matrix> > interpolation_operators;
+            interpolation_operators.push_back(make_ref(I));
 
 
-            disp(x);
+
+            MultigridQR<Matrix, Vector> multigrid(smoother, direct_solver);
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.fix_semidefinite_operators(true); 
+
+            multigrid.use_line_search(true); 
+            multigrid.update(make_ref(QtAQ));
+            multigrid.verbose(true);
+
+
+
+            // This should be somewhere else... 
+            multigrid.set_R(R); 
+            multigrid.set_upper_bound(upper_bound); 
+            multigrid.set_lower_bound(lower_bound); 
+
+
+
+            multigrid.apply(Qtrhs, Qtx);
+            x = Q * Qtx; 
+
+            // disp(x);
 
         }
 

@@ -9,7 +9,7 @@
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
-
+#include "utopia_ProjectedGaussSeidelQR.hpp"
 
 #include "utopia_Recorder.hpp"
 
@@ -72,7 +72,7 @@ namespace utopia
          * @param[in]  smoother       The smoother.
          * @param[in]  coarse_solver  The direct solver for coarse level.
          */
-        Multigrid(const std::shared_ptr<Smoother> &smoother,
+        MultigridQR(const std::shared_ptr<Smoother> &smoother,
                   const std::shared_ptr<Solver>   &coarse_solver)
         : smoother_cloneable_(smoother),
           coarse_solver_(coarse_solver),
@@ -83,7 +83,7 @@ namespace utopia
             this->must_generate_masks(true);
         }
 
-        ~Multigrid(){}
+        ~MultigridQR(){}
 
         void read(Input &in) override
         {
@@ -177,6 +177,8 @@ namespace utopia
             r_norm = norm2(memory.r[l]);
             r0_norm = r_norm;
 
+            Vector x_old = x; 
+
             std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
             this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "r_norm" });
 
@@ -212,11 +214,14 @@ namespace utopia
 
                 x += memory.c[l];
 
+                rel_norm = norm2(x_old - x); 
+                x_old = x; 
+
                 // UTOPIA_RECORD_VALUE("x += memory.c[l]", x);
 
                 memory.r[l] = rhs - level(l).A() * x;
                 r_norm = norm2(memory.r[l]);
-                rel_norm = r_norm/r0_norm;
+                // rel_norm = r_norm/r0_norm;
 
                 // print iteration status on every iteration
                 if(this->verbose())
@@ -416,8 +421,17 @@ namespace utopia
          */
         inline bool smoothing(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1)
         {
-            smoothers_[l]->sweeps(nu);
-            smoothers_[l]->smooth(rhs, x);
+            smoothers_[l]->sweeps(5);
+
+
+            ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get()); 
+            GS_smoother->set_R(R_);            
+            GS_smoother->set_box_constraints(make_box_constaints(make_ref(lb_),  make_ref(ub_)));          
+            GS_smoother->smooth(rhs, x);
+
+            // exit(0); 
+
+            // smoothers_[l]->smooth(rhs, x);
             return true;
         }
 
@@ -436,9 +450,9 @@ namespace utopia
             return true;
         }
 
-        Multigrid * clone() const override
+        MultigridQR * clone() const override
         {
-           return new Multigrid(
+           return new MultigridQR(
             std::shared_ptr<Smoother>(smoother_cloneable_->clone()),
             std::shared_ptr<Solver>(coarse_solver_->clone())
             );
@@ -496,6 +510,22 @@ namespace utopia
         {
           return block_size_;
         }
+
+        void set_R(const Matrix & R)
+        {
+          R_ = R; 
+        }
+
+        void set_lower_bound(const Vector & lb)
+        {
+          lb_ = lb; 
+        }        
+
+        void set_upper_bound(const Vector & ub)
+        {
+          ub_ = ub; 
+        }                
+
 
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;
