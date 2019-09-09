@@ -130,9 +130,6 @@ namespace utopia {
 
             for (const auto & dof : elem_dofs)
             dof_set.erase (dof);
-
-
-;
             
     
             if (!dof_set.empty() ||  

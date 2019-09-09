@@ -61,6 +61,7 @@
 namespace utopia {
 
     void apply_boundary_conditions(libMesh::DofMap &dof_map, USparseMatrix &mat, UVector &vec);
+    void apply_boundary_conditions(LibMeshFunctionSpace &V, USparseMatrix &mat, UVector &vec);
     void apply_boundary_conditions(libMesh::DofMap &dof_map, UVector &vec);
 
     template<class Vector>
