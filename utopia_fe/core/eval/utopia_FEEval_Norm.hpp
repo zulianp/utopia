@@ -14,7 +14,7 @@ namespace utopia {
 
         inline static auto apply(
             const Expr &expr,
-            AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::trace(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx) )
+            AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::norm2(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx) )
         {
             static_assert(Type == 2, "TODO other norms");
 

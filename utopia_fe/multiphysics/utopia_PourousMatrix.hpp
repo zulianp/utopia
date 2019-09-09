@@ -8,6 +8,7 @@
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_NewTransferAssembler.hpp"
 #include "utopia_FluxPostProcessor.hpp"
+#include "utopia_FractureFlowUtils.hpp"
 
 #include "libmesh/parallel_mesh.h"
 
@@ -18,71 +19,83 @@ namespace utopia {
     template<class Matrix, class Vector>
     class GradientRecovery {
     public:
+        typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
+        using Scalar = UTOPIA_SCALAR(Vector);
 
-        void init(){}
-
-        void recover()
+        void init(FunctionSpaceT &V)
         {
-            // m_utopia_status("FractureFlowTransportSimulation::Transport::assemble_aux_quantities begin");
-            // Chrono chrono; chrono.start();
+            int dim = V.mesh().spatial_dimension();
+            auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("gradient-recover");
+            grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("p", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 
-            // auto &C = space->subspace(0);
-            // const int dim = C.mesh().spatial_dimension();
+            for(int i = 0; i < dim; ++i) {
+                grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("grad_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+            }
 
-            // auto &P = aux_space.subspace(0);
-            // auto W = aux_space.subspace(1, dim + 1);
+            grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("e", libMesh::Order(0), libMesh::MONOMIAL) );
 
-            // auto p = trial(P);
-            // auto u = trial(W);
-            // auto v = test(W);
+            grad_space_.subspace(0).initialize();
+        }
 
-            // UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list());
-            // copy_values(C, pressure_w, P, aux_pressure);
-            // synchronize(aux_pressure);
+        void recover(const FunctionSpaceT &V, const Vector &sol)
+        {
+            Chrono chrono; chrono.start();
+            const int dim = V.mesh().spatial_dimension();
 
-            // auto ph = interpolate(aux_pressure, p);
+            auto &P = grad_space_.subspace(0);
+            auto W = grad_space_.subspace(1, dim + 1);
+            auto E = grad_space_.subspace(dim + 1); //error space
 
-            // //FIXME If do not put paranthesis it gives priority to the minus instead of multiplication
-            // //and there is a bug with the unary -dot(a, b) apparently
-            // auto l_form = -(
-            //          inner(
-            //              flow.diffusion_tensor * grad(ph),
-            //              ctx_fun(flow.sampler) * v
-            //          ) * dX
-            // );
+            auto p = trial(P);
+            auto u = trial(W);
+            auto v = test(W);
+            auto e = test(E);
 
-            // auto b_form = inner(trial(aux_space), test(aux_space)) * dX;
+            auto &dof_map = P.dof_map();
 
-            // USparseMatrix aux_mass_matrix;
-            // UVector M_x_v;
-            // utopia::assemble(l_form, M_x_v);
-            // utopia::assemble(b_form, aux_mass_matrix);
+            UVector p_interp_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            copy_values(V, sol, P, p_interp_buff);
+            synchronize(p_interp_buff);
 
-            // UVector aux_values = local_zeros(local_size(M_x_v));
+            // auto p_interp = interpolate(p_interp_buff, p);
+            // auto grad_form = inner(grad(p_interp), v) * dX;
 
-            // //this mass vector contains also the porosity
-            // copy_values(C, mass_vector, aux_space.subspace(dim + 1), M_x_v);
+            // auto mass_form = inner(coeff(1.0), v) * dX;
 
-            // if(lump_mass_matrix) {
-            //     UVector aux_mass_vector = sum(aux_mass_matrix, 1);
-            //     aux_values = e_mul(M_x_v, 1./aux_mass_vector);
-            // } else {
-            //     GMRES<USparseMatrix, UVector>("bjacobi").solve(aux_mass_matrix, M_x_v, aux_values);
-            // }
+            // UVector grad_ph, mass_vec;
+            // utopia::assemble(grad_form, grad_ph);
+            // utopia::assemble(mass_form, mass_vec);
 
-            // copy_values(C, pressure_w, P, aux_values);
+            // UVector grad_p_projected = e_mul(grad_ph, 1./mass_vec);
+            // UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            // grad_p_projected_buff = grad_p_projected;
+            // synchronize(grad_p_projected_buff);
+
+            // auto grad_interp = interpolate(grad_p_projected_buff, u);
+            // auto error_form  = inner(norm2(grad_interp - grad(p_interp)), e) * dX;
+            // auto vol_form    = inner(trial(E), e) * dX;
+
+            // UVector error, vol;
+            // utopia::assemble(error_form, error);
+            // utopia::assemble(vol_form,   vol);
+            // error = e_mul(error, 1./vol);
+
+            // UVector aux_values = p_interp_buff + grad_p_projected + error;
 
             // utopia::convert(aux_values, *P.equation_system().solution);
             // P.equation_system().solution->close();
 
-
-            // m_utopia_status("FractureFlowTransportSimulation::Transport::assemble_aux_quantities end");
-            // chrono.stop();
-
-            // std::cout << chrono << std::endl;
+            chrono.stop();
+            std::cout << chrono << std::endl;
         }
 
-        ProductFunctionSpace<LibMeshFunctionSpace> grad_space_;
+        inline bool empty() const
+        {
+            return grad_space_.n_subspaces() == 0;
+        }
+
+    private:
+        ProductFunctionSpace<FunctionSpaceT> grad_space_;
     };
 
     template<class Matrix, class Vector>
@@ -298,6 +311,7 @@ namespace utopia {
 
         using Mortar = utopia::Mortar<Matrix, Vector>;
         using Super  = utopia::PostProcessable<Matrix, Vector>;
+        using GradientRecoveryT = utopia::GradientRecovery<Matrix, Vector>;
         using Scalar = UTOPIA_STORE(Vector);
 
 
@@ -315,6 +329,13 @@ namespace utopia {
             flow_model_ = flow;
 
             in.get("mortar", mortar_);
+
+            bool adaptive_refinement = false;
+            in.get("adaptive-refinement", adaptive_refinement);
+
+            if(adaptive_refinement) {
+                gradient_recovery_.init(space());
+            }
 
             init();
         }
@@ -345,6 +366,10 @@ namespace utopia {
         inline void post_process_flow(const Vector &x)
         {
             Super::post_process(space(), x);
+
+            if(!gradient_recovery_.empty()) {
+                gradient_recovery_.recover(space(), x);
+            }
         }
 
         inline FunctionSpaceT &space()
@@ -376,6 +401,7 @@ namespace utopia {
         UIFunctionSpace<FunctionSpaceT>  space_;
         std::shared_ptr<Model<Matrix, Vector>> flow_model_;
         Mortar mortar_;
+        GradientRecoveryT gradient_recovery_;
     };
 
 }

@@ -76,7 +76,56 @@ namespace utopia {
         return left.dot(right);
     }
 
+    // template<typename T>
+    // inline static T inner(const double &left, libMesh::DenseVector<T> &&right)
+    // {
+    //     right.scale(left);
+    //     const std::size_t n = right.size();
 
+    //     T ret = 0.0;
+    //     for(std::size_t i = 0; i < n; ++i) {
+    //         ret += right(i);
+    //     }
+
+    //     return ret;
+    // }
+
+
+    // template<typename T>
+    // inline static T inner(const double &left, const libMesh::DenseVector<T> &right)
+    // {
+    //     libMesh::DenseVector<T> r_copy = right;
+    //     return inner(left, std::move(r_copy));
+    // }
+
+
+    // template<typename T>
+    // inline static T inner(const libMesh::DenseVector<T> &right, const double &left)
+    // {
+    //     libMesh::DenseVector<T> r_copy = right;
+    //     return inner(left, std::move(r_copy));
+    // }
+
+    // template<typename T>
+    // inline static T inner(const double &left, libMesh::VectorValue<T> &&right)
+    // {
+    //     right *= (left);
+    //     const std::size_t n = LIBMESH_DIM;
+
+    //     T ret = 0.0;
+    //     for(std::size_t i = 0; i < n; ++i) {
+    //         ret += right(i);
+    //     }
+
+    //     return ret;
+    // }
+
+    // template<typename T>
+    // inline static T inner(const double &left, const libMesh::VectorValue<T> &right)
+    // {
+    //     libMesh::DenseVector<T> r_copy = right;
+    //     return inner(left, std::move(r_copy));
+    // }
 
     template<typename T>
     inline static T inner(const libMesh::DenseVector<T> &left, const libMesh::VectorValue<T> &right)
@@ -1543,11 +1592,83 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n; ++i) {
                 ret[i] = utopia::norm2(vals[i]);
-            }
+          }
 
             return ret;
         }
 
+        // template<class T, int Order>
+        // static auto norm2(
+        //     const QValues<LMDenseVector> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        // {
+        //     auto n = vals.size();
+        //     QValues<double> ret(n);
+
+        //     for(std::size_t i = 0; i < n; ++i) {
+        //         ret[i] = utopia::norm2(vals[i]);
+        //     }
+
+        //     return ret;
+        // }
+
+
+        // static auto norm2(
+        //     const QValues<DenseVectorT> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        // {
+        //     auto n = vals.size();
+        //     QValues<double> ret(n);
+
+        //     for(std::size_t i = 0; i < n; ++i) {
+        //         ret[i] = vals[i].l2_norm();
+        //     }
+
+        //     assert(false);
+        //     return ret;
+        // }
+
+        // static auto norm2(
+        //     const QValues<TensorValueT> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        // {
+        //     auto n = vals.size();
+        //     QValues<double> ret(n);
+
+        //     for(std::size_t i = 0; i < n; ++i) {
+        //         ret[i] = vals[i].norm();
+        //     }
+
+        //     return ret;
+        // }
+
+
+        // static auto norm2(
+        //     const DenseVectorT &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> double
+        // {
+        //     return vals.l2_norm();
+        // }
+
+        // static auto norm2(
+        //     const std::vector<double> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> double
+        // {
+        //     double ret = 0.0;
+
+        //     for(auto v : vals) {
+        //         ret += v * v;
+        //     }
+
+        //     return std::sqrt(ret);
+        // }
+
+        // template<class T>
+        // static double norm2(const T &val, const AssemblyContext<LIBMESH_TAG> &)
+        // {
+        //     assert(false);
+        //     return 0.;
+        // }
 
         template<class T, int Order>
         static auto apply_unary(
@@ -3418,6 +3539,96 @@ namespace utopia {
 
             return ret;
         }
+
+        // template<class Op>
+        inline static auto apply_binary(
+            const Interpolate<UVector,TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>> &left,
+            const GradInterpolate<UVector, TrialFunction<LibMeshFunctionSpace> > &right,
+            // const Op &op,
+            const Minus &op,
+            AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+        {
+            auto f = fun(left.coefficient(), left.fun(), ctx);
+            auto g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+            auto ret = g;
+
+            std::size_t n_quad_points = g.size();
+
+            for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+                subtract(f[qp], g[qp].implementation(), ret[qp].implementation());
+            }
+
+            return std::move(ret);
+        }
+
+        template<class Vector>
+        inline static void subtract(
+            const Vector &left,
+            const Vector &right,
+            Vector &result)
+        {
+            result = left;
+            result -= right; 
+        }
+
+
+
+        // template<typename T, int Order, typename C, class Op>
+        // inline static auto apply_binary(
+        //     const QValues<Wrapper<T, Order>> &left,
+        //     const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+        //     const Op &op,
+        //     AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+        // {
+        //     auto g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+        //     auto ret = g;
+
+        //     std::size_t n_quad_points = g.size();
+
+        //     for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+        //         ret[qp].implementation()[qp] = apply_binary(left[qp].implementation(), g[qp].implementation(), op, ctx);
+        //     }
+
+        //     return std::move(ret);
+        // }
+
+        // template<typename T, int Order, typename C, class Op>
+        // inline static auto apply_binary(
+        //     const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+        //     const QValues<Wrapper<T, Order>> &left,
+        //     const Op &op,
+        //     AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+        // {
+        //     auto g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+        //     auto ret = g;
+
+        //     std::size_t n_quad_points = g.size();
+
+        //     for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+        //         ret[qp].implementation()[qp] = apply_binary(g[qp].implementation(), left[qp].implementation(), op, ctx);
+        //     }
+
+        //     return std::move(ret);
+        // }
+
+
+
+        // inline static auto apply_binary(
+        //     const libMesh::DenseVector<double> &left,
+        //     const libMesh::DenseVector<double> &right,
+        //     const Minus &op,
+        //     AssemblyContext<LIBMESH_TAG> &ctx) -> libMesh::DenseVector<double>
+        // {
+        //     auto ret = right;
+
+        //     std::size_t n_quad_points = ret.size();
+
+        //     for(std::size_t i = 0; i < n_quad_points; ++i) {
+        //         ret(i) = op.apply(left(i), right(i));
+        //     }
+
+        //     return std::move(ret);
+        // }
 
         template<class Op>
         inline static FunctionType apply_binary(const Number<double> &left, const TestFunction<LibMeshFunctionSpace> &right, const Op &op, AssemblyContext<LIBMESH_TAG> &ctx)
