@@ -589,7 +589,8 @@ namespace utopia {
             *x_m_ = local_zeros(dof_map_m.n_local_dofs());
             pourous_matrix_.assemble_flow(*x_m_, *A_m_, *rhs_m_);
 
-            apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
+            // apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
+            apply_boundary_conditions(pourous_matrix_.space(), *A_m_, *rhs_m_);
 
             if(report_) {
                 report_->add_stat(pourous_matrix_.space(), *A_m_);
@@ -619,7 +620,8 @@ namespace utopia {
                     *x_f_[i] = local_zeros(dof_map_f.n_local_dofs());
                     dfn->assemble_flow(*x_f_[i], *A_f_[i], *rhs_f_[i]);
 
-                    apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    // apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    apply_boundary_conditions(dfn->space(), *A_f_[i], *rhs_f_[i]);
 
                     if(report_) {
                         report_->add_stat(dfn->space(), *A_f_[i]);
@@ -636,7 +638,8 @@ namespace utopia {
                     rhs += transpose(*T) * (*rhs_f_[i]);
                 }
 
-                apply_boundary_conditions(dof_map_m, A, rhs);
+                // apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
+                apply_boundary_conditions(pourous_matrix_.space(), *A_m_, *rhs_m_);
 
             } else //if(assembly_strategy_ == "monolithic") 
             {

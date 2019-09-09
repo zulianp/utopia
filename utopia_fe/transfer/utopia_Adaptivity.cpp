@@ -255,6 +255,7 @@ namespace utopia {
                     {
                         
                         libmesh_assert_less (my_dof, my_side->n_nodes());
+                        assert(my_dof < n_side_dofs);
                         
                         const libMesh::dof_id_type my_dof_g = my_dof_indices[my_dof];
                   
