@@ -19,11 +19,6 @@
                 "side"  : 1,
                 "type"  : "expr",
                 "value" : "sin(5*y)^2"
-            },
-            {
-                "side"  : 3,
-                "type"  : "expr",
-                "value" : "sin(1.0-y)^2"
             }
 
         ]

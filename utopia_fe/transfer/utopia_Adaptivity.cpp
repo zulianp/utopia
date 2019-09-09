@@ -1,4 +1,3 @@
-/*  Created by Maria Nestola 07/09/2019*/
 
 #include "utopia_Adaptivity.hpp"
 #include "libmesh/elem.h"
@@ -131,9 +130,6 @@ namespace utopia {
 
             for (const auto & dof : elem_dofs)
             dof_set.erase (dof);
-
-
-;
             
     
             if (!dof_set.empty() ||  
@@ -317,4 +313,3 @@ namespace utopia {
         }
     }
 }
-     

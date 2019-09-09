@@ -12,6 +12,7 @@
 namespace utopia {
 
     class Adaptivity {
+
     public:
         void constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S);
         void constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S);
@@ -79,14 +80,16 @@ namespace utopia {
                                    dof_set.begin(), dof_set.end());
 
                 mat.resize(old_size, static_cast<unsigned int>(dof_indices.size()));
+                
                 mat.zero();
 
                 for(unsigned int i=0; i != old_size; i++) {
-                    if (dof_map.is_constrained_dof(dof_indices[i])) {
+                    if (dof_map.is_constrained_dof(dof_indices[i])) 
+                    {
                         auto pos = dof_constraints.find(dof_indices[i]);
 
                         if(pos == dof_constraints.end()) {
-                            mat(i, i) = 1.;
+                            mat(i,i) = 1.;
                             continue;
                         }
 
@@ -95,17 +98,32 @@ namespace utopia {
                         for(const auto & item : constraint_row) {
                             const auto n_elem_dofs = static_cast<unsigned int>(dof_indices.size());
 
+                           
+
                             for (unsigned int j=0; j != n_elem_dofs; j++) {
                                 if (dof_indices[j] == item.first){
-                                    mat(i, j) = item.second;
+                                    mat(i, j) = 1.0 * item.second;
                                 }
                             }
                         }
+                    }
 
-                    } else {
+                    else 
+                    {
                         mat(i,i) = 1.;
                     }
                 }
+
+
+                // ElementMatrix mat_new;
+
+                // construct_constraint_matrix (elem, dof_map,  dof_constraints, mat_new, dof_indices, true);
+
+                // if ((mat.n() == mat_new.m()) &&
+                //       (mat_new.n() ==  dof_indices.size())) // If the constraint matrix
+                //     mat.right_multiply(mat_new);           // is constrained...
+
+                // libmesh_assert_equal_to (mat.n(),  dof_indices.size());
             }
         }
 
@@ -136,8 +154,11 @@ namespace utopia {
             const uint ndofs = dof_indices.size();
 
             for(uint i = 0; i < ndofs; ++i) {
+               
                 if(dof_map.is_constrained_dof(dof_indices[i])) {
+                   
                     auto it = dof_constraints.find(dof_indices[i]);
+                    
                     if(it == dof_constraints.end()) continue;
 
                     for(uint j = 0; j < ndofs; j++) {
@@ -145,7 +166,7 @@ namespace utopia {
                     }
 
                     mat(i, i) = 1;
-
+               
 
                     const auto &c_row = it->second;
 
@@ -207,23 +228,37 @@ namespace utopia {
                                         );
 
             libMesh::DenseVector<double> old(vec);
+            
             C.vector_mult_transpose(vec, old);
+
+            //libMesh::DenseVector<double> tmp(vec);
+
+            //tmp.zero();  
 
             mat.left_multiply_transpose(C);
             mat.right_multiply(C);
 
+            //std::cout<<C<<std::endl;
+
+            // mat.print_matlab();
+
             const uint ndofs = dof_indices.size();
 
             for(uint i = 0; i < ndofs; ++i) {
+               
                 if(dof_map.is_constrained_dof(dof_indices[i])) {
+                    
                     auto it = dof_constraints.find(dof_indices[i]);
+                    
                     if(it == dof_constraints.end()) continue;
 
                     for(uint j = 0; j < ndofs; j++) {
                         mat(i, j) = 0;
                     }
 
-                    mat(i, i) = 1;
+                    mat(i, i) = 1.0;
+
+                    //tmp(i) = -1.0;
 
                     const auto &c_row = it->second;
 
@@ -231,14 +266,15 @@ namespace utopia {
 
                         for(uint j = 0; j < ndofs; j++) {
                             if(dof_indices[j] == item.first) {
+                                //std::cout<<"dof_indices[i]:"<<dof_indices[i]<<" and hanging entry:"<<item.second<<std::endl;
                                 mat(i, j) = -item.second;
                             }
                         }
                     }
                 }
             }
-        }
-    };
+         }
+   };
 }
 
 #endif

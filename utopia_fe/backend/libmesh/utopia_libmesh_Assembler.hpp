@@ -148,6 +148,7 @@ namespace utopia {
 
                     if(ctx_.has_assembled()) {
                         if(apply_constraints) {
+                            // std::cout<<"I am here heterogenously_constrain_element_matrix_and_vector"<<std::endl;
                             dof_map.heterogenously_constrain_element_matrix_and_vector(
                                 el_mat.implementation(),
                                 el_vec.implementation(),
@@ -155,6 +156,7 @@ namespace utopia {
                             );
 
                         } else {
+                            //std::cout<<"Adaptivity::constrain_matrix_and_vector"<<std::endl;
                             Adaptivity::constrain_matrix_and_vector(
                                 *it,
                                 dof_map,
@@ -164,6 +166,14 @@ namespace utopia {
                                 dof_indices
                             );
                         }
+
+
+                        libMesh::Elem * ele = *it;
+                        //std::cout<<"current_elem_LIBMESH: "<<ele[0]<<std::endl;
+                        // utopia::disp("el_mat");
+                        // utopia::disp(el_mat);
+                        // utopia::disp("el_vec");
+                        // utopia::disp(el_vec);
 
                         add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
                         add_vector(el_vec.implementation(), dof_indices, temp_vec);
