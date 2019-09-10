@@ -1,6 +1,4 @@
 
-/*created by maria Nestola 05/09/2019*/
-
 #include "utopia_Adaptivity.hpp"
 #include "libmesh/elem.h"
 #include "libmesh/remote_elem.h"
@@ -42,6 +40,7 @@ namespace utopia {
         
         const auto end_el = mesh.active_local_elements_end();
 
+
         dof_constraints_.clear();
         
         
@@ -65,25 +64,16 @@ namespace utopia {
         std::cout << "--------------------------------------------------\n";
     }
     
-    void Adaptivity::constraint_matrix_to(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S)
+    void Adaptivity::constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S)
     {
         const auto & mesh = V.mesh();
         unsigned int var_num = V.subspace_id();
         
         auto & dof_map = V.dof_map();
-        constraint_matrix_to(mesh, dof_map, var_num, M, S);
+        constraint_matrix(mesh, dof_map, var_num, M, S);
     }
 
-    void Adaptivity::constraint_matrix_from(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S)
-    {
-        const auto & mesh = V.mesh();
-        unsigned int var_num = V.subspace_id();
-        
-        auto & dof_map = V.dof_map();
-        constraint_matrix_from(mesh, dof_map, var_num, M, S);
-    }
-
-    void Adaptivity::constraint_matrix_to(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S)
+    void Adaptivity::constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S)
     {
 
         assemble_constraint(mesh, dof_map, var_num);
@@ -94,7 +84,8 @@ namespace utopia {
         M = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), 30);
         
         S = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), 30);
-                
+        
+        
         std::vector<libMesh::dof_id_type> elem_dofs;
 
         std::vector<libMesh::dof_id_type> I(1,0), J(1,0);
@@ -163,7 +154,6 @@ namespace utopia {
                     
                     I[0] = elem_dofs[i];
                     J[0] = elem_dofs[i];
-                    //std::cout<<"HN elem_dofs[i] "<<elem_dofs[i]<<" HN elem_dofs[i] "<<elem_dofs[i]<<std::endl;
                     V[0] = 0.0;
 
                     //S.set (elem_dofs[i],elem_dofs[i],0.0);
@@ -186,138 +176,11 @@ namespace utopia {
                                 C(i,j) = item.second;
                                   I[0] = elem_dofs[i];
                                   J[0] = elem_dofs[j];
-                                  //std::cout<<"elem_dofs[i] "<<elem_dofs[i]<<"elem_dofs[j] "<<elem_dofs[j]<<std::endl;
                                   V[0] = item.second;
-                                  M.set_matrix(I,J,V);
+                                M.set_matrix(I,J,V);
                                 //M.set (elem_dofs[i],elem_dofs[j],item.second);
                                
-                                  S.set_matrix(I,J,V);
-
-
-                            }
-                        }
-                    }
-                }
-    
-                else
-                {
-                    C(i,i) = 1.;
-                    I[0] = elem_dofs[i];
-                    J[0] = elem_dofs[i];
-                    V[0] = 1.0;
-                    M.set_matrix(I,J,V);
-                    //M.set (elem_dofs[i],elem_dofs[i],1.0);
-                }
-            }
-        }
-    }
-    
-    void Adaptivity::constraint_matrix_from(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S_from)
-    {
-
-        assemble_constraint(mesh, dof_map, var_num);
-        
-        bool called_recursively = false;
-    
-        
-        M = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), 30);
-
-        S_from = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), 30);
-        
-        
-        std::vector<libMesh::dof_id_type> elem_dofs;
-
-        std::vector<libMesh::dof_id_type> I(1,0), J(1,0);
-
-        std::vector<double> V(1, 0);
-        
-        auto      el     = mesh.active_local_elements_begin();
-        
-        const auto end_el = mesh.active_local_elements_end();
-        
-        
-        libMesh::DenseMatrix<libMesh::Number> C;
-        
-        Write<USparseMatrix> w(M, utopia::GLOBAL_INSERT), w_2(S_from, utopia::GLOBAL_INSERT);
-        
-        for ( ; el != end_el; ++el)
-        {
-            const auto * elem = *el;
-            
-            auto * ele = *el;
-            
-            dof_map.dof_indices(elem, elem_dofs);
-            
-            std::set<libMesh::dof_id_type>  dof_set;
-            
-            bool we_have_constraints = false;
-
-            for (const auto & dof : elem_dofs){
-                
-                if (dof_map.is_constrained_dof(dof))
-                {
-                    we_have_constraints = true;
-                    
-                    auto pos = dof_constraints_.find(dof);
-                    
-                    libmesh_assert (pos != dof_constraints_.end());
-                    
-                    const auto & constraint_row = pos->second;
-                    
-                    for (const auto & item : constraint_row)
-                    dof_set.insert (item.first);
-                    
-                }
-            }
-
-            for (const auto & dof : elem_dofs)
-            dof_set.erase (dof);
-            
-    
-            if (!dof_set.empty() ||  
-                !called_recursively) 
-            {
-                const unsigned int old_size =
-                static_cast<unsigned int>(elem_dofs.size());
-                
-                elem_dofs.insert(elem_dofs.end(),
-                                 dof_set.begin(), dof_set.end());
-                
-          
-                C.resize (old_size,
-                          static_cast<unsigned int>(elem_dofs.size()));
-                
-                for (unsigned int i=0; i != old_size; i++)
-                if (dof_map.is_constrained_dof(elem_dofs[i]))
-                {     
-                    
-                    I[0] = elem_dofs[i];
-                    J[0] = elem_dofs[i];
-                    V[0] = 0.0;
-
-                    S_from.set_matrix(I, J, V);
-                    
-                    auto pos = dof_constraints_.find(elem_dofs[i]);
-                    
-                    libmesh_assert (pos != dof_constraints_.end());
-                    
-                    const auto & constraint_row = pos->second;
-   
-                    
-                    for (const auto & item : constraint_row)
-                    {
-                        for (unsigned int j=0,
-                             n_elem_dofs = static_cast<unsigned int>(elem_dofs.size());
-                             j != n_elem_dofs; j++)
-                        {
-                            if (elem_dofs[j] == item.first){
-                                C(i,j) = item.second;
-                                  I[0] = elem_dofs[i];
-                                  J[0] = elem_dofs[j];
-                                  V[0] = item.second;
-                                  M.set_matrix(I,J,V);
-
-                                  S_from.set_matrix(I,J,V);
+                                S.set_matrix(I,J,V);
                                 //S.set (elem_dofs[i],elem_dofs[j],item.second);
                             }
                         }
@@ -331,12 +194,12 @@ namespace utopia {
                     J[0] = elem_dofs[i];
                     V[0] = 1.0;
                     M.set_matrix(I,J,V);
-                    //S_from.set_matrix(I, J, V);
                     //M.set (elem_dofs[i],elem_dofs[i],1.0);
                 }
             }
         }
     }
+    
 
     void Adaptivity::compute_constraints(libMesh::DofConstraints &constraints,
                                          const libMesh::DofMap &dof_map,
