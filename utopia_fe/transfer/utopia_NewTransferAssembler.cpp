@@ -787,10 +787,10 @@ namespace utopia {
             a.constraint_matrix(*from_mesh, *from_dofs, opts.from_var_num, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
             a.constraint_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
-            disp("from");
-            disp(*data.constraint_matrix_from);
-            disp("to");
-            disp(*data.constraint_matrix_to);
+            // disp("from");
+            // disp(*data.constraint_matrix_from);
+            // disp("to");
+            // disp(*data.constraint_matrix_to);
         }
 
 
