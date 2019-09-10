@@ -76,56 +76,62 @@ namespace utopia {
         return left.dot(right);
     }
 
+    inline static double inner(const double &left, libMesh::DenseVector<double> &&right)
+    {
+        right.scale(left);
+        const std::size_t n = right.size();
+
+        double ret = 0.0;
+        for(std::size_t i = 0; i < n; ++i) {
+            ret += right(i);
+        }
+
+        return ret;
+    }
+
+
     // template<typename T>
-    // inline static T inner(const double &left, libMesh::DenseVector<T> &&right)
+    // inline static double inner(const double &left, const libMesh::DenseVector<double> &right)
     // {
-    //     right.scale(left);
-    //     const std::size_t n = right.size();
-
-    //     T ret = 0.0;
-    //     for(std::size_t i = 0; i < n; ++i) {
-    //         ret += right(i);
-    //     }
-
-    //     return ret;
-    // }
-
-
-    // template<typename T>
-    // inline static T inner(const double &left, const libMesh::DenseVector<T> &right)
-    // {
-    //     libMesh::DenseVector<T> r_copy = right;
+    //     libMesh::DenseVector<double> r_copy = right;
     //     return inner(left, std::move(r_copy));
     // }
 
+    inline static double inner(const libMesh::DenseVector<double> &right, const double &left)
+    {
+        libMesh::DenseVector<double> r_copy = right;
+        return inner(left, std::move(r_copy));
+    }
 
-    // template<typename T>
-    // inline static T inner(const libMesh::DenseVector<T> &right, const double &left)
-    // {
-    //     libMesh::DenseVector<T> r_copy = right;
-    //     return inner(left, std::move(r_copy));
-    // }
 
-    // template<typename T>
-    // inline static T inner(const double &left, libMesh::VectorValue<T> &&right)
-    // {
-    //     right *= (left);
-    //     const std::size_t n = LIBMESH_DIM;
 
-    //     T ret = 0.0;
-    //     for(std::size_t i = 0; i < n; ++i) {
-    //         ret += right(i);
-    //     }
+    template<typename T>
+    inline static T inner(const libMesh::DenseVector<T> &right, const double &left)
+    {
+        libMesh::DenseVector<T> r_copy = right;
+        return inner(left, std::move(r_copy));
+    }
 
-    //     return ret;
-    // }
+    template<typename T>
+    inline static T inner(const double &left, libMesh::VectorValue<T> &&right)
+    {
+        right *= (left);
+        const std::size_t n = LIBMESH_DIM;
 
-    // template<typename T>
-    // inline static T inner(const double &left, const libMesh::VectorValue<T> &right)
-    // {
-    //     libMesh::DenseVector<T> r_copy = right;
-    //     return inner(left, std::move(r_copy));
-    // }
+        T ret = 0.0;
+        for(std::size_t i = 0; i < n; ++i) {
+            ret += right(i);
+        }
+
+        return ret;
+    }
+
+    template<typename T>
+    inline static T inner(const double &left, const libMesh::VectorValue<T> &right)
+    {
+        libMesh::DenseVector<T> r_copy = right;
+        return inner(left, std::move(r_copy));
+    }
 
     template<typename T>
     inline static T inner(const libMesh::DenseVector<T> &left, const libMesh::VectorValue<T> &right)
@@ -1582,6 +1588,22 @@ namespace utopia {
             return std::move(vals);
         }
 
+
+        // template<class T, int Order>
+        // static auto norm2(
+        //     const QValues<Wrapper<T, Order>> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        // {
+        //     auto n = vals.size();
+        //     QValues<double> ret(n);
+
+        //     for(std::size_t i = 0; i < n; ++i) {
+        //         ret[i] = utopia::norm2(vals[i]);
+        //   }
+
+        //     return ret;
+        // }
+
         template<class T, int Order>
         static auto norm2(
             const std::vector<Wrapper<T, Order>> &vals,
@@ -1597,6 +1619,64 @@ namespace utopia {
             return ret;
         }
 
+        static auto norm2(
+            const QValues<Wrapper<libMesh::DenseVector<double>, 1>> &vals,
+            const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        {
+            auto n = vals.size();
+            QValues<double> ret(n);
+
+            for(std::size_t i = 0; i < n; ++i) {
+                ret[i] = vals[i].implementation().l2_norm();
+          }
+
+            return ret;
+        }
+
+        // static auto norm2(
+        //     const QValues<Wrapper<libMesh::DenseMatrix<double>, 2>> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        // {
+        //     auto n = vals.size();
+        //     QValues<double> ret(n);
+
+        //     for(std::size_t i = 0; i < n; ++i) {
+        //         // ret[i] = vals[i].implementation().l2_norm();
+        //         assert(false);
+        //   }
+
+        //     return ret;
+        // }
+
+        // static auto norm2(
+        //     const QValues<Vectord> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        // {
+        //     auto n = vals.size();
+        //     QValues<double> ret(n);
+
+        //     for(std::size_t i = 0; i < n; ++i) {
+        //         ret[i] = utopia::norm2(vals[i]);
+        //   }
+
+        //     return ret;
+        // }
+
+        // template<typename T>
+        // static auto norm2(
+        //     const QValues<Wrapper<T, 1>> &vals,
+        //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+        // {
+        //     auto n = vals.size();
+        //     QValues<double> ret(n);
+
+        //     for(std::size_t i = 0; i < n; ++i) {
+        //         ret[i] = utopia::norm2(vals[i]);
+        //   }
+
+        //     return ret;
+        // }
+
         // template<class T, int Order>
         // static auto norm2(
         //     const QValues<LMDenseVector> &vals,
@@ -1606,7 +1686,7 @@ namespace utopia {
         //     QValues<double> ret(n);
 
         //     for(std::size_t i = 0; i < n; ++i) {
-        //         ret[i] = utopia::norm2(vals[i]);
+        //         ret[i] = vals[i].implementation().l2_norm()
         //     }
 
         //     return ret;
@@ -1614,7 +1694,7 @@ namespace utopia {
 
 
         // static auto norm2(
-        //     const QValues<DenseVectorT> &vals,
+        //     const QValues<libMesh::DenseVector<double>> &vals,
         //     const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
         // {
         //     auto n = vals.size();
@@ -1624,7 +1704,7 @@ namespace utopia {
         //         ret[i] = vals[i].l2_norm();
         //     }
 
-        //     assert(false);
+        //     // assert(false);
         //     return ret;
         // }
 

@@ -1,7 +1,9 @@
 #ifndef UTOPIA_FE_EVAL_NORM2_HPP
 #define UTOPIA_FE_EVAL_NORM2_HPP
 
+#include "utopia_Norm.hpp"
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_FEEval_Empty.hpp"
 #include "utopia_AssemblyContext.hpp"
 #include "utopia_FEBackend.hpp"
 

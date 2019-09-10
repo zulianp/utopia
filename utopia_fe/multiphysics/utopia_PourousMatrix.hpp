@@ -57,26 +57,29 @@ namespace utopia {
             copy_values(V, sol, P, p_interp_buff);
             synchronize(p_interp_buff);
 
-            // auto p_interp = interpolate(p_interp_buff, p);
-            // auto grad_form = inner(grad(p_interp), v) * dX;
+            auto p_interp = interpolate(p_interp_buff, p);
+            auto grad_form = inner(grad(p_interp), v) * dX;
 
-            // auto mass_form = inner(coeff(1.0), v) * dX;
+            auto mass_form = inner(u, v) * dX;
 
-            // UVector grad_ph, mass_vec;
-            // utopia::assemble(grad_form, grad_ph);
-            // utopia::assemble(mass_form, mass_vec);
+            UVector grad_ph, mass_vec;
+            USparseMatrix mass_mat;
+            utopia::assemble(grad_form, grad_ph);
+            utopia::assemble(mass_form, mass_mat);
+            mass_vec = sum(mass_mat, 1);
 
-            // UVector grad_p_projected = e_mul(grad_ph, 1./mass_vec);
-            // UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-            // grad_p_projected_buff = grad_p_projected;
-            // synchronize(grad_p_projected_buff);
+            UVector grad_p_projected = e_mul(grad_ph, 1./mass_vec);
+            UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            grad_p_projected_buff = grad_p_projected;
+            synchronize(grad_p_projected_buff);
 
-            // auto grad_interp = interpolate(grad_p_projected_buff, u);
-            // auto error_form  = inner(norm2(grad_interp - grad(p_interp)), e) * dX;
-            // auto vol_form    = inner(trial(E), e) * dX;
+            auto grad_interp = interpolate(grad_p_projected_buff, u);
+            auto error_form  = inner(norm2(grad_interp - grad(p_interp)), e) * dX;
+            auto vol_form    = inner(trial(E), e) * dX;
 
-            // UVector error, vol;
+            UVector error, vol;
             // utopia::assemble(error_form, error);
+            std::cout << tree_format(error_form.getClass()) << std::endl;
             // utopia::assemble(vol_form,   vol);
             // error = e_mul(error, 1./vol);
 
