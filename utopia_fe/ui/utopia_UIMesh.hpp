@@ -53,8 +53,8 @@ namespace utopia {
             mesh_refinement.test_level_one(true);
         }
 
-        // mesh_refinement.clean_refinement_flags();
-        mesh.prepare_for_use();
+        // mesh_refinement.clean_refinement_flags()
+  
     }
 
     template<class Mesh>

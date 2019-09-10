@@ -12,7 +12,9 @@
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_MeshTransferOperator.hpp"
-
+#include "libmesh/elem.h"
+#include "libmesh/node.h"
+#include "libmesh/mesh_base.h"
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/boundary_mesh.h"
 
@@ -87,6 +89,9 @@ namespace utopia {
 
             is.get("master-boundary", master_boundary);
             is.get("slave-boundary",  slave_boundary);
+
+
+
 
             if(master_boundary) {
                 auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_master.mesh().mesh_dimension()-1);
@@ -222,6 +227,26 @@ namespace utopia {
         ////////////////////////////////////////////////////////////
         convert(fun_slave, *input_slave.space().equation_system().solution);
         input_slave.space().equation_system().solution->close();
+
+         // auto       el     = input_slave.space().mesh().active_local_elements_begin();
+       
+         // const auto end_el = input_slave.space().mesh().active_local_elements_end();
+
+         //    for ( ; el != end_el; ++el)
+         //    {
+         //         const libMesh::Elem * elem = *el;
+               
+         //         libMesh::Elem * ele = *el;
+
+         //         std::cout<<"current_elem_LIBMESH: "<<ele[0]<<std::endl;
+
+         //              for(int ll=0; ll<ele->n_nodes(); ll++){
+         //                const libMesh::Node * v_node = ele->node_ptr(ll);
+         //                const libMesh::dof_id_type v_dof = v_node->dof_number(input_slave.space().equation_system().number(),0,0);
+         //                std::cout<<"node_id is "<<v_node->id()<<" and dof is "<<v_dof<<std::endl;
+         //              }
+         //    }
+
         libMesh::Nemesis_IO io_slave(input_slave.mesh());
         io_slave.write_equation_systems("slave.e", input_slave.space().equation_systems());
     }
