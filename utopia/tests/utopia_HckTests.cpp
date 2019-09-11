@@ -99,11 +99,12 @@ namespace utopia
             Vector x = fun.initial_guess(); 
             fun.describe(); 
 
-
+#ifdef WITH_PETSC
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-
+#else
             // auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+#endif
             // subproblem->pc_type("bjacobi"); 
 
             subproblem->atol(1e-14);
@@ -228,6 +229,7 @@ namespace utopia
 
         void RMTR_unconstrained()
         {
+#ifdef WITH_PETSC
             // auto n_coarse = 50; 
             auto n_coarse = n_; 
 
@@ -238,7 +240,11 @@ namespace utopia
             Vector x = fun_Bratu2D->initial_guess(); 
             fun_Bratu2D->describe(); 
 
+#ifdef WITH_PETSC
             auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+#else
+            auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+#endif
 
 
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
@@ -286,6 +292,7 @@ namespace utopia
                 
             // Solve 
             rmtr->solve(x);
+#endif
         }
 
 

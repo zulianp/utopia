@@ -1,7 +1,10 @@
 #include "utopia_Bratu2D.hpp"
 
+#ifdef  WITH_PETSC
+
 namespace utopia 
 {
+
 
     PetscErrorCode Bratu2DFormFunctionLocal(DMDALocalInfo *info,PetscScalar **x,PetscScalar **f,ParamsBratu2D *user)
     {
@@ -344,3 +347,5 @@ PetscErrorCode Bratu2DFormInitialGuess(DM da,ParamsBratu2D *user,Vec X)
     //explicit
     template class Bratu2D<DSMatrixd, DVectord, PETSC>;
 }
+
+#endif //WITH_PETSC

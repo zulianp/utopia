@@ -21,13 +21,16 @@ namespace utopia {
                 Q(std::make_shared<USparseMatrix>()),
                 T(std::make_shared<USparseMatrix>()),
                 constraint_matrix_from(std::make_shared<USparseMatrix>()),
-                constraint_matrix_to(std::make_shared<USparseMatrix>())
+                constraint_matrix_to(std::make_shared<USparseMatrix>()),
+                post_constraint_matrix_from(std::make_shared<USparseMatrix>()),
+                post_constraint_matrix_to(std::make_shared<USparseMatrix>())
             {}
 
             void permute(const USparseMatrix &P, TransferData &out);
 
             std::shared_ptr<USparseMatrix> B, D, Q, T;
             std::shared_ptr<USparseMatrix> constraint_matrix_from, constraint_matrix_to;
+            std::shared_ptr<USparseMatrix> post_constraint_matrix_from, post_constraint_matrix_to;
         };
 
         bool assemble(
@@ -80,6 +83,16 @@ namespace utopia {
         inline void handle_adaptive_refinement(const bool val)
         {
             handle_adaptive_refinement_ = val;
+        }
+
+        inline void constraint_matrix_from(const std::shared_ptr<USparseMatrix> &mat)
+        {
+            data.constraint_matrix_from = mat;
+        }
+
+        inline void constraint_matrix_to(const std::shared_ptr<USparseMatrix> &mat)
+        {
+            data.constraint_matrix_to = mat;
         }
 
     private:

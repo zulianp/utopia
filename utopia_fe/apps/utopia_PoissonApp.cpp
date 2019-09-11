@@ -34,19 +34,34 @@ namespace utopia {
         auto u = trial(V);
         auto v = test(V);
 
-        auto linear_form = inner(coeff(0.0), v) * dX;
+        auto linear_form = inner(coeff(10.0), v) * dX;
         auto bilinear_form = inner(grad(u), grad(v)) * dX;
 
         USparseMatrix A;
         UVector rhs, x;
 
+        //rhs.set(1.0);
+
         assemble(bilinear_form == linear_form, A, rhs);
 
-        apply_boundary_conditions(V.dof_map(), A, rhs);
+        //utopia::write("A_before.m", A);
+
+        apply_boundary_conditions(V, A, rhs);
+
+        // utopia::rename("a", A);
+
+        // utopia::write("A.m", A);
+
+        // utopia::rename("b", rhs);
+
+        // utopia::write("rhs.m", rhs);
 
         x = local_zeros(local_size(rhs));
 
-        Factorization<USparseMatrix, UVector>().solve(A, rhs, x);
+        Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
+        fact.describe(std::cout);
+        fact.solve(A, rhs, x);
+
 
         write("rhs.e", V, rhs);
         write("sol.e", V, x);

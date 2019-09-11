@@ -151,6 +151,7 @@ namespace utopia {
 
         bool init(
             FunctionSpace &pourous_matrix,
+            const std::shared_ptr<USparseMatrix> &constraint_matrix_pm,
             FunctionSpace &fracture_newtork)
         {
             coupling_matrix_ = std::make_shared<Matrix>();
@@ -159,6 +160,11 @@ namespace utopia {
             if(is_dual()) {
                 NewTransferAssembler transfer_assembler;
                 transfer_assembler.remove_incomplete_intersections(false);
+                transfer_assembler.constraint_matrix_from(constraint_matrix_pm);
+
+                if(constraint_matrix_pm && !empty(*constraint_matrix_pm)) {
+                    m_utopia_status("using constraint matrix from mortar in porous-matrix");
+                }
 
                 if(!transfer_assembler.assemble(
                     pourous_matrix.mesh(),
@@ -515,8 +521,21 @@ namespace utopia {
 
             assert(n_dfn == lagrange_multiplier_.size());
 
+            std::shared_ptr<USparseMatrix> constraint_matrix;
+
+            if(pourous_matrix_.has_mortar_constraints()) {
+                auto &mortar = pourous_matrix_.mortar();
+                mortar.compute_mortar_matrix_without_slave_dofs();
+                constraint_matrix = mortar.mortar_matrix_without_slave_dofs();
+            }
+
             for(std::size_t i = 0; i < n_dfn; ++i) {
-                if(!lagrange_multiplier_[i]->init(pourous_matrix_.space(), fracture_network_[i]->space())) {
+
+                if(!lagrange_multiplier_[i]->init(
+                    pourous_matrix_.space(),
+                    constraint_matrix,
+                    fracture_network_[i]->space()
+                    )) {
                     return false;
                 }
             }
@@ -570,7 +589,8 @@ namespace utopia {
             *x_m_ = local_zeros(dof_map_m.n_local_dofs());
             pourous_matrix_.assemble_flow(*x_m_, *A_m_, *rhs_m_);
 
-            apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
+            // apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
+            apply_boundary_conditions(pourous_matrix_.space(), *A_m_, *rhs_m_);
 
             if(report_) {
                 report_->add_stat(pourous_matrix_.space(), *A_m_);
@@ -600,7 +620,8 @@ namespace utopia {
                     *x_f_[i] = local_zeros(dof_map_f.n_local_dofs());
                     dfn->assemble_flow(*x_f_[i], *A_f_[i], *rhs_f_[i]);
 
-                    apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    // apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    apply_boundary_conditions(dfn->space(), *A_f_[i], *rhs_f_[i]);
 
                     if(report_) {
                         report_->add_stat(dfn->space(), *A_f_[i]);
@@ -617,7 +638,8 @@ namespace utopia {
                     rhs += transpose(*T) * (*rhs_f_[i]);
                 }
 
-                apply_boundary_conditions(dof_map_m, A, rhs);
+                // apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
+                apply_boundary_conditions(pourous_matrix_.space(), *A_m_, *rhs_m_);
 
             } else //if(assembly_strategy_ == "monolithic") 
             {

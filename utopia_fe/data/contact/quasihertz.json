@@ -18,8 +18,8 @@
 			"path_2" : "../data/contact/quasi_hertz_91.e",
 			"path_3" : "../data/contact/quasi_hertz_750.e",
 			"path_4"   : "../data/contact/quasi_hertz_750_smooth.e",
-			"path_5" : "../data/contact/quasi_hertz_8732.e",
-			"path" : "../data/contact/quasi_hertz_8732_smooth.e",
+			"path" : "../data/contact/quasi_hertz_8732.e",
+			"path_6" : "../data/contact/quasi_hertz_8732_smooth.e",
 			"order" : 2
 		},
 		"qp-solver" : {
@@ -97,9 +97,6 @@
 		},
 
 		"contact": {
-			"n-transient-steps": 30,
-			"max-nl-iter": 100,
-			"radius": 0.5,
 			"pairs": [
 				{
 					"master": 1,

@@ -16,8 +16,8 @@ namespace utopia
     class QPwithConstraints : public ConstrainedTestFunction<Matrix, Vector>
     {
     public:
-        typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
-        typedef UTOPIA_SCALAR(DVectord) Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        typedef UTOPIA_SCALAR(Vector) Scalar;
 
         ~QPwithConstraints(){}
 
