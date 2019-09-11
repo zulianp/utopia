@@ -2,6 +2,10 @@
 #define UTOPIA_MATRIX_HPP
 
 #include "utopia_Enums.hpp"
+#include "utopia_Range.hpp"
+#include "utopia_Layout.hpp"
+#include "utopia_Communicator.hpp"
+#include "utopia_DistributedObject.hpp"
 
 namespace utopia {
 
@@ -29,7 +33,7 @@ namespace utopia {
 
 		//utility functions
 		virtual bool empty() const = 0;
-		virtual bool clear() const = 0;
+		virtual void clear() = 0;
 	};
 
 	template<typename Scalar_, typename SizeType_>
@@ -44,7 +48,7 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-		virtual Scalar get(const SizeType &i, const SizeType &j) = 0;
+		virtual Scalar get(const SizeType &i, const SizeType &j) const = 0;
 
 		virtual ~DenseMatrix() {}
 	};
@@ -57,7 +61,7 @@ namespace utopia {
 
 	//parallel types, collective operations
 	template<typename Scalar_, typename SizeType_>
-	class DistributedMatrix : public MatrixBase<Scalar_, SizeType_> {
+	class DistributedMatrix : public MatrixBase<Scalar_, SizeType_>, public DistributedObject {
 	public:
 		using Scalar = Scalar_;
 		using SizeType = SizeType_;
@@ -65,6 +69,36 @@ namespace utopia {
 		//basic collective mutators allowing to write on other processes (e.g. for FE assembly)
 		virtual void c_set(const SizeType &i, const SizeType &j, const Scalar &value) = 0;
 		virtual void c_add(const SizeType &i, const SizeType &j, const Scalar &value) = 0;
+
+		virtual void row_range(Range &r) = 0;
+		virtual void col_range(Range &r) = 0;
+
+		virtual void row_layout(Layout<SizeType, 1> &l)
+		{
+			l.local_size(0) = local_rows();
+			l.global_size(0) = rows();
+		}
+
+		virtual void col_layout(Layout<SizeType, 1> &l)
+		{
+			l.local_size(0) = local_cols();
+			l.global_size(0) = cols();
+		}
+
+		virtual void layout(Layout<SizeType, 2> &l) 
+		{
+			l.local_size(0) = local_rows();
+			l.local_size(1) = local_cols();
+
+			l.global_size(0) = rows();
+			l.global_size(1) = cols();
+		}
+
+		virtual SizeType local_rows() const = 0;
+		virtual SizeType rows() const = 0;
+
+		virtual SizeType local_cols() const = 0;
+		virtual SizeType cols() const = 0;
 
 		virtual ~DistributedMatrix() {}
 	};
@@ -75,7 +109,7 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-		virtual Scalar get(const SizeType &i, const SizeType &j) = 0;
+		virtual Scalar get(const SizeType &i, const SizeType &j) const = 0;
 
 		virtual ~DistributedDenseMatrix() {}
 	};

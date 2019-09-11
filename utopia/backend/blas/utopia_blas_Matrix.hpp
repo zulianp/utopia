@@ -1,8 +1,12 @@
 #ifndef UTOPIA_BLAS_MATRIX_HPP
 #define UTOPIA_BLAS_MATRIX_HPP
 
+#include "utopia_Interfaces.hpp"
 #include "utopia_Wrapper.hpp"
 #include "utopia_blas_Traits.hpp"
+#include "utopia_BLAS_Operands.hpp"
+#include "utopia_blas_Algorithms.hpp"
+
 
 #include <vector>
 #include <memory>
@@ -10,10 +14,13 @@
 
 namespace utopia {
     template<typename T>
-    class BLASDenseMatrix
+    class BLASDenseMatrix : 
+        public DenseMatrix<T, std::size_t>,
+        public Tensor<BLASDenseMatrix<T>, 2>,
+        public BLAS1Tensor<BLASDenseMatrix<T>>
     {
         typedef std::vector<T> Entries;
-        typedef typename Entries::size_type SizeType;
+        typedef size_t SizeType;
 
     public:
         BLASDenseMatrix(SizeType rows, SizeType cols) : rows_(rows), cols_(cols)
@@ -45,10 +52,10 @@ namespace utopia {
             entries_ = e;
 
         }
-        inline bool empty() const
-        {
-            return entries_.empty();
-        }
+        // inline bool empty() const
+        // {
+        //     return entries_.empty();
+        // }
 
         SizeType rows() const {
             return rows_;
@@ -86,17 +93,17 @@ namespace utopia {
             assert(index < entries_.size());
             return entries_[index];
         }
-        void set(SizeType i, SizeType j, T value) {
-            assert(i < rows());
-            assert(j < cols());
-            entries_[ i + rows() * j ] = value;
-        }
+        // void set(SizeType i, SizeType j, T value) {
+        //     assert(i < rows());
+        //     assert(j < cols());
+        //     entries_[ i + rows() * j ] = value;
+        // }
 
-        T get(SizeType i, SizeType j) const {
-            assert(i < rows());
-            assert(j < cols());
-            return at(i + rows() * j);
-        }
+        // T get(SizeType i, SizeType j) const {
+        //     assert(i < rows());
+        //     assert(j < cols());
+        //     return at(i + rows() * j);
+        // }
 
         void set_rows(SizeType rows) {
             rows_ = rows;
@@ -147,6 +154,137 @@ namespace utopia {
             fill(entries_.begin(), entries_.end(), T(value));
         }
 
+
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR MatrixBase ///////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        //locks (No Op)
+        inline void read_lock() override {}
+        inline void write_lock(WriteMode) override {}
+        inline void read_unlock() override {}
+        inline void write_unlock(WriteMode) override {}
+
+        //basic mutators
+        inline void set(const SizeType &i, const SizeType &j, const T &value) override
+        {
+            assert(i < rows());
+            assert(j < cols());
+            entries_[ i + rows() * j ] = value;
+        }
+
+        inline void add(const SizeType &i, const SizeType &j, const T &value) override
+        {
+            assert(i < rows());
+            assert(j < cols());
+            entries_[ i + rows() * j ] += value;
+        }
+
+        //print function
+        inline void describe() const override
+        {
+            auto &os = std::cout;
+            describe(os);        }
+
+        inline void describe(std::ostream &os) const
+        {
+
+            for (SizeType i=0; i<rows(); ++i)
+            {
+                for(SizeType j=0; j<cols(); ++j)
+                {
+                    os << get(i, j) << ' ';
+                }
+                os << '\n';
+            }
+        }
+
+
+        //utility functions
+        inline bool empty() const override
+        {
+            return entries_.empty();
+        }
+
+        inline void clear() override
+        {
+            entries_.clear();
+            rows_ = 0;
+            cols_ = 0;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR DenseMatrix //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        inline T get(const SizeType &i, const SizeType &j) const override
+        {
+            assert(i < rows());
+            assert(j < cols());
+            return at(i + rows() * j);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR BLAS1Tensor //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        ///<T>SWAP - swap x and y
+        inline void swap(BLASDenseMatrix &x) override
+        {
+            std::swap(rows_, x.rows_);
+            std::swap(cols_, x.cols_);
+            std::swap(entries_, x.entries_);
+        }
+
+        ///<T>SCAL - x = a*x
+        inline void scale(T &a) override
+        {
+            BLASAlgorithms<T>::scal(size(), a, ptr(), 1);
+        }
+
+        ///<T>COPY - copy x into y (this)
+        inline void copy(const BLASDenseMatrix &x) override
+        {
+            entries_.resize(x.size());
+            rows_ = x.rows_;
+            cols_ = x.cols_;
+            BLASAlgorithms<T>::copy(x.size(), x.ptr(), 1, ptr(), 1);
+        }
+
+        ///<T>AXPY - y = a*x + y
+        inline void axpy(const T &a, const BLASDenseMatrix &x) override
+        {
+            assert(size() == x.size());
+            BLASAlgorithms<T>::axpy(size(), a, x.ptr(), 1, ptr(), 1);
+        }
+
+        ///<T>DOT - dot product
+        inline T dot(const BLASDenseMatrix &other) const override
+        {
+            assert(size() == other.size());
+            return BLASAlgorithms<T>::ddot(size(), ptr(), 1, other.ptr(), 1);
+        }
+
+        ///<T>NRM2 - Euclidean norm
+        inline T norm2() const override
+        {
+            return BLASAlgorithms<T>::nrm2(size(), ptr(), 1);
+        }
+
+        ///<T>ASUM - sum of absolute values
+        inline T asum() const override
+        {
+            return BLASAlgorithms<T>::asum(size(), ptr(), 1);
+        }
+
+        ///<T>AMAX - index of max abs value
+        inline SizeType amax() const override
+        {
+            return BLASAlgorithms<T>::amax(size(), ptr(), 1);
+        }
+
     private:
         Entries entries_;
         SizeType rows_;
@@ -161,15 +299,7 @@ namespace utopia {
     template<typename T>
     void disp(const Wrapper< BLASDenseMatrix<T>, 2> &w, std::ostream &os)
     {
-        for (SizeType i=0; i<w.implementation().rows(); ++i)
-        {
-            for(SizeType j=0; j<w.implementation().cols(); ++j)
-            {
-                os << w.implementation().get(i, j) << ' ';
-            }
-            os << '\n';
-        }
-        //disp(w.implementation().entries().begin(), w.implementation().entries().end(), os);
+        w.implemenetation().describe(os);
     }
 
 }

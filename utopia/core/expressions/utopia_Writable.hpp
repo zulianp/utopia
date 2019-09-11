@@ -8,6 +8,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Config.hpp"
+#include "utopia_Enums.hpp"
 
 #include <vector>
 #include <initializer_list>
@@ -290,12 +291,12 @@ namespace utopia {
 #endif //ENABLE_LOCK_CHECK
     };
 
-    enum WriteMode {
-        AUTO  = 0, //unsafe for the moment depends on backend implementation
-        LOCAL = 1,
-        GLOBAL_INSERT = 2,
-        GLOBAL_ADD    = 3
-    };
+    // enum WriteMode {
+    //     AUTO  = 0, //unsafe for the moment depends on backend implementation
+    //     LOCAL = 1,
+    //     GLOBAL_INSERT = 2,
+    //     GLOBAL_ADD    = 3
+    // };
 
 
     template<class Tensor>

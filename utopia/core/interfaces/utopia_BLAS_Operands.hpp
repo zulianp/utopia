@@ -26,16 +26,16 @@ namespace utopia {
 		virtual void axpy(const Scalar &a, const Tensor &x) = 0;
 
 		///<Scalar>DOT - dot product
-		virtual Scalar dot(const Tensor &other) = 0;
+		virtual Scalar dot(const Tensor &other) const = 0;
 
 		///<Scalar>NRM2 - Euclidean norm
-		virtual Scalar norm2() = 0;
+		virtual Scalar norm2() const = 0;
 
 		///<Scalar>ASUM - sum of absolute values
-		virtual Scalar asum() = 0;
+		virtual Scalar asum() const = 0;
 
 		///I<Scalar>AMAX - index of max abs value
-		virtual SizeType amax() = 0;
+		virtual SizeType amax() const = 0;
 
 		//missing blas routines
 
@@ -145,10 +145,21 @@ namespace utopia {
 		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) = 0;
 
 		/// C := alpha * op(A) * op(B)
-		virtual void multiply(const bool transpose_A, const Scalar const alpha, const bool transpose_B, const Matrix &B, Matrix &C) = 0;
+		virtual void multiply(
+			const bool transpose_A,
+			const Scalar alpha,
+			const bool transpose_B,
+			const Matrix &B,
+			Matrix &C) = 0;
 
 		// <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
-		virtual void gemm(const bool transpose_A, const Scalar const alpha, const bool transpose_B, const Matrix &B, const Scalar beta, Matrix &C) = 0;
+		virtual void gemm(
+			const bool transpose_A,
+			const Scalar alpha,
+			const bool transpose_B,
+			const Matrix &B,
+			const Scalar beta,
+			Matrix &C) = 0;
 
 		//missing blas routines
 

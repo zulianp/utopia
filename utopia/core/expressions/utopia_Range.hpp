@@ -11,17 +11,24 @@
 namespace utopia {
     class Range {
     private:
-        const SizeType _begin, _end, _extent;
+        SizeType begin_, end_, extent_;
 
     public:
         Range(const SizeType begin, const SizeType to)
-                : _begin(begin), _end(to), _extent(to - begin) { }
+                : begin_(begin), end_(to), extent_(to - begin) { }
 
 
         explicit Range(const SizeType beginAndTo)
-                : _begin(beginAndTo), _end(beginAndTo + 1), _extent(1)
+                : begin_(beginAndTo), end_(beginAndTo + 1), extent_(1)
         {
             assert(beginAndTo >= 0);
+        }
+
+        inline void set(const SizeType &begin, const SizeType &end)
+        {
+            begin_ = begin;
+            end_ = end;
+            extent_ = end - begin;
         }
 
         /** \addtogroup ranges
@@ -33,7 +40,7 @@ namespace utopia {
          */
         inline SizeType begin() const
         {
-            return _begin;
+            return begin_;
         }
 
         /*!
@@ -41,7 +48,7 @@ namespace utopia {
          */
         inline SizeType end() const
         {
-            return _end;
+            return end_;
         }
 
         /**
@@ -49,21 +56,21 @@ namespace utopia {
          */
         inline SizeType extent() const
         {
-            return _extent;
+            return extent_;
         }
 
         /**
          * @brief      Checks if range is empty.
          */
         inline bool empty() const {
-            return _extent == 0;
+            return extent_ == 0;
         }
 
         /**
          * @brief      Checks if range is valid.
          */
         inline bool valid() const {
-            return _extent >= 0;
+            return extent_ >= 0;
         }
 
         /**
@@ -71,7 +78,7 @@ namespace utopia {
          */
         inline bool inside(const SizeType index) const
         {
-            return index >= _begin && index < _end;
+            return index >= begin_ && index < end_;
         }
 
         /**
@@ -105,11 +112,11 @@ namespace utopia {
         }
 
         inline const Range operator + (const long shift) const {
-            return Range(_begin + shift, _end + shift);
+            return Range(begin_ + shift, end_ + shift);
         }
 
         inline const Range operator - (const long shift) const {
-            return Range(_begin - shift, _end - shift);
+            return Range(begin_ - shift, end_ - shift);
         }
 
         friend std::ostream & operator <<(std::ostream &os, const Range &range)
