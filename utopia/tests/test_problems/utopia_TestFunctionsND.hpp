@@ -152,8 +152,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QuadraticFunctionBoundary : public Function<Matrix, Vector> {
     public:
-        typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
-        typedef UTOPIA_SCALAR(DVectord) Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        typedef UTOPIA_SCALAR(Vector) Scalar;
 
         virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
             Scalar val = dot(point, A * point);
@@ -185,8 +185,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QuadraticFunctionConstrained : public ConstrainedTestFunction<Matrix, Vector> {
     public:
-        typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
-        typedef UTOPIA_SCALAR(DVectord) Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        typedef UTOPIA_SCALAR(Vector) Scalar;
 
         QuadraticFunctionConstrained(Vector & b, Matrix & H, Matrix & B, Vector & ub):
                                                                         b_(b),

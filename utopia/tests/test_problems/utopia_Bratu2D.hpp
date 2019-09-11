@@ -8,6 +8,8 @@ namespace utopia
 }
 
 #ifdef  WITH_PETSC
+#warning "this code should go in the petsc backend folder"
+
 #include <petscdm.h>
 #include <petscdmda.h>
 #include <petscsnes.h>
