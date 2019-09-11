@@ -57,6 +57,8 @@ namespace utopia {
     void test_lapack_eigen_solver()
     {
         using namespace utopia;
+        using SizeType = Traits<Matrixd>::SizeType;
+        
         const int n = 9;
         Matrixd A = zeros(n, n);
         std::vector<SizeType> is{0, 1, 2, 3, 4, 5, 6, 7, 8};

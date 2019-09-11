@@ -12,7 +12,7 @@ extern "C"
 
 namespace utopia {
     namespace internals {
-        bool lapack_dgesv_solve(const Matrixd::Implementation &A, const Vectord::Implementation &b, Vectord::Implementation &x)
+        bool lapack_dgesv_solve(const Matrixd&A, const Vectord&b, Vectord&x)
         {
             const int n = A.rows();
             const int nrhs = 1;
@@ -23,9 +23,9 @@ namespace utopia {
 
             x = b;
 
-            Matrixd::Implementation Atmp = A;
+            Matrixd Atmp = A;
 
-            dgesv_(&n, &nrhs, Atmp.ptr(), &lda, ipiv, &x[0], &ldb, &info);
+            dgesv_(&n, &nrhs, Atmp.ptr(), &lda, ipiv, x.ptr(), &ldb, &info);
             return true;
         }
     }

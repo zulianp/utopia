@@ -3,6 +3,7 @@
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Tensor.hpp"
 
 namespace utopia
 {
@@ -10,7 +11,7 @@ namespace utopia
     class EvalDots
     {
         public:
-            static void apply(const Wrapper<Vector, 1> &v1, const std::vector<std::shared_ptr<Wrapper<Vector, 1> > > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
+            static void apply(const Tensor<Vector, 1> &v1, const std::vector<std::shared_ptr<Tensor<Vector, 1> > > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
             {
                 typename utopia::Traits<Vector>::SizeType n =  vectors.size();
 
@@ -22,7 +23,7 @@ namespace utopia
                     results[i] = dot(v1, *(vectors[i]));
             }
 
-            static void apply(const Wrapper<Vector, 1> &v1, const std::vector<Wrapper<Vector, 1> > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
+            static void apply(const Tensor<Vector, 1> &v1, const std::vector<Tensor<Vector, 1> > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
             {
                 typename utopia::Traits<Vector>::SizeType n =  vectors.size();
 
@@ -34,13 +35,13 @@ namespace utopia
                     results[i] = dot(v1, (vectors[i]));
             }
 
-            static void apply(const Wrapper<Vector, 1> &v11, const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21, const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2)
+            static void apply(const Tensor<Vector, 1> &v11, const Tensor<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Tensor<Vector, 1> &v21, const Tensor<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2)
             {
                 result1 = dot(v11, v12);
                 result2 = dot(v21, v22);
             }  
 
-            static void apply(const Wrapper<Vector, 1> &v11, const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21, const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2, const Wrapper<Vector, 1> &v31,const Wrapper<Vector, 1> &v32, typename utopia::Traits<Vector>::Scalar & result3)
+            static void apply(const Tensor<Vector, 1> &v11, const Tensor<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Tensor<Vector, 1> &v21, const Tensor<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2, const Tensor<Vector, 1> &v31,const Tensor<Vector, 1> &v32, typename utopia::Traits<Vector>::Scalar & result3)
             {
                 result1 = dot(v11, v12);
                 result2 = dot(v21, v22);
@@ -53,13 +54,13 @@ namespace utopia
     class EvalNorm2s
     {
         public:
-            static void apply(const Wrapper<Vector, 1> &v1, const Wrapper<Vector, 1> &v2, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2)
+            static void apply(const Tensor<Vector, 1> &v1, const Tensor<Vector, 1> &v2, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2)
             {
                 result1 = norm2(v1);
                 result2 = norm2(v2);
             }
 
-            static void apply(const Wrapper<Vector, 1> &v1, const Wrapper<Vector, 1> &v2, const Wrapper<Vector, 1> &v3, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2, typename utopia::Traits<Vector>::Scalar & result3)
+            static void apply(const Tensor<Vector, 1> &v1, const Tensor<Vector, 1> &v2, const Tensor<Vector, 1> &v3, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2, typename utopia::Traits<Vector>::Scalar & result3)
             {
                 result1 = norm2(v1);
                 result2 = norm2(v2);
@@ -71,42 +72,42 @@ namespace utopia
 
 
     template< class Vector>
-    void dots(const Wrapper<Vector, 1> &v1, const std::vector<std::shared_ptr<Wrapper<Vector, 1> > > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
+    void dots(const Tensor<Vector, 1> &v1, const std::vector<std::shared_ptr<Tensor<Vector, 1> > > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
     {
         EvalDots<Vector>::apply(v1, vectors, results);
     }
 
 
     template< class Vector>
-    void dots(const Wrapper<Vector, 1> &v1, const std::vector<Wrapper<Vector, 1> > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
+    void dots(const Tensor<Vector, 1> &v1, const std::vector<Tensor<Vector, 1> > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
     {
         EvalDots<Vector>::apply(v1, vectors, results);
     }
 
 
     template< class Vector>
-    void dots(const Wrapper<Vector, 1> &v11,const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21,const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2)
+    void dots(const Tensor<Vector, 1> &v11,const Tensor<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Tensor<Vector, 1> &v21,const Tensor<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2)
     {
         EvalDots<Vector>::apply(v11, v12, result1, v21, v22, result2);
     }
 
 
     template< class Vector>
-    void dots(const Wrapper<Vector, 1> &v11,const Wrapper<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Wrapper<Vector, 1> &v21,const Wrapper<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2, const Wrapper<Vector, 1> &v31,const Wrapper<Vector, 1> &v32, typename utopia::Traits<Vector>::Scalar & result3)
+    void dots(const Tensor<Vector, 1> &v11,const Tensor<Vector, 1> &v12, typename utopia::Traits<Vector>::Scalar & result1, const Tensor<Vector, 1> &v21,const Tensor<Vector, 1> &v22, typename utopia::Traits<Vector>::Scalar & result2, const Tensor<Vector, 1> &v31,const Tensor<Vector, 1> &v32, typename utopia::Traits<Vector>::Scalar & result3)
     {
         EvalDots<Vector>::apply(v11, v12, result1, v21, v22, result2, v31, v32, result3);
     }
 
 
     template< class Vector>
-    void norms2(const Wrapper<Vector, 1> &v1,const Wrapper<Vector, 1> &v2, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2)
+    void norms2(const Tensor<Vector, 1> &v1,const Tensor<Vector, 1> &v2, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2)
     {
         EvalNorm2s<Vector>::apply(v1, v2, result1, result2);
     }
 
 
     template< class Vector>
-    void norms2(const Wrapper<Vector, 1> &v1,const Wrapper<Vector, 1> &v2, const Wrapper<Vector, 1> &v3, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2, typename utopia::Traits<Vector>::Scalar & result3)
+    void norms2(const Tensor<Vector, 1> &v1,const Tensor<Vector, 1> &v2, const Tensor<Vector, 1> &v3, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2, typename utopia::Traits<Vector>::Scalar & result3)
     {
         EvalNorm2s<Vector>::apply(v1, v2, v3,  result1, result2, result3);
     }

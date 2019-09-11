@@ -8,6 +8,8 @@
 #include "utopia_blas_Algorithms.hpp"
 #include "utopia_blas_ForwardDeclarations.hpp"
 #include "utopia_blas_Vector.hpp"
+#include "utopia_Size.hpp"
+#include "utopia_Constructible.hpp"
 
 
 #include <vector>
@@ -21,13 +23,25 @@ namespace utopia {
         public Tensor<BlasDenseMatrix<T>, 2>,
         public BLAS1Tensor<BlasDenseMatrix<T>>,
         public BLAS2Matrix<BlasDenseMatrix<T>, BlasVector<T>>,
-        public BLAS3Matrix<BlasDenseMatrix<T>>
-    {
+        public BLAS3Matrix<BlasDenseMatrix<T>>,
+        public Constructible<T, std::size_t, 2> {
+    public:
         typedef std::vector<T> Entries;
-        typedef size_t SizeType;
+        using SizeType = std::size_t;
+        using Scalar = T;
+       
         using BlasVector = utopia::BlasVector<T>;
 
-    public:
+        using Super = utopia::Tensor<BlasDenseMatrix<T>, 2>;
+
+        template<class Expr>
+        BlasDenseMatrix(const Expression<Expr> &expr)
+        : rows_(0), cols_(0)
+        {
+            //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+            Super::eval(expr);
+        }
+
         BlasDenseMatrix(BlasDenseMatrix &&other)
         : entries_(std::move(other.entries_)), 
           rows_(std::move(other.rows_)),
@@ -76,7 +90,7 @@ namespace utopia {
 
         BlasDenseMatrix(const Entries& e)
         {
-            rows_ = e.size();
+            rows_ = e.n_elements();
             cols_ = 1;
             entries_ = e;
         }
@@ -89,7 +103,7 @@ namespace utopia {
             return cols_;
         }
 
-        SizeType size() const {
+        SizeType n_elements() const {
             return rows() * cols();
         }
 
@@ -108,13 +122,13 @@ namespace utopia {
 
         inline T &at(const SizeType index)
         {
-            assert(index < entries_.size());
+            assert(index < entries_.n_elements());
             return entries_[index];
         }
 
         inline const T &at(const SizeType index) const
         {
-            assert(index < entries_.size());
+            assert(index < n_elements());
             return entries_[index];
         }
 
@@ -185,6 +199,38 @@ namespace utopia {
             entries_[ i + rows() * j ] = value;
         }
 
+        void set(const T &val) override
+        {
+            std::fill(std::begin(entries_), std::end(entries_), val);
+        }
+
+        template<class Index, class Values>
+        void set_matrix_aux(
+            const Index &rows,
+            const Index &cols,
+            const Values &vals)
+        {
+            const SizeType nr = rows.size();
+            const SizeType nc = cols.size();
+            assert(nr * nc == vals.size());
+
+            SizeType idx = 0;
+            for(SizeType i = 0; i < nr; ++i) {
+                for(SizeType j = 0; j < nc; ++j) {
+                    set(rows[i], rows[j], vals[idx++]);
+                }
+            }
+        }
+
+        //FIXME use span instead
+        void set_matrix(
+            const std::vector<SizeType> &rows,
+            const std::vector<SizeType> &cols,
+            const std::vector<T> &vals)
+        {
+            set_matrix_aux(rows, cols, vals);
+        }
+
         inline void add(const SizeType &i, const SizeType &j, const T &value) override
         {
             assert(i < rows());
@@ -224,6 +270,11 @@ namespace utopia {
             cols_ = 0;
         }
 
+        inline Size size() const override
+        {
+            return {rows_, cols_};
+        }
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR DenseMatrix //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -251,48 +302,48 @@ namespace utopia {
         ///<T>SCAL - x = a*x
         inline void scale(T &a) override
         {
-            BLASAlgorithms<T>::scal(size(), a, ptr(), 1);
+            BLASAlgorithms<T>::scal(n_elements(), a, ptr(), 1);
         }
 
         ///<T>COPY - copy x into y (this)
         inline void copy(const BlasDenseMatrix &x) override
         {
-            entries_.resize(x.size());
+            entries_.resize(x.n_elements());
             rows_ = x.rows_;
             cols_ = x.cols_;
-            BLASAlgorithms<T>::copy(x.size(), x.ptr(), 1, ptr(), 1);
+            BLASAlgorithms<T>::copy(x.n_elements(), x.ptr(), 1, ptr(), 1);
         }
 
         ///<T>AXPY - y = a*x + y
         inline void axpy(const T &a, const BlasDenseMatrix &x) override
         {
-            assert(size() == x.size());
-            BLASAlgorithms<T>::axpy(size(), a, x.ptr(), 1, ptr(), 1);
+            assert(n_elements() == x.n_elements());
+            BLASAlgorithms<T>::axpy(n_elements(), a, x.ptr(), 1, ptr(), 1);
         }
 
         ///<T>DOT - dot product
         inline T dot(const BlasDenseMatrix &other) const override
         {
-            assert(size() == other.size());
-            return BLASAlgorithms<T>::ddot(size(), ptr(), 1, other.ptr(), 1);
+            assert(n_elements() == other.n_elements());
+            return BLASAlgorithms<T>::ddot(n_elements(), ptr(), 1, other.ptr(), 1);
         }
 
         ///<T>NRM2 - Euclidean norm
         inline T norm2() const override
         {
-            return BLASAlgorithms<T>::nrm2(size(), ptr(), 1);
+            return BLASAlgorithms<T>::nrm2(n_elements(), ptr(), 1);
         }
 
         ///<T>ASUM - sum of absolute values
         inline T asum() const override
         {
-            return BLASAlgorithms<T>::asum(size(), ptr(), 1);
+            return BLASAlgorithms<T>::asum(n_elements(), ptr(), 1);
         }
 
         ///<T>AMAX - index of max abs value
         inline SizeType amax() const override
         {
-            return BLASAlgorithms<T>::amax(size(), ptr(), 1);
+            return BLASAlgorithms<T>::amax(n_elements(), ptr(), 1);
         }
 
 
@@ -309,14 +360,14 @@ namespace utopia {
         {
             const char t_A_flag = transpose_A ? 'T' : 'N';
 
-            const int m = this->rows();
-            const int n = this->cols();
+            const SizeType m = this->rows();
+            const SizeType n = this->cols();
 
-            const int y_size = transpose_A ? this->cols() : this->rows();
+            const SizeType y_size = transpose_A ? this->cols() : this->rows();
 
-            const int lda = m;
+            const SizeType lda = m;
 
-            if(y.empty() || y_size != int(y.size())) {
+            if(y.empty() || y_size != y.size()) {
                 y.resize(y_size);
                 std::fill(y.begin(), y.end(), 0);
             } else if(approxeq(alpha, 0.0)) {
@@ -351,11 +402,11 @@ namespace utopia {
             const T beta,
             BlasDenseMatrix &C) override
         {
-            const int k = transpose_A ? this->rows() : this->cols();
+            const SizeType k = transpose_A ? this->rows() : this->cols();
             assert(k == (transpose_B ? B.cols() : B.rows()));
 
-            const int m = transpose_A ? this->cols() : this->rows();
-            const int n = transpose_B ? B.rows() : B.cols();
+            const SizeType m = transpose_A ? this->cols() : this->rows();
+            const SizeType n = transpose_B ? B.rows() : B.cols();
 
             const char t_A_flag = transpose_A ? 'T' : 'N';
             const char t_B_flag = transpose_B ? 'T' : 'N';
@@ -381,6 +432,24 @@ namespace utopia {
             );
         }
 
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Constructible //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        inline void identity(const Size &s) override
+        {
+            assert(s.dims() == 2);
+            identity(s.get(0), s.get(1));
+        }
+
+        inline void values(const Size &s, const T val) override 
+        {
+            resize(s.get(0), s.get(1));
+            set(val);
+        }
+
+
 
     private:
         Entries entries_;
@@ -388,15 +457,15 @@ namespace utopia {
         SizeType cols_;
     };
 
-    inline Wrapper<BlasDenseMatrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
-        return BlasDenseMatrix<double>(rows, cols, args);
-    }
+    // inline Wrapper<BlasDenseMatrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
+    //     return BlasDenseMatrix<double>(rows, cols, args);
+    // }
 
-    template<typename T>
-    void disp(const Wrapper< BlasDenseMatrix<T>, 2> &w, std::ostream &os)
-    {
-        w.implemenetation().describe(os);
-    }
+    // template<typename T>
+    // void disp(const Wrapper< BlasDenseMatrix<T>, 2> &w, std::ostream &os)
+    // {
+    //     w.implemenetation().describe(os);
+    // }
 
 }
 

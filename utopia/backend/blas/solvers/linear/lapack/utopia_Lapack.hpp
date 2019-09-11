@@ -13,7 +13,7 @@
 namespace utopia {
 
     namespace internals {
-        bool lapack_dgesv_solve(const Matrixd::Implementation &A, const Vectord::Implementation &b, Vectord::Implementation &x);
+        bool lapack_dgesv_solve(const Matrixd &A, const Vectord&b, Vectord&x);
     }
 
     template<>
@@ -21,7 +21,7 @@ namespace utopia {
     public:
         inline bool apply(const Vectord &b, Vectord &x) override
         {
-            return internals::lapack_dgesv_solve(this->get_operator()->implementation(), b.implementation(), x.implementation());
+            return internals::lapack_dgesv_solve(*this->get_operator(), b, x);
         }
 
         LUDecomposition * clone() const override

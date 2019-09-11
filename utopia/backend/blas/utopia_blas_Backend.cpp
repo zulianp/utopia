@@ -445,8 +445,8 @@ namespace utopia {
 
     BLASBackend::Scalar BLASBackend::dot(const Matrix &left, const Matrix &right)
     {
-        const int n = left.size();
-        assert(n == right.size());
+        const int n = left.n_elements();
+        assert(n == right.n_elements());
 
         const int incx = 1;
         const int incy = 1;

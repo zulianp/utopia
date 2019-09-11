@@ -6,6 +6,7 @@
 #include "utopia_Layout.hpp"
 #include "utopia_Communicator.hpp"
 #include "utopia_DistributedObject.hpp"
+#include "utopia_Size.hpp"
 
 namespace utopia {
 
@@ -39,6 +40,7 @@ namespace utopia {
 	template<typename Scalar_, typename SizeType_>
 	class Matrix : public MatrixBase<Scalar_, SizeType_> {
 	public:
+		virtual Size size() const = 0;
 		virtual ~Matrix() {}
 	};
 
@@ -47,8 +49,11 @@ namespace utopia {
 	public:
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
+		using Super    = utopia::Matrix<Scalar_, SizeType_>;
+		using Super::set;
 
 		virtual Scalar get(const SizeType &i, const SizeType &j) const = 0;
+		virtual void set(const Scalar &val) = 0;
 
 		virtual ~DenseMatrix() {}
 	};

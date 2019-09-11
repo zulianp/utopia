@@ -15,13 +15,27 @@ namespace utopia {
     template<typename T>
     class BlasVector : 
         public Vector<T, std::size_t>,
-        public Tensor<BlasVector<T>, 2>,
+        public Tensor<BlasVector<T>, 1>,
         public BLAS1Tensor<BlasVector<T>>
     {
+    public:
         typedef std::vector<T> Entries;
-        typedef size_t SizeType;
 
-	public:
+        using Scalar = T;
+        using SizeType = std::size_t;
+        using Super = utopia::Tensor<BlasVector<T>, 1>;
+
+        using Super::Super;
+
+        BlasVector()
+        {}
+
+        BlasVector(std::initializer_list<T> args)
+        : entries_(args)
+        {
+
+        }
+
         BlasVector(const BlasVector &other)
         : entries_(other.entries_)
         {}
@@ -44,7 +58,7 @@ namespace utopia {
         	return *this;
         }
 
-        inline SizeType size()
+        inline SizeType size() const
         {
         	return entries_.size();
         }
@@ -71,6 +85,17 @@ namespace utopia {
         auto begin() const { return entries_.begin(); }
         auto end() const { return entries_.end(); }
 
+        Entries &entries() 
+        {
+        	return entries_;
+        }
+
+        const Entries &entries() const
+        {
+        	return entries_;
+        }
+
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR MatrixBase ///////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -87,6 +112,11 @@ namespace utopia {
             assert(i < size());
             
             entries_[i] = value;
+        }
+
+        virtual void set(const T &val) override
+        {
+            std::fill(std::begin(entries_), std::end(entries_), val);
         }
 
         inline void add(const SizeType &i, const T &value) override

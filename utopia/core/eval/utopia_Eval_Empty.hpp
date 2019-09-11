@@ -23,6 +23,7 @@
 #include "utopia_FillTypeQuery.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
+#include "utopia_Tensor.hpp"
 
 
 namespace utopia {
@@ -32,37 +33,71 @@ namespace utopia {
     template<class Expr, class Traits = utopia::Traits<Expr>, int Backend = Traits::Backend>
     class Eval {};
 
-    template<class Tensor, int Order, class Traits, int Backend>
-    class Eval<Wrapper<Tensor, Order>, Traits, Backend> {
+    // template<class Tensor, int Order, class Traits, int Backend>
+    // class Eval<Wrapper<Tensor, Order>, Traits, Backend> {
+    // public:
+    //     inline static const Tensor &apply(const Wrapper<Tensor, Order> &expr) {
+    //         return expr.implementation();
+    //     }
+
+    //     inline static Tensor &apply(Wrapper<Tensor, Order> &expr) {
+    //         return expr.implementation();
+    //     }
+    // };
+
+    // template<class Tensor, int Order, class Traits, int Backend>
+    // class Eval<Wrapper<Tensor &, Order>, Traits, Backend> {
+    // public:
+    //     inline static const Tensor &apply(const Wrapper<Tensor &, Order> &expr) {
+    //         return expr.implementation();
+    //     }
+
+    //     inline static Tensor &apply(Wrapper<Tensor &, Order> &expr) {
+    //         return expr.implementation();
+    //     }
+    // };
+
+    // template<class Tensor, int Order, class Traits, int Backend>
+    // class Eval<Wrapper<const Tensor &, Order>, Traits, Backend> {
+    // public:
+    //     inline static const Tensor &apply(const Wrapper<const Tensor &, Order> &expr) {
+    //         return expr.implementation();
+    //     }
+    // };
+
+
+    template<class Derived, int Order, class Traits, int Backend>
+    class Eval<Tensor<Derived, Order>, Traits, Backend> {
     public:
-        inline static const Tensor &apply(const Wrapper<Tensor, Order> &expr) {
-            return expr.implementation();
+        inline static const Derived &apply(const Tensor<Derived, Order> &expr) {
+            return expr.derived();
         }
 
-        inline static Tensor &apply(Wrapper<Tensor, Order> &expr) {
-            return expr.implementation();
+        inline static Derived &apply(Tensor<Derived, Order> &expr) {
+            return expr.derived();
         }
     };
 
-    template<class Tensor, int Order, class Traits, int Backend>
-    class Eval<Wrapper<Tensor &, Order>, Traits, Backend> {
+    template<class Derived, int Order, class Traits, int Backend>
+    class Eval<Tensor<Derived &, Order>, Traits, Backend> {
     public:
-        inline static const Tensor &apply(const Wrapper<Tensor &, Order> &expr) {
-            return expr.implementation();
+        inline static const Derived &apply(const Tensor<Derived &, Order> &expr) {
+            return expr.derived();
         }
 
-        inline static Tensor &apply(Wrapper<Tensor &, Order> &expr) {
-            return expr.implementation();
+        inline static Derived &apply(Tensor<Derived &, Order> &expr) {
+            return expr.derived();
         }
     };
 
-    template<class Tensor, int Order, class Traits, int Backend>
-    class Eval<Wrapper<const Tensor &, Order>, Traits, Backend> {
+    template<class Derived, int Order, class Traits, int Backend>
+    class Eval<Tensor<const Derived &, Order>, Traits, Backend> {
     public:
-        inline static const Tensor &apply(const Wrapper<const Tensor &, Order> &expr) {
-            return expr.implementation();
+        inline static const Derived &apply(const Tensor<const Derived &, Order> &expr) {
+            return expr.derived();
         }
     };
+
 
 }
 

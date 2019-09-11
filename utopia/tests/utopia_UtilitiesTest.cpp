@@ -332,32 +332,32 @@ namespace utopia {
     void runUtilitiesTest() {
         UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
 
-#ifdef WITH_BLAS
-        UtilitiesTest<Matrixd, Vectord>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+//         UtilitiesTest<Matrixd, Vectord>().run();
+// #endif //WITH_BLAS
 
-#ifdef WITH_PETSC
-        BlockTest<DSMatrixd, DVectord>().run();
+// #ifdef WITH_PETSC
+//         BlockTest<DSMatrixd, DVectord>().run();
 
 
-        if(mpi_world_size() == 1) {
-            UtilitiesTest<DMatrixd, DVectord>().run();
-            BlockTest<DMatrixd, DVectord>().run();
-#ifdef WITH_BLAS
-            // interoperability
-            UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();
-            UtilitiesTest<Matrixd, DVectord>().inline_eval_test();
-#endif //WITH_BLAS
+//         if(mpi_world_size() == 1) {
+//             UtilitiesTest<DMatrixd, DVectord>().run();
+//             BlockTest<DMatrixd, DVectord>().run();
+// #ifdef WITH_BLAS
+//             // interoperability
+//             UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();
+//             UtilitiesTest<Matrixd, DVectord>().inline_eval_test();
+// #endif //WITH_BLAS
 
-        }
+//         }
 
-#endif //WITH_PETSC
+// #endif //WITH_PETSC
 
-        if(mpi_world_size() == 1) {
-#ifdef WITH_TRILINOS
-            BlockTest<TSMatrixd, TVectord>().run();
-#endif //WITH_TRILINOS
-        }
+//         if(mpi_world_size() == 1) {
+// #ifdef WITH_TRILINOS
+//             BlockTest<TSMatrixd, TVectord>().run();
+// #endif //WITH_TRILINOS
+//         }
 
         UTOPIA_UNIT_TEST_END("UtilitiesTest");
     }

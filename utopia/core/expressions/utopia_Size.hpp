@@ -77,6 +77,12 @@ namespace utopia {
             return _data.size();
         }
 
+        inline SizeType dims() const
+        {
+            return _data.size();
+        }
+
+
         bool empty() const
         {
             return _data.empty();

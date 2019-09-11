@@ -34,6 +34,7 @@ namespace utopia {
 		//utility functions
 		virtual bool empty() const = 0;
 		virtual void clear() = 0;
+		virtual void set(const Scalar &val) = 0;
 	};
 
 	template<typename Scalar_, typename SizeType_>

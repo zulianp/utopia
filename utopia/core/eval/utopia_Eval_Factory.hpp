@@ -87,6 +87,34 @@ namespace utopia {
         }
     };
 
+    //NEW
+    template<class Left, int Order, class Traits, int Backend>
+    class Eval<Construct<Left, Factory<Identity, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Construct<Left, Factory<Identity, Order> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            expr.left().identity(expr.size());
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    //NEW
+    template<class Left, int Order, class Traits, int Backend>
+    class Eval<Construct<Left, Factory<Zeros, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Construct<Left, Factory<Zeros, Order> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            expr.left().zeros(expr.right().size());
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
     template<class Left, class Right, int Order, class Options, class Traits, int Backend>
     class Eval<Construct<Left, Build<Factory<Right, Order>, Options> >, Traits, Backend> {
     public:

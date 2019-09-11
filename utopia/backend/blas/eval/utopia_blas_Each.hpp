@@ -11,13 +11,11 @@ namespace utopia {
             template<class Fun>
             inline static void apply_read(const Vectord &v, Fun fun)
             {
-                const auto &impl = raw_type(v);
-
                 For<>::apply(
                     0,
-                    impl.size(),
-                    [&impl, &fun](const std::size_t i) {
-                        fun(i, impl[i]);
+                    v.size(),
+                    [&v, &fun](const std::size_t i) {
+                        fun(i, v.get(i));
                     }
                 );
             }
@@ -25,13 +23,11 @@ namespace utopia {
             template<class Fun>
             inline static void apply_write(Vectord &v, Fun fun)
             {
-                auto &impl = raw_type(v);
-
                 For<>::apply(
                     0,
-                    impl.size(),
-                    [&impl, &fun](const std::size_t i) {
-                        impl[i] = fun(i);
+                    v.size(),
+                    [&v, &fun](const std::size_t i) {
+                        v.set(i, fun(i));
                     }
                 );
             }
@@ -39,19 +35,16 @@ namespace utopia {
             template<class Fun>
             inline static void apply_transform(const Vectord &in, Vectord &out, Fun fun)
             {
-                const auto &impl_in = raw_type(in);
-                auto &impl_out = raw_type(out);
-                auto s = impl_in.size();
-
-                if(s != impl_out.size()) {
-                    impl_out.resize(s);
+                auto s = in.size();
+                if(s != out.size()) {
+                    out.resize(s);
                 }
 
                 For<>::apply(
                     0,
                     s,
-                    [&impl_in, &impl_out, &fun](const std::size_t i) {
-                        impl_out[i] = fun(i, impl_in[i]);
+                    [&in, &out, &fun](const std::size_t i) {
+                        out.set(i, fun(i, in.get(i)));
                     }
                 );
             }

@@ -547,7 +547,7 @@ namespace utopia {
                 result.resize(mat.rows(), mat.cols());
             }
 
-            for(SizeType i = 0; i < mat.size(); ++i) {
+            for(SizeType i = 0; i < mat.n_elements(); ++i) {
                 result.entries()[i] = op.template apply<Scalar>(mat.entries()[i]);
             }
         }
@@ -557,7 +557,7 @@ namespace utopia {
                 result.resize(mat.rows(), mat.cols());
             }
 
-            for(SizeType i = 0; i < mat.size(); ++i) {
+            for(SizeType i = 0; i < mat.n_elements(); ++i) {
                 result.entries()[i] = -mat.entries()[i];
             }
         }

@@ -299,63 +299,117 @@ namespace utopia {
     // };
 
 
-    template<class Tensor>
-    class Write {
-    public:
-        Tensor &_tensor;
-        typedef typename Traits<Tensor>::Scalar Scalar;
+//     template<class Tensor>
+//     class Write {
+//     public:
+//         Tensor &_tensor;
+//         typedef typename Traits<Tensor>::Scalar Scalar;
 
-        /**
-         * @ingroup     lock
-         * @brief       Write lock providing memory access to object. \n
-         * @param       tensor  The tensor.
-         */
-        Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
-        : _tensor(tensor), mode_(mode)
-        {
-#ifdef ENABLE_LOCK_CHECK
-            _tensor.write_lock();
-#endif //ENABLE_LOCK_CHECK
-            Backend<Scalar, Traits<Tensor>::Backend>::write_lock(_tensor.implementation(), mode_);
-        }
+//         /**
+//          * @ingroup     lock
+//          * @brief       Write lock providing memory access to object. \n
+//          * @param       tensor  The tensor.
+//          */
+//         Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
+//         : _tensor(tensor), mode_(mode)
+//         {
+// #ifdef ENABLE_LOCK_CHECK
+//             _tensor.write_lock();
+// #endif //ENABLE_LOCK_CHECK
+//             Backend<Scalar, Traits<Tensor>::Backend>::write_lock(_tensor.implementation(), mode_);
+//         }
 
-        ~Write()
-        {
-#ifdef ENABLE_LOCK_CHECK
-            _tensor.write_unlock();
-#endif //ENABLE_LOCK_CHECK
-            Backend<Scalar, Traits<Tensor>::Backend>::write_unlock(_tensor.implementation(), mode_);
-        }
+//         ~Write()
+//         {
+// #ifdef ENABLE_LOCK_CHECK
+//             _tensor.write_unlock();
+// #endif //ENABLE_LOCK_CHECK
+//             Backend<Scalar, Traits<Tensor>::Backend>::write_unlock(_tensor.implementation(), mode_);
+//         }
 
 
-        WriteMode mode_;
-    };
+//         WriteMode mode_;
+//     };
 
-    template<class T, int Order>
-    class Write< std::vector<Wrapper<T, Order> > > {
-    public:
-        using Tensors = std::vector<Wrapper<T, Order> >;
-        using Scalar  = typename Traits<T>::Scalar;
+//     template<class T, int Order>
+//     class Write< std::vector<Wrapper<T, Order> > > {
+//     public:
+//         using Tensors = std::vector<Wrapper<T, Order> >;
+//         using Scalar  = typename Traits<T>::Scalar;
         
 
-        Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
-        : tensors_(tensors), mode_(mode)
-        {
-            for(auto &t : tensors_) {
-                Backend<Scalar, Traits<T>::Backend>::write_lock(t.implementation(), mode_);
-            }
-        }
+//         Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
+//         : tensors_(tensors), mode_(mode)
+//         {
+//             for(auto &t : tensors_) {
+//                 Backend<Scalar, Traits<T>::Backend>::write_lock(t.implementation(), mode_);
+//             }
+//         }
 
-        ~Write()
-        {
-            for(auto &t : tensors_) {
-                Backend<Scalar, Traits<T>::Backend>::write_unlock(t.implementation(), mode_);
-            }
-        }
+//         ~Write()
+//         {
+//             for(auto &t : tensors_) {
+//                 Backend<Scalar, Traits<T>::Backend>::write_unlock(t.implementation(), mode_);
+//             }
+//         }
 
-        Tensors &tensors_;
-        WriteMode mode_;
-    };
+//         Tensors &tensors_;
+//         WriteMode mode_;
+//     };
+
+
+
+        template<class Tensor>
+        class Write {
+        public:
+            Tensor &_tensor;
+            typedef typename Traits<Tensor>::Scalar Scalar;
+
+            /**
+             * @ingroup     lock
+             * @brief       Write lock providing memory access to object. \n
+             * @param       tensor  The tensor.
+             */
+            Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
+            : _tensor(tensor), mode_(mode)
+            {
+                _tensor.write_lock(mode_);
+            }
+
+            ~Write()
+            {
+                _tensor.write_unlock(mode_);
+            }
+
+
+            WriteMode mode_;
+        };
+
+        template<class T, int Order>
+        class Write< std::vector<Wrapper<T, Order> > > {
+        public:
+            using Tensors = std::vector<Wrapper<T, Order> >;
+            using Scalar  = typename Traits<T>::Scalar;
+            
+
+            Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
+            : tensors_(tensors), mode_(mode)
+            {
+                for(auto &t : tensors_) {
+                    t.write_lock(mode_);
+                }
+            }
+
+            ~Write()
+            {
+                for(auto &t : tensors_) {
+                    t.write_unlock(mode_);
+                }
+            }
+
+            Tensors &tensors_;
+            WriteMode mode_;
+        };
 
 }
 

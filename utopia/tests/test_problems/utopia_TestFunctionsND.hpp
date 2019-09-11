@@ -18,7 +18,7 @@ namespace utopia {
 
         TestFunctionND_1(SizeType N = 10) : N(N), b(values(N, 3.0)), A(identity(N, N)), a(1.0) {
 
-            static_assert(Matrix::FILL_TYPE == FillType::DENSE, "This function has a dense hessian do not use sparse implementations");
+            static_assert(Traits<Matrix>::FILL_TYPE == FillType::DENSE, "This function has a dense hessian do not use sparse implementations");
         }
 
         inline bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
