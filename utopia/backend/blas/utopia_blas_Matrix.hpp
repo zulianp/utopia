@@ -6,6 +6,8 @@
 #include "utopia_blas_Traits.hpp"
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_blas_Algorithms.hpp"
+#include "utopia_blas_ForwardDeclarations.hpp"
+#include "utopia_blas_Vector.hpp"
 
 
 #include <vector>
@@ -14,30 +16,57 @@
 
 namespace utopia {
     template<typename T>
-    class BLASDenseMatrix : 
+    class BlasDenseMatrix : 
         public DenseMatrix<T, std::size_t>,
-        public Tensor<BLASDenseMatrix<T>, 2>,
-        public BLAS1Tensor<BLASDenseMatrix<T>>
+        public Tensor<BlasDenseMatrix<T>, 2>,
+        public BLAS1Tensor<BlasDenseMatrix<T>>,
+        public BLAS2Matrix<BlasDenseMatrix<T>, BlasVector<T>>,
+        public BLAS3Matrix<BlasDenseMatrix<T>>
     {
         typedef std::vector<T> Entries;
         typedef size_t SizeType;
+        using BlasVector = utopia::BlasVector<T>;
 
     public:
-        BLASDenseMatrix(SizeType rows, SizeType cols) : rows_(rows), cols_(cols)
+        BlasDenseMatrix(BlasDenseMatrix &&other)
+        : entries_(std::move(other.entries_)), 
+          rows_(std::move(other.rows_)),
+          cols_(std::move(other.cols_))
+        {}
+
+        BlasDenseMatrix(const BlasDenseMatrix &other)
+        : entries_(other.entries_), 
+          rows_(other.rows_),
+          cols_(other.cols_)
+        {}
+
+        inline BlasDenseMatrix &operator=(const BlasDenseMatrix &other)
         {
-            entries_.resize(rows_*cols_);
+            if(this == &other) return *this;
+            copy(other);
+            return *this;
         }
 
-        BLASDenseMatrix(SizeType rows, SizeType cols, T value) : rows_(rows), cols_(cols)
+        inline BlasDenseMatrix &operator=(BlasDenseMatrix &&other)
         {
-            set_entries(Entries(rows_ * cols_, value));
+            if(this == &other) return *this;
+            entries_ = std::move(other.entries_);
+            rows_    = std::move(other.rows_);
+            cols_    = std::move(other.cols_);
+            return *this;
         }
 
-        ~BLASDenseMatrix() { }
+        BlasDenseMatrix(SizeType rows, SizeType cols) : entries_(rows * cols), rows_(rows), cols_(cols)
+        {}
 
-        BLASDenseMatrix() : rows_(0), cols_(0) {}
+        BlasDenseMatrix(SizeType rows, SizeType cols, T value) : entries_(rows * cols, value), rows_(rows), cols_(cols)
+        {}
 
-        BLASDenseMatrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows_(rows), cols_(cols)
+        ~BlasDenseMatrix() { }
+
+        BlasDenseMatrix() : rows_(0), cols_(0) {}
+
+        BlasDenseMatrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows_(rows), cols_(cols)
         {
             using std::copy;
 
@@ -45,17 +74,12 @@ namespace utopia {
             copy(args.begin(), args.end(), entries_.begin());
         }
 
-        BLASDenseMatrix(const Entries& e)
+        BlasDenseMatrix(const Entries& e)
         {
             rows_ = e.size();
             cols_ = 1;
             entries_ = e;
-
         }
-        // inline bool empty() const
-        // {
-        //     return entries_.empty();
-        // }
 
         SizeType rows() const {
             return rows_;
@@ -93,17 +117,6 @@ namespace utopia {
             assert(index < entries_.size());
             return entries_[index];
         }
-        // void set(SizeType i, SizeType j, T value) {
-        //     assert(i < rows());
-        //     assert(j < cols());
-        //     entries_[ i + rows() * j ] = value;
-        // }
-
-        // T get(SizeType i, SizeType j) const {
-        //     assert(i < rows());
-        //     assert(j < cols());
-        //     return at(i + rows() * j);
-        // }
 
         void set_rows(SizeType rows) {
             rows_ = rows;
@@ -154,8 +167,6 @@ namespace utopia {
             fill(entries_.begin(), entries_.end(), T(value));
         }
 
-
-
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR MatrixBase ///////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -200,7 +211,6 @@ namespace utopia {
             }
         }
 
-
         //utility functions
         inline bool empty() const override
         {
@@ -231,7 +241,7 @@ namespace utopia {
 
 
         ///<T>SWAP - swap x and y
-        inline void swap(BLASDenseMatrix &x) override
+        inline void swap(BlasDenseMatrix &x) override
         {
             std::swap(rows_, x.rows_);
             std::swap(cols_, x.cols_);
@@ -245,7 +255,7 @@ namespace utopia {
         }
 
         ///<T>COPY - copy x into y (this)
-        inline void copy(const BLASDenseMatrix &x) override
+        inline void copy(const BlasDenseMatrix &x) override
         {
             entries_.resize(x.size());
             rows_ = x.rows_;
@@ -254,14 +264,14 @@ namespace utopia {
         }
 
         ///<T>AXPY - y = a*x + y
-        inline void axpy(const T &a, const BLASDenseMatrix &x) override
+        inline void axpy(const T &a, const BlasDenseMatrix &x) override
         {
             assert(size() == x.size());
             BLASAlgorithms<T>::axpy(size(), a, x.ptr(), 1, ptr(), 1);
         }
 
         ///<T>DOT - dot product
-        inline T dot(const BLASDenseMatrix &other) const override
+        inline T dot(const BlasDenseMatrix &other) const override
         {
             assert(size() == other.size());
             return BLASAlgorithms<T>::ddot(size(), ptr(), 1, other.ptr(), 1);
@@ -285,19 +295,105 @@ namespace utopia {
             return BLASAlgorithms<T>::amax(size(), ptr(), 1);
         }
 
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR BLAS2Matrix //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        void gemv(
+            const bool transpose_A,
+            const T &alpha,
+            const BlasVector &x,
+            const T &beta,
+            BlasVector &y) override
+        {
+            const char t_A_flag = transpose_A ? 'T' : 'N';
+
+            const int m = this->rows();
+            const int n = this->cols();
+
+            const int y_size = transpose_A ? this->cols() : this->rows();
+
+            const int lda = m;
+
+            if(y.empty() || y_size != int(y.size())) {
+                y.resize(y_size);
+                std::fill(y.begin(), y.end(), 0);
+            } else if(approxeq(alpha, 0.0)) {
+                std::fill(y.begin(), y.end(), 0);
+            }
+
+            BLASAlgorithms<T>::gemv(
+                   t_A_flag,               //0
+                   m,                      //1
+                   n,                      //2
+                   alpha,            //3
+                   ptr(),               //4
+                   lda,                    //5
+                   x.ptr(),              //6
+                   1,                    //7
+                   beta,                   //8
+                   y.ptr(),                  //9
+                   1
+            );                   //10
+
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR BLAS3Matrix //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        void gemm(
+            const bool transpose_A,
+            const T alpha,
+            const bool transpose_B,
+            const BlasDenseMatrix &B,
+            const T beta,
+            BlasDenseMatrix &C) override
+        {
+            const int k = transpose_A ? this->rows() : this->cols();
+            assert(k == (transpose_B ? B.cols() : B.rows()));
+
+            const int m = transpose_A ? this->cols() : this->rows();
+            const int n = transpose_B ? B.rows() : B.cols();
+
+            const char t_A_flag = transpose_A ? 'T' : 'N';
+            const char t_B_flag = transpose_B ? 'T' : 'N';
+
+            if (C.empty() || approxeq(beta, 0.0)) {
+                C.resize(m, n);
+                std::fill(C.entries().begin(), C.entries().end(), 0);
+            }
+
+            BLASAlgorithms<T>::gemm(
+                t_A_flag, 
+                t_B_flag, 
+                m, 
+                n, 
+                k, 
+                alpha, this->ptr(), 
+                transpose_A ? k : m,
+                B.ptr(),
+                transpose_B ? n : k,
+                beta,
+                C.ptr(),
+                m
+            );
+        }
+
+
     private:
         Entries entries_;
         SizeType rows_;
         SizeType cols_;
-
     };
 
-    inline Wrapper<BLASDenseMatrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
-        return BLASDenseMatrix<double>(rows, cols, args);
+    inline Wrapper<BlasDenseMatrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
+        return BlasDenseMatrix<double>(rows, cols, args);
     }
 
     template<typename T>
-    void disp(const Wrapper< BLASDenseMatrix<T>, 2> &w, std::ostream &os)
+    void disp(const Wrapper< BlasDenseMatrix<T>, 2> &w, std::ostream &os)
     {
         w.implemenetation().describe(os);
     }

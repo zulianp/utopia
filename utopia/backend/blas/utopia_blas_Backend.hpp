@@ -22,7 +22,7 @@ namespace utopia {
     class BLASBackend : public ScalarBackend<double> {
     public:
         typedef double Scalar;
-        typedef utopia::BLASDenseMatrix<Scalar> Matrix;
+        typedef utopia::BlasDenseMatrix<Scalar> Matrix;
         typedef std::vector<Scalar> Vector;
         typedef std::vector<Scalar>::size_type SizeType;
 

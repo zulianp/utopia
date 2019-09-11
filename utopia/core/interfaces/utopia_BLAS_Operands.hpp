@@ -74,25 +74,31 @@ namespace utopia {
 		}
 
 		/// y = alpha * A * x
-		virtual void multiply(const Scalar &alpha, const Vector &x, Vector &y) = 0;
+		virtual void multiply(const Scalar &alpha, const Vector &x, Vector &y)
+		{
+		    gemv(false, alpha, x, 0.0, y);
+		}
 
 		/// y = alpha * A^T * x
-		virtual void transpose_multiply(const Scalar &alpha, const Vector &x, Vector &y) = 0;
+		virtual void transpose_multiply(const Scalar &alpha, const Vector &x, Vector &y)
+		{
+		    gemv(true, alpha, x, 0.0, y);
+		}
 
 		/// y := alpha * A * x + beta * y
-		virtual void multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) = 0;
+		virtual void multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y)
+		{
+		    gemv(false, alpha, x, beta, y);
+		}
 
 		/// y := alpha * A' * x + beta * y
-		virtual void transpose_multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) = 0;
-
-		virtual void gemv(const bool transpose, const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y)
+		virtual void transpose_multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y)
 		{
-			if(transpose) {
-				multiply_transpose_add(alpha, x, beta, y);
-			} else {
-				multiply_add(alpha, x, beta, y);
-			}
+		    gemv(true, alpha, x, beta, y);
 		}
+
+		virtual void gemv(const bool transpose, const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) = 0;
+
 
 		//missing blas routines
 
@@ -142,7 +148,10 @@ namespace utopia {
 		}
 
 		/// C := alpha * A * B
-		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) = 0;
+		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C)
+		{
+			multiply(false, alpha, false, B, C);
+		}
 
 		/// C := alpha * op(A) * op(B)
 		virtual void multiply(
@@ -150,7 +159,10 @@ namespace utopia {
 			const Scalar alpha,
 			const bool transpose_B,
 			const Matrix &B,
-			Matrix &C) = 0;
+			Matrix &C)
+		{
+			gemm(transpose_A, alpha, transpose_B, B, 0.0, C);
+		}
 
 		// <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
 		virtual void gemm(

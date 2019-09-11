@@ -9,14 +9,14 @@
 #include "utopia_Wrapper.hpp"
 
 namespace utopia {
-    typedef utopia::Wrapper<utopia::BLASDenseMatrix<double>, 2>    Matrixd;
+    typedef utopia::Wrapper<utopia::BlasDenseMatrix<double>, 2>    Matrixd;
     typedef utopia::Wrapper<std::vector<double>, 1>       Vectord;
     typedef utopia::Wrapper<utopia::CRSMatrix<double>, 2> CRSMatrixd;
     typedef utopia::Wrapper<utopia::CCSMatrix<double>, 2> CCSMatrixd;
 
     ///////////////////////////////////////////////////////////////////////////////
 
-    inline BLASDenseMatrix<double> &raw_type(Wrapper<BLASDenseMatrix<double>, 2> &utopiaType)
+    inline BlasDenseMatrix<double> &raw_type(Wrapper<BlasDenseMatrix<double>, 2> &utopiaType)
     {
         return utopiaType.implementation();
     }
@@ -28,7 +28,7 @@ namespace utopia {
 
     ///////////////////////////////////////////////////////////////////////////////
 
-    inline const BLASDenseMatrix<double> &raw_type(const Wrapper<BLASDenseMatrix<double>, 2> &utopiaType)
+    inline const BlasDenseMatrix<double> &raw_type(const Wrapper<BlasDenseMatrix<double>, 2> &utopiaType)
     {
         return utopiaType.implementation();
     }
