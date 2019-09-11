@@ -10,27 +10,27 @@
 
 namespace utopia {
     template<typename T>
-    class Matrix
+    class BLASDenseMatrix
     {
         typedef std::vector<T> Entries;
         typedef typename Entries::size_type SizeType;
 
     public:
-        Matrix(SizeType rows, SizeType cols) : rows_(rows), cols_(cols)
+        BLASDenseMatrix(SizeType rows, SizeType cols) : rows_(rows), cols_(cols)
         {
             entries_.resize(rows_*cols_);
         }
 
-        Matrix(SizeType rows, SizeType cols, T value) : rows_(rows), cols_(cols)
+        BLASDenseMatrix(SizeType rows, SizeType cols, T value) : rows_(rows), cols_(cols)
         {
             set_entries(Entries(rows_ * cols_, value));
         }
 
-        ~Matrix() { }
+        ~BLASDenseMatrix() { }
 
-        Matrix() : rows_(0), cols_(0) {}
+        BLASDenseMatrix() : rows_(0), cols_(0) {}
 
-        Matrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows_(rows), cols_(cols)
+        BLASDenseMatrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows_(rows), cols_(cols)
         {
             using std::copy;
 
@@ -38,7 +38,7 @@ namespace utopia {
             copy(args.begin(), args.end(), entries_.begin());
         }
 
-        Matrix(const Entries& e)
+        BLASDenseMatrix(const Entries& e)
         {
             rows_ = e.size();
             cols_ = 1;
@@ -154,12 +154,12 @@ namespace utopia {
 
     };
 
-    inline Wrapper<Matrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
-        return Matrix<double>(rows, cols, args);
+    inline Wrapper<BLASDenseMatrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
+        return BLASDenseMatrix<double>(rows, cols, args);
     }
 
     template<typename T>
-    void disp(const Wrapper< Matrix<T>, 2> &w, std::ostream &os)
+    void disp(const Wrapper< BLASDenseMatrix<T>, 2> &w, std::ostream &os)
     {
         for (SizeType i=0; i<w.implementation().rows(); ++i)
         {

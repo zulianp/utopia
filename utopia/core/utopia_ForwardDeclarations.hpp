@@ -42,8 +42,8 @@ namespace utopia {
     template<class T>
     class Traits;
 
-    template <class T>
-    class Matrix;
+    // template <class T>
+    // class Matrix;
 
     template<class Expr, int Order>
     class Norm;
