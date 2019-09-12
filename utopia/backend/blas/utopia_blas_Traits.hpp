@@ -15,7 +15,7 @@ namespace utopia {
     public:
         typedef T Scalar;
         typedef utopia::BlasDenseMatrix<T> Matrix;
-        typedef std::vector<T> Vector;
+        typedef utopia::BlasVector<T> Vector;
         typedef utopia::CRSMatrix<T> CRSMatrix;
         //default sparse matrix
         typedef utopia::CRSMatrix<T> SparseMatrix;
@@ -28,7 +28,7 @@ namespace utopia {
         };
     };
 
-    UTOPIA_MAKE_TRAITS_TPL_1(std::vector, BLASTraits);
+    // UTOPIA_MAKE_TRAITS_TPL_1(std::vector, BLASTraits);
     UTOPIA_MAKE_TRAITS_TPL_1(BlasVector, BLASTraits);
     UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasDenseMatrix, BLASTraits);
     UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(CRSMatrix, BLASTraits);

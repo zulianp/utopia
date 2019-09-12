@@ -20,8 +20,8 @@ namespace utopia {
         inline static bool apply(const Construct<Left, Right> &expr) {
 
             UTOPIA_TRACE_BEGIN(expr);
-            UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
-                                          Eval<Right, Traits>::apply(expr.right()) );
+
+            expr.left().construct( Eval<Right, Traits>::apply(expr.right()) );
 
             UTOPIA_TRACE_END(expr);
             return true;
@@ -35,7 +35,7 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            expr.left() = Eval<Right, Traits>::apply(expr.right());
+            expr.left().construct( Eval<Right, Traits>::apply(expr.right()) );
 
             UTOPIA_TRACE_END(expr);
             return true;

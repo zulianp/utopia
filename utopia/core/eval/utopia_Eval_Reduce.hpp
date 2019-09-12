@@ -8,6 +8,7 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_Each.hpp"
 #include "utopia_Operators.hpp"
+#include "utopia_Operations.hpp"
 
 namespace utopia {
 
@@ -61,9 +62,13 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).norm2(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            // result = UTOPIA_BACKEND(Traits).norm2(
+            //         Eval<Expr, Traits>::apply(expr.expr())
+            // );
+
+
+            result = Eval<Expr, Traits>::apply(expr.expr()).norm2();
+
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -97,9 +102,11 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).norm_infty(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            // result = UTOPIA_BACKEND(Traits).norm_infty(
+            //         Eval<Expr, Traits>::apply(expr.expr())
+            // );
+
+            result = Eval<Expr, Traits>::apply(expr.expr()).norm_infty();
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -107,16 +114,23 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval<Reduce<Binary<Left, Right, ApproxEqual>, And>, Traits, Backend> {
+    class Eval<ReduceApproxEqual<Left, Right>, Traits, Backend> {
     public:
-        inline static bool apply(const Reduce<Binary<Left, Right, ApproxEqual>, And> &expr) {
+        inline static bool apply(const ReduceApproxEqual<Left, Right> &expr) {
             bool result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).compare(
-                    Eval<Left,  Traits>::apply(expr.expr().left()),
-                    Eval<Right, Traits>::apply(expr.expr().right()),
-                    expr.expr().operation());
+            // result = UTOPIA_BACKEND(Traits).compare(
+            //         Eval<Left,  Traits>::apply(expr.expr().left()),
+            //         Eval<Right, Traits>::apply(expr.expr().right()),
+            //         expr.expr().operation());
+
+
+            result = 
+                Eval<Left,  Traits>::apply(expr.expr().left()).equals(
+                Eval<Right, Traits>::apply(expr.expr().right()),
+                expr.expr().operation().tol()
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;

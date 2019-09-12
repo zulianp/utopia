@@ -20,12 +20,8 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.left().left(),
-                    Eval<Left, Traits>::apply(expr.left().right())
-                    );
+            result.construct(expr.right());
+            result.axpy(expr.left().left(), Eval<Left, Traits>::apply(expr.left().right()));
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -43,12 +39,15 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.left().right(),
-                    Eval<Left, Traits>::apply(expr.left().left())
-                    );
+            result.construct(Eval<Right, Traits>::apply(expr.right()));
+            result.axpy(expr.left().right(), Eval<Left, Traits>::apply(expr.left().left()));
+
+            // UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
+            // UTOPIA_BACKEND(Traits).axpy(
+            //         result,
+            //         expr.left().right(),
+            //         Eval<Left, Traits>::apply(expr.left().left())
+            //         );
 
 
             UTOPIA_TRACE_END(expr);

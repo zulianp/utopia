@@ -6,6 +6,7 @@
 #include "utopia_blas_Traits.hpp"
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_blas_Algorithms.hpp"
+#include "utopia_Normed.hpp"
 
 #include <vector>
 #include <memory>
@@ -16,16 +17,48 @@ namespace utopia {
     class BlasVector : 
         public Vector<T, std::size_t>,
         public Tensor<BlasVector<T>, 1>,
-        public BLAS1Tensor<BlasVector<T>>
+        public BLAS1Tensor<BlasVector<T>>,
+        public Normed<T>
     {
     public:
         typedef std::vector<T> Entries;
 
         using Scalar = T;
         using SizeType = std::size_t;
+        
+       ////////////////////////////////////////////////////////////////////
+       ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
+       ////////////////////////////////////////////////////////////////////
         using Super = utopia::Tensor<BlasVector<T>, 1>;
-
         using Super::Super;
+
+        template<class Expr>
+        BlasVector(const Expression<Expr> &expr)
+        {
+            //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+            Super::construct_eval(expr.derived());
+        }
+
+        template<class Expr>
+        inline BlasVector &operator=(const Expression<Expr> &expr)
+        {
+            Super::assign_eval(expr.derived());
+            return *this;
+        }
+
+        void assign(const BlasVector &other) override
+        {
+            copy(other);
+        }
+
+        void assign(BlasVector &&other) override
+        {
+            entries_ = std::move(other.entries_);
+        }
+
+        ////////////////////////////////////////////////////////////////////
+
+
 
         BlasVector()
         {}
@@ -217,6 +250,33 @@ namespace utopia {
         inline SizeType amax() const override
         {
             return BLASAlgorithms<T>::amax(size(), ptr(), 1);
+        }
+
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Normed //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        inline Scalar norm_infty() const override
+        {
+            using std::max_element;
+            if(entries_.empty()) return 0.;
+            return *max_element(entries_.begin(), entries_.end());
+        }
+
+
+        bool equals(const BlasVector &other, const T tol = 0.0) const
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                if(std::abs(entries_[i] - other.entries_[i]) > tol) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
     private:

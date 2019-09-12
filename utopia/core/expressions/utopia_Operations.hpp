@@ -193,11 +193,18 @@ namespace utopia {
     }
 
     template<class Left, class Right>
-    Boolean<Reduce<Binary<Left, Right, ApproxEqual>, And> > approxeq(const Expression<Left> &left,
-                                                                     const Expression<Right> &right,
-                                                           const typename Right::Scalar tol = 1e-6) {
-        typedef utopia::Binary<Left, Right, ApproxEqual> BinOp;
-        return Reduce<BinOp, And>(BinOp(left.derived(), right.derived(), ApproxEqual(tol)));
+    using EWApproxEqual = utopia::Binary<Left, Right, ApproxEqual>;
+
+    template<class Left, class Right>
+    using ReduceApproxEqual = utopia::Reduce<EWApproxEqual<Left, Right>, And>;
+
+    template<class Left, class Right>
+    Boolean<ReduceApproxEqual<Left, Right>> approxeq(const Expression<Left> &left,
+                                                     const Expression<Right> &right,
+                                                     const typename Right::Scalar tol = 1e-6) {
+        
+        typedef utopia::EWApproxEqual<Left, Right> BinOp;
+        return ReduceApproxEqual<Left, Right>(BinOp(left.derived(), right.derived(), ApproxEqual(tol)));
     }
 
     /**     @defgroup   queries Structural and numerical queries

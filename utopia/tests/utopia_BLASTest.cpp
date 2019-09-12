@@ -223,31 +223,30 @@ namespace utopia {
     {
         Vectord w1{ hm_vector({1., 2., 3.}) };
         Vectord w2{ hm_vector({4., 5., 6.}) };
-        Vectord actual = w1;
         w1 += 0.1 * w2;
         Vectord expected{ hm_vector({1.4, 2.5, 3.6}) };
 
-        // utopia_test_assert(approxeq(expected, actual));
+        utopia_test_assert(approxeq(expected, w1));
     }
 
-//     void blas_norm_test() {
-//         Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
-//         Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
-//         Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
-//         Vectord wresult;
+    void blas_norm_test() {
+        Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
+        Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
+        Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
+        Vectord wresult;
 
-//         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
+        auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
 
-//         wresult = twiceaxpy;
-//         Vectord wexp{ hm_vector({-11.1, -2.93, -1.21}) };
+        wresult = twiceaxpy;
+        Vectord wexp{ hm_vector({-11.1, -2.93, -1.21}) };
 
-//         utopia_test_assert(approxeq(wexp, wresult));
+        utopia_test_assert(approxeq(wexp, wresult));
 
-//         Real val = norm2(twiceaxpy);
-//         // std::cout << tree_format(norm2(twiceaxpy).getClass()) << std::endl;
-//         // std::cout << val << std::endl;
-//         val = norm_infty(twiceaxpy); UTOPIA_UNUSED(val);
-//     }
+        Real val = norm2(twiceaxpy);
+        // std::cout << tree_format(norm2(twiceaxpy).getClass()) << std::endl;
+        // std::cout << val << std::endl;
+        val = norm_infty(twiceaxpy); UTOPIA_UNUSED(val);
+    }
 
 //     void blas_composite_test() {
 //         Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
@@ -406,7 +405,7 @@ namespace utopia {
         // UTOPIA_RUN_TEST(blas_inplace_test);
         // UTOPIA_RUN_TEST(blas_accessors_test);
         // UTOPIA_RUN_TEST(blas_set_values_test);
-        // UTOPIA_RUN_TEST(blas_norm_test);
+        UTOPIA_RUN_TEST(blas_norm_test);
         // UTOPIA_RUN_TEST(blas_composite_test);
         // UTOPIA_RUN_TEST(blas_sparse_matrix_test);
         // UTOPIA_RUN_TEST(blas_pow_test);

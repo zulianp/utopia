@@ -18,11 +18,11 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class Normed {
+    class HilbertFunction {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
 
-        virtual ~Normed() {}
+        virtual ~HilbertFunction() {}
         virtual void gradient(Function<Matrix, Vector> &function, const Vector &x, Vector &gradient) = 0;
         virtual Scalar norm(const Vector &x) const = 0;
         virtual Scalar dot(const Vector &left, const Vector &right) const = 0;
@@ -37,7 +37,7 @@ namespace utopia
         using Scalar = UTOPIA_SCALAR(GlobalVector);
         virtual ~IMSConvexHullSolver() {}
 
-        virtual void solve(Normed<GlobalMatrix, GlobalVector> &normed,
+        virtual void solve(HilbertFunction<GlobalMatrix, GlobalVector> &normed,
                    const Scalar a_norm2,
                    std::vector<GlobalVector> &gradients,
                    GlobalVector &in_out_b_g) = 0;
@@ -48,7 +48,7 @@ namespace utopia
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
 
-        void solve(Normed<GlobalMatrix, GlobalVector> &normed,
+        void solve(HilbertFunction<GlobalMatrix, GlobalVector> &normed,
                    const Scalar a_norm2,
                    std::vector<GlobalVector> &gradients,
                    GlobalVector &in_out_b_g) override
@@ -202,9 +202,9 @@ namespace utopia
             N_NORM_TYPES
         };
 
-        using Normed = utopia::Normed<Matrix, Vector>;
+        using HilbertFunction = utopia::HilbertFunction<Matrix, Vector>;
 
-        class L2Normed final : public Normed {
+        class L2HilbertFunction final : public HilbertFunction {
         public:
             void gradient(Function<Matrix, Vector> &function, const Vector &x, Vector &gradient) override
             {
@@ -229,9 +229,9 @@ namespace utopia
             bool needs_hessian() const override { return false; }
         };
 
-        class ANormed final : public Normed {
+        class AHilbertFunction final : public HilbertFunction {
         public:
-            ANormed(const std::shared_ptr<LinearSolverT> &linear_solver)
+            AHilbertFunction(const std::shared_ptr<LinearSolverT> &linear_solver)
             : M_inv(linear_solver)
             {}
 
@@ -267,9 +267,9 @@ namespace utopia
             Vector temp;
         };
 
-        class ASquaredNormed final : public Normed {
+        class ASquaredHilbertFunction final : public HilbertFunction {
         public:
-            ASquaredNormed(const std::shared_ptr<LinearSolverT> &linear_solver)
+            ASquaredHilbertFunction(const std::shared_ptr<LinearSolverT> &linear_solver)
             : M_inv(linear_solver)
             {}
 
@@ -327,9 +327,9 @@ namespace utopia
         convex_hull_n_gradients_(2)
         {
             normed_.resize(N_NORM_TYPES);
-            normed_[L2_NORM] = std::make_shared<L2Normed>();
-            normed_[A_NORM]  = std::make_shared<ANormed>(std::shared_ptr<LinearSolverT>(linear_solver->clone()));
-            normed_[A_SQUARED_NORM] = std::make_shared<ASquaredNormed>(std::shared_ptr<LinearSolverT>(linear_solver->clone()));
+            normed_[L2_NORM] = std::make_shared<L2HilbertFunction>();
+            normed_[A_NORM]  = std::make_shared<AHilbertFunction>(std::shared_ptr<LinearSolverT>(linear_solver->clone()));
+            normed_[A_SQUARED_NORM] = std::make_shared<ASquaredHilbertFunction>(std::shared_ptr<LinearSolverT>(linear_solver->clone()));
         }
 
         void set_convex_hull_n_gradients(const SizeType n)
@@ -345,7 +345,7 @@ namespace utopia
         // bool convex_hull_minmia
 
         bool B(Function<Matrix, Vector> &fun,
-               Normed &normed,
+               HilbertFunction &normed,
                const Vector &left_in,
                const Vector &right_in,
                const Vector &dir,
@@ -613,7 +613,7 @@ namespace utopia
         // std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \delta_k \f$ */
         NormType norm_type_;
 
-        std::vector<std::shared_ptr<Normed>> normed_;
+        std::vector<std::shared_ptr<HilbertFunction>> normed_;
         std::vector<Vector> gradients_;
         SizeType convex_hull_n_gradients_;
 

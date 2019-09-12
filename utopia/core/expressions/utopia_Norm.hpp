@@ -32,8 +32,9 @@ namespace utopia {
 
         operator typename Traits<Norm>::Scalar() const
         {
-            Evaluator<typename Traits<Norm>::Vector, Traits<Norm>::Backend> e;
-            return e.eval(*this);
+            // Evaluator<typename Traits<Norm>::Vector, Traits<Norm>::Backend> e;
+            // return e.eval(*this);
+            return Eval<Norm, Traits<Norm>, Traits<Norm>::Backend>::apply(*this);
         }
 
     private:

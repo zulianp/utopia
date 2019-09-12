@@ -9,6 +9,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Expression.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_StoreAs.hpp"
 
 namespace utopia {
     template<class Left, class Right>
@@ -32,7 +33,7 @@ namespace utopia {
 
     private:
         Left &_left;
-        Right _right;
+        UTOPIA_STORE_CONST(Right) _right;
     };
 
     template<class Left, class Right>
@@ -55,7 +56,7 @@ namespace utopia {
 
     private:
         Left &_left;
-        Right _right;
+        UTOPIA_STORE_CONST(Right) _right;
     };
 
     template<class Left, class Right>

@@ -32,6 +32,10 @@ namespace utopia {
        
         using BlasVector = utopia::BlasVector<T>;
 
+        ////////////////////////////////////////////////////////////////////
+        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
+        ////////////////////////////////////////////////////////////////////
+
         using Super = utopia::Tensor<BlasDenseMatrix<T>, 2>;
 
         template<class Expr>
@@ -39,8 +43,29 @@ namespace utopia {
         : rows_(0), cols_(0)
         {
             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
-            Super::eval(expr);
+            Super::construct_eval(expr.derived());
         }
+
+        template<class Expr>
+        inline BlasDenseMatrix &operator=(const Expression<Expr> &expr)
+        {
+            Super::assign_eval(expr.derived());
+            return *this;
+        }
+
+        void assign(const BlasDenseMatrix &other) override
+        {
+            copy(other);
+        }
+
+        void assign(BlasDenseMatrix &&other) override
+        {
+            entries_ = std::move(other.entries_);
+            rows_ = std::move(other.rows_);
+            cols_ = std::move(other.cols_);
+        }
+
+        ////////////////////////////////////////////////////////////////////
 
         BlasDenseMatrix(BlasDenseMatrix &&other)
         : entries_(std::move(other.entries_)), 

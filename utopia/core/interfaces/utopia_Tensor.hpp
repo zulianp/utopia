@@ -13,7 +13,9 @@ namespace utopia {
 
 	//CRTP type
 	template<typename Derived, int Order_>
-	class Tensor : public Expression<Tensor<Derived, Order_>> {
+	class Tensor : 
+	// public Expression<Derived> {
+	public Expression<Tensor<Derived, Order_>> {
 	public:
 		static const int Order   = Order_;
 		static const int StoreAs = UTOPIA_BY_REFERENCE;
@@ -25,11 +27,44 @@ namespace utopia {
 
 		Tensor() {}
 
+		virtual void construct(const Derived &other) { assign(other); }
+		virtual void construct(Derived &&other) { assign(other); }
+
+		virtual void assign(const Derived &other) = 0;
+		virtual void assign(Derived &&other) = 0;
+
 		template<class Expr>
-		void eval(const Expression<Expr> &expr)
+		void construct_eval(const Expression<Expr> &expr)
 		{
 			using C = utopia::Construct<Derived, Expr>;
 			Eval<C, Traits<Derived>, Traits<Derived>::Backend>::apply(C(derived(), expr.derived()));
+		}
+
+		template<class Expr>
+		void assign_eval(const Expression<Expr> &expr)
+		{
+			using A = utopia::Assign<Derived, Expr>;
+			Eval<A, Traits<Derived>, Traits<Derived>::Backend>::apply(A(derived(), expr.derived()));
+		}
+
+		// template<class Expr>
+		void assign_eval(const Tensor &expr)
+		{
+			assign(expr.derived());
+		}
+
+		Tensor &operator=(const Tensor &t) 
+		{
+			if(this == &t) return *this;
+			assign(t);
+			return *this;
+		}
+
+		Tensor &operator=(Tensor &&t) 
+		{
+			if(this == &t) return *this;
+			assign(t);
+			return *this;
 		}
 
 		template<class Expr>
