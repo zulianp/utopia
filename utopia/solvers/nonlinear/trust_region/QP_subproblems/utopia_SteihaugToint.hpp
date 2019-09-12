@@ -52,7 +52,7 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
-            init(local_size(b).get(0));
+            init(local_size(b));
             if(this->precond_)
             {
                 auto A_ptr = utopia::op(this->get_operator());
@@ -95,7 +95,7 @@ namespace utopia
     private:
         bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr)
         {
-            init(local_size(g).get(0));
+            init(local_size(g));
             r = -1.0 * g;
             v_k = r;
             Scalar alpha, g_norm, d_B_d, z, z1;
@@ -157,7 +157,7 @@ namespace utopia
 
         bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k)
         {
-            init(local_size(g).get(0));
+            init(local_size(g));
             bool converged = false;
             SizeType it=0;
 

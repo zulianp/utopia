@@ -79,6 +79,12 @@ namespace utopia {
 		    gemv(false, alpha, x, 0.0, y);
 		}
 
+		/// y = alpha * A * x
+		virtual void transpose_multiply(const Vector &x, Vector &y) const
+		{
+		    gemv(false, 1.0, x, 0.0, y);
+		}
+
 		/// y = alpha * A^T * x
 		virtual void transpose_multiply(const Scalar &alpha, const Vector &x, Vector &y) const
 		{
@@ -151,6 +157,12 @@ namespace utopia {
 		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const
 		{
 			multiply(false, alpha, false, B, C);
+		}
+
+		/// C := alpha * A * B
+		virtual void transpose_multiply(const Matrix &B, Matrix &C) const
+		{
+			multiply(true, 1.0, false, B, C);
 		}
 
 		/// C := alpha * op(A) * op(B)

@@ -64,21 +64,21 @@ namespace utopia {
             result.e_max(right.derived());
         }
  
-        template<class Left, class Right>
-        static void apply(Left &&left, const Number<Right> &right, const Plus &, Result &result)
-        {
-            // result.construct(std::forward<Left>(left));
-            // result.axpy(1.0, right);
-            assert(false);
-        }
+        // template<class Left, class Right>
+        // static void apply(Left &&left, const Number<Right> &right, const Plus &, Result &result)
+        // {
+        //     // result.construct(std::forward<Left>(left));
+        //     // result.axpy(1.0, right);
+        //     assert(false);
+        // }
 
-        template<class Left, class Right>
-        static void apply(Left &&left, const Number<Right> &right, const Minus &, Result &result)
-        {
-            // result.construct(std::forward<Left>(left));
-            // result.axpy(-1.0, right);
-            assert(false);
-        }
+        // template<class Left, class Right>
+        // static void apply(Left &&left, const Number<Right> &right, const Minus &, Result &result)
+        // {
+        //     // result.construct(std::forward<Left>(left));
+        //     // result.axpy(-1.0, right);
+        //     assert(false);
+        // }
 
         template<class Left, class Right>
         static void apply(Left &&left, const Number<Right> &right, const Multiplies &, Result &result)
@@ -101,13 +101,13 @@ namespace utopia {
             result.scale(left);
         }
 
-        template<class Left, class Right>
-        static void apply(Left &&left, const Number<Right> &right, const Min &, Result &result)
-        {
-            // result.construct(std::forward<Left>(left));
-            // result.e_min(right);
-            assert(false);
-        }
+        // template<class Left, class Right>
+        // static void apply(Left &&left, const Number<Right> &right, const Min &, Result &result)
+        // {
+        //     // result.construct(std::forward<Left>(left));
+        //     // result.e_min(right);
+        //     assert(false);
+        // }
 
         template<class Left, class Right, class Op>
         static void apply(const Number<Left> &left, const Number<Right> &right, const Op &op, Result &result)
@@ -121,14 +121,14 @@ namespace utopia {
              result = op.template apply<Scalar>(left, right);
         }
 
-        template<class Left, class Right>
-        static void apply(Left &&left, const Number<Right> &right, const Max &, Result &result)
-        {
-            // result.construct(std::forward<Left>(left));
-            // result.e_max(right);
+        // template<class Left, class Right>
+        // static void apply(Left &&left, const Number<Right> &right, const Max &, Result &result)
+        // {
+        //     // result.construct(std::forward<Left>(left));
+        //     // result.e_max(right);
 
-            assert(false);
-        }
+        //     assert(false);
+        // }
     };
 
     template<>

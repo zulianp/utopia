@@ -87,7 +87,7 @@ namespace utopia
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
         {
-            init(local_size(b).get(0));
+            init(local_size(b));
 
             if(precond_) {
                 return preconditioned_solve(A, b, x);
@@ -145,11 +145,11 @@ namespace utopia
 
             assert(!empty(b));
 
-            if(empty(x) || size(x).get(0) != size(b).get(0)) {
+            if(empty(x) || size(x) != size(b)) {
                 x = local_zeros(local_size(b));
                 r = b;
             } else {
-                assert(local_size(x).get(0) == local_size(b).get(0));
+                assert(local_size(x) == local_size(b));
                 if(reset_initial_guess_) {
                     x.set(0.);
                 }
@@ -229,11 +229,11 @@ namespace utopia
             z     = local_zeros(local_size(b));
             z_new = local_zeros(local_size(b));
 
-            if(empty(x) || size(x).get(0) != size(b).get(0)) {
+            if(empty(x) || size(x) != size(b)) {
                 x = local_zeros(local_size(b));
                 r = b;
             } else {
-                assert(local_size(x).get(0) == local_size(b).get(0));
+                assert(local_size(x) == local_size(b));
 
                 if(reset_initial_guess_) {
                     x.set(0.);

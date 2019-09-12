@@ -33,7 +33,7 @@ namespace utopia {
             s.push_back(r.begin());
             s.push_back(r.end() % n);
 
-            Vector selection = v.select(s);
+            Vector selection = select(v, s);
             auto s_r = range(selection);
 
             {
@@ -42,7 +42,7 @@ namespace utopia {
                 utopia_test_assert(selection.get(s_r.begin() + 1) == (r.end() % n));
             }
 
-            Scalar sum_v_s = sum(v.select(s));
+            Scalar sum_v_s = sum(select(v, s));
             utopia_test_assert(sum_v_s >= r.begin());
         }
 
@@ -72,7 +72,7 @@ namespace utopia {
             c_s.push_back(0);
             c_s.push_back(2);
 
-            Matrix selection = m.select(r_s, c_s);
+            Matrix selection = select(m, r_s, c_s);
 
             {
                 auto s_r = row_range(selection);
@@ -81,7 +81,7 @@ namespace utopia {
                 utopia_test_assert(selection.get(s_r.begin(), 1) == rr.begin() * n + 2);
             }
 
-            Matrix row_selection = m.select(r_s);
+            Matrix row_selection = select(m, r_s);
 
             {
                 auto s_r = row_range(row_selection);
@@ -115,17 +115,17 @@ namespace utopia {
         UTOPIA_UNIT_TEST_BEGIN("SelectionTest");
 
         //FIXME
-// #ifdef WITH_BLAS
-//         SelectionTest<Matrixd, Vectord>().run();
-// #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        SelectionTest<Matrixd, Vectord>().run();
+#endif //WITH_BLAS
 
-// #ifdef WITH_PETSC
-//         SelectionTest<DMatrixd, DVectord>().run();
-// #endif //WITH_PETSC
+#ifdef WITH_PETSC
+        SelectionTest<DMatrixd, DVectord>().run();
+#endif //WITH_PETSC
 
-// #ifdef WITH_TRILINOS
-//         SelectionTest<TSMatrixd, TVectord>().run();
-// #endif //WITH_TRILINOS
+#ifdef WITH_TRILINOS
+        SelectionTest<TSMatrixd, TVectord>().run();
+#endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("SelectionTest");
     }

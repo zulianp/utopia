@@ -22,16 +22,18 @@
 namespace utopia {
     template<typename T>
     class BlasDenseMatrix : 
+        // Dynamic polymorphic types
         public DenseMatrix<T, std::size_t>,
+        public Normed<T>,
+        public Transformable<T>,
+        public Constructible<T, std::size_t, 2>,
+        // Static polymorphic types
         public Tensor<BlasDenseMatrix<T>, 2>,
         public BLAS1Tensor<BlasDenseMatrix<T>>,
         public BLAS2Matrix<BlasDenseMatrix<T>, BlasVector<T>>,
         public BLAS3Matrix<BlasDenseMatrix<T>>,
-        public Constructible<T, std::size_t, 2>,
         public Comparable<BlasDenseMatrix<T>>,
-        public ElementWiseOperand<BlasDenseMatrix<T>>,
-        public Normed<T>,
-        public Transformable<T> {
+        public ElementWiseOperand<BlasDenseMatrix<T>> {
     public:
         typedef std::vector<T> Entries;
         using SizeType = std::size_t;
@@ -40,6 +42,9 @@ namespace utopia {
         using BlasVector = utopia::BlasVector<T>;
         using BLAS2Matrix<BlasDenseMatrix, BlasVector>::multiply;
         using BLAS3Matrix<BlasDenseMatrix>::multiply;
+        using BLAS2Matrix<BlasDenseMatrix, BlasVector>::transpose_multiply;
+        using BLAS3Matrix<BlasDenseMatrix>::transpose_multiply;
+
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -654,6 +659,35 @@ namespace utopia {
             }
         }
 
+        inline void select(
+            const std::vector<SizeType> &row_index, 
+            const std::vector<SizeType> &col_index, 
+            BlasDenseMatrix &result) const override
+        {
+            const SizeType r = row_index.size();
+
+            if(!col_index.empty()) {
+                const SizeType c = col_index.size();
+
+                result.resize(r, c);
+
+                for(SizeType i = 0; i < r; ++i) {
+                    for(SizeType j = 0; j < c; ++j) {
+                        result.set(i, j, get(row_index[i], col_index[j]));
+                    }
+                }
+            } else {
+                const SizeType c = cols();
+
+                result.resize(r, c);
+
+                for(SizeType i = 0; i < r; ++i) {
+                    for(SizeType j = 0; j < c; ++j) {
+                        result.set(i, j, get(row_index[i], j));
+                    }
+                }
+            }
+        }
 
     private:
         Entries entries_;

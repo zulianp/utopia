@@ -202,8 +202,8 @@ namespace utopia
             if(mpi_world_size() == 1)
             {
                 Vector x = values(10, 2);
-                TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
-                Vector expected = values(x.size().get(0), 0.468919);
+                TestFunctionND_1<Matrix, Vector> fun2(x.size());
+                Vector expected = values(x.size(), 0.468919);
 
                 Vector x_w1  = values(4, 10);
                 Vector expected_woods = values(4, 1);
@@ -256,9 +256,9 @@ namespace utopia
             if(mpi_world_size() == 1) {
                 Vector x1 = values(10, 2);
                 Vector x2 = values(10, 2);
-                TestFunctionND_1<Matrix, Vector> fun2(x1.size().get(0));
+                TestFunctionND_1<Matrix, Vector> fun2(x1.size());
 
-                Vector expected = values(x1.size().get(0), 0.468919);
+                Vector expected = values(x1.size(), 0.468919);
 
                 InputParameters params;
                 params.set("atol", 1e-11);
@@ -439,18 +439,18 @@ namespace utopia
         UTOPIA_UNIT_TEST_BEGIN("SolversTest");
 
         //FIXME 
-// #ifdef WITH_PETSC
-//         SolverTest<DMatrixd, DVectord, PetscScalar>().run();
+#ifdef WITH_PETSC
+        SolverTest<DMatrixd, DVectord, PetscScalar>().run();
 
-// #ifdef WITH_BLAS
-//         MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run();
-// #endif //WITH_BLAS
-// #endif
+#ifdef WITH_BLAS
+        MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run();
+#endif //WITH_BLAS
+#endif
 
-// #ifdef WITH_BLAS
-//         SolverTest<Matrixd, Vectord, double>().run();
-//         MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run();
-// #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        SolverTest<Matrixd, Vectord, double>().run();
+        MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run();
+#endif //WITH_BLAS
 
         UTOPIA_UNIT_TEST_END("SolversTest");
     }

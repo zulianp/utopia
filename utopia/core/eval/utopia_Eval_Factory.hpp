@@ -72,12 +72,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).build(
-            //         Eval<Left, Traits>::apply(expr.left()),
-            //         expr.right().size(),
-            //         expr.right().type()
-            // );
-
             Eval<Left, Traits>::apply(expr.left()).local_values(
                 expr.right().size(),
                 expr.right().type().value()
@@ -172,43 +166,19 @@ namespace utopia {
         }
     };
 
+    //NEW
+    template<class Left, int Order, class Traits, int Backend>
+    class Eval<Construct<Left, Factory<LocalZeros, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Construct<Left, Factory<LocalZeros, Order>  > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
 
+            Eval<Left, Traits>::apply(expr.left()).local_zeros( expr.right().size() );
 
-    // template<class Left, class Right, int Order, class Traits, int Backend>
-    // class Eval<Assign<Left, Factory<Right, Order> >, Traits, Backend> {
-    // public:
-    //     inline static void apply(const Assign<Left, Factory<Right, Order> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         UTOPIA_BACKEND(Traits).build(
-    //                 Eval<Left, Traits>::apply(expr.left()),
-    //                 expr.right().size(),
-    //                 expr.right().type()
-    //         );
-
-
-    //         UTOPIA_TRACE_END(expr);
-    //     }
-    // };
-
-    // template<class Left, class Right, int Order, class Traits, int Backend>
-    // class Eval<Construct<Left, Factory<Right, Order> >, Traits, Backend> {
-    // public:
-    //     inline static void apply(const Construct<Left, Factory<Right, Order> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         UTOPIA_BACKEND(Traits).build(
-    //                 Eval<Left, Traits>::apply(expr.left()),
-    //                 expr.right().size(),
-    //                 expr.right().type()
-    //         );
-
-
-    //         UTOPIA_TRACE_END(expr);
-    //     }
-    // };
+            UTOPIA_TRACE_END(expr);
+        }
+    };
 
     //NEW
     template<class Left, class Right, int Order, class Traits, int Backend>
@@ -217,12 +187,6 @@ namespace utopia {
         inline static void apply(const Construct<Left, Factory<LocalValues<Right>, Order> > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).build(
-            //         Eval<Left, Traits>::apply(expr.left()),
-            //         expr.right().size(),
-            //         expr.right().type()
-            // );
 
             Eval<Left, Traits>::apply(expr.left()).local_values(
                 expr.right().size(),
@@ -240,12 +204,6 @@ namespace utopia {
         inline static void apply(const Construct<Left, Factory<Values<Right>, Order> > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).build(
-            //         Eval<Left, Traits>::apply(expr.left()),
-            //         expr.right().size(),
-            //         expr.right().type()
-            // );
 
             Eval<Left, Traits>::apply(expr.left()).values(
                 expr.right().size(),

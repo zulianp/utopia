@@ -29,7 +29,7 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
-            result = 10. * point.size().get(0) + sum(pow2(point) - 10. * cos((2. * pi) * point));
+            result = 10. * point.size() + sum(pow2(point) - 10. * cos((2. * pi) * point));
             return true;
         }
 
@@ -38,7 +38,7 @@ namespace utopia
             using std::sin;
 
             if(empty(gradient)) {
-                gradient = zeros(point.size().get(0));
+                gradient = zeros(point.size());
             }
 
             const Read<Vector> read(point);
@@ -57,7 +57,7 @@ namespace utopia
         {
             using std::cos;
 
-            const auto n = point.size().get(0);
+            const auto n = point.size();
 
             if(empty(hessian)) {
 

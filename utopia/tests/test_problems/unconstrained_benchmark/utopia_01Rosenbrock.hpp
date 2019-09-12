@@ -44,7 +44,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == this->dim());
+            assert(point.size() == this->dim());
 
             const Read<Vector> read(point);
 
@@ -62,7 +62,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == this->dim());
+            assert(point.size() == this->dim());
             result = zeros(this->dim());
 
             const Read<Vector> read(point);
@@ -83,7 +83,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == this->dim());
+            assert(point.size() == this->dim());
 
             if(empty(result))
                 result = zeros(this->dim(), this->dim());

@@ -57,7 +57,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
 
             {
                 const Read<Vector> read(point);
@@ -79,7 +79,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
             result = zeros(4);
 
             {
@@ -106,7 +106,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
             result = zeros(4, 4);
 
             const Read<Vector> read(point);

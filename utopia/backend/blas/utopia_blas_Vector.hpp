@@ -20,15 +20,17 @@
 namespace utopia {
     template<typename T>
     class BlasVector :
+        // Dynamic polymorphic types
         public Vector<T, std::size_t>,
-        public Tensor<BlasVector<T>, 1>,
-        public BLAS1Tensor<BlasVector<T>>,
         public Normed<T>,
         public Transformable<T>,
         public Reducible<T>,
+        public Constructible<T, std::size_t, 1>,
+        // Static polymorphic types
+        public Tensor<BlasVector<T>, 1>,
+        public BLAS1Tensor<BlasVector<T>>,
         public Comparable<BlasVector<T>>,
-        public ElementWiseOperand<BlasVector<T>>,
-        public Constructible<T, std::size_t, 1>
+        public ElementWiseOperand<BlasVector<T>>
     {
     public:
         typedef std::vector<T> Entries;
@@ -415,6 +417,11 @@ namespace utopia {
             return aux_reduce(op);
         }
 
+        inline T reduce(const Plus &op) const override
+        {
+            return aux_reduce(op);
+        }
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -423,6 +430,21 @@ namespace utopia {
         {
             resize(s);
             set(val);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Selectable //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        inline void select(const std::vector<SizeType> &index, BlasVector &result) const override
+        {
+            const SizeType n = index.size();
+            result.resize(n);
+
+            for(SizeType i = 0; i < n; ++i) {
+                result.set(i, get(index[i]));
+            }
         }
 
     private:
@@ -436,7 +458,6 @@ namespace utopia {
             }
         }
 
-
         template<class Op>
         inline T aux_reduce(const Op &op) const
         {
@@ -449,6 +470,8 @@ namespace utopia {
             for(SizeType i = 1; i < n; ++i) {
                 ret = op.apply(ret, entries_[i]);
             }
+
+            return ret;
         }
 
     };

@@ -20,13 +20,6 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).apply_binary(
-            //     result,
-            //     Eval<Left,  Traits>::apply(expr.left()),
-            //     Multiplies(),
-            //     Eval<Right, Traits>::apply(expr.right())
-            //     );
-
             EvalBinaryAux<Result>::apply(
                 Eval<Left,  Traits>::apply(expr.left()),
                 Eval<Right, Traits>::apply(expr.right()),
@@ -51,13 +44,10 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).multiply(
-                result,
-                true,
-                Eval<Left, Traits>::apply(expr.left().expr()),
-                false,
-                Eval<Right, Traits>::apply(expr.right())
-                );
+            Eval<Left, Traits>::apply(expr.left().expr()).transpose_multiply(
+                Eval<Right, Traits>::apply(expr.right()), 
+                result
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;

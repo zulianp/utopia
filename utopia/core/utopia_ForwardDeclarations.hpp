@@ -11,6 +11,8 @@ namespace utopia {
     template<class Derived>
     class Expression;
 
+    template<class Derived, int Order>
+    class Tensor;
 
     template<typename T, int BackendType>
     class Backend;
@@ -57,7 +59,7 @@ namespace utopia {
     template<class Expr>
     class View;
 
-    template<class Expr, typename SizeType, int Order>
+    template<class Expr, int Order>
     class Select;
 
     template<class Expr>

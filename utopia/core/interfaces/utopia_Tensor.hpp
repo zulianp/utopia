@@ -7,6 +7,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Expression.hpp"
 #include "utopia_Operators.hpp"
+#include "utopia_Select.hpp"
 // #include "utopia_Eval.hpp"
 
 namespace utopia {
@@ -15,7 +16,8 @@ namespace utopia {
 	template<typename Derived, int Order_>
 	class Tensor : 
 	// public Expression<Derived> {
-	public Expression<Tensor<Derived, Order_>> {
+	public Expression<Tensor<Derived, Order_>>,
+	public Selectable<Tensor<Derived, Order_>> {
 	public:
 		static const int Order   = Order_;
 		static const int StoreAs = UTOPIA_BY_REFERENCE;

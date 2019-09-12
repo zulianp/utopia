@@ -5,18 +5,19 @@
 #include "utopia_Utils.hpp"
 
 namespace utopia {
-    template<class Expr, typename SizeType, int Order>
+    template<class Expr, int Order>
     class Select;
 
-    template<class Expr_, typename SizeType>
-    class Select<Expr_, SizeType, 1> : public Expression< Select<Expr_, SizeType, 1> > {
+    template<class Expr_>
+    class Select<Expr_, 1> : public Expression< Select<Expr_, 1>  > {
     public:
-
         typedef Expr_ Expr;
-        typedef typename Expr::Scalar Scalar;
+        using Scalar   = typename Traits<Expr>::Scalar;
+        using SizeType = typename Traits<Expr>::SizeType;
 
-        static const int Order = Expr::Order;
-
+        //FIXME use Traits instead
+        static const int Order = 1;
+        static_assert(Expr::Order == Order, "must be same order of the tensor");
 
         inline explicit Select(const Expr &expr, const std::vector<SizeType> &index)
         : expr_(expr), index_ptr_(utopia::make_ref(index))
@@ -42,13 +43,17 @@ namespace utopia {
     };
 
 
-    template<class Expr_, typename SizeType>
-    class Select<Expr_, SizeType, 2> : public Expression< Select<Expr_, SizeType, 2> > {
+    template<class Expr_>
+    class Select<Expr_, 2> : public Expression< Select<Expr_, 2> > {
     public:
         typedef Expr_ Expr;
-        typedef typename Expr::Scalar Scalar;
+        using Scalar   = typename Traits<Expr>::Scalar;
+        using SizeType = typename Traits<Expr>::SizeType;
 
-        static const int Order = Expr::Order;
+        //FIXME use Traits instead
+        static const int Order = 2;
+        static_assert(Expr::Order == Order, "must be same order of the tensor");
+
 
         inline explicit Select(const Expr &expr, const std::vector<SizeType> &row_index, const std::vector<SizeType> &col_index)
         : expr_(expr),
@@ -83,47 +88,64 @@ namespace utopia {
         std::shared_ptr<const std::vector<SizeType> > col_index_ptr_;
     };
 
-    template<class Expr, typename SizeType, int Order>
-    class Traits< Select<Expr, SizeType, Order> > : public Traits<Expr> {};
+    template<class Expr, int Order>
+    class Traits< Select<Expr, Order> > : public Traits<Expr> {};
 
 
-    template<class Implementation, class Derived, int Order>
+    template<class Derived>
     class Selectable {};
 
-    template<class Implementation, class Derived>
-    class Selectable<Implementation, Derived, 1> {
+    template<class Derived>
+    class Selectable<Tensor<Derived, 1>> {
     public:
-        typedef typename utopia::Traits<Implementation>::SizeType SizeType;
+        using TensorT = utopia::Tensor<Derived, 1>;
+        using That    = utopia::Selectable<Tensor<Derived, 1>>;
 
-        inline Select<Derived, SizeType, 1> select(const std::vector<SizeType> &index) const
+        typedef typename utopia::Traits<Derived>::SizeType SizeType;
+
+        //lazy evaluation
+        inline friend Select<TensorT, 1> select(const That &that, const std::vector<SizeType> &index)
         {
-            return Select<Derived, SizeType, 1>(derived(), index);
+            return Select<TensorT, 1>(that.derived(), index);
         }
 
-        inline Select<Derived, SizeType, 1> select(std::vector<SizeType> &&index) const
+        inline friend Select<TensorT, 1> select(const That &that, std::vector<SizeType> &&index)
         {
-            return Select<Derived, SizeType, 1>(derived(), std::move(index));
+            return Select<TensorT, 1>(that.derived(), std::move(index));
         }
+
+        //direct evaluation
+        virtual void select(const std::vector<SizeType> &index, Derived &result) const = 0;
 
     private:
-        CONST_DERIVED_CRT(Derived);
+        CONST_DERIVED_CRT(TensorT);
     };
 
-
-    template<class Implementation, class Derived>
-    class Selectable<Implementation, Derived, 2> {
+    template<class Derived>
+    class Selectable<Tensor<Derived, 2>> {
     public:
-        typedef typename utopia::Traits<Implementation>::SizeType SizeType;
+        using TensorT = utopia::Tensor<Derived, 2>;
+        using That = utopia::Selectable<Tensor<Derived, 2>>;
 
-        inline Select<Derived, SizeType, 2> select(const std::vector<SizeType> &row_index, const std::vector<SizeType> &col_index = std::vector<SizeType>()) const
+        typedef typename utopia::Traits<Derived>::SizeType SizeType;
+
+        //lazy evaluation
+        inline friend Select<TensorT, 2> select(const That &that, const std::vector<SizeType> &row_index, const std::vector<SizeType> &col_index = std::vector<SizeType>())
         {
-            return Select<Derived, SizeType, 2>(derived(), row_index, col_index);
+            return Select<TensorT, 2>(that.derived(), row_index, col_index);
         }
 
-        inline Select<Derived, SizeType, 2> select(std::vector<SizeType> &&row_index, std::vector<SizeType> &&col_index = std::vector<SizeType>()) const
+        inline friend Select<TensorT, 2> select(const That &that, std::vector<SizeType> &&row_index, std::vector<SizeType> &&col_index = std::vector<SizeType>())
         {
-            return Select<Derived, SizeType, 2>(derived(), std::move(row_index, col_index));
+            return Select<TensorT, 2>(that.derived(), std::move(row_index, col_index));
         }
+
+        /// if col_index is empty select all columns
+        //direct evaluation
+        virtual void select(
+            const std::vector<SizeType> &row_index, 
+            const std::vector<SizeType> &col_index, 
+            Derived &result) const = 0;
 
     private:
         CONST_DERIVED_CRT(Derived);

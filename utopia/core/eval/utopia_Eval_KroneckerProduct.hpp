@@ -10,7 +10,7 @@ namespace utopia {
 	class EvalKroneckerProduct {
 	public:
 
-		static void apply(const Vector &left, const Vector &right, Matrix &result)
+		static void apply(const Vector &, const Vector &, Matrix &)
 		{
 			static_assert(Backend < HOMEMADE, "implement in backend");
 		}
