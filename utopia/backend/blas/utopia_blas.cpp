@@ -9,7 +9,7 @@ namespace utopia {
     // template class Wrapper<utopia::CRSMatrix<double>, 2>;
     // template class Wrapper<utopia::CCSMatrix<double>, 2>;
 
-    // template class BiCGStab<utopia::BlasDenseMatrix<double>, Vectord, HOMEMADE>;
+    template class BiCGStab<utopia::BlasDenseMatrix<double>, Vectord, HOMEMADE>;
     // template class BiCGStab<utopia::CRSMatrix<double>, Vectord, HOMEMADE>;
     // template class BiCGStab<utopia::CCSMatrix<double>, Vectord, HOMEMADE>;
 }

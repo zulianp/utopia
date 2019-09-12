@@ -61,11 +61,11 @@ namespace utopia {
 
         //Serial benchmarks
         //FIXME does not compile for blas3 (missing mat*mat)
-// #ifdef WITH_BLAS
-// 		if(mpi_world_size() == 1) {
-// 			run_all_benchmarks<CRSMatrixd, Vectord>("homemade");
-// 		}
-// #endif
+#ifdef WITH_BLAS
+		if(mpi_world_size() == 1) {
+			run_all_benchmarks<Matrixd, Vectord>("homemade");
+		}
+#endif
 
         mpi_world_barrier();
         if(mpi_world_rank() == 0) {

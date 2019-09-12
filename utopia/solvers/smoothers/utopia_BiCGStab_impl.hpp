@@ -81,7 +81,13 @@ namespace utopia {
             precond->apply(p_, y_);
             A.apply(y_, v_);
 
-            alpha = rho/dot(r0_, v_);
+            Scalar r0_dot_v = dot(r0_, v_);
+
+            if(r0_dot_v == 0.0) {
+                assert(false);
+            }
+
+            alpha = rho/r0_dot_v;
 
             h_ = x + alpha * y_;
             //if h is accurate enough
@@ -106,6 +112,12 @@ namespace utopia {
             //FIXME should use left preconditioner instead
             precond->apply(t_, K_inv_t_);
             omega = dot(z_, K_inv_t_)/dot(K_inv_t_, K_inv_t_);
+
+            assert(Scalar(dot(K_inv_t_, K_inv_t_)) != 0.0);
+
+            if(std::isnan(omega)) {
+                assert(false);
+            }
 
             x = h_ + omega * z_;
             //if x is accurate enough
@@ -171,7 +183,13 @@ namespace utopia {
             p_ = r_ + beta * (p_ - omega * v_);
             A.apply(p_, v_);
 
-            alpha = rho/dot(r0_, v_);
+            const Scalar r0_dot_v = dot(r0_, v_);
+            
+            if(r0_dot_v == 0.0) {
+                assert(false);
+            }
+
+            alpha = rho/r0_dot_v;
 
             h_ = x + alpha * p_;
                     //if h is accurate enough

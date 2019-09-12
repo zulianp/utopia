@@ -80,9 +80,11 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).norm1(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            // result = UTOPIA_BACKEND(Traits).norm1(
+            //         Eval<Expr, Traits>::apply(expr.expr())
+            // );
+
+            result = Eval<Expr, Traits>::apply(expr.expr()).norm1();
 
             UTOPIA_TRACE_END(expr);
             return result;

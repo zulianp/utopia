@@ -24,7 +24,9 @@ namespace utopia {
 
         void initialize() override
         {
-            const SizeType base_n = 9000;
+            static const bool is_sparse = utopia::is_sparse<Matrix>::value;
+
+            const SizeType base_n = is_sparse? 9000 : 90;
             const SizeType n_instances = 10;
 
             for(SizeType i = 0; i < n_instances; ++i) {

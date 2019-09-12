@@ -32,8 +32,12 @@ namespace utopia {
 
         void initialize() override
         {
-            const SizeType base_n = 1000;
+            static const bool is_sparse = utopia::is_sparse<Matrix>::value;
+            static const bool verbose = false;
+
+            const SizeType base_n = is_sparse? 1000 : 10;
             const SizeType n_instances = 5;
+
 
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
@@ -43,6 +47,7 @@ namespace utopia {
                     "cg_" + std::to_string(i),
                     [n]() {
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+                        cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
                         cg.set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
                         run_linear_solver(n, cg);
@@ -53,6 +58,7 @@ namespace utopia {
                     "bicgstab_" + std::to_string(i),
                     [n]() {
                         BiCGStab<Matrix, Vector, HOMEMADE> cg;
+                        cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
                         run_linear_solver(n, cg);
                     }
@@ -227,7 +233,8 @@ namespace utopia {
             }
 
             solver.solve(A, b, x);
-            utopia_test_assert(approxeq(A * x, b, 1e-6));
+            Vector Ax = A * x;
+            utopia_test_assert(approxeq(Ax, b, 1e-6));
         }
 
         template<class MultigridSolver>

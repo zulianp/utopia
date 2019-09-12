@@ -53,7 +53,7 @@ namespace utopia {
                     expected.set(0, 10);
                 }
 
-                if (r.end() == expected.size()) {
+                if (SizeType(r.end()) == SizeType(expected.size())) {
                     expected.set(expected.size() - 1, 10);
                 }
             }
