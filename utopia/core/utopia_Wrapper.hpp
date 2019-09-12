@@ -17,6 +17,7 @@
 #include "utopia_Ranged.hpp"
 #include "utopia_Select.hpp"
 #include "utopia_BackendInfo.hpp"
+#include "utopia_Tensor.hpp"
 // #include "utopia_ConditionalType.hpp"
 
 
@@ -294,6 +295,13 @@ namespace utopia {
     //     return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().range(v.implementation());
     // }
 
+    template<class T>
+    inline Range range(const Tensor<T, 1> &v) {
+        Range r;
+        v.derived().range(r);
+        return r;
+    }
+
     // /*!
     //  * @fn Range row_range(const Wrapper<Tensor, 2> &v)
     //  * @brief Row ranges allow to coordinate the access of rows of the tensor based on memory location.
@@ -307,6 +315,13 @@ namespace utopia {
     //             v.implementation());
     // }
 
+    template<class T>
+    inline Range row_range(const Tensor<T, 2> &v) {
+        Range r;
+        v.derived().row_range(r);
+        return r;
+    }
+
     // /*!
     //  * @fn Range col_range(const Wrapper<Tensor, 2> &v)
     //  * @brief Column ranges allow to coordinate the access of columns of the tensor based on memory location.
@@ -319,6 +334,13 @@ namespace utopia {
     //     return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().col_range(
     //             v.implementation());
     // }
+
+    template<class T>
+    inline Range col_range(const Tensor<T, 2> &v) {
+        Range r;
+        v.derived().col_range(r);
+        return r;
+    }
 
     // /** @}*/
 
@@ -563,6 +585,13 @@ namespace utopia {
     //     auto s = size(w);
     //     return s.get(0) <= 0;
     // }
+
+    template<class Derived, int Order>
+    bool empty(const Tensor<Derived, Order> &w)
+    {
+        return w.derived().empty();
+    }
+
 
     // /**
     //  * @ingroup    queries

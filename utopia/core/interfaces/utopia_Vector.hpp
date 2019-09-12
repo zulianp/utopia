@@ -23,6 +23,9 @@ namespace utopia {
 		virtual void read_unlock()  			  = 0;
 		virtual void write_unlock(WriteMode mode) = 0;
 
+		virtual void read_and_write_lock(WriteMode mode) = 0;
+		virtual void read_and_write_unlock(WriteMode mode) = 0;
+
 		//basic mutators
 		virtual void set(const SizeType &i, const Scalar &value) = 0;
 		virtual void add(const SizeType &i, const Scalar &value) = 0;
@@ -35,12 +38,30 @@ namespace utopia {
 		virtual bool empty() const = 0;
 		virtual void clear() = 0;
 		virtual void set(const Scalar &val) = 0;
+
+		virtual SizeType size() const = 0;
 	};
 
 	template<typename Scalar_, typename SizeType_>
 	class Vector : public VectorBase<Scalar_, SizeType_> {
 	public:
+		using SizeType = SizeType_;
+
 		virtual ~Vector() {}
+
+		
+
+		// facade functions for treating a node vector and distributed vector in the same way
+		inline void range(Range &r) const { r.set(0, this->size()); }
+		
+		inline void layout(Layout<SizeType, 1> &l) const
+		{
+			l.local_size()  = local_size();
+			l.global_size() = local_size();
+		}
+		
+		inline SizeType local_size() const { return this->size(); }
+		
 	};
 
 	//parallel types, collective operations
@@ -53,16 +74,15 @@ namespace utopia {
 		//basic collective mutators allowing to write on other processes (e.g. for FE assembly)
 		virtual void c_set(const SizeType &i, const Scalar &value) = 0;
 		virtual void c_add(const SizeType &i, const Scalar &value) = 0;
-		virtual void range(Range &r) = 0;
+		virtual void range(Range &r) const = 0;
 		
-		virtual void layout(Layout<SizeType, 1> &l)
+		virtual void layout(Layout<SizeType, 1> &l) const
 		{
 			l.local_size()  = local_size();
-			l.global_size() = size();
+			l.global_size() = this->size();
 		}
 		
 		virtual SizeType local_size() const = 0;
-		virtual SizeType size() const = 0;
 
 		virtual ~DistributedVector() {}
 	};

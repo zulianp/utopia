@@ -71,11 +71,11 @@ namespace utopia {
             }
 
             if(!lower_bound_) {
-                lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_).get(0), min_val_));
+                lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_), min_val_));
             }
 
             if(!upper_bound_) {
-                upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_).get(0), max_val_));
+                upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_), max_val_));
             }
         }  
 

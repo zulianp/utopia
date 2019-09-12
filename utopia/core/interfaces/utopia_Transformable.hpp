@@ -17,6 +17,7 @@ namespace utopia {
 		virtual void transform(const Cos &)  = 0;
 		virtual void transform(const Sin &)  = 0;
 		virtual void transform(const Abs &)  = 0;
+		virtual void transform(const Minus &) = 0;
 
 		virtual void transform(const Pow &p)  = 0;
 		virtual void transform(const Reciprocal<T> &f) = 0;

@@ -10,6 +10,7 @@
 #include "utopia_Comparable.hpp"
 #include "utopia_ElementWiseOperand.hpp"
 #include "utopia_Transformable.hpp"
+#include "utopia_Constructible.hpp"
 
 #include <vector>
 #include <memory>
@@ -24,13 +25,16 @@ namespace utopia {
         public Normed<T>,
         public Transformable<T>,
         public Comparable<BlasVector<T>>,
-        public ElementWiseOperand<BlasVector<T>>
+        public ElementWiseOperand<BlasVector<T>>,
+        public Constructible<T, std::size_t, 1>
     {
     public:
         typedef std::vector<T> Entries;
 
         using Scalar = T;
         using SizeType = std::size_t;
+
+        using Constructible<T, std::size_t, 1>::values;
 
        ////////////////////////////////////////////////////////////////////
        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -97,7 +101,7 @@ namespace utopia {
         	return *this;
         }
 
-        inline SizeType size() const
+        inline SizeType size() const override
         {
         	return entries_.size();
         }
@@ -144,6 +148,9 @@ namespace utopia {
         inline void write_lock(WriteMode) override {}
         inline void read_unlock() override {}
         inline void write_unlock(WriteMode) override {}
+
+        inline void read_and_write_lock(WriteMode) override {}
+        inline void read_and_write_unlock(WriteMode) override {}
 
         //basic mutators
         inline void set(const SizeType &i, const T &value) override
@@ -384,6 +391,22 @@ namespace utopia {
             aux_transform(op);
         }
 
+        void transform(const Minus &) override
+        {
+            for(auto &e : entries_) {
+                e = -e;
+            }
+        }
+
+        inline void values(const SizeType &s, const Scalar val) override
+        {
+            resize(s);
+            set(val);
+        }
+
+    private:
+    	Entries entries_;
+
         template<class Op>
         void aux_transform(const Op &op)
         {
@@ -391,9 +414,6 @@ namespace utopia {
                 e = op.apply(e);
             }
         }
-
-    private:
-    	Entries entries_;
 
     };
 

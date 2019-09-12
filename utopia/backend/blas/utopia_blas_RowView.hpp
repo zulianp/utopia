@@ -20,7 +20,7 @@ namespace utopia {
 
         inline SizeType n_values() const
         {
-            return t_.implementation().cols();
+            return t_.cols();
         }
 
         inline SizeType col(const SizeType index) const

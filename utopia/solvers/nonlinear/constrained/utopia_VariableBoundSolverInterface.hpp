@@ -93,7 +93,7 @@ namespace utopia
         Vector x_g = x - g;
         Vector ub, lb;
 
-        Scalar n = local_size(x).get(0);
+        Scalar n = local_size(x);
 
         if(constraints_.has_upper_bound())
           ub = *constraints_.upper_bound();
@@ -195,7 +195,7 @@ namespace utopia
           if(constraints_.has_upper_bound())
           {
               Vector u =  *constraints_.upper_bound() - x_k;
-              u_f = local_zeros(local_size(x_k).get(0));
+              u_f = local_zeros(local_size(x_k));
               {
                   Read<Vector> rv(u);
                   Write<Vector> wv(u_f);
@@ -207,12 +207,12 @@ namespace utopia
                   }
           }
           else
-              u_f = local_values(local_size(x_k).get(0), ub_uniform); ;
+              u_f = local_values(local_size(x_k), ub_uniform); ;
 
           if(constraints_.has_lower_bound())
           {
               Vector l = *(constraints_.lower_bound()) - x_k;
-              l_f = local_zeros(local_size(x_k).get(0));
+              l_f = local_zeros(local_size(x_k));
 
               {
                   Read<Vector> rv(l);
@@ -226,7 +226,7 @@ namespace utopia
               }
           }
           else
-              l_f = local_values(local_size(x_k).get(0), lb_uniform);
+              l_f = local_values(local_size(x_k), lb_uniform);
 
           return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
       }
@@ -240,12 +240,12 @@ namespace utopia
           if(constraints_.has_upper_bound())
               u_f =  *constraints_.upper_bound() - x_k;
           else
-              u_f = local_values(local_size(x_k).get(0), 9e12);
+              u_f = local_values(local_size(x_k), 9e12);
 
           if(constraints_.has_lower_bound())
               l_f = *(constraints_.lower_bound()) - x_k;
           else
-              l_f = local_values(local_size(x_k).get(0), -9e12);
+              l_f = local_values(local_size(x_k), -9e12);
 
           return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
       }

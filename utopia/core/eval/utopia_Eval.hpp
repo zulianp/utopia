@@ -22,6 +22,7 @@
 #include "utopia_Eval_Select.hpp"
 #include "utopia_Eval_Inverse.hpp"
 #include "utopia_Eval_Blocks.hpp"
+#include "utopia_Eval_KroneckerProduct.hpp"
 
 
 #endif //UTOPIA_EVAL_HPP

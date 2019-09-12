@@ -209,7 +209,7 @@ namespace utopia {
          * @brief       Lock providing both: read and write memory access to the object.
          * @param      tensor  The tensor.
          */
-        ReadAndWrite(Tensor &tensor, WriteMode mode)
+        ReadAndWrite(Tensor &tensor, WriteMode mode = utopia::LOCAL)
         : tensor_(tensor), mode_(mode)
         {
             tensor_.read_and_write_lock(mode_);

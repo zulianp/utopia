@@ -69,14 +69,32 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval<Assign<Wrapper<Left, 2>, Diag< Diag<Right> > >, Traits, Backend> {
+    class Eval<Assign<Tensor<Left, 1>, Diag<Right> >, Traits, Backend> {
     public:
-        inline static bool apply(const Assign<Wrapper<Left, 2>, Diag< Diag<Right> > > &expr)
+        using LeftTensor = utopia::Tensor<Left, 1>;
+        inline static bool apply(const Assign<LeftTensor, Diag<Right> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Right, Traits>::apply(expr.right().expr()).build_diag(
+                Eval<LeftTensor, Traits>::apply(expr.left())
+            );
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<Assign<Tensor<Left, 2>, Diag< Diag<Right> > >, Traits, Backend> {
+    public:
+        inline static bool apply(const Assign<Tensor<Left, 2>, Diag< Diag<Right> > > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag(
-                    Eval<Wrapper<Left, 2>,  Traits>::apply(expr.left()),
+                    Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr().expr())
             );
 
@@ -86,9 +104,9 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval<Assign<Wrapper<Left, 1>, Diag< Diag<Right> > >, Traits, Backend> {
+    class Eval<Assign<Tensor<Left, 1>, Diag< Diag<Right> > >, Traits, Backend> {
     public:
-        inline static bool apply(const Assign<Wrapper<Left, 1>, Diag< Diag<Right> > > &expr)
+        inline static bool apply(const Assign<Tensor<Left, 1>, Diag< Diag<Right> > > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -124,9 +142,9 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval<Construct<Wrapper<Left, 2>, Diag< Diag<Right> > >, Traits, Backend> {
+    class Eval<Construct<Tensor<Left, 2>, Diag< Diag<Right> > >, Traits, Backend> {
     public:
-        typedef utopia::Wrapper<Left, 2> WLeft;
+        typedef utopia::Tensor<Left, 2> WLeft;
 
         inline static bool apply(const Construct<WLeft, Diag< Diag<Right> > > &expr)
         {
@@ -143,9 +161,28 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval<Construct<Wrapper<Left, 1>, Diag< Diag<Right> > >, Traits, Backend> {
+    class Eval<Construct<Tensor<Left, 1>, Diag<Right>>, Traits, Backend> {
     public:
-        inline static bool apply(const Construct<Wrapper<Left, 1>, Diag< Diag<Right> > > &expr)
+        using LeftExpr  = utopia::Tensor<Left, 1>;
+        using RightExpr = utopia::Diag<Right>;
+
+        inline static bool apply(const Construct<LeftExpr, RightExpr> &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Right, Traits>::apply(expr.right().expr()).build_diag(
+                Eval<LeftExpr,  Traits>::apply(expr.left())
+            );
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<Construct<Tensor<Left, 1>, Diag< Diag<Right> > >, Traits, Backend> {
+    public:
+        inline static bool apply(const Construct<Tensor<Left, 1>, Diag< Diag<Right> > > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -158,11 +195,11 @@ namespace utopia {
         }
     };
 
-    template<class Tensor, class Traits, int Backend>
-    class Eval< Diag<Wrapper<Tensor, 2> >, Traits, Backend> {
+    template<class T, class Traits, int Backend>
+    class Eval< Diag<Tensor<T, 2> >, Traits, Backend> {
     public:
-        typedef utopia::Wrapper<Tensor, 2> WTensor;
-        typedef utopia::Diag<WTensor> Expr;
+        typedef utopia::Tensor<T, 2> WT;
+        typedef utopia::Diag<WT> Expr;
         typedef typename Traits::Vector Result;
 
         inline static Result apply(const Expr &expr)
@@ -173,7 +210,7 @@ namespace utopia {
 
             UTOPIA_BACKEND(Traits).diag(
                     result,
-                    Eval<WTensor,  Traits>::apply(expr.expr())
+                    Eval<WT,  Traits>::apply(expr.expr())
                     );
 
             UTOPIA_TRACE_END(expr);

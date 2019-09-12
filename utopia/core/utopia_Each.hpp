@@ -14,7 +14,7 @@
 
 namespace utopia {
 
-    template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Tensor::FILL_TYPE>
+    template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Traits<Tensor>::FILL_TYPE>
     class Each {};
 
     template<class Tensor, int FILL_TYPE>

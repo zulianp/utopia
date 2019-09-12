@@ -34,8 +34,8 @@ namespace utopia {
         }
 
         bool gradient(const Vector &point, Vector &result) const override {
-            if(empty(result) || size(point).get(0) != size(result).get(0)) {
-                result = values(point.size().get(0), 0.0);
+            if(empty(result) || size(point) != size(result)) {
+                result = values(point.size(), 0.0);
             }
 
             const Scalar s = dot(point, A * point);
@@ -65,7 +65,7 @@ namespace utopia {
 
             const Scalar s = dot(point, A * point);
             const Range rr = row_range(temp);
-            const SizeType n = size(point).get(0);
+            const SizeType n = size(point);
 
             assert(rr.begin() == range(point).begin());
             assert(rr.end() == range(point).end());
@@ -139,7 +139,7 @@ namespace utopia {
         }
 
         virtual bool hessian(const Vector &point, Matrix &result) const override {
-            const auto n = point.size().get(0);
+            const auto n = point.size();
             result = identity(n, n);
             result *= 2;
             return true;
@@ -261,7 +261,7 @@ namespace utopia {
         
         virtual SizeType dim() const override
         {
-            return size(b_).get(0); 
+            return size(b_); 
         }
 
         virtual bool exact_sol_known() const override
@@ -297,7 +297,7 @@ namespace utopia {
         {
             x_init_ = values(n_, 1.0);
 
-            const SizeType n_local = local_size(x_init_).get(0);
+            const SizeType n_local = local_size(x_init_);
             b_ = local_values(n_local, 1.0);
             Vector u = local_values(n_local, 1.0);
 
@@ -324,7 +324,7 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &result) const override
         {
-            assert(x.size().get(0) == n_);
+            assert(x.size() == n_);
             Vector g = 0*x;
             gradient(x, g);
             result = 0.5 * dot(g, g);
@@ -333,7 +333,7 @@ namespace utopia {
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            assert(x.size().get(0) == n_);
+            assert(x.size() == n_);
 
             if(empty(g)){
                 g = 0*x;

@@ -95,6 +95,25 @@ namespace utopia {
         : value_(scalar_cast<Scalar>(expr.derived()))
         {}
 
+        template<class Derived>
+        inline void construct(const Expression<Derived> &expr)
+        {
+            value_ = scalar_cast<Scalar>(expr.derived());
+        }
+
+        template<class OtherScalar>
+        inline void construct(const Number<OtherScalar> &expr)
+        {
+            value_ = scalar_cast<Scalar>(expr.value_);
+        }
+
+
+        inline void construct(const Number<Scalar> &expr)
+        {
+            value_ = expr.value_;
+        }
+
+
     private:
         Scalar value_;
     };

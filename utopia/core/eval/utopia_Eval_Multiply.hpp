@@ -6,6 +6,7 @@
 #define UTOPIA_UTOPIA_EVAL_MULTIPLY_HPP
 
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_Eval_Binary.hpp"
 
 namespace utopia {
 
@@ -19,12 +20,19 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).apply_binary(
-                result,
+            // UTOPIA_BACKEND(Traits).apply_binary(
+            //     result,
+            //     Eval<Left,  Traits>::apply(expr.left()),
+            //     Multiplies(),
+            //     Eval<Right, Traits>::apply(expr.right())
+            //     );
+
+            EvalBinaryAux<Result>::apply(
                 Eval<Left,  Traits>::apply(expr.left()),
+                Eval<Right, Traits>::apply(expr.right()),
                 Multiplies(),
-                Eval<Right, Traits>::apply(expr.right())
-                );
+                result
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;

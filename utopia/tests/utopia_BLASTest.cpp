@@ -56,39 +56,39 @@ namespace utopia {
         utopia_test_assert(approxeq(expected, res));
     }
 
-//     void blas_test() {
-//         //variables
-//         Matrixd m1{ hm_matrix(2, 2, {1, 0, 0, 1}) };
-//         Matrixd m2{ hm_matrix(2, 2, {1, 2, 3, 4}) };
-//         Vectord v{ hm_vector({1.0, 10.0}) };
+    void blas_test() {
+        //variables
+        Matrixd m1{ hm_matrix(2, 2, {1, 0, 0, 1}) };
+        Matrixd m2{ hm_matrix(2, 2, {1, 2, 3, 4}) };
+        Vectord v{ hm_vector({1.0, 10.0}) };
 
-//         { //BLAS 2 + 3
-//             Vectord vresult;
-//             auto expr = m2 * v - (m1 * m2) * v;
-//             // std::cout << tree_format(expr.getClass()) << std::endl;
-//             vresult = expr;
+        { //BLAS 2 + 3
+            Vectord vresult;
+            auto expr = m2 * v - (m1 * m2) * v;
+            // std::cout << tree_format(expr.getClass()) << std::endl;
+            vresult = expr;
 
-//             Vectord vexp({0.0, 0.0});
-//             utopia_test_assert(approxeq(vexp, vresult));
-//         }
+            Vectord vexp({0.0, 0.0});
+            utopia_test_assert(approxeq(vexp, vresult));
+        }
 
-//         Matrixd mexp{ hm_matrix(2, 2, {1, 3, 2, 4}) };
+        Matrixd mexp{ hm_matrix(2, 2, {1, 3, 2, 4}) };
 
-//         { //BLAS 3
-//             Matrixd mresult;
-//             auto mexpr = transpose(m2) * transpose(m1);
-//             // std::cout << tree_format(mexpr.getClass()) << std::endl;
-//             mresult = mexpr;
+        { //BLAS 3
+            Matrixd mresult;
+            auto mexpr = transpose(m2) * transpose(m1);
+            // std::cout << tree_format(mexpr.getClass()) << std::endl;
+            mresult = mexpr;
 
-//             utopia_test_assert(approxeq(mexp, mresult));
-//         }
+            utopia_test_assert(approxeq(mexp, mresult));
+        }
 
-//         {
-//             Matrixd mresult;
-//             mresult = transpose(m2);
-//             utopia_test_assert(approxeq(mexp, mresult));
-//         }
-//     }
+        {
+            Matrixd mresult;
+            mresult = transpose(m2);
+            utopia_test_assert(approxeq(mexp, mresult));
+        }
+    }
 
 
     void blas_pow_test() {
@@ -131,21 +131,21 @@ namespace utopia {
 //         utopia_test_assert(approxeq(H_exp, H));
 //     }
 
-//     void blas_solver_test() {
-// #ifdef WITH_LAPACK
-//         auto lapackSolver = std::make_shared< LUDecomposition<Matrixd, Vectord> >();
-//         Vectord x0({3.0, -2.0});
+    void blas_solver_test() {
+#ifdef WITH_LAPACK
+        auto lapackSolver = std::make_shared< LUDecomposition<Matrixd, Vectord> >();
+        Vectord x0({3.0, -2.0});
 
-//         Newton<Matrixd, Vectord> newtonSolver(lapackSolver);
-//         newtonSolver.enable_differentiation_control(false);
+        Newton<Matrixd, Vectord> newtonSolver(lapackSolver);
+        newtonSolver.enable_differentiation_control(false);
 
-//         TestFunctionND_1<Matrixd, Vectord> fun2(10);
+        TestFunctionND_1<Matrixd, Vectord> fun2(10);
 
-//         x0 = values(10, 2.0);
-//         newtonSolver.solve(fun2, x0);
-// #endif //WITH_LAPACK
+        x0 = values(10, 2.0);
+        newtonSolver.solve(fun2, x0);
+#endif //WITH_LAPACK
 
-//     }
+    }
 
     void blas_inplace_test() {
         Vectord v1{ hm_vector({4.0, 3.0, 2.0, 1.0}) };
@@ -200,24 +200,26 @@ namespace utopia {
     }
 
 
-//     void blas_set_values_test() {
-//         Matrixd m1 = identity(3, 3);
+    void blas_set_values_test() {
+        using SizeType = Traits<Matrixd>::SizeType;
 
-//         std::vector<SizeType> rows{0, 1, 2};
-//         std::vector<SizeType> cols{0, 1, 2};
-//         std::vector<double> vals{
-//             100, 0, 0,
-//             0, 101, 0,
-//             0, 0, 102};
+        Matrixd m1 = identity(3, 3);
 
-//         {
-//             Write<Matrixd> w_m1(m1);
-//             m1.set_matrix(rows, cols, vals);
-//         }
+        std::vector<SizeType> rows{0, 1, 2};
+        std::vector<SizeType> cols{0, 1, 2};
+        std::vector<double> vals{
+            100, 0, 0,
+            0, 101, 0,
+            0, 0, 102};
 
-//         Matrixd m_exp{ hm_matrix(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0}) };
-//         utopia_test_assert(approxeq(m_exp, m1));
-//     }
+        {
+            Write<Matrixd> w_m1(m1);
+            m1.set_matrix(rows, cols, vals);
+        }
+
+        Matrixd m_exp{ hm_matrix(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0}) };
+        utopia_test_assert(approxeq(m_exp, m1));
+    }
 
     void blas_axpy_test()
     {
@@ -371,40 +373,40 @@ namespace utopia {
 // #endif //WITH_UMFPACK
 //     }
 
-    // void blas_pgs_test()
-    // {
-    //     int n = 3;
-    //     CRSMatrixd A = sparse(n, n, 1);
+    void blas_pgs_test()
+    {
+        int n = 3;
+        Matrixd A = zeros(n, n);
 
-    //     {
-    //         Write<CRSMatrixd> w_A(A);
-    //         A.set(0, 0, 1);
-    //         A.set(1, 1, 1);
-    //         A.set(2, 2, 1);
-    //     }
+        {
+            Write<Matrixd> w_A(A);
+            A.set(0, 0, 1);
+            A.set(1, 1, 1);
+            A.set(2, 2, 1);
+        }
 
-    //     Vectord rhs = values(n, 2.);
-    //     Vectord x   = zeros(n);
+        Vectord rhs = values(n, 2.);
+        Vectord x   = zeros(n);
 
-    //     ProjectedGaussSeidel<CRSMatrixd, Vectord> pgs;
-    //     pgs.solve(A, rhs, x);
-    // }
+        ProjectedGaussSeidel<Matrixd, Vectord> pgs;
+        pgs.solve(A, rhs, x);
+    }
 
 #endif //WITH_BLAS
 
     void runBLASTest() {
 #ifdef WITH_BLAS
         UTOPIA_UNIT_TEST_BEGIN("BLASTest");
-        // UTOPIA_RUN_TEST(blas_pgs_test);
+        UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
         // UTOPIA_RUN_TEST(blas_row_view_test);
-        // UTOPIA_RUN_TEST(blas_test);
+        UTOPIA_RUN_TEST(blas_test);
         UTOPIA_RUN_TEST(blas_axpy_test);
         // UTOPIA_RUN_TEST(blas_function_test);
-        // UTOPIA_RUN_TEST(blas_solver_test);
+        UTOPIA_RUN_TEST(blas_solver_test);
         UTOPIA_RUN_TEST(blas_inplace_test);
         UTOPIA_RUN_TEST(blas_accessors_test);
-        // UTOPIA_RUN_TEST(blas_set_values_test);
+        UTOPIA_RUN_TEST(blas_set_values_test);
         UTOPIA_RUN_TEST(blas_norm_test);
         UTOPIA_RUN_TEST(blas_composite_test);
         // UTOPIA_RUN_TEST(blas_sparse_matrix_test);

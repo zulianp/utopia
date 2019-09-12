@@ -129,11 +129,11 @@ namespace utopia {
             entries_ = e;
         }
 
-        SizeType rows() const {
+        SizeType rows() const override {
             return rows_;
         }
 
-        SizeType cols() const {
+        SizeType cols() const override {
             return cols_;
         }
 
@@ -390,7 +390,7 @@ namespace utopia {
             const T &alpha,
             const BlasVector &x,
             const T &beta,
-            BlasVector &y) override
+            BlasVector &y) const override
         {
             const char t_A_flag = transpose_A ? 'T' : 'N';
 
@@ -608,11 +608,49 @@ namespace utopia {
             aux_transform(op);
         }
 
+        void transform(const Minus &) override
+        {
+            for(auto &e : entries_) {
+                e = -e;
+            }
+        }
+
         template<class Op>
         void aux_transform(const Op &op)
         {
             for(auto &e : entries_) {
                 e = op.apply(e);
+            }
+        }
+
+        //FIXME make use of interface
+        inline void build_diag(BlasVector &v) const 
+        {
+            auto n = std::min(rows_, cols_);
+            v.resize(n);
+
+            for(SizeType i = 0; i < n; ++i) {
+                v.set(i, get(i, i));
+            }
+        }
+
+        inline void diag(const BlasVector &v) 
+        {
+            auto n = v.size();
+            resize(n, n);
+
+            for(SizeType i = 0; i < n; ++i) {
+                set(i, i, v.get(i));
+            }
+        }
+
+        inline void diag(const BlasDenseMatrix &m) 
+        {
+            auto n = std::min(m.rows_, m.cols_);
+            resize(n, n);
+
+            for(SizeType i = 0; i < n; ++i) {
+                set(i, i, m.get(i, i));
             }
         }
 

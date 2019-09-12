@@ -8,6 +8,7 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_Operators.hpp"
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Eval_KroneckerProduct.hpp"
 
 namespace utopia {
 
@@ -28,6 +29,13 @@ namespace utopia {
         {
             result.construct(std::forward<Left>(left));
             result.axpy(-1.0, right.derived());
+        }
+
+        template<class Left, class Right, int Order>
+        static void apply(Left &&left, const Tensor<Right, Order> &right, const EMultiplies &, Result &result)
+        {
+            result.construct(std::forward<Left>(left));
+            result.e_mul(right.derived());
         }
 
         template<class Left, class Right>
@@ -99,6 +107,18 @@ namespace utopia {
             // result.construct(std::forward<Left>(left));
             // result.e_min(right);
             assert(false);
+        }
+
+        template<class Left, class Right, class Op>
+        static void apply(const Number<Left> &left, const Number<Right> &right, const Op &op, Result &result)
+        {
+             result = op.template apply<Scalar>(left.value(), right.value());
+        }
+
+        template<class Op>
+        static void apply(const Scalar &left, const Scalar &right, const Op &op, Result &result)
+        {
+             result = op.template apply<Scalar>(left, right);
         }
 
         template<class Left, class Right>
@@ -227,11 +247,16 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).kronecker_product(
-                result,
-                Eval<Left, Traits>::apply(expr.left()),
-                Eval<Right, Traits>::apply(expr.right())
-                );
+            // UTOPIA_BACKEND(Traits).kronecker_product(
+            //     result,
+            //     Eval<Left, Traits>::apply(expr.left()),
+            //     Eval<Right, Traits>::apply(expr.right())
+            //     );
+
+            auto left  = Eval<Left, Traits>::apply(expr.left());
+            auto right = Eval<Left, Traits>::apply(expr.right());
+
+            EvalKroneckerProduct<decltype(result), decltype(left)>::apply(left, right, result);
 
             UTOPIA_TRACE_END(expr);
             return result;

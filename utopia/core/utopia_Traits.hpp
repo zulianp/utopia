@@ -185,16 +185,24 @@ namespace utopia {
     /*!
      * @class Traits
      */
-    template<class T>
-    class Traits : public Traits<typename T::Implementation> {
-    public:
-        //You need to implement this for your type. See BLASTraits as an example
-        //typedef double Scalar;
-        // enum {
-        //     FILL_TYPE = FillType::DENSE
-        // };
+    // template<class T>
+    // class Traits : public Traits<typename T::Implementation> {
+    // public:
+    //     //You need to implement this for your type. See BLASTraits as an example
+    //     //typedef double Scalar;
+    //     // enum {
+    //     //     FILL_TYPE = FillType::DENSE
+    //     // };
 
-        static const int Order = T::Order;
+    //     static const int Order = T::Order;
+    // };
+
+    /*!
+     * @class Traits
+     */
+    template<class T>
+    class Traits<const T> : public Traits<T> {
+    public:
     };
 
     template<typename T>

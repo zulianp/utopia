@@ -68,36 +68,36 @@ namespace utopia {
 		  */
 
 		/// y = A * x
-		virtual void multiply(const Vector &x, Vector &y)
+		virtual void multiply(const Vector &x, Vector &y) const
 		{
 			multiply(1.0, x, y);
 		}
 
 		/// y = alpha * A * x
-		virtual void multiply(const Scalar &alpha, const Vector &x, Vector &y)
+		virtual void multiply(const Scalar &alpha, const Vector &x, Vector &y) const
 		{
 		    gemv(false, alpha, x, 0.0, y);
 		}
 
 		/// y = alpha * A^T * x
-		virtual void transpose_multiply(const Scalar &alpha, const Vector &x, Vector &y)
+		virtual void transpose_multiply(const Scalar &alpha, const Vector &x, Vector &y) const
 		{
 		    gemv(true, alpha, x, 0.0, y);
 		}
 
 		/// y := alpha * A * x + beta * y
-		virtual void multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y)
+		virtual void multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) const
 		{
 		    gemv(false, alpha, x, beta, y);
 		}
 
 		/// y := alpha * A' * x + beta * y
-		virtual void transpose_multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y)
+		virtual void transpose_multiply_add(const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) const
 		{
 		    gemv(true, alpha, x, beta, y);
 		}
 
-		virtual void gemv(const bool transpose, const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) = 0;
+		virtual void gemv(const bool transpose, const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) const = 0;
 
 
 		//missing blas routines

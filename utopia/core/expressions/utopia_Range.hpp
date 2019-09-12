@@ -14,6 +14,7 @@ namespace utopia {
         SizeType begin_, end_, extent_;
 
     public:
+        Range() {}
         Range(const SizeType begin, const SizeType to)
                 : begin_(begin), end_(to), extent_(to - begin) { }
 
