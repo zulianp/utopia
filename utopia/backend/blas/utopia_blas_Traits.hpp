@@ -4,8 +4,8 @@
 #define UTOPIA_UTOPIA_BLASTRAITS_HPP
 
 #include "utopia_Traits.hpp"
-#include "utopia_blas_CRSMatrix.hpp"
-#include "utopia_blas_CCSMatrix.hpp"
+// #include "utopia_blas_CRSMatrix.hpp"
+// #include "utopia_blas_CCSMatrix.hpp"
 #include "utopia_blas_ForwardDeclarations.hpp"
 
 namespace utopia {
@@ -16,11 +16,11 @@ namespace utopia {
         typedef T Scalar;
         typedef utopia::BlasDenseMatrix<T> Matrix;
         typedef utopia::BlasVector<T> Vector;
-        typedef utopia::CRSMatrix<T> CRSMatrix;
+        // typedef utopia::CRSMatrix<T> CRSMatrix;
         //default sparse matrix
-        typedef utopia::CRSMatrix<T> SparseMatrix;
+        // typedef utopia::CRSMatrix<T> SparseMatrix;
 
-        typedef utopia::CCSMatrix<T> CCSMatrix;
+        // typedef utopia::CCSMatrix<T> CCSMatrix;
         typedef typename std::vector<T>::size_type SizeType;
 
         enum {
@@ -37,8 +37,8 @@ namespace utopia {
     // UTOPIA_MAKE_TRAITS_TPL_1(std::vector, BLASTraits);
     UTOPIA_MAKE_TRAITS_TPL_1(BlasVector, BLASTraits);
     UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasDenseMatrix, BLASTraits);
-    UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(CRSMatrix, BLASTraits);
-    UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(CCSMatrix, BLASTraits);
+    // UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(CRSMatrix, BLASTraits);
+    // UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(CCSMatrix, BLASTraits);
 }
 
 #endif //UTOPIA_UTOPIA_BLASTRAITS_HPP
