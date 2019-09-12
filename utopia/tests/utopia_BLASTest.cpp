@@ -105,31 +105,28 @@ namespace utopia {
         //disp(res2);
     }
 
+    void blas_function_test() {
+        Vectord point({1.0, -1.0});
 
+        TestFunction2D_1<Matrixd, Vectord> fun;
+        Vectord g;
+        Matrixd H;
 
+        fun.gradient(point, g);
+        fun.hessian(point, H);
 
-//     void blas_function_test() {
-//         Vectord point({1.0, -1.0});
+        Vectord::Scalar fun_value;
+        fun.value(point, fun_value);
 
-//         TestFunction2D_1<Matrixd, Vectord> fun;
-//         Vectord g;
-//         Matrixd H;
+        Vectord::Scalar val_exp = 169.0;
+        utopia_test_assert(approxeq(val_exp, fun_value));
 
-//         fun.gradient(point, g);
-//         fun.hessian(point, H);
+        Vectord g_exp{ hm_vector({-10.0, 48.0}) };
+        utopia_test_assert(approxeq(g_exp, g));
 
-//         Vectord::Scalar fun_value;
-//         fun.value(point, fun_value);
-
-//         Vectord::Scalar val_exp = 169.0;
-//         utopia_test_assert(approxeq(val_exp, fun_value));
-
-//         Vectord g_exp{ hm_vector({-10.0, 48.0}) };
-//         utopia_test_assert(approxeq(g_exp, g));
-
-//         Matrixd H_exp{ hm_matrix(2, 2, {4.0, 0.0, 0.0, 8.0}) };
-//         utopia_test_assert(approxeq(H_exp, H));
-//     }
+        Matrixd H_exp{ hm_matrix(2, 2, {4.0, 0.0, 0.0, 8.0}) };
+        utopia_test_assert(approxeq(H_exp, H));
+    }
 
     void blas_solver_test() {
 #ifdef WITH_LAPACK
@@ -270,108 +267,65 @@ namespace utopia {
         utopia_test_assert(approxeq(wexp, wresult));
     }
 
-    // void blas_row_view_test()
-    // {
-    //     CRSMatrixd mat = sparse(3, 3, 1);
+    void blas_row_view_test()
+    {
+        using MatrixT  = utopia::Matrixd;
+        using SizeType = Traits<MatrixT>::SizeType;
 
-    //     {
-    //         Write<CRSMatrixd> write(mat);
-    //         mat.set(0, 0, 2);
-    //         mat.set(1, 1, 2);
-    //         mat.set(2, 2, 2);
-    //     }
+        SizeType n = 3;
+        MatrixT mat = zeros(n, n);
 
-    //     //controlled way
-    //     {
-    //         Read<CRSMatrixd> r_m(mat);
-
-    //         Size s = size(mat);
-    //         Range r = row_range(mat);
-    //         for(auto i = r.begin(); i != r.end(); ++i) {
-    //             RowView<const CRSMatrixd> row_view(mat, i);
-    //             const SizeType n_values = row_view.n_values();
-
-    //             utopia_test_assert(n_values == SizeType(1));
-
-    //             for(SizeType k = 0; k < n_values; ++k) {
-    //                 auto c = row_view.col(k);
-    //                 auto v = row_view.get(k);
-
-    //                 utopia_test_assert(approxeq(2., v));
-    //                 utopia_test_assert(SizeType(c) == SizeType(i));
-    //             }
-    //         }
-    //     }
-
-    //     //simple way
-    //     each_read(mat, [](const SizeType i, const SizeType j, const double v) {
-    //         utopia_test_assert(i == j);
-    //         utopia_test_assert(approxeq(2., v));
-    //     });
-
-    //     Matrixd d_mat = values(3, 3, 2.);
-
-    //     SizeType n_vals = 0;
-    //     each_read(d_mat, [&n_vals](const SizeType /*i*/, const SizeType /*j*/, const double v) {
-    //         utopia_test_assert(approxeq(2., v));
-    //         ++n_vals;
-    //     });
-
-    //     utopia_test_assert(n_vals == 3 * 3);
-    // }
+        {
+            Write<MatrixT> write(mat);
+            
+            for(SizeType i = 0; i < n; ++i) {
+                mat.set(i, i, 2);
+            }
+        }
 
 
-    // template<typename SizeType, typename Scalar>
-    // utopia::CRSMatrixd crs(const SizeType rows, const SizeType cols,
-    //                        std::initializer_list <SizeType> rowptr,
-    //                        std::initializer_list <SizeType> colindex,
-    //                        std::initializer_list <Scalar> values
-    //                        ) {
-    //     utopia::CRSMatrixd ret;
-    //     ret.implementation().initialize(rows, cols, rowptr, colindex, values);
-    //     return ret;
-    // }
+        //controlled way
+        {
+            Read<MatrixT> r_m(mat);
 
-//     void blas_sparse_matrix_test() {
-//         CRSMatrixd mat = sparse(3, 3, 1);
+            Size s = size(mat);
+            Range r = row_range(mat);
+            for(auto i = r.begin(); i != r.end(); ++i) {
+                RowView<const MatrixT> row_view(mat, i);
+                const SizeType n_values = row_view.n_values();
 
-//         {
-//             Write<CRSMatrixd> write(mat);
-//             mat.set(0, 0, 2);
-//             mat.set(1, 1, 2);
-//             mat.set(2, 2, 2);
-//         }
+                utopia_test_assert(n_values == n);
 
-//         Vectord v1{ hm_vector({2, 2, 2}) };
-//         Vectord v2 = mat * v1;
-//         utopia_test_assert(approxeq(2 * v1, v2));
+                for(SizeType k = 0; k < n_values; ++k) {
+                    const SizeType c = row_view.col(k);
+                    auto v = row_view.get(k);
 
-//         CCSMatrixd ccsmat = mat;
+                    if(c == SizeType(i)) {
+                        utopia_test_assert(approxeq(2., v));
+                    }
+                }
+            }
+        }
 
-// #ifdef WITH_UMFPACK
-//         //     auto lsolver = std::make_shared<UmfpackLU>();
+        //simple way
+        each_read(mat, [](const SizeType i, const SizeType j, const double v) {
+            if(i==j) {
+                utopia_test_assert(approxeq(2., v));
+            } else {
+                utopia_test_assert(approxeq(0., v));
+            }
+        });
 
-//         //     lsolver->solve(mat, v1, v2);
+        Matrixd d_mat = values(3, 3, 2.);
 
-//         //     Newton<CRSMatrixd, Vectord> nlsolver(lsolver);
-//         // //    nlsolver.enable_differentiation_control(true);
+        SizeType n_vals = 0;
+        each_read(d_mat, [&n_vals](const SizeType /*i*/, const SizeType /*j*/, const double v) {
+            utopia_test_assert(approxeq(2., v));
+            ++n_vals;
+        });
 
-//         //     SimpleQuadraticFunction<CRSMatrixd, Vectord> fun;
-//         //     Vectord x = values(100, 2.);
-//         //     Vectord expected = zeros(x.size());
-
-//         //     nlsolver.solve(fun, x);
-//         //     utopia_test_assert(approxeq(expected, x));
-
-
-//         //     Rosenbrock01<CRSMatrixd, Vectord> rosenbrock;
-//         //     Vectord x2({-2, -2});
-//         //     nlsolver.solve(rosenbrock, x2);
-
-//         //     expected = values(2, 1);
-//         //     utopia_test_assert(approxeq(expected, x2));
-// #endif //WITH_UMFPACK
-//     }
+        utopia_test_assert(n_vals == 3 * 3);
+    }
 
     void blas_pgs_test()
     {
@@ -399,17 +353,16 @@ namespace utopia {
         UTOPIA_UNIT_TEST_BEGIN("BLASTest");
         UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
-        // UTOPIA_RUN_TEST(blas_row_view_test);
+        UTOPIA_RUN_TEST(blas_row_view_test);
         UTOPIA_RUN_TEST(blas_test);
         UTOPIA_RUN_TEST(blas_axpy_test);
-        // UTOPIA_RUN_TEST(blas_function_test);
+        UTOPIA_RUN_TEST(blas_function_test);
         UTOPIA_RUN_TEST(blas_solver_test);
         UTOPIA_RUN_TEST(blas_inplace_test);
         UTOPIA_RUN_TEST(blas_accessors_test);
         UTOPIA_RUN_TEST(blas_set_values_test);
         UTOPIA_RUN_TEST(blas_norm_test);
         UTOPIA_RUN_TEST(blas_composite_test);
-        // UTOPIA_RUN_TEST(blas_sparse_matrix_test);
         UTOPIA_RUN_TEST(blas_pow_test);
         UTOPIA_UNIT_TEST_END("BLASTest");
 #endif // WITH_BLAS
