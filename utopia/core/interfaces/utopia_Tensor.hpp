@@ -70,39 +70,39 @@ namespace utopia {
 		template<class Expr>
 		Derived &operator*=(const Expression<Expr> &expr)
 		{
-			using I = utopia::InPlace<Derived, Expr, Multiplies>;
-			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(derived(), expr.derived()));
+			using I = utopia::InPlace<Tensor, Expr, Multiplies>;
+			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(*this, expr.derived()));
 		    return derived();
 		}
 
 		Derived &operator*=(const Scalar value)
 		{
-			using I = utopia::InPlace<Derived, Number<Scalar>, Multiplies>;
-			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(derived(), value));
+			using I = utopia::InPlace<Tensor, Number<Scalar>, Multiplies>;
+			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(*this, value));
 		    return derived();
 		}
 
 		template<class Expr>
 		Derived &operator+=(const Expression<Expr> &expr)
 		{
-			using I = utopia::InPlace<Derived, Expr, Plus>;
-			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(derived(), expr.derived()));
+			using I = utopia::InPlace<Tensor, Expr, Plus>;
+			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(*this, expr.derived()));
 		    return derived();
 		}
 
 		template<class Expr>
 		Derived &operator-=(const Expression<Expr> &expr)
 		{
-			using I = utopia::InPlace<Derived, Expr, Minus>;
-			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(derived(), expr.derived()));
+			using I = utopia::InPlace<Tensor, Expr, Minus>;
+			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(*this, expr.derived()));
 		    return derived();
 		}
 
 		template<class Expr>
 		Derived &operator/=(const Expression<Expr> &expr)
 		{
-			using I = utopia::InPlace<Derived, Expr, Divides>;
-			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(derived(), expr.derived()));
+			using I = utopia::InPlace<Tensor, Expr, Divides>;
+			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(*this, expr.derived()));
 		    return derived();
 		}
 

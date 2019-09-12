@@ -147,57 +147,57 @@ namespace utopia {
 
 //     }
 
-//     void blas_inplace_test() {
-//         Vectord v1{ hm_vector({4.0, 3.0, 2.0, 1.0}) };
-//         Vectord v2{ hm_vector({1.0, 2.0, 3.0, 4.0}) };
-//         Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
-//         // Matrixd m2(2, 2, {2.0, 1.0, 1.0, 1.0});
+    void blas_inplace_test() {
+        Vectord v1{ hm_vector({4.0, 3.0, 2.0, 1.0}) };
+        Vectord v2{ hm_vector({1.0, 2.0, 3.0, 4.0}) };
+        Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        // Matrixd m2(2, 2, {2.0, 1.0, 1.0, 1.0});
 
-//         //! [in place operations (blas)]
-//         v1 -= v2;
-//         m1 *= m1;
-//         //! [in place operations (blas)]
+        //! [in place operations (blas)]
+        v1 -= v2;
+        m1 *= m1;
+        //! [in place operations (blas)]
 
-//         Vectord v_exp{ hm_vector({3.0, 1.0, -1.0, -3.0}) };
-//         utopia_test_assert(approxeq(v_exp, v1));
+        Vectord v_exp{ hm_vector({3.0, 1.0, -1.0, -3.0}) };
+        utopia_test_assert(approxeq(v_exp, v1));
 
-//         Matrixd m_exp{ hm_matrix(2, 2, {8.0, 8.0, 8.0, 8.0}) };
-//         utopia_test_assert(approxeq(m_exp, m1));
-//     }
+        Matrixd m_exp{ hm_matrix(2, 2, {8.0, 8.0, 8.0, 8.0}) };
+        utopia_test_assert(approxeq(m_exp, m1));
+    }
 
-//     void blas_accessors_test() {
-//         Vectord v1{ hm_vector({0.0, 0.0}) };
-//         Vectord v2{ hm_vector({1.0, 1.0}) };
-//         Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
-//         Matrixd m2{ hm_matrix(2, 2, {0.0, 0.0, 0.0, 0.0}) };
+    void blas_accessors_test() {
+        Vectord v1{ hm_vector({0.0, 0.0}) };
+        Vectord v2{ hm_vector({1.0, 1.0}) };
+        Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        Matrixd m2{ hm_matrix(2, 2, {0.0, 0.0, 0.0, 0.0}) };
 
-//         {
-//             Write<Vectord> w_v1(v1);
-//             v1.set(0, 1);
-//             v1.set(1, 2);
-//         }
+        {
+            Write<Vectord> w_v1(v1);
+            v1.set(0, 1);
+            v1.set(1, 2);
+        }
 
-//         {
-//             Write<Matrixd> w_m2(m2);
-//             Read<Vectord> r_v1(v1);
+        {
+            Write<Matrixd> w_m2(m2);
+            Read<Vectord> r_v1(v1);
 
-//             m2.set(0, 0, v1.get(0));
-//             m2.set(1, 1, 1);
-//         }
+            m2.set(0, 0, v1.get(0));
+            m2.set(1, 1, 1);
+        }
 
-//         v1 -= v2;
-//         m1 *= m2;
+        v1 -= v2;
+        m1 *= m2;
 
-//         Vectord v_exp{ hm_vector({0.0, 1.0}) };
-//         utopia_test_assert(approxeq(v_exp, v1));
+        Vectord v_exp{ hm_vector({0.0, 1.0}) };
+        utopia_test_assert(approxeq(v_exp, v1));
 
-//         Matrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
-//         utopia_test_assert(approxeq(m_exp, m1));
+        Matrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        utopia_test_assert(approxeq(m_exp, m1));
 
 
 
-//         v1.set(6.);
-//     }
+        v1.set(6.);
+    }
 
 
 //     void blas_set_values_test() {
@@ -248,25 +248,25 @@ namespace utopia {
         val = norm_infty(twiceaxpy); UTOPIA_UNUSED(val);
     }
 
-//     void blas_composite_test() {
-//         Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
-//         Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
-//         Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
-//         Vectord wresult;
-//         //advanced (To make it work for all backends)
-//         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
-//         auto temp = twiceaxpy + w1 * dot(w1, 4.0 * (2.0 * w2) + w3 * 6.0);
-//         //    //multiline calculations
-//         auto expr = temp * 0.01;
+    void blas_composite_test() {
+        Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
+        Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
+        Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
+        Vectord wresult;
+        //advanced (To make it work for all backends)
+        auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
+        auto temp = twiceaxpy + w1 * dot(w1, 4.0 * (2.0 * w2) + w3 * 6.0);
+        //    //multiline calculations
+        auto expr = temp * 0.01;
 
-//         //query the expression structure
-//         // std::cout << tree_format(expr.getClass()) << std::endl;
+        //query the expression structure
+        // std::cout << tree_format(expr.getClass()) << std::endl;
 
-//         //Evaluate and verify value of the expression
-//         wresult = expr;
-//         Vectord wexp{ hm_vector({-24.311, -7.2893, -2.4321}) };
-//         utopia_test_assert(approxeq(wexp, wresult));
-//     }
+        //Evaluate and verify value of the expression
+        wresult = expr;
+        Vectord wexp{ hm_vector({-24.311, -7.2893, -2.4321}) };
+        utopia_test_assert(approxeq(wexp, wresult));
+    }
 
     // void blas_row_view_test()
     // {
@@ -402,11 +402,11 @@ namespace utopia {
         UTOPIA_RUN_TEST(blas_axpy_test);
         // UTOPIA_RUN_TEST(blas_function_test);
         // UTOPIA_RUN_TEST(blas_solver_test);
-        // UTOPIA_RUN_TEST(blas_inplace_test);
-        // UTOPIA_RUN_TEST(blas_accessors_test);
+        UTOPIA_RUN_TEST(blas_inplace_test);
+        UTOPIA_RUN_TEST(blas_accessors_test);
         // UTOPIA_RUN_TEST(blas_set_values_test);
         UTOPIA_RUN_TEST(blas_norm_test);
-        // UTOPIA_RUN_TEST(blas_composite_test);
+        UTOPIA_RUN_TEST(blas_composite_test);
         // UTOPIA_RUN_TEST(blas_sparse_matrix_test);
         // UTOPIA_RUN_TEST(blas_pow_test);
         UTOPIA_UNIT_TEST_END("BLASTest");

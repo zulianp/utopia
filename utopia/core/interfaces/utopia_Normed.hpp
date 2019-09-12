@@ -10,6 +10,7 @@ namespace utopia {
 
 		virtual ~Normed() {}
 		virtual Scalar norm_infty() const = 0;
+		virtual Scalar norm1() const = 0;
 		// virtual norm_infty() const = 0;
 	};
 }

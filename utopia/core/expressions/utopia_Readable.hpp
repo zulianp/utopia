@@ -7,6 +7,7 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Config.hpp"
+#include "utopia_Enums.hpp"
 
 namespace utopia {
 
@@ -115,33 +116,33 @@ namespace utopia {
             Backend<Scalar, Traits<Implementation>::Backend >::get(derived().implementation(), index, values);
         }
 
-#ifdef ENABLE_LOCK_CHECK
-        Readable()
-        : lock_active_(false)
-        { }
+// #ifdef ENABLE_LOCK_CHECK
+//         Readable()
+//         : lock_active_(false)
+//         { }
 
-        inline bool is_read_locked() const
-        {
-            return lock_active_;
-        }
+//         inline bool is_read_locked() const
+//         {
+//             return lock_active_;
+//         }
 
-        inline void read_lock() const
-        {
-            lock_active_ = true;
-        }
+//         inline void read_lock() const
+//         {
+//             lock_active_ = true;
+//         }
 
-        inline void read_unlock() const
-        {
-            lock_active_ = false;
-        }
-#endif //NDEBUG
+//         inline void read_unlock() const
+//         {
+//             lock_active_ = false;
+//         }
+// #endif //NDEBUG
 
     private:
         CONST_DERIVED_CRT(Derived);
 
-#ifdef ENABLE_LOCK_CHECK
-        mutable bool lock_active_;
-#endif //NDEBUG
+// #ifdef ENABLE_LOCK_CHECK
+//         mutable bool lock_active_;
+// #endif //NDEBUG
     };
 
 
@@ -157,32 +158,26 @@ namespace utopia {
          * @param      tensor  The tensor (the const qualifier might be removed internally).
          */
         Read(const Tensor &tensor)
-        : _tensor(tensor)
+        : tensor_(tensor)
         {
-#ifdef ENABLE_LOCK_CHECK
-            _tensor.read_lock();
-#endif //NDEBUG
-
-            Backend<Scalar, Traits<Tensor>::Backend >::read_lock(_tensor.implementation());
+            const_cast<Tensor &>(tensor_).read_lock();
         }
 
         ~Read()
         {
-#ifdef ENABLE_LOCK_CHECK
-            _tensor.read_unlock();
-#endif //NDEBUG
-            Backend<Scalar, Traits<Tensor>::Backend >::read_unlock(_tensor.implementation());
+            const_cast<Tensor &>(tensor_).read_unlock();
         }
 
     private:
-        const Tensor &_tensor;
+        const Tensor &tensor_;
     };
 
 
     template<class T, int Order>
-    class Read< std::vector<Wrapper<T, Order> > > {
+    class Read< std::vector<Tensor<T, Order> > > {
     public:
-        using Tensors = std::vector<Wrapper<T, Order> >;
+        using Tensor = utopia::Tensor<T, Order>;
+        using Tensors = std::vector<Tensor>;
         using Scalar  = typename Traits<T>::Scalar;
         
 
@@ -190,14 +185,14 @@ namespace utopia {
         : tensors_(tensors)
         {
             for(auto &t : tensors_) {
-                Backend<Scalar, Traits<T>::Backend>::read_lock(t.implementation());
+                const_cast<Tensor &>(t).read_lock();
             }
         }
 
         ~Read()
         {
             for(auto &t : tensors_) {
-                Backend<Scalar, Traits<T>::Backend>::read_unlock(t.implementation());
+                const_cast<Tensor &>(t).read_unlock();
             }
         }
 
@@ -214,27 +209,20 @@ namespace utopia {
          * @brief       Lock providing both: read and write memory access to the object.
          * @param      tensor  The tensor.
          */
-        ReadAndWrite(Tensor &tensor)
-        : _tensor(tensor)
+        ReadAndWrite(Tensor &tensor, WriteMode mode)
+        : tensor_(tensor), mode_(mode)
         {
-#ifdef ENABLE_LOCK_CHECK
-            _tensor.read_lock();
-            _tensor.write_lock();
-#endif
-            Backend<Scalar, Traits<Tensor>::Backend >::read_and_write_lock(_tensor.implementation());
+            tensor_.read_and_write_lock(mode_);
         }
 
         ~ReadAndWrite()
         {
-#ifdef ENABLE_LOCK_CHECK
-            _tensor.read_unlock();
-            _tensor.write_unlock();
-#endif
-            Backend<Scalar, Traits<Tensor>::Backend >::read_and_write_unlock(_tensor.implementation());
+            tensor_.read_and_write_unlock(mode_);
         }
 
     private:
-         Tensor &_tensor;
+         Tensor &tensor_;
+         WriteMode mode_;
     };
 
 }

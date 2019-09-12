@@ -42,10 +42,15 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).dot(
-                    Eval<Left,  Traits>::apply(expr.expr().left()),
-                    Eval<Right, Traits>::apply(expr.expr().right())
+            // result = UTOPIA_BACKEND(Traits).dot(
+            //         Eval<Left,  Traits>::apply(expr.expr().left()),
+            //         Eval<Right, Traits>::apply(expr.expr().right())
+            // );
+
+            result = Eval<Left,  Traits>::apply(expr.expr().left()).dot(
+                Eval<Right, Traits>::apply(expr.expr().right())
             );
+
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -62,13 +67,7 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            // result = UTOPIA_BACKEND(Traits).norm2(
-            //         Eval<Expr, Traits>::apply(expr.expr())
-            // );
-
-
             result = Eval<Expr, Traits>::apply(expr.expr()).norm2();
-
 
             UTOPIA_TRACE_END(expr);
             return result;

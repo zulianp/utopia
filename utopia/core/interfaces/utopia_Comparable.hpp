@@ -4,13 +4,13 @@
 #include "utopia_Traits.hpp"
 
 namespace utopia {
-	template<class Derived>
+	template<class T>
 	class Comparable {
 	public:
 		virtual ~Comparable() {}
-		
-		using Scalar = typename utopia::Traits<Derived>::Scalar;
-		virtual bool equals(const Derived &other, Scalar tol = 0.0) const = 0;
+
+		using Scalar = typename utopia::Traits<T>::Scalar;
+		virtual bool equals(const T &other, Scalar tol = 0.0) const = 0;
 
 	};
 }

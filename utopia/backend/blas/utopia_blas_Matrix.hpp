@@ -10,6 +10,8 @@
 #include "utopia_blas_Vector.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Constructible.hpp"
+#include "utopia_ElementWiseOperand.hpp"
+#include "utopia_Normed.hpp"
 
 
 #include <vector>
@@ -24,13 +26,18 @@ namespace utopia {
         public BLAS1Tensor<BlasDenseMatrix<T>>,
         public BLAS2Matrix<BlasDenseMatrix<T>, BlasVector<T>>,
         public BLAS3Matrix<BlasDenseMatrix<T>>,
-        public Constructible<T, std::size_t, 2> {
+        public Constructible<T, std::size_t, 2>,
+        public Comparable<BlasDenseMatrix<T>>,
+        public ElementWiseOperand<BlasDenseMatrix<T>>,
+        public Normed<T> {
     public:
         typedef std::vector<T> Entries;
         using SizeType = std::size_t;
         using Scalar = T;
        
         using BlasVector = utopia::BlasVector<T>;
+        using BLAS2Matrix<BlasDenseMatrix, BlasVector>::multiply;
+        using BLAS3Matrix<BlasDenseMatrix>::multiply;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -325,7 +332,7 @@ namespace utopia {
         }
 
         ///<T>SCAL - x = a*x
-        inline void scale(T &a) override
+        inline void scale(const T &a) override
         {
             BLASAlgorithms<T>::scal(n_elements(), a, ptr(), 1);
         }
@@ -425,7 +432,7 @@ namespace utopia {
             const bool transpose_B,
             const BlasDenseMatrix &B,
             const T beta,
-            BlasDenseMatrix &C) override
+            BlasDenseMatrix &C) const override
         {
             const SizeType k = transpose_A ? this->rows() : this->cols();
             assert(k == (transpose_B ? B.cols() : B.rows()));
@@ -473,6 +480,80 @@ namespace utopia {
             resize(s.get(0), s.get(1));
             set(val);
         }
+
+
+        bool equals(const BlasDenseMatrix &other, const T tol = 0.0) const override
+        {
+            if(other.rows() != rows()) return false;
+            if(other.cols() != cols()) return false;
+
+            const SizeType n = entries_.size();
+            assert(n == other.entries_.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                if(std::abs(entries_[i] - other.entries_[i]) > tol) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        inline void e_mul(const BlasDenseMatrix &other) override
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.entries_.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] *= other.entries_[i];
+            }  
+        }
+
+        inline void e_min(const BlasDenseMatrix &other) override
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.entries_.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] = std::min(other.entries_[i], entries_[i]);
+            }  
+        }
+
+        inline void e_max(const BlasDenseMatrix &other) override
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.entries_.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] = std::max(other.entries_[i], entries_[i]);
+            }  
+        }
+
+        ////////////// OVERRIDES FOR Normed //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        inline T norm_infty() const override
+        {
+            using std::max_element;
+            if(entries_.empty()) return 0.;
+            return *max_element(entries_.begin(), entries_.end());
+        }
+
+        inline T norm1() const override
+        {
+            T ret = 0.0;
+            for(auto &e : entries_) {
+                ret += std::abs(e);
+            }
+
+            return ret;
+        }
+
 
 
 

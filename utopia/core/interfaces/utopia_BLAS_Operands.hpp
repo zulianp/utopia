@@ -17,7 +17,7 @@ namespace utopia {
 		virtual void swap(Tensor &x) = 0;
 
 		///<Scalar>SCAL - x = a*x
-		virtual void scale(Scalar &a) = 0;
+		virtual void scale(const Scalar &a) = 0;
 
 		///<Scalar>COPY - copy x into y (this)
 		virtual void copy(const Tensor &x) = 0;
@@ -142,13 +142,13 @@ namespace utopia {
 
 		virtual ~BLAS3Matrix() {}
 
-		virtual void multiply(const Matrix &B, Matrix &C) 
+		virtual void multiply(const Matrix &B, Matrix &C) const
 		{
 			multiply(1.0, B, C);
 		}
 
 		/// C := alpha * A * B
-		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C)
+		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const
 		{
 			multiply(false, alpha, false, B, C);
 		}
@@ -159,7 +159,7 @@ namespace utopia {
 			const Scalar alpha,
 			const bool transpose_B,
 			const Matrix &B,
-			Matrix &C)
+			Matrix &C) const
 		{
 			gemm(transpose_A, alpha, transpose_B, B, 0.0, C);
 		}
@@ -171,7 +171,7 @@ namespace utopia {
 			const bool transpose_B,
 			const Matrix &B,
 			const Scalar beta,
-			Matrix &C) = 0;
+			Matrix &C)  const = 0;
 
 		//missing blas routines
 

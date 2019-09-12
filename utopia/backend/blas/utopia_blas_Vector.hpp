@@ -7,6 +7,8 @@
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_blas_Algorithms.hpp"
 #include "utopia_Normed.hpp"
+#include "utopia_Comparable.hpp"
+#include "utopia_ElementWiseOperand.hpp"
 
 #include <vector>
 #include <memory>
@@ -18,7 +20,9 @@ namespace utopia {
         public Vector<T, std::size_t>,
         public Tensor<BlasVector<T>, 1>,
         public BLAS1Tensor<BlasVector<T>>,
-        public Normed<T>
+        public Normed<T>,
+        public Comparable<BlasVector<T>>,
+        public ElementWiseOperand<BlasVector<T>>
     {
     public:
         typedef std::vector<T> Entries;
@@ -208,7 +212,7 @@ namespace utopia {
         }
 
         ///<T>SCAL - x = a*x
-        inline void scale(T &a) override
+        inline void scale(const T &a) override
         {
             BLASAlgorithms<T>::scal(size(), a, ptr(), 1);
         }
@@ -257,18 +261,31 @@ namespace utopia {
         ////////////// OVERRIDES FOR Normed //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline Scalar norm_infty() const override
+        inline T norm_infty() const override
         {
             using std::max_element;
             if(entries_.empty()) return 0.;
             return *max_element(entries_.begin(), entries_.end());
         }
 
+        inline T norm1() const override
+        {
+            T ret = 0.0;
+            for(auto &e : entries_) {
+                ret += std::abs(e);
+            }
 
-        bool equals(const BlasVector &other, const T tol = 0.0) const
+            return ret;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Comparable //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        bool equals(const BlasVector &other, const T tol = 0.0) const override
         {
             const SizeType n = entries_.size();
-            assert(n == other.size());
+            if(n != other.size()) return false;
 
             for(SizeType i = 0; i < n; ++i) {
                 if(std::abs(entries_[i] - other.entries_[i]) > tol) {
@@ -278,6 +295,42 @@ namespace utopia {
 
             return true;
         }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        inline void e_mul(const BlasVector &other) override
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] *= other.entries_[i];
+            }  
+        }
+
+        inline void e_min(const BlasVector &other) override
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] = std::min(other.entries_[i], entries_[i]);
+            }  
+        }
+
+        inline void e_max(const BlasVector &other) override
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] = std::max(other.entries_[i], entries_[i]);
+            }  
+        }
+
 
     private:
     	Entries entries_;
