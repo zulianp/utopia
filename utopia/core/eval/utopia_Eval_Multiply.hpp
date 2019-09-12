@@ -64,13 +64,21 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).multiply(
-                result,
+            // UTOPIA_BACKEND(Traits).multiply(
+            //     result,
+            //     false,
+            //     Eval<Left, Traits>::apply(expr.left()),
+            //     true,
+            //     Eval<Right, Traits>::apply(expr.right().expr())
+            //     );
+
+
+            Eval<Left, Traits>::apply(expr.left()).multiply(
                 false,
-                Eval<Left, Traits>::apply(expr.left()),
                 true,
-                Eval<Right, Traits>::apply(expr.right().expr())
-                );
+                Eval<Right, Traits>::apply(expr.right().expr()),
+                result
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -88,13 +96,20 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).multiply(
-                result,
+            // UTOPIA_BACKEND(Traits).multiply(
+            //     result,
+            //     true,
+            //     Eval<Left,  Traits>::apply(expr.left().expr()),
+            //     true,
+            //     Eval<Right, Traits>::apply(expr.right().expr())
+            //     );
+
+            Eval<Left, Traits>::apply(expr.left().expr()).multiply(
                 true,
-                Eval<Left,  Traits>::apply(expr.left().expr()),
                 true,
-                Eval<Right, Traits>::apply(expr.right().expr())
-                );
+                Eval<Right, Traits>::apply(expr.right().expr()),
+                result
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -112,13 +127,20 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).multiply(
-                result,
+            // UTOPIA_BACKEND(Traits).multiply(
+            //     result,
+            //     true,
+            //     Eval<Right, Traits>::apply(expr.expr().right()),
+            //     true,
+            //     Eval<Left, Traits>::apply(expr.expr().left())
+            //     );
+
+            Eval<Right, Traits>::apply(expr.expr().right()).multiply(
                 true,
-                Eval<Right, Traits>::apply(expr.expr().right()),
                 true,
-                Eval<Left, Traits>::apply(expr.expr().left())
-                );
+                Eval<Left, Traits>::apply(expr.expr().left()),
+                result
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;

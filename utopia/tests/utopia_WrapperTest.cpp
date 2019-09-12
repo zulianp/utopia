@@ -53,8 +53,8 @@ namespace utopia {
                     expected.set(0, 10);
                 }
 
-                if (r.end() == expected.size().get(0)) {
-                    expected.set(expected.size().get(0) - 1, 10);
+                if (r.end() == expected.size()) {
+                    expected.set(expected.size() - 1, 10);
                 }
             }
 
@@ -118,9 +118,9 @@ namespace utopia {
 //         WrapperTest<DMatrixd, DVectord, PetscScalar>().run();
 // #endif
 
-// #ifdef WITH_BLAS
-//         WrapperTest<Matrixd, Vectord, double>().run();
-// #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        WrapperTest<Matrixd, Vectord, double>().run();
+#endif //WITH_BLAS
         UTOPIA_UNIT_TEST_END("WrapperTest");
     }
 }

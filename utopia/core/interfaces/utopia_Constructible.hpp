@@ -14,7 +14,7 @@ namespace utopia {
 		using SizeType = SizeType_;
 
 		virtual ~Constructible() {}
-		virtual void identity(const Size &s) = 0;
+		virtual void identity(const Size &s, const Scalar diag = 1.0) = 0;
 		virtual void zeros(const Size &s) { values(s, 0.0); }
 		virtual void values(const Size &s, const Scalar val) = 0;
 			

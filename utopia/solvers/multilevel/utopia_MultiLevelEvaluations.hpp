@@ -143,6 +143,8 @@ namespace utopia
         public:
             inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & s_global)
             {
+                UTOPIA_UNUSED(s_global);
+                
                 typename Traits<Vector>::Scalar energy = 0.0;
                 fun.value(x, energy);
                 // energy += dot(g_diff, s_global);

@@ -10,10 +10,10 @@ namespace utopia {
     //[optimized] provide a backend specific implementation by specializing the templa
 
     ///backend generic det for small matrices
-    template<class Tensor, class Traits, int Backend>
-    class Eval<Determinant< Wrapper<Tensor, 2> >, Traits, Backend> {
+    template<class T, class Traits, int Backend>
+    class Eval<Determinant< Tensor<T, 2> >, Traits, Backend> {
     public:
-        typedef utopia::Wrapper<Tensor, 2> Tensor2;
+        typedef utopia::Tensor<T, 2> T2;
         typedef typename Traits::Scalar Scalar;
 
         inline static Scalar det_3(
@@ -35,15 +35,15 @@ namespace utopia {
                    m02 * m11 * m20;
         }
 
-        inline static Scalar apply(const Determinant<Tensor2> &expr)
+        inline static Scalar apply(const Determinant<T2> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            auto &t = expr.expr();
+            auto &t = expr.expr().derived();
             auto s = size(t);
             assert(s.get(0) == s.get(1));
 
-            Read<Tensor2> r(t);
+            Read<T> r(t);
             Scalar out;
 
             switch(s.get(0)) {

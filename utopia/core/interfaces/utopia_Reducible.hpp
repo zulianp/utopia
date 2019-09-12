@@ -23,6 +23,19 @@ namespace utopia {
 		virtual T sum() const { return reduce(Plus()); }
 
 	};
+
+
+	template<typename Scalar, typename SizeType>
+	class ReducibleMatrix {
+	public:
+		virtual ~ReducibleMatrix() {}
+
+		virtual SizeType reduce(const PlusIsNonZero<Scalar> &) const = 0;
+		virtual SizeType nnz() const 
+		{
+			return reduce(PlusIsNonZero<Scalar>());
+		}
+	};
 }
 
 #endif //UTOPIA_REDUCIBLE_HPP

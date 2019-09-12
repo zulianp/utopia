@@ -99,8 +99,8 @@ namespace utopia {
     template<class Expr, int Number, class Traits, int Backend>
     class Eval<Variable<Expr, Number>, Traits, Backend> {
     public:
-        inline static auto apply(const Variable<Expr, Number> &expr) -> decltype(expr.expr().implementation()) {
-            return expr.expr().implementation();
+        inline static auto apply(const Variable<Expr, Number> &expr) -> decltype(expr.expr().derived()) {
+            return expr.expr().derived();
         }
     };
 }

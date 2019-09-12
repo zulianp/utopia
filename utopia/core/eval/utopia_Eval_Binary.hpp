@@ -63,6 +63,20 @@ namespace utopia {
             result.construct(std::forward<Left>(left));
             result.e_max(right.derived());
         }
+
+        template<class Left, class Right>
+        static void apply(Left &&left, const Number<Right> &right, const Min &, Result &result)
+        {
+            result.construct(std::forward<Left>(left));
+            result.e_min(right.get());
+        }
+
+        template<class Left, class Right>
+        static void apply(Left &&left, const Number<Right> &right, const Max &, Result &result)
+        {
+            result.construct(std::forward<Left>(left));
+            result.e_max(right.get());
+        }
  
         // template<class Left, class Right>
         // static void apply(Left &&left, const Number<Right> &right, const Plus &, Result &result)
@@ -112,7 +126,7 @@ namespace utopia {
         template<class Left, class Right, class Op>
         static void apply(const Number<Left> &left, const Number<Right> &right, const Op &op, Result &result)
         {
-             result = op.template apply<Scalar>(left.value(), right.value());
+             result = op.template apply<Scalar>(left.get(), right.get());
         }
 
         template<class Op>

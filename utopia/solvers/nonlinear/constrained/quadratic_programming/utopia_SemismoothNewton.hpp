@@ -268,7 +268,7 @@ namespace utopia {
             Vector d = diag(A);
 
             bool ret = true;
-            each_read(d, [&ret](const SizeType i, const Scalar val) {
+            each_read(d, [&ret](const SizeType, const Scalar val) {
                 if(std::abs(val) < 1e-16) {
                     ret = false;
                     std::cerr << "[Error] zero element on diagonal" << std::endl;

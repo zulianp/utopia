@@ -6,11 +6,14 @@
 #define utopia_utopia_LITERAL_HPP
 
 #include <iostream>
+#include <cmath>
 #include "utopia_Expression.hpp"
+#include "utopia_BLAS_Operands.hpp"
 
 namespace utopia {
     template<typename _Scalar>
-    class Number : public Expression< Number<_Scalar> > {
+    class Number : public Expression< Number<_Scalar> >, 
+                   public BLAS1Tensor< Number<_Scalar> > {
     public:
         static const int Order = 0;
         // static const int  StoreAs = UTOPIA_BY_VALUE;
@@ -77,10 +80,10 @@ namespace utopia {
             return value_;
         }
 
-        inline constexpr Number(const Scalar &value)  : value_(value)
+        inline constexpr Number(const Scalar &value = 0.0)  : value_(value)
         {}
 
-        std::string getClass() const
+        inline std::string getClass() const override
         {
             return "Number";
         }
@@ -107,10 +110,57 @@ namespace utopia {
             value_ = scalar_cast<Scalar>(expr.value_);
         }
 
-
         inline void construct(const Number<Scalar> &expr)
         {
             value_ = expr.value_;
+        }
+
+        ///<Scalar>SWAP - swap x and y
+        inline void swap(Number &x) override
+        {
+            std::swap(x.value_, value_);
+        }
+
+        ///<Scalar>SCAL - x = a*x
+        inline void scale(const Scalar &a) override
+        {
+            value_ *= a;
+        }
+
+        ///<Scalar>COPY - copy x into y (this)
+        inline void copy(const Number &x) override
+        {
+            value_ = x.value_;
+        }
+
+        ///<Scalar>AXPY - y = a*x + y
+        inline void axpy(const Scalar &a, const Number &x) override
+        {
+            value_ += a * x.value_;
+        }
+
+        ///<Scalar>DOT - dot product
+        inline Scalar dot(const Number &other) const override
+        {
+            return value_ * other.value_;
+        }
+
+        ///<Scalar>NRM2 - Euclidean norm
+        inline Scalar norm2() const override
+        {
+            return std::abs(value_);
+        }
+
+        ///<Scalar>ASUM - sum of absolute values
+        inline Scalar asum() const override
+        {
+            return std::abs(value_);
+        }
+
+        ///I<Scalar>AMAX - index of max abs value
+        inline unsigned short amax() const override
+        {
+            return 0;
         }
 
 
@@ -123,6 +173,12 @@ namespace utopia {
     {
         return { 1 };
     }
+
+    template<typename Scalar_>
+    class Traits< Number<Scalar_>> : public Traits<Scalar_> {
+    public:
+        using SizeType = unsigned short;
+    };
 
 
 

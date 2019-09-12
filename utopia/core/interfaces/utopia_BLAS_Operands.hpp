@@ -148,6 +148,8 @@ namespace utopia {
 
 		virtual ~BLAS3Matrix() {}
 
+		virtual void transpose(Matrix &C) const = 0;
+
 		virtual void multiply(const Matrix &B, Matrix &C) const
 		{
 			multiply(1.0, B, C);
@@ -163,6 +165,16 @@ namespace utopia {
 		virtual void transpose_multiply(const Matrix &B, Matrix &C) const
 		{
 			multiply(true, 1.0, false, B, C);
+		}
+
+		/// C := alpha * op(A) * op(B)
+		virtual void multiply(
+			const bool transpose_A,
+			const bool transpose_B,
+			const Matrix &B,
+			Matrix &C) const
+		{
+			gemm(transpose_A, 1.0, transpose_B, B, 0.0, C);
 		}
 
 		/// C := alpha * op(A) * op(B)

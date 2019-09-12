@@ -163,8 +163,8 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            EXPR_TYPE(Traits, Left) result = Eval<Left, Traits>::apply(expr.left());
-            UTOPIA_BACKEND(Traits).mat_diag_shift(result, expr.right().left());
+            auto result = Eval<Left, Traits>::apply(expr.left());
+            result.shift_diag(expr.right().left());
 
             UTOPIA_TRACE_END(expr);
             return result;

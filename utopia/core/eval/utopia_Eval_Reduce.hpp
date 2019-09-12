@@ -22,11 +22,6 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            // result = UTOPIA_BACKEND(Traits).reduce(
-            //         Eval<Expr, Traits>::apply(expr.expr()),
-            //         expr.operation()
-            // );
-
             result = Eval<Expr, Traits>::apply(expr.expr()).reduce(expr.operation());
 
             UTOPIA_TRACE_END(expr);
@@ -176,10 +171,12 @@ namespace utopia {
     };
 
 
-    template<class Tensor, typename T, class Traits, int Backend>
-    class Eval<Reduce<Wrapper<Tensor, 2>, PlusIsNonZero<T>>, Traits, Backend> {
+    template<class Derived, typename T, class Traits, int Backend>
+    class Eval<Reduce<Tensor<Derived, 2>, PlusIsNonZero<T>>, Traits, Backend> {
     public:
-        using Expr = utopia::Reduce<Wrapper<Tensor, 2>, PlusIsNonZero<T>>;
+        using Expr = utopia::Reduce<Tensor<Derived, 2>, PlusIsNonZero<T>>;
+        using Vector = UTOPIA_VECTOR(Derived);
+
         typedef typename Traits::Scalar Scalar;
         typedef typename Traits::SizeType SizeType;
 
@@ -189,7 +186,7 @@ namespace utopia {
             SizeType result = 0;
             UTOPIA_TRACE_BEGIN(expr);
 
-            each_read(expr.expr(), [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
+            each_read(expr.expr().derived(), [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
                 UTOPIA_UNUSED(i);
                 UTOPIA_UNUSED(j);
 
@@ -197,7 +194,7 @@ namespace utopia {
             });
 
 
-            Wrapper<typename Traits::Vector, 1> v = local_values(1, result);
+            Vector v = local_values(1, result);
             result = sum(v);
 
             UTOPIA_TRACE_END(expr);

@@ -97,7 +97,7 @@ namespace utopia {
     template<class Traits, int Sparsity>
     class TensorQuery<Traits, 0, Sparsity> {
     public:
-        typedef typename Traits::Scalar Type;
+        typedef utopia::Number<typename Traits::Scalar> Type;
     };
 
     template<class Traits, int Sparsity>
@@ -176,7 +176,8 @@ namespace utopia {
     template<typename Left, typename Right>
     class MostDescriptive<Number<Left>, Number<Right> > {
     public:
-        typedef decltype(Left(0) + Right(0)) Type;
+        // typedef decltype(Left(0) + Right(0)) Type;
+        using Type = utopia::Number<decltype(Left(0) + Right(0))>;
     };
 
 
@@ -205,8 +206,8 @@ namespace utopia {
     public:
     };
 
-    template<typename T>
-    class Traits< Number<T> > : public Traits<T> {};
+    // template<typename T>
+    // class Traits< Number<T> > : public Traits<T> {};
 
 
     template<>

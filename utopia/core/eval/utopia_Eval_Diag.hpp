@@ -93,9 +93,13 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).diag(
-                    Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr().expr())
+            // UTOPIA_BACKEND(Traits).diag(
+            //         Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),
+            //         Eval<Right, Traits>::apply(expr.right().expr().expr())
+            // );
+
+            Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()).diag(
+                        Eval<Right, Traits>::apply(expr.right().expr().expr())
             );
 
             UTOPIA_TRACE_END(expr);

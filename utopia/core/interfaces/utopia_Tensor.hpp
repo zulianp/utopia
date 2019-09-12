@@ -8,6 +8,7 @@
 #include "utopia_Expression.hpp"
 #include "utopia_Operators.hpp"
 #include "utopia_Select.hpp"
+// #include "utopia_Factory.hpp"
 // #include "utopia_Eval.hpp"
 
 namespace utopia {
@@ -41,6 +42,14 @@ namespace utopia {
 			using C = utopia::Construct<Tensor, Expr>;
 			Eval<C, Traits<Derived>, Traits<Derived>::Backend>::apply(C(*this, expr.derived()));
 		}
+
+
+		// template<int OtherOrder>
+ 	// 	void construct_eval(const Diag<Factory<Zeros, OtherOrder>> &expr)
+ 	// 	{
+ 	// 		using C = utopia::Construct<Tensor, Factory<Zeros, Order>>;
+ 	// 		Eval<C, Traits<Derived>, Traits<Derived>::Backend>::apply(C(*this, expr.derived()));
+ 	// 	}
 
 		template<class Expr>
 		void assign_eval(const Expression<Expr> &expr)
@@ -128,17 +137,42 @@ namespace utopia {
 	//     return t.derived().local_size();
 	// }
 
-	template<class Derived, int Order>
-	inline auto size(const Tensor<Derived, Order> &t)
+	// template<class Derived, int Order>
+	// inline auto size(const Tensor<Derived, Order> &t)
+	// {
+	//     return t.derived().size();
+	// }
+
+	// template<class Derived, int Order>
+	// inline auto local_size(const Tensor<Derived, Order> &t)
+	// {
+	//     return t.derived().local_size();
+	// }
+
+	template<class Derived>
+	inline Size size(const Tensor<Derived, 1> &t)
+	{
+	    return {t.derived().size()};
+	}
+
+	template<class Derived>
+	inline Size local_size(const Tensor<Derived, 1> &t)
+	{
+	    return {t.derived().local_size()};
+	}
+
+	template<class Derived>
+	inline Size size(const Tensor<Derived, 2> &t)
 	{
 	    return t.derived().size();
 	}
 
-	template<class Derived, int Order>
-	inline auto local_size(const Tensor<Derived, Order> &t)
+	template<class Derived>
+	inline Size local_size(const Tensor<Derived, 2> &t)
 	{
 	    return t.derived().local_size();
 	}
+
 
 }
 

@@ -27,7 +27,7 @@ namespace utopia
     inline static void runAllTests()
     {
         runWrapperTest();
-        run_autodiff_test();
+        // run_autodiff_test();
         runAlgebraTest();
         runUtilitiesTest();
         runPetscTest();
@@ -75,8 +75,8 @@ namespace utopia
             while (std::getline(iss, token, ',')) {
                 if (token == "wrapper")
                     runWrapperTest();
-                else if (token == "autodiff")
-                    run_autodiff_test();
+                // else if (token == "autodiff")
+                //     run_autodiff_test();
                 else if (token == "solvers")
                 {
                     runGenericSolversTest();

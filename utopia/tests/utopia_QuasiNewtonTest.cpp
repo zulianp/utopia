@@ -552,10 +552,10 @@ namespace utopia
             // QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
         #endif
 
-        // #ifdef WITH_BLAS
-        //         QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().print_backend_info();
-        //         QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().run_dense();
-        // #endif //WITH_BLAS
+        #ifdef WITH_BLAS
+                QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().print_backend_info();
+                QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().run_dense();
+        #endif //WITH_BLAS
 
         // #ifdef WITH_TRILINOS
                 // QuasiNewtonTest<TSMatrixd, TVectord>().print_backend_info();

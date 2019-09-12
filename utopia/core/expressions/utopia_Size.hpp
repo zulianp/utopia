@@ -124,6 +124,12 @@ namespace utopia {
             return os;
         }
 
+        inline operator SizeType() const
+        {
+            assert(_data.size() == 1);
+            return _data[0];
+        }
+
     private:
 
         std::vector<SizeType> _data;

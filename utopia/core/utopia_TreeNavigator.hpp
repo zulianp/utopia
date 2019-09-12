@@ -97,8 +97,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class Tensor, int Order>
-        void visit(const Wrapper<Tensor, Order> &expr)
+        template<class Derived, int Order>
+        void visit(const Tensor<Derived, Order> &expr)
         {
             pre_intercept(expr);
 

@@ -150,11 +150,11 @@ namespace utopia {
             utopia_test_assert(size.get(1) == 3);
 
             Vector v = zeros(3);
-            size = v.size();
+            size = {v.size()};
             utopia_test_assert(size.get(0) == 3);
 
             v = m * v;
-            size = v.size();
+            size = {v.size()};
             utopia_test_assert(size.get(0) == 2);
         }
 
@@ -196,10 +196,13 @@ namespace utopia {
             Vector v;
             Matrix mat;
 
+            auto mv = mat * v;
+            static_assert( (IsSubTree<decltype(mv), decltype(mv)>::value), "should be true" );
+
             auto expr = -diag(0.1 * v +  mat * v);
             static_assert( !(IsSubTree<Binary<Vector, Vector, Plus>, decltype(expr)>::value), "should be false" );
-            static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value), "should be true" );
-            static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value),  "should be true"  );
+            static_assert( (IsSubTree<decltype(mv), decltype(expr)>::value), "should be true" );
+            static_assert( (IsSubTree<decltype(mv), decltype(expr)>::value),  "should be true"  );
             static_assert( (IsSubTree<Matrix, decltype(expr)>::value),  "should be true"  );
             static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  );
         }
@@ -233,9 +236,9 @@ namespace utopia {
     {
         UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
-// #ifdef WITH_BLAS
-//         AlgebraTest<Matrixd, Vectord>().run();
-// #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        AlgebraTest<Matrixd, Vectord>().run();
+#endif //WITH_BLAS
 
 #ifdef WITH_PETSC
         AlgebraTest<DMatrixd, DVectord>().run();

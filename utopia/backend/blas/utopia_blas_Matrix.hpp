@@ -13,6 +13,7 @@
 #include "utopia_ElementWiseOperand.hpp"
 #include "utopia_Normed.hpp"
 #include "utopia_Transformable.hpp"
+#include "utopia_Reducible.hpp"
 
 
 #include <vector>
@@ -27,6 +28,8 @@ namespace utopia {
         public Normed<T>,
         public Transformable<T>,
         public Constructible<T, std::size_t, 2>,
+        public Reducible<T>,
+        public ReducibleMatrix<T, std::size_t>,
         // Static polymorphic types
         public Tensor<BlasDenseMatrix<T>, 2>,
         public BLAS1Tensor<BlasDenseMatrix<T>>,
@@ -161,13 +164,13 @@ namespace utopia {
 
         inline T &at(const SizeType index)
         {
-            assert(index < entries_.n_elements());
+            assert(index < entries_.size());
             return entries_[index];
         }
 
         inline const T &at(const SizeType index) const
         {
-            assert(index < n_elements());
+            assert(index < entries_.size());
             return entries_[index];
         }
 
@@ -186,6 +189,13 @@ namespace utopia {
             this->entries_.resize(rows_ * cols_);
         }
 
+        void resize(const Size &s)
+        {
+            this->rows_ = s.get(0);
+            this->cols_ = s.get(1);
+            this->entries_.resize(rows_ * cols_);
+        }
+
         T* ptr()
         {
             return &entries_[0];
@@ -196,7 +206,7 @@ namespace utopia {
             return &entries_[0];
         }
 
-        void identity(const SizeType rows, const SizeType cols)
+        void identity(const SizeType rows, const SizeType cols, const Scalar diag = 1.0)
         {
             using std::move;
             using std::min;
@@ -206,8 +216,9 @@ namespace utopia {
             fill(entries_.begin(), entries_.end(), T(0));
 
             const SizeType n = min(rows, cols);
-            for (SizeType i = 0; i < n; ++i)
-                set(i, i, T(1.0));
+            for (SizeType i = 0; i < n; ++i) {
+                set(i, i, diag);
+            }
         }
 
         void values(const SizeType rows, const SizeType cols, T value)
@@ -471,15 +482,43 @@ namespace utopia {
             );
         }
 
+        inline void transpose(BlasDenseMatrix &C) const override {
+            bool is_squared = rows_ == cols_;
+
+            if(this == &C) {
+                if(is_squared) {
+                    //in place
+                    for(SizeType i = 0; i < rows_; ++i) {
+                        for(SizeType j = i + 1; j < rows_; ++j) {
+                            C.set(i, j, get(j, i));
+                        }
+                    }
+                } else {
+                    BlasDenseMatrix temp;
+                    transpose(temp);
+                    C = temp;
+                }
+
+            } else {
+                C.resize(cols_, rows_);
+
+                for(SizeType i = 0; i < rows_; ++i) {
+                    for(SizeType j = 0; j < cols_; ++j) {
+                        C.set(i, j, get(j, i));
+                    }
+                }
+            }
+        }
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
 
-        inline void identity(const Size &s) override
+        inline void identity(const Size &s, const Scalar diag = 1.0) override
         {
             assert(s.dims() == 2);
-            identity(s.get(0), s.get(1));
+            identity(s.get(0), s.get(1), diag);
         }
 
         inline void values(const Size &s, const T val) override 
@@ -659,6 +698,14 @@ namespace utopia {
             }
         }
 
+        inline void shift_diag(const T &val) {
+            auto n = std::min(rows_, cols_);
+
+            for(SizeType i = 0; i < n; ++i) {
+                ref(i, i) += val;
+            }
+        }
+
         inline void select(
             const std::vector<SizeType> &row_index, 
             const std::vector<SizeType> &col_index, 
@@ -689,10 +736,69 @@ namespace utopia {
             }
         }
 
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Reducible //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        inline T reduce(const Min &op) const override
+        {
+            return aux_reduce(op);
+        }
+
+        inline T reduce(const Max &op) const override
+        {
+            return aux_reduce(op);
+        }
+
+        inline T reduce(const Plus &op) const override
+        {
+            return aux_reduce(op);
+        }
+
+        virtual SizeType reduce(const PlusIsNonZero<Scalar> &op) const override
+        {
+            if(entries_.empty()) return 0.0;
+
+            const auto &u_op = op.is_non_zero();
+
+            const SizeType n = entries_.size();
+
+            SizeType ret = 0;
+
+            for(SizeType i = 0; i < n; ++i) {
+                ret += u_op.apply(entries_[i]);
+            }
+
+            return ret;
+        }
+
     private:
         Entries entries_;
         SizeType rows_;
         SizeType cols_;
+
+        template<class Op>
+        inline T aux_reduce(const Op &op) const
+        {
+            if(entries_.empty()) return 0.0;
+
+            const SizeType n = entries_.size();
+
+            T ret = entries_[0];
+
+            for(SizeType i = 1; i < n; ++i) {
+                ret = op.apply(ret, entries_[i]);
+            }
+
+            return ret;
+        }
+
+        inline T &ref(const SizeType i, const SizeType j)
+        {
+            return at(i + rows() * j);
+        }
     };
 
     // inline Wrapper<BlasDenseMatrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
