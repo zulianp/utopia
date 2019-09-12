@@ -263,30 +263,26 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
+            auto &&alpha = expr.right().left().left();
+
             if(&expr.left() == &expr.right().right()) {
                 auto &&l = Eval<Left, Traits, Backend>::apply(expr.left());
-                UTOPIA_BACKEND(Traits).axpy(
-                    l,
-                    expr.right().left().left(),
+
+                l.axpy(
+                    alpha,
                     Eval<Right, Traits, Backend>::apply(expr.right().left().right())
                 );
+
             } else {
                 auto &&l  = Eval<Left, Traits, Backend>::apply(expr.left());
                 auto &&ll = Eval<Left, Traits, Backend>::apply(expr.right().right());
                 auto &&rr = Eval<Right, Traits, Backend>::apply(expr.right().left().right());
 
-                auto &&alpha = expr.right().left().left();
-
                 if(&rr == &l) {
-                    // assert(false);
-                    expr.left() = Eval<RExpr, Traits, Backend>::apply(expr.right());
+                    expr.left().assign(Eval<RExpr, Traits, Backend>::apply(expr.right()));
                 } else {
-                    l = ll;
-                    UTOPIA_BACKEND(Traits).axpy(
-                        l,
-                        alpha,
-                        rr
-                    );
+                    l.assign(ll);
+                    l.axpy(alpha, rr);
                 }
             }
 

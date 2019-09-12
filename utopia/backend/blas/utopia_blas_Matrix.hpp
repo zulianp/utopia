@@ -12,6 +12,7 @@
 #include "utopia_Constructible.hpp"
 #include "utopia_ElementWiseOperand.hpp"
 #include "utopia_Normed.hpp"
+#include "utopia_Transformable.hpp"
 
 
 #include <vector>
@@ -29,7 +30,8 @@ namespace utopia {
         public Constructible<T, std::size_t, 2>,
         public Comparable<BlasDenseMatrix<T>>,
         public ElementWiseOperand<BlasDenseMatrix<T>>,
-        public Normed<T> {
+        public Normed<T>,
+        public Transformable<T> {
     public:
         typedef std::vector<T> Entries;
         using SizeType = std::size_t;
@@ -555,6 +557,64 @@ namespace utopia {
         }
 
 
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Transformable //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        void transform(const Sqrt &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Pow2 &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Log &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Exp &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Cos &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Sin &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Abs &op) override
+        {
+            aux_transform(op);
+        }
+
+
+        void transform(const Pow &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Reciprocal<T> &op) override
+        {
+            aux_transform(op);
+        }
+
+        template<class Op>
+        void aux_transform(const Op &op)
+        {
+            for(auto &e : entries_) {
+                e = op.apply(e);
+            }
+        }
 
 
     private:

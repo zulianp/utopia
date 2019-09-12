@@ -9,6 +9,7 @@
 #include "utopia_Normed.hpp"
 #include "utopia_Comparable.hpp"
 #include "utopia_ElementWiseOperand.hpp"
+#include "utopia_Transformable.hpp"
 
 #include <vector>
 #include <memory>
@@ -16,11 +17,12 @@
 
 namespace utopia {
     template<typename T>
-    class BlasVector : 
+    class BlasVector :
         public Vector<T, std::size_t>,
         public Tensor<BlasVector<T>, 1>,
         public BLAS1Tensor<BlasVector<T>>,
         public Normed<T>,
+        public Transformable<T>,
         public Comparable<BlasVector<T>>,
         public ElementWiseOperand<BlasVector<T>>
     {
@@ -29,7 +31,7 @@ namespace utopia {
 
         using Scalar = T;
         using SizeType = std::size_t;
-        
+
        ////////////////////////////////////////////////////////////////////
        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
        ////////////////////////////////////////////////////////////////////
@@ -122,7 +124,7 @@ namespace utopia {
         auto begin() const { return entries_.begin(); }
         auto end() const { return entries_.end(); }
 
-        Entries &entries() 
+        Entries &entries()
         {
         	return entries_;
         }
@@ -147,7 +149,7 @@ namespace utopia {
         inline void set(const SizeType &i, const T &value) override
         {
             assert(i < size());
-            
+
             entries_[i] = value;
         }
 
@@ -159,7 +161,7 @@ namespace utopia {
         inline void add(const SizeType &i, const T &value) override
         {
             assert(i < size());
-            
+
             entries_[i] += value;
         }
 
@@ -196,7 +198,7 @@ namespace utopia {
         inline T get(const SizeType &i) const override
         {
             assert(i < size());
-            
+
             return entries_[i];
         }
 
@@ -308,7 +310,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] *= other.entries_[i];
-            }  
+            }
         }
 
         inline void e_min(const BlasVector &other) override
@@ -318,7 +320,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] = std::min(other.entries_[i], entries_[i]);
-            }  
+            }
         }
 
         inline void e_max(const BlasVector &other) override
@@ -328,9 +330,67 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] = std::max(other.entries_[i], entries_[i]);
-            }  
+            }
         }
 
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Transformable //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        void transform(const Sqrt &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Pow2 &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Log &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Exp &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Cos &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Sin &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Abs &op) override
+        {
+            aux_transform(op);
+        }
+
+
+        void transform(const Pow &op) override
+        {
+            aux_transform(op);
+        }
+
+        void transform(const Reciprocal<T> &op) override
+        {
+            aux_transform(op);
+        }
+
+        template<class Op>
+        void aux_transform(const Op &op)
+        {
+            for(auto &e : entries_) {
+                e = op.apply(e);
+            }
+        }
 
     private:
     	Entries entries_;

@@ -36,15 +36,15 @@ namespace utopia {
 		template<class Expr>
 		void construct_eval(const Expression<Expr> &expr)
 		{
-			using C = utopia::Construct<Derived, Expr>;
-			Eval<C, Traits<Derived>, Traits<Derived>::Backend>::apply(C(derived(), expr.derived()));
+			using C = utopia::Construct<Tensor, Expr>;
+			Eval<C, Traits<Derived>, Traits<Derived>::Backend>::apply(C(*this, expr.derived()));
 		}
 
 		template<class Expr>
 		void assign_eval(const Expression<Expr> &expr)
 		{
-			using A = utopia::Assign<Derived, Expr>;
-			Eval<A, Traits<Derived>, Traits<Derived>::Backend>::apply(A(derived(), expr.derived()));
+			using A = utopia::Assign<Tensor, Expr>;
+			Eval<A, Traits<Derived>, Traits<Derived>::Backend>::apply(A(*this, expr.derived()));
 		}
 
 		// template<class Expr>

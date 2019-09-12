@@ -88,6 +88,29 @@ namespace utopia {
     };
 
     //NEW
+    template<class Left, class Right, int Order, class Traits, int Backend>
+    class Eval<Construct<Left, Factory<Values<Right>, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Construct<Left, Factory<Values<Right>, Order> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            // UTOPIA_BACKEND(Traits).build(
+            //         Eval<Left, Traits>::apply(expr.left()),
+            //         expr.right().size(),
+            //         expr.right().type()
+            // );
+
+            Eval<Left, Traits>::apply(expr.left()).values(
+                expr.right().size(),
+                expr.right().type().value()
+            );
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    //NEW
     template<class Left, int Order, class Traits, int Backend>
     class Eval<Construct<Left, Factory<Identity, Order> >, Traits, Backend> {
     public:
@@ -109,7 +132,7 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            expr.left().zeros(expr.right().size());
+            Eval<Left, Traits>::apply(expr.left()).zeros(expr.right().size());
 
             UTOPIA_TRACE_END(expr);
         }

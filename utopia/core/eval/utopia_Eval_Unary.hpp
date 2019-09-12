@@ -44,11 +44,11 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).apply_unary(
-                result,
-                expr.operation(),
+            result.construct(
                 Eval<Expr, Traits>::apply(expr.expr())
-                );
+            );
+
+            result.transform(expr.operation());
 
             UTOPIA_TRACE_END(expr);
             return result;

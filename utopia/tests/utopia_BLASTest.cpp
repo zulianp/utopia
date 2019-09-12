@@ -29,32 +29,32 @@ namespace utopia {
         return vec;
     }
 
-//     void blas_gemm_test()
-//     {
-//         Matrixd A{ hm_matrix(2, 2, {1, 1, 1, 1}) };
-//         Matrixd B{ hm_matrix(2, 2, {2, 2, 2, 2}) };
-//         Matrixd C{ hm_matrix(2, 2, {4, 0, 0, 4}) };
-//         Matrixd res;
+    void blas_gemm_test()
+    {
+        Matrixd A{ hm_matrix(2, 2, {1, 1, 1, 1}) };
+        Matrixd B{ hm_matrix(2, 2, {2, 2, 2, 2}) };
+        Matrixd C{ hm_matrix(2, 2, {4, 0, 0, 4}) };
+        Matrixd res;
 
-//         //specialization 1
-//         res = 0.1 * A * B;
-//         Matrixd expected = values(2, 2, 0.4);
+        //specialization 1
+        res = 0.1 * A * B;
+        Matrixd expected = values(2, 2, 0.4);
 
-//         utopia_test_assert(approxeq(expected, res));
+        utopia_test_assert(approxeq(expected, res));
 
-//         res *= -.6;
+        res *= -.6;
 
-//         //specialization 2
-//         res = 0.1 * A * B + 0.2 * C;
+        //specialization 2
+        res = 0.1 * A * B + 0.2 * C;
 
-//         {
-//             Write<Matrixd> w_r(expected);
-//             expected.set(0, 0, 1.2);
-//             expected.set(1, 1, 1.2);
-//         }
+        {
+            Write<Matrixd> w_r(expected);
+            expected.set(0, 0, 1.2);
+            expected.set(1, 1, 1.2);
+        }
 
-//         utopia_test_assert(approxeq(expected, res));
-//     }
+        utopia_test_assert(approxeq(expected, res));
+    }
 
 //     void blas_test() {
 //         //variables
@@ -91,19 +91,19 @@ namespace utopia {
 //     }
 
 
-//     void blas_pow_test() {
-//         //variables
+    void blas_pow_test() {
+        //variables
 
-//         Vectord v{ hm_vector({2.0, 10.0}) };
+        Vectord v{ hm_vector({2.0, 10.0}) };
 
-//         // int a=8;
+        // int a=8;
 
-//         utopia::Vectord res=power(v,4.0);
+        utopia::Vectord res=power(v,4.0);
 
-//         //auto res2=powAB(2.0);
+        //auto res2=powAB(2.0);
 
-//         //disp(res2);
-//     }
+        //disp(res2);
+    }
 
 
 
@@ -396,7 +396,7 @@ namespace utopia {
 #ifdef WITH_BLAS
         UTOPIA_UNIT_TEST_BEGIN("BLASTest");
         // UTOPIA_RUN_TEST(blas_pgs_test);
-        // UTOPIA_RUN_TEST(blas_gemm_test);
+        UTOPIA_RUN_TEST(blas_gemm_test);
         // UTOPIA_RUN_TEST(blas_row_view_test);
         // UTOPIA_RUN_TEST(blas_test);
         UTOPIA_RUN_TEST(blas_axpy_test);
@@ -408,7 +408,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(blas_norm_test);
         UTOPIA_RUN_TEST(blas_composite_test);
         // UTOPIA_RUN_TEST(blas_sparse_matrix_test);
-        // UTOPIA_RUN_TEST(blas_pow_test);
+        UTOPIA_RUN_TEST(blas_pow_test);
         UTOPIA_UNIT_TEST_END("BLASTest");
 #endif // WITH_BLAS
     }
