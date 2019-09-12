@@ -6,6 +6,7 @@
 #define UTOPIA_UTOPIA_BACKENDINFO_HPP
 
 #include <string>
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
     class BackendInfo {
@@ -18,9 +19,20 @@ namespace utopia {
             this->name_ = name;
         }
 
+        BackendInfo(const std::string &name = "undefined")
+        : name_(name)
+        {}
+
     private:
         std::string name_;
     };
+
+
+    template<class T>
+    auto backend_info(const T &)
+    {
+        return Traits<T>::backend_info();
+    }
 }
 
 #endif //UTOPIA_UTOPIA_BACKENDINFO_HPP

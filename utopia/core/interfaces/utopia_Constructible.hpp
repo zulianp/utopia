@@ -17,9 +17,23 @@ namespace utopia {
 		virtual void identity(const Size &s) = 0;
 		virtual void zeros(const Size &s) { values(s, 0.0); }
 		virtual void values(const Size &s, const Scalar val) = 0;
+			
+
+		///Specialize for sparse matrices
+		virtual void sparse(const Size &s, const SizeType /*nnz*/) 
+		{
+			zeros(s);
+		}
 
 		virtual void local_zeros(const Size &s) { values(s, 0.0); }
 		virtual void local_values(const Size &s, const Scalar val) { values(s, val); }
+
+		///Specialize for sparse matrices
+		virtual void local_sparse(const Size &s, const SizeType /*nnz*/) 
+		{
+			local_zeros(s);
+		}
+
 	};
 
 	template<typename Scalar_, typename SizeType_>

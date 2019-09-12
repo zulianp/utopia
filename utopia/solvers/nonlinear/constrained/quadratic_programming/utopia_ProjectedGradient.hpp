@@ -64,7 +64,7 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init(local_size(b).get(0));
+            init(local_size(b));
 
             x_old = x;
             A.apply(x, u);
@@ -129,7 +129,7 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init(local_size(b).get(0));
+            init(local_size(b));
 
             // ideally, we have two separate implementations, or cases
             this->fill_empty_bounds();

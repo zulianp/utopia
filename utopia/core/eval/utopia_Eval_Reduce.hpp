@@ -22,10 +22,12 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).reduce(
-                    Eval<Expr, Traits>::apply(expr.expr()),
-                    expr.operation()
-            );
+            // result = UTOPIA_BACKEND(Traits).reduce(
+            //         Eval<Expr, Traits>::apply(expr.expr()),
+            //         expr.operation()
+            // );
+
+            result = Eval<Expr, Traits>::apply(expr.expr()).reduce(expr.operation());
 
             UTOPIA_TRACE_END(expr);
             return result;

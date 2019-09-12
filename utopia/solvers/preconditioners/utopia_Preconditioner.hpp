@@ -11,7 +11,7 @@
 #include <memory>
 #include <cassert>
 
-#define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
+// #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
 
 namespace utopia
 {
@@ -67,15 +67,15 @@ namespace utopia
     }
 
     template<class Matrix>
-    std::unique_ptr< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> > op(const std::shared_ptr<const Matrix> &mat)
+    std::unique_ptr< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> > op(const std::shared_ptr<const Matrix> &mat)
     {
-        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
+        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> >(mat);
     }
 
     template<class Matrix>
-    std::unique_ptr< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> > op_ref(const Matrix &mat)
+    std::unique_ptr< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> > op_ref(const Matrix &mat)
     {
-        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(make_ref(mat));
+        return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> >(make_ref(mat));
     }
 
 

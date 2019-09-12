@@ -51,7 +51,7 @@ namespace  utopia
                 auto &box = this->get_box_constraints();
 
 
-                init(local_size(rhs).get(0));
+                init(local_size(rhs));
                 return aux_solve(A, rhs, sol, box);
             }
 
@@ -61,7 +61,7 @@ namespace  utopia
                 this->fill_empty_bounds(); 
                 auto &box = this->get_box_constraints();
 
-                init(local_size(rhs).get(0));
+                init(local_size(rhs));
                 return aux_solve(*A_op_ptr, rhs, sol, box);
             }
 
@@ -83,7 +83,7 @@ namespace  utopia
                 }
 
                 const Scalar gamma = 1.0; 
-                const Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs).get(0)); 
+                const Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs)); 
                 Scalar pAp; 
 
                 SizeType it =0; 
@@ -184,7 +184,7 @@ namespace  utopia
 
             void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & fi) const
             {
-                fi = local_values(local_size(x).get(0), 0); 
+                fi = local_values(local_size(x), 0); 
 
                 {
                     Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(g);
@@ -205,8 +205,8 @@ namespace  utopia
 
             Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub) const
             {
-                Vector alpha_f1 = local_values(local_size(x).get(0), 1e15); 
-                Vector alpha_f2 = local_values(local_size(x).get(0), 1e15); 
+                Vector alpha_f1 = local_values(local_size(x), 1e15); 
+                Vector alpha_f2 = local_values(local_size(x), 1e15); 
 
                 {
                     Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(p);
@@ -258,7 +258,7 @@ namespace  utopia
 
             void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & beta) const
             {
-                beta = local_values(local_size(x).get(0), 0.0); 
+                beta = local_values(local_size(x), 0.0); 
 
                 {
                     Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(g);

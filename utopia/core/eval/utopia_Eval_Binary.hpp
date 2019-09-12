@@ -131,6 +131,17 @@ namespace utopia {
         }
     };
 
+    template<>
+    class EvalBinaryAux<double> {
+    public:
+        template<class Op>
+        static void apply(const double &left, const double &right, const Op &op, double &result)
+        {
+             result = op.template apply<double>(left, right);
+        }
+    };
+
+
     template<class ScalarT, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Number<ScalarT>, Right, Operation>, Traits, Backend> {
     public:

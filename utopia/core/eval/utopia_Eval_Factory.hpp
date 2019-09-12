@@ -111,6 +111,40 @@ namespace utopia {
     };
 
     //NEW
+    template<class Left, class Right, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Factory<NNZ<Right>, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Assign<Left, Factory<NNZ<Right>, Order> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Left, Traits>::apply(expr.left()).sparse(
+                expr.right().size(),
+                expr.right().type().nnz()
+            );
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    //NEW
+    template<class Left, class Right, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Factory<LocalNNZ<Right>, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Assign<Left, Factory<LocalNNZ<Right>, Order> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Left, Traits>::apply(expr.left()).local_sparse(
+                expr.right().size(),
+                expr.right().type().nnz()
+            );
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    //NEW
     template<class Left, int Order, class Traits, int Backend>
     class Eval<Assign<Left, Factory<Identity, Order> >, Traits, Backend> {
     public:
@@ -250,44 +284,40 @@ namespace utopia {
         }
     };
 
-    // template<class Left, class Right, int Order, class Options, class Traits, int Backend>
-    // class Eval<Construct<Left, Build<Factory<Right, Order>, Options> >, Traits, Backend> {
-    // public:
-    //     typedef utopia::Construct<Left, Build<Factory<Right, Order>, Options> > Expr;
+   
+   //NEW
+   template<class Left, class Right, int Order, class Traits, int Backend>
+   class Eval<Construct<Left, Factory<NNZ<Right>, Order> >, Traits, Backend> {
+   public:
+       inline static void apply(const Construct<Left, Factory<NNZ<Right>, Order> > &expr)
+       {
+           UTOPIA_TRACE_BEGIN(expr);
 
-    //     inline static void apply(const Expr &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
+           Eval<Left, Traits>::apply(expr.left()).sparse(
+               expr.right().size(),
+               expr.right().type().nnz()
+           );
 
-    //         UTOPIA_BACKEND(Traits).build(
-    //                 Eval<Left, Traits>::apply(expr.left()),
-    //                 expr.right().factory().size(),
-    //                 expr.right().factory().type(),
-    //                 UTOPIA_BACKEND(Traits).parse_args(expr.right().opts())
-    //         );
+           UTOPIA_TRACE_END(expr);
+       }
+   };
 
+   //NEW
+   template<class Left, class Right, int Order, class Traits, int Backend>
+   class Eval<Construct<Left, Factory<LocalNNZ<Right>, Order> >, Traits, Backend> {
+   public:
+       inline static void apply(const Construct<Left, Factory<LocalNNZ<Right>, Order> > &expr)
+       {
+           UTOPIA_TRACE_BEGIN(expr);
 
-    //         UTOPIA_TRACE_END(expr);
-    //     }
-    // };
+           Eval<Left, Traits>::apply(expr.left()).local_sparse(
+               expr.right().size(),
+               expr.right().type().nnz()
+           );
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // template<class Type, int Order, class Traits, int Backend>
-    // class Eval< Factory<Type, Order>, Traits, Backend> {
-    // public:
-    //     inline static typename TypeAndFill<Traits, Factory<Type, Order> >::Type apply(const Factory<Type, Order> &expr) {
-    //         typename TypeAndFill<Traits, Factory<Type, Order> >::Type ret;
-
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         UTOPIA_BACKEND(Traits).build(ret, expr.size(), expr.type());
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return ret;
-    //     }
-    // };
+           UTOPIA_TRACE_END(expr);
+       }
+   };
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_FACTORY_HPP

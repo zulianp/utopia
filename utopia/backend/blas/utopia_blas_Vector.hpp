@@ -11,6 +11,7 @@
 #include "utopia_ElementWiseOperand.hpp"
 #include "utopia_Transformable.hpp"
 #include "utopia_Constructible.hpp"
+#include "utopia_Reducible.hpp"
 
 #include <vector>
 #include <memory>
@@ -24,6 +25,7 @@ namespace utopia {
         public BLAS1Tensor<BlasVector<T>>,
         public Normed<T>,
         public Transformable<T>,
+        public Reducible<T>,
         public Comparable<BlasVector<T>>,
         public ElementWiseOperand<BlasVector<T>>,
         public Constructible<T, std::size_t, 1>
@@ -398,6 +400,25 @@ namespace utopia {
             }
         }
 
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Reducible //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        inline T reduce(const Min &op) const override
+        {
+            return aux_reduce(op);
+        }
+
+        inline T reduce(const Max &op) const override
+        {
+            return aux_reduce(op);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR Constructible //////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
         inline void values(const SizeType &s, const Scalar val) override
         {
             resize(s);
@@ -408,10 +429,25 @@ namespace utopia {
     	Entries entries_;
 
         template<class Op>
-        void aux_transform(const Op &op)
+        inline void aux_transform(const Op &op)
         {
             for(auto &e : entries_) {
                 e = op.apply(e);
+            }
+        }
+
+
+        template<class Op>
+        inline T aux_reduce(const Op &op) const
+        {
+            if(entries_.empty()) return 0.0;
+
+            const SizeType n = size();
+
+            T ret = entries_[0];
+
+            for(SizeType i = 1; i < n; ++i) {
+                ret = op.apply(ret, entries_[i]);
             }
         }
 

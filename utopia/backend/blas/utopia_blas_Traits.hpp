@@ -26,6 +26,12 @@ namespace utopia {
         enum {
             Backend = BLAS
         };
+
+        static BackendInfo &backend_info()
+        {
+            static BackendInfo instance_("blas");
+            return instance_;
+        }
     };
 
     // UTOPIA_MAKE_TRAITS_TPL_1(std::vector, BLASTraits);
