@@ -25,11 +25,11 @@ namespace utopia {
     class BlasDenseMatrix : 
         // Dynamic polymorphic types
         public DenseMatrix<T, std::size_t>,
+        public ReducibleMatrix<T, std::size_t>,
+        public Constructible<T, std::size_t, 2>,
         public Normed<T>,
         public Transformable<T>,
-        public Constructible<T, std::size_t, 2>,
         public Reducible<T>,
-        public ReducibleMatrix<T, std::size_t>,
         // Static polymorphic types
         public Tensor<BlasDenseMatrix<T>, 2>,
         public BLAS1Tensor<BlasDenseMatrix<T>>,
@@ -514,7 +514,6 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-
         inline void identity(const Size &s, const Scalar diag = 1.0) override
         {
             assert(s.dims() == 2);
@@ -526,7 +525,6 @@ namespace utopia {
             resize(s.get(0), s.get(1));
             set(val);
         }
-
 
         bool equals(const BlasDenseMatrix &other, const T tol = 0.0) const override
         {
@@ -600,7 +598,6 @@ namespace utopia {
             return ret;
         }
 
-
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Transformable //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -640,7 +637,6 @@ namespace utopia {
         {
             aux_transform(op);
         }
-
 
         void transform(const Pow &op) override
         {
@@ -736,7 +732,6 @@ namespace utopia {
             }
         }
 
-
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Reducible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -800,16 +795,6 @@ namespace utopia {
             return at(i + rows() * j);
         }
     };
-
-    // inline Wrapper<BlasDenseMatrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
-    //     return BlasDenseMatrix<double>(rows, cols, args);
-    // }
-
-    // template<typename T>
-    // void disp(const Wrapper< BlasDenseMatrix<T>, 2> &w, std::ostream &os)
-    // {
-    //     w.implemenetation().describe(os);
-    // }
 
 }
 
