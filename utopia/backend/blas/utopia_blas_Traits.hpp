@@ -4,8 +4,6 @@
 #define UTOPIA_UTOPIA_BLASTRAITS_HPP
 
 #include "utopia_Traits.hpp"
-// #include "utopia_blas_CRSMatrix.hpp"
-// #include "utopia_blas_CCSMatrix.hpp"
 #include "utopia_blas_ForwardDeclarations.hpp"
 #include <vector>
 
@@ -35,7 +33,6 @@ namespace utopia {
 
     UTOPIA_MAKE_TRAITS_TPL_1(BlasVector, BLASTraits);
     UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasDenseMatrix, BLASTraits);
-    // UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasIndexSet, BLASTraits);
 
 }
 

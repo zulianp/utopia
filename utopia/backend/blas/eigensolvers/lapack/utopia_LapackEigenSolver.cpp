@@ -1,6 +1,5 @@
 
 #include "utopia_LapackEigenSolver.hpp"
-#include "utopia_blas_Backend.hpp"
 
 extern "C" {
     int dsygvx_(int *itype,

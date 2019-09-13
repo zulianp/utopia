@@ -1,46 +1,14 @@
-
 #ifndef UTOPIA_BLAS_TYPES_HPP
 #define UTOPIA_BLAS_TYPES_HPP
 
 #include "utopia_blas_Matrix.hpp"
+#include "utopia_blas_Vector.hpp"
 #include "utopia_blas_Traits.hpp"
-#include "utopia_blas_CRSMatrix.hpp"
-
-#include "utopia_Wrapper.hpp"
+#include "utopia_Tensor.hpp"
 
 namespace utopia {
     using Matrixd = utopia::BlasDenseMatrix<double>;
     using Vectord = utopia::BlasVector<double>;
-    
-    // typedef utopia::Wrapper<utopia::BlasDenseMatrix<double>, 2>    Matrixd;
-    // typedef utopia::Wrapper<std::vector<double>, 1>       Vectord;
-    // typedef utopia::Wrapper<utopia::CRSMatrix<double>, 2> CRSMatrixd;
-    // typedef utopia::Wrapper<utopia::CCSMatrix<double>, 2> CCSMatrixd;
-
-    // ///////////////////////////////////////////////////////////////////////////////
-
-    // inline BlasDenseMatrix<double> &raw_type(Wrapper<BlasDenseMatrix<double>, 2> &utopiaType)
-    // {
-    //     return utopiaType.implementation();
-    // }
-
-    // inline std::vector<double> &raw_type(Wrapper<std::vector<double>, 1> &utopiaType)
-    // {
-    //     return utopiaType.implementation();
-    // }
-
-    // ///////////////////////////////////////////////////////////////////////////////
-
-    // inline const BlasDenseMatrix<double> &raw_type(const Wrapper<BlasDenseMatrix<double>, 2> &utopiaType)
-    // {
-    //     return utopiaType.implementation();
-    // }
-
-    // inline const std::vector<double> &raw_type(const Wrapper<std::vector<double>, 1> &utopiaType)
-    // {
-    //     return utopiaType.implementation();
-    // }
-
 }
 
 #endif //UTOPIA_BLAS_TYPES_HPP
