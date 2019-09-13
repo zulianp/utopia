@@ -351,7 +351,17 @@ namespace utopia {
         PetscViewerDestroy(&fd);
         return err;
     }
+
     bool PetscVector::write(const std::string &path) const
+    {
+        if(is_matlab_file(path)) {
+            return write_matlab(path);
+        } else {
+            return write_binary(path);
+        }
+    }
+    
+    bool PetscVector::write_binary(const std::string &path) const
     {
         PetscViewer fd;
         bool err = check_error( PetscViewerBinaryOpen(communicator(), path.c_str(), FILE_MODE_WRITE, &fd) );
@@ -497,5 +507,12 @@ namespace utopia {
                 break;
             }
         }
+    }
+
+    bool PetscVector::equals(const PetscVector &other, const Scalar &tol) const
+    {
+        PetscVector diff = other;
+        diff.axpy(-1.0, *this);
+        return diff.norm_infty() < tol;
     }
 }

@@ -359,6 +359,18 @@ namespace utopia {
     //  * @param[in]  path    The path.
     //  * @param[in]  t       Tensor to be read and used.
     //  */
+    template<class Derived, int Order>
+    inline bool read(const std::string &path, Tensor<Derived, Order> &t) {
+        return t.derived().read(path);
+    }
+
+    //TODO
+    // template<class Derived, int Order, class... Args>
+    // inline bool read(const std::string &path, Tensor<Derived, Order> &t, Args &&...args) {
+    //     auto &backend = Backend<typename Traits<Derived>::Scalar, Traits<Derived>::Backend>::Instance();
+    //     return backend.read(path, t.implementation(), backend.parse_args(options(args...)));
+    // }
+
     // template<class Tensor, int Order>
     // inline bool read(const std::string &path, Wrapper<Tensor, Order> &t) {
     //     return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().read(path, t.implementation());
@@ -377,6 +389,11 @@ namespace utopia {
     //  * @param[in]  path    The path.
     //  * @param[in]  t       Tensor to be saved.
     //  */
+    template<class Derived, int Order>
+    inline bool write(const std::string &path, const Tensor<Derived, Order> &t) {
+        return t.derived().write(path);
+    }
+
     // template<class Tensor, int Order>
     // inline bool write(const std::string &path, const Wrapper<Tensor, Order> &t) {
     //     return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().write(path, t.implementation());

@@ -2,6 +2,7 @@
 #include "utopia_SolverTest.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "utopia_Rename.hpp"
 
 namespace utopia
 {
@@ -214,8 +215,8 @@ namespace utopia
             if(mpi_world_size() == 1)
             {
                 DVectord x = values(10, 2);
-                TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
-                DVectord expected = values(x.size().get(0), 0.468919);
+                TestFunctionND_1<DMatrixd, DVectord> fun2(x.size());
+                DVectord expected = values(x.size(), 0.468919);
 
                 InputParameters in;
                 in.set("atol", 1e-10);
@@ -252,9 +253,9 @@ namespace utopia
             nlsolver.verbose(false);
 
             DVectord x = values(10, 2);
-            TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
+            TestFunctionND_1<DMatrixd, DVectord> fun2(x.size());
 
-            DVectord expected = values(x.size().get(0), 0.468919);
+            DVectord expected = values(x.size(), 0.468919);
             nlsolver.solve(fun2, x);
             utopia_test_assert(approxeq(expected, x));
         }
@@ -295,9 +296,9 @@ namespace utopia
             utopia_test_assert(approxeq(expected, x));
 
             x = values(10, 2.0);
-            TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
+            TestFunctionND_1<DMatrixd, DVectord> fun2(x.size());
 
-            expected = values(x.size().get(0), 0.468919);
+            expected = values(x.size(), 0.468919);
             nlsolver.solve(fun2, x);
             utopia_test_assert(approxeq(expected, x));
         }
@@ -317,7 +318,7 @@ namespace utopia
 
             if(mpi_world_size() <= 2) {
                 expected_rosenbrock = values(2, 1.0);
-                ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_2d(local_size(expected_rosenbrock).get(0));
+                ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_2d(local_size(expected_rosenbrock));
                 x0 = values(2, 2.0);
                 nlsolver.solve(r_generic_2d, x0);
                 utopia_test_assert(approxeq(expected_rosenbrock, x0));
@@ -325,7 +326,7 @@ namespace utopia
 
             if(mpi_world_size() <= 3) {
                 expected_rosenbrock = values(3, 1.0);
-                ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_3d(local_size(expected_rosenbrock).get(0));
+                ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_3d(local_size(expected_rosenbrock));
                 x0 = values(3, -2.0);
                 nlsolver.solve(r_generic_3d, x0);
                 utopia_test_assert(approxeq(expected_rosenbrock, x0));
@@ -333,7 +334,7 @@ namespace utopia
 
             if(mpi_world_size() <= 6) {
                 expected_rosenbrock = values(6, 1.0);
-                ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_6d(local_size(expected_rosenbrock).get(0));
+                ExtendedRosenbrock21<DMatrixd, DVectord> r_generic_6d(local_size(expected_rosenbrock));
                 x0 = values(6, 2.0);
                 nlsolver.solve(r_generic_6d, x0);
                 utopia_test_assert(approxeq(expected_rosenbrock, x0));

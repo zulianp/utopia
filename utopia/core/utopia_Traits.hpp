@@ -41,6 +41,7 @@ namespace utopia {
         // static const int UPPER_TRIANGULAR   = 8;
         static const int SCALAR             = 16;
         static const int DELEGATE           = 32;
+        static const int POLYMORPHIC        = 64;
 
         /////////////////////////////////////////////////
     };
@@ -91,6 +92,17 @@ namespace utopia {
     };
 
 
+    template<>
+    class Fill2String<FillType::POLYMORPHIC> {
+    public:
+        constexpr static const char * Value()
+        {
+            return "Polymorphic";
+        }
+    };
+
+
+
     template<class Traits, int Order, int Sparsity = FillType::DENSE>
     class TensorQuery {};
 
@@ -116,6 +128,12 @@ namespace utopia {
     class TensorQuery<Traits, 2, FillType::SPARSE> {
     public:
         typedef typename Traits::SparseMatrix Type;
+    };
+
+    template<class Traits>
+    class TensorQuery<Traits, 2, FillType::POLYMORPHIC> {
+    public:
+        typedef typename Traits::PolymorphicMatrix Type;
     };
 
 
@@ -253,7 +271,28 @@ namespace utopia {
     template<class Tensor, class TraitsT = Traits<Tensor> >
     struct is_sparse {
         enum {
-            value = TraitsT::FILL_TYPE == FillType::SPARSE
+            value = TraitsT::FILL_TYPE == FillType::SPARSE || TraitsT::FILL_TYPE == FillType::POLYMORPHIC
+        };
+    };
+
+    template<class Tensor, class TraitsT = Traits<Tensor> >
+    struct is_polymorhic {
+        enum {
+            value = TraitsT::FILL_TYPE == FillType::POLYMORPHIC
+        };
+    };
+
+    template<class Tensor, class TraitsT = Traits<Tensor> >
+    struct is_dense {
+        enum {
+            value = TraitsT::FILL_TYPE == FillType::DENSE
+        };
+    };
+
+    template<class Tensor, class TraitsT = Traits<Tensor> >
+    struct is_dense_or_polymorphic {
+        enum {
+            value = is_dense<Tensor>::value || is_polymorhic<Tensor>::value
         };
     };
 
@@ -288,6 +327,13 @@ namespace utopia {
         };
     };
 
+    class DefaultPolymorphicTraits {
+    public:
+        enum {
+            FILL_TYPE = FillType::POLYMORPHIC
+        };
+    };
+
 #define UTOPIA_MAKE_TRAITS(TensorType, TraitsType)  \
     template<> class Traits<TensorType> : public TraitsType, public DefaultDelegateTraits {}; \
     template<> class Traits<const TensorType &> : public TraitsType, public DefaultDelegateTraits {}; \
@@ -302,6 +348,11 @@ namespace utopia {
     template<> class Traits<TensorType> : public TraitsType, public DefaultDenseTraits { }; \
     template<> class Traits<const TensorType &> : public TraitsType, public DefaultDenseTraits { }; \
     template<> class Traits<TensorType &> : public TraitsType, public DefaultDenseTraits { }
+
+#define UTOPIA_MAKE_TRAITS_POLYMORPHIC(TensorType, TraitsType)  \
+    template<> class Traits<TensorType> : public TraitsType, public DefaultPolymorphicTraits { }; \
+    template<> class Traits<const TensorType &> : public TraitsType, public DefaultPolymorphicTraits { }; \
+    template<> class Traits<TensorType &> : public TraitsType, public DefaultPolymorphicTraits { }
 
 #define UTOPIA_MAKE_TRAITS_TPL_1(TensorType, TraitsType)  \
     template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultDelegateTraits {}; \

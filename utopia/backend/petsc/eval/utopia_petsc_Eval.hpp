@@ -1,19 +1,16 @@
 //TODO
-// #ifndef UTOPIA_EVAL_PETSC_HPP
-// #define UTOPIA_EVAL_PETSC_HPP
+#ifndef UTOPIA_EVAL_PETSC_HPP
+#define UTOPIA_EVAL_PETSC_HPP
 
-// #include "utopia_Eval_Empty.hpp"
-// #include "utopia_petsc_Traits.hpp"
-// #include "utopia_petsc_Backend.hpp"
+#include "utopia_Eval_Empty.hpp"
+#include "utopia_petsc_Eval_Rename.hpp"
+#include "utopia_petsc_Eval_KroneckerProduct.hpp"
 // #include "utopia_petsc_Eval_NZZXRow.hpp"
-// #include "utopia_petsc_Eval_Rename.hpp"
-// #include "utopia_petsc_Eval.hpp"
 // #include "utopia_petsc_Eval_Inverse.hpp"
 // #include "utopia_petsc_Eval_Factory.hpp"
 // #include "utopia_petsc_Eval_Residual.hpp"
 // #include "utopia_petsc_Eval_DotOpDot.hpp"
 // #include "utopia_petsc_Eval_Blocks.hpp"
-// #include "utopia_petsc_RowView.hpp"
 // #include "utopia_petsc_EvalDotVecVecs.hpp"
 // #include "utopia_petsc_EvalMatGetCol.hpp"
 // #include "utopia_petsc_Eval_VecUniqueSortSerial.hpp"
@@ -328,4 +325,4 @@
 //     };
 // }
 
-// #endif //UTOPIA_EVAL_PETSC_HPP
+#endif //UTOPIA_EVAL_PETSC_HPP

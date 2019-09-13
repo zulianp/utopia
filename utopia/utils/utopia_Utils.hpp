@@ -16,6 +16,9 @@
 
 namespace utopia
 {
+    bool is_matlab_file(const std::string &path);
+
+
     inline std::string str(const char *char_array)
     {
         return std::string(char_array);

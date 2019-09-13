@@ -4,6 +4,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_BackendInfo.hpp"
 
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -18,9 +19,10 @@ namespace utopia {
         using Scalar   = PetscScalar;
         using SizeType = PetscInt;
 
-        using Matrix   = utopia::PetscMatrix;
-        using SparseMatrix   = utopia::PetscMatrix;
-        using Vector   = utopia::PetscVector;
+        using Matrix = utopia::PetscMatrix;
+        using SparseMatrix = utopia::PetscMatrix;
+        using PolymorphicMatrix = utopia::PetscMatrix;
+        using Vector = utopia::PetscVector;
 
         using IndexSet = utopia::PetscIndexSet;
 
@@ -28,10 +30,17 @@ namespace utopia {
         {
             Backend = PETSC
         };
+
+        static BackendInfo &backend_info()
+        {
+            static BackendInfo instance_("petsc");
+            return instance_;
+        }
     };
 
     //FIXME create polymorphic traits
-    UTOPIA_MAKE_TRAITS_SPARSE(PetscMatrix, PetscTraits);
+    // UTOPIA_MAKE_TRAITS_SPARSE(PetscMatrix, PetscTraits);
+    UTOPIA_MAKE_TRAITS_POLYMORPHIC(PetscMatrix, PetscTraits);
     UTOPIA_MAKE_TRAITS(PetscVector, PetscTraits);
     
     UTOPIA_MAKE_PARALLEL_TRAITS(PetscMatrix);

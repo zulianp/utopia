@@ -258,6 +258,9 @@ namespace utopia {
         // }
     };
 
+    //FIXME
+    template<class Tensor>
+    class Each<Tensor, 2, FillType::POLYMORPHIC> : public Each<Tensor, 2, FillType::SPARSE> {};
 
      /** 	@defgroup element_acess Element Acess
      * 		@ingroup read_write

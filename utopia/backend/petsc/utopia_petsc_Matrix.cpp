@@ -96,7 +96,8 @@ namespace utopia {
 
     MatType PetscMatrix::type_override() const
     {
-        return MATDENSE;
+        return MATAIJ;
+        // return MATDENSE;
     }
 
     void PetscMatrix::add_matrix(
@@ -155,8 +156,6 @@ namespace utopia {
         check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
     }
 
-
-
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path)
     {
         destroy();
@@ -173,6 +172,15 @@ namespace utopia {
     }
 
     bool PetscMatrix::write(const std::string &path) const
+    {
+        if(is_matlab_file(path)) {
+            return write_matlab(path);
+        } else {
+            return write_binary(path);
+        }
+    }
+
+    bool PetscMatrix::write_binary(const std::string &path) const
     {
         PetscViewer fd;
 
@@ -964,7 +972,7 @@ namespace utopia {
         check_error( MatZeroEntries(implementation()) );
     }
 
-    bool PetscMatrix::is_nan_or_inf() const
+    bool PetscMatrix::has_nan_or_inf() const
     {
         int has_nan = 0;
         const Scalar * values;
@@ -1500,5 +1508,12 @@ namespace utopia {
         check_error( MatZeroRows(raw_type(), idx.size(), &idx[0], diag, nullptr, nullptr) );
 
         MatSetOption(raw_type(), MAT_KEEP_NONZERO_PATTERN, val);
+    }
+
+    bool PetscMatrix::equals(const PetscMatrix &other, const Scalar &tol) const
+    {
+        PetscMatrix diff = other;
+        diff.axpy(-1.0, *this);
+        return diff.norm2() < tol;
     }
 }

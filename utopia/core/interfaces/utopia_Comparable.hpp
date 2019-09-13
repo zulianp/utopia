@@ -10,7 +10,7 @@ namespace utopia {
 		virtual ~Comparable() {}
 
 		using Scalar = typename utopia::Traits<T>::Scalar;
-		virtual bool equals(const T &other, Scalar tol = 0.0) const = 0;
+		virtual bool equals(const T &other, const Scalar &tol = 0.0) const = 0;
 
 	};
 }

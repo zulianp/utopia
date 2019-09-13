@@ -87,7 +87,7 @@ namespace utopia
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
             // merit function
-            assert(x.size().get(0) == 4);
+            assert(x.size() == 4);
             Vector g = values(2, 0.0);
             gradient(x, g);
             result = 0.5 * norm2(g);
@@ -96,7 +96,7 @@ namespace utopia
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            assert(x.size().get(0) == 4);
+            assert(x.size() == 4);
             g = zeros(4);
 
             {
@@ -119,7 +119,7 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            assert(x.size().get(0) == 4);
+            assert(x.size() == 4);
 
             H = zeros(4,4);
 

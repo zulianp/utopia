@@ -29,9 +29,12 @@
 #include "utopia_petsc_Each.hpp"
 #include "utopia_petsc_debug.hpp"
 
+#include "utopia_petsc_Eval.hpp"
+
 namespace utopia {
     void optimize_nnz(PetscMatrix &A);
     bool is_diagonally_dominant(const PetscMatrix &A);
 }
+
 
 #endif //UTOPIA_PETSC_HPP

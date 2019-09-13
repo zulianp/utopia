@@ -11,6 +11,7 @@
 #include "utopia_Transformable.hpp"
 #include "utopia_ElementWiseOperand.hpp"
 #include "utopia_Constructible.hpp"
+#include "utopia_Comparable.hpp"
 #include "utopia_BLAS_Operands.hpp"
 
 #include "utopia_petsc_Base.hpp"
@@ -36,6 +37,7 @@ namespace utopia {
         public Constructible<PetscScalar, PetscInt, 1>,
         public ElementWiseOperand<PetscScalar>,
         public ElementWiseOperand<PetscVector>,
+        public Comparable<PetscVector>,
         public Tensor<PetscVector, 1>,
         public BLAS1Tensor<PetscVector>
     {
@@ -488,6 +490,12 @@ namespace utopia {
         );
       }
 
+      ///////////////////////////////////////////////////////////////////////////
+      ////////////// OVERRIDES FOR Comparable ////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////
+
+
+      bool equals(const PetscVector &other, const Scalar &tol = 0.0) const override;
 
       ///////////////////////////////////////////////////////////////////////////
 
@@ -525,7 +533,7 @@ namespace utopia {
             return name;
         }
 
-        inline void set_name(const std::string &name)
+        inline void rename(const std::string &name)
         {
             PetscObjectSetName((PetscObject)implementation(), name.c_str());
         }
@@ -877,9 +885,16 @@ namespace utopia {
 
         void copy_from(Vec vec);
 
-        bool read(MPI_Comm comm, const std::string &path);
 
+        inline bool read(const std::string &path)
+        {
+            return read(comm().get(), path);
+        }
+
+        bool read(MPI_Comm comm, const std::string &path);
+ 
         bool write(const std::string &path) const;
+        bool write_binary(const std::string &path) const;
         bool write_matlab(const std::string &path) const;
 
         bool is_consistent() const;

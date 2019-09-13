@@ -293,7 +293,7 @@ namespace utopia {
         ////////////// OVERRIDES FOR Comparable //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        bool equals(const BlasVector &other, const T tol = 0.0) const override
+        bool equals(const BlasVector &other, const T &tol = 0.0) const override
         {
             const SizeType n = entries_.size();
             if(n != other.size()) return false;

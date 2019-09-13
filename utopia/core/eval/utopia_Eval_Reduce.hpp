@@ -9,6 +9,7 @@
 #include "utopia_Each.hpp"
 #include "utopia_Operators.hpp"
 #include "utopia_Operations.hpp"
+#include "utopia_Tracer.hpp"
 
 namespace utopia {
 

@@ -596,7 +596,7 @@ namespace utopia {
          ////////////// OVERRIDES FOR Comparable //////////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
 
-         bool equals(const PetscMatrix &other, Scalar tol = 0.0) const override;
+         bool equals(const PetscMatrix &other, const Scalar &tol = 0.0) const override;
 
          ////////////////////////////////////////////////////////////////////
          
@@ -621,7 +621,7 @@ namespace utopia {
             return name;
         }
 
-        inline void set_name(const std::string &name)
+        inline void rename(const std::string &name)
         {
             PetscObjectSetName((PetscObject)implementation(), name.c_str());
         }
@@ -681,9 +681,14 @@ namespace utopia {
             SizeType rows_global,
             SizeType cols_global);
 
-
         bool write(const std::string &path) const;
+        bool write_binary(const std::string &path) const;
         bool write_matlab(const std::string &path) const;
+
+        inline bool read(const std::string &path)
+        {
+            return read(comm().get(), path);
+        }
 
         bool read(MPI_Comm comm, const std::string &path);
         void copy_from(Mat mat);
@@ -744,7 +749,7 @@ namespace utopia {
 
 
         bool is_mpi() const;
-        bool is_nan_or_inf() const;
+        bool has_nan_or_inf() const;
 
         inline bool is_owner() const
         {

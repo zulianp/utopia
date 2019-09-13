@@ -7,6 +7,7 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_Tracer.hpp"
 
 
 namespace utopia {

@@ -85,7 +85,7 @@ namespace utopia
                 Scalar xnext = point.get(i+1);
                 sum += 100.0 * pow(xnext - xi * xi, 2.0) + pow(xi - 1, 2.0);
             }
-            if (r.end() != point.size().get(0))
+            if (r.end() != point.size())
                 sum += 100.0 * pow(xp1 - point.get(endm1) * point.get(endm1), 2.0)
                     + pow(point.get(endm1) - 1, 2.0);
             result = sum;
@@ -96,7 +96,7 @@ namespace utopia
         {
             Read<Vector> read(point);
 
-            SizeType d = point.size().get(0);
+            SizeType d = point.size();
             result = zeros(d);
 
             // for parallel access to result
@@ -148,7 +148,7 @@ namespace utopia
         {
             Read<Vector> read(point);
 
-            SizeType d = point.size().get(0);
+            SizeType d = point.size();
             result = zeros(d, d);
 
             // for parallel access to Matrix

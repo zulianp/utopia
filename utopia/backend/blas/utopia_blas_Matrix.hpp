@@ -516,7 +516,7 @@ namespace utopia {
             set(val);
         }
 
-        bool equals(const BlasDenseMatrix &other, const T tol = 0.0) const override
+        bool equals(const BlasDenseMatrix &other, const T &tol = 0.0) const override
         {
             if(other.rows() != rows()) return false;
             if(other.cols() != cols()) return false;

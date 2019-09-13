@@ -9,7 +9,7 @@ namespace utopia {
     class Rename<Tensor, PETSC> {
     public:
         inline static void apply(const std::string &name, Tensor &t) {
-            t.implementation().set_name(name);
+            t.rename(name);
         }
     };
 }

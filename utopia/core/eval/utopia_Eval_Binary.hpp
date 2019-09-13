@@ -9,6 +9,7 @@
 #include "utopia_Operators.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Eval_KroneckerProduct.hpp"
+#include "utopia_Tracer.hpp"
 
 namespace utopia {
 

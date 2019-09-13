@@ -47,24 +47,29 @@ namespace utopia {
         Tensor<VecDerived, 1> &rhs,
         const typename Traits<MatDerived>::IndexSet &constrained_idx)
     {
-        ApplyBCToSystem<MatDerived, VecDerived>::apply(A, x, rhs, constrained_idx);
+        ApplyBCToSystem<MatDerived, VecDerived>::apply(A.derived(), x.derived(), rhs.derived(), constrained_idx);
     }
 
     template<class Matrix, class Vector>
     void set_zero_rows(Tensor<Matrix, 2> &w, const Tensor<Vector, 1> &indicator, const double diag = 0.)
     {
-        using VectorT  = utopia::Tensor<Vector, 1>;
-        using Scalar   = UTOPIA_SCALAR(VectorT);
-        using SizeType = UTOPIA_SIZE_TYPE(VectorT);
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
 
-        std::vector<SizeType> index;
+        //FIXME maybe use array type once is available
+        using IndexSet = typename Traits<Vector>::IndexSet;
+
+        IndexSet index;
         //index.reserve(local_size(indicator).get(0));
 
-        each_read(indicator, [&index](const SizeType i, const Scalar value) {
-            if(value == 1.) {
-                index.push_back(i);
-            }
-        });
+        {
+            //Write<IndexSet> w(index);
+            each_read(indicator.derived(), [&index](const SizeType i, const Scalar value) {
+                if(value == 1.) {
+                    index.push_back(i);
+                }
+            });
+        }
 
         set_zero_rows(w, index, diag);
     }
