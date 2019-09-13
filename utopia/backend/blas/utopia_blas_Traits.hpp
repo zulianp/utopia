@@ -14,11 +14,13 @@ namespace utopia {
     template<typename T>
     class BLASTraits {
     public:
-        using Scalar   = T;
-        using Matrix   = utopia::BlasDenseMatrix<T>;
-        using Vector   = utopia::BlasVector<T>;
-        using SizeType = typename std::vector<T>::size_type;
-        using IndexSet = utopia::BlasIndexSet;
+        using Scalar      = T;
+        using Matrix      = utopia::BlasDenseMatrix<T>;
+        using Vector      = utopia::BlasVector<T>;
+        using SizeType    = std::size_t;
+        using IndexSet    = utopia::BlasIndexSet;
+        using ScalarArray = utopia::BlasArray<T>;
+        using IndexArray  = utopia::BlasArray<int>;
 
         enum {
             Backend = BLAS

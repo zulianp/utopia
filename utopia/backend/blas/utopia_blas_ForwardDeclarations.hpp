@@ -8,6 +8,9 @@ namespace utopia {
 	template<typename T>
 	class BlasVector;
 
+	template<typename T>
+	class BlasArray;
+
 	class BlasIndexSet;
 }
 
