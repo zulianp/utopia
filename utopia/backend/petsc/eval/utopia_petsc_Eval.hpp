@@ -5,9 +5,12 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_petsc_Eval_Rename.hpp"
 #include "utopia_petsc_Eval_KroneckerProduct.hpp"
+#include "utopia_petsc_Eval_Parallel.hpp"
+#include "utopia_petsc_Eval_Inverse.hpp"
+#include "utopia_petsc_Eval_Factory.hpp"
+
 // #include "utopia_petsc_Eval_NZZXRow.hpp"
-// #include "utopia_petsc_Eval_Inverse.hpp"
-// #include "utopia_petsc_Eval_Factory.hpp"
+
 // #include "utopia_petsc_Eval_Residual.hpp"
 // #include "utopia_petsc_Eval_DotOpDot.hpp"
 // #include "utopia_petsc_Eval_Blocks.hpp"
@@ -20,27 +23,11 @@
 // #include "utopia_petsc_Eval_Cond.hpp"
 // #endif //WITH_SLEPC
 
-// /*! @file
-// * Petsc language extensions
-// */
+/*! @file
+* Petsc language extensions
+*/
 
-// namespace utopia {
-//     template<class Left, class Right, class Traits>
-//     class Eval<Construct<Left, LocalDiagBlock<Right> >, Traits, PETSC> {
-//     public:
-
-//         inline static void apply(const Construct<Left, LocalDiagBlock<Right> > & expr)
-//         {
-//             UTOPIA_TRACE_BEGIN(expr);
-
-//             UTOPIA_BACKEND(Traits).build_local_diag_block(
-//                 Eval<Left,  Traits>::apply(expr.left()),
-//                 Eval<Right, Traits>::apply(expr.right().expr())
-//                 );
-
-//             UTOPIA_TRACE_END(expr);
-//         }
-//     };
+namespace utopia {
 
 //     // mat-mat-mat multiplication
 //     template<class M1, class M2, class M3, class Traits>
@@ -323,6 +310,6 @@
 //             return result;
 //         }
 //     };
-// }
+}
 
 #endif //UTOPIA_EVAL_PETSC_HPP

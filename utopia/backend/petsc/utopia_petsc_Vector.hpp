@@ -137,8 +137,11 @@ namespace utopia {
 
          void assign(PetscVector &&other) override
          {
-             // entries_ = std::move(other.entries_);
-            assert(false && "TODO");
+             comm_ = std::move(other.comm_);
+             vec_ = std::move(other.vec_);
+             initialized_ = std::move(other.initialized_);
+             ghost_values_ = std::move(other.ghost_values_);
+             immutable_ = std::move(other.immutable_);
          }
 
          ////////////////////////////////////////////////////////////////////
@@ -176,8 +179,8 @@ namespace utopia {
         void write_lock(WriteMode mode) override ;
         void write_unlock(WriteMode mode) override ;
 
-        void read_and_write_lock(WriteMode mode) override { assert(false); }
-        void read_and_write_unlock(WriteMode mode) override { assert(false); }
+        void read_and_write_lock(WriteMode mode) override;
+        void read_and_write_unlock(WriteMode mode) override;
 
         //basic mutators
         inline void set(const SizeType &index, const Scalar &value) override
@@ -296,37 +299,17 @@ namespace utopia {
        ////////////// OVERRIDES FOR ElementWiseOperand ////////////////////////////
        ///////////////////////////////////////////////////////////////////////////
 
-       inline void e_mul(const PetscVector &other) override
-       {
-            assert(is_consistent());
-            assert(other.is_consistent());
-            check_error( VecPointwiseMult( implementation(), implementation(), other.implementation()) );
-       }
+       void e_mul(const PetscVector &other) override;
+       void e_div(const PetscVector &other) override;
+       void e_min(const PetscVector &other) override;
+       void e_max(const PetscVector &other) override;
 
-       void e_min(const PetscVector &other) override
-       {
-            assert(false && "IMPLEMENT ME");
-       }
+       //against scalars
+       void e_mul(const Scalar &other) override;
+       void e_div(const Scalar &other) override;
+       void e_min(const Scalar &other) override;
+       void e_max(const Scalar &other) override;
 
-       void e_max(const PetscVector &other) override
-       {
-            assert(false && "IMPLEMENT ME");
-       }
-
-       inline void e_mul(const Scalar &other) override
-       {
-            scale(other);
-       }
-
-       void e_min(const Scalar &other) override
-       {
-            assert(false && "IMPLEMENT ME");
-       }
-
-       void e_max(const Scalar &other) override
-       {
-            assert(false && "IMPLEMENT ME");
-       }
 
        ///////////////////////////////////////////////////////////////////////////
        ////////////// OVERRIDES FOR Transformable ////////////////////////////
@@ -354,71 +337,19 @@ namespace utopia {
        ///////////////////////////////////////////////////////////////////////////
 
        ///<Scalar>SWAP - swap x and y
-       inline void swap(PetscVector &x) override {
-            using std::swap;
-            swap(comm_, x.comm_);
-            swap(vec_, x.vec_);
-            swap(initialized_, x.initialized_);
-            swap(ghost_values_, x.ghost_values_);
-            swap(immutable_, x.immutable_);
-       }
-
+       void swap(PetscVector &x) override;
        ///<Scalar>SCAL - x = a*x
-       inline void scale(const Scalar &a) override
-       {
-            check_error( VecScale(implementation(), a) );
-       }
-
+       void scale(const Scalar &a) override;
        ///<Scalar>COPY - copy other into this
-        void copy(const PetscVector &other) override
-       {
-            if(this == &other) return;
-
-            assert(!immutable_);
-
-            if(is_compatible(other) && !other.has_ghosts()) {
-                assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
-                assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
-                PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
-                initialized_ = other.initialized_;
-                immutable_ = other.immutable_;
-                return;
-            }
-
-            destroy();
-
-            if(other.vec_) {
-                PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
-                PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
-                ghost_values_ = other.ghost_values_;
-
-                initialized_ = other.initialized_;
-                immutable_ = other.immutable_;
-            } else {
-                initialized_ = false;
-            }
-
-            return;
-       }
-
+        void copy(const PetscVector &other) override;
        ///<Scalar>AXPY - y = a*x + y
-       inline void axpy(const Scalar &alpha, const PetscVector &x) override
-       {
-            assert(is_consistent());
-            assert(x.is_consistent());
+       void axpy(const Scalar &alpha, const PetscVector &x) override;
 
-            check_error( VecAXPY(implementation(), alpha, x.implementation()) );
-       }
+        SizeType amax() const override;
 
        ///<Scalar>DOT - dot product
        Scalar dot(const PetscVector &other) const override;
         
-        SizeType amax() const override
-       {
-            assert(false && "IMPLEMENT ME");
-       }
-
-
        ///////////////////////////////////////////////////////////////////////////
        ////////////// OVERRIDES FOR Reducible ////////////////////////////
        ///////////////////////////////////////////////////////////////////////////
@@ -874,6 +805,10 @@ namespace utopia {
         bool is_mpi() const;
 
         void resize(SizeType local_size, SizeType global_size);
+        void resize(SizeType global_size)
+        {
+          resize(PETSC_DECIDE, global_size);
+        }
 
 
         void select(
@@ -902,6 +837,16 @@ namespace utopia {
         void convert_from(const Vec &mat);
         void convert_to(Vec &mat) const;
         void wrap(Vec &mat);
+
+        inline void ghosted(
+          const SizeType &local_size,
+          const SizeType &global_size,
+          const PetscArray<SizeType> &index
+          )
+        {
+          ghosted(comm().get(), local_size, global_size, index);
+        }
+
 
     private:
         PetscCommunicator comm_;

@@ -39,6 +39,13 @@ namespace utopia {
             result.e_mul(right.derived());
         }
 
+        template<class Left, class Right, int Order>
+        static void apply(Left &&left, const Tensor<Right, Order> &right, const Divides &, Result &result)
+        {
+            result.construct(std::forward<Left>(left));
+            result.e_div(right.derived());
+        }
+
         template<class Left, class Right>
         static void apply(const Tensor<Left, 2> &left, const Tensor<Right, 1> &right, const Multiplies &, Result &result)
         {

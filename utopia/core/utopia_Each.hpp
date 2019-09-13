@@ -260,7 +260,16 @@ namespace utopia {
 
     //FIXME
     template<class Tensor>
-    class Each<Tensor, 2, FillType::POLYMORPHIC> : public Each<Tensor, 2, FillType::SPARSE> {};
+    class Each<Tensor, 2, FillType::POLYMORPHIC> : public Each<Tensor, 2, FillType::SPARSE> {
+    public:
+        template<class Fun>
+        inline static void apply_write(Tensor &m, Fun fun)
+        {
+            #warning "Using apply_write in polymorphic without checking if matrix is dense first"
+            Each<Tensor, 2, FillType::DENSE>::apply_write(m, fun);
+        }
+
+    };
 
      /** 	@defgroup element_acess Element Acess
      * 		@ingroup read_write

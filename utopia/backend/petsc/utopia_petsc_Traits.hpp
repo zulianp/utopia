@@ -13,18 +13,21 @@
 #include "petscmat.h"
 
 namespace utopia {
-    
+
+
     class PetscTraits {
     public:
         using Scalar   = PetscScalar;
         using SizeType = PetscInt;
 
-        using Matrix = utopia::PetscMatrix;
-        using SparseMatrix = utopia::PetscMatrix;
+        using Matrix            = utopia::PetscMatrix;
+        using SparseMatrix      = utopia::PetscMatrix;
         using PolymorphicMatrix = utopia::PetscMatrix;
-        using Vector = utopia::PetscVector;
+        using Vector            = utopia::PetscVector;
 
-        using IndexSet = utopia::PetscIndexSet;
+        using IndexSet    = utopia::PetscIndexSet;
+        using IndexArray  = utopia::PetscArray<SizeType>;
+        using ScalarArray = utopia::PetscArray<Scalar>;
 
         enum
         {

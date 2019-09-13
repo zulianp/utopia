@@ -2,6 +2,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_Config.hpp"
+#include "utopia_MPI.hpp"
 
 #ifdef WITH_TRILINOS
 #include <Tpetra_Core.hpp>

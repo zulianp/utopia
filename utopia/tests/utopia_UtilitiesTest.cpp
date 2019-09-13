@@ -343,12 +343,12 @@ namespace utopia {
 
 
         if(mpi_world_size() == 1) {
-            UtilitiesTest<DMatrixd, DVectord>().run();
+            // UtilitiesTest<DMatrixd, DVectord>().run(); //FIXME
             BlockTest<DMatrixd, DVectord>().run();
 #ifdef WITH_BLAS
             // interoperability
-            UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();
-            UtilitiesTest<Matrixd, DVectord>().inline_eval_test();
+            // UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();
+            // UtilitiesTest<Matrixd, DVectord>().inline_eval_test();
 #endif //WITH_BLAS
 
         }

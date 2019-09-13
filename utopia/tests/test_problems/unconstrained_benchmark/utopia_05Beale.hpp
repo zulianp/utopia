@@ -49,7 +49,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
 
             const Read<Vector> read(point);
 
@@ -70,7 +70,7 @@ namespace utopia
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
             result = zeros(2);
 
             const Read<Vector> read(point);
@@ -99,7 +99,7 @@ namespace utopia
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
 
             result = zeros(2, 2);
 

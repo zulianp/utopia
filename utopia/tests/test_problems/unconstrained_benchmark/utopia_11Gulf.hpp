@@ -60,7 +60,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 3);
+            assert(point.size() == 3);
 
             const Read<Vector> read(point);
 
@@ -89,7 +89,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 3);
+            assert(point.size() == 3);
             g = zeros(3);
 
             const Read<Vector> read(point);
@@ -131,7 +131,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 3);
+            assert(point.size() == 3);
             result = zeros(3,3);
 
             const Read<Vector> read(point);

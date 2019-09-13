@@ -489,7 +489,7 @@ namespace utopia {
     // inline void convert(Wrapper<Tensor, Order> &t, RawType &rawType) {
     //     Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().convert(t.implementation(), rawType);
     // }
-
+    
 
     // template<typename T, int Order>
     // void disp(const Wrapper<std::vector<T>, Order> &w, std::ostream &os) {
@@ -578,6 +578,12 @@ namespace utopia {
     //  * @tparam     Impl   The tensor implementation.
     //  * @tparam     Order  The order of the tensor.
     //  */
+    template<class Derived, int Order>
+    void disp(const Tensor<Derived, Order> &w)
+    {
+        w.derived().describe();
+    }
+
     // template<class Impl, int Order>
     // void disp(const Wrapper<Impl, Order> &w)
     // {

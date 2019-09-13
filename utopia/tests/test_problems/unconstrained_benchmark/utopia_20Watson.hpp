@@ -61,7 +61,7 @@ namespace utopia
                 return false;
             }
 
-            assert(x.size().get(0) == this->dim());
+            assert(x.size() == this->dim());
             {
                 const Read<Vector> read(x);
 
@@ -102,7 +102,7 @@ namespace utopia
                 return false;
             }
 
-            assert(x.size().get(0) == this->dim());
+            assert(x.size() == this->dim());
             g = zeros(this->dim());
 
             {
@@ -163,7 +163,7 @@ namespace utopia
                 return false;
             }
 
-            assert(x.size().get(0) == this->dim());
+            assert(x.size() == this->dim());
             H = zeros(this->dim(), this->dim());
 
             std::vector<std::vector<Scalar> > hess(this->dim(), std::vector<Scalar>(this->dim()));

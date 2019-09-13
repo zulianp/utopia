@@ -14,7 +14,7 @@ class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector>
         bool value(const Vector &point, Scalar &result) const override 
         {
             using namespace utopia; 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
 
             const Read<Vector> read(point);
 
@@ -28,7 +28,7 @@ class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector>
         bool gradient(const Vector &point, Vector &result) const override 
         {
             using namespace utopia; 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
             result = zeros(2);
 
             const Read<Vector> read(point);
@@ -45,7 +45,7 @@ class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector>
         bool hessian(const Vector &point, Matrix &result) const override 
         {
             using namespace utopia; 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
             result = zeros(2, 2);
 
             const Read<Vector> read(point);

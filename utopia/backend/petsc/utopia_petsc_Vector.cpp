@@ -333,6 +333,16 @@ namespace utopia {
         assert(is_consistent());
     }
 
+    void PetscVector::convert_from(const Vec &vec)
+    {
+        copy_from(vec);
+    }
+
+    void PetscVector::convert_to(Vec &vec) const
+    {
+        check_error( VecCopy(raw_type(), vec) );
+    }
+
     bool PetscVector::read(MPI_Comm comm, const std::string &path)
     {
         destroy();
@@ -509,10 +519,117 @@ namespace utopia {
         }
     }
 
+    void PetscVector::read_and_write_lock(WriteMode mode) { assert(false); }
+    void PetscVector::read_and_write_unlock(WriteMode mode) { assert(false); }
+
     bool PetscVector::equals(const PetscVector &other, const Scalar &tol) const
     {
         PetscVector diff = other;
         diff.axpy(-1.0, *this);
         return diff.norm_infty() < tol;
+    }
+
+    void PetscVector::e_mul(const PetscVector &other)
+    {
+         assert(is_consistent());
+         assert(other.is_consistent());
+         check_error( VecPointwiseMult( implementation(), implementation(), other.implementation()) );
+    }
+
+    void PetscVector::e_div(const PetscVector &other)
+    {
+        check_error( VecPointwiseDivide(raw_type(), raw_type(), other.raw_type() ) );
+    }
+
+    void PetscVector::e_min(const PetscVector &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void PetscVector::e_max(const PetscVector &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void PetscVector::e_mul(const Scalar &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void PetscVector::e_div(const Scalar &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void PetscVector::e_min(const Scalar &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void PetscVector::e_max(const Scalar &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    ///<Scalar>SWAP - swap x and y
+    void PetscVector::swap(PetscVector &x) {
+         using std::swap;
+         swap(comm_, x.comm_);
+         swap(vec_, x.vec_);
+         swap(initialized_, x.initialized_);
+         swap(ghost_values_, x.ghost_values_);
+         swap(immutable_, x.immutable_);
+    }
+
+    ///<Scalar>SCAL - x = a*x
+    void PetscVector::scale(const Scalar &a)
+    {
+         check_error( VecScale(implementation(), a) );
+    }
+
+    ///<Scalar>COPY - copy other into this
+     void PetscVector::copy(const PetscVector &other)
+    {
+         if(this == &other) return;
+
+         assert(!immutable_);
+
+         if(is_compatible(other) && !other.has_ghosts()) {
+             assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
+             assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
+             PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
+             initialized_ = other.initialized_;
+             immutable_ = other.immutable_;
+             return;
+         }
+
+         destroy();
+
+         if(other.vec_) {
+             PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
+             PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
+             ghost_values_ = other.ghost_values_;
+
+             initialized_ = other.initialized_;
+             immutable_ = other.immutable_;
+         } else {
+             initialized_ = false;
+         }
+
+         return;
+    }
+
+    ///<Scalar>AXPY - y = a*x + y
+    void PetscVector::axpy(const Scalar &alpha, const PetscVector &x)
+    {
+         assert(is_consistent());
+         assert(x.is_consistent());
+
+         check_error( VecAXPY(implementation(), alpha, x.implementation()) );
+    }
+
+    PetscVector::SizeType PetscVector::amax() const
+    {
+         assert(false && "IMPLEMENT ME");
     }
 }

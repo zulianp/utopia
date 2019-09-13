@@ -1,8 +1,8 @@
 #ifndef UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 #define UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 
-#include <vector>
 #include "utopia_ForwardDeclarations.hpp"
+#include <vector>
 
 namespace utopia {
 
@@ -13,8 +13,10 @@ namespace utopia {
     using PetscIndexSet = std::vector<int>;
     class PetscTraits;
 
+    //class PetscArray
+    //FIXME
     template<typename T>
-    class PetscArray;
+    using PetscArray = std::vector<T>;
 
     template<class Matrix, class Vector>
     class TaoSolver;

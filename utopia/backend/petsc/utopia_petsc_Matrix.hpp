@@ -194,14 +194,13 @@ namespace utopia {
 
          void assign(const PetscMatrix &other) override
          {
-            assert(false && "TODO");
-             // copy(other);
+             copy(other);
          }
 
          void assign(PetscMatrix &&other) override
          {
-             // entries_ = std::move(other.entries_);
-            assert(false && "TODO");
+             comm_ = std::move(other.comm_);
+             wrapper_ = std::move(other.wrapper_);
          }
 
          ///////////////////////////////////////////////////////////////////////////
@@ -692,8 +691,8 @@ namespace utopia {
 
         bool read(MPI_Comm comm, const std::string &path);
         void copy_from(Mat mat);
-        void copy_to(Mat mat);
-        void copy_to(Mat *mat);
+        void copy_to(Mat mat) const;
+        void copy_to(Mat *mat) const;
 
         inline Range row_range() const
         {
@@ -711,10 +710,6 @@ namespace utopia {
             return Range(r_begin, r_end);
         }
 
-        
-
-
-        
         bool is_sparse() const;
 
         void select(const PetscIndexSet &row_index,
@@ -739,14 +734,13 @@ namespace utopia {
             return ret;
         }
 
-
-
         void row_sum(PetscVector &col) const;
         void row_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
         void col_sum(PetscVector &col) const;
-
+        void col_max(PetscVector &) const { assert(false && "IMPLEMENT ME"); }
+        void col_min(PetscVector &) const { assert(false && "IMPLEMENT ME"); }
 
         bool is_mpi() const;
         bool has_nan_or_inf() const;
@@ -769,7 +763,7 @@ namespace utopia {
 
         void get_col(PetscVector &result, const SizeType id) const;
 
-        inline void diag_shift(const Scalar factor)
+        inline void shift_diag(const Scalar factor)
         {
             check_error( MatShift(implementation(), factor) );
         }
@@ -938,6 +932,11 @@ namespace utopia {
 
 
         void set_zero_rows(const PetscIndexSet &idx, const Scalar &diag = 0.0);
+
+        void diagonal_block(PetscMatrix &block) const;
+
+        void diag_scale_right(const PetscVector &diag);
+        void diag_scale_left(const PetscVector &diag);
 
     private:
         PetscCommunicator comm_;

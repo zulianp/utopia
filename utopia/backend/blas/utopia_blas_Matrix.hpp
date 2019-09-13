@@ -548,6 +548,16 @@ namespace utopia {
             }  
         }
 
+        inline void e_div(const BlasDenseMatrix &other) override
+        {
+            const SizeType n = entries_.size();
+            assert(n == other.entries_.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] /= other.entries_[i];
+            }  
+        }
+
         inline void e_min(const BlasDenseMatrix &other) override
         {
             const SizeType n = entries_.size();
