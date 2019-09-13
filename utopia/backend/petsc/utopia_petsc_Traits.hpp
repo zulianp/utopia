@@ -2,8 +2,9 @@
 #ifndef UTOPIA_UTOPIA_PETSC_TRAITS_HPP
 #define UTOPIA_UTOPIA_PETSC_TRAITS_HPP
 
-#include "utopia_Traits.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_Traits.hpp"
+
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 
@@ -18,6 +19,7 @@ namespace utopia {
         using SizeType = PetscInt;
 
         using Matrix   = utopia::PetscMatrix;
+        using SparseMatrix   = utopia::PetscMatrix;
         using Vector   = utopia::PetscVector;
 
         using IndexSet = utopia::PetscIndexSet;

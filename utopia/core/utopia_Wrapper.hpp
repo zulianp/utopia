@@ -6,6 +6,7 @@
 #define utopia_utopia_MATRIXEXPR_HPP
 
 
+#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Expression.hpp"
 #include "utopia_Evaluator.hpp"
 #include "utopia_Assign.hpp"
@@ -17,7 +18,7 @@
 #include "utopia_Ranged.hpp"
 #include "utopia_Select.hpp"
 #include "utopia_BackendInfo.hpp"
-#include "utopia_Tensor.hpp"
+// #include "utopia_Tensor.hpp"
 // #include "utopia_ConditionalType.hpp"
 
 
@@ -604,6 +605,15 @@ namespace utopia {
     //  *
     //  * @return     1 if there is some nan or inf, 0 otherwise
     //  */
+   template<class Derived, int Order>
+   bool has_nan_or_inf(const Tensor<Derived, Order> &w)
+   {
+       // static_assert(Order == 1, "contains_nan_or_inf:: works just for vectors at the moment");
+      return w.derived().has_nan_or_inf();
+   }
+
+
+
     // template<class Tensor, int Order>
     // bool has_nan_or_inf(const Wrapper<Tensor, Order> &w)
     // {
@@ -611,11 +621,11 @@ namespace utopia {
     //     return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().is_nan_or_inf(w.implementation());
     // }
 
-    // template<class Derived>
-    // inline constexpr int order(const Expression<Derived> &)
-    // {
-    //     return Derived::Order;
-    // }
+    template<class Derived>
+    inline constexpr int order(const Expression<Derived> &)
+    {
+        return Derived::Order;
+    }
 
     // template<class Tensor, int Order>
     // inline auto raw_type(const Wrapper<Tensor, Order> &w) -> decltype(

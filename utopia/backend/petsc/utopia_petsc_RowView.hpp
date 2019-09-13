@@ -1,6 +1,8 @@
 #ifndef UTOPIA_PETSC_ROW_VIEW_HPP
 #define UTOPIA_PETSC_ROW_VIEW_HPP
 
+#include "utopia_RowView.hpp"
+
 namespace utopia {
 
     template<class Tensor, int FILL_TYPE>

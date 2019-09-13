@@ -453,7 +453,7 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void values(const SizeType &s, const Scalar val) override
+        inline void values(const SizeType &s, const Scalar &val) override
         {
             resize(s);
             set(val);

@@ -1000,7 +1000,7 @@ namespace utopia {
         // }
 
         if(must_reset) {
-            auto temp_ksp = utopia::make_unique<Impl>(op.implementation().communicator());
+            auto temp_ksp = utopia::make_unique<Impl>(op.comm().get());
             temp_ksp->copy_settings_from(*ksp_);
             ksp_ = std::move(temp_ksp);
 

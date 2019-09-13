@@ -6,6 +6,7 @@
 #define UTOPIA_UTOPIA_EVAL_FACTORY_HPP
 
 #include "utopia_Eval_Empty.hpp"
+// #include "utopia_Tracer.hpp"
 
 namespace utopia {
 
@@ -327,6 +328,49 @@ namespace utopia {
            );
 
            UTOPIA_TRACE_END(expr);
+
+           return result;
+       }
+   };
+
+   //NEW
+   template<class Expr, int Order, class Traits, int Backend>
+   class Eval<Factory<LocalValues<Expr>, Order>, Traits, Backend> {
+   public:
+        using Result = typename Traits::Vector;
+
+       inline static Result apply(const Factory<LocalValues<Expr>, Order> &expr)
+       {
+           Result result;
+           UTOPIA_TRACE_BEGIN(expr);
+
+           result.local_values(
+               expr.size(),
+               expr.type().value()
+           );
+
+           UTOPIA_TRACE_END(expr);
+
+           return result;
+       }
+   };
+
+   //NEW
+   template<class Traits, int Backend>
+   class Eval<Factory<LocalIdentity, 2>, Traits, Backend> {
+   public:
+        using Result = typename Traits::Matrix;
+
+       inline static Result apply(const Factory<LocalIdentity, 2> &expr)
+       {
+           Result result;
+           // UTOPIA_TRACE_BEGIN(expr);
+
+           result.local_identity(
+               expr.size()
+           );
+
+           // UTOPIA_TRACE_END(expr);
 
            return result;
        }

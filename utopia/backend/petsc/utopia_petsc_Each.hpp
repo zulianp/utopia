@@ -2,7 +2,9 @@
 #define UTOPIA_PETSC_EACH_HPP
 
 #include "utopia_petsc_Types.hpp"
+#include "utopia_Each.hpp"
 #include "utopia_petsc_RowView.hpp"
+#include "utopia_Wrapper.hpp"
 
 namespace utopia {
 

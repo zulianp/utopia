@@ -207,7 +207,7 @@ namespace utopia {
             return &entries_[0];
         }
 
-        void identity(const SizeType rows, const SizeType cols, const Scalar diag = 1.0)
+        void identity(const SizeType rows, const SizeType cols, const Scalar &diag = 1.0)
         {
             using std::move;
             using std::min;
@@ -222,7 +222,7 @@ namespace utopia {
             }
         }
 
-        void values(const SizeType rows, const SizeType cols, T value)
+        void values(const SizeType rows, const SizeType cols, T &value)
         {
             using std::move;
             using std::min;
@@ -504,13 +504,13 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void identity(const Size &s, const Scalar diag = 1.0) override
+        inline void identity(const Size &s, const Scalar &diag = 1.0) override
         {
             assert(s.dims() == 2);
             identity(s.get(0), s.get(1), diag);
         }
 
-        inline void values(const Size &s, const T val) override 
+        inline void values(const Size &s, const T &val) override 
         {
             resize(s.get(0), s.get(1));
             set(val);
@@ -744,18 +744,16 @@ namespace utopia {
             return aux_reduce(op);
         }
 
-        virtual SizeType reduce(const PlusIsNonZero<Scalar> &op) const override
+        inline SizeType nnz(const Scalar tol = 0.0) const override
         {
             if(entries_.empty()) return 0.0;
-
-            const auto &u_op = op.is_non_zero();
 
             const SizeType n = entries_.size();
 
             SizeType ret = 0;
 
             for(SizeType i = 0; i < n; ++i) {
-                ret += u_op.apply(entries_[i]);
+                ret += std::abs(entries_[i]) > tol;
             }
 
             return ret;

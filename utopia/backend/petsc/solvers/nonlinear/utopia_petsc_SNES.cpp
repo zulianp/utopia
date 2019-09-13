@@ -3,5 +3,6 @@
 
 namespace utopia {
     template class SNESSolver<DSMatrixd, DVectord, PETSC>;
-    template class SNESSolver<DMatrixd, DVectord, PETSC>;
+    //FIXME
+    // template class SNESSolver<DMatrixd, DVectord, PETSC>;
 }

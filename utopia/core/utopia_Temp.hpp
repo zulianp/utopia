@@ -1,49 +1,59 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2016-09-12
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2016-09-14
-*/
+#ifndef UTOPIA_TEMP_HPP
+#define UTOPIA_TEMP_HPP
 
-#ifndef utopia_TEMP_HPP
-#define utopia_TEMP_HPP
-
+#include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Traits.hpp"
 
 #include "utopia_Expression.hpp"
-#include "utopia_Evaluator.hpp"
-#include "utopia_Assign.hpp"
-#include "utopia_Traits.hpp"
-#include "utopia_InPlace.hpp"
-#include "utopia_Mutable.hpp"
-#include "utopia_Readable.hpp"
-#include "utopia_Writable.hpp"
-#include "utopia_Ranged.hpp"
+// #include "utopia_Evaluator.hpp"
+// #include "utopia_Assign.hpp"
+// #include "utopia_Traits.hpp"
+// #include "utopia_InPlace.hpp"
+// #include "utopia_Mutable.hpp"
+// #include "utopia_Readable.hpp"
+// #include "utopia_Writable.hpp"
+// #include "utopia_Ranged.hpp"
 
 #include <iostream>
 #include <type_traits>
 
+namespace utopia {
 
-namespace utopia
-{
-
-
-    template<class Tensor>
-    void set_zero_rows(Wrapper<Tensor, 2> &w,  const std::vector<typename utopia::Traits<Tensor>::SizeType> & index, const double diag)
+    template<class Derived>
+    void set_zero_rows(
+        Tensor<Derived, 2> &w, 
+        const typename Traits<Derived>::IndexSet &index,
+        const typename Traits<Derived>::Scalar diag)
     {
-        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().set_zero_rows(w.implementation(), index, diag);
+        w.derived().set_zero_rows(index, diag);
     }
 
-    // not sure how to name this one
-    template<class MatTensor, class VectorTensor>
-    void apply_BC_to_system(Wrapper<MatTensor, 2> &A, Wrapper<VectorTensor, 1> &x, Wrapper<VectorTensor, 1> &rhs,  const std::vector<typename utopia::Traits<VectorTensor>::SizeType> & index)
+
+    template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
+    class ApplyBCToSystem {
+    public:
+        template<class IndexSetT>
+        void apply(Matrix &, Vector &, Vector&, const IndexSetT &)
+        {
+            static_assert(Backend < HOMEMADE, "implement for specific backend");
+        }
+    };
+
+    //FIXME not sure how to name this one: change name to apply_equality_constraints_to_system
+    template<class MatDerived, class VecDerived>
+    void apply_BC_to_system(
+        Tensor<MatDerived, 2> &A,
+        Tensor<VecDerived, 1> &x,
+        Tensor<VecDerived, 1> &rhs,
+        const typename Traits<MatDerived>::IndexSet &constrained_idx)
     {
-        Backend<typename Traits<MatTensor>::Scalar, Traits<MatTensor>::Backend>::Instance().apply_BC_to_system(A.implementation(), x.implementation(), rhs.implementation(), index);
+        ApplyBCToSystem<MatDerived, VecDerived>::apply(A, x, rhs, constrained_idx);
     }
 
     template<class Matrix, class Vector>
-    void set_zero_rows(Wrapper<Matrix, 2> &w, const Wrapper<Vector, 1> &indicator, const double diag = 0.)
+    void set_zero_rows(Tensor<Matrix, 2> &w, const Tensor<Vector, 1> &indicator, const double diag = 0.)
     {
-        using VectorT  = utopia::Wrapper<Vector, 1>;
+        using VectorT  = utopia::Tensor<Vector, 1>;
         using Scalar   = UTOPIA_SCALAR(VectorT);
         using SizeType = UTOPIA_SIZE_TYPE(VectorT);
 
@@ -64,21 +74,21 @@ namespace utopia
     class EvalVecUniqueSortSerial
     {
         public:
-            static void apply(const Wrapper<Vector, 1> &/*x*/, Wrapper<Vector, 1> & /*sorted */, const int /*used_values */ )
+            static void apply(const Tensor<Vector, 1> &/*x*/, Tensor<Vector, 1> & /*sorted */, const int /*used_values */ )
             {
                 static_assert(Traits<Vector>::Backend==PETSC, "EvalVecUniqueSortSerial implemented just for petsc backend.");
             }
     };
 
     template<class Vector>
-    void vec_unique_sort_serial(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)
+    void vec_unique_sort_serial(const Tensor<Vector, 1> &x, Tensor<Vector, 1> &sorted, const int used_values = -1)
     {
         EvalVecUniqueSortSerial<Vector>::apply(x, sorted, used_values);
     }
 
 
     template<class Matrix>
-    void chop_abs(Wrapper<Matrix, 2> &A, const double eps)
+    void chop_abs(Tensor<Matrix, 2> &A, const double eps)
     {
         Backend<typename Traits<Matrix>::Scalar, Traits<Matrix>::Backend>::Instance().chop(A.implementation(), eps);
     }
@@ -88,7 +98,7 @@ namespace utopia
     class ChopSmallerThan
     {
         public:
-            static void apply(const Wrapper<Matrix, 2> &/*x*/, const double & /*eps*/)
+            static void apply(const Tensor<Matrix, 2> &/*x*/, const double & /*eps*/)
             {
                 static_assert(Traits<Matrix>::Backend==PETSC, "ChopSmallerThan implemented just for petsc backend.");
             }
@@ -99,7 +109,7 @@ namespace utopia
     class ChopBiggerThan
     {
         public:
-            static void apply(const Wrapper<Matrix, 2> & /*x*/, const double & /*eps*/)
+            static void apply(const Tensor<Matrix, 2> & /*x*/, const double & /*eps*/)
             {
                 static_assert(Traits<Matrix>::Backend==PETSC, "ChopBiggerThan implemented just for petsc backend.");
             }
@@ -107,19 +117,18 @@ namespace utopia
 
 
     template<class Matrix>
-    void chop_smaller_than(Wrapper<Matrix, 2> &A, const double eps)
+    void chop_smaller_than(Tensor<Matrix, 2> &A, const double eps)
     {
         ChopSmallerThan<Matrix>::apply(A, eps);
     }    
 
 
     template<class Matrix>
-    void chop_bigger_than(Wrapper<Matrix, 2> &A, const double eps)
+    void chop_bigger_than(Tensor<Matrix, 2> &A, const double eps)
     {
         ChopBiggerThan<Matrix>::apply(A, eps);
     }    
 
-
 }
 
-#endif //utopia_TEMP_HPP
+#endif //UTOPIA_TEMP_HPP

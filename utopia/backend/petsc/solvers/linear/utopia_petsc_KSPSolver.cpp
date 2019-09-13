@@ -132,5 +132,6 @@ namespace utopia {
 
     //explicit
     template class KSPSolver<DSMatrixd, DVectord, PETSC>;
-    template class KSPSolver<DMatrixd, DVectord, PETSC>;
+    //FIXME
+    // template class KSPSolver<DMatrixd, DVectord, PETSC>;
 }

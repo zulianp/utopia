@@ -141,8 +141,8 @@ namespace utopia {
         Matrix utopia_Hpre;
 
         convert(x, utopia_x);
-        utopia_H.implementation().wrap(H);
-        utopia_Hpre.implementation().wrap(Hpre);
+        utopia_H.wrap(H);
+        utopia_Hpre.wrap(Hpre);
 
         if(!fun->hessian(utopia_x, utopia_H, utopia_Hpre)) {
             if(!fun->hessian(utopia_x, utopia_H)) {
@@ -489,7 +489,7 @@ namespace utopia {
     void TaoSolver<Matrix, Vector>::init(Function<Matrix, Vector> &fun, Vector & x)
     {
         if(!impl_->initialized()) {
-            impl_->init(x.implementation().communicator());
+            impl_->init(x.comm().get());
 
              if(this->linear_solver()) {
                 impl_->set_linear_solver(this->linear_solver());
@@ -534,7 +534,8 @@ namespace utopia {
     }
 
     template class TaoSolver<DSMatrixd, DVectord>;
-    template class TaoSolver<DMatrixd, DVectord>;
+    //FIXME
+    // template class TaoSolver<DMatrixd, DVectord>;
 }
 
 #undef U_CHECKERR

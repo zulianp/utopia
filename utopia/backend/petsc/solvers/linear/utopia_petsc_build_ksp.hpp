@@ -86,7 +86,7 @@ namespace utopia {
             utopia::convert(b, b_ut);
 
             Matrix A_ut;
-            A_ut.implementation().wrap(const_cast<Mat &>(A));
+            A_ut.wrap(const_cast<Mat &>(A));
 
             lin_solver->solve(A_ut, b_ut, x_ut);
 

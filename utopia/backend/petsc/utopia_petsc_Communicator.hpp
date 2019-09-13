@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PETSC_COMMUNICATOR_HPP
 #define UTOPIA_PETSC_COMMUNICATOR_HPP
 
+#include "utopia_Communicator.hpp"
 #include <mpi.h>
 
 namespace utopia {

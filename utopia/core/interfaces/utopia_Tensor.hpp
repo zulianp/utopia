@@ -172,6 +172,17 @@ namespace utopia {
 	    return t.derived().local_size();
 	}
 
+	template<class T, int Order>
+	inline auto &raw_type(const Tensor<T, Order> &t)
+	{
+	    return t.derived().raw_type();
+	}
+
+	template<class T, int Order>
+	inline auto &raw_type(Tensor<T, Order> &t)
+	{
+	    return t.derived().raw_type();
+	}
 
 }
 

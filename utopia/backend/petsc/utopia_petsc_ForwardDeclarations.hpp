@@ -2,6 +2,7 @@
 #define UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 
 #include <vector>
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
 

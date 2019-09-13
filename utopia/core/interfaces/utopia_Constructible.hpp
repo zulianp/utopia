@@ -14,25 +14,27 @@ namespace utopia {
 		using SizeType = SizeType_;
 
 		virtual ~Constructible() {}
-		virtual void identity(const Size &s, const Scalar diag = 1.0) = 0;
+		virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
 		virtual void zeros(const Size &s) { values(s, 0.0); }
-		virtual void values(const Size &s, const Scalar val) = 0;
+		virtual void values(const Size &s, const Scalar &val) = 0;
 			
 
 		///Specialize for sparse matrices
-		virtual void sparse(const Size &s, const SizeType /*nnz*/) 
+		virtual void sparse(const Size &s, const SizeType &/*nnz*/) 
 		{
 			zeros(s);
 		}
 
-		virtual void local_zeros(const Size &s) { values(s, 0.0); }
-		virtual void local_values(const Size &s, const Scalar val) { values(s, val); }
+		virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
+		virtual void local_values(const Size &s, const Scalar &val) { values(s, val); }
 
 		///Specialize for sparse matrices
-		virtual void local_sparse(const Size &s, const SizeType /*nnz*/) 
+		virtual void local_sparse(const Size &s, const SizeType &/*nnz*/) 
 		{
 			local_zeros(s);
 		}
+
+		virtual void local_identity(const Size &s, const Scalar &diag = 1.0) { identity(s, diag); }
 
 	};
 
@@ -43,15 +45,19 @@ namespace utopia {
 		using SizeType = SizeType_;
 
 		virtual ~Constructible() {}
-		virtual void zeros(const Size &s) { values(s, 0.0); }
-		virtual void values(const Size &s, const Scalar val) { values(s.get(0), val); }
-
-
+		
 		virtual void zeros(const SizeType &s) { values(s, 0.0); }
-		virtual void values(const SizeType &s, const Scalar val) = 0;
+		virtual void values(const SizeType &s, const Scalar &val) = 0;
 
-		virtual void local_zeros(const Size &s) { values(s, 0.0); }
-		virtual void local_values(const Size &s, const Scalar val) { values(s, val); }
+		virtual void local_zeros(const SizeType &s) { local_values(s, 0.0); }
+		virtual void local_values(const SizeType &s, const Scalar &val) { values(s, val); }
+
+		//comodity
+		virtual void zeros(const Size &s) { values(s, 0.0); }
+		virtual void values(const Size &s, const Scalar &val) { values(s.get(0), val); }
+
+		virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
+		virtual void local_values(const Size &s, const Scalar &val) { local_values(s.get(0), val); }
 	};
 }
 

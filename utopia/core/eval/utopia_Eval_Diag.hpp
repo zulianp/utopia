@@ -9,43 +9,45 @@
 
 namespace utopia {
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval<Multiply< Left, Diag<Right> >, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Left) apply(const Multiply<Left, Diag<Right> > &expr) {
-            static_assert(Right::Order == 1, "Right has to be a vector");
-            EXPR_TYPE(Traits, Left) result;
+    //TODO
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval<Multiply< Left, Diag<Right> >, Traits, Backend> {
+    // public:
+    //     inline static EXPR_TYPE(Traits, Left) apply(const Multiply<Left, Diag<Right> > &expr) {
+    //         static_assert(Right::Order == 1, "Right has to be a vector");
+    //         EXPR_TYPE(Traits, Left) result;
 
-            UTOPIA_TRACE_BEGIN(expr);
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).diag_scale_right(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr()),
-                    result);
+    //         UTOPIA_BACKEND(Traits).diag_scale_right(
+    //                 Eval<Left,  Traits>::apply(expr.left()),
+    //                 Eval<Right, Traits>::apply(expr.right().expr()),
+    //                 result);
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval<Multiply< Diag<Left>, Right>, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Right) apply(const Multiply< Diag<Left>, Right> &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
+    //TODO
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval<Multiply< Diag<Left>, Right>, Traits, Backend> {
+    // public:
+    //     inline static EXPR_TYPE(Traits, Right) apply(const Multiply< Diag<Left>, Right> &expr)
+    //     {
+    //         EXPR_TYPE(Traits, Right) result;
 
-            UTOPIA_TRACE_BEGIN(expr);
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).diag_scale_left(
-                    result,
-                    Eval<Left,  Traits>::apply(expr.left().expr()),
-                    Eval<Right, Traits>::apply(expr.right()));
+    //         UTOPIA_BACKEND(Traits).diag_scale_left(
+    //                 result,
+    //                 Eval<Left,  Traits>::apply(expr.left().expr()),
+    //                 Eval<Right, Traits>::apply(expr.right()));
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 
     //////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////// Assign /////////////////////////////////////////
@@ -58,9 +60,13 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).diag(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr())
+            // UTOPIA_BACKEND(Traits).diag(
+            //         Eval<Left,  Traits>::apply(expr.left()),
+            //         Eval<Right, Traits>::apply(expr.right().expr())
+            // );
+
+            Eval<Left,  Traits>::apply(expr.left()).diag(
+                Eval<Right, Traits>::apply(expr.right().expr())
             );
 
             UTOPIA_TRACE_END(expr);
@@ -114,10 +120,15 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Left,  Traits>::apply(expr.right().expr().expr()));
+            // UTOPIA_BACKEND(Traits).assign(
+            //         Eval<Left,  Traits>::apply(expr.left()),
+            //         Eval<Left,  Traits>::apply(expr.right().expr().expr()));
 
+            // UTOPIA_BACKEND(Traits).assign(
+
+            Eval<Left,  Traits>::apply(expr.left()).assign(
+                Eval<Left,  Traits>::apply(expr.right().expr().expr())
+            );
 
             UTOPIA_TRACE_END(expr);
             return true;
@@ -135,8 +146,12 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).diag(
-                    Eval<Left,  Traits>::apply(expr.left()),
+            // UTOPIA_BACKEND(Traits).diag(
+            //         Eval<Left,  Traits>::apply(expr.left()),
+            //         Eval<Right, Traits>::apply(expr.right().expr())
+            // );
+
+            Eval<Left,  Traits>::apply(expr.left()).diag(
                     Eval<Right, Traits>::apply(expr.right().expr())
             );
 
@@ -154,9 +169,14 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).diag(
-                    Eval<WLeft,  Traits>::apply(expr.left()),
-                    Eval<Diag<Right>, Traits>::apply(expr.right().expr())
+            // UTOPIA_BACKEND(Traits).diag(
+            //         Eval<WLeft,  Traits>::apply(expr.left()),
+            //         Eval<Diag<Right>, Traits>::apply(expr.right().expr())
+            // );
+
+
+            Eval<WLeft,  Traits>::apply(expr.left()).diag(
+                Eval<Diag<Right>, Traits>::apply(expr.right().expr())
             );
 
             UTOPIA_TRACE_END(expr);
@@ -190,9 +210,14 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Left,  Traits>::apply(expr.right().expr().expr()));
+            // UTOPIA_BACKEND(Traits).assign(
+            //         Eval<Left,  Traits>::apply(expr.left()),
+            //         Eval<Left,  Traits>::apply(expr.right().expr().expr()));
+
+
+            Eval<Left,  Traits>::apply(expr.left()).assign(
+            Eval<Left,  Traits>::apply(expr.right().expr().expr())
+            );
 
             UTOPIA_TRACE_END(expr);
             return true;
@@ -212,10 +237,14 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).diag(
-                    result,
-                    Eval<WT,  Traits>::apply(expr.expr())
-                    );
+            // UTOPIA_BACKEND(Traits).diag(
+            //         result,
+            //         Eval<WT,  Traits>::apply(expr.expr())
+            //         );
+
+
+
+            Eval<WT,  Traits>::apply(expr.expr()).build_diag(result);
 
             UTOPIA_TRACE_END(expr);
             return result;

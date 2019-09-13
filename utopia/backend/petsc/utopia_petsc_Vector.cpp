@@ -10,21 +10,17 @@ namespace utopia {
     template<class Operation>
     void PetscVector::aux_transform(const Operation &op)
     {
-        Range r = range(v);
+        Range r = range();
 
-        Size gs, ls;
-        size(v, gs);
-        local_size(v, ls);
-
-        write_lock(result, LOCAL);
-        read_lock(v);
+        write_lock(LOCAL);
+        read_lock();
 
         for(PetscInt i = r.begin(); i < r.end(); ++i) {
             set(i, op.template apply<Scalar>(get(i)));
         }
 
-        write_unlock(result, LOCAL);
-        read_unlock(v);
+        write_unlock(LOCAL);
+        read_unlock();
     }
 
     void PetscVector::transform(const Sqrt &op)
@@ -68,7 +64,7 @@ namespace utopia {
     }
 
 
-    void PetscVector::transform(const Pow &pop)
+    void PetscVector::transform(const Pow &op)
     {
         aux_transform(op);
     }
@@ -263,7 +259,7 @@ namespace utopia {
         return std::search(begin(str), end(str), begin(seq), end(seq)) == str.end();
     }
 
-    bool PetscVector::is_nan_or_inf() const
+    bool PetscVector::has_nan_or_inf() const
     {
         PetscInt m;
         const PetscScalar *x;

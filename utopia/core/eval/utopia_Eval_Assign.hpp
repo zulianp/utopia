@@ -1,26 +1,23 @@
-//
-// Created by Patrick Zulian on 29/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_EVAL_ASSIGN_HPP_HPP
 #define UTOPIA_UTOPIA_EVAL_ASSIGN_HPP_HPP
 
+#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Eval_Empty.hpp"
-
 
 namespace utopia {
     template<class Left, class Right, int Order, class Traits, int Backend>
-    class Eval<Assign<Wrapper<Left, Order>, Wrapper<Right, Order> >, Traits, Backend> {
+    class Eval<Assign<Tensor<Left, Order>, Tensor<Right, Order> >, Traits, Backend> {
     public:
-        typedef utopia::Wrapper<Left, Order> LeftExpr;
-        typedef utopia::Wrapper<Right, Order> RightExpr;
+        typedef utopia::Tensor<Left, Order> LeftExpr;
+        typedef utopia::Tensor<Right, Order> RightExpr;
         typedef utopia::Assign<LeftExpr, RightExpr> Expr;
 
         inline static bool apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(Eval<LeftExpr,  Traits>::apply(expr.left()),
-                                          Eval<RightExpr, Traits>::apply(expr.right()) );
+            Eval<LeftExpr, Traits>::apply(expr.left()).assign(
+                Eval<RightExpr, Traits>::apply(expr.right())
+            );
 
             UTOPIA_TRACE_END(expr);
             return true;
@@ -34,7 +31,7 @@ namespace utopia {
         inline static bool apply(const Assign<Left, Right> &expr) {
             UTOPIA_TRACE_BEGIN(expr);
             
-            expr.left().assign(
+            expr.left().construct(
                 Eval<Right, Traits>::apply(expr.right())
             );
 
@@ -50,9 +47,17 @@ namespace utopia {
 
         inline static bool apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
-            UTOPIA_BACKEND(Traits).apply_unary(Eval<Left,  Traits>::apply(expr.left()),
-                                               expr.right().operation(),
-                                               Eval<Right, Traits>::apply( expr.right().expr()) );
+            // UTOPIA_BACKEND(Traits).apply_unary(Eval<Left,  Traits>::apply(expr.left()),
+            //                                    expr.right().operation(),
+            //                                    Eval<Right, Traits>::apply( expr.right().expr()) );
+
+            auto &&left = Eval<Left,  Traits>::apply(expr.left());
+            left.construct(
+                Eval<Right, Traits>::apply( expr.right().expr() )
+            );
+
+            left.transform( expr.right().operation() );
+
 
             UTOPIA_TRACE_END(expr);
             return true;
@@ -75,84 +80,94 @@ namespace utopia {
     //         UTOPIA_TRACE_END(expr);
     //         return true;
     //     }
+    // };   
+
+
+    //TODO
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval< Assign< View<Left>, Right>, Traits, Backend> {
+    // public:
+    //     inline static bool apply(const Assign<View<Left>, Right> &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
+
+    //         const auto &left = expr.left();
+    //         auto rr = row_range(left);
+    //         auto cr = col_range(left);
+
+    //         UTOPIA_BACKEND(Traits).assign_to_range(Eval<Left,  Traits>::apply(expr.left().expr()),
+    //                                                Eval<Right, Traits>::apply(expr.right()),
+    //                                                rr, cr);
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
+    // };
+
+    //TODO
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval< Assign< View< Tensor<Left, 1> >, Right>, Traits, Backend> {
+    // public:
+    //     typedef utopia::Tensor<Left, 1> LeftTensor;
+
+    //     inline static bool apply(const Assign<View<LeftTensor>, Right> &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
+
+    //         const auto &left = expr.left();
+    //         auto rr = row_range(left);
+    //         auto cr = col_range(left);
+
+    //         UTOPIA_BACKEND(Traits).assign_to_range(Eval<LeftTensor, Traits>::apply(expr.left().expr()),
+    //                                                Eval<Right, Traits>::apply(expr.right()),
+    //                                                rr, cr);
+
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
     // };
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval< Assign< View<Left>, Right>, Traits, Backend> {
+    class Eval< Assign<Left, Transposed <Tensor<Right, 2> > >, Traits, Backend> {
     public:
-        inline static bool apply(const Assign<View<Left>, Right> &expr)
+        inline static bool apply(const Assign<Left, Transposed <Tensor<Right, 2> > > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            const auto &left = expr.left();
-            auto rr = row_range(left);
-            auto cr = col_range(left);
+            // UTOPIA_BACKEND(Traits).assign_transposed(
+            //         Eval<Left,  Traits>::apply(expr.left()),
+            //         Eval<Tensor<Right, 2>, Traits>::apply(expr.right().expr())
+            // );
 
-            UTOPIA_BACKEND(Traits).assign_to_range(Eval<Left,  Traits>::apply(expr.left().expr()),
-                                                   Eval<Right, Traits>::apply(expr.right()),
-                                                   rr, cr);
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
+            auto &&left  = Eval<Left,  Traits>::apply(expr.left());
+            auto &&right = Eval<Tensor<Right, 2>, Traits>::apply(expr.right().expr());
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval< Assign< View< Wrapper<Left, 1> >, Right>, Traits, Backend> {
-    public:
-        typedef utopia::Wrapper<Left, 1> LeftWrapper;
-
-        inline static bool apply(const Assign<View<LeftWrapper>, Right> &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            const auto &left = expr.left();
-            auto rr = row_range(left);
-            auto cr = col_range(left);
-
-            UTOPIA_BACKEND(Traits).assign_to_range(Eval<LeftWrapper, Traits>::apply(expr.left().expr()),
-                                                   Eval<Right, Traits>::apply(expr.right()),
-                                                   rr, cr);
+            right.transpose(left);
 
             UTOPIA_TRACE_END(expr);
             return true;
         }
     };
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval< Assign<Left, Transposed <Wrapper<Right, 2> > >, Traits, Backend> {
-    public:
-        inline static bool apply(const Assign<Left, Transposed <Wrapper<Right, 2> > > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign_transposed(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Wrapper<Right, 2>, Traits>::apply(expr.right().expr())
-            );
+    //TODO
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval< Assign<Left, View<Right> >, Traits, Backend> {
+    // public:
+    //     inline static bool apply(const Assign<Left, View<Right> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
+    //         UTOPIA_BACKEND(Traits).assign_from_range(
+    //                 Eval<Left,  Traits>::apply(expr.left()),
+    //                 Eval<Right, Traits>::apply(expr.right().expr()),
+    //                 row_range(expr.right()),
+    //                 col_range(expr.right())
+    //         );
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval< Assign<Left, View<Right> >, Traits, Backend> {
-    public:
-        inline static bool apply(const Assign<Left, View<Right> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).assign_from_range(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr()),
-                    row_range(expr.right()),
-                    col_range(expr.right())
-            );
-
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
+    // };
 
 }
 

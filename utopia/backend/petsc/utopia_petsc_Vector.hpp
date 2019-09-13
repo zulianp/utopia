@@ -1,16 +1,8 @@
 #ifndef UTOPIA_UTOPIA_PETSCVECTOR_H
 #define UTOPIA_UTOPIA_PETSCVECTOR_H
 
-#include "utopia_petsc_ForwardDeclarations.hpp"
-#include "utopia_petsc_Error.hpp"
-
-#include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
-
 #include "utopia_Range.hpp"
-#include "utopia_Writable.hpp"
-#include "petscvec.h"
-#include "utopia_petsc_Base.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_Vector.hpp"
 #include "utopia_Tensor.hpp"
@@ -18,14 +10,21 @@
 #include "utopia_Reducible.hpp"
 #include "utopia_Transformable.hpp"
 #include "utopia_ElementWiseOperand.hpp"
+#include "utopia_Constructible.hpp"
 #include "utopia_BLAS_Operands.hpp"
 
+#include "utopia_petsc_Base.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_petsc_Error.hpp"
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_petsc_IndexSet.hpp"
+#include "utopia_petsc_Traits.hpp"
 
 #include <map>
 #include <vector>
 #include <limits>
+
+#include "petscvec.h"
 
 namespace utopia {
 
@@ -34,7 +33,7 @@ namespace utopia {
         public Normed<PetscScalar>,
         public Transformable<PetscScalar>,
         public Reducible<PetscScalar>,
-        // public Constructible<T, std::size_t, 1>,
+        public Constructible<PetscScalar, PetscInt, 1>,
         public ElementWiseOperand<PetscScalar>,
         public ElementWiseOperand<PetscVector>,
         public Tensor<PetscVector, 1>,
@@ -44,7 +43,13 @@ namespace utopia {
             using Scalar   = PetscScalar;
             using SizeType = PetscInt;
             using Super    = utopia::Tensor<PetscVector, 1>;
+            using Constructible = utopia::Constructible<PetscScalar, PetscInt, 1>;
+
             using Super::Super;
+            using Constructible::values;
+            using Constructible::local_values;
+            using Constructible::local_zeros;
+            using Constructible::zeros;
 
     private:
         class GhostValues {
@@ -437,7 +442,54 @@ namespace utopia {
         return result;
       }
 
+      ///////////////////////////////////////////////////////////////////////////
+      ////////////// OVERRIDES FOR Constructible ////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////
 
+      inline void zeros(const SizeType &s) override
+      {
+        zeros(
+            comm().get(),
+            type_override(),
+            PETSC_DECIDE,
+            s
+        );
+      }
+
+      inline void values(const SizeType &s, const Scalar &val) override
+      {
+        values(
+            comm().get(),
+            type_override(),
+            PETSC_DECIDE,
+            s,
+            val
+        );
+      }
+
+      inline void local_zeros(const SizeType &s) override
+      {
+        zeros(
+            comm().get(),
+            type_override(),
+            s,
+            PETSC_DETERMINE
+        );
+      }
+
+      inline void local_values(const SizeType &s, const Scalar &val) override
+      {
+        values(
+            comm().get(),
+            type_override(),
+            s,
+            PETSC_DETERMINE,
+            val
+        );
+      }
+
+
+      ///////////////////////////////////////////////////////////////////////////
 
        
         inline PetscVector()
@@ -582,7 +634,14 @@ namespace utopia {
             return vec_;
         }
 
-        
+        inline Vec &raw_type() {
+            return vec_;
+        }
+
+        inline const Vec &raw_type() const {
+            assert(vec_ != nullptr);
+            return vec_;
+        }
 
         inline bool is_null() const
         {
@@ -803,7 +862,7 @@ namespace utopia {
 
      
 
-        bool is_nan_or_inf() const;
+        bool has_nan_or_inf() const;
         bool is_mpi() const;
 
         void resize(SizeType local_size, SizeType global_size);

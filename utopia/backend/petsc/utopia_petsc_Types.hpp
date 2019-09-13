@@ -1,8 +1,7 @@
-
 #ifndef UTOPIA_PETSC_TYPES_HPP
 #define UTOPIA_PETSC_TYPES_HPP
 
-#include "utopia_Tensor.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Traits.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"

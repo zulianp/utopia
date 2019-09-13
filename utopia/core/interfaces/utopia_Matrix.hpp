@@ -36,9 +36,11 @@ namespace utopia {
 		virtual bool empty() const = 0;
 		virtual void clear() = 0;
 
-
 		virtual SizeType rows() const = 0;
 		virtual SizeType cols() const = 0;
+
+		virtual Size size() const { return {rows(), cols() }; }
+		
 	};
 
 	template<typename Scalar_, typename SizeType_>
@@ -47,7 +49,7 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-		virtual Size size() const = 0;
+		
 		virtual ~Matrix() {}
 
 		//face methods for treaing matrix and distrubed-matrix in the same way
@@ -88,7 +90,7 @@ namespace utopia {
 		inline SizeType local_rows() const { return this->rows(); }
 		inline SizeType local_cols() const { return this->cols(); }
 
-		inline Size local_size() const { return {local_rows(), local_cols() }; }
+		inline Size local_size() const { return this->size(); }
 
 	};
 
@@ -126,6 +128,9 @@ namespace utopia {
 		virtual void row_range(Range &r) const = 0;
 		virtual void col_range(Range &r) const = 0;
 
+		virtual SizeType local_rows() const = 0;
+		virtual SizeType local_cols() const = 0;
+
 		virtual void row_layout(Layout<SizeType, 1> &l) const
 		{
 			l.local_size(0) = local_rows();
@@ -147,8 +152,6 @@ namespace utopia {
 			l.global_size(1) = this->cols();
 		}
 
-		virtual SizeType local_rows() const = 0;
-		virtual SizeType local_cols() const = 0;
 		virtual Size local_size() const { return {local_rows(), local_cols() }; }
 
 		virtual ~DistributedMatrix() {}

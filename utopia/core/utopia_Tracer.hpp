@@ -8,7 +8,7 @@
 #include <chrono>
 
 #include "utopia_Base.hpp"
-#include "utopia_Core.hpp"
+#include "utopia_Expressions.hpp"
 
 #ifdef UTOPIA_TRACE_ENABLED
 
