@@ -9,11 +9,13 @@
 #include <cmath>
 #include "utopia_Expression.hpp"
 #include "utopia_BLAS_Operands.hpp"
+#include "utopia_Normed.hpp"
 
 namespace utopia {
     template<typename _Scalar>
     class Number : public Expression< Number<_Scalar> >, 
-                   public BLAS1Tensor< Number<_Scalar> > {
+                   public BLAS1Tensor< Number<_Scalar> >,
+                   public Normed<_Scalar> {
     public:
         static const int Order = 0;
         // static const int  StoreAs = UTOPIA_BY_VALUE;
@@ -152,7 +154,13 @@ namespace utopia {
         }
 
         ///<Scalar>ASUM - sum of absolute values
-        inline Scalar asum() const override
+        inline Scalar norm1() const override
+        {
+            return std::abs(value_);
+        }
+
+        ///<Scalar>ASUM - sum of absolute values
+        inline Scalar norm_infty() const override
         {
             return std::abs(value_);
         }

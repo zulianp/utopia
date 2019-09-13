@@ -68,7 +68,7 @@ namespace utopia {
 	template<typename Scalar_, typename SizeType_>
 	class DistributedVector : public VectorBase<Scalar_, SizeType_>, public DistributedObject {
 	public:
-		using Scalar = Scalar_;
+		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
 		//basic collective mutators allowing to write on other processes (e.g. for FE assembly)

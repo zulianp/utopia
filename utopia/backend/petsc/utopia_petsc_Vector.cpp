@@ -3,8 +3,80 @@
 
 #include <set>
 #include <cstring>
+#include <map>
 
 namespace utopia {
+
+    template<class Operation>
+    void PetscVector::aux_transform(const Operation &op)
+    {
+        Range r = range(v);
+
+        Size gs, ls;
+        size(v, gs);
+        local_size(v, ls);
+
+        write_lock(result, LOCAL);
+        read_lock(v);
+
+        for(PetscInt i = r.begin(); i < r.end(); ++i) {
+            set(i, op.template apply<Scalar>(get(i)));
+        }
+
+        write_unlock(result, LOCAL);
+        read_unlock(v);
+    }
+
+    void PetscVector::transform(const Sqrt &op)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Pow2 &op)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Log &op)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Exp &op)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Cos &op)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Sin &op)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Abs &op)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Minus &op)
+    {
+        aux_transform(op);
+    }
+
+
+    void PetscVector::transform(const Pow &pop)
+    {
+        aux_transform(op);
+    }
+
+    void PetscVector::transform(const Reciprocal<Scalar> &op)
+    {
+        aux_transform(op);
+    }
 
     bool PetscVector::has_type(VecType type) const
     {
@@ -233,7 +305,7 @@ namespace utopia {
     }
 
     void PetscVector::select(
-        const std::vector<PetscInt> &index,
+        const PetscIndexSet &index,
         PetscVector &result) const
     {
         MPI_Comm comm = communicator();

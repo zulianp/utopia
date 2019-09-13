@@ -28,11 +28,11 @@ namespace utopia {
 		///<Scalar>DOT - dot product
 		virtual Scalar dot(const Tensor &other) const = 0;
 
-		///<Scalar>NRM2 - Euclidean norm
-		virtual Scalar norm2() const = 0;
+		///<Scalar>NRM2 - Euclidean norm (Moved to Normed type)
+		// virtual Scalar norm2() const = 0;
 
-		///<Scalar>ASUM - sum of absolute values
-		virtual Scalar asum() const = 0;
+		///<Scalar>ASUM - sum of absolute values (Moved to Normed type)
+		// virtual Scalar asum() const = 0;
 
 		///I<Scalar>AMAX - index of max abs value
 		virtual SizeType amax() const = 0;

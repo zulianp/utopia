@@ -9,6 +9,7 @@ namespace utopia {
 	public:
 		virtual ~DistributedObject() {}
 		virtual Communicator &comm() = 0;
+		virtual const Communicator &comm() const = 0;
 	};
 
 }

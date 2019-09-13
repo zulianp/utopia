@@ -258,17 +258,7 @@ namespace utopia {
             return BLASAlgorithms<T>::ddot(size(), ptr(), 1, other.ptr(), 1);
         }
 
-        ///<T>NRM2 - Euclidean norm
-        inline T norm2() const override
-        {
-            return BLASAlgorithms<T>::nrm2(size(), ptr(), 1);
-        }
-
-        ///<T>ASUM - sum of absolute values
-        inline T asum() const override
-        {
-            return BLASAlgorithms<T>::asum(size(), ptr(), 1);
-        }
+    
 
         ///<T>AMAX - index of max abs value
         inline SizeType amax() const override
@@ -288,16 +278,17 @@ namespace utopia {
             return *max_element(entries_.begin(), entries_.end());
         }
 
-        inline T norm1() const override
+        ///<T>NRM2 - Euclidean norm
+        inline T norm2() const override
         {
-            T ret = 0.0;
-            for(auto &e : entries_) {
-                ret += std::abs(e);
-            }
-
-            return ret;
+            return BLASAlgorithms<T>::nrm2(size(), ptr(), 1);
         }
 
+        ///<T>ASUM - sum of absolute values
+        inline T norm1() const override
+        {
+            return BLASAlgorithms<T>::asum(size(), ptr(), 1);
+        }
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Comparable //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////

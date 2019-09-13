@@ -5,9 +5,6 @@
 #include "utopia_petsc_Error.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_SerialSparseMatrix.hpp"
-#include "utopia_petsc_SerialVector.hpp"
-#include "utopia_petsc_SparseMatrix.hpp"
 #include "utopia_petsc_Traits.hpp"
 #include "utopia_petsc_Types.hpp"
 #include "utopia_petsc_Vector.hpp"
@@ -32,7 +29,6 @@
 #include "utopia_petsc_TaoTRQP.hpp"
 
 
-
 #ifdef WITH_SLEPC
     #include "utopia_petsc_Slepc.hpp"
 #endif
@@ -45,8 +41,8 @@
 #include "utopia_petsc_debug.hpp"
 
 namespace utopia {
-    void optimize_nnz(DSMatrixd &A);
-    bool is_diagonally_dominant(const DSMatrixd &A);
+    void optimize_nnz(PetscMatrix &A);
+    bool is_diagonally_dominant(const PetscMatrix &A);
 }
 
 #endif //UTOPIA_PETSC_HPP

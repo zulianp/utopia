@@ -7,11 +7,11 @@
 namespace utopia {
 
     template<int FILL_TYPE>
-    class Each<DVectord, 1, FILL_TYPE> {
+    class Each<PetscVector, 1, FILL_TYPE> {
     public:
 
         template<class Fun>
-        inline static void apply_read(const DVectord &v, Fun fun)
+        inline static void apply_read(const PetscVector &v, Fun fun)
         {
             PetscErrorCode ierr;
 
@@ -37,7 +37,7 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_write(DVectord &v, Fun fun)
+        inline static void apply_write(PetscVector &v, Fun fun)
         {
             PetscErrorCode ierr;
 
@@ -63,7 +63,7 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_transform(const DVectord &in, DVectord &out, Fun fun)
+        inline static void apply_transform(const PetscVector &in, PetscVector &out, Fun fun)
         {
             PetscErrorCode ierr;
 

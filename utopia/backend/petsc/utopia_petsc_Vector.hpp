@@ -1,15 +1,27 @@
 #ifndef UTOPIA_UTOPIA_PETSCVECTOR_H
 #define UTOPIA_UTOPIA_PETSCVECTOR_H
 
+#include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Error.hpp"
 
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
+
 #include "utopia_Range.hpp"
 #include "utopia_Writable.hpp"
 #include "petscvec.h"
 #include "utopia_petsc_Base.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_Vector.hpp"
+#include "utopia_Tensor.hpp"
+#include "utopia_Normed.hpp"
+#include "utopia_Reducible.hpp"
+#include "utopia_Transformable.hpp"
+#include "utopia_ElementWiseOperand.hpp"
+#include "utopia_BLAS_Operands.hpp"
+
+#include "utopia_petsc_Communicator.hpp"
+#include "utopia_petsc_IndexSet.hpp"
 
 #include <map>
 #include <vector>
@@ -17,7 +29,23 @@
 
 namespace utopia {
 
-    class PetscVector {
+    class PetscVector : 
+        public DistributedVector<PetscScalar, PetscInt>,
+        public Normed<PetscScalar>,
+        public Transformable<PetscScalar>,
+        public Reducible<PetscScalar>,
+        // public Constructible<T, std::size_t, 1>,
+        public ElementWiseOperand<PetscScalar>,
+        public ElementWiseOperand<PetscVector>,
+        public Tensor<PetscVector, 1>,
+        public BLAS1Tensor<PetscVector>
+    {
+    public:
+            using Scalar   = PetscScalar;
+            using SizeType = PetscInt;
+            using Super    = utopia::Tensor<PetscVector, 1>;
+            using Super::Super;
+
     private:
         class GhostValues {
         public:
@@ -39,18 +67,18 @@ namespace utopia {
             }
 
             inline void init_index(
-                const PetscInt n_local,
-                const std::vector<PetscInt> &index)
+                const SizeType n_local,
+                const std::vector<SizeType> &index)
             {
                 has_ghosts_ = true;
-                const PetscInt n = index.size();
+                const SizeType n = index.size();
 
-                for(PetscInt i = 0; i < n; ++i) {
+                for(SizeType i = 0; i < n; ++i) {
                     ghost_index_[index[i]] = n_local + i;
                 }
             }
 
-            inline PetscInt get_index(const PetscInt &g_index) const
+            inline SizeType get_index(const SizeType &g_index) const
             {
                 auto it = ghost_index_.find(g_index);
 
@@ -69,12 +97,349 @@ namespace utopia {
                 ghost_index_.clear();
             }
 
-            std::map<PetscInt, PetscInt> ghost_index_;
+            std::map<SizeType, SizeType> ghost_index_;
             bool has_ghosts_;
         };
 
     public:
 
+
+        ////////////////////////////////////////////////////////////////////
+        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
+        ////////////////////////////////////////////////////////////////////
+     
+
+         template<class Expr>
+         PetscVector(const Expression<Expr> &expr)
+         {
+             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+             Super::construct_eval(expr.derived());
+         }
+
+         template<class Expr>
+         inline PetscVector &operator=(const Expression<Expr> &expr)
+         {
+             Super::assign_eval(expr.derived());
+             return *this;
+         }
+
+         void assign(const PetscVector &other) override
+         {
+             copy(other);
+         }
+
+         void assign(PetscVector &&other) override
+         {
+             // entries_ = std::move(other.entries_);
+            assert(false && "TODO");
+         }
+
+         ////////////////////////////////////////////////////////////////////
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR DistributedObject ////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        PetscCommunicator &comm() override
+        {
+            return comm_;
+        }
+
+        const PetscCommunicator &comm() const override
+        {
+            return comm_;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR VectorBase ////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+
+        //locks
+
+        inline void read_lock() override {
+            readable_  = utopia::make_unique<ConstLocalView>(implementation());
+        }
+
+        inline void read_unlock() override 
+        {
+            readable_ = nullptr;
+        }
+
+        void write_lock(WriteMode mode) override ;
+        void write_unlock(WriteMode mode) override ;
+
+        void read_and_write_lock(WriteMode mode) override { assert(false); }
+        void read_and_write_unlock(WriteMode mode) override { assert(false); }
+
+        //basic mutators
+        inline void set(const SizeType &index, const Scalar &value) override
+        {
+            assert(range().inside(index));
+            // check_error(
+            // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+            writeable_->data[index - writeable_->range_begin] = value;
+                 // );
+        }
+
+        inline void add(const SizeType &index, const Scalar &value) override
+        {
+            assert(range().inside(index));
+            // check_error(
+            // VecSetValues(implementation(), 1, &index, &value, ADD_VALUES);
+                // );
+
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+            writeable_->data[index - writeable_->range_begin] += value;
+        }
+
+        inline Scalar get(const SizeType &index) const override
+        {
+            // Scalar value;
+            // VecGetValues(implementation(), 1, &index, &value);
+            // return value;
+            assert(range().inside(index));
+            assert((readable_) && "use Read<Vector> r(vec) before using get. Check if you are using a copy of the vector");
+
+            return readable_->data[index - readable_->range_begin];
+        }
+
+
+        //print function
+        void describe() const override;
+
+        //utility functions
+        inline bool empty() const override { return is_null() || size() == 0; }
+        inline void clear() override { destroy(); }
+        
+        inline void set(const Scalar &value) override
+        {
+            check_error( VecSet(implementation(), value) );
+        }
+
+       inline SizeType size() const override
+       {
+           if(is_null()) {
+               return utopia::INVALID_INDEX;
+           }
+
+           SizeType ret;
+           VecGetSize(implementation(), &ret);
+           return ret;
+       }
+
+
+       ///////////////////////////////////////////////////////////////////////////
+       ////////////// OVERRIDES FOR DistributedVector ////////////////////////////
+       ///////////////////////////////////////////////////////////////////////////
+
+
+       inline void c_set(const SizeType &i, const Scalar &value) override
+       {
+            check_error( VecSetValues(implementation(), 1, &i, &value, INSERT_VALUES) );
+       }
+
+       inline void c_add(const SizeType &i, const Scalar &value) override
+       {
+            check_error( VecSetValues(implementation(), 1, &i, &value, ADD_VALUES) );
+       }
+
+      
+       inline void range(Range &r) const override
+       {
+            SizeType r_begin, r_end;
+            VecGetOwnershipRange(implementation(), &r_begin, &r_end);
+            r.set(r_begin, r_end);
+       }
+       
+       inline SizeType local_size() const override
+       {
+           if(is_null()) return 0;
+
+           SizeType ret;
+           VecGetLocalSize(implementation(), &ret);
+           return ret;
+       }
+
+       ///////////////////////////////////////////////////////////////////////////
+       ////////////// OVERRIDES FOR Normed ////////////////////////////
+       ///////////////////////////////////////////////////////////////////////////
+
+       inline Scalar norm2() const override {
+           Scalar val;
+           check_error( VecNorm(implementation(), NORM_2, &val) );
+           return val;
+       }
+
+       inline Scalar norm1() const override {
+           Scalar val;
+           check_error( VecNorm(implementation(), NORM_1, &val) );
+           return val;
+       }
+
+       inline Scalar norm_infty() const override {
+           Scalar val;
+           check_error( VecNorm(implementation(), NORM_INFINITY, &val) );
+           return val;
+       }
+
+       ///////////////////////////////////////////////////////////////////////////
+       ////////////// OVERRIDES FOR ElementWiseOperand ////////////////////////////
+       ///////////////////////////////////////////////////////////////////////////
+
+       inline void e_mul(const PetscVector &other) override
+       {
+            assert(is_consistent());
+            assert(other.is_consistent());
+            check_error( VecPointwiseMult( implementation(), implementation(), other.implementation()) );
+       }
+
+       void e_min(const PetscVector &other) override
+       {
+            assert(false && "IMPLEMENT ME");
+       }
+
+       void e_max(const PetscVector &other) override
+       {
+            assert(false && "IMPLEMENT ME");
+       }
+
+       inline void e_mul(const Scalar &other) override
+       {
+            scale(other);
+       }
+
+       void e_min(const Scalar &other) override
+       {
+            assert(false && "IMPLEMENT ME");
+       }
+
+       void e_max(const Scalar &other) override
+       {
+            assert(false && "IMPLEMENT ME");
+       }
+
+       ///////////////////////////////////////////////////////////////////////////
+       ////////////// OVERRIDES FOR Transformable ////////////////////////////
+       ///////////////////////////////////////////////////////////////////////////
+
+       void transform(const Sqrt &op) override;
+       void transform(const Pow2 &op) override;
+       void transform(const Log &op)  override;
+       void transform(const Exp &op)  override;
+       void transform(const Cos &op)  override;
+       void transform(const Sin &op)  override;
+       void transform(const Abs &op)  override;
+       void transform(const Minus &op) override;
+
+       void transform(const Pow &p)  override;
+       void transform(const Reciprocal<Scalar> &f) override;
+
+
+       template<class Operation>
+       void aux_transform(const Operation &op);
+
+
+       ///////////////////////////////////////////////////////////////////////////
+       ////////////// OVERRIDES FOR BLAS1Operand ////////////////////////////
+       ///////////////////////////////////////////////////////////////////////////
+
+       ///<Scalar>SWAP - swap x and y
+       inline void swap(PetscVector &x) override {
+            using std::swap;
+            swap(comm_, x.comm_);
+            swap(vec_, x.vec_);
+            swap(initialized_, x.initialized_);
+            swap(ghost_values_, x.ghost_values_);
+            swap(immutable_, x.immutable_);
+       }
+
+       ///<Scalar>SCAL - x = a*x
+       inline void scale(const Scalar &a) override
+       {
+            check_error( VecScale(implementation(), a) );
+       }
+
+       ///<Scalar>COPY - copy other into this
+        void copy(const PetscVector &other) override
+       {
+            if(this == &other) return;
+
+            assert(!immutable_);
+
+            if(is_compatible(other) && !other.has_ghosts()) {
+                assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
+                assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
+                PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
+                initialized_ = other.initialized_;
+                immutable_ = other.immutable_;
+                return;
+            }
+
+            destroy();
+
+            if(other.vec_) {
+                PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
+                PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
+                ghost_values_ = other.ghost_values_;
+
+                initialized_ = other.initialized_;
+                immutable_ = other.immutable_;
+            } else {
+                initialized_ = false;
+            }
+
+            return;
+       }
+
+       ///<Scalar>AXPY - y = a*x + y
+       inline void axpy(const Scalar &alpha, const PetscVector &x) override
+       {
+            assert(is_consistent());
+            assert(x.is_consistent());
+
+            check_error( VecAXPY(implementation(), alpha, x.implementation()) );
+       }
+
+       ///<Scalar>DOT - dot product
+       Scalar dot(const PetscVector &other) const override;
+        
+        SizeType amax() const override
+       {
+            assert(false && "IMPLEMENT ME");
+       }
+
+
+       ///////////////////////////////////////////////////////////////////////////
+       ////////////// OVERRIDES FOR Reducible ////////////////////////////
+       ///////////////////////////////////////////////////////////////////////////
+
+       Scalar reduce(const Plus &) const override
+       {
+        Scalar result = 0;
+        check_error( VecSum(implementation(), &result) );
+        return result;
+      }
+
+      Scalar reduce(const Min &) const override
+      {
+        Scalar result = std::numeric_limits<Scalar>::max();
+        check_error( VecMin(implementation(), nullptr, &result) );
+        return result;
+      }
+
+      Scalar reduce(const Max &) const override
+      {
+        Scalar result = -std::numeric_limits<Scalar>::max();
+        check_error( VecMax(implementation(), nullptr, &result) );
+        return result;
+      }
+
+
+
+       
         inline PetscVector()
         : vec_(nullptr), initialized_(false)
         {
@@ -120,7 +485,7 @@ namespace utopia {
             return ret;
         }
 
-        virtual VecType type_override() const
+        inline VecType type_override() const
         {
             return VECSTANDARD;
         }
@@ -129,33 +494,11 @@ namespace utopia {
 
         bool same_type(const PetscVector &other) const;
 
-        inline PetscInt local_size() const
-        {
-            if(is_null()) return 0;
-
-            PetscInt ret;
-            VecGetLocalSize(implementation(), &ret);
-            return ret;
-        }
-
-        inline PetscInt size() const
-        {
-            // if(!initialized()) {
-            // 	return utopia::INVALID_INDEX;
-            // }
-
-            if(is_null()) {
-                return utopia::INVALID_INDEX;
-            }
-
-            PetscInt ret;
-            VecGetSize(implementation(), &ret);
-            return ret;
-        }
+     
 
         inline Range range() const
         {
-            PetscInt r_begin, r_end;
+            SizeType r_begin, r_end;
             VecGetOwnershipRange(implementation(), &r_begin, &r_end);
             return Range(r_begin, r_end);
         }
@@ -239,7 +582,7 @@ namespace utopia {
             return vec_;
         }
 
-        void describe() const;
+        
 
         inline bool is_null() const
         {
@@ -255,9 +598,9 @@ namespace utopia {
             initialized_ = val;
         }
 
-        inline PetscInt global_to_local(const PetscInt g_index) const
+        inline SizeType global_to_local(const SizeType g_index) const
         {
-            PetscInt begin, end;
+            SizeType begin, end;
             VecGetOwnershipRange(implementation(), &begin, &end);
 
             if(!ghost_values_.has_ghosts() || (g_index >= begin && g_index < end)) {
@@ -268,25 +611,15 @@ namespace utopia {
             return ghost_values_.get_index(g_index);
         }
 
-        inline void init_ghost_index(const std::vector<PetscInt> &index)
+        inline void init_ghost_index(const std::vector<SizeType> &index)
         {
             ghost_values_.init_index(local_size(), index);
         }
 
-        inline PetscScalar get(const PetscInt index) const
+ 
+        inline const Scalar &operator[](const SizeType index) const
         {
-            // PetscScalar value;
-            // VecGetValues(implementation(), 1, &index, &value);
-            // return value;
-            assert(range().inside(index));
-            assert((readable_) && "use Read<Vector> r(vec) before using get. Check if you are using a copy of the vector");
-
-            return readable_->data[index - readable_->range_begin];
-        }
-
-        inline const PetscScalar &operator[](const PetscInt index) const
-        {
-            // PetscScalar value;
+            // Scalar value;
             // VecGetValues(implementation(), 1, &index, &value);
             // return value;
             assert(range().inside(index));
@@ -296,8 +629,8 @@ namespace utopia {
         }
 
         inline void get(
-            const std::vector<PetscInt> &index,
-            std::vector<PetscScalar> &values) const
+            const std::vector<SizeType> &index,
+            std::vector<Scalar> &values) const
         {
             std::size_t n = index.size();
 
@@ -307,14 +640,14 @@ namespace utopia {
 
                 VecGetValues(
                     implementation(),
-                    static_cast<PetscInt>(index.size()),
+                    static_cast<SizeType>(index.size()),
                     &index[0],
                     &values[0]
                     );
 
             } else {
 
-                const PetscScalar *array;
+                const Scalar *array;
                 Vec local_form;
 
                 VecGhostGetLocalForm(implementation(), &local_form);
@@ -333,47 +666,23 @@ namespace utopia {
         }
 
         inline void set(
-            const std::vector<PetscInt> &indices,
-            const std::vector<PetscScalar> &values)
+            const std::vector<SizeType> &indices,
+            const std::vector<Scalar> &values)
         {
             assert(indices.size() == values.size());
             check_error( VecSetValues(implementation(), indices.size(), &indices[0], &values[0], INSERT_VALUES) );
         }
 
-        inline void set(const PetscScalar value)
-        {
-            check_error( VecSet(implementation(), value) );
-        }
-
+     
         inline void add_vector(
-            const std::vector<PetscInt> &indices,
-            const std::vector<PetscScalar> &values)
+            const std::vector<SizeType> &indices,
+            const std::vector<Scalar> &values)
         {
             assert(indices.size() == values.size());
             check_error( VecSetValues(implementation(), indices.size(), &indices[0], &values[0], ADD_VALUES) );
         }
 
-        inline void set(const PetscInt index, PetscScalar value)
-        {
-            assert(range().inside(index));
-            // check_error(
-            // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
-
-            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
-            writeable_->data[index - writeable_->range_begin] = value;
-                 // );
-        }
-
-        inline void add(const PetscInt index, PetscScalar value)
-        {
-            assert(range().inside(index));
-            // check_error(
-            // VecSetValues(implementation(), 1, &index, &value, ADD_VALUES);
-                // );
-
-            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
-            writeable_->data[index - writeable_->range_begin] += value;
-        }
+ 
 
         inline bool has_ghosts() const
         {
@@ -391,8 +700,8 @@ namespace utopia {
         }
 
         //builders
-        void repurpose(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
-        inline void zeros(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global)
+        void repurpose(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global);
+        inline void zeros(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global)
         {
             repurpose(comm, type, n_local, n_global);
             check_error( VecZeroEntries(implementation()) );
@@ -400,7 +709,7 @@ namespace utopia {
             assert(is_consistent());
         }
 
-        inline void values(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global, PetscScalar value)
+        inline void values(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global, Scalar value)
         {
             repurpose(comm, type, n_local, n_global);
             check_error( VecSet(implementation(), value) );
@@ -408,23 +717,23 @@ namespace utopia {
             assert(is_consistent());
         }
 
-        void init(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
-        void ghosted(MPI_Comm comm, PetscInt local_size, PetscInt global_size, const std::vector<PetscInt> &index);
-        void nest(MPI_Comm comm, PetscInt nb, IS is[], Vec x[], const bool use_vec_nest_type = false);
+        void init(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global);
+        void ghosted(MPI_Comm comm, SizeType local_size, SizeType global_size, const std::vector<SizeType> &index);
+        void nest(MPI_Comm comm, SizeType nb, IS is[], Vec x[], const bool use_vec_nest_type = false);
 
 
         //ops
         ///this is y
-        inline void axpy(const PetscScalar &alpha, const PetscVector &x)
-        {
-            assert(is_consistent());
-            assert(x.is_consistent());
+        // inline void axpy(const Scalar &alpha, const PetscVector &x)
+        // {
+        //     assert(is_consistent());
+        //     assert(x.is_consistent());
 
-            check_error( VecAXPY(implementation(), alpha, x.implementation()) );
-        }
+        //     check_error( VecAXPY(implementation(), alpha, x.implementation()) );
+        // }
 
         ///this is y
-        inline void axpby(const PetscScalar alpha, const PetscVector &x, const PetscScalar &beta)
+        inline void axpby(const Scalar alpha, const PetscVector &x, const Scalar &beta)
         {
             assert(is_consistent());
             assert(x.is_consistent());
@@ -438,42 +747,7 @@ namespace utopia {
             check_error( VecZeroEntries(implementation()) );
         }
 
-        //reductions
-        inline PetscReal norm2() const {
-            PetscReal val;
-            check_error( VecNorm(implementation(), NORM_2, &val) );
-            return val;
-        }
-
-        inline PetscReal norm1() const {
-            PetscReal val;
-            check_error( VecNorm(implementation(), NORM_1, &val) );
-            return val;
-        }
-
-        inline PetscReal norm_infty() const {
-            PetscReal val;
-            check_error( VecNorm(implementation(), NORM_INFINITY, &val) );
-            return val;
-        }
-
-        inline PetscScalar sum() const {
-            PetscScalar result = 0;
-            check_error( VecSum(implementation(), &result) );
-            return result;
-        }
-
-        inline PetscScalar min() const {
-            PetscScalar result = std::numeric_limits<PetscScalar>::max();
-            check_error( VecMin(implementation(), nullptr, &result) );
-            return result;
-        }
-
-        inline PetscScalar max() const {
-            PetscScalar result = -std::numeric_limits<PetscScalar>::max();
-            check_error( VecMax(implementation(), nullptr, &result) );
-            return result;
-        }
+   
 
         inline void e_mul(const PetscVector &other, PetscVector &result) const
         {
@@ -489,7 +763,7 @@ namespace utopia {
             assert(other.is_consistent());
         }
 
-        PetscScalar dot(const PetscVector &other) const;
+        // Scalar dot(const PetscVector &other) const;
 
         inline void e_div(const PetscVector &other, PetscVector &result) const
         {
@@ -511,12 +785,12 @@ namespace utopia {
             check_error( VecReciprocal(implementation()) );
         }
 
-        inline void scale(const PetscScalar factor)
-        {
-            check_error( VecScale(implementation(), factor) );
-        }
+        // inline void scale(const Scalar factor)
+        // {
+        //     check_error( VecScale(implementation(), factor) );
+        // }
 
-        inline void reciprocal(const PetscScalar numerator)
+        inline void reciprocal(const Scalar numerator)
         {
             reciprocal();
 
@@ -527,27 +801,17 @@ namespace utopia {
             scale(numerator);
         }
 
-        inline void read_lock() {
-            readable_  = utopia::make_unique<ConstLocalView>(implementation());
-        }
-
-        inline void read_unlock()
-        {
-            readable_ = nullptr;
-        }
-
-        void write_lock(WriteMode mode);
-        void write_unlock(WriteMode mode);
+     
 
         bool is_nan_or_inf() const;
         bool is_mpi() const;
 
-        void resize(PetscInt local_size, PetscInt global_size);
+        void resize(SizeType local_size, SizeType global_size);
 
 
         void select(
-            const std::vector<PetscInt> &index,
-            PetscVector &result) const;
+            const PetscIndexSet &index,
+            PetscVector &result) const override;
 
         void select(const Range &global_range, PetscVector &result) const;
 
@@ -561,7 +825,13 @@ namespace utopia {
 
         bool is_consistent() const;
 
+        void convert_from(const Vec &mat);
+        void convert_to(Vec &mat) const;
+        void wrap(Vec &mat);
+
     private:
+        PetscCommunicator comm_;
+
         Vec vec_;
         bool initialized_;
 
@@ -573,8 +843,8 @@ namespace utopia {
         class LocalView {
         public:
             Vec v;
-            PetscInt range_begin, range_end;
-            PetscScalar *data;
+            SizeType range_begin, range_end;
+            Scalar *data;
             PetscErrorCode ierr;
 
             LocalView(Vec v_in)
@@ -593,8 +863,8 @@ namespace utopia {
         class ConstLocalView {
         public:
             const Vec v;
-            const PetscScalar *data;
-            PetscInt range_begin, range_end;
+            const Scalar *data;
+            SizeType range_begin, range_end;
             PetscErrorCode ierr;
 
             ConstLocalView(const LocalView &view)
@@ -605,9 +875,9 @@ namespace utopia {
             {}
 
             ConstLocalView(
-                const PetscScalar * data_in,
-                PetscInt range_begin_in,
-                PetscInt range_end_in
+                const Scalar * data_in,
+                SizeType range_begin_in,
+                SizeType range_end_in
                 )
             : v(nullptr), data(data_in), range_begin(range_begin_in), range_end(range_end_in)
             {}
@@ -630,7 +900,7 @@ namespace utopia {
         std::unique_ptr<LocalView> writeable_;
         std::unique_ptr<ConstLocalView> readable_;
 
-        inline static bool check_error(const PetscInt err) {
+        inline static bool check_error(const SizeType err) {
             return PetscErrorHandler::Check(err);
         }
 

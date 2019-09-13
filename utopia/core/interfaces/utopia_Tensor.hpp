@@ -8,17 +8,16 @@
 #include "utopia_Expression.hpp"
 #include "utopia_Operators.hpp"
 #include "utopia_Select.hpp"
-// #include "utopia_Factory.hpp"
-// #include "utopia_Eval.hpp"
+#include "utopia_Size.hpp"
 
 namespace utopia {
 
 	//CRTP type
 	template<typename Derived, int Order_>
 	class Tensor : 
-	// public Expression<Derived> {
 	public Expression<Tensor<Derived, Order_>>,
-	public Selectable<Tensor<Derived, Order_>> {
+	public Selectable<Tensor<Derived, Order_>> 
+	{
 	public:
 		static const int Order   = Order_;
 		static const int StoreAs = UTOPIA_BY_REFERENCE;

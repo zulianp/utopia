@@ -3,6 +3,7 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Utils.hpp"
+#include "utopia_Traits.hpp"
 
 namespace utopia {
     template<class Expr, int Order>
@@ -105,7 +106,7 @@ namespace utopia {
         using TensorT = utopia::Tensor<Derived, 1>;
         using That    = utopia::Selectable<Tensor<Derived, 1>>;
 
-        using SizeType = typename utopia::Traits<Derived>::SizeType;
+        // using SizeType = typename utopia::Traits<Derived>::SizeType;
         using IndexSet = typename utopia::Traits<Derived>::IndexSet;
 
         //lazy evaluation
@@ -132,7 +133,7 @@ namespace utopia {
         using TensorT = utopia::Tensor<Derived, 2>;
         using That = utopia::Selectable<Tensor<Derived, 2>>;
 
-        using SizeType = typename utopia::Traits<Derived>::SizeType;
+        // using SizeType = typename utopia::Traits<Derived>::SizeType;
         using IndexSet = typename utopia::Traits<Derived>::IndexSet;
 
         //lazy evaluation

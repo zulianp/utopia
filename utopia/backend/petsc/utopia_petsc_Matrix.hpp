@@ -7,6 +7,8 @@
 #include "utopia_petsc_Base.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Range.hpp"
+#include "utopia_Matrix.hpp"
+#include "utopia_Tensor.hpp"
 
 #include "petscsys.h"
 #include "petscmat.h"
@@ -94,8 +96,49 @@ namespace utopia {
         bool owner_;
     };
 
-    class PetscMatrix {
+    class PetscMatrix  : 
+        public Tensor<PetscMatrix, 2>,
+        public DistributedMatrix<PetscScalar, PetscInt> 
+        {
     public:
+        using Scalar   = PetscScalar;
+        using SizeType = PetscInt;
+        using Super    = utopia::Tensor<PetscMatrix, 2>;
+        using Super::Super;
+
+        ////////////////////////////////////////////////////////////////////
+        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
+        ////////////////////////////////////////////////////////////////////
+        
+         template<class Expr>
+         PetscMatrix(const Expression<Expr> &expr)
+         {
+             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+             Super::construct_eval(expr.derived());
+         }
+
+         template<class Expr>
+         inline PetscMatrix &operator=(const Expression<Expr> &expr)
+         {
+             Super::assign_eval(expr.derived());
+             return *this;
+         }
+
+         void assign(const PetscMatrix &other) override
+         {
+            assert(false && "TODO");
+             // copy(other);
+         }
+
+         void assign(PetscMatrix &&other) override
+         {
+             // entries_ = std::move(other.entries_);
+            assert(false && "TODO");
+         }
+
+         ////////////////////////////////////////////////////////////////////
+
+
         Mat &implementation() {
             return wrapper_->implementation();
         }
@@ -225,15 +268,15 @@ namespace utopia {
                         const std::vector<PetscInt> &cols,
                         const std::vector<PetscScalar> &values);
 
-        inline void write_lock() { }
+        inline void write_lock(WriteMode) override { }
 
-        inline void write_unlock() {
+        inline void write_unlock(WriteMode) override {
             check_error( MatAssemblyBegin(implementation(), MAT_FINAL_ASSEMBLY) );
             check_error( MatAssemblyEnd(implementation(),   MAT_FINAL_ASSEMBLY) );
         }
 
-        inline void read_lock() { }
-        inline void read_unlock() { }
+        inline void read_lock() override { }
+        inline void read_unlock() override { }
 
         void dense_init(
             MPI_Comm comm,
@@ -523,6 +566,10 @@ namespace utopia {
         bool has_type(VecType type) const;
         bool same_type(const PetscMatrix &other) const;
         bool is_cuda() const;
+
+        void convert_from(const Mat &mat);
+        void convert_to(Mat &mat) const;
+
     private:
         std::shared_ptr<PetscMatrixMemory> wrapper_;
 

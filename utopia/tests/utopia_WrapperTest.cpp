@@ -114,9 +114,9 @@ namespace utopia {
 
     void runWrapperTest() {
         UTOPIA_UNIT_TEST_BEGIN("WrapperTest");
-// #ifdef WITH_PETSC
-//         WrapperTest<DMatrixd, DVectord, PetscScalar>().run();
-// #endif
+#ifdef WITH_PETSC
+        WrapperTest<PetscMatrix, PetscVector, PetscScalar>().run();
+#endif
 
 #ifdef WITH_BLAS
         WrapperTest<Matrixd, Vectord, double>().run();
