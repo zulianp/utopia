@@ -363,7 +363,6 @@ namespace utopia {
         class Write {
         public:
             Tensor &_tensor;
-            typedef typename Traits<Tensor>::Scalar Scalar;
 
             /**
              * @ingroup     lock
@@ -388,9 +387,7 @@ namespace utopia {
         template<class T, int Order>
         class Write< std::vector<Wrapper<T, Order> > > {
         public:
-            using Tensors = std::vector<Wrapper<T, Order> >;
-            using Scalar  = typename Traits<T>::Scalar;
-            
+            using Tensors = std::vector<Wrapper<T, Order> >;            
 
             Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
             : tensors_(tensors), mode_(mode)

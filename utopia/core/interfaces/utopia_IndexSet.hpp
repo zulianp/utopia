@@ -18,21 +18,23 @@ namespace utopia {
 
 		//locks
 		virtual void read_lock()  = 0;
-		virtual void write_lock() = 0;
+		virtual void write_lock(WriteMode) = 0;
 
 		virtual void read_unlock()  = 0;
-		virtual void write_unlock() = 0;
+		virtual void write_unlock(WriteMode) = 0;
 
 		//basic mutators
 		virtual void set(const SizeType &i, const Index &value) = 0;
-		virtual Index get(const SizeType &i) = 0;
+		virtual Index get(const SizeType &i) const = 0;
 
 		//print function
 		virtual void describe() const = 0;
 
 		//utility functions
 		virtual bool empty() const = 0;
-		virtual bool clear() const = 0;
+		virtual void clear() = 0;
+
+		virtual SizeType size() const = 0;
 	};
 
 }

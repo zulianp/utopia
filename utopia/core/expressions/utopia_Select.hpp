@@ -12,22 +12,23 @@ namespace utopia {
     class Select<Expr_, 1> : public Expression< Select<Expr_, 1>  > {
     public:
         typedef Expr_ Expr;
-        using Scalar   = typename Traits<Expr>::Scalar;
-        using SizeType = typename Traits<Expr>::SizeType;
+        using Scalar   = typename utopia::Traits<Expr>::Scalar;
+        using SizeType = typename utopia::Traits<Expr>::SizeType;
+        using IndexSet = typename utopia::Traits<Expr>::IndexSet;
 
         //FIXME use Traits instead
         static const int Order = 1;
         static_assert(Expr::Order == Order, "must be same order of the tensor");
 
-        inline explicit Select(const Expr &expr, const std::vector<SizeType> &index)
+        inline explicit Select(const Expr &expr, const IndexSet &index)
         : expr_(expr), index_ptr_(utopia::make_ref(index))
         {}
 
-        inline explicit Select(const Expr &expr, std::vector<SizeType> &&index)
+        inline explicit Select(const Expr &expr, IndexSet &&index)
         : expr_(expr), index_ptr_(std::make_shared(std::move(index)))
         {}
 
-        inline const std::vector<SizeType> &index() const
+        inline const IndexSet &index() const
         {
             return *index_ptr_;
         }
@@ -39,7 +40,7 @@ namespace utopia {
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
-        std::shared_ptr<const std::vector<SizeType> > index_ptr_;
+        std::shared_ptr<const IndexSet > index_ptr_;
     };
 
 
@@ -47,32 +48,35 @@ namespace utopia {
     class Select<Expr_, 2> : public Expression< Select<Expr_, 2> > {
     public:
         typedef Expr_ Expr;
-        using Scalar   = typename Traits<Expr>::Scalar;
-        using SizeType = typename Traits<Expr>::SizeType;
+
+        using Scalar   = typename utopia::Traits<Expr>::Scalar;
+        using SizeType = typename utopia::Traits<Expr>::SizeType;
+        using IndexSet = typename utopia::Traits<Expr>::IndexSet;
+
 
         //FIXME use Traits instead
         static const int Order = 2;
         static_assert(Expr::Order == Order, "must be same order of the tensor");
 
 
-        inline explicit Select(const Expr &expr, const std::vector<SizeType> &row_index, const std::vector<SizeType> &col_index)
+        inline explicit Select(const Expr &expr, const IndexSet &row_index, const IndexSet &col_index)
         : expr_(expr),
           row_index_ptr_(utopia::make_ref(row_index)),
           col_index_ptr_(utopia::make_ref(col_index))
         {}
 
-        inline explicit Select(const Expr &expr, std::vector<SizeType> &&row_index, std::vector<SizeType> &&col_index)
+        inline explicit Select(const Expr &expr, IndexSet &&row_index, IndexSet &&col_index)
         : expr_(expr),
           row_index_ptr_(std::make_shared(std::move(row_index))),
           col_index_ptr_(std::make_shared(std::move(col_index)))
         {}
 
-        inline const std::vector<SizeType> &row_index() const
+        inline const IndexSet &row_index() const
         {
             return *row_index_ptr_;
         }
 
-        inline const std::vector<SizeType> &col_index() const
+        inline const IndexSet &col_index() const
         {
             return *col_index_ptr_;
         }
@@ -84,8 +88,8 @@ namespace utopia {
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
-        std::shared_ptr<const std::vector<SizeType> > row_index_ptr_;
-        std::shared_ptr<const std::vector<SizeType> > col_index_ptr_;
+        std::shared_ptr<const IndexSet > row_index_ptr_;
+        std::shared_ptr<const IndexSet > col_index_ptr_;
     };
 
     template<class Expr, int Order>
@@ -101,21 +105,22 @@ namespace utopia {
         using TensorT = utopia::Tensor<Derived, 1>;
         using That    = utopia::Selectable<Tensor<Derived, 1>>;
 
-        typedef typename utopia::Traits<Derived>::SizeType SizeType;
+        using SizeType = typename utopia::Traits<Derived>::SizeType;
+        using IndexSet = typename utopia::Traits<Derived>::IndexSet;
 
         //lazy evaluation
-        inline friend Select<TensorT, 1> select(const That &that, const std::vector<SizeType> &index)
+        inline friend Select<TensorT, 1> select(const That &that, const IndexSet &index)
         {
             return Select<TensorT, 1>(that.derived(), index);
         }
 
-        inline friend Select<TensorT, 1> select(const That &that, std::vector<SizeType> &&index)
+        inline friend Select<TensorT, 1> select(const That &that, IndexSet &&index)
         {
             return Select<TensorT, 1>(that.derived(), std::move(index));
         }
 
         //direct evaluation
-        virtual void select(const std::vector<SizeType> &index, Derived &result) const = 0;
+        virtual void select(const IndexSet &index, Derived &result) const = 0;
 
     private:
         CONST_DERIVED_CRT(TensorT);
@@ -127,15 +132,16 @@ namespace utopia {
         using TensorT = utopia::Tensor<Derived, 2>;
         using That = utopia::Selectable<Tensor<Derived, 2>>;
 
-        typedef typename utopia::Traits<Derived>::SizeType SizeType;
+        using SizeType = typename utopia::Traits<Derived>::SizeType;
+        using IndexSet = typename utopia::Traits<Derived>::IndexSet;
 
         //lazy evaluation
-        inline friend Select<TensorT, 2> select(const That &that, const std::vector<SizeType> &row_index, const std::vector<SizeType> &col_index = std::vector<SizeType>())
+        inline friend Select<TensorT, 2> select(const That &that, const IndexSet &row_index, const IndexSet &col_index = IndexSet())
         {
             return Select<TensorT, 2>(that.derived(), row_index, col_index);
         }
 
-        inline friend Select<TensorT, 2> select(const That &that, std::vector<SizeType> &&row_index, std::vector<SizeType> &&col_index = std::vector<SizeType>())
+        inline friend Select<TensorT, 2> select(const That &that, IndexSet &&row_index, IndexSet &&col_index = IndexSet())
         {
             return Select<TensorT, 2>(that.derived(), std::move(row_index, col_index));
         }
@@ -143,8 +149,8 @@ namespace utopia {
         /// if col_index is empty select all columns
         //direct evaluation
         virtual void select(
-            const std::vector<SizeType> &row_index, 
-            const std::vector<SizeType> &col_index, 
+            const IndexSet &row_index, 
+            const IndexSet &col_index, 
             Derived &result) const = 0;
 
     private:

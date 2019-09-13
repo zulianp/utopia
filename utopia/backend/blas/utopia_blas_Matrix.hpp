@@ -14,6 +14,7 @@
 #include "utopia_Normed.hpp"
 #include "utopia_Transformable.hpp"
 #include "utopia_Reducible.hpp"
+#include "utopia_blas_IndexSet.hpp"
 
 
 #include <vector>
@@ -703,8 +704,8 @@ namespace utopia {
         }
 
         inline void select(
-            const std::vector<SizeType> &row_index, 
-            const std::vector<SizeType> &col_index, 
+            const BlasIndexSet &row_index, 
+            const BlasIndexSet &col_index, 
             BlasDenseMatrix &result) const override
         {
             const SizeType r = row_index.size();
@@ -716,7 +717,7 @@ namespace utopia {
 
                 for(SizeType i = 0; i < r; ++i) {
                     for(SizeType j = 0; j < c; ++j) {
-                        result.set(i, j, get(row_index[i], col_index[j]));
+                        result.set(i, j, get(row_index.get(i), col_index.get(j)));
                     }
                 }
             } else {
@@ -726,7 +727,7 @@ namespace utopia {
 
                 for(SizeType i = 0; i < r; ++i) {
                     for(SizeType j = 0; j < c; ++j) {
-                        result.set(i, j, get(row_index[i], j));
+                        result.set(i, j, get(row_index.get(i), j));
                     }
                 }
             }

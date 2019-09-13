@@ -12,6 +12,7 @@
 #include "utopia_Transformable.hpp"
 #include "utopia_Constructible.hpp"
 #include "utopia_Reducible.hpp"
+#include "utopia_blas_IndexSet.hpp"
 
 #include <vector>
 #include <memory>
@@ -472,13 +473,13 @@ namespace utopia {
         ///////////////////////////////////////////////////////////////////////////
 
 
-        inline void select(const std::vector<SizeType> &index, BlasVector &result) const override
+        inline void select(const BlasIndexSet &index, BlasVector &result) const override
         {
             const SizeType n = index.size();
             result.resize(n);
 
             for(SizeType i = 0; i < n; ++i) {
-                result.set(i, get(index[i]));
+                result.set(i, get(index.get(i)));
             }
         }
 

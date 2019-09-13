@@ -7,21 +7,18 @@
 // #include "utopia_blas_CRSMatrix.hpp"
 // #include "utopia_blas_CCSMatrix.hpp"
 #include "utopia_blas_ForwardDeclarations.hpp"
+#include <vector>
 
 namespace utopia {
 
     template<typename T>
     class BLASTraits {
     public:
-        typedef T Scalar;
-        typedef utopia::BlasDenseMatrix<T> Matrix;
-        typedef utopia::BlasVector<T> Vector;
-        // typedef utopia::CRSMatrix<T> CRSMatrix;
-        //default sparse matrix
-        // typedef utopia::CRSMatrix<T> SparseMatrix;
-
-        // typedef utopia::CCSMatrix<T> CCSMatrix;
-        typedef typename std::vector<T>::size_type SizeType;
+        using Scalar   = T;
+        using Matrix   = utopia::BlasDenseMatrix<T>;
+        using Vector   = utopia::BlasVector<T>;
+        using SizeType = typename std::vector<T>::size_type;
+        using IndexSet = utopia::BlasIndexSet;
 
         enum {
             Backend = BLAS
@@ -34,11 +31,10 @@ namespace utopia {
         }
     };
 
-    // UTOPIA_MAKE_TRAITS_TPL_1(std::vector, BLASTraits);
     UTOPIA_MAKE_TRAITS_TPL_1(BlasVector, BLASTraits);
     UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasDenseMatrix, BLASTraits);
-    // UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(CRSMatrix, BLASTraits);
-    // UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(CCSMatrix, BLASTraits);
+    // UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasIndexSet, BLASTraits);
+
 }
 
 #endif //UTOPIA_UTOPIA_BLASTRAITS_HPP

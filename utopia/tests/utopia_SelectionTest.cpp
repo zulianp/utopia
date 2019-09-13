@@ -12,12 +12,12 @@ namespace utopia {
     template<class Matrix, class Vector>
     class SelectionTest {
     private:
-        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+         using Scalar   = typename utopia::Traits<Vector>::Scalar;
+         using SizeType = typename utopia::Traits<Vector>::SizeType;
+         using IndexSet = typename utopia::Traits<Vector>::IndexSet;
 
         void vector_selection_test()
         {
-            typedef typename utopia::Traits<Vector>::SizeType SizeType;
-
             const int n = mpi_world_size() * 3;
             Vector v = zeros(n);
             auto r = range(v);
@@ -29,9 +29,14 @@ namespace utopia {
                 }
             }
 
-            std::vector<SizeType> s;
-            s.push_back(r.begin());
-            s.push_back(r.end() % n);
+            IndexSet s;
+            s.resize(2);
+            {
+                Write<IndexSet> w(s);
+
+                s.set(0, r.begin());
+                s.set(1, r.end() % n);
+            }
 
             Vector selection = select(v, s);
             auto s_r = range(selection);
@@ -48,8 +53,6 @@ namespace utopia {
 
         void matrix_selection_test()
         {
-            typedef typename utopia::Traits<Vector>::SizeType SizeType;
-
             const SizeType n = mpi_world_size() * 3;
             Matrix m = zeros(n, n);
             auto rr = row_range(m);
@@ -63,15 +66,22 @@ namespace utopia {
                 }
             }
 
-            std::vector<SizeType> r_s;
-            std::vector<SizeType> c_s;
+            IndexSet r_s;
+            IndexSet c_s;
 
-            r_s.push_back(rr.begin());
-            r_s.push_back(rr.begin() + 1);
+            r_s.resize(2);
+            c_s.resize(2);
 
-            c_s.push_back(0);
-            c_s.push_back(2);
+            {
+                Write<IndexSet> wr(r_s), wc(c_s);
+                r_s.set(0, rr.begin());
+                r_s.set(1, rr.begin() + 1);
 
+                c_s.set(0, 0);
+                c_s.set(1, 2);
+            }
+
+           
             Matrix selection = select(m, r_s, c_s);
 
             {

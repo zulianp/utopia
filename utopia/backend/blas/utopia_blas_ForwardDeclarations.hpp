@@ -7,6 +7,8 @@ namespace utopia {
 
 	template<typename T>
 	class BlasVector;
+
+	class BlasIndexSet;
 }
 
 #endif //UTOPIA_BLAS_FORWARD_DECLARATIONS_HPP
