@@ -37,6 +37,28 @@ namespace utopia {
             const libMesh::DofMap &dof_map,
             libMesh::DofConstraints &constraints);
 
+
+        static void process_constraints (libMesh::MeshBase  &mesh, 
+                                         libMesh::DofMap &dof_map, 
+                                         libMesh::DofConstraints &_dof_constraints);
+
+        static  void add_constraints_to_send_list(libMesh::DofMap &dof_map, 
+                                      libMesh::DofConstraints &_dof_constraints);
+
+        static void gather_constraints (libMesh::MeshBase  & mesh,
+                             std::set<libMesh::dof_id_type> & unexpanded_dofs, 
+                             libMesh::DofConstraints &_dof_constraints,
+                             libMesh::DofMap & dof_map,
+                             bool look_for_constrainees);
+
+        static void allgather_recursive_constraints(libMesh::MeshBase  & mesh, 
+                                                    libMesh::DofConstraints &_dof_constraints, 
+                                                    libMesh::DofMap &dof_map);
+
+        static void scatter_constraints(libMesh::MeshBase  & mesh, 
+                                        libMesh::DofMap &dof_map, 
+                                        libMesh::DofConstraints &_dof_constraints);
+
         template<class ElementMatrix>
         static void construct_constraint_matrix(const libMesh::Elem *elem,
                                                 const libMesh::DofMap &dof_map,

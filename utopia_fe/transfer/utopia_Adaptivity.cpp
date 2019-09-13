@@ -3,6 +3,11 @@
 #include "libmesh/elem.h"
 #include "libmesh/remote_elem.h"
 #include "libmesh/fe_interface.h"
+#include "libmesh/parallel.h"
+#include "libmesh/parallel_algebra.h"
+#include "libmesh/parallel_elem.h"
+#include "libmesh/parallel_node.h"
+#include "libmesh/parallel_sync.h"
 
 namespace utopia {
 
@@ -28,9 +33,19 @@ namespace utopia {
             }
         }
 
+          libMesh::MeshBase &mesh_copy=const_cast<libMesh::MeshBase&>(mesh);
+
+          libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
+
+          process_constraints(mesh_copy, dof_copy, constraints);
+
         std::cout << "--------------------------------------------------\n";
         std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
         std::cout << "--------------------------------------------------\n";
+
+      
+
+        
     }
     
     void Adaptivity::assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num)
@@ -59,6 +74,12 @@ namespace utopia {
             
         }
 
+        libMesh::MeshBase &mesh_copy=const_cast<libMesh::MeshBase&>(mesh);
+
+        libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
+
+        Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
+
         std::cout << "--------------------------------------------------\n";
         std::cout<< "[Adaptivity::assemble_constraint] n_constraints: " << dof_constraints_.size() << std::endl;
         std::cout << "--------------------------------------------------\n";
@@ -69,12 +90,13 @@ namespace utopia {
         const auto & mesh = V.mesh();
         unsigned int var_num = V.subspace_id();
         
-        auto & dof_map = V.dof_map();
+        const auto & dof_map = V.dof_map();
         constraint_matrix(mesh, dof_map, var_num, M, S);
     }
 
     void Adaptivity::constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S)
     {
+
 
         assemble_constraint(mesh, dof_map, var_num);
         
@@ -296,7 +318,7 @@ namespace utopia {
 
                             const libMesh::dof_id_type their_dof_g = parent_dof_indices[their_dof];
                             
-                            const libMesh::Real their_dof_value = libMesh::FEInterface::shape(mesh_dim-1,
+                            const double their_dof_value = libMesh::FEInterface::shape(mesh_dim-1,
                                                                             fe_type,
                                                                             parent_side->type(),
                                                                             their_dof,
@@ -315,5 +337,543 @@ namespace utopia {
                 }
             }
         }
+    }
+
+
+
+    void Adaptivity::process_constraints (libMesh::MeshBase &mesh, libMesh::DofMap &dof_map, libMesh::DofConstraints &_dof_constraints)
+    {
+
+       std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
+
+       allgather_recursive_constraints(mesh, _dof_constraints, dof_map);
+
+       typedef std::set<libMesh::dof_id_type> RCSet;
+       RCSet unexpanded_set;
+
+       for (const auto & i : _dof_constraints)
+        unexpanded_set.insert(i.first);
+
+       while (!unexpanded_set.empty())
+         for (RCSet::iterator i = unexpanded_set.begin();
+             i != unexpanded_set.end(); /* nothing */)
+          {
+            // If the DOF is constrained
+            libMesh::DofConstraints::iterator
+              pos = _dof_constraints.find(*i);
+
+            libmesh_assert (pos != _dof_constraints.end());
+
+            libMesh::DofConstraintRow & constraint_row = pos->second;
+
+            std::vector<libMesh::dof_id_type> constraints_to_expand;
+
+            for (const auto & item : constraint_row)
+              if (item.first != *i && dof_map.is_constrained_dof(item.first))
+                {
+                  unexpanded_set.insert(item.first);
+                  constraints_to_expand.push_back(item.first);
+                }
+
+            for (const auto & expandable : constraints_to_expand)
+              {
+                const double this_coef = constraint_row[expandable];
+
+                libMesh::DofConstraints::const_iterator
+                subpos = _dof_constraints.find(expandable);
+
+                libmesh_assert (subpos != _dof_constraints.end());
+
+                const libMesh::DofConstraintRow & subconstraint_row = subpos->second;
+
+                for (const auto & item : subconstraint_row)
+                  {
+                    // Assert that the constraint does not form a cycle.
+                    libmesh_assert(item.first != expandable);
+                    constraint_row[item.first] += item.second * this_coef;
+                    std::cout<<"item.second * this_coef=>"<<item.second * this_coef<<std::endl;
+                  }
+
+                constraint_row.erase(expandable);
+              }
+
+            if (constraints_to_expand.empty())
+              i = unexpanded_set.erase(i);
+            else
+              ++i;
+          }
+
+      std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
+
+
+      scatter_constraints(mesh, dof_map, _dof_constraints);
+    
+      // Now that we have our root constraint dependencies sorted out, add
+      // them to the send_list
+      add_constraints_to_send_list(dof_map, _dof_constraints);
+    }
+
+
+    void Adaptivity::allgather_recursive_constraints(libMesh::MeshBase & mesh, 
+                                                    libMesh::DofConstraints &_dof_constraints, 
+                                                    libMesh::DofMap &dof_map)
+    {
+       std::cout<<"Adaptivity::allgather_recursive_constraints::BEGIN "<<std::endl;
+
+      // This function must be run on all processors at once
+      //parallel_object_only();
+
+
+      if (dof_map.n_processors() == 1)
+        return;
+
+
+        unsigned int has_constraints = !_dof_constraints.empty();
+
+      dof_map.comm().max(has_constraints);
+
+      if (!has_constraints)
+        return;
+      {
+        std::map<libMesh::processor_id_type, std::set<libMesh::dof_id_type>> pushed_ids;
+
+
+
+        const unsigned int sys_num = dof_map.sys_number();
+
+        // Collect the constraints to push to each processor
+        for (auto & elem : as_range(mesh.active_not_local_elements_begin(),
+                                    mesh.active_not_local_elements_end()))
+          {
+            const unsigned short n_nodes = elem->n_nodes();
+
+            {
+              const unsigned int n_vars = elem->n_vars(sys_num);
+              for (unsigned int v=0; v != n_vars; ++v)
+                {
+                  const unsigned int n_comp = elem->n_comp(sys_num,v);
+                  for (unsigned int c=0; c != n_comp; ++c)
+                    {
+                      const unsigned int id =
+                        elem->dof_number(sys_num,v,c);
+                      if (dof_map.is_constrained_dof(id))
+                        pushed_ids[elem->processor_id()].insert(id);
+                    }
+                }
+            }
+
+            for (unsigned short n = 0; n != n_nodes; ++n)
+              {
+                const libMesh::Node & node = elem->node_ref(n);
+                const unsigned int n_vars = node.n_vars(sys_num);
+                for (unsigned int v=0; v != n_vars; ++v)
+                  {
+                    const unsigned int n_comp = node.n_comp(sys_num,v);
+                    for (unsigned int c=0; c != n_comp; ++c)
+                      {
+                        const unsigned int id =
+                          node.dof_number(sys_num,v,c);
+                        if (dof_map.is_constrained_dof(id))
+                          pushed_ids[elem->processor_id()].insert(id);
+                      }
+                  }
+              }
+
+          }
+
+        // Rewrite those id sets as vectors for sending and receiving,
+        // then find the corresponding data for each id, then push it all.
+        std::map<libMesh::processor_id_type, std::vector<libMesh::dof_id_type>>
+          pushed_id_vecs, received_id_vecs;
+        for (auto & p : pushed_ids)
+          pushed_id_vecs[p.first].assign(p.second.begin(), p.second.end());
+
+        std::map<libMesh::processor_id_type, std::vector<std::vector<std::pair<libMesh::dof_id_type,double>>>>
+          pushed_keys_vals, received_keys_vals;
+
+        for (auto & p : pushed_id_vecs)
+          {
+            auto & keys_vals = pushed_keys_vals[p.first];
+            keys_vals.reserve(p.second.size());
+
+            for (auto & pushed_id : p.second)
+              {
+                const libMesh::DofConstraintRow & row = _dof_constraints[pushed_id];
+                keys_vals.emplace_back(row.begin(), row.end());
+
+              }
+          }
+
+        auto ids_action_functor =
+          [& received_id_vecs]
+          (libMesh::processor_id_type pid,
+           const std::vector<libMesh::dof_id_type> & data)
+          {
+            received_id_vecs[pid] = data;
+          };
+
+        libMesh::Parallel::push_parallel_vector_data
+          (dof_map.comm(), pushed_id_vecs, ids_action_functor);
+
+        auto keys_vals_action_functor =
+          [& received_keys_vals]
+          (libMesh::processor_id_type pid,
+           const std::vector<std::vector<std::pair<libMesh::dof_id_type,double>>> & data)
+          {
+            received_keys_vals[pid] = data;
+          };
+
+        libMesh::Parallel::push_parallel_vector_data
+          (dof_map.comm(), pushed_keys_vals, keys_vals_action_functor);
+
+
+
+        for (auto & p : received_id_vecs)
+          {
+            const libMesh::processor_id_type pid = p.first;
+            const auto & pushed_ids_to_me = p.second;
+            libmesh_assert(received_keys_vals.count(pid));
+
+            const auto & pushed_keys_vals_to_me = received_keys_vals.at(pid);
+
+
+            libmesh_assert_equal_to (pushed_ids_to_me.size(),
+                                     pushed_keys_vals_to_me.size());
+
+
+            for (auto i : libMesh::index_range(pushed_ids_to_me))
+              {
+                libMesh::dof_id_type constrained = pushed_ids_to_me[i];
+
+        
+                if (!dof_map.is_constrained_dof(constrained))
+                  {
+                    libMesh::DofConstraintRow & row = _dof_constraints[constrained];
+                    for (auto & kv : pushed_keys_vals_to_me[i])
+                      {
+                        libmesh_assert_less(kv.first, dof_map.n_dofs());
+                        row[kv.first] = kv.second;
+                      }
+                  }
+              }
+          }
+      }
+
+
+      typedef std::set<libMesh::dof_id_type> DoF_RCSet;
+      DoF_RCSet unexpanded_dofs;
+
+      for (const auto & i : _dof_constraints)
+        unexpanded_dofs.insert(i.first);
+
+      std::cout<<"Adaptivity::allgather_recursive_constraints::END"<<std::endl;
+
+
+      gather_constraints(mesh, unexpanded_dofs, _dof_constraints, dof_map, false);
+
+      
+    }
+
+
+
+    void Adaptivity::gather_constraints (libMesh::MeshBase & mesh,
+                                         std::set<libMesh::dof_id_type> & unexpanded_dofs, 
+                                         libMesh::DofConstraints & _dof_constraints,
+                                         libMesh::DofMap &dof_map,
+                                         bool look_for_constrainees)
+    {
+      typedef std::set<libMesh::dof_id_type> DoF_RCSet;
+
+     std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
+
+      bool unexpanded_set_nonempty = !unexpanded_dofs.empty();
+      dof_map.comm().max(unexpanded_set_nonempty);
+
+      while (unexpanded_set_nonempty)
+        {
+          // Let's make sure we don't lose sync in this loop.
+          //parallel_object_only();
+
+          // Request sets
+          DoF_RCSet   dof_request_set;
+
+          // Request sets to send to each processor
+          std::map<libMesh::processor_id_type, std::vector<libMesh::dof_id_type>>
+            requested_dof_ids;
+
+          // And the sizes of each
+          std::map<libMesh::processor_id_type, libMesh::dof_id_type>
+            dof_ids_on_proc;
+
+          // Fill (and thereby sort and uniq!) the main request sets
+          for (const auto & unexpanded_dof : unexpanded_dofs)
+            {
+              libMesh::DofConstraints::const_iterator
+                pos = _dof_constraints.find(unexpanded_dof);
+
+              // If we were asked for a DoF and we don't already have a
+              // constraint for it, then we need to check for one.
+              if (pos == _dof_constraints.end())
+                {
+                  if (!dof_map.local_index(unexpanded_dof) &&
+                      !_dof_constraints.count(unexpanded_dof) )
+                    dof_request_set.insert(unexpanded_dof);
+                }
+              // If we were asked for a DoF and we already have a
+              // constraint for it, then we need to check if the
+              // constraint is recursive.
+              else
+                {
+                  const libMesh::DofConstraintRow & row = pos->second;
+                  for (const auto & j : row)
+                    {
+                      const libMesh::dof_id_type constraining_dof = j.first;
+
+                      // If it's non-local and we haven't already got a
+                      // constraint for it, we might need to ask for one
+                      if (!dof_map.local_index(constraining_dof) &&
+                          !_dof_constraints.count(constraining_dof))
+                        dof_request_set.insert(constraining_dof);
+                    }
+                }
+            }
+
+          // Clear the unexpanded constraint set; we're about to expand it
+          unexpanded_dofs.clear();
+
+          // Count requests by processor
+          libMesh::processor_id_type proc_id = 0;
+          for (const auto & i : dof_request_set)
+            {
+              while (i >= dof_map.end_dof(proc_id))
+                proc_id++;
+              dof_ids_on_proc[proc_id]++;
+            }
+
+          for (auto & pair : dof_ids_on_proc)
+            {
+              requested_dof_ids[pair.first].reserve(pair.second);
+            }
+
+          // Prepare each processor's request set
+          proc_id = 0;
+          for (const auto & i : dof_request_set)
+            {
+              while (i >= dof_map.end_dof(proc_id))
+                proc_id++;
+              requested_dof_ids[proc_id].push_back(i);
+            }
+
+          unexpanded_set_nonempty = !unexpanded_dofs.empty();
+          dof_map.comm().max(unexpanded_set_nonempty);
+        }
+
+
+     std::cout<<"Adaptivity::gather_constraints::END "<<std::endl; 
+    }
+
+    void Adaptivity::add_constraints_to_send_list(libMesh::DofMap &dof_map, 
+                                                  libMesh::DofConstraints &_dof_constraints)
+    {
+      
+
+     std::cout<<"Adaptivity::add_constraints_to_send_list::BEGIN "<<std::endl; 
+      // This function must be run on all processors at once
+     // parallel_object_only();
+
+      // Return immediately if there's nothing to gather
+      if (dof_map.n_processors() == 1)
+        return;
+
+      // We might get to return immediately if none of the processors
+      // found any constraints
+      unsigned int has_constraints = !_dof_constraints.empty();
+      dof_map.comm().max(has_constraints);
+      if (!has_constraints)
+        return;
+
+      for (const auto & i : _dof_constraints)
+        {
+          libMesh::dof_id_type constrained_dof = i.first;
+
+          // We only need the dependencies of our own constrained dofs
+          if (!dof_map.local_index(constrained_dof))
+            continue;
+
+          const libMesh::DofConstraintRow & constraint_row = i.second;
+          for (const auto & j : constraint_row)
+            {
+              libMesh::dof_id_type constraint_dependency = j.first;
+
+              // No point in adding one of our own dofs to the send_list
+              if (dof_map.local_index(constraint_dependency))
+                continue;
+
+               std::vector<libMesh::dof_id_type> _send_list = dof_map.get_send_list();
+
+              _send_list.push_back(constraint_dependency);
+            }
+        }
+
+
+     std::cout<<"Adaptivity::add_constraints_to_send_list::END "<<std::endl;  
+    }
+
+
+    void Adaptivity::scatter_constraints(libMesh::MeshBase & mesh, 
+                                         libMesh::DofMap &dof_map, 
+                                         libMesh::DofConstraints &_dof_constraints)
+    {
+
+
+
+
+      std::cout<<"Adaptivity::scatter_constraints::BEGIN"<<std::endl;
+
+      // This function must be run on all processors at once
+      //parallel_object_only();
+
+      // Return immediately if there's nothing to gather
+      if (dof_map.n_processors() == 1)
+        return;
+
+      // We might get to return immediately if none of the processors
+      // found any constraints
+      unsigned int has_constraints = !_dof_constraints.empty();
+
+        
+      dof_map.comm().max(has_constraints);
+      if (!has_constraints)
+        return;
+
+      libMesh::Parallel::MessageTag range_tag = dof_map.comm().get_unique_tag();
+
+
+      std::map<libMesh::processor_id_type, std::set<libMesh::dof_id_type>> pushed_ids;
+
+      // Collect the dof constraints I need to push to each processor
+      libMesh::dof_id_type constrained_proc_id = 0;
+      for (auto & i : _dof_constraints)
+        {
+          const libMesh::dof_id_type constrained = i.first;
+          while (constrained >= dof_map.end_dof(constrained_proc_id))
+            constrained_proc_id++;
+
+          if (constrained_proc_id != dof_map.processor_id())
+            continue;
+
+          libMesh::DofConstraintRow & row = i.second;
+          for (auto & j : row)
+            {
+              const libMesh::dof_id_type constraining = j.first;
+
+              libMesh::processor_id_type constraining_proc_id = 0;
+              while (constraining >= dof_map.end_dof(constraining_proc_id))
+                constraining_proc_id++;
+
+              if (constraining_proc_id != dof_map.processor_id() &&
+                  constraining_proc_id != constrained_proc_id)
+                pushed_ids[constraining_proc_id].insert(constrained);
+            }
+        }
+
+      // Pack the dof constraint rows and rhs's to push
+
+      std::map<libMesh::processor_id_type,
+              std::vector<std::vector<std::pair<libMesh::dof_id_type, double>>>>
+        pushed_keys_vals, pushed_keys_vals_to_me;
+
+
+      auto keys_vals_action_functor =
+        [& pushed_keys_vals_to_me]
+        (libMesh::processor_id_type pid,
+         const std::vector<std::vector<std::pair<libMesh::dof_id_type, double>>> & data)
+        {
+          pushed_keys_vals_to_me[pid] = data;
+        };
+
+
+      libMesh::Parallel::push_parallel_vector_data
+        (dof_map.comm(), pushed_keys_vals, keys_vals_action_functor);
+
+      
+
+      typedef std::map<libMesh::dof_id_type, std::set<libMesh::dof_id_type>> DofConstrainsMap;
+      DofConstrainsMap dof_id_constrains;
+
+      for (auto & i : _dof_constraints)
+        {
+          const libMesh::dof_id_type constrained = i.first;
+          libMesh::DofConstraintRow & row = i.second;
+          for (const auto & j : row)
+            {
+              const libMesh::dof_id_type constraining = j.first;
+
+              libMesh::dof_id_type constraining_proc_id = 0;
+              while (constraining >= dof_map.end_dof(constraining_proc_id))
+                constraining_proc_id++;
+
+              if (constraining_proc_id == dof_map.processor_id())
+                dof_id_constrains[constraining].insert(constrained);
+            }
+        }
+
+      // Loop over all foreign elements, find any supporting our
+      // constrained dof indices.
+      pushed_ids.clear();
+
+      for (const auto & elem : as_range(mesh.active_not_local_elements_begin(),
+                                        mesh.active_not_local_elements_end()))
+        {
+          std::vector<libMesh::dof_id_type> my_dof_indices;
+          dof_map.dof_indices (elem, my_dof_indices);
+
+          for (const auto & dof : my_dof_indices)
+            {
+              DofConstrainsMap::const_iterator dcmi = dof_id_constrains.find(dof);
+              if (dcmi != dof_id_constrains.end())
+                {
+                  for (const auto & constrained : dcmi->second)
+                    {
+                      libMesh::dof_id_type the_constrained_proc_id = 0;
+                      while (constrained >= dof_map.end_dof(the_constrained_proc_id))
+                        the_constrained_proc_id++;
+
+                      const libMesh::processor_id_type elemproc = elem->processor_id();
+                      if (elemproc != the_constrained_proc_id)
+                        pushed_ids[elemproc].insert(constrained);
+                    }
+                }
+            }
+        }
+
+
+      pushed_keys_vals.clear();
+      pushed_keys_vals_to_me.clear();
+
+      libMesh::Parallel::push_parallel_vector_data
+        (dof_map.comm(), pushed_keys_vals, keys_vals_action_functor);
+
+
+      libMesh::GhostingFunctor::map_type elements_to_couple;
+
+
+      std::set<libMesh::dof_id_type> requested_dofs;
+
+      for (const auto & pr : elements_to_couple)
+        {
+          const libMesh::Elem * elem = pr.first;
+
+          // FIXME - optimize for the non-fully-coupled case?
+          std::vector<libMesh::dof_id_type> element_dofs;
+          dof_map.dof_indices(elem, element_dofs);
+
+          for (auto dof : element_dofs)
+            requested_dofs.insert(dof);
+        }
+
+        std::cout<<"Adaptivity::scatter_constraints::END"<<std::endl; 
+
+         gather_constraints(mesh, requested_dofs, _dof_constraints, dof_map, false);
     }
 }
