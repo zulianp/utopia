@@ -332,9 +332,9 @@ namespace utopia {
 //     };
 
 //     template<class T, int Order>
-//     class Write< std::vector<Wrapper<T, Order> > > {
+//     class Write< std::vector<Tensor<T, Order> > > {
 //     public:
-//         using Tensors = std::vector<Wrapper<T, Order> >;
+//         using Tensors = std::vector<Tensor<T, Order> >;
 //         using Scalar  = typename Traits<T>::Scalar;
         
 
@@ -384,10 +384,22 @@ namespace utopia {
             WriteMode mode_;
         };
 
-        template<class T, int Order>
-        class Write< std::vector<Wrapper<T, Order> > > {
+        template<class T>
+        class Write<std::vector<T>> {
         public:
-            using Tensors = std::vector<Wrapper<T, Order> >;            
+            inline Write(const std::vector<T> &) {}
+        };
+
+        template<class T, std::size_t N>
+        class Write<std::array<T, N>> {
+        public:
+            inline Write(const std::array<T, N> &) {}
+        };
+
+        template<class T, int Order>
+        class Write< std::vector<Tensor<T, Order> > > {
+        public:
+            using Tensors = std::vector<Tensor<T, Order> >;            
 
             Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
             : tensors_(tensors), mode_(mode)

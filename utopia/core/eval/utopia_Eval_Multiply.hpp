@@ -44,8 +44,11 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left().expr()).transpose_multiply(
-                Eval<Right, Traits>::apply(expr.right()), 
+            auto &&l = Eval<Left,  Traits>::apply(expr.left().expr());
+            auto &&r = Eval<Right, Traits>::apply(expr.right());
+            
+            l.transpose_multiply(
+                r, 
                 result
             );
 
@@ -73,9 +76,7 @@ namespace utopia {
             //     );
 
 
-            Eval<Left, Traits>::apply(expr.left()).multiply(
-                false,
-                true,
+            Eval<Left, Traits>::apply(expr.left()).multiply_transpose(
                 Eval<Right, Traits>::apply(expr.right().expr()),
                 result
             );

@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 29/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_EVAL_BINARY_HPP_HPP
 #define UTOPIA_UTOPIA_EVAL_BINARY_HPP_HPP
 
@@ -86,22 +82,6 @@ namespace utopia {
             result.e_max(right.get());
         }
  
-        // template<class Left, class Right>
-        // static void apply(Left &&left, const Number<Right> &right, const Plus &, Result &result)
-        // {
-        //     // result.construct(std::forward<Left>(left));
-        //     // result.axpy(1.0, right);
-        //     assert(false);
-        // }
-
-        // template<class Left, class Right>
-        // static void apply(Left &&left, const Number<Right> &right, const Minus &, Result &result)
-        // {
-        //     // result.construct(std::forward<Left>(left));
-        //     // result.axpy(-1.0, right);
-        //     assert(false);
-        // }
-
         template<class Left, class Right>
         static void apply(Left &&left, const Number<Right> &right, const Multiplies &, Result &result)
         {
@@ -123,14 +103,6 @@ namespace utopia {
             result.scale(left);
         }
 
-        // template<class Left, class Right>
-        // static void apply(Left &&left, const Number<Right> &right, const Min &, Result &result)
-        // {
-        //     // result.construct(std::forward<Left>(left));
-        //     // result.e_min(right);
-        //     assert(false);
-        // }
-
         template<class Left, class Right, class Op>
         static void apply(const Number<Left> &left, const Number<Right> &right, const Op &op, Result &result)
         {
@@ -142,15 +114,6 @@ namespace utopia {
         {
              result = op.template apply<Scalar>(left, right);
         }
-
-        // template<class Left, class Right>
-        // static void apply(Left &&left, const Number<Right> &right, const Max &, Result &result)
-        // {
-        //     // result.construct(std::forward<Left>(left));
-        //     // result.e_max(right);
-
-        //     assert(false);
-        // }
     };
 
     template<>
@@ -162,7 +125,6 @@ namespace utopia {
              result = op.template apply<double>(left, right);
         }
     };
-
 
     template<class ScalarT, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Number<ScalarT>, Right, Operation>, Traits, Backend> {
@@ -223,8 +185,6 @@ namespace utopia {
         }
     };
 
- 
-
     template<class Left, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Left, Right, Operation>, Traits, Backend> {
     public:
@@ -269,7 +229,6 @@ namespace utopia {
         }
     };
 
-
     template<class Left, class Right, class Traits, int Backend>
     class Eval<OuterProduct<Left, Right>, Traits, Backend> {
     public:
@@ -279,12 +238,6 @@ namespace utopia {
             EXPR_TYPE(Traits, Expr) result;
 
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).kronecker_product(
-            //     result,
-            //     Eval<Left, Traits>::apply(expr.left()),
-            //     Eval<Right, Traits>::apply(expr.right())
-            //     );
 
             auto left  = Eval<Left, Traits>::apply(expr.left());
             auto right = Eval<Left, Traits>::apply(expr.right());

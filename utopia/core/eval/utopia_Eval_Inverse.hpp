@@ -5,15 +5,15 @@
 
 namespace utopia {
 
-        template<class Tensor, class Traits, int Backend>
-        class Eval<Inverse< Wrapper<Tensor, 2> >, Traits, Backend> {
+        template<class Derived, class Traits, int Backend>
+        class Eval<Inverse< Tensor<Derived, 2> >, Traits, Backend> {
         public:
-            typedef utopia::Wrapper<Tensor, 2> Tensor2;
+            typedef Derived Tensor2;
             typedef utopia::Inverse<Tensor2> Expr;
 
             typedef typename Traits::Scalar Scalar;
 
-            inline static Tensor apply(const Expr &expr)
+            inline static Derived apply(const Expr &expr)
             {
                 UTOPIA_TRACE_BEGIN(expr);
                 Tensor2 ret;

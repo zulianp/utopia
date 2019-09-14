@@ -10,10 +10,10 @@ namespace utopia
     class EvalGetCol
     {
         public:
-            static void apply(const Wrapper<Matrix, 2> &M, Wrapper<Vector, 1> &v, typename utopia::Traits<Vector>::SizeType col_id)
+            static void apply(const Tensor<Matrix, 2> &M, Tensor<Vector, 1> &v, typename utopia::Traits<Vector>::SizeType col_id)
             {
-                 using VectorT  = utopia::Wrapper<Vector, 1>;
-                using MatrixT  = utopia::Wrapper<Matrix, 2>;
+                 using VectorT  = utopia::Tensor<Vector, 1>;
+                using MatrixT  = utopia::Tensor<Matrix, 2>;
 
                 using SizeType = UTOPIA_SIZE_TYPE(VectorT);
 
@@ -42,9 +42,9 @@ namespace utopia
 
 
     template<class Matrix, class Vector>
-    void mat_get_col(const Wrapper<Matrix, 2> &M, Wrapper<Vector, 1> &v, typename utopia::Traits<Vector>::SizeType col_id)
+    void mat_get_col(const Tensor<Matrix, 2> &M, Tensor<Vector, 1> &v, typename utopia::Traits<Vector>::SizeType col_id)
     {
-        EvalGetCol<Matrix, Vector>::apply(M, v, col_id);
+        EvalGetCol<Matrix, Vector>::apply(M.derived(), v.derived(), col_id);
     }
 
 

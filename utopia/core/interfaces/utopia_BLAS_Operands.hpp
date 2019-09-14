@@ -162,10 +162,16 @@ namespace utopia {
 			multiply(false, alpha, false, B, C);
 		}
 
-		/// C := alpha * A * B
+		/// C := A^T * B
 		virtual void transpose_multiply(const Matrix &B, Matrix &C) const
 		{
 			multiply(true, 1.0, false, B, C);
+		}
+
+		/// C := A * B^T
+		virtual void multiply_transpose(const Matrix &B, Matrix &C) const
+		{
+			multiply(false, 1.0, true, B, C);
 		}
 
 		/// C := alpha * op(A) * op(B)

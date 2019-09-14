@@ -15,6 +15,7 @@
 #include "utopia_Transformable.hpp"
 #include "utopia_Reducible.hpp"
 #include "utopia_blas_IndexSet.hpp"
+#include "utopia_Operations.hpp"
 
 
 #include <vector>
@@ -442,6 +443,15 @@ namespace utopia {
             const T beta,
             BlasDenseMatrix &C) const override
         {
+            //handle aliases
+            if(&B == &C || this == &C) {
+                //TEMPORARY-CREATED
+                BlasDenseMatrix temp;
+                gemm(transpose_A, alpha, transpose_B, B, beta, temp);
+                C = std::move(temp);
+                return;
+            }
+
             const SizeType k = transpose_A ? this->rows() : this->cols();
             assert(k == (transpose_B ? B.cols() : B.rows()));
 
@@ -462,7 +472,8 @@ namespace utopia {
                 m, 
                 n, 
                 k, 
-                alpha, this->ptr(), 
+                alpha,
+                this->ptr(), 
                 transpose_A ? k : m,
                 B.ptr(),
                 transpose_B ? n : k,

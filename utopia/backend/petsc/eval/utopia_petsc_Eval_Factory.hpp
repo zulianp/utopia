@@ -21,7 +21,6 @@ namespace utopia {
         }
     };
 
-
     template<class Left, class Index, class Traits>
     class Eval< Construct<Left, Ghosts<Index> >, Traits, PETSC> {
     public:
@@ -29,13 +28,6 @@ namespace utopia {
 
         inline static void apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).build_ghosts(
-            //     expr.right().local_size(),
-            //     expr.right().global_size(),
-            //     expr.right().index(),
-                
-            // );
 
             const auto &r = expr.right();
 
@@ -55,13 +47,6 @@ namespace utopia {
 
         inline static void apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).build_ghosts(
-            //     expr.right().local_size(),
-            //     expr.right().global_size(),
-            //     expr.right().index(),
-            //     Eval<Left, Traits, PETSC>::apply(expr.left())
-            // );
 
             const auto &r = expr.right();
 

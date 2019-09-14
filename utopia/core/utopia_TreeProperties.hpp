@@ -117,8 +117,8 @@ namespace utopia {
 
 
 
-    template<class Tensor, int Order>
-    class TreeProperties< Wrapper<Tensor, Order> > {
+    template<class T, int Order>
+    class TreeProperties< Tensor<T, Order> > {
     public:
         enum { greatest_tensor_order = Order   };
         enum { smallest_tensor_order = Order   };

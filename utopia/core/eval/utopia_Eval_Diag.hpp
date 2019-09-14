@@ -23,11 +23,6 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).diag_scale_right(
-            //         Eval<Left,  Traits>::apply(expr.left()),
-            //         Eval<Right, Traits>::apply(expr.right().expr()),
-            //         result);
-
             result.construct(
                 Eval<Left,  Traits>::apply(expr.left())
             );
@@ -72,11 +67,6 @@ namespace utopia {
             EXPR_TYPE(Traits, Right) result;
 
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).diag_scale_left(
-            //         result,
-            //         Eval<Left,  Traits>::apply(expr.left().expr()),
-            //         Eval<Right, Traits>::apply(expr.right()));
 
             result.construct(
                 Eval<Right, Traits>::apply(expr.right())
@@ -125,11 +115,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).diag(
-            //         Eval<Left,  Traits>::apply(expr.left()),
-            //         Eval<Right, Traits>::apply(expr.right().expr())
-            // );
-
             Eval<Left,  Traits>::apply(expr.left()).diag(
                 Eval<Right, Traits>::apply(expr.right().expr())
             );
@@ -163,11 +148,6 @@ namespace utopia {
         inline static bool apply(const Assign<Tensor<Left, 2>, Diag< Diag<Right> > > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).diag(
-            //         Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),
-            //         Eval<Right, Traits>::apply(expr.right().expr().expr())
-            // );
 
             Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()).diag(
                         Eval<Right, Traits>::apply(expr.right().expr().expr())
@@ -210,15 +190,10 @@ namespace utopia {
         inline static bool apply(const Construct<Left, Diag<Right> > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).diag(
-            //         Eval<Left,  Traits>::apply(expr.left()),
-            //         Eval<Right, Traits>::apply(expr.right().expr())
-            // );
-
-            Eval<Left,  Traits>::apply(expr.left()).diag(
-                    Eval<Right, Traits>::apply(expr.right().expr())
-            );
+            
+            auto &&r = Eval<Right, Traits>::apply(expr.right().expr());
+            
+            Eval<Left,  Traits>::apply(expr.left()).diag(r);
 
             UTOPIA_TRACE_END(expr);
             return true;

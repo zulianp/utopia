@@ -5,6 +5,7 @@
 #include "utopia_Inverse.hpp"
 
 namespace utopia {
+
     template<class Left, class Right, class Traits>
     class Eval< Construct<Left, Inverse<Right> >, Traits, PETSC> {
     public:
@@ -15,8 +16,6 @@ namespace utopia {
             UTOPIA_TRACE_BEGIN(expr);
             auto & left   = Eval<Left, Traits>::apply(expr.left());
             auto && right = Eval<Right, Traits>::apply(expr.right().expr());
-
-            // UTOPIA_BACKEND(Traits).inverse(left, right);
 
             right.inverse(left);
 
@@ -35,7 +34,6 @@ namespace utopia {
             auto & left   = Eval<Left, Traits>::apply(expr.left());
             auto && right = Eval<Right, Traits>::apply(expr.right().expr());
 
-            // UTOPIA_BACKEND(Traits).inverse(left, right);
             right.inverse(left);
 
             UTOPIA_TRACE_END(expr);

@@ -38,8 +38,8 @@ namespace utopia {
     template<class Left, class Right>
     class Multiply;
 
-    template<class Implementation, int Order>
-    class Wrapper;
+    // template<class Implementation, int Order>
+    // class Wrapper;
 
     template<class T>
     class Traits;

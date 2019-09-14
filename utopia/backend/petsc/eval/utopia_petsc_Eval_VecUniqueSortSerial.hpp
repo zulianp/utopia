@@ -22,7 +22,7 @@ namespace utopia
     class EvalVecUniqueSortSerial<Vector, PETSC>
     {
         public:
-            static void apply(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)
+            static void apply(const Tensor<Vector, 1> &x, Tensor<Vector, 1> &sorted, const int used_values = -1)
             {
                 PetscErrorCode ierr = 0;
 

@@ -5,6 +5,7 @@
 #include "utopia_Each.hpp"
 #include "utopia_petsc_RowView.hpp"
 #include "utopia_Wrapper.hpp"
+#include "utopia_Factory.hpp"
 
 namespace utopia {
 

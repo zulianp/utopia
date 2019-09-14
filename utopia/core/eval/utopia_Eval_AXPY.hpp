@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 29/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_EVAL_AXPY_HPP
 #define UTOPIA_UTOPIA_EVAL_AXPY_HPP
 
@@ -42,14 +38,6 @@ namespace utopia {
             result.construct(Eval<Right, Traits>::apply(expr.right()));
             result.axpy(expr.left().right(), Eval<Left, Traits>::apply(expr.left().left()));
 
-            // UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
-            // UTOPIA_BACKEND(Traits).axpy(
-            //         result,
-            //         expr.left().right(),
-            //         Eval<Left, Traits>::apply(expr.left().left())
-            //         );
-
-
             UTOPIA_TRACE_END(expr);
             return result;
         }
@@ -57,11 +45,11 @@ namespace utopia {
 
     ///hack that only allows for Terminal symbol on the left-hand side since the compiler thinks
     ///that this is ambiguous with Binary<Left, Right, Op>
-    template<class LeftTensor, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Wrapper<LeftTensor, Order>, Binary<Number<ScalarT>, Wrapper<RightTensor, Order>, Multiplies>, Plus>, Traits, Backend> {
+    template<class LeftDerived, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
+    class Eval<Binary<Tensor<LeftDerived, Order>, Binary<Number<ScalarT>, Tensor<RightTensor, Order>, Multiplies>, Plus>, Traits, Backend> {
     public:
-        typedef utopia::Wrapper<LeftTensor, Order> Left;
-        typedef utopia::Wrapper<RightTensor, Order> Right;
+        typedef utopia::Tensor<LeftDerived, Order> Left;
+        typedef utopia::Tensor<RightTensor, Order> Right;
         typedef utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Plus> Expr;
 
         inline static EXPR_TYPE(Traits, Left) apply(const Expr &expr)
@@ -70,13 +58,11 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Left, Traits>::apply(expr.left()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.right().left(),
-                    Eval<Right, Traits>::apply(expr.right().right())
-                    );
-
+            result.construct( Eval<Left, Traits>::apply(expr.left()) );
+            result.axpy(
+                expr.right().left(),
+                Eval<Right, Traits>::apply(expr.right().right())
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -85,11 +71,11 @@ namespace utopia {
 
     ///hack that only allows for Terminal symbol on the left-hand side since the compiler thinks
     ///that this is ambiguous with Binary<Left, Right, Op>
-    template<class LeftTensor, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Wrapper<LeftTensor, Order>, Binary<Wrapper<RightTensor, Order>, Number<ScalarT>, Multiplies>, Plus>, Traits, Backend> {
+    template<class LeftDerived, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
+    class Eval<Binary<Tensor<LeftDerived, Order>, Binary<Tensor<RightTensor, Order>, Number<ScalarT>, Multiplies>, Plus>, Traits, Backend> {
     public:
-        typedef utopia::Wrapper<LeftTensor, Order> Left;
-        typedef utopia::Wrapper<RightTensor, Order> Right;
+        typedef utopia::Tensor<LeftDerived, Order> Left;
+        typedef utopia::Tensor<RightTensor, Order> Right;
         typedef utopia::Binary<Left, Binary<Right, Number<ScalarT>, Multiplies>, Plus> Expr;
 
         inline static EXPR_TYPE(Traits, Left) apply(const Expr &expr)
@@ -98,45 +84,17 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Left, Traits>::apply(expr.left()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.right().right(),
-                    Eval<Right, Traits>::apply(expr.right().left())
-                    );
-
+            result.construct( Eval<Left, Traits>::apply(expr.left()) );
+            
+            result.axpy(
+                expr.right().right(),
+                Eval<Right, Traits>::apply(expr.right().left())
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
-
-    // template<class Left, typename ScalarT, class Traits, int Backend>
-    // class Eval<Assign<Left,
-    //                   Binary< Number<ScalarT>,
-    //                           Factory<Identity, 2>,
-    //                           Multiplies>
-    //                  >,
-    //            Traits, Backend> {
-    // public:
-    //     inline static void apply(const Assign<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies> > &expr) {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         UTOPIA_BACKEND(Traits).build(
-    //                Eval<Left, Traits>::apply(expr.left()),
-    //                size(expr.right().right()),
-    //                expr.right().right().type()
-    //         );
-
-    //         UTOPIA_BACKEND(Traits).scal(
-    //                 expr.right().left(),
-    //                 Eval<Left, Traits>::apply(expr.left()),
-    //                 Eval<Left, Traits>::apply(expr.left())
-    //         );
-
-    //         UTOPIA_TRACE_END(expr);
-    //     }
-    // };
 
     template<class Left, class Traits, int Backend>
     class Eval<Binary<Left, Factory<Identity, 2>, Plus>, Traits, Backend> {
@@ -165,28 +123,6 @@ namespace utopia {
 
             auto result = Eval<Left, Traits>::apply(expr.left());
             result.shift_diag(expr.right().left());
-
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Right)
-        apply(const Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus > &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).zaxpy(
-                    -expr.left().right(),
-                     Eval<Left,  Traits>::apply(expr.left().left()),
-                     Eval<Right, Traits>::apply(expr.right()),
-                     result
-            );
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -283,6 +219,29 @@ namespace utopia {
 
             UTOPIA_TRACE_END(expr);
             return true;
+        }
+    };
+
+    //FIXME WHY IS THIS NEVER INSTANTIATED?
+    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
+    class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {
+    public:
+        inline static EXPR_TYPE(Traits, Right)
+        apply(const Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus > &expr)
+        {
+            EXPR_TYPE(Traits, Right) result;
+
+            UTOPIA_TRACE_BEGIN(expr);
+
+            UTOPIA_BACKEND(Traits).zaxpy(
+                    -expr.left().right(),
+                     Eval<Left,  Traits>::apply(expr.left().left()),
+                     Eval<Right, Traits>::apply(expr.right()),
+                     result
+            );
+
+            UTOPIA_TRACE_END(expr);
+            return result;
         }
     };
 }

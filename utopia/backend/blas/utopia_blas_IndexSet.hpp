@@ -33,6 +33,17 @@ namespace utopia {
 			return index_[i];
 		}
 
+		Index &operator[](const SizeType &i)
+		{
+			assert( i < size() );
+			return index_[i];
+		}
+
+		const Index &operator[](const SizeType &i) const
+		{
+			assert( i < size() );
+			return index_[i];
+		}
 
 		//print function
 		inline void describe() const override

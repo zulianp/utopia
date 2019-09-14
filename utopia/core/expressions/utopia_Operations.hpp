@@ -13,6 +13,7 @@
 #include "utopia_Binary.hpp"
 #include "utopia_Literal.hpp"
 #include "utopia_Boolean.hpp"
+#include "utopia_Factory.hpp"
 
 #include <limits>
 #include <cmath>

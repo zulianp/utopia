@@ -744,11 +744,6 @@ namespace utopia {
         utopia_test_assert(approxeq(expected, res));
     }
 
-    template<class Tensor, int Order>
-    utopia::Wrapper<Tensor, Order> &to_wrapper(utopia::Wrapper<Tensor, Order> &t)
-    {
-        return t;
-    }
 
 
     // template<class Left, class Right>
@@ -827,7 +822,7 @@ namespace utopia {
     void petsc_inverse()
     {
         if(mpi_world_size() == 1) {
-            DMatrixd mat = identity(3, 3);
+            DMatrixd mat = dense_identity(3, 3);
 
             {
                 Write<DMatrixd> w(mat);

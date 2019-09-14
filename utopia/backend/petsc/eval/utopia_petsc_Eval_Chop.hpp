@@ -4,6 +4,7 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_petsc_Traits.hpp"
 #include "utopia_petsc_Backend.hpp"
+#include "utopia_Temp.hpp"
 
 #include <cassert>
 
@@ -11,118 +12,24 @@
 * Petsc language extensions
 */
 
-namespace utopia
-{
-
-
+namespace utopia {
     template<class Matrix>
-    class ChopSmallerThan<Matrix, PETSC>
-    {
-        public:
-            static void apply(const Wrapper<Matrix, 2> &A, const double & eps)
-            {
-            
-                PetscScalar    *newVals;
-                PetscInt       *newCols;
-                PetscInt       rStart=0, rEnd=0, numRows=0, maxRows=0, r=0, colMax = 0;
+    class ChopSmallerThan<Matrix, PETSC> {
+    public:
+        using Scalar   = typename Traits<Matrix>::Scalar;
+        using SizeType = typename Traits<Matrix>::SizeType;
 
-                MatGetOwnershipRange(raw_type(A), &rStart, &rEnd);
-                for (r = rStart; r < rEnd; ++r) 
-                {
-                    PetscInt ncols;
-
-                    MatGetRow(raw_type(A), r, &ncols, NULL, NULL);
-                    colMax = PetscMax(colMax, ncols);
-                    MatRestoreRow(raw_type(A), r, &ncols, NULL, NULL);
-                }
-                 
-                numRows = rEnd - rStart;
-                MPIU_Allreduce(&numRows, &maxRows, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)raw_type(A)));
-                PetscMalloc2(colMax,&newCols,colMax,&newVals);
-                 
-                for (r = rStart; r < rStart+maxRows; ++r) 
-                {
-                    const PetscScalar *vals;
-                    const PetscInt    *cols;
-                    PetscInt           ncols, newcols, c;
-
-                    if (r < rEnd) 
-                    {
-                        MatGetRow(raw_type(A), r, &ncols, &cols, &vals);
-                        for (c = 0; c < ncols; ++c) 
-                        {
-                            newCols[c] = cols[c];
-                            newVals[c] = (vals[c]) < eps ? 0.0 : vals[c];
-                        }
-                       
-                        newcols = ncols;
-                        MatRestoreRow(raw_type(A), r, &ncols, &cols, &vals);
-                        MatSetValues(raw_type(A), 1, &r, newcols, newCols, newVals, INSERT_VALUES);
-                    }
-
-                    MatAssemblyBegin(raw_type(A), MAT_FINAL_ASSEMBLY);
-                    MatAssemblyEnd(raw_type(A), MAT_FINAL_ASSEMBLY);
-
-                }
-                   
-                PetscFree2(newCols,newVals);
-            }
+        static void apply(const Tensor<Matrix, 2> &A, const Scalar &eps);
     };
 
     template<class Matrix>
-    class ChopBiggerThan<Matrix, PETSC>
-    {
-        public:
-            static void apply(const Wrapper<Matrix, 2> &A, const double & eps)
-            {
-            
-                PetscScalar    *newVals;
-                PetscInt       *newCols;
-                PetscInt       rStart=0, rEnd=0, numRows=0, maxRows=0, r=0, colMax = 0;
+    class ChopGreaterThan<Matrix, PETSC> {
+    public:
+        using Scalar   = typename Traits<Matrix>::Scalar;
+        using SizeType = typename Traits<Matrix>::SizeType;
 
-                MatGetOwnershipRange(raw_type(A), &rStart, &rEnd);
-                for (r = rStart; r < rEnd; ++r) 
-                {
-                    PetscInt ncols;
-
-                    MatGetRow(raw_type(A), r, &ncols, NULL, NULL);
-                    colMax = PetscMax(colMax, ncols);
-                    MatRestoreRow(raw_type(A), r, &ncols, NULL, NULL);
-                }
-                 
-                numRows = rEnd - rStart;
-                MPIU_Allreduce(&numRows, &maxRows, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)raw_type(A)));
-                PetscMalloc2(colMax,&newCols,colMax,&newVals);
-                 
-                for (r = rStart; r < rStart+maxRows; ++r) 
-                {
-                    const PetscScalar *vals;
-                    const PetscInt    *cols;
-                    PetscInt           ncols, newcols, c;
-
-                    if (r < rEnd) 
-                    {
-                        MatGetRow(raw_type(A), r, &ncols, &cols, &vals);
-                        for (c = 0; c < ncols; ++c) 
-                        {
-                            newCols[c] = cols[c];
-                            newVals[c] = (vals[c]) > eps ? 0.0 : vals[c];
-                        }
-                       
-                        newcols = ncols;
-                        MatRestoreRow(raw_type(A), r, &ncols, &cols, &vals);
-                        MatSetValues(raw_type(A), 1, &r, newcols, newCols, newVals, INSERT_VALUES);
-                    }
-
-                    MatAssemblyBegin(raw_type(A), MAT_FINAL_ASSEMBLY);
-                    MatAssemblyEnd(raw_type(A), MAT_FINAL_ASSEMBLY);
-
-                }
-                   
-                PetscFree2(newCols,newVals);
-            }
+        static void apply(const Tensor<Matrix, 2> &A, const Scalar &eps);
     };
-
 
 }
 

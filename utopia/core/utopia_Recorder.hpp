@@ -2,7 +2,7 @@
 #define UTOPIA_RECORDER_HPP
 
 #include "utopia_Expression.hpp"
-#include "utopia_Wrapper.hpp"
+#include "utopia_Tensor.hpp"
 #include "utopia_Traits.hpp"
 #include <ostream>
 #include <iomanip>
@@ -25,7 +25,7 @@ namespace utopia {
     class Recorder {
     public:
         template<class Derived, class T>
-        void record_expr_and_value(const Expression<Derived> &expr, const Wrapper<T, 1> &v)
+        void record_expr_and_value(const Expression<Derived> &expr, const Tensor<T, 1> &v)
         {
             record_name_and_value(expr.getClass(), v);
         }
@@ -54,9 +54,9 @@ namespace utopia {
         }
 
         template<class T>
-        void record_name_and_value(const std::string &name, const Wrapper<T, 1> &v)
+        void record_name_and_value(const std::string &name, const Tensor<T, 1> &v)
         {
-            typedef utopia::Wrapper<T, 1> Vector;
+            typedef utopia::Tensor<T, 1> Vector;
             DEF_UTOPIA_SCALAR(Vector);
 
             mpi_world_barrier();

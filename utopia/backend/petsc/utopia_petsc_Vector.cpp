@@ -519,8 +519,8 @@ namespace utopia {
         }
     }
 
-    void PetscVector::read_and_write_lock(WriteMode mode) { assert(false); }
-    void PetscVector::read_and_write_unlock(WriteMode mode) { assert(false); }
+    void PetscVector::read_and_write_lock(WriteMode mode) { write_lock(mode); }
+    void PetscVector::read_and_write_unlock(WriteMode mode) { write_unlock(mode); }
 
     bool PetscVector::equals(const PetscVector &other, const Scalar &tol) const
     {
@@ -538,37 +538,68 @@ namespace utopia {
 
     void PetscVector::e_div(const PetscVector &other)
     {
+        assert(is_consistent());
+        assert(other.is_consistent());
         check_error( VecPointwiseDivide(raw_type(), raw_type(), other.raw_type() ) );
+    }
+
+
+    template<class Operation>
+    static void element_wise_generic(
+        const PetscVector &x,
+        const Operation &op,
+        PetscVector &op_and_result)
+    {
+        //TODO
+    }
+
+    template<typename Scalar, class Operation>
+    static void element_wise_generic(
+        const Scalar &x,
+        const Operation &op,
+        PetscVector &result)
+    {
+        Range r = result.range();
+
+        result.write_lock(LOCAL);
+        result.read_lock();
+
+        for(PetscInt i = r.begin(); i < r.end(); ++i) {
+            result.set(i, op.template apply<Scalar>(x, result.get(i)));
+        }
+
+        result.write_unlock(LOCAL);
+        result.read_unlock();
     }
 
     void PetscVector::e_min(const PetscVector &other)
     {
-        assert(false && "IMPLEMENT ME");
+        check_error( VecPointwiseMin( raw_type(), raw_type(), other.raw_type() ) );
     }
 
     void PetscVector::e_max(const PetscVector &other)
     {
-        assert(false && "IMPLEMENT ME");
+        check_error( VecPointwiseMax( raw_type(), raw_type(), other.raw_type() ) );
     }
 
     void PetscVector::e_mul(const Scalar &other)
     {
-        assert(false && "IMPLEMENT ME");
+        element_wise_generic(other, Multiplies(), *this);
     }
 
     void PetscVector::e_div(const Scalar &other)
     {
-        assert(false && "IMPLEMENT ME");
+        element_wise_generic(other, Divides(), *this);
     }
 
     void PetscVector::e_min(const Scalar &other)
     {
-        assert(false && "IMPLEMENT ME");
+        element_wise_generic(other, Min(), *this);
     }
 
     void PetscVector::e_max(const Scalar &other)
     {
-        assert(false && "IMPLEMENT ME");
+        element_wise_generic(other, Max(), *this);
     }
 
     ///<Scalar>SWAP - swap x and y

@@ -140,7 +140,7 @@ namespace utopia {
             wrapper_ = std::make_shared<PetscMatrixMemory>(comm.get());
         }
 
-        PetscMatrix(const PetscCommunicator &comm = PETSC_COMM_WORLD) : comm_(comm) 
+        PetscMatrix(const PetscCommunicator &comm = PETSC_COMM_WORLD) : comm_(comm)
         {
             init_empty(comm);
         }
@@ -185,19 +185,20 @@ namespace utopia {
          template<class Expr>
          PetscMatrix(const Expression<Expr> &expr)
          {
+            static_assert(!std::is_same<Expr, Tensor<PetscVector, 1>>::value, "cannot assign a vector to a matrix");
+
             //FIXME see if expression can provide a comm
             init_empty(comm_);
              //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
              Super::construct_eval(expr.derived());
+             // assert(valid());
          }
 
          template<class Expr>
          inline PetscMatrix &operator=(const Expression<Expr> &expr)
          {
-             //FIXME see if expression can provide a comm
-             init_empty(comm_);
-
              Super::assign_eval(expr.derived());
+             // assert(valid());
              return *this;
          }
 
@@ -586,7 +587,7 @@ namespace utopia {
          void transpose_multiply(const PetscMatrix &B, PetscMatrix &C) const override;
 
          /// C := alpha * A * B^T
-         void multiply_transpose(const PetscMatrix &B, PetscMatrix &C) const;
+         void multiply_transpose(const PetscMatrix &B, PetscMatrix &C) const override;
 
          /// C := alpha * op(A) * op(B)
          void multiply(
@@ -620,7 +621,7 @@ namespace utopia {
          bool equals(const PetscMatrix &other, const Scalar &tol = 0.0) const override;
 
          ////////////////////////////////////////////////////////////////////
-         
+
 
         Mat &implementation() {
             return wrapper_->implementation();
@@ -781,9 +782,10 @@ namespace utopia {
         //petsc says that it is correct only for square matrices
         void build_diag(PetscVector &result) const;
         void build_diag(PetscMatrix &result) const;
+        void diag(const PetscVector &other);
         void diag(const PetscMatrix &other) { other.build_diag(*this); }
 
-        void get_col(PetscVector &result, const SizeType id) const;
+        void col(const SizeType id, PetscVector &result) const;
 
         inline void shift_diag(const Scalar factor)
         {
@@ -938,12 +940,12 @@ namespace utopia {
         }
 
         void inverse(PetscMatrix &result) const;
-        
+
 
         void convert_to_mat_baij(const SizeType block_size);
 
         bool is_initialized_as( MPI_Comm comm, MatType dense_type, SizeType local_rows, SizeType local_cols, SizeType global_rows, SizeType global_cols);
-        
+
 
         bool has_type(VecType type) const;
         bool same_type(const PetscMatrix &other) const;
@@ -986,6 +988,7 @@ namespace utopia {
           //y = A * x;
           bool create_vecs(Vec *x, Vec *y) const;
 
+          bool valid() const;
     };
 }
 

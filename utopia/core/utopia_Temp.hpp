@@ -105,18 +105,18 @@ namespace utopia {
         public:
             static void apply(const Tensor<Matrix, 2> &/*x*/, const double & /*eps*/)
             {
-                static_assert(Traits<Matrix>::Backend==PETSC, "ChopSmallerThan implemented just for petsc backend.");
+                static_assert(Traits<Matrix>::Backend<HOMEMADE, "ChopSmallerThan implemented just for petsc backend.");
             }
     };
 
 
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
-    class ChopBiggerThan
+    class ChopGreaterThan
     {
         public:
             static void apply(const Tensor<Matrix, 2> & /*x*/, const double & /*eps*/)
             {
-                static_assert(Traits<Matrix>::Backend==PETSC, "ChopBiggerThan implemented just for petsc backend.");
+                static_assert(Traits<Matrix>::Backend<HOMEMADE, "ChopGreaterThan implemented just for petsc backend.");
             }
     };
 
@@ -131,7 +131,7 @@ namespace utopia {
     template<class Matrix>
     void chop_bigger_than(Tensor<Matrix, 2> &A, const double eps)
     {
-        ChopBiggerThan<Matrix>::apply(A, eps);
+        ChopGreaterThan<Matrix>::apply(A, eps);
     }    
 
 }

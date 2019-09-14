@@ -5,7 +5,6 @@
 #include "utopia_Instance.hpp"
 #include "utopia_petsc_Each.hpp"
 
-
 #include <algorithm>
 #include <set>
 
@@ -291,6 +290,7 @@ namespace utopia {
     void PetscMatrix::transpose()
     {
         check_error( MatTranspose(raw_type(),  MAT_INPLACE_MATRIX, &raw_type()) );
+        assert(valid());
     }
 
     void PetscMatrix::transpose(PetscMatrix &result) const
@@ -305,14 +305,16 @@ namespace utopia {
                 temp.destroy();
 
                 check_error( MatTranspose(raw_type(), MAT_INITIAL_MATRIX, &temp.raw_type()) );
-                result = std::move(temp);
+                result.construct( std::move(temp) );
             }
 
+            assert(result.valid());
             return;
         }
 
         result.destroy();
         check_error( MatTranspose(raw_type(), MAT_INITIAL_MATRIX, &result.raw_type()) );
+        assert(result.valid());
     }
 
     void PetscMatrix::clear()
@@ -667,7 +669,7 @@ namespace utopia {
         result.set_initialized(true);
     }
 
-    void PetscMatrix::get_col(PetscVector &result, const PetscInt id) const
+    void PetscMatrix::col(const SizeType id, PetscVector &result) const
     {
         auto gs = size();
 
@@ -677,8 +679,7 @@ namespace utopia {
         check_error( MatGetColumnVector(raw_type(), result.raw_type(), id) );
         result.set_initialized(true);
     }
-
-
+    
     void PetscMatrix::dense_init_diag(MatType dense_type, const PetscVector &diag)
     {
         MPI_Comm comm = diag.communicator();
@@ -742,6 +743,15 @@ namespace utopia {
             check_error( MatConvert(temp, type_override(), MAT_INITIAL_MATRIX, &raw_type()) );
             check_error(  MatDestroy(&temp) );
         }
+    }
+
+    void PetscMatrix::diag(const PetscVector &other)
+    {
+        // if(is_sparse()) {
+            matij_init_diag(other);
+        // } else {
+        //     dense_init_diag(MATDENSE, other);
+        // }
     }
 
     void PetscMatrix::build_diag(PetscMatrix &result) const
@@ -1249,8 +1259,11 @@ namespace utopia {
 
     void PetscMatrix::multiply(const PetscVector &vec, PetscVector &result) const
     {
+        //handle alias
         if(vec.raw_type() == result.raw_type()) {
-            assert(false && "handle me");
+            PetscVector x = vec;
+            multiply(x, result);
+            return;
         }
 
         assert(vec.is_consistent());
@@ -1439,6 +1452,8 @@ namespace utopia {
                 result = std::move(temp);
             }
         }
+
+        assert(result.valid());
     }
 
     void PetscMatrix::transpose_multiply(const PetscMatrix &mat, PetscMatrix &result) const
@@ -1446,10 +1461,12 @@ namespace utopia {
         if(mat.raw_type() != result.raw_type() && raw_type() != result.raw_type()) {
             result.destroy();
             check_error( MatTransposeMatMult(raw_type(), mat.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.raw_type()) );
+            assert(result.valid());
         } else {
             PetscMatrix temp; temp.destroy();
             check_error( MatTransposeMatMult(raw_type(), mat.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.raw_type()) );
-            result = std::move(temp);
+            result.construct(std::move(temp));
+            assert(result.valid());
         }
     }
 
@@ -1460,10 +1477,12 @@ namespace utopia {
         if(mat.raw_type() != result.raw_type() && raw_type() != result.raw_type()) {
             result.destroy();
             check_error( MatMatTransposeMult(raw_type(), mat.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.raw_type()) );
+            assert(result.valid());
         } else {
             PetscMatrix temp; temp.destroy();
             check_error( MatMatTransposeMult(raw_type(), mat.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.raw_type()) );
             result = std::move(temp);
+            assert(result.valid());
         }
     }
 
@@ -1592,6 +1611,7 @@ namespace utopia {
         Mat M;
         check_error( MatGetDiagonalBlock(raw_type(), &M) );
         other.copy_from(M);
+        assert(other.valid());
     }
 
     void PetscMatrix::diag_scale_right(const PetscVector &diag)
@@ -1668,5 +1688,12 @@ namespace utopia {
     {
         assert(false && "IMPLEMENT ME");
     }
-
+    
+    bool PetscMatrix::valid() const {
+        // PetscTruth       flg;
+        // MatValid(mat,(PetscTruth*)&flg);
+        PetscBool flg;
+        MatAssembled(raw_type(), &flg);
+        return flg && type();
+    }
 }

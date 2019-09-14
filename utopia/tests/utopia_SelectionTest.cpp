@@ -33,9 +33,9 @@ namespace utopia {
             s.resize(2);
             {
                 Write<IndexSet> w(s);
-
-                s.set(0, r.begin());
-                s.set(1, r.end() % n);
+                //FIXME
+                s[0] = r.begin();
+                s[1] = r.end() % n;
             }
 
             Vector selection = select(v, s);
@@ -74,11 +74,12 @@ namespace utopia {
 
             {
                 Write<IndexSet> wr(r_s), wc(c_s);
-                r_s.set(0, rr.begin());
-                r_s.set(1, rr.begin() + 1);
+                //FIXME use set instead
+                r_s[0] = rr.begin();
+                r_s[1] = rr.begin() + 1;
 
-                c_s.set(0, 0);
-                c_s.set(1, 2);
+                c_s[0] = 0;
+                c_s[1] = 2;
             }
 
            
@@ -125,18 +126,17 @@ namespace utopia {
         UTOPIA_UNIT_TEST_BEGIN("SelectionTest");
 
         //FIXME
-// #ifdef WITH_BLAS
-//         SelectionTest<Matrixd, Vectord>().run();
-// #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        SelectionTest<Matrixd, Vectord>().run();
+#endif //WITH_BLAS
 
-// //FIXME
-// // #ifdef WITH_PETSC
-// //         SelectionTest<PetscMatrix, PetscVector>().run();
-// // #endif //WITH_PETSC
+#ifdef WITH_PETSC
+        SelectionTest<PetscMatrix, PetscVector>().run();
+#endif //WITH_PETSC
 
-// #ifdef WITH_TRILINOS
-//         SelectionTest<TSMatrixd, TVectord>().run();
-// #endif //WITH_TRILINOS
+#ifdef WITH_TRILINOS
+        SelectionTest<TSMatrixd, TVectord>().run();
+#endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("SelectionTest");
     }

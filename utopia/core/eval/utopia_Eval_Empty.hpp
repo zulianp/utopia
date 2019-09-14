@@ -33,39 +33,6 @@ namespace utopia {
     template<class Expr, class Traits = utopia::Traits<Expr>, int Backend = Traits::Backend>
     class Eval {};
 
-    // template<class Tensor, int Order, class Traits, int Backend>
-    // class Eval<Wrapper<Tensor, Order>, Traits, Backend> {
-    // public:
-    //     inline static const Tensor &apply(const Wrapper<Tensor, Order> &expr) {
-    //         return expr.implementation();
-    //     }
-
-    //     inline static Tensor &apply(Wrapper<Tensor, Order> &expr) {
-    //         return expr.implementation();
-    //     }
-    // };
-
-    // template<class Tensor, int Order, class Traits, int Backend>
-    // class Eval<Wrapper<Tensor &, Order>, Traits, Backend> {
-    // public:
-    //     inline static const Tensor &apply(const Wrapper<Tensor &, Order> &expr) {
-    //         return expr.implementation();
-    //     }
-
-    //     inline static Tensor &apply(Wrapper<Tensor &, Order> &expr) {
-    //         return expr.implementation();
-    //     }
-    // };
-
-    // template<class Tensor, int Order, class Traits, int Backend>
-    // class Eval<Wrapper<const Tensor &, Order>, Traits, Backend> {
-    // public:
-    //     inline static const Tensor &apply(const Wrapper<const Tensor &, Order> &expr) {
-    //         return expr.implementation();
-    //     }
-    // };
-
-
     template<class Derived, int Order, class Traits, int Backend>
     class Eval<Tensor<Derived, Order>, Traits, Backend> {
     public:
@@ -75,6 +42,10 @@ namespace utopia {
 
         inline static Derived &apply(Tensor<Derived, Order> &expr) {
             return expr.derived();
+        }
+
+        inline static Derived && apply(Tensor<Derived, Order> &&expr) {
+            return std::move(expr.derived());
         }
     };
 
@@ -98,7 +69,12 @@ namespace utopia {
         }
     };
 
-
+    //for c++14 only
+    // template<class Expr>
+    // auto eval(const Expression<Expr> &expr)
+    // {
+    //     return Eval<Expr>::apply(expr.derived());
+    // }
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_EMPTY_HPP_HPP

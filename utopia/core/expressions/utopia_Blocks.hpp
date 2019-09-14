@@ -98,13 +98,13 @@ namespace utopia {
     }
 
     template<class Derived>
-    Blocks<Derived> block3x3(
+    Blocks<Derived, 2> block3x3(
         const Tensor<Derived, 2> &a00, const Tensor<Derived, 2> &a01, const Tensor<Derived, 2> &a02,
         const Tensor<Derived, 2> &a10, const Tensor<Derived, 2> &a11, const Tensor<Derived, 2> &a12,
         const Tensor<Derived, 2> &a20, const Tensor<Derived, 2> &a21, const Tensor<Derived, 2> &a22
         )
     {
-        using MatrixPtrT = typename Blocks<Wrapper<Derived, 2>>::MatrixPtrT;
+        using MatrixPtrT = typename Blocks<Derived, 2>::MatrixPtrT;
         std::vector<MatrixPtrT> vec = {
             make_ref(a00.derived()),
             make_ref(a01.derived()),
@@ -117,7 +117,7 @@ namespace utopia {
             make_ref(a22.derived())
         };
 
-        return Blocks<Derived>(3, 3, vec);
+        return Blocks<Derived, 2>(3, 3, vec);
     }
 
     //////////////////////////////////////////////////////////////////
@@ -244,10 +244,10 @@ namespace utopia {
 
     template<class Derived>
     void undo_blocks(
-        const Wrapper<Derived, 1> &block_vec,
-        Wrapper<Derived, 1> &a0,
-        Wrapper<Derived, 1> &a1,
-        Wrapper<Derived, 1> &a2
+        const Tensor<Derived, 1> &block_vec,
+        Tensor<Derived, 1> &a0,
+        Tensor<Derived, 1> &a1,
+        Tensor<Derived, 1> &a2
         )
     {
 

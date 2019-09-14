@@ -106,16 +106,22 @@ namespace utopia {
                 m1.set(0, 1, 1);
             }
 
-            disp(m1);
-
             Matrix m2 = values(3, 3, 2);
+            
             Matrix m3 = m2 * transpose(m2);
-            m3 = transpose(m1) * m3;
-            m3 = m2 * m3;
-            m3 = m1 * m3;
+            //direct variant: Matrix m3; m2.transpose_multiply(m2, m3);
 
-            each_read(m3, [](SizeType x, SizeType /*y*/, double entry) {
-                if (x == 0) {
+            m3 = transpose(m1) * m3;
+            //direct variant: m1.transpose_multiply(m3, m3);
+
+            m3 = m2 * m3;
+            //direct variant: m2.multiply(m3, m3);
+
+            m3 = m1 * m3;
+            //direct variant:  m1.multiply(m3, m3);
+
+            each_read(m3, [](SizeType i, SizeType /*y*/, double entry) {
+                if (i == 0) {
                     utopia_test_assert(entry == 192);
                 } else {
                     utopia_test_assert(entry == 96);
@@ -238,9 +244,9 @@ namespace utopia {
     {
         UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
-#ifdef WITH_BLAS
-        AlgebraTest<Matrixd, Vectord>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+//         AlgebraTest<Matrixd, Vectord>().run();
+// #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
         AlgebraTest<DMatrixd, DVectord>().run();

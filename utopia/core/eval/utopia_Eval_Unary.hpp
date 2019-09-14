@@ -9,24 +9,27 @@
 
 namespace utopia {
 
-    template<class Tensor, typename Scalar, class Traits, int Backend>
+    template<class Derived, typename Scalar, class Traits, int Backend>
     class Eval<Unary<
-    Wrapper<Tensor, 1>,
+    Tensor<Derived, 1>,
     Reciprocal<Scalar> >,
     Traits, Backend> {
     public:
-        inline static Tensor apply(const Unary<Wrapper<Tensor, 1>, Reciprocal<Scalar> > &expr)
+        inline static Derived apply(const Unary<Tensor<Derived, 1>, Reciprocal<Scalar> > &expr)
         {
-            Tensor result;
+            Derived result;
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            //FIXME this is actually a binary thing
-            UTOPIA_BACKEND(Traits).apply_binary(
-                result,
-                expr.operation(),
-                Eval<Wrapper<Tensor, 1>, Traits>::apply(expr.expr())
-            );
+            result.construct(Eval<Tensor<Derived, 1>, Traits>::apply(expr.expr()));
+            result.transform(expr.operation());
+
+            // //FIXME this is actually a binary thing
+            // UTOPIA_BACKEND(Traits).apply_binary(
+            //     result,
+            //     expr.operation(),
+            //     Eval<Tensor<Derived, 1>, Traits>::apply(expr.expr())
+            // );
 
             UTOPIA_TRACE_END(expr);
             return result;

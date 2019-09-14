@@ -15,11 +15,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).build_local_diag_block(
-            //     Eval<Left,  Traits>::apply(expr.left()),
-            //     Eval<Right, Traits>::apply(expr.right().expr())
-            //     );
-
             Eval<Right, Traits>::apply(expr.right().expr()).diagonal_block(
             	Eval<Left,  Traits>::apply(expr.left())
             );
@@ -36,11 +31,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).build_local_diag_block(
-            //     Eval<Left,  Traits>::apply(expr.left()),
-            //     Eval<Right, Traits>::apply(expr.right().expr())
-            //     );
-
             Eval<Right, Traits>::apply(expr.right().expr()).diagonal_block(
             	Eval<Left,  Traits>::apply(expr.left())
             );
@@ -48,6 +38,30 @@ namespace utopia {
             UTOPIA_TRACE_END(expr);
         }
     };
+
+    //FIXME todo
+    // template<class Left, class Right, class Traits>
+    // class Eval<LocalRedistribute<Left, Right>, Traits, PETSC> {
+    // public:
+
+    //     inline static EXPR_TYPE(Traits, Left) apply(const LocalRedistribute<Left, Right> &expr)
+    //     {
+    //         EXPR_TYPE(Traits, Left) result;
+
+    //         UTOPIA_TRACE_BEGIN(expr);
+
+    //         UTOPIA_BACKEND(Traits).build_local_redistribute(
+    //             result,
+    //             Eval<Left,  Traits>::apply(expr.left()),
+    //             Eval<Right, Traits>::apply(expr.right())
+    //             );
+
+
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
+
 
 }
 

@@ -17,20 +17,20 @@ namespace utopia {
         }
     };
 
-    template<class Tensor, int Order, class Traits, int Backend>
-    class Eval< Differentiable<Wrapper<Tensor, Order> >, Traits, Backend> {
+    template<class Derived, int Order, class Traits, int Backend>
+    class Eval< Differentiable<Tensor<Derived, Order> >, Traits, Backend> {
     public:
-        inline static const Tensor &apply(const Differentiable<Wrapper<Tensor, Order> > &expr) {
-            return Eval<Wrapper<Tensor, Order>, Traits>::apply(expr.expr());
+        inline static const Derived &apply(const Differentiable<Tensor<Derived, Order> > &expr) {
+            return Eval<Tensor<Derived, Order>, Traits>::apply(expr.expr());
         }
     };
 
-    template<class Tensor, int Order, class Traits, int Backend>
-    class Eval<Differentiable<const Wrapper<Tensor, Order> >, Traits, Backend> {
+    template<class Derived, int Order, class Traits, int Backend>
+    class Eval<Differentiable<const Tensor<Derived, Order> >, Traits, Backend> {
     public:
-        inline static const Tensor & apply(const Differentiable<const Wrapper<Tensor, Order> > &expr)
+        inline static const Derived & apply(const Differentiable<const Tensor<Derived, Order> > &expr)
         {
-            return Eval<Wrapper<Tensor, Order>, Traits>::apply(expr.expr());
+            return Eval<Tensor<Derived, Order>, Traits>::apply(expr.expr());
         }
     };
 }
