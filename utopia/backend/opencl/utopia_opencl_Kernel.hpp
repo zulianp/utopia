@@ -27,7 +27,7 @@ namespace utopia {
 
                 std::cout << "FAILED" << std::endl;
                 std::cout << "------------------------------------------" << std::endl;
-                std::cout << tree_format(expr.derived().getClass()) << std::endl;
+                std::cout << tree_format(expr.derived().get_class()) << std::endl;
                 std::cout << "------------------------------------------" << std::endl;
                 os_ << "[TODO]";
                 assert(false);
@@ -333,7 +333,7 @@ namespace utopia {
 
                 visit(expr.derived(), env_, Options());
 
-                // std::cout << tree_format(expr.getClass()) << std::endl;
+                // std::cout << tree_format(expr.get_class()) << std::endl;
                 // env_.describe(std::cout);
 
 
@@ -453,7 +453,7 @@ namespace utopia {
                 template<typename InnerExpr>
                 void pre_order_visit(const utopia::Evaluate<InnerExpr> &node)
                 {
-                    // std::cout << "encountered evaluate for " << node.expr().getClass() << std::endl;
+                    // std::cout << "encountered evaluate for " << node.expr().get_class() << std::endl;
                     env_->new_arg(make_var_copy(node));
                 }
 
@@ -517,7 +517,7 @@ namespace utopia {
             template<class ExprT>
             std::string get_template_path(const ExprT &expr)
             {
-                // std::cout << tree_format(expr.getClass()) << std::endl;
+                // std::cout << tree_format(expr.get_class()) << std::endl;
                 // std::cout << "has_mat_mat_mul: " << has_mat_mat_mul(expr) << std::endl;
 
                 if(has_mat_mat_mul(expr)) {
@@ -553,7 +553,7 @@ namespace utopia {
                 name_ = KernelNameGenerator::instance().next_name();
 
                 ok = gen.generate(expr, name_, code_template, code_); assert(ok);
-                // std::cout << "initializing kernel for:\n" << treeFormat(expr.getClass()) << std::endl;
+                // std::cout << "initializing kernel for:\n" << treeFormat(expr.get_class()) << std::endl;
                 initialized_ = true;
             }
 
@@ -895,7 +895,7 @@ namespace utopia {
             template<class EvaluatedExpr>
                     bool call(const Evaluate<EvaluatedExpr> &expr)
                     {
-                // std::cout << tree_format(expr.getClass()) << std::endl;
+                // std::cout << tree_format(expr.get_class()) << std::endl;
 
                         EvalAction eval;
                         auto nav = make_nav(eval);

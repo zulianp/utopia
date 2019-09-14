@@ -9,8 +9,8 @@ namespace utopia {
     template<class Expr>
     class Structure final : public Expression<Structure<Expr>> {
     public:
-        std::string getClass() const override {
-            return "Structure<" + expr_.getClass() + ">";
+        std::string get_class() const override {
+            return "Structure<" + expr_.get_class() + ">";
         }
 
         Structure(const Expr &expr) : expr_(expr) { }

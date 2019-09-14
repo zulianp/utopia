@@ -14,9 +14,9 @@ namespace utopia {
     public:
         Negate(const Expr &expr) : Unary<Expr, Minus>(expr) { }
 
-        std::string getClass() const override
+        std::string get_class() const override
         {
-            return "Negate<" + this->expr().getClass() + ">";
+            return "Negate<" + this->expr().get_class() + ">";
         }
 
         virtual ~Negate() { }

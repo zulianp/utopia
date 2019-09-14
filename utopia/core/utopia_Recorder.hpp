@@ -27,7 +27,7 @@ namespace utopia {
         template<class Derived, class T>
         void record_expr_and_value(const Expression<Derived> &expr, const Tensor<T, 1> &v)
         {
-            record_name_and_value(expr.getClass(), v);
+            record_name_and_value(expr.get_class(), v);
         }
 
         void scope_begin(const std::string &name)

@@ -39,8 +39,8 @@ namespace utopia {
         Variable(const std::shared_ptr<Expr> &expr)
         : expr_(expr) {}
 
-        std::string getClass() const override {
-            return "Variable<" + expr_->getClass() + ">";
+        std::string get_class() const override {
+            return "Variable<" + expr_->get_class() + ">";
         }
 
     private:

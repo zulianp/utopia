@@ -16,7 +16,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "TODO";
         }
@@ -34,7 +34,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Identity";
         }
@@ -49,7 +49,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "DenseIdentity";
         }
@@ -69,7 +69,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalIdentity";
         }
@@ -85,7 +85,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalZeros";
         }
@@ -101,7 +101,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Zeros";
         }
@@ -138,7 +138,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Values";
         }
@@ -176,7 +176,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalValues";
         }
@@ -214,7 +214,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "NNZ";
         }
@@ -254,7 +254,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "NNZXRow";
         }
@@ -291,7 +291,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalNNZ";
         }
@@ -308,7 +308,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Resize";
         }
@@ -343,9 +343,9 @@ namespace utopia {
                 : _size(size), _type(type)
         {}
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
-            return "Factory(" + std::string(FactoryTraits<Type>::getClass()) + ")";
+            return "Factory(" + std::string(FactoryTraits<Type>::get_class()) + ")";
         }
 
         virtual ~Factory() {}
@@ -396,9 +396,9 @@ namespace utopia {
         : factory_(factory), opts_(opts)
         {}
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
-            return factory_.getClass();
+            return factory_.get_class();
         }
 
         virtual ~Build() {}
@@ -436,9 +436,9 @@ namespace utopia {
             return Type();
         }
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
-            return "SymbolicTensor(" + std::string(FactoryTraits<Type>::getClass()) + ")";
+            return "SymbolicTensor(" + std::string(FactoryTraits<Type>::get_class()) + ")";
         }
     };
 

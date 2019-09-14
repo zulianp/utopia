@@ -1058,7 +1058,7 @@ namespace utopia {
         DSMatrixd m = local_identity(n, n);
 
         auto expr = dot(v, v)/dot(m * v, v);
-        // std::cout << tree_format(expr.getClass()) << std::endl;
+        // std::cout << tree_format(expr.get_class()) << std::endl;
 
         double s = expr;
         utopia_test_assert(approxeq(1., s));

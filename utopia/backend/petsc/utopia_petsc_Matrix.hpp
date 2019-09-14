@@ -962,6 +962,10 @@ namespace utopia {
         void diag_scale_right(const PetscVector &diag);
         void diag_scale_left(const PetscVector &diag);
 
+        inline std::string get_class() const override {
+            return "PetscMatrix";
+        }
+
     private:
         PetscCommunicator comm_;
         std::shared_ptr<PetscMatrixMemory> wrapper_;

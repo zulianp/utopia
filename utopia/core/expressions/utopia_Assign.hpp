@@ -26,8 +26,8 @@ namespace utopia {
 //        inline Left &left() const { return _left; }
         inline const Right &right() const { return _right; }
 
-        std::string getClass() const {
-            return "Assign<" + left().getClass() + ", " + right().getClass() + ">";
+        std::string get_class() const {
+            return "Assign<" + left().get_class() + ", " + right().get_class() + ">";
         }
 
 
@@ -50,8 +50,8 @@ namespace utopia {
 //        inline const Left &left() const { return _left; }
         inline const Right &right() const { return _right; }
 
-        std::string getClass() const {
-            return "Construct<" + left().getClass() + ", " + right().getClass() + ">";
+        std::string get_class() const {
+            return "Construct<" + left().get_class() + ", " + right().get_class() + ">";
         }
 
     private:

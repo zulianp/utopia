@@ -24,8 +24,8 @@ namespace utopia {
         inline Reduce(const Expr &expr, const Operation &operation = Operation())
                 : expr_(expr), operation_(operation) { }
 
-        inline std::string getClass() const {
-            return "Reduce<" + expr_.getClass() + ", " + operation_.getClass() + ">";
+        inline std::string get_class() const {
+            return "Reduce<" + expr_.get_class() + ", " + operation_.get_class() + ">";
         }
 
         inline const Expr &expr() const

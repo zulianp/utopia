@@ -20,7 +20,7 @@
 
 namespace utopia {
     template<typename T>
-    class BlasVector :
+    class BlasVector final :
         // Dynamic polymorphic types
         public Vector<T, std::size_t>,
         public Normed<T>,
@@ -491,6 +491,10 @@ namespace utopia {
             for(SizeType i = 0; i < n; ++i) {
                 result.set(i, get(index.get(i)));
             }
+        }
+
+        inline std::string get_class() const override {
+            return "BlasVector";
         }
 
     private:

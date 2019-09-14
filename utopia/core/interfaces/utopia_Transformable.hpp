@@ -25,7 +25,7 @@ namespace utopia {
 		// //UNARY
 		// class Sqrt {
 		// public:
-		//     std::string getClass() const { return "Sqrt"; }
+		//     std::string get_class() const { return "Sqrt"; }
 
 		//     template<typename T>
 		//     inline static T apply(const T &x) {
@@ -36,7 +36,7 @@ namespace utopia {
 
 		// class Pow2 {
 		// public:
-		//     std::string getClass() const { return "Pow2"; }
+		//     std::string get_class() const { return "Pow2"; }
 
 		//     template<typename T>
 		//     inline static T apply(const T &x) {
@@ -47,7 +47,7 @@ namespace utopia {
 
 		// class Pow {
 		// public:
-		//     std::string getClass() const { return "Pow"; }
+		//     std::string get_class() const { return "Pow"; }
 
 		//     template<typename T>
 		//     inline T apply(const T &x) const {
@@ -61,7 +61,7 @@ namespace utopia {
 
 		// class Log {
 		// public:
-		//     std::string getClass() const { return "Log"; }
+		//     std::string get_class() const { return "Log"; }
 
 		//     template<typename T>
 		//     inline static T apply(const T &x) {
@@ -72,7 +72,7 @@ namespace utopia {
 
 		// class Exp {
 		// public:
-		//     std::string getClass() const { return "Exp"; }
+		//     std::string get_class() const { return "Exp"; }
 
 		//     template<typename T>
 		//     inline static T apply(const T &x) {
@@ -83,7 +83,7 @@ namespace utopia {
 
 		// class Cos {
 		// public:
-		//     std::string getClass() const { return "Cos"; }
+		//     std::string get_class() const { return "Cos"; }
 
 		//     template<typename T>
 		//     inline static T apply(const T &x) {
@@ -95,7 +95,7 @@ namespace utopia {
 
 		// class Sin {
 		// public:
-		//     std::string getClass() const { return "Sin"; }
+		//     std::string get_class() const { return "Sin"; }
 
 		//     template<typename T>
 		//     inline static T apply(const T &x) {
@@ -106,12 +106,12 @@ namespace utopia {
 
 		// class Transpose {
 		// public:
-		//     std::string getClass() const { return "Transpose"; }
+		//     std::string get_class() const { return "Transpose"; }
 		// };
 
 		// class Abs {
 		// public:
-		//     std::string getClass() const { return "Abs"; }
+		//     std::string get_class() const { return "Abs"; }
 
 		//     template<typename T>
 		//     inline static T apply(const T &x) {
@@ -123,7 +123,7 @@ namespace utopia {
 
 		// template<class Expr>
 		// std::string GetClass() {
-		//     return Expr().getClass();
+		//     return Expr().get_class();
 		// }
 
 		// //Special (FIND A NAME)
@@ -132,7 +132,7 @@ namespace utopia {
 		// public:
 		//     typedef T Scalar;
 
-		//     std::string getClass() const { return "Reciprocal"; }
+		//     std::string get_class() const { return "Reciprocal"; }
 
 		//     template<typename T2>
 		//     inline T2 apply(const T2 &x) const {

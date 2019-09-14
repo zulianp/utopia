@@ -36,9 +36,9 @@ namespace utopia {
         const Right &right() const { return _right; }
         const Operation &operation() const { return _operation; }
 
-        virtual std::string getClass() const
+        virtual std::string get_class() const
         {
-            return GetClass<Operation>() + "<" + _left.getClass() + ", " + _right.getClass() + ">";
+            return GetClass<Operation>() + "<" + _left.get_class() + ", " + _right.get_class() + ">";
         }
 
         virtual ~Binary() { }

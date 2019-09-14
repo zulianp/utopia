@@ -25,8 +25,8 @@ namespace utopia {
 
         inline const Expr &expr() const { return expr_; }
 
-        std::string getClass() const {
-            return  "TensorReduce<" + expr_.getClass() + ">";
+        std::string get_class() const {
+            return  "TensorReduce<" + expr_.get_class() + ">";
         }
 
         inline int dim() const

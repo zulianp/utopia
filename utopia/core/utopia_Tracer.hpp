@@ -43,7 +43,7 @@ namespace utopia {
         template<class T>
         Measurement(const Expression<T> &expr) {
             id_ = generate_unique_id();
-            class_ = expr.getClass();
+            class_ = expr.get_class();
         }
 
         inline MeasurementId get_id() const {

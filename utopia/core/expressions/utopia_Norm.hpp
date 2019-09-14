@@ -26,8 +26,8 @@ namespace utopia {
             return _expr;
         }
 
-        std::string getClass() const {
-            return "Norm<" + _expr.getClass() + ">";
+        std::string get_class() const {
+            return "Norm<" + _expr.get_class() + ">";
         }
 
         operator typename Traits<Norm>::Scalar() const

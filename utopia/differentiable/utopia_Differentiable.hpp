@@ -22,8 +22,8 @@ namespace utopia {
             return expr_;
         }
 
-        inline std::string getClass() const {
-            return "independent_(" + expr_.getClass() + ")";
+        inline std::string get_class() const {
+            return "independent_(" + expr_.get_class() + ")";
         }
 
     private:

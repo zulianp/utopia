@@ -65,7 +65,7 @@ namespace utopia {
         { //BLAS 2 + 3
             Vectord vresult;
             auto expr = m2 * v - (m1 * m2) * v;
-            // std::cout << tree_format(expr.getClass()) << std::endl;
+            // std::cout << tree_format(expr.get_class()) << std::endl;
             vresult = expr;
 
             Vectord vexp({0.0, 0.0});
@@ -77,7 +77,7 @@ namespace utopia {
         { //BLAS 3
             Matrixd mresult;
             auto mexpr = transpose(m2) * transpose(m1);
-            // std::cout << tree_format(mexpr.getClass()) << std::endl;
+            // std::cout << tree_format(mexpr.get_class()) << std::endl;
             mresult = mexpr;
 
             utopia_test_assert(approxeq(mexp, mresult));
@@ -242,7 +242,7 @@ namespace utopia {
         utopia_test_assert(approxeq(wexp, wresult));
 
         Real val = norm2(twiceaxpy);
-        // std::cout << tree_format(norm2(twiceaxpy).getClass()) << std::endl;
+        // std::cout << tree_format(norm2(twiceaxpy).get_class()) << std::endl;
         // std::cout << val << std::endl;
         val = norm_infty(twiceaxpy); UTOPIA_UNUSED(val);
     }
@@ -259,7 +259,7 @@ namespace utopia {
         auto expr = temp * 0.01;
 
         //query the expression structure
-        // std::cout << tree_format(expr.getClass()) << std::endl;
+        // std::cout << tree_format(expr.get_class()) << std::endl;
 
         //Evaluate and verify value of the expression
         wresult = expr;

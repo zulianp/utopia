@@ -18,8 +18,8 @@ namespace utopia {
         inline Left &left() const { return _left; }
         inline const Right &right() const { return _right; }
 
-        inline std::string getClass() const {
-            return "InPlace<" + _left.getClass() + ", " + _right.getClass() + ", " + _operation.getClass() +  ">";
+        inline std::string get_class() const {
+            return "InPlace<" + _left.get_class() + ", " + _right.get_class() + ", " + _operation.get_class() +  ">";
         }
 
         inline const Operation &operation() const { return _operation; }

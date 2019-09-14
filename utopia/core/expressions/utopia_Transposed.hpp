@@ -21,8 +21,8 @@ namespace utopia {
 
         virtual ~Transposed() { }
 
-        std::string getClass() const {
-            return "Transposed<" + _expr.getClass() + ">";
+        std::string get_class() const {
+            return "Transposed<" + _expr.get_class() + ">";
         }
 
     private:

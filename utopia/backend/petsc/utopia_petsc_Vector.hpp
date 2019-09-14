@@ -853,6 +853,9 @@ namespace utopia {
           ghosted(comm().get(), local_size, global_size, index);
         }
 
+        inline std::string get_class() const override {
+            return "PetscVector";
+        }
 
     private:
         PetscCommunicator comm_;

@@ -85,7 +85,7 @@ namespace utopia {
         inline constexpr Number(const Scalar &value = 0.0)  : value_(value)
         {}
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
             return "Number";
         }
@@ -224,7 +224,7 @@ namespace utopia {
             return Value;
         }
 
-        inline std::string getClass() const
+        inline std::string get_class() const
         {
             return "Literal(TODO)";
         }

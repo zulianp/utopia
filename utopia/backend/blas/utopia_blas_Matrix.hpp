@@ -780,6 +780,10 @@ namespace utopia {
             return ret;
         }
 
+        inline std::string get_class() const override {
+            return "BlasMatrix";
+        }
+
     private:
         Entries entries_;
         SizeType rows_;

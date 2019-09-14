@@ -103,7 +103,7 @@
 //                 Eval<B, Traits>::apply(expr.left().right())
 //             );
 
-//             // std::cout << tree_format(expr.getClass()) << std::endl;
+//             // std::cout << tree_format(expr.get_class()) << std::endl;
 
 //             UTOPIA_TRACE_END(expr);
 //             return result;

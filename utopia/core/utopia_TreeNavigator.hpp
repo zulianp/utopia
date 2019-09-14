@@ -222,7 +222,7 @@ namespace utopia {
         template<class Expr>
         void post_intercept(const Expr &expr)
         {
-            if(verbose_) std::cout << "visited " << expr.getClass() << std::endl;
+            if(verbose_) std::cout << "visited " << expr.get_class() << std::endl;
         }
 
     private:

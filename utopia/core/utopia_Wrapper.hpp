@@ -132,7 +132,7 @@ namespace utopia {
     //     }
 
 
-    //     std::string getClass() const {
+    //     std::string get_class() const {
     //         return Fill2String<FILL_TYPE>::Value() + Order2String<_Order>::Value();
     //     }
 
@@ -201,7 +201,7 @@ namespace utopia {
     //     }
 
 
-    //    std::string getClass() const {
+    //    std::string get_class() const {
     //        return Fill2String<FILL_TYPE>::Value() + Order2String<_Order>::Value();
     //    }
 
@@ -250,7 +250,7 @@ namespace utopia {
     //     };
 
 
-    //     std::string getClass() const {
+    //     std::string get_class() const {
     //         return Fill2String<FILL_TYPE>::Value() + Order2String<_Order>::Value();
     //     }
     // private:

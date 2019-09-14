@@ -196,7 +196,7 @@ namespace utopia {
 
             virtual void describe(std::ostream &os) const
             {
-                os << expr_.getClass() << "\n";
+                os << expr_.get_class() << "\n";
             }
 
         private:
@@ -223,7 +223,7 @@ namespace utopia {
 
             virtual void describe(std::ostream &os) const
             {
-                os << expr_.getClass() << "\n";
+                os << expr_.get_class() << "\n";
             }
 
         private:
@@ -247,7 +247,7 @@ namespace utopia {
 
                 virtual void describe(std::ostream &os) const
                 {
-                    os << expr_.getClass() << "\n";
+                    os << expr_.get_class() << "\n";
                 }
 
             private:

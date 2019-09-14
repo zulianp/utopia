@@ -197,8 +197,8 @@ namespace utopia {
             Vector v = values(n, 1.0);
 
             // const double ab = 1.0;
-            // std::cout << ((ab * m * m + ab * m).getClass()) << std::endl;
-            // std::cout << tree_format((ab * m * m + ab * m).getClass()) << std::endl;
+            // std::cout << ((ab * m * m + ab * m).get_class()) << std::endl;
+            // std::cout << tree_format((ab * m * m + ab * m).get_class()) << std::endl;
 
             //Useful when applying automatic diff to remove unwanted expressions such as Id and 0
             //For now only works for trees with with certain sub-trees:  Id * (m + 0) * v + 0 *v -> m * v
@@ -206,7 +206,7 @@ namespace utopia {
             auto expr   = identity(n, n) * (m + zeros(n, n)) * v + zeros(n, n) * v;
             auto s_expr = simplify(expr);
 
-            // disp(tree_format(s_expr.getClass()));
+            // disp(tree_format(s_expr.get_class()));
 
             Vector expected = m * v;
             Vector actual   = s_expr;
