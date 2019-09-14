@@ -8,7 +8,15 @@ namespace utopia {
     class WrapperTest {
     public:
 
+        static void print_backend_info()
+        {
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
+
         void run() {
+            print_backend_info();
             UTOPIA_RUN_TEST(vector_factory_test);
             UTOPIA_RUN_TEST(matrix_factory_test);
             UTOPIA_RUN_TEST(matrix_assembly_test);

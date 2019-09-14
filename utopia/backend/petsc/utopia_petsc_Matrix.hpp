@@ -135,10 +135,14 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
         ////////////////////////////////////////////////////////////////////
+        void init_empty(const PetscCommunicator &comm)
+        {
+            wrapper_ = std::make_shared<PetscMatrixMemory>(comm.get());
+        }
 
-        PetscMatrix(const MPI_Comm comm = PETSC_COMM_WORLD) : comm_(comm) {
-            using std::make_shared;
-            wrapper_ = make_shared<PetscMatrixMemory>(comm);
+        PetscMatrix(const PetscCommunicator &comm = PETSC_COMM_WORLD) : comm_(comm) 
+        {
+            init_empty(comm);
         }
 
         PetscMatrix(PetscMatrix &&other)
@@ -181,6 +185,8 @@ namespace utopia {
          template<class Expr>
          PetscMatrix(const Expression<Expr> &expr)
          {
+            //FIXME see if expression can provide a comm
+            init_empty(comm_);
              //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
              Super::construct_eval(expr.derived());
          }
@@ -188,6 +194,9 @@ namespace utopia {
          template<class Expr>
          inline PetscMatrix &operator=(const Expression<Expr> &expr)
          {
+             //FIXME see if expression can provide a comm
+             init_empty(comm_);
+
              Super::assign_eval(expr.derived());
              return *this;
          }
@@ -326,6 +335,19 @@ namespace utopia {
             matij_init_identity(
                 comm().get(),
                 MATAIJ,
+                PETSC_DECIDE,
+                PETSC_DECIDE,
+                s.get(0),
+                s.get(1),
+                diag
+            );
+         }
+
+         inline void dense_identity(const Size &s, const Scalar &diag = 1.0) override
+         {
+            dense_init_identity(
+                comm().get(),
+                MATDENSE,
                 PETSC_DECIDE,
                 PETSC_DECIDE,
                 s.get(0),

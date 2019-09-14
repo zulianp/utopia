@@ -13,6 +13,75 @@
 
 namespace utopia {
 
+
+    //TODO
+    // class CompatibleMatPair {
+    // public:
+    //     CompatibleMatPair(const MPI_Comm comm, const Mat &left, const Mat &right)
+    //     {
+    //         const bool left_is_sparse  = is_sparse(left);
+    //         const bool right_is_sparse = is_sparse(right);
+
+    //         must_destroy_left_  = false;
+    //         must_destroy_right_ = false;
+
+    //         MatType common_type;
+    //         if(left_is_sparse != right_is_sparse) {
+    //             if(left_is_sparse) {
+    //                 MatCreate(comm, &left_);
+    //                 PetscBackend::check_error( MatGetType(right, &common_type) );
+    //                 PetscBackend::check_error( MatConvert(left, common_type, MAT_INITIAL_MATRIX, &left_) );
+    //                 right_ = right;
+    //                 must_destroy_left_  = true;
+
+    //             } else {
+    //                 MatCreate(comm, &right_);
+    //                 PetscBackend::check_error( MatGetType(left, &common_type) );
+    //                 PetscBackend::check_error( MatConvert(right, common_type, MAT_INITIAL_MATRIX, &right_) );
+    //                 left_ = left;
+    //                 must_destroy_right_ = true;
+    //             }
+    //         } else {
+    //             left_  = left;
+    //             right_ = right;
+    //         }
+    //     }
+
+
+    //     inline const Mat &left()
+    //     {
+    //         return left_;
+    //     }
+
+    //     inline const Mat &right()
+    //     {
+    //         return right_;
+    //     }
+
+    //     ~CompatibleMatPair()
+    //     {
+    //         if(must_destroy_left_) MatDestroy(&left_);
+    //         if(must_destroy_right_) MatDestroy(&right_);
+    //     }
+
+    // private:
+
+    //     static bool is_sparse(const Mat &mat)
+    //     {
+    //         MatType type;
+    //         MatGetType(mat, &type);
+    //         const std::string type_str(type);
+    //         const size_t start = type_str.size() - 5;
+    //         return !(type_str.substr(start, 5) == "dense");
+    //     }
+
+    //     Mat left_;
+    //     Mat right_;
+    //     bool must_destroy_left_;
+    //     bool must_destroy_right_;
+    // };
+
+
     void PetscMatrix::copy(const PetscMatrix &other) /*override*/
     {
        if(raw_type() == other.raw_type()) {
@@ -1558,7 +1627,23 @@ namespace utopia {
        const PetscMatrix &B,
        PetscMatrix &C) const
     {
-        assert(false && "IMPLEMENT ME");
+        if(!transpose_A && !transpose_B) {
+            multiply(B, C);
+            return;
+        }
+
+        if(transpose_A && !transpose_B) {
+            transpose_multiply(B, C);
+            return;
+        }
+
+        if(!transpose_A && transpose_B) {
+            multiply_transpose(B, C);
+            return;
+        }
+
+        B.multiply(*this, C);
+        C.transpose();
     }
 
     /// C := alpha * op(A) * op(B)

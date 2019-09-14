@@ -114,11 +114,17 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
         ////////////////////////////////////////////////////////////////////
-     
+        void init_empty()
+        {
+          vec_ = nullptr; 
+          initialized_ = false;
+          immutable_ = false;
+        }
 
          template<class Expr>
          PetscVector(const Expression<Expr> &expr)
          {
+            init_empty();
              //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
              Super::construct_eval(expr.derived());
          }

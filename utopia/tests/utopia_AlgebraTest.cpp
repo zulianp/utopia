@@ -100,11 +100,13 @@ namespace utopia {
                 return;
             }
 
-            Matrix m1 = identity(3, 3);
+            Matrix m1 = dense_identity(3, 3);
             {
                 Write<Matrix> w(m1, GLOBAL_INSERT);
                 m1.set(0, 1, 1);
             }
+
+            disp(m1);
 
             Matrix m2 = values(3, 3, 2);
             Matrix m3 = m2 * transpose(m2);
@@ -129,14 +131,14 @@ namespace utopia {
             }
 
             int n = 3;
-            Matrix m = 0.5 * identity(n, n);
+            Matrix m = 0.5 * dense_identity(n, n);
             auto expr = det(m);
 
             double val = expr;
             utopia_test_assert(approxeq(0.125, val));
 
 
-            Matrix m4 = 0.5 * identity(4, 4);
+            Matrix m4 = 0.5 * dense_identity(4, 4);
             double det4 = det(m4);
 
             utopia_test_assert(approxeq(0.0625, det4));

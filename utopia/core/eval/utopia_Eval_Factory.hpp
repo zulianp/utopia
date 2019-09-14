@@ -247,6 +247,35 @@ namespace utopia {
 
     //NEW
     template<class Left, int Order, class Traits, int Backend>
+    class Eval<Construct<Left, Factory<DenseIdentity, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Construct<Left, Factory<DenseIdentity, Order> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Left, Traits>::apply(expr.left()).dense_identity(expr.right().size());
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+
+    //NEW
+    template<class Left, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Factory<DenseIdentity, Order> >, Traits, Backend> {
+    public:
+        inline static void apply(const Assign<Left, Factory<DenseIdentity, Order> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Left, Traits>::apply(expr.left()).dense_identity(expr.right().size());
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    //NEW
+    template<class Left, int Order, class Traits, int Backend>
     class Eval<Construct<Left, Factory<Zeros, Order> >, Traits, Backend> {
     public:
         inline static void apply(const Construct<Left, Factory<Zeros, Order> > &expr)
@@ -305,6 +334,22 @@ namespace utopia {
            UTOPIA_TRACE_BEGIN(expr);
 
            Eval<Left, Traits>::apply(expr.left()).identity(expr.right().right().size(), expr.right().left());
+
+           UTOPIA_TRACE_END(expr);
+       }
+   };
+
+   //NEW
+   template<class Left, class Right, int Order, class Traits, int Backend>
+   class Eval<Construct<Left, Binary<Number<Right>, Factory<DenseIdentity, Order>, Multiplies>>, Traits, Backend> {
+   public:
+       using Expr = utopia::Construct<Left, Binary<Number<Right>, Factory<DenseIdentity, Order>, Multiplies>>;
+
+       inline static void apply(const Expr &expr)
+       {
+           UTOPIA_TRACE_BEGIN(expr);
+
+           Eval<Left, Traits>::apply(expr.left()).dense_identity(expr.right().right().size(), expr.right().left());
 
            UTOPIA_TRACE_END(expr);
        }

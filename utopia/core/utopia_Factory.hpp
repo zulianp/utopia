@@ -27,6 +27,7 @@ namespace utopia {
     };
 
     class Identity {};
+    class DenseIdentity {};
 
     template<>
     class FactoryTraits<Identity> {
@@ -40,6 +41,21 @@ namespace utopia {
 
         enum {
             FILL_TYPE = FillType::SPARSE
+        };
+    };
+
+    template<>
+    class FactoryTraits<DenseIdentity> {
+    public:
+        typedef double Scalar;
+
+        static constexpr const char * getClass()
+        {
+            return "DenseIdentity";
+        }
+
+        enum {
+            FILL_TYPE = FillType::DENSE
         };
     };
 
@@ -589,6 +605,18 @@ namespace utopia {
     inline Factory<Identity, 2> identity(const Size &size)
     {
         return Factory<Identity, 2>(size);
+    }
+
+
+    /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
+    inline Factory<DenseIdentity, 2> dense_identity(const Size::SizeType rows, const Size::SizeType cols)
+    {
+        return Factory<DenseIdentity, 2>(Size({rows, cols}));
+    }
+    /// Returns denDensese_identity matrix  \f$ I^{size_0 \times size_1}  \f$.
+    inline Factory<DenseIdentity, 2> dense_identity(const Size &size)
+    {
+        return Factory<DenseIdentity, 2>(size);
     }
 
     /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
