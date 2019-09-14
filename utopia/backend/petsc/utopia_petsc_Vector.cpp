@@ -544,14 +544,14 @@ namespace utopia {
     }
 
 
-    template<class Operation>
-    static void element_wise_generic(
-        const PetscVector &x,
-        const Operation &op,
-        PetscVector &op_and_result)
-    {
-        //TODO
-    }
+    // template<class Operation>
+    // static void element_wise_generic(
+    //     const PetscVector &x,
+    //     const Operation &op,
+    //     PetscVector &op_and_result)
+    // {
+    //     //TODO
+    // }
 
     template<typename Scalar, class Operation>
     static void element_wise_generic(

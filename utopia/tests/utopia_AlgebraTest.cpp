@@ -103,13 +103,14 @@ namespace utopia {
             Matrix m1 = dense_identity(3, 3);
             {
                 Write<Matrix> w(m1, GLOBAL_INSERT);
-                m1.set(0, 1, 1);
+                m1.c_set(0, 1, 1);
             }
 
             Matrix m2 = values(3, 3, 2);
             
             Matrix m3 = m2 * transpose(m2);
-            //direct variant: Matrix m3; m2.transpose_multiply(m2, m3);
+            //direct variant (1): Matrix m3; m2.transpose_multiply(m2, m3);
+            //direct variant (2): Matrix m3; m3.multiply_transpose(m2, m3);
 
             m3 = transpose(m1) * m3;
             //direct variant: m1.transpose_multiply(m3, m3);
