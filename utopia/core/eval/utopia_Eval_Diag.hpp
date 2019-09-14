@@ -30,7 +30,7 @@ namespace utopia {
             aux_apply(
                 Eval<Right, Traits>::apply(expr.right().expr()),
                 result
-            )
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;
