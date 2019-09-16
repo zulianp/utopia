@@ -8,7 +8,7 @@
 #include "libmesh/parallel_elem.h"
 #include "libmesh/parallel_node.h"
 #include "libmesh/parallel_sync.h"
-
+#include "libmesh/mesh_tools.h"
 namespace utopia {
 
     void Adaptivity::compute_all_constraints(
@@ -16,6 +16,11 @@ namespace utopia {
         const libMesh::DofMap &dof_map,
         libMesh::DofConstraints &constraints)
     {
+
+        std::vector<SizeType> index; 
+        compute_boundary_nodes(mesh, dof_map, 0,0, index);
+        
+
         using uint = unsigned int;
         auto el = mesh.active_local_elements_begin();
         
@@ -29,7 +34,7 @@ namespace utopia {
             
             uint n_vars = dof_map.n_variables();
             for(uint var_num = 0; var_num < n_vars; ++var_num) {
-                compute_constraints(constraints, dof_map, var_num, elem, mesh.mesh_dimension());
+                compute_constraints(constraints, dof_map, var_num, elem, mesh.mesh_dimension(), index);
             }
         }
 
@@ -55,6 +60,10 @@ namespace utopia {
         
         const auto end_el = mesh.active_local_elements_end();
 
+        std::vector<SizeType> index;
+        compute_boundary_nodes(mesh, dof_map, 0, 0, index);
+
+
 
         dof_constraints_.clear();
         
@@ -69,7 +78,7 @@ namespace utopia {
 
             for (unsigned int var_num=0; var_num<dof_map.n_variables();
                  ++var_num) {
-                compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension());
+                compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension(), index);
             }
             
         }
@@ -89,13 +98,21 @@ namespace utopia {
     {
         const auto & mesh = V.mesh();
         unsigned int var_num = V.subspace_id();
+       
         
         const auto & dof_map = V.dof_map();
         constraint_matrix(mesh, dof_map, var_num, M, S);
+
     }
 
     void Adaptivity::constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S)
     {
+        
+        std::vector<SizeType> index;
+
+        compute_boundary_nodes(mesh, dof_map, 0, var_num, index);
+
+
 
 
         assemble_constraint(mesh, dof_map, var_num);
@@ -135,7 +152,36 @@ namespace utopia {
             
             bool we_have_constraints = false;
 
-            for (const auto & dof : elem_dofs){
+            for (const auto & dof : elem_dofs)
+            {
+
+                // if (dof_map.is_constrained_dof(dof))
+                // {
+                //     for(auto it=index.begin(); it < index.end(); ++it)
+                //     {
+
+                //         int i = *it;
+                //         if(dof==i) 
+                //         {
+                //             continue;
+                //         }
+                //         else    
+                //         {
+
+                //             we_have_constraints = true;
+                            
+                //             auto pos = dof_constraints_.find(dof);
+
+                                   
+                //             libmesh_assert (pos != dof_constraints_.end());
+                            
+                //             const auto & constraint_row = pos->second;
+                            
+                //             for (const auto & item : constraint_row)
+                //             dof_set.insert (item.first);
+                //         }
+                //     }
+                // }
                 
                 if (dof_map.is_constrained_dof(dof))
                 {
@@ -227,7 +273,8 @@ namespace utopia {
                                          const libMesh::DofMap &dof_map,
                                          const unsigned int var_num,
                                          const libMesh::Elem * elem,
-                                         const unsigned mesh_dim
+                                         const unsigned mesh_dim,
+                                         const std::vector<SizeType> index
                                          )
     {
         
@@ -285,8 +332,8 @@ namespace utopia {
                         const libMesh::dof_id_type my_dof_g = my_dof_indices[my_dof];
                   
                         bool self_constraint = false;
-                        for (unsigned int their_dof=0;
-                             their_dof != n_parent_side_dofs; their_dof++)
+                        
+                        for (unsigned int their_dof=0; their_dof != n_parent_side_dofs; their_dof++)
                         {
                             libmesh_assert_less (their_dof, parent_side->n_nodes());
                             
@@ -302,7 +349,7 @@ namespace utopia {
                         if (self_constraint) continue;
                         
                         libMesh::DofConstraintRow * constraint_row;
-                     
+
                         constraint_row = &(constraints[my_dof_g]);
 
                         const libMesh::Point & support_point = my_side->point(my_dof);
@@ -327,10 +374,11 @@ namespace utopia {
                                 (std::abs(their_dof_value) < .999))
                             {
                  
-                              
-                                
+
                                 constraint_row->insert(std::make_pair (their_dof_g,
-                                                                       their_dof_value));
+                                                           their_dof_value));
+                            
+                      
                             }
                         }
                     }
@@ -346,23 +394,31 @@ namespace utopia {
 
        std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
 
+       
+       std::vector<SizeType> index; 
+
+       compute_boundary_nodes(mesh, dof_map, 0,0, index);
+
        allgather_recursive_constraints(mesh, _dof_constraints, dof_map);
 
+       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
+
        typedef std::set<libMesh::dof_id_type> RCSet;
+
        RCSet unexpanded_set;
 
        for (const auto & i : _dof_constraints)
-        unexpanded_set.insert(i.first);
+       { 
+           unexpanded_set.insert(i.first);
+       }
 
        while (!unexpanded_set.empty())
-         for (RCSet::iterator i = unexpanded_set.begin();
-             i != unexpanded_set.end(); /* nothing */)
-          {
-            // If the DOF is constrained
-            libMesh::DofConstraints::iterator
-              pos = _dof_constraints.find(*i);
+        for (RCSet::iterator i = unexpanded_set.begin(); i != unexpanded_set.end(); /* nothing */)
+        {
+                              
+            libMesh::DofConstraints::iterator pos = _dof_constraints.find(*i);
 
-            libmesh_assert (pos != _dof_constraints.end());
+            libmesh_assert( pos != _dof_constraints.end());
 
             libMesh::DofConstraintRow & constraint_row = pos->second;
 
@@ -371,18 +427,31 @@ namespace utopia {
             for (const auto & item : constraint_row)
               if (item.first != *i && dof_map.is_constrained_dof(item.first))
                 {
-                  unexpanded_set.insert(item.first);
-                  constraints_to_expand.push_back(item.first);
+                    bool check =true;
+
+                    for(auto it=index.begin(); it < index.end(); ++it)
+                    {
+                        int b_id=*it;
+                        
+                        if(b_id==item.first) {
+                            check = false;
+                        }
+                    }
+         
+                    std::cout<<check<<std::endl;
+                    if (check ==true) {
+                          unexpanded_set.insert(item.first);                        
+                          constraints_to_expand.push_back(item.first);
+                    }
                 }
 
             for (const auto & expandable : constraints_to_expand)
-              {
+            {
                 const double this_coef = constraint_row[expandable];
 
-                libMesh::DofConstraints::const_iterator
-                subpos = _dof_constraints.find(expandable);
+                libMesh::DofConstraints::const_iterator subpos = _dof_constraints.find(expandable);
 
-                libmesh_assert (subpos != _dof_constraints.end());
+                libmesh_assert(subpos != _dof_constraints.end());
 
                 const libMesh::DofConstraintRow & subconstraint_row = subpos->second;
 
@@ -390,26 +459,32 @@ namespace utopia {
                   {
                     // Assert that the constraint does not form a cycle.
                     libmesh_assert(item.first != expandable);
+                    
                     constraint_row[item.first] += item.second * this_coef;
+                    
                     std::cout<<"item.second * this_coef=>"<<item.second * this_coef<<std::endl;
                   }
 
                 constraint_row.erase(expandable);
-              }
+            }
 
-            if (constraints_to_expand.empty())
-              i = unexpanded_set.erase(i);
+            if (constraints_to_expand.empty()) 
+            {
+                i = unexpanded_set.erase(i);
+            }
             else
+            {
               ++i;
-          }
-
+            }
+        }
+        
       std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
 
 
       scatter_constraints(mesh, dof_map, _dof_constraints);
     
-      // Now that we have our root constraint dependencies sorted out, add
-      // them to the send_list
+      // // Now that we have our root constraint dependencies sorted out, add
+      // // them to the send_list
       add_constraints_to_send_list(dof_map, _dof_constraints);
     }
 
@@ -420,15 +495,12 @@ namespace utopia {
     {
        std::cout<<"Adaptivity::allgather_recursive_constraints::BEGIN "<<std::endl;
 
-      // This function must be run on all processors at once
-      //parallel_object_only();
-
 
       if (dof_map.n_processors() == 1)
         return;
 
 
-        unsigned int has_constraints = !_dof_constraints.empty();
+      unsigned int has_constraints = !_dof_constraints.empty();
 
       dof_map.comm().max(has_constraints);
 
@@ -492,7 +564,7 @@ namespace utopia {
           pushed_keys_vals, received_keys_vals;
 
         for (auto & p : pushed_id_vecs)
-          {
+        {
             auto & keys_vals = pushed_keys_vals[p.first];
             keys_vals.reserve(p.second.size());
 
@@ -502,7 +574,7 @@ namespace utopia {
                 keys_vals.emplace_back(row.begin(), row.end());
 
               }
-          }
+        }
 
         auto ids_action_functor =
           [& received_id_vecs]
@@ -561,10 +633,11 @@ namespace utopia {
 
 
       typedef std::set<libMesh::dof_id_type> DoF_RCSet;
+
       DoF_RCSet unexpanded_dofs;
 
-      for (const auto & i : _dof_constraints)
-        unexpanded_dofs.insert(i.first);
+      for (const auto & i : _dof_constraints) unexpanded_dofs.insert(i.first);
+
 
       std::cout<<"Adaptivity::allgather_recursive_constraints::END"<<std::endl;
 
@@ -582,55 +655,50 @@ namespace utopia {
                                          libMesh::DofMap &dof_map,
                                          bool look_for_constrainees)
     {
-      typedef std::set<libMesh::dof_id_type> DoF_RCSet;
+      
 
-     std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
+      std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
+
+      typedef std::set<libMesh::dof_id_type> DoF_RCSet;
 
       bool unexpanded_set_nonempty = !unexpanded_dofs.empty();
       dof_map.comm().max(unexpanded_set_nonempty);
 
       while (unexpanded_set_nonempty)
-        {
-          // Let's make sure we don't lose sync in this loop.
-          //parallel_object_only();
-
-          // Request sets
+      {
+          
           DoF_RCSet   dof_request_set;
 
-          // Request sets to send to each processor
+
           std::map<libMesh::processor_id_type, std::vector<libMesh::dof_id_type>>
             requested_dof_ids;
 
-          // And the sizes of each
+
           std::map<libMesh::processor_id_type, libMesh::dof_id_type>
             dof_ids_on_proc;
 
-          // Fill (and thereby sort and uniq!) the main request sets
+
           for (const auto & unexpanded_dof : unexpanded_dofs)
-            {
+          {
               libMesh::DofConstraints::const_iterator
                 pos = _dof_constraints.find(unexpanded_dof);
 
-              // If we were asked for a DoF and we don't already have a
-              // constraint for it, then we need to check for one.
+   
               if (pos == _dof_constraints.end())
-                {
+              {
                   if (!dof_map.local_index(unexpanded_dof) &&
                       !_dof_constraints.count(unexpanded_dof) )
                     dof_request_set.insert(unexpanded_dof);
-                }
-              // If we were asked for a DoF and we already have a
-              // constraint for it, then we need to check if the
-              // constraint is recursive.
+              }
+
               else
-                {
+              {
                   const libMesh::DofConstraintRow & row = pos->second;
                   for (const auto & j : row)
                     {
                       const libMesh::dof_id_type constraining_dof = j.first;
 
-                      // If it's non-local and we haven't already got a
-                      // constraint for it, we might need to ask for one
+
                       if (!dof_map.local_index(constraining_dof) &&
                           !_dof_constraints.count(constraining_dof))
                         dof_request_set.insert(constraining_dof);
@@ -638,31 +706,35 @@ namespace utopia {
                 }
             }
 
-          // Clear the unexpanded constraint set; we're about to expand it
           unexpanded_dofs.clear();
 
-          // Count requests by processor
+
           libMesh::processor_id_type proc_id = 0;
           for (const auto & i : dof_request_set)
-            {
+          {
               while (i >= dof_map.end_dof(proc_id))
+              {
                 proc_id++;
-              dof_ids_on_proc[proc_id]++;
-            }
+                dof_ids_on_proc[proc_id]++;
+              }
+          }
 
           for (auto & pair : dof_ids_on_proc)
-            {
+          {
               requested_dof_ids[pair.first].reserve(pair.second);
-            }
+          }
 
-          // Prepare each processor's request set
+       
           proc_id = 0;
+
           for (const auto & i : dof_request_set)
-            {
+          {
               while (i >= dof_map.end_dof(proc_id))
+              {
                 proc_id++;
-              requested_dof_ids[proc_id].push_back(i);
+                requested_dof_ids[proc_id].push_back(i);
             }
+          }
 
           unexpanded_set_nonempty = !unexpanded_dofs.empty();
           dof_map.comm().max(unexpanded_set_nonempty);
@@ -743,6 +815,7 @@ namespace utopia {
 
         
       dof_map.comm().max(has_constraints);
+
       if (!has_constraints)
         return;
 
@@ -753,6 +826,7 @@ namespace utopia {
 
       // Collect the dof constraints I need to push to each processor
       libMesh::dof_id_type constrained_proc_id = 0;
+
       for (auto & i : _dof_constraints)
         {
           const libMesh::dof_id_type constrained = i.first;
@@ -855,25 +929,65 @@ namespace utopia {
         (dof_map.comm(), pushed_keys_vals, keys_vals_action_functor);
 
 
-      libMesh::GhostingFunctor::map_type elements_to_couple;
+      // libMesh::GhostingFunctor::map_type elements_to_couple;
 
 
-      std::set<libMesh::dof_id_type> requested_dofs;
+      // std::set<libMesh::dof_id_type> requested_dofs;
 
-      for (const auto & pr : elements_to_couple)
-        {
-          const libMesh::Elem * elem = pr.first;
+      // for (const auto & pr : elements_to_couple)
+      //   {
+      //     const libMesh::Elem * elem = pr.first;
 
-          // FIXME - optimize for the non-fully-coupled case?
-          std::vector<libMesh::dof_id_type> element_dofs;
-          dof_map.dof_indices(elem, element_dofs);
+      //     // FIXME - optimize for the non-fully-coupled case?
+      //     std::vector<libMesh::dof_id_type> element_dofs;
+      //     dof_map.dof_indices(elem, element_dofs);
 
-          for (auto dof : element_dofs)
-            requested_dofs.insert(dof);
-        }
+      //     for (auto dof : element_dofs)
+      //       requested_dofs.insert(dof);
+      //   }
 
         std::cout<<"Adaptivity::scatter_constraints::END"<<std::endl; 
+    }
 
-         gather_constraints(mesh, requested_dofs, _dof_constraints, dof_map, false);
+    void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh, 
+                                            const libMesh::DofMap &dof_map,
+                                            unsigned int sys_number, unsigned int var_number, 
+                                            std::vector<SizeType> & index){
+
+
+       // V.mesh().get_boundary_info().print_info();
+
+       // std::vector<libMesh::boundary_id_type> node_boundaries;
+
+       // V.mesh().get_boundary_info().build_node_boundary_ids(node_boundaries);
+
+       // std::vector<libMesh::dof_id_type> node_id_list;
+       
+
+       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
+
+       // mesh.print_info();
+
+       std::cout<<"on_boundary "<< on_boundary.size() <<std::endl;
+
+
+       {
+            libMesh::MeshBase::const_node_iterator it = mesh.local_nodes_begin();
+            const libMesh::MeshBase::const_node_iterator end_it = mesh.local_nodes_end();
+            for ( ; it != end_it; ++it)
+            {
+                const libMesh::Node * node = *it;
+                
+                for (unsigned int comp = 0;comp < node->n_comp(sys_number, var_number); comp++)
+                {
+                    const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, comp);
+                    
+                    if(on_boundary.count(node->id())) {
+                        
+                        index.push_back(node_dof);
+                    }                   
+                }
+            }
+       }
     }
 }

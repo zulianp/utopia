@@ -95,6 +95,6 @@ namespace utopia {
         double measure_div = sum(divergence_v);
         std::cout <<  "measure_div: " << measure_div << std::endl;
 
-        write("div.e", V, divergence_v);
+        // write("div.e", V, divergence_v);
     }
 }
