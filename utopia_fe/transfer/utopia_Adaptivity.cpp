@@ -462,7 +462,7 @@ namespace utopia {
                     
                     constraint_row[item.first] += item.second * this_coef;
                     
-                    std::cout<<"item.second * this_coef=>"<<item.second * this_coef<<std::endl;
+                    //std::cout<<"item.second * this_coef=>"<<item.second * this_coef<<std::endl;
                   }
 
                 constraint_row.erase(expandable);
@@ -750,15 +750,11 @@ namespace utopia {
       
 
      std::cout<<"Adaptivity::add_constraints_to_send_list::BEGIN "<<std::endl; 
-      // This function must be run on all processors at once
-     // parallel_object_only();
 
-      // Return immediately if there's nothing to gather
       if (dof_map.n_processors() == 1)
         return;
 
-      // We might get to return immediately if none of the processors
-      // found any constraints
+      
       unsigned int has_constraints = !_dof_constraints.empty();
       dof_map.comm().max(has_constraints);
       if (!has_constraints)
@@ -952,24 +948,13 @@ namespace utopia {
     void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh, 
                                             const libMesh::DofMap &dof_map,
                                             unsigned int sys_number, unsigned int var_number, 
-                                            std::vector<SizeType> & index){
+                                            std::vector<SizeType> & index)
+    {
 
 
-       // V.mesh().get_boundary_info().print_info();
-
-       // std::vector<libMesh::boundary_id_type> node_boundaries;
-
-       // V.mesh().get_boundary_info().build_node_boundary_ids(node_boundaries);
-
-       // std::vector<libMesh::dof_id_type> node_id_list;
-       
+       std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
 
        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
-
-       // mesh.print_info();
-
-       std::cout<<"on_boundary "<< on_boundary.size() <<std::endl;
-
 
        {
             libMesh::MeshBase::const_node_iterator it = mesh.local_nodes_begin();
@@ -988,6 +973,9 @@ namespace utopia {
                     }                   
                 }
             }
-       }
+        }
+
+
+        std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
     }
 }
