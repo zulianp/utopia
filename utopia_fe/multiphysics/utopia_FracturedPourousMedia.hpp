@@ -513,6 +513,8 @@ namespace utopia {
 
                 // matrix_processors_.push_back(report_);
             });
+
+            in.get("adaptivity", adaptivity_);
         }
 
         inline bool init()
@@ -544,6 +546,26 @@ namespace utopia {
         }
 
         inline bool compute_flow()
+        {
+            if(adaptivity_) {
+                return compute_flow_with_refinement();
+            } else {
+                return compute_flow_no_refinement();
+            }
+        }
+
+        inline bool compute_flow_with_refinement()
+        {
+            do {
+                bool ok = compute_flow_no_refinement();
+                if(!ok) return ok;
+                //TODO fracture networks
+            } while(pourous_matrix_.refine(*x_m_));
+
+            return true;
+        }
+
+        inline bool compute_flow_no_refinement()
         {
             Matrix A;
             Vector rhs;
@@ -698,7 +720,7 @@ namespace utopia {
         }
 
         FracturedPourousMedia(libMesh::Parallel::Communicator &comm)
-        : comm_(comm), pourous_matrix_(comm), assembly_strategy_("static-condensation"), use_mg_(false), remove_constrained_dofs_(false), rescale_(1.0)
+        : comm_(comm), pourous_matrix_(comm), assembly_strategy_("static-condensation"), use_mg_(false), remove_constrained_dofs_(false), rescale_(1.0), adaptivity_(false)
         {}
 
     private:
@@ -722,6 +744,8 @@ namespace utopia {
 
         std::vector<std::shared_ptr<MatrixPostProcessor<Matrix>> > matrix_processors_;
         std::shared_ptr<DFMReport<Matrix, Vector>> report_;
+
+        bool adaptivity_;
 
     };
     

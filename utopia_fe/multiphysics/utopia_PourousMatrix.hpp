@@ -16,90 +16,6 @@
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
-    class GradientRecovery {
-    public:
-        typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
-        using Scalar = UTOPIA_SCALAR(Vector);
-
-        void init(FunctionSpaceT &V)
-        {
-            int dim = V.mesh().spatial_dimension();
-            auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("gradient-recover");
-            grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("p", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
-
-            for(int i = 0; i < dim; ++i) {
-                grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("grad_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
-            }
-
-            grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("e", libMesh::Order(0), libMesh::MONOMIAL) );
-
-            grad_space_.subspace(0).initialize();
-        }
-
-        void recover(const FunctionSpaceT &V, const Vector &sol)
-        {
-            Chrono chrono; chrono.start();
-            const int dim = V.mesh().spatial_dimension();
-
-            auto &P = grad_space_.subspace(0);
-            auto W = grad_space_.subspace(1, dim + 1);
-            auto E = grad_space_.subspace(dim + 1); //error space
-
-            auto p = trial(P);
-            auto u = trial(W);
-            auto v = test(W);
-            auto e = test(E);
-
-            auto &dof_map = P.dof_map();
-
-            UVector p_interp_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-            copy_values(V, sol, P, p_interp_buff);
-            synchronize(p_interp_buff);
-
-            auto p_interp = interpolate(p_interp_buff, p);
-            auto grad_form = inner(grad(p_interp), v) * dX;
-
-            auto mass_form = inner(u, v) * dX;
-
-            UVector grad_ph, mass_vec;
-            USparseMatrix mass_mat;
-            utopia::assemble(grad_form, grad_ph);
-            utopia::assemble(mass_form, mass_mat);
-            mass_vec = sum(mass_mat, 1);
-
-            UVector grad_p_projected = e_mul(grad_ph, 1./mass_vec);
-            UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-            grad_p_projected_buff = grad_p_projected;
-            synchronize(grad_p_projected_buff);
-
-            auto grad_interp = interpolate(grad_p_projected_buff, u);
-            auto error_form  = inner(norm2(grad_interp - grad(p_interp)), e) * dX;
-            auto vol_form    = inner(trial(E), e) * dX;
-
-            UVector error, vol;
-            // utopia::assemble(error_form, error);
-            std::cout << tree_format(error_form.getClass()) << std::endl;
-            // utopia::assemble(vol_form,   vol);
-            // error = e_mul(error, 1./vol);
-
-            // UVector aux_values = p_interp_buff + grad_p_projected + error;
-
-            // utopia::convert(aux_values, *P.equation_system().solution);
-            // P.equation_system().solution->close();
-
-            chrono.stop();
-            std::cout << chrono << std::endl;
-        }
-
-        inline bool empty() const
-        {
-            return grad_space_.n_subspaces() == 0;
-        }
-
-    private:
-        ProductFunctionSpace<FunctionSpaceT> grad_space_;
-    };
 
     template<class Matrix, class Vector>
     class Mortar : public Configurable {
@@ -247,6 +163,44 @@ namespace utopia {
     };
 
     template<class Matrix, class Vector>
+    class GradientRecovery : public Configurable {
+    public:
+        typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
+        using Scalar = UTOPIA_SCALAR(Vector);
+
+        inline bool empty() const
+        {
+            return grad_space_.empty();
+        }
+
+        // bool refine(FunctionSpaceT &V, const Vector &sol);
+        bool refine(const Mortar<Matrix, Vector> &mortar, FunctionSpaceT &V, const Vector &sol);
+
+        void read(Input &in) override;
+        
+        GradientRecovery();
+
+        inline int n_refinements() const { return n_refinements_; }
+
+    private:
+        UVector all_values_;
+        UVector error_;
+        ProductFunctionSpace<FunctionSpaceT> grad_space_;
+        int system_num_;
+        int error_var_num_;
+        Scalar max_local_error_;
+        int n_refinements_;
+        int max_refinements_;
+
+        void init(FunctionSpaceT &V);
+
+        void recover(const Mortar<Matrix, Vector> &mortar, const FunctionSpaceT &V, const Vector &sol);
+        void append_error_estimate(FunctionSpaceT &V);
+        bool apply_refinement(FunctionSpaceT &V, const Vector &sol);
+    };
+
+
+    template<class Matrix, class Vector>
     class PostProcessable : public virtual Configurable {
     public:
         using FunctionSpaceT = utopia::LibMeshFunctionSpace;
@@ -332,15 +286,13 @@ namespace utopia {
             flow_model_ = flow;
 
             in.get("mortar", mortar_);
-
-            bool adaptive_refinement = false;
-            in.get("adaptive-refinement", adaptive_refinement);
-
-            if(adaptive_refinement) {
-                gradient_recovery_.init(space());
-            }
+            in.get("gradient-recovery", gradient_recovery_);
 
             init();
+        }
+
+        inline bool refine(const Vector &sol) {
+            return gradient_recovery_.refine(mortar_, space(), sol);
         }
 
         inline bool assemble_flow(const Vector &x, Matrix &hessian, Vector &gradient)
@@ -369,10 +321,6 @@ namespace utopia {
         inline void post_process_flow(const Vector &x)
         {
             Super::post_process(space(), x);
-
-            if(!gradient_recovery_.empty()) {
-                gradient_recovery_.recover(space(), x);
-            }
         }
 
         inline FunctionSpaceT &space()
