@@ -23,7 +23,7 @@ namespace utopia {
     public:
 
         void init(
-            libMesh::MeshBase &mesh,
+            const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map,
             const int var_num);
 

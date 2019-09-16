@@ -1,4 +1,5 @@
 #include "utopia_PourousMatrix.hpp"
+#include "utopia_LibMeshDofMapAdapterNew.hpp"
 
 namespace utopia {
     //FIXME move me to the backend
@@ -48,52 +49,91 @@ namespace utopia {
     void GradientRecovery<Matrix, Vector>::read(Input &in)
     {
         in.get("max-local-error", max_local_error_);
-        in.get("max_refinements", max_refinements_);
+        in.get("max-refinements", max_refinements_);
+    }
+
+    static void make_permutation(
+        const libMesh::MeshBase &mesh,
+        const libMesh::DofMap &dof_map_from,
+        const int &var_num_from, 
+        const libMesh::DofMap &dof_map_to,
+        const int &var_num_to, 
+        USparseMatrix &mat,
+        const int tensor_dim = 1)
+    {
+        ElementDofMapAdapter a_from, a_to;
+          a_from.init(
+            mesh,
+            dof_map_from,
+            var_num_from);
+
+          a_to.init(
+            mesh,
+            dof_map_to,
+            var_num_to);
+
+          if(tensor_dim == 1) {
+              ElementDofMapAdapter::make_permutation(a_from, a_to, mat);
+          } else {
+            ElementDofMapAdapter::make_vector_permutation(
+                          tensor_dim,
+                          a_from,
+                          a_to,
+                          mat);
+        }
+
     }
 
     template<class Matrix, class Vector>
     void GradientRecovery<Matrix, Vector>::init(FunctionSpaceT &V)
     {
+        // grad_space_.clear();
         if(grad_space_.empty()) {
             int dim = V.mesh().spatial_dimension();
             auto &aux = V.equation_systems().add_system<libMesh::LinearImplicitSystem>("gradient-recover");
             system_num_ = aux.number();
-            grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("p", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+
+            // if(aux.is_initialized()) {
+            //     std::cout << "Aux " << system_num_ << "/" << V.equation_systems().n_systems() << std::endl;
+            //     std::cout << "Aux_n_var = " << aux.n_vars() << std::endl;
+
+            //     for(int i = 0; i < dim + 1; ++i) {
+            //         grad_space_ *= LibMeshFunctionSpace(aux, i);
+            //     }
+
+            //     return;
+            // }
+
+            grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("fun", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
 
             for(int i = 0; i < dim; ++i) {
                 grad_space_ *= LibMeshFunctionSpace(aux, aux.add_variable("grad_" + std::to_string(i), libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
             }
 
-            error_var_num_ = aux.add_variable("e", libMesh::Order(0), libMesh::MONOMIAL);
+            error_var_num_ = aux.add_variable("error_estimate", libMesh::Order(0), libMesh::MONOMIAL);
             grad_space_ *= LibMeshFunctionSpace(aux, error_var_num_);
-        }
+            grad_space_.subspace(0).initialize();
+        } 
 
-        grad_space_.subspace(0).initialize();
+
+
+
+        std::cout << "Aux " << system_num_ << "/" << V.equation_systems().n_systems() << std::endl;
+        std::cout << "Aux_n_var = " << V.equation_systems().get_system(system_num_).n_vars() << std::endl;   
     }
 
     template<class Matrix, class Vector>
     bool GradientRecovery<Matrix, Vector>::refine(const Mortar<Matrix, Vector> &mortar, FunctionSpaceT &V, const Vector &sol)
     {
-        if(n_refinements_ >= max_refinements_) return false;
-
-        init(V);
-        recover(mortar, V, sol);
-        return apply_refinement(V, sol);
+        estimate_error(mortar, V, sol);
+        return apply_refinement(V);
     }
 
-    // template<class Matrix, class Vector>
-    // bool GradientRecovery<Matrix, Vector>::refine(FunctionSpaceT &V, const Vector &sol)
-    // {
-    //     if(n_refinements_ >= max_refinements_) return false;
-
-    //     init(V);
-    //     recover(V, sol);
-    //     return apply_refinement(V, sol);
-    // }
-
     template<class Matrix, class Vector>
-    bool GradientRecovery<Matrix, Vector>::apply_refinement(FunctionSpaceT &V, const Vector &sol)
+    bool GradientRecovery<Matrix, Vector>::apply_refinement(FunctionSpaceT &V)
    {
+        if(n_refinements_ >= max_refinements_) return false;
+
         auto &m = V.mesh();
 
         Read<UVector> r(error_);
@@ -113,6 +153,8 @@ namespace utopia {
 
 
         libMesh::MeshRefinement refinement(m);
+        
+
         auto e_it = elements_begin(m);
 
         if(e_it != elements_end(m)) {
@@ -121,14 +163,12 @@ namespace utopia {
 
         refinement.make_flags_parallel_consistent();
         refinement.refine_elements();
-        refinement.test_level_one(true);
+        // refinement.test_level_one(true);
+        refinement.clean_refinement_flags();
 
-        m.prepare_for_use();
-        V.initialize();
+        V.equation_systems().reinit();
 
         n_refinements_ += refined;
-
-        append_error_estimate(V);
         return refined;
     }
 
@@ -140,9 +180,34 @@ namespace utopia {
     }
 
     template<class Matrix, class Vector>
-    void GradientRecovery<Matrix, Vector>::recover(const Mortar<Matrix, Vector> &mortar, const FunctionSpaceT &V, const Vector &sol)
+    void GradientRecovery<Matrix, Vector>::estimate_error(const Mortar<Matrix, Vector> &mortar, FunctionSpaceT &V, const Vector &sol)
     {
+        //REMOVE ME
+        if(n_refinements_ >= max_refinements_) return;
+
         Chrono chrono; chrono.start();
+
+        init(V);
+
+        USparseMatrix permutation, mortar_matrix;
+        if(!mortar.empty()) {
+            make_permutation(
+                V.mesh(),
+                V.dof_map(),
+                0,
+                grad_space_.subspace(0).dof_map(),
+                0,
+                permutation,
+                grad_space_.n_subspaces() - 1
+            );
+
+            mortar_matrix = USparseMatrix(permutation * *mortar.mortar_matrix() * transpose(permutation));
+
+            auto s_mm = size(mortar_matrix);
+            disp(s_mm);
+        }
+
+      
         const int dim = V.mesh().spatial_dimension();
 
         auto &P = grad_space_.subspace(0);
@@ -170,7 +235,19 @@ namespace utopia {
         USparseMatrix mass_mat;
         utopia::assemble(grad_form, grad_ph);
         utopia::assemble(mass_form, mass_mat);
-        mass_vec = sum(mass_mat, 1);
+
+        if(!mortar.empty()) {
+            auto s_mm = size(mass_mat);
+            disp(s_mm);
+            
+            grad_ph  = transpose(mortar_matrix) * grad_ph;
+            //FIXME
+            mass_mat = USparseMatrix(transpose(mortar_matrix) * mass_mat * mortar_matrix);
+            mass_vec = sum(mass_mat, 1);
+        } else {
+            mass_vec = sum(mass_mat, 1);
+        }
+
 
         UVector grad_p_projected = e_mul(grad_ph, 1./mass_vec);
         UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
@@ -193,6 +270,8 @@ namespace utopia {
 
         chrono.stop();
         std::cout << chrono << std::endl;
+
+        append_error_estimate(V);
     }   
 
     template class GradientRecovery<USparseMatrix, UVector>;

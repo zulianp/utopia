@@ -556,7 +556,9 @@ namespace utopia {
 
         inline bool compute_flow_with_refinement()
         {
+            int i = 0;
             do {
+                std::cout << "compute_flow_with_refinement: loop " << i++ << std::endl;
                 bool ok = compute_flow_no_refinement();
                 if(!ok) return ok;
                 //TODO fracture networks

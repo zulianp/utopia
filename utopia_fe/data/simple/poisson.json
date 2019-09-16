@@ -4,7 +4,9 @@
         "n-x" : 10,
         "n-y" : 10,
         "refinements" : 0,
-        "random-refine" : false
+        "random-refine" : true,
+        "random-refinements" : 4
+
     },
     "space": {
         "system-name" : "poisson",
