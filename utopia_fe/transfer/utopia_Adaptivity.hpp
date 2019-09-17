@@ -15,7 +15,11 @@ namespace utopia {
 
     public:
         void constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S);
-        void constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S);
+        
+        void constraint_matrix(const libMesh::MeshBase &mesh, 
+                               const libMesh::DofMap &dof_map, 
+                               int var_num, 
+                               USparseMatrix &M, USparseMatrix &S);
 
 
     private:
@@ -29,13 +33,45 @@ namespace utopia {
                                         const libMesh::DofMap &dof_map,
                                         const unsigned int variable_number,
                                         const libMesh::Elem * elem,
-                                        const unsigned mesh_dim
+                                        const unsigned mesh_dim,
+                                        const std::vector<SizeType> index
                                         );
 
         static void compute_all_constraints(
             const libMesh::MeshBase &mesh,
             const libMesh::DofMap &dof_map,
             libMesh::DofConstraints &constraints);
+
+        static void compute_boundary_nodes(const libMesh::MeshBase &mesh, 
+                                           const libMesh::DofMap &dof_map,
+                                           unsigned int sys_number, 
+                                           unsigned int var_number,
+                                           std::vector<SizeType> & index);
+
+
+        static void process_constraints (libMesh::MeshBase  &mesh, 
+                                         libMesh::DofMap &dof_map, 
+                                         libMesh::DofConstraints &_dof_constraints);
+
+        static  void add_constraints_to_send_list(libMesh::DofMap &dof_map, 
+                                                  libMesh::DofConstraints &_dof_constraints);
+
+        static void gather_constraints (libMesh::MeshBase  & mesh,
+                                         std::set<libMesh::dof_id_type> & unexpanded_dofs, 
+                                         libMesh::DofConstraints &_dof_constraints,
+                                         libMesh::DofMap & dof_map,
+                                         bool look_for_constrainees);
+
+        static void allgather_recursive_constraints(libMesh::MeshBase  & mesh, 
+                                                    libMesh::DofConstraints &_dof_constraints, 
+                                                    libMesh::DofMap &dof_map);
+
+        // static  void check_for_constraint_loops(const libMesh::DofConstraints & _dof_constraints, 
+        //                                         libMesh::DofMap & dof_map);
+
+        static void scatter_constraints(libMesh::MeshBase  & mesh, 
+                                        libMesh::DofMap &dof_map, 
+                                        libMesh::DofConstraints &_dof_constraints);
 
         template<class ElementMatrix>
         static void construct_constraint_matrix(const libMesh::Elem *elem,
@@ -45,6 +81,15 @@ namespace utopia {
                                                 std::vector<libMesh::dof_id_type> &dof_indices,
                                                 const bool called_recursively = false)
         {
+            
+
+            // if(elem->on_boundary())
+            // {
+            //     for(int k=0; k<elem->n_nodes(); k++){
+            //         const libMesh::Node * node = elem->node_ptr(k);
+            //     }
+            // }
+
             const std::size_t n_var = dof_map.n_variables();
             dof_map.dof_indices(elem, dof_indices);
 
