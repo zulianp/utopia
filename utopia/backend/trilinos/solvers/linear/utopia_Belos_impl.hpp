@@ -16,7 +16,6 @@
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
-
 #ifdef WITH_TRILINOS_MUELU
 #include <MueLu.hpp>
 #include <MueLu_CreateTpetraPreconditioner.hpp>
@@ -210,6 +209,41 @@ namespace utopia {
         } else {
             //use default paramlist
         }
+    }
+
+    //read an utopia file and convert in a trilinos list
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
+        {
+          Smoother<Matrix, Vector>::read(in);
+          PreconditionedSolver::read(in);
+
+          //TODO
+          std::string exotic = "";
+          in.get("exotic", exotic);
+
+          if(!exotic.empty()) {
+
+          }
+
+          impl_->param_list->set("Relative tolerance", this->rtol(), "CG");
+          impl_->param_list->set("S tolerance", this->stol(), "CG");
+          impl_->param_list->set("A tolerance", this->atol(), "CG");
+          impl_->param_list->set("Maximum iteration", this->max_it(),"CG");
+          impl_->param_list->set("Verbose", this->verbose(), "CG");
+          //auto in = open_istream(const Path &path);
+    }
+
+    // available parameters
+    // TODO print setted parameters??
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os ) const
+    {
+        Smoother<Matrix, Vector>::print_usage(os);
+        PreconditionedSolver::print_usage(os);
+          //TODO
+          //m_utopia_warning_once("not implemented");
+
     }
 
     template <typename Matrix, typename Vector>

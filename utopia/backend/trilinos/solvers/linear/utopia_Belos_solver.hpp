@@ -15,7 +15,7 @@ namespace utopia {
     /**@ingroup     Linear
      * @brief       Class provides interface to Trilinos Belos solvers \n
      *              For setting up basic parameters, one can use classic Belos
-     * runtime options
+     *              runtime options
      */
     template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class BelosSolver {};
@@ -48,31 +48,53 @@ namespace utopia {
         /**
          * @brief      Reads the xml file based on different layout than read
          *
-         * @param[in]  path  location of the xml file
+         * @param[path] path  location of the xml file
          */
         void read_xml(const std::string &path);
 
-        void read(Input &in) override {
-          Smoother<Matrix, Vector>::read(in);
+        /**
+         * @brief      Reads the UTOPIA input object.
+         *
+         * @param[in]  in  The parameters
+         */
+        void read(Input &in) override;/* {
+          Smoother<Matrix, Vector>::read(in); 
           PreconditionedSolver::read(in);
           //TODO
-          m_utopia_warning_once("not implemented");
-        }
+          atol_(1e-9);
+          rtol_(1e-9),;
+          stol_(1e-11);
+          max_it_(300);
+          verbose_(false);
 
-        void print_usage(std::ostream &os = std::cout) const override
-        {
-          Smoother<Matrix, Vector>::print_usage(os);
+          m_utopia_warning_once("not implemented");
+        }*/
+
+        /**
+         * @brief      Prints the parameters used.
+         *
+         * @param[os]  os The std::ostream parameters
+         */
+        void print_usage(std::ostream &os = std::cout) const override;
+   /*     {
+          Smoother<Matrix, Vector>::print_usage(os); 
           PreconditionedSolver::print_usage(os);
           //TODO
           m_utopia_warning_once("not implemented");
 
-        }
+        }*/
+
         /**
-         * @brief      Sets the parameters.
+         * @brief      Clone the object.
          *
-         * @param[in]  params  The parameters
          */
         BelosSolver * clone() const override;
+        /**
+         * @brief      Sets the smoothing vectors.
+         *
+         * @param[x]  x The x vector
+         * @param[rhs]  rhs The rhs vector
+         */
         bool smooth(const Vector &rhs, Vector &x) override;
 
         private:

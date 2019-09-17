@@ -258,7 +258,7 @@ namespace utopia {
         {
             if(initialized()) {
                 //TODO check if this is the right version
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 10, 3)
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 10, 2)
                 TaoType type;
 #else
                 const TaoType type;

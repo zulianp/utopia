@@ -9,7 +9,6 @@
 #include "Amesos2_Meta.hpp"
 
 //TODO remove from here
-#include <Kokkos_DefaultNode.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
@@ -18,11 +17,6 @@
 #include <Amesos2_Factory.hpp>
 #include <Amesos2_Solver.hpp>
 #include <Amesos2_MultiVecAdapter.hpp>
-
-#include <BelosSolverFactory.hpp>
-#include <BelosTpetraAdapter.hpp>
-#include <BelosLinearProblem.hpp>
-#include <BelosSolverManager.hpp>
 
 #include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
@@ -318,14 +312,18 @@ namespace utopia {
     void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &in)
     {
         DirectSolver<Matrix, Vector>::read(in);
-
         in.get("keep-symbolic-factorization", impl_->keep_symbolic_factorization);
+      //  in.get("exotic", exotic); //exotic = "";
+      //  if(!exotic.empty()) {
+      //  }
     }
 
+    // available parameters
+    // TODO print setted parameters??
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const
     {
-
+        DirectSolver<Matrix, Vector>::print_usage(os);
     }
 
     template <typename Matrix, typename Vector>
