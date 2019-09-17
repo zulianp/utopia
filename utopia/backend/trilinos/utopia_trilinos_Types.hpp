@@ -14,8 +14,8 @@
 namespace utopia
 {
 
-UTOPIA_MAKE_TRAITS_DENSE(TpetraMatrix, TrilinosTraits);
-UTOPIA_MAKE_TRAITS_SPARSE(TpetraSparseMatrix, TrilinosTraits);
+// UTOPIA_MAKE_TRAITS_DENSE(TpetraMatrix, TrilinosTraits);
+UTOPIA_MAKE_TRAITS_SPARSE(TpetraMatrix, TrilinosTraits);
 
 UTOPIA_MAKE_TRAITS(TpetraVector, TrilinosTraits);
 
@@ -27,56 +27,56 @@ UTOPIA_MAKE_TRAITS(TpetraVector, TrilinosTraits);
  */
 
 
-typedef Wrapper<TpetraMatrix, 2>             TMatrixd;
-typedef Wrapper<TpetraSparseMatrix, 2>       TSMatrixd;
+// typedef Wrapper<TpetraMatrix, 2>           TMatrixd;
+typedef utopia::TpetraMatrix       TSMatrixd;
 typedef Wrapper<TpetraVector, 1>             TVectord;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    inline void disp(const Wrapper<TpetraMatrix, 2> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<TpetraSparseMatrix, 2> &w) {
-        w.implementation().describe();
-    }
-
-    // inline void disp(const Wrapper<TpetraSerialSparseMatrix, 2> &w) {
+    // inline void disp(const Wrapper<TpetraMatrix, 2> &w) {
     //     w.implementation().describe();
     // }
 
-    inline void disp(const TVectord &w) {
-        w.implementation().describe();
-    }
+    // inline void disp(const Wrapper<TpetraSparseMatrix, 2> &w) {
+    //     w.implementation().describe();
+    // }
 
-    inline int comm_size(const TVectord &t)
-    {
-        auto comm = t.implementation().communicator();
-        return comm->getSize();
-    }
+    // // inline void disp(const Wrapper<TpetraSerialSparseMatrix, 2> &w) {
+    // //     w.implementation().describe();
+    // // }
 
-    inline int comm_rank(const TSMatrixd &t)
-    {
-        auto comm = t.implementation().communicator();
-        return comm->getRank();
-    }
+    // inline void disp(const TVectord &w) {
+    //     w.implementation().describe();
+    // }
 
-    inline int comm_size(const TSMatrixd &t)
-    {
-        auto comm = t.implementation().communicator();
-        return comm->getSize();
-    }
+    // inline int comm_size(const TVectord &t)
+    // {
+    //     auto comm = t.implementation().communicator();
+    //     return comm->getSize();
+    // }
 
-    inline int comm_rank(const TVectord &t)
-    {
-        auto comm = t.implementation().communicator();
-        return comm->getRank();
-    }
+    // inline int comm_rank(const TSMatrixd &t)
+    // {
+    //     auto comm = t.implementation().communicator();
+    //     return comm->getRank();
+    // }
 
-    inline void synchronize(TVectord &t)
-    {
-        t.implementation().update_ghosts();
-    }
+    // inline int comm_size(const TSMatrixd &t)
+    // {
+    //     auto comm = t.implementation().communicator();
+    //     return comm->getSize();
+    // }
+
+    // inline int comm_rank(const TVectord &t)
+    // {
+    //     auto comm = t.implementation().communicator();
+    //     return comm->getRank();
+    // }
+
+    // inline void synchronize(TVectord &t)
+    // {
+    //     t.implementation().update_ghosts();
+    // }
     // inline void disp(const Wrapper<TpetraSerialVector, 1> &w) {
     //     w.implementation().describe()
     // }

@@ -1,17 +1,17 @@
-#ifndef UTOPIA_TPETRASPARSEMATRIX_H
-#define UTOPIA_TPETRASPARSEMATRIX_H
+// #ifndef UTOPIA_TPETRASPARSEMATRIX_H
+// #define UTOPIA_TPETRASPARSEMATRIX_H
 
-#include "utopia_Tpetra_Matrix.hpp"
+// #include "utopia_Tpetra_Matrix.hpp"
 
-namespace utopia
-{
+// namespace utopia
+// {
 
-class TpetraSparseMatrix : public TpetraMatrix
-    {
-    public:
-        virtual ~TpetraSparseMatrix() {}
-    };
+// class TpetraSparseMatrix : public TpetraMatrix
+//     {
+//     public:
+//         virtual ~TpetraSparseMatrix() {}
+//     };
 
-}
+// }
 
-#endif //UTOPIA_TPETRASPARSEMATRIX_H
+// #endif //UTOPIA_TPETRASPARSEMATRIX_H
