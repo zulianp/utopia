@@ -52,6 +52,47 @@ namespace utopia {
         in.get("max-refinements", max_refinements_);
     }
 
+
+    static void make_permutation(
+                const int dim,
+                const ElementDofMapAdapter &from,
+                const ElementDofMapAdapter &to,
+                 USparseMatrix &mat)
+    {
+        using Scalar   = Traits<USparseMatrix>::Scalar;
+        using SizeType = Traits<USparseMatrix>::SizeType;
+
+        std::vector<SizeType> irows(1), icols(1);
+        std::vector<Scalar>   vals(1, 1.0);
+
+        auto max_nnz = from.max_nnz(); assert(max_nnz > 0);
+        mat = local_sparse(to.n_local_dofs(), from.n_local_dofs(), max_nnz);
+
+        std::size_t n_elems = from.dof_map().n_elements();
+        
+        assert(n_elems == to.dof_map().n_elements());
+
+        Write<USparseMatrix>  w(mat, utopia::GLOBAL_INSERT);
+
+        for(std::size_t e = 0; e < n_elems; ++e) {
+            const auto &from_dofs = from.dof_map().dofs(e);
+            const auto &to_dofs   = to.dof_map().dofs(e);
+
+            const auto n_from = from_dofs.size();
+            const auto n_to   = to_dofs.size();
+
+            assert(n_from == n_to);
+
+            for(std::size_t i = 0; i < n_to; ++i) {
+                for(int d = 0; d < dim; ++d) {
+                    irows[0] = to_dofs[i] + d;
+                    icols[0] = from_dofs[i];
+                    mat.set_matrix(irows, icols, vals);
+                }
+            }
+        }
+    }
+
     static void make_permutation(
         const libMesh::MeshBase &mesh,
         const libMesh::DofMap &dof_map_from,
@@ -72,16 +113,10 @@ namespace utopia {
             dof_map_to,
             var_num_to);
 
-          if(tensor_dim == 1) {
-              ElementDofMapAdapter::make_permutation(a_from, a_to, mat);
-          } else {
-            ElementDofMapAdapter::make_vector_permutation(
-                          tensor_dim,
-                          a_from,
-                          a_to,
-                          mat);
-        }
+        make_permutation(tensor_dim, a_from, a_to, mat);
 
+        assert(size(mat).get(0) == dof_map_to.n_dofs());
+        assert(size(mat).get(1) == dof_map_from.n_dofs());
     }
 
     template<class Matrix, class Vector>
@@ -201,7 +236,7 @@ namespace utopia {
                 grad_space_.n_subspaces() - 1
             );
 
-            mortar_matrix = USparseMatrix(permutation * *mortar.mortar_matrix() * transpose(permutation));
+            mortar_matrix = USparseMatrix(permutation * *mortar.mortar_matrix_without_slave_dofs() * transpose(permutation));
 
             auto s_mm = size(mortar_matrix);
             disp(s_mm);
@@ -231,25 +266,22 @@ namespace utopia {
 
         auto mass_form = inner(u, v) * dX;
 
-        UVector grad_ph, mass_vec;
+        UVector grad_ph, grad_p_projected, mass_vec;
         USparseMatrix mass_mat;
         utopia::assemble(grad_form, grad_ph);
         utopia::assemble(mass_form, mass_mat);
 
         if(!mortar.empty()) {
-            auto s_mm = size(mass_mat);
-            disp(s_mm);
-            
             grad_ph  = transpose(mortar_matrix) * grad_ph;
-            //FIXME
+            // //FIXME
             mass_mat = USparseMatrix(transpose(mortar_matrix) * mass_mat * mortar_matrix);
             mass_vec = sum(mass_mat, 1);
+            grad_p_projected = mortar_matrix * e_mul(grad_ph, 1./mass_vec);
         } else {
             mass_vec = sum(mass_mat, 1);
+            grad_p_projected = e_mul(grad_ph, 1./mass_vec);
         }
 
-
-        UVector grad_p_projected = e_mul(grad_ph, 1./mass_vec);
         UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
         grad_p_projected_buff = grad_p_projected;
         synchronize(grad_p_projected_buff);

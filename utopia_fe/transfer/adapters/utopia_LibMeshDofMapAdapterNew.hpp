@@ -64,6 +64,9 @@ namespace utopia {
         }
 
         inline SizeType n_local_dofs() const { return n_local_dofs_;}
+        inline SizeType max_nnz() const { return max_nnz_; }
+
+        const moonolith::DofMap& dof_map() const { return dof_map_; }
 
     private:
         moonolith::Communicator comm_;

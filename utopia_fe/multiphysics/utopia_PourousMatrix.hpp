@@ -290,6 +290,17 @@ namespace utopia {
             init();
         }
 
+        inline bool write(Vector &x)
+        {
+            if(gradient_recovery_.empty()) {
+                utopia::write(space().equation_system().name() + ".e", space(), x);
+            } else {
+                utopia::write(space().equation_system().name() + "-" + std::to_string(gradient_recovery_.n_refinements()) + ".e", space(), x);
+            }
+
+            return true;
+        }
+
         inline bool refine(const Vector &) {
             if(gradient_recovery_.apply_refinement(space())) {
                 init();

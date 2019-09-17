@@ -705,8 +705,10 @@ namespace utopia {
         }
 
         inline bool export_flow()
-        {
-            write(pourous_matrix_.space().equation_system().name() + ".e", pourous_matrix_.space(), *x_m_);
+        {   
+            // write(pourous_matrix_.space().equation_system().name() + ".e", pourous_matrix_.space(), *x_m_);
+
+            pourous_matrix_.write(*x_m_);
 
             const std::size_t n_dfn = fracture_network_.size();
 
