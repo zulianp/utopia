@@ -132,7 +132,7 @@ namespace utopia {
     }
 
     void ElementDofMapAdapter::init(
-        libMesh::MeshBase &mesh,
+        const libMesh::MeshBase &mesh,
         const libMesh::DofMap &dof_map,
         const int var_num)
     {
@@ -158,7 +158,7 @@ namespace utopia {
             dof_object.global_idx = elem_ptr->id();
             dof_object.block      = elem_ptr->subdomain_id();
 
-            dof_map.dof_indices(elem_ptr, dof_indices);
+            dof_map.dof_indices(elem_ptr, dof_indices, var_num);
             auto n_dofs_x_el = dof_indices.size();
             dof_object.dofs.resize(n_dofs_x_el);
 

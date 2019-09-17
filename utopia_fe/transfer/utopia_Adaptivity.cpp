@@ -429,7 +429,7 @@ namespace utopia {
     void Adaptivity::process_constraints (libMesh::MeshBase &mesh, libMesh::DofMap &dof_map, libMesh::DofConstraints &_dof_constraints)
     {
 
-       std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
+       // std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
 
        
        std::vector<SizeType> index; 
@@ -514,7 +514,7 @@ namespace utopia {
             }
         }
         
-      std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
+      // std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
 
 
       scatter_constraints(mesh, dof_map, _dof_constraints);
@@ -529,7 +529,7 @@ namespace utopia {
                                                     libMesh::DofConstraints &_dof_constraints, 
                                                     libMesh::DofMap &dof_map)
     {
-       std::cout<<"Adaptivity::allgather_recursive_constraints::BEGIN "<<std::endl;
+       // std::cout<<"Adaptivity::allgather_recursive_constraints::BEGIN "<<std::endl;
 
 
       if (dof_map.n_processors() == 1)
@@ -675,7 +675,7 @@ namespace utopia {
       for (const auto & i : _dof_constraints) unexpanded_dofs.insert(i.first);
 
 
-      std::cout<<"Adaptivity::allgather_recursive_constraints::END"<<std::endl;
+      // std::cout<<"Adaptivity::allgather_recursive_constraints::END"<<std::endl;
 
 
       gather_constraints(mesh, unexpanded_dofs, _dof_constraints, dof_map, false);
@@ -692,8 +692,8 @@ namespace utopia {
                                          bool look_for_constrainees)
     {
       
-
         std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
+
 
         typedef std::set<libMesh::dof_id_type> DoF_RCSet;
 
@@ -777,15 +777,18 @@ namespace utopia {
             }
 
 
+
         std::cout<<"Adaptivity::gather_constraints::END "<<std::endl; 
+
+
     }
 
     void Adaptivity::add_constraints_to_send_list(libMesh::DofMap &dof_map, 
                                                   libMesh::DofConstraints &_dof_constraints)
     {
       
-
         std::cout<<"Adaptivity::add_constraints_to_send_list::BEGIN "<<std::endl; 
+
 
         if (dof_map.n_processors() == 1) return;
 
@@ -819,6 +822,7 @@ namespace utopia {
 
         std::cout<<"Adaptivity::add_constraints_to_send_list::END "<<std::endl;  
 
+
     }
 
 
@@ -830,7 +834,7 @@ namespace utopia {
 
 
 
-      std::cout<<"Adaptivity::scatter_constraints::BEGIN"<<std::endl;
+      // std::cout<<"Adaptivity::scatter_constraints::BEGIN"<<std::endl;
 
       // This function must be run on all processors at once
       //parallel_object_only();
@@ -976,7 +980,7 @@ namespace utopia {
       //       requested_dofs.insert(dof);
       //   }
 
-        std::cout<<"Adaptivity::scatter_constraints::END"<<std::endl; 
+        // std::cout<<"Adaptivity::scatter_constraints::END"<<std::endl; 
     }
 
     void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh, 
@@ -986,7 +990,7 @@ namespace utopia {
     {
 
 
-       std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
+       // std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
 
        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
@@ -1010,6 +1014,6 @@ namespace utopia {
         }
 
 
-        std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
+        // std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
     }
 }

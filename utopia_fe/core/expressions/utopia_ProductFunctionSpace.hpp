@@ -104,6 +104,11 @@ namespace utopia {
             return spaces_.empty();
         }
 
+        inline void clear()
+        {
+            spaces_.clear();
+        }
+
         template<class Fun>
         void each(Fun fun)
         {

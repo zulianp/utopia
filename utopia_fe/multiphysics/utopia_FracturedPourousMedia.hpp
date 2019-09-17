@@ -160,7 +160,10 @@ namespace utopia {
             if(is_dual()) {
                 NewTransferAssembler transfer_assembler;
                 transfer_assembler.remove_incomplete_intersections(false);
-                transfer_assembler.constraint_matrix_from(constraint_matrix_pm);
+
+                if(constraint_matrix_pm) {
+                    transfer_assembler.constraint_matrix_from(constraint_matrix_pm);
+                }
 
                 if(constraint_matrix_pm && !empty(*constraint_matrix_pm)) {
                     m_utopia_status("using constraint matrix from mortar in porous-matrix");
@@ -227,7 +230,10 @@ namespace utopia {
             (*mass_matrix_t_)     = transpose(*mass_matrix_);
 
             set_zero_at_constraint_rows(pourous_matrix.dof_map(),   *coupling_matrix_t_);
-            set_zero_at_constraint_rows(fracture_newtork.dof_map(), *mass_matrix_t_);
+            // set_zero_at_constraint_rows(fracture_newtork.dof_map(), *mass_matrix_t_);
+            m_utopia_warning("set_zero_at_constraint_rows(fracture_newtork.dof_map(), *mass_matrix_t_)");
+
+            is_constrained_ = sum(*transfer_matrix(), 1);
             return true;
         }
 
@@ -256,6 +262,11 @@ namespace utopia {
             return mass_matrix_t_;
         }
 
+        inline const UVector &is_constrained() const
+        {
+            return is_constrained_;
+        }
+
     private:
         std::string type_;
         bool use_interpolation_;
@@ -272,6 +283,8 @@ namespace utopia {
         std::shared_ptr<Matrix> mass_matrix_t_;
 
         TransferOptions opts_;
+
+        UVector is_constrained_;
 
     };
 
@@ -556,7 +569,9 @@ namespace utopia {
 
         inline bool compute_flow_with_refinement()
         {
+            int i = 0;
             do {
+                std::cout << "compute_flow_with_refinement: loop " << i++ << std::endl;
                 bool ok = compute_flow_no_refinement();
                 if(!ok) return ok;
                 //TODO fracture networks
@@ -703,8 +718,10 @@ namespace utopia {
         }
 
         inline bool export_flow()
-        {
-            write(pourous_matrix_.space().equation_system().name() + ".e", pourous_matrix_.space(), *x_m_);
+        {   
+            // write(pourous_matrix_.space().equation_system().name() + ".e", pourous_matrix_.space(), *x_m_);
+
+            pourous_matrix_.write(*x_m_);
 
             const std::size_t n_dfn = fracture_network_.size();
 

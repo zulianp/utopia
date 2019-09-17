@@ -168,19 +168,21 @@ namespace utopia {
         typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
         using Scalar = UTOPIA_SCALAR(Vector);
 
+
+        GradientRecovery();
+
+        void read(Input &in) override;
+        
         inline bool empty() const
         {
             return grad_space_.empty();
         }
 
-        // bool refine(FunctionSpaceT &V, const Vector &sol);
-        bool refine(const Mortar<Matrix, Vector> &mortar, FunctionSpaceT &V, const Vector &sol);
-
-        void read(Input &in) override;
-        
-        GradientRecovery();
-
         inline int n_refinements() const { return n_refinements_; }
+        ///calls estimate_error then apply_refinement
+        bool refine(const Mortar<Matrix, Vector> &mortar, FunctionSpaceT &V, const Vector &sol);
+        void estimate_error(const Mortar<Matrix, Vector> &mortar, FunctionSpaceT &V, const Vector &sol);
+        bool apply_refinement(FunctionSpaceT &V);
 
     private:
         UVector all_values_;
@@ -192,11 +194,8 @@ namespace utopia {
         int n_refinements_;
         int max_refinements_;
 
-        void init(FunctionSpaceT &V);
-
-        void recover(const Mortar<Matrix, Vector> &mortar, const FunctionSpaceT &V, const Vector &sol);
-        void append_error_estimate(FunctionSpaceT &V);
-        bool apply_refinement(FunctionSpaceT &V, const Vector &sol);
+        void init(FunctionSpaceT &V); 
+        void append_error_estimate(FunctionSpaceT &V); 
     };
 
 
@@ -291,8 +290,24 @@ namespace utopia {
             init();
         }
 
-        inline bool refine(const Vector &sol) {
-            return gradient_recovery_.refine(mortar_, space(), sol);
+        inline bool write(Vector &x)
+        {
+            if(gradient_recovery_.empty()) {
+                utopia::write(space().equation_system().name() + ".e", space(), x);
+            } else {
+                utopia::write(space().equation_system().name() + "-" + std::to_string(gradient_recovery_.n_refinements()) + ".e", space(), x);
+            }
+
+            return true;
+        }
+
+        inline bool refine(const Vector &) {
+            if(gradient_recovery_.apply_refinement(space())) {
+                init();
+                return true;
+            }
+
+            return false;
         }
 
         inline bool assemble_flow(const Vector &x, Matrix &hessian, Vector &gradient)
@@ -321,6 +336,7 @@ namespace utopia {
         inline void post_process_flow(const Vector &x)
         {
             Super::post_process(space(), x);
+            gradient_recovery_.estimate_error(mortar_, space(), x);
         }
 
         inline FunctionSpaceT &space()

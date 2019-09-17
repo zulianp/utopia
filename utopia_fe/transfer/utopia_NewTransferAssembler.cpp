@@ -248,6 +248,11 @@ namespace utopia {
 
     static void handle_constraints_pre_process(TransferDataT &data)
     {
+        assert( data.constraint_matrix_from );
+        assert( data.constraint_matrix_to );
+        assert( data.D );
+        assert( data.B );
+
         auto &cm_from = *data.constraint_matrix_from;
         auto &cm_to = *data.constraint_matrix_to;
         auto &D = *data.D;
