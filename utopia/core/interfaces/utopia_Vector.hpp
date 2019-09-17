@@ -52,7 +52,7 @@ namespace utopia {
 		
 
 		// facade functions for treating a node vector and distributed vector in the same way
-		inline void range(Range &r) const { r.set(0, this->size()); }
+		inline Range range() const { return Range(0, this->size()); }
 		
 		inline void layout(Layout<SizeType, 1> &l) const
 		{
@@ -74,7 +74,7 @@ namespace utopia {
 		//basic collective mutators allowing to write on other processes (e.g. for FE assembly)
 		virtual void c_set(const SizeType &i, const Scalar &value) = 0;
 		virtual void c_add(const SizeType &i, const Scalar &value) = 0;
-		virtual void range(Range &r) const = 0;
+		virtual Range range() const = 0;
 		
 		virtual void layout(Layout<SizeType, 1> &l) const
 		{

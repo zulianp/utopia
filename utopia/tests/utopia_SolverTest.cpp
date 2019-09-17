@@ -438,12 +438,11 @@ namespace utopia
     {
         UTOPIA_UNIT_TEST_BEGIN("SolversTest");
 
-        //FIXME 
 #ifdef WITH_PETSC
-        SolverTest<DMatrixd, DVectord, PetscScalar>().run();
+        SolverTest<PetscMatrix, PetscVector, PetscScalar>().run();
 
 #ifdef WITH_BLAS
-        MSSolverTest<DMatrixd, DVectord, Matrixd, Vectord>().run();
+        MSSolverTest<PetscMatrix, PetscVector, Matrixd, Vectord>().run();
 #endif //WITH_BLAS
 #endif
 

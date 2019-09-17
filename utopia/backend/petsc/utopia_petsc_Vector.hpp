@@ -38,8 +38,9 @@ namespace utopia {
         public ElementWiseOperand<PetscScalar>,
         public ElementWiseOperand<PetscVector>,
         public Comparable<PetscVector>,
-        public Tensor<PetscVector, 1>,
-        public BLAS1Tensor<PetscVector>
+        // public Ranged<PetscVector, 1>,
+        public BLAS1Tensor<PetscVector>,
+        public Tensor<PetscVector, 1>
     {
     public:
             using Scalar   = PetscScalar;
@@ -260,14 +261,6 @@ namespace utopia {
        inline void c_add(const SizeType &i, const Scalar &value) override
        {
             check_error( VecSetValues(implementation(), 1, &i, &value, ADD_VALUES) );
-       }
-
-      
-       inline void range(Range &r) const override
-       {
-            SizeType r_begin, r_end;
-            VecGetOwnershipRange(implementation(), &r_begin, &r_end);
-            r.set(r_begin, r_end);
        }
        
        inline SizeType local_size() const override
@@ -493,7 +486,7 @@ namespace utopia {
 
      
 
-        inline Range range() const
+        inline Range range() const override
         {
             SizeType r_begin, r_end;
             VecGetOwnershipRange(implementation(), &r_begin, &r_end);

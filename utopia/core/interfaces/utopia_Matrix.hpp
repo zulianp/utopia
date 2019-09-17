@@ -63,8 +63,8 @@ namespace utopia {
 			this->add(i, j, value);
 		}
 
-		inline void row_range(Range &r) const { r.set(0, this->rows()); }
-		inline void col_range(Range &r) const { r.set(0, this->cols()); }
+		inline Range row_range() const { return Range(0, this->rows()); }
+		inline Range col_range() const { return Range(0, this->cols()); }
 
 		inline void row_layout(Layout<SizeType, 1> &l) const
 		{
@@ -125,8 +125,8 @@ namespace utopia {
 		virtual void c_set(const SizeType &i, const SizeType &j, const Scalar &value) = 0;
 		virtual void c_add(const SizeType &i, const SizeType &j, const Scalar &value) = 0;
 
-		virtual void row_range(Range &r) const = 0;
-		virtual void col_range(Range &r) const = 0;
+		virtual Range row_range() const = 0;
+		virtual Range col_range() const = 0;
 
 		virtual SizeType local_rows() const = 0;
 		virtual SizeType local_cols() const = 0;

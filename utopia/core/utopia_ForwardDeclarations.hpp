@@ -166,6 +166,9 @@ namespace utopia {
 
     template<class Vector, int Backend>
     class EvalNorm2s;
+
+    template<class Left, class Right, class Traits, int Backend>
+    class EvalAssignToView;
 }
 
 #endif //utopia_utopia_FORWARDDECLARATIONS_HPP

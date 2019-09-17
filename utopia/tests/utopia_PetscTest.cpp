@@ -1178,34 +1178,35 @@ namespace utopia {
     }
 
 
-    // void petsc_get_col_test()
-    // {
-    //     auto n = 10;
-    //     auto m = 5;
-    //     auto col_id = 2;
+    void petsc_get_col_test()
+    {
+        auto n = 10;
+        auto m = 5;
+        auto col_id = 2;
 
-    //     DMatrixd M = values(n, m, 0.0);
-    //     {
-    //         Write<DMatrixd> w_m(M);
-    //         auto r = row_range(M);
-    //         auto c = col_range(M);
+        DMatrixd M = values(n, m, 0.0);
+        {
+            Write<DMatrixd> w_m(M);
+            auto r = row_range(M);
+            auto c = col_range(M);
 
-    //         for(auto i = r.begin(); i != r.end(); ++i)
-    //         {
-    //             for(auto j = c.begin(); j != c.end(); ++j)
-    //             {
-    //                 M.set(i, j, j);
-    //             }
-    //         }
-    //     }
+            for(auto i = r.begin(); i != r.end(); ++i)
+            {
+                for(auto j = c.begin(); j != c.end(); ++j)
+                {
+                    M.set(i, j, j);
+                }
+            }
+        }
 
-    //     DVectord col_result = zeros(n);
-    //     mat_get_col(M, col_result, col_id);
+        DVectord col_result = zeros(n);
+        // mat_get_col(M, col_result, col_id);
+        M.col(col_id, col_result);
 
-    //     DVectord col_expected = local_values(local_size(col_result).get(0), col_id);
-    //     utopia_test_assert(approxeq(col_result, col_expected));
+        DVectord col_expected = local_values(local_size(col_result).get(0), col_id);
+        utopia_test_assert(approxeq(col_result, col_expected));
 
-    // }
+    }
 
     void petsc_memcheck()
     {
@@ -1318,7 +1319,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_binary_min_max);
         UTOPIA_RUN_TEST(petsc_dot_test);
         UTOPIA_RUN_TEST(petsc_transform);
-        // UTOPIA_RUN_TEST(petsc_get_col_test); //FIXME
+        UTOPIA_RUN_TEST(petsc_get_col_test);
         UTOPIA_RUN_TEST(petsc_dense_mat_mult_test);
         UTOPIA_RUN_TEST(petsc_norm_test);
         UTOPIA_RUN_TEST(petsc_chop_test); 

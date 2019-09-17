@@ -298,9 +298,7 @@ namespace utopia {
 
     template<class T>
     inline Range range(const Tensor<T, 1> &v) {
-        Range r;
-        v.derived().range(r);
-        return r;
+        return v.derived().range();
     }
 
     // /*!
@@ -318,9 +316,7 @@ namespace utopia {
 
     template<class T>
     inline Range row_range(const Tensor<T, 2> &v) {
-        Range r;
-        v.derived().row_range(r);
-        return r;
+        return v.derived().row_range();
     }
 
     // /*!
@@ -338,9 +334,7 @@ namespace utopia {
 
     template<class T>
     inline Range col_range(const Tensor<T, 2> &v) {
-        Range r;
-        v.derived().col_range(r);
-        return r;
+        return v.derived().col_range();
     }
 
     // /** @}*/

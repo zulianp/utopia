@@ -1696,4 +1696,12 @@ namespace utopia {
         MatAssembled(raw_type(), &flg);
         return flg && type();
     }
+
+    void PetscMatrix::assign(
+        const Range &row_range,
+        const Range &col_range,
+        const PetscMatrix &block)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
 }

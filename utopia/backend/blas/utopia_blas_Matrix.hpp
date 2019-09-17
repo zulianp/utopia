@@ -715,6 +715,58 @@ namespace utopia {
             }
         }
 
+        inline void assign(
+            const Range &row_range,
+            const Range &col_range,
+            const BlasDenseMatrix &block
+        )
+        {
+            assert(row_range.valid());
+            assert(col_range.valid());
+            
+            if(&block == this) {
+                BlasDenseMatrix temp = block;
+                assign(row_range, col_range, temp);
+                return;
+            }
+
+            SizeType b_j = 0;
+            for(auto j = col_range.begin(); j < col_range.end(); ++j, ++b_j) {
+                SizeType b_i = 0;
+                for(auto i = row_range.begin(); i < row_range.end(); ++i, ++b_i) {
+                    set(i, j, block.get(b_i, b_j));
+                }
+            }
+        }
+
+        inline void select(
+            const Range &row_range,
+            const Range &col_range,
+            BlasDenseMatrix &block
+        ) const
+        {
+
+            assert(row_range.valid());
+            assert(col_range.valid());
+
+            if(&block == this) {
+                BlasDenseMatrix temp;
+                select(row_range, col_range, temp);
+                block = temp;
+                return;
+            }
+
+            block.resize(row_range.extent(), col_range.extent());
+
+            SizeType b_j = 0;
+            for(auto j = col_range.begin(); j < col_range.end(); ++j, ++b_j) {
+                SizeType b_i = 0;
+                for(auto i = row_range.begin(); i < row_range.end(); ++i, ++b_i) {
+                    block.set(b_i, b_j, get(i, j));
+                }
+            }
+        }
+
         inline void select(
             const BlasIndexSet &row_index, 
             const BlasIndexSet &col_index, 

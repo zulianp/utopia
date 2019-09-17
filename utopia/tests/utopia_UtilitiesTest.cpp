@@ -136,36 +136,47 @@ namespace utopia {
 
 
         //FIXME
-        // void range_test() {
-        //     Matrix m1 = identity(3, 3);
-        //     View<Matrix> view = m1.range(0, 1, 0, 3);
-        //     Matrix m2 = view;
-        //     each_read(m2, [](SizeType /*x*/, SizeType y, double entry) {
-        //         utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
-        //     });
+        void range_test() {
+            Matrix m1 = identity(3, 3);
 
-        //     #ifdef WITH_PETSC
-        //         //NOTE(eric): range assignment is NYI in Petsc backend
-        //     if (std::is_same<Matrix, DMatrixd>::value) return;
-        //     #endif
+            ////////////////////////////////////////////////////////////
 
-        //     Matrix m3 = m1;
-        //     m3.range(0, 1, 0, 3) = m2;
-        //     each_read(m3, [](SizeType x, SizeType y, double entry) {
-        //         utopia_test_assert(approxeq(x == y ? 1.0 : 0.0, entry));
-        //     });
+            auto m1_view = view(m1, Range(0, 1), Range(0, 3));
+            Matrix m2 = m1_view;
 
-        //     Matrix diff = m1 - m3;
-        //     each_read(diff, [](SizeType /*x*/, SizeType /*y*/, double entry) {
-        //         utopia_test_assert(approxeq(0.0, entry));
-        //     });
 
-        //     Matrix m4 = values(4, 4, 0.0);
-        //     m4.range(0, 2, 0, 2) = identity(2, 2);
-        //     each_read(m4, [](SizeType x, SizeType y, double entry) {
-        //         utopia_test_assert(approxeq(x == y && x < 2 ? 1.0 : 0.0, entry));
-        //     });
-        // }
+            each_read(m2, [](SizeType /*x*/, SizeType y, double entry) {
+                utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
+            });
+
+            #ifdef WITH_PETSC
+                //NOTE(eric): range assignment is NYI in Petsc backend
+            if (std::is_same<Matrix, DMatrixd>::value) return;
+            #endif
+
+            ////////////////////////////////////////////////////////////
+
+            Matrix m3 = m1;
+            view(m3, Range(0, 1), Range(0, 3)) = m2;
+
+            each_read(m3, [](SizeType x, SizeType y, double entry) {
+                utopia_test_assert(approxeq(x == y ? 1.0 : 0.0, entry));
+            });
+
+            Matrix diff = m1 - m3;
+            each_read(diff, [](SizeType /*x*/, SizeType /*y*/, double entry) {
+                utopia_test_assert(approxeq(0.0, entry));
+            });
+
+            ////////////////////////////////////////////////////////////
+
+            // Matrix m4 = values(4, 4, 0.0);
+            // view(m4, Range(0, 2), Range(0, 2)) = identity(2, 2);
+
+            // each_read(m4, [](SizeType x, SizeType y, double entry) {
+            //     utopia_test_assert(approxeq(x == y && x < 2 ? 1.0 : 0.0, entry));
+            // });
+        }
 
         void factory_and_operations_test()
         {
@@ -248,6 +259,30 @@ namespace utopia {
         }
 
     public:
+        static void print_backend_info()
+        {
+            mpi_world_barrier();
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+            mpi_world_barrier();
+        }
+
+        void run() {
+            print_backend_info();
+            UTOPIA_RUN_TEST(csv_read_write);
+            UTOPIA_RUN_TEST(factory_test);
+            UTOPIA_RUN_TEST(wrapper_test);
+            UTOPIA_RUN_TEST(range_test);
+            UTOPIA_RUN_TEST(factory_and_operations_test);
+            UTOPIA_RUN_TEST(simplify_test);
+            UTOPIA_RUN_TEST(variable_test);
+        }
+    };
+
+    template<class Matrix, class Vector>
+    class InlinerTest {
+    private:
         void inline_eval_test()
         {
             int n = 10;
@@ -308,7 +343,8 @@ namespace utopia {
             }
             utopia_test_assert(approxeq(28.001, num));
         }
-
+    
+    public:
         static void print_backend_info()
         {
             mpi_world_barrier();
@@ -320,15 +356,9 @@ namespace utopia {
 
         void run() {
             print_backend_info();
-            UTOPIA_RUN_TEST(csv_read_write);
-            UTOPIA_RUN_TEST(factory_test);
-            UTOPIA_RUN_TEST(wrapper_test);
-            // UTOPIA_RUN_TEST(range_test);
-            UTOPIA_RUN_TEST(factory_and_operations_test);
-            UTOPIA_RUN_TEST(simplify_test);
-            UTOPIA_RUN_TEST(variable_test);
             UTOPIA_RUN_TEST(inline_eval_test);
         }
+
     };
 
     void runUtilitiesTest() {
@@ -336,6 +366,7 @@ namespace utopia {
 
 #ifdef WITH_BLAS
         UtilitiesTest<Matrixd, Vectord>().run();
+        InlinerTest<Matrixd, Vectord>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
@@ -343,7 +374,7 @@ namespace utopia {
 
 
         if(mpi_world_size() == 1) {
-            // UtilitiesTest<DMatrixd, DVectord>().run(); //FIXME
+            UtilitiesTest<DMatrixd, DVectord>().run(); //FIXME
             BlockTest<DMatrixd, DVectord>().run();
 #ifdef WITH_BLAS
             // interoperability

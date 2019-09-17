@@ -124,6 +124,7 @@ namespace utopia {
         public BLAS2Matrix<PetscMatrix, PetscVector>,
         public BLAS3Matrix<PetscMatrix>,
         public Comparable<PetscMatrix>,
+        // public Ranged<PetscMatrix, 2>,
         public Tensor<PetscMatrix, 2>
         {
     public:
@@ -241,20 +242,20 @@ namespace utopia {
             check_error( MatSetValue(implementation(), i, j, value, ADD_VALUES) );
          }
 
-         inline void row_range(Range &r) const override
+         inline Range row_range() const override
          {
             SizeType r_begin, r_end;
             MatGetOwnershipRange(implementation(), &r_begin, &r_end);
             assert(Range(r_begin, r_end).valid());
-            r.set(r_begin, r_end);
+            return {r_begin, r_end};
          }
 
-         inline void col_range(Range &r) const override
+         inline Range col_range() const override
          {
             SizeType r_begin, r_end;
             MatGetOwnershipRangeColumn(implementation(), &r_begin, &r_end);
             assert(Range(r_begin, r_end).valid());
-            r.set(r_begin, r_end);
+            return {r_begin, r_end};
          }
 
          inline SizeType rows() const override
@@ -730,22 +731,6 @@ namespace utopia {
         void copy_to(Mat mat) const;
         void copy_to(Mat *mat) const;
 
-        inline Range row_range() const
-        {
-            SizeType r_begin, r_end;
-            MatGetOwnershipRange(implementation(), &r_begin, &r_end);
-            assert(Range(r_begin, r_end).valid());
-            return Range(r_begin, r_end);
-        }
-
-        inline Range col_range() const
-        {
-            SizeType r_begin, r_end;
-            MatGetOwnershipRangeColumn(implementation(), &r_begin, &r_end);
-            assert(Range(r_begin, r_end).valid());
-            return Range(r_begin, r_end);
-        }
-
         bool is_sparse() const;
 
         void select(const PetscIndexSet &row_index,
@@ -978,6 +963,10 @@ namespace utopia {
         inline std::string get_class() const override {
             return "PetscMatrix";
         }
+
+        void assign(const Range &row_range,
+                    const Range &col_range,
+                    const PetscMatrix &block);
 
     private:
         PetscCommunicator comm_;
