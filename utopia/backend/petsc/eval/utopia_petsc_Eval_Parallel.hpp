@@ -4,6 +4,7 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Tracer.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
 
 namespace utopia {
 
@@ -26,7 +27,6 @@ namespace utopia {
     template<class Left, class Right, class Traits>
     class Eval<Assign<Left, LocalDiagBlock<Right> >, Traits, PETSC> {
     public:
-
         inline static void apply(const Assign<Left, LocalDiagBlock<Right> > & expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
@@ -39,29 +39,31 @@ namespace utopia {
         }
     };
 
-    //FIXME todo
-    // template<class Left, class Right, class Traits>
-    // class Eval<LocalRedistribute<Left, Right>, Traits, PETSC> {
-    // public:
+    void build_local_redistribute(
+        const PetscVector &x_from,
+        const PetscVector &shape_vec,
+        PetscVector &result);
 
-    //     inline static EXPR_TYPE(Traits, Left) apply(const LocalRedistribute<Left, Right> &expr)
-    //     {
-    //         EXPR_TYPE(Traits, Left) result;
+    template<class Left, class Right, class Traits>
+    class Eval<LocalRedistribute<Left, Right>, Traits, PETSC> {
+    public:
 
-    //         UTOPIA_TRACE_BEGIN(expr);
+        inline static EXPR_TYPE(Traits, Left) apply(const LocalRedistribute<Left, Right> &expr)
+        {
+            EXPR_TYPE(Traits, Left) result;
 
-    //         UTOPIA_BACKEND(Traits).build_local_redistribute(
-    //             result,
-    //             Eval<Left,  Traits>::apply(expr.left()),
-    //             Eval<Right, Traits>::apply(expr.right())
-    //             );
+            UTOPIA_TRACE_BEGIN(expr);
 
+            build_local_redistribute(
+                Eval<Left,  Traits>::apply(expr.left()),
+                Eval<Right, Traits>::apply(expr.right()),
+                result
+            );
 
-    //         UTOPIA_TRACE_END(expr);
-    //         return result;
-    //     }
-    // };
-
+            UTOPIA_TRACE_END(expr);
+            return result;
+        }
+    };
 
 }
 

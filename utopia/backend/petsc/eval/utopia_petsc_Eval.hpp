@@ -17,6 +17,7 @@
 #include "utopia_petsc_EvalMatGetCol.hpp"
 #include "utopia_petsc_Eval_VecUniqueSortSerial.hpp"
 #include "utopia_petsc_Eval_Multiply.hpp"
+#include "utopia_petsc_Eval_Misc.hpp"
 
 
 #ifdef WITH_SLEPC

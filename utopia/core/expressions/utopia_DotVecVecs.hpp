@@ -4,6 +4,7 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Tensor.hpp"
+#include "utopia_Traits.hpp"
 
 namespace utopia
 {

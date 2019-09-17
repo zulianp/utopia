@@ -13,6 +13,7 @@
 
 namespace utopia
 {
+    //FIXME separate declaration from implementation (i.e. move the body of the method in the cpp file)
     // This function is not efficient at all
     // it copies values of distributed vector to one processor
     // runs unique search on proc 0

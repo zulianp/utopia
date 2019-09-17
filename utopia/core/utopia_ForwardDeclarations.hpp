@@ -161,6 +161,11 @@ namespace utopia {
 
     class Input;
 
+    template<class Vector, int Backend>
+    class EvalDots;
+
+    template<class Vector, int Backend>
+    class EvalNorm2s;
 }
 
 #endif //utopia_utopia_FORWARDDECLARATIONS_HPP
