@@ -23,32 +23,8 @@ namespace utopia {
        std::vector<SizeType> index;
        std::vector<SizeType> index_local;
 
-       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(V.mesh());
-
-        std::cout << "apply_boundary_conditions Adaptivity begin: "  << std::endl;
-
-      
-      //  if(V.mesh().mesh_dimension()<3)
-      //  {
-      //       libMesh::MeshBase::const_node_iterator it = V.mesh().local_nodes_begin();
-      //       const libMesh::MeshBase::const_node_iterator end_it = V.mesh().local_nodes_end();
-      //       for ( ; it != end_it; ++it)
-      //       {
-      //           const libMesh::Node * node = *it;
-                
-      //           for (unsigned int comp = 0;comp < node->n_comp(V.equation_system().number(), 0); comp++)
-      //           {
-      //               const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, comp);
-                    
-      //               if(on_boundary.count(node->id()) && V.dof_map().is_constrained_dof(node_dof)) {
-
-      //                    index.push_back(node_dof);
-      //               }
-      //           }
-      //       }
-      //   }
-
-      // else
+       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(V.mesh());      
+ 
 
        {
             libMesh::MeshBase::const_element_iterator it = V.mesh().active_elements_begin();
@@ -87,7 +63,7 @@ namespace utopia {
                                    
                                         index_local.push_back(node_dof);
                                         
-                                        utopia::disp(node_dof);
+                                        //utopia::disp(node_dof);
            
                             }
 
@@ -131,7 +107,6 @@ namespace utopia {
 
             for(auto it=index.begin(); it < index.end(); ++it){
                 int i = *it;
-                std::cout<<"I=>"<<i<<std::endl;
                 auto valpos = rhs_values.find(i);
                 I[0] = i;
                 value[0]=valpos->second;
@@ -147,6 +122,8 @@ namespace utopia {
         if(utopia::Utopia::instance().verbose()) {
             std::cout << "apply_boundary_conditions end: " << c << std::endl;
         }
+
+        // std::cout << "apply_boundary_conditions end: " << c << std::endl;
     }
 
 

@@ -1,0 +1,34 @@
+{
+    "mesh": {
+        "type": "square",
+        "elem-type" : "tri",
+        "n-x" : 5,
+        "n-y" : 5,
+        "refinements" : 0,
+        "random-refine" : true,
+        "random-refinements": 3
+
+    },
+    "space": {
+        "system-name" : "poisson",
+        "variables" : [
+            {
+                "name" : "u",
+                "order" : 1,
+                "*fe-family": "MONOMIAL"
+            }
+        ],
+        "boundary-conditions" :[
+                {
+                "side"  : 1,
+                "type"  : "expr",
+                "value" : "2"
+            },
+            {
+                "side"  : 3,
+                "type"  : "0"
+            }
+
+        ]
+    }
+}

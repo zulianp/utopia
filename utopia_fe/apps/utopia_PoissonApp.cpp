@@ -39,23 +39,24 @@ namespace utopia {
 
         USparseMatrix A;
         UVector rhs, x;
+        
 
         //rhs.set(1.0);
 
         assemble(bilinear_form == linear_form, A, rhs);
 
-        utopia::disp(size(A).get(0));
+        // utopia::disp(size(A).get(0));
 
-        utopia::disp(size(A).get(1));
+        // utopia::disp(size(A).get(1));
 
-        utopia::write("A_before.m", A);
+        // utopia::write("A_before.m", A);
 
         apply_boundary_conditions(V, A, rhs);
 
 
         // utopia::rename("a", A);
 
-        utopia::write("A.m", A);
+        // utopia::write("A.m", A);
 
         // utopia::rename("b", rhs);
 

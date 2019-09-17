@@ -33,8 +33,7 @@ namespace utopia {
                                         const libMesh::DofMap &dof_map,
                                         const unsigned int variable_number,
                                         const libMesh::Elem * elem,
-                                        const unsigned mesh_dim,
-                                        const std::vector<SizeType> index
+                                        const unsigned mesh_dim
                                         );
 
         static void compute_all_constraints(
@@ -73,6 +72,7 @@ namespace utopia {
                                         libMesh::DofMap &dof_map, 
                                         libMesh::DofConstraints &_dof_constraints);
 
+
         template<class ElementMatrix>
         static void construct_constraint_matrix(const libMesh::Elem *elem,
                                                 const libMesh::DofMap &dof_map,
@@ -83,12 +83,6 @@ namespace utopia {
         {
             
 
-            // if(elem->on_boundary())
-            // {
-            //     for(int k=0; k<elem->n_nodes(); k++){
-            //         const libMesh::Node * node = elem->node_ptr(k);
-            //     }
-            // }
 
             const std::size_t n_var = dof_map.n_variables();
             dof_map.dof_indices(elem, dof_indices);
