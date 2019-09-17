@@ -41,8 +41,6 @@ namespace utopia {
         }
     };
 
-    //FIXME create polymorphic traits
-    // UTOPIA_MAKE_TRAITS_SPARSE(PetscMatrix, PetscTraits);
     UTOPIA_MAKE_TRAITS_POLYMORPHIC(PetscMatrix, PetscTraits);
     UTOPIA_MAKE_TRAITS(PetscVector, PetscTraits);
     

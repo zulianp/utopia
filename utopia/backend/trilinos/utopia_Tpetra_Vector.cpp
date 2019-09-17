@@ -231,6 +231,26 @@ namespace utopia {
         }
     }
 
+    void TpetraVector::assign(const TpetraVector &other)
+    {
+        if(this == &other) return;
+
+        if(other.is_null()) {
+            vec_.reset();
+            return;
+        }
+
+        copy(other);
+        return;
+    }
+
+    void TpetraVector::assign(TpetraVector &&other)
+    {
+        if(this == &other) return;
+        vec_ = std::move(other.vec_);
+        ghosted_vec_ = std::move(other.ghosted_vec_);
+    }
+
     TpetraVector &TpetraVector::operator=(const TpetraVector &other)
     {
         if(this == &other) return *this;

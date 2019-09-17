@@ -1,4 +1,5 @@
 #include "utopia_UIMesh.hpp"
+#include "moonolith_communicator.hpp"
 
 namespace utopia {
     

@@ -5,7 +5,9 @@
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Logger.hpp"
+#include "utopia_Tensor.hpp"
 #include "utopia_Tpetra_Vector.hpp"
+
 
 #include <Tpetra_CrsMatrix_decl.hpp>
 #include <Tpetra_Map_decl.hpp>
@@ -19,7 +21,9 @@
 
 namespace utopia {
     //template<class NodeType>
-    class TpetraMatrix {
+    class TpetraMatrix :
+    public Tensor<TpetraMatrix, 2>
+    {
     public:
 
         /////////////////////////////////////////////////////////////
@@ -321,15 +325,15 @@ namespace utopia {
                }
            }
         }
-        void mult(const TpetraVector &vec, TpetraVector &result) const;
-        void mult_t(const TpetraVector &vec, TpetraVector &result) const;
+        void multiply(const TpetraVector &vec, TpetraVector &result) const;
+        void transpose_multiply(const TpetraVector &vec, TpetraVector &result) const;
 
-        void mult(const TpetraMatrix &right, TpetraMatrix &result) const;
+        void multiply(const TpetraMatrix &right, TpetraMatrix &result) const;
         //result = tranpose(*this) * mat
-        void mult_t(const TpetraMatrix &right, TpetraMatrix &result) const;
+        void transpose_multiply(const TpetraMatrix &right, TpetraMatrix &result) const;
 
         //result op(*this) * op
-        void mult(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const;
+        void multiply(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const;
         void axpy(const Scalar alpha, const TpetraMatrix &x);
         void transpose(TpetraMatrix &mat) const;
 
@@ -343,6 +347,18 @@ namespace utopia {
             implementation().scale(alpha);
             write_unlock();
         }
+
+
+        inline rcp_crs_mat_type &raw_type()
+        {
+           return implementation_ptr();
+        }
+
+        inline const rcp_crs_mat_type &raw_type() const
+        {
+           return implementation_ptr();
+        }
+
 
         inline crs_mat_type &implementation()
         {

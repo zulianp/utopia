@@ -4,9 +4,11 @@
 #include "utopia_Belos_solver.hpp"
 
 #include "utopia_make_unique.hpp"
+#include "utopia_Wrapper.hpp"
 
 #include <BelosLinearProblem.hpp>
 #include <BelosTpetraAdapter.hpp>
+#include <BelosSolverFactory.hpp>
 
 //TODO remove from here
 #include <Kokkos_DefaultNode.hpp>

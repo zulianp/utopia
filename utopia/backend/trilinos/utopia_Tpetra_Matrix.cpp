@@ -70,7 +70,7 @@ namespace utopia {
         return values[index];
     }
 
-    void TpetraMatrix::mult(const TpetraVector &vec, TpetraVector &result) const
+    void TpetraMatrix::multiply(const TpetraVector &vec, TpetraVector &result) const
     {
         if(result.is_null()) {
             result.init(mat_->getRowMap());
@@ -87,7 +87,7 @@ namespace utopia {
         }
     }
 
-    void TpetraMatrix::mult_t(const TpetraVector &vec, TpetraVector &result) const
+    void TpetraMatrix::transpose_multiply(const TpetraVector &vec, TpetraVector &result) const
     {
         assert(mat_->hasTransposeApply());
 
@@ -106,20 +106,20 @@ namespace utopia {
         }
     }
 
-    void TpetraMatrix::mult(const TpetraMatrix &right, TpetraMatrix &result) const
+    void TpetraMatrix::multiply(const TpetraMatrix &right, TpetraMatrix &result) const
     {
-        mult(false, right, false, result);
+        multiply(false, right, false, result);
     }
 
-    void TpetraMatrix::mult_t(const TpetraMatrix &right, TpetraMatrix &result) const
+    void TpetraMatrix::transpose_multiply(const TpetraMatrix &right, TpetraMatrix &result) const
     {
-        mult(true, right, false, result);
+        multiply(true, right, false, result);
     }
 
     //result op(*this) * op
-    void TpetraMatrix::mult(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const
+    void TpetraMatrix::multiply(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const
     {
-        m_utopia_status_once("TpetraMatrix::mult Proper thing to do would be to check if the maps are compatible");
+        m_utopia_status_once("TpetraMatrix::multiply Proper thing to do would be to check if the maps are compatible");
         //IMPROVEME
         result.mat_.reset();
 
@@ -500,7 +500,7 @@ namespace utopia {
     {
         TpetraVector vec, row_sum;
         vec.values(this->communicator(), this->local_size().get(1), this->size().get(1), 1.);
-        this->mult(vec, row_sum);
+        this->multiply(vec, row_sum);
         return row_sum.sum();
     }
 

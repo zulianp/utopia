@@ -6,7 +6,9 @@
 #include "utopia_make_unique.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Tensor.hpp"
 #include "utopia_Writable.hpp"
+#include "utopia_Constructible.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -17,11 +19,17 @@
 #include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
+#include "utopia_trilinos_Traits.hpp"
+
 #include <memory>
 
 namespace utopia {
 
-    class TpetraVector {
+    class TpetraVector : 
+    public Tensor<TpetraVector, 1>,
+    public Constructible<TpetraScalar, TpetraSizeType, 1>
+
+    {
     public:
 
 
@@ -57,6 +65,42 @@ namespace utopia {
 //        typedef Tpetra::Vector<>::mag_type                magnitude_type;
     typedef vector_type::scalar_type                  Scalar;
 
+        using IndexSet = Traits<TpetraVector>::IndexSet;
+
+
+        ////////////////////////////////////////////////////////////////////
+        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
+        ////////////////////////////////////////////////////////////////////
+
+        using Super         = utopia::Tensor<TpetraVector, 1>;
+        using Constructible = utopia::Constructible<Scalar, GO, 1>;
+
+        using Super::Super;
+        // using Constructible::values;
+        // using Constructible::local_values;
+        // using Constructible::local_zeros;
+        // using Constructible::zeros;
+
+         template<class Expr>
+         TpetraVector(const Expression<Expr> &expr)
+         {
+             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+             Super::construct_eval(expr.derived());
+         }
+
+         template<class Expr>
+         inline TpetraVector &operator=(const Expression<Expr> &expr)
+         {
+             Super::assign_eval(expr.derived());
+             return *this;
+         }
+
+        void assign(const TpetraVector &other) override;
+        void assign(TpetraVector &&other) override;
+
+
+        ////////////////////////////////
+
         TpetraVector()
         {}
 
@@ -90,7 +134,18 @@ namespace utopia {
             return *this;
         }
 
+        void select(const IndexSet &index, TpetraVector &result) const override
+        {
+            generic_select(index, result);
+        }
+
         void copy(const TpetraVector &other);
+
+        /////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////// OVERRIDES for Constructible ////////////////////
+        /////////////////////////////////////////////////////////////////////////////////
+
+        // virtual void values(const SizeType &s, const Scalar &val) 
 
 
         //////////////////////////////////////////
@@ -227,7 +282,7 @@ namespace utopia {
             const std::vector<Scalar> &values);
 
         template<typename Integer>
-        void select(
+        void generic_select(
             const std::vector<Integer> &index,
             TpetraVector &out
             ) const
@@ -425,6 +480,17 @@ namespace utopia {
             assert(!vec_.is_null());
             return *vec_;
         }
+
+        inline rcpvector_type &raw_type()
+        {
+            return implementation_ptr();
+        }
+
+        inline const rcpvector_type &raw_type() const
+        {
+            return implementation_ptr();
+        }
+
 
         inline rcpvector_type &implementation_ptr()
         {
