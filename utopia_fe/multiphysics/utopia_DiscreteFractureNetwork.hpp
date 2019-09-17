@@ -124,6 +124,10 @@ namespace utopia {
             return empty_;
         }
 
+        inline bool refine(const Vector &) {
+            return false;
+        }
+
         FractureCoupling()
         : empty_(true), export_constrained_(false)
         {}

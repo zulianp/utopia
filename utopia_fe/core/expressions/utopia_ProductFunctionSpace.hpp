@@ -99,6 +99,11 @@ namespace utopia {
             return spaces_.size();
         }
 
+        inline bool empty() const
+        {
+            return spaces_.empty();
+        }
+
         template<class Fun>
         void each(Fun fun)
         {
