@@ -34,7 +34,7 @@ namespace utopia {
         auto u = trial(V);
         auto v = test(V);
 
-        auto linear_form = inner(coeff(20.0), v) * dX;
+        auto linear_form = inner(coeff(0.0), v) * dX;
         auto bilinear_form = inner(grad(u), grad(v)) * dX;
 
         USparseMatrix A;
@@ -44,14 +44,18 @@ namespace utopia {
 
         assemble(bilinear_form == linear_form, A, rhs);
 
-        //utopia::write("A_before.m", A);
+        utopia::disp(size(A).get(0));
+
+        utopia::disp(size(A).get(1));
+
+        utopia::write("A_before.m", A);
 
         apply_boundary_conditions(V, A, rhs);
 
 
         // utopia::rename("a", A);
 
-        // utopia::write("A.m", A);
+        utopia::write("A.m", A);
 
         // utopia::rename("b", rhs);
 

@@ -18,31 +18,58 @@ namespace utopia {
     {
 
         std::vector<SizeType> index; 
-        compute_boundary_nodes(mesh, dof_map, 0,0, index);
         
+        //compute_boundary_nodes(mesh, dof_map, 0,0, index);
+
 
         using uint = unsigned int;
+        
         auto el = mesh.active_local_elements_begin();
         
         const auto end_el = mesh.active_local_elements_end();
         
-        for(; el != end_el; ++el) {
+        for(; el != end_el; ++el) 
+        {
             const auto * elem = *el;
+            
             auto * ele = *el;
 
             libmesh_assert (mesh.is_prepared());
             
             uint n_vars = dof_map.n_variables();
+
             for(uint var_num = 0; var_num < n_vars; ++var_num) {
-                compute_constraints(constraints, dof_map, var_num, elem, mesh.mesh_dimension(), index);
+
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+
+            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
+
+                if (fe_type.order>0){
+
+                    compute_constraints(constraints, dof_map, var_num, elem, mesh.mesh_dimension(), index);
+                }
             }
         }
 
-          libMesh::MeshBase &mesh_copy=const_cast<libMesh::MeshBase&>(mesh);
+        libMesh::MeshBase &mesh_copy=const_cast<libMesh::MeshBase&>(mesh);
 
-          libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
+        libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
 
-          process_constraints(mesh_copy, dof_copy, constraints);
+        uint n_vars = dof_map.n_variables();
+                
+        for(uint var_num = 0; var_num < n_vars; ++var_num) 
+        {
+
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+
+            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
+
+            if (fe_type.order>0)
+            {
+
+                  process_constraints(mesh_copy, dof_copy, constraints);
+            }
+        }
 
         std::cout << "--------------------------------------------------\n";
         std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
@@ -61,33 +88,44 @@ namespace utopia {
         const auto end_el = mesh.active_local_elements_end();
 
         std::vector<SizeType> index;
+        
+
         compute_boundary_nodes(mesh, dof_map, 0, 0, index);
 
 
 
         dof_constraints_.clear();
         
-        
-        for ( ; el != end_el; ++el)
+
+        libMesh::FEType fe_type = dof_map.variable_type(var_num);
+
+        fe_type.order = static_cast<libMesh::Order>(fe_type.order);
+
+        if(fe_type.order>0)
         {
-            const auto * elem = *el;
-            
-            auto * ele = *el;
-            libmesh_assert (mesh.is_prepared());
-            
+        
+        
+            for ( ; el != end_el; ++el)
+            {
+                const auto * elem = *el;
+                
+                auto * ele = *el;
+                libmesh_assert (mesh.is_prepared());
+                
 
-            for (unsigned int var_num=0; var_num<dof_map.n_variables();
-                 ++var_num) {
-                compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension(), index);
+                for (unsigned int var_num=0; var_num<dof_map.n_variables();
+                     ++var_num) {
+                    compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension(), index);
+                }
+                
             }
-            
+
+            libMesh::MeshBase &mesh_copy=const_cast<libMesh::MeshBase&>(mesh);
+
+            libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
+
+            Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
         }
-
-        libMesh::MeshBase &mesh_copy=const_cast<libMesh::MeshBase&>(mesh);
-
-        libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
-
-        Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
 
         std::cout << "--------------------------------------------------\n";
         std::cout<< "[Adaptivity::assemble_constraint] n_constraints: " << dof_constraints_.size() << std::endl;
@@ -110,10 +148,7 @@ namespace utopia {
         
         std::vector<SizeType> index;
 
-        compute_boundary_nodes(mesh, dof_map, 0, var_num, index);
-
-
-
+        //compute_boundary_nodes(mesh, dof_map, 0, var_num, index);
 
         assemble_constraint(mesh, dof_map, var_num);
         
@@ -350,6 +385,8 @@ namespace utopia {
                         
                         libMesh::DofConstraintRow * constraint_row;
 
+                        //if (dof_map.is_constrained_dof(my_dof_g)) continue;
+
                         constraint_row = &(constraints[my_dof_g]);
 
                         const libMesh::Point & support_point = my_side->point(my_dof);
@@ -438,7 +475,6 @@ namespace utopia {
                         }
                     }
          
-                    std::cout<<check<<std::endl;
                     if (check ==true) {
                           unexpanded_set.insert(item.first);                        
                           constraints_to_expand.push_back(item.first);
@@ -657,91 +693,91 @@ namespace utopia {
     {
       
 
-      std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
+        std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
 
-      typedef std::set<libMesh::dof_id_type> DoF_RCSet;
+        typedef std::set<libMesh::dof_id_type> DoF_RCSet;
 
-      bool unexpanded_set_nonempty = !unexpanded_dofs.empty();
-      dof_map.comm().max(unexpanded_set_nonempty);
+        bool unexpanded_set_nonempty = !unexpanded_dofs.empty();
 
-      while (unexpanded_set_nonempty)
-      {
-          
-          DoF_RCSet   dof_request_set;
+        dof_map.comm().max(unexpanded_set_nonempty);
 
-
-          std::map<libMesh::processor_id_type, std::vector<libMesh::dof_id_type>>
-            requested_dof_ids;
+        while (unexpanded_set_nonempty)
+        {
+              
+              DoF_RCSet   dof_request_set;
 
 
-          std::map<libMesh::processor_id_type, libMesh::dof_id_type>
-            dof_ids_on_proc;
+              std::map<libMesh::processor_id_type, std::vector<libMesh::dof_id_type>> requested_dof_ids;
 
 
-          for (const auto & unexpanded_dof : unexpanded_dofs)
-          {
-              libMesh::DofConstraints::const_iterator
-                pos = _dof_constraints.find(unexpanded_dof);
+              std::map<libMesh::processor_id_type, libMesh::dof_id_type> dof_ids_on_proc;
 
-   
-              if (pos == _dof_constraints.end())
-              {
-                  if (!dof_map.local_index(unexpanded_dof) &&
-                      !_dof_constraints.count(unexpanded_dof) )
-                    dof_request_set.insert(unexpanded_dof);
-              }
 
-              else
-              {
-                  const libMesh::DofConstraintRow & row = pos->second;
-                  for (const auto & j : row)
+            for (const auto & unexpanded_dof : unexpanded_dofs)
+            {
+                  libMesh::DofConstraints::const_iterator
+                    pos = _dof_constraints.find(unexpanded_dof);
+
+       
+                if (pos == _dof_constraints.end())
+                {
+                      if (!dof_map.local_index(unexpanded_dof) &&
+                          !_dof_constraints.count(unexpanded_dof) )
+                        dof_request_set.insert(unexpanded_dof);
+                }
+
+                else
+                {
+                      const libMesh::DofConstraintRow & row = pos->second;
+                     
+                    for (const auto & j : row)
                     {
-                      const libMesh::dof_id_type constraining_dof = j.first;
+                          const libMesh::dof_id_type constraining_dof = j.first;
 
 
-                      if (!dof_map.local_index(constraining_dof) &&
-                          !_dof_constraints.count(constraining_dof))
-                        dof_request_set.insert(constraining_dof);
+                          if (!dof_map.local_index(constraining_dof) &&
+                              !_dof_constraints.count(constraining_dof))
+                            dof_request_set.insert(constraining_dof);
                     }
                 }
             }
 
-          unexpanded_dofs.clear();
+              unexpanded_dofs.clear();
 
 
-          libMesh::processor_id_type proc_id = 0;
-          for (const auto & i : dof_request_set)
-          {
-              while (i >= dof_map.end_dof(proc_id))
+              libMesh::processor_id_type proc_id = 0;
+              for (const auto & i : dof_request_set)
               {
-                proc_id++;
-                dof_ids_on_proc[proc_id]++;
+                  while (i >= dof_map.end_dof(proc_id))
+                  {
+                    proc_id++;
+                    dof_ids_on_proc[proc_id]++;
+                  }
               }
-          }
 
-          for (auto & pair : dof_ids_on_proc)
-          {
-              requested_dof_ids[pair.first].reserve(pair.second);
-          }
-
-       
-          proc_id = 0;
-
-          for (const auto & i : dof_request_set)
-          {
-              while (i >= dof_map.end_dof(proc_id))
+              for (auto & pair : dof_ids_on_proc)
               {
-                proc_id++;
-                requested_dof_ids[proc_id].push_back(i);
+                  requested_dof_ids[pair.first].reserve(pair.second);
+              }
+
+           
+              proc_id = 0;
+
+              for (const auto & i : dof_request_set)
+              {
+                  while (i >= dof_map.end_dof(proc_id))
+                  {
+                    proc_id++;
+                    requested_dof_ids[proc_id].push_back(i);
+                }
+              }
+
+              unexpanded_set_nonempty = !unexpanded_dofs.empty();
+              dof_map.comm().max(unexpanded_set_nonempty);
             }
-          }
-
-          unexpanded_set_nonempty = !unexpanded_dofs.empty();
-          dof_map.comm().max(unexpanded_set_nonempty);
-        }
 
 
-     std::cout<<"Adaptivity::gather_constraints::END "<<std::endl; 
+        std::cout<<"Adaptivity::gather_constraints::END "<<std::endl; 
     }
 
     void Adaptivity::add_constraints_to_send_list(libMesh::DofMap &dof_map, 
@@ -749,42 +785,40 @@ namespace utopia {
     {
       
 
-     std::cout<<"Adaptivity::add_constraints_to_send_list::BEGIN "<<std::endl; 
+        std::cout<<"Adaptivity::add_constraints_to_send_list::BEGIN "<<std::endl; 
 
-      if (dof_map.n_processors() == 1)
-        return;
+        if (dof_map.n_processors() == 1) return;
 
-      
-      unsigned int has_constraints = !_dof_constraints.empty();
-      dof_map.comm().max(has_constraints);
-      if (!has_constraints)
-        return;
+          
+          unsigned int has_constraints = !_dof_constraints.empty();
 
-      for (const auto & i : _dof_constraints)
+          dof_map.comm().max(has_constraints);
+
+        if (!has_constraints) return;
+
+        for (const auto & i : _dof_constraints)
         {
-          libMesh::dof_id_type constrained_dof = i.first;
+              libMesh::dof_id_type constrained_dof = i.first;
 
-          // We only need the dependencies of our own constrained dofs
-          if (!dof_map.local_index(constrained_dof))
-            continue;
-
-          const libMesh::DofConstraintRow & constraint_row = i.second;
-          for (const auto & j : constraint_row)
-            {
-              libMesh::dof_id_type constraint_dependency = j.first;
-
-              // No point in adding one of our own dofs to the send_list
-              if (dof_map.local_index(constraint_dependency))
+              if (!dof_map.local_index(constrained_dof))
                 continue;
 
-               std::vector<libMesh::dof_id_type> _send_list = dof_map.get_send_list();
+              const libMesh::DofConstraintRow & constraint_row = i.second;
+              
+            for (const auto & j : constraint_row)
+            {
+                  libMesh::dof_id_type constraint_dependency = j.first;
 
-              _send_list.push_back(constraint_dependency);
+                  if (dof_map.local_index(constraint_dependency)) continue;
+
+                   std::vector<libMesh::dof_id_type> _send_list = dof_map.get_send_list();
+
+                  _send_list.push_back(constraint_dependency);
             }
-        }
+        }       
 
+        std::cout<<"Adaptivity::add_constraints_to_send_list::END "<<std::endl;  
 
-     std::cout<<"Adaptivity::add_constraints_to_send_list::END "<<std::endl;  
     }
 
 
@@ -823,8 +857,8 @@ namespace utopia {
       // Collect the dof constraints I need to push to each processor
       libMesh::dof_id_type constrained_proc_id = 0;
 
-      for (auto & i : _dof_constraints)
-        {
+    for (auto & i : _dof_constraints)
+    {
           const libMesh::dof_id_type constrained = i.first;
           while (constrained >= dof_map.end_dof(constrained_proc_id))
             constrained_proc_id++;
