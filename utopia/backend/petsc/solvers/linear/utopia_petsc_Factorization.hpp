@@ -14,7 +14,6 @@ namespace utopia {
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
 
     public:
         Factorization()
@@ -75,6 +74,14 @@ namespace utopia {
         void describe(std::ostream &os) const
         {
             strategy_.describe(os);
+        }
+
+        inline void read(Input &is) override
+        {
+            DirectSolver<Matrix, Vector>::read(is);
+
+            //FIXME check before if it is a factorization
+            strategy_.read(is);
         }
 
     private:

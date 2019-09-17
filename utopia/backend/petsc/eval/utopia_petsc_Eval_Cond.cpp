@@ -1,11 +1,13 @@
 #include "utopia_petsc_Eval_Cond_impl.hpp"
 
 #ifdef WITH_SLEPC
-#include "utopia_petsc.hpp"
+#include "utopia_petsc_Matrix.hpp"
 
 namespace utopia {
-    template class Cond<DSMatrixd, PETSC>;
-    template class Cond<DMatrixd, PETSC>;
+    // template class Cond<DSMatrixd, PETSC>;
+    // template class Cond<DMatrixd, PETSC>;
+
+    template class Cond<PetscMatrix, PETSC>;
 }
 
 #endif //WITH_SLEPC

@@ -198,8 +198,8 @@ namespace utopia {
         MatCreateVecs(A, NULL, & raw_type(vr));
         MatCreateVecs(A, NULL, & raw_type(vi));
 
-        vr.implementation().set_initialized(true);
-        vi.implementation().set_initialized(true);
+        vr.set_initialized(true);
+        vi.set_initialized(true);
 
         EPSGetConverged(eps_, &nconv);
 
@@ -234,7 +234,7 @@ namespace utopia {
 
 
         MatCreateVecs(A, nullptr, &raw_type(vr));
-        vr.implementation().set_initialized(true);
+        vr.set_initialized(true);
 
         EPSGetConverged(eps_, &nconv);
 

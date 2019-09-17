@@ -357,6 +357,19 @@ namespace utopia {
             );
          }
 
+         inline void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override
+         {
+            dense_init_identity(
+                comm().get(),
+                MATDENSE,
+                s.get(0),
+                s.get(1),
+                PETSC_DETERMINE,
+                PETSC_DETERMINE,
+                diag
+            );
+         }
+
          inline void values(const Size &s, const Scalar &val) override
          {
             dense_init_values(

@@ -36,6 +36,7 @@ namespace utopia {
 
 		virtual void local_identity(const Size &s, const Scalar &diag = 1.0) { identity(s, diag); }
 		virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) { identity(s, diag); }
+		virtual void local_dense_identity(const Size &s, const Scalar &diag = 1.0) { dense_identity(s, diag); }
 
 	};
 

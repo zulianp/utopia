@@ -421,6 +421,27 @@ namespace utopia {
        }
    };
 
+
+   template<class Traits, int Backend>
+   class Eval<Factory<LocalDenseIdentity, 2>, Traits, Backend> {
+   public:
+        using Result = typename Traits::Matrix;
+
+       inline static Result apply(const Factory<LocalDenseIdentity, 2> &expr)
+       {
+           Result result;
+           // UTOPIA_TRACE_BEGIN(expr);
+
+           result.local_dense_identity(
+               expr.size()
+           );
+
+           // UTOPIA_TRACE_END(expr);
+
+           return result;
+       }
+   };
+
    //NEW FIXME this is for the expression dense()
    template<class Left, int Order, class Traits, int Backend>
    class Eval<Assign<Left, Factory<Resize, Order> >, Traits, Backend> {
@@ -450,6 +471,36 @@ namespace utopia {
 
            UTOPIA_TRACE_END(expr);
        }
+   };
+
+   template<class Derived, typename T>
+   using AssignMatrixWithIdShit = utopia::Assign<
+                                      Tensor<Derived, 2>,
+                                      Binary<
+                                        Tensor<Derived, 2>,
+                                        Binary<Number<T>, Factory<LocalIdentity, 2>, Multiplies>,
+                                        Plus
+                                      >
+                                  >;
+
+   template<class Derived, typename T, class Traits, int Backend>
+   class Eval<AssignMatrixWithIdShit<Derived, T>, Traits, Backend> {
+   public:
+      using Matrix = utopia::Tensor<Derived, 2>;
+
+      inline static void apply(const AssignMatrixWithIdShit<Derived, T> &expr)
+      {
+          UTOPIA_TRACE_BEGIN(expr);
+
+          auto &&l = Eval<Matrix, Traits>::apply(expr.left());
+          auto &&diag = expr.right().right().left();
+
+          l.construct( Eval<Matrix, Traits>::apply(expr.right().left()) );
+          l.shift_diag(diag);
+
+          UTOPIA_TRACE_END(expr);
+      }
+
    };
 
 }

@@ -287,7 +287,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class MildStiffExample : public virtual Function<Matrix, Vector> , public virtual LeastSquaresFunction<Matrix, Vector>
     {
-        static_assert(!utopia::is_sparse<Matrix>::value, "utopia::MildStiffExample does not support sparse matrices as Hessian is dense matrix.");
+        static_assert(!utopia::is_sparse<Matrix>::value || utopia::is_polymorhic<Matrix>::value, "utopia::MildStiffExample does not support sparse matrices as Hessian is dense matrix.");
 
     public:
         typedef UTOPIA_SCALAR(Vector)      Scalar;

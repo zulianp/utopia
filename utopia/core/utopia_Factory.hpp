@@ -60,6 +60,7 @@ namespace utopia {
     };
 
     class LocalIdentity {};
+    class LocalDenseIdentity {};
     class Zeros {};
     class LocalZeros {};
 
@@ -699,6 +700,13 @@ namespace utopia {
     {
         return Factory<LocalIdentity, 2>(size);
     }
+
+    /// Returns local identity matrix  \f$ I^{size \times size}  \f$ i.e. each processors owns local identity matrix.
+    inline Factory<LocalDenseIdentity, 2> local_dense_identity(const Size &size)
+    {
+        return Factory<LocalDenseIdentity, 2>(size);
+    }
+
 
 
     ///  Returns local zero vector \f$ 0^{n \times 1}  \f$.

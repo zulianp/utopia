@@ -7,13 +7,15 @@
 
 #include "utopia_petsc_Eval_Cond.hpp"
 #include "utopia_petsc_Slepc.hpp"
+#include "utopia_petsc_Vector.hpp"
+
 
 namespace utopia {
 
     template<class Matrix>
     UTOPIA_SCALAR(Matrix) Cond<Matrix, PETSC>::apply(const Matrix &H)
     {
-        using Vector = utopia::Wrapper<UTOPIA_VECTOR(Matrix), 1>;
+        using Vector = typename Traits<Matrix>::Vector;
 
         Scalar small = 0, large = 0;
 
