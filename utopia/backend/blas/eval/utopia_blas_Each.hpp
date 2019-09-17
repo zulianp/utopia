@@ -3,13 +3,16 @@
 
 #include "utopia_Each.hpp"
 #include "utopia_blas_Types.hpp"
+#include "utopia_blas_ForwardDeclarations.hpp"
 
 namespace utopia {
-        template<int FILL_TYPE>
-        class Each<Vectord, 1, FILL_TYPE> {
+        template<typename T, int FILL_TYPE>
+        class Each<BlasVector<T>, 1, FILL_TYPE> {
         public:
+            using BlasVector = utopia::BlasVector<T>;
+            
             template<class Fun>
-            inline static void apply_read(const Vectord &v, Fun fun)
+            inline static void apply_read(const BlasVector &v, Fun fun)
             {
                 For<>::apply(
                     0,
@@ -21,7 +24,7 @@ namespace utopia {
             }
 
             template<class Fun>
-            inline static void apply_write(Vectord &v, Fun fun)
+            inline static void apply_write(BlasVector &v, Fun fun)
             {
                 For<>::apply(
                     0,
@@ -33,7 +36,7 @@ namespace utopia {
             }
 
             template<class Fun>
-            inline static void apply_transform(const Vectord &in, Vectord &out, Fun fun)
+            inline static void apply_transform(const BlasVector &in, BlasVector &out, Fun fun)
             {
                 auto s = in.size();
                 if(s != out.size()) {
