@@ -980,8 +980,6 @@ namespace utopia {
                             {
                                    
                                         index_local.push_back(node_dof);
-                                        
-                                        // utopia::disp(node_dof);
            
                             }
 

@@ -295,8 +295,8 @@ namespace utopia {
         
         temp_T += post_constraint_matrix_to * temp_T;
             
-        rename("tc", temp_T);
-        write("TC.m", temp_T);
+        // rename("tc", temp_T);
+        // write("TC.m", temp_T);
 //
 //        rename("hn", post_constraint_matrix_to);
 //        write("HN.m", post_constraint_matrix_to);
@@ -337,8 +337,8 @@ namespace utopia {
                 tensorize(T_x, opts.n_var, T);
             }
 
-            rename("t", T);
-            write("T.m", T);
+            // rename("t", T);
+            // write("T.m", T);
         }
     }
 
