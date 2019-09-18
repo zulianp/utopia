@@ -387,7 +387,7 @@ namespace utopia {
         const bool is_row_min = this->size().get(0) <= this->size().get(1);
         GO n = (is_row_min)? this->size().get(0) : this->size().get(1);
 
-        if(d.is_null() || d.size().get(0) != n) {
+        if(d.is_null() || d.size() != n) {
             m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
 
             if(is_row_min) {
@@ -407,8 +407,8 @@ namespace utopia {
 
     void TpetraMatrix::diag(const TpetraVector &d)
     {
-        auto ls = d.local_size().get(0);
-        auto gs = d.size().get(0);
+        auto ls = d.local_size();
+        auto gs = d.size();
 
         crs_init(d.communicator(),
                  ls,

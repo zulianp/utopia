@@ -8,6 +8,7 @@
 #include "utopia_For.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Readable.hpp"
+#include "utopia_Traits.hpp"
 
 #include <functional>
 // #define UTOPIA_DISABLE_UNROLLING

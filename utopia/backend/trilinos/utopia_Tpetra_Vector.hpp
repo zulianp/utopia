@@ -13,6 +13,7 @@
 #include "utopia_ElementWiseOperand.hpp"
 #include "utopia_Transformable.hpp"
 #include "utopia_Comparable.hpp"
+#include "utopia_Vector.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -31,6 +32,7 @@
 namespace utopia {
 
     class TpetraVector : 
+    public DistributedVector<TpetraScalar, TpetraSizeType>,
     public ElementWiseOperand<TpetraVector>,
     public Transformable<TpetraScalar>,
     public Tensor<TpetraVector, 1>,
@@ -39,6 +41,9 @@ namespace utopia {
     public Comparable<TpetraVector>
     {
     public:
+
+        using SizeType = utopia::TpetraSizeType;
+        using Scalar   = utopia::TpetraScalar;
 
 
     typedef Tpetra::Operator<>::scalar_type SC;
@@ -71,7 +76,7 @@ namespace utopia {
     typedef Teuchos::RCP<const map_type>              rcp_map_type;
 
 //        typedef Tpetra::Vector<>::mag_type                magnitude_type;
-    typedef vector_type::scalar_type                  Scalar;
+    // typedef vector_type::scalar_type                  Scalar;
 
         using IndexSet = Traits<TpetraVector>::IndexSet;
 
@@ -256,7 +261,13 @@ namespace utopia {
             vec_.reset(new vector_type(map));
         }
 
-
+        void ghosted(const TpetraVector::GO &local_size,
+                     const TpetraVector::GO &global_size,
+                     const std::vector<GO> &ghost_index
+        )
+        {
+            ghosted(comm().get(), local_size, global_size, ghost_index);
+        }
 
         void ghosted(const rcp_comm_type &comm,
                      const TpetraVector::GO &local_size,
@@ -281,7 +292,7 @@ namespace utopia {
             describe(std::cout);
         }
 
-        inline Scalar get(const GO i) const
+        inline Scalar get(const SizeType &i) const override
         {
             // assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
             // return read_only_data_[local_index(i)];
@@ -306,7 +317,7 @@ namespace utopia {
             }
         }
 
-        inline void set(const GO i, const Scalar value)
+        inline void set(const SizeType &i, const Scalar &value) override
         {
             assert(view_ptr_);
             auto local_index = view_ptr_->map.getLocalElement(i);
@@ -319,7 +330,7 @@ namespace utopia {
             // }
         }
 
-        inline void add(const GO i, const Scalar value)
+        inline void add(const SizeType &i, const Scalar &value) override
         {
             assert(view_ptr_);
 
@@ -334,7 +345,19 @@ namespace utopia {
             // }
         }
 
-        inline void set(const Scalar value)
+
+        inline void c_set(const SizeType &i, const Scalar &value) override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+
+        inline void c_add(const SizeType &i, const Scalar &value) override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+        inline void set(const Scalar &value) override
         {
             implementation().putScalar(value);
         }
@@ -432,35 +455,35 @@ namespace utopia {
         }
 
 
-        inline void read_lock()
+        inline void read_lock() override
         {
             // read_only_data_ = get_read_only_data();
             make_view();
         }
 
-        inline void read_unlock()
+        inline void read_unlock() override
         {
             // read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
             free_view();
         }
 
-        inline void write_lock(const WriteMode &mode = utopia::AUTO)
+        inline void write_lock(WriteMode mode = utopia::AUTO) override
         {
             if(mode != GLOBAL_ADD || mode == GLOBAL_INSERT) {
                 make_view();
             }
         }
 
-        void write_unlock(const WriteMode &mode = utopia::AUTO);
+        void write_unlock(WriteMode mode = utopia::AUTO) override;
 
-        inline void read_and_write_lock(const WriteMode &mode = utopia::AUTO)
+        inline void read_and_write_lock(WriteMode mode = utopia::AUTO) override
         {
             // write_data_ = implementation().getDataNonConst();
             // read_only_data_ = write_data_;
             make_view();
         }
 
-        inline void read_and_write_unlock(const WriteMode &mode = utopia::AUTO)
+        inline void read_and_write_unlock(WriteMode mode = utopia::AUTO) override
         {
             // write_data_ = Teuchos::ArrayRCP<Scalar>();
             // read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
@@ -473,22 +496,22 @@ namespace utopia {
             return { implementation().getMap()->getMinGlobalIndex(), implementation().getMap()->getMaxGlobalIndex() + 1 };
         }
 
-        inline Size size() const
+        inline SizeType size() const
         {
             if(is_null()) {
                 return {0};
             }
 
-            return { implementation().getMap()->getGlobalNumElements() };
+            return implementation().getMap()->getGlobalNumElements();
         }
 
-        inline Size local_size() const
+        inline SizeType local_size() const
         {
             if(is_null()) {
                 return {0};
             }
 
-            return { implementation().getMap()->getNodeNumElements() };
+            return implementation().getMap()->getNodeNumElements();
         }
 
         inline Scalar norm2() const {
@@ -608,6 +631,18 @@ namespace utopia {
         {
             return !ghosted_vec_.is_null();
         }
+
+        TrilinosCommunicator &comm() override
+        {
+            return comm_;
+        }
+
+        const TrilinosCommunicator &comm() const override
+        {
+            return comm_;
+        }
+
+        void clear() override;
 
     private:
 

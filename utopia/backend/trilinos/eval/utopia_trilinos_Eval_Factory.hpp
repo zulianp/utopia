@@ -14,13 +14,13 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build_ghosts(expr.local_size(), expr.global_size(), expr.index(), ret);
+            // UTOPIA_BACKEND(Traits).build_ghosts(expr.local_size(), expr.global_size(), expr.index(), ret);
+            ret.ghosted(expr.local_size(), expr.global_size(), expr.index());
 
             UTOPIA_TRACE_END(expr);
             return ret;
         }
     };
-
 
     template<class Left, class Index, class Traits>
     class Eval< Construct<Left, Ghosts<Index> >, Traits, TRILINOS> {
@@ -29,13 +29,16 @@ namespace utopia {
 
         inline static void apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
+            auto &&g = expr.right();
 
-            UTOPIA_BACKEND(Traits).build_ghosts(
-                expr.right().local_size(),
-                expr.right().global_size(),
-                expr.right().index(),
-                Eval<Left, Traits, TRILINOS>::apply(expr.left())
-            );
+            // UTOPIA_BACKEND(Traits).build_ghosts(
+            //     expr.right().local_size(),
+            //     expr.right().global_size(),
+            //     expr.right().index(),
+            //     Eval<Left, Traits, TRILINOS>::apply(expr.left())
+            // );
+
+            Eval<Left, Traits, TRILINOS>::apply(expr.left()).ghosted(g.local_size(), g.global_size(), g.index());
 
             UTOPIA_TRACE_END(expr);
         }

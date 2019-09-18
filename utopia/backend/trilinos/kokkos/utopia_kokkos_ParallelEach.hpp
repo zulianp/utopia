@@ -17,12 +17,12 @@ namespace utopia {
     // class ParallelEach {};
 
     template<int FILL_TYPE>
-    class ParallelEach<TVectord, 1, FILL_TYPE>{
+    class ParallelEach<TpetraVector, 1, FILL_TYPE>{
     public:
         template<class Fun>
-        inline static void apply_write(const TVectord &v, Fun fun)
+        inline static void apply_write(const TpetraVector &v, Fun fun)
         {
-            using ExecutionSpaceT = TVectord::Implementation::vector_type::execution_space;
+            using ExecutionSpaceT = TpetraVector::vector_type::execution_space;
 
             auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
             auto offset = range(v).begin();
@@ -32,9 +32,9 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_read(const TVectord &v, Fun fun)
+        inline static void apply_read(const TpetraVector &v, Fun fun)
         {
-            using ExecutionSpaceT = TVectord::Implementation::vector_type::execution_space;
+            using ExecutionSpaceT = TpetraVector::vector_type::execution_space;
 
             auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
             auto offset = range(v).begin();
