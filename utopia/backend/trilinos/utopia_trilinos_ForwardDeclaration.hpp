@@ -4,7 +4,6 @@
 
 namespace utopia {
     class TpetraMatrix;
-    // class TpetraSparseMatrix;
     class TpetraVector;
 }
 

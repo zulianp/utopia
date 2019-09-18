@@ -4,8 +4,10 @@
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Matrix.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_Tensor.hpp"
+#include "utopia_Normed.hpp"
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_Communicator.hpp"
 
@@ -21,14 +23,19 @@
 namespace utopia {
     //template<class NodeType>
     class TpetraMatrix :
+    public DistributedSparseMatrix<TpetraScalar, TpetraSizeType>,
     public Tensor<TpetraMatrix, 2>,
-    public SparseConstructible<TpetraScalar, TpetraSizeType>
+    public SparseConstructible<TpetraScalar, TpetraSizeType>,
+    public Normed<TpetraScalar>
     {
     public:
 
         /////////////////////////////////////////////////////////////
         // typedef definitions
         /////////////////////////////////////////////////////////////
+
+        using Scalar   = utopia::TpetraScalar;
+        using SizeType = utopia::TpetraSizeType;
 
         //types of Operators
         typedef Tpetra::Operator<>::scalar_type SC;
@@ -55,7 +62,7 @@ namespace utopia {
         typedef Teuchos::RCP<const Teuchos::Comm<int> >       rcp_comm_type;
         typedef Tpetra::Map<LO, GO, NT>                       map_type;
         typedef Teuchos::RCP<const map_type>                  rcp_map_type;
-        typedef Tpetra::Vector<SC, LO, GO, NT>::scalar_type   Scalar;
+        
 
         /////////////////////////////////////////////////////////////
         //Constructors
@@ -156,6 +163,102 @@ namespace utopia {
             assert(false && "IMPLEMENT ME");
         }
 
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR DistributedObject ////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        TrilinosCommunicator &comm() override
+        {
+            return comm_;
+        }
+
+        const TrilinosCommunicator &comm() const override
+        {
+            return comm_;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////// OVERRIDES FOR MatrixBase and DistributedMatrix /////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        void c_set(const SizeType &i, const SizeType &j, const Scalar &value) override;
+        void c_add(const SizeType &i, const SizeType &j, const Scalar &value) override;
+       
+        SizeType rows() const override;
+        SizeType cols() const override;
+        SizeType local_rows() const override;
+        SizeType local_cols() const override;
+        
+        inline Range row_range() const override
+        {
+            return  { implementation().getRowMap()->getMinGlobalIndex(), implementation().getRowMap()->getMaxGlobalIndex() + 1 };
+        }
+
+        inline Range col_range() const override
+        {
+            if(implementation().getDomainMap().is_null()) {
+                assert(!init_->domain_map.is_null());
+                return  { init_->domain_map->getMinGlobalIndex(), init_->domain_map->getMaxGlobalIndex() + 1 };
+            } else {
+                return  { implementation().getDomainMap()->getMinGlobalIndex(), implementation().getDomainMap()->getMaxGlobalIndex() + 1 };
+            }
+        }
+
+        inline Size size() const override
+        {
+            if(is_null()) {
+                return {0, 0};
+            }
+
+            if(implementation().isFillComplete()) {
+                return { implementation().getGlobalNumRows(), implementation().getGlobalNumCols() };
+            } else {
+                assert(!implementation().getRowMap().is_null());
+
+                if(implementation().getDomainMap().is_null()) {
+                    assert(!init_->domain_map.is_null());
+                    return { implementation().getRowMap()->getGlobalNumElements(), init_->domain_map->getGlobalNumElements() };
+                } else {
+                    return { implementation().getRowMap()->getGlobalNumElements(), implementation().getDomainMap()->getGlobalNumElements() };
+                }
+            }
+        }
+
+        inline bool empty() const override
+        {
+            return is_null();
+        }
+
+        inline Size local_size() const override
+        {
+            if(is_null()) {
+                return {0, 0};
+            }
+
+            assert(!implementation().getRowMap().is_null());
+
+            if(implementation().getDomainMap().is_null()) {
+                assert(!init_->domain_map.is_null());
+                return { implementation().getRowMap()->getNodeNumElements(), init_->domain_map->getNodeNumElements() };
+            } else {
+                return { implementation().getRowMap()->getNodeNumElements(), implementation().getDomainMap()->getNodeNumElements() };
+            }
+        }
+
+        void describe(std::ostream &os) const
+        {
+            auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
+            implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
+        }
+
+        inline void describe() const override
+        {
+            describe(std::cout);
+        }
+
+        void clear() override;
+
         /////////////////////////////////////////////////////////////
         //OVERRIDES for SparseConstructible
         /////////////////////////////////////////////////////////////
@@ -181,6 +284,16 @@ namespace utopia {
         {
             assert(false && "IMPLEMENT ME");
         }
+
+
+        /////////////////////////////////////////////////////////////
+        //OVERRIDES for Normed
+        /////////////////////////////////////////////////////////////
+
+
+        Scalar norm_infty() const override;
+        Scalar norm1() const override;
+        Scalar norm2() const override;
 
         /////////////////////////////////////////////////////////////
         //Overloading Operators
@@ -259,62 +372,7 @@ namespace utopia {
                       const Scalar factor = 1.);
 
 
-        inline Range row_range() const
-        {
-            return  { implementation().getRowMap()->getMinGlobalIndex(), implementation().getRowMap()->getMaxGlobalIndex() + 1 };
-        }
-
-        inline Range col_range() const
-        {
-            if(implementation().getDomainMap().is_null()) {
-                assert(!init_->domain_map.is_null());
-                return  { init_->domain_map->getMinGlobalIndex(), init_->domain_map->getMaxGlobalIndex() + 1 };
-            } else {
-                return  { implementation().getDomainMap()->getMinGlobalIndex(), implementation().getDomainMap()->getMaxGlobalIndex() + 1 };
-            }
-        }
-
-        inline Size size() const
-        {
-            if(is_null()) {
-                return {0, 0};
-            }
-
-            if(implementation().isFillComplete()) {
-                return { implementation().getGlobalNumRows(), implementation().getGlobalNumCols() };
-            } else {
-                assert(!implementation().getRowMap().is_null());
-
-                if(implementation().getDomainMap().is_null()) {
-                    assert(!init_->domain_map.is_null());
-                    return { implementation().getRowMap()->getGlobalNumElements(), init_->domain_map->getGlobalNumElements() };
-                } else {
-                    return { implementation().getRowMap()->getGlobalNumElements(), implementation().getDomainMap()->getGlobalNumElements() };
-                }
-            }
-        }
-
-        inline bool empty() const
-        {
-            return is_null();
-        }
-
-        inline Size local_size() const
-        {
-            if(is_null()) {
-                return {0, 0};
-            }
-
-            assert(!implementation().getRowMap().is_null());
-
-            if(implementation().getDomainMap().is_null()) {
-                assert(!init_->domain_map.is_null());
-                return { implementation().getRowMap()->getNodeNumElements(), init_->domain_map->getNodeNumElements() };
-            } else {
-                return { implementation().getRowMap()->getNodeNumElements(), implementation().getDomainMap()->getNodeNumElements() };
-            }
-        }
-
+        
         inline void read_lock()
         {
             //TODO?
@@ -325,27 +383,18 @@ namespace utopia {
             //TODO?
         }
 
-        inline void write_lock(const WriteMode &mode = utopia::AUTO)
+        inline void write_lock(WriteMode mode = utopia::AUTO)
         {
             //TODO?
             implementation().resumeFill();
         }
 
-        inline void write_unlock(const WriteMode &mode = utopia::AUTO)
+        inline void write_unlock(WriteMode mode = utopia::AUTO)
         {
             this->finalize();
         }
 
-        void describe(std::ostream &os) const
-        {
-            auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
-            implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
-        }
-
-        inline void describe() const
-        {
-            describe(std::cout);
-        }
+      
 
         void set(const GO &row, const GO &col, const Scalar &value);
         Scalar get(const GO &row, const GO &col) const;
@@ -471,12 +520,16 @@ namespace utopia {
             return mat_.is_null();
         }
 
+        inline bool read(const std::string &path)
+        {
+            return read(comm().get(), path);
+        }
+
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
 
         bool is_valid(const bool verbose = false) const;
 
-        Scalar norm2() const;
         Scalar sum() const;
 
 
@@ -488,6 +541,11 @@ namespace utopia {
             init_ = std::make_shared<InitStructs>();
             init_->domain_map = domain_map;
             init_->range_map = range_map;
+        }
+
+        inline void build_from_structure(const TpetraMatrix &rhs)
+        {
+            copy(rhs);
         }
 
     private:

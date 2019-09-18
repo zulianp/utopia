@@ -509,4 +509,52 @@ namespace utopia {
         return row_sum.sum();
     }
 
+    TpetraMatrix::Scalar TpetraMatrix::norm_infty() const
+    {
+        assert(false && "IMPLEMENT ME");
+        return -1.0;
+    }
+
+    TpetraMatrix::Scalar TpetraMatrix::norm1() const
+    {
+        assert(false && "IMPLEMENT ME");
+        return -1.0;
+    }
+
+    void TpetraMatrix::c_set(const SizeType &i, const SizeType &j, const Scalar &value)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraMatrix::c_add(const SizeType &i, const SizeType &j, const Scalar &value)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    TpetraMatrix::SizeType TpetraMatrix::rows() const
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+    
+    TpetraMatrix::SizeType TpetraMatrix::cols() const
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    TpetraMatrix::SizeType TpetraMatrix::local_rows() const
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+    
+    TpetraMatrix::SizeType TpetraMatrix::local_cols() const
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+
+    void TpetraMatrix::clear()
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+    
 }

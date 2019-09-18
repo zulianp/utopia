@@ -292,10 +292,10 @@ namespace utopia {
      * @param[in]  v       The tensor.
      * @param[in]  fun     The  function with desirable action.
      */
-    template<class Tensor, class Fun>
-    inline void each_read(const Tensor &v, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_read(const Tensor<T, Order> &v, Fun fun)
     {
-        Each<Tensor>::apply_read(v, fun);
+        Each<T>::apply_read(v.derived(), fun);
     }
 
 
@@ -318,10 +318,10 @@ namespace utopia {
      * @param[in]  v       The tensor.
      * @param[in]  fun     The  function with desirable action.
      */
-    template<class Tensor, class Fun>
-    inline void each_write(Tensor &v, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_write(Tensor<T, Order> &v, Fun fun)
     {
-        Each<Tensor>::apply_write(v, fun);
+        Each<T>::apply_write(v.derived(), fun);
     }
 
 
@@ -356,22 +356,22 @@ namespace utopia {
      * @param[in]  b       The tensor to be write into/ output.
      * @param[in]  fun     The  function with desirable action.
      */
-    template<class Tensor, class Fun>
-    inline void each_transform(const Tensor &a, Tensor &b, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_transform(const Tensor<T, Order> &a, Tensor<T, Order> &b, Fun fun)
     {
-        Each<Tensor>::apply_transform(a, b, fun);
+        Each<T>::apply_transform(a.derived(), b.derived(), fun);
     }
 
-    template<class Tensor, class Fun>
-    inline void each_transform(Tensor &t, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_transform(Tensor<T, Order> &t, Fun fun)
     {
-        Each<Tensor>::apply_transform(t, fun);
+        Each<T>::apply_transform(t.derived(), fun);
     }
 
-    template<class Tensor, class Fun>
-    inline void each_apply(Tensor &t, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_apply(Tensor<T, Order> &t, Fun fun)
     {
-        Each<Tensor>::apply(t, fun);
+        Each<T>::apply(t.derived(), fun);
     }
 }
 

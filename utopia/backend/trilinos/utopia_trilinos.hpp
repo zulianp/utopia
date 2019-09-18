@@ -23,10 +23,10 @@
 #include "utopia_trilinos_RowView.hpp"
 #include "utopia_trilinos_solvers.hpp"
 #include "utopia_trilinos_Each.hpp"
-
+#include "utopia_trilinos_Eval_Factory.hpp"
 
 //FIXME re-introduce later
-// #include "utopia_trilinos_Eval_Factory.hpp"
+
 // #include "utopia_trilinos_Eval_RAP.hpp"
 // #include "utopia_trilinos_Eval_Distance.hpp"
 

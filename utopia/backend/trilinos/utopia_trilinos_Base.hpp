@@ -2,6 +2,7 @@
 #define UTOPIA_TRILINOS_BASE_HPP
 
 #include <Tpetra_Operator.hpp>
+#include <vector>
 
 namespace utopia {
 
@@ -9,9 +10,9 @@ namespace utopia {
     using TpetraLocalSizeType = Tpetra::Operator<TpetraScalar>::local_ordinal_type;
     using TpetraSizeType      = Tpetra::Operator<TpetraScalar, TpetraLocalSizeType>::global_ordinal_type;
 
-    using TpetraIndexSet    = std::vector<TpetraSizeType>;
-    using TpetraIndexArray  = std::vector<TpetraSizeType>;
-    using TpetraScalarArray = std::vector<TpetraScalar>;
+    using TpetraIndexSet      = std::vector<TpetraSizeType>;
+    using TpetraIndexArray    = std::vector<TpetraSizeType>;
+    using TpetraScalarArray   = std::vector<TpetraScalar>;
 
 }
 

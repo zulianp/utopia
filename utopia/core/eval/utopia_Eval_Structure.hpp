@@ -13,9 +13,8 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build_from_structure(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr())
+            Eval<Left,  Traits>::apply(expr.left()).build_from_structure(
+                Eval<Right, Traits>::apply(expr.right().expr())
             );
 
             UTOPIA_TRACE_END(expr);

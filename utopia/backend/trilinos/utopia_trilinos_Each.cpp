@@ -6,9 +6,8 @@
 
 namespace utopia {
 
-    template<>
     template<class Fun>
-    void Each<TpetraMatrix, 2, FillType::SPARSE>::apply(TpetraMatrix &mat, Fun fun)
+    void TpetraMatrixEach::apply(TpetraMatrix &mat, Fun fun)
     {
         auto r = row_range(mat);
 
@@ -31,9 +30,8 @@ namespace utopia {
         }
     }
 
-    template<>
     template<class Fun>
-    void Each<TpetraMatrix, 2, FillType::SPARSE>::apply_transform(TpetraMatrix &mat, Fun fun)
+    void TpetraMatrixEach::apply_transform(TpetraMatrix &mat, Fun fun)
     {
         auto rr = row_range(mat);
         if(rr.empty()) return;
@@ -59,8 +57,7 @@ namespace utopia {
         }
     }
 
-    template<>
-    void Each<TpetraMatrix, 2, FillType::SPARSE>::apply_read(const TpetraMatrix &mat, std::function<void(const Scalar &)> &fun)
+    void TpetraMatrixEach::apply_read(const TpetraMatrix &mat, std::function<void(const Scalar &)> &fun)
     {
         //FIXME make performance version
         apply_read(mat, [&fun](const SizeType i, const SizeType j, const Scalar val) {
@@ -71,9 +68,8 @@ namespace utopia {
         });
     }
 
-    template<>
     template<class Fun>
-    void Each<TpetraMatrix, 2, FillType::SPARSE>::apply_read(const TpetraMatrix &mat, Fun fun)
+    void TpetraMatrixEach::apply_read(const TpetraMatrix &mat, Fun fun)
     {
         auto rr = row_range(mat);
         if(rr.empty()) return;
@@ -99,8 +95,7 @@ namespace utopia {
         }
     }
 
-    template<int FILL_TYPE>
-    void Each<TpetraVector, 1, FILL_TYPE>::apply_read(const TpetraVector &v, std::function<void(const Scalar &)> &fun)
+    void TpetraVectorEach::apply_read(const TpetraVector &v, std::function<void(const Scalar &)> &fun)
     {
         auto impl = raw_type(v);
         auto view = impl->getLocalView<Kokkos::HostSpace>();
@@ -116,9 +111,8 @@ namespace utopia {
         );
     }
 
-    template<int FILL_TYPE>
     template<class Fun>
-    void Each<TpetraVector, 1, FILL_TYPE>::apply_read(const TpetraVector &v, Fun fun)
+    void TpetraVectorEach::apply_read(const TpetraVector &v, Fun fun)
     {
         auto impl = raw_type(v);
         auto view = impl->getLocalView<Kokkos::HostSpace>();
@@ -135,9 +129,8 @@ namespace utopia {
         );
     }
 
-    template<int FILL_TYPE>
     template<class Fun>
-    void Each<TpetraVector, 1, FILL_TYPE>::apply_write(TpetraVector &v, Fun fun)
+    void TpetraVectorEach::apply_write(TpetraVector &v, Fun fun)
     {
         auto impl = raw_type(v);
         auto view = impl->getLocalView<Kokkos::HostSpace>();
@@ -154,9 +147,8 @@ namespace utopia {
         );
     }
 
-    template<int FILL_TYPE>
     template<class Fun>
-    void Each<TpetraVector, 1, FILL_TYPE>::apply_transform(const TpetraVector &in, TpetraVector &out, Fun fun)
+    void TpetraVectorEach::apply_transform(const TpetraVector &in, TpetraVector &out, Fun fun)
     {
         const auto r = range(out);
 
