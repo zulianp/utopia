@@ -35,6 +35,14 @@ namespace utopia {
     };
 
     template<class Scalar>
+    class KokkosOp<Scalar, Divides> {
+    public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            return a / b;
+        }
+    };
+
+    template<class Scalar>
     class KokkosOp<Scalar, IsNaNOrInf> {
     public:
         KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &val) {

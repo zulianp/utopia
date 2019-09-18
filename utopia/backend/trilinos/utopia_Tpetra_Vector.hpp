@@ -9,6 +9,10 @@
 #include "utopia_Tensor.hpp"
 #include "utopia_Writable.hpp"
 #include "utopia_Constructible.hpp"
+#include "utopia_Reducible.hpp"
+#include "utopia_ElementWiseOperand.hpp"
+#include "utopia_Transformable.hpp"
+#include "utopia_Comparable.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -20,15 +24,19 @@
 #include <Tpetra_CrsMatrix.hpp>
 
 #include "utopia_trilinos_Traits.hpp"
+#include "utopia_trilinos_Communicator.hpp"
 
 #include <memory>
 
 namespace utopia {
 
     class TpetraVector : 
+    public ElementWiseOperand<TpetraVector>,
+    public Transformable<TpetraScalar>,
     public Tensor<TpetraVector, 1>,
-    public Constructible<TpetraScalar, TpetraSizeType, 1>
-
+    public Constructible<TpetraScalar, TpetraSizeType, 1>,
+    public Reducible<TpetraScalar>,
+    public Comparable<TpetraVector>
     {
     public:
 
@@ -100,8 +108,8 @@ namespace utopia {
 
 
         ////////////////////////////////
-
-        TpetraVector()
+        TpetraVector(const TrilinosCommunicator &comm = Tpetra::getDefaultComm())
+        : comm_(comm)
         {}
 
         ~TpetraVector()
@@ -145,8 +153,86 @@ namespace utopia {
         //////////////////////////////// OVERRIDES for Constructible ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
 
-        // virtual void values(const SizeType &s, const Scalar &val) 
+        void values(const SizeType &s, const Scalar &val) override
+        {
+            assert(false && "IMPLEMENT");
+        } 
 
+
+        /////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////// OVERRIDES for Reducible ////////////////////
+        /////////////////////////////////////////////////////////////////////////////////
+
+        inline Scalar reduce(const Plus &) const override
+        {
+            return sum();
+        }
+
+        inline Scalar reduce(const Min &)  const override
+        {
+            return min();
+        }
+
+        inline Scalar reduce(const Max &)  const override
+        {
+            return max();
+        }
+
+        Scalar sum() const override;
+        Scalar min() const override;
+        Scalar max() const override;
+
+        /////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////// OVERRIDES for ElementWiseOperand ////////////////////
+        /////////////////////////////////////////////////////////////////////////////////
+
+        void e_mul(const TpetraVector &other) override
+        {
+            raw_type()->elementWiseMultiply(
+                1.,
+                *raw_type(),
+                *other.raw_type(),
+                0.
+            );
+        }
+
+        void e_div(const TpetraVector &other) override
+        {
+            KokkosEvalBinary<TpetraVector, Divides>::eval(*this, Divides(), other, *this);
+        }
+
+        void e_min(const TpetraVector &other) override
+        {
+            KokkosEvalBinary<TpetraVector, Min>::eval(*this, Min(), other, *this);
+        }
+
+        void e_max(const TpetraVector &other) override
+        {
+            KokkosEvalBinary<TpetraVector, Max>::eval(*this, Max(), other, *this);
+        }
+
+        /////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////// OVERRIDES for Transformable ////////////////////
+        /////////////////////////////////////////////////////////////////////////////////
+
+
+        void transform(const Sqrt &) override;
+        void transform(const Pow2 &) override;
+        void transform(const Log &)  override;
+        void transform(const Exp &)  override;
+        void transform(const Cos &)  override;
+        void transform(const Sin &)  override;
+        void transform(const Abs &)  override;
+        void transform(const Minus &) override;
+
+        void transform(const Pow &p)  override;
+        void transform(const Reciprocal<TpetraScalar> &f) override;
+
+        /////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////// OVERRIDES for Comparable ////////////////////
+        /////////////////////////////////////////////////////////////////////////////////
+
+        bool equals(const TpetraVector &other, const Scalar &tol = 0.0) const override;
 
         //////////////////////////////////////////
         //API functions
@@ -304,7 +390,7 @@ namespace utopia {
 
             // if(communicator()->getSize() == 1) {
 
-                auto n = data.size();
+                std::size_t n = data.size();
                 auto out_data = out.implementation().getDataNonConst();
 
                 for(std::size_t i = 0; i < n; ++i) {
@@ -358,23 +444,23 @@ namespace utopia {
             free_view();
         }
 
-        inline void write_lock(WriteMode mode)
+        inline void write_lock(const WriteMode &mode = utopia::AUTO)
         {
             if(mode != GLOBAL_ADD || mode == GLOBAL_INSERT) {
                 make_view();
             }
         }
 
-        void write_unlock(WriteMode mode);
+        void write_unlock(const WriteMode &mode = utopia::AUTO);
 
-        inline void read_and_write_lock()
+        inline void read_and_write_lock(const WriteMode &mode = utopia::AUTO)
         {
             // write_data_ = implementation().getDataNonConst();
             // read_only_data_ = write_data_;
             make_view();
         }
 
-        inline void read_and_write_unlock()
+        inline void read_and_write_unlock(const WriteMode &mode = utopia::AUTO)
         {
             // write_data_ = Teuchos::ArrayRCP<Scalar>();
             // read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
@@ -417,9 +503,7 @@ namespace utopia {
           return implementation().normInf();
         }
 
-        Scalar sum() const;
-        Scalar min() const;
-        Scalar max() const;
+ 
 
         bool is_nan_or_inf() const;
 
@@ -434,18 +518,18 @@ namespace utopia {
         }
 
 
-        inline void e_mul(const TpetraVector &right, TpetraVector &result) const
-        {
-            //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
-            result.values(this->communicator(), local_size().get(0), size().get(0), 0.);
+        // inline void e_mul(const TpetraVector &right, TpetraVector &result) const
+        // {
+        //     //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
+        //     result.values(this->communicator(), local_size().get(0), size().get(0), 0.);
 
-            result.implementation().elementWiseMultiply(
-                1.,
-                this->implementation(),
-                right.implementation(),
-                0.
-            );
-        }
+        //     result.implementation().elementWiseMultiply(
+        //         1.,
+        //         this->implementation(),
+        //         right.implementation(),
+        //         0.
+        //     );
+        // }
 
         template<typename Op>
         inline void apply(const Op op)
@@ -526,6 +610,8 @@ namespace utopia {
         }
 
     private:
+
+        TrilinosCommunicator comm_;
         rcpvector_type vec_;
         rcpvector_type ghosted_vec_;
         // Teuchos::ArrayRCP<const Scalar> read_only_data_;

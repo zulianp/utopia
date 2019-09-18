@@ -7,12 +7,11 @@
 #include "utopia_Logger.hpp"
 #include "utopia_Tensor.hpp"
 #include "utopia_Tpetra_Vector.hpp"
+#include "utopia_trilinos_Communicator.hpp"
 
 
 #include <Tpetra_CrsMatrix_decl.hpp>
 #include <Tpetra_Map_decl.hpp>
-
-
 #include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
@@ -22,7 +21,8 @@
 namespace utopia {
     //template<class NodeType>
     class TpetraMatrix :
-    public Tensor<TpetraMatrix, 2>
+    public Tensor<TpetraMatrix, 2>,
+    public SparseConstructible<TpetraScalar, TpetraSizeType>
     {
     public:
 
@@ -96,22 +96,99 @@ namespace utopia {
          ~TpetraMatrix()
          {}
 
+
+        ////////////////////////////////////////////////////////////////////
+        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
+        ////////////////////////////////////////////////////////////////////
+
+         using Super    = utopia::Tensor<TpetraMatrix, 2>;
+         using Super::Super;
+
+         template<class Expr>
+         TpetraMatrix(const Expression<Expr> &expr)
+        : owner_(true)
+         {
+            static_assert(!std::is_same<Expr, Tensor<TpetraVector, 1>>::value, "cannot assign a vector to a matrix");
+             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+             Super::construct_eval(expr.derived());
+         }
+
+         template<class Expr>
+         inline TpetraMatrix &operator=(const Expression<Expr> &expr)
+         {
+             Super::assign_eval(expr.derived());
+             return *this;
+         }
+
+         void assign(const TpetraMatrix &other) override
+         {
+             copy(other);
+         }
+
+         void assign(TpetraMatrix &&other) override
+         {
+            owner_ = std::move(other.owner_);
+            comm_ = std::move(other.comm_);
+            mat_ = std::move(other.mat_);
+         }
+
+        
+        void copy(const TpetraMatrix &other)
+        {
+            if(this == &other) return;
+
+            if(other.is_null()) {
+                mat_.reset();
+                owner_ = true;
+                return;
+            }
+
+            mat_ = other.mat_->clone(other.mat_->getNode());
+            owner_ = true;
+        }
+
+
+        void select(
+            const IndexSet &row_index, 
+            const IndexSet &col_index, 
+            TpetraMatrix &result) const override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+        /////////////////////////////////////////////////////////////
+        //OVERRIDES for SparseConstructible
+        /////////////////////////////////////////////////////////////
+
+        inline void identity(const Size &s, const Scalar &diag = 1.0) override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+        ///Specialize for sparse matrices
+        inline void sparse(const Size &s, const SizeType &/*nnz*/) override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+        ///Specialize for sparse matrices
+        inline void local_sparse(const Size &s, const SizeType &/*nnz*/) override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+        inline void local_identity(const Size &s, const Scalar &diag = 1.0) override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
         /////////////////////////////////////////////////////////////
         //Overloading Operators
         /////////////////////////////////////////////////////////////
 
         TpetraMatrix &operator=(const TpetraMatrix &other)
         {
-            if(this == &other) return *this;
-
-            if(other.is_null()) {
-                mat_.reset();
-                owner_ = true;
-                return *this;
-            }
-
-            mat_ = other.mat_->clone(other.mat_->getNode());
-            owner_ = true;
+            copy(other);
             return *this;
         }
 
@@ -217,6 +294,11 @@ namespace utopia {
             }
         }
 
+        inline bool empty() const
+        {
+            return is_null();
+        }
+
         inline Size local_size() const
         {
             if(is_null()) {
@@ -243,13 +325,13 @@ namespace utopia {
             //TODO?
         }
 
-        inline void write_lock()
+        inline void write_lock(const WriteMode &mode = utopia::AUTO)
         {
             //TODO?
             implementation().resumeFill();
         }
 
-        inline void write_unlock()
+        inline void write_unlock(const WriteMode &mode = utopia::AUTO)
         {
             this->finalize();
         }
@@ -337,8 +419,9 @@ namespace utopia {
         void axpy(const Scalar alpha, const TpetraMatrix &x);
         void transpose(TpetraMatrix &mat) const;
 
-        void get_diag(TpetraVector &d) const;
-        void init_diag(const TpetraVector &d);
+        void build_diag(TpetraVector &d) const;
+        void diag(const TpetraVector &d);
+        void diag(const TpetraMatrix &d);
 
         inline void scale(const Scalar alpha)
         {
@@ -408,6 +491,7 @@ namespace utopia {
         }
 
     private:
+        TrilinosCommunicator comm_;
         rcp_crs_mat_type  mat_;
         bool              owner_;
 

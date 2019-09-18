@@ -174,13 +174,13 @@ namespace utopia {
 	}
 
 	template<class T, int Order>
-	inline auto &raw_type(const Tensor<T, Order> &t)
+	inline auto raw_type(const Tensor<T, Order> &t) -> decltype( t.derived().raw_type() ) &
 	{
 	    return t.derived().raw_type();
 	}
 
 	template<class T, int Order>
-	inline auto &raw_type(Tensor<T, Order> &t)
+	inline auto raw_type(Tensor<T, Order> &t) -> decltype( t.derived().raw_type() ) &
 	{
 	    return t.derived().raw_type();
 	}

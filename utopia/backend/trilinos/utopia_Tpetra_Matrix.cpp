@@ -382,7 +382,7 @@ namespace utopia {
         write_unlock();
     }
 
-    void TpetraMatrix::get_diag(TpetraVector &d) const
+    void TpetraMatrix::build_diag(TpetraVector &d) const
     {
         const bool is_row_min = this->size().get(0) <= this->size().get(1);
         GO n = (is_row_min)? this->size().get(0) : this->size().get(1);
@@ -400,7 +400,12 @@ namespace utopia {
         implementation().getLocalDiagCopy(d.implementation());
     }
 
-    void TpetraMatrix::init_diag(const TpetraVector &d)
+    void TpetraMatrix::diag(const TpetraMatrix &d)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraMatrix::diag(const TpetraVector &d)
     {
         auto ls = d.local_size().get(0);
         auto gs = d.size().get(0);

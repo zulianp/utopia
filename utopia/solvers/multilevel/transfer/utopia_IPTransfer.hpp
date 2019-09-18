@@ -190,7 +190,7 @@
             if(empty(P_neg_))
             {
                 P_neg_ = (*_Pr); 
-                chop_bigger_than(P_neg_, -1e-13); 
+                chop_greater_than(P_neg_, -1e-13); 
             }
                 
             x_new = (P_pos_*x_pos) + (P_neg_*x_neg); 

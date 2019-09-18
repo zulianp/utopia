@@ -29,7 +29,7 @@ namespace utopia {
 
 
     template<class T>
-    auto backend_info(const T &)
+    const BackendInfo &backend_info(const T &)
     {
         return Traits<T>::backend_info();
     }

@@ -28,7 +28,7 @@ namespace utopia {
 			return new PetscCommunicator(get());
 		}
 
-		inline MPI_Comm get() const override
+		inline MPI_Comm get() const //override
 		{
 			return comm_;
 		}

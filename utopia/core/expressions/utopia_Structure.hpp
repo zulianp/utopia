@@ -2,7 +2,7 @@
 #define UTOPIA_STRUCTURE_HPP
 
 #include "utopia_Expression.hpp"
-#include "utopia_Wrapper.hpp"
+#include "utopia_Tensor.hpp"
 
 namespace utopia {
 
@@ -32,16 +32,16 @@ namespace utopia {
         return size(expr.expr());
     }
 
-    template<class Tensor>
-    Structure<Wrapper<Tensor, 2>> structure(const Wrapper<Tensor, 2> &mat)
+    template<class Derived>
+    Structure<Tensor<Derived, 2>> structure(const Tensor<Derived, 2> &mat)
     {
-        return Structure<Wrapper<Tensor, 2>>(mat);
+        return Structure<Tensor<Derived, 2>>(mat);
     }
 
-    template<class Tensor>
-    Structure<Wrapper<Tensor, 1>> structure(const Wrapper<Tensor, 1> &mat)
+    template<class Derived>
+    Structure<Tensor<Derived, 1>> structure(const Tensor<Derived, 1> &mat)
     {
-        return Structure<Wrapper<Tensor, 1>>(mat);
+        return Structure<Tensor<Derived, 1>>(mat);
     }
 }
 

@@ -16,6 +16,7 @@ namespace utopia {
         using Scalar   = utopia::TpetraScalar;
         using SizeType = utopia::TpetraSizeType;
         using Matrix   = utopia::TpetraMatrix;
+        using SparseMatrix = utopia::TpetraMatrix;
         using Vector   = utopia::TpetraVector;
 
         //FIXME use Kokkos compatible wrapper

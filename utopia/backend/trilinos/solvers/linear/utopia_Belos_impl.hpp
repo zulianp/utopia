@@ -160,7 +160,7 @@ namespace utopia {
         std::string dir_prec_type = impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
         if ( direct_solver ) {
 #ifdef WITH_TRILINOS_IFPACK2
-            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, precond.implementation().implementation_ptr());
+            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, raw_type(precond));
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
@@ -179,7 +179,7 @@ namespace utopia {
 #ifdef WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
             impl_->M_muelu = MueLu::CreateTpetraPreconditioner((
-                                                                Teuchos::RCP<typename Impl::OP>) precond.implementation().implementation_ptr(),
+                                                                Teuchos::RCP<typename Impl::OP>) raw_type(precond),
                                                                impl_->param_list->sublist("MueLu", false)
                                                                );
 
@@ -295,7 +295,7 @@ namespace utopia {
         if ( direct_solver )
         {
 #ifdef WITH_TRILINOS_IFPACK2
-            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, this->get_operator()->implementation().implementation_ptr());
+            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, raw_type(*this->get_operator()));
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
@@ -313,7 +313,7 @@ namespace utopia {
         } else {
 #ifdef WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
-            impl_->M_muelu = MueLu::CreateTpetraPreconditioner(this->get_operator()->implementation().implementation_ptr(), impl_->param_list->sublist("MueLu", false));
+            impl_->M_muelu = MueLu::CreateTpetraPreconditioner(raw_type(*this->get_operator()), impl_->param_list->sublist("MueLu", false));
             assert(!impl_->M_muelu.is_null());
             std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
             std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });

@@ -16,9 +16,9 @@ namespace utopia {
 		virtual int size() const = 0;
 		virtual Communicator * clone() const = 0;
 
-#ifdef WITH_MPI
-		virtual MPI_Comm get() const = 0;
-#endif //WITH_MPI
+// #ifdef WITH_MPI
+// 		virtual MPI_Comm get() const = 0;
+// #endif //WITH_MPI
 
 	};
 
@@ -36,7 +36,7 @@ namespace utopia {
 		}
 
 #ifdef WITH_MPI
-		inline MPI_Comm get() const override 
+		inline MPI_Comm get() const //override 
 		{
 			return MPI_COMM_SELF;
 		}

@@ -30,7 +30,7 @@ namespace utopia {
 
 
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class ApplyBCToSystem {
+    class ApplyEqualityConstraintsToSystem {
     public:
         template<class IndexSetT>
         void apply(Matrix &, Vector &, Vector&, const IndexSetT &)
@@ -47,7 +47,7 @@ namespace utopia {
         Tensor<VecDerived, 1> &rhs,
         const typename Traits<MatDerived>::IndexSet &constrained_idx)
     {
-        ApplyBCToSystem<MatDerived, VecDerived>::apply(A.derived(), x.derived(), rhs.derived(), constrained_idx);
+        ApplyEqualityConstraintsToSystem<MatDerived, VecDerived>::apply(A.derived(), x.derived(), rhs.derived(), constrained_idx);
     }
 
     template<class Matrix, class Vector>
@@ -63,7 +63,6 @@ namespace utopia {
         //index.reserve(local_size(indicator).get(0));
 
         {
-            //Write<IndexSet> w(index);
             each_read(indicator.derived(), [&index](const SizeType i, const Scalar value) {
                 if(value == 1.) {
                     index.push_back(i);
@@ -98,28 +97,42 @@ namespace utopia {
         Backend<typename Traits<Matrix>::Scalar, Traits<Matrix>::Backend>::Instance().chop(A.implementation(), eps);
     }
 
-
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
-    class ChopSmallerThan
-    {
-        public:
-            static void apply(const Tensor<Matrix, 2> &/*x*/, const double & /*eps*/)
-            {
-                static_assert(Traits<Matrix>::Backend<HOMEMADE, "ChopSmallerThan implemented just for petsc backend.");
-            }
+    class ChopSmallerThan {
+    public:
+        using Scalar   = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Matrix>::SizeType;
+
+        static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
+        {
+            // static_assert(Traits<Matrix>::Backend<HOMEMADE, "ChopSmallerThan implemented just for petsc backend.");
+            each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &value) -> Scalar {
+                if(value < eps) {
+                    return 0.0;
+                } else {
+                    return value;
+                }
+            });
+        }
     };
 
-
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
-    class ChopGreaterThan
-    {
-        public:
-            static void apply(const Tensor<Matrix, 2> & /*x*/, const double & /*eps*/)
-            {
-                static_assert(Traits<Matrix>::Backend<HOMEMADE, "ChopGreaterThan implemented just for petsc backend.");
-            }
-    };
+    class ChopGreaterThan {
+    public:
+        using Scalar   = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
+        static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
+        {
+           each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &value) -> Scalar {
+               if(value > eps) {
+                   return 0.0;
+               } else {
+                   return value;
+               }
+           });
+        }
+    };
 
     template<class Matrix>
     void chop_smaller_than(Tensor<Matrix, 2> &A, const double eps)
@@ -129,7 +142,7 @@ namespace utopia {
 
 
     template<class Matrix>
-    void chop_bigger_than(Tensor<Matrix, 2> &A, const double eps)
+    void chop_greater_than(Tensor<Matrix, 2> &A, const double eps)
     {
         ChopGreaterThan<Matrix>::apply(A, eps);
     }    

@@ -1254,7 +1254,7 @@ namespace utopia {
         DSMatrixd M_n = M;  
 
         chop_smaller_than(M_p, 1e-15); 
-        chop_bigger_than(M_n, 1e-15); 
+        chop_greater_than(M_n, 1e-15); 
 
         M_p += M_n; 
         utopia_test_assert(approxeq(M_p, M));        

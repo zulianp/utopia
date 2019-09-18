@@ -6,6 +6,7 @@
 #include "utopia.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
+#include "utopia_trilinos_Each.hpp"
 
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_MultiLevelTestProblem.hpp"
@@ -117,7 +118,7 @@ namespace utopia {
         // rm->describe(*out);
         // dm->describe(*out);
 
-        utopia_test_assert(P.implementation().is_valid(true));
+        utopia_test_assert(P.is_valid(true));
     }
 
     void trilinos_accessors()
@@ -496,12 +497,12 @@ namespace utopia {
         build_rectangular_matrix(n, m, P);
 
         TSMatrixd R_2 = transpose(P) * A;
-        utopia_test_assert(R_2.implementation().is_valid(true));
+        utopia_test_assert(R_2.is_valid(true));
 
         //For the moment this is computing (transpose(P) * A) * P
         TSMatrixd R  = utopia::ptap(A, P); //equiv: transpose(P) * A * P;
 
-        utopia_test_assert(R.implementation().is_valid(true));
+        utopia_test_assert(R.is_valid(true));
 
 #ifdef WITH_PETSC
         //using petsc to test trilinos
@@ -644,7 +645,7 @@ namespace utopia {
                 //apply transpose for restriction
                 transfers.push_back( std::make_shared<IPTransferT>(interp_ptr) );
             }
-            // utopia_test_assert(interp_ptr->implementation().is_valid(true));
+            // utopia_test_assert(interp_ptr->is_valid(true));
         }
 
         multigrid.set_transfer_operators(transfers);

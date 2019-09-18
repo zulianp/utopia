@@ -15,6 +15,62 @@
 // maybe this can help at least for assembly #include <Tpetra_MultiVectorFiller.hpp> or FEMultiVector
 namespace utopia {
 
+    template<class Op>
+    void aux_transform(TpetraVector &v, const Op &op)
+    {
+        assert(false && "IMPEMENT ME");
+    }
+
+    void TpetraVector::transform(const Sqrt &op)
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Pow2 &op)
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Log &op) 
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Exp &op) 
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Cos &op) 
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Sin &op) 
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Abs &op) 
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Minus &op)
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Pow &op) 
+    {
+        aux_transform(*this, op);
+    }
+
+    void TpetraVector::transform(const Reciprocal<TpetraScalar> &op)
+    {
+        aux_transform(*this, op);
+    }
+
     void TpetraVector::add_vector(
         const std::vector<GO> &indices,
         const std::vector<Scalar> &values)
@@ -265,7 +321,7 @@ namespace utopia {
     }
 
 
-    void TpetraVector::write_unlock(WriteMode mode)
+    void TpetraVector::write_unlock(const WriteMode &mode)
     {
         switch(mode) {
             case utopia::GLOBAL_ADD: {
@@ -285,6 +341,13 @@ namespace utopia {
 
         // write_data_ = Teuchos::ArrayRCP<Scalar>();
         free_view();
+    }
+
+
+    bool TpetraVector::equals(const TpetraVector &other, const Scalar &tol) const
+    {
+        assert(false && "IMPLEMENT ME");
+        return false;
     }
 
 }

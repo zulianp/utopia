@@ -41,6 +41,8 @@ namespace utopia {
         using SizeType = std::size_t;
 
         using Constructible<T, std::size_t, 1>::values;
+        using iterator = typename Entries::iterator;
+        using const_iterator = typename Entries::iterator;
 
        ////////////////////////////////////////////////////////////////////
        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -132,12 +134,11 @@ namespace utopia {
         	return &entries_[0];
         }
 
+        inline iterator begin() { return entries_.begin(); }
+        inline iterator end()   { return entries_.end(); }
 
-        auto begin() { return entries_.begin(); }
-        auto end()   { return entries_.end(); }
-
-        auto begin() const { return entries_.begin(); }
-        auto end() const { return entries_.end(); }
+        inline const_iterator begin() const { return entries_.begin(); }
+        inline const_iterator end()   const { return entries_.end(); }
 
         Entries &entries()
         {
