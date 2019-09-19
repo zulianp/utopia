@@ -50,7 +50,7 @@ namespace utopia {
 		using SizeType = SizeType_;
 
 		virtual ~Constructible() {}
-		virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
+		// virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
 
 		///Specialize for sparse matrices
 		virtual void sparse(const Size &s, const SizeType &/*nnz*/) override
@@ -69,7 +69,7 @@ namespace utopia {
 
 
 		virtual void zeros(const Size &s) override { values(s, 0.0); }
-		virtual void values(const Size &s, const Scalar &val) = 0;
+		// virtual void values(const Size &s, const Scalar &val) = 0;
 		virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) override { identity(s, diag); }
 
 		virtual void local_zeros(const Size &s) override { local_values(s, 0.0); }

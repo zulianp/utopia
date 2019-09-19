@@ -19,7 +19,7 @@ namespace utopia {
         : expr_(expr), fun_(fun)
         {}
 
-        std::string getClass() const override { return "Filter<" + expr_.getClass() + ">"; }
+        std::string get_class() const override { return "Filter<" + expr_.get_class() + ">"; }
 
         inline const Expr &expr() const
         {

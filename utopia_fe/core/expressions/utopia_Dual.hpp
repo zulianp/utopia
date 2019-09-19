@@ -13,7 +13,7 @@ namespace utopia {
         static const int Order = Expr::Order;
         typedef typename Expr::Scalar Scalar;
 
-        std::string getClass() const override { return "Dual<" + expr_.getClass() + ">"; }
+        std::string get_class() const override { return "Dual<" + expr_.get_class() + ">"; }
 
         inline const Expr &expr() const
         {

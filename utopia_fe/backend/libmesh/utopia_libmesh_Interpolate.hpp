@@ -200,7 +200,7 @@ namespace utopia {
             return data_->coeff_;
         }
 
-        inline std::string getClass() const override {
+        inline std::string get_class() const override {
             return "Interpolate";
         }
 

@@ -20,7 +20,7 @@ namespace utopia {
         typedef utopia::BasisFunction< TrialFunction<FunctionSpaceT>, FunctionSpaceT > super;
         using super::super;
 
-        inline std::string getClass() const override { return "TrialFunction"; }
+        inline std::string get_class() const override { return "TrialFunction"; }
     };
 
     template<class Derived>

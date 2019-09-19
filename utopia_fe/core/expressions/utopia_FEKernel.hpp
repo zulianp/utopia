@@ -22,7 +22,7 @@ namespace utopia {
             fun_(std::forward<Args...>(args...));
         }
 
-        std::string getClass() const override
+        std::string get_class() const override
         {
             return "FEKernel";
         }

@@ -24,7 +24,7 @@ namespace utopia {
         : fun(fun)
         {}
 
-        std::string getClass() const { return "ContextFunction"; }
+        std::string get_class() const { return "ContextFunction"; }
 
     private:
         Fun fun;

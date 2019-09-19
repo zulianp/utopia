@@ -14,7 +14,7 @@ namespace utopia {
     template<typename Scalar, int Dim>
     class LibMeshShape : public moonolith::Shape<Scalar, Dim-1, Dim> {
     public:
-        using Vector  = utopia::Vector<Scalar, Dim>;
+        using Vector  = moonolith::Vector<Scalar, Dim>;
         using CoPoint = moonolith::Vector<Scalar, Dim>;
         using Point   = moonolith::Vector<Scalar, Dim-1>;
         using Ray     = moonolith::Ray<Scalar, Dim>;

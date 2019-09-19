@@ -17,9 +17,9 @@ namespace utopia {
 
         //FIXME put in utopia
         template<class T>
-        static bool is_ghosted(const Wrapper<T, 1> &vec)
+        static bool is_ghosted(const Tensor<T, 1> &vec)
         {
-            return vec.implementation().has_ghosts();
+            return vec.derived().has_ghosts();
         }
 
         template<class Expr>
@@ -95,7 +95,7 @@ namespace utopia {
             auto s_m = size(mat);
 
             //FIXME trilinos backend is buggy
-            if(GlobalMatrix::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+            if(Traits<GlobalMatrix>::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
                 auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
                     *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
@@ -137,8 +137,8 @@ namespace utopia {
                         reinit_context_on(expr, (*it)->id());
                     }
 
-                    el_mat.implementation().zero();
-                    el_vec.implementation().zero();
+                    el_mat.set(0.0);
+                    el_vec.set(0.0);
 
                     FormEvaluator<LIBMESH_TAG> eval;
                     eval.eval(expr, el_mat, el_vec, ctx_);
@@ -149,11 +149,13 @@ namespace utopia {
                     if(ctx_.has_assembled()) {
                         if(apply_constraints) {
                             // std::cout<<"I am here heterogenously_constrain_element_matrix_and_vector"<<std::endl;
-                            dof_map.heterogenously_constrain_element_matrix_and_vector(
-                                el_mat.implementation(),
-                                el_vec.implementation(),
-                                dof_indices
-                            );
+                            // dof_map.heterogenously_constrain_element_matrix_and_vector(
+                            //     el_mat,
+                            //     el_vec,
+                            //     dof_indices
+                            // );
+
+                            assert(false);
 
                         } else {
                             //std::cout<<"Adaptivity::constrain_matrix_and_vector"<<std::endl;
@@ -161,8 +163,8 @@ namespace utopia {
                                 *it,
                                 dof_map,
                                 constraints,
-                                el_mat.implementation(),
-                                el_vec.implementation(),
+                                el_mat,
+                                el_vec,
                                 dof_indices
                             );
                         }
@@ -175,13 +177,13 @@ namespace utopia {
                         // utopia::disp("el_vec");
                         // utopia::disp(el_vec);
 
-                        add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-                        add_vector(el_vec.implementation(), dof_indices, temp_vec);
+                        add_matrix(el_mat, dof_indices, dof_indices, mat);
+                        add_vector(el_vec, dof_indices, temp_vec);
                     }
                 }
             }
 
-            if(GlobalVector::Backend == utopia::TRILINOS) {
+            if(Traits<GlobalVector>::Backend == utopia::TRILINOS) {
                 vec = 1. * temp_vec; //avoid copying
             } else {
                 vec = std::move(temp_vec);
@@ -225,7 +227,7 @@ namespace utopia {
             );
 
             //FIXME trilinos backend is buggy
-            if(GlobalMatrix::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+            if(Traits<GlobalMatrix>::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
                 SizeType nnz_x_row = 0;
                 if(!dof_map.get_n_nz().empty()) {
                     // nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
@@ -254,7 +256,7 @@ namespace utopia {
                             reinit_context_on(expr, (*it)->id());
                         }
 
-                        el_mat.implementation().zero();
+                        el_mat.set(0.0);
 
                         FormEvaluator<LIBMESH_TAG> eval;
                         eval.eval(expr, el_mat, ctx_, true);
@@ -262,10 +264,10 @@ namespace utopia {
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
 
-                        Adaptivity::constrain_matrix(*it, dof_map, constraints, el_mat.implementation(), dof_indices);
+                        Adaptivity::constrain_matrix(*it, dof_map, constraints, el_mat, dof_indices);
 
                         if(ctx_.has_assembled()) {
-                            add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+                            add_matrix(el_mat, dof_indices, dof_indices, mat);
                         }
                     }
                 }
@@ -331,7 +333,7 @@ namespace utopia {
                             reinit_context_on(expr, (*it)->id());
                         }
 
-                        el_vec.implementation().zero();
+                        el_vec.set(0.0);
 
                         FormEvaluator<LIBMESH_TAG> eval;
                         eval.eval(expr, el_vec, ctx_, true);
@@ -339,16 +341,16 @@ namespace utopia {
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
 
-                        Adaptivity::constrain_vector(*it, dof_map, constraints, el_vec.implementation(), dof_indices);
+                        Adaptivity::constrain_vector(*it, dof_map, constraints, el_vec, dof_indices);
 
                         if(ctx_.has_assembled()) {
-                            add_vector(el_vec.implementation(), dof_indices, temp_vec);
+                            add_vector(el_vec, dof_indices, temp_vec);
                         }
                     }
                 }
             }
 
-            if(GlobalVector::Backend == utopia::TRILINOS) {
+            if(Traits<GlobalVector>::Backend == utopia::TRILINOS) {
                 vec = 1. * temp_vec;
             } else {
                 vec = std::move(temp_vec);

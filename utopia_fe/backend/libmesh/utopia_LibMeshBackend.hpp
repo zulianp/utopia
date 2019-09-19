@@ -66,12 +66,13 @@ namespace utopia {
     void apply_boundary_conditions(libMesh::DofMap &dof_map, UVector &vec);
 
     template<class Vector>
-    void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
-    {
+    void mark_constrained_dofs(libMesh::DofMap &dof_map, Tensor<Vector, 1> &t_vec)
+    {   
+        auto &vec = t_vec.derived();
         vec = local_zeros(dof_map.n_local_dofs());
         const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
-        Write<Wrapper<Vector, 1>> w_v(vec);
+        Write<Vector> w_v(vec);
 
         if(has_constaints) {
             Range r = range(vec);

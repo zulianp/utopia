@@ -20,11 +20,11 @@ namespace utopia {
         }
     };
 
-    template<class Tensor, int Order, class Traits, int Backend, int IsQuadData>
-    class FEEval< Wrapper<Tensor, Order>, Traits, Backend, IsQuadData> {
+    template<class Derived, int Order, class Traits, int Backend, int IsQuadData>
+    class FEEval< Tensor<Derived, Order>, Traits, Backend, IsQuadData> {
     public:
         //default fallback on eval if does not exists
-        inline static const Wrapper<Tensor, Order> &apply(const Wrapper<Tensor, Order> &expr, const AssemblyContext<Backend> &)
+        inline static const Tensor<Derived, Order> &apply(const Tensor<Derived, Order> &expr, const AssemblyContext<Backend> &)
         {
             return expr;
         }

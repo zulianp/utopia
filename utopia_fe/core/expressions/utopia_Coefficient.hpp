@@ -30,7 +30,7 @@ namespace utopia {
             return value_;
         }
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
             return "ConstantCoefficient" + std::to_string(Order);
         }
@@ -87,7 +87,7 @@ namespace utopia {
             result = value_;
         }
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
             return "ConstantCoefficient0";
         }
@@ -101,8 +101,8 @@ namespace utopia {
     }
 
     template<class T, int Order>
-    inline ConstantCoefficient<Wrapper<T, Order> , Order> coeff(const Wrapper<T, Order> &expr) {
-        return ConstantCoefficient<Wrapper<T, Order>, Order>(expr);
+    inline ConstantCoefficient<Tensor<T, Order> , Order> coeff(const Tensor<T, Order> &expr) {
+        return ConstantCoefficient<Tensor<T, Order>, Order>(expr);
     }
 
 
@@ -184,7 +184,7 @@ namespace utopia {
                 fun_(p, result);
             }
 
-            inline std::string getClass() const override
+            inline std::string get_class() const override
             {
                 return "FunctionCoefficient" + std::to_string(Order);
             }
@@ -225,7 +225,7 @@ namespace utopia {
             }
 
 
-            inline std::string getClass() const override
+            inline std::string get_class() const override
             {
                 return "FunctionCoefficient0";
             }

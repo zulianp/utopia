@@ -21,13 +21,13 @@ namespace utopia {
 #else
         inline static int type(const Expr &expr,  const AssemblyContext &)
         {
-            std::cout << "Unhandled FunctionalTraits type for " <<  expr.getClass() << std::endl;
+            std::cout << "Unhandled FunctionalTraits type for " <<  expr.get_class() << std::endl;
             return POLYNOMIAL_FUNCTION;
         }
 
         inline static int order(const Expr &expr, const AssemblyContext &)
         {
-            std::cout << "Unhandled FunctionalTraits order for " <<  expr.getClass() << std::endl;
+            std::cout << "Unhandled FunctionalTraits order for " <<  expr.get_class() << std::endl;
             return 0;
         }
 #endif

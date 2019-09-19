@@ -107,6 +107,7 @@ namespace utopia {
 
     void Adaptivity::constraint_matrix(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num, USparseMatrix &M, USparseMatrix &S)
     {
+        using IndexArray = Traits<USparseMatrix>::IndexArray;
         
         std::vector<SizeType> index;
 
@@ -127,7 +128,7 @@ namespace utopia {
         
         std::vector<libMesh::dof_id_type> elem_dofs;
 
-        std::vector<libMesh::dof_id_type> I(1,0), J(1,0);
+        IndexArray I(1,0), J(1,0);
 
         std::vector<double> V(1, 0);
         

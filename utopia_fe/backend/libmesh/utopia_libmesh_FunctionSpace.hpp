@@ -147,7 +147,7 @@ namespace utopia {
         inline libMesh::MeshBase &mesh() { return equation_systems_->get_mesh(); }
         inline const libMesh::MeshBase &mesh() const { return equation_systems_->get_mesh(); }
 
-        inline std::string getClass() const override {
+        inline std::string get_class() const override {
             return "LibMeshFunctionSpace";
         }
 

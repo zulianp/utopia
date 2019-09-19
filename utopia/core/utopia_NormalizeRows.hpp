@@ -10,7 +10,7 @@ namespace utopia {
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
     class NormalizeRows {
     public:
-        using Vector   = utopia::Wrapper<UTOPIA_VECTOR(Matrix), 1>;
+        using Vector   = typename Traits<Matrix>::Vector;
         using Scalar   = UTOPIA_SCALAR(Matrix);
         using SizeType = UTOPIA_SIZE_TYPE(Matrix);
 

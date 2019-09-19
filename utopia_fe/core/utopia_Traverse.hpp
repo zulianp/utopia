@@ -2,6 +2,7 @@
 #define UTOPIA_TRAVERSE_HPP
 
 #include "utopia_FEForwardDeclarations.hpp"
+#include "utopia_Tensor.hpp"
 #include <iostream>
 #include <memory>
 
@@ -14,7 +15,7 @@ namespace utopia {
     template<class Expr, class Visitor>
     inline static int traverse(Expr &expr, Visitor &visitor)
     {
-        std::cout << "[Warning] Traverse: encountered unhandled expression: " << expr.getClass() << std::endl;
+        std::cout << "[Warning] Traverse: encountered unhandled expression: " << expr.get_class() << std::endl;
         return TRAVERSE_CONTINUE;
     }
 
@@ -429,7 +430,7 @@ namespace utopia {
     }
 
     template<class T, int Order, class Visitor>
-    inline static int traverse(Wrapper<T, Order> &expr, Visitor &visitor)
+    inline static int traverse(Tensor<T, Order> &expr, Visitor &visitor)
     {
         return visitor.visit(expr);
     }
@@ -672,7 +673,7 @@ namespace utopia {
     template<class Expr, class Visitor>
     inline static int traverse(const Expr &expr, Visitor &visitor)
     {
-        std::cout << "[Warning] Encountered unhandled expression: " << expr.getClass() << std::endl;
+        std::cout << "[Warning] Encountered unhandled expression: " << expr.get_class() << std::endl;
         return TRAVERSE_CONTINUE;
     }
 
@@ -1004,7 +1005,7 @@ namespace utopia {
     }
 
     template<class T, int Order, class Visitor>
-    inline static int traverse(const Wrapper<T, Order> &expr, Visitor &visitor)
+    inline static int traverse(const Tensor<T, Order> &expr, Visitor &visitor)
     {
         return visitor.visit(expr);
     }

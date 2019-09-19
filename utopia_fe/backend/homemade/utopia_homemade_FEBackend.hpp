@@ -321,13 +321,13 @@ namespace utopia {
 
         //////////////////////////////////////////////////////////////////////////////////////////
         //Interpolate
-        template<class Tensor>
+        template<class Derived>
         static void interp_values(
-            const Interpolate<Wrapper<Tensor, 1>, TrialFunction<HMFESpace> > &interp,
+            const Interpolate<Tensor<Derived, 1>, TrialFunction<HMFESpace> > &interp,
             Vectord &element_values,
             AssemblyContext<HOMEMADE> &ctx)
         {
-            auto &c   = interp.coefficient();
+            auto &c   = interp.coefficient().derived();
             auto &f   = interp.fun();
 
             auto space_ptr = f.space_ptr();
@@ -345,17 +345,17 @@ namespace utopia {
             element_values = zeros(indices.size());
 
             Write<Vectord> w(element_values);
-            Read<Wrapper<Tensor, 1>> r(c);
+            Read<Derived> r(c);
 
             for(std::size_t i = 0; i < indices.size(); ++i) {
                 element_values.set(i, c.get(indices[i]));
             }
         }
 
-        template<class Tensor, class Space>
-        static std::vector<double> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<HOMEMADE> &ctx)
+        template<class Derived, class Space>
+        static std::vector<double> fun(const Interpolate<Tensor<Derived, 1>, TrialFunction<Space> > &interp, AssemblyContext<HOMEMADE> &ctx)
         {
-            auto &c  = interp.coefficient();
+            auto &c  = interp.coefficient().derived();
             auto &f  = interp.fun();
             auto &&g = fun(f, ctx);
 
@@ -372,10 +372,10 @@ namespace utopia {
             return ret;
         }
 
-        template<class Tensor>
-        static std::vector<Vectord> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<HMFESpace> > &interp, AssemblyContext<HOMEMADE> &ctx)
+        template<class Derived>
+        static std::vector<Vectord> grad(const Interpolate<Tensor<Derived, 1>, TrialFunction<HMFESpace> > &interp, AssemblyContext<HOMEMADE> &ctx)
         {
-            auto &c   = interp.coefficient();
+            auto &c   = interp.coefficient().derived();
             auto &f   = interp.fun();
             auto &&g = grad(f, ctx);
 
@@ -395,10 +395,10 @@ namespace utopia {
             return ret;
         }
 
-        template<class Tensor>
-        static std::vector<Matrixd> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<HMFESpace> > > &interp, AssemblyContext<HOMEMADE> &ctx)
+        template<class Derived>
+        static std::vector<Matrixd> grad(const Interpolate<Tensor<Derived, 1>, TrialFunction<ProductFunctionSpace<HMFESpace> > > &interp, AssemblyContext<HOMEMADE> &ctx)
         {
-            auto &c   = interp.coefficient();
+            auto &c   = interp.coefficient().derived();
             auto &f   = interp.fun();
             auto &&g = grad(f, ctx);
 
@@ -420,13 +420,13 @@ namespace utopia {
 
 
 
-        template<class Tensor>
+        template<class Derived>
         static void interp_values(
-            const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<HMFESpace>> > &interp,
+            const Interpolate<Tensor<Derived, 1>, TrialFunction<ProductFunctionSpace<HMFESpace>> > &interp,
             Vectord &element_values,
             AssemblyContext<HOMEMADE> &ctx)
         {
-            auto &c   = interp.coefficient();
+            auto &c   = interp.coefficient().derived();
             auto &f   = interp.fun();
 
             auto space_ptr = f.space_ptr();
@@ -453,7 +453,7 @@ namespace utopia {
             element_values = zeros(prod_indices.size());
 
             Write<Vectord> w(element_values);
-            Read<Wrapper<Tensor, 1>> r(c);
+            Read<Derived> r(c);
 
             for(std::size_t i = 0; i < prod_indices.size(); ++i) {
                 element_values.set(i, c.get(prod_indices[i]));

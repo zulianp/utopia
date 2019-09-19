@@ -11,8 +11,8 @@
 
 namespace utopia {
 
-        template<typename Scalar, int Dim>
-        using Vector = moonolith::Vector<Scalar, Dim>;
+        // template<typename Scalar, int Dim>
+        // using Vector = moonolith::Vector<Scalar, Dim>;
 
         // template<typename Scalar, int Dim>
         // class Ray {
