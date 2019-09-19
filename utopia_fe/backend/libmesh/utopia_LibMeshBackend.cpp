@@ -24,51 +24,45 @@ namespace utopia {
        std::vector<SizeType> index_local;
 
        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(V.mesh());      
- 
+
+       auto & mesh = V.mesh();
+
+       auto & dof_map = V.dof_map();
+
 
        {
-            libMesh::MeshBase::const_element_iterator it = V.mesh().active_elements_begin();
+            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
             
-            const libMesh::MeshBase::const_element_iterator end_it = V.mesh().active_elements_end();
+            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
             
             for ( ; it != end_it; ++it)
             {
                 const libMesh::Elem * ele = *it;
 
-                for(int kk=0; kk<ele->n_sides(); kk++)
+                for(int kk=0; kk<ele->n_sides(); kk++) {       
+                    auto neigh = ele->neighbor_ptr(kk);    
 
-                {             
-                    auto side = ele->build_side_ptr(kk);
-
-                    
-                    if (ele->neighbor_ptr(kk) != libMesh::remote_elem) // V.mesh().boundary_info->boundary_ids(ele,kk).size
+                    if (neigh == libmesh_nullptr && neigh != libMesh::remote_elem)
                     {
-
-                        //std::cout<<"ciao, this is b_id=>"<<V.mesh().boundary_info->boundary_ids(ele,kk).at(0)<<std::endl;
+                        auto side = ele->build_side_ptr(kk);
 
                         index_local.clear();
-
-                         //std::cout<<"side->n_nodes()"<<side->n_nodes()<<std::endl;
 
                         for (int ll=0; ll<ele->n_nodes(); ll++)
                         {
 
                            const libMesh::Node * node = ele->node_ptr(ll);
 
-
                            const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, 0);                
 
-                            if(on_boundary.count(node->id()) && V.dof_map().is_constrained_dof(node_dof)) 
+                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
                             {
                                    
-                                        index_local.push_back(node_dof);
-                                        
-                                        //utopia::disp(node_dof);
+                                index_local.push_back(node_dof);
            
                             }
 
                         }
-
 
                         if(index_local.size()==side->n_nodes())
                         {
@@ -79,12 +73,7 @@ namespace utopia {
                 }
             }
         }
-                    
-
-       
-
-      
-
+        
 
         const bool has_constaints = V.dof_map().constraint_rows_begin() != V.dof_map().constraint_rows_end();
 

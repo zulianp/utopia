@@ -53,19 +53,19 @@ namespace utopia {
 
         uint n_vars = dof_map.n_variables();
                 
-        for(uint var_num = 0; var_num < n_vars; ++var_num) 
+        // for(uint var_num = 0; var_num < n_vars; ++var_num) 
+        // {
+
+        libMesh::FEType fe_type = dof_map.variable_type(0);
+
+        fe_type.order = static_cast<libMesh::Order>(fe_type.order);
+
+        if (fe_type.order>0)
         {
 
-            libMesh::FEType fe_type = dof_map.variable_type(var_num);
-
-            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
-
-            if (fe_type.order>0)
-            {
-
-                  process_constraints(mesh_copy, dof_copy, constraints);
-            }
+              process_constraints(mesh_copy, dof_copy, constraints);
         }
+        //}
 
         std::cout << "--------------------------------------------------\n";
         std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
@@ -389,7 +389,7 @@ namespace utopia {
     void Adaptivity::process_constraints (libMesh::MeshBase &mesh, libMesh::DofMap &dof_map, libMesh::DofConstraints &_dof_constraints)
     {
 
-       std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
+    //   std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
 
        
        std::vector<SizeType> index; 
@@ -472,7 +472,7 @@ namespace utopia {
             }
         }
         
-      std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
+    //  std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
 
     }
 
@@ -643,7 +643,7 @@ namespace utopia {
                                          bool look_for_constrainees)
     {
       
-        std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
+      //  std::cout<<"Adaptivity::gather_constraints::BEGIN "<<std::endl;  
 
 
         typedef std::set<libMesh::dof_id_type> DoF_RCSet;
@@ -729,7 +729,7 @@ namespace utopia {
 
 
 
-        std::cout<<"Adaptivity::gather_constraints::END "<<std::endl; 
+     //   std::cout<<"Adaptivity::gather_constraints::END "<<std::endl; 
 
 
     }
@@ -738,7 +738,7 @@ namespace utopia {
                                                   libMesh::DofConstraints &_dof_constraints)
     {
       
-        std::cout<<"Adaptivity::add_constraints_to_send_list::BEGIN "<<std::endl; 
+        //std::cout<<"Adaptivity::add_constraints_to_send_list::BEGIN "<<std::endl; 
 
 
         if (dof_map.n_processors() == 1) return;
@@ -771,7 +771,7 @@ namespace utopia {
             }
         }       
 
-        std::cout<<"Adaptivity::add_constraints_to_send_list::END "<<std::endl;  
+        //std::cout<<"Adaptivity::add_constraints_to_send_list::END "<<std::endl;  
 
 
     }
@@ -957,14 +957,12 @@ namespace utopia {
             {
                 const libMesh::Elem * ele = *it;
 
-                for(int kk=0; kk<ele->n_sides(); kk++)
+                for(int kk=0; kk<ele->n_sides(); kk++) {       
+                    auto neigh = ele->neighbor_ptr(kk);    
 
-                {             
-                    auto side = ele->build_side_ptr(kk);
-
-                    
-                    if (ele->neighbor_ptr(kk) != libMesh::remote_elem /* && mesh.boundary_info->boundary_ids(ele,kk)<3*/)
+                    if (neigh == libmesh_nullptr && neigh != libMesh::remote_elem)
                     {
+                        auto side = ele->build_side_ptr(kk);
 
                         index_local.clear();
 
@@ -973,18 +971,16 @@ namespace utopia {
 
                            const libMesh::Node * node = ele->node_ptr(ll);
 
-
                            const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0);                
 
                             if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
                             {
                                    
-                                        index_local.push_back(node_dof);
+                                index_local.push_back(node_dof);
            
                             }
 
                         }
-
 
                         if(index_local.size()==side->n_nodes())
                         {
@@ -998,6 +994,6 @@ namespace utopia {
             
 
 
-      std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
+   //  std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
     }
 }
