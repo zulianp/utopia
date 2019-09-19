@@ -40,37 +40,37 @@ namespace utopia {
 #endif //WITH_PETSC
 
 
-#ifdef WITH_BLAS
-    void amg_with_blas()
-    {
-        Vectord rhs, x;
-        CRSMatrixd A;
+// #ifdef WITH_BLAS
+//     void amg_with_blas()
+//     {
+//         Vectord rhs, x;
+//         CRSMatrixd A;
 
-        const bool binwrite = false;
-        const std::string data_path = Utopia::instance().get("data_path");
-        const std::string folder = data_path + "/mg_blas";
-        const std::string sysfile = "system.txt";
+//         const bool binwrite = false;
+//         const std::string data_path = Utopia::instance().get("data_path");
+//         const std::string folder = data_path + "/mg_blas";
+//         const std::string sysfile = "system.txt";
 
-        read(folder + "/rhs.txt", rhs);
-        read(folder + "/lhs.txt", A);
+//         read(folder + "/rhs.txt", rhs);
+//         read(folder + "/lhs.txt", A);
 
-        x = local_zeros(local_size(rhs));
+//         x = local_zeros(local_size(rhs));
 
-        ASPAMG<CRSMatrixd, Vectord> amg;
-        if(!amg.import("ASPAMG", data_path + "/xml/default.xml")) {
-            InputParameters in;
-            in.set("TspMaxit", 200);
-            amg.read(in);
-        }
+//         ASPAMG<CRSMatrixd, Vectord> amg;
+//         if(!amg.import("ASPAMG", data_path + "/xml/default.xml")) {
+//             InputParameters in;
+//             in.set("TspMaxit", 200);
+//             amg.read(in);
+//         }
 
-        amg.solve(A, rhs, x);
-        amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
+//         amg.solve(A, rhs, x);
+//         amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
 
-        double res_norm = norm2(rhs - A * x);
-        utopia_test_assert(res_norm < 1e-8);
+//         double res_norm = norm2(rhs - A * x);
+//         utopia_test_assert(res_norm < 1e-8);
 
-    }
-#endif //WITH_BLAS
+//     }
+// #endif //WITH_BLAS
 
     void run_m3e_lin_sol_test()
     {

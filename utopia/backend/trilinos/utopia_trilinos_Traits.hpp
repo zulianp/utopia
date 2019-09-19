@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
-#include "utopia_trilinos_ForwardDeclaration.hpp"
+#include "utopia_trilinos_ForwardDeclarations.hpp"
 #include "utopia_trilinos_Base.hpp"
 #include "utopia_BackendInfo.hpp"
 

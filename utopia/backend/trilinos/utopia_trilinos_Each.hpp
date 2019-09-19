@@ -3,7 +3,7 @@
 
 #include "utopia_Traits.hpp"
 #include "utopia_Each.hpp"
-#include "utopia_trilinos_ForwardDeclaration.hpp"
+#include "utopia_trilinos_ForwardDeclarations.hpp"
 #include "utopia_trilinos_Traits.hpp"
 
 namespace utopia {
