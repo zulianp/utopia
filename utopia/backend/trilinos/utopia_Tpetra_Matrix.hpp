@@ -548,6 +548,9 @@ namespace utopia {
             copy(rhs);
         }
 
+
+        void set_zero_rows(const IndexSet &index, const Scalar &diag);
+
     private:
         TrilinosCommunicator comm_;
         rcp_crs_mat_type  mat_;

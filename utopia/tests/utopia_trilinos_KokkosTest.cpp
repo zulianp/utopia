@@ -8,6 +8,7 @@
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
 #include "utopia_kokkos_ParallelEach.hpp"
+#include "utopia_trilinos_Each_impl.hpp"
 #include <algorithm>
 
 #include "utopia_Structure.hpp"

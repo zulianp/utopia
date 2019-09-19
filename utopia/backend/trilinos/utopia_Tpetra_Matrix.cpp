@@ -556,5 +556,41 @@ namespace utopia {
     {
         assert(false && "IMPLEMENT ME");
     }
+
+
+    void TpetraMatrix::set_zero_rows(const IndexSet &index, const Scalar &diag)
+    {
+        auto &impl = implementation();
+        auto rr = row_range();
+
+        auto col_map = impl.getColMap()->getLocalMap();
+        auto row_map = impl.getRowMap()->getLocalMap();
+        auto local_mat = impl.getLocalMatrix();
+
+        for(auto i_global : index)
+        {
+            if(!rr.inside(i_global)) {
+                std::cerr << "[Error] index out of range " << i_global << " not in " << rr << std::endl;
+                assert(rr.inside(i_global));
+                continue;
+            }
+
+            auto i = i_global - rr.begin();
+            auto row = local_mat.row(i);
+            auto n_values = row.length;
+
+            for(decltype(n_values) k = 0; k < n_values; ++k)
+            {
+                auto &val = row.value(k);
+                const auto col = row.colidx(k);
+
+                if(row_map.getGlobalElement(i) == col_map.getGlobalElement(col)) {
+                    val = diag;
+                } else {
+                    val = 0.;
+                }
+            }
+        }
+    }
     
 }

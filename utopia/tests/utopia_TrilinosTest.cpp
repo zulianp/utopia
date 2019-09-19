@@ -6,7 +6,7 @@
 #include "utopia.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
-#include "utopia_trilinos_Each.hpp"
+#include "utopia_trilinos_Each_impl.hpp"
 
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_MultiLevelTestProblem.hpp"
@@ -18,15 +18,10 @@
 
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
-
 #include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
-
 #include "utopia_IPTransfer.hpp"
-
 #include <cmath>
-
-#include "utopia_trilinos_Each.hpp"
 
 namespace utopia {
 

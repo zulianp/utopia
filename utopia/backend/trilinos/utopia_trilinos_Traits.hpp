@@ -30,7 +30,7 @@ namespace utopia {
 
         static BackendInfo &backend_info()
         {
-            static BackendInfo instance_("tpetra");
+            static BackendInfo instance_("trilinos");
             return instance_;
         }
     };

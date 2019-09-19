@@ -169,7 +169,7 @@ namespace utopia {
         return ret_global;
     }
 
-    bool TpetraVector::is_nan_or_inf() const
+    bool TpetraVector::has_nan_or_inf() const
     {
         int ret = KokkosEvalReduce<TpetraVector, IsNaNOrInf>::eval(*this, IsNaNOrInf(), Scalar(0));
         auto &comm = *communicator();

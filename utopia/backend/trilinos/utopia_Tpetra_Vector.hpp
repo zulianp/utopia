@@ -528,7 +528,7 @@ namespace utopia {
 
  
 
-        bool is_nan_or_inf() const;
+        bool has_nan_or_inf() const;
 
         inline void scale(const Scalar alpha)
         {

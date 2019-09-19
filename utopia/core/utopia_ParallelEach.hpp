@@ -4,7 +4,7 @@
 #include "utopia_Each.hpp"
 
 namespace utopia {
-    template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Tensor::FILL_TYPE>
+    template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Traits<Tensor>::FILL_TYPE>
     class ParallelEach : public Each<Tensor, Order, FILL_TYPE> {};
 
     template<class Tensor, class Fun>

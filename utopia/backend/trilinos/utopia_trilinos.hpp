@@ -25,6 +25,9 @@
 #include "utopia_trilinos_Each.hpp"
 #include "utopia_trilinos_Eval_Factory.hpp"
 
+//FIXME this should not be necessary
+#include "utopia_trilinos_Each_impl.hpp"
+
 //FIXME re-introduce later
 
 // #include "utopia_trilinos_Eval_RAP.hpp"

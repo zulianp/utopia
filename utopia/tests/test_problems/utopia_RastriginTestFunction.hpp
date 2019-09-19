@@ -60,13 +60,7 @@ namespace utopia
             const auto n = point.size();
 
             if(empty(hessian)) {
-
-                if(is_sparse<Matrix>::value) {
-                    hessian = sparse(n, n, 1);
-                } else {
-                    hessian = zeros(n, n);
-                }
-
+                hessian = sparse(n, n, 1);
             }
 
             const Read<Vector> read(point);
