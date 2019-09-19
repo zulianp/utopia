@@ -43,17 +43,6 @@ namespace utopia {
            Vector r = mat * vec;                    assert(r.size() == (n1 + n3));
            Vector r1 = zeros(n1), r2 = zeros(n3);   assert(r1.size() == n1); assert(r2.size() == n3);
 
-           disp(mat);
-           disp("-------------------------");
-           disp(vec);
-           disp("-----------------------");
-           disp(r);
-           disp("-----------------------");
-           disp(r1);
-           disp("-----------------------");
-           disp(r2);
-           disp("-----------------------");
-
            undo_blocks(r, r1, r2);
 
            assert(r1.size() == n1);

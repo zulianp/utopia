@@ -15,6 +15,70 @@
 // maybe this can help at least for assembly #include <Tpetra_MultiVectorFiller.hpp> or FEMultiVector
 namespace utopia {
 
+    template<typename Integer>
+    void TpetraVector::generic_select(
+        const std::vector<Integer> &index,
+        TpetraVector &out
+        ) const
+    {
+        //FIXME does not work in parallel
+        auto data = implementation().getData();
+        const SizeType offset = implementation().getMap()->getMinGlobalIndex();
+
+        auto map = Teuchos::rcp(
+            new map_type(
+                Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+                index.size(),
+                0,
+                communicator())
+        );
+
+        out.init(map);
+
+        if(comm().size() == 1) {
+            const SizeType n = index.size();
+            auto out_data = out.implementation().getDataNonConst();
+
+            for(SizeType i = 0; i < n; ++i) {
+                const SizeType local_index = index[i] - offset;
+
+                if(local_index >= n) {
+                    std::cout << local_index << " = " << index[i] << " - " << offset << std::endl;
+                }
+
+                assert(local_index < n);
+                out_data[i] = data[local_index];
+            }
+        } else {
+            assert(false && "IMPLEMENT ME");
+        //     /////////////////////////////////////////////////
+
+        //     std::vector<GO> tpetra_index;
+        //     tpetra_index.reserve(index.size());
+
+        //     for(auto i : index) {
+        //         tpetra_index.push_back(i);
+        //     }
+
+        //     const Teuchos::ArrayView<const GO>
+        //        index_view(tpetra_index);
+
+        //      auto import_map = Teuchos::rcp(new map_type(global_size, index_view, 0, comm));
+
+        //     Tpetra::Import<
+        //         LO,
+        //         GO,
+        //         vector_type::node_type> importer(map, import_map);
+
+        //     implementation().doImport(out.implementation(), importer, Tpetra::INSERT);
+        }
+    }
+
+    void TpetraVector::select(const IndexSet &index, TpetraVector &result) const
+    {
+        generic_select(index, result);
+    }
+
     void TpetraVector::transform(const Sqrt &op)
     {
         apply(op);
@@ -267,6 +331,12 @@ namespace utopia {
 
     void TpetraVector::copy(const TpetraVector &other)
     {
+        if(&other == this) return;
+        if(other.empty()) {
+            clear();
+            return;
+        }
+
         if(other.has_ghosts()) {
             ghosted_vec_ = Teuchos::rcp(new vector_type(other.ghosted_vec_->getMap(), 1));
             ghosted_vec_->assign(*other.ghosted_vec_);

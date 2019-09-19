@@ -148,10 +148,7 @@ namespace utopia {
             return *this;
         }
 
-        void select(const IndexSet &index, TpetraVector &result) const override
-        {
-            generic_select(index, result);
-        }
+        void select(const IndexSet &index, TpetraVector &result) const override;
 
         void copy(const TpetraVector &other);
 
@@ -360,56 +357,7 @@ namespace utopia {
         void generic_select(
             const std::vector<Integer> &index,
             TpetraVector &out
-            ) const
-        {
-            //FIXME does not work in parallel
-            auto data   = implementation().getData();
-            auto offset = implementation().getMap()->getMinGlobalIndex();
-
-            auto map = Teuchos::rcp(
-                new map_type(
-                    Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-                    index.size(),
-                    0,
-                    communicator())
-            );
-
-
-            out.init(map);
-
-            // if(communicator()->getSize() == 1) {
-
-                std::size_t n = data.size();
-                auto out_data = out.implementation().getDataNonConst();
-
-                for(std::size_t i = 0; i < n; ++i) {
-                    auto local_index = index[i] - offset;
-                    assert(local_index < n);
-                    out_data[i] = data[local_index];
-                }
-            // } else {
-            //     /////////////////////////////////////////////////
-
-            //     std::vector<GO> tpetra_index;
-            //     tpetra_index.reserve(index.size());
-
-            //     for(auto i : index) {
-            //         tpetra_index.push_back(i);
-            //     }
-
-            //     const Teuchos::ArrayView<const GO>
-            //        index_view(tpetra_index);
-
-            //      auto import_map = Teuchos::rcp(new map_type(global_size, index_view, 0, comm));
-
-            //     Tpetra::Import<
-            //         LO,
-            //         GO,
-            //         vector_type::node_type> importer(map, import_map);
-
-            //     implementation().doImport(out.implementation(), importer, Tpetra::INSERT);
-            // }
-        }
+        ) const;
 
         inline Teuchos::ArrayRCP<const Scalar> get_read_only_data() const
         {

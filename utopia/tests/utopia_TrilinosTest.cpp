@@ -1146,11 +1146,14 @@ namespace utopia {
         rmtr->max_it(1000);
         rmtr->max_coarse_it(1);
         //rmtr->max_smoothing_it(1); //FIXME??
+        rmtr->max_QP_smoothing_it(1);
         rmtr->delta0(1);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
         rmtr->set_grad_smoothess_termination(0.000001);
         //rmtr->set_eps_grad_termination(1e-7); //FIXME??
+        rmtr->atol(1e-8);
+        rmtr->rtol(1e-7);
 
         rmtr->verbose(problem.verbose);
         // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
