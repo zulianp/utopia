@@ -34,6 +34,7 @@ namespace utopia {
     class TpetraVector : 
     public DistributedVector<TpetraScalar, TpetraSizeType>,
     public ElementWiseOperand<TpetraVector>,
+    public ElementWiseOperand<TpetraScalar>,
     public Transformable<TpetraScalar>,
     public Tensor<TpetraVector, 1>,
     public Constructible<TpetraScalar, TpetraSizeType, 1>,
@@ -214,6 +215,28 @@ namespace utopia {
         void e_max(const TpetraVector &other) override
         {
             KokkosEvalBinary<TpetraVector, Max>::eval(*this, Max(), other, *this);
+        }
+
+        ////////////////////////////////////////////////////////////////
+
+        void e_mul(const Scalar &other) override
+        {
+            scale(other);
+        }
+
+        void e_div(const Scalar &other) override
+        {
+           assert(false && "IMPLEMENT ME");
+        }
+
+        void e_min(const Scalar &other) override
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+        void e_max(const Scalar &other) override
+        {
+            assert(false && "IMPLEMENT ME");
         }
 
         /////////////////////////////////////////////////////////////////////////////////

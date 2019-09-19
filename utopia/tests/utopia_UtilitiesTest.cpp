@@ -386,11 +386,11 @@ namespace utopia {
 
 #endif //WITH_PETSC
 
-//         if(mpi_world_size() == 1) {
-// #ifdef WITH_TRILINOS
-//             BlockTest<TSMatrixd, TVectord>().run();
-// #endif //WITH_TRILINOS
-//         }
+        if(mpi_world_size() == 1) {
+#ifdef WITH_TRILINOS
+            BlockTest<TSMatrixd, TVectord>().run();
+#endif //WITH_TRILINOS
+        }
 
         UTOPIA_UNIT_TEST_END("UtilitiesTest");
     }

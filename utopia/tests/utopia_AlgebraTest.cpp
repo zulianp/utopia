@@ -2,22 +2,18 @@
 #include "utopia_AlgebraTest.hpp"
 #include "utopia_IsSubTree.hpp"
 
+#ifdef WITH_TRILINOS
+#include "utopia_trilinos.hpp"
+#endif
+
 namespace utopia {
 
-    template<class Matrix, class Vector>
-    class AlgebraTest {
-    private:
+    template<class Vector>
+    class VectorAlgebraTest {
+    public:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
-
-        void nnz_test()
-        {
-            long n = 100;
-            Matrix I = identity(n, n);
-            long nnz_I = utopia::nnz(I, 0.);
-            utopia_test_assert(nnz_I == n);
-        }
-
-
+        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+        
         void norm_test()
         {
             Vector v = zeros(2);
@@ -40,20 +36,6 @@ namespace utopia {
 
             n = norm_infty(v);
             utopia_test_assert(approxeq(10.0, n));
-        }
-
-        void quadratic_form()
-        {
-            const int n = mpi_world_size() * 2;
-            Vector x = values(n, 1.);
-            Vector b = values(n, 2.);
-            Matrix A = values(n, n, 1.);
-
-            double value = 0.5 * dot(x, A * x) + dot(x, b);
-            double expected = sum(A) * 0.5 + sum(b);
-
-            utopia_test_assert(approxeq(value, expected));
-            utopia_test_assert(approxeq(value, n*n*0.5 + n*2.));
         }
 
         void dot_test()
@@ -91,6 +73,72 @@ namespace utopia {
 
             one = norm2(v * (1.0 / Scalar(norm2(v))));
             utopia_test_assert(approxeq(1.0, one));
+        }
+
+        void binary_min_max()
+        {
+            const int n = mpi_world_size() * 2;
+            Vector one = values(n, 1.);
+            Vector two = values(n, 2.);
+
+            Vector actual_min = utopia::min(one, two);
+            Vector actual_max = utopia::max(one, two);
+
+            utopia_test_assert(approxeq(one, actual_min));
+            utopia_test_assert(approxeq(two, actual_max));
+
+            actual_min = utopia::min(two, values(n, 1.));
+            actual_max = utopia::max(values(n, 2.), one);
+
+            utopia_test_assert(approxeq(one, actual_min));
+            utopia_test_assert(approxeq(two, actual_max));
+        }
+
+        static void print_backend_info()
+        {
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
+
+    public:
+        void run()
+        {
+            print_backend_info();
+            UTOPIA_RUN_TEST(norm_test);
+            UTOPIA_RUN_TEST(dot_test);
+            UTOPIA_RUN_TEST(dot_product_composition_test);
+            UTOPIA_RUN_TEST(binary_min_max);
+        }
+
+    };
+
+    template<class Matrix, class Vector>
+    class AlgebraTest {
+    private:
+        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+        void nnz_test()
+        {
+            long n = 100;
+            Matrix I = identity(n, n);
+            long nnz_I = utopia::nnz(I, 0.);
+            utopia_test_assert(nnz_I == n);
+        }
+
+        void quadratic_form()
+        {
+            const int n = mpi_world_size() * 2;
+            Vector x = values(n, 1.);
+            Vector b = values(n, 2.);
+            Matrix A = values(n, n, 1.);
+
+            double value = 0.5 * dot(x, A * x) + dot(x, b);
+            double expected = sum(A) * 0.5 + sum(b);
+
+            utopia_test_assert(approxeq(value, expected));
+            utopia_test_assert(approxeq(value, n*n*0.5 + n*2.));
         }
 
         void multiply_test()
@@ -167,26 +215,6 @@ namespace utopia {
             utopia_test_assert(size.get(0) == 2);
         }
 
-        void binary_min_max()
-        {
-            const int n = mpi_world_size() * 2;
-            Vector one = values(n, 1.);
-            Vector two = values(n, 2.);
-
-            Vector actual_min = utopia::min(one, two);
-            Vector actual_max = utopia::max(one, two);
-
-            utopia_test_assert(approxeq(one, actual_min));
-            utopia_test_assert(approxeq(two, actual_max));
-
-            actual_min = utopia::min(two, values(n, 1.));
-            actual_max = utopia::max(values(n, 2.), one);
-
-            utopia_test_assert(approxeq(one, actual_min));
-            utopia_test_assert(approxeq(two, actual_max));
-        }
-
-
         void local_values_test()
         {
             auto k = 15;
@@ -216,25 +244,14 @@ namespace utopia {
             static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  );
         }
 
-        static void print_backend_info()
-        {
-            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
-            }
-        }
-
     public:
         void run()
         {
-            print_backend_info();
+            VectorAlgebraTest<Vector>().run();
             UTOPIA_RUN_TEST(is_subtree);
-            UTOPIA_RUN_TEST(norm_test);
-            UTOPIA_RUN_TEST(dot_test);
-            UTOPIA_RUN_TEST(dot_product_composition_test);
             UTOPIA_RUN_TEST(multiply_test);
             UTOPIA_RUN_TEST(determinant_test);
             UTOPIA_RUN_TEST(size_test);
-            UTOPIA_RUN_TEST(binary_min_max);
             UTOPIA_RUN_TEST(quadratic_form);
             UTOPIA_RUN_TEST(local_values_test);
             UTOPIA_RUN_TEST(nnz_test);
@@ -250,12 +267,12 @@ namespace utopia {
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        AlgebraTest<DMatrixd, DVectord>().run();
+        AlgebraTest<PetscMatrix, PetscVector>().run();
 #endif //WITH_PETSC
 
-// #ifdef WITH_TRILINOS
-//         AlgebraTest<TMatrixd, TVectord>().run();
-// #endif //WITH_TRILINOS
+#ifdef WITH_TRILINOS
+        VectorAlgebraTest<TpetraVector>().run();
+#endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("AlgebraTest");
     }

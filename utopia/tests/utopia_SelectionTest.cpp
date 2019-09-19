@@ -54,7 +54,7 @@ namespace utopia {
         void matrix_selection_test()
         {
             const SizeType n = mpi_world_size() * 3;
-            Matrix m = zeros(n, n);
+            Matrix m = sparse(n, n, n);
             auto rr = row_range(m);
 
             {
@@ -134,9 +134,9 @@ namespace utopia {
         SelectionTest<PetscMatrix, PetscVector>().run();
 #endif //WITH_PETSC
 
-// #ifdef WITH_TRILINOS
-//         SelectionTest<TSMatrixd, TVectord>().run();
-// #endif //WITH_TRILINOS
+#ifdef WITH_TRILINOS
+        SelectionTest<TSMatrixd, TVectord>().run();
+#endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("SelectionTest");
     }
