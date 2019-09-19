@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8.1)
 project(utopia_fe)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -123,6 +123,7 @@ macro(add_utopiafe_module module_name)
 endmacro(add_utopiafe_module)
 
 list(APPEND UTOPIA_FE_MODULES
+    tests
     apps
     multiphysics
     fractures
@@ -142,7 +143,6 @@ list(APPEND UTOPIA_FE_MODULES
     core
     rapidxml
     base
-    tests
  )
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
