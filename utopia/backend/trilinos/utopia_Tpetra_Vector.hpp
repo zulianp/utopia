@@ -76,10 +76,12 @@ namespace utopia {
     typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
     typedef Teuchos::RCP<const map_type>              rcp_map_type;
 
-//        typedef Tpetra::Vector<>::mag_type                magnitude_type;
+//      typedef Tpetra::Vector<>::mag_type                magnitude_type;
     // typedef vector_type::scalar_type                  Scalar;
 
-        using IndexSet = Traits<TpetraVector>::IndexSet;
+        using IndexSet    = Traits<TpetraVector>::IndexSet;
+        using IndexArray  = Traits<TpetraVector>::IndexArray;
+        using ScalarArray = Traits<TpetraVector>::ScalarArray;
 
 
         ////////////////////////////////////////////////////////////////////
@@ -90,10 +92,6 @@ namespace utopia {
         using Constructible = utopia::Constructible<Scalar, GO, 1>;
 
         using Super::Super;
-        // using Constructible::values;
-        // using Constructible::local_values;
-        // using Constructible::local_zeros;
-        // using Constructible::zeros;
 
          template<class Expr>
          TpetraVector(const Expression<Expr> &expr)
@@ -159,11 +157,7 @@ namespace utopia {
         //////////////////////////////// OVERRIDES for Constructible ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
 
-        void values(const SizeType &s, const Scalar &val) override
-        {
-            assert(false && "IMPLEMENT");
-        } 
-
+        void values(const SizeType &s, const Scalar &val) override;
 
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Reducible ////////////////////
@@ -202,47 +196,23 @@ namespace utopia {
             );
         }
 
-        void e_div(const TpetraVector &other) override
-        {
-            KokkosEvalBinary<TpetraVector, Divides>::eval(*this, Divides(), other, *this);
-        }
-
-        void e_min(const TpetraVector &other) override
-        {
-            KokkosEvalBinary<TpetraVector, Min>::eval(*this, Min(), other, *this);
-        }
-
-        void e_max(const TpetraVector &other) override
-        {
-            KokkosEvalBinary<TpetraVector, Max>::eval(*this, Max(), other, *this);
-        }
-
+        void e_div(const TpetraVector &other) override;
+        void e_min(const TpetraVector &other) override;
+        void e_max(const TpetraVector &other) override;
         ////////////////////////////////////////////////////////////////
 
-        void e_mul(const Scalar &other) override
+        inline void e_mul(const Scalar &other) override
         {
             scale(other);
         }
 
-        void e_div(const Scalar &other) override
-        {
-           assert(false && "IMPLEMENT ME");
-        }
-
-        void e_min(const Scalar &other) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
-
-        void e_max(const Scalar &other) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
+        void e_div(const Scalar &other) override;
+        void e_min(const Scalar &other) override;
+        void e_max(const Scalar &other) override;
 
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Transformable ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
-
 
         void transform(const Sqrt &) override;
         void transform(const Pow2 &) override;
@@ -252,7 +222,6 @@ namespace utopia {
         void transform(const Sin &)  override;
         void transform(const Abs &)  override;
         void transform(const Minus &) override;
-
         void transform(const Pow &p)  override;
         void transform(const Reciprocal<TpetraScalar> &f) override;
 
@@ -303,14 +272,13 @@ namespace utopia {
             implementation().update(alpha, *x.vec_, 1.);
         }
 
-        void describe(std::ostream &os) const
+        inline void describe(std::ostream &os) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
         }
 
-
-        void describe() const
+        inline void describe() const
         {
             describe(std::cout);
         }
@@ -324,13 +292,13 @@ namespace utopia {
             return view_ptr_->view(local_index, 0);
         }
 
-        inline Scalar operator[](const GO i) const
+        inline Scalar operator[](const SizeType &i) const
         {
             // assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
             return get(i);
         }
 
-        inline LO local_index(const GO i) const
+        inline LO local_index(const SizeType &i) const
         {
             if(has_ghosts()) {
                return ghosted_vec_->getMap()->getLocalElement(i);
@@ -346,11 +314,6 @@ namespace utopia {
             auto local_index = view_ptr_->map.getLocalElement(i);
 
             view_ptr_->view(local_index, 0) = value;
-            // if(!write_data_.is_null()) {
-            //     write_data_[i - implementation().getMap()->getMinGlobalIndex()] = value;
-            // } else {
-            //     implementation().replaceGlobalValue(i, value);
-            // }
         }
 
         inline void add(const SizeType &i, const Scalar &value) override
@@ -360,25 +323,10 @@ namespace utopia {
             auto local_index = view_ptr_->map.getLocalElement(i);
 
             view_ptr_->view(local_index, 0) += value;
-
-            // if(!ghosted_vec_.is_null()) {
-            //     ghosted_vec_->sumIntoGlobalValue(i, value);
-            // } else {
-            //     implementation().sumIntoGlobalValue(i, value);
-            // }
         }
 
-
-        inline void c_set(const SizeType &i, const Scalar &value) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
-
-
-        inline void c_add(const SizeType &i, const Scalar &value) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
+        void c_set(const SizeType &i, const Scalar &value) override;
+        void c_add(const SizeType &i, const Scalar &value) override;
 
         inline void set(const Scalar &value) override
         {
@@ -388,7 +336,7 @@ namespace utopia {
         template<typename Integer>
         void get(
             const std::vector<Integer> &index,
-            std::vector<Scalar> &values) const
+            ScalarArray &values) const
         {
             // m_utopia_warning_once(" > get does not work in parallel if it asks for ghost entries");
             //FIXME does not work in parallel
@@ -406,12 +354,12 @@ namespace utopia {
         }
 
         void set_vector(
-            const std::vector<GO> &indices,
-            const std::vector<Scalar> &values);
+            const IndexArray &indices,
+            const ScalarArray &values);
 
         void add_vector(
-            const std::vector<GO> &indices,
-            const std::vector<Scalar> &values);
+            const IndexArray &indices,
+            const ScalarArray &values);
 
         template<typename Integer>
         void generic_select(
@@ -476,7 +424,6 @@ namespace utopia {
                 return implementation().getData();
             }
         }
-
 
         inline void read_lock() override
         {
@@ -549,8 +496,6 @@ namespace utopia {
           return implementation().normInf();
         }
 
- 
-
         bool has_nan_or_inf() const;
 
         inline void scale(const Scalar alpha)
@@ -562,20 +507,6 @@ namespace utopia {
         {
             return implementation().dot(other.implementation());
         }
-
-
-        // inline void e_mul(const TpetraVector &right, TpetraVector &result) const
-        // {
-        //     //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
-        //     result.values(this->communicator(), local_size().get(0), size().get(0), 0.);
-
-        //     result.implementation().elementWiseMultiply(
-        //         1.,
-        //         this->implementation(),
-        //         right.implementation(),
-        //         0.
-        //     );
-        // }
 
         template<typename Op>
         inline void apply(const Op op)
@@ -620,7 +551,6 @@ namespace utopia {
         {
             return implementation_ptr();
         }
-
 
         inline rcpvector_type &implementation_ptr()
         {
@@ -668,12 +598,9 @@ namespace utopia {
         void clear() override;
 
     private:
-
         TrilinosCommunicator comm_;
         rcpvector_type vec_;
         rcpvector_type ghosted_vec_;
-        // Teuchos::ArrayRCP<const Scalar> read_only_data_;
-        // Teuchos::ArrayRCP<Scalar> write_data_;
 
         class View {
         public:

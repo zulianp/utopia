@@ -592,5 +592,36 @@ namespace utopia {
             }
         }
     }
-    
+
+    void TpetraMatrix::select(
+        const IndexSet &row_index, 
+        const IndexSet &col_index, 
+        TpetraMatrix &result) const
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraMatrix::identity(const Size &s, const Scalar &diag)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    ///Specialize for sparse matrices
+    void TpetraMatrix::sparse(const Size &s, const SizeType &nnz)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    ///Specialize for sparse matrices
+    void TpetraMatrix::local_sparse(const Size &s, const SizeType &/*nnz*/)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraMatrix::local_identity(const Size &s, const Scalar &diag)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+
 }

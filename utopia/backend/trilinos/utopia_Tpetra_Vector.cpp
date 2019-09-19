@@ -66,14 +66,14 @@ namespace utopia {
         aux_transform(*this, op);
     }
 
-    void TpetraVector::transform(const Reciprocal<TpetraScalar> &op)
+    void TpetraVector::transform(const Reciprocal<Scalar> &op)
     {
         aux_transform(*this, op);
     }
 
     void TpetraVector::add_vector(
-        const std::vector<GO> &indices,
-        const std::vector<Scalar> &values)
+        const IndexArray &indices,
+        const ScalarArray &values)
     {
         const std::size_t n = values.size();
         assert(n == indices.size());
@@ -90,8 +90,8 @@ namespace utopia {
     }
 
     void TpetraVector::set_vector(
-        const std::vector<GO> &indices,
-        const std::vector<Scalar> &values)
+        const IndexArray &indices,
+        const ScalarArray &values)
     {
         const std::size_t n = values.size();
         assert(n == indices.size());
@@ -183,7 +183,7 @@ namespace utopia {
         const rcp_comm_type &comm,
         const TpetraVector::GO &local_size,
         const TpetraVector::GO &global_size,
-        const std::vector<GO> &ghost_index
+        const IndexArray &ghost_index
     )
     {
         rcp_map_type map(new map_type(global_size, local_size, 0, comm));
@@ -195,7 +195,7 @@ namespace utopia {
 
             Range r = { r_begin, r_end };
 
-            std::vector<GO> filled_with_local;
+            IndexArray filled_with_local;
             filled_with_local.reserve(r.extent() + ghost_index.size());
 
             for(auto i = r.begin(); i != r.end(); ++i) {
@@ -351,6 +351,51 @@ namespace utopia {
     }
 
     void TpetraVector::clear()
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraVector::e_div(const TpetraVector &other)
+    {
+        KokkosEvalBinary<TpetraVector, Divides>::eval(*this, Divides(), other, *this);
+    }
+
+    void TpetraVector::e_min(const TpetraVector &other)
+    {
+        KokkosEvalBinary<TpetraVector, Min>::eval(*this, Min(), other, *this);
+    }
+
+    void TpetraVector::e_max(const TpetraVector &other)
+    {
+        KokkosEvalBinary<TpetraVector, Max>::eval(*this, Max(), other, *this);
+    }
+
+    void TpetraVector::e_div(const Scalar &other)
+    {
+       assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraVector::e_min(const Scalar &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraVector::e_max(const Scalar &other)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraVector::values(const SizeType &s, const Scalar &val)
+    {
+        assert(false && "IMPLEMENT");
+    } 
+
+    void TpetraVector::c_set(const SizeType &i, const Scalar &value)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
+    void TpetraVector::c_add(const SizeType &i, const Scalar &value)
     {
         assert(false && "IMPLEMENT ME");
     }

@@ -63,6 +63,9 @@ namespace utopia {
         typedef Tpetra::Map<LO, GO, NT>                       map_type;
         typedef Teuchos::RCP<const map_type>                  rcp_map_type;
         
+        using IndexSet    = Traits<TpetraMatrix>::IndexSet;
+        using IndexArray  = Traits<TpetraMatrix>::IndexArray;
+        using ScalarArray = Traits<TpetraMatrix>::ScalarArray;
 
         /////////////////////////////////////////////////////////////
         //Constructors
@@ -158,11 +161,7 @@ namespace utopia {
         void select(
             const IndexSet &row_index, 
             const IndexSet &col_index, 
-            TpetraMatrix &result) const override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
-
+            TpetraMatrix &result) const override;
 
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR DistributedObject ////////////////////////////
@@ -263,28 +262,15 @@ namespace utopia {
         //OVERRIDES for SparseConstructible
         /////////////////////////////////////////////////////////////
 
-        inline void identity(const Size &s, const Scalar &diag = 1.0) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
+        void identity(const Size &s, const Scalar &diag = 1.0) override;
 
         ///Specialize for sparse matrices
-        inline void sparse(const Size &s, const SizeType &/*nnz*/) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
+        void sparse(const Size &s, const SizeType &/*nnz*/) override;
 
         ///Specialize for sparse matrices
-        inline void local_sparse(const Size &s, const SizeType &/*nnz*/) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
+        void local_sparse(const Size &s, const SizeType &/*nnz*/) override;
 
-        inline void local_identity(const Size &s, const Scalar &diag = 1.0) override
-        {
-            assert(false && "IMPLEMENT ME");
-        }
-
+        void local_identity(const Size &s, const Scalar &diag = 1.0) override;
 
         /////////////////////////////////////////////////////////////
         //OVERRIDES for Normed
@@ -372,7 +358,6 @@ namespace utopia {
                       const Scalar factor = 1.);
 
 
-        
         inline void read_lock()
         {
             //TODO?
@@ -394,11 +379,9 @@ namespace utopia {
             this->finalize();
         }
 
-      
-
-        void set(const GO &row, const GO &col, const Scalar &value);
-        Scalar get(const GO &row, const GO &col) const;
-        void add(const GO &row, const GO &col, const Scalar &value);
+        void set(const SizeType &row, const SizeType &col, const Scalar &value);
+        Scalar get(const SizeType &row, const SizeType &col) const;
+        void add(const SizeType &row, const SizeType &col, const Scalar &value);
 
         template<typename Integer>
         void add_matrix(
