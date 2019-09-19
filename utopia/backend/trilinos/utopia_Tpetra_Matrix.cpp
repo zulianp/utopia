@@ -1,6 +1,7 @@
 #include "utopia_Tpetra_Matrix.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_trilinos_Each_impl.hpp"
 
 #include <TpetraExt_MatrixMatrix_def.hpp>
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
@@ -72,6 +73,8 @@ namespace utopia {
 
     void TpetraMatrix::multiply(const TpetraVector &vec, TpetraVector &result) const
     {
+        assert(vec.size() == cols());
+
         if(result.is_null()) {
             result.init(mat_->getRowMap());
             // result.owner_ = true;
@@ -85,6 +88,8 @@ namespace utopia {
             std::cout << ex.what() << std::endl;
             assert(false);
         }
+
+        assert(result.size() == rows());
     }
 
     void TpetraMatrix::transpose_multiply(const TpetraVector &vec, TpetraVector &result) const
@@ -511,52 +516,107 @@ namespace utopia {
 
     TpetraMatrix::Scalar TpetraMatrix::norm_infty() const
     {
-        assert(false && "IMPLEMENT ME");
-        return -1.0;
+        //FIXME (optimize for device)
+        Scalar ret = -std::numeric_limits<Scalar>::max();
+        each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) {
+            ret = std::max(std::abs(val), ret);
+        });
+
+        auto &comm = *communicator();
+        Scalar ret_global = 0.;
+        Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
+        return ret_global;
     }
 
     TpetraMatrix::Scalar TpetraMatrix::norm1() const
     {
-        assert(false && "IMPLEMENT ME");
-        return -1.0;
+        //FIXME (optimize for device)
+        Scalar ret = 0.0;
+        each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) {
+            ret = std::abs(val) + ret;
+        });
+
+        auto &comm = *communicator();
+        Scalar ret_global = 0.;
+        Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
+        return ret_global;
     }
 
     void TpetraMatrix::c_set(const SizeType &i, const SizeType &j, const Scalar &value)
     {
-        assert(false && "IMPLEMENT ME");
+        //FIXME
+        set(i, j, value);
     }
 
     void TpetraMatrix::c_add(const SizeType &i, const SizeType &j, const Scalar &value)
     {
-        assert(false && "IMPLEMENT ME");
+        //FIXME
+        add(i, j, value);
     }
 
     TpetraMatrix::SizeType TpetraMatrix::rows() const
     {
-        assert(false && "IMPLEMENT ME");
+        if(is_null()) {
+            return 0;
+        }
+
+        if(implementation().isFillComplete()) {
+            return implementation().getGlobalNumRows();
+        } else {
+            assert(!implementation().getRowMap().is_null());
+            return implementation().getRowMap()->getGlobalNumElements();
+        }
     }
     
     TpetraMatrix::SizeType TpetraMatrix::cols() const
     {
-        assert(false && "IMPLEMENT ME");
+        if(is_null()) {
+            return 0;
+        }
+
+        if(implementation().isFillComplete()) {
+            return implementation().getGlobalNumCols();
+        } else {
+            if(implementation().getDomainMap().is_null()) {
+                assert(!init_->domain_map.is_null());
+                return init_->domain_map->getGlobalNumElements();
+            } else {
+                return implementation().getDomainMap()->getGlobalNumElements();
+            }
+        }
     }
 
     TpetraMatrix::SizeType TpetraMatrix::local_rows() const
     {
-        assert(false && "IMPLEMENT ME");
+        if(is_null()) {
+            return 0;
+        }
+
+        assert(!implementation().getRowMap().is_null());
+
+       return implementation().getRowMap()->getNodeNumElements();
     }
     
     TpetraMatrix::SizeType TpetraMatrix::local_cols() const
     {
-        assert(false && "IMPLEMENT ME");
-    }
+        if(is_null()) {
+            return 0;
+        }
 
+        if(implementation().getDomainMap().is_null()) {
+            assert(!init_->domain_map.is_null());
+            return init_->domain_map->getNodeNumElements();
+        } else {
+            return implementation().getDomainMap()->getNodeNumElements();
+        }
+    }
 
     void TpetraMatrix::clear()
     {
-        assert(false && "IMPLEMENT ME");
+        mat_.reset();
+        owner_ = true;
+        init_.reset();
     }
-
 
     void TpetraMatrix::set_zero_rows(const IndexSet &index, const Scalar &diag)
     {
@@ -603,25 +663,48 @@ namespace utopia {
 
     void TpetraMatrix::identity(const Size &s, const Scalar &diag)
     {
-        assert(false && "IMPLEMENT ME");
+        crs_identity(
+            comm().get(),
+            INVALID_INDEX,
+            INVALID_INDEX,
+            s.get(0),
+            s.get(1)
+        );
     }
 
-    ///Specialize for sparse matrices
     void TpetraMatrix::sparse(const Size &s, const SizeType &nnz)
     {
-        assert(false && "IMPLEMENT ME");
+        crs_init(
+            comm().get(),
+            INVALID_INDEX,
+            INVALID_INDEX,
+            s.get(0),
+            s.get(1),
+            nnz
+        );
     }
 
-    ///Specialize for sparse matrices
-    void TpetraMatrix::local_sparse(const Size &s, const SizeType &/*nnz*/)
+    void TpetraMatrix::local_sparse(const Size &s, const SizeType &nnz)
     {
-        assert(false && "IMPLEMENT ME");
+        crs_init(
+            comm().get(),
+            s.get(0),
+            s.get(1),
+            Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+            Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+            nnz
+        );
     }
 
     void TpetraMatrix::local_identity(const Size &s, const Scalar &diag)
     {
-        assert(false && "IMPLEMENT ME");
+        crs_identity(
+            comm().get(),
+            s.get(0),
+            s.get(1),
+            Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+            Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()
+        );
     }
-
 
 }

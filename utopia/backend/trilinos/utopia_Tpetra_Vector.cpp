@@ -15,60 +15,54 @@
 // maybe this can help at least for assembly #include <Tpetra_MultiVectorFiller.hpp> or FEMultiVector
 namespace utopia {
 
-    template<class Op>
-    void aux_transform(TpetraVector &v, const Op &op)
-    {
-        assert(false && "IMPEMENT ME");
-    }
-
     void TpetraVector::transform(const Sqrt &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
     void TpetraVector::transform(const Pow2 &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
-    void TpetraVector::transform(const Log &op) 
+    void TpetraVector::transform(const Log &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
-    void TpetraVector::transform(const Exp &op) 
+    void TpetraVector::transform(const Exp &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
-    void TpetraVector::transform(const Cos &op) 
+    void TpetraVector::transform(const Cos &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
-    void TpetraVector::transform(const Sin &op) 
+    void TpetraVector::transform(const Sin &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
-    void TpetraVector::transform(const Abs &op) 
+    void TpetraVector::transform(const Abs &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
     void TpetraVector::transform(const Minus &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
-    void TpetraVector::transform(const Pow &op) 
+    void TpetraVector::transform(const Pow &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
     void TpetraVector::transform(const Reciprocal<Scalar> &op)
     {
-        aux_transform(*this, op);
+        apply(op);
     }
 
     void TpetraVector::add_vector(
@@ -127,9 +121,8 @@ namespace utopia {
         return !vec_.is_null();
     }
 
-    bool TpetraVector::write(const std::string &path) const
-    {
-     typedef Tpetra::CrsMatrix<SC, LO, GO, NT>            crs_matrix_type;
+    bool TpetraVector::write(const std::string &path) const {
+        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>            crs_matrix_type;
         if(vec_.is_null()) return false;
 
         try {
@@ -162,7 +155,7 @@ namespace utopia {
 
     TpetraVector::Scalar TpetraVector::max() const
     {
-          Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), std::numeric_limits<Scalar>::min());
+          Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), -std::numeric_limits<Scalar>::max());
           auto &comm = *communicator();
           Scalar ret_global = 0.;
         Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
@@ -303,6 +296,7 @@ namespace utopia {
     void TpetraVector::assign(TpetraVector &&other)
     {
         if(this == &other) return;
+        comm_ = std::move(other.comm_);
         vec_ = std::move(other.vec_);
         ghosted_vec_ = std::move(other.ghosted_vec_);
     }
@@ -319,7 +313,6 @@ namespace utopia {
         copy(other);
         return *this;
     }
-
 
     void TpetraVector::write_unlock(WriteMode mode)
     {
@@ -343,16 +336,18 @@ namespace utopia {
         free_view();
     }
 
-
     bool TpetraVector::equals(const TpetraVector &other, const Scalar &tol) const
     {
-        assert(false && "IMPLEMENT ME");
-        return false;
+        TpetraVector diff = *this;
+        diff.axpy(-1, other);
+        return diff.norm_infty() <= tol;
     }
 
     void TpetraVector::clear()
     {
-        assert(false && "IMPLEMENT ME");
+        vec_.reset();
+        ghosted_vec_.reset();
+        view_ptr_.reset();
     }
 
     void TpetraVector::e_div(const TpetraVector &other)
@@ -372,32 +367,73 @@ namespace utopia {
 
     void TpetraVector::e_div(const Scalar &other)
     {
-       assert(false && "IMPLEMENT ME");
+       KokkosEvalBinary<TpetraVector, Divides>::eval(*this, Divides(), other, *this);
     }
 
     void TpetraVector::e_min(const Scalar &other)
     {
-        assert(false && "IMPLEMENT ME");
+        KokkosEvalBinary<TpetraVector, Min>::eval(*this, Min(), other, *this);
     }
 
     void TpetraVector::e_max(const Scalar &other)
     {
-        assert(false && "IMPLEMENT ME");
+        KokkosEvalBinary<TpetraVector, Max>::eval(*this, Max(), other, *this);
+    }
+
+    void TpetraVector::values(
+        const rcp_comm_type &comm,
+        const SizeType &n_local,
+        const SizeType &n_global,
+        const Scalar &val
+    )
+    {
+        assert(n_local <= n_global);
+        assert(n_local >= 0);
+
+        rcp_map_type map;
+        map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
+        vec_.reset(new vector_type(map));
+        implementation().putScalar(val);
+
+        assert(size() > 0);
     }
 
     void TpetraVector::values(const SizeType &s, const Scalar &val)
     {
-        assert(false && "IMPLEMENT");
-    } 
+        assert(s > 0);
+
+        rcp_map_type map;
+        map = Teuchos::rcp(new map_type(s, 0, comm().get()));
+        vec_.reset(new vector_type(map));
+        implementation().putScalar(val);
+
+        assert(size() > 0);
+    }
+
+    void TpetraVector::local_values(const SizeType &s, const Scalar &val)
+    {
+        assert(s > 0);
+
+        rcp_map_type map;
+        map = Teuchos::rcp(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), s, 0, comm().get()));
+        vec_.reset(new vector_type(map));
+        implementation().putScalar(val);
+
+        assert(size() > 0);
+    }
 
     void TpetraVector::c_set(const SizeType &i, const Scalar &value)
     {
-        assert(false && "IMPLEMENT ME");
+        implementation().replaceGlobalValue(i, value);
     }
 
     void TpetraVector::c_add(const SizeType &i, const Scalar &value)
     {
-        assert(false && "IMPLEMENT ME");
+        if(!ghosted_vec_.is_null()) {
+            ghosted_vec_->sumIntoGlobalValue(i, value);
+        } else {
+            implementation().sumIntoGlobalValue(i, value);
+        }
     }
 
 }

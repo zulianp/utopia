@@ -36,12 +36,12 @@ namespace utopia {
            utopia_test_assert(s.get(1) == (n2 + n4));
 
            Matrix mat = b_mat;
-           Vector ones_1 = values(n2, 2.);
-           Vector ones_2 = values(n4, 1.);
+           Vector ones_1 = values(n2, 2.);          assert(ones_1.size() == n2);
+           Vector ones_2 = values(n4, 1.);          assert(ones_2.size() == n4);
 
-           Vector vec = blocks(ones_1, ones_2);
-           Vector r = mat * vec;
-           Vector r1 = zeros(n1), r2 = zeros(n3);
+           Vector vec = blocks(ones_1, ones_2);     assert(vec.size() == (n2 + n4));
+           Vector r = mat * vec;                    assert(r.size() == (n1 + n2));
+           Vector r1 = zeros(n1), r2 = zeros(n3);   assert(r1.size() == n1); assert(r2.size() == n3);
 
            undo_blocks(r, r1, r2);
 

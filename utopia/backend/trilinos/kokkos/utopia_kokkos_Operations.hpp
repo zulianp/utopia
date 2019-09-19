@@ -35,6 +35,20 @@ namespace utopia {
     };
 
     template<class Scalar>
+    class KokkosOp<Scalar, Minus> {
+    public:
+        KokkosOp(){}
+        KokkosOp(const Minus &) {}
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            return a - b;
+        }
+
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
+            return -value;
+        }
+    };
+
+    template<class Scalar>
     class KokkosOp<Scalar, Divides> {
     public:
         KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {

@@ -96,6 +96,7 @@ namespace utopia {
          template<class Expr>
          TpetraVector(const Expression<Expr> &expr)
          {
+            static_assert(!std::is_same<TpetraVector, Expr>::value, "should not come here with this derived type");
              //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
              Super::construct_eval(expr.derived());
          }
@@ -103,6 +104,7 @@ namespace utopia {
          template<class Expr>
          inline TpetraVector &operator=(const Expression<Expr> &expr)
          {
+             static_assert(!std::is_same<TpetraVector, Expr>::value, "should not come here with this derived type");
              Super::assign_eval(expr.derived());
              return *this;
          }
@@ -120,7 +122,6 @@ namespace utopia {
         {}
 
         TpetraVector(const TpetraVector &other);
-
 
         TpetraVector(TpetraVector &&other)
         : vec_(std::move(other.vec_))
@@ -141,6 +142,7 @@ namespace utopia {
         TpetraVector &operator=(TpetraVector &&other)
         {
             if(this == &other) return *this;
+            comm_ = std::move(comm_);
             vec_ = std::move(other.vec_);
             ghosted_vec_ = std::move(other.ghosted_vec_);
             return *this;
@@ -158,6 +160,7 @@ namespace utopia {
         /////////////////////////////////////////////////////////////////////////////////
 
         void values(const SizeType &s, const Scalar &val) override;
+        void local_values(const SizeType &s, const Scalar &val) override;
 
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Reducible ////////////////////
@@ -234,19 +237,11 @@ namespace utopia {
         //////////////////////////////////////////
         //API functions
         //////////////////////////////////////////
-        inline void values(const rcp_comm_type &comm, std::size_t n_local, Tpetra::global_size_t n_global, Scalar value)
-        {
-            rcp_map_type map;
-
-            if(n_local == INVALID_INDEX) {
-                map = Teuchos::rcp(new map_type(n_global, 0, comm));
-            } else {
-                map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
-            }
-
-            vec_.reset(new vector_type(map));
-            implementation().putScalar(value);
-        }
+        void values(
+            const rcp_comm_type &comm,
+            const SizeType &n_local,
+            const SizeType &n_global,
+            const Scalar &value);
 
         inline void init(const rcp_map_type &map)
         {
@@ -469,7 +464,7 @@ namespace utopia {
         inline SizeType size() const
         {
             if(is_null()) {
-                return {0};
+                return 0;
             }
 
             return implementation().getMap()->getGlobalNumElements();
@@ -478,7 +473,7 @@ namespace utopia {
         inline SizeType local_size() const
         {
             if(is_null()) {
-                return {0};
+                return 0;
             }
 
             return implementation().getMap()->getNodeNumElements();
