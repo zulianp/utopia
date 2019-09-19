@@ -355,7 +355,7 @@ namespace utopia {
                       std::size_t cols_local,
                       Tpetra::global_size_t rows_global,
                       Tpetra::global_size_t cols_global,
-                      const Scalar factor = 1.);
+                      const Scalar factor);
 
 
         inline void read_lock()

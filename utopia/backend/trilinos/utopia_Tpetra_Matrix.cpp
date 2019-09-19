@@ -668,7 +668,8 @@ namespace utopia {
             INVALID_INDEX,
             INVALID_INDEX,
             s.get(0),
-            s.get(1)
+            s.get(1),
+            diag
         );
     }
 
@@ -703,7 +704,8 @@ namespace utopia {
             s.get(0),
             s.get(1),
             Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-            Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()
+            Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+            diag
         );
     }
 
