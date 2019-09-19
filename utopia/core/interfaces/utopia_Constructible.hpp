@@ -64,16 +64,16 @@ namespace utopia {
 			local_zeros(s);
 		}
 
-		virtual void local_identity(const Size &s, const Scalar &diag = 1.0) override { identity(s, diag); }
+		virtual void local_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
 
 
 
-		virtual void zeros(const Size &s) override { values(s, 0.0); }
+		virtual void zeros(const Size &s) override { this->values(s, 0.0); }
 		// virtual void values(const Size &s, const Scalar &val) = 0;
-		virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) override { identity(s, diag); }
+		virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
 
 		virtual void local_zeros(const Size &s) override { local_values(s, 0.0); }
-		virtual void local_values(const Size &s, const Scalar &val) override { values(s, val); }
+		virtual void local_values(const Size &s, const Scalar &val) override { this->values(s, val); }
 		virtual void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override { dense_identity(s, diag); }
 	};
 
