@@ -167,7 +167,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     bool GradientRecovery<Matrix, Vector>::apply_refinement(FunctionSpaceT &V)
    {
-        if(n_refinements_ >= max_refinements_) return false;
+        //if(n_refinements_ >= max_refinements_) return false;
 
         auto &m = V.mesh();
 

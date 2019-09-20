@@ -1,6 +1,7 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "libmesh/petsc_vector.h"
 #include "utopia_Adaptivity.hpp"
+#include "libmesh/remote_elem.h"
 
 namespace utopia {
 
@@ -22,82 +23,57 @@ namespace utopia {
        std::vector<SizeType> index;
        std::vector<SizeType> index_local;
 
-       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(V.mesh());
+       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(V.mesh());      
 
-      
+       auto & mesh = V.mesh();
 
+       auto & dof_map = V.dof_map();
 
-       // {
-       //      libMesh::MeshBase::const_node_iterator it = V.mesh().local_nodes_begin();
-       //      const libMesh::MeshBase::const_node_iterator end_it = V.mesh().local_nodes_end();
-       //      for ( ; it != end_it; ++it)
-       //      {
-       //          const libMesh::Node * node = *it;
-                
-       //          for (unsigned int comp = 0;comp < node->n_comp(V.equation_system().number(), 0); comp++)
-       //          {
-       //              const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, comp);
-
-       //               //std::cout<<"node_dof "<<node_dof <<std::endl;
-       //               //mesh.get_boundary_info().get_nodeset_name (cast_int<boundary_id_type>(node->id()));
-                    
-       //              if(on_boundary.count(node->id()) && V.dof_map().is_constrained_dof(node_dof)) {
-
-       //                   std::cout<<"ciao, this is to compare=>"<<node_dof<<std::endl;
-
-       //                   index.push_back(node_dof);
-       //              }
-       //          }
-       //      }
-       //  }
 
        {
-            libMesh::MeshBase::const_element_iterator it = V.mesh().active_elements_begin();
-            const libMesh::MeshBase::const_element_iterator end_it = V.mesh().active_elements_end();
+            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+            
+            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
             
             for ( ; it != end_it; ++it)
             {
                 const libMesh::Elem * ele = *it;
 
-                for(int kk=0; kk<ele->n_sides(); kk++)
-                {             
-                    auto side = ele->build_side_ptr(kk);
+                for(int kk=0; kk<ele->n_sides(); kk++) {       
+                    auto neigh = ele->neighbor_ptr(kk);    
 
-                    //std::cout<<"ciao, this is b_id=>"<<*it<<std::endl;
-
-                    index_local.clear();
-
-                    //std::cout<<"side->n_nodes()"<<side->n_nodes()<<std::endl;
-
-                    for (int ll=0; ll<ele->n_nodes(); ll++)
+                    if (neigh == libmesh_nullptr && neigh != libMesh::remote_elem)
                     {
+                        auto side = ele->build_side_ptr(kk);
 
-                       const libMesh::Node * node = ele->node_ptr(ll);
+                        index_local.clear();
 
-
-                       const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, 0);
-
-                       auto check=true;
-                     
-
-                        if(check && on_boundary.count(node->id()) && V.dof_map().is_constrained_dof(node_dof)) 
+                        for (int ll=0; ll<ele->n_nodes(); ll++)
                         {
-                           index_local.push_back(node_dof);
+
+                           const libMesh::Node * node = ele->node_ptr(ll);
+
+                           const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, 0);                
+
+                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
+                            {
+                                   
+                                index_local.push_back(node_dof);
+           
+                            }
+
+                        }
+
+                        if(index_local.size()==side->n_nodes())
+                        {
+
+                           index.insert(index.end(), index_local.begin(), index_local.end());
                         }
                     }
-
-                    if(index_local.size()==side->n_nodes()){
-
-                        index.insert(index.end(), index_local.begin(), index_local.end());
-
-     
-                   }
-               }
-           }
-       }
-       
-      
-
+                }
+            }
+        }
+        
 
         const bool has_constaints = V.dof_map().constraint_rows_begin() != V.dof_map().constraint_rows_end();
 
@@ -123,6 +99,7 @@ namespace utopia {
                 auto valpos = rhs_values.find(i);
                 I[0] = i;
                 value[0]=valpos->second;
+
                 vec.set(I, value);
 
             }
@@ -134,6 +111,8 @@ namespace utopia {
         if(utopia::Utopia::instance().verbose()) {
             std::cout << "apply_boundary_conditions end: " << c << std::endl;
         }
+
+        // std::cout << "apply_boundary_conditions end: " << c << std::endl;
     }
 
 
