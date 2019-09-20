@@ -35,8 +35,8 @@ namespace utopia {
         }
     };
 
-    UTOPIA_MAKE_TRAITS_SPARSE(TpetraMatrix, TpetraTraits);
-    UTOPIA_MAKE_TRAITS(TpetraVector, TpetraTraits);
+    UTOPIA_MAKE_TRAITS_SPARSE(TpetraMatrix, TpetraTraits, 2);
+    UTOPIA_MAKE_TRAITS(TpetraVector, TpetraTraits, 1);
 
     UTOPIA_MAKE_PARALLEL_TRAITS(TpetraVector);
     UTOPIA_MAKE_PARALLEL_TRAITS(TpetraMatrix);

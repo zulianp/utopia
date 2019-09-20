@@ -122,7 +122,7 @@ namespace utopia {
 	template<typename Derived, int Order_>
 	class Traits<Tensor<Derived, Order_>> : public Traits<Derived> {
 	public:
-	    static const int Order = Order;
+	    static const int Order = Order_;
 	};
 
 	// template<class Derived>

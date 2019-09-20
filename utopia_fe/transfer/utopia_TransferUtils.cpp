@@ -170,7 +170,7 @@ namespace utopia {
         const auto &phi1 = fe_p1->get_phi();
         const auto &phi2 = fe_p2->get_phi();
 
-        libMesh::DenseMatrix<double> el_mat;
+        LMDenseMatrix el_mat;
         std::vector<libMesh::dof_id_type> dof_p1, dof_p2;
 
         for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
@@ -192,7 +192,7 @@ namespace utopia {
                 const auto n_dofs_p2 = dof_p2.size();
 
                 el_mat.resize(n_dofs_p2, n_dofs_p1);
-                el_mat.zero();
+                el_mat.set(0.0);
 
                 const auto n_qp = phi1[0].size();
                 const auto n_i  = phi2.size();
@@ -204,7 +204,7 @@ namespace utopia {
                             auto val = phi2[i][k] * phi1[j][k];
                             if(std::abs(val) < 1e-10) continue;
                             
-                            el_mat(i, j) = val;
+                            el_mat.set(i, j, val);
                         }
                     }
                 }
@@ -212,10 +212,10 @@ namespace utopia {
                 //local 2 global
                 for(uint i = 0; i < n_dofs_p2; ++i) {
                     for(uint j = 0; j < n_dofs_p1; ++j) {
-                        auto val = el_mat(i, j);
+                        auto val = el_mat.get(i, j);
                         if(std::abs(val) < 1e-10) continue;
 
-                        mat.set_matrix({dof_p2[i]}, {dof_p1[j]}, {val});
+                        mat.c_set(dof_p2[i], dof_p1[j], val);
                     }
                 }
             }

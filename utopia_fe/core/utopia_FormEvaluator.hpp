@@ -54,14 +54,14 @@ namespace utopia {
         template<class Form, class Derived, int Order>
         static void eval(const Form &expr, Tensor<Derived, Order> &tensor, AssemblyContext<BAKEND_FLAG> &ctx, const bool reset_tensor)
         {
-            ctx.init_tensor(tensor, reset_tensor);
+            ctx.init_tensor(tensor.derived(), reset_tensor);
             FormEval<Form, BAKEND_FLAG>::apply(expr, tensor.derived(), ctx);
         }
 
         template<class Form, class Derived, int Order>
         static void eval(Form &expr, Tensor<Derived, Order> &tensor, AssemblyContext<BAKEND_FLAG> &ctx, const bool reset_tensor)
         {
-            ctx.init_tensor(tensor, reset_tensor);
+            ctx.init_tensor(tensor.derived(), reset_tensor);
             FormEval<Form, BAKEND_FLAG>::apply(expr, tensor.derived(), ctx);
         }
 

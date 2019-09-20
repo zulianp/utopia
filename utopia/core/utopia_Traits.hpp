@@ -306,6 +306,12 @@ namespace utopia {
 
     #define EXPR_TYPE(ImplementationTraits, Expr) typename utopia::TypeAndFill<ImplementationTraits, Expr>::Type
 
+    template<int Order_>
+    class DefaultTensorTraits {
+    public:
+        static const int Order = Order_;
+    };
+
     class DefaultDenseTraits {
     public:
         enum {
@@ -334,40 +340,40 @@ namespace utopia {
         };
     };
 
-#define UTOPIA_MAKE_TRAITS(TensorType, TraitsType)  \
-    template<> class Traits<TensorType> : public TraitsType, public DefaultDelegateTraits {}; \
-    template<> class Traits<const TensorType &> : public TraitsType, public DefaultDelegateTraits {}; \
-    template<> class Traits<TensorType &> : public TraitsType, public DefaultDelegateTraits {}
+#define UTOPIA_MAKE_TRAITS(TensorType, TraitsType, Order)  \
+    template<> class Traits<TensorType> : public TraitsType, public DefaultDelegateTraits, public DefaultTensorTraits<Order> {}; \
+    template<> class Traits<const TensorType &> : public TraitsType, public DefaultDelegateTraits, public DefaultTensorTraits<Order> {}; \
+    template<> class Traits<TensorType &> : public TraitsType, public DefaultDelegateTraits, public DefaultTensorTraits<Order> {}
 
-#define UTOPIA_MAKE_TRAITS_SPARSE(TensorType, TraitsType)  \
-    template<> class Traits<TensorType> : public TraitsType, public DefaultSparseTraits { }; \
-    template<> class Traits<const TensorType &> : public TraitsType, public DefaultSparseTraits { }; \
-    template<> class Traits<TensorType &> : public TraitsType, public DefaultSparseTraits { }
+#define UTOPIA_MAKE_TRAITS_SPARSE(TensorType, TraitsType, Order)  \
+    template<> class Traits<TensorType> : public TraitsType, public DefaultSparseTraits, public DefaultTensorTraits<Order> { }; \
+    template<> class Traits<const TensorType &> : public TraitsType, public DefaultSparseTraits, public DefaultTensorTraits<Order> { }; \
+    template<> class Traits<TensorType &> : public TraitsType, public DefaultSparseTraits, public DefaultTensorTraits<Order> { }
 
-#define UTOPIA_MAKE_TRAITS_DENSE(TensorType, TraitsType)  \
-    template<> class Traits<TensorType> : public TraitsType, public DefaultDenseTraits { }; \
-    template<> class Traits<const TensorType &> : public TraitsType, public DefaultDenseTraits { }; \
-    template<> class Traits<TensorType &> : public TraitsType, public DefaultDenseTraits { }
+#define UTOPIA_MAKE_TRAITS_DENSE(TensorType, TraitsType, Order)  \
+    template<> class Traits<TensorType> : public TraitsType, public DefaultDenseTraits, public DefaultTensorTraits<Order> { }; \
+    template<> class Traits<const TensorType &> : public TraitsType, public DefaultDenseTraits, public DefaultTensorTraits<Order> { }; \
+    template<> class Traits<TensorType &> : public TraitsType, public DefaultDenseTraits, public DefaultTensorTraits<Order> { }
 
-#define UTOPIA_MAKE_TRAITS_POLYMORPHIC(TensorType, TraitsType)  \
-    template<> class Traits<TensorType> : public TraitsType, public DefaultPolymorphicTraits { }; \
-    template<> class Traits<const TensorType &> : public TraitsType, public DefaultPolymorphicTraits { }; \
-    template<> class Traits<TensorType &> : public TraitsType, public DefaultPolymorphicTraits { }
+#define UTOPIA_MAKE_TRAITS_POLYMORPHIC(TensorType, TraitsType, Order)  \
+    template<> class Traits<TensorType> : public TraitsType, public DefaultPolymorphicTraits, public DefaultTensorTraits<Order> { }; \
+    template<> class Traits<const TensorType &> : public TraitsType, public DefaultPolymorphicTraits, public DefaultTensorTraits<Order> { }; \
+    template<> class Traits<TensorType &> : public TraitsType, public DefaultPolymorphicTraits, public DefaultTensorTraits<Order> { }
 
-#define UTOPIA_MAKE_TRAITS_TPL_1(TensorType, TraitsType)  \
-    template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultDelegateTraits {}; \
-    template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultDelegateTraits {}; \
-    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultDelegateTraits {}
+#define UTOPIA_MAKE_TRAITS_TPL_1(TensorType, TraitsType, Order)  \
+    template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultDelegateTraits, public DefaultTensorTraits<Order> {}; \
+    template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultDelegateTraits, public DefaultTensorTraits<Order> {}; \
+    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultDelegateTraits, public DefaultTensorTraits<Order> {}
 
-#define UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(TensorType, TraitsType)  \
-    template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultSparseTraits { }; \
-    template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultSparseTraits { }; \
-    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultSparseTraits { }
+#define UTOPIA_MAKE_TRAITS_SPARSE_TPL_1(TensorType, TraitsType, Order)  \
+    template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultSparseTraits, public DefaultTensorTraits<Order> { }; \
+    template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultSparseTraits, public DefaultTensorTraits<Order> { }; \
+    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultSparseTraits, public DefaultTensorTraits<Order> { }
 
-#define UTOPIA_MAKE_TRAITS_DENSE_TPL_1(TensorType, TraitsType)  \
-    template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultDenseTraits { }; \
-    template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultDenseTraits { }; \
-    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultDenseTraits {  }
+#define UTOPIA_MAKE_TRAITS_DENSE_TPL_1(TensorType, TraitsType, Order)  \
+    template<typename T> class Traits< TensorType<T> > : public TraitsType<T>, public DefaultDenseTraits, public DefaultTensorTraits<Order> { }; \
+    template<typename T> class Traits<const TensorType<T> &> : public TraitsType<T>, public DefaultDenseTraits, public DefaultTensorTraits<Order> { }; \
+    template<typename T> class Traits< TensorType<T> &> : public TraitsType<T>, public DefaultDenseTraits, public DefaultTensorTraits<Order> {  }
 
     //Always to be called within the utopia namespace
 #define UTOPIA_MAKE_PARALLEL_TRAITS(TensorType)  template<> class is_parallel<TensorType> { public: enum { value = true}; }

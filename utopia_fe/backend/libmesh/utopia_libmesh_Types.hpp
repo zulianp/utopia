@@ -29,22 +29,24 @@ namespace utopia {
         os << "\n";
     }
 
-    template<typename T>
-    class LibMeshAlgebraTraits {
-    public:
-        typedef T Scalar;
-        typedef libMesh::dof_id_type SizeType;
+    // template<typename T>
+    // class LibMeshAlgebraTraits {
+    // public:
+    //     typedef T Scalar;
+    //     typedef libMesh::dof_id_type SizeType;
 
-        enum {
-            Backend = LIBMESH_TAG
-        };
+    //     using Matrix = utopia::LMDenseMatrix;
+    //     using Vector = utopia::LMDenseVector;
 
-        typedef libMesh::DenseMatrix<Scalar> Matrix;
-        typedef libMesh::DenseVector<Scalar> Vector;
-    };
+    //     enum {
+    //         Backend = LIBMESH_TAG
+    //     };
+        
+    
+    // };
 
-    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseMatrix, LibMeshAlgebraTraits);
-    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseVector, LibMeshAlgebraTraits);
+    // UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseMatrix, LibMeshAlgebraTraits);
+    // UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseVector, LibMeshAlgebraTraits);
 
 
     inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
@@ -98,9 +100,10 @@ namespace utopia {
         // mat.add_matrix(u_row_dofs, u_col_dofs, block.entries());
     }
 
+    template<typename I>
     inline static void set_matrix(const LMDenseMatrix &block,
-                                  const std::vector<libMesh::dof_id_type> &row_dofs,
-                                  const std::vector<libMesh::dof_id_type> &col_dofs,
+                                  const std::vector<I> &row_dofs,
+                                  const std::vector<I> &col_dofs,
                                   USparseMatrix &mat)
     {
         using IndexSet = Traits<UVector>::IndexSet;

@@ -258,7 +258,7 @@ namespace utopia {
             assert(r.extent() == n_local_elems);
             
             std::vector<bool> remove(adapter.n_local_dofs(), false);
-            auto cr = adapter.permutation()->implementation().col_range();
+            auto cr = adapter.permutation()->col_range();
             
             element_wise.is_contact = local_zeros(adapter.n_local_dofs());
             

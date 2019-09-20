@@ -297,7 +297,7 @@ namespace utopia {
                     // dof_map.dof_indices(e, dofs);
 
                     const auto &dofs = dof_map[idx].dofs;
-                    mat.set_matrix(dofs, dofs, local_trafo_t.get_values());
+                    set_matrix(mat, dofs, dofs, local_trafo_t.get_values());
 
                     for(auto d : dofs) {
                         if(rr.inside(d)) {

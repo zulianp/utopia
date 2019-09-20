@@ -219,7 +219,7 @@ namespace utopia {
 
         {
             Write<USparseMatrix> w_m(mat, utopia::GLOBAL_ADD);
-            libMesh::DenseMatrix<libMesh::Real> el_mat;
+            LMDenseMatrix el_mat;
 
             auto fe = libMesh::FEBase::build(dim, fe_type);
             libMesh::QGauss qrule(dim, fe_type.default_quadrature_order());
@@ -248,7 +248,7 @@ namespace utopia {
                     n_indices
                 );
 
-                el_mat.zero();
+                el_mat.set(0.0);
 
 
                 for(unsigned int i = 0; i < n_shape_functions; i++) {
@@ -258,7 +258,7 @@ namespace utopia {
                             assert(!std::isnan(value) && !std::isinf(value));
 
                             for(unsigned int k = 0; k < n_tensor; k++) {
-                                el_mat(i + k * phi.size(), j + k * phi.size()) += value;
+                                el_mat.add(i + k * phi.size(), j + k * phi.size(), value);
                             }
                         }
                     }

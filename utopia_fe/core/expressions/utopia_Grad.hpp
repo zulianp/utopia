@@ -11,7 +11,7 @@ namespace utopia {
     template<class Expr>
     class Gradient : public DifferentialOperator< Gradient<Expr> >/*, public Val< Gradient<Expr> >*/ {
     public:
-        static const int Order = Expr::Order + 1;
+        static const int Order = Traits<Expr>::Order + 1;
         typedef typename Expr::Scalar Scalar;
 
         std::string get_class() const override { return "Gradient<" + expr_.get_class() + ">"; }

@@ -157,7 +157,8 @@ namespace utopia {
     };
 
     template<>
-    class Traits<LibMeshFunctionSpace> : public LibMeshAlgebraTraits<double> {
+    class Traits<LibMeshFunctionSpace> //: public LibMeshAlgebraTraits<double> 
+    {
     public:
         static const int Backend = LIBMESH_TAG;
         static const int Order = 1;

@@ -104,8 +104,9 @@ namespace utopia {
                 mat *= 0.;
             }
 
-
-            GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            typename Traits<GlobalVector>::IndexSet ghost_nodes;
+            convert(dof_map.get_send_list(), ghost_nodes);
+            GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
             // if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
                 // vec = local_zeros(dof_map.n_local_dofs());
 
@@ -304,7 +305,10 @@ namespace utopia {
             const auto &dof_map = space.dof_map();
             auto &m = space.mesh();
 
-            GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            typename Traits<GlobalVector>::IndexSet ghost_nodes;
+
+            convert(dof_map.get_send_list(), ghost_nodes);
+            GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
 
             // if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
             // 	// vec = local_zeros(dof_map.n_local_dofs());

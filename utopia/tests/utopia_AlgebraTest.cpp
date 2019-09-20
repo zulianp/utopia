@@ -13,6 +13,8 @@ namespace utopia {
     public:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+        static_assert(Traits<Vector>::Order == 1, "Tensor order of vector must be one");
         
         void norm_test()
         {
@@ -118,6 +120,8 @@ namespace utopia {
     private:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+        static_assert(Traits<Matrix>::Order == 2, "Tensor order of matrix must be 2");
 
         void nnz_test()
         {

@@ -503,6 +503,38 @@ namespace utopia {
 
    };
 
+
+
+   template<class Left, class Traits, int Backend>
+   class Eval<InPlace<Left, Factory<Identity, 2>, Minus>, Traits, Backend> {
+   public:
+
+       inline static bool apply(const InPlace<Left, Factory<Identity, 2>, Minus> &expr)
+       {
+           UTOPIA_TRACE_BEGIN(expr);
+
+           Eval<Left, Traits>::apply(expr.left()).shift_diag(-1.);
+
+           UTOPIA_TRACE_END(expr);
+           return true;
+       }
+   };
+
+   template<class Left, class Traits, int Backend>
+   class Eval<InPlace<Left, Factory<Identity, 2>, Plus>, Traits, Backend> {
+   public:
+
+       inline static bool apply(const InPlace<Left, Factory<Identity, 2>, Plus> &expr)
+       {
+           UTOPIA_TRACE_BEGIN(expr);
+
+           Eval<Left, Traits>::apply(expr.left()).shift_diag(1.);
+
+           UTOPIA_TRACE_END(expr);
+           return true;
+       }
+   };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_FACTORY_HPP

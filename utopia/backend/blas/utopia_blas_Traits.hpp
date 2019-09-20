@@ -31,8 +31,8 @@ namespace utopia {
         }
     };
 
-    UTOPIA_MAKE_TRAITS_TPL_1(BlasVector, BLASTraits);
-    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasDenseMatrix, BLASTraits);
+    UTOPIA_MAKE_TRAITS_TPL_1(BlasVector, BLASTraits, 1);
+    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasDenseMatrix, BLASTraits, 2);
 
 }
 

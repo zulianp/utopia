@@ -38,10 +38,10 @@ namespace utopia {
         }
     };
 
-    template<class Tensor> 
-    inline SizeType max_row_nnz(const Wrapper<Tensor, 2> &mat)
+    template<class Derived> 
+    inline SizeType max_row_nnz(const Tensor<Derived, 2> &mat)
     {
-        return MaxRowNNZ<Wrapper<Tensor, 2>>::apply(mat);
+        return MaxRowNNZ<Tensor<Derived, 2>>::apply(mat.derived());
     }
 
 }

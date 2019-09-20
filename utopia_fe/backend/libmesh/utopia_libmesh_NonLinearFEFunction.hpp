@@ -70,7 +70,9 @@ namespace utopia {
 
     //libmesh
     template<class FunctionSpaceT, class Expr, class GlobalMatrix>
-    void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, Wrapper<GlobalMatrix, 2> &mat)
+    void element_assemble_expression_v(
+        const libMesh::MeshBase::const_element_iterator &it,
+        const Expr &expr, Tensor<GlobalMatrix, 2> &t_mat)
     {
         typedef utopia::Traits<FunctionSpaceT> TraitsT;
         typedef typename TraitsT::Matrix ElementMatrix;
@@ -78,6 +80,7 @@ namespace utopia {
 
         static const int Backend = TraitsT::Backend;
 
+        auto &mat = t_mat.derived();
         const auto &space = find_space<FunctionSpaceT>(expr);
         const auto &dof_map = space.dof_map();
 
@@ -132,7 +135,10 @@ namespace utopia {
 
 
     template<class FunctionSpaceT, class Expr, class GlobalVector>
-    void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, Wrapper<GlobalVector, 1> &vec)
+    void element_assemble_expression_v(
+        const libMesh::MeshBase::const_element_iterator &it,
+        const Expr &expr,
+        Tensor<GlobalVector, 1> &t_vec)
     {
         typedef utopia::Traits<FunctionSpaceT> TraitsT;
         typedef typename TraitsT::Matrix ElementMatrix;
@@ -142,6 +148,7 @@ namespace utopia {
 
         const auto &space = find_space<FunctionSpaceT>(expr);
         const auto &dof_map = space.dof_map();
+        auto &vec = t_vec.derived();
 
         AssemblyContext<Backend> ctx;
         ctx.set_current_element((*it)->id());

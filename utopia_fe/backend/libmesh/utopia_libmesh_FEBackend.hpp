@@ -2119,14 +2119,12 @@ namespace utopia {
 
         //////////////////////////////////////////////////////////////////////////////////////////
         //Interpolate
-        template<class Derived>
         static void gather_interp_values(
-            const Tensor<Derived, 1> &t_c,
+            const UVector &c,
             const TrialFunction<LibMeshFunctionSpace> &f,
             Vector &element_values,
             AssemblyContext<LIBMESH_TAG> &ctx)
         {
-            const auto &c = t_c.derived();
             // auto &c   = interp.coefficient();
             // auto &f   = interp.fun();
 
@@ -2141,16 +2139,16 @@ namespace utopia {
             element_values = zeros(indices.size());
 
             Write<Vector> w(element_values);
-            Read<Derived> r(c);
+            Read<UVector> r(c);
 
-            typename Traits<Derived>::IndexSet u_index;
+            typename Traits<UVector>::IndexSet u_index;
             u_index.insert(u_index.end(), indices.begin(), indices.end());
 
             // for(std::size_t i = 0; i < indices.size(); ++i) {
             // 	element_values.set(i, c.get(indices[i]));
             // }
             // std::cout << raw_type(c) << std::endl;
-            assert( c.implementation().has_ghosts() || mpi_world_size() == 1);
+            assert( c.has_ghosts() || c.comm().size() == 1);
             c.get(u_index, element_values.entries());
         }
 
@@ -2202,7 +2200,7 @@ namespace utopia {
             auto &&g = fun(f, ctx);
 
             Vector element_values;
-            gather_interp_values(c, f, element_values, ctx);
+            gather_interp_values(c.derived(), f, element_values, ctx);
 
             const std::size_t n_shape_functions = g.size();
             const std::size_t n_quad_points = g[0].size();
@@ -2228,9 +2226,8 @@ namespace utopia {
             return ret;
         }
 
-        template<class Derived>
         static std::vector<Vector> grad(
-            const Tensor<Derived, 1> &c,
+            const UVector &c,
             const TrialFunction<LibMeshFunctionSpace> &f,
             AssemblyContext<LIBMESH_TAG> &ctx)
         {
@@ -2315,11 +2312,9 @@ namespace utopia {
             return div(f.coefficient(), f.fun(), ctx);
         }
 
-        template<class Derived>
         static std::vector<Matrix> 
-        grad(const Tensor<Derived, 1> &t_c, const TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace> > &f, AssemblyContext<LIBMESH_TAG> &ctx)
+        grad(const UVector &c, const TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace> > &f, AssemblyContext<LIBMESH_TAG> &ctx)
         {
-            const auto &c   = t_c.derived();
             // auto &f   = interp.fun();
             auto space_ptr = f.space_ptr();
             auto &&g = grad(f, ctx);
@@ -2391,14 +2386,14 @@ namespace utopia {
         }
 
 
-        template<class Derived>
         static void gather_interp_values(
-            const Tensor<Derived, 1> &t_c,
+            const UVector &c,
             const TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>> &f,
             Vector &element_values,
             AssemblyContext<LIBMESH_TAG> &ctx)
         {
-            const auto &c   = t_c.derived();
+            using IndexArray = typename Traits<UVector>::IndexArray;
+
             // auto &f   = interp.fun();
 
             auto space_ptr = f.space_ptr();
@@ -2408,7 +2403,7 @@ namespace utopia {
 
             const auto &elem_ptr = mesh.elem(ctx.current_element());
 
-            std::vector<libMesh::dof_id_type> prod_indices;
+            IndexArray prod_indices;
             std::vector<libMesh::dof_id_type> indices;
 
             space_ptr->each([&](const int sub_index, const LibMeshFunctionSpace &space) {
@@ -2420,8 +2415,8 @@ namespace utopia {
             element_values = zeros(n_indices);
 
             Write<Vector> w(element_values);
-            Read<Derived> r(c);
-            assert( c.implementation().has_ghosts() || mpi_world_size() == 1);
+            Read<UVector> r(c);
+            assert( c.has_ghosts() || c.comm().size() == 1 );
             c.get(prod_indices, element_values.entries());
         }
 

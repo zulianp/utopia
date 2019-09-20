@@ -59,7 +59,9 @@ namespace utopia {
             }
 
             idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
-            UVector out = disp.select(idx);
+            UVector out; 
+            disp.select(idx, out);
+
             {
                 Read<UVector> r_out(out);
                 auto range_out = range(out);

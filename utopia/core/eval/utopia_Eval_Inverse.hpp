@@ -9,7 +9,7 @@ namespace utopia {
         class Eval<Inverse< Tensor<Derived, 2> >, Traits, Backend> {
         public:
             typedef Derived Tensor2;
-            typedef utopia::Inverse<Tensor2> Expr;
+            typedef utopia::Inverse< Tensor<Derived, 2> > Expr;
 
             typedef typename Traits::Scalar Scalar;
 
@@ -18,14 +18,14 @@ namespace utopia {
                 UTOPIA_TRACE_BEGIN(expr);
                 Tensor2 ret;
                 apply(expr, ret);
-                return ret.implementation();
+                return ret;
             }
 
             inline static bool apply(const Expr &expr, Tensor2 &result)
             {
                 UTOPIA_TRACE_BEGIN(expr);
 
-                const auto &m = expr.expr();
+                const auto &m = expr.expr().derived();
                 auto s = size(m);
 
                 assert(s.get(0) == s.get(1));

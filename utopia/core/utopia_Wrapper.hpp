@@ -472,6 +472,12 @@ namespace utopia {
     //     Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().convert(rawType, t.implementation());
     // }
 
+    template<typename T1, typename T2>
+    inline void convert(const std::vector<T1> &from, std::vector<T2> &to) {
+       to.resize(from.size());
+       std::copy(from.begin(), from.end(), to.begin());
+    }
+
     // /**
     //  * @ingroup    interoperability
     //  * @brief      Converts utopia-wrapper specified type of tensor into original type.
