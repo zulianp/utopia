@@ -528,6 +528,8 @@ namespace utopia {
             });
 
             in.get("adaptivity", adaptivity_);
+
+            in.get("solver", solver);
         }
 
         inline bool init()
@@ -600,8 +602,8 @@ namespace utopia {
             // }
 
             Vector x = local_zeros(local_size(rhs));
-            Factorization<Matrix, Vector> solver;
-            
+         
+            solver.describe(std::cout);
             if(!solver.solve(A, rhs, x)) {
                 std::cerr << "[Error] failed to solve" << std::endl;
                 return false;
@@ -763,6 +765,8 @@ namespace utopia {
         std::shared_ptr<DFMReport<Matrix, Vector>> report_;
 
         bool adaptivity_;
+
+        Factorization<Matrix, Vector> solver;
 
     };
     

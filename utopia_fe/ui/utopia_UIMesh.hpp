@@ -13,6 +13,14 @@
 
 namespace utopia {
 
+    void refine_at_intersection(
+        const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
+        const libMesh::Order &elem_order,
+        const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
+        const int refinement_loops = 1,
+        const bool use_interpolation = false);
+
+
     inline void refine_0(libMesh::UnstructuredMesh &mesh)
     {
         libMesh::MeshRefinement mesh_refinement(mesh);
@@ -54,7 +62,7 @@ namespace utopia {
         }
 
         // mesh_refinement.clean_refinement_flags()
-  
+
     }
 
     template<class Mesh>
@@ -153,8 +161,8 @@ namespace utopia {
                     radius,
                     sphere_refine,//const unsigned int nr = 2,
                     get_type(elem_type, order, 3)
-                    //const unsigned int 	n_smooth = 2,
-                    // const bool 	flat = true
+                    //const unsigned int    n_smooth = 2,
+                    // const bool   flat = true
                 );
 
             } else if(mesh_type == "aabb") {
@@ -207,11 +215,11 @@ namespace utopia {
                 mesh_->all_second_order(full_order);
             }
 
-            { 
+            {
                 //single morph
                 UIMorph<libMesh::DistributedMesh> morph;
                 is.get("morph", morph);
-                
+
                 if(morph.is_valid()) {
                     morph.apply(*mesh_);
                 }
@@ -229,11 +237,11 @@ namespace utopia {
 
                     UIMorph<libMesh::DistributedMesh> morph;
                     morph.read(is);
-                    
+
                     if(morph.is_valid()) {
                         morph.apply(*mesh_);
                     }
-                    
+
                 });
             });
 
@@ -253,6 +261,30 @@ namespace utopia {
 
             if(must_random_refine) {
                 random_refine(*mesh_, n_random_refinements);
+            }
+
+            bool must_refine_at_intersection = false;
+            is.get("refine-at-intersection", must_refine_at_intersection);
+
+            if(must_refine_at_intersection) {
+                std::string intersecting_mesh_path;
+                is.get("intersecting-mesh-path", intersecting_mesh_path);
+
+                int n_refinements_at_intersection = 1;
+                is.get("n-refinements-at-intersection", n_refinements_at_intersection);
+
+                auto i_mesh = std::make_shared<libMesh::DistributedMesh>(mesh_->comm());
+
+                i_mesh->read(intersecting_mesh_path);
+
+                refine_at_intersection(
+                        i_mesh,
+                        libMesh::Order(1),
+                        mesh_,
+                        n_refinements_at_intersection,
+                        false
+                );
+
             }
 
         }
