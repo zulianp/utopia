@@ -1,6 +1,7 @@
 list(APPEND CORE_MODULES
     .
     eval
+    eval/mech
     expressions
 )
 

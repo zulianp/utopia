@@ -31,6 +31,7 @@
 #include "utopia_FEEval_Factory.hpp"
 #include "utopia_FEEval_Norm.hpp"
 
-
+//specialized
+#include "utopia_FEEval_Strain.hpp"
 
 #endif //UTOPIA_FE_EVAL_HPP
