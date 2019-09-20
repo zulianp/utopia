@@ -75,6 +75,14 @@ namespace utopia {
         {
             strategy_.describe(os);
         }
+        
+        
+        inline void read(Input &is) override
+        {
+            DirectSolver<Matrix, Vector>::read(is);
+            strategy_.read(is);
+        }
+    
 
         inline void read(Input &is) override
         {

@@ -161,8 +161,8 @@ namespace utopia {
                     radius,
                     sphere_refine,//const unsigned int nr = 2,
                     get_type(elem_type, order, 3)
-                    //const unsigned int 	n_smooth = 2,
-                    // const bool 	flat = true
+                    //const unsigned int    n_smooth = 2,
+                    // const bool   flat = true
                 );
 
             } else if(mesh_type == "aabb") {
@@ -274,6 +274,9 @@ namespace utopia {
                 is.get("n-refinements-at-intersection", n_refinements_at_intersection);
 
                 auto i_mesh = std::make_shared<libMesh::DistributedMesh>(mesh_->comm());
+
+                i_mesh->read(intersecting_mesh_path);
+
 
                 refine_at_intersection(
                         i_mesh,

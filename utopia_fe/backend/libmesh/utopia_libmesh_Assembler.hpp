@@ -39,23 +39,27 @@ namespace utopia {
             const auto &dof_map = space.dof_map();
             auto &m = space.mesh();
 
-
             val = 0.;
 
-            for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-                init_context_on(expr, (*elements_begin(m))->id());
+            auto e_begin = elements_begin(m);
+            auto e_end   = elements_end(m);
 
-                if(it != elements_begin(m)) {
-                    reinit_context_on(expr, (*it)->id());
-                }
+            if(e_begin != e_end)  {
+                init_context_on(expr, (*e_begin)->id());
+                for(auto it = e_begin; it != e_end; ++it) {
 
-                Number<Scalar> el_val = 0.;
+                    if(it != e_begin) {
+                        reinit_context_on(expr, (*it)->id());
+                    }
 
-                FormEvaluator<LIBMESH_TAG> eval;
-                eval.eval(expr, el_val, ctx_);
+                    Number<Scalar> el_val = 0.;
 
-                if(ctx_.has_assembled()) {
-                    val += el_val;
+                    FormEvaluator<LIBMESH_TAG> eval;
+                    eval.eval(expr, el_val, ctx_);
+
+                    if(ctx_.has_assembled()) {
+                        val += el_val;
+                    }
                 }
             }
 
@@ -129,11 +133,16 @@ namespace utopia {
                 ElementMatrix el_mat;
                 ElementVector el_vec;
 
-                init_context_on(expr, (*elements_begin(m))->id());
+                auto e_begin = elements_begin(m);
+                auto e_end   = elements_end(m);
+
+                if(e_begin != e_end) {
+                    init_context_on(expr, (*e_begin)->id());
+                }
 
                 std::vector<libMesh::dof_id_type> dof_indices;
-                for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-                    if(it != elements_begin(m)) {
+                for(auto it = e_begin; it != e_end; ++it) {
+                    if(it != e_begin) {
                         reinit_context_on(expr, (*it)->id());
                     }
 
@@ -143,7 +152,6 @@ namespace utopia {
                     FormEvaluator<LIBMESH_TAG> eval;
                     eval.eval(expr, el_mat, el_vec, ctx_);
 
-                    
                     dof_map.dof_indices(*it, dof_indices);
 
                     if(ctx_.has_assembled()) {
@@ -171,7 +179,7 @@ namespace utopia {
 
 
                         libMesh::Elem * ele = *it;
-                        // std::cout<<"current_elem_LIBMESH: "<<ele[0]<<std::endl;
+                        // std::cout<<"current_elem: "<<ele[0]<<std::endl;
                         // utopia::disp("el_mat");
                         // utopia::disp(el_mat);
                         // utopia::disp("el_vec");
@@ -246,13 +254,16 @@ namespace utopia {
             {
                 Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
 
-                if(elements_begin(m) != elements_end(m)) {
+                auto e_begin = elements_begin(m);
+                auto e_end   = elements_end(m);
+
+                if(e_begin != e_end) {
 
                     ElementMatrix el_mat;
-                    init_context_on(expr, (*elements_begin(m))->id());
+                    init_context_on(expr, (*e_begin)->id());
 
-                    for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-                        if(it != elements_begin(m)) {
+                    for(auto it = e_begin; it != e_end; ++it) {
+                        if(it != e_begin) {
                             reinit_context_on(expr, (*it)->id());
                         }
 
@@ -325,11 +336,14 @@ namespace utopia {
                 Write<GlobalVector> w_v(temp_vec, utopia::GLOBAL_ADD);
                 ElementVector el_vec;
 
-                if(elements_begin(m) != elements_end(m)) {
-                    init_context_on(expr, (*elements_begin(m))->id());
+                auto e_begin = elements_begin(m);
+                auto e_end   = elements_end(m);
 
-                    for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-                        if(it != elements_begin(m)) {
+                if(e_begin != e_end) {
+                    init_context_on(expr, (*e_begin)->id());
+
+                    for(auto it = e_begin; it != e_end; ++it) {
+                        if(it != e_begin) {
                             reinit_context_on(expr, (*it)->id());
                         }
 

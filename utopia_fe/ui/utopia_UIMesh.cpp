@@ -1,6 +1,20 @@
 #include "utopia_UIMesh.hpp"
+<<<<<<< HEAD
 #include "moonolith_communicator.hpp"
 
+=======
+#include "utopia_assemble_volume_transfer.hpp"
+#include "utopia_InterpolationLocalAssembler.hpp"
+#include "utopia_TransferAssembler.hpp"
+
+#include "moonolith_communicator.hpp"
+
+#include "libmesh/mesh_refinement.h"
+#include "libmesh/mesh_tools.h"
+#include "libmesh/elem.h"
+
+
+>>>>>>> remotes/origin/frac-refactor
 namespace utopia {
     
     void refine_at_intersection(
@@ -32,6 +46,7 @@ namespace utopia {
             Chrono c;
             c.start();
             USparseMatrix B;
+
             moonolith::Communicator comm(mesh->comm().get());
             if(assemble_volume_transfer(
                 comm,
