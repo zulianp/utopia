@@ -103,6 +103,7 @@ namespace utopia {
         typedef TraitsT::Matrix Matrix;
         typedef TraitsT::Vector Vector;
         typedef TraitsT::DXType DXType;
+        typedef TraitsT::GradientType GradientType;
 
         inline std::vector< std::unique_ptr<FE> > &fe()
         {
@@ -124,6 +125,15 @@ namespace utopia {
             return active_values().vector_fe();
         }
 
+        inline GradientType &grad(const int subspace_id)
+        {
+            return active_values().grad(subspace_id).g;
+        }
+
+        inline const GradientType &grad(const int subspace_id) const
+        {
+            return active_values().grad(subspace_id).g;
+        }
 
 
         inline std::vector< std::unique_ptr<FE> > &test()

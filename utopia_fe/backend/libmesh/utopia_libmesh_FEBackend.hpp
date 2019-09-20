@@ -1908,12 +1908,14 @@ namespace utopia {
         // scalar fe functions
         static const GradientType &grad(const TrialFunction<LibMeshFunctionSpace> &fun, AssemblyContext<LIBMESH_TAG> &ctx)
         {
-            return ctx.trial()[fun.space_ptr()->subspace_id()]->get_dphi();
+            // return ctx.trial()[fun.space_ptr()->subspace_id()]->get_dphi();
+            return ctx.grad(fun.space_ptr()->subspace_id());
         }
 
         static const GradientType &grad(const TestFunction<LibMeshFunctionSpace> &fun, AssemblyContext<LIBMESH_TAG> &ctx)
         {
-            return ctx.test()[fun.space_ptr()->subspace_id()]->get_dphi();
+            //return ctx.test()[fun.space_ptr()->subspace_id()]->get_dphi();
+            return ctx.grad(fun.space_ptr()->subspace_id());
         }
 
         // vector fe functions
@@ -2282,8 +2284,8 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_shape_functions; ++i) {
                 for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
-                    // ret[qp] += element_values.get(i) * g[i][qp];
-                    add(ret[qp], element_values.get(i) * g[i][qp]);
+                    ret[qp] += element_values.get(i) * g[i][qp];
+                    // add(ret[qp], element_values.get(i) * g[i][qp]);
                 }
             }
 
@@ -3132,33 +3134,22 @@ namespace utopia {
         // 	return ret;
         // }
 
-        // template<class Space>
         inline static auto multiply(
             const LMDenseMatrix &left,
             const Gradient<TrialFunction<LibMeshFunctionSpace> > &right,
             AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type
         {
-            typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+            const GradientType &g = grad(right.expr(), ctx);
+            GradientType ret = g;
 
-            Read<LMDenseMatrix> r_l(left);
+            const std::size_t n = g.size();
+            const std::size_t n_qp = g[0].size();
 
-            Size s_l = size(left);
-
-            for(auto &v : ret) {
-                for(auto &s : v) {
-                    auto s_copy = s;
-
-                    for(uint i = 0; i < s_l.get(0); ++i) {
-                        s(i) = left.get(i, 0) * s_copy(0);
-
-                        for(uint j = 1; j < s_l.get(1); ++j) {
-                            s(i) += left.get(i, j) * s_copy(j);
-                        }
-                    }
-
+            for(std::size_t i = 0; i < n; ++i) {
+                for(std::size_t k = 0; k < n_qp; ++k) {
+                    ret[i][k] = left * g[i][k];
                 }
             }
-
             return ret;
         }
 

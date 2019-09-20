@@ -37,6 +37,37 @@ namespace utopia {
         typedef TraitsT::Vector Vector;
         typedef TraitsT::DXType DXType;
         typedef TraitsT::JacobianType JacobianType;
+        typedef TraitsT::GradientType GradientType;
+
+        class GradValue {
+        public:
+            bool active;
+            GradientType g;
+
+            void init(
+                const int spatial_dim,
+                const std::vector<std::vector<libMesh::VectorValue<double>>> &v)
+            {
+                const std::size_t n = v.size();
+                const std::size_t n_qp = v[0].size();
+                g.resize(n);
+
+                for(std::size_t i = 0; i < n; ++i) {
+                    g[i].resize(n_qp);
+                    for(std::size_t k = 0; k < n_qp; ++k) {
+
+                        g[i][k].resize(spatial_dim);
+                        for(int d = 0; d < spatial_dim; ++d) {
+                            g[i][k].set(d, v[i][k](d));
+                        }
+                    }
+                }
+
+            }
+
+            GradValue() : active(false) {}
+        };
+
 
         inline std::vector< std::unique_ptr<FE> > &fe()
         {
@@ -125,11 +156,16 @@ namespace utopia {
             const auto &eq_sys = space_ptr->equation_system();
             const std::size_t n_vars = eq_sys.n_vars();
             fe_.resize(n_vars);
+            grads_.resize(n_vars);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 auto fe = libMesh::FEBase::build(dim, eq_sys.get_dof_map().variable_type(i));
                 fe->attach_quadrature_rule(quad_test().get());
                 fe_[i] = std::move(fe);
+
+                if(!grads_[i]) {
+                    grads_[i] = std::make_shared<GradValue>();
+                }
 
             }
 
@@ -140,6 +176,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem);
+                grad(i).active = false;
             }
 
             //vfe
@@ -148,6 +185,8 @@ namespace utopia {
                     v_fe_ptr->init(fe_);
                 }
             }
+
+            init_grads(space_ptr->mesh().spatial_dimension());
         }
 
         template<class Expr>
@@ -168,6 +207,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem);
+                grad(i).active = false;
             }
 
             //vfe
@@ -176,6 +216,8 @@ namespace utopia {
                     v_fe_ptr->reinit(fe_);
                 }
             }
+
+            init_grads(space_ptr->mesh().spatial_dimension());
         }
 
         inline bool on_boundary() const
@@ -251,17 +293,23 @@ namespace utopia {
             const auto &eq_sys = space_ptr->equation_system();
             const std::size_t n_vars = eq_sys.n_vars();
             fe_.resize(n_vars);
+            grads_.resize(n_vars);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 auto fe = libMesh::FEBase::build(dim, eq_sys.get_dof_map().variable_type(i));
                 fe->attach_quadrature_rule(quad_test().get());
                 fe_[i] = std::move(fe);
+                
+                if(!grads_[i]) {
+                    grads_[i] = std::make_shared<GradValue>();
+                }
             }
 
             init_fe_flags(expr);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem, side);
+                grad(i).active = false;
             }
 
             //vfe
@@ -271,6 +319,7 @@ namespace utopia {
                 }
             }
 
+            init_grads(space_ptr->mesh().spatial_dimension());
             init_dual(s_type);
         }
 
@@ -288,6 +337,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem, side);
+                grad(i).active = false;
             }
 
             //vfe
@@ -297,6 +347,8 @@ namespace utopia {
                 }
             }
 
+
+            init_grads(space_ptr->mesh().spatial_dimension());
             //init_dual(s_type);
         }
 
@@ -372,6 +424,32 @@ namespace utopia {
         std::vector<DualBasis> &dual_fe() { return dual_fe_; }
         const std::vector<DualBasis> &dual_fe()  const { return dual_fe_; }
 
+        inline GradValue &grad(const std::size_t i) {
+            assert(i < grads_.size());
+            assert(bool(grads_[i]));
+
+            return *grads_[i];
+        }
+
+        inline const GradValue &grad(const std::size_t i) const {
+            assert(i < grads_.size());
+            assert(bool(grads_[i]));
+
+            return *grads_[i];
+        }
+
+        void init_grads(const int spatial_dim)
+        {
+            for(std::size_t i = 0; i < fe_.size(); ++i) {
+                if(fe_[i]) {
+                    if(grad(i).active) {
+                        grad(i).init(spatial_dim, fe_[i]->get_dphi());
+                    }
+                }
+            }
+        }
+
+
     private:
         long current_element_;
         long quadrature_order_;
@@ -388,6 +466,10 @@ namespace utopia {
 
         //additional precomputed values
         std::vector<std::shared_ptr<VectorElement>> vector_fe_;
+        
+
+     
+        std::vector< std::shared_ptr<GradValue> > grads_;
 
 
         class FEInitializer {
@@ -496,6 +578,7 @@ namespace utopia {
             void init_dphi(const LibMeshFunctionSpace &s)
             {
                 ctx.fe()[s.subspace_id()]->get_dphi();
+                ctx.grad(s.subspace_id()).active = true;
             }
 
 

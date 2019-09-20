@@ -167,20 +167,20 @@ namespace utopia {
         typedef double Scalar;
         typedef utopia::LMDenseVector Vector;
         typedef utopia::LMDenseMatrix Matrix;
-        typedef libMesh::TensorValue<Scalar> TensorValueT;
-        typedef libMesh::VectorValue<Scalar> VectorValueT;
+        // typedef libMesh::TensorValue<Scalar> TensorValueT;
+        // typedef libMesh::VectorValue<Scalar> VectorValueT;
 
         typedef utopia::LibMeshFunctionSpace Implementation;
 
         typedef libMesh::FEBase FE;
 
-        typedef std::vector<std::vector<libMesh::FEBase::OutputShape>> FunctionType;
-        typedef std::vector<std::vector<libMesh::FEBase::OutputGradient>> GradientType;
-        typedef std::vector<std::vector<libMesh::FEBase::OutputDivergence>> DivergenceType;
-        typedef std::vector<std::vector<Matrix>> JacobianType;
-        typedef std::vector<std::vector<Vector>> CurlType;
+        typedef std::vector<std::vector<double>> FunctionType;
+        typedef std::vector<std::vector<utopia::LMDenseVector>> GradientType;
+        typedef std::vector<std::vector<double>> DivergenceType;
+        typedef std::vector<std::vector<utopia::LMDenseMatrix>> JacobianType;
+        typedef std::vector<std::vector<utopia::LMDenseVector>> CurlType;
 
-        typedef std::vector<libMesh::Real> DXType;
+        typedef std::vector<double> DXType;
         typedef libMesh::MeshBase MeshType;
         typedef utopia::LibMeshAssemblyValues AssemblyValues;
     };

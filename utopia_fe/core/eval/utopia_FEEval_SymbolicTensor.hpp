@@ -34,9 +34,9 @@ namespace utopia {
     template<class Type, int Order, class Traits, int Backend, int IsQuadData>
     class FEEval<SymbolicTensor<Type, Order>, Traits, Backend, IsQuadData> {
     public:
-        inline static auto apply(const SymbolicTensor<Type, Order> &expr, AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::default_identity() )
+        inline static SymbolicTensor<Type, Order> & apply(const SymbolicTensor<Type, Order> &expr, AssemblyContext<Backend> &ctx)
         {
-            return FEBackend<Backend>::default_identity();
+            return expr;
         }
 
     };
