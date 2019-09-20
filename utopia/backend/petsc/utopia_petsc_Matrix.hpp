@@ -748,7 +748,7 @@ namespace utopia {
                 const Range &global_col_range,
                 PetscMatrix &result) const;
 
-        inline Scalar trace() const
+        inline Scalar trace() const override
         {
             Scalar ret;
             check_error( MatGetTrace(implementation(), &ret) );

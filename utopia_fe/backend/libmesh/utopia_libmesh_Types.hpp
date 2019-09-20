@@ -100,13 +100,41 @@ namespace utopia {
         // mat.add_matrix(u_row_dofs, u_col_dofs, block.entries());
     }
 
-    template<typename I>
-    inline static void set_matrix(const LMDenseMatrix &block,
-                                  const std::vector<I> &row_dofs,
-                                  const std::vector<I> &col_dofs,
+    template<typename Dofs>
+    inline static void set_matrix(const libMesh::DenseMatrix<double> &block,
+                                  const Dofs &row_dofs,
+                                  const Dofs &col_dofs,
                                   USparseMatrix &mat)
     {
-        using IndexSet = Traits<UVector>::IndexSet;
+        // using IndexSet = Traits<UVector>::IndexSet;
+        Size s = size(mat);
+        for(uint i = 0; i < row_dofs.size(); ++i) {
+         for(uint j = 0; j < col_dofs.size(); ++j) {
+             const libMesh::Real val = block(i, j);
+             if(val != 0.0) {
+                 assert(row_dofs[i] < s.get(0));
+                 assert(col_dofs[j] < s.get(1));
+
+                 mat.c_set(row_dofs[i], col_dofs[j], val);
+             }
+         }
+        }
+
+        // IndexSet u_row_dofs(row_dofs.size()), u_col_dofs(col_dofs.size());
+
+        // std::copy(row_dofs.begin(), row_dofs.end(), u_row_dofs.begin());
+        // std::copy(col_dofs.begin(), col_dofs.end(), u_col_dofs.begin());
+
+        // mat.set_matrix(u_row_dofs, u_col_dofs, block.entries());
+    }
+
+    template<typename Dofs>
+    inline static void set_matrix(const LMDenseMatrix &block,
+                                  const Dofs &row_dofs,
+                                  const Dofs &col_dofs,
+                                  USparseMatrix &mat)
+    {
+        // using IndexSet = Traits<UVector>::IndexSet;
         Size s = size(mat);
         for(uint i = 0; i < row_dofs.size(); ++i) {
          for(uint j = 0; j < col_dofs.size(); ++j) {

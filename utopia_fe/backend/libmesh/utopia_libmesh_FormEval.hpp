@@ -250,15 +250,15 @@ namespace utopia {
             accumulator = val;
         }
 
-        template<class Left, class Right>
+        template<class Left, class Right, class MatT, class VecT>
         static void apply(
                     const Equality<Left, Right> &expr,
-                    USparseMatrix &mat,
-                    UVector &vec,
+                    Tensor<MatT, 2> &mat,
+                    Tensor<VecT, 1> &vec,
                     AssemblyContext<LIBMESH_TAG> &ctx)
         {
-            apply(expr.left(),  mat, ctx);
-            apply(expr.right(), vec, ctx);
+            apply(expr.left(),  mat.derived(), ctx);
+            apply(expr.right(), vec.derived(), ctx);
         }
 
         template<class Matrix, class Vector>
@@ -287,15 +287,15 @@ namespace utopia {
             AssemblyContext<LIBMESH_TAG> &ctx;
         };
 
-        template<class... Eq>
+        template<class... Eq, class MatT, class VecT>
         static void apply(
             const Equations<Eq...> &eqs,
-            USparseMatrix &mat,
-            UVector &vec,
+            Tensor<MatT, 2> &mat,
+            Tensor<VecT, 1> &vec,
             AssemblyContext<LIBMESH_TAG> &ctx)
         {
             // FEBackend<LIBMESH_TAG>::init_context(eqs, ctx);
-            EquationAssembler<USparseMatrix, UVector> eq_ass(mat, vec, ctx);
+            EquationAssembler<MatT, VecT> eq_ass(mat.derived(), vec.derived(), ctx);
             eqs.each(eq_ass);
         }
 

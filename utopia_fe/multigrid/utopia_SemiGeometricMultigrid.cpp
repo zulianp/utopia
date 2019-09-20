@@ -23,7 +23,10 @@ namespace utopia {
     {
         auto &dof_map = V.dof_map();
         auto u = trial(V);
-        UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+
+        Traits<UVector>::IndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         x.set(1.);
 
         double volume = -1.;
@@ -278,7 +281,7 @@ namespace utopia {
         //hacky
         if(is_block_solver_) {
             for(SizeType i = 0; i < mg.n_levels(); ++i) {
-                const_cast<USparseMatrix &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());
+                const_cast<USparseMatrix &>(mg.level(i).A()).convert_to_mat_baij(meshes[0]->mesh_dimension());
             }
         }
 

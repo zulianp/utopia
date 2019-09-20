@@ -18,7 +18,11 @@ namespace utopia {
         bool ok = true;
 
         const auto &p1_dof_map = P1_[0].dof_map();
-        x_p1_ = ghosted(p1_dof_map.n_local_dofs(), p1_dof_map.n_dofs(), p1_dof_map.get_send_list());
+
+        typename Traits<Vector>::IndexArray ghost_nodes;
+        convert(p1_dof_map.get_send_list(), ghost_nodes);
+
+        x_p1_ = ghosted(p1_dof_map.n_local_dofs(), p1_dof_map.n_dofs(), ghost_nodes);
         x_p1_ = VtoP1_ * x;
 
         synchronize(x_p1_);

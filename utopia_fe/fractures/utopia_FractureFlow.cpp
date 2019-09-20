@@ -165,7 +165,9 @@ namespace utopia {
 
         auto &dof_map = V_aperture.dof_map();
 
-        sampled = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        UIndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        sampled = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         // sampled = local_zeros(dof_map.n_local_dofs());
 
         auto constant_sampler = std::dynamic_pointer_cast<UIConstantFunction<double>>(sampler);
@@ -178,7 +180,9 @@ namespace utopia {
 
             auto lform = inner(ctx_fun(sampler), v) * dX;
 
-            UVector aperture_h = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            UIndexArray ghost_nodes;
+            convert(dof_map.get_send_list(), ghost_nodes);
+            UVector aperture_h = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
             utopia::assemble(lform, aperture_h);
 
             USparseMatrix mass_mat;

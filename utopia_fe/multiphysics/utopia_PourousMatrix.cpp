@@ -17,7 +17,7 @@ namespace utopia {
         std::size_t n_quad_points = g.size();
 
         for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
-            FEBackend<LIBMESH_TAG>::subtract(f[qp], g[qp].implementation(), ret[qp].implementation());
+            FEBackend<LIBMESH_TAG>::subtract(f[qp], g[qp], ret[qp]);
         }
 
         return std::move(ret);
@@ -167,7 +167,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     bool GradientRecovery<Matrix, Vector>::apply_refinement(FunctionSpaceT &V)
    {
-        //if(n_refinements_ >= max_refinements_) return false;
+        if(n_refinements_ >= max_refinements_) return false;
 
         auto &m = V.mesh();
 
@@ -217,9 +217,6 @@ namespace utopia {
     template<class Matrix, class Vector>
     void GradientRecovery<Matrix, Vector>::estimate_error(const Mortar<Matrix, Vector> &mortar, FunctionSpaceT &V, const Vector &sol)
     {
-        //REMOVE ME
-        if(n_refinements_ >= max_refinements_) return;
-
         Chrono chrono; chrono.start();
 
         init(V);
@@ -256,8 +253,9 @@ namespace utopia {
         auto test_e  = test(E);
 
         auto &dof_map = P.dof_map();
-
-        UVector p_interp_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        UIndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        UVector p_interp_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         copy_values(V, sol, P, p_interp_buff);
         synchronize(p_interp_buff);
 
@@ -282,7 +280,7 @@ namespace utopia {
             grad_p_projected = e_mul(grad_ph, 1./mass_vec);
         }
 
-        UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         grad_p_projected_buff = grad_p_projected;
         synchronize(grad_p_projected_buff);
 

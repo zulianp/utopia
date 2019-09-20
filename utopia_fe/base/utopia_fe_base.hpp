@@ -12,6 +12,10 @@ namespace utopia {
     using USparseMatrix = DSMatrixd;
     using UVector  = DVectord;
 #endif //WITH_TRILINOS_ALGEBRA
+
+    using UIndexArray  = utopia::Traits<UVector>::IndexArray;
+    using UScalarArray = utopia::Traits<UVector>::ScalarArray;
+    using UIndexSet    = utopia::Traits<UVector>::IndexSet;
 }
 
 #endif //UTOPIA_FE_BASE_HPP

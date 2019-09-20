@@ -71,10 +71,12 @@ namespace utopia {
         auto &dof_map = V.dof_map();
         dof_map.prepare_send_list();
 
-        UVector sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        UIndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        UVector sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         sol.set(0.);
 
-        UVector diff_coeff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        UVector diff_coeff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         diff_coeff.set(diffusivity);
 
         auto u_old = interpolate(sol, du);

@@ -817,6 +817,17 @@ namespace utopia {
             return aux_reduce(op);
         }
 
+        inline T trace() const override {
+            const SizeType n = std::min(rows(), cols());
+
+            T ret = 0.0;
+            for(SizeType i = 0; i < n; ++i) {
+                ret += get(i, i);
+            }
+
+            return ret;
+        }
+
         inline SizeType nnz(const Scalar tol = 0.0) const override
         {
             if(entries_.empty()) return 0.0;

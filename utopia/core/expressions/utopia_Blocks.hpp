@@ -256,27 +256,27 @@ namespace utopia {
         auto &a1_d = a1.derived();
         auto &a2_d = a2.derived();
 
-        auto r = range(block_vec);
+        auto r = range(block_vec_d);
 
         auto r0 = range(a0_d);
         auto r1 = range(a1_d);
         auto r2 = range(a2_d);
 
         {
-            Read<Derived> r_(block_vec);
+            Read<Derived> r_(block_vec_d);
             Write<Derived> w0(a0_d), w1(a1_d), w2(a2_d);
 
             SizeType index = r.begin();
             for(auto i = r0.begin(); i < r0.end(); ++i) {
-                a0_d.set(i, block_vec.get(index++));
+                a0_d.set(i, block_vec_d.get(index++));
             }
 
             for(auto i = r1.begin(); i < r1.end(); ++i) {
-                a1_d.set(i, block_vec.get(index++));
+                a1_d.set(i, block_vec_d.get(index++));
             }
 
             for(auto i = r2.begin(); i < r2.end(); ++i) {
-                a2_d.set(i, block_vec.get(index++));
+                a2_d.set(i, block_vec_d.get(index++));
             }
         }
     }

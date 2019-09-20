@@ -17,21 +17,22 @@ namespace utopia {
         template<class Matrix>
         void make_dual(const Matrix &weights)
         {
-            auto n_fun = grad.size();
-            auto n_qp = grad[0].size();
+            assert(false);
+            // auto n_fun = grad.size();
+            // auto n_qp = grad[0].size();
 
-            dual_grad.resize(n_fun);
+            // dual_grad.resize(n_fun);
 
-            for(uint i = 0; i < n_fun; ++i) {
-                dual_grad[i].resize(n_qp);
+            // for(uint i = 0; i < n_fun; ++i) {
+            //     dual_grad[i].resize(n_qp);
 
-                for(uint k = 0; k < n_qp; ++k) {
-                    dual_grad[i][k] = grad[0][k] * weights(i, 0); 
-                    for(uint j = 1; j < n_fun; ++j) {
-                        dual_grad[i][k] += grad[j][k] * weights(i, j); 
-                    }
-                }
-            }
+            //     for(uint k = 0; k < n_qp; ++k) {
+            //         dual_grad[i][k] = grad[0][k] * weights(i, 0); 
+            //         for(uint j = 1; j < n_fun; ++j) {
+            //             dual_grad[i][k] += grad[j][k] * weights(i, j); 
+            //         }
+            //     }
+            // }
         }
 
         void init_grad(std::vector< std::unique_ptr<FE> > &fe_object)
@@ -50,6 +51,21 @@ namespace utopia {
                 //TensorValue is by default initialized to 0s
             }
 
+
+            //NEW
+            for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+                std::size_t offset = 0;
+                for(std::size_t i = 0; i < n_vars; ++i) {
+                    const auto &fe = fe_object[start_var + i];
+                    const uint n_shape_i = fe->n_shape_functions();
+
+                    for(uint j = 0; j < n_shape_i; ++j, offset++) {
+                        grad[offset][qp].resize(n_shape_i, dim);
+                    }
+                }
+            }
+
+
             reinit_grad(fe_object);
         }
 
@@ -59,12 +75,13 @@ namespace utopia {
 
             for(auto &v : grad) {
                 for(auto &w : v) {
-                    w.zero();
+                    w.set(0.0);
                 }
             }
 
             for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
                 std::size_t offset = 0;
+
 
                 for(std::size_t i = 0; i < n_vars; ++i) {
                     const auto &fe = fe_object[start_var + i];
@@ -74,7 +91,7 @@ namespace utopia {
                         const auto &grad_i = fe->get_dphi()[j][qp];
 
                         for(uint d = 0; d < dim; ++d) {
-                            grad[offset][qp](i, d) = grad_i(d);
+                            grad[offset][qp].set(i, d, grad_i(d));
                         }
                     }
                 }
@@ -101,7 +118,7 @@ namespace utopia {
         std::size_t start_var;
         std::size_t n_vars;
         JacobianType grad;
-        JacobianType dual_grad;
+        // JacobianType dual_grad;
     };
 }
 

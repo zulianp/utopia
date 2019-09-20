@@ -15,7 +15,7 @@ namespace utopia {
             const auto &d_nnz = r.type().d_nnz;
             const auto &o_nnz = r.type().o_nnz;
             const auto &gs    = r.size();
-            auto &A = expr.left().implementation();
+            auto &A = Eval<Left, Traits>::apply(expr.left());
 
             //FIXME
             
@@ -47,7 +47,7 @@ namespace utopia {
            const auto &d_nnz = r.type().d_nnz;
            const auto &o_nnz = r.type().o_nnz;
            const auto &gs    = r.size();
-           auto &A = expr.left().implementation();
+           auto &A = Eval<Left, Traits>::apply(expr.left());
 
 
            //FIXME

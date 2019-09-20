@@ -177,8 +177,8 @@ namespace utopia {
         typedef std::vector<std::vector<libMesh::FEBase::OutputShape>> FunctionType;
         typedef std::vector<std::vector<libMesh::FEBase::OutputGradient>> GradientType;
         typedef std::vector<std::vector<libMesh::FEBase::OutputDivergence>> DivergenceType;
-        typedef std::vector<std::vector<TensorValueT>> JacobianType;
-        typedef std::vector<std::vector<VectorValueT>> CurlType;
+        typedef std::vector<std::vector<Matrix>> JacobianType;
+        typedef std::vector<std::vector<Vector>> CurlType;
 
         typedef std::vector<libMesh::Real> DXType;
         typedef libMesh::MeshBase MeshType;

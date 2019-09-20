@@ -164,9 +164,7 @@ namespace utopia {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).trace(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            result = Eval<Expr, Traits>::apply(expr.expr()).trace();
 
             UTOPIA_TRACE_END(expr);
             return result;

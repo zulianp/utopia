@@ -78,7 +78,7 @@ namespace utopia {
         auto &dphi = fe->get_dphi();
         auto &JxW  = fe->get_JxW();
 
-        libMesh::DenseMatrix<libMesh::Real> mat;
+        LMDenseMatrix mat;
         std::vector<libMesh::dof_id_type> dof_indices;
 
         {
@@ -91,7 +91,7 @@ namespace utopia {
                 auto n = dof_indices.size();
 
                 mat.resize(n, n);
-                mat.zero();
+                mat.set(0.0);
                 fe->reinit(&e);
 
                 auto nqp = JxW.size();
@@ -100,7 +100,7 @@ namespace utopia {
                 for(uint si = 0; si < n_shape_funcions; ++si) {
                     for(uint sj = 0; sj < n_shape_funcions; ++sj) {
                         for(uint k = 0; k < nqp; ++k) {
-                            mat(si, sj) += (dphi[si][k] * dphi[sj][k]) * JxW[k];
+                            mat.add(si, sj, (dphi[si][k] * dphi[sj][k]) * JxW[k]);
                         }
                     }
                 }
@@ -215,7 +215,9 @@ namespace utopia {
             disp);
 
         
-        UVector gx = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        Traits<UVector>::IndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        UVector gx = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
 
         std::vector<PetscInt>    dofs(1);
         std::vector<PetscScalar> vals(1);

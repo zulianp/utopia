@@ -1,8 +1,5 @@
 #include "utopia_UIMesh.hpp"
-<<<<<<< HEAD
-#include "moonolith_communicator.hpp"
 
-=======
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_InterpolationLocalAssembler.hpp"
 #include "utopia_TransferAssembler.hpp"
@@ -14,7 +11,6 @@
 #include "libmesh/elem.h"
 
 
->>>>>>> remotes/origin/frac-refactor
 namespace utopia {
     
     void refine_at_intersection(
@@ -25,18 +21,20 @@ namespace utopia {
         const bool use_interpolation
         )
     {
+        Traits<UVector>::IndexArray u_indices, ghost_nodes;
+        Traits<UVector>::ScalarArray values;
+        std::vector<libMesh::dof_id_type> indices;
 
         libMesh::MeshRefinement mesh_refinement(*mesh);
-
         for(int i = 0; i < refinement_loops; ++i) {
-        //equations system
+            //equations system
             auto vol_equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
             auto &vol_sys = vol_equation_systems->add_system<libMesh::LinearImplicitSystem>("vol_sys");
 
             auto surf_equation_systems = std::make_shared<libMesh::EquationSystems>(*fracture_network);
             auto &surf_sys = surf_equation_systems->add_system<libMesh::LinearImplicitSystem>("surf_sys");
 
-        //scalar function space
+            //scalar function space
             auto V_vol  = LibMeshFunctionSpace(vol_equation_systems, libMesh::LAGRANGE, elem_order,      "u_vol");
             auto V_surf = LibMeshFunctionSpace(surf_equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_surf");
 
@@ -74,25 +72,25 @@ namespace utopia {
 
                 USparseMatrix T_t = transpose(T);
                 UVector t_temp = sum(T_t, 1);
-                UVector t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
+
+                convert(V_vol.dof_map().get_send_list(), ghost_nodes);
+                UVector t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), ghost_nodes);
                 t = t_temp;
 
-
-                std::vector<libMesh::dof_id_type> indices;
-                std::vector<double> values;
+                synchronize(t);
 
                 mesh_refinement.clean_refinement_flags();
 
                 Read<UVector> r_(t);
                 for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
                     V_vol.dof_map().dof_indices(*e_it, indices);
-                    t.get(indices, values);
+                    convert(indices, u_indices);
+                    t.get(u_indices, values);
 
                     double val = std::accumulate(values.begin(), values.end(), 0.,  std::plus<double>());
                     if(val > 0) {
                         (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
                     }
-
                 }
 
                 mesh_refinement.make_flags_parallel_consistent();

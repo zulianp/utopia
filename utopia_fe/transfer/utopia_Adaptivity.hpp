@@ -3,6 +3,7 @@
 
 #include "utopia_fe_base.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_libmesh_Types.hpp"
 
 #include "libmesh/dof_map.h"
 #include "libmesh/petsc_matrix.h"
@@ -10,6 +11,56 @@
 #include "libmesh/elem.h"
 
 namespace utopia {
+
+    inline void convert(const libMesh::DenseMatrix<double> &in, LMDenseMatrix &out) {
+        using uint = unsigned int;
+        uint rows = in.m();
+        uint cols = in.n();
+        out.resize(rows, cols);
+
+        for(uint i = 0; i < rows; ++i) {
+            for(uint j = 0; j < rows; ++j) {
+                out.set(i, j, in(i, j));
+            }
+        }
+    }
+
+    inline void convert(const LMDenseMatrix &in, libMesh::DenseMatrix<double> &out) {
+        using uint = unsigned int;
+        uint rows = in.rows();
+        uint cols = in.cols();
+        out.resize(rows, cols);
+
+        for(uint i = 0; i < rows; ++i) {
+            for(uint j = 0; j < rows; ++j) {
+                out(i, j) = in.get(i, j);
+            }
+        }
+    }
+
+    inline void convert(const libMesh::DenseVector<double> &in, LMDenseVector &out) {
+        using uint = unsigned int;
+        uint n = in.size();
+
+        out.resize(n);
+
+        for(uint i = 0; i < n; ++i) {
+            out.set(i, in(i));
+        }
+    }
+
+    inline void convert(const LMDenseVector &in, libMesh::DenseVector<double> &out) {
+        using uint = unsigned int;
+        uint n = in.size();
+
+        out.resize(n);
+        for(uint i = 0; i < n; ++i) {
+            out(i) = in.get(i);
+        }
+    }
+
+
+
 
     class Adaptivity {
 
@@ -171,12 +222,17 @@ namespace utopia {
         static void constrain_matrix(const libMesh::Elem *elem,
                                      const libMesh::DofMap &dof_map,
                                      const libMesh::DofConstraints dof_constraints,
-                                     ElementMatrix &mat,
+                                     ElementMatrix &u_mat,
                                      std::vector<libMesh::dof_id_type> &dof_indices)
         {
             using uint = unsigned int;
 
-            ElementMatrix C;
+            libMesh::DenseMatrix<double> mat;
+
+            //FIXME
+            convert(u_mat, mat);
+
+            libMesh::DenseMatrix<double> C;
             
             construct_constraint_matrix(
                                         elem,
@@ -219,13 +275,16 @@ namespace utopia {
                     }
                 }
             }
+
+            //FIXME
+            convert(mat, u_mat);
         }
 
         template<class ElementVector>
         static void constrain_vector(const libMesh::Elem *elem,
                                      const libMesh::DofMap &dof_map,
                                      const libMesh::DofConstraints dof_constraints,
-                                     ElementVector &vec,
+                                     ElementVector &u_vec,
                                      std::vector<libMesh::dof_id_type> &dof_indices)
         {
             using uint = unsigned int;
@@ -241,8 +300,11 @@ namespace utopia {
                                         false //FIXME
                                         );
 
+            libMesh::DenseVector<double> vec; 
+            convert(u_vec, vec); //FIXME
             libMesh::DenseVector<double> old(vec);
             C.vector_mult_transpose(vec, old);
+            convert(vec, u_vec); //FIXME
         }
 
         template<class ElementMatrix, class ElementVector>
@@ -250,8 +312,8 @@ namespace utopia {
             const libMesh::Elem *elem,
             const libMesh::DofMap &dof_map,
             const libMesh::DofConstraints dof_constraints,
-            ElementMatrix &mat,
-            ElementVector &vec,
+            ElementMatrix &u_mat,
+            ElementVector &u_vec,
             std::vector<libMesh::dof_id_type> &dof_indices)
         {
             using uint = unsigned int;
@@ -265,6 +327,13 @@ namespace utopia {
                                         dof_indices,
                                         false //FIXME
                                         );
+
+            //FIXME
+            libMesh::DenseMatrix<double> mat;
+            libMesh::DenseVector<double> vec; 
+            convert(u_vec, vec); 
+            convert(u_mat, mat);
+
 
             libMesh::DenseVector<double> old(vec);
             
@@ -312,6 +381,9 @@ namespace utopia {
                     }
                 }
             }
+
+            convert(vec, u_vec); 
+            convert(mat, u_mat);
          }
    };
 }

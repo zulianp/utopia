@@ -248,6 +248,14 @@ namespace utopia {
             static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  );
         }
 
+        void trace_test()
+        {
+            int n = 3;
+            Matrix m = 0.5 * dense_identity(n, n);
+            Scalar t = trace(m);
+            utopia_test_assert(approxeq(t, 1.5, 1e-16));
+        }
+
     public:
         void run()
         {
@@ -259,6 +267,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(quadratic_form);
             UTOPIA_RUN_TEST(local_values_test);
             UTOPIA_RUN_TEST(nnz_test);
+            UTOPIA_RUN_TEST(trace_test);
         }
     };
 

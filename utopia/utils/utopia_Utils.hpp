@@ -35,6 +35,21 @@ namespace utopia
     void disp(const std::string &str);
     void disp(const char * str);
 
+    inline void disp(const double value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
+
+    inline void disp(const int value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
+
+    inline void disp(const long value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
+
     template<typename T>
     void disp(const T & val, const std::string & name)
     {

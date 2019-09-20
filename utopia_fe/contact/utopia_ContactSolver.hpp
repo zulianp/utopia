@@ -347,7 +347,7 @@ namespace utopia {
 
         bool step()
         {
-            assert(x_.implementation().has_ghosts());
+            assert(x_.has_ghosts());
             synchronize(x_);
 
             if(contact_is_outdated_) {
@@ -438,7 +438,11 @@ namespace utopia {
         {
             reset();
             auto &dof_map = V_->subspace(0).dof_map();
-            x_ = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+
+            Traits<UVector>::IndexArray ghost_nodes;
+            convert(dof_map.get_send_list(), ghost_nodes);
+            
+            x_ = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
             inc_c_ = local_zeros(local_size(x_));
             xc_  = local_zeros(local_size(x_));
             lagrange_multiplier_ = local_zeros(local_size(x_));

@@ -590,7 +590,10 @@ namespace utopia {
         auto u = trial(W);
         auto v = test(W);
 
-        UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list());
+        UIndexArray ghost_nodes;
+        convert(P.dof_map().get_send_list(), ghost_nodes);
+        UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), ghost_nodes);
+
         copy_values(C, pressure_w, P, aux_pressure);
         synchronize(aux_pressure);
 
@@ -672,8 +675,10 @@ namespace utopia {
 
         auto &C = space->space().subspace(0);
 
-        pressure_w = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), C.dof_map().get_send_list());
-        concentration = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), C.dof_map().get_send_list());
+        UIndexArray ghost_nodes;
+        convert(C.dof_map().get_send_list(), ghost_nodes);
+        pressure_w = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), ghost_nodes);
+        concentration = ghosted(C.dof_map().n_local_dofs(), C.dof_map().n_dofs(), ghost_nodes);
 
         copy_values(V, pressure, C, pressure_w);
 
@@ -978,7 +983,7 @@ namespace utopia {
                 }
 
                 //upwinding end
-                add_matrix(utopia::raw_type(eval_b_form), dofs, dofs, gradient_matrix);
+                add_matrix(eval_b_form, dofs, dofs, gradient_matrix);
             }
 
         }
@@ -1189,7 +1194,9 @@ namespace utopia {
         auto &C = space->space().last_subspace();
         auto &P = flow.space.space().last_subspace();
 
-        UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), P.dof_map().get_send_list());
+        UIndexArray ghost_nodes;
+        convert(P.dof_map().get_send_list(), ghost_nodes);
+        UVector aux_pressure = ghosted(P.dof_map().n_local_dofs(), P.dof_map().n_dofs(), ghost_nodes);
         copy_values(C, pressure_w, P, aux_pressure);
         synchronize(aux_pressure);
 

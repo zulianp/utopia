@@ -56,99 +56,79 @@ namespace utopia {
     {
         if(!empty(B)) 
         {
-            B.implementation().set_name("b");
-
+            rename("b", B);
             utopia::write("B.m", B);
         }
 
         if(!empty(D)) 
         {
-            D.implementation().set_name("d");
-
+            rename("d", D);
             utopia::write("D.m", D);
         }
 
         if(!empty(Q)) 
         {
-            Q.implementation().set_name("q");
-
+            rename("q", Q);
             utopia::write("Q.m", Q);
         }
 
         if(!empty(Q_inv)) 
         {
-            Q_inv.implementation().set_name("q_inv");
-
+            rename("q_inv", Q_inv);
             utopia::write("Q_inv.m", Q_inv);
         }
 
         if(!empty(T)) 
         {
-            T.implementation().set_name("t");
-
+            rename("t", T);
             utopia::write("T.m", T);
         }
 
         if(!empty(inv_mass_vector)) 
         {
-            inv_mass_vector.implementation().set_name("imv");
-
+            rename("imv", inv_mass_vector);
             utopia::write("inv_mass_vector.m", inv_mass_vector);
         }
 
         if(!empty(weighted_gap)) 
         {
-            weighted_gap.implementation().set_name("wg");
+            rename("wg", weighted_gap);
 
             utopia::write("weighted_gap.m", weighted_gap);
         }
 
         if(!empty(gap)) 
         {
-            gap.implementation().set_name("g");
-
+            rename("g", gap);
             utopia::write("gap.m", gap);
         }
 
         if(!empty(weighted_normal)) 
         {
-            weighted_normal.implementation().set_name("wn");
-
+            rename("wn", weighted_normal);
             utopia::write("weighted_normal.m", weighted_normal);
         }
 
         if(!empty(normal)) 
         {
-            normal.implementation().set_name("n");
-
+            rename("n", normal);
             utopia::write("normal.m", normal);
         }
 
-
         if(!empty(is_contact)) 
         {
-            is_contact.implementation().set_name("ic");
-
+            rename("ic", is_contact);
             utopia::write("is_contact.m", is_contact);
         }
 
-
         if(!empty(is_glue)) 
         {
-            is_glue.implementation().set_name("ig");
-
+            rename("ig", is_glue);
             utopia::write("is_glue.m", is_glue);
         }
 
-// orthogonal_trafo.implementation().set_name("o");
-// utopia::write("O.m", orthogonal_trafo);
-
-// complete_transformation.implementation().set_name("ct");
-// utopia::write("complete_transformation.m", complete_transformation);
         return true;
     }
-    
-
 
     class ConvertContactBuffers {
     public:

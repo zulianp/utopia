@@ -24,9 +24,19 @@ namespace utopia {
     class FEEval< Tensor<Derived, Order>, Traits, Backend, IsQuadData> {
     public:
         //default fallback on eval if does not exists
-        inline static const Tensor<Derived, Order> &apply(const Tensor<Derived, Order> &expr, const AssemblyContext<Backend> &)
+        inline static const Derived &apply(const Tensor<Derived, Order> &expr, const AssemblyContext<Backend> &)
         {
-            return expr;
+            return expr.derived();
+        }
+
+        inline static Derived &apply(Tensor<Derived, Order> &expr, const AssemblyContext<Backend> &)
+        {
+            return expr.derived();
+        }
+
+        inline static Derived apply(Tensor<Derived, Order> &&expr, const AssemblyContext<Backend> &)
+        {
+            return std::move(expr.derived());
         }
     };
 

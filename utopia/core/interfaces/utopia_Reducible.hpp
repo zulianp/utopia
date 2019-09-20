@@ -32,6 +32,7 @@ namespace utopia {
 		virtual ~ReducibleMatrix() {}
 
 		virtual SizeType nnz(const Scalar tol = 0.0) const = 0;
+		virtual Scalar trace() const  = 0;
 	};
 }
 
