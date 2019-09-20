@@ -25,7 +25,12 @@ namespace utopia {
 
         inline static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::grad_t_plus_grad(expr.left().expr(), expr.right(), ctx) )
         {
-            return FEBackend<Backend>::grad_t_plus_grad(1.0, expr.left().expr(), expr.right(), ctx);
+            return FEBackend<Backend>::grad_t_plus_grad(
+                1.0,
+                expr.left().expr(),
+                expr.right(),
+                ctx
+            );
         }
     };
 }
