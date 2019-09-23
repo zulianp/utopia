@@ -58,9 +58,10 @@ namespace utopia {
                 for(std::size_t i = 0; i < n_vars; ++i) {
                     const auto &fe = fe_object[start_var + i];
                     const uint n_shape_i = fe->n_shape_functions();
+                    std::size_t elem_dim = fe->get_dim();
 
                     for(uint j = 0; j < n_shape_i; ++j, offset++) {
-                        grad[offset][qp].resize(n_shape_i, dim);
+                        grad[offset][qp].resize(elem_dim, dim);
                     }
                 }
             }
