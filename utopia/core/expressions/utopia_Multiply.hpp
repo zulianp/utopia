@@ -15,7 +15,9 @@ namespace utopia {
     template<class Left, class Right>
     class MultiplyTensorOrder {
     public:
-        static const int Order = (Left::Order < Right::Order)? Left::Order : Right::Order;
+        static const int Order = (Left::Order == 0) ? Right::Order : (
+            (Right::Order == 0) ? Left::Order : 
+            (Left::Order < Right::Order)? Left::Order : Right::Order );
     };
 
     #define TENSOR_ORDER_MULTIPLY(Left_, Right_) (MultiplyTensorOrder<Left_, Right_>::Order)

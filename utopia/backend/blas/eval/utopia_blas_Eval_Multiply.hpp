@@ -2,6 +2,7 @@
 #define UTOPIA_BLAS_EVAL_MULTIPLY_HPP
 
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
 
@@ -16,7 +17,9 @@ namespace utopia {
             > {
     public:
         typedef utopia::Multiply< Binary<Number<Alpha>, A, Multiplies>, Tensor<B, 2>> Expr;
-        typedef typename TypeAndFill<Traits, Multiply<A, Tensor<B, 2>> >::Type C;
+        typedef typename TypeAndFill<Traits, Tensor<B, 2> >::Type C;
+
+        static_assert(std::is_same<C, B>::value, "output must be a 2nd order tensor");
 
         inline static C apply(const Expr &expr) {
             C c;
@@ -24,13 +27,79 @@ namespace utopia {
             UTOPIA_TRACE_BEGIN(expr);
 
             auto &&a = Eval<A, Traits>::apply(expr.left().right());
-            const B &b = Eval<Tensor<B, 2>, Traits>::apply(expr.right());
+            auto &&b = Eval<Tensor<B, 2>, Traits>::apply(expr.right());
             const Alpha alpha = expr.left().left();
 
-            a.gemm(false, alpha, false, b, 0.0, c);
+            // a.gemm(false, alpha, false, b, 0.0, c);
+            apply_aux(alpha, a, b, c);
 
             UTOPIA_TRACE_END(expr);
             return c;
+        }
+
+    private:
+        template<class MatT>
+        inline static void apply_aux(
+            const Number<Alpha> &alpha,
+            const Tensor<MatT, 2> &a,
+            const Tensor<MatT, 2> &b,
+            Tensor<MatT, 2> &c)
+        {
+            a.derived().gemm(false, alpha, false, b.derived(), 0.0, c.derived());
+        }
+
+        template<class MatT>
+        inline static void apply_aux(
+            const Number<Alpha> &alpha,
+            const Number<Alpha> &a,
+            const Tensor<MatT, 2> &b,
+            Tensor<MatT, 2> &c)
+        {
+            // a.gemm(false, alpha, false, b, 0.0, c);
+
+            c.derived() = b.derived();
+            c.derived() *= (alpha * a);
+        }
+
+        //move version
+        template<class MatT>
+        inline static void apply_aux(
+            const Number<Alpha> &alpha,
+            const Number<Alpha> &a,
+            Tensor<MatT, 2> &&b,
+            Tensor<MatT, 2> &c)
+        {
+            // a.gemm(false, alpha, false, b, 0.0, c);
+
+            c.derived() = std::move(b.derived());
+            c.derived() *= (alpha * a);
+        }
+
+        template<class MatT>
+        inline static void apply_aux(
+            const Number<Alpha> &alpha,
+            const Tensor<MatT, 2> &a,
+            const Number<Alpha> &b,
+            Tensor<MatT, 2> &c)
+        {
+            // a.gemm(false, alpha, false, b, 0.0, c);
+
+            c.derived() = a.derived();
+            c.derived() *= (b * alpha);
+        }
+
+        //move version
+        template<class MatT>
+        inline static void apply_aux(
+            const Number<Alpha> &alpha,
+            Tensor<MatT, 2> &&a,
+            const Number<Alpha> &b,
+            Tensor<MatT, 2> &c)
+        {
+            // a.gemm(false, alpha, false, b, 0.0, c);
+
+            c.derived() = std::move(a.derived());
+            c.derived() *= (b * alpha);
         }
     };
 

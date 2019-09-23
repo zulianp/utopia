@@ -18,7 +18,7 @@ namespace utopia {
     public:
         typedef typename Traits::Scalar Scalar;
 
-        inline static Scalar apply(const Reduce<Expr, Operation> &expr)
+        inline static Number<Scalar> apply(const Reduce<Expr, Operation> &expr)
         {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
@@ -35,7 +35,7 @@ namespace utopia {
     public:
         typedef typename Traits::Scalar Scalar;
 
-        inline static Scalar apply(const Dot<Left, Right> &expr)
+        inline static Number<Scalar> apply(const Dot<Left, Right> &expr)
         {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
@@ -60,7 +60,7 @@ namespace utopia {
     public:
         typedef typename Traits::Scalar Scalar;
 
-        inline static Scalar apply(const Norm<Expr, 2> &expr)
+        inline static Number<Scalar> apply(const Norm<Expr, 2> &expr)
         {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
@@ -77,7 +77,7 @@ namespace utopia {
     public:
         typedef typename Traits::Scalar Scalar;
 
-        inline static Scalar apply(const Norm<Expr, 1> &expr) {
+        inline static Number<Scalar> apply(const Norm<Expr, 1> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -97,7 +97,7 @@ namespace utopia {
     public:
         typedef typename Traits::Scalar Scalar;
 
-        inline static Scalar apply(const Norm<Expr, INFINITY_NORM_TAG> &expr) {
+        inline static Number<Scalar> apply(const Norm<Expr, INFINITY_NORM_TAG> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -140,7 +140,7 @@ namespace utopia {
     class Eval<Reduce< Diag<Expr>, Plus>, Traits, Backend> {
     public:
         typedef typename Traits::Scalar Scalar;
-        inline static Scalar apply(const Reduce< Diag<Expr>, Plus> &expr)
+        inline static Number<Scalar> apply(const Reduce< Diag<Expr>, Plus> &expr)
         {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
@@ -159,7 +159,7 @@ namespace utopia {
     public:
         typedef typename Traits::Scalar Scalar;
 
-        inline static Scalar apply(const Trace<Expr> &expr)
+        inline static Number<Scalar> apply(const Trace<Expr> &expr)
         {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);

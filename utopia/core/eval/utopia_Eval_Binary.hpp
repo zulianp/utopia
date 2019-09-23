@@ -12,35 +12,61 @@ namespace utopia {
     template<class Result>
     class EvalBinaryAux {
     public:
+        template<class Left, class Right, class Operation, class Res, int Order>
+        static void apply(Left &&l, Right &&r, const Operation &op, Tensor<Res, Order> &result)
+        {
+            EvalBinaryAux<Tensor<Res, Order>>::apply(
+                std::forward<Left>(l),
+                std::forward<Right>(r),
+                op,
+                result.derived()
+            );
+        }
+
+        template<class Left, class Right, class Operation, class Res>
+        static void apply(Left &&l, Right &&r, const Operation &op, Number<Res> &result)
+        {
+            EvalBinaryAux<Number<Res>>::apply(
+                std::forward<Left>(l),
+                std::forward<Right>(r),
+                op,
+                result
+            );
+        }
+    };
+
+    template<class Result, int Order>
+    class EvalBinaryAux<Tensor<Result, Order>> {
+    public:
         using Scalar = typename Traits<Result>::Scalar;
 
-        template<class Left, class Right, int Order>
+        ///////////////////////////// PLUS /////////////////////////////
+
+        template<class Left, class Right>
         static void apply(Left &&left, const Tensor<Right, Order> &right, const Plus &, Result &result)
         {
             result.construct(std::forward<Left>(left));
             result.axpy(1.0, right.derived());
         }
 
-        template<class Left, class Right, int Order>
+        ///////////////////////////// MINUS /////////////////////////////
+
+        template<class Left, class Right>
         static void apply(Left &&left, const Tensor<Right, Order> &right, const Minus &, Result &result)
         {
             result.construct(std::forward<Left>(left));
             result.axpy(-1.0, right.derived());
         }
 
-        template<class Left, class Right, int Order>
+        ///////////////////////////// EMULTIPLIES /////////////////////////////
+
+        template<class Left, class Right>
         static void apply(Left &&left, const Tensor<Right, Order> &right, const EMultiplies &, Result &result)
         {
             result.construct(std::forward<Left>(left));
             result.e_mul(right.derived());
         }
 
-        template<class Left, class Right, int Order>
-        static void apply(Left &&left, const Tensor<Right, Order> &right, const Divides &, Result &result)
-        {
-            result.construct(std::forward<Left>(left));
-            result.e_div(right.derived());
-        }
 
         template<class Left, class Right>
         static void apply(const Tensor<Left, 2> &left, const Tensor<Right, 1> &right, const Multiplies &, Result &result)
@@ -54,40 +80,16 @@ namespace utopia {
             left.derived().multiply(right.derived(), result);
         }
 
-        template<class Left, class Right, int Order>
-        static void apply(Left &&left, const Tensor<Right, Order> &right, const Min &, Result &result)
-        {
-            result.construct(std::forward<Left>(left));
-            result.e_min(right.derived());
-        }
-
-        template<class Left, class Right, int Order>
-        static void apply(Left &&left, const Tensor<Right, Order> &right, const Max &, Result &result)
-        {
-            result.construct(std::forward<Left>(left));
-            result.e_max(right.derived());
-        }
+        ///////////////////////////// EDIVIDES /////////////////////////////
 
         template<class Left, class Right>
-        static void apply(Left &&left, const Number<Right> &right, const Min &, Result &result)
+        static void apply(Left &&left, const Tensor<Right, Order> &right, const Divides &, Result &result)
         {
             result.construct(std::forward<Left>(left));
-            result.e_min(right.get());
+            result.e_div(right.derived());
         }
 
-        template<class Left, class Right>
-        static void apply(Left &&left, const Number<Right> &right, const Max &, Result &result)
-        {
-            result.construct(std::forward<Left>(left));
-            result.e_max(right.get());
-        }
- 
-        template<class Left, class Right>
-        static void apply(Left &&left, const Number<Right> &right, const Multiplies &, Result &result)
-        {
-            result.construct(std::forward<Left>(left));
-            result.scale(right);
-        }
+        ///////////////////////////// MULTIPLIES /////////////////////////////
 
         template<class Left>
         static void apply(Left &&left, const Scalar &right, const Multiplies &, Result &result)
@@ -96,23 +98,58 @@ namespace utopia {
             result.scale(right);
         }
 
-        template<class Left, class Right>
-        static void apply(const Number<Left> &left, Right &&right, const Multiplies &, Result &result)
+        template<class Right>
+        static void apply(const Scalar &left, Right &&right, const Multiplies &, Result &result)
         {
             result.construct(std::forward<Right>(right));
             result.scale(left);
         }
 
-        template<class Left, class Right, class Op>
-        static void apply(const Number<Left> &left, const Number<Right> &right, const Op &op, Result &result)
+        ///////////////////////////// MIN /////////////////////////////
+
+        template<class Left, class Right>
+        static void apply(Left &&left, const Tensor<Right, Order> &right, const Min &, Result &result)
         {
-             result = op.template apply<Scalar>(left.get(), right.get());
+            result.construct(std::forward<Left>(left));
+            result.e_min(right.derived());
         }
 
-        template<class Op>
-        static void apply(const Scalar &left, const Scalar &right, const Op &op, Result &result)
+        template<class Left>
+        static void apply(Left &&left, const Scalar &right, const Min &, Result &result)
         {
-             result = op.template apply<Scalar>(left, right);
+            result.construct(std::forward<Left>(left));
+            result.e_min(right);
+        }
+
+        template<class Right>
+        static void apply(const Scalar &l, Right &&right, const Min &, Result &result)
+        {
+            result.construct(std::forward<Right>(right));
+            result.e_min(l);
+        }
+
+        ///////////////////////////// MAX /////////////////////////////
+
+        template<class Left, class Right>
+        static void apply(Left &&left, const Tensor<Right, Order> &right, const Max &, Result &result)
+        {
+            result.construct(std::forward<Left>(left));
+            result.e_max(right.derived());
+        }
+
+
+        template<class Right>
+        static void apply(const Scalar &l, Right &&right, const Max &, Result &result)
+        {
+            result.construct(std::forward<Right>(right));
+            result.e_max(l);
+        }
+
+        template<class Left>
+        static void apply(Left &&left, const Scalar &r, const Max &, Result &result)
+        {
+            result.construct(std::forward<Left>(left));
+            result.e_max(r);
         }
     };
 
@@ -126,64 +163,74 @@ namespace utopia {
         }
     };
 
-    template<class ScalarT, class Right, class Operation, class Traits, int Backend>
-    class Eval<Binary<Number<ScalarT>, Right, Operation>, Traits, Backend> {
+    template<typename Scalar>
+    class EvalBinaryAux<Number<Scalar>> {
     public:
-        typedef typename TypeAndFill<Traits, Binary<Number<ScalarT>, Right, Operation> >::Type Result;
-        inline static Result apply(const Binary<Number<ScalarT>, Right, Operation> &expr)
+        template<class Op>
+        static void apply(const Number<Scalar> &left, const Number<Scalar> &right, const Op &op, Number<Scalar> &result)
         {
-            Result result;
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            EvalBinaryAux<Result>::apply(
-                Eval<Right, Traits>::apply(expr.right()),
-                expr.left(),
-                expr.operation(),
-                result
-            );
-
-
-            UTOPIA_TRACE_END(expr);
-            return result;
+             result.set(op.template apply<double>(left.get(), right.get()));
         }
     };
 
-    template<class ScalarT, class Left, class Operation, class Traits, int Backend>
-    class Eval<Binary<Left, Number<ScalarT>, Operation>, Traits, Backend> {
-    public:
-        using Expr = utopia::Binary<Left, Number<ScalarT>, Operation>;
+    // template<class ScalarT, class Right, class Operation, class Traits, int Backend>
+    // class Eval<Binary<Number<ScalarT>, Right, Operation>, Traits, Backend> {
+    // public:
+    //     typedef typename TypeAndFill<Traits, Binary<Number<ScalarT>, Right, Operation> >::Type Result;
+    //     inline static Result apply(const Binary<Number<ScalarT>, Right, Operation> &expr)
+    //     {
+    //         Result result;
 
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
-        inline static Result apply(const Expr &expr)
-        {
-            Result result;
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_TRACE_BEGIN(expr);
+    //         EvalBinaryAux<Result>::apply(
+    //             Eval<Right, Traits>::apply(expr.right()),
+    //             expr.left(),
+    //             expr.operation(),
+    //             result
+    //         );
 
-            EvalBinaryAux<Result>::apply(
-                Eval<Left, Traits>::apply(expr.left()),
-                expr.right(),
-                expr.operation(),
-                result
-            );
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 
-    template<class Left, class Right, class Operation, class Traits, int Backend>
-    class Eval<Binary<Number<Left>, Number<Right>, Operation>, Traits, Backend> {
-    public:
+    // template<class ScalarT, class Left, class Operation, class Traits, int Backend>
+    // class Eval<Binary<Left, Number<ScalarT>, Operation>, Traits, Backend> {
+    // public:
+    //     using Expr = utopia::Binary<Left, Number<ScalarT>, Operation>;
 
-        inline static auto apply(const Binary<Number<Left>, Number<Right>, Operation> &expr) -> decltype(Left() + Right())
-        {
-            Left l = expr.left();
-            Right r = expr.right();
-            return expr.operation().apply(l, r);
-        }
-    };
+    //     typedef typename TypeAndFill<Traits, Expr>::Type Result;
+    //     inline static Result apply(const Expr &expr)
+    //     {
+    //         Result result;
+
+    //         UTOPIA_TRACE_BEGIN(expr);
+
+    //         EvalBinaryAux<Result>::apply(
+    //             Eval<Left, Traits>::apply(expr.left()),
+    //             expr.right(),
+    //             expr.operation(),
+    //             result
+    //         );
+
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
+
+    // template<class Left, class Right, class Operation, class Traits, int Backend>
+    // class Eval<Binary<Number<Left>, Number<Right>, Operation>, Traits, Backend> {
+    // public:
+
+    //     inline static auto apply(const Binary<Number<Left>, Number<Right>, Operation> &expr) -> decltype(Left() + Right())
+    //     {
+    //         Left l = expr.left();
+    //         Right r = expr.right();
+    //         return expr.operation().apply(l, r);
+    //     }
+    // };
 
     template<class Left, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Left, Right, Operation>, Traits, Backend> {
@@ -195,7 +242,14 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            EvalBinaryAux<Result>::apply(
+            // EvalBinaryAux<Result>::apply(
+            //     Eval<Left,  Traits>::apply(expr.left()),
+            //     Eval<Right, Traits>::apply(expr.right()),
+            //     expr.operation(),
+            //     result
+            // );
+
+            apply_aux(
                 Eval<Left,  Traits>::apply(expr.left()),
                 Eval<Right, Traits>::apply(expr.right()),
                 expr.operation(),
@@ -205,29 +259,51 @@ namespace utopia {
             UTOPIA_TRACE_END(expr);
             return result;
         }
-    };
 
-    template<class Left, class ScalarT, class Traits, int Backend>
-    class Eval<Binary<Left, Number<ScalarT>, Multiplies>, Traits, Backend> {
-    public:
-
-        typedef typename TypeAndFill<Traits, Binary<Left, Number<ScalarT>, Multiplies> >::Type Result;
-        inline static Result apply(const Binary<Left, Number<ScalarT>, Multiplies> &expr)
+        template<class L, class R, class Res, int Order>
+        inline static void apply_aux(L &&l, R &&r, const Operation &op, Tensor<Res, Order> &result)
         {
-            Result result;
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            result.construct(
-                Eval<Left, Traits>::apply(expr.left())
+            EvalBinaryAux<Tensor<Res, Order>>::apply(
+                std::forward<L>(l),
+                std::forward<R>(r),
+                op,
+                result.derived()
             );
+        }
 
-            result.scale(expr.right());
-
-            UTOPIA_TRACE_END(expr);
-            return result;
+        template<class L, class R, class Res>
+        inline static void apply_aux(L &&l, R &&r, const Operation &op, Number<Res> &result)
+        {
+            EvalBinaryAux<Number<Res>>::apply(
+                std::forward<L>(l),
+                std::forward<R>(r),
+                op,
+                result
+            );
         }
     };
+
+    // template<class Left, class ScalarT, class Traits, int Backend>
+    // class Eval<Binary<Left, Number<ScalarT>, Multiplies>, Traits, Backend> {
+    // public:
+
+    //     typedef typename TypeAndFill<Traits, Binary<Left, Number<ScalarT>, Multiplies> >::Type Result;
+    //     inline static Result apply(const Binary<Left, Number<ScalarT>, Multiplies> &expr)
+    //     {
+    //         Result result;
+
+    //         UTOPIA_TRACE_BEGIN(expr);
+
+    //         result.construct(
+    //             Eval<Left, Traits>::apply(expr.left())
+    //         );
+
+    //         result.scale(expr.right());
+
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval<OuterProduct<Left, Right>, Traits, Backend> {

@@ -662,5 +662,6 @@ namespace utopia {
     PetscVector::SizeType PetscVector::amax() const
     {
          assert(false && "IMPLEMENT ME");
+         return -1;
     }
 }

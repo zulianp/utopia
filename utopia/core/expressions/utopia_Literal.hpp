@@ -82,6 +82,10 @@ namespace utopia {
             return value_;
         }
 
+        inline void set(const Scalar &value)
+        {
+            value_ = value;
+        }
         inline constexpr Number(const Scalar &value = 0.0)  : value_(value)
         {}
 

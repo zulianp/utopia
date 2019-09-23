@@ -101,7 +101,17 @@ namespace utopia {
         }
     };
 
+    template<typename T>
+    class Unwrap {
+    public:
+        using Type = T;
+    };
 
+    template<class Derived, int Order>
+    class Unwrap<Tensor<Derived, Order>> {
+    public:
+        using Type = Derived;
+    };
 
     template<class Traits, int Order, int Sparsity = FillType::DENSE>
     class TensorQuery {};
@@ -148,7 +158,7 @@ namespace utopia {
     template<class Left, class Right>
     class MostDescriptive {
     public:
-        typedef Left Type;
+        using Type = typename Unwrap<Left>::Type;
     };
 
 
@@ -157,38 +167,38 @@ namespace utopia {
              int SparsityRight = utopia::Traits<Right>::FILL_TYPE>
     class ChooseType {
     public:
-        typedef Default Type;
+        using Type = typename Unwrap<Default>::Type;
     };
 
     template<class Left, class Right, class Default, int SparsityRight>
     class ChooseType<Left, Right, Default, FillType::DELEGATE, SparsityRight> {
     public:
-        typedef Right Type;
+        using Type = typename Unwrap<Right>::Type;
     };
 
     template<class Left, class Right, class Default, int SparsityLeft>
     class ChooseType<Left, Right, Default, SparsityLeft,  FillType::DELEGATE> {
     public:
-        typedef Left Type;
+        using Type = typename Unwrap<Left>::Type;
     };
 
     template<class Left, class Right, class Default>
     class ChooseType<Left, Right, Default, FillType::DELEGATE,  FillType::DELEGATE> {
     public:
-        typedef Default Type;
+        using Type = typename Unwrap<Default>::Type;
     };
 
 
     template<class Left, class Right>
     class MostDescriptive<Left, Number<Right> > {
     public:
-        typedef Left Type;
+        using Type = typename Unwrap<Left>::Type;
     };
 
     template<class Left, class Right>
     class MostDescriptive<Number<Left>, Right > {
     public:
-        typedef Right Type;
+        using Type = typename Unwrap<Right>::Type;
     };
 
     template<typename Left, typename Right>

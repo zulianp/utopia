@@ -8,6 +8,49 @@
 
 namespace utopia {
 
+    template<class Matrix, class Vector>
+    class SerialAlgebraTest {
+    public:
+        using Traits = utopia::Traits<Vector>;
+
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Expr   = utopia::Multiply<Number<Scalar>, Tensor<Matrix, 2>>;
+        using ChosenType = typename ChooseType<Number<Scalar>, Tensor<Matrix, 2>, Number<Scalar>>::Type;
+        static const int FT = utopia::Traits<Tensor<Matrix, 2>>::FILL_TYPE;
+        static const int Order = Expr::Order;
+        using Result = typename TypeAndFill<Traits, Expr>::Type;
+
+        static_assert(Order == 2, "must be a 2nd order tensor");
+        static_assert(FT == FillType::DENSE, "must be dense");
+        static_assert(std::is_same<ChosenType, Matrix>::value,  "expression must result in matrix");
+        static_assert(std::is_same<Result, Matrix>::value, "expression must result in matrix");
+
+        void complicated_test()
+        {
+            const Scalar lambda = 1.0, mu = 1.0;
+            Matrix F = identity(3, 3);
+            Matrix H = identity(3, 3);
+
+            Matrix F_inv_t = transpose(inv(F));
+            const Scalar J = det(F);
+            const Scalar alpha = (1.0 * lambda * std::log(J) - 1.0 * mu);
+
+            const Scalar temp = lambda * inner(F_inv_t, H);
+            const Scalar temp2 = inner(F_inv_t, H);
+            Matrix mat = mu * H - alpha * F_inv_t * transpose(H) * F_inv_t + lambda * inner(F_inv_t, H) * F_inv_t;
+            // Matrix mat = inner(F_inv_t, H) * F_inv_t;
+
+            // std::cout << tree_format((inner(F_inv_t, H) * F_inv_t).get_class()) << std::endl;
+        }
+
+        void run()
+        {
+            UTOPIA_RUN_TEST(complicated_test);
+        }
+
+    };
+
     template<class Vector>
     class VectorAlgebraTest {
     public:
@@ -277,6 +320,7 @@ namespace utopia {
 
 #ifdef WITH_BLAS
         AlgebraTest<Matrixd, Vectord>().run();
+        SerialAlgebraTest<Matrixd, Vectord>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
