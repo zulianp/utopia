@@ -39,6 +39,7 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_ngs_test);
             UTOPIA_RUN_TEST(petsc_gss_newton_test);
             UTOPIA_RUN_TEST(petsc_newton_test);
+            UTOPIA_RUN_TEST(petsc_sparse_newton_test_inexact); 
             UTOPIA_RUN_TEST(petsc_newton_rosenbrock_test);
             UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test); //petsc 3.11.3 ERROR here
             UTOPIA_RUN_TEST(petsc_sparse_nonlinear_semismooth_newton_test);
@@ -274,6 +275,26 @@ namespace utopia
             nlsolver.solve(fun, x);
             utopia_test_assert(approxeq(expected, x));
         }
+
+
+        void petsc_sparse_newton_test_inexact()
+        {
+            if(mpi_world_size() > 10) return;
+
+            auto lsolver = std::make_shared< BiCGStab<DSMatrixd, DVectord> >();
+            Newton<DSMatrixd, DVectord> nlsolver(lsolver);
+            nlsolver.verbose(false);
+            nlsolver.forcing_strategy(InexactNewtonForcingStartegies::CAI); 
+
+            SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
+
+            DVectord x = values(10, 2.);
+            DVectord expected = zeros(x.size());
+
+            nlsolver.solve(fun, x);
+            utopia_test_assert(approxeq(expected, x));
+        }        
+
 
         void petsc_newton_test()
         {

@@ -75,29 +75,42 @@ namespace utopia
                 //find direction step
                 step = local_zeros(local_size(x));
 
-                if(this->has_preconditioned_solver() && fun.has_preconditioner())
+                // setting up adaptive stopping criterium for linear solver
+                if(this->has_forcing_strategy())
                 {
-                    fun.hessian(x, hessian, preconditioner);
-                    this->linear_solve(hessian, preconditioner, -grad, step);
-                } else {
-                    fun.hessian(x, hessian);
-                    this->linear_solve(hessian, -grad, step);
+                  if(IterativeSolver<Matrix, Vector>* iterative_solver =  dynamic_cast<IterativeSolver<Matrix, Vector>* > (this->linear_solver_.get()))
+                  {
+                    iterative_solver->atol(this->estimate_ls_atol(g_norm, it)); 
+                  }
                 }
 
-                if(ls_strategy_) {
+                if(this->has_preconditioned_solver() && fun.has_preconditioner())
+                {
+                  fun.hessian(x, hessian, preconditioner);
+                  this->linear_solve(hessian, preconditioner, -grad, step);
+                } 
+                else 
+                {
+                  fun.hessian(x, hessian);
+                  this->linear_solve(hessian, -grad, step);
+                }
 
-                    ls_strategy_->get_alpha(fun, grad, x, step, alpha_);
-                    x += alpha_ * step;
-                } else {
-                    //update x
-                    if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
-                    {
-                        x += step;
-                    }
-                    else
-                    {
-                        x += alpha_ * step;
-                    }
+                if(ls_strategy_) 
+                {
+                  ls_strategy_->get_alpha(fun, grad, x, step, alpha_);
+                  x += alpha_ * step;
+                } 
+                else 
+                {
+                  //update x
+                  if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
+                  {
+                      x += step;
+                  }
+                  else
+                  {
+                      x += alpha_ * step;
+                  }
                 }
 
                 // notify listener
