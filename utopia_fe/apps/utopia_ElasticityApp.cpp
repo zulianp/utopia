@@ -114,7 +114,9 @@ namespace utopia {
         UVector x, g, c;
         USparseMatrix H;
 
-        x = ghosted(dof_map.n_dofs(), dof_map.n_local_dofs(), dof_map.get_send_list());
+        UIndexSet ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        x = ghosted(dof_map.n_dofs(), dof_map.n_local_dofs(), ghost_nodes);
 
         material.assemble_hessian_and_gradient(x, H, g);
         g *= -1.0;

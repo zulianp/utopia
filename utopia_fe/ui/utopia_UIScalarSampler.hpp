@@ -378,11 +378,11 @@ namespace utopia {
 
     template<typename Scalar_>
     class ContextFunction<
-        std::vector<libMesh::VectorValue<Scalar_>>,
+        std::vector<LMDenseVector>,
         Normal<Scalar_>
         > final :
         public Expression<
-                ContextFunction<std::vector<libMesh::VectorValue<Scalar_>>, Normal<Scalar_>>
+                ContextFunction<std::vector<LMDenseVector>, Normal<Scalar_>>
                 >{
     public:
         static const int Order = 1;
@@ -392,15 +392,17 @@ namespace utopia {
         {}
 
         template<int Backend>
-        auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<libMesh::VectorValue<Scalar_>>
+        auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<LMDenseVector>
         {
             const auto &n = ctx.fe()[0]->get_normals();
             auto nn = n.size();
+            auto dim = ctx.spatial_dimension();
 
-            std::vector<libMesh::VectorValue<Scalar_>> normals(nn);
+            std::vector<LMDenseVector> normals(nn);
             for(std::size_t i = 0; i < nn; ++i) {
-                for(int d = 0; d < LIBMESH_DIM; ++d) {
-                    normals[i](d) = n[i](d);
+                normals[i].resize(dim);
+                for(int d = 0; d < dim; ++d) {
+                    normals[i].set(d, n[i](d));
                 }
             }
 
@@ -409,9 +411,9 @@ namespace utopia {
 
     };
 
-    inline ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>> normal()
+    inline ContextFunction<std::vector<LMDenseVector>, Normal<double>> normal()
     {
-        return ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>>();
+        return ContextFunction<std::vector<LMDenseVector>, Normal<double>>();
     }
 
 

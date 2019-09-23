@@ -59,7 +59,8 @@ namespace utopia {
             Order = 0
         };
 
-        typedef T Scalar;
+        // typedef T Scalar;
+        using Scalar = typename Traits<T>::Scalar;
 
         ConstantCoefficient(const T &value)
         : value_(value)

@@ -11,8 +11,9 @@ namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
     class FormPoisson final : public ExtendedFunction<Matrix, Vector> {
     public:
-        typedef typename utopia::Traits<Vector>::Scalar Scalar;
-        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+        using Scalar   = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using IndexSet = typename utopia::Traits<Vector>::IndexSet;
 
         FormPoisson(FunctionSpace &V) : V_(V)
         {
@@ -21,7 +22,9 @@ namespace utopia {
 
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {
-            Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
+            IndexSet ghost_nodes;
+            convert(V_.dof_map().get_send_list(), ghost_nodes);
+            Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), ghost_nodes);
             x_ = x;
             synchronize(x_);
 
@@ -41,7 +44,10 @@ namespace utopia {
 
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
+            IndexSet ghost_nodes;
+            convert(V_.dof_map().get_send_list(), ghost_nodes);
+            Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), ghost_nodes);
+            
             x_ = x;
             synchronize(x_);
 

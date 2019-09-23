@@ -167,6 +167,7 @@ namespace utopia {
                     grads_[i] = std::make_shared<GradValue>();
                 }
 
+                grad(i).active = false;
             }
 
             //FIXME find-out if this is needed
@@ -176,7 +177,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem);
-                grad(i).active = false;
+                
             }
 
             //vfe
@@ -207,7 +208,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem);
-                grad(i).active = false;
+                // grad(i).active = false;
             }
 
             //vfe
@@ -303,13 +304,15 @@ namespace utopia {
                 if(!grads_[i]) {
                     grads_[i] = std::make_shared<GradValue>();
                 }
+
+                grad(i).active = false;
             }
 
             init_fe_flags(expr);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem, side);
-                grad(i).active = false;
+                
             }
 
             //vfe

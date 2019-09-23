@@ -65,6 +65,11 @@ namespace utopia {
             return space_ptr()->n_subspaces();
         }
 
+        inline bool equals(const BasisFunction &other) const
+        {
+            return space_ptr_ == other.space_ptr_;
+        }
+
     private:
         std::shared_ptr<FunctionSpaceT> space_ptr_;
     };

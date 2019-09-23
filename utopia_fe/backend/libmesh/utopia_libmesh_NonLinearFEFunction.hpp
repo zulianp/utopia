@@ -58,12 +58,12 @@ namespace utopia {
         dof_map.dof_indices(*it, dof_indices);
 
         if(ctx.has_assembled()) {
-            if(apply_constraints) {
-                dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
-            }
+            // if(apply_constraints) {
+            //     dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+            // }
 
-            add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-            add_vector(el_vec.implementation(), dof_indices, vec);
+            add_matrix(el_mat, dof_indices, dof_indices, mat);
+            add_vector(el_vec, dof_indices, vec);
         }
     }
 
@@ -431,7 +431,9 @@ namespace utopia {
         auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
         space.initialize();
 
-        sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), space.dof_map().get_send_list());
+        UIndexSet ghost_nodes;
+        convert(space.dof_map().get_send_list(), ghost_nodes);
+        sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), ghost_nodes);
 
         NonLinearFEFunction<USparseMatrix, UVector, Equations<Eqs...>> nl_fun(eqs);
         Newton<USparseMatrix, UVector> solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
@@ -457,10 +459,14 @@ namespace utopia {
 
         auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
         space.initialize();
-
         auto &dof_map = space.dof_map();
-        sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-        old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+
+        UIndexSet ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+
+        
+        sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
+        old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
 
         NonLinearFEFunction<USparseMatrix, UVector, Equations<Eqs...>> nl_fun(eqs, true);
         Newton<USparseMatrix, UVector> solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
