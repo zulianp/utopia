@@ -225,6 +225,8 @@ namespace utopia {
 
             auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
+            auto mixedUp = mu * grad(u) - F; //(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t;
+
             auto stress_lin = mu * grad(u)
             -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
             + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
@@ -242,6 +244,8 @@ namespace utopia {
             auto eval_F_inv_t = eval(F_inv_t, ctx);
             auto eval_J       = eval(J, ctx);
             auto eval_log_J   = eval(logn(J), ctx);
+
+            auto eval_mixedUp = quad_eval(mixedUp, ctx);
 
             disp("-----------------------------------");
             disp("-----------------------------------");

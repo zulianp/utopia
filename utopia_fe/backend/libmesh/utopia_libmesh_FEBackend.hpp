@@ -18,28 +18,6 @@
 
 namespace utopia {
 
-    // template<typename T>
-    // void disp(const libMesh::TensorValue<T> &t, std::ostream &os = std::cout)
-    // {
-    //     for(auto i = 0; i < LIBMESH_DIM; ++i) {
-    //         for(auto j = 0; j < LIBMESH_DIM; ++j) {
-    //             os << t(i, j) << ", ";
-    //         }
-
-    //         os << "\n";
-    //     }
-    // }
-
-    // template<typename T>
-    // void disp(const libMesh::VectorValue<T> &t, std::ostream &os = std::cout)
-    // {
-    //     for(auto i = 0; i < LIBMESH_DIM; ++i) {
-    //         os << t(i) << ", ";
-    //     }
-
-    //     os << "\n";
-    // }
-
     template<typename T>
     void disp(const std::vector<std::vector<T>> &data, std::ostream &os = std::cout) {
         for(std::size_t i = 0; i < data.size(); ++i) {
@@ -58,24 +36,6 @@ namespace utopia {
         }
     }
 
-    // template<typename T>
-    // inline static T inner(const libMesh::VectorValue<T> &left, const libMesh::VectorValue<T> &right)
-    // {
-    //     return left * right;
-    // }
-
-    // template<typename T>
-    // inline static T inner(const libMesh::TensorValue<T> &left, const libMesh::TensorValue<T> &right)
-    // {
-    //     return left.contract(right);
-    // }
-
-    // template<typename T>
-    // inline static T inner(const libMesh::DenseVector<T> &left, const libMesh::DenseVector<T> &right)
-    // {
-    //     return left.dot(right);
-    // }
-
     inline static double inner(const double &left, const LMDenseVector &right)
     {
         return right.sum() * left;
@@ -85,73 +45,6 @@ namespace utopia {
     {
         return right.sum() * left;
     }
-
-    // template<typename T>
-    // inline static T inner(const double &left, libMesh::VectorValue<T> &&right)
-    // {
-    //     right *= (left);
-    //     const std::size_t n = LIBMESH_DIM;
-
-    //     T ret = 0.0;
-    //     for(std::size_t i = 0; i < n; ++i) {
-    //         ret += right(i);
-    //     }
-
-    //     return ret;
-    // }
-
-    // template<typename T>
-    // inline static T inner(const double &left, const libMesh::VectorValue<T> &right)
-    // {
-    //     libMesh::DenseVector<T> r_copy = right;
-    //     return inner(left, std::move(r_copy));
-    // }
-
-    // template<typename T>
-    // inline static T inner(const LMDenseVector &left, const libMesh::VectorValue<T> &right)
-    // {
-    //     T result = 0;
-    //     std::size_t n = left.size();
-    //     for(std::size_t i = 0; i < n; ++i) {
-    //         result += left.get(i) * right(i);
-    //     }
-
-    //     return result;
-    // }
-
-    // template<typename T>
-    // inline static T inner(const libMesh::VectorValue<T> &left, const LMDenseVector &right)
-    // {
-    //     T result = 0;
-    //     std::size_t n = right.size();
-    //     for(std::size_t i = 0; i < n; ++i) {
-    //         result += right.get(i) * left(i);
-    //     }
-
-    //     return result;
-    // }
-
-    // inline static double inner(const LMDenseMatrix &left, const LMDenseMatrix &right)
-    // {
-    //     return left.dot(right);
-    // }
-
-    // template<typename T>
-    // inline static T inner(const LMDenseMatrix &left, const libMesh::TensorValue<T> &right)
-    // {
-    //     std::size_t m = left.rows();
-    //     std::size_t n = left.cols();
-
-    //     T result = 0;
-    //     for(std::size_t i = 0; i < m; ++i) {
-    //         for(std::size_t j = 0; j < n; ++j) {
-    //             result += left.get(i, j) * right(i, j);
-    //         }
-    //     }
-
-    //     return result;
-    // }
-
 
     template<class Left, typename T>
     inline static T inner(const Tensor<Left, 2> &left, const libMesh::VectorValue<T> &right)
@@ -166,46 +59,12 @@ namespace utopia {
         return inner(left.derived(), right);
     }
 
-    // template<class Left, typename T>
-    // inline static T inner(const Tensor<Left, 1> &left, const LMDenseVector &right)
-    // {
-    //     return inner(left.derived(), right);
-    // }
-
-
-    // template<typename T, class Right>
-    // inline static T inner(const libMesh::VectorValue<T> &left, const Tensor<Right, 1> &right)
-    // {
-    //     return inner(right.derived(), left);
-    // }
-
-    // template<typename T, class Right>
-    // inline static T inner(const libMesh::DenseVector<T> &left, const Tensor<Right, 1> &right)
-    // {
-    //     return inner(right, left);
-    // }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    // template<class Left, typename T>
-    // inline static T inner(const Tensor<Left, 2> &left, const libMesh::TensorValue<T> &right)
-    // {
-    //     return inner(left, right);
-    // }
 
     template<class Left, typename T>
     inline static T inner(const Tensor<Left, 2> &left, const LMDenseMatrix &right)
     {
         return inner(left, right);
     }
-
-
-    // template<typename T, class Right>
-    // inline static T inner(const libMesh::TensorValue<T> &left, const  Tensor<Right, 2> &right)
-    // {
-    //     return inner(right, left);
-    // }
 
     template<typename T, class Right>
     inline static T inner(const LMDenseMatrix &left, const Tensor<Right, 2> &right)
@@ -227,8 +86,6 @@ namespace utopia {
         typedef TraitsT::Scalar Scalar;
         typedef TraitsT::Vector Vector;
         typedef TraitsT::Matrix Matrix;
-        // typedef TraitsT::TensorValueT TensorValueT;
-        // typedef TraitsT::VectorValueT VectorValueT;
         typedef TraitsT::FE FE;
         typedef TraitsT::FunctionType FunctionType;
         typedef TraitsT::GradientType GradientType;
@@ -236,9 +93,6 @@ namespace utopia {
         typedef TraitsT::JacobianType JacobianType;
         typedef TraitsT::CurlType CurlType;
         typedef TraitsT::DXType DXType;
-
-        // typedef libMesh::DenseVector<libMesh::Real> LMDenseVector;
-        
 
         template<typename T>
         using FQValues = std::vector<std::vector<T>>;
@@ -798,7 +652,7 @@ namespace utopia {
         //     return ret;
         // }
 
-        template<typename T>
+
         static auto apply_binary(
             const SymbolicTensor<Identity, 2> &,
             QValues<LMDenseMatrix> &&mats,
@@ -815,6 +669,25 @@ namespace utopia {
             // disp(mats);
 
             return std::move(mats);
+        }
+
+        static auto apply_binary(
+            const SymbolicTensor<Identity, 2> &,
+            const QValues<LMDenseMatrix> &mats,
+            const Plus &,
+            const AssemblyContext<LIBMESH_TAG> &) -> QValues<LMDenseMatrix>
+        {
+            QValues<LMDenseMatrix> ret = mats;
+            auto s = size(mats[0]);
+            for(auto &m : ret) {
+                m += identity(s);
+            }
+
+
+            // std::cout << "-----------------------" << std::endl;
+            // disp(mats);
+
+            return ret;
         }
 
 
@@ -1282,18 +1155,52 @@ namespace utopia {
             return op.apply(left, right);
         }
 
+        template<typename T>
+        static auto apply_binary(
+            FQValues<T> &&left,
+            const T &val,
+            const Minus &,
+            const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
+        {
+            for(auto &ll : left) {
+                for(auto &l : ll) {
+                    left -= val;
+                }
+            }
+
+            return std::move(left);
+        }
 
         template<typename T>
         static auto apply_binary(
-            std::vector<T> &&left,
+            QValues<T> &&left,
             const T &val,
             const Minus &,
-            const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T>
+            const AssemblyContext<LIBMESH_TAG> &) -> QValues<T>
         {
             std::size_t n = left.size();
 
             for(std::size_t i = 0; i != n; ++i) {
                 left[i] -= val;
+            }
+
+            return std::move(left);
+        }
+
+        template<typename T>
+        static auto apply_binary(
+            FQValues<T> &&left,
+            const QValues<T> &val,
+            const Minus &,
+            const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
+        {
+            const std::size_t n = left.size();
+            const std::size_t n_qp = left[0].size();
+
+            for(std::size_t i = 0; i != n; ++i) {
+                for(std::size_t j = 0; j != n_qp; ++j) {
+                    left[i][j] -= val[i];
+                }
             }
 
             return std::move(left);
