@@ -82,6 +82,10 @@ namespace utopia
                   {
                     iterative_solver->atol(this->estimate_ls_atol(g_norm, it)); 
                   }
+                  else
+                  {
+                    utopia_error("utopia::Newton::you can not use inexact Newton with exact linear solver. "); 
+                  }
                 }
 
                 if(this->has_preconditioned_solver() && fun.has_preconditioner())
