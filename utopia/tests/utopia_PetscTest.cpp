@@ -832,7 +832,7 @@ namespace utopia {
 
             PetscMatrix inv_mat  = inv(mat);
             PetscMatrix actual   = inv_mat * mat;
-            PetscMatrix expected = identity(3, 3);
+            PetscMatrix expected = dense_identity(3, 3);
 
             utopia_test_assert( approxeq(actual, expected) );
         }
