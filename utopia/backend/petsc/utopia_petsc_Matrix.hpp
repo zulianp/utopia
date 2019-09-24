@@ -514,6 +514,14 @@ namespace utopia {
          // virtual void e_min(const PetscMatrix &other) = 0;
          // virtual void e_max(const PetscMatrix &other) = 0;
 
+         //FIXME inherit from ElementWiseOperand
+         ///x = x*(1./a)
+         inline void e_div(const Scalar &a) //override
+         {
+            check_error( MatScale(implementation(), 1./a) );
+         }
+
+
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR BLAS1Tensor //////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
@@ -531,13 +539,6 @@ namespace utopia {
          inline void scale(const Scalar &a) override
          {
             check_error( MatScale(implementation(), a) );
-         }
-
-         //FIXME inherit from ElWiseOperand
-         ///x = x*(1./a)
-         inline void e_div(const Scalar &a) //override
-         {
-            check_error( MatScale(implementation(), 1./a) );
          }
 
          ///<Scalar>COPY - copy x into y (this)

@@ -249,16 +249,16 @@ namespace utopia {
 
             auto eval_mixedUp = quad_eval(mixedUp, ctx);
 
-            disp("-----------------------------------");
-            disp("-----------------------------------");
-            // disp(eval_uk);
-            disp("-----------------------------------");
-            disp(eval_grad);
-            disp("-----------------------------------");
-            // disp(eval_g_uk);
             // disp("-----------------------------------");
-            disp(eval_F);
-            disp("-----------------------------------");
+            // disp("-----------------------------------");
+            // // disp(eval_uk);
+            // disp("-----------------------------------");
+            // disp(eval_grad);
+            // disp("-----------------------------------");
+            // // disp(eval_g_uk);
+            // // disp("-----------------------------------");
+            // disp(eval_F);
+            // disp("-----------------------------------");
 
             // disp(eval_F_inv);
             // disp("-----------------------------------");
@@ -330,13 +330,13 @@ namespace utopia {
             disp(eval_denom);
             auto eval_division = quad_eval(grad(uk)/denom, ctx);
 
-            // auto e_div_inner = quad_eval(div_inner, ctx);
-            // disp(e_div_inner[0]);
+            auto e_div_inner = quad_eval(div_inner, ctx);
+            disp(e_div_inner[0]);
 
-            // auto div_inner_dx = div_inner * dX;
+            auto div_inner_dx = div_inner * dX;
 
-            // auto e_div_inner_dx = eval(div_inner_dx, ctx);
-            // disp(e_div_inner_dx);
+            auto e_div_inner_dx = eval(div_inner_dx, ctx);
+            disp(e_div_inner_dx);
         }
     }
 }

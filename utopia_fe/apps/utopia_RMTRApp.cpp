@@ -282,8 +282,8 @@ namespace utopia {
         std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> f;
         if(in.fun == "bratu") {
             f = std::make_shared<Bratu<decltype(V), USparseMatrix, UVector>>(V);
-        } else if(in.fun == "min-surf") {
-            f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
+        // } else if(in.fun == "min-surf") {
+            // f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "matrixpoisson") {
             f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "poisson") {

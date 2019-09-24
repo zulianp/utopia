@@ -21,23 +21,55 @@ namespace utopia {
         // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         {
-            // auto mu = params_.var_mu();
-            // auto lambda = params_.var_lambda();
+            auto mu = params_.var_mu();
+            auto lambda = params_.var_lambda();
 
-            // auto u = trial(V_);
-            // auto v = test(V_);
-            // auto uk = interpolate(x, u);
+            auto u = trial(V_);
+            auto v = test(V_);
+            auto uk = interpolate(x, u);
 
-            // auto F 		 = identity() + grad(uk);
-            // auto F_t 	 = transpose(F);
-            // auto F_inv   = inv(F);
-            // auto F_inv_t = transpose(F_inv);
-            // auto J       = det(F);
+            auto F 		 = identity() + grad(uk);
+            auto F_t 	 = transpose(F);
+            auto F_inv   = inv(F);
+            auto F_inv_t = transpose(F_inv);
+            auto J       = det(F);
 
-            // auto C = F_t * F;
-            // auto E = 0.5 * (C - identity());
-            // auto S = (2.0 * rescaling_) * mu * E + (rescaling_ * lambda) * (trace(E) * identity());
-            // auto P = F * S;
+            auto C = F_t * F;
+            auto E = 0.5 * (C - identity());
+            auto S = (2.0 * rescaling_) * mu * E + (rescaling_ * lambda) * (trace(E) * identity());
+            auto P = F * S;
+
+            auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
+            auto stress_lin = F * (
+                (2.0 * rescaling_) * mu * strain_lin + (rescaling_ * lambda) * (trace(strain_lin) * identity())
+                ) + grad(u) * S;
+
+
+            auto l_form = inner(P, grad(v)) * dX;
+            auto b_form = inner(stress_lin, grad(v)) * dX;
+
+            return assemble(b_form == l_form, hessian, gradient);
+        }
+
+        inline bool stress(const Vector &x, Vector &result) override {
+
+            auto mu = params_.var_mu();
+            auto lambda = params_.var_lambda();
+
+            auto u = trial(V_);
+            auto v = test(V_);
+            auto uk = interpolate(x, u);
+
+            auto F       = identity() + grad(uk);
+            auto F_t     = transpose(F);
+            auto F_inv   = inv(F);
+            auto F_inv_t = transpose(F_inv);
+            auto J       = det(F);
+
+            auto C = F_t * F;
+            auto E = 0.5 * (C - identity());
+            auto S = (2.0 * rescaling_) * mu * E + (rescaling_ * lambda) * (trace(E) * identity());
+            auto P = F * S;
 
             // auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
             // auto stress_lin = F * (
@@ -45,47 +77,9 @@ namespace utopia {
             //     ) + grad(u) * S;
 
 
-            // auto l_form = inner(P, grad(v)) * dX;
-            // auto b_form = inner(stress_lin, grad(v)) * dX;
+            auto l_form = inner(P, grad(v)) * dX;
 
-            // return assemble(b_form == l_form, hessian, gradient);
-
-            assert(false);
-            return false;
-        }
-
-        inline bool stress(const Vector &x, Vector &result) override {
-
-            // auto mu = params_.var_mu();
-            // auto lambda = params_.var_lambda();
-
-            // auto u = trial(V_);
-            // auto v = test(V_);
-            // auto uk = interpolate(x, u);
-
-            // auto F       = identity() + grad(uk);
-            // auto F_t     = transpose(F);
-            // auto F_inv   = inv(F);
-            // auto F_inv_t = transpose(F_inv);
-            // auto J       = det(F);
-
-            // auto C = F_t * F;
-            // auto E = 0.5 * (C - identity());
-            // auto S = (2.0 * rescaling_) * mu * E + (rescaling_ * lambda) * (trace(E) * identity());
-            // auto P = F * S;
-
-            // // auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
-            // // auto stress_lin = F * (
-            // //     (2.0 * rescaling_) * mu * strain_lin + (rescaling_ * lambda) * (trace(strain_lin) * identity())
-            // //     ) + grad(u) * S;
-
-
-            // auto l_form = inner(P, grad(v)) * dX;
-
-            // return assemble(l_form, result);
-
-            assert(false);
-            return false;
+            return assemble(l_form, result);
         }
 
         inline Scalar rescaling() const override
