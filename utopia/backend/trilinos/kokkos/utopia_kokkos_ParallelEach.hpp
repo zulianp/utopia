@@ -46,10 +46,10 @@ namespace utopia {
 
 
     template<int FILL_TYPE>
-    class ParallelEach<TSMatrixd, 2, FILL_TYPE>{
+    class ParallelEach<TpetraMatrixd, 2, FILL_TYPE>{
     public:
         template<class Fun>
-        inline static void apply_write(TSMatrixd &mat, Fun fun)
+        inline static void apply_write(TpetraMatrixd &mat, Fun fun)
         {
              typedef Kokkos::TeamPolicy<>               team_policy;
              typedef Kokkos::TeamPolicy<>::member_type  member_type;
@@ -85,7 +85,7 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_read(const TSMatrixd &mat, Fun fun)
+        inline static void apply_read(const TpetraMatrixd &mat, Fun fun)
         {
             typedef Kokkos::TeamPolicy<>               team_policy;
             typedef Kokkos::TeamPolicy<>::member_type  member_type;
@@ -122,7 +122,7 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_transform(TSMatrixd &mat, Fun fun)
+        inline static void apply_transform(TpetraMatrixd &mat, Fun fun)
         {
             typedef Kokkos::TeamPolicy<>               team_policy;
             typedef Kokkos::TeamPolicy<>::member_type  member_type;
@@ -160,7 +160,7 @@ namespace utopia {
     };
 
     template<class Fun>
-    inline void parallel_each_apply(TSMatrixd &mat, Fun fun)
+    inline void parallel_each_apply(TpetraMatrixd &mat, Fun fun)
     {
         typedef Kokkos::TeamPolicy<>               team_policy;
         typedef Kokkos::TeamPolicy<>::member_type  member_type;

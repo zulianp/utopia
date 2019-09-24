@@ -12,9 +12,8 @@ namespace utopia {
      * @brief Matrix representation of the trilinos backend.
      */
 
-    using TSMatrixd = utopia::TpetraMatrix;
-    using TVectord  = utopia::TpetraVector;
-     
+    using TpetraMatrixd = utopia::TpetraMatrix;
+    using TpetraVectord = utopia::TpetraVector;
 }
 
 #endif //UTOPIA_UTOPIA_TRILINOS_TYPES_HPP

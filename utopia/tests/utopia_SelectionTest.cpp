@@ -136,7 +136,7 @@ namespace utopia {
 
 // #ifdef WITH_TRILINOS
         //FIME missing implementation in TpetraMatrix
-//         SelectionTest<TSMatrixd, TVectord>().run();
+//         SelectionTest<TpetraMatrixd, TpetraVectord>().run();
 // #endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("SelectionTest");

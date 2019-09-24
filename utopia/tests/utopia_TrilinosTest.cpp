@@ -67,18 +67,18 @@ namespace utopia {
     void trilinos_build()
     {
         auto n = 10;
-        TVectord v = local_values(n, 1.);
+        TpetraVectord v = local_values(n, 1.);
 
         //FIXME replace this with an actual test
         // disp(v);
 
-        TSMatrixd m = local_sparse(n, n, 3);
+        TpetraMatrixd m = local_sparse(n, n, 3);
         assemble_laplacian_1D(m);
 
         //FIXME replace this with an actual test
         // disp(m);
 
-        TVectord z = m * v;
+        TpetraVectord z = m * v;
         double nz = norm2(z);
         utopia_test_assert(approxeq(nz, 0.));
     }
@@ -86,13 +86,13 @@ namespace utopia {
     void trilinos_build_identity()
     {
         auto n = 10;
-        TSMatrixd id = local_identity(n, n);
-        TVectord v = local_values(n, 2.);
+        TpetraMatrixd id = local_identity(n, n);
+        TpetraVectord v = local_values(n, 2.);
         double actual = norm1(id * v);
 
         utopia_test_assert(approxeq(size(v).get(0) * 2., actual));
 
-        TSMatrixd id_t = transpose(id);
+        TpetraMatrixd id_t = transpose(id);
         actual = norm1(id * v);
 
         utopia_test_assert(approxeq(size(v).get(0) * 2., actual));
@@ -100,7 +100,7 @@ namespace utopia {
 
     void trilinos_rect_matrix()
     {
-        TSMatrixd P;
+        TpetraMatrixd P;
         // build_rectangular_matrix(5, 10, P);
         build_rectangular_matrix(10, 5, P);
 
@@ -119,11 +119,11 @@ namespace utopia {
     void trilinos_accessors()
     {
         auto n = 10;
-        TVectord v = local_values(n, 10.);
+        TpetraVectord v = local_values(n, 10.);
 
         {
             Range r = range(v);
-            Write<TVectord> w_v(v);
+            Write<TpetraVectord> w_v(v);
 
             //set first and last entries of each process, are to be 0
             v.set(r.begin(), 0.);
@@ -143,7 +143,7 @@ namespace utopia {
     void trilinos_matrix_access()
     {
         auto n = 10;
-        TSMatrixd Y = local_sparse(n, n, 3);
+        TpetraMatrixd Y = local_sparse(n, n, 3);
         assemble_laplacian_1D(Y);
 
 
@@ -151,7 +151,7 @@ namespace utopia {
         auto i  = rr.begin();
 
         {
-            Read<TSMatrixd> r_(Y);
+            Read<TpetraMatrixd> r_(Y);
             if(i == 0 || i + 1 == size(Y).get(0)) {
                 utopia_test_assert(approxeq(Y.get(i, i), 1.));
             } else {
@@ -160,12 +160,12 @@ namespace utopia {
         }
 
         {
-            Write<TSMatrixd> w_(Y);
+            Write<TpetraMatrixd> w_(Y);
             Y.set(i, i, 4.);
         }
 
         {
-            Read<TSMatrixd> r_(Y);
+            Read<TpetraMatrixd> r_(Y);
             utopia_test_assert(approxeq(Y.get(i, i), 4.));
         }
     }
@@ -173,7 +173,7 @@ namespace utopia {
     void trilinos_set()
     {
         auto n = 10;
-        TVectord v = local_values(n, 10.);
+        TpetraVectord v = local_values(n, 10.);
 
         v.set(0.);
 
@@ -185,13 +185,13 @@ namespace utopia {
     void trilinos_vec_minus()
     {
         auto n = 10;
-        TVectord y = local_values(n, 1.);
-        TVectord x = local_values(n, 5.);
+        TpetraVectord y = local_values(n, 1.);
+        TpetraVectord x = local_values(n, 5.);
 
-        TVectord z;
+        TpetraVectord z;
         z = y - x;
 
-        TVectord expected = local_values(n, -4.);
+        TpetraVectord expected = local_values(n, -4.);
 
         double sum_z = double(sum(z));
 
@@ -202,8 +202,8 @@ namespace utopia {
     void trilinos_vec_axpy()
     {
         auto n = 10;
-        TVectord y = local_values(n, 1.);
-        TVectord x = local_values(n, 5.);
+        TpetraVectord y = local_values(n, 1.);
+        TpetraVectord x = local_values(n, 5.);
         auto alpha = 0.1;
         y += alpha * x;
 
@@ -214,11 +214,11 @@ namespace utopia {
     void trilinos_residual()
     {
         auto n = 10;
-        TVectord y   = local_values(n, 2.);
-        TVectord x   = local_values(n, 1.);
-        TSMatrixd Id = local_identity(n, n);
+        TpetraVectord y   = local_values(n, 2.);
+        TpetraVectord x   = local_values(n, 1.);
+        TpetraMatrixd Id = local_identity(n, n);
 
-        TVectord z = x - Id * y;
+        TpetraVectord z = x - Id * y;
 
         double val = norm1(z);
         utopia_test_assert(approxeq(val, size(y).get(0)));
@@ -227,7 +227,7 @@ namespace utopia {
     void trilinos_vec_scale()
     {
         auto n = 10;
-        TVectord y = local_values(n, 1.);
+        TpetraVectord y = local_values(n, 1.);
 
         y *= 2.;
 
@@ -235,7 +235,7 @@ namespace utopia {
         utopia_test_assert(approxeq(val, size(y).get(0) * 2.));
 
 
-        TVectord y2 = y * 2.;
+        TpetraVectord y2 = y * 2.;
 
         val = norm1(y2);
         utopia_test_assert(approxeq(val, size(y2).get(0) * 4.));
@@ -244,17 +244,17 @@ namespace utopia {
     void trilinos_mat_scale()
     {
         auto n = 10;
-        TSMatrixd Y = local_sparse(n, n, 3);
+        TpetraMatrixd Y = local_sparse(n, n, 3);
         assemble_laplacian_1D(Y);
 
         Y *= 2.;
 
-        TVectord x = local_values(n, 1.);
+        TpetraVectord x = local_values(n, 1.);
         double val = norm1(Y * x);
         utopia_test_assert(approxeq(val, 0.));
 
 
-        TSMatrixd Y2 = Y * 2.;
+        TpetraMatrixd Y2 = Y * 2.;
 
         val = norm1(Y2 * x);
         utopia_test_assert(approxeq(val, 0.));
@@ -263,23 +263,23 @@ namespace utopia {
     void trilinos_mat_axpy()
     {
         auto n = 10;
-        TSMatrixd X = local_sparse(n, n, 3);
+        TpetraMatrixd X = local_sparse(n, n, 3);
         assemble_laplacian_1D(X);
 
-        TSMatrixd Y = X;
+        TpetraMatrixd Y = X;
 
         auto alpha = 0.1;
         Y += alpha * X;
 
 
-        TVectord v = local_values(n, 5.);
+        TpetraVectord v = local_values(n, 5.);
 
         double val = norm1(Y * v);
         double tolerance = 30. * std::numeric_limits<double>::epsilon();
         //std::cout << "val " << val <<std::endl;
         utopia_test_assert(approxeq(val, 0., tolerance ));
 
-        TSMatrixd Id = local_identity(n, n);
+        TpetraMatrixd Id = local_identity(n, n);
         Id += 2. * Id;
 
         v.set(1.);
@@ -290,11 +290,11 @@ namespace utopia {
     void trilinos_mv()
     {
         auto n = 10;
-        TVectord x = local_values(n, 5.);
-        TSMatrixd m = local_sparse(n, n, 3);
+        TpetraVectord x = local_values(n, 5.);
+        TpetraMatrixd m = local_sparse(n, n, 3);
         assemble_laplacian_1D(m);
 
-        TVectord y = m * x;
+        TpetraVectord y = m * x;
 
         const double val = norm2(y);
         utopia_test_assert(approxeq(val, 0.));
@@ -305,10 +305,10 @@ namespace utopia {
     {
         auto rows = 5;
         auto cols = 6;
-        TSMatrixd A = local_sparse(rows, cols, 2);
+        TpetraMatrixd A = local_sparse(rows, cols, 2);
 
         {
-            Write<TSMatrixd> w_A(A);
+            Write<TpetraMatrixd> w_A(A);
             Range r = row_range(A);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
@@ -317,8 +317,8 @@ namespace utopia {
             }
         }
 
-        TVectord v    = local_values(rows, 1.);
-        TVectord At_v = transpose(A) * v;
+        TpetraVectord v    = local_values(rows, 1.);
+        TpetraVectord At_v = transpose(A) * v;
 
         each_read(At_v, [](const SizeType i, const double val) {
             utopia_test_assert(val <= 2. + 1e-16);
@@ -334,10 +334,10 @@ namespace utopia {
     {
         auto rows = 5;
         auto cols = 6;
-        TSMatrixd A = local_sparse(rows, cols, 2);
+        TpetraMatrixd A = local_sparse(rows, cols, 2);
 
         {
-            Write<TSMatrixd> w_A(A);
+            Write<TpetraMatrixd> w_A(A);
             Range r = row_range(A);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
@@ -346,10 +346,10 @@ namespace utopia {
             }
         }
 
-        TVectord v    = local_values(rows, 1.);
+        TpetraVectord v    = local_values(rows, 1.);
         //Expilcit transpose
-        TSMatrixd At  = transpose(A);
-        TVectord At_v = At * v;
+        TpetraMatrixd At  = transpose(A);
+        TpetraVectord At_v = At * v;
 
         // disp(At);
 
@@ -369,11 +369,11 @@ namespace utopia {
     {
         auto rows = 5;
         auto cols = 5;
-        TSMatrixd A = local_sparse(rows, cols, 2);
+        TpetraMatrixd A = local_sparse(rows, cols, 2);
         auto gs = size(A);
 
         {
-            Write<TSMatrixd> w_A(A);
+            Write<TpetraMatrixd> w_A(A);
             Range r = row_range(A);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
@@ -384,7 +384,7 @@ namespace utopia {
 
         auto s = size(A);
 
-        TSMatrixd At = transpose(A);
+        TpetraMatrixd At = transpose(A);
         auto s_t = size(At);
         utopia_test_assert(s_t.get(0) == s.get(1));
 
@@ -394,17 +394,17 @@ namespace utopia {
         // disp(At);
         // std::cout << "-----------------------" << std::endl;
 
-        TSMatrixd id = local_identity(rows, cols);
-        TVectord v = local_values(cols, 2.);
+        TpetraMatrixd id = local_identity(rows, cols);
+        TpetraVectord v = local_values(cols, 2.);
 
-        TVectord actual = id * v;
+        TpetraVectord actual = id * v;
         double norm_actual = norm1(actual);
 
         utopia_test_assert(approxeq(size(actual).get(0) * 2, norm_actual));
 
         //Does not work in parallel
-        TSMatrixd id_t = transpose(id);
-        TVectord v2 = local_values(rows, 2.);
+        TpetraMatrixd id_t = transpose(id);
+        TpetraVectord v2 = local_values(rows, 2.);
         actual = id_t * v2;
         norm_actual = norm1(actual);
         double norm_expected = size(v2).get(0) * 2.;
@@ -422,13 +422,13 @@ namespace utopia {
     void trilinos_mm()
     {
         auto n = 10;
-        TSMatrixd A = local_sparse(n, n, 3);
+        TpetraMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
-        TSMatrixd B = A;
-        TSMatrixd C = transpose(A) * B;
+        TpetraMatrixd B = A;
+        TpetraMatrixd C = transpose(A) * B;
 
-        TVectord x = local_values(n, 5.);
-        TVectord y = C * x;
+        TpetraVectord x = local_values(n, 5.);
+        TpetraVectord y = C * x;
 
         const double val = norm2(y);
         utopia_test_assert(approxeq(val, 0.));
@@ -438,14 +438,14 @@ namespace utopia {
     {
         auto n = 10;
         auto m = 3;
-        TSMatrixd A = local_sparse(n, n, 3);
+        TpetraMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
-        TSMatrixd P;
+        TpetraMatrixd P;
         build_rectangular_matrix(n, m, P);
-        TSMatrixd B = A * P;
-        TSMatrixd P_t = transpose(P);
-        TSMatrixd C_1 = P_t * A;
-        TSMatrixd C_2 = transpose(P) * A;
+        TpetraMatrixd B = A * P;
+        TpetraMatrixd P_t = transpose(P);
+        TpetraMatrixd C_1 = P_t * A;
+        TpetraMatrixd C_2 = transpose(P) * A;
 
         //FIXME write test here
     }
@@ -453,17 +453,17 @@ namespace utopia {
     void trilinos_diag()
     {
         auto n = 10;
-        TSMatrixd A = local_sparse(n, n, 3);
+        TpetraMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
-        TVectord d = diag(A);
+        TpetraVectord d = diag(A);
         //        disp(A);
         //        disp(d);
 
         const double val = norm1(d);
         utopia_test_assert(approxeq(val, size(d).get(0)*2.-2.));
 
-        TSMatrixd D = diag(d);
-        TVectord x  = local_values(n, 1.);
+        TpetraMatrixd D = diag(d);
+        TpetraVectord x  = local_values(n, 1.);
         //        disp(D);
         //        disp(x);
         utopia_test_assert(approxeq(d, D*x));
@@ -473,8 +473,8 @@ namespace utopia {
     {
         auto n = 10;
         auto m = 3;
-        TSMatrixd A = local_identity(n, m);
-        TVectord d;
+        TpetraMatrixd A = local_identity(n, m);
+        TpetraVectord d;
         d  = diag(A);
         const double val = norm1(d);
 
@@ -485,17 +485,17 @@ namespace utopia {
 
     void test_ptap(const int n, const int m)
     {
-        TSMatrixd A = local_sparse(n, n, 3);
+        TpetraMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
 
-        TSMatrixd P;
+        TpetraMatrixd P;
         build_rectangular_matrix(n, m, P);
 
-        TSMatrixd R_2 = transpose(P) * A;
+        TpetraMatrixd R_2 = transpose(P) * A;
         utopia_test_assert(R_2.is_valid(true));
 
         //For the moment this is computing (transpose(P) * A) * P
-        TSMatrixd R  = utopia::ptap(A, P); //equiv: transpose(P) * A * P;
+        TpetraMatrixd R  = utopia::ptap(A, P); //equiv: transpose(P) * A * P;
 
         utopia_test_assert(R.is_valid(true));
 
@@ -538,16 +538,16 @@ namespace utopia {
 
     void test_rap(const int n, const int m)
     {
-        TSMatrixd A = local_sparse(n, n, 3);
+        TpetraMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
 
-        TSMatrixd P;
+        TpetraMatrixd P;
         build_rectangular_matrix(n, m, P);
 
-        TSMatrixd R = transpose(P);
+        TpetraMatrixd R = transpose(P);
 
 
-        TSMatrixd res = R * A * P;
+        TpetraMatrixd res = R * A * P;
 
         // disp(res);
     }
@@ -577,11 +577,11 @@ namespace utopia {
 
     void trilinos_cg()
     {
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
-        TVectord x = zeros(size(*ml_problem.rhs));
+        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
+        TpetraVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
-        ConjugateGradient<TSMatrixd, TVectord> cg;
+        ConjugateGradient<TpetraMatrixd, TpetraVectord> cg;
         cg.rtol(1e-6);
         cg.atol(1e-6);
         cg.max_it(800);
@@ -665,10 +665,10 @@ namespace utopia {
     {
         auto rows = 3;
         auto cols = 4;
-        TSMatrixd A = local_sparse(rows, cols, 2);
+        TpetraMatrixd A = local_sparse(rows, cols, 2);
 
         {
-            Write<TSMatrixd> w_A(A);
+            Write<TpetraMatrixd> w_A(A);
             Range r = row_range(A);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
@@ -677,13 +677,13 @@ namespace utopia {
             }
         }
 
-        TSMatrixd At = transpose(A);
+        TpetraMatrixd At = transpose(A);
 
         auto &M = A;
 
         auto rr = row_range(M);
         for(auto i = rr.begin(); i < rr.end(); ++i) {
-            RowView<TSMatrixd> row(M, i, true);
+            RowView<TpetraMatrixd> row(M, i, true);
             for(auto j = 0; j < row.n_values(); ++j) {
                 int col = row.col(j);
                 int val = row.get(j);
@@ -697,7 +697,7 @@ namespace utopia {
         SizeType n = 10, m = 5;
         SizeType gn = mpi_world_size() * n, gm = mpi_world_size() * m;
 
-        TSMatrixd P;
+        TpetraMatrixd P;
         build_rectangular_matrix(n, m, P);
 
         Range rr = row_range(P);
@@ -712,11 +712,11 @@ namespace utopia {
     {
 
         int n = 10;
-        TVectord v    = local_values(n, 1.);
-        TVectord ones = local_values(local_size(v).get(0), 1.);
+        TpetraVectord v    = local_values(n, 1.);
+        TpetraVectord ones = local_values(local_size(v).get(0), 1.);
 
 
-        TVectord ones_mul_v = e_mul(ones, v);
+        TpetraVectord ones_mul_v = e_mul(ones, v);
         v = e_mul(ones, v);
 
         double sv = sum(v);
@@ -764,7 +764,7 @@ namespace utopia {
         //petsc version
         st_cg_test<PetscMatrix, PetscVector>();
 #endif //WITH_PETSC
-        st_cg_test<TSMatrixd, TVectord>();
+        st_cg_test<TpetraMatrixd, TpetraVectord>();
     }
 
 
@@ -776,7 +776,7 @@ namespace utopia {
         test_mg<PetscMatrix, PetscVector>();
 #endif //WITH_PETSC
         //trilinos version
-        test_mg<TSMatrixd, TVectord>();
+        test_mg<TpetraMatrixd, TpetraVectord>();
     }
 
 
@@ -784,8 +784,8 @@ namespace utopia {
     {
         // if(mpi_world_size() > 1) return;
 
-        using MatrixT = utopia::TSMatrixd;
-        using VectorT = utopia::TVectord;
+        using MatrixT = utopia::TpetraMatrixd;
+        using VectorT = utopia::TpetraVectord;
 
         // using MatrixT = utopia::PetscMatrix;
         // using VectorT = utopia::PetscVector;
@@ -854,13 +854,13 @@ namespace utopia {
 
     void trilinos_row_view()
     {
-        TSMatrixd A = local_sparse(4, 4, 3);
+        TpetraMatrixd A = local_sparse(4, 4, 3);
         assemble_laplacian_1D(A);
 
         auto rr = row_range(A);
 
         for(auto i = rr.begin(); i != rr.end(); ++i) {
-            RowView<TSMatrixd> row(A, i);
+            RowView<TpetraMatrixd> row(A, i);
             utopia_test_assert(row.n_values() >= 2);
             auto col = row.col(0);
             // auto val = row.get(0);
@@ -869,10 +869,10 @@ namespace utopia {
         }
 
 
-        TSMatrixd B = local_sparse(4, 4, 3);
+        TpetraMatrixd B = local_sparse(4, 4, 3);
 
         {
-            Write<TSMatrixd> w_(B, GLOBAL_ADD);
+            Write<TpetraMatrixd> w_(B, GLOBAL_ADD);
 
             auto r = row_range(B);
             auto s = size(B);
@@ -902,7 +902,7 @@ namespace utopia {
         int m = 3;
 
 
-        TSMatrixd P;
+        TpetraMatrixd P;
         build_rectangular_matrix(n, m, P);
 
         auto rr = row_range(P);
@@ -921,7 +921,7 @@ namespace utopia {
 
         utopia_test_assert(nnz == count);
 
-        TSMatrixd P_t = transpose(P);
+        TpetraMatrixd P_t = transpose(P);
 
         each_read(P_t, [&count](const SizeType i, const SizeType j, const double val) {
             utopia_test_assert(val == 1.);
@@ -938,15 +938,15 @@ namespace utopia {
 
     void trilinos_each_read_transpose()
     {
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(5, 2, false);
+        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(5, 2, false);
 
 
-        TSMatrixd R = transpose(*ml_problem.interpolators[0]);
-        TSMatrixd R_copy = R;
+        TpetraMatrixd R = transpose(*ml_problem.interpolators[0]);
+        TpetraMatrixd R_copy = R;
         R_copy *= 0.;
 
-        TVectord v  = local_values(local_size(R).get(1), 10.);
-        TVectord Rv = local_zeros(local_size(R).get(0));
+        TpetraVectord v  = local_values(local_size(R).get(1), 10.);
+        TpetraVectord Rv = local_zeros(local_size(R).get(0));
 
         Rv = R * v;
 
@@ -956,7 +956,7 @@ namespace utopia {
 
     void trilinos_read()
     {
-        TSMatrixd m;
+        TpetraMatrixd m;
         auto path = Utopia::instance().get("data_path") + "/matrixmarket/gre_343_343_crg.mm";
         bool ok = read(path, m);
         utopia_test_assert(ok);
@@ -966,10 +966,10 @@ namespace utopia {
 #ifdef WITH_PETSC
     void trilinos_petsc_interop()
     {
-        KSPSolver<TSMatrixd, TVectord> solver;
+        KSPSolver<TpetraMatrixd, TpetraVectord> solver;
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
-        TVectord x = zeros(size(*ml_problem.rhs));
+        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
+        TpetraVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
 
@@ -989,21 +989,21 @@ namespace utopia {
     void trilinos_structure()
     {
         auto n = 10;
-        TSMatrixd A = local_sparse(n, n, 3);
+        TpetraMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
 
         auto expr = structure(A);
 
-        TSMatrixd B(expr);
+        TpetraMatrixd B(expr);
     }
 
     void trilinos_exp()
     {
 #ifdef WITH_PETSC
-        TVectord x = local_values(10, 2.);
+        TpetraVectord x = local_values(10, 2.);
         PetscVector y = local_values(10, 2.);
 
-        TVectord ex = exp(x);
+        TpetraVectord ex = exp(x);
         PetscVector ey = exp(y);
 
         utopia_test_assert(cross_backend_approxeq(ey, ex));
@@ -1015,16 +1015,16 @@ namespace utopia {
     {
         int n = 10;
 
-        TSMatrixd m = local_sparse(n, n, 3);
+        TpetraMatrixd m = local_sparse(n, n, 3);
         assemble_laplacian_1D(m);
 
-        TSMatrixd m_copy = m;
+        TpetraMatrixd m_copy = m;
 
-        TVectord d  = local_values(n, -1.);
-        TSMatrixd D = diag(d);
+        TpetraVectord d  = local_values(n, -1.);
+        TpetraMatrixd D = diag(d);
         m += D;
 
-        TVectord ones = local_values(n, 1);
+        TpetraVectord ones = local_values(n, 1);
 
         double sum_m      = sum(m * ones);
         double sum_d      = sum(d);
@@ -1034,7 +1034,7 @@ namespace utopia {
         utopia_test_assert(approxeq(sum_d, sum_D));
         utopia_test_assert(approxeq(sum_m, sum_d + sum_m_copy));
 
-        TSMatrixd m_new = m_copy + D;
+        TpetraMatrixd m_new = m_copy + D;
         double sum_m_new = sum(m * ones);
 
         utopia_test_assert(approxeq(sum_m_new, sum_d + sum_m_copy));
@@ -1046,12 +1046,12 @@ namespace utopia {
         int n = 10;
         double lambda = 1.9;
 
-        auto fun_tpetra = std::make_shared<Bratu1D<TSMatrixd, TVectord> >(n, lambda);
+        auto fun_tpetra = std::make_shared<Bratu1D<TpetraMatrixd, TpetraVectord> >(n, lambda);
         auto fun_petsc  = std::make_shared<Bratu1D<PetscMatrix, PetscVector> >(n, lambda);
 
         auto init_expr = values(n, 1.);
 
-        TVectord x_tpetra = init_expr;
+        TpetraVectord x_tpetra = init_expr;
         PetscVector x_petsc  = init_expr;
 
         double val_tpetra = 0.;
@@ -1064,7 +1064,7 @@ namespace utopia {
         utopia_test_assert(cross_backend_approxeq(x_petsc, x_tpetra));
         utopia_test_assert(approxeq(val_tpetra, val_petsc));
 
-        TVectord grad_tpetra;
+        TpetraVectord grad_tpetra;
         PetscVector grad_petsc;
 
         ok = fun_tpetra->gradient_no_rhs(x_tpetra, grad_tpetra); assert(ok);
@@ -1074,7 +1074,7 @@ namespace utopia {
 
         //last part fails
 
-        TSMatrixd H_tpetra;
+        TpetraMatrixd H_tpetra;
         PetscMatrix H_petsc;
 
         ok = fun_tpetra->hessian(x_tpetra, H_tpetra); assert(ok);
@@ -1167,13 +1167,13 @@ namespace utopia {
 
     void trilinos_replace_value()
     {
-        TSMatrixd A = local_sparse(2, 3, 4);
+        TpetraMatrixd A = local_sparse(2, 3, 4);
 
         auto gs = size(A);
         auto r = row_range(A);
 
         {
-            Write<TSMatrixd> w_(A);
+            Write<TpetraMatrixd> w_(A);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
                 // A.set(i, i, 1.);
@@ -1184,7 +1184,7 @@ namespace utopia {
         }
 
         {
-            Write<TSMatrixd> w_(A);
+            Write<TpetraMatrixd> w_(A);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
                 A.set(i, 0, -3.);
@@ -1196,33 +1196,33 @@ namespace utopia {
 
     void trilinos_copy_write()
     {
-        TSMatrixd P;
+        TpetraMatrixd P;
         build_rectangular_matrix(10, 5, P);
 
         P = transpose(P);
 
-        TSMatrixd P2 = P;
+        TpetraMatrixd P2 = P;
         P2 *= 0.;
 
         {
-            Write<TSMatrixd> w_(P2);
+            Write<TpetraMatrixd> w_(P2);
             each_read(P, [&P2](const SizeType i, const SizeType j, const double value) {
                 P2.set(i, j, value * 2.);
             });
         }
 
-        TSMatrixd A;
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
+        TpetraMatrixd A;
+        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
         A = *ml_problem.interpolators[0];
 
         A = transpose(A);
 
-        TSMatrixd A2 = A;
+        TpetraMatrixd A2 = A;
 
         A2 *= 0.;
 
         {
-            Write<TSMatrixd> w_(A2);
+            Write<TpetraMatrixd> w_(A2);
             each_read(A, [&A2](const SizeType i, const SizeType j, const double value) {
                 A2.set(i, j, 1.);
             });
@@ -1237,16 +1237,16 @@ namespace utopia {
         const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
         bool ok = read(folder + "/I_2", petsc_P); utopia_test_assert(ok);
 
-        TSMatrixd P;
+        TpetraMatrixd P;
         backend_convert_sparse(petsc_P, P);
 
         P = transpose(P);
 
-        TSMatrixd P2 = P;
+        TpetraMatrixd P2 = P;
         P2 *= 0.;
 
         {
-            Write<TSMatrixd> w_(P2);
+            Write<TpetraMatrixd> w_(P2);
             each_read(P, [&P2](const SizeType i, const SizeType j, const double value) {
                 P2.set(i, j, value * 2.);
             });
@@ -1259,13 +1259,13 @@ namespace utopia {
         const int n   = mpi_world_size() * 2;
         const int off = mpi_world_rank() * 2;
 
-        std::vector<TVectord::SizeType> ghosts{ (off + 3) % n };
-        TVectord v = ghosted(2, n, ghosts);
+        std::vector<TpetraVectord::SizeType> ghosts{ (off + 3) % n };
+        TpetraVectord v = ghosted(2, n, ghosts);
 
         auto r = range(v);
 
         {
-            Write<TVectord> w_v(v);
+            Write<TpetraVectord> w_v(v);
             for(auto i = r.begin(); i != r.end(); ++i) {
                 v.set(i, i);
             }
@@ -1274,7 +1274,7 @@ namespace utopia {
         // synchronize(v);
 
         {
-            Read<TVectord> r_v(v);
+            Read<TpetraVectord> r_v(v);
             std::vector<SizeType> index{(off + 3) % n};
             std::vector<double> values;
             v.get(index, values);
@@ -1291,12 +1291,12 @@ namespace utopia {
         rmtr_test<PetscMatrix, PetscVector>();
 #endif //WITH_PETSC
 
-        rmtr_test<TSMatrixd, TVectord>();
+        rmtr_test<TpetraMatrixd, TpetraVectord>();
     }
 
     void trilinos_matrix_norm()
     {
-        TSMatrixd m = local_identity(10, 10);
+        TpetraMatrixd m = local_identity(10, 10);
 
         double nm = norm2(m);
         utopia_test_assert( approxeq(nm, std::sqrt(1.*size(m).get(0))) );
@@ -1308,11 +1308,11 @@ namespace utopia {
     {
         std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_belos.xml";
 
-        BelosSolver<TSMatrixd, TVectord> solver;
+        BelosSolver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
-        TVectord x = zeros(size(*ml_problem.rhs));
+        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
+        TpetraVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
         double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
@@ -1333,11 +1333,11 @@ namespace utopia {
     {
         std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_amesos.xml";
 
-        Amesos2Solver<TSMatrixd, TVectord> solver;
+        Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
-        TVectord x = zeros(size(*ml_problem.rhs));
+        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
+        TpetraVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
         double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
@@ -1361,7 +1361,7 @@ namespace utopia {
         const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
         bool ok = read(folder + "/I_2", petsc_P); utopia_test_assert(ok);
 
-        TSMatrixd P;
+        TpetraMatrixd P;
         backend_convert_sparse(petsc_P, P);
 
         double sum_P = sum(P);
@@ -1392,8 +1392,8 @@ namespace utopia {
 
     void trilinos_set_zeros()
     {
-        TSMatrixd m = local_identity(10, 10);
-        using SizeT = UTOPIA_SIZE_TYPE(TSMatrixd);
+        TpetraMatrixd m = local_identity(10, 10);
+        using SizeT = UTOPIA_SIZE_TYPE(TpetraMatrixd);
         auto rr = row_range(m);
 
         std::vector<SizeT> index;
@@ -1402,7 +1402,7 @@ namespace utopia {
 
         // disp(m);
 
-        Read<TSMatrixd> r(m);
+        Read<TpetraMatrixd> r(m);
         auto val = m.get(rr.begin(), rr.begin());
         utopia_test_assert(val == 2.);
     }

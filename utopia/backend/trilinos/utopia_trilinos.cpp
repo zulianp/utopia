@@ -7,7 +7,7 @@
 
 namespace utopia{
 
-    template class RowView<TpetraMatrix>;
-    template class BiCGStab<TpetraMatrix, TpetraVector, HOMEMADE>;
+    template class RowView<TpetraMatrixd>;
+    template class BiCGStab<TpetraMatrixd, TpetraVectord, HOMEMADE>;
 
 }

@@ -391,7 +391,7 @@ namespace utopia {
 
         if(mpi_world_size() == 1) {
 #ifdef WITH_TRILINOS
-            BlockTest<TSMatrixd, TVectord>().run();
+            BlockTest<TpetraMatrixd, TpetraVectord>().run();
 #endif //WITH_TRILINOS
         }
 

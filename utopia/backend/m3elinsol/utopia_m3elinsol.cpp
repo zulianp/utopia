@@ -20,14 +20,9 @@ namespace utopia {
     template class ASPAMG<PetscMatrix, PetscVector>;
 #endif //WITH_PETSC
 
-#ifdef WITH_BLAS
-
-    template class ASPAMG<CRSMatrixd, Vectord>;
-#endif //WITH_BLAS
-
 #ifdef WITH_TRILINOS
 
-    template class ASPAMG<TSMatrixd, TVectord>;
+    template class ASPAMG<TpetraMatrixd, TpetraVectord>;
 #endif //WITH_TRILINOS
 
 }

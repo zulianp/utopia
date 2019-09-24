@@ -6,8 +6,8 @@
 
 namespace utopia {
 #ifdef WITH_TRILINOS_ALGEBRA
-    using USparseMatrix = TpetraMatrix;
-    using UVector  = TpetraVector;
+    using USparseMatrix = TpetraMatrixd;
+    using UVector  = TpetraVectord;
 #else
     using USparseMatrix = PetscMatrix;
     using UVector  = PetscVector;

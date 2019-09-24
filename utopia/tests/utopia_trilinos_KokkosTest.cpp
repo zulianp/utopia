@@ -25,11 +25,11 @@ namespace utopia {
     {
         auto n = 10;
 
-        TVectord v = local_values(n, 1.);
+        TpetraVectord v = local_values(n, 1.);
 
-        TVectord w = local_values(n, 10.);
+        TpetraVectord w = local_values(n, 10.);
 
-        TVectord z = max(w, v);
+        TpetraVectord z = max(w, v);
 
         utopia_test_assert(approxeq(z, w));
     }
@@ -38,11 +38,11 @@ namespace utopia {
     {
         auto n = 10;
 
-        TVectord v = local_values(n, 1.);
+        TpetraVectord v = local_values(n, 1.);
 
-        TVectord w = local_values(n, 10.);
+        TpetraVectord w = local_values(n, 10.);
 
-        TVectord z = min(w , v);
+        TpetraVectord z = min(w , v);
 
         utopia_test_assert(approxeq(z, v));
     }
@@ -51,7 +51,7 @@ namespace utopia {
     {
         auto n = 10;
 
-        TVectord v = local_values(n, 1.);
+        TpetraVectord v = local_values(n, 1.);
 
         double z = sum(v);
 
@@ -62,7 +62,7 @@ namespace utopia {
     {
         auto n = 10;
 
-        TVectord v = local_values(n, 1.);
+        TpetraVectord v = local_values(n, 1.);
 
         auto r = range(v);
 
@@ -79,7 +79,7 @@ namespace utopia {
     {
         auto n = 10;
 
-        TVectord v = local_values(n, 1.);
+        TpetraVectord v = local_values(n, 1.);
 
         auto r = range(v);
 
@@ -95,14 +95,14 @@ namespace utopia {
     void kokkos_write() {
         auto n = 10;
 
-        TVectord w = local_values(n, -1.);
+        TpetraVectord w = local_values(n, -1.);
 
         parallel_each_write(w, KOKKOS_LAMBDA(const SizeType i) -> double {
             return i;
         });
 
         {
-            Read<TVectord> r_(w);
+            Read<TpetraVectord> r_(w);
             auto r = range(w);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
@@ -114,7 +114,7 @@ namespace utopia {
     void kokkos_parallel_each_mat() {
         auto n = 10;
 
-        TSMatrixd w = local_identity(n, n);
+        TpetraMatrixd w = local_identity(n, n);
 
         parallel_each_write(w, KOKKOS_LAMBDA(const SizeType i, const SizeType j) -> double {
             return i * n + j;
@@ -129,7 +129,7 @@ namespace utopia {
     void kokkos_read() {
 
         auto n = 10;
-        TVectord w = local_values(n, 50);
+        TpetraVectord w = local_values(n, 50);
 
         parallel_each_read(w, KOKKOS_LAMBDA(const SizeType i, const double entry)
         { });
@@ -140,10 +140,10 @@ namespace utopia {
         auto nr = 3;
         auto nc = 3;
 
-        TSMatrixd P = local_sparse(nr, nc, 1);
+        TpetraMatrixd P = local_sparse(nr, nc, 1);
 
         {
-            Write<TSMatrixd> w_(P);
+            Write<TpetraMatrixd> w_(P);
             auto r = row_range(P);
             auto cols = size(P).get(1);
             for(auto i = r.begin(); i < r.end(); ++i) {

@@ -56,7 +56,7 @@ namespace utopia {
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS
-        run_all_benchmarks<TSMatrixd, TVectord>("trilinos");
+        run_all_benchmarks<TpetraMatrixd, TpetraVectord>("trilinos");
 #endif //WITH_TRILINOS
 
         //Serial benchmarks

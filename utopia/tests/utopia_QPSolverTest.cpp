@@ -211,7 +211,7 @@ namespace utopia {
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS
-        QPSolverTest<TSMatrixd, TVectord>().run();
+        QPSolverTest<TpetraMatrixd, TpetraVectord>().run();
 #endif //WITH_TRILINOS
 
 #ifdef WITH_BLAS

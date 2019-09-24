@@ -206,8 +206,8 @@ static void run_all(const int n)
 
 #ifdef WITH_TRILINOS    
 //run with trilinos types 
-	run<TVectord>(n);
-    run_access<TVectord>(n);
+	run<TpetraVectord>(n);
+    run_access<TpetraVectord>(n);
 #endif //WITH_TRILINOS    
 }
 

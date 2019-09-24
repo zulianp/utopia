@@ -558,8 +558,8 @@ namespace utopia
         #endif //WITH_BLAS
 
         // #ifdef WITH_TRILINOS
-                // QuasiNewtonTest<TSMatrixd, TVectord>().print_backend_info();
-        // 		QuasiNewtonTest<TSMatrixd, TVectord>().run_sparse();
+                // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
+        // 		QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
         // #endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("runQuasiNewtonTest");
