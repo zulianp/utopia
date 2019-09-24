@@ -127,7 +127,7 @@ namespace utopia {
 #endif
 
 #ifdef WITH_BLAS
-        WrapperTest<Matrixd, Vectord, double>().run();
+        WrapperTest<BlasMatrixd, BlasVectord, double>().run();
 #endif //WITH_BLAS
         UTOPIA_UNIT_TEST_END("WrapperTest");
     }

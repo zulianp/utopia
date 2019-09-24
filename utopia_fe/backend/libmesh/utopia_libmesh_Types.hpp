@@ -16,7 +16,7 @@
 
 namespace utopia {
 
-    typedef utopia::BlasDenseMatrix<libMesh::Real>  LMDenseMatrix;
+    typedef utopia::BlasMatrix<libMesh::Real>  LMDenseMatrix;
     typedef utopia::BlasVector<libMesh::Real>       LMDenseVector;
 
     template<class It>

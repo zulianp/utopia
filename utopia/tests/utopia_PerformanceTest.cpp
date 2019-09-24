@@ -357,7 +357,7 @@
 // 			std::cout << "------------------------------------\n";
 // 			std::cout << "PETSC: " << std::endl;
 // 		}
-// 		test_program<DMatrixd, DVectord>("petsc");
+// 		test_program<PetscMatrix, PetscVector>("petsc");
 // #endif //WITH_PETSC
 
 // #ifdef WITH_EIGEN_3

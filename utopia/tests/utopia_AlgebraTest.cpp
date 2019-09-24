@@ -374,8 +374,8 @@ namespace utopia {
         UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
 #ifdef WITH_BLAS
-        AlgebraTest<Matrixd, Vectord>().run();
-        SerialAlgebraTest<Matrixd, Vectord>().run();
+        AlgebraTest<BlasMatrixd, BlasVectord>().run();
+        SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC

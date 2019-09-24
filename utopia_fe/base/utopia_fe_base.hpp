@@ -6,18 +6,18 @@
 
 namespace utopia {
 #ifdef WITH_TRILINOS_ALGEBRA
-    using USparseMatrix = TSMatrixd;
-    using UVector  = TVectord;
+    using USparseMatrix = TpetraMatrix;
+    using UVector  = TpetraVector;
 #else
-    using USparseMatrix = DSMatrixd;
-    using UVector  = DVectord;
+    using USparseMatrix = PetscMatrix;
+    using UVector  = PetscVector;
 #endif //WITH_TRILINOS_ALGEBRA
 
     using UIndexArray  = utopia::Traits<UVector>::IndexArray;
     using UScalarArray = utopia::Traits<UVector>::ScalarArray;
     using UIndexSet    = utopia::Traits<UVector>::IndexSet;
 
-    using USerialMatrix = utopia::BlasDenseMatrix<double>;
+    using USerialMatrix = utopia::BlasMatrix<double>;
     using USerialVector = utopia::BlasVector<double>;
 }
 

@@ -19,7 +19,7 @@ namespace utopia {
 
 	inline static void add_matrix(const std::vector<libMesh::dof_id_type> &row_dofs,
 								  const std::vector<libMesh::dof_id_type> &col_dofs,
-								  TSMatrixd &mat) //USparseMatrix
+								  TSUSerialMatrix &mat) //USparseMatrix
 	{
 		int size = row_dofs.size()*col_dofs.size();
 		std::vector<double> zero_vector (size);

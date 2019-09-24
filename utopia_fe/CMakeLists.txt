@@ -133,7 +133,7 @@ list(APPEND UTOPIA_FE_MODULES
     transfer
     visualization
     backend/libmesh
-    backend/homemade
+    # backend/homemade
     backend/intrepid2
     backend/mars
     intersection

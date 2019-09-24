@@ -88,19 +88,19 @@ int main(int argc, char** argv)
 
     { //Only in the main file: put this scope so that the petsc objects will be destroyed before the call to finalize
 
-        DSMatrixd m = sparse(n, n, 3);
+        PetscMatrix m = sparse(n, n, 3);
         assemble_laplacian_1D(n, m);
 
         //Made const since it is immutable
-        const DVectord v  = values(n, value);
-        DVectord actual   = m * v;
+        const PetscVector v  = values(n, value);
+        PetscVector actual   = m * v;
 
-        DVectord expected = zeros(n);
+        PetscVector expected = zeros(n);
         
         { 
             //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
             Range r = range(expected);
-            Write<DVectord> w(expected);
+            Write<PetscVector> w(expected);
 
             if(r.begin() == 0) {
                 expected.set(0, value);
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         //[assemble vector alternative]:
-        DVectord rhs = zeros(n);
+        PetscVector rhs = zeros(n);
         each_write(rhs, [value](const SizeType i) -> double {
             //The returned value will be written in the vector
             if(i == 0 || i == n-1) {
@@ -142,14 +142,14 @@ int main(int argc, char** argv)
         {
             SizeType local_n = 3;
             SizeType block_size = 2; 
-            DVectord x       = local_zeros (local_n * block_size);
-            DVectord f       = local_values(local_n * block_size, 0.5);
-            DSMatrixd mat    = local_identity(local_n, local_n);
+            PetscVector x       = local_zeros (local_n * block_size);
+            PetscVector f       = local_values(local_n * block_size, 0.5);
+            PetscMatrix mat    = local_identity(local_n, local_n);
 
             // kron_prod(mat x identity) * f
             {
-                Read<DVectord>  r(x);
-                Write<DVectord> w(f);
+                Read<PetscVector>  r(x);
+                Write<PetscVector> w(f);
 
                 each_read(mat, [block_size, &x, &f](const SizeType i, const SizeType j, const double entry) 
                 {
@@ -166,6 +166,6 @@ int main(int argc, char** argv)
         }
     }
 
-    solve_constrained_poisson_problem<DSMatrixd, DVectord>();
+    solve_constrained_poisson_problem<PetscMatrix, PetscVector>();
     return Utopia::Finalize();
 }

@@ -53,7 +53,7 @@ namespace utopia {
 
         inline void ref(Point &ref_point) const
         {
-            Read<Vectord> r_(x_ref_);
+            Read<USerialVector> r_(x_ref_);
             
             for(int d = 0; d < Dim-1; ++d) {
                 ref_point[d] = x_ref_.get(d);
@@ -67,19 +67,19 @@ namespace utopia {
         QMortar q_;
 
         //mats and vecs
-        Vectord g_, g_1_, x_, x_ref_, p_, n_, r_, h_, Jtn_, v_, u_;
-        Matrixd A_, J_, H_, H_fe_, JtJ_;
+        USerialVector g_, g_1_, x_, x_ref_, p_, n_, r_, h_, Jtn_, v_, u_;
+        USerialMatrix A_, J_, H_, H_fe_, JtJ_;
 
-        LUDecomposition<Matrixd, Vectord> solver_;
+        LUDecomposition<USerialMatrix, USerialVector> solver_;
 
         int max_iter_;
         Scalar tol_, accept_tol_;
         bool use_newton_;
         bool verbose_;
 
-        inline void get_point(Vectord &x) const
+        inline void get_point(USerialVector &x) const
         {
-            Write<Vectord> w_(x);
+            Write<USerialVector> w_(x);
             const auto &xyz = fe_->get_xyz();
             for(int i = 0; i < Dim; ++i) {
                 x.set(i, xyz[0](i));
@@ -94,10 +94,10 @@ namespace utopia {
             }
         }
 
-        inline void get_hessian(const Vectord &v, Matrixd &H) const
+        inline void get_hessian(const USerialVector &v, USerialMatrix &H) const
         {
-            Read<Vectord> r_(v);
-            Write<Matrixd> w_(H);
+            Read<USerialVector> r_(v);
+            Write<USerialMatrix> w_(H);
 
             const auto &d2d2x = fe_->get_d2xyzdxi2();
 
@@ -126,9 +126,9 @@ namespace utopia {
             }
         }
 
-        inline void get_jacobian(Matrixd &J) const
+        inline void get_jacobian(USerialMatrix &J) const
         {
-            Write<Matrixd> w_(J);
+            Write<USerialMatrix> w_(J);
 
             const auto &ddxi = fe_->get_dxyzdxi();
             for(int i = 0; i < Dim; ++i) {
@@ -197,7 +197,7 @@ namespace utopia {
             // if(t != 0.) 
             {
 
-                Write<Vectord> w_x(x_ref_), w_u(u_);
+                Write<USerialVector> w_x(x_ref_), w_u(u_);
 
                 auto p = ray.o + t * ray.dir;
                 libMesh::Point guess;
@@ -236,7 +236,7 @@ namespace utopia {
                                         Scalar &t)
         {
             {
-                Write<Vectord> w_n(p_), w_p(n_);
+                Write<USerialVector> w_n(p_), w_p(n_);
 
                 for(int i = 0; i < Dim; ++i) {
                     p_.set(i, ray.o[i]);
@@ -269,7 +269,7 @@ namespace utopia {
 
                 //build overall gradient
                 {
-                    Write<Vectord> w_g(g_);
+                    Write<USerialVector> w_g(g_);
 
                     for(int d = 0; d < Dim-1; ++d) {
                         g_.set(d, g_1_.get(d));
@@ -282,8 +282,8 @@ namespace utopia {
 
                 {
                     //update ref coordinates
-                    Read<Vectord> r_u(u_);
-                    Write<Vectord> w_x_ref(x_ref_);
+                    Read<USerialVector> r_u(u_);
+                    Write<USerialVector> w_x_ref(x_ref_);
 
                     for(int d = 0; d < Dim-1; ++d) {
                         x_ref_.set(d, u_.get(d));
@@ -316,7 +316,7 @@ namespace utopia {
                                         Scalar &t)
         {
             {
-                Write<Vectord> w_n(p_), w_p(n_);
+                Write<USerialVector> w_n(p_), w_p(n_);
 
                 for(int i = 0; i < Dim; ++i) {
                     p_.set(i, ray.o[i]);
@@ -355,7 +355,7 @@ namespace utopia {
 
                 //build overall gradient
                 {
-                    Write<Vectord> w_g(g_);
+                    Write<USerialVector> w_g(g_);
 
                     for(int d = 0; d < Dim-1; ++d) {
                         g_.set(d, g_1_.get(d));
@@ -380,9 +380,9 @@ namespace utopia {
                 get_hessian(r_, A_);
 
                 {
-                    Write<Matrixd> w_H(H_);
-                    Read<Matrixd> r_A(A_);
-                    Read<Vectord> r_Jtn(Jtn_);
+                    Write<USerialMatrix> w_H(H_);
+                    Read<USerialMatrix> r_A(A_);
+                    Read<USerialVector> r_Jtn(Jtn_);
 
                     for(int d1 = 0; d1 < Dim-1; ++d1) {
                         for(int d2 = 0; d2 < Dim-1; ++d2) {
@@ -437,8 +437,8 @@ namespace utopia {
 
                 {
                     //update ref coordinates
-                    Read<Vectord> r_u(u_);
-                    Write<Vectord> w_x_ref(x_ref_);
+                    Read<USerialVector> r_u(u_);
+                    Write<USerialVector> w_x_ref(x_ref_);
 
                     for(int d = 0; d < Dim - 1; ++d) {
                         x_ref_.set(d, u_.get(d));
@@ -462,9 +462,9 @@ namespace utopia {
 
 
     protected:
-        virtual void reinit(const Vectord &x_ref)
+        virtual void reinit(const USerialVector &x_ref)
         {
-            Read<Vectord> r_(x_ref);
+            Read<USerialVector> r_(x_ref);
 
             for(int i = 0; i < Dim - 1; ++i) {
                 q_.get_points()[0](i) = x_ref.get(i);

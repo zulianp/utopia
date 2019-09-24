@@ -160,7 +160,7 @@ static void run_access_blas(const int n)
 static void run_access_petsc(const int n)
 {
     std::cout << "Utopia Access Petsc" << std::endl;
-    DVectord v = local_values(n, 1.);
+    PetscVector v = local_values(n, 1.);
     std::cout << backend(v).info().get_name() << std::endl;
     
     Chrono c;
@@ -168,7 +168,7 @@ static void run_access_petsc(const int n)
     
     {
         PetscScalar val = 10.;
-        Write<DVectord> w_(v);
+        Write<PetscVector> w_(v);
         auto r = range(v);
         For<>::apply(
                      r.begin(),
@@ -192,8 +192,8 @@ static void run_all(const int n)
 	//if it has compiled with blas or petsc WITH_BLAS or WITH_PETSC macros are available (if you want to make it compile no matter the utopia installation)
 #ifdef WITH_PETSC    
 //run with petsc types 
-	run<DVectord>(n);
-    run_access<DVectord>(n);
+	run<PetscVector>(n);
+    run_access<PetscVector>(n);
     run_access_petsc(n);
 #endif //WITH_PETSC 
 

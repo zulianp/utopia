@@ -6,7 +6,7 @@ find_project_files(CMAKE_CURRENT_SOURCE_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOU
 add_utopiafe_module(utopia_fe_tests
     transfer
     utopia_fe_visualization
-    utopia_fe_homemade
+    # utopia_fe_homemade
     utopia_fe_libmesh_backend
     utopia_fe_contact
     utopia_fe_materials

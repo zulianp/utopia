@@ -7,10 +7,6 @@
 #include "utopia_petsc_Vector.hpp"
 
 namespace utopia {
-    //FIXME
-    using DMatrixd  = utopia::PetscMatrix;
-    using DSMatrixd = utopia::PetscMatrix;
-    using DVectord  = utopia::PetscVector;
 
     inline void convert(const Vec &petsc_vec, PetscVector &utopia_vec)
     {

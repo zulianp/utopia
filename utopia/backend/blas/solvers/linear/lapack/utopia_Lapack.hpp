@@ -13,13 +13,13 @@
 namespace utopia {
 
     namespace internals {
-        bool lapack_dgesv_solve(const Matrixd &A, const Vectord&b, Vectord&x);
+        bool lapack_dgesv_solve(const BlasMatrixd &A, const BlasVectord&b, BlasVectord&x);
     }
 
     template<>
-    class LUDecomposition<Matrixd, Vectord, BLAS> : public DirectSolver<Matrixd, Vectord> {
+    class LUDecomposition<BlasMatrixd, BlasVectord, BLAS> : public DirectSolver<BlasMatrixd, BlasVectord> {
     public:
-        inline bool apply(const Vectord &b, Vectord &x) override
+        inline bool apply(const BlasVectord &b, BlasVectord &x) override
         {
             return internals::lapack_dgesv_solve(*this->get_operator(), b, x);
         }

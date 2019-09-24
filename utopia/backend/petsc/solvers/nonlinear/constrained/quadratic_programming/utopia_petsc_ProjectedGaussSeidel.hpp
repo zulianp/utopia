@@ -16,12 +16,12 @@
 // namespace utopia {
 
 // 	template<>
-// 	class ProjectedGaussSeidel<DSMatrixd, DVectord, PETSC> : public IterativeSolver<DSMatrixd, DVectord>, public Smoother<DSMatrixd, DVectord> {
+// 	class ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC> : public IterativeSolver<PetscMatrix, PetscVector>, public Smoother<PetscMatrix, PetscVector> {
 // 	public:
-// 		typedef utopia::DSMatrixd Matrix;
-// 		typedef utopia::DVectord Vector;
+// 		typedef utopia::PetscMatrix Matrix;
+// 		typedef utopia::PetscVector Vector;
 // 		DEF_UTOPIA_SCALAR(Matrix)
-// 		typedef Traits<DSMatrixd>::SizeType SizeType;
+// 		typedef Traits<PetscMatrix>::SizeType SizeType;
 
 // 		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
 

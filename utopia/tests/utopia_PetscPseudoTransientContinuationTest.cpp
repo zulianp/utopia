@@ -25,23 +25,23 @@ namespace utopia
         	if(mpi_world_size() >1)
         		return;
 
-        	SmallSingularExample<DMatrixd, DVectord> fun;
-        	DVectord x_exact 	= values(2, 1.0);
-        	DVectord x   		= values(2, 1.0);
+        	SmallSingularExample<PetscMatrix, PetscVector> fun;
+        	PetscVector x_exact 	= values(2, 1.0);
+        	PetscVector x   		= values(2, 1.0);
 
         	{
-        		Write<DVectord> r1(x_exact, LOCAL);
-        		Write<DVectord> r2(x, LOCAL);
+        		Write<PetscVector> r1(x_exact, LOCAL);
+        		Write<PetscVector> r2(x, LOCAL);
 
         		x.set(1, 0.0);
         		x_exact.set(0, 0.0);
         	}
 
-            auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord> >(); 
+            auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector> >(); 
             linear_solver->atol(1e-14); 
             linear_solver->max_it(10000);
 
-            PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
+            PseudoContinuation<PetscMatrix, PetscVector> solver(linear_solver); 
             solver.reset_mass_matrix(false); 
 
         	solver.verbose(verbose_);
@@ -55,23 +55,23 @@ namespace utopia
             if(mpi_world_size() >1)
                 return;
 
-            SmallSingularExample<DMatrixd, DVectord> fun;
-            DVectord x_exact    = values(2, 1.0);
-            DVectord x          = values(2, 1.0);
+            SmallSingularExample<PetscMatrix, PetscVector> fun;
+            PetscVector x_exact    = values(2, 1.0);
+            PetscVector x          = values(2, 1.0);
 
             {
-                Write<DVectord> r1(x_exact, LOCAL);
-                Write<DVectord> r2(x, LOCAL);
+                Write<PetscVector> r1(x_exact, LOCAL);
+                Write<PetscVector> r2(x, LOCAL);
 
                 x.set(1, 0.0);
                 x_exact.set(0, 0.0);
             }
 
-            auto linear_solver = std::make_shared<GMRES<DMatrixd, DVectord> >(); 
+            auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector> >(); 
             linear_solver->atol(1e-14); 
             linear_solver->max_it(10000);
 
-            ASTRUM<DMatrixd, DVectord> solver(linear_solver); 
+            ASTRUM<PetscMatrix, PetscVector> solver(linear_solver); 
             solver.tau_init(2); 
             solver.scaling(false); 
 
@@ -90,13 +90,13 @@ namespace utopia
         		return;
 
 
-        	ContinuousStirredReactor<DMatrixd, DVectord> fun;
-        	DVectord x0, x;
+        	ContinuousStirredReactor<PetscMatrix, PetscVector> fun;
+        	PetscVector x0, x;
         	fun.get_initial_guess(x0, 0.0);
 
-        	auto linear_solver = std::make_shared<Factorization<DMatrixd, DVectord>>(MATSOLVERPETSC, PCLU);
-            // ASTRUM<DMatrixd, DVectord> solver(linear_solver); 
-            PseudoContinuation<DMatrixd, DVectord> solver(linear_solver); 
+        	auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>(MATSOLVERPETSC, PCLU);
+            // ASTRUM<PetscMatrix, PetscVector> solver(linear_solver); 
+            PseudoContinuation<PetscMatrix, PetscVector> solver(linear_solver); 
             // solver.scaling(false); 
             solver.reset_mass_matrix(true); 
             solver.verbose(verbose_);

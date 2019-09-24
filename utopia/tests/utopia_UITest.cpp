@@ -82,9 +82,9 @@ namespace utopia {
 
 #ifdef WITH_PETSC
 
-        // auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-        auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        Newton<DSMatrixd, DVectord> newton(cg);
+        // auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>();
+        auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
+        Newton<PetscMatrix, PetscVector> newton(cg);
 
 #ifdef WITH_JSON
         newton.import("Newton", data_path + "/json/default.json");

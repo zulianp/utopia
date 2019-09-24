@@ -14,7 +14,7 @@
 
 // namespace utopia {
 
-// 	bool ProjectedGaussSeidel<DSMatrixd, DVectord, PETSC>::apply(const Vector &b, Vector &x)
+// 	bool ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::apply(const Vector &b, Vector &x)
 // 	{
 // 		if(this->verbose())
 // 			this->init_solver("utopia/passo ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
@@ -60,7 +60,7 @@
 // 		return converged;
 // 	}
 
-// 	bool ProjectedGaussSeidel<DSMatrixd, DVectord, PETSC>::smooth(const Matrix &A, const Vector &b, Vector &x)
+// 	bool ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::smooth(const Matrix &A, const Vector &b, Vector &x)
 // 	{
 // 		if(empty(x) || size(x).get(0) != size(b).get(0)) {
 // 			x = local_zeros(local_size(b));
@@ -88,14 +88,14 @@
 // 		return true;
 // 	}
 
-// 	ProjectedGaussSeidel<DSMatrixd, DVectord, PETSC>::~ProjectedGaussSeidel() {}
+// 	ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::~ProjectedGaussSeidel() {}
 
-// 	void ProjectedGaussSeidel<DSMatrixd, DVectord, PETSC>::init(const Matrix &A)
+// 	void ProjectedGaussSeidel<PetscMatrix, PetscVector, PETSC>::init(const Matrix &A)
 // 	{
 // 		auto ls = local_size(A);
 // 		auto gs = size(A);
 
-// 		DVectord dummy = local_zeros(ls.get(0));
+// 		PetscVector dummy = local_zeros(ls.get(0));
 
 // 		const bool has_bound = constraints_.has_bound();
 

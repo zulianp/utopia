@@ -13,7 +13,7 @@ namespace utopia {
     class BLASTraits {
     public:
         using Scalar      = T;
-        using Matrix      = utopia::BlasDenseMatrix<T>;
+        using Matrix      = utopia::BlasMatrix<T>;
         using Vector      = utopia::BlasVector<T>;
         using SizeType    = std::size_t;
         using IndexSet    = utopia::BlasIndexSet;
@@ -32,7 +32,7 @@ namespace utopia {
     };
 
     UTOPIA_MAKE_TRAITS_TPL_1(BlasVector, BLASTraits, 1);
-    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasDenseMatrix, BLASTraits, 2);
+    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(BlasMatrix, BLASTraits, 2);
 
 }
 

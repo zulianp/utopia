@@ -264,7 +264,7 @@ namespace utopia
 		if(mpi_world_size()==1)
 		{
 			#ifdef WITH_PETSC
-				UnconstrainedOptimizationBenchmark<DMatrixd, DVectord> bench1;
+				UnconstrainedOptimizationBenchmark<PetscMatrix, PetscVector> bench1;
 				bench1.set_verbosity_level(verbosity_level);
 				bench1.run();
 			#endif //WITH_PETSC

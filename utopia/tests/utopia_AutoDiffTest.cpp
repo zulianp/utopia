@@ -197,7 +197,7 @@
 // #endif //WITH_BLAS
 
 // // #ifdef WITH_PETSC
-// //     AutoDiffTest<DSMatrixd, DVectord>().run();
+// //     AutoDiffTest<PetscMatrix, PetscVector>().run();
 // // #endif //WITH_PETSC
 //     UTOPIA_UNIT_TEST_END("AutoDiffTest");
 // }

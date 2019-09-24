@@ -46,8 +46,8 @@
 
 namespace utopia {
 
-    void apply_boundary_conditions(libMesh::DofMap &dof_map, TSMatrixd &mat, TVectord &vec);
-    void apply_boundary_conditions(libMesh::DofMap &dof_map, TVectord &vec);
+    void apply_boundary_conditions(libMesh::DofMap &dof_map, TSUSerialMatrix &mat, TUSerialVector &vec);
+    void apply_boundary_conditions(libMesh::DofMap &dof_map, TUSerialVector &vec);
 
     template<class Vector>
     void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
@@ -143,7 +143,7 @@ namespace utopia {
         }
     }
 
-    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, DVectord &utopia_vec)
+    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, PetscVector &utopia_vec)
     {
         using namespace libMesh;
         Vec p_vec = cast_ptr< libMesh::PetscVector<libMesh::Number> *>(&lm_vec)->vec();
@@ -152,7 +152,7 @@ namespace utopia {
 
 
 
-    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, DSMatrixd &utopia_mat) {
+    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, PetscMatrix &utopia_mat) {
         using namespace libMesh;
 
         Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
@@ -160,22 +160,22 @@ namespace utopia {
     }
 
 #ifdef WITH_TRILINOS
-    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TVectord &utopia_vec)
+    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TUSerialVector &utopia_vec)
     {
         //FIXME inefficient
-        DVectord temp;
+        PetscVector temp;
         utopia::convert(lm_vec, temp);
         utopia::backend_convert(temp, utopia_vec);
     }
 
 
-    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TSMatrixd &utopia_mat) {
+    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TSUSerialMatrix &utopia_mat) {
         using namespace libMesh;
 
         Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
 
         //FIXME inefficient
-        DSMatrixd temp;
+        PetscMatrix temp;
         utopia::convert(p_mat, temp);
         backend_convert_sparse(temp, utopia_mat);
     }

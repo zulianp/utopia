@@ -4,8 +4,8 @@
 #include "utopia_petsc_Matrix.hpp"
 
 namespace utopia {
-    // template class Cond<DSMatrixd, PETSC>;
-    // template class Cond<DMatrixd, PETSC>;
+    // template class Cond<PetscMatrix, PETSC>;
+    // template class Cond<PetscMatrix, PETSC>;
 
     template class Cond<PetscMatrix, PETSC>;
 }

@@ -353,7 +353,7 @@ namespace utopia {
 
         // coarse_solver->verbose(true);
         // smoother->verbose(true);
-        // auto coarse_solver = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+        // auto coarse_solver = std::make_shared<utopia::KSP_TR<PetscMatrix, PetscVector> >("gltr");
         // coarse_solver->atol(1e-12);
         // coarse_solver->rtol(1e-12);
         // coarse_solver->pc_type("lu");

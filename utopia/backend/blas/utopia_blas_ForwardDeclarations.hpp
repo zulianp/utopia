@@ -3,7 +3,7 @@
 
 namespace utopia {
 	template<typename T>
-	class BlasDenseMatrix;
+	class BlasMatrix;
 
 	template<typename T>
 	class BlasVector;

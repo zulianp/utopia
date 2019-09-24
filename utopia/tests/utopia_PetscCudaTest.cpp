@@ -67,7 +67,7 @@ namespace utopia {
     void petsc_no_cuda_linear_solver()
     {
         //normal matrices for comparing performance
-        generic_linear_solver_test<DSMatrixd, DVectord>();
+        generic_linear_solver_test<PetscMatrix, PetscVector>();
     }
 
     void petsc_cuda_mg()

@@ -4,7 +4,7 @@
 
 namespace utopia {
 
-    void write(const Path &path, Intrepid2FunctionSpace &space, TVectord &x)
+    void write(const Path &path, Intrepid2FunctionSpace &space, TUSerialVector &x)
     {
        // utopia::convert(x, *space.equation_system().solution);
        // space.equation_system().solution->close();

@@ -205,8 +205,8 @@ namespace utopia {
     void run_qp_solver_test() {
         UTOPIA_UNIT_TEST_BEGIN("QPSolverTest");
 #ifdef WITH_PETSC
-        QPSolverTest<DSMatrixd, DVectord>().run();
-        PQPSolverTest<DSMatrixd, DVectord>().run();
+        QPSolverTest<PetscMatrix, PetscVector>().run();
+        PQPSolverTest<PetscMatrix, PetscVector>().run();
 
 #endif //WITH_PETSC
 
@@ -215,7 +215,7 @@ namespace utopia {
 #endif //WITH_TRILINOS
 
 #ifdef WITH_BLAS
-        QPSolverTest<Matrixd, Vectord>().run(); // TODO:: because blas is missing min operation .... 
+        QPSolverTest<BlasMatrixd, BlasVectord>().run(); // TODO:: because blas is missing min operation .... 
 #endif //WITH_BLAS
 
         UTOPIA_UNIT_TEST_END("QPSolverTest");

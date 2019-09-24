@@ -154,7 +154,7 @@ namespace utopia {
 
             #ifdef WITH_PETSC
                 //NOTE(eric): range assignment is NYI in Petsc backend
-            if (std::is_same<Matrix, DMatrixd>::value) return;
+            if (std::is_same<Matrix, PetscMatrix>::value) return;
             #endif
 
             ////////////////////////////////////////////////////////////
@@ -368,21 +368,21 @@ namespace utopia {
         UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
 
 #ifdef WITH_BLAS
-        UtilitiesTest<Matrixd, Vectord>().run();
-        InlinerTest<Matrixd, Vectord>().run();
+        UtilitiesTest<BlasMatrixd, BlasVectord>().run();
+        InlinerTest<BlasMatrixd, BlasVectord>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        BlockTest<DSMatrixd, DVectord>().run();
+        BlockTest<PetscMatrix, PetscVector>().run();
 
 
         if(mpi_world_size() == 1) {
-            UtilitiesTest<DMatrixd, DVectord>().run(); //FIXME
-            BlockTest<DMatrixd, DVectord>().run();
+            UtilitiesTest<PetscMatrix, PetscVector>().run(); //FIXME
+            BlockTest<PetscMatrix, PetscVector>().run();
 #ifdef WITH_BLAS
             // interoperability
-            // UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();
-            // UtilitiesTest<Matrixd, DVectord>().inline_eval_test();
+            // UtilitiesTest<PetscMatrix, BlasVectord>().inline_eval_test();
+            // UtilitiesTest<BlasMatrixd, PetscVector>().inline_eval_test();
 #endif //WITH_BLAS
 
         }

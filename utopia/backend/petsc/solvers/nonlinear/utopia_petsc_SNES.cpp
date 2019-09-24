@@ -2,7 +2,7 @@
 #include "utopia_petsc_Types.hpp"
 
 namespace utopia {
-    template class SNESSolver<DSMatrixd, DVectord, PETSC>;
+    template class SNESSolver<PetscMatrix, PetscVector, PETSC>;
     //FIXME
-    // template class SNESSolver<DMatrixd, DVectord, PETSC>;
+    // template class SNESSolver<PetscMatrix, PetscVector, PETSC>;
 }

@@ -11,13 +11,13 @@
 namespace utopia {
     void petsc_tao_solve_simple()
     {
-        TestFunctionND_1<DMatrixd, DVectord> fun(10);
-        TaoSolver<DMatrixd, DVectord> tao(std::make_shared<Factorization<DMatrixd, DVectord>>());
-        DVectord x = zeros(10);
+        TestFunctionND_1<PetscMatrix, PetscVector> fun(10);
+        TaoSolver<PetscMatrix, PetscVector> tao(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
+        PetscVector x = zeros(10);
         tao.set_type("blmvm");
         tao.solve(fun, x);
 
-        DVectord expected = values(10, 0.468919);
+        PetscVector expected = values(10, 0.468919);
         utopia_test_assert(approxeq(x, expected));
     }
 
@@ -25,12 +25,12 @@ namespace utopia {
     {
         const SizeType n = 100;
 
-        DSMatrixd m;
-        DVectord rhs, upper_bound;
-        ExampleTestCase2<DSMatrixd, DVectord> example;
+        PetscMatrix m;
+        PetscVector rhs, upper_bound;
+        ExampleTestCase2<PetscMatrix, PetscVector> example;
         example.getOperators(n, m, rhs, upper_bound);
-        DVectord x = zeros(n);
-        auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        PetscVector x = zeros(n);
+        auto lsolver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
 
         const double scale_factor = 1e-10;
         rhs *= scale_factor;
@@ -38,8 +38,8 @@ namespace utopia {
 
         auto box = make_upper_bound_constraints(make_ref(upper_bound));
 
-        QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
-        TaoSolver<DSMatrixd, DVectord> tao(lsolver);
+        QuadraticFunction<PetscMatrix, PetscVector> fun(make_ref(m), make_ref(rhs));
+        TaoSolver<PetscMatrix, PetscVector> tao(lsolver);
         // tao.set_ksp_types("bcgs", "jacobi", " ");
         tao.set_box_constraints(box);
         // tao.set_type("tron");
@@ -48,8 +48,8 @@ namespace utopia {
 
         x *= 1./scale_factor;
 
-        DVectord xssn = zeros(n);
-        SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> ssnewton(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+        PetscVector xssn = zeros(n);
+        SemismoothNewton<PetscMatrix, PetscVector, HOMEMADE> ssnewton(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
         ssnewton.set_box_constraints(box);
         ssnewton.stol(1e-18);
         ssnewton.atol(1e-18);
@@ -66,8 +66,8 @@ namespace utopia {
 
     void petsc_tao_solve_mg()
     {
-        DVectord rhs;
-        DSMatrixd A, I_1, I_2, I_3;
+        PetscVector rhs;
+        PetscMatrix A, I_1, I_2, I_3;
 
         const std::string data_path = Utopia::instance().get("data_path");
 
@@ -76,20 +76,20 @@ namespace utopia {
         read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
         read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
 
-        std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
+        std::vector<std::shared_ptr<PetscMatrix>> interpolation_operators;
         interpolation_operators.push_back(make_ref(I_2));
         interpolation_operators.push_back(make_ref(I_3));
 
-        auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        Multigrid<DSMatrixd, DVectord> multigrid(smoother, linear_solver);
+        auto smoother      = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
+        auto linear_solver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
+        Multigrid<PetscMatrix, PetscVector> multigrid(smoother, linear_solver);
         multigrid.set_transfer_operators(std::move(interpolation_operators));
-        DVectord x = zeros(A.size().get(0));
-        // DVectord upper_bound = values(A.size().get(0), 0.003);
+        PetscVector x = zeros(A.size().get(0));
+        // PetscVector upper_bound = values(A.size().get(0), 0.003);
         // auto box = make_upper_bound_constraints(make_ref(upper_bound));
 
-        QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(A), make_ref(rhs));
-        TaoSolver<DSMatrixd, DVectord> tao(make_ref(multigrid));
+        QuadraticFunction<PetscMatrix, PetscVector> fun(make_ref(A), make_ref(rhs));
+        TaoSolver<PetscMatrix, PetscVector> tao(make_ref(multigrid));
 
         // multigrid.verbose(true);
         multigrid.max_it(20);
@@ -105,22 +105,22 @@ namespace utopia {
     {
         const SizeType n = 100;
 
-        DSMatrixd m;
-        DVectord rhs, upper_bound;
-        ExampleTestCase2<DSMatrixd, DVectord> example;
+        PetscMatrix m;
+        PetscVector rhs, upper_bound;
+        ExampleTestCase2<PetscMatrix, PetscVector> example;
         example.getOperators(n, m, rhs, upper_bound);
-        DVectord x = zeros(n);
+        PetscVector x = zeros(n);
 
         const double scale_factor = 10e-10;
         rhs *= scale_factor;
         upper_bound *= scale_factor;
 
         auto box = make_upper_bound_constraints(make_ref(upper_bound));
-        QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
+        QuadraticFunction<PetscMatrix, PetscVector> fun(make_ref(m), make_ref(rhs));
 
-        auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
-        // auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
-        auto qp_solver = std::make_shared<TaoQPSolver<DSMatrixd, DVectord> >(lsolver);
+        auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
+        // auto lsolver = std::make_shared<BiCGStab<PetscMatrix, PetscVector> >();
+        auto qp_solver = std::make_shared<TaoQPSolver<PetscMatrix, PetscVector> >(lsolver);
 
         // lsolver->atol(1e-16);
 
@@ -128,7 +128,7 @@ namespace utopia {
         qp_solver->stol(1e-15);
         qp_solver->max_it(10000);
 
-        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver);
+        TrustRegionVariableBound<PetscMatrix, PetscVector>  tr_solver(qp_solver);
         tr_solver.set_box_constraints(box);
         tr_solver.verbose(false);
         tr_solver.atol(1e-15);
@@ -138,8 +138,8 @@ namespace utopia {
 
         x *= 1./scale_factor;
 
-        DVectord xssn = zeros(n);
-        SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> ssnewton(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+        PetscVector xssn = zeros(n);
+        SemismoothNewton<PetscMatrix, PetscVector, HOMEMADE> ssnewton(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
         ssnewton.set_box_constraints(box);
         ssnewton.stol(1e-17);
         ssnewton.atol(1e-17);

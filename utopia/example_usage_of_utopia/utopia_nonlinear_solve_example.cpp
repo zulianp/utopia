@@ -71,13 +71,13 @@ int main(int argc, char** argv)
     { //Only in the main file: put this scope so that the petsc objects will be destroyed before the call to finalize
     
         // instatiating Rosenbrock 2D banana function
-        Rosenbrock2DFunction<utopia::DMatrixd, utopia::DVectord> rosenbrock_fun;
+        Rosenbrock2DFunction<utopia::PetscMatrix, utopia::PetscVector> rosenbrock_fun;
 
         // exact solution to our problem
-        DVectord rosenbrock_exact = values(2, 1);
+        PetscVector rosenbrock_exact = values(2, 1);
 
         // constructing initial guess
-        DVectord x = values(2, 2); 
+        PetscVector x = values(2, 2); 
 
         // setting up parameters of solver 
         // Parameters params; 

@@ -4,5 +4,5 @@
 
 //explicit instantiations
 namespace utopia {
-    template class BiCGStab<utopia::BlasDenseMatrix<double>, Vectord, HOMEMADE>;
+    template class BiCGStab<BlasMatrixd, BlasVectord, HOMEMADE>;
 }

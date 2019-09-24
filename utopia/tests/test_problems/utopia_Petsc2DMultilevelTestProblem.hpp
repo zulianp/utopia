@@ -13,8 +13,8 @@ namespace utopia
     class Petsc2DMultilevelTestProblem
     {
         public:
-            typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
-            typedef UTOPIA_SCALAR(DVectord) Scalar;
+            typedef UTOPIA_SIZE_TYPE(PetscVector) SizeType;
+            typedef UTOPIA_SCALAR(PetscVector) Scalar;
 
 
         Petsc2DMultilevelTestProblem(const SizeType &n_levels = 2, const SizeType & n_coarse = 10, bool remove_BC_contributions = false):

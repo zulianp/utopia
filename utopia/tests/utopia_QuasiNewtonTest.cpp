@@ -543,18 +543,18 @@ namespace utopia
     {
         UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
         #ifdef WITH_PETSC
-            // QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().print_backend_info();
-            // QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
+            // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
+            // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
 
-            QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
-            // QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
+            QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
+            // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector> >().run_sparse();
 
-            // QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
+            // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
         #endif
 
         #ifdef WITH_BLAS
-                QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().print_backend_info();
-                QuasiNewtonTest<Matrixd, Vectord, BFGS<Matrixd, Vectord> >().run_dense();
+                QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
+                QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
         #endif //WITH_BLAS
 
         // #ifdef WITH_TRILINOS

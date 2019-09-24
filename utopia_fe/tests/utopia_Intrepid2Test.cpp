@@ -55,8 +55,8 @@ namespace utopia {
 //		auto b_form = inner(grad(u), grad(v)) * dX;
 //		auto l_form = inner(coeff(1.), v) * dX;
 
-		TSMatrixd H;
-		TVectord rhs;
+		TSUSerialMatrix H;
+		TUSerialVector rhs;
 
 		Intrepid2Assembler assembler;
 //		assembler.assemble(l_form, rhs);
@@ -66,7 +66,7 @@ namespace utopia {
         //TODO FIXME
 //		apply_boundary_conditions(V.dof_map(), H, rhs);
 
-		TVectord x = local_zeros(local_size(rhs)); //UVector x
+		TUSerialVector x = local_zeros(local_size(rhs)); //UVector x
 		solve(H, rhs, x);
 
 //		write("intrepid2test.e", V, x); //TODO implement write function

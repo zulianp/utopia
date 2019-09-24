@@ -17,7 +17,7 @@
 namespace utopia {
 
 #ifdef WITH_PETSC
-    template class ASPAMG<DSMatrixd, DVectord>;
+    template class ASPAMG<PetscMatrix, PetscVector>;
 #endif //WITH_PETSC
 
 #ifdef WITH_BLAS

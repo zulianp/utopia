@@ -2,7 +2,7 @@
 
 namespace utopia {
 
-    void apply_boundary_conditions(libMesh::DofMap &dof_map, TSMatrixd &mat, TVectord &vec)
+    void apply_boundary_conditions(libMesh::DofMap &dof_map, TSUSerialMatrix &mat, TUSerialVector &vec)
     {
         if(utopia::Utopia::instance().verbose()) {
             std::cout << "apply_boundary_conditions begin: "  << std::endl;
@@ -14,7 +14,7 @@ namespace utopia {
         assert(!empty(mat));
         assert(!empty(vec));
 
-        using SizeType = Traits<TVectord>::SizeType;
+        using SizeType = Traits<TUSerialVector>::SizeType;
 
         const bool has_constraints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
@@ -36,7 +36,7 @@ namespace utopia {
 
         set_zero_rows(mat, index, 1.);
 
-        Write<TVectord> w_v(vec);
+        Write<TUSerialVector> w_v(vec);
 
         if(has_constraints) {
             libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
@@ -57,11 +57,11 @@ namespace utopia {
         }
     }
 
-    void apply_boundary_conditions(libMesh::DofMap &dof_map, TVectord &vec)
+    void apply_boundary_conditions(libMesh::DofMap &dof_map, TUSerialVector &vec)
     {
         const bool has_constraints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
-        Write<TVectord> w_v(vec);
+        Write<TUSerialVector> w_v(vec);
 
         if(has_constraints) {
             libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();

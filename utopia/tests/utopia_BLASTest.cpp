@@ -13,17 +13,17 @@ namespace utopia {
 
 #ifdef WITH_BLAS
 
-    Matrixd hm_matrix(const SizeType rows, const SizeType cols, const std::vector<Real> &values)
+    BlasMatrixd hm_matrix(const SizeType rows, const SizeType cols, const std::vector<Real> &values)
     {
-        Matrixd mat;
+        BlasMatrixd mat;
         mat.resize(rows, cols);
         mat.entries() = values;
         return mat;
     }
 
-    Vectord hm_vector(const std::vector<Real> &values)
+    BlasVectord hm_vector(const std::vector<Real> &values)
     {
-        Vectord vec;
+        BlasVectord vec;
         vec.resize(values.size());
         vec.entries() = values;
         return vec;
@@ -31,14 +31,14 @@ namespace utopia {
 
     void blas_gemm_test()
     {
-        Matrixd A{ hm_matrix(2, 2, {1, 1, 1, 1}) };
-        Matrixd B{ hm_matrix(2, 2, {2, 2, 2, 2}) };
-        Matrixd C{ hm_matrix(2, 2, {4, 0, 0, 4}) };
-        Matrixd res;
+        BlasMatrixd A{ hm_matrix(2, 2, {1, 1, 1, 1}) };
+        BlasMatrixd B{ hm_matrix(2, 2, {2, 2, 2, 2}) };
+        BlasMatrixd C{ hm_matrix(2, 2, {4, 0, 0, 4}) };
+        BlasMatrixd res;
 
         //specialization 1
         res = 0.1 * A * B;
-        Matrixd expected = values(2, 2, 0.4);
+        BlasMatrixd expected = values(2, 2, 0.4);
 
         utopia_test_assert(approxeq(expected, res));
 
@@ -48,7 +48,7 @@ namespace utopia {
         res = 0.1 * A * B + 0.2 * C;
 
         {
-            Write<Matrixd> w_r(expected);
+            Write<BlasMatrixd> w_r(expected);
             expected.set(0, 0, 1.2);
             expected.set(1, 1, 1.2);
         }
@@ -58,24 +58,24 @@ namespace utopia {
 
     void blas_test() {
         //variables
-        Matrixd m1{ hm_matrix(2, 2, {1, 0, 0, 1}) };
-        Matrixd m2{ hm_matrix(2, 2, {1, 2, 3, 4}) };
-        Vectord v{ hm_vector({1.0, 10.0}) };
+        BlasMatrixd m1{ hm_matrix(2, 2, {1, 0, 0, 1}) };
+        BlasMatrixd m2{ hm_matrix(2, 2, {1, 2, 3, 4}) };
+        BlasVectord v{ hm_vector({1.0, 10.0}) };
 
         { //BLAS 2 + 3
-            Vectord vresult;
+            BlasVectord vresult;
             auto expr = m2 * v - (m1 * m2) * v;
             // std::cout << tree_format(expr.get_class()) << std::endl;
             vresult = expr;
 
-            Vectord vexp({0.0, 0.0});
+            BlasVectord vexp({0.0, 0.0});
             utopia_test_assert(approxeq(vexp, vresult));
         }
 
-        Matrixd mexp{ hm_matrix(2, 2, {1, 3, 2, 4}) };
+        BlasMatrixd mexp{ hm_matrix(2, 2, {1, 3, 2, 4}) };
 
         { //BLAS 3
-            Matrixd mresult;
+            BlasMatrixd mresult;
             auto mexpr = transpose(m2) * transpose(m1);
             // std::cout << tree_format(mexpr.get_class()) << std::endl;
             mresult = mexpr;
@@ -84,7 +84,7 @@ namespace utopia {
         }
 
         {
-            Matrixd mresult;
+            BlasMatrixd mresult;
             mresult = transpose(m2);
             utopia_test_assert(approxeq(mexp, mresult));
         }
@@ -94,11 +94,11 @@ namespace utopia {
     void blas_pow_test() {
         //variables
 
-        Vectord v{ hm_vector({2.0, 10.0}) };
+        BlasVectord v{ hm_vector({2.0, 10.0}) };
 
         // int a=8;
 
-        utopia::Vectord res=power(v,4.0);
+        utopia::BlasVectord res=power(v,4.0);
 
         //auto res2=powAB(2.0);
 
@@ -106,37 +106,37 @@ namespace utopia {
     }
 
     void blas_function_test() {
-        Vectord point({1.0, -1.0});
+        BlasVectord point({1.0, -1.0});
 
-        TestFunction2D_1<Matrixd, Vectord> fun;
-        Vectord g;
-        Matrixd H;
+        TestFunction2D_1<BlasMatrixd, BlasVectord> fun;
+        BlasVectord g;
+        BlasMatrixd H;
 
         fun.gradient(point, g);
         fun.hessian(point, H);
 
-        Vectord::Scalar fun_value;
+        BlasVectord::Scalar fun_value;
         fun.value(point, fun_value);
 
-        Vectord::Scalar val_exp = 169.0;
+        BlasVectord::Scalar val_exp = 169.0;
         utopia_test_assert(approxeq(val_exp, fun_value));
 
-        Vectord g_exp{ hm_vector({-10.0, 48.0}) };
+        BlasVectord g_exp{ hm_vector({-10.0, 48.0}) };
         utopia_test_assert(approxeq(g_exp, g));
 
-        Matrixd H_exp{ hm_matrix(2, 2, {4.0, 0.0, 0.0, 8.0}) };
+        BlasMatrixd H_exp{ hm_matrix(2, 2, {4.0, 0.0, 0.0, 8.0}) };
         utopia_test_assert(approxeq(H_exp, H));
     }
 
     void blas_solver_test() {
 #ifdef WITH_LAPACK
-        auto lapackSolver = std::make_shared< LUDecomposition<Matrixd, Vectord> >();
-        Vectord x0({3.0, -2.0});
+        auto lapackSolver = std::make_shared< LUDecomposition<BlasMatrixd, BlasVectord> >();
+        BlasVectord x0({3.0, -2.0});
 
-        Newton<Matrixd, Vectord> newtonSolver(lapackSolver);
+        Newton<BlasMatrixd, BlasVectord> newtonSolver(lapackSolver);
         newtonSolver.enable_differentiation_control(false);
 
-        TestFunctionND_1<Matrixd, Vectord> fun2(10);
+        TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(10);
 
         x0 = values(10, 2.0);
         newtonSolver.solve(fun2, x0);
@@ -145,38 +145,38 @@ namespace utopia {
     }
 
     void blas_inplace_test() {
-        Vectord v1{ hm_vector({4.0, 3.0, 2.0, 1.0}) };
-        Vectord v2{ hm_vector({1.0, 2.0, 3.0, 4.0}) };
-        Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
-        // Matrixd m2(2, 2, {2.0, 1.0, 1.0, 1.0});
+        BlasVectord v1{ hm_vector({4.0, 3.0, 2.0, 1.0}) };
+        BlasVectord v2{ hm_vector({1.0, 2.0, 3.0, 4.0}) };
+        BlasMatrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        // BlasMatrixd m2(2, 2, {2.0, 1.0, 1.0, 1.0});
 
         //! [in place operations (blas)]
         v1 -= v2;
         m1 *= m1;
         //! [in place operations (blas)]
 
-        Vectord v_exp{ hm_vector({3.0, 1.0, -1.0, -3.0}) };
+        BlasVectord v_exp{ hm_vector({3.0, 1.0, -1.0, -3.0}) };
         utopia_test_assert(approxeq(v_exp, v1));
 
-        Matrixd m_exp{ hm_matrix(2, 2, {8.0, 8.0, 8.0, 8.0}) };
+        BlasMatrixd m_exp{ hm_matrix(2, 2, {8.0, 8.0, 8.0, 8.0}) };
         utopia_test_assert(approxeq(m_exp, m1));
     }
 
     void blas_accessors_test() {
-        Vectord v1{ hm_vector({0.0, 0.0}) };
-        Vectord v2{ hm_vector({1.0, 1.0}) };
-        Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
-        Matrixd m2{ hm_matrix(2, 2, {0.0, 0.0, 0.0, 0.0}) };
+        BlasVectord v1{ hm_vector({0.0, 0.0}) };
+        BlasVectord v2{ hm_vector({1.0, 1.0}) };
+        BlasMatrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        BlasMatrixd m2{ hm_matrix(2, 2, {0.0, 0.0, 0.0, 0.0}) };
 
         {
-            Write<Vectord> w_v1(v1);
+            Write<BlasVectord> w_v1(v1);
             v1.set(0, 1);
             v1.set(1, 2);
         }
 
         {
-            Write<Matrixd> w_m2(m2);
-            Read<Vectord> r_v1(v1);
+            Write<BlasMatrixd> w_m2(m2);
+            Read<BlasVectord> r_v1(v1);
 
             m2.set(0, 0, v1.get(0));
             m2.set(1, 1, 1);
@@ -185,10 +185,10 @@ namespace utopia {
         v1 -= v2;
         m1 *= m2;
 
-        Vectord v_exp{ hm_vector({0.0, 1.0}) };
+        BlasVectord v_exp{ hm_vector({0.0, 1.0}) };
         utopia_test_assert(approxeq(v_exp, v1));
 
-        Matrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        BlasMatrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
         utopia_test_assert(approxeq(m_exp, m1));
 
 
@@ -198,9 +198,9 @@ namespace utopia {
 
 
     void blas_set_values_test() {
-        using SizeType = Traits<Matrixd>::SizeType;
+        using SizeType = Traits<BlasMatrixd>::SizeType;
 
-        Matrixd m1 = identity(3, 3);
+        BlasMatrixd m1 = identity(3, 3);
 
         std::vector<SizeType> rows{0, 1, 2};
         std::vector<SizeType> cols{0, 1, 2};
@@ -210,34 +210,34 @@ namespace utopia {
             0, 0, 102};
 
         {
-            Write<Matrixd> w_m1(m1);
+            Write<BlasMatrixd> w_m1(m1);
             m1.set_matrix(rows, cols, vals);
         }
 
-        Matrixd m_exp{ hm_matrix(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0}) };
+        BlasMatrixd m_exp{ hm_matrix(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0}) };
         utopia_test_assert(approxeq(m_exp, m1));
     }
 
     void blas_axpy_test()
     {
-        Vectord w1{ hm_vector({1., 2., 3.}) };
-        Vectord w2{ hm_vector({4., 5., 6.}) };
+        BlasVectord w1{ hm_vector({1., 2., 3.}) };
+        BlasVectord w2{ hm_vector({4., 5., 6.}) };
         w1 += 0.1 * w2;
-        Vectord expected{ hm_vector({1.4, 2.5, 3.6}) };
+        BlasVectord expected{ hm_vector({1.4, 2.5, 3.6}) };
 
         utopia_test_assert(approxeq(expected, w1));
     }
 
     void blas_norm_test() {
-        Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
-        Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
-        Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
-        Vectord wresult;
+        BlasVectord w1{ hm_vector({10.0, 3.0, 1.0}) };
+        BlasVectord w2{ hm_vector({20.0, 2.0, 3.0}) };
+        BlasVectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
+        BlasVectord wresult;
 
         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
 
         wresult = twiceaxpy;
-        Vectord wexp{ hm_vector({-11.1, -2.93, -1.21}) };
+        BlasVectord wexp{ hm_vector({-11.1, -2.93, -1.21}) };
 
         utopia_test_assert(approxeq(wexp, wresult));
 
@@ -248,10 +248,10 @@ namespace utopia {
     }
 
     void blas_composite_test() {
-        Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
-        Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
-        Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
-        Vectord wresult;
+        BlasVectord w1{ hm_vector({10.0, 3.0, 1.0}) };
+        BlasVectord w2{ hm_vector({20.0, 2.0, 3.0}) };
+        BlasVectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
+        BlasVectord wresult;
         //advanced (To make it work for all backends)
         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
         auto temp = twiceaxpy + w1 * dot(w1, 4.0 * (2.0 * w2) + w3 * 6.0);
@@ -263,13 +263,13 @@ namespace utopia {
 
         //Evaluate and verify value of the expression
         wresult = expr;
-        Vectord wexp{ hm_vector({-24.311, -7.2893, -2.4321}) };
+        BlasVectord wexp{ hm_vector({-24.311, -7.2893, -2.4321}) };
         utopia_test_assert(approxeq(wexp, wresult));
     }
 
     void blas_row_view_test()
     {
-        using MatrixT  = utopia::Matrixd;
+        using MatrixT  = utopia::BlasMatrixd;
         using SizeType = Traits<MatrixT>::SizeType;
 
         SizeType n = 3;
@@ -316,7 +316,7 @@ namespace utopia {
             }
         });
 
-        Matrixd d_mat = values(3, 3, 2.);
+        BlasMatrixd d_mat = values(3, 3, 2.);
 
         SizeType n_vals = 0;
         each_read(d_mat, [&n_vals](const SizeType /*i*/, const SizeType /*j*/, const double v) {
@@ -330,19 +330,19 @@ namespace utopia {
     void blas_pgs_test()
     {
         int n = 3;
-        Matrixd A = zeros(n, n);
+        BlasMatrixd A = zeros(n, n);
 
         {
-            Write<Matrixd> w_A(A);
+            Write<BlasMatrixd> w_A(A);
             A.set(0, 0, 1);
             A.set(1, 1, 1);
             A.set(2, 2, 1);
         }
 
-        Vectord rhs = values(n, 2.);
-        Vectord x   = zeros(n);
+        BlasVectord rhs = values(n, 2.);
+        BlasVectord x   = zeros(n);
 
-        ProjectedGaussSeidel<Matrixd, Vectord> pgs;
+        ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
         pgs.solve(A, rhs, x);
     }
 

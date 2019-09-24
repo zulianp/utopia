@@ -502,17 +502,17 @@ namespace utopia {
 #ifdef WITH_PETSC
         //using petsc to test trilinos
 
-        DSMatrixd A_petsc = local_sparse(n, n, 3);
+        PetscMatrix A_petsc = local_sparse(n, n, 3);
         assemble_laplacian_1D(A_petsc);
 
-        DSMatrixd P_petsc;
+        PetscMatrix P_petsc;
         build_rectangular_matrix(n, m, P_petsc);
 
-        DSMatrixd R_2_petsc = transpose(P_petsc) * A_petsc;
-        DSMatrixd R_petsc   = utopia::ptap(A_petsc, P_petsc);
+        PetscMatrix R_2_petsc = transpose(P_petsc) * A_petsc;
+        PetscMatrix R_petsc   = utopia::ptap(A_petsc, P_petsc);
 
-        DSMatrixd R_tpetra;
-        DSMatrixd R_2_tpetra;
+        PetscMatrix R_tpetra;
+        PetscMatrix R_2_tpetra;
 
 
         backend_convert_sparse(R_2, R_2_tpetra);
@@ -762,7 +762,7 @@ namespace utopia {
 
 #ifdef WITH_PETSC
         //petsc version
-        st_cg_test<DSMatrixd, DVectord>();
+        st_cg_test<PetscMatrix, PetscVector>();
 #endif //WITH_PETSC
         st_cg_test<TSMatrixd, TVectord>();
     }
@@ -773,7 +773,7 @@ namespace utopia {
         // if(mpi_world_size() > 1) return;
         //petsc version
 #ifdef WITH_PETSC
-        test_mg<DSMatrixd, DVectord>();
+        test_mg<PetscMatrix, PetscVector>();
 #endif //WITH_PETSC
         //trilinos version
         test_mg<TSMatrixd, TVectord>();
@@ -787,8 +787,8 @@ namespace utopia {
         using MatrixT = utopia::TSMatrixd;
         using VectorT = utopia::TVectord;
 
-        // using MatrixT = utopia::DSMatrixd;
-        // using VectorT = utopia::DVectord;
+        // using MatrixT = utopia::PetscMatrix;
+        // using VectorT = utopia::PetscVector;
 
         VectorT rhs;
         MatrixT A, I;
@@ -805,8 +805,8 @@ namespace utopia {
         bool ok = true;
         //FIXME needs trilinos formats but for the moment lets use petsc's
         {
-            DSMatrixd petsc_A, petsc_I;
-            DVectord petsc_rhs;
+            PetscMatrix petsc_A, petsc_I;
+            PetscVector petsc_rhs;
 
             const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
 
@@ -977,7 +977,7 @@ namespace utopia {
 
         // disp(*ml_problem.matrix);
 
-        DSMatrixd p_mat;
+        PetscMatrix p_mat;
         backend_convert_sparse(*ml_problem.matrix, p_mat);
 
         // disp(p_mat);
@@ -1001,10 +1001,10 @@ namespace utopia {
     {
 #ifdef WITH_PETSC
         TVectord x = local_values(10, 2.);
-        DVectord y = local_values(10, 2.);
+        PetscVector y = local_values(10, 2.);
 
         TVectord ex = exp(x);
-        DVectord ey = exp(y);
+        PetscVector ey = exp(y);
 
         utopia_test_assert(cross_backend_approxeq(ey, ex));
 
@@ -1047,12 +1047,12 @@ namespace utopia {
         double lambda = 1.9;
 
         auto fun_tpetra = std::make_shared<Bratu1D<TSMatrixd, TVectord> >(n, lambda);
-        auto fun_petsc  = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(n, lambda);
+        auto fun_petsc  = std::make_shared<Bratu1D<PetscMatrix, PetscVector> >(n, lambda);
 
         auto init_expr = values(n, 1.);
 
         TVectord x_tpetra = init_expr;
-        DVectord x_petsc  = init_expr;
+        PetscVector x_petsc  = init_expr;
 
         double val_tpetra = 0.;
         double val_petsc  = 0.;
@@ -1065,7 +1065,7 @@ namespace utopia {
         utopia_test_assert(approxeq(val_tpetra, val_petsc));
 
         TVectord grad_tpetra;
-        DVectord grad_petsc;
+        PetscVector grad_petsc;
 
         ok = fun_tpetra->gradient_no_rhs(x_tpetra, grad_tpetra); assert(ok);
         ok = fun_petsc->gradient_no_rhs(x_petsc, grad_petsc);    assert(ok);
@@ -1075,7 +1075,7 @@ namespace utopia {
         //last part fails
 
         TSMatrixd H_tpetra;
-        DSMatrixd H_petsc;
+        PetscMatrix H_petsc;
 
         ok = fun_tpetra->hessian(x_tpetra, H_tpetra); assert(ok);
         ok = fun_petsc->hessian(x_petsc, H_petsc);    assert(ok);
@@ -1084,7 +1084,7 @@ namespace utopia {
         // write("H_t.m", H_tpetra);
 
 
-        DSMatrixd H_converted;
+        PetscMatrix H_converted;
         backend_convert_sparse(H_tpetra, H_converted);
 
         // write("H_c.m", H_converted);
@@ -1232,7 +1232,7 @@ namespace utopia {
 #ifdef WITH_PETSC
     void trilinos_copy_write_big()
     {
-        DSMatrixd petsc_P;
+        PetscMatrix petsc_P;
 
         const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
         bool ok = read(folder + "/I_2", petsc_P); utopia_test_assert(ok);
@@ -1288,7 +1288,7 @@ namespace utopia {
     {
 #ifdef WITH_PETSC
         //petsc version
-        rmtr_test<DSMatrixd, DVectord>();
+        rmtr_test<PetscMatrix, PetscVector>();
 #endif //WITH_PETSC
 
         rmtr_test<TSMatrixd, TVectord>();
@@ -1356,7 +1356,7 @@ namespace utopia {
 #ifdef WITH_PETSC
     void trilinos_transform()
     {
-        DSMatrixd petsc_P;
+        PetscMatrix petsc_P;
 
         const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
         bool ok = read(folder + "/I_2", petsc_P); utopia_test_assert(ok);

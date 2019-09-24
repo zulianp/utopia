@@ -493,10 +493,10 @@ namespace utopia {
     Range xr = range(x);
     const PetscInt xb = xr.begin();
 
-    Vectord y = values(xr.extent(), 2.0);
+    BlasVectord y = values(xr.extent(), 2.0);
 
     {
-        Read<Vectord> r_y(y);
+        Read<BlasVectord> r_y(y);
         Write<PetscVector> w_x(x);
         for (SizeType i = 0; i < xr.extent(); ++i)
             x.set(xb + i, y.get(i));

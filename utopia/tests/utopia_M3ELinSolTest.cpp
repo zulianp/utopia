@@ -12,8 +12,8 @@ namespace utopia {
 #ifdef WITH_PETSC
     void amg_with_petsc()
     {
-        DVectord  rhs, x;
-        DSMatrixd A;
+        PetscVector  rhs, x;
+        PetscMatrix A;
 
         const bool binwrite = false;
         const std::string data_path = Utopia::instance().get("data_path");
@@ -28,7 +28,7 @@ namespace utopia {
 
         x = local_zeros(local_size(rhs));
 
-        ASPAMG<DSMatrixd, DVectord> amg;
+        ASPAMG<PetscMatrix, PetscVector> amg;
         amg.solve(A, rhs, x);
         amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
 

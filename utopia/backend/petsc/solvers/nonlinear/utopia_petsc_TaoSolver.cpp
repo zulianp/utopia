@@ -533,9 +533,9 @@ namespace utopia {
         return cloned.release();
     }
 
-    template class TaoSolver<DSMatrixd, DVectord>;
+    template class TaoSolver<PetscMatrix, PetscVector>;
     //FIXME
-    // template class TaoSolver<DMatrixd, DVectord>;
+    // template class TaoSolver<PetscMatrix, PetscVector>;
 }
 
 #undef U_CHECKERR

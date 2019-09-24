@@ -448,7 +448,7 @@ namespace utopia
         UTOPIA_UNIT_TEST_BEGIN("SolversTest");
 
 #ifdef WITH_BLAS
-        SolverTest<Matrixd, Vectord, double>().run();
+        SolverTest<BlasMatrixd, BlasVectord, double>().run();
         //FIXME this fails for some reason
         // MSSolverTest<Matrixd, Vectord, Matrixd, Vectord>().run();
 #endif //WITH_BLAS

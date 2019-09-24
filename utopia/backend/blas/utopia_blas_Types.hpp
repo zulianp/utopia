@@ -7,8 +7,8 @@
 #include "utopia_Tensor.hpp"
 
 namespace utopia {
-    using Matrixd = utopia::BlasDenseMatrix<double>;
-    using Vectord = utopia::BlasVector<double>;
+    using BlasMatrixd = utopia::BlasMatrix<double>;
+    using BlasVectord = utopia::BlasVector<double>;
 }
 
 #endif //UTOPIA_BLAS_TYPES_HPP

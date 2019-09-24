@@ -48,8 +48,8 @@
 namespace utopia {
 	class Intrepid2Assembler {
 	public:
-		typedef utopia::TSMatrixd GlobalMatrix;
-		typedef utopia::TVectord GlobalVector;
+		typedef utopia::TSUSerialMatrix GlobalMatrix;
+		typedef utopia::TUSerialVector GlobalVector;
 		typedef UTOPIA_SCALAR(GlobalVector) Scalar;
 
 		typedef Kokkos::DefaultExecutionSpace Host;

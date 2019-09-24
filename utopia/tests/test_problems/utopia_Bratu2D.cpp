@@ -345,7 +345,7 @@ PetscErrorCode Bratu2DFormInitialGuess(DM da,ParamsBratu2D *user,Vec X)
 
 
     //explicit
-    template class Bratu2D<DSMatrixd, DVectord, PETSC>;
+    template class Bratu2D<PetscMatrix, PetscVector, PETSC>;
 }
 
 #endif //WITH_PETSC

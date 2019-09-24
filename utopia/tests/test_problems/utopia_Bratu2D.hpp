@@ -42,8 +42,8 @@ namespace utopia
     class Bratu2D<Matrix, Vector, PETSC> final: virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
         public:
-            typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
-            typedef UTOPIA_SCALAR(DVectord) Scalar;
+            typedef UTOPIA_SIZE_TYPE(PetscVector) SizeType;
+            typedef UTOPIA_SCALAR(PetscVector) Scalar;
 
 
         Bratu2D(const SizeType & n,

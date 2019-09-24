@@ -41,14 +41,14 @@ extern "C" {
 
 namespace utopia {
 
-    bool LapackEigenSolver::spd_geig(const Matrixd &A, const Matrixd &B, Vectord &evalues, Matrixd &evectors) const
+    bool LapackEigenSolver::spd_geig(const BlasMatrixd &A, const BlasMatrixd &B, BlasVectord &evalues, BlasMatrixd &evectors) const
     {
 
         const Size sA = size(A);
         const Size sB = size(B);
 
-        Matrixd Acopy = A;
-        Matrixd Bcopy = B;
+        BlasMatrixd Acopy = A;
+        BlasMatrixd Bcopy = B;
 
         evalues.resize(sA.get(0));
         evectors.resize(sA.get(0), sB.get(0));
@@ -121,14 +121,14 @@ namespace utopia {
         return false;
     }
 
-    bool LapackEigenSolver::spd_geig_small(const Matrixd &A, const Matrixd &B, const double upper_bound, Vectord &evalues, Matrixd &evectors) const
+    bool LapackEigenSolver::spd_geig_small(const BlasMatrixd &A, const BlasMatrixd &B, const double upper_bound, BlasVectord &evalues, BlasMatrixd &evectors) const
     {
 
         const Size sA = size(A);
         const Size sB = size(B);
 
-        Matrixd Acopy = A;
-        Matrixd Bcopy = B;
+        BlasMatrixd Acopy = A;
+        BlasMatrixd Bcopy = B;
 
         evalues.resize(sA.get(0));
         evectors.resize(sA.get(0), sB.get(0));
@@ -201,7 +201,7 @@ namespace utopia {
         return false;
     }
 
-    bool LapackEigenSolver::fix_sizes(const SizeType m, Vectord &evalues, Matrixd &evectors) const
+    bool LapackEigenSolver::fix_sizes(const SizeType m, BlasVectord &evalues, BlasMatrixd &evectors) const
     {
         const SizeType n = size(evalues);
 
@@ -211,7 +211,7 @@ namespace utopia {
         } else if(m != n) {
             evalues.resize(m);
 
-            Matrixd out;
+            BlasMatrixd out;
             out.resize(n, m);
 
             for(SizeType i = 0; i < n; ++i) {
@@ -510,7 +510,7 @@ namespace utopia {
     // 	return true;
     // }
 
-    bool LapackEigenSolver::spd_eig(const Matrixd &A, Vectord &evalues, Matrixd &evector) const
+    bool LapackEigenSolver::spd_eig(const BlasMatrixd &A, BlasVectord &evalues, BlasMatrixd &evector) const
     {
         auto s = size(A);
         auto n = s.get(0);

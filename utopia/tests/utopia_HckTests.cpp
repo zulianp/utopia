@@ -315,7 +315,7 @@ namespace utopia
             auto n_levels = 4; 
             auto coarse_dofs = 125; 
 
-            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
+            HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, true, true).run();
         #endif
         UTOPIA_UNIT_TEST_END("HckTests");
 

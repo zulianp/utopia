@@ -49,7 +49,7 @@ namespace utopia {
 
         //Parallel benchmarks
 #ifdef WITH_PETSC
-        run_all_benchmarks<DSMatrixd, DVectord>("petsc");
+        run_all_benchmarks<PetscMatrix, PetscVector>("petsc");
 #ifdef PETSC_HAVE_CUDA
         run_all_benchmarks<CuSMatrixd, CuVectord>("petsc+cuda");
 #endif //PETSC_HAVE_CUDA
@@ -63,7 +63,7 @@ namespace utopia {
         //FIXME does not compile for blas3 (missing mat*mat)
 #ifdef WITH_BLAS
 		if(mpi_world_size() == 1) {
-			run_all_benchmarks<Matrixd, Vectord>("homemade");
+			run_all_benchmarks<BlasMatrixd, BlasVectord>("homemade");
 		}
 #endif
 

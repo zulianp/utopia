@@ -26,7 +26,7 @@
 
 namespace utopia {
     template<typename T>
-    class BlasDenseMatrix : 
+    class BlasMatrix : 
         // Dynamic polymorphic types
         public DenseMatrix<T, std::size_t>,
         public ReducibleMatrix<T, std::size_t>,
@@ -35,12 +35,12 @@ namespace utopia {
         public Transformable<T>,
         public Reducible<T>,
         // Static polymorphic types
-        public Tensor<BlasDenseMatrix<T>, 2>,
-        public BLAS1Tensor<BlasDenseMatrix<T>>,
-        public BLAS2Matrix<BlasDenseMatrix<T>, BlasVector<T>>,
-        public BLAS3Matrix<BlasDenseMatrix<T>>,
-        public Comparable<BlasDenseMatrix<T>>,
-        public ElementWiseOperand<BlasDenseMatrix<T>>,
+        public Tensor<BlasMatrix<T>, 2>,
+        public BLAS1Tensor<BlasMatrix<T>>,
+        public BLAS2Matrix<BlasMatrix<T>, BlasVector<T>>,
+        public BLAS3Matrix<BlasMatrix<T>>,
+        public Comparable<BlasMatrix<T>>,
+        public ElementWiseOperand<BlasMatrix<T>>,
         public ElementWiseOperand<T>,
         public Operator<BlasVector<T>> {
     public:
@@ -49,20 +49,20 @@ namespace utopia {
         using Scalar = T;
        
         using BlasVector = utopia::BlasVector<T>;
-        using BLAS2Matrix<BlasDenseMatrix, BlasVector>::multiply;
-        using BLAS3Matrix<BlasDenseMatrix>::multiply;
-        using BLAS2Matrix<BlasDenseMatrix, BlasVector>::transpose_multiply;
-        using BLAS3Matrix<BlasDenseMatrix>::transpose_multiply;
+        using BLAS2Matrix<BlasMatrix, BlasVector>::multiply;
+        using BLAS3Matrix<BlasMatrix>::multiply;
+        using BLAS2Matrix<BlasMatrix, BlasVector>::transpose_multiply;
+        using BLAS3Matrix<BlasMatrix>::transpose_multiply;
 
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
         ////////////////////////////////////////////////////////////////////
 
-        using Super = utopia::Tensor<BlasDenseMatrix<T>, 2>;
+        using Super = utopia::Tensor<BlasMatrix<T>, 2>;
 
         template<class Expr>
-        BlasDenseMatrix(const Expression<Expr> &expr)
+        BlasMatrix(const Expression<Expr> &expr)
         : rows_(0), cols_(0)
         {
             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
@@ -70,18 +70,18 @@ namespace utopia {
         }
 
         template<class Expr>
-        inline BlasDenseMatrix &operator=(const Expression<Expr> &expr)
+        inline BlasMatrix &operator=(const Expression<Expr> &expr)
         {
             Super::assign_eval(expr.derived());
             return *this;
         }
 
-        void assign(const BlasDenseMatrix &other) override
+        void assign(const BlasMatrix &other) override
         {
             copy(other);
         }
 
-        void assign(BlasDenseMatrix &&other) override
+        void assign(BlasMatrix &&other) override
         {
             entries_ = std::move(other.entries_);
             rows_ = std::move(other.rows_);
@@ -90,26 +90,26 @@ namespace utopia {
 
         ////////////////////////////////////////////////////////////////////
 
-        BlasDenseMatrix(BlasDenseMatrix &&other)
+        BlasMatrix(BlasMatrix &&other)
         : entries_(std::move(other.entries_)), 
           rows_(std::move(other.rows_)),
           cols_(std::move(other.cols_))
         {}
 
-        BlasDenseMatrix(const BlasDenseMatrix &other)
+        BlasMatrix(const BlasMatrix &other)
         : entries_(other.entries_), 
           rows_(other.rows_),
           cols_(other.cols_)
         {}
 
-        inline BlasDenseMatrix &operator=(const BlasDenseMatrix &other)
+        inline BlasMatrix &operator=(const BlasMatrix &other)
         {
             if(this == &other) return *this;
             copy(other);
             return *this;
         }
 
-        inline BlasDenseMatrix &operator=(BlasDenseMatrix &&other)
+        inline BlasMatrix &operator=(BlasMatrix &&other)
         {
             if(this == &other) return *this;
             entries_ = std::move(other.entries_);
@@ -118,17 +118,17 @@ namespace utopia {
             return *this;
         }
 
-        BlasDenseMatrix(SizeType rows, SizeType cols) : entries_(rows * cols), rows_(rows), cols_(cols)
+        BlasMatrix(SizeType rows, SizeType cols) : entries_(rows * cols), rows_(rows), cols_(cols)
         {}
 
-        BlasDenseMatrix(SizeType rows, SizeType cols, T value) : entries_(rows * cols, value), rows_(rows), cols_(cols)
+        BlasMatrix(SizeType rows, SizeType cols, T value) : entries_(rows * cols, value), rows_(rows), cols_(cols)
         {}
 
-        ~BlasDenseMatrix() { }
+        ~BlasMatrix() { }
 
-        BlasDenseMatrix() : rows_(0), cols_(0) {}
+        BlasMatrix() : rows_(0), cols_(0) {}
 
-        BlasDenseMatrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows_(rows), cols_(cols)
+        BlasMatrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows_(rows), cols_(cols)
         {
             using std::copy;
 
@@ -136,7 +136,7 @@ namespace utopia {
             copy(args.begin(), args.end(), entries_.begin());
         }
 
-        BlasDenseMatrix(const Entries& e)
+        BlasMatrix(const Entries& e)
         {
             rows_ = e.n_elements();
             cols_ = 1;
@@ -348,7 +348,7 @@ namespace utopia {
 
 
         ///<T>SWAP - swap x and y
-        inline void swap(BlasDenseMatrix &x) override
+        inline void swap(BlasMatrix &x) override
         {
             std::swap(rows_, x.rows_);
             std::swap(cols_, x.cols_);
@@ -362,7 +362,7 @@ namespace utopia {
         }
 
         ///<T>COPY - copy x into y (this)
-        inline void copy(const BlasDenseMatrix &x) override
+        inline void copy(const BlasMatrix &x) override
         {
             entries_.resize(x.n_elements());
             rows_ = x.rows_;
@@ -371,14 +371,14 @@ namespace utopia {
         }
 
         ///<T>AXPY - y = a*x + y
-        inline void axpy(const T &a, const BlasDenseMatrix &x) override
+        inline void axpy(const T &a, const BlasMatrix &x) override
         {
             assert(n_elements() == x.n_elements());
             BLASAlgorithms<T>::axpy(n_elements(), a, x.ptr(), 1, ptr(), 1);
         }
 
         ///<T>DOT - dot product
-        inline T dot(const BlasDenseMatrix &other) const override
+        inline T dot(const BlasMatrix &other) const override
         {
             assert(n_elements() == other.n_elements());
             return BLASAlgorithms<T>::ddot(n_elements(), ptr(), 1, other.ptr(), 1);
@@ -452,14 +452,14 @@ namespace utopia {
             const bool transpose_A,
             const T alpha,
             const bool transpose_B,
-            const BlasDenseMatrix &B,
+            const BlasMatrix &B,
             const T beta,
-            BlasDenseMatrix &C) const override
+            BlasMatrix &C) const override
         {
             //handle aliases
             if(&B == &C || this == &C) {
                 //TEMPORARY-CREATED
-                BlasDenseMatrix temp;
+                BlasMatrix temp;
                 gemm(transpose_A, alpha, transpose_B, B, beta, temp);
                 C = std::move(temp);
                 return;
@@ -496,7 +496,7 @@ namespace utopia {
             );
         }
 
-        inline void transpose(BlasDenseMatrix &C) const override {
+        inline void transpose(BlasMatrix &C) const override {
             bool is_squared = rows_ == cols_;
 
             if(this == &C) {
@@ -510,7 +510,7 @@ namespace utopia {
                         }
                     }
                 } else {
-                    BlasDenseMatrix temp;
+                    BlasMatrix temp;
                     transpose(temp);
                     C = temp;
                 }
@@ -542,7 +542,7 @@ namespace utopia {
             set(val);
         }
 
-        bool equals(const BlasDenseMatrix &other, const T &tol = 0.0) const override
+        bool equals(const BlasMatrix &other, const T &tol = 0.0) const override
         {
             if(other.rows() != rows()) return false;
             if(other.cols() != cols()) return false;
@@ -564,7 +564,7 @@ namespace utopia {
         ///////////////////////////////////////////////////////////////////////////
 
 
-        inline void e_mul(const BlasDenseMatrix &other) override
+        inline void e_mul(const BlasMatrix &other) override
         {
             const SizeType n = entries_.size();
             assert(n == other.entries_.size());
@@ -574,7 +574,7 @@ namespace utopia {
             }  
         }
 
-        inline void e_div(const BlasDenseMatrix &other) override
+        inline void e_div(const BlasMatrix &other) override
         {
             const SizeType n = entries_.size();
             assert(n == other.entries_.size());
@@ -584,7 +584,7 @@ namespace utopia {
             }  
         }
 
-        inline void e_min(const BlasDenseMatrix &other) override
+        inline void e_min(const BlasMatrix &other) override
         {
             const SizeType n = entries_.size();
             assert(n == other.entries_.size());
@@ -594,7 +594,7 @@ namespace utopia {
             }  
         }
 
-        inline void e_max(const BlasDenseMatrix &other) override
+        inline void e_max(const BlasMatrix &other) override
         {
             const SizeType n = entries_.size();
             assert(n == other.entries_.size());
@@ -751,7 +751,7 @@ namespace utopia {
             }
         }
 
-        inline void diag(const BlasDenseMatrix &m) 
+        inline void diag(const BlasMatrix &m) 
         {
             auto n = std::min(m.rows_, m.cols_);
             resize(n, n);
@@ -772,14 +772,14 @@ namespace utopia {
         inline void assign(
             const Range &row_range,
             const Range &col_range,
-            const BlasDenseMatrix &block
+            const BlasMatrix &block
         )
         {
             assert(row_range.valid());
             assert(col_range.valid());
             
             if(&block == this) {
-                BlasDenseMatrix temp = block;
+                BlasMatrix temp = block;
                 assign(row_range, col_range, temp);
                 return;
             }
@@ -796,7 +796,7 @@ namespace utopia {
         inline void select(
             const Range &row_range,
             const Range &col_range,
-            BlasDenseMatrix &block
+            BlasMatrix &block
         ) const
         {
 
@@ -804,7 +804,7 @@ namespace utopia {
             assert(col_range.valid());
 
             if(&block == this) {
-                BlasDenseMatrix temp;
+                BlasMatrix temp;
                 select(row_range, col_range, temp);
                 block = temp;
                 return;
@@ -824,7 +824,7 @@ namespace utopia {
         inline void select(
             const BlasIndexSet &row_index, 
             const BlasIndexSet &col_index, 
-            BlasDenseMatrix &result) const override
+            BlasMatrix &result) const override
         {
             const SizeType r = row_index.size();
 
