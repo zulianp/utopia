@@ -66,94 +66,93 @@ namespace utopia {
 
     void NonLinearElasticityTest::run(Input &in)
     {
-        assert(false);
-        // auto mesh = square(this->comm(), 20, 20, 0., 1., 0., 1., libMesh::QUAD8);
+        auto mesh = square(this->comm(), 20, 20, 0., 1., 0., 1., libMesh::QUAD8);
 
-        // const auto dim = mesh->mesh_dimension();
+        const auto dim = mesh->mesh_dimension();
 
-        // auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
-        // auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("neo-hookean");
+        auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
+        auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("neo-hookean");
 
-        // const double mu = 1.;
-        // const double lambda = 1.;
+        const double mu = 1.;
+        const double lambda = 1.;
 
-        // auto elem_order = libMesh::SECOND;
+        auto elem_order = libMesh::SECOND;
 
-        // ////////////////////////////////////////////
+        ////////////////////////////////////////////
 
-        // auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
-        // auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
-        // auto V = Vx * Vy;
+        auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
+        auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
+        auto V = Vx * Vy;
 
-        // if(dim == 3) {
-        //     V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
-        // }
+        if(dim == 3) {
+            V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
+        }
 
-        // auto u = trial(V);
-        // auto v = test(V);
+        auto u = trial(V);
+        auto v = test(V);
 
-        // auto ux = u[0];
-        // auto uy = u[1];
+        auto ux = u[0];
+        auto uy = u[1];
 
-        // ////////////////////////////////////////////
-        // UVector sol;
-        // auto uk = interpolate(sol, u);
+        ////////////////////////////////////////////
+        UVector sol;
+        auto uk = interpolate(sol, u);
 
-        // auto F 		 = identity() + grad(uk);
-        // auto F_t 	 = transpose(F);
-        // auto F_inv   = inv(F);
-        // auto F_inv_t = transpose(F_inv);
-        // auto J       = det(F);
+        auto F 		 = identity() + grad(uk);
+        auto F_t 	 = transpose(F);
+        auto F_inv   = inv(F);
+        auto F_inv_t = transpose(F_inv);
+        auto J       = det(F);
 
-        // //compressible neo-hookean
-        // auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+        //compressible neo-hookean
+        auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
-        // auto stress_lin = mu * grad(u)
-        // -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
-        // + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
+        auto stress_lin = mu * grad(u)
+        -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
+        + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
-        // auto l_form = inner(P, grad(v)) * dX;
-        // auto b_form = inner(stress_lin, grad(v)) * dX;
-        // auto eq = b_form == l_form;
+        auto l_form = inner(P, grad(v)) * dX;
+        auto b_form = inner(stress_lin, grad(v)) * dX;
+        auto eq = b_form == l_form;
 
-        // ////////////////////////////////////////////
+        ////////////////////////////////////////////
 
-        // libMesh::Nemesis_IO io(*mesh);
+        libMesh::Nemesis_IO io(*mesh);
 
-        // if(dim == 3) {
-        //     auto uz = u[2];
+        if(dim == 3) {
+            auto uz = u[2];
 
-        //     nl_solve(
-        //         equations(
-        //                 eq
-        //             ),
-        //         constraints(
-        //             boundary_conditions(ux == coeff(0.),    {1, 3}),
-        //             boundary_conditions(uz == coeff(0.),    {1, 3}),
-        //             boundary_conditions(uy == coeff(0.05),  {1}),
-        //             boundary_conditions(uy == coeff(-0.05), {3})
-        //             ),
-        //         sol
-        //         );
-        // } else {
+            nl_solve(
+                equations(
+                        eq
+                    ),
+                constraints(
+                    boundary_conditions(ux == coeff(0.),    {1, 3}),
+                    boundary_conditions(uz == coeff(0.),    {1, 3}),
+                    boundary_conditions(uy == coeff(0.05),  {1}),
+                    boundary_conditions(uy == coeff(-0.05), {3})
+                    ),
+                sol
+                );
+        } else {
 
-        //     nl_solve(
-        //         equations(
-        //              eq
-        //             ),
-        //         constraints(
-        //             boundary_conditions(ux == coeff(0.),  {0, 2}),
-        //             boundary_conditions(uy == coeff(0.1), {0}),
-        //             boundary_conditions(uy == coeff(-0.1), {2})
-        //             ),
-        //         sol
-        //         );
-        // }
-
+            nl_solve(
+                equations(
+                     eq
+                    ),
+                constraints(
+                    boundary_conditions(ux == coeff(0.),  {0, 2}),
+                    boundary_conditions(uy == coeff(0.1), {0}),
+                    boundary_conditions(uy == coeff(-0.1), {2})
+                    ),
+                sol
+                );
+        }
 
 
-        // convert(sol, *sys.solution);
-        // sys.solution->close();
-        // io.write_equation_systems("hyper-elasticity.e", *equation_systems);
+
+        convert(sol, *sys.solution);
+        sys.solution->close();
+        io.write_equation_systems("hyper-elasticity.e", *equation_systems);
     }
 }

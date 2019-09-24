@@ -205,11 +205,11 @@ namespace utopia {
 
             auto eval_mixedUp = quad_eval(mixedUp, ctx);
 
-            disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
-            disp(eval_gu);
-            disp("-----------------------------------");
-            disp(eval_gu_t);
-            disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
+            // disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
+            // disp(eval_gu);
+            // disp("-----------------------------------");
+            // disp(eval_gu_t);
+            // disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
 
             // disp("-----------------------------------");
 
