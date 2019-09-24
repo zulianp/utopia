@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <limits>
 #include <memory>
+#include <cmath>
 
 
 namespace utopia
@@ -172,6 +173,9 @@ namespace utopia
             // b_g is no longer needed and can be used as temporary variable
             in_out_b_g *= lambda.get(n_gradients);
             for (std::size_t i = 0; i < n_gradients; i++) {
+
+                assert(!is_nan_or_inf(lambda.get(i)));
+
                 in_out_b_g += lambda.get(i) * gradients[i];
             }
 
@@ -408,7 +412,11 @@ namespace utopia
                 }
             }
 
+            assert(!g_buff.has_nan_or_inf());
+
             normed.transform_gradient(g_buff, h_g);
+
+            assert(!h_g.has_nan_or_inf());
             return success;
         }
 
@@ -506,7 +514,7 @@ namespace utopia
 
                     while(a_norm > T1_(radiusk)) {
 
-                        const auto &dir = gradients_.back();
+                        const auto &dir = gradients_.back(); assert(!dir.has_nan_or_inf());
                         Scalar step_size = (radiusk/a_norm);
                         assert(step_size > 0.);
 
@@ -559,19 +567,19 @@ namespace utopia
                                 // const auto lambda = std::min(1., std::max(0., (n_bg2 - dot_bg_fg)/(n_bg2 + a_norm2 - 2. * dot_bg_fg)));
 
                                 //Seems harmful for B(x)
-                                const auto lambda = (n_bg2 - dot_bg_fg)/(n_bg2 + a_norm2 - 2. * dot_bg_fg);
+                                const auto lambda = (n_bg2 - dot_bg_fg)/(n_bg2 + a_norm2 - 2. * dot_bg_fg); assert(!is_nan_or_inf(lambda));
 
                                 //add small elements to list
-                                gradients_.back() = (lambda * first_g + (1.-lambda) * b_g);
+                                gradients_.back() = (lambda * first_g + (1.-lambda) * b_g); assert(!gradients_.back().has_nan_or_inf());
                             } else {
-                                convex_hull_solver_->solve(*normed, a_norm2, gradients_, b_g);
+                                convex_hull_solver_->solve(*normed, a_norm2, gradients_, b_g); assert(!b_g.has_nan_or_inf());
 
                                 if(static_cast<SizeType>(gradients_.size()) >= convex_hull_n_gradients_) {
                                     gradients_.erase(gradients_.begin());
                                 }
                             }
 
-                            a_norm = normed->norm(gradients_.back());
+                            a_norm = normed->norm(gradients_.back()); assert(!is_nan_or_inf(a_norm));
                             a_norm2 = a_norm * a_norm;
 
                             if(radiusk < this->atol() && a_norm < this->atol()) {

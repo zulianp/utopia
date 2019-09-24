@@ -14,6 +14,7 @@
 #include "utopia_Transformable.hpp"
 #include "utopia_Reducible.hpp"
 #include "utopia_Comparable.hpp"
+#include "utopia_Operator.hpp"
 
 //Backend includes
 #include "utopia_petsc_Base.hpp"
@@ -125,6 +126,7 @@ namespace utopia {
         public BLAS3Matrix<PetscMatrix>,
         public Comparable<PetscMatrix>,
         // public Ranged<PetscMatrix, 2>,
+        public Operator<PetscVector>,
         public Tensor<PetscMatrix, 2>
         {
     public:
@@ -561,6 +563,20 @@ namespace utopia {
             assert(false && "IMPLEMENT ME");
             return 1.0;
          }
+
+         ///////////////////////////////////////////////////////////////////////////
+         ////////////// OVERRIDES FOR Operator //////////////////////////////////
+         ///////////////////////////////////////////////////////////////////////////
+
+         inline bool apply(const PetscVector &in, PetscVector &out) const override
+         {
+            if(empty()) return false;
+
+             this->multiply(in, out);
+
+             return true;
+         }
+
 
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR BLAS2Matrix //////////////////////////////////

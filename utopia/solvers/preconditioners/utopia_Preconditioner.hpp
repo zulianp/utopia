@@ -7,20 +7,14 @@
 #include "utopia_Traits.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_Operator.hpp"
 
 #include <memory>
 #include <cassert>
 
 // #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
 
-namespace utopia
-{
-    template<class Vector>
-    class Operator {
-    public:
-        virtual ~Operator() {}
-        virtual bool apply(const Vector &rhs, Vector &sol) const = 0;
-    };
+namespace utopia {
 
     template<class Matrix, class Vector>
     class MatrixOperator final : public Operator<Vector> {

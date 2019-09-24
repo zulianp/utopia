@@ -234,6 +234,9 @@ namespace utopia {
 
             solver.solve(A, b, x);
             Vector Ax = A * x;
+
+            const Scalar r_norm = norm2(b - Ax);
+
             utopia_test_assert(approxeq(Ax, b, 1e-6));
         }
 

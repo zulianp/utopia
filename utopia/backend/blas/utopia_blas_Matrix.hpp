@@ -16,6 +16,7 @@
 #include "utopia_Reducible.hpp"
 #include "utopia_blas_IndexSet.hpp"
 #include "utopia_Operations.hpp"
+#include "utopia_Operator.hpp"
 
 
 #include <vector>
@@ -40,7 +41,8 @@ namespace utopia {
         public BLAS3Matrix<BlasDenseMatrix<T>>,
         public Comparable<BlasDenseMatrix<T>>,
         public ElementWiseOperand<BlasDenseMatrix<T>>,
-        public ElementWiseOperand<T> {
+        public ElementWiseOperand<T>,
+        public Operator<BlasVector<T>> {
     public:
         typedef std::vector<T> Entries;
         using SizeType = std::size_t;
@@ -431,6 +433,15 @@ namespace utopia {
                    1
             );                   //10
 
+        }
+
+        inline bool apply(const BlasVector &in, BlasVector &out) const override
+        {
+            if(empty()) return false;
+
+            this->multiply(in, out);
+
+            return true;
         }
 
         ///////////////////////////////////////////////////////////////////////////

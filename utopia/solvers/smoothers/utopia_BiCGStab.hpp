@@ -33,8 +33,7 @@ namespace utopia {
 
         inline bool apply(const Vector &b, Vector &x) override
         {
-            auto A_ptr = utopia::op(this->get_operator());
-            return solve(*A_ptr, b, x);
+            return solve(static_cast<const Operator<Vector> &>(*this->get_operator()), b, x);
         }
 
         bool smooth(const Vector &rhs, Vector &x) override;

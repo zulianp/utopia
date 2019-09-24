@@ -8,9 +8,10 @@
 #include "utopia_Logger.hpp"
 #include "utopia_Tensor.hpp"
 #include "utopia_Normed.hpp"
+#include "utopia_Operator.hpp"
+
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_Communicator.hpp"
-
 
 #include <Tpetra_CrsMatrix_decl.hpp>
 #include <Tpetra_Map_decl.hpp>
@@ -26,7 +27,8 @@ namespace utopia {
     public DistributedSparseMatrix<TpetraScalar, TpetraSizeType>,
     public Tensor<TpetraMatrix, 2>,
     public SparseConstructible<TpetraScalar, TpetraSizeType>,
-    public Normed<TpetraScalar>
+    public Normed<TpetraScalar>,
+    public Operator<TpetraVector>
     {
     public:
 
@@ -439,6 +441,16 @@ namespace utopia {
                }
            }
         }
+
+        inline bool apply(const TpetraVector &in, TpetraVector &out) const override
+        {
+            if(empty()) return false;
+
+            this->multiply(in, out);
+
+            return true;
+        }
+
         void multiply(const TpetraVector &vec, TpetraVector &result) const;
         void transpose_multiply(const TpetraVector &vec, TpetraVector &result) const;
 

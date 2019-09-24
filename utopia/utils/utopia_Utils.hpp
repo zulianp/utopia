@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cmath>
 
 #include "utopia_MPI.hpp"
 #include "utopia_Chrono.hpp"
@@ -28,6 +29,11 @@ namespace utopia
     inline std::string str(const T &val)
     {
         return std::to_string(val);
+    }
+    template<typename T>
+    inline bool is_nan_or_inf(const T &v)
+    {
+        return std::isinf(v) || std::isnan(v);
     }
 
     bool read(const std::string &path, std::string &str);

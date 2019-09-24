@@ -498,6 +498,16 @@ namespace utopia {
             return "BlasVector";
         }
 
+
+        inline bool has_nan_or_inf() const
+        {
+            for(const auto &e : entries_) {
+                if(is_nan_or_inf(e)) return true;
+            }
+
+            return false;
+        }
+
     private:
     	Entries entries_;
 

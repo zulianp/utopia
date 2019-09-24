@@ -197,21 +197,23 @@ namespace utopia {
 
             s_ = r_ - alpha * v_;
 
-            if((it % check_norm_each) == 0) {
-                r_norm = norm2(s_);
+            // if((it % check_norm_each) == 0) {
+            //     r_norm = norm2(s_);
 
-                if(this->verbose()) {
-                    PrintInfo::print_iter_status({ Scalar(it), r_norm });
-                }
+            //     if(this->verbose()) {
+            //         PrintInfo::print_iter_status({ Scalar(it), r_norm });
+            //     }
 
-                converged = this->check_convergence(it, r_norm, 1, 1);
-                if(converged) { break; }
-            }
+            //     converged = this->check_convergence(it, r_norm, 1, 1);
+            //     // if(converged) { break; }
+            // }
 
             A.apply(s_, t_);
             omega = dot(t_, s_)/dot(t_, t_);
 
             if(std::isnan(omega) || std::isinf(omega)) {
+                r_norm = norm2(s_);
+                
                 if(this->verbose()) {
                     PrintInfo::print_iter_status({ Scalar(it), r_norm });
                 }

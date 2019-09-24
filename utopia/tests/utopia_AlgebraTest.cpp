@@ -139,6 +139,43 @@ namespace utopia {
             utopia_test_assert(approxeq(two, actual_max));
         }
 
+        void axpy_test()
+        {
+            int n = 10;
+            const Scalar beta = 1.0, omega = 2.0, alpha = 7.0;
+            Vector r = values(n, 1.0), 
+                   p = values(n, 2.0),
+                   v = values(n, 3.0),
+                   x = values(n, 500.1),
+                   y = values(n, 19.3);
+
+            p = r + beta * (p - omega * v);
+
+            Vector expected = values(n, -3.0);
+
+            utopia_test_assert(approxeq(expected, p));
+
+            Vector s, h;
+            s = r - alpha * v;
+
+            expected.set(-20.);
+            utopia_test_assert(approxeq(expected, s));
+
+            h = x + alpha * y;
+            expected.set(635.2);
+            utopia_test_assert(approxeq(expected, h));
+        }
+
+        void divide_dots_test()
+        {
+            int n = 9;
+            Vector t = values(n, 1.0), 
+                   s = values(n, 2.0);
+
+            const Scalar res = dot(t, s)/dot(t, t);
+            utopia_test_assert(approxeq(2.0, res));
+        }
+
         static void print_backend_info()
         {
             if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
@@ -154,6 +191,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(dot_test);
             UTOPIA_RUN_TEST(dot_product_composition_test);
             UTOPIA_RUN_TEST(binary_min_max);
+            UTOPIA_RUN_TEST(axpy_test);
+            UTOPIA_RUN_TEST(divide_dots_test);
         }
 
     };
