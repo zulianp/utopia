@@ -10,7 +10,7 @@ namespace utopia {
 
     class FSITest final : public FETest {
     public:
-        void run(Input &in) override { assert(false && "IMPLEMENT ME"); }
+        void run(Input &in) override;// { assert(false && "IMPLEMENT ME"); }
 
         inline static std::string command()
         {

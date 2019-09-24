@@ -225,7 +225,7 @@ namespace utopia {
 
             auto g = eval(inner(P, grad(v)) * dX, ctx);
             // disp(g);
-            disp("-----------------------------------");
+            // disp("-----------------------------------");
             auto H = eval(inner(stress_lin, grad(v)) * dX, ctx);
             // disp(H);
 
@@ -277,16 +277,16 @@ namespace utopia {
 
             auto eval_denom = quad_eval(denom, ctx);
 
-            disp(eval_denom);
-            auto eval_division = quad_eval(grad(uk)/denom, ctx);
+            // disp(eval_denom);
+            // auto eval_division = quad_eval(grad(uk)/denom, ctx);
 
             auto e_div_inner = quad_eval(div_inner, ctx);
-            disp(e_div_inner[0]);
+            // disp(e_div_inner[0]);
 
             auto div_inner_dx = div_inner * dX;
 
             auto e_div_inner_dx = eval(div_inner_dx, ctx);
-            disp(e_div_inner_dx);
+            // disp(e_div_inner_dx);
         }
     }
 }
