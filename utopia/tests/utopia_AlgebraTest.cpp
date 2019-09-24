@@ -299,6 +299,21 @@ namespace utopia {
             utopia_test_assert(approxeq(t, 1.5, 1e-16));
         }
 
+        void in_place_test()
+        {
+            int n = 3;
+            Matrix oracle = dense_identity(n, n);
+            Matrix m = 0.5 * dense_identity(n, n);
+            m *= 2.0;
+
+            utopia_test_assert(approxeq(m, oracle, 1e-16));
+
+            oracle *= 1./4.0;
+            m /= 4.0;
+
+            utopia_test_assert(approxeq(m, oracle, 1e-16));
+        }
+
     public:
         void run()
         {
@@ -311,6 +326,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(local_values_test);
             UTOPIA_RUN_TEST(nnz_test);
             UTOPIA_RUN_TEST(trace_test);
+            UTOPIA_RUN_TEST(in_place_test);
         }
     };
 

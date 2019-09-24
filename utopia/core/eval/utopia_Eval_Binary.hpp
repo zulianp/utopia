@@ -89,6 +89,13 @@ namespace utopia {
             result.e_div(right.derived());
         }
 
+        template<class Left, class Right>
+        static void apply(Left &&left, const Scalar &right, const Divides &, Result &result)
+        {
+            result.construct(std::forward<Left>(left));
+            result.e_div(right);
+        }
+
         ///////////////////////////// MULTIPLIES /////////////////////////////
 
         template<class Left>

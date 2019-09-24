@@ -533,6 +533,13 @@ namespace utopia {
             check_error( MatScale(implementation(), a) );
          }
 
+         //FIXME inherit from ElWiseOperand
+         ///x = x*(1./a)
+         inline void e_div(const Scalar &a) //override
+         {
+            check_error( MatScale(implementation(), 1./a) );
+         }
+
          ///<Scalar>COPY - copy x into y (this)
          void copy(const PetscMatrix &other) override;
 

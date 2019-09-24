@@ -225,7 +225,9 @@ namespace utopia {
 
             auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
-            auto mixedUp = mu * grad(u) - F; //(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t;
+            // auto mixedUp = mu * grad(u) - (lambda * logn(J) - mu) * F_inv_t;// * transpose(grad(u)) * F_inv_t;
+            auto mixedUp = -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
+            + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
             auto stress_lin = mu * grad(u)
             -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
@@ -250,13 +252,13 @@ namespace utopia {
             disp("-----------------------------------");
             disp("-----------------------------------");
             // disp(eval_uk);
-            // disp("-----------------------------------");
-            // disp(eval_grad);
-            // disp("-----------------------------------");
+            disp("-----------------------------------");
+            disp(eval_grad);
+            disp("-----------------------------------");
             // disp(eval_g_uk);
             // disp("-----------------------------------");
-            // disp(eval_F);
-            // disp("-----------------------------------");
+            disp(eval_F);
+            disp("-----------------------------------");
 
             // disp(eval_F_inv);
             // disp("-----------------------------------");
@@ -266,62 +268,67 @@ namespace utopia {
 
             check_equal(eval_P, eval_P_expected);
 
-            // auto eval_stress = quad_eval(stress_lin, ctx);
-            // auto eval_stress_expected = neohookean_linearized(mu, lambda, eval_grad, eval_F);
-            // check_equal(eval_stress, eval_stress_expected);
+            auto eval_stress = quad_eval(stress_lin, ctx);
+            auto eval_stress_expected = neohookean_linearized(mu, lambda, eval_grad, eval_F);
+            check_equal(eval_stress, eval_stress_expected);
 
 
-            // auto g = eval(inner(P, grad(v)) * dX, ctx);
-            // // disp(g);
-            // disp("-----------------------------------");
-            // auto H = eval(inner(stress_lin, grad(v)) * dX, ctx);
-            // // disp(H);
+            auto g = eval(inner(P, grad(v)) * dX, ctx);
+            // disp(g);
+            disp("-----------------------------------");
+            auto H = eval(inner(stress_lin, grad(v)) * dX, ctx);
+            // disp(H);
 
 
-            // //////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////
 
-            // auto C = F_t * F;
-            // auto E = 0.5 * (C - identity());
-            // auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
-            // auto C_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
+            auto C = F_t * F;
+            auto E = 0.5 * (C - identity());
+            auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
+            auto C_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
 
-            // auto stress_lin_2 = F * ( (2.0 * mu) * C_lin + lambda * (trace(C_lin) * identity()) ) + grad(u) * S;
+            auto stress_lin_2 = F * ( (2.0 * mu) * C_lin + lambda * (trace(C_lin) * identity()) ) + grad(u) * S;
 
-            // auto eval_C = eval(C, ctx);
-            // auto eval_E = eval(E, ctx);
-            // auto eval_trace_ExI = eval(trace(E) * identity(), ctx);
-            // auto eval_S = eval(S, ctx);
-            // auto eval_C_lin = eval(C_lin, ctx);
-            // auto eval_stress_lin_2 = eval(stress_lin_2, ctx);
+            auto eval_C = eval(C, ctx);
+            auto eval_E = eval(E, ctx);
+            auto eval_trace_ExI = eval(trace(E) * identity(), ctx);
+            auto eval_S = eval(S, ctx);
+            auto eval_C_lin = eval(C_lin, ctx);
+            auto eval_stress_lin_2 = eval(stress_lin_2, ctx);
 
 
-            // ///////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////
 
-            // auto S_bar = mu * identity(dim, dim);
-            // auto eval_S_bar = quad_eval(S_bar * F, ctx);
-            // // disp(eval_S_bar);
+            auto S_bar = mu * identity(dim, dim);
+            auto eval_S_bar = quad_eval(S_bar * F, ctx);
+            // disp(eval_S_bar);
 
-            // // auto sum_SF = F - S_bar;
-            // auto sum_SF = S_bar + F;
-            // // auto sum_SF = mu * identity() - F;
-            // auto eval_sum_SF = eval(inner(sum_SF, grad(v)), ctx);
-            // // disp(eval_sum_SF);
+            // auto sum_SF = F - S_bar;
+            auto sum_SF = S_bar + F;
+            // auto sum_SF = mu * identity() - F;
+            auto eval_sum_SF = eval(inner(sum_SF, grad(v)), ctx);
+            // disp(eval_sum_SF);
 
-            // auto S_iso = S_bar + (inner((-1.0 / 2) * S_bar, C) * inv(C));
-            // auto eval_S_iso = quad_eval(S_iso, ctx);
-            // // MostDescriptive<decltype(S_bar), decltype(F)>::Type desc;
-            // // std::cout <<
+            auto S_iso = S_bar + (inner((-1.0 / 2) * S_bar, C) * inv(C));
+            auto eval_S_iso = quad_eval(S_iso, ctx);
+            // MostDescriptive<decltype(S_bar), decltype(F)>::Type desc;
+            // std::cout <<
 
-            // auto dot_grads = inner(grad(uk), grad(uk));
-            // auto en = quad_eval(dot_grads, ctx);
-            // assert(!en.empty());
+            auto dot_grads = inner(grad(uk), grad(uk));
+            auto en = quad_eval(dot_grads, ctx);
+            assert(!en.empty());
 
-            // auto dot_grads_dx = dot_grads * dX;
-            // auto endx = eval(dot_grads_dx, ctx);
-            // // disp(endx);
+            auto dot_grads_dx = dot_grads * dX;
+            auto endx = eval(dot_grads_dx, ctx);
+            // disp(endx);
 
-            // auto denom      = inner(grad(uk), grad(uk));
-            // auto div_inner  = inner(grad(uk)/denom, grad(v));
+            auto denom      = inner(grad(uk), grad(uk));
+            auto div_inner  = inner(grad(uk)/denom, grad(v));
+
+            auto eval_denom = quad_eval(denom, ctx);
+
+            disp(eval_denom);
+            auto eval_division = quad_eval(grad(uk)/denom, ctx);
 
             // auto e_div_inner = quad_eval(div_inner, ctx);
             // disp(e_div_inner[0]);

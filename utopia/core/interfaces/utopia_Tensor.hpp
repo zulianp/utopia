@@ -117,6 +117,13 @@ namespace utopia {
 		    return derived();
 		}
 
+		Derived &operator/=(const Scalar value)
+		{
+			using I = utopia::InPlace<Tensor, Number<Scalar>, Divides>;
+			Eval<I, Traits<Derived>, Traits<Derived>::Backend>::apply(I(*this, value));
+		    return derived();
+		}
+
 	};
 
 	template<typename Derived, int Order_>

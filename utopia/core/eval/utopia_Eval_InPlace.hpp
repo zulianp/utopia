@@ -44,12 +44,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).axpy(
-            //       Eval<Left, Traits>::apply(expr.left()),
-            //       1.,
-            //       Eval<Right, Traits>::apply(expr.right())
-            //       );
-
             Eval<Left, Traits>::apply(expr.left()).axpy(1.0, Eval<Right, Traits>::apply(expr.right()));
 
             UTOPIA_TRACE_END(expr);
@@ -65,14 +59,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).axpy(
-            //       Eval<Left, Traits>::apply(expr.left()),
-            //       -1.,
-            //       Eval<Right, Traits>::apply(expr.right())
-            //       );
-
-
-            
             Eval<Left, Traits>::apply(expr.left()).axpy(
                   -1.,
                   Eval<Right, Traits>::apply(expr.right())
@@ -91,12 +77,6 @@ namespace utopia {
         inline static bool apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).axpy(
-            //       Eval<Left, Traits>::apply(expr.left()),
-            //       static_cast<T>(expr.right().left()),
-            //       Eval<Right, Traits>::apply(expr.right().right())
-            //       );
 
             Eval<Left, Traits>::apply(expr.left()).axpy(expr.right().left(), Eval<Right, Traits>::apply(expr.right().right()));
 
@@ -131,12 +111,21 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).scale(
-            //     Eval<Left, Traits>::apply(expr.left()),
-            //     static_cast<Right>(expr.right())
-            // );
-
             Eval<Left, Traits>::apply(expr.left()).scale(expr.right());
+            
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<InPlace<Left, Number<Right>, Divides>, Traits, Backend> {
+    public:
+        inline static bool apply(const InPlace<Left, Number<Right>, Divides> &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Left, Traits>::apply(expr.left()).e_div(expr.right().get());
 
             UTOPIA_TRACE_END(expr);
             return true;

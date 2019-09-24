@@ -38,7 +38,8 @@ namespace utopia {
         public BLAS2Matrix<BlasDenseMatrix<T>, BlasVector<T>>,
         public BLAS3Matrix<BlasDenseMatrix<T>>,
         public Comparable<BlasDenseMatrix<T>>,
-        public ElementWiseOperand<BlasDenseMatrix<T>> {
+        public ElementWiseOperand<BlasDenseMatrix<T>>,
+        public ElementWiseOperand<T> {
     public:
         typedef std::vector<T> Entries;
         using SizeType = std::size_t;
@@ -586,6 +587,45 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] = std::max(other.entries_[i], entries_[i]);
+            }  
+        }
+
+        //////////////////////////////////////////////////////////////////////
+
+
+        inline void e_mul(const T &other) override
+        {
+            const SizeType n = entries_.size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] *= other;
+            }  
+        }
+
+        inline void e_div(const T &other) override
+        {
+            const SizeType n = entries_.size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] /= other;
+            }  
+        }
+
+        inline void e_min(const T &other) override
+        {
+            const SizeType n = entries_.size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] = std::min(other, entries_[i]);
+            }  
+        }
+
+        inline void e_max(const T &other) override
+        {
+            const SizeType n = entries_.size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                entries_[i] = std::max(other, entries_[i]);
             }  
         }
 
