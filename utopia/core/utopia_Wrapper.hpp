@@ -584,6 +584,15 @@ namespace utopia {
         w.derived().describe();
     }
 
+    template<class T>
+    void disp(const std::vector<T> &w)
+    {
+        for(const auto &wi : w) {
+            disp(wi);
+            disp("\n");
+        }
+    }
+
     // template<class Impl, int Order>
     // void disp(const Wrapper<Impl, Order> &w)
     // {

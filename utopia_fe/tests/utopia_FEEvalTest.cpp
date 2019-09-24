@@ -25,41 +25,11 @@
 
 namespace utopia {
 
-    // LMDenseMatrix make_tensor_value(const LMDenseMatrix &in)
-    // {
-    //     LMDenseMatrix ret;
-    //     each_read(in, [&ret](const SizeType i, const SizeType j, const double val) {
-    //         ret(i, j) = val;
-    //     });
-
-    //     return ret;
-    // }
-
-    // LMDenseMatrix make_wrapper(const int n, const LMDenseMatrix &in)
-    // {
-    //     LMDenseMatrix ret = zeros(n, n);
-    //     each_write(ret, [&in](const SizeType i, const SizeType j) ->  double {
-    //         return in(i, j);
-    //     });
-
-    //     return ret;
-    // }
-
     LMDenseMatrix neohookean_first_piola(const double mu, const double lambda, const LMDenseMatrix &F)
     {
         LMDenseMatrix F_inv_t = transpose(inv(F));
         return mu * (F - F_inv_t) + (lambda * std::log(det(F))) * F_inv_t;
     }
-
-    // LMDenseMatrix neohookean_first_piola(const double mu, const double lambda, const LMDenseMatrix &F)
-    // {
-    //     // LMDenseMatrix F = F;
-    //     // if(size(F).get(0) < 3) {
-    //     //     F.set(2, 2, 1);
-    //     // }
-
-    //     return neohookean_first_piola(mu, lambda, F);
-    // }
 
     std::vector<LMDenseMatrix> neohookean_first_piola(const double mu, const double lambda, const std::vector<LMDenseMatrix> &F)
     {
@@ -96,23 +66,7 @@ namespace utopia {
             assert(H[i].size() == F.size());
 
             for(std::size_t qp = 0; qp < F.size(); ++qp) {
-
-
-                // if(dim < 3) {
-                //     F_qp(2, 2) = 1;
-                // }
-
-                auto ret_iqp = neohookean_linearized(mu, lambda, H[i][qp], F[qp]);
-
-                // if(dim < 3) {
-                //     ret_iqp.set(2, 2, 0;
-                //     ret_iqp(2, 0) = 0;
-                //     ret_iqp(2, 1) = 0;
-                //     ret_iqp(0, 2) = 0;
-                //     ret_iqp(1, 2) = 0;
-                // }
-
-                ret[i][qp] = ret_iqp;
+                ret[i][qp] = neohookean_linearized(mu, lambda, H[i][qp], F[qp]);
             }
         }
 
@@ -246,21 +200,17 @@ namespace utopia {
             auto eval_F_inv_t = eval(F_inv_t, ctx);
             auto eval_J       = eval(J, ctx);
             auto eval_log_J   = eval(logn(J), ctx);
+            auto eval_gu      = eval((grad(u)) , ctx);
+            auto eval_gu_t    = eval(transpose(grad(u)) , ctx); 
 
             auto eval_mixedUp = quad_eval(mixedUp, ctx);
 
-            // disp("-----------------------------------");
-            // disp("-----------------------------------");
-            // // disp(eval_uk);
-            // disp("-----------------------------------");
-            // disp(eval_grad);
-            // disp("-----------------------------------");
-            // // disp(eval_g_uk);
-            // // disp("-----------------------------------");
-            // disp(eval_F);
-            // disp("-----------------------------------");
+            disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
+            disp(eval_gu);
+            disp("-----------------------------------");
+            disp(eval_gu_t);
+            disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
 
-            // disp(eval_F_inv);
             // disp("-----------------------------------");
 
             auto eval_P = quad_eval(P, ctx);

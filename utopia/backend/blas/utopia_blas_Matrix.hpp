@@ -21,6 +21,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <algorithm>
 
 namespace utopia {
     template<typename T>
@@ -249,7 +250,7 @@ namespace utopia {
         {
             assert(i < rows());
             assert(j < cols());
-            entries_[ i + rows() * j ] = value;
+            entries_[ idx(i, j) ] = value;
         }
 
         void set(const T &val) override
@@ -288,7 +289,7 @@ namespace utopia {
         {
             assert(i < rows());
             assert(j < cols());
-            entries_[ i + rows() * j ] += value;
+            entries_[ idx(i, j) ] += value;
         }
 
         //print function
@@ -336,7 +337,7 @@ namespace utopia {
         {
             assert(i < rows());
             assert(j < cols());
-            return at(i + rows() * j);
+            return at(idx(i, j));
         }
 
         ///////////////////////////////////////////////////////////////////////////
@@ -492,7 +493,9 @@ namespace utopia {
                     //in place
                     for(SizeType i = 0; i < rows_; ++i) {
                         for(SizeType j = i + 1; j < rows_; ++j) {
-                            C.set(i, j, get(j, i));
+                            const SizeType idx_ij = C.idx(i, j);
+                            const SizeType idx_ji = C.idx(j, i);
+                            std::swap( C.at(idx_ij), C.at(idx_ji) );
                         }
                     }
                 } else {
@@ -910,7 +913,13 @@ namespace utopia {
 
         inline T &ref(const SizeType i, const SizeType j)
         {
-            return at(i + rows() * j);
+            return at(idx(i, j));
+        }
+
+
+        inline SizeType idx(const SizeType i, const SizeType j) const
+        {
+            return i + rows() * j;
         }
     };
 

@@ -18,23 +18,23 @@
 
 namespace utopia {
 
-    template<typename T>
-    void disp(const std::vector<std::vector<T>> &data, std::ostream &os = std::cout) {
-        for(std::size_t i = 0; i < data.size(); ++i) {
-            for(std::size_t qp = 0; qp < data[i].size(); ++qp) {
-                std::cout << "[" << i << ", " << qp << "]:\n";
-                disp(data[i][qp], os);
-            }
-        }
-    }
+    // template<typename T>
+    // void disp(const std::vector<std::vector<T>> &data, std::ostream &os = std::cout) {
+    //     for(std::size_t i = 0; i < data.size(); ++i) {
+    //         for(std::size_t qp = 0; qp < data[i].size(); ++qp) {
+    //             std::cout << "[" << i << ", " << qp << "]:\n";
+    //             disp(data[i][qp], os);
+    //         }
+    //     }
+    // }
 
-    template<typename T>
-    void disp(const std::vector<T> &data, std::ostream &os = std::cout) {
-        for(std::size_t qp = 0; qp < data.size(); ++qp) {
-            std::cout << "[" << qp << "]:\n";
-            disp(data[qp], os);
-        }
-    }
+    // template<typename T>
+    // void disp(const std::vector<T> &data, std::ostream &os = std::cout) {
+    //     for(std::size_t qp = 0; qp < data.size(); ++qp) {
+    //         std::cout << "[" << qp << "]:\n";
+    //         disp(data[qp], os);
+    //     }
+    // }
 
     inline static double inner(const double &left, const LMDenseVector &right)
     {
