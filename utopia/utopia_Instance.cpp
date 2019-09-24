@@ -37,6 +37,7 @@ namespace utopia {
         PetscInitialize(&argc, &argv, (char *) 0, help);
     #endif    //WITH_SLEPC
 
+        PetscOptionsSetValue(nullptr, "-on_error_abort", nullptr);
         // is this proper place for doing this ???
         KSPRegister("utopia", KSPCreate_UTOPIA);
 
