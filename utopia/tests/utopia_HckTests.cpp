@@ -39,22 +39,22 @@ namespace utopia
 
         void run()
         {
-            // UTOPIA_RUN_TEST(newton_test);            
+            UTOPIA_RUN_TEST(newton_test);            
 
-            // UTOPIA_RUN_TEST(STCG_test); 
-            // UTOPIA_RUN_TEST(MPGRP); 
+            UTOPIA_RUN_TEST(STCG_test); 
+            UTOPIA_RUN_TEST(MPGRP); 
 
             UTOPIA_RUN_TEST(TR_unconstrained);
-            // UTOPIA_RUN_TEST(TR_constrained); 
+            UTOPIA_RUN_TEST(TR_constrained); 
             
-            // UTOPIA_RUN_TEST(Poisson_test); 
+            UTOPIA_RUN_TEST(Poisson_test); 
 
-            // UTOPIA_RUN_TEST(QuasiTR_unconstrained);
-            // UTOPIA_RUN_TEST(QuasiTR_constrained);
+            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            UTOPIA_RUN_TEST(QuasiTR_constrained);
 
 
-            // UTOPIA_RUN_TEST(RMTR_unconstrained); 
-            // UTOPIA_RUN_TEST(RMTR_l2_linear); 
+            UTOPIA_RUN_TEST(RMTR_unconstrained); 
+            UTOPIA_RUN_TEST(RMTR_l2_linear); 
         }
 
         template<class QPSolverTemp>
@@ -298,7 +298,7 @@ namespace utopia
 
 
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
 
             // Set TR-QP strategies 
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -388,7 +388,7 @@ namespace utopia
             // auto n_levels = 4; 
             // auto coarse_dofs = 100; 
 
-            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, true, true).run();
+            HckTests<DSMatrixd, DVectord>(coarse_dofs, n_levels, 1.0, false, true).run();
         #endif
         UTOPIA_UNIT_TEST_END("HckTests");
 
