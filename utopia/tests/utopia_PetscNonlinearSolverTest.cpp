@@ -611,14 +611,14 @@ namespace utopia
 #endif //WITH_PETSC
 
 
-    void run_petsc_non_linear_solvers_test()
+    void petsc_nonlinear()
     {
-        UTOPIA_UNIT_TEST_BEGIN("runPetscNonlinearSolverTest");
+        //UTOPIA_UNIT_TEST_BEGIN("runPetscNonlinearSolverTest");
         #ifdef WITH_PETSC
                 PetscNonlinearSolverTest().run();
         #endif
-        UTOPIA_UNIT_TEST_END("runPetscNonlinearSolverTest");
+        //UTOPIA_UNIT_TEST_END("runPetscNonlinearSolverTest");
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_non_linear_solvers_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(petsc_nonlinear);
 }

@@ -624,15 +624,15 @@ namespace utopia {
 
 #endif //WITH_PETSC
 
-    void run_petsc_linear_solvers_test()
+    void petsc_linear()
     {
-        UTOPIA_UNIT_TEST_BEGIN("PetscLinearSolverTest");
+        //UTOPIA_UNIT_TEST_BEGIN("PetscLinearSolverTest");
 #ifdef WITH_PETSC
         PetscLinearSolverTest().run();
 #endif
 
-        UTOPIA_UNIT_TEST_END("PetscLinearSolverTest");
+        //UTOPIA_UNIT_TEST_END("PetscLinearSolverTest");
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_linear_solvers_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(petsc_linear);
 }

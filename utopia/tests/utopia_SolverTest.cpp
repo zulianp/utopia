@@ -371,11 +371,11 @@ namespace utopia
 
         void run()
         {
-            UTOPIA_UNIT_TEST_BEGIN("MSSolverTest");
+            //UTOPIA_UNIT_TEST_BEGIN("MSSolverTest");
             // UTOPIA_RUN_TEST(convex_hull_2);
             UTOPIA_RUN_TEST(convex_hull_4);
             // UTOPIA_RUN_TEST(convex_hull_8);
-            UTOPIA_UNIT_TEST_END("MSSolverTest");
+            //UTOPIA_UNIT_TEST_END("MSSolverTest");
         }
 
         void convex_hull(const int convex_hull_n_gradients)
@@ -443,9 +443,9 @@ namespace utopia
 
     };
 
-    void run_generic_solvers_test()
+    void solvers()
     {
-        UTOPIA_UNIT_TEST_BEGIN("SolversTest");
+        //UTOPIA_UNIT_TEST_BEGIN("SolversTest");
 
 #ifdef WITH_BLAS
         SolverTest<BlasMatrixd, BlasVectord, double>().run();
@@ -463,8 +463,8 @@ namespace utopia
 #endif //WITH_BLAS
 #endif
 
-        UTOPIA_UNIT_TEST_END("SolversTest");
+        //UTOPIA_UNIT_TEST_END("SolversTest");
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_generic_solvers_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(solvers);
 }

@@ -14,6 +14,7 @@ namespace utopia {
         int run(int argc, char **argv) const;
         int run(const std::vector<std::string> &tests) const;
         void describe(std::ostream &os = std::cout) const;
+        void verbose(const bool val);
     };
 }
 

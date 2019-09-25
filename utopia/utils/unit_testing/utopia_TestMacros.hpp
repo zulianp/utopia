@@ -4,7 +4,19 @@
 #include "utopia_AutoRegisterTestUnit.hpp"
 #include "utopia_TestRegistry.hpp"
 
+#define UTOPIA_RUN_TEST(test_name) \
+    {                               \
+        utopia::Chrono private_c; private_c.start(); \
+        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "> " << std::left << std::setw(40) << (#test_name) << std::flush; } \
+        test_name();                                \
+        private_c.stop();                             \
+         if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "(" << private_c.get_seconds() << "s)" << std::endl; } \
+    }
+
+
 namespace utopia {
+
+
 
     class UnitTestBase {
     public:

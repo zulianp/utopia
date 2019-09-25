@@ -147,31 +147,31 @@ namespace utopia {
 #endif //NDEBUG
 
 
-#define UTOPIA_RUN_TEST(test_name) \
-    {                               \
-        utopia::Chrono private_c; private_c.start(); \
-        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "> " << std::left << std::setw(40) << (#test_name) << std::flush; } \
-        test_name();                                \
-        private_c.stop();                             \
-         if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "(" << private_c.get_seconds() << "s)" << std::endl; } \
-    }
+// #define UTOPIA_RUN_TEST(test_name) \
+//     {                               \
+//         utopia::Chrono private_c; private_c.start(); \
+//         if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "> " << std::left << std::setw(40) << (#test_name) << std::flush; } \
+//         test_name();                                \
+//         private_c.stop();                             \
+//          if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "(" << private_c.get_seconds() << "s)" << std::endl; } \
+//     }
 
-#define UTOPIA_UNIT_TEST_BEGIN(test_unit_name)                          \
-    {                                                                   \
-        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {                                     \
-            std::cout << "--------------------------------------------------------\n";       \
-            std::cout << "begin:\t" << (test_unit_name) << std::endl;  \
-            std::cout << "--------------------------------------------------------\n";       \
-        }                                                               \
-    }
+// #define //UTOPIA_UNIT_TEST_BEGIN(test_unit_name)                          \
+//     {                                                                   \
+//         if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {                                     \
+//             std::cout << "--------------------------------------------------------\n";       \
+//             std::cout << "begin:\t" << (test_unit_name) << std::endl;  \
+//             std::cout << "--------------------------------------------------------\n";       \
+//         }                                                               \
+//     }
 
-#define UTOPIA_UNIT_TEST_END(test_unit_name) \
-    {                                                                   \
-        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {                                     \
-            std::cout << "--------------------------------------------------------\n";       \
-            std::cout << "end:\t" << (test_unit_name) << std::endl;  \
-            std::cout << "--------------------------------------------------------\n";       \
-        }                                                               \
-    }
+// #define //UTOPIA_UNIT_TEST_END(test_unit_name) \
+//     {                                                                   \
+//         if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {                                     \
+//             std::cout << "--------------------------------------------------------\n";       \
+//             std::cout << "end:\t" << (test_unit_name) << std::endl;  \
+//             std::cout << "--------------------------------------------------------\n";       \
+//         }                                                               \
+//     }
 
 #endif //utopia_utopia_BASE_HPP

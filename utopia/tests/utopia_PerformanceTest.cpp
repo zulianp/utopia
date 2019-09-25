@@ -319,7 +319,7 @@
 
 // 	void run_performance_test()
 // 	{
-// 		UTOPIA_UNIT_TEST_BEGIN("PerformanceTest");
+// 		//UTOPIA_UNIT_TEST_BEGIN("PerformanceTest");
 
 // 		const bool verbose = performance_test_verbose();
 
@@ -369,7 +369,7 @@
 // #endif //WITH_EIGEN_3
 
 
-// 		UTOPIA_UNIT_TEST_END("PerformanceTest");
+// 		//UTOPIA_UNIT_TEST_END("PerformanceTest");
 // 	}
 
 // }

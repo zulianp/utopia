@@ -13,6 +13,11 @@ namespace utopia {
     TestRunner::~TestRunner()
     {}
 
+    void TestRunner::verbose(const bool val)
+    {
+        TestRegistry::instance().verbose(val);
+    }
+
     int TestRunner::run(int argc, char **argv) const {
         UTOPIA_UNUSED(argc);
         UTOPIA_UNUSED(argv);

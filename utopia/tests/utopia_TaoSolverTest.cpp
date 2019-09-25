@@ -153,9 +153,9 @@ namespace utopia {
     }
 
 
-    void run_tao_solver_test()
+    void tao()
     {
-        UTOPIA_UNIT_TEST_BEGIN("PetscTaoTest");
+        //UTOPIA_UNIT_TEST_BEGIN("PetscTaoTest");
         //does not work yet missing ksp for dense matrix
         // UTOPIA_RUN_TEST(petsc_tao_solve_simple);
         // UTOPIA_RUN_TEST(petsc_tao_solve_vi);
@@ -165,10 +165,10 @@ namespace utopia {
 #ifdef PETSC_HAVE_MUMPS
         UTOPIA_RUN_TEST(petsc_tao_tr_bound);
 #endif //PETSC_HAVE_MUMPS
-        UTOPIA_UNIT_TEST_END("PetscTaoTest");
+        //UTOPIA_UNIT_TEST_END("PetscTaoTest");
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_tao_solver_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(tao);
 }
 
 

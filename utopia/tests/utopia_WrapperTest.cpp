@@ -120,7 +120,7 @@ namespace utopia {
     };
 
     void run_wrapper_test() {
-        UTOPIA_UNIT_TEST_BEGIN("WrapperTest");
+        //UTOPIA_UNIT_TEST_BEGIN("WrapperTest");
 #ifdef WITH_PETSC
         WrapperTest<PetscMatrix, PetscVector, PetscScalar>().run();
 #endif
@@ -128,7 +128,7 @@ namespace utopia {
 #ifdef WITH_BLAS
         WrapperTest<BlasMatrixd, BlasVectord, double>().run();
 #endif //WITH_BLAS
-        UTOPIA_UNIT_TEST_END("WrapperTest");
+        //UTOPIA_UNIT_TEST_END("WrapperTest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(run_wrapper_test);

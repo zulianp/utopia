@@ -18,10 +18,13 @@ namespace utopia {
         int run(const std::string &unit_name);
         int run_all();
         void describe(std::ostream &os = std::cout) const;
+        inline bool verbose() const { return verbose_; }
+        inline void verbose(const bool val) { verbose_ = val; }
 
     private:
-        TestRegistry() {}
+        TestRegistry() : verbose_(false) {}
         std::map<std::string, RunTest> units_;
+        bool verbose_;
     };
 
 }

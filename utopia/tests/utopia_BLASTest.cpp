@@ -348,9 +348,9 @@ namespace utopia {
 
 
 
-    void run_blas_test() {
+    void blas() {
 
-        UTOPIA_UNIT_TEST_BEGIN("BLASTest");
+        //UTOPIA_UNIT_TEST_BEGIN("BLASTest");
         UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
         UTOPIA_RUN_TEST(blas_row_view_test);
@@ -364,10 +364,10 @@ namespace utopia {
         UTOPIA_RUN_TEST(blas_norm_test);
         UTOPIA_RUN_TEST(blas_composite_test);
         UTOPIA_RUN_TEST(blas_pow_test);
-        UTOPIA_UNIT_TEST_END("BLASTest");
+        //UTOPIA_UNIT_TEST_END("BLASTest");
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_blas_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(blas);
 }
 
 #endif // WITH_BLAS

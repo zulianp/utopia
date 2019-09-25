@@ -115,12 +115,12 @@
 
 //     void run_petsc_cuda_test() {
 // #ifdef PETSC_HAVE_CUDA
-//         UTOPIA_UNIT_TEST_BEGIN("PetscCudaTest");
+//         //UTOPIA_UNIT_TEST_BEGIN("PetscCudaTest");
 //         // UTOPIA_RUN_TEST(petsc_cuda_init);
 //         // UTOPIA_RUN_TEST(petsc_cuda_mg);
 //         UTOPIA_RUN_TEST(petsc_cuda_linear_solver);
 //         UTOPIA_RUN_TEST(petsc_no_cuda_linear_solver);
-//         UTOPIA_UNIT_TEST_END("PetscCudaTest");
+//         //UTOPIA_UNIT_TEST_END("PetscCudaTest");
 // #endif //PETSC_HAVE_CUDA
 //     }
 // }

@@ -116,9 +116,9 @@ namespace utopia {
         }
     };
 
-    void run_selection_test()
+    void selection()
     {
-        UTOPIA_UNIT_TEST_BEGIN("SelectionTest");
+        //UTOPIA_UNIT_TEST_BEGIN("SelectionTest");
 
         //FIXME
 #ifdef WITH_BLAS
@@ -134,8 +134,8 @@ namespace utopia {
 //         SelectionTest<TpetraMatrixd, TpetraVectord>().run();
 // #endif //WITH_TRILINOS
 
-        UTOPIA_UNIT_TEST_END("SelectionTest");
+        //UTOPIA_UNIT_TEST_END("SelectionTest");
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_selection_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(selection);
 }

@@ -369,9 +369,9 @@ namespace utopia {
         }
     };
 
-    static void run_algebra_test()
+    static void algebra()
     {
-        UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
+        // //UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
 #ifdef WITH_BLAS
         AlgebraTest<BlasMatrixd, BlasVectord>().run();
@@ -386,9 +386,9 @@ namespace utopia {
         VectorAlgebraTest<TpetraVector>().run();
 #endif //WITH_TRILINOS
 
-        UTOPIA_UNIT_TEST_END("AlgebraTest");
+        // //UTOPIA_UNIT_TEST_END("AlgebraTest");
     }    
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_algebra_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(algebra);
 
 }

@@ -337,14 +337,14 @@ namespace utopia
 #endif //WITH_SLEPC
 
 
-	void run_petsc_slepc_solvers_test()
+	void slepc_es()
 	{
-		UTOPIA_UNIT_TEST_BEGIN("runSlepcsSolverTest");
+		//UTOPIA_UNIT_TEST_BEGIN("runSlepcsSolverTest");
 #ifdef  WITH_SLEPC
 				SlepcsSolverTest().run();
 #endif		
-		UTOPIA_UNIT_TEST_END("runSlepcsSolverTest");				
+		//UTOPIA_UNIT_TEST_END("runSlepcsSolverTest");				
 	}
 
-	UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_slepc_solvers_test);
+	UTOPIA_REGISTER_TEST_FUNCTION(slepc_es);
 }
