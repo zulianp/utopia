@@ -339,11 +339,9 @@ namespace utopia
 
 	void slepc_es()
 	{
-		//UTOPIA_UNIT_TEST_BEGIN("runSlepcsSolverTest");
 #ifdef  WITH_SLEPC
 				SlepcsSolverTest().run();
-#endif		
-		//UTOPIA_UNIT_TEST_END("runSlepcsSolverTest");				
+#endif				
 	}
 
 	UTOPIA_REGISTER_TEST_FUNCTION(slepc_es);

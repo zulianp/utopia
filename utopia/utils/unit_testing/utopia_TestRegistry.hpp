@@ -23,11 +23,13 @@ namespace utopia {
         inline void verbose(const bool val) { verbose_ = val; }
 
     private:
-        TestRegistry() : verbose_(false) {}
+        TestRegistry() : verbose_(false), error_code_(0) {}
         std::map<std::string, RunTest> units_;
         std::map<std::string, RunTest> optional_units_;
         bool verbose_;
+        int error_code_ = 0;
 
+        void run_unit(const std::string &unit_name, RunTest run_test);
         int run_aux(const std::map<std::string, RunTest> &units, const std::string &unit_name);
     };
 

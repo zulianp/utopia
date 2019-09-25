@@ -1277,7 +1277,6 @@ namespace utopia {
     void petsc_specific() {
 #ifdef WITH_PETSC
 
-        //UTOPIA_UNIT_TEST_BEGIN("PetscTest");
         UTOPIA_RUN_TEST(petsc_memcheck);
         UTOPIA_RUN_TEST(petsc_line_search);
         UTOPIA_RUN_TEST(petsc_residual);
@@ -1337,7 +1336,6 @@ namespace utopia {
         //  maria();
         //  //local_diag_block();              // TODO:: utopia_test_assert fails in parallel
 
-        //UTOPIA_UNIT_TEST_END("PetscTest");
         #endif // WITH_PETSC
     }
 

@@ -118,8 +118,6 @@ namespace utopia {
 
     void selection()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("SelectionTest");
-
         //FIXME
 #ifdef WITH_BLAS
         SelectionTest<BlasMatrixd, BlasVectord>().run();
@@ -133,8 +131,6 @@ namespace utopia {
         //FIME missing implementation in TpetraMatrix
 //         SelectionTest<TpetraMatrixd, TpetraVectord>().run();
 // #endif //WITH_TRILINOS
-
-        //UTOPIA_UNIT_TEST_END("SelectionTest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(selection);

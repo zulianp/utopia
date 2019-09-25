@@ -445,7 +445,6 @@ namespace utopia
 
     void solvers()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("SolversTest");
 
 #ifdef WITH_BLAS
         SolverTest<BlasMatrixd, BlasVectord, double>().run();
@@ -462,8 +461,6 @@ namespace utopia
         // MSSolverTest<PetscMatrix, PetscVector, Matrixd, Vectord>().run();
 #endif //WITH_BLAS
 #endif
-
-        //UTOPIA_UNIT_TEST_END("SolversTest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(solvers);

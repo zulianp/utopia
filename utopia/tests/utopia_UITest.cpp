@@ -96,14 +96,12 @@ namespace utopia {
 
     void run_ui_test()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("UITest");
         UTOPIA_RUN_TEST(xml_stream);
         UTOPIA_RUN_TEST(input_parameters);
         UTOPIA_RUN_TEST(newton_ui);
 #ifdef WITH_TINY_EXPR
         UTOPIA_RUN_TEST(symbolic_expr);
 #endif //WITH_TINY_EXPR
-        //UTOPIA_UNIT_TEST_END("UITest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(run_ui_test);

@@ -137,11 +137,9 @@ namespace utopia
 
     void pseudo_transient_continuation()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("runPetscPseudoTransientContinuationTest");
-        #ifdef WITH_PETSC
-                PseudoTransientContinuationTest().run();
-        #endif
-        //UTOPIA_UNIT_TEST_END("runPetscPseudoTransientContinuationTest");
+#ifdef WITH_PETSC
+        PseudoTransientContinuationTest().run();
+#endif
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(pseudo_transient_continuation);

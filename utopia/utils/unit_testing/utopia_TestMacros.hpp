@@ -1,7 +1,6 @@
 #ifndef UTOPIA_TEST_MACROS_HPP
 #define UTOPIA_TEST_MACROS_HPP
 
-#include "utopia_AutoRegisterTestUnit.hpp"
 #include "utopia_TestRegistry.hpp"
 
 #define UTOPIA_RUN_TEST(test_name) \

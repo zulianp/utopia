@@ -353,12 +353,9 @@ namespace utopia
 
     void non_linear_multilevel()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("NonlinearMultilevelSolverTest");
-        #ifdef  WITH_PETSC
+#ifdef  WITH_PETSC
             NonlinearBratuSolverTest(3, true, false).run();
-        #endif
-        //UTOPIA_UNIT_TEST_END("NonlinearMultilevelSolverTest");
-
+#endif
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(non_linear_multilevel);

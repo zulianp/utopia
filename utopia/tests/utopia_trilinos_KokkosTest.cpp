@@ -163,7 +163,6 @@ namespace utopia {
 
     void run_kokkos_test()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("KokkosTest");
         UTOPIA_RUN_TEST(kokkos_max);
         UTOPIA_RUN_TEST(kokkos_min);
         UTOPIA_RUN_TEST(kokkos_min_reduction);
@@ -173,7 +172,6 @@ namespace utopia {
         UTOPIA_RUN_TEST(kokkos_read);
         UTOPIA_RUN_TEST(kokkos_apply);
         UTOPIA_RUN_TEST(kokkos_parallel_each_mat);
-        //UTOPIA_UNIT_TEST_END("KokkosTest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(run_kokkos_test);

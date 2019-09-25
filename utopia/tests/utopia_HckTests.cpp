@@ -399,8 +399,7 @@ namespace utopia
 
     void hck()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("HckTests");
-        #ifdef  WITH_PETSC
+#ifdef WITH_PETSC
 
         auto n_levels = 3; 
         auto coarse_dofs = 5; 
@@ -409,9 +408,7 @@ namespace utopia
             // auto coarse_dofs = 100; 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run();
 
-        #endif
-        //UTOPIA_UNIT_TEST_END("HckTests");
-
+#endif
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(hck);

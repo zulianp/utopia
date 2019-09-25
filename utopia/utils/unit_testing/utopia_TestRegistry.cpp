@@ -44,6 +44,29 @@ namespace utopia {
         os << std::flush;
     }
 
+    void TestRegistry::run_unit(const std::string &unit_name, RunTest run_test)
+    {
+        try {
+            if(utopia::mpi_world_rank() == 0 && verbose()) {                                     \
+                std::cout << "--------------------------------------------------------\n";       \
+                std::cout << "begin:\t[" << unit_name << "] unit tests" << std::endl;  \
+                std::cout << "--------------------------------------------------------\n";       \
+            }     
+
+            run_test();
+
+            if(utopia::mpi_world_rank() == 0 && verbose()) {                                     \
+                std::cout << "--------------------------------------------------------\n";       \
+                std::cout << "end:\t[" << unit_name << "] unit tests" << std::endl;  \
+                std::cout << "--------------------------------------------------------\n";       \
+            }  
+
+            } catch(std::exception &ex) {
+                std::cerr << "[Failure] in " << unit_name << " " << ex.what() << std::endl;
+                error_code_ = 1;
+        } 
+    }
+
     int TestRegistry::run_all()
     {
         if(mpi_world_rank() == 0) {
@@ -53,28 +76,9 @@ namespace utopia {
         Chrono c;
         c.start();
 
-        int error_code = 0;
+        
         for(std::map<std::string, RunTest>::const_iterator it = units_.begin(); it != units_.end(); ++it) {
-            try {
-
-                if(utopia::mpi_world_rank() == 0 && verbose()) {                                     \
-                    std::cout << "--------------------------------------------------------\n";       \
-                    std::cout << "begin:\t[" << (it->first) << "] unit tests" << std::endl;  \
-                    std::cout << "--------------------------------------------------------\n";       \
-                }     
-
-                it->second();
-
-                if(utopia::mpi_world_rank() == 0 && verbose()) {                                     \
-                    std::cout << "--------------------------------------------------------\n";       \
-                    std::cout << "end:\t[" << (it->first) << "] unit tests" << std::endl;  \
-                    std::cout << "--------------------------------------------------------\n";       \
-                }    
-
-            } catch(std::exception &ex) {
-                std::cerr << "[Failure] in " << it->first << " " << ex.what() << std::endl;
-                error_code = 1;
-            }
+            run_unit(it->first, it->second);
         }
 
         if(mpi_world_rank() == 0) {
@@ -88,8 +92,8 @@ namespace utopia {
         }
 
         mpi_world_barrier();
+        return error_code_;
 
-        return error_code;
     }
 
     int TestRegistry::run_aux(const std::map<std::string, RunTest> &units, const std::string &unit_name)
@@ -98,15 +102,8 @@ namespace utopia {
         if(it == units.end()) {
             return -1;
         }
-
-        try {
-            it->second();
-        } catch(std::exception &ex) {
-            std::cerr << "[Failure] in " << it->first << " " << ex.what() << std::endl;
-            return 1;
-        }
-
-        return 0;
+        run_unit(it->first, it->second);
+        return error_code_;
     }
 
     int TestRegistry::run(const std::string &unit_name)

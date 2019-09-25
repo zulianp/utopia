@@ -626,12 +626,9 @@ namespace utopia {
 
     void petsc_linear()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("PetscLinearSolverTest");
 #ifdef WITH_PETSC
         PetscLinearSolverTest().run();
 #endif
-
-        //UTOPIA_UNIT_TEST_END("PetscLinearSolverTest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(petsc_linear);

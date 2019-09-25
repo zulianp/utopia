@@ -1406,10 +1406,8 @@ namespace utopia {
         utopia_test_assert(val == 2.);
     }
 
-    void run_trilinos_test()
+    void trilinos_specific()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("TrilinosTest");
-
         UTOPIA_RUN_TEST(stcg_pt_test);
 
         UTOPIA_RUN_TEST(trilinos_structure);
@@ -1498,11 +1496,9 @@ namespace utopia {
 
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
-
-        //UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_trilinos_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(trilinos_specific);
 }
 
 #endif //WITH_TRILINOS

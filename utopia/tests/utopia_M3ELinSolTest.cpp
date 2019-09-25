@@ -72,10 +72,8 @@ namespace utopia {
 //     }
 // #endif //WITH_BLAS
 
-    void run_m3e_lin_sol_test()
+    void m3e_lin_sol()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("M3ELinSolTest");
-
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(amg_with_petsc);
 #endif //WITH_PETSC
@@ -84,11 +82,10 @@ namespace utopia {
 //         UTOPIA_RUN_TEST(amg_with_blas);
 // #endif //WITH_BLAS
 
-        //UTOPIA_UNIT_TEST_END("M3ELinSolTest");
     }
 
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_m3e_lin_sol_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(m3e_lin_sol);
 }
 
 #endif

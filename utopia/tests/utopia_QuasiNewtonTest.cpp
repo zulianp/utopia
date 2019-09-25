@@ -540,28 +540,25 @@ namespace utopia
 
     void quasi_newton()
     {
-        //UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
-        #ifdef WITH_PETSC
-            // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
-            // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
+#ifdef WITH_PETSC
+        // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
+        // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
 
-            QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
-            // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector> >().run_sparse();
+        QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
+        // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector> >().run_sparse();
 
-            // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
-        #endif
+        // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
+#endif
 
-        #ifdef WITH_BLAS
-                QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
-                QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
-        #endif //WITH_BLAS
+#ifdef WITH_BLAS
+            QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
+            QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
+#endif //WITH_BLAS
 
-        // #ifdef WITH_TRILINOS
-                // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
-        // 		QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
-        // #endif //WITH_TRILINOS
-
-        //UTOPIA_UNIT_TEST_END("runQuasiNewtonTest");
+    // #ifdef WITH_TRILINOS
+            // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
+    // 		QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
+    // #endif //WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(quasi_newton);

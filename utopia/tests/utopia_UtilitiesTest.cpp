@@ -365,7 +365,6 @@ namespace utopia {
     };
 
     void run_utilities_test() {
-        //UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
 
 #ifdef WITH_BLAS
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
@@ -394,8 +393,6 @@ namespace utopia {
             BlockTest<TpetraMatrixd, TpetraVectord>().run();
 #endif //WITH_TRILINOS
         }
-
-        //UTOPIA_UNIT_TEST_END("UtilitiesTest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(run_utilities_test);

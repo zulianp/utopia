@@ -247,7 +247,6 @@ namespace utopia {
     };
 
     void qp_solver() {
-        //UTOPIA_UNIT_TEST_BEGIN("QPSolverTest");
 #ifdef WITH_PETSC
         QPSolverTest<PetscMatrix, PetscVector>().run();
         PQPSolverTest<PetscMatrix, PetscVector>().run();
@@ -262,7 +261,6 @@ namespace utopia {
         QPSolverTest<BlasMatrixd, BlasVectord>().run(); // TODO:: because blas is missing min operation .... 
 #endif //WITH_BLAS
 
-        //UTOPIA_UNIT_TEST_END("QPSolverTest");
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_solver);
