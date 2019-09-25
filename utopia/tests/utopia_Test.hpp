@@ -44,12 +44,14 @@ namespace utopia
         runPetscNonlinearSolversTest();
         runPetscLinearSolversTest();
         runPetscSlepcSolversTest();
-        runQuasiNewtonTest();
+        
 
         runNonlinearMultilevelSolverTest();
         runPetscPseudoTransientContinuationTest(); 
 
         run_qp_solver_test();
+        runHckTest();
+        runQuasiNewtonTest();
 
         //only works for serial
         if(mpi_world_size() == 1) {
