@@ -15,7 +15,7 @@ namespace utopia {
         static char add_test_unit(const std::string &unit_name, RunTest run_test);
 
         static TestRegistry &instance();
-
+        int run(const std::string &unit_name);
         int run_all();
         void describe(std::ostream &os = std::cout) const;
 

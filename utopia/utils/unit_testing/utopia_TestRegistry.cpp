@@ -20,6 +20,11 @@ namespace utopia {
     void TestRegistry::describe(std::ostream &os) const
     {
         os << "Number of tests units: " << units_.size() << std::endl;
+        os << "sub-commands:\n";
+        for(const auto &u : units_) {
+            os << "\t" << u.first << "\n";
+        }
+        os << std::flush;
     }
 
     int TestRegistry::run_all()
@@ -37,7 +42,23 @@ namespace utopia {
         return error_code;
     }
 
-    static TestRegistry &registry = TestRegistry::instance();
+    int TestRegistry::run(const std::string &unit_name)
+    {
+        auto it = units_.find(unit_name);
+        if(it == units_.end()) {
+            std::cerr << "[Error] could not find test with name " << unit_name << std::endl;
+            return -1;
+        }
+
+        try {
+            it->second();
+        } catch(std::exception &ex) {
+            std::cerr << "[Failure] in " << it->first << " " << ex.what() << std::endl;
+            return 1;
+        }
+
+        return 0;
+    }
 
 }
 

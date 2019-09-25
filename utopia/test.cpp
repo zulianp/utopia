@@ -17,9 +17,10 @@ int main(const int argc, char *argv[])
 
     Utopia::Init(argc, argv);
 
-    std::string tests = "all";
     bool run_tests = true;
 
+    TestRunner test_runner;
+    std::vector<std::string> tests;
     for (int i = 1; i < argc; i++) {
         if (argv[i] == std::string("-data_path")) {
             if (++i >= argc)
@@ -31,7 +32,7 @@ int main(const int argc, char *argv[])
         } else if (argv[i] == std::string("-test")) {
             if (++i >= argc)
                 break;
-            tests = argv[i];
+            tests.push_back(argv[i]);
         } else if(argv[i] == std::string("-skip-tests")) {
             run_tests = false;
         } else if(argv[i] == std::string("-verbose")) {
@@ -40,6 +41,9 @@ int main(const int argc, char *argv[])
             Utopia::instance().set("performance_test_verbose", "true");
         } else if(argv[i] == std::string("-bench")) {
             run_benchmarks();
+        } else if(argv[i] == std::string("-list")) {
+            test_runner.describe();
+            run_tests = false;
         }
     }
 
@@ -47,7 +51,11 @@ int main(const int argc, char *argv[])
     // Utopia::instance().set("n_threads", "2");
 
     if(run_tests) {
-        TestRunner().run(argc, argv);
+        if(tests.empty()) {
+            test_runner.run(argc, argv);
+        } else {
+            test_runner.run(tests);
+        }
     }
 
     return Utopia::Finalize();
