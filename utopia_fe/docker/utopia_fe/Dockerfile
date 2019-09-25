@@ -42,7 +42,7 @@ RUN cd /utopia_cloned/utopia/bin_debug && make install
 ##########################################################################
 
 ENV LD_LIBRARY_PATH /opt/petsc/lib
-RUN cd /utopia_cloned/utopia/bin && ./utopia_exec -verbose && ./utopia_exec -test none -bench
+RUN cd /utopia_cloned/utopia/bin && ./utopia_test -verbose -bench
 
 # compile moonolith
 
