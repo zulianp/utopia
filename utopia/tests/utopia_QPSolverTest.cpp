@@ -160,7 +160,7 @@ namespace utopia {
         void ProjectedGS_QR()
         {
 
-            std::cout<<"----------- Ciao Hardik ------------  \n"; 
+            // std::cout<<"----------- Ciao Hardik ------------  \n"; 
 
             Vector rhs;
             Matrix A, R, Q; 
@@ -199,13 +199,12 @@ namespace utopia {
         {
             print_backend_info();
 
-            // UTOPIA_RUN_TEST(pg_test);
-            // UTOPIA_RUN_TEST(pcg_test);
-            // UTOPIA_RUN_TEST(ngs_test);
-            // UTOPIA_RUN_TEST(MPRGP_test); 
+            UTOPIA_RUN_TEST(pg_test);
+            UTOPIA_RUN_TEST(pcg_test);
+            UTOPIA_RUN_TEST(ngs_test);
+            UTOPIA_RUN_TEST(MPRGP_test); 
 
-
-            UTOPIA_RUN_TEST(ProjectedGS_QR); 
+            // UTOPIA_RUN_TEST(ProjectedGS_QR); 
 
         }
 
