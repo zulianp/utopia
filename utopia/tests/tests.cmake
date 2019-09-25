@@ -1,4 +1,7 @@
 
+set(UTOPIA_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+# set(UTOPIA_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 list(APPEND TEST_MODULES
     .
     test_problems
@@ -6,11 +9,11 @@ list(APPEND TEST_MODULES
     benchmarks
 )
 
-find_project_files(CMAKE_CURRENT_SOURCE_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
+find_project_files(UTOPIA_TEST_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 # add_library(utopia_test STATIC ${LOCAL_SOURCES})
 target_sources(utopia_test PRIVATE  ${LOCAL_SOURCES})
 target_link_libraries(utopia_test utopia_core utopia_utils utopia_solvers utopia_differentiable utopia_ui utopia_interoperability utopia_polymorphic)
-target_include_directories(utopia_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(utopia_test PUBLIC ${UTOPIA_TEST_DIR})
 target_include_directories(utopia_test PUBLIC ..)
 target_include_directories(utopia_test PUBLIC ../backend ${TEST_MODULES})
 

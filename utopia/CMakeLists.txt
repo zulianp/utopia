@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(utopia)
-cmake_policy(SET "CMP0079" NEW)
+# cmake_policy(SET "CMP0079" NEW)
 
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
@@ -370,14 +370,15 @@ if(NOT UTOPIA_ARCHIVE_ONLY)
     # test suite
     add_executable(utopia_test test.cpp)
     target_link_libraries(utopia_test utopia)
-    add_subdirectory(tests)
+    # add_subdirectory(tests)
+    include(tests/tests.cmake)
 
     add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
     target_link_libraries(utopia_exec utopia)
     target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
     target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
-    install(TARGETS utopia utopia_exec utopia_test
+    install(TARGETS utopia utopia_exec
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
