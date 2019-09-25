@@ -353,6 +353,36 @@ namespace utopia {
             utopia_test_assert(approxeq(m, oracle, 1e-16));
         }
 
+        void outer_product_test()
+        {
+            int n = 5;
+            Vector x = values(10, 1.0); 
+            Vector y = values(10, 5.0); 
+
+
+            {
+                Write<Vector> rx(x), ry(y);
+
+                each_write(x, [](const SizeType i) -> double {
+                    return i+1.0;  }   );
+
+                each_write(y, [](const SizeType i) -> double {
+                    return 1./(i+1.);  }   );                
+            }            
+            
+            
+            // disp(x); 
+            // disp(y); 
+
+            Matrix M = outer(x, y); 
+            // disp(M); 
+
+            utopia_test_assert(approxeq(norm2(M), 24.426636618640689, 1e-8));
+            
+        }
+
+
+
     public:
         void run()
         {
@@ -366,6 +396,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(nnz_test);
             UTOPIA_RUN_TEST(trace_test);
             UTOPIA_RUN_TEST(in_place_test);
+            UTOPIA_RUN_TEST(outer_product_test);
         }
     };
 

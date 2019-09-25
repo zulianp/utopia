@@ -81,6 +81,7 @@ namespace utopia {
         template<class FunctionT>
         bool get_alpha_aux_home_made(FunctionT &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha)
         {
+
             Vector x_0 = x, x_k = x;
             Scalar alpha_c, alpha_p, dg = dot(d,g);
             Scalar f, f0, fc, fp, t1, t2, t3, a, b, disc;

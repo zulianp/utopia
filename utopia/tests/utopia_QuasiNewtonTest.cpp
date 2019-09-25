@@ -21,7 +21,7 @@ namespace utopia
             void run_dense()
             {
                 UTOPIA_RUN_TEST(quasi_newton_test);
-                UTOPIA_RUN_TEST(Quasi_TR_test);
+                // UTOPIA_RUN_TEST(Quasi_TR_test);
             }
 
             void run_sparse()
@@ -59,34 +59,36 @@ namespace utopia
                 nlsolver.atol(1e-5);
                 nlsolver.rtol(1e-15);
                 nlsolver.stol(1e-15);
-                nlsolver.verbose(_verbose);
+                nlsolver.verbose(true);
+                nlsolver.max_it(2); 
 
                 auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
                 nlsolver.set_line_search_strategy(line_search);
 
-
+                // ----------------- Example 1 -------------
                 SimpleQuadraticFunction<Matrix, Vector> fun(_n);
-
                 Vector x = values(_n, 2.);
                 Vector expected_1 = zeros(x.size());
+                // nlsolver.solve(fun, x);
+                // utopia_test_assert(approxeq(expected_1, x));
 
 
-                nlsolver.solve(fun, x);
-                utopia_test_assert(approxeq(expected_1, x));
+                // ----------------- Example 2 -------------
+                // TestFunctionND_1<Matrix, Vector> fun2(x.size());
+                // x = values(_n, 2.0);
+                // Vector expected_2 = values(x.size(), 0.468919);
 
-                TestFunctionND_1<Matrix, Vector> fun2(x.size());
-                x = values(_n, 2.0);
-                Vector expected_2 = values(x.size(), 0.468919);
+                // nlsolver.solve(fun2, x);
+                // utopia_test_assert(approxeq(expected_2, x));
 
-                nlsolver.solve(fun2, x);
-                utopia_test_assert(approxeq(expected_2, x));
 
-                Rosenbrock01<Matrix, Vector> rosenbrock;
-                Vector x0 = values(2, 0.5);
-                nlsolver.solve(rosenbrock, x0);
-                Vector expected_rosenbrock = values(2, 1.0);
+                // ----------------- Example 3 -------------
+                // Rosenbrock01<Matrix, Vector> rosenbrock;
+                // Vector x0 = values(2, 0.5);
+                // nlsolver.solve(rosenbrock, x0);
+                // Vector expected_rosenbrock = values(2, 1.0);
 
-                utopia_test_assert(approxeq(x0, expected_rosenbrock));
+                // utopia_test_assert(approxeq(x0, expected_rosenbrock));
             }
 
             void Quasi_TR_test()
@@ -437,12 +439,11 @@ namespace utopia
 
                 rmtr->max_it(50);
                 rmtr->max_coarse_it(3);
-                rmtr->max_smoothing_it(3);
+                rmtr->max_sucessful_smoothing_it(3);
                 rmtr->delta0(1);
                 rmtr->atol(1e-4);
                 rmtr->rtol(1e-10);
-                rmtr->set_grad_smoothess_termination(0.000001);
-                rmtr->set_eps_grad_termination(1e-7);
+                rmtr->set_grad_smoothess_termination(1e-7);
 
                 rmtr->verbose(problem.verbose);
                 // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -507,12 +508,11 @@ namespace utopia
 
             rmtr->max_it(30);
             rmtr->max_coarse_it(3);
-            rmtr->max_smoothing_it(3);
+            rmtr->max_sucessful_smoothing_it(3);
             rmtr->delta0(1);
             rmtr->atol(1e-4);
             rmtr->rtol(1e-10);
-            rmtr->set_grad_smoothess_termination(0.000001);
-            rmtr->set_eps_grad_termination(1e-7);
+            rmtr->set_grad_smoothess_termination(1e-7);
 
             rmtr->verbose(problem.verbose);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -542,12 +542,10 @@ namespace utopia
     {
         UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
         #ifdef WITH_PETSC
-            // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
-            // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
+            QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
+            QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
 
-            QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
-            // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector> >().run_sparse();
-
+            // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
             // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
         #endif
 

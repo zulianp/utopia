@@ -11,9 +11,7 @@ namespace utopia
     class BFGS final: public HessianApproximation<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-
-        static_assert(!utopia::is_sparse<Matrix>::value, "utopia::BFGS does not support sparse matrices.");
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType; 
 
         public:
 
