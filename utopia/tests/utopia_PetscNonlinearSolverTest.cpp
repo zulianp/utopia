@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_SolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "utopia_Rename.hpp"
@@ -611,7 +611,7 @@ namespace utopia
 #endif //WITH_PETSC
 
 
-    void runPetscNonlinearSolversTest()
+    void run_petsc_non_linear_solvers_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("runPetscNonlinearSolverTest");
         #ifdef WITH_PETSC
@@ -619,4 +619,6 @@ namespace utopia
         #endif
         UTOPIA_UNIT_TEST_END("runPetscNonlinearSolverTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_non_linear_solvers_test);
 }

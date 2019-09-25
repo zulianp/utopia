@@ -1,4 +1,4 @@
-#include "utopia_QPSolverTest.hpp"
+#include "utopia_Testing.hpp"
 
 #include "utopia.hpp"
 
@@ -264,4 +264,6 @@ namespace utopia {
 
         UTOPIA_UNIT_TEST_END("QPSolverTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_qp_solver_test);
 }

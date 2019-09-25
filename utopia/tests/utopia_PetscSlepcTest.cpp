@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_SolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "utopia_InputParameters.hpp"
 
@@ -337,7 +337,7 @@ namespace utopia
 #endif //WITH_SLEPC
 
 
-	void runPetscSlepcSolversTest()
+	void run_petsc_slepc_solvers_test()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runSlepcsSolverTest");
 #ifdef  WITH_SLEPC
@@ -345,4 +345,6 @@ namespace utopia
 #endif		
 		UTOPIA_UNIT_TEST_END("runSlepcsSolverTest");				
 	}
+
+	UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_slepc_solvers_test);
 }

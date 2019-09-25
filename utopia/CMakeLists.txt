@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(utopia)
+cmake_policy(SET "CMP0079" NEW)
 
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
@@ -298,10 +299,6 @@ if(USE_SPIKE_SOLVERS)
     list(APPEND UTOPIA_MODULES spike/solvers)
 endif()
 
-# test suite
-add_subdirectory(tests)
-
-
 
 # core modules
 set(UTOPIA_MODULES interoperability backend solvers differentiable core ui utils)
@@ -370,12 +367,17 @@ if(NOT UTOPIA_ARCHIVE_ONLY)
     # target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
     # target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
 
+    # test suite
+    add_executable(utopia_test test.cpp)
+    target_link_libraries(utopia_test utopia)
+    add_subdirectory(tests)
+
     add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
     target_link_libraries(utopia_exec utopia)
     target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
     target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
-    install(TARGETS utopia utopia_exec #utopia_dynamic
+    install(TARGETS utopia utopia_exec utopia_test
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib

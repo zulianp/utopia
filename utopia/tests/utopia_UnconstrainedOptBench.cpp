@@ -1,11 +1,10 @@
-#ifndef UTOPIA_UNCONSTRAINED_OPTIMIZATION_BENCHMARK_HPP
-#define UTOPIA_UNCONSTRAINED_OPTIMIZATION_BENCHMARK_HPP
-
+#include "utopia_Testing.hpp"
 #include "utopia_Chrono.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
+#include "utopia_UnconstrainedBenchmark.hpp"
 
 
 #include <string>
@@ -253,7 +252,6 @@ namespace utopia
 		}
 	};
 
-
 	void run_unconstrained_optimization_benchmark()
 	{
 		int verbosity_level = 1;
@@ -275,7 +273,6 @@ namespace utopia
 		}
 	}
 
-
+	// UTOPIA_REGISTER_TEST_FUNCTION(run_unconstrained_optimization_benchmark);
 }
 
-#endif //UTOPIA_UNCONSTRAINED_OPTIMIZATION_BENCHMARK_HPP

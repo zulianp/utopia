@@ -2,8 +2,7 @@
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
-
-#include "utopia_trilinos_KokkosTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
@@ -176,13 +175,8 @@ namespace utopia {
         UTOPIA_RUN_TEST(kokkos_parallel_each_mat);
         UTOPIA_UNIT_TEST_END("KokkosTest");
     }
-}
 
-#else //WITH_TRILINOS
-
-namespace utopia
-{
-    void run_kokkos_test() {}
+    UTOPIA_REGISTER_TEST_FUNCTION(run_kokkos_test);
 }
 
 #endif //WITH_TRILINOS

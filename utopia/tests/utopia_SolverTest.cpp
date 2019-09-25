@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_SolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
@@ -443,7 +443,7 @@ namespace utopia
 
     };
 
-    void runGenericSolversTest()
+    void run_generic_solvers_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("SolversTest");
 
@@ -465,4 +465,6 @@ namespace utopia
 
         UTOPIA_UNIT_TEST_END("SolversTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_generic_solvers_test);
 }

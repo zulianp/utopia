@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_SolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
@@ -538,7 +538,7 @@ namespace utopia
 
 
 
-    void runQuasiNewtonTest()
+    void run_quasi_newton_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
         #ifdef WITH_PETSC
@@ -563,4 +563,6 @@ namespace utopia
 
         UTOPIA_UNIT_TEST_END("runQuasiNewtonTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_quasi_newton_test);
 }

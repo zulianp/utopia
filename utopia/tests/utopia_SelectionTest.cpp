@@ -1,10 +1,5 @@
-/*
-* @Author: Eric Botter
-* @Date:   2016-11-07
-*/
 #include "utopia.hpp"
-#include "utopia_SelectionTest.hpp"
-// #include "utopia_Collection.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_IsSubTree.hpp"
 
 namespace utopia {
@@ -141,4 +136,6 @@ namespace utopia {
 
         UTOPIA_UNIT_TEST_END("SelectionTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_selection_test);
 }

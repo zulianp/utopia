@@ -1,5 +1,5 @@
 
-#include "utopia_UITest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_ui.hpp"
 
 #include "utopia.hpp"
@@ -105,5 +105,7 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
         UTOPIA_UNIT_TEST_END("UITest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_ui_test);
 
 }

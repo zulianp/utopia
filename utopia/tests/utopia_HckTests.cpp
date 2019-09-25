@@ -1,4 +1,5 @@
 #include "utopia.hpp"
+#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 
 namespace utopia
@@ -396,7 +397,7 @@ namespace utopia
 
     };
 
-    void runHckTest()
+    void run_hck_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("HckTests");
         #ifdef  WITH_PETSC
@@ -412,4 +413,6 @@ namespace utopia
         UTOPIA_UNIT_TEST_END("HckTests");
 
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_hck_test);
 }

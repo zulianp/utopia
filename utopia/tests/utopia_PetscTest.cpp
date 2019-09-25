@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_PetscTest.hpp"
+#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_Device.hpp"
@@ -1274,7 +1274,7 @@ namespace utopia {
 
     #endif //WITH_PETSC;
 
-    void runPetscTest() {
+    void run_petsc_test() {
 #ifdef WITH_PETSC
 
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
@@ -1340,4 +1340,6 @@ namespace utopia {
         UTOPIA_UNIT_TEST_END("PetscTest");
         #endif // WITH_PETSC
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_test);
 }

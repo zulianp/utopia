@@ -23,7 +23,7 @@ namespace utopia {
 			for(SizeType i = 0; i < r; ++i) {
 				const auto x = left.get(i);
 				for(SizeType j = 0; j < c; ++j) {
-					const auto y = right.get(i);
+					const auto y = right.get(j);
 					result.set(i, j, x*y);
 				}
 			}

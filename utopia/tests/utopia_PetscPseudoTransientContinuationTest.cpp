@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_SolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 
@@ -135,7 +135,7 @@ namespace utopia
 #endif //WITH_PETSC
 
 
-    void runPetscPseudoTransientContinuationTest()
+    void run_petsc_pseudo_transient_continuation_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("runPetscPseudoTransientContinuationTest");
         #ifdef WITH_PETSC
@@ -143,4 +143,6 @@ namespace utopia
         #endif
         UTOPIA_UNIT_TEST_END("runPetscPseudoTransientContinuationTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_pseudo_transient_continuation_test);
 }

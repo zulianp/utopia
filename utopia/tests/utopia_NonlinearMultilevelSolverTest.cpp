@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_SolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
 
@@ -351,8 +351,7 @@ namespace utopia
 
 #endif //WITH_PETSC
 
-
-    void runNonlinearMultilevelSolverTest()
+    void run_non_linear_multi_level_solver_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("NonlinearMultilevelSolverTest");
         #ifdef  WITH_PETSC
@@ -361,4 +360,6 @@ namespace utopia
         UTOPIA_UNIT_TEST_END("NonlinearMultilevelSolverTest");
 
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_non_linear_multi_level_solver_test);
 }

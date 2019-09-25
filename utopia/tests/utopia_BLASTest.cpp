@@ -1,17 +1,17 @@
-/*
- * @Author: Eric Botter
- * @Date:   2016-11-15
- */
+
+#include "utopia_Base.hpp"
+
+#ifdef WITH_BLAS
+
 #include "utopia.hpp"
-#include "utopia_BLASTest.hpp"
+#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestFunctions2D.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
+#include "utopia_Testing.hpp"
 
 typedef double Real;
 
 namespace utopia {
-
-#ifdef WITH_BLAS
 
     BlasMatrixd hm_matrix(const SizeType rows, const SizeType cols, const std::vector<Real> &values)
     {
@@ -346,10 +346,10 @@ namespace utopia {
         pgs.solve(A, rhs, x);
     }
 
-#endif //WITH_BLAS
 
-    void runBLASTest() {
-#ifdef WITH_BLAS
+
+    void run_blas_test() {
+
         UTOPIA_UNIT_TEST_BEGIN("BLASTest");
         UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
@@ -365,6 +365,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(blas_composite_test);
         UTOPIA_RUN_TEST(blas_pow_test);
         UTOPIA_UNIT_TEST_END("BLASTest");
-#endif // WITH_BLAS
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_blas_test);
 }
+
+#endif // WITH_BLAS

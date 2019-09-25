@@ -1,6 +1,6 @@
 #include "utopia.hpp"
-#include "utopia_AlgebraTest.hpp"
 #include "utopia_IsSubTree.hpp"
+#include "utopia_Testing.hpp"
 
 #ifdef WITH_TRILINOS
 #include "utopia_trilinos.hpp"
@@ -369,7 +369,7 @@ namespace utopia {
         }
     };
 
-    void runAlgebraTest()
+    static void run_algebra_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
@@ -387,5 +387,8 @@ namespace utopia {
 #endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("AlgebraTest");
-    }
+    }    
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_algebra_test);
+
 }

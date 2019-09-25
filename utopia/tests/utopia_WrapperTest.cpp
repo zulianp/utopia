@@ -1,5 +1,5 @@
 
-#include "utopia_WrapperTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia.hpp"
 
 namespace utopia {
@@ -119,8 +119,7 @@ namespace utopia {
 
     };
 
-
-    void runWrapperTest() {
+    void run_wrapper_test() {
         UTOPIA_UNIT_TEST_BEGIN("WrapperTest");
 #ifdef WITH_PETSC
         WrapperTest<PetscMatrix, PetscVector, PetscScalar>().run();
@@ -131,5 +130,7 @@ namespace utopia {
 #endif //WITH_BLAS
         UTOPIA_UNIT_TEST_END("WrapperTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_wrapper_test);
 }
 

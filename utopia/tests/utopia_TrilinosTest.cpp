@@ -1,8 +1,7 @@
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
-
-#include "utopia_TrilinosTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
@@ -1502,13 +1501,8 @@ namespace utopia {
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
-}
 
-#else //WITH_TRILINOS
-
-namespace utopia
-{
-    void run_trilinos_test() {}
+    UTOPIA_REGISTER_TEST_FUNCTION(run_trilinos_test);
 }
 
 #endif //WITH_TRILINOS

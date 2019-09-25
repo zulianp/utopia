@@ -1,4 +1,4 @@
-#include "utopia_TaoSolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia.hpp"
 
 #ifdef WITH_PETSC
@@ -167,8 +167,9 @@ namespace utopia {
 #endif //PETSC_HAVE_MUMPS
         UTOPIA_UNIT_TEST_END("PetscTaoTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_tao_solver_test);
 }
 
-#else
-namespace utopia { void run_tao_solver_test() {} }
+
 #endif //WITH_PETSC

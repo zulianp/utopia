@@ -1,13 +1,13 @@
-#include "utopia_M3ELinSolTest.hpp"
+
 #include "utopia_Base.hpp"
+
+#ifdef WITH_M3ELINSOL
+#include "utopia_Testing.hpp"
 #include "utopia.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_ui.hpp"
 
 namespace utopia {
-#ifndef WITH_M3ELINSOL
-    void run_m3e_lin_sol_test() {}
-#else
 
 #ifdef WITH_PETSC
     void amg_with_petsc()
@@ -43,8 +43,8 @@ namespace utopia {
 // #ifdef WITH_BLAS
 //     void amg_with_blas()
 //     {
-//         Vectord rhs, x;
-//         CRSMatrixd A;
+//         BlasVectord rhs, x;
+//         BlasMatrixd A;
 
 //         const bool binwrite = false;
 //         const std::string data_path = Utopia::instance().get("data_path");
@@ -56,7 +56,7 @@ namespace utopia {
 
 //         x = local_zeros(local_size(rhs));
 
-//         ASPAMG<CRSMatrixd, Vectord> amg;
+//         ASPAMG<BlasMatrixd, BlasVectord> amg;
 //         if(!amg.import("ASPAMG", data_path + "/xml/default.xml")) {
 //             InputParameters in;
 //             in.set("TspMaxit", 200);
@@ -80,12 +80,17 @@ namespace utopia {
         UTOPIA_RUN_TEST(amg_with_petsc);
 #endif //WITH_PETSC
 
-#ifdef WITH_BLAS
-        UTOPIA_RUN_TEST(amg_with_blas);
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+//         UTOPIA_RUN_TEST(amg_with_blas);
+// #endif //WITH_BLAS
 
         UTOPIA_UNIT_TEST_END("M3ELinSolTest");
     }
 
-#endif
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_m3e_lin_sol_test);
 }
+
+#endif
+
+

@@ -1,6 +1,6 @@
 #include "utopia.hpp"
 #include "utopia_AutoDiff.hpp" //simplify_test
-#include "utopia_UtilitiesTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_Blocks.hpp"
 #include "utopia_Eval_Blocks.hpp"
 
@@ -364,7 +364,7 @@ namespace utopia {
 
     };
 
-    void runUtilitiesTest() {
+    void run_utilities_test() {
         UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
 
 #ifdef WITH_BLAS
@@ -397,4 +397,6 @@ namespace utopia {
 
         UTOPIA_UNIT_TEST_END("UtilitiesTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_utilities_test);
 }

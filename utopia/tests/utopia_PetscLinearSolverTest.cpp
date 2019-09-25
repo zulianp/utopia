@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_SolverTest.hpp"
+#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_MultiLevelTestProblem.hpp"
@@ -624,7 +624,7 @@ namespace utopia {
 
 #endif //WITH_PETSC
 
-    void runPetscLinearSolversTest()
+    void run_petsc_linear_solvers_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("PetscLinearSolverTest");
 #ifdef WITH_PETSC
@@ -633,4 +633,6 @@ namespace utopia {
 
         UTOPIA_UNIT_TEST_END("PetscLinearSolverTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_petsc_linear_solvers_test);
 }

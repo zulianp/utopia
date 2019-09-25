@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_MiscTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_FactoryMethod.hpp"
 
 namespace utopia {
@@ -124,7 +124,7 @@ namespace utopia {
 #endif //WITH_LAPACK
 
 
-    void runMiscTest() {
+    void run_misc_test() {
         // std::cout << "Begin: MiscTest" << std::endl;
         UTOPIA_UNIT_TEST_BEGIN("MiscTest");
 
@@ -144,4 +144,6 @@ namespace utopia {
         UTOPIA_UNIT_TEST_END("MiscTest");
 
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(run_misc_test);
 }
