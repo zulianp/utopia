@@ -269,7 +269,6 @@ namespace utopia
             for(SizeType i = 0; i < L-1; ++i) {
                 const auto &flags = this->function(i+1).get_eq_constrains_flg();
                 assert(!empty(flags));
-
                 this->transfer(i).handle_equality_constraints(flags);
             }
         }
@@ -347,16 +346,8 @@ namespace utopia
 
 
             //-------------- INITIALIZATIONS ---------------
-            if(!skip_BC_checks()){
-                this->function(fine_level).get_eq_constrains_values(x_h);
-            }
-
             SizeType fine_local_size = local_size(x_h).get(0);
-
-            // this->status_.clear();
             this->init_memory(fine_local_size);
-
-            // initialize();
 
 
             memory_.x[fine_level] = x_h;
@@ -461,6 +452,7 @@ namespace utopia
                 converged = false;
             }
 
+
             // making sure that correction does not exceed tr radius ...
             if(converged){
                 return true;
@@ -487,19 +479,28 @@ namespace utopia
 
 
             if(!skip_BC_checks()){
-                this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]);
+                if(CONSISTENCY_LEVEL != GALERKIN){
+                    this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]);
+                }
             }
 
+
             //----------------------------------------------------------------------------
-            //                  initializing coarse level (deltas, constraints, hessian approx, ...)
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
             //----------------------------------------------------------------------------
             this->init_level(level-1);
 
             //----------------------------------------------------------------------------
-            //                   first order coarse level objective managment
+            //                  first order coarse level objective managment
             //----------------------------------------------------------------------------
-            this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
+            if(CONSISTENCY_LEVEL != GALERKIN)
+            {
+                if(empty(memory_.g[level-1])){
+                    memory_.g[level-1] = 0.0* memory_.x[level-1]; 
+                }
 
+                this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
+            }
 
             if(!skip_BC_checks())
             {
@@ -508,7 +509,7 @@ namespace utopia
                 }
             }
 
-            if(this->check_grad_smoothness()){
+            if(this->check_grad_smoothness() && CONSISTENCY_LEVEL != GALERKIN){
                 smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1);
             }
             else{
@@ -536,15 +537,16 @@ namespace utopia
                     }
 
                     this->function(level-1).hessian(memory_.x[level-1], memory_.H[level-1]);
-                    memory_.H_diff[level-1] -=  memory_.H[level-1];
-                }
 
+                    // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
+                    memory_.H_diff[level-1] -= memory_.H[level-1];
+
+                }
             }
 
             //----------------------------------------------------------------------------
             //                   additional coarse level initialization...
             //----------------------------------------------------------------------------
-
             memory_.x_0[level-1]    = memory_.x[level-1];
             memory_.s[level-1]      = local_zeros(local_size(memory_.x[level-1]));
 
@@ -573,10 +575,8 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 //                       building trial point from coarse level
                 //----------------------------------------------------------------------------
-                // this line to be removed
                 memory_.s[level-1] = memory_.x[level-1] - memory_.x_0[level-1];
                 coarse_reduction -= memory_.energy[level-1]; 
-
 
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
 
@@ -586,7 +586,6 @@ namespace utopia
 
                 E_old = memory_.energy[level]; 
 
-                // new test for dbg mode
                 memory_.x[level] += memory_.s[level];
 
                 this->compute_s_global(level, memory_.s_working[level]);
@@ -687,7 +686,9 @@ namespace utopia
                 memory_.s[level] = local_zeros(local_size(memory_.x[level]));
             }
 
+            // TODO:: do check if this is only post-smoothing (check if s_working is initiailized otherwise to zero)
             // important, as this can be postsmoothing
+            // also check if fine level 
             this->compute_s_global(level, memory_.s_working[level]);
 
 
@@ -695,19 +696,49 @@ namespace utopia
             {
                 if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
                 {
-                    memory_.g[level] += memory_.g_diff[level]; 
+                    if(CONSISTENCY_LEVEL == FIRST_ORDER)
+                    {
+                        memory_.g[level] += memory_.g_diff[level]; 
+                    }
+                    else if(CONSISTENCY_LEVEL == GALERKIN)
+                    {
+                        memory_.g[level] = memory_.g_diff[level]; 
+                    }
+                    else if(CONSISTENCY_LEVEL == SECOND_ORDER)
+                    {
+                        memory_.g[level] += memory_.g_diff[level]; 
+
+                        // memory_.H[level] = memory_.H[level] + memory_.H_diff[level]; 
+                        memory_.H[level] += memory_.H_diff[level]; 
+                        make_hess_updates = false;                
+                    }                    
+                    else
+                    {
+                        utopia_error("RMTR:: Consistency order not existent .... \n"); 
+                    }
                 }
                 else
                 {
                     this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
                 }
 
-                if(solve_type != POST_SMOOTHING){
-                    memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
+                // energy computations ... 
+                if(solve_type != POST_SMOOTHING)
+                {
+                    if(CONSISTENCY_LEVEL == SECOND_ORDER)
+                    {
+                        this->function(level).value(memory_.x[level], memory_.energy[level]); 
+                        memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
+                    }
+                    else
+                    {
+                        memory_.energy[level] = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
+                    }
                 }
 
                 memory_.gnorm[level] = this->criticality_measure(level);
             }
+
 
             converged  = this->check_local_convergence(it, it_success,  memory_.gnorm[level], level, memory_.delta[level], solve_type);
 
@@ -729,8 +760,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //     solving constrained system to get correction and  building trial point
             //----------------------------------------------------------------------------
-                // correction needs to get prepared
-                memory_.s[level] *= 0.0;
+                // obtain correction
                 this->solve_qp_subproblem(level, exact_solve_flg);
 
                 // predicted reduction based on model
@@ -783,7 +813,8 @@ namespace utopia
 
                 if(make_grad_updates)
                 {
-                    Vector g_old = memory_.g[level];
+                    // std::cout<<"grad updated... \n"; 
+                    // Vector g_old = memory_.g[level];
                     this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
                     memory_.gnorm[level] = this->criticality_measure(level);
 
@@ -1069,7 +1100,6 @@ namespace utopia
         {
             Scalar Rg_norm, g_norm;
             norms2(g_restricted, g_coarse, Rg_norm, g_norm);
-
             return (Rg_norm >= _grad_smoothess_termination * g_norm) ? true : false;
         }
 
@@ -1119,11 +1149,12 @@ namespace utopia
             else{
                 _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
             }
-            // _tr_subproblems[level]->verbose("true"); 
 
+            memory_.s[level] = local_zeros(local_size(memory_.g[level]). get(0)); 
+            
             _tr_subproblems[level]->current_radius(memory_.delta[level]);
             _tr_subproblems[level]->solve(memory_.H[level], -1.0 * memory_.g[level], memory_.s[level]);
-
+            
             return true;
         }
 
@@ -1143,7 +1174,8 @@ namespace utopia
          */
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
         {
-            if(level < this->n_levels()-1){
+            if(level < this->n_levels()-1)
+            {
                 return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
             }
             else{
@@ -1167,6 +1199,7 @@ namespace utopia
          */
         virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
+            // std::cout<<"get_multilevel_gradient: level: "<< level << "  \n"; 
             if(level < this->n_levels()-1)
             {
                 return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
@@ -1208,7 +1241,7 @@ namespace utopia
         {
             if(empty( memory_.x_0[level]))
             {
-                s_global = 0*memory_.x[level]; 
+                s_global = 0.0*memory_.x[level]; 
             }
             else if(level < this->n_levels()-1)
             {

@@ -114,7 +114,7 @@ namespace utopia
             return true;
         }
 
-        inline const std::vector<SizeType> & get_indices_related_to_BC()
+        inline const std::vector<SizeType> & get_indices_related_to_BC() const
         {
             return indices_eq_constraints_; 
         }
@@ -148,7 +148,7 @@ namespace utopia
         }
 
 
-        virtual bool zero_contribution_to_equality_constrains(Vector & x)
+        virtual bool zero_contribution_to_equality_constrains(Vector & x) const
         {
             x = _eq_constraints_mask_matrix_ * x; 
             return true;

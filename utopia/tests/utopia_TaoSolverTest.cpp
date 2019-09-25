@@ -152,6 +152,7 @@ namespace utopia {
 
     }
 
+
     void run_tao_solver_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("PetscTaoTest");
@@ -159,6 +160,7 @@ namespace utopia {
         // UTOPIA_RUN_TEST(petsc_tao_solve_simple);
         // UTOPIA_RUN_TEST(petsc_tao_solve_vi);
         UTOPIA_RUN_TEST(petsc_tao_solve_mg);
+
 //FIXME
 #ifdef PETSC_HAVE_MUMPS
         UTOPIA_RUN_TEST(petsc_tao_tr_bound);

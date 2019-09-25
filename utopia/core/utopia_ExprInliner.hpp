@@ -219,6 +219,7 @@ namespace utopia {
         template<class DerivedTensor>
         inline static Scalar eval_at(const Tensor<DerivedTensor, 1> &expr, const SizeType i, const SizeType j)
         {
+            UTOPIA_UNUSED(j);
             assert(j == 0 && "Trying to access tensor of order 1 like an order 2 one.");
             return expr.derived().get(i);
         }

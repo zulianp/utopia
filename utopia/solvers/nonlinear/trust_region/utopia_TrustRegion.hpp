@@ -173,10 +173,10 @@
 
           #ifdef DEBUG_mode
             if(this->verbose_)
-              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E, E_k, E_k1, ared, pred, rho, delta, s_norm});
+              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E_k, E_k1, E, ared, pred, rho, delta, s_norm});
           #else
             if(this->verbose_)
-              PrintInfo::print_iter_status(it, {g_norm, r_norm, E, E_k1, rho, delta, s_norm});
+              PrintInfo::print_iter_status(it, {g_norm, r_norm, E_k, E_k1, rho, delta, s_norm});
           #endif
 
             converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta);

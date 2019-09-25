@@ -1268,7 +1268,6 @@ namespace utopia {
         m *= 0.;
 
         zero_rows_to_identity(m, 1e-10);
-
         // disp(m);
     }
 

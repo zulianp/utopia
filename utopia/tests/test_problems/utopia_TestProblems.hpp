@@ -12,8 +12,10 @@
 #include "utopia_UnconstrainedBenchmark.hpp"
 #include "utopia_Bratu1D.hpp"
 #include "utopia_Bratu2D.hpp"
+#include "utopia_Poisson3D.hpp"
+
 #include "utopia_ContinuousStirredTankReactor.hpp"
 
-#include "utopia_Petsc2DMultilevelTestProblem.hpp"
+#include "utopia_PetscMultilevelTestProblem.hpp"
 
 #endif

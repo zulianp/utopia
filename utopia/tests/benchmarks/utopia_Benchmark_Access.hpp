@@ -110,13 +110,14 @@ namespace utopia {
                         });
 
                         Scalar res = 0.0;
-                        each_read(x, [&res](const SizeType, const Scalar val) {
+
+                        each_read(x, [&res](const SizeType /*i*/, const Scalar val) {
                             res += val;
                         });
 
                         res /= size(x).get(0);
 
-                        each_transform(x, x, [res](const SizeType, const Scalar val) -> Scalar {
+                        each_transform(x, x, [res](const SizeType /*i*/, const Scalar val) -> Scalar {
                             return val - res;
                         });
                     }
@@ -139,9 +140,9 @@ namespace utopia {
                         assemble_laplacian_1D(A);
 
                         // auto N = size(A).get(0);
-
                         Scalar res = 0.0;
-                        each_read(A, [&res](const SizeType, const SizeType, const Scalar val) {
+
+                        each_read(A, [&res](const SizeType /*i*/, const SizeType /*j*/, const Scalar val) {
                             res += val;
                         });
 

@@ -168,23 +168,6 @@ namespace utopia {
                 std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: Local sizes do not match. \n";
             }
 
-            // old - slow version
-            // {
-            //     Write<Vector> w(x);
-            //     Read<Vector>  r_id(bc_ids);
-            //     Read<Vector>  r_val(bc_values);
-
-            //     Range range_w = range(x);
-            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-            //     {
-            //         Scalar id = bc_ids.get(i);
-            //         Scalar value = bc_values.get(i);
-
-            //         if(id == 1)
-            //             x.set(i, value);
-            //     }
-            // }
-
             Vector x_old = x; 
 
             {
@@ -213,28 +196,10 @@ namespace utopia {
          * @param      fun   The fun
          * @param      c     The correction
          */
-        virtual bool zero_correction_related_to_equality_constrain(Fun & fun, Vector & c)
+        virtual bool zero_correction_related_to_equality_constrain(const Fun & fun, Vector & c) 
         {
-            // older/slower version
-            // Vector bc;
-            // fun.get_eq_constrains_flg(bc);
-
-            // {
-            //     Write<Vector> w(c);
-            //     Read<Vector> r(bc);
-
-            //     Range range_w = range(c);
-            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-            //     {
-            //         if(bc.get(i) == 1)
-            //             c.set(i, 0);
-            //     }
-            // }
-
-
+ 
             fun.zero_contribution_to_equality_constrains(c); 
-
-
             return true;
         }
 
@@ -246,44 +211,10 @@ namespace utopia {
          * @param      M     matrix
          *
          */
-        virtual bool zero_correction_related_to_equality_constrain_mat(Fun & fun, Matrix & M)
+        virtual bool zero_correction_related_to_equality_constrain_mat(const Fun & fun, Matrix & M)
         {
-            // Vector bc;
-            // fun.get_eq_constrains_flg(bc);
             const std::vector<SizeType> & index = fun.get_indices_related_to_BC(); 
-
-            // {
-            //     Read<Vector> r(bc);
-
-            //     Range range_w = range(bc);
-            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-            //     {
-            //         if(bc.get(i) == 1)
-            //             index.push_back(i);
-            //     }
-            // }
-
-            // hopefully simplification/faster solution 
-            //fun.get_indices_related_to_BC(index); 
-
             set_zero_rows(M, index, 1.);
-
-            // // horible solution....
-            // // do we actually need that?? set_zero_rows should put one on diagonal
-            // {
-            //     ReadAndWrite<Matrix> w(M);
-            //     Range r = row_range(M);
-
-            //     //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-            //     for(SizeType i = r.begin(); i != r.end(); ++i)
-            //     {
-            //         if(std::abs(M.get(i,i)) < 1e-15){
-            //             std::cout<<"--- yes, something got used.... \n"; 
-            //             M.set(i, i, 1.0);
-            //         }
-            //     }
-            // }
-
 
             return true;
         }
