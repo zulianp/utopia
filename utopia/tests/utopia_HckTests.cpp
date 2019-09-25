@@ -109,6 +109,8 @@ namespace utopia
 
         void Poisson_test()
         {
+//FIXME
+#ifdef WITH_PETSC
             Poisson3D<Matrix, Vector> fun(10);
 
             Vector b; 
@@ -160,6 +162,7 @@ namespace utopia
 
             if(output_vtk_)
                 fun.output_to_VTK(x);
+#endif //WITH_PETSC
         }
 
 
@@ -171,7 +174,11 @@ namespace utopia
             if(verbose_)
                 fun.describe(); 
 
+#ifdef WITH_PETSC
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", false);
+#else
+            auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
+#endif
             
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_); 
@@ -290,7 +297,8 @@ namespace utopia
 
         void RMTR_unconstrained()
         {
-
+//FIXME
+#ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > multilevel_problem(2, n_levels_, n_); 
             auto fun = multilevel_problem.level_functions_[n_levels_-1];
             Bratu2D<Matrix, Vector> * fun_Bratu2D = dynamic_cast<Bratu2D<Matrix, Vector> *>(fun.get());
@@ -329,12 +337,13 @@ namespace utopia
 
 
             if(output_vtk_)
-                fun_Bratu2D->output_to_VTK(x, "RMTR_output.vtk");            
+                fun_Bratu2D->output_to_VTK(x, "RMTR_output.vtk");        
+#endif //WITH_PETSC    
         }
 
         void RMTR_l2_linear()
         {
-
+#ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_); 
 
             auto fun = multilevel_problem.level_functions_[n_levels_-1];
@@ -371,7 +380,8 @@ namespace utopia
             rmtr->solve(x);
             
             if(output_vtk_)
-                fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");            
+                fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");  
+#endif //WITH_PETSC          
         }
 
 
