@@ -13,6 +13,12 @@ namespace utopia {
         return 0;
     }
 
+    char TestRegistry::add_optional_test_unit(const std::string &unit_name, RunTest run_test)
+    {
+        instance().optional_units_[unit_name] = run_test;
+        return 0;
+    }
+
     TestRegistry &TestRegistry::instance()
     {
         static TestRegistry instance_;
@@ -22,10 +28,18 @@ namespace utopia {
     void TestRegistry::describe(std::ostream &os) const
     {
         os << "Number of tests units: " << units_.size() << std::endl;
-        os << "select with: -test <sub-command>";
-        os << "sub-commands:\n";
+        os << "select with: -test <sub-command>\n";
+        os << "available sub-commands:\n";
         for(const auto &u : units_) {
             os << "\t" << u.first << "\n";
+        }
+
+        if(!optional_units_.empty()) {
+            os << "\t------ optional -------" << std::endl;
+
+            for(const auto &u : optional_units_) {
+                os << "\t" << u.first << "\n";
+            }
         }
         os << std::flush;
     }
@@ -78,11 +92,10 @@ namespace utopia {
         return error_code;
     }
 
-    int TestRegistry::run(const std::string &unit_name)
+    int TestRegistry::run_aux(const std::map<std::string, RunTest> &units, const std::string &unit_name)
     {
-        auto it = units_.find(unit_name);
-        if(it == units_.end()) {
-            std::cerr << "[Error] could not find test with name " << unit_name << std::endl;
+        auto it = units.find(unit_name);
+        if(it == units.end()) {
             return -1;
         }
 
@@ -94,6 +107,20 @@ namespace utopia {
         }
 
         return 0;
+    }
+
+    int TestRegistry::run(const std::string &unit_name)
+    {
+        int ret = run_aux(units_, unit_name);
+        if(ret == -1) {
+            ret = run_aux(optional_units_, unit_name);
+        }
+
+        if(ret == -1) {
+            std::cerr << "[Error] no unit test with name " << unit_name << std::endl;
+        }
+
+        return ret;
     }
 
 }

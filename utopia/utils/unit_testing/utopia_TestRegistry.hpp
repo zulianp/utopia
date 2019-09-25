@@ -13,6 +13,7 @@ namespace utopia {
         typedef void (*RunTest)();
 
         static char add_test_unit(const std::string &unit_name, RunTest run_test);
+        static char add_optional_test_unit(const std::string &unit_name, RunTest run_test);
 
         static TestRegistry &instance();
         int run(const std::string &unit_name);
@@ -24,7 +25,10 @@ namespace utopia {
     private:
         TestRegistry() : verbose_(false) {}
         std::map<std::string, RunTest> units_;
+        std::map<std::string, RunTest> optional_units_;
         bool verbose_;
+
+        int run_aux(const std::map<std::string, RunTest> &units, const std::string &unit_name);
     };
 
 }

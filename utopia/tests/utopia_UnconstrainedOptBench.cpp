@@ -252,7 +252,7 @@ namespace utopia
 		}
 	};
 
-	void run_unconstrained_optimization_benchmark()
+	void unconstrained_opt()
 	{
 		int verbosity_level = 1;
 		if(Utopia::instance().verbose()) {
@@ -269,10 +269,10 @@ namespace utopia
 		}
 		else
 		{
-			std::cout<<"run_unconstrained_optimization_benchmark, does not work in parallel. \n"; 
+			std::cout<<"unconstrained_opt, does not work in parallel. \n"; 
 		}
 	}
 
-	// UTOPIA_REGISTER_TEST_FUNCTION(run_unconstrained_optimization_benchmark);
+	UTOPIA_REGISTER_TEST_FUNCTION_OPTIONAL(unconstrained_opt);
 }
 
