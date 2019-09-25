@@ -408,9 +408,9 @@ namespace utopia
             // auto coarse_dofs = 100; 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run();
 
-#ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, PetscVectord>(coarse_dofs, n_levels, 1.0, false, true).run();
-#endif
+// #ifdef WITH_TRILINOS
+//         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, false, true).run();
+// #endif
 #endif
         
     }

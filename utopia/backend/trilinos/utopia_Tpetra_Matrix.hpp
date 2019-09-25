@@ -526,6 +526,11 @@ namespace utopia {
         bool is_valid(const bool verbose = false) const;
 
         Scalar sum() const;
+        //FIXME
+        inline Scalar reduce(const Plus &) const //override
+        {
+            return sum();
+        }
 
 
         void set_domain_and_range(
