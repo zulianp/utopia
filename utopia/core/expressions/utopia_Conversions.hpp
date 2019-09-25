@@ -9,8 +9,11 @@
 namespace utopia {
 
     template<class TFrom, class TTo>
-    void backend_convert_sparse(const Tensor<TFrom, 2> &from, Tensor<TTo, 2> &to)
+    void backend_convert_sparse(const Tensor<TFrom, 2> &t_from, Tensor<TTo, 2> &t_to)
     {
+        const auto &from = t_from.derived();
+        auto &to = t_to.derived();
+
         auto ls = local_size(from);
         auto n_row_local = ls.get(0);
         std::vector<int> nnzxrow(n_row_local, 0);
@@ -27,7 +30,7 @@ namespace utopia {
         to = local_sparse(ls.get(0), ls.get(1), nnz);
 
         {
-            Write<Tensor<TTo, 2>> w_t(to);
+            Write<TTo> w_t(to);
             each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
                 to.set(i, j, val);
             });
@@ -39,12 +42,15 @@ namespace utopia {
     }
 
     template<class TFrom, class TTo>
-    void backend_convert(const Tensor<TFrom, 1> &from, Tensor<TTo, 1> &to)
+    void backend_convert(const Tensor<TFrom, 1> &t_from, Tensor<TTo, 1> &t_to)
     {
+        const auto &from = t_from.derived();
+        auto &to = t_to.derived();
+
         auto ls = local_size(from).get(0);
         to = local_zeros(ls);
 
-        Write< Tensor<TTo, 1> > w_t(to);
+        Write<TTo> w_t(to);
         each_read(from, [&to](const SizeType i, const double val) {
             to.set(i, val);
         });
@@ -81,7 +87,7 @@ namespace utopia {
     template<class T1, class T2>
     bool cross_backend_approxeq(const Tensor<T1, 1> &l, const Tensor<T2, 1> &r)
     {
-        Tensor<T1, 1> r_copy;
+        T1 r_copy;
         backend_convert(r, r_copy);
         return approxeq(l, r_copy, 1e-10);
     }
@@ -89,7 +95,7 @@ namespace utopia {
     template<class T1, class T2>
     bool cross_backend_approxeq(const Tensor<T1, 2> &l, const Tensor<T2, 2> &r)
     {
-        Tensor<T1, 2> r_copy;
+        T1 r_copy;
         backend_convert_sparse(r, r_copy);
         return approxeq(l, r_copy, 1e-10);
     }
