@@ -200,7 +200,7 @@ namespace utopia
                 fun.describe(); 
 
             auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
-            lsolver->pc_type("bjacobi"); 
+            // lsolver->pc_type("bjacobi"); 
             
             Newton<Matrix, Vector> solver(lsolver);
             solver.read(input_params_); 
