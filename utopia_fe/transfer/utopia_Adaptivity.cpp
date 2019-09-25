@@ -52,21 +52,20 @@ namespace utopia {
         libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
 
         uint n_vars = dof_map.n_variables();
-                
-        // for(uint var_num = 0; var_num < n_vars; ++var_num) 
-        // {
 
-        libMesh::FEType fe_type = dof_map.variable_type(0);
-
-        fe_type.order = static_cast<libMesh::Order>(fe_type.order);
-
-        if (fe_type.order>0)
+        for(uint var_num = 0; var_num < n_vars; ++var_num) 
         {
 
-              process_constraints(mesh_copy, dof_copy, constraints);
-        }
-        //}
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
 
+            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
+
+            if (fe_type.order>0)
+            {
+                process_constraints(mesh_copy, dof_copy, constraints);
+            }
+        }
+      
         std::cout << "--------------------------------------------------\n";
         std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
         std::cout << "--------------------------------------------------\n";
@@ -136,8 +135,6 @@ namespace utopia {
     {
         
         std::vector<SizeType> index;
-
-        //compute_boundary_nodes(mesh, dof_map, 0, var_num, index);
 
         assemble_constraint(mesh, dof_map, var_num);
         
@@ -429,12 +426,14 @@ namespace utopia {
                         int b_id=*it;
                         
                         if(b_id==item.first) {
+
                             check = false;
                         }
                     }
          
                     if (check ==true) {
-                          unexpanded_set.insert(item.first);                        
+                          unexpanded_set.insert(item.first);     
+
                           constraints_to_expand.push_back(item.first);
                     }
                 }
@@ -948,6 +947,42 @@ namespace utopia {
        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
 
+        // {
+        //     libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+            
+        //     const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
+            
+        //     for ( ; it != end_it; ++it)
+        //     {
+        //         const libMesh::Elem * ele = *it;
+
+
+        //         for (int ll=0; ll<ele->n_nodes(); ll++)
+        //         {
+
+        //            const libMesh::Node * node = ele->node_ptr(ll);
+
+        //            const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0);                
+
+        //             if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
+        //             {
+                           
+        //                 index.push_back(node_dof);
+   
+        //             }
+
+        //         }
+
+        //         // if(index_local.size()==side->n_nodes())
+        //         // {
+
+        //         //    index.insert(index.end(), index_local.begin(), index_local.end());
+        //         // }
+        //     }
+        // }
+  
+
+
        {
             libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
             
@@ -958,9 +993,10 @@ namespace utopia {
                 const libMesh::Elem * ele = *it;
 
                 for(int kk=0; kk<ele->n_sides(); kk++) {       
+                    
                     auto neigh = ele->neighbor_ptr(kk);    
 
-                    if (neigh == libmesh_nullptr && neigh != libMesh::remote_elem)
+                    if (neigh != libMesh::remote_elem && mesh.get_boundary_info().boundary_id(ele, kk)>0)
                     {
                         auto side = ele->build_side_ptr(kk);
 

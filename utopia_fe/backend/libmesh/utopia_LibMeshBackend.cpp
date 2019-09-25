@@ -2,7 +2,7 @@
 #include "libmesh/petsc_vector.h"
 #include "utopia_Adaptivity.hpp"
 #include "libmesh/remote_elem.h"
-
+#include "libmesh/fe_interface.h"
 namespace utopia {
 
     void apply_boundary_conditions(LibMeshFunctionSpace &V,
@@ -20,7 +20,7 @@ namespace utopia {
         assert(!empty(mat));
         assert(!empty(vec));
 
-       std::vector<SizeType> index;
+       std::vector<SizeType> index, dirichel_id;
        std::vector<SizeType> index_local;
 
        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(V.mesh());      
@@ -29,6 +29,110 @@ namespace utopia {
 
        auto & dof_map = V.dof_map();
 
+       libMesh::DofConstraintValueMap &rhs_values = V.dof_map().get_primal_constraint_values();  
+
+
+      {
+          libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+          
+          const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
+
+          std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
+         
+          std::unique_ptr<const libMesh::Elem> my_side, parent_side_0;
+
+          libMesh::FEType fe_type = dof_map.variable_type(0);
+      
+
+          
+          for ( ; it != end_it; ++it)
+          {
+            const libMesh::Elem * ele = *it; 
+
+            //fe_type.order = static_cast<libMesh::Order>(fe_type.order + ele->p_level());
+
+            const auto *ele_parent_0 = ele->top_parent();
+
+            for(int jj=0; jj<ele_parent_0->n_sides(); jj++) 
+            {
+
+             
+              
+              libmesh_assert(ele_parent_0);
+
+              //auto my_side = ele->build_side_ptr(jj);
+
+              //std::cout<<"my_side"<<*my_side<<'\n'; 
+
+
+
+              auto parent_side_0 = ele_parent_0->build_side_ptr(jj);
+
+
+             
+
+              // my_dof_indices.reserve (my_side->n_nodes()); 
+            
+              // parent_dof_indices.reserve (parent_side_0->n_nodes());
+
+              // my_dof_indices.clear();
+
+              // parent_dof_indices.clear();
+
+              // V.dof_map().dof_indices (my_side.get(), my_dof_indices,  0);
+
+              // V.dof_map().dof_indices (parent_side_0.get(), parent_dof_indices, 0);
+
+              // const unsigned int n_side_dofs = libMesh::FEInterface::n_dofs(V.mesh().mesh_dimension()-1, fe_type, my_side->type());
+                  
+              // const unsigned int n_parent_side_dofs = libMesh::FEInterface::n_dofs(V.mesh().mesh_dimension()-1, fe_type, parent_side_0->type());
+
+
+              index_local.clear();
+
+              for (int ll=0; ll<parent_side_0->n_nodes(); ll++)
+              {
+            
+                const libMesh::Node * node_0 = parent_side_0->node_ptr(ll);
+
+                //auto node_dof_0 = parent_dof_indices[ll];
+
+
+                const libMesh::dof_id_type node_dof_0 = node_0->dof_number(V.equation_system().number(), 0, 0); 
+               
+                if(dof_map.is_constrained_dof(node_dof_0)) {
+                    
+                    index_local.push_back(node_dof_0);
+
+                    auto valpos = rhs_values.find(node_dof_0);
+
+                    index.push_back(node_dof_0);
+                    
+                                            
+
+                }
+              }
+
+               if(index_local.size()==parent_side_0->n_nodes()){
+
+                auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0,jj);
+
+                std::cout<<"bc_id"<<bc_id<<std::endl;
+
+                std::cout<<"my_side_p"<<*parent_side_0<<'\n';  
+
+                auto check = (std::find(dirichel_id.begin(), dirichel_id.end(), bc_id) != dirichel_id.end());
+
+
+                if (!check) dirichel_id.push_back(bc_id);
+
+                //auto side = ele->build_side_ptr(jj);
+             }
+           }
+         }
+       }
+    
+      //  std::cout<<"dirichel_id"<<dirichel_id.size()<<std::endl;
 
        {
             libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
@@ -39,36 +143,52 @@ namespace utopia {
             {
                 const libMesh::Elem * ele = *it;
 
-                for(int kk=0; kk<ele->n_sides(); kk++) {       
-                    auto neigh = ele->neighbor_ptr(kk);    
+                for(int kk=0; kk<ele->n_sides(); kk++) {     
 
-                    if (neigh == libmesh_nullptr && neigh != libMesh::remote_elem)
+                    auto neigh = ele->neighbor_ptr(kk); 
+
+                    auto bc_id = mesh.get_boundary_info().boundary_id(ele,kk);
+
+                    auto check = (std::find(dirichel_id.begin(), dirichel_id.end(), bc_id) != dirichel_id.end());
+
+                    if(check)
                     {
-                        auto side = ele->build_side_ptr(kk);
+                         index_local.clear();
 
-                        index_local.clear();
+                         auto side = ele->build_side_ptr(kk);
 
-                        for (int ll=0; ll<ele->n_nodes(); ll++)
+                        for (int ll=0; ll<side->n_nodes(); ll++)
                         {
+                          
+                            const libMesh::Node * node = side->node_ptr(ll);
 
-                           const libMesh::Node * node = ele->node_ptr(ll);
+                            const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, 0); 
 
-                           const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, 0);                
+                            index.push_back(node_dof);
 
-                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
-                            {
+
+                        //     auto valpos = rhs_values.find(node_dof);
+
+                        //     double value = valpos->second;
+
+                        //     std::cout<<"value "<<value<<std::endl;
+                   
+
+                        //     if(dof_map.is_constrained_dof(node_dof)) 
+                        //     {
                                    
-                                index_local.push_back(node_dof);
+                        //         index_local.push_back(node_dof);
            
-                            }
+                        //     }
 
                         }
 
-                        if(index_local.size()==side->n_nodes())
-                        {
+                        // if(index_local.size()==side->n_nodes())
+                        // {
 
-                           index.insert(index.end(), index_local.begin(), index_local.end());
-                        }
+                        //    index.insert(index.end(), index_local.begin(), index_local.end());
+
+                        // }
                     }
                 }
             }
@@ -89,22 +209,28 @@ namespace utopia {
         std::vector<SizeType> I(1,0);
         std::vector<double> value(1, 0);
 
-        if(has_constaints) {
+        //utopia::disp(vec);
+
+        if(has_constaints) 
+        {
             libMesh::DofConstraintValueMap &rhs_values = V.dof_map().get_primal_constraint_values();
+
+            //rhs_values.
 
             Range r = range(vec);
 
-            for(auto it=index.begin(); it < index.end(); ++it){
-                int i = *it;
-                auto valpos = rhs_values.find(i);
-                I[0] = i;
-                value[0]=valpos->second;
+            for(auto it=index.begin(); it < index.end(); ++it)
+            {
+              int i = *it;
+              auto valpos = rhs_values.find(i);
+              I[0] = i;
+              value[0]=valpos->second;
+              vec.set(I, value);
 
-                vec.set(I, value);
-
-            }
+          }
         }
-    
+        
+        //utopia::disp(vec);
 
         c.stop();
 
@@ -195,17 +321,4 @@ namespace utopia {
 }
 
 
-//for(auto it=index_local.begin(); it < index_local.end(); ++it)
-//  {
-
-//    //   auto check = (std::find(index.begin(), index.end(), *it) != index.end());
-
-//    // if(!check)
-//    // {
-//      std::cout<<"ciao, this is node=>"<<*it<<std::endl;
-
-//     //auto check = (std::find(index.begin(), index.end(), node_dof) != index.end());
-//      index.push_back(*it);
-//    // }
-// }
 

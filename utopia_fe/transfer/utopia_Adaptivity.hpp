@@ -85,7 +85,7 @@ namespace utopia {
 
 
             const std::size_t n_var = dof_map.n_variables();
-            dof_map.dof_indices(elem, dof_indices);
+            //dof_map.dof_indices(elem, dof_indices);
 
             typedef std::set<libMesh::dof_id_type> RCSet;
 
