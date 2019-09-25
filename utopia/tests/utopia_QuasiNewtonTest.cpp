@@ -65,7 +65,7 @@ namespace utopia
                 nlsolver.set_line_search_strategy(line_search);
 
 
-                SimpleQuadraticFunction<Matrix, Vector> fun;
+                SimpleQuadraticFunction<Matrix, Vector> fun(_n);
 
                 Vector x = values(_n, 2.);
                 Vector expected_1 = zeros(x.size());
@@ -74,9 +74,9 @@ namespace utopia
                 nlsolver.solve(fun, x);
                 utopia_test_assert(approxeq(expected_1, x));
 
-                TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
+                TestFunctionND_1<Matrix, Vector> fun2(x.size());
                 x = values(_n, 2.0);
-                Vector expected_2 = values(x.size().get(0), 0.468919);
+                Vector expected_2 = values(x.size(), 0.468919);
 
                 nlsolver.solve(fun2, x);
                 utopia_test_assert(approxeq(expected_2, x));
@@ -163,7 +163,7 @@ namespace utopia
                 auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
                 nlsolver.set_line_search_strategy(line_search);
 
-                SimpleQuadraticFunction<Matrix, Vector> fun;
+                SimpleQuadraticFunction<Matrix, Vector> fun(_n);
 
                 Vector x = values(_n, 2.);
                 Vector expected_1 = zeros(x.size());

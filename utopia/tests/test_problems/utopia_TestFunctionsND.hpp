@@ -126,6 +126,16 @@ namespace utopia {
     class SimpleQuadraticFunction : public Function<Matrix, Vector> {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
+        using SizeType = typename Traits<Vector>::SizeType;
+
+        SimpleQuadraticFunction(const SizeType &n) : n_(n) {}
+
+        virtual bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
+        {
+            H = identity(n_, n_);
+            H_pre = H;
+            return true;
+        }
 
         virtual bool value(const Vector &point, Scalar &result) const override {
             const Scalar val = norm2(point);
@@ -145,7 +155,10 @@ namespace utopia {
             return true;
         }
 
-        SimpleQuadraticFunction() { }
+        // SimpleQuadraticFunction() { }
+
+        private:
+            SizeType n_;
     };
 
     // Quadratic function class

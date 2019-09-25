@@ -35,6 +35,8 @@ namespace utopia
     class PetscNonlinearSolverTest {
     public:
 
+        using Scalar = Traits<PetscVector>::Scalar;
+
         void run()
         {
             UTOPIA_RUN_TEST(petsc_ngs_test);
@@ -268,9 +270,10 @@ namespace utopia
             nlsolver.enable_differentiation_control(false);
             nlsolver.verbose(false);
 
-            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun;
+            const SizeType n = 10;
+            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(10, 2.);
+            PetscVector x = values(n, 2.);
             PetscVector expected = zeros(x.size());
 
             nlsolver.solve(fun, x);
@@ -287,9 +290,10 @@ namespace utopia
             nlsolver.verbose(false);
             nlsolver.forcing_strategy(InexactNewtonForcingStartegies::CAI); 
 
-            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun;
+            const SizeType n = 10;
+            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(10, 2.);
+            PetscVector x = values(n, 2.);
             PetscVector expected = zeros(x.size());
 
             nlsolver.solve(fun, x);
@@ -306,9 +310,10 @@ namespace utopia
             nlsolver.enable_differentiation_control(false);
             nlsolver.verbose(false);
 
-            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun;
+            const SizeType n = 10;
+            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(10, 2.);
+            PetscVector x = values(n, 2.);
             PetscVector expected = zeros(x.size());
 
             nlsolver.solve(fun, x);
@@ -461,7 +466,7 @@ namespace utopia
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
             nlsolver.verbose(false);
 
-            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun;
+            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(_n);
 
             PetscVector x = values(_n, 2.);
             PetscVector expected = zeros(x.size());
@@ -569,9 +574,10 @@ namespace utopia
             Newton<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL> nlsolver(lsolver);
             nlsolver.verbose(false);
 
-            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun;
+            const SizeType n = 10;
+            SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(10, 2.);
+            PetscVector x = values(n, 2.);
             PetscVector expected = zeros(x.size());
 
             nlsolver.solve(fun, x);
