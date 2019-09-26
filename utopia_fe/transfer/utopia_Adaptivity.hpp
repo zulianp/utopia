@@ -33,8 +33,7 @@ namespace utopia {
                                         const libMesh::DofMap &dof_map,
                                         const unsigned int variable_number,
                                         const libMesh::Elem * elem,
-                                        const unsigned mesh_dim,
-                                        conststd::vector<int> & index
+                                        const unsigned mesh_dim
                                         );
 
         static void compute_all_constraints(
