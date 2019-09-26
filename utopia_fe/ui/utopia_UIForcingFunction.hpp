@@ -42,7 +42,9 @@ namespace utopia {
 
                 if(clazz == "AdaptiveFunction") {
                     auto ff = std::const_pointer_cast<AdaptiveFunction<FunctionSpace,Vector>>(make_ref<AdaptiveFunction<FunctionSpace,Vector>>(V_));
+                    //auto ff = make_ref<AdaptiveFunction<FunctionSpace,Vector>>(V_);
                     ff->read(is);
+                    //ff->read(is);
                     this->add(ff);
                     std::cout << "AdaptiveFunction" << std::endl;
                     return;

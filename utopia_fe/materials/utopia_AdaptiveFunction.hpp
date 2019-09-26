@@ -56,9 +56,13 @@ namespace utopia
                 auto f = coeff(value);
     #endif //WITH_TINY_EXPR
 
+                std::cout<<"Ciao"<<std::endl;
+
             	auto v = test(V_);
             	auto l_form = surface_integral((1./area_) * inner(f, v), block_);
             	assemble(l_form, result);
+
+                disp(result);
 
     	        return true;
     	    }

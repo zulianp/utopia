@@ -6,7 +6,7 @@
         "n-y" : 5,
         "refinements" : 0,
         "random-refine" : true,
-        "random-refinements": 3
+        "random-refinements": 5
 
     },
     "space": {
