@@ -60,7 +60,12 @@ namespace utopia
             // UTOPIA_RUN_TEST(RMTR_inf_linear_unconstr); 
 
 
-            UTOPIA_RUN_TEST(Trilinos_Lin_solver); 
+
+            UTOPIA_RUN_TEST(MIN_test); 
+
+
+
+            // UTOPIA_RUN_TEST(Trilinos_Lin_solver); 
 
         }
 
@@ -460,11 +465,12 @@ namespace utopia
 
                 QuadraticExtendedFunction<PetscMatrix, PetscVector> fun_QP(make_ref(H), make_ref(g), x_eq, x_bc_marker, empty_rhs); 
                 auto QP_solver_petsc = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+                QP_solver_petsc->max_it(3); 
                 TrustRegionVariableBound<PetscMatrix, PetscVector> tr_solver_petsc(QP_solver_petsc);
                 tr_solver_petsc.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));                          
                 tr_solver_petsc.read(input_params_); 
                 tr_solver_petsc.max_it(100);
-                tr_solver_petsc.delta0(1e-5); 
+                tr_solver_petsc.delta0(1e5); 
                 tr_solver_petsc.verbose(true);
 
                 x = fun.initial_guess(); 
@@ -482,7 +488,7 @@ namespace utopia
                     backend_convert(x, x_tril);
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<TpetraMatrixd, TpetraVectord> >();
-                    QP_solver->max_it(300); 
+                    QP_solver->max_it(3); 
 
                     TpetraVectord lb_tril = local_values(local_size(x_tril).get(0), -9e9); 
                     TpetraVectord ub_tril = local_values(local_size(x_tril).get(0), 9e9); 
@@ -497,7 +503,7 @@ namespace utopia
                     tr_solver.set_box_constraints(make_box_constaints(make_ref(lb_tril), make_ref(ub_tril)));                          
                     tr_solver.read(input_params_); 
                     tr_solver.max_it(100);
-                    tr_solver.delta0(1e-5); 
+                    tr_solver.delta0(1e5); 
                     tr_solver.verbose(true);
                     tr_solver.solve(fun_QP_tril, x_tril); 
 
@@ -506,6 +512,23 @@ namespace utopia
 
             #endif //WITH_PETSC 
 
+
+        }
+
+
+
+        void MIN_test()
+        {
+
+            #ifdef WITH_TRILINOS
+                TpetraVectord x =  local_values(5, 1.0); 
+                // disp(x, "x"); 
+
+                std::cout<<"min: "<< min(x) << "  \n"; 
+                std::cout<<"max: "<< max(x) << "  \n"; 
+                std::cout<<"sum: "<< sum(x) << "  \n"; 
+
+            #endif //WITH_TRILINOS               
 
         }
 

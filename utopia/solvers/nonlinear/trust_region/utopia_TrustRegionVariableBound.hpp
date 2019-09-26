@@ -108,8 +108,12 @@
             p_k = 0 * p_k;
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->set_box_constraints(box);
+            tr_subproblem->verbose(true); 
             tr_subproblem->solve(H, -1.0 * g, p_k);
             this->solution_status_.num_linear_solves++;
+
+            return false; 
+
           }
           else
           {
