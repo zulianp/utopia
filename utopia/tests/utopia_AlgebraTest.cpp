@@ -371,7 +371,6 @@ namespace utopia {
 
     static void algebra()
     {
-
 #ifdef WITH_BLAS
         AlgebraTest<BlasMatrixd, BlasVectord>().run();
         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();

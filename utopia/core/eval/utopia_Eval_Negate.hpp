@@ -7,21 +7,14 @@ namespace utopia {
     template<class Expr, class Traits, int Backend>
     class Eval<Negate<Expr>, Traits, Backend> {
     public:
-          typedef utopia::Unary<Expr, Minus> DelegateT;
+        typedef utopia::Unary<Expr, Minus> DelegateT;
         typedef typename TypeAndFill<Traits, DelegateT>::Type Result;
 
         inline static Result apply(const Negate<Expr> &expr)
         {
-            Result result;
-
             UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).apply_unary(
-                result,
-                expr.operation(),
-                Eval<DelegateT, Traits>::apply(expr.expr())
-                );
-
+            Result result = Eval<Expr, Traits>::apply(expr.expr());
+            result.transform(Minus());
             UTOPIA_TRACE_END(expr);
             return result;
         }

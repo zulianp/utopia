@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 01/10/15.
-//
-
 #ifndef UTOPIA_UTOPIA_BACKENDINFO_HPP
 #define UTOPIA_UTOPIA_BACKENDINFO_HPP
 

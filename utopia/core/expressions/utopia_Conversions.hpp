@@ -11,6 +11,8 @@ namespace utopia {
     template<class TFrom, class TTo>
     void backend_convert_sparse(const Tensor<TFrom, 2> &t_from, Tensor<TTo, 2> &t_to)
     {
+        using SizeType = typename Traits<TFrom>::SizeType;
+
         const auto &from = t_from.derived();
         auto &to = t_to.derived();
 
@@ -44,6 +46,8 @@ namespace utopia {
     template<class TFrom, class TTo>
     void backend_convert(const Tensor<TFrom, 1> &t_from, Tensor<TTo, 1> &t_to)
     {
+        using SizeType = typename Traits<TFrom>::SizeType;
+        
         const auto &from = t_from.derived();
         auto &to = t_to.derived();
 

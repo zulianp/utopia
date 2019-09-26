@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 29/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_EVAL_EMPTY_HPP_HPP
 #define UTOPIA_UTOPIA_EVAL_EMPTY_HPP_HPP
 
@@ -10,7 +6,6 @@
 #include "utopia_Operators.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Reduce.hpp"
-#include "utopia_Backend.hpp"
 #include "utopia_Assign.hpp"
 #include "utopia_Structured.hpp"
 #include "utopia_Factory.hpp"
@@ -22,13 +17,8 @@
 #include "utopia_Norm.hpp"
 #include "utopia_FillTypeQuery.hpp"
 #include "utopia_MPI.hpp"
-// #include "utopia_Tracer.hpp"
-// #include "utopia_Tensor.hpp"
-
 
 namespace utopia {
-
-#define UTOPIA_BACKEND(Traits_) (utopia::Backend<typename Traits_::Scalar, Traits_::Backend>::Instance())
 
     template<class Expr, class Traits = utopia::Traits<Expr>, int Backend = Traits::Backend>
     class Eval {};

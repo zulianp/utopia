@@ -13,7 +13,10 @@
 
 namespace utopia {
 
-	//CRTP type
+	// /*!
+	//  * @class Tensor
+	//  * @brief The wrapper of any tensor representation.
+	//  */
 	template<typename Derived, int Order_>
 	class Tensor : 
 	public Expression<Tensor<Derived, Order_>>,

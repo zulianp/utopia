@@ -18,6 +18,9 @@
 #include "utopia_petsc_Eval_VecUniqueSortSerial.hpp"
 #include "utopia_petsc_Eval_Multiply.hpp"
 #include "utopia_petsc_Eval_Misc.hpp"
+#include "utopia_petsc_Eval_Monitor.hpp"
+
+
 
 
 #ifdef WITH_SLEPC

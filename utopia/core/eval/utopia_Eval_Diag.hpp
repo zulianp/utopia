@@ -165,12 +165,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).assign(
-            //         Eval<Left,  Traits>::apply(expr.left()),
-            //         Eval<Left,  Traits>::apply(expr.right().expr().expr()));
-
-            // UTOPIA_BACKEND(Traits).assign(
-
             Eval<Left,  Traits>::apply(expr.left()).assign(
                 Eval<Left,  Traits>::apply(expr.right().expr().expr())
             );
@@ -209,12 +203,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).diag(
-            //         Eval<WLeft,  Traits>::apply(expr.left()),
-            //         Eval<Diag<Right>, Traits>::apply(expr.right().expr())
-            // );
-
-
             Eval<WLeft,  Traits>::apply(expr.left()).diag(
                 Eval<Diag<Right>, Traits>::apply(expr.right().expr())
             );
@@ -250,11 +238,6 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).assign(
-            //         Eval<Left,  Traits>::apply(expr.left()),
-            //         Eval<Left,  Traits>::apply(expr.right().expr().expr()));
-
-
             Eval<Left,  Traits>::apply(expr.left()).assign(
             Eval<Left,  Traits>::apply(expr.right().expr().expr())
             );
@@ -277,17 +260,31 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).diag(
-            //         result,
-            //         Eval<WT,  Traits>::apply(expr.expr())
-            //         );
-
-
-
             Eval<WT, Traits>::apply(expr.expr()).build_diag(result);
 
             UTOPIA_TRACE_END(expr);
             return result;
+        }
+    };
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////// Specialized /////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class T, class Traits, int Backend>
+    class Eval<
+        Construct<
+            Tensor<T, 2>,
+            Diag<Factory<Zeros, 1>> 
+            >, Traits, Backend> {
+    public:
+        using Expr = utopia::Construct<Tensor<T, 2>, Diag<Factory<Zeros, 1>>>;
+        
+        inline static void apply(const Expr &expr)
+        {
+            auto &l = Eval<Tensor<T, 2>, Traits>::apply(expr.left());
+            l.zeros(size(expr.right()));
         }
     };
 

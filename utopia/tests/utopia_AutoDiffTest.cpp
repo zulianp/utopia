@@ -1,203 +1,206 @@
-// #include "utopia_AutoDiffTest.hpp"
-// #include "utopia.hpp"
-// #include "test_problems/utopia_TestProblems.hpp"
-// #include "utopia_MPI.hpp"
+#include "utopia.hpp"
+#include "test_problems/utopia_TestProblems.hpp"
+#include "utopia_MPI.hpp"
+#include "utopia_Testing.hpp"
+
+namespace utopia {
+
+    class ExampleDiffFun {
+    public:
+    template<class X>
+        inline auto operator()(const X &x) const -> decltype( dot(x, x) ) {
+            return dot(x, x);
+        }
+    };
+
+    template<class Matrix, class Vector>
+    class AutoDiffTest {
+    public:
+        void diff_test()
+        {
+            using namespace utopia;
+
+            const int n = 10;
+        //some example vectors
+            Vector x = values(n, 25.0);
+            Vector b = values(n, 1.0);
+
+        //some example matrices
+            Matrix A = zeros(n, n);
+            Matrix B = 0.5 * identity(n, n);
+            Matrix C = identity(n, n);
+
+            {
+                Write<Matrix> w(A);
+                Range r = row_range(A);
+                for(SizeType i = r.begin(); i != r.end(); ++i) {
+                    if(i > 0) {
+                        A.add(i, i - 1, -1.0);
+                    }
+
+                    if(i < n-1) {
+                        A.add(i, i + 1, -1.0);
+                    }
+
+                    A.add(i, i, 2.0);
+                }
+            }
+
+        //Create the independent variable vector (VERY IMPORTANT)
+            auto d_x = independent_variable(x);
+
+        //Extended example
+            {
+            //create valued expression
+                auto expr = 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b);
+
+            //create derivative
+                auto d_expr = derivative(expr);
+
+            //evaluate derivative
+                Vector df = d_expr;
+            }
+
+        //Short version
+            {
+                Vector df = derivative( 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) );
+            // disp(df);
+            }
+
+        //2nd order derivative
+            {
+                auto expr     =  0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) ;
+                auto d_expr   = derivative(expr);
+                auto d_expr_2 = derivative(d_expr);
 
 
-// class ExampleDiffFun {
-// public:
-//     template<class X>
-//     inline auto operator()(const X &x) const -> decltype( dot(x, x) ) {
-//         return dot(x, x);
-//     }
-// };
+            // std::cout << tree_format(d_expr_2.get_class()) << std::endl;
 
-// template<class Matrix, class Vector>
-// class AutoDiffTest {
-// public:
-//     void diff_test()
-//     {
-//         using namespace utopia;
+                Number<double> f = expr;  UTOPIA_UNUSED(f);   //or double f = scalar_cast<double>(expr);
+                Vector g = d_expr;		  UTOPIA_UNUSED(g);
+                Matrix H = d_expr_2;	  UTOPIA_UNUSED(H);
+                // disp(H);
+            }
 
-//         const int n = 10;
-//         //some example vectors
-//         Vector x = values(n, 25.0);
-//         Vector b = values(n, 1.0);
+            //Using automatic diff in the context of newton solvers
+            {
+                //To be worked on
+                auto f = auto_diff_fun<Matrix, Vector>(ExampleDiffFun());
+                Vector sol = values(n, 1.0);
 
-//         //some example matrices
-//         Matrix A = zeros(n, n);
-//         Matrix B = 0.5 * identity(n, n);
-//         Matrix C = identity(n, n);
-
-//         {
-//             Write<Matrix> w(A);
-//             Range r = row_range(A);
-//             for(SizeType i = r.begin(); i != r.end(); ++i) {
-//                 if(i > 0) {
-//                     A.add(i, i - 1, -1.0);
-//                 }
-
-//                 if(i < n-1) {
-//                     A.add(i, i + 1, -1.0);
-//                 }
-
-//                 A.add(i, i, 2.0);
-//             }
-//         }
-
-//         //Create the independent variable vector (VERY IMPORTANT)
-//         auto d_x = independent_variable(x);
-
-//         //Extended example
-//         {
-//             //create valued expression
-//             auto expr = 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b);
-
-//             //create derivative
-//             auto d_expr = derivative(expr);
-
-//             //evaluate derivative
-//             Vector df = d_expr;
-//         }
-
-//         //Short version
-//         {
-//             Vector df = derivative( 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) );
-//             // disp(df);
-//         }
-
-//         //2nd order derivative
-//         {
-//             auto expr     =  0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) ;
-//             auto d_expr   = derivative(expr);
-//             auto d_expr_2 = derivative(d_expr);
+                Newton<Matrix, Vector> newton(std::make_shared<ConjugateGradient<Matrix, Vector>>(A));
+                newton.solve(f, sol);
+                // disp(sol);
+            }
+        }
 
 
-//             // std::cout << tree_format(d_expr_2.get_class()) << std::endl;
+        void sparse_diff_test()
+        {
+            using namespace utopia;
 
-//             Number<double> f = expr;  UTOPIA_UNUSED(f);   //or double f = scalar_cast<double>(expr);
-//             Vector g = d_expr;		  UTOPIA_UNUSED(g);
-//             Matrix H = d_expr_2;	  UTOPIA_UNUSED(H);
-//             // disp(H);
-//         }
+            const int n = 100;
+            //some example vectors
+            Vector x = values(n, 25.0);
+            Vector b = values(n, 1.0);
 
-//         //Using automatic diff in the context of newton solvers
-//         {
-//             //To be worked on
-//             auto f = auto_diff_fun<Matrix, Vector>(ExampleDiffFun());
-//             Vector sol = values(n, 1.0);
+            //some example matrices
+            Matrix A = sparse(n, n, 3);
+            Matrix B = 0.5 * identity(n, n);
+            Matrix C = identity(n, n);
 
-//             Newton<Matrix, Vector> newton(std::make_shared<ConjugateGradient<Matrix, Vector>>(A));
-//             newton.solve(f, sol);
-//             // disp(sol);
-//         }
-//     }
+            {
+                Write<Matrix> w(A);
+                Range r = row_range(A);
+                for(SizeType i = r.begin(); i != r.end(); ++i) {
+                    if(i > 0) {
+                        A.add(i, i - 1, -1.0);
+                    }
 
+                    if(i < n-1) {
+                        A.add(i, i + 1, -1.0);
+                    }
 
-//     void sparse_diff_test()
-//     {
-//         using namespace utopia;
+                    A.add(i, i, 2.0);
+                }
+            }
 
-//         const int n = 100;
-//         //some example vectors
-//         Vector x = values(n, 25.0);
-//         Vector b = values(n, 1.0);
+            //Create the independent variable vector (VERY IMPORTANT)
+            auto d_x = independent_variable(x);
 
-//         //some example matrices
-//         Matrix A = sparse(n, n, 3);
-//         Matrix B = 0.5 * identity(n, n);
-//         Matrix C = identity(n, n);
+            //Extended example
+            {
+                //create valued expression
+                auto expr = 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b);
 
-//         {
-//             Write<Matrix> w(A);
-//             Range r = row_range(A);
-//             for(SizeType i = r.begin(); i != r.end(); ++i) {
-//                 if(i > 0) {
-//                     A.add(i, i - 1, -1.0);
-//                 }
+                //create derivative
+                auto d_expr = derivative(expr);
 
-//                 if(i < n-1) {
-//                     A.add(i, i + 1, -1.0);
-//                 }
+                Number<double> f = expr; UTOPIA_UNUSED(f); //or double f = scalar_cast<double>(expr);
 
-//                 A.add(i, i, 2.0);
-//             }
-//         }
+                //evaluate derivative
+                Vector df = d_expr;
+            }
 
-//         //Create the independent variable vector (VERY IMPORTANT)
-//         auto d_x = independent_variable(x);
+            //Short version
+            {
+                Vector df = derivative( 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) );
+                // disp(df);
+            }
 
-//         //Extended example
-//         {
-//             //create valued expression
-//             auto expr = 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b);
+            //2nd order derivative
+            {
+                auto expr     = 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) ;
+                auto d_expr   = derivative(expr);
+                auto d_expr_2 = derivative(d_expr);
 
-//             //create derivative
-//             auto d_expr = derivative(expr);
+                // std::cout << tree_format(d_expr_2.get_class()) << std::endl;
 
-//             Number<double> f = expr; UTOPIA_UNUSED(f); //or double f = scalar_cast<double>(expr);
+                Number<double> f = expr; UTOPIA_UNUSED(f);
+                Vector g = d_expr;		 UTOPIA_UNUSED(g);
+                Matrix H = d_expr_2;	 UTOPIA_UNUSED(H);
+            }
+        }
 
-//             //evaluate derivative
-//             Vector df = d_expr;
-//         }
+        void trace_test()
+        {
+            using namespace utopia;
 
-//         //Short version
-//         {
-//             Vector df = derivative( 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) );
-//             // disp(df);
-//         }
+            int n = 10;
+            Matrix x = identity(n, n);
 
-//         //2nd order derivative
-//         {
-//             auto expr     = 0.5 * dot(B * d_x, A * pow2(d_x)) + dot(C * d_x,  A * b) ;
-//             auto d_expr   = derivative(expr);
-//             auto d_expr_2 = derivative(d_expr);
+            // double r = trace(x);
+            //disp(r);
 
-//             // std::cout << tree_format(d_expr_2.get_class()) << std::endl;
+            auto d_x  = independent_variable(x);
+            auto expr = trace(d_x);
+            auto d_expr = derivative(expr);
 
-//             Number<double> f = expr; UTOPIA_UNUSED(f);
-//             Vector g = d_expr;		 UTOPIA_UNUSED(g);
-//             Matrix H = d_expr_2;	 UTOPIA_UNUSED(H);
-//         }
-//     }
+            // std::cout << tree_format(d_expr.get_class()) << std::endl;
+            Matrix f = d_expr;
+            //disp(f);
 
-//     void trace_test()
-//     {
-//         using namespace utopia;
+        }
 
-//         int n = 10;
-//         Matrix x = identity(n, n);
+        void run()
+        {
+            UTOPIA_RUN_TEST(trace_test);
+        }
+    };
 
-//         // double r = trace(x);
-//         //disp(r);
+    void autodiff()
+    {
+        
+#ifdef WITH_BLAS
+        AutoDiffTest<BlasMatrixd, BlasVectord>().run();
+#endif //WITH_BLAS
 
-//         auto d_x  = independent_variable(x);
-//         auto expr = trace(d_x);
-//         auto d_expr = derivative(expr);
+// #ifdef WITH_PETSC
+    //     AutoDiffTest<PetscMatrix, PetscVector>().run();
+// #endif //WITH_PETSC
+    }
 
-//         // std::cout << tree_format(d_expr.get_class()) << std::endl;
-//         Matrix f = d_expr;
-//         //disp(f);
+    UTOPIA_REGISTER_TEST_FUNCTION(autodiff);
 
-//     }
+}
 
-//     void run()
-//     {
-//         UTOPIA_RUN_TEST(trace_test);
-//     }
-// };
-
-// void run_autodiff_test()
-// {
-//     //FIXME
-//     using namespace utopia;
-//     //UTOPIA_UNIT_TEST_BEGIN("AutoDiffTest");
-// #ifdef WITH_BLAS
-//     AutoDiffTest<Matrixd, Vectord>().run();
-// #endif //WITH_BLAS
-
-// // #ifdef WITH_PETSC
-// //     AutoDiffTest<PetscMatrix, PetscVector>().run();
-// // #endif //WITH_PETSC
-//     //UTOPIA_UNIT_TEST_END("AutoDiffTest");
-// }
