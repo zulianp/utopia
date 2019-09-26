@@ -611,7 +611,7 @@ namespace utopia
 #endif //WITH_PETSC
 
 
-    void petsc_nonlinear()
+    static void petsc_nonlinear()
     {
 #ifdef WITH_PETSC
         PetscNonlinearSolverTest().run();

@@ -212,16 +212,16 @@ namespace utopia {
     {
         Scalar ret = KokkosEvalReduce<TpetraVector, Min>::eval(*this, Min(), std::numeric_limits<Scalar>::max());
         auto &comm = *communicator();
-        Scalar ret_global = std::numeric_limits<Scalar>::max();
+        Scalar ret_global = 0.;
         Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
         return ret_global;
     }
 
     TpetraVector::Scalar TpetraVector::max() const
     {
-        Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), -std::numeric_limits<Scalar>::max());
-        auto &comm = *communicator();
-        Scalar ret_global = -std::numeric_limits<Scalar>::max();
+          Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), -std::numeric_limits<Scalar>::max());
+          auto &comm = *communicator();
+          Scalar ret_global = 0.;
         Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
         return ret_global;
     }

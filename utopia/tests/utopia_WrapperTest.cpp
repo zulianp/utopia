@@ -119,7 +119,7 @@ namespace utopia {
 
     };
 
-    void run_wrapper_test() {
+    static void wrapper() {
 #ifdef WITH_PETSC
         WrapperTest<PetscMatrix, PetscVector, PetscScalar>().run();
 #endif
@@ -129,6 +129,6 @@ namespace utopia {
 #endif //WITH_BLAS
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_wrapper_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(wrapper);
 }
 

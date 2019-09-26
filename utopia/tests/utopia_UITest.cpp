@@ -94,7 +94,7 @@ namespace utopia {
 #endif //WITH_PETSC
     }
 
-    void run_ui_test()
+    static void ui()
     {
         UTOPIA_RUN_TEST(xml_stream);
         UTOPIA_RUN_TEST(input_parameters);
@@ -104,6 +104,6 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_ui_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(ui);
 
 }

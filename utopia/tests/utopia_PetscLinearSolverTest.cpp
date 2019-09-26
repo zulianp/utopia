@@ -624,7 +624,7 @@ namespace utopia {
 
 #endif //WITH_PETSC
 
-    void petsc_linear()
+    static void petsc_linear()
     {
 #ifdef WITH_PETSC
         PetscLinearSolverTest().run();

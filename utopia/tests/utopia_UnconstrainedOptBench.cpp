@@ -252,7 +252,7 @@ namespace utopia
 		}
 	};
 
-	void unconstrained_opt()
+	static void unconstrained_opt()
 	{
 		int verbosity_level = 1;
 		if(Utopia::instance().verbose()) {

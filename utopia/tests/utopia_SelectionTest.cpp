@@ -116,7 +116,7 @@ namespace utopia {
         }
     };
 
-    void selection()
+    static void selection()
     {
         //FIXME
 #ifdef WITH_BLAS

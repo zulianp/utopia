@@ -351,7 +351,7 @@ namespace utopia
 
 #endif //WITH_PETSC
 
-    void non_linear_multilevel()
+    static void non_linear_multilevel()
     {
 #ifdef  WITH_PETSC
             NonlinearBratuSolverTest(3, true, false).run();

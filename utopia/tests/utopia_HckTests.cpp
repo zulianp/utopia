@@ -522,7 +522,6 @@ namespace utopia
 
             #ifdef WITH_TRILINOS
                 TpetraVectord x =  local_values(5, 1.0); 
-                // disp(x, "x"); 
 
                 std::cout<<"min: "<< min(x) << "  \n"; 
                 std::cout<<"max: "<< max(x) << "  \n"; 

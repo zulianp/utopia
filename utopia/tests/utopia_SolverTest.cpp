@@ -443,7 +443,7 @@ namespace utopia
 
     };
 
-    void solvers()
+    static void solvers()
     {
 
 #ifdef WITH_BLAS

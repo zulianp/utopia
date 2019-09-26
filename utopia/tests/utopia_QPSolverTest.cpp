@@ -246,7 +246,7 @@ namespace utopia {
 
     };
 
-    void qp_solver() {
+    static void qp_solver() {
 #ifdef WITH_PETSC
         QPSolverTest<PetscMatrix, PetscVector>().run();
         PQPSolverTest<PetscMatrix, PetscVector>().run();

@@ -10,12 +10,11 @@ list(APPEND TEST_MODULES
 )
 
 find_project_files(UTOPIA_TEST_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-# add_library(utopia_test STATIC ${LOCAL_SOURCES})
-target_sources(utopia_test PRIVATE  ${LOCAL_SOURCES})
+target_sources(utopia_test PRIVATE ${LOCAL_SOURCES})
 target_link_libraries(utopia_test utopia_core utopia_utils utopia_solvers utopia_differentiable utopia_ui utopia_interoperability utopia_polymorphic)
-target_include_directories(utopia_test PUBLIC ${UTOPIA_TEST_DIR})
-target_include_directories(utopia_test PUBLIC ..)
-target_include_directories(utopia_test PUBLIC ../backend ${TEST_MODULES})
+target_include_directories(utopia_test PRIVATE ${UTOPIA_TEST_DIR})
+target_include_directories(utopia_test PRIVATE .)
+target_include_directories(utopia_test PRIVATE ${TEST_MODULES})
 
 if(TRY_WITH_EIGEN_3)
     find_package(Eigen3)
@@ -49,16 +48,6 @@ endif()
 if(TARGET utopia_m3elinsol)
     target_link_libraries(utopia_test utopia_m3elinsol)
 endif()
-
-# install(TARGETS utopia_test
-#     RUNTIME DESTINATION bin
-#     LIBRARY DESTINATION lib
-#     ARCHIVE DESTINATION lib
-#     )
-
-# install(FILES ${LOCAL_HEADERS} DESTINATION include)
-
-# set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_test" PARENT_SCOPE)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
