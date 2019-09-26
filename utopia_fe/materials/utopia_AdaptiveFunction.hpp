@@ -62,7 +62,7 @@ namespace utopia
             	auto l_form = surface_integral((1./area_) * inner(f, v), block_);
             	assemble(l_form, result);
 
-                disp(result);
+               // disp(result);
 
     	        return true;
     	    }

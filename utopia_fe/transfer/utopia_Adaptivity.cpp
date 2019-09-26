@@ -930,7 +930,7 @@ namespace utopia {
        
        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
 
-       std::vector<int> dirichel_id, index_local;
+       std::vector<int> dirichlet_id, index_local;
 
        index_local.clear();
 
@@ -1042,7 +1042,7 @@ namespace utopia {
                             auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
 
 
-                            if (!check) dirichel_id.push_back(bc_id);
+                            if (!check) dirichlet_id.push_back(bc_id);
                         }
                     }
                 }
