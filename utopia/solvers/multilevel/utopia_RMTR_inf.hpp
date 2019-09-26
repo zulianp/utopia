@@ -397,7 +397,7 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
             Scalar radius = this->memory_.delta[level];
 
@@ -414,18 +414,17 @@ namespace utopia
             );
 
 
-
             // generating constraints to go for QP solve
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
 
-            // // setting should be really parameters from outside ...
-            // this->_tr_subproblems[level]->atol(1e-16);
+            // setting should be really parameters from outside ...
+            this->_tr_subproblems[level]->atol(1e-14);
 
-            // if(flg)
-            //     this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
-            // else
-            //     this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
+            if(flg)
+                this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
+            else
+                this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
 
 
             _tr_subproblems[level]->set_box_constraints(box);

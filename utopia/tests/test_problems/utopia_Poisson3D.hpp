@@ -64,6 +64,13 @@ namespace utopia
             }
         }
 
+
+        void get_A_rhs(Matrix & A, Vector & rhs)
+        {
+            A = A_no_bc_; 
+            convert(snes_->vec_rhs, rhs); 
+        }
+
         virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
