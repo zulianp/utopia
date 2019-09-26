@@ -364,7 +364,7 @@ namespace utopia {
 
     };
 
-    void run_utilities_test() {
+    static void utilities() {
 
 #ifdef WITH_BLAS
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
@@ -395,5 +395,5 @@ namespace utopia {
         }
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(run_utilities_test);
+    UTOPIA_REGISTER_TEST_FUNCTION(utilities);
 }

@@ -378,6 +378,8 @@ if(NOT UTOPIA_ARCHIVE_ONLY)
     target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
     target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
+    # set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
+    
     install(TARGETS utopia utopia_exec
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib

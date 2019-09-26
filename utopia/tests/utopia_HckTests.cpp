@@ -92,7 +92,7 @@ namespace utopia
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
             QP_solver->atol(1e-10);
             QP_solver->max_it(n_*n_);
-            QP_solver->verbose(true); 
+            // QP_solver->verbose(true); 
             QP_solver->current_radius(9e9); 
 
             QP_solve(QP_solver); 
@@ -397,7 +397,7 @@ namespace utopia
 
     };
 
-    void hck()
+    static void hck()
     {
 #ifdef WITH_PETSC
 

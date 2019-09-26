@@ -1406,7 +1406,7 @@ namespace utopia {
         utopia_test_assert(val == 2.);
     }
 
-    void trilinos_specific()
+    static void trilinos_specific()
     {
         UTOPIA_RUN_TEST(stcg_pt_test);
 

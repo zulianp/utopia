@@ -124,7 +124,7 @@ namespace utopia {
 #endif //WITH_LAPACK
 
 
-    void misc() {
+    static void misc() {
 
 #ifdef WITH_CUDA
            UTOPIA_RUN_TEST(cuda_hello_world);

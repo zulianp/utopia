@@ -1274,7 +1274,7 @@ namespace utopia {
 
     #endif //WITH_PETSC;
 
-    void petsc_specific() {
+    static void petsc_specific() {
 #ifdef WITH_PETSC
 
         UTOPIA_RUN_TEST(petsc_memcheck);

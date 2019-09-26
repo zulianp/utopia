@@ -348,7 +348,7 @@ namespace utopia {
 
 
 
-    void blas() {
+    static void blas() {
         UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
         UTOPIA_RUN_TEST(blas_row_view_test);

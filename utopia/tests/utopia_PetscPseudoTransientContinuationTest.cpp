@@ -135,7 +135,7 @@ namespace utopia
 #endif //WITH_PETSC
 
 
-    void pseudo_transient_continuation()
+    static void pseudo_transient_continuation()
     {
 #ifdef WITH_PETSC
         PseudoTransientContinuationTest().run();

@@ -337,7 +337,7 @@ namespace utopia
 #endif //WITH_SLEPC
 
 
-	void slepc_es()
+	static void slepc_es()
 	{
 #ifdef  WITH_SLEPC
 				SlepcsSolverTest().run();

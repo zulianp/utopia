@@ -72,7 +72,7 @@ namespace utopia {
 //     }
 // #endif //WITH_BLAS
 
-    void m3e_lin_sol()
+    static void m3e_lin_sol()
     {
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(amg_with_petsc);

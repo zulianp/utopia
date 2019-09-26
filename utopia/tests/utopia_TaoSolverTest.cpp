@@ -153,7 +153,7 @@ namespace utopia {
     }
 
 
-    void tao()
+    static void tao()
     {
         //does not work yet missing ksp for dense matrix
         // UTOPIA_RUN_TEST(petsc_tao_solve_simple);
