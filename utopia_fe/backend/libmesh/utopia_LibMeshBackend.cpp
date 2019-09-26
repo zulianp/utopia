@@ -2,7 +2,7 @@
 #include "libmesh/petsc_vector.h"
 #include "utopia_Adaptivity.hpp"
 #include "libmesh/remote_elem.h"
-
+#include "libmesh/fe_interface.h"
 namespace utopia {
 
     void apply_boundary_conditions(LibMeshFunctionSpace &V,
@@ -20,60 +20,12 @@ namespace utopia {
         assert(!empty(mat));
         assert(!empty(vec));
 
-       std::vector<SizeType> index;
+       std::vector<int> index, dirichel_id;
        std::vector<SizeType> index_local;
 
-       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(V.mesh());      
 
-       auto & mesh = V.mesh();
-
-       auto & dof_map = V.dof_map();
-
-
-       {
-            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
-            
-            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
-            
-            for ( ; it != end_it; ++it)
-            {
-                const libMesh::Elem * ele = *it;
-
-                for(int kk=0; kk<ele->n_sides(); kk++) {       
-                    auto neigh = ele->neighbor_ptr(kk);    
-
-                    if (neigh == libmesh_nullptr && neigh != libMesh::remote_elem)
-                    {
-                        auto side = ele->build_side_ptr(kk);
-
-                        index_local.clear();
-
-                        for (int ll=0; ll<ele->n_nodes(); ll++)
-                        {
-
-                           const libMesh::Node * node = ele->node_ptr(ll);
-
-                           const libMesh::dof_id_type node_dof = node->dof_number(V.equation_system().number(), 0, 0);                
-
-                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
-                            {
-                                   
-                                index_local.push_back(node_dof);
-           
-                            }
-
-                        }
-
-                        if(index_local.size()==side->n_nodes())
-                        {
-
-                           index.insert(index.end(), index_local.begin(), index_local.end());
-                        }
-                    }
-                }
-            }
-        }
-        
+       Adaptivity::compute_boundary_nodes(V.mesh(), V.dof_map(), V.equation_system().number(), 0, index);
+  
 
         const bool has_constaints = V.dof_map().constraint_rows_begin() != V.dof_map().constraint_rows_end();
 
@@ -89,22 +41,24 @@ namespace utopia {
         std::vector<SizeType> I(1,0);
         std::vector<double> value(1, 0);
 
-        if(has_constaints) {
+        if(has_constaints) 
+        {
             libMesh::DofConstraintValueMap &rhs_values = V.dof_map().get_primal_constraint_values();
 
             Range r = range(vec);
 
-            for(auto it=index.begin(); it < index.end(); ++it){
-                int i = *it;
-                auto valpos = rhs_values.find(i);
-                I[0] = i;
-                value[0]=valpos->second;
+            for(auto it=index.begin(); it < index.end(); ++it)
+            {
+              int i = *it;
+              auto valpos = rhs_values.find(i);
+              I[0] = i;
+              value[0]=valpos->second;
+              vec.set(I, value);
 
-                vec.set(I, value);
-
-            }
+          }
         }
-    
+        
+        //utopia::disp(vec);
 
         c.stop();
 
@@ -195,17 +149,4 @@ namespace utopia {
 }
 
 
-//for(auto it=index_local.begin(); it < index_local.end(); ++it)
-//  {
-
-//    //   auto check = (std::find(index.begin(), index.end(), *it) != index.end());
-
-//    // if(!check)
-//    // {
-//      std::cout<<"ciao, this is node=>"<<*it<<std::endl;
-
-//     //auto check = (std::find(index.begin(), index.end(), node_dof) != index.end());
-//      index.push_back(*it);
-//    // }
-// }
 

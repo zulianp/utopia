@@ -42,10 +42,10 @@ namespace utopia {
             libMesh::DofConstraints &constraints);
 
         static void compute_boundary_nodes(const libMesh::MeshBase &mesh, 
-                                           const libMesh::DofMap &dof_map,
+                                           libMesh::DofMap &dof_map,
                                            unsigned int sys_number, 
                                            unsigned int var_number,
-                                           std::vector<SizeType> & index);
+                                           std::vector<int> & index);
 
 
         static void process_constraints (libMesh::MeshBase  &mesh, 
@@ -72,6 +72,11 @@ namespace utopia {
                                         libMesh::DofMap &dof_map, 
                                         libMesh::DofConstraints &_dof_constraints);
 
+        // static void compute_boundary_nodes(const libMesh::MeshBase &mesh, 
+        //                                     const libMesh::DofMap &dof_map,
+        //                                     unsigned int sys_number, unsigned int var_number, 
+        //                                     std::vector<SizeType> & index)
+
 
         template<class ElementMatrix>
         static void construct_constraint_matrix(const libMesh::Elem *elem,
@@ -85,7 +90,7 @@ namespace utopia {
 
 
             const std::size_t n_var = dof_map.n_variables();
-            dof_map.dof_indices(elem, dof_indices);
+            //dof_map.dof_indices(elem, dof_indices);
 
             typedef std::set<libMesh::dof_id_type> RCSet;
 
