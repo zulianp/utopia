@@ -1704,4 +1704,23 @@ namespace utopia {
     {
         assert(false && "IMPLEMENT ME");
     }
+
+    PetscMatrix::SizeType PetscMatrix::global_nnz() const
+    {
+        if(empty()) return 0;
+
+        MatInfo        info;
+        MatGetInfo(raw_type(), MAT_GLOBAL_SUM, &info);
+        return info.nz_used;
+    }
+
+    PetscMatrix::SizeType PetscMatrix::local_nnz() const
+    {
+        if(empty()) return 0;
+        
+        MatInfo        info;
+        MatGetInfo(raw_type(), MAT_LOCAL, &info);
+        return info.nz_used;
+    }
+
 }
