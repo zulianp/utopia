@@ -30,7 +30,11 @@ namespace utopia {
             UTOPIA_TRACE_BEGIN(expr);
             auto &&g = expr.right();
 
-            Eval<Left, Traits, TRILINOS>::apply(expr.left()).ghosted(g.local_size(), g.global_size(), g.index());
+            Eval<Left, Traits, TRILINOS>::apply(expr.left()).ghosted(
+                g.local_size(),
+                g.global_size(),
+                g.index()
+            );
 
             UTOPIA_TRACE_END(expr);
         }
@@ -43,12 +47,13 @@ namespace utopia {
 
         inline static void apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
+            
+            auto &&g = expr.right();
 
-            UTOPIA_BACKEND(Traits).build_ghosts(
-                expr.right().local_size(),
-                expr.right().global_size(),
-                expr.right().index(),
-                Eval<Left, Traits, TRILINOS>::apply(expr.left())
+            Eval<Left, Traits>::apply(expr.left()).ghosted(
+                g.local_size(),
+                g.global_size(),
+                g.index()
             );
 
             UTOPIA_TRACE_END(expr);

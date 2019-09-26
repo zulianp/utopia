@@ -537,8 +537,12 @@ namespace utopia {
         }
 
         inline void values(const Size &s, const T &val) override 
-        {
-            resize(s.get(0), s.get(1));
+        {   
+            if(s.dims() == 1) {
+                resize(s.get(0), s.get(0));
+            } else {
+                resize(s.get(0), s.get(1));
+            }
             set(val);
         }
 

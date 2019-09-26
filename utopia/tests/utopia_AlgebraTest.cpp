@@ -120,6 +120,29 @@ namespace utopia {
             utopia_test_assert(approxeq(1.0, one));
         }
 
+        void reduce_test()
+        {
+            Vector x = local_values(5, 1.0); 
+
+            Scalar min_val = min(x); 
+            Scalar max_val = max(x); 
+            Scalar sum_val = sum(x); 
+
+            utopia_test_assert(approxeq(1.0, min_val));
+            utopia_test_assert(approxeq(1.0, max_val));
+            utopia_test_assert(approxeq(5.0, sum_val));
+
+            x = local_values(5, -1.0); 
+
+            min_val = min(x); 
+            max_val = max(x); 
+            sum_val = sum(x); 
+
+            utopia_test_assert(approxeq(-1.0, min_val));
+            utopia_test_assert(approxeq(-1.0, max_val));
+            utopia_test_assert(approxeq(-5.0, sum_val));     
+        }
+
         void binary_min_max()
         {
             const int n = mpi_world_size() * 2;
@@ -190,6 +213,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(norm_test);
             UTOPIA_RUN_TEST(dot_test);
             UTOPIA_RUN_TEST(dot_product_composition_test);
+            UTOPIA_RUN_TEST(reduce_test);
             UTOPIA_RUN_TEST(binary_min_max);
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(divide_dots_test);
@@ -371,7 +395,6 @@ namespace utopia {
 
     static void algebra()
     {
-
 #ifdef WITH_BLAS
         AlgebraTest<BlasMatrixd, BlasVectord>().run();
         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();

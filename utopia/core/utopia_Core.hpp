@@ -24,9 +24,7 @@
  */
 
 
-#include "utopia_Backend.hpp"
 #include "utopia_BackendInfo.hpp"
-#include "utopia_Evaluator.hpp"
 #include "utopia_Factory.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Instance.hpp"
@@ -45,6 +43,6 @@
 #include "utopia_Eval.hpp"
 
 #include "utopia_Temp.hpp"
-#include "utopia_BackendConvert.hpp"
+
 
 #endif //UTOPIA_CORE_HPP

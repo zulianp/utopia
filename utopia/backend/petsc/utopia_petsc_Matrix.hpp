@@ -992,6 +992,9 @@ namespace utopia {
                     const Range &col_range,
                     const PetscMatrix &block);
 
+        SizeType global_nnz() const;
+        SizeType local_nnz() const;
+
     private:
         PetscCommunicator comm_;
         std::shared_ptr<PetscMatrixMemory> wrapper_;

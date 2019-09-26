@@ -5,6 +5,7 @@
 
 #include "utopia_Traits.hpp"
 #include "utopia_blas_ForwardDeclarations.hpp"
+#include "utopia_BackendInfo.hpp"
 #include <vector>
 
 namespace utopia {

@@ -1,9 +1,5 @@
-//
-// Created by Patrick Zulian on 18/05/15.
-//
-
-#ifndef utopia_utopia_FORWARDDECLARATIONS_HPP
-#define utopia_utopia_FORWARDDECLARATIONS_HPP
+#ifndef UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP
+#define UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP
 
 #include <string>
 
@@ -38,14 +34,8 @@ namespace utopia {
     template<class Left, class Right>
     class Multiply;
 
-    // template<class Implementation, int Order>
-    // class Wrapper;
-
     template<class T>
     class Traits;
-
-    // template <class T>
-    // class Matrix;
 
     template<class Expr, int Order>
     class Norm;
@@ -72,10 +62,8 @@ namespace utopia {
     template<class Expr>
     std::string GetClass();
 
-
     template<class Expr>
     class Write;
-
 
     template<class Expr>
     class Read;
@@ -106,12 +94,8 @@ namespace utopia {
     template<class Expr>
     class Differentiable;
 
-    // template<class Expr>
-    // class Derivative;
-
     template<class Expr>
     constexpr int is_differentiable();
-
 
     template<class Expr>
     class TreeProperties;
@@ -171,4 +155,4 @@ namespace utopia {
     class EvalAssignToView;
 }
 
-#endif //utopia_utopia_FORWARDDECLARATIONS_HPP
+#endif //UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

@@ -96,22 +96,23 @@ namespace utopia {
         }
     };
 
-    template<class Left, class Traits, int Backend>
-    class Eval<Binary<Left, Factory<Identity, 2>, Plus>, Traits, Backend> {
-    public:
-        inline static typename TypeAndFill<Traits, Left>::Type apply(const Binary<Left, Factory<Identity, 2>, Plus> &expr) {
-            static_assert(Left::Order == 2, "can only be instantiated for 2nd order tensors");
+    //TODO
+    // template<class Left, class Traits, int Backend>
+    // class Eval<Binary<Left, Factory<Identity, 2>, Plus>, Traits, Backend> {
+    // public:
+    //     inline static typename TypeAndFill<Traits, Left>::Type apply(const Binary<Left, Factory<Identity, 2>, Plus> &expr) {
+    //         static_assert(Left::Order == 2, "can only be instantiated for 2nd order tensors");
 
-            UTOPIA_TRACE_BEGIN(expr);
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            typename TypeAndFill<Traits, Left>::Type result = Eval<Left, Traits>::apply(expr.left());
-            UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
+    //         typename TypeAndFill<Traits, Left>::Type result = Eval<Left, Traits>::apply(expr.left());
+    //         UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
 
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 
     template<class Left, typename ScalarT, class Traits, int Backend>
     class Eval<Binary<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies>, Plus>, Traits, Backend> {
@@ -223,27 +224,27 @@ namespace utopia {
     };
 
     //FIXME WHY IS THIS NEVER INSTANTIATED?
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Right)
-        apply(const Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus > &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
+    // template<class Left, class Right, typename ScalarT, class Traits, int Backend>
+    // class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {
+    // public:
+    //     inline static EXPR_TYPE(Traits, Right)
+    //     apply(const Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus > &expr)
+    //     {
+    //         EXPR_TYPE(Traits, Right) result;
 
-            UTOPIA_TRACE_BEGIN(expr);
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).zaxpy(
-                    -expr.left().right(),
-                     Eval<Left,  Traits>::apply(expr.left().left()),
-                     Eval<Right, Traits>::apply(expr.right()),
-                     result
-            );
+    //         UTOPIA_BACKEND(Traits).zaxpy(
+    //                 -expr.left().right(),
+    //                  Eval<Left,  Traits>::apply(expr.left().left()),
+    //                  Eval<Right, Traits>::apply(expr.right()),
+    //                  result
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_AXPY_HPP

@@ -136,23 +136,24 @@ namespace utopia {
         }
     };
 
-    template<class Expr, class Traits, int Backend>
-    class Eval<Reduce< Diag<Expr>, Plus>, Traits, Backend> {
-    public:
-        typedef typename Traits::Scalar Scalar;
-        inline static Number<Scalar> apply(const Reduce< Diag<Expr>, Plus> &expr)
-        {
-            Scalar result;
-            UTOPIA_TRACE_BEGIN(expr);
+    //TODO
+    // template<class Expr, class Traits, int Backend>
+    // class Eval<Reduce< Diag<Expr>, Plus>, Traits, Backend> {
+    // public:
+    //     typedef typename Traits::Scalar Scalar;
+    //     inline static Number<Scalar> apply(const Reduce< Diag<Expr>, Plus> &expr)
+    //     {
+    //         Scalar result;
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).trace(
-                    Eval<Expr, Traits>::apply(expr.expr().expr())
-            );
+    //         result = UTOPIA_BACKEND(Traits).trace(
+    //                 Eval<Expr, Traits>::apply(expr.expr().expr())
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 
     template<class Expr, class Traits, int Backend>
     class Eval<Trace<Expr>, Traits, Backend> {
