@@ -91,7 +91,7 @@ namespace utopia
         }
 
 
-        virtual bool get_rhs( Vector & rhs)
+        virtual bool get_rhs( Vector & rhs) const
         {
             rhs = _rhs;
             return true;
@@ -102,13 +102,13 @@ namespace utopia
             return !empty(_rhs);
         }
 
-        virtual bool get_eq_constrains_values(Vector & x)
+        virtual bool get_eq_constrains_values(Vector & x) const 
         {
             x = _x_eq_values;
             return true;
         }
 
-        virtual bool get_eq_constrains_flg(Vector & x)
+        virtual bool get_eq_constrains_flg(Vector & x) const
         {
             x = _eq_constrains_flg;
             return true;

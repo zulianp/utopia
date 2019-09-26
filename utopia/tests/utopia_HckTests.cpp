@@ -24,17 +24,17 @@ namespace utopia
             input_params_.set("rtol", 1e-10);
             input_params_.set("stol", 1e-10);        
             input_params_.set("verbose", verbose_); 
-            input_params_.set("max-it", 10); 
+            input_params_.set("max-it", 20); 
 
             // RMTR specific parameters 
             input_params_.set("max_coarse_it", 2); 
             input_params_.set("max_sucessful_coarse_it", 1); 
-            input_params_.set("max_QP_coarse_it", 300);             
-            input_params_.set("pre_smoothing_steps", 10); 
-            input_params_.set("post_smoothing_steps", 10); 
+            input_params_.set("max_QP_coarse_it", 1000);             
+            input_params_.set("pre_smoothing_steps", 5); 
+            input_params_.set("post_smoothing_steps", 5); 
             input_params_.set("max_sucessful_smoothing_it", 1);   
-            input_params_.set("max_QP_smoothing_it", 5);   
-            input_params_.set("delta0", 10);   
+            input_params_.set("max_QP_smoothing_it", 10);   
+            input_params_.set("delta0", 1);   
             input_params_.set("grad_smoothess_termination", 1e-8);      
         }
 
@@ -61,11 +61,8 @@ namespace utopia
 
 
 
-            UTOPIA_RUN_TEST(MIN_test); 
-
-
-
-            // UTOPIA_RUN_TEST(Trilinos_Lin_solver); 
+            // UTOPIA_RUN_TEST(TR_tril_test); 
+            UTOPIA_RUN_TEST(RMTR_tril_test_lin_un_inf); 
 
         }
 
@@ -444,7 +441,7 @@ namespace utopia
         }
 
 
-        void Trilinos_Lin_solver()
+        void TR_tril_test()
         {
             #ifdef WITH_PETSC
                 Poisson3D<PetscMatrix, Vector> fun(50);
@@ -463,14 +460,15 @@ namespace utopia
                 PetscVector lb = local_values(local_size(x), -9e9); 
                 PetscVector ub = local_values(local_size(x), 9e9); 
 
-                QuadraticExtendedFunction<PetscMatrix, PetscVector> fun_QP(make_ref(H), make_ref(g), x_eq, x_bc_marker, empty_rhs); 
+                QuadraticExtendedFunction<PetscMatrix, PetscVector> fun_QP(H, g, x_eq, x_bc_marker, empty_rhs); 
                 auto QP_solver_petsc = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
-                QP_solver_petsc->max_it(3); 
+                // QP_solver_petsc->max_it(3); 
+
                 TrustRegionVariableBound<PetscMatrix, PetscVector> tr_solver_petsc(QP_solver_petsc);
                 tr_solver_petsc.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));                          
                 tr_solver_petsc.read(input_params_); 
                 tr_solver_petsc.max_it(100);
-                tr_solver_petsc.delta0(1e5); 
+                tr_solver_petsc.delta0(1e-5); 
                 tr_solver_petsc.verbose(true);
 
                 x = fun.initial_guess(); 
@@ -488,7 +486,7 @@ namespace utopia
                     backend_convert(x, x_tril);
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<TpetraMatrixd, TpetraVectord> >();
-                    QP_solver->max_it(3); 
+                    // QP_solver->max_it(3); 
 
                     TpetraVectord lb_tril = local_values(local_size(x_tril).get(0), -9e9); 
                     TpetraVectord ub_tril = local_values(local_size(x_tril).get(0), 9e9); 
@@ -497,13 +495,13 @@ namespace utopia
                     backend_convert(x_eq, x_eq_tril);
                     backend_convert(x_bc_marker, x_bc_marker_tril);
 
-                    QuadraticExtendedFunction<TpetraMatrixd, TpetraVectord> fun_QP_tril(make_ref(H_tril), make_ref(g_tril), x_eq_tril, x_bc_marker_tril, empty_rhs_tril); 
+                    QuadraticExtendedFunction<TpetraMatrixd, TpetraVectord> fun_QP_tril(H_tril, g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril); 
 
                     TrustRegionVariableBound<TpetraMatrixd, TpetraVectord> tr_solver(QP_solver);
                     tr_solver.set_box_constraints(make_box_constaints(make_ref(lb_tril), make_ref(ub_tril)));                          
                     tr_solver.read(input_params_); 
                     tr_solver.max_it(100);
-                    tr_solver.delta0(1e5); 
+                    tr_solver.delta0(1e-5); 
                     tr_solver.verbose(true);
                     tr_solver.solve(fun_QP_tril, x_tril); 
 
@@ -516,23 +514,106 @@ namespace utopia
         }
 
 
-
-        void MIN_test()
+        std::shared_ptr<QuadraticExtendedFunction<TpetraMatrixd, TpetraVectord> > copy_QPfun_to_tril(const Poisson3D<PetscMatrix, PetscVector> & fun)
         {
+            PetscMatrix H; 
+            PetscVector g, x_eq, x_bc_marker; 
 
-            #ifdef WITH_TRILINOS
-                TpetraVectord x =  local_values(5, 1.0); 
+            fun.get_A_rhs(H, g); 
+            fun.get_eq_constrains_values(x_eq); 
+            fun.get_eq_constrains_flg(x_bc_marker); 
 
-                std::cout<<"min: "<< min(x) << "  \n"; 
-                std::cout<<"max: "<< max(x) << "  \n"; 
-                std::cout<<"sum: "<< sum(x) << "  \n"; 
+            TpetraMatrixd H_tril; 
+            TpetraVectord g_tril; 
+            TpetraVectord x_eq_tril, x_bc_marker_tril, empty_rhs_tril; 
+            backend_convert_sparse(H, H_tril);
+            backend_convert(g, g_tril);
+            backend_convert(x_eq, x_eq_tril);
+            backend_convert(x_bc_marker, x_bc_marker_tril);
+            empty_rhs_tril = 0.0*x_eq_tril; 
 
-            #endif //WITH_TRILINOS               
+            return std::make_shared<QuadraticExtendedFunction<TpetraMatrixd, TpetraVectord> >(H_tril, g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril); 
 
         }
 
 
 
+        void RMTR_tril_test_lin_un_inf()
+        {
+            #ifdef WITH_PETSC
+                PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_); 
+
+                auto fun = multilevel_problem.level_functions_[n_levels_-1];
+                Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
+                Vector x = fun_Poisson3D->initial_guess(); 
+
+                if(verbose_)
+                    fun_Poisson3D->describe(); 
+
+
+                #ifdef WITH_TRILINOS
+
+                    TpetraVectord x_tril; 
+                    
+                    backend_convert(x, x_tril);
+                    TpetraVectord lb_tril = local_values(local_size(x_tril).get(0), -9e9); 
+                    TpetraVectord ub_tril = local_values(local_size(x_tril).get(0), 9e9); 
+
+
+                    std::vector<std::shared_ptr<Transfer<TpetraMatrixd, TpetraVectord> > > transfers_tril; 
+                    for(auto i=0; i < multilevel_problem.transfers_.size(); i++)
+                    {
+                        MatrixTransfer<Matrix, Vector> * mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector> *>(multilevel_problem.transfers_[i].get());
+
+                        TpetraMatrixd I_tril; 
+                        backend_convert_sparse(mat_transfer->I(), I_tril); 
+                        transfers_tril.push_back( std::make_shared<MatrixTransfer<TpetraMatrixd, TpetraVectord> >( std::make_shared<TpetraMatrixd>(I_tril)));
+                    }
+
+
+                    std::vector<std::shared_ptr<ExtendedFunction<TpetraMatrixd, TpetraVectord> > >  level_functions_tril;
+                    level_functions_tril.resize(multilevel_problem.level_functions_.size()); 
+                    for(auto i=0; i < multilevel_problem.level_functions_.size(); i++)
+                    {
+                        
+                        Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(multilevel_problem.level_functions_[i].get());
+                        level_functions_tril[i] = copy_QPfun_to_tril(*fun_Laplace); 
+                    }   
+
+
+                    auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<TpetraMatrixd, TpetraVectord> >();
+                    auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<TpetraMatrixd, TpetraVectord> >();
+                    // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<TpetraMatrixd, TpetraVectord> >();                
+                    
+                    auto rmtr = std::make_shared<RMTR_inf<TpetraMatrixd, TpetraVectord, FIRST_ORDER> >(n_levels_);
+
+                    // Set TR-QP strategies 
+                    rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+                    rmtr->set_fine_tr_strategy(tr_strategy_fine);                        
+
+                    // Transfers and objective functions
+                    rmtr->set_transfer_operators(transfers_tril);
+                    rmtr->set_functions(level_functions_tril);    
+
+
+                    rmtr->read(input_params_); 
+                    rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+                    rmtr->verbose(true);
+                    // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+                    rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+                    
+                        
+                    // Solve 
+                    rmtr->solve(x_tril);
+                    
+
+                #endif //WITH_TRILINOS                     
+
+
+            #endif //WITH_PETSC 
+
+
+        }        
 
 
     private: 
@@ -554,7 +635,7 @@ namespace utopia
         // auto coarse_dofs = 5; 
 
         auto n_levels = 3; 
-        auto coarse_dofs = 20; 
+        auto coarse_dofs = 10; 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run();
 
 // #ifdef WITH_TRILINOS

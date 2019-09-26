@@ -65,7 +65,7 @@ namespace utopia
         }
 
 
-        void get_A_rhs(Matrix & A, Vector & rhs)
+        void get_A_rhs(Matrix & A, Vector & rhs) const
         {
             A = A_no_bc_; 
             convert(snes_->vec_rhs, rhs); 

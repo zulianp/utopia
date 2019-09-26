@@ -80,8 +80,8 @@ namespace utopia {
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
-        QuadraticExtendedFunction(  const std::shared_ptr<Matrix> &H, 
-                                    const std::shared_ptr<Vector> &rhs, 
+        QuadraticExtendedFunction(  const Matrix &H, 
+                                    const Vector &rhs, 
                                     const Vector & x_0, 
                                     const Vector & bc_marker, 
                                     const Vector & rhs_non_eq): 
@@ -98,19 +98,19 @@ namespace utopia {
         bool initialize_hessian(Matrix &H, Matrix &/*H_pre*/) const override
         {
             // H = *this->data()->H;
-            H = *H_;
+            H = H_;
             return true;
         }
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            value = 0.5 * dot(x, (*H_) * x) + dot(x, *rhs_);
+            value = 0.5 * dot(x, (H_) * x) + dot(x, rhs_);
             return true;
         }
 
         bool gradient_no_rhs(const Vector &x, Vector &result) const override
         {
-            result = (*H_) * x + (*rhs_);
+            result = (H_ * x)+ (rhs_);
 
             {
                 Vector bc_flg = this->get_eq_constrains_flg(); 
@@ -136,7 +136,7 @@ namespace utopia {
         {
             UTOPIA_UNUSED(x);
             
-            H = *H_;
+            H = H_;
             
             const std::vector<SizeType> & index = this->get_indices_related_to_BC(); 
             set_zero_rows(H, index, 1.);
@@ -164,8 +164,8 @@ namespace utopia {
         }
 
     private:
-        std::shared_ptr<Vector> rhs_;
-        std::shared_ptr<Matrix> H_;
+        Vector rhs_;
+        Matrix H_;
     };
 
 }
