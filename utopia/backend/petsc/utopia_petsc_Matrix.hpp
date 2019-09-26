@@ -992,6 +992,21 @@ namespace utopia {
                     const Range &col_range,
                     const PetscMatrix &block);
 
+            // Scalar PetscBackend::get_global_nnz(PetscMatrix &m)
+            // {
+            //     MatInfo        info;
+            //     MatGetInfo(m.implementation(), MAT_GLOBAL_SUM, &info);
+            //     return info.nz_used;
+            // }
+
+            // Scalar PetscBackend::get_local_nnz(PetscMatrix &m)
+            // {
+            //     MatInfo        info;
+            //     MatGetInfo(m.implementation(), MAT_LOCAL, &info);
+            //     return info.nz_used;
+            // }
+
+
     private:
         PetscCommunicator comm_;
         std::shared_ptr<PetscMatrixMemory> wrapper_;
