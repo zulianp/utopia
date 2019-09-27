@@ -158,16 +158,10 @@ namespace utopia
         virtual void init_memory(const SizeType & fine_local_size) override
         {
             RMTR::init_memory(fine_local_size);
-            std::cout<<"----- QUasiRMTR: - verify ..... \n"; 
 
             SizeType fine_lev=this->n_levels() - 1; 
             hessian_approxs_[fine_lev]->initialize(this->memory_.x[fine_lev], this->memory_.g[fine_lev]);
         }
-
-        // virtual void init_level(const SizeType & level) override
-        // {
-        //     RMTR::init_level(level);
-        // }
 
 
         virtual bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) override

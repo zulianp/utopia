@@ -32,13 +32,13 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class QuasiRMTR_inf :   public RMTR<Matrix, Vector, CONSISTENCY_LEVEL>
+    class QuasiRMTR_inf :   public RMTR<Matrix, Vector, CONSISTENCY_LEVEL>,  public MultilevelVariableBoundSolverInterface<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
-        typedef utopia::MatrixFreeQPSolver<Vector>  TRSubproblem;
-        typedef std::shared_ptr<TRSubproblem>       TRSubproblemPtr;
+        typedef utopia::MatrixFreeQPSolver<Vector>          TRSubproblem;
+        typedef std::shared_ptr<TRSubproblem>               TRSubproblemPtr;
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -54,6 +54,8 @@ namespace utopia
         typedef utopia::HessianApproximation<Vector>    HessianApproximation;
         typedef std::shared_ptr<HessianApproximation>   HessianApproxPtr;
 
+        typedef utopia::MultilevelVariableBoundSolverInterface<Vector>  MLConstraints;
+
 
         static_assert(utopia::is_first_order<CONSISTENCY_LEVEL>::value, "utopia::QuasiRMTR does not support second order, nor galerkin consistency, nor Galerkin.");
 
@@ -61,8 +63,7 @@ namespace utopia
 
 
         QuasiRMTR_inf(  const SizeType & n_levels):
-                    RMTR(n_levels),
-                    has_box_constraints_(false)
+                    RMTR(n_levels)
         {
             hessian_approxs_.resize(n_levels);
         }
@@ -106,29 +107,6 @@ namespace utopia
         {
             return "QuasiRMTR_inf";
         }
-
-        /**
-         * @brief      Sets the box constraints.
-         *
-         * @param      box   The box
-         *
-         */
-        virtual void set_box_constraints(BoxConstraints & box)
-        {
-          box_constraints_ = box;
-          has_box_constraints_ = true;
-        }
-
-        /**
-         * @brief      Gets the box constraints.
-         *
-         * @return     The box constraints.
-         */
-        virtual BoxConstraints & get_box_constraints()
-        {
-          return box_constraints_;
-        }
-
 
         virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
         {
@@ -212,45 +190,17 @@ namespace utopia
         {
             RMTR::init_memory(fine_local_size);
 
-            constraints_memory_.init(this->n_levels());
+            MLConstraints::init_constr_memory(this->n_levels(), fine_local_size); 
 
             const SizeType fine_level = this->n_levels()-1;
-            const Scalar inf = std::numeric_limits<Scalar>::infinity();
-
-            if(has_box_constraints_)
-            {
-                if(box_constraints_.has_upper_bound())
-                    constraints_memory_.x_upper[fine_level] = *box_constraints_.upper_bound();
-                else
-                    constraints_memory_.x_upper[fine_level] = local_values(fine_local_size, inf);
-
-                if(box_constraints_.has_lower_bound())
-                    constraints_memory_.x_lower[fine_level] = *box_constraints_.lower_bound();
-                else
-                    constraints_memory_.x_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
-
-
-                constraints_memory_.active_upper[fine_level] = constraints_memory_.x_upper[fine_level];
-                constraints_memory_.active_lower[fine_level] = constraints_memory_.x_lower[fine_level];
-            }
-            else
-            {
-                constraints_memory_.active_upper[fine_level] = local_values(fine_local_size, inf);
-                constraints_memory_.active_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
-            }
-
-            // inherited tr bound constraints...
-            constraints_memory_.tr_upper[fine_level] = local_values(fine_local_size, inf);
-            constraints_memory_.tr_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
 
             // precompute norms of prolongation operators needed for projections of constraints...
-            for(auto l = 0; l < this->n_levels() -1; l++)
-                constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
+            for(auto l = 0; l < fine_level; l++){
+                this->constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
+            }
 
-
-            // hessian_approxs_[this->n_levels() - 1 ]->initialize();
-            SizeType fine_lev=this->n_levels() - 1; 
-            hessian_approxs_[fine_lev]->initialize(this->memory_.x[fine_lev], this->memory_.g[fine_lev]);
+            // Hessian approximations 
+            hessian_approxs_[fine_level]->initialize(this->memory_.x[fine_level], this->memory_.g[fine_level]);
         }
 
 
@@ -258,128 +208,18 @@ namespace utopia
         // since TR bounds are weak bounds...
         virtual bool check_feasibility(const SizeType & level ) override
         {
-            bool terminate = false;
-
-            {
-                Read<Vector> ru(constraints_memory_.tr_upper[level]);
-                Read<Vector> rl(constraints_memory_.tr_lower[level]);
-                Read<Vector> rx(this->memory_.x[level]);
-
-                Range r = range(constraints_memory_.tr_upper[level]);
-
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                {
-                    Scalar xi = this->memory_.x[level].get(i);
-                    Scalar li = constraints_memory_.tr_lower[level].get(i);
-                    Scalar ui = constraints_memory_.tr_upper[level].get(i);
-
-                   if(xi < li || xi > ui)
-                        terminate = true;
-                }
-            }
-
-            return terminate;
+            return MLConstraints::check_feasibility(level, this->memory_.x[level]); 
         }
 
 
-
-        // this routine is correct only under assumption, that P/R/I have only positive elements ...
         virtual void init_level(const SizeType & level) override
         {
             RMTR::init_level(level);
 
             const SizeType finer_level = level+1;
-
-
-            if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&this->transfer(level)))
-            {
-                constraints_memory_.tr_upper[level] =  this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-                constraints_memory_.tr_lower[level] =  this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-            }
-            else
-            {
-                //----------------------------------------------------------------------------
-                //     soft projection of tr bounds
-                //----------------------------------------------------------------------------
-                Vector tr_fine_last_lower = this->memory_.x[finer_level] - local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-                {
-                    ReadAndWrite<Vector> rv(tr_fine_last_lower);
-                    Read<Vector> rl(constraints_memory_.tr_lower[finer_level]);
-
-                    Range r = range(tr_fine_last_lower);
-
-                    for(SizeType i = r.begin(); i != r.end(); ++i){
-                        tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
-                    }
-                }
-
-                Vector tr_fine_last_upper = this->memory_.x[finer_level] + local_values(local_size(this->memory_.x[finer_level]).get(0), this->memory_.delta[finer_level]);
-                {
-                    ReadAndWrite<Vector> rv(tr_fine_last_upper);
-                    Read<Vector> rl(constraints_memory_.tr_upper[finer_level]);
-
-                    Range r = range(tr_fine_last_upper);
-
-                    for(SizeType i = r.begin(); i != r.end(); ++i){
-                        tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
-                    }
-                }
-
-                // ------------------------ new version, taking into account  positive and negative elements projection separatelly -----------------
-                this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
-                this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
-
-            }
-
-
-            if(has_box_constraints_)
-            {
-
-                if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&this->transfer(level)))
-                {
-                    // std::cout<<"yes, identity transfer, LB, UB ... \n"; 
-                    constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
-                    constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
-                }
-                else
-                {
-                    //----------------------------------------------------------------------------
-                    //     projection of variable bounds to the coarse level
-                    //----------------------------------------------------------------------------
-                    Vector lx =  (constraints_memory_.x_lower[finer_level] - this->memory_.x[finer_level]);
-                    Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(lx);
-                    constraints_memory_.x_lower[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), lower_multiplier);
-
-                    Vector ux =  (constraints_memory_.x_upper[finer_level] - this->memory_.x[finer_level]);
-                    Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
-                    constraints_memory_.x_upper[level] = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), upper_multiplier);
-                }
-
-
-                //----------------------------------------------------------------------------
-                //     intersect bounds on the coarse level
-                //----------------------------------------------------------------------------
-                constraints_memory_.active_upper[level] = local_zeros(local_size(this->memory_.x[level]).get(0));
-                constraints_memory_.active_lower[level] = local_zeros(local_size(this->memory_.x[level]).get(0));
-                {
-                    Write<Vector>   rv(constraints_memory_.active_upper[level]), rw(constraints_memory_.active_lower[level]);
-                    Read<Vector>    rl(this->memory_.x[level]), rq(constraints_memory_.x_lower[level]), re(constraints_memory_.x_upper[level]), rr(constraints_memory_.tr_lower[level]), rt(constraints_memory_.tr_upper[level]);
-
-                    Range r = range(this->memory_.x[level]);
-
-                    for(SizeType i = r.begin(); i != r.end(); ++i)
-                    {
-                        constraints_memory_.active_upper[level].set(i, std::min(constraints_memory_.tr_upper[level].get(i), constraints_memory_.x_upper[level].get(i)));
-                        constraints_memory_.active_lower[level].set(i, std::max(constraints_memory_.tr_lower[level].get(i), constraints_memory_.x_lower[level].get(i)));
-                    }
-                }
-            }
-            else
-            {
-                constraints_memory_.active_upper[level] = constraints_memory_.tr_upper[level];
-                constraints_memory_.active_lower[level] = constraints_memory_.tr_lower[level];
-            }
+            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.delta[finer_level], this->transfer(level)); 
         }
+
 
         virtual bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) override
         {
@@ -425,13 +265,13 @@ namespace utopia
             Vector Pc;
 
             Vector x_g = this->memory_.x[level] - g_restricted;
-            get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc);
+            MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
             Pc -= this->memory_.x[level];
             Scalar Rg_norm =  norm2(Pc);
 
 
             x_g = this->memory_.x[level] - g_coarse;
-            get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc);
+            MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
             Pc -= this->memory_.x[level];
             Scalar  g_norm =  norm2(Pc);
 
@@ -442,45 +282,8 @@ namespace utopia
         // measuring wrt to feasible set...
         virtual Scalar criticality_measure(const SizeType & level) override
         {
-            Vector Pc;
-            Vector x_g = this->memory_.x[level] - this->memory_.g[level];
-
-            get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc);
-
-            Pc -= this->memory_.x[level];
-
-            // std::cout<<"level: "<< level << " \n"; 
-            // std::cout<<"norm2(g) "<< norm2(this->memory_.g[level]) << "    Pc_norm(g): "<< norm2(Pc) << "  \n"; 
-
-            return norm2(Pc);
+            return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->memory_.g[level]); 
         }
-
-
-        /**
-         * @brief      Projection onto feasible set
-         *
-         * @param[in]  x    Iterate
-         * @param[in]  lb   lower bound
-         * @param[in]  ub   upper bound
-         * @param[in]  Pc   projection
-         *
-         */
-        void get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
-        {
-            Pc = local_zeros(local_size(x).get(0));
-            {
-                Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-                Write<Vector> wv(Pc);
-
-                each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double {
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);
-                          if(li >= xi)
-                            return li;
-                          else
-                            return (ui <= xi) ? ui : xi; }   );
-            }
-        }
-
 
 
         /**
@@ -497,12 +300,12 @@ namespace utopia
             Scalar radius = this->memory_.delta[level];
 
             // first we need to prepare box of intersection of level constraints with tr. constraints
-            Vector l = constraints_memory_.active_lower[level] - this->memory_.x[level];
+            Vector l = this->constraints_memory_.active_lower[level] - this->memory_.x[level];
             each_transform(l, l, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
                 return (val >= -1*radius)  ? val : -1 * radius;  }
             );
 
-            Vector u =  constraints_memory_.active_upper[level] - this->memory_.x[level];
+            Vector u =  this->constraints_memory_.active_upper[level] - this->memory_.x[level];
             each_transform(u, u, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
               return (val <= radius)  ? val : radius; }
             );
@@ -531,33 +334,11 @@ namespace utopia
 
 
 
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////Debugging stuff ////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////            
-            Vector s = this->memory_.s[level]; 
-            Vector s_new = s; 
+            // ----- just for debugging pourposes ----------------
+            Vector s_old = this->memory_.s[level]; 
+            MLConstraints::get_projection(s_old, l, u, this->memory_.s[level]); 
 
-            {
-                Read<Vector> rs(s), rl(l), ru(u);
-                Write<Vector> wv(s_new);
 
-                each_write(s_new, [&l, &u, &s](const SizeType i) -> double
-                {
-                    auto ui = u.get(i);
-                    auto li = l.get(i);
-                    auto si = s.get(i);
-
-                    if(si > ui)
-                        return ui; 
-                    else if(si < li)
-                        return li; 
-                    else 
-                        return si; 
-
-                });
-            }
-
-            this->memory_.s[level] = s_new; 
 
             return true;
         }
@@ -617,11 +398,6 @@ namespace utopia
         std::vector<TRSubproblemPtr>            _tr_subproblems;
 
     protected:
-        ConstraintsLevelMemory <Vector>         constraints_memory_;
-
-        BoxConstraints box_constraints_;        // constraints on the finest level....
-        bool has_box_constraints_;               // as we can run rmtr with inf. norm also without constraints...
-
         std::vector<HessianApproxPtr>  hessian_approxs_;
 
     };

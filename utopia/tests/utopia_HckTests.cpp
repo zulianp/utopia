@@ -583,14 +583,12 @@ namespace utopia
                         level_functions_tril[i] = copy_QPfun_to_tril<Matrix, Vector, TpetraMatrixd, TpetraVectord>(*fun_Laplace); 
                     }   
 
-
                     auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<MatrixTril, VectorTril> >();
                     // auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<MatrixTril, VectorTril> >();
                     auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<TpetraMatrixd, TpetraVectord> >();                
                     
                     auto rmtr = std::make_shared<RMTR_inf<MatrixTril, VectorTril, GALERKIN> >(n_levels_);
 
-            
 
                     // Set TR-QP strategies 
                     rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -615,10 +613,7 @@ namespace utopia
 
                 #endif //WITH_TRILINOS                     
 
-
             #endif //WITH_PETSC 
-
-
         }        
 
 
