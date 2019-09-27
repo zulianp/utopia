@@ -30,7 +30,7 @@ namespace utopia {
 		virtual Scalar dot(const Tensor &other) const = 0;
 
 		///I<Scalar>AMAX - index of max abs value
-		virtual SizeType amax() const = 0;
+		// virtual SizeType amax() const = 0;
 
 		///<Scalar>NRM2 - Euclidean norm (Moved to Normed type)
 		// virtual Scalar norm2() const = 0;
@@ -104,6 +104,7 @@ namespace utopia {
 		    gemv(true, alpha, x, beta, y);
 		}
 
+		/// y := alpha * op(A) * x + beta * y
 		virtual void gemv(const bool transpose, const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) const = 0;
 
 
@@ -157,21 +158,18 @@ namespace utopia {
 		}
 
 		/// C := alpha * A * B
-		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const
-		{
-			multiply(false, alpha, false, B, C);
-		}
+		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const = 0;
 
 		/// C := A^T * B
 		virtual void transpose_multiply(const Matrix &B, Matrix &C) const
 		{
-			multiply(true, 1.0, false, B, C);
+			multiply(true, false, B, C);
 		}
 
 		/// C := A * B^T
 		virtual void multiply_transpose(const Matrix &B, Matrix &C) const
 		{
-			multiply(false, 1.0, true, B, C);
+			multiply(false, true, B, C);
 		}
 
 		/// C := alpha * op(A) * op(B)
@@ -179,20 +177,51 @@ namespace utopia {
 			const bool transpose_A,
 			const bool transpose_B,
 			const Matrix &B,
-			Matrix &C) const
+			Matrix &C) const = 0;
+
+
+	
+		//missing blas routines
+
+		// <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
+
+		// <Scalar>SYMM - symmetric matrix matrix multiply
+
+		// <Scalar>SYRK - symmetric rank-k update to a matrix
+
+		// <Scalar>SYR2K - symmetric rank-2k update to a matrix
+
+		// <Scalar>TRMM - triangular matrix matrix multiply
+
+		// <Scalar>TRSM - solving triangular matrix with multiple right hand sides
+	};
+
+
+
+	template<class Matrix>
+	class BLAS3DenseMatrix : public BLAS3Matrix<Matrix> {
+	public:
+		using Scalar   = typename utopia::Traits<Matrix>::Scalar;
+		using SizeType = typename utopia::Traits<Matrix>::SizeType;
+
+		using BLAS3Matrix<Matrix>::multiply;
+
+		virtual ~BLAS3DenseMatrix() {}
+
+		/// C := alpha * A * B
+		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const override
+		{
+			gemm(false, alpha, false, B, 0.0, C);
+		}
+
+		/// C := alpha * op(A) * op(B)
+		virtual void multiply(
+			const bool transpose_A,
+			const bool transpose_B,
+			const Matrix &B,
+			Matrix &C) const override
 		{
 			gemm(transpose_A, 1.0, transpose_B, B, 0.0, C);
-		}
-
-		/// C := alpha * op(A) * op(B)
-		virtual void multiply(
-			const bool transpose_A,
-			const Scalar alpha,
-			const bool transpose_B,
-			const Matrix &B,
-			Matrix &C) const
-		{
-			gemm(transpose_A, alpha, transpose_B, B, 0.0, C);
 		}
 
 		// <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C

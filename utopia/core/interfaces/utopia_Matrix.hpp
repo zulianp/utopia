@@ -105,6 +105,9 @@ namespace utopia {
 		virtual Scalar get(const SizeType &i, const SizeType &j) const = 0;
 		virtual void set(const Scalar &val) = 0;
 
+		virtual void read_and_write_lock(WriteMode mode) = 0;
+		virtual void read_and_write_unlock(WriteMode mode) = 0;
+
 		virtual ~DenseMatrix() {}
 	};
 
@@ -112,6 +115,13 @@ namespace utopia {
 	class SparseMatrix : public Matrix<Scalar_, SizeType_> {
 	public:
 		virtual ~SparseMatrix() {}
+	};
+
+	class PolymorphicMatrix {
+	public:
+		virtual ~PolymorphicMatrix() {}
+		virtual bool is_dense() const { return !is_sparse(); }
+		virtual bool is_sparse() const = 0;
 	};
 
 	//parallel types, collective operations

@@ -1,6 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_IsSubTree.hpp"
 #include "utopia_Testing.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 
 #ifdef WITH_TRILINOS
 #include "utopia_trilinos.hpp"
@@ -120,6 +121,29 @@ namespace utopia {
             utopia_test_assert(approxeq(1.0, one));
         }
 
+        void reduce_test()
+        {
+            Vector x = values(5, 1.0); 
+
+            Scalar min_val = min(x); 
+            Scalar max_val = max(x); 
+            Scalar sum_val = sum(x); 
+
+            utopia_test_assert(approxeq(1.0, min_val));
+            utopia_test_assert(approxeq(1.0, max_val));
+            utopia_test_assert(approxeq(5.0, sum_val));
+
+            x = values(5, -1.0); 
+
+            min_val = min(x); 
+            max_val = max(x); 
+            sum_val = sum(x); 
+
+            utopia_test_assert(approxeq(-1.0, min_val));
+            utopia_test_assert(approxeq(-1.0, max_val));
+            utopia_test_assert(approxeq(-5.0, sum_val));     
+        }
+
         void binary_min_max()
         {
             const int n = mpi_world_size() * 2;
@@ -190,6 +214,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(norm_test);
             UTOPIA_RUN_TEST(dot_test);
             UTOPIA_RUN_TEST(dot_product_composition_test);
+            UTOPIA_RUN_TEST(reduce_test);
             UTOPIA_RUN_TEST(binary_min_max);
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(divide_dots_test);
@@ -198,7 +223,65 @@ namespace utopia {
     };
 
     template<class Matrix, class Vector>
-    class AlgebraTest {
+    class SparseAlgebraTest {
+    public:
+
+        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+        static_assert(Traits<Matrix>::Order == 2, "Tensor order of matrix must be 2");
+
+        static const int n = is_dense<Matrix>::value? 600 : 8000; 
+
+        void sparse_chop_test()
+        {
+            Matrix M = sparse(n, n, 3);
+            assemble_laplacian_1D(M);
+
+            // mpi_world_barrier();
+            
+            // Chrono c;
+            // c.start();
+            chop_smaller_than(M, 1e-13); 
+            chop_greater_than(M, 1e-13);       
+            
+            // mpi_world_barrier();
+            // c.stop();
+
+            // if(mpi_world_rank() == 0) std::cout << c << std::endl;
+
+            utopia_test_assert(approxeq(0.0, norm2(M), 1e-13));
+        }
+
+        void transform_test()
+        {   
+            Matrix M = sparse(n, n, 3);
+            assemble_laplacian_1D(M);
+            Matrix M_abs = abs(M);
+            const Scalar sum_M_abs = sum(M_abs);
+            
+            Scalar expected = 2*2 + (n - 2) * 4;
+            utopia_test_assert(approxeq(expected, sum_M_abs, 1e-13));
+
+            Matrix sqrt_M_abs = sqrt(M_abs);
+            const Scalar sum_sqrt_M_abs = sum(sqrt_M_abs);
+
+            expected = 2*2 + (n - 2) * (2 + std::sqrt(2.0));
+            utopia_test_assert(approxeq(expected, sum_sqrt_M_abs, 1e-8));
+
+            Matrix M_abs_2 = pow2(sqrt_M_abs);
+            utopia_test_assert(approxeq(M_abs, M_abs_2, 1e-8));
+        }
+
+        void run()
+        {
+            UTOPIA_RUN_TEST(sparse_chop_test);
+            UTOPIA_RUN_TEST(transform_test);
+        }
+    };
+
+    template<class Matrix, class Vector>
+    class DenseAlgebraTest {
     private:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
@@ -231,6 +314,11 @@ namespace utopia {
         {
             if(!is_sparse<Matrix>::value && Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
                 std::cerr << "[Warning] petsc does not support parallel dense matrix-matrix multiplication" << std::endl;
+                return;
+            }
+
+            if(mpi_world_size() > 3) {
+                std::cerr << "[Warning] multiply_test not run for comm size > 3" << std::endl;
                 return;
             }
 
@@ -353,6 +441,30 @@ namespace utopia {
             utopia_test_assert(approxeq(m, oracle, 1e-16));
         }
 
+        void chop_test()
+        {
+            SizeType n = 10; 
+            Vector x = values(n, 1.0); 
+            Vector y = values(n, -1.0); 
+
+            each_write(y, [n](const SizeType &i) -> Scalar
+            {
+                if(i == 0){
+                    return 1e-14; 
+                }
+                else{
+                    return  (i < n/2.0) ? -i : i ; 
+                }
+            });                
+
+
+            Matrix M = outer(x, y); 
+            chop_smaller_than(M, 1e-13); 
+            chop_greater_than(M, 1e-13);       
+
+            utopia_test_assert(approxeq(0.0, norm2(M), 1e-13));
+        }
+
     public:
         void run()
         {
@@ -366,23 +478,26 @@ namespace utopia {
             UTOPIA_RUN_TEST(nnz_test);
             UTOPIA_RUN_TEST(trace_test);
             UTOPIA_RUN_TEST(in_place_test);
+            UTOPIA_RUN_TEST(chop_test);
         }
     };
 
     static void algebra()
     {
-
 #ifdef WITH_BLAS
-        AlgebraTest<BlasMatrixd, BlasVectord>().run();
+        DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        AlgebraTest<PetscMatrix, PetscVector>().run();
+        DenseAlgebraTest<PetscMatrix, PetscVector>().run();
+        SparseAlgebraTest<PetscMatrix, PetscVector>().run();
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS
         VectorAlgebraTest<TpetraVector>().run();
+        SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
 #endif //WITH_TRILINOS
         
     }    

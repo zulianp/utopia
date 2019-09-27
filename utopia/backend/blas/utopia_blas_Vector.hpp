@@ -262,7 +262,7 @@ namespace utopia {
     
 
         ///<T>AMAX - index of max abs value
-        inline SizeType amax() const override
+        inline SizeType amax() const //override
         {
             return BLASAlgorithms<T>::amax(size(), ptr(), 1);
         }

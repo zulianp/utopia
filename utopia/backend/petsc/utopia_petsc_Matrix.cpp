@@ -155,11 +155,9 @@ namespace utopia {
     template<class Op>
     void PetscMatrix::aux_transform(const Op &op)
     {
-
-        assert(false && "IMPLEMENT ME");
-        // each_transform(*this, *this, [op](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
-        //     return op.template apply(value);
-        // });
+        each_transform(*this, [op](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
+            return op.template apply(value);
+        });
     }
 
     MatType PetscMatrix::type_override() const
@@ -1385,6 +1383,7 @@ namespace utopia {
         assert(false && "TODO");
     }
 
+    /// y := alpha * op(A) * x + beta * y
     void PetscMatrix::gemv(const bool transpose_A, const Scalar &alpha, const PetscVector &x, const Scalar &beta, PetscVector &y) const
     {
         if(alpha == 1.0 && beta == 1.0) {
@@ -1396,17 +1395,23 @@ namespace utopia {
 
             return;
 
-        } else if(beta == 1.0) {
-            if(transpose_A) {
+        } else if(beta == 0.0) {
+            if(alpha == 0.0) {
+                y.set(0.0);
+            } else if(transpose_A) {
                 transpose_multiply(alpha, x, y);
             } else {
                 multiply(alpha, x, y);
             }
 
             return;
-        }
+        } else {
+            PetscVector temp;
+            temp.scale(beta);
 
-        assert(false && "TODO");
+            multiply(alpha, x, y);
+            y.axpy(-1.0, temp);
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1544,33 +1549,7 @@ namespace utopia {
 
     bool PetscMatrix::create_vecs(Vec *x, Vec *y) const
     {
-        // if(is_cuda()) {
-        //     auto vec_type = compatible_cuda_vec_type();
-        //     Size s = size();
-        //     Size ls = local_size();
-
-        //     MPI_Comm comm = communicator();
-
-        // 	if(x) {
-        //         check_error( VecCreate(comm, x) );
-        //         check_error( VecSetFromOptions(*x) );
-        //         check_error( VecSetType(*x, vec_type) );
-
-        //         check_error( VecSetSizes(*x, ls.get(1), s.get(1)) );
-        // 	}
-
-        // 	if(y) {
-        //         check_error( VecCreate(comm, y) );
-        //         check_error( VecSetFromOptions(*y) );
-        //         check_error( VecSetType(*y, vec_type) );
-        //         check_error( VecSetSizes(*y, ls.get(0), s.get(0)) );
-        // 	}
-
-        // } else {
-
-            MatCreateVecs(raw_type(), x, y);
-        // }
-
+        MatCreateVecs(raw_type(), x, y);
         return true;
     }
 
@@ -1635,12 +1614,14 @@ namespace utopia {
         copy_to(mat);
     }
 
+    /// C := alpha * A * B
     void PetscMatrix::multiply(const Scalar &alpha, const PetscMatrix &B, PetscMatrix &C) const
     {
-        assert(false && "IMPLEMENT ME");
+        multiply(B, C);
+        C.scale(alpha);
     }
 
-    /// C := alpha * op(A) * op(B)
+    /// C := op(A) * op(B)
     void PetscMatrix::multiply(
        const bool transpose_A,
        const bool transpose_B,
@@ -1665,29 +1646,6 @@ namespace utopia {
         B.multiply(*this, C);
         C.transpose();
     }
-
-    /// C := alpha * op(A) * op(B)
-    void PetscMatrix::multiply(
-       const bool transpose_A,
-       const Scalar alpha,
-       const bool transpose_B,
-       const PetscMatrix &B,
-       PetscMatrix &C) const
-    {
-        assert(false && "IMPLEMENT ME");
-    }
-
-    // <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
-    void PetscMatrix::gemm(
-       const bool transpose_A,
-       const Scalar alpha,
-       const bool transpose_B,
-       const PetscMatrix &B,
-       const Scalar beta,
-       PetscMatrix &C) const
-    {
-        assert(false && "IMPLEMENT ME");
-    }
     
     bool PetscMatrix::valid() const {
         // PetscTruth       flg;
@@ -1704,4 +1662,35 @@ namespace utopia {
     {
         assert(false && "IMPLEMENT ME");
     }
+
+    PetscMatrix::SizeType PetscMatrix::global_nnz() const
+    {
+        if(empty()) return 0;
+
+        MatInfo        info;
+        MatGetInfo(raw_type(), MAT_GLOBAL_SUM, &info);
+        return info.nz_used;
+    }
+
+    PetscMatrix::SizeType PetscMatrix::local_nnz() const
+    {
+        if(empty()) return 0;
+        
+        MatInfo        info;
+        MatGetInfo(raw_type(), MAT_LOCAL, &info);
+        return info.nz_used;
+    }
+
+    PetscMatrix::SizeType PetscMatrix::nnz(const Scalar tol) const
+    {
+        if(empty()) return 0;
+        
+        SizeType ret = 0;
+        each_read(*this, [tol, &ret](const SizeType &, const SizeType &, const Scalar &v) {
+            ret += PetscAbs(v) > tol;
+        });
+
+        return ret;
+    }
+
 }

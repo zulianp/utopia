@@ -231,9 +231,14 @@ namespace utopia {
     }
 
 
+    /**     @defgroup   elementwise Element-wise
+     *       @ingroup    algebra
+    */
+
+
 
     /**
-     * @ingroup tensor_products
+     * @ingroup elementwise
      * @brief   Pointwise multiplication.
      */
     template<class Left, class Right>
@@ -243,7 +248,7 @@ namespace utopia {
     }
 
     /**
-     * @ingroup tensor_products
+     * @ingroup elementwise
      * @brief   Pointwise min.
      */
     template<class Left, class Right>
@@ -251,18 +256,26 @@ namespace utopia {
         return Binary<Left, Right, Min>(left.derived(), right.derived());
     }
 
+    /**
+     * @ingroup elementwise
+     * @brief   Pointwise min.
+     */
     template<class Left, class Right, int Order>
     inline Binary<Left, Number<Right>, Min> min(const Expression<Left> &left, const Factory<Values<Right>, Order> &right) {
         return Binary<Left, Number<Right>, Min>(left.derived(), right.type().value());
     }
 
+    /**
+     * @ingroup elementwise
+     * @brief   Pointwise min.
+     */
     template<class Left, class Right, int Order>
     inline Binary<Left, Number<Right>, Min> min(const Factory<Values<Right>, Order> &right, const Expression<Left> &left) {
         return Binary<Left, Number<Right>, Min>(left.derived(), right.type().value());
     }
 
     /**
-     * @ingroup tensor_products
+     * @ingroup elementwise
      * @brief   Pointwise max.
      */
     template<class Left, class Right>
@@ -270,18 +283,23 @@ namespace utopia {
         return Binary<Left, Right, Max>(left.derived(), right.derived());
     }
 
+    /**
+     * @ingroup elementwise
+     * @brief   Pointwise max.
+     */
     template<class Left, class Right, int Order>
     inline Binary<Left, Number<Right>, Max> max(const Expression<Left> &left, const Factory<Values<Right>, Order> &right) {
         return Binary<Left, Number<Right>, Max>(left.derived(), right.type().value());
     }
 
+    /**
+     * @ingroup elementwise
+     * @brief   Pointwise max.
+     */
     template<class Left, class Right, int Order>
     inline Binary<Left, Number<Right>, Max> max(const Factory<Values<Right>, Order> &right, const Expression<Left> &left) {
         return Binary<Left, Number<Right>, Max>(left.derived(), right.type().value());
     }
-
-
-
 
 }
 

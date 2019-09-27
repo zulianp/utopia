@@ -1,4 +1,3 @@
-
 #include "utopia_Adaptivity.hpp"
 #include "libmesh/elem.h"
 #include "libmesh/remote_elem.h"
@@ -9,6 +8,9 @@
 #include "libmesh/parallel_node.h"
 #include "libmesh/parallel_sync.h"
 #include "libmesh/mesh_tools.h"
+
+
+
 namespace utopia {
 
     void Adaptivity::compute_all_constraints(
@@ -52,21 +54,20 @@ namespace utopia {
         libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
 
         uint n_vars = dof_map.n_variables();
-                
-        // for(uint var_num = 0; var_num < n_vars; ++var_num) 
-        // {
 
-        libMesh::FEType fe_type = dof_map.variable_type(0);
-
-        fe_type.order = static_cast<libMesh::Order>(fe_type.order);
-
-        if (fe_type.order>0)
+        for(uint var_num = 0; var_num < n_vars; ++var_num) 
         {
 
-              process_constraints(mesh_copy, dof_copy, constraints);
-        }
-        //}
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
 
+            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
+
+            if (fe_type.order>0)
+            {
+                process_constraints(mesh_copy, dof_copy, constraints);
+            }
+        }
+      
         std::cout << "--------------------------------------------------\n";
         std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
         std::cout << "--------------------------------------------------\n";
@@ -137,8 +138,6 @@ namespace utopia {
         using IndexArray = Traits<USparseMatrix>::IndexArray;
         
         std::vector<SizeType> index;
-
-        //compute_boundary_nodes(mesh, dof_map, 0, var_num, index);
 
         assemble_constraint(mesh, dof_map, var_num);
         
@@ -393,7 +392,7 @@ namespace utopia {
     //   std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
 
        
-       std::vector<SizeType> index; 
+       std::vector<int> index; 
 
        compute_boundary_nodes(mesh, dof_map, 0,0, index);
 
@@ -430,12 +429,14 @@ namespace utopia {
                         int b_id=*it;
                         
                         if(b_id==item.first) {
+
                             check = false;
                         }
                     }
          
                     if (check ==true) {
-                          unexpanded_set.insert(item.first);                        
+                          unexpanded_set.insert(item.first);     
+
                           constraints_to_expand.push_back(item.first);
                     }
                 }
@@ -914,42 +915,33 @@ namespace utopia {
       libMesh::Parallel::push_parallel_vector_data
         (dof_map.comm(), pushed_keys_vals, keys_vals_action_functor);
 
-
-      // libMesh::GhostingFunctor::map_type elements_to_couple;
-
-
-      // std::set<libMesh::dof_id_type> requested_dofs;
-
-      // for (const auto & pr : elements_to_couple)
-      //   {
-      //     const libMesh::Elem * elem = pr.first;
-
-      //     // FIXME - optimize for the non-fully-coupled case?
-      //     std::vector<libMesh::dof_id_type> element_dofs;
-      //     dof_map.dof_indices(elem, element_dofs);
-
-      //     for (auto dof : element_dofs)
-      //       requested_dofs.insert(dof);
-      //   }
-
-        // std::cout<<"Adaptivity::scatter_constraints::END"<<std::endl; 
     }
+
 
     
 
     void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh, 
-                                            const libMesh::DofMap &dof_map,
+                                            libMesh::DofMap &dof_map,
                                             unsigned int sys_number, unsigned int var_number, 
-                                            std::vector<SizeType> & index)
+                                            std::vector<int> & index)
     {
 
        
-       std::vector<SizeType> index_local;
+       // std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
+       
+       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
 
-       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
+       std::vector<int> dirichlet_id, index_local;
 
+       index_local.clear();
 
+       dirichlet_id.clear();
+
+       index.clear(); 
+
+       if(mesh.mesh_dimension()<3)
        {
+
             libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
             
             const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
@@ -959,9 +951,10 @@ namespace utopia {
                 const libMesh::Elem * ele = *it;
 
                 for(int kk=0; kk<ele->n_sides(); kk++) {       
+                    
                     auto neigh = ele->neighbor_ptr(kk);    
 
-                    if (neigh == libmesh_nullptr && neigh != libMesh::remote_elem)
+                    if (neigh != libMesh::remote_elem && mesh.get_boundary_info().boundary_id(ele, kk)>0)
                     {
                         auto side = ele->build_side_ptr(kk);
 
@@ -992,9 +985,109 @@ namespace utopia {
                 }
             }
         }
+
+       else
+       {
+            {
+                libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+                libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+              
+                const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
+
+                std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
             
+                std::unique_ptr<const libMesh::Elem> my_side, parent_side_0;
+
+                libMesh::FEType fe_type = dof_map.variable_type(0);
+          
+
+              
+                for ( ; it != end_it; ++it)
+                {
+                    const libMesh::Elem * ele = *it; 
+
+                    const auto *ele_parent_0 = ele->top_parent();
+
+                    for(int jj=0; jj<ele_parent_0->n_sides(); jj++) 
+                    {
+
+                                
+                      libmesh_assert(ele_parent_0);
+
+                      auto parent_side_0 = ele_parent_0->build_side_ptr(jj);
+
+                      index_local.clear();
+
+                       for (int ll=0; ll<parent_side_0->n_nodes(); ll++)
+                       {
+                    
+                            const libMesh::Node * node_0 = parent_side_0->node_ptr(ll);
+
+                            const libMesh::dof_id_type node_dof_0 = node_0->dof_number(sys_number, var_number, 0); 
+                           
+                            if(dof_map.is_constrained_dof(node_dof_0)) {
+                                
+                                index_local.push_back(node_dof_0);
+
+                                auto valpos = rhs_values.find(node_dof_0);
+
+                                index.push_back(node_dof_0);                                               
+                            }
+                        }
+
+                           if(index_local.size()==parent_side_0->n_nodes()){
+
+                            auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0,jj);
+
+                            auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
 
 
-   //  std::cout<<"Adaptivity::compute_boundary_nodes::BEGIN "<<std::endl;
+                            if (!check) dirichlet_id.push_back(bc_id);
+                        }
+                    }
+                }
+            }
+
+            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+                
+            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
+                
+            for ( ; it != end_it; ++it)
+            {
+                const libMesh::Elem * ele = *it;
+
+                for(int kk=0; kk<ele->n_sides(); kk++) 
+                {     
+
+                    auto neigh = ele->neighbor_ptr(kk); 
+
+                    auto bc_id = mesh.get_boundary_info().boundary_id(ele,kk);
+
+                    auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
+
+                    if(check)
+                    {
+                         index_local.clear();
+
+                         auto side = ele->build_side_ptr(kk);
+
+                        for (int ll=0; ll<side->n_nodes(); ll++)
+                        {
+                          
+                            const libMesh::Node * node = side->node_ptr(ll);
+
+                            const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
+
+                            index.push_back(node_dof);
+                        }
+                    }
+                }
+            }
+        }
+
+
+    // std::cout<<"Adaptivity::compute_boundary_nodes::END "<<std::endl; 
     }
+        
 }
