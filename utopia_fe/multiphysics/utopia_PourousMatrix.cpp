@@ -171,20 +171,30 @@ namespace utopia {
 
         auto &m = V.mesh();
 
+
         Read<UVector> r(error_);
+        auto el = elements_begin(m);
+        auto el_end = elements_end(m);
 
         bool refined = false;
-        for(auto e_it = elements_begin(m); e_it != elements_end(m); ++e_it) {
-            auto &e = **e_it;
+        for(; el != el_end; ++el) {
+            auto &e = **el;
             auto idx = e.dof_number(system_num_, error_var_num_, 0);
 
+            assert(idx < grad_space_.subspace(0).dof_map().n_dofs());
+            assert(idx < size(error_).get(0));
+
             auto err = error_.get(idx);
+            //max_local_error_*=n_refinements_;
 
             if(err > max_local_error_) {
                 refined = true;
                 e.set_refinement_flag(libMesh::Elem::REFINE);
             }
         }
+
+
+        std::cout<<"I am refining::end "<<std::endl;
 
 
         libMesh::MeshRefinement refinement(m);

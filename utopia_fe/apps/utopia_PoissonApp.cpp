@@ -26,24 +26,42 @@ namespace utopia {
         UIMesh<libMesh::DistributedMesh> mesh(comm());
         UIFunctionSpace<LibMeshFunctionSpace> space(make_ref(mesh));
 
+
         in.get("mesh", mesh);
         in.get("space", space);
+    
+        UIForcingFunction<LibMeshFunctionSpace, UVector> forcing_function(space.subspace(0));
+
+        in.get("forcing-function", forcing_function);
+        
+
 
         auto &V = space.space().subspace(0);
+       
 
         auto u = trial(V);
         auto v = test(V);
+
+
+        //forcing_function_ = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
 
         auto linear_form = inner(coeff(0.0), v) * dX;
         auto bilinear_form = inner(grad(u), grad(v)) * dX;
 
         USparseMatrix A;
-        UVector rhs, x;
+        UVector rhs, x, neumann_bc;
         
 
         //rhs.set(1.0);
-
         assemble(bilinear_form == linear_form, A, rhs);
+
+        x = local_zeros(local_size(rhs));
+
+        neumann_bc = local_zeros(local_size(rhs));
+        
+        forcing_function.eval(x,neumann_bc);
+
+        rhs+=neumann_bc;
 
         // utopia::disp(size(A).get(0));
 
@@ -62,7 +80,7 @@ namespace utopia {
 
         // utopia::write("rhs.m", rhs);
 
-        x = local_zeros(local_size(rhs));
+      
 
         Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
         fact.describe(std::cout);
