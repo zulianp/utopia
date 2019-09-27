@@ -1683,6 +1683,8 @@ namespace utopia {
 
     PetscMatrix::SizeType PetscMatrix::nnz(const Scalar tol) const
     {
+        if(empty()) return 0;
+        
         SizeType ret = 0;
         each_read(*this, [tol, &ret](const SizeType &, const SizeType &, const Scalar &v) {
             ret += PetscAbs(v) > tol;

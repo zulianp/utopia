@@ -927,7 +927,7 @@ namespace utopia {
     {
 
        
-       std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
+       // std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
        
        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
 
@@ -1087,7 +1087,7 @@ namespace utopia {
         }
 
 
-    std::cout<<"Adaptivity::compute_boundary_nodes::END "<<std::endl; 
+    // std::cout<<"Adaptivity::compute_boundary_nodes::END "<<std::endl; 
     }
         
 }

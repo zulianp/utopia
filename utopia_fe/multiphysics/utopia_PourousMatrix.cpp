@@ -269,30 +269,45 @@ namespace utopia {
         copy_values(V, sol, P, p_interp_buff);
         synchronize(p_interp_buff);
 
+        assert(!has_nan_or_inf(p_interp_buff));
+
         auto p_interp = interpolate(p_interp_buff, p);
         auto grad_form = inner(grad(p_interp), v) * dX;
 
         auto mass_form = inner(u, v) * dX;
 
-        UVector grad_ph, grad_p_projected, mass_vec;
+        UVector grad_ph, grad_p_projected, mass_vec, inv_mass_vec;
         USparseMatrix mass_mat;
         utopia::assemble(grad_form, grad_ph);
         utopia::assemble(mass_form, mass_mat);
+
+        assert(!has_nan_or_inf(grad_ph));
+        assert(!has_nan_or_inf(mass_mat));
+
+        mass_vec = sum(mass_mat, 1);
+        e_pseudo_inv(mass_vec, inv_mass_vec);
 
         if(!mortar.empty()) {
             grad_ph  = transpose(mortar_matrix) * grad_ph;
             // //FIXME
             mass_mat = USparseMatrix(transpose(mortar_matrix) * mass_mat * mortar_matrix);
-            mass_vec = sum(mass_mat, 1);
-            grad_p_projected = mortar_matrix * e_mul(grad_ph, 1./mass_vec);
+            
+            grad_p_projected = mortar_matrix * e_mul(grad_ph, inv_mass_vec);
         } else {
-            mass_vec = sum(mass_mat, 1);
-            grad_p_projected = e_mul(grad_ph, 1./mass_vec);
+            grad_p_projected = e_mul(grad_ph, inv_mass_vec);
         }
+
+        assert(!has_nan_or_inf(grad_ph));
+        assert(!has_nan_or_inf(mass_vec));
+        assert(!has_nan_or_inf(inv_mass_vec));
+        assert(!has_nan_or_inf(grad_p_projected));
 
         UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         grad_p_projected_buff = grad_p_projected;
         synchronize(grad_p_projected_buff);
+
+
+        assert(!has_nan_or_inf(grad_p_projected_buff));
 
         auto grad_interp = interpolate(grad_p_projected_buff, u);
         auto error_form  = inner(norm2(grad_interp - grad(p_interp)), test_e) * dX;
@@ -304,8 +319,11 @@ namespace utopia {
         utopia::assemble(vol_form,   vol);
         // error = e_div(error, vol);
 
+        assert(!has_nan_or_inf(error_));
+
         all_values_ = p_interp_buff + grad_p_projected + error_;
 
+        assert(!has_nan_or_inf(all_values_));
 
 
         chrono.stop();
