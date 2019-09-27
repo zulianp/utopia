@@ -483,11 +483,7 @@ namespace utopia {
          ///////////////////////////////////////////////////////////////////////////
 
 
-         inline SizeType nnz(const Scalar tol = 0.0) const override
-         {
-            assert(false && "IMPLEMENT ME");
-            return -1;
-         }
+         SizeType nnz(const Scalar tol = 0.0) const override;
 
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR Transformable //////////////////////////////

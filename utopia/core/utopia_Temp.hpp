@@ -105,14 +105,9 @@ namespace utopia {
 
         static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
         {
-            // static_assert(Traits<Matrix>::Backend<HOMEMADE, "ChopSmallerThan implemented just for petsc backend.");
-            each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &value) -> Scalar {
-                if(value < eps) {
-                    return 0.0;
-                } else {
-                    return value;
-                }
-            });
+              each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
+                  return v < eps ? 0.0 : v;
+              });
         }
     };
 
@@ -124,13 +119,9 @@ namespace utopia {
 
         static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
         {
-           each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &value) -> Scalar {
-               if(value > eps) {
-                   return 0.0;
-               } else {
-                   return value;
-               }
-           });
+          each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
+              return v > eps ? 0.0 : v;
+          });
         }
     };
 
@@ -139,7 +130,6 @@ namespace utopia {
     {
         ChopSmallerThan<Matrix>::apply(A, eps);
     }    
-
 
     template<class Matrix>
     void chop_greater_than(Tensor<Matrix, 2> &A, const double eps)

@@ -180,6 +180,38 @@ namespace utopia {
                 }
             }
         }
+
+        template<class Fun>
+        inline static void apply_transform(Tensor &mat, Fun fun)
+        {
+            const SizeType cols = mat.cols();
+            auto r = row_range(mat);
+
+            ReadAndWrite<Tensor> rw(mat, utopia::LOCAL);
+            for(SizeType i = r.begin(); i < r.end(); ++i) {
+                for(SizeType j = 0; j < cols; ++j) {
+                    mat.set(i, j, fun(i, j, mat.get(i, j)));
+                }
+            }
+        }
+
+        template<class Fun>
+        inline static void apply_transform(Tensor &in, Tensor &out, Fun fun)
+        {
+            assert(raw_type(in) != raw_type(out));
+
+            Write<Tensor> w(out, utopia::LOCAL);
+
+            auto r = row_range(in);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                RowView<Tensor> row(in, i);
+
+                for(SizeType c = 0; c < row.n_values(); ++c) {
+                    const SizeType j = row.col(c);
+                    out.set(i, j, fun(i, j, row.get(c)));
+                }
+            }
+        }
     };
 
     template<class Tensor>
@@ -187,19 +219,6 @@ namespace utopia {
     public:
         using SizeType = typename Traits<Tensor>::SizeType;
         using Scalar   = typename Traits<Tensor>::Scalar;
-
-        // inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
-        // {
-        // 	Range r = row_range(m);
-
-        // 	for(auto i = r.begin(); i != r.end(); ++i) {
-        // 		RowView<const Tensor> row_view(m, i);
-        // 		auto n_values = row_view.n_values();
-        // 		for(decltype(n_values) index = 0; index < n_values; ++index) {
-        // 			fun(row_view.get(index));
-        // 		}
-        // 	}
-        // }
 
         template<class Fun>
         inline static void apply_read(const Tensor &m, Fun fun)
@@ -227,36 +246,32 @@ namespace utopia {
             });
         }
 
-        // template<class Fun>
-        // inline static void apply_write(Tensor &m, Fun fun)
-        // {
-        // 	Range r = row_range(m);
+        template<class Fun>
+        inline static void apply_transform(Tensor &mat, Fun fun)
+        {
+            Tensor mat_copy = mat;
+            apply_transform(mat_copy, mat, fun);
+        }
 
-        // 	//It will not be rewritten anyhow so this is safe
-        // 	for(auto i = r.begin(); i != r.end(); ++i) {
-        // 		RowView<Tensor> row_view(m, i);
+        template<class Fun>
+        inline static void apply_transform(Tensor &in, Tensor &out, Fun fun)
+        {
+            assert(raw_type(in) != raw_type(out));
 
-        // 		for(auto index = 0; index < row_view.n_values(); ++index) {
-        // 			row_view.set_value_at(index, fun(i, row_view.get_col_at(index)));
-        // 		}
-        // 	}
-        // }
+            out.scale(0.0);
 
-        // template<class Fun>
-        // inline static void apply_transform(Tensor &m, Fun fun)
-        // {
-        // 	Range r = row_range(m);
+            Write<Tensor> w(out, utopia::LOCAL);
 
-        // 	//It will not be rewritten anyhow so this is safe
-        // 	for(auto i = r.begin(); i != r.end(); ++i) {
-        // 		RowView<Tensor> row_view(m, i);
+            auto r = row_range(in);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                RowView<Tensor> row(in, i);
 
-        // 		for(auto index = 0; index < row_view.n_values(); ++index) {
-        // 			auto val = fun(i, row_view.get_col_at(index), row_view.get_value_at(index));
-        // 			row_view.set_value_at(index, val);
-        // 		}
-        // 	}
-        // }
+                for(SizeType c = 0; c < row.n_values(); ++c) {
+                    const SizeType j = row.col(c);
+                    out.set(i, j, fun(i, j, row.get(c)));
+                }
+            }
+        }
     };
 
     //FIXME

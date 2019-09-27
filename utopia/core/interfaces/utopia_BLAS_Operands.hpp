@@ -104,6 +104,7 @@ namespace utopia {
 		    gemv(true, alpha, x, beta, y);
 		}
 
+		/// y := alpha * op(A) * x + beta * y
 		virtual void gemv(const bool transpose, const Scalar &alpha, const Vector &x, const Scalar &beta, Vector &y) const = 0;
 
 

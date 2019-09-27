@@ -245,8 +245,10 @@ namespace utopia {
         //locks (No Op)
         inline void read_lock() override {}
         inline void write_lock(WriteMode) override {}
+        inline void read_and_write_lock(WriteMode) override {}
         inline void read_unlock() override {}
         inline void write_unlock(WriteMode) override {}
+        inline void read_and_write_unlock(WriteMode) override {}
 
         //basic mutators
         inline void set(const SizeType &i, const SizeType &j, const T &value) override

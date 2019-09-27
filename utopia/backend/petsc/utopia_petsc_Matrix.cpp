@@ -155,11 +155,9 @@ namespace utopia {
     template<class Op>
     void PetscMatrix::aux_transform(const Op &op)
     {
-
-        assert(false && "IMPLEMENT ME");
-        // each_transform(*this, *this, [op](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
-        //     return op.template apply(value);
-        // });
+        each_transform(*this, [op](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
+            return op.template apply(value);
+        });
     }
 
     MatType PetscMatrix::type_override() const
@@ -1385,6 +1383,7 @@ namespace utopia {
         assert(false && "TODO");
     }
 
+    /// y := alpha * op(A) * x + beta * y
     void PetscMatrix::gemv(const bool transpose_A, const Scalar &alpha, const PetscVector &x, const Scalar &beta, PetscVector &y) const
     {
         if(alpha == 1.0 && beta == 1.0) {
@@ -1396,17 +1395,23 @@ namespace utopia {
 
             return;
 
-        } else if(beta == 1.0) {
-            if(transpose_A) {
+        } else if(beta == 0.0) {
+            if(alpha == 0.0) {
+                y.set(0.0);
+            } else if(transpose_A) {
                 transpose_multiply(alpha, x, y);
             } else {
                 multiply(alpha, x, y);
             }
 
             return;
-        }
+        } else {
+            PetscVector temp;
+            temp.scale(beta);
 
-        assert(false && "TODO");
+            multiply(alpha, x, y);
+            y.axpy(-1.0, temp);
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1609,12 +1614,14 @@ namespace utopia {
         copy_to(mat);
     }
 
+    /// C := alpha * A * B
     void PetscMatrix::multiply(const Scalar &alpha, const PetscMatrix &B, PetscMatrix &C) const
     {
-        assert(false && "IMPLEMENT ME");
+        multiply(B, C);
+        C.scale(alpha);
     }
 
-    /// C := alpha * op(A) * op(B)
+    /// C := op(A) * op(B)
     void PetscMatrix::multiply(
        const bool transpose_A,
        const bool transpose_B,
@@ -1672,6 +1679,16 @@ namespace utopia {
         MatInfo        info;
         MatGetInfo(raw_type(), MAT_LOCAL, &info);
         return info.nz_used;
+    }
+
+    PetscMatrix::SizeType PetscMatrix::nnz(const Scalar tol) const
+    {
+        SizeType ret = 0;
+        each_read(*this, [tol, &ret](const SizeType &, const SizeType &, const Scalar &v) {
+            ret += PetscAbs(v) > tol;
+        });
+
+        return ret;
     }
 
 }

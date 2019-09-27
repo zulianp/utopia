@@ -105,6 +105,9 @@ namespace utopia {
 		virtual Scalar get(const SizeType &i, const SizeType &j) const = 0;
 		virtual void set(const Scalar &val) = 0;
 
+		virtual void read_and_write_lock(WriteMode mode) = 0;
+		virtual void read_and_write_unlock(WriteMode mode) = 0;
+
 		virtual ~DenseMatrix() {}
 	};
 
