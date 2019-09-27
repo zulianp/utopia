@@ -160,7 +160,7 @@ namespace utopia {
     };
 
     template<class Fun>
-    inline void parallel_each_transform(TpetraMatrixd &mat, Fun fun)
+    inline void parallel_transform(TpetraMatrixd &mat, Fun fun)
     {
         typedef Kokkos::TeamPolicy<>               team_policy;
         typedef Kokkos::TeamPolicy<>::member_type  member_type;

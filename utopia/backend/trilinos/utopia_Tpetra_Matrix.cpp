@@ -728,7 +728,7 @@ namespace utopia {
         using Scalar = Traits<TpetraMatrix>::Scalar;
 
         KokkosOp<Scalar, Op> k_op(op);
-        parallel_each_transform(mat, KOKKOS_LAMBDA(const Scalar value) -> Scalar {
+        parallel_transform(mat, KOKKOS_LAMBDA(const Scalar value) -> Scalar {
             return k_op.apply(value);
         });
     }

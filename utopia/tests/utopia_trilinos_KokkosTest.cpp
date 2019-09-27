@@ -155,7 +155,7 @@ namespace utopia {
             }
         }
 
-        parallel_each_transform(P, KOKKOS_LAMBDA(const double value) -> double {
+        parallel_transform(P, KOKKOS_LAMBDA(const double value) -> double {
             return value * 2.;
         });
 
