@@ -329,11 +329,6 @@ namespace utopia
                 this->transfer(level).project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
                 this->transfer(level).project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
 
-                std::cout<<"TODO:: fix RMTR inf(non quasi) - projection of bounds..... \n"; 
-
-                // ------------------------ old version, incorect in case that projection has negative elements  -----------------
-                // this->transfer(level).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level]);
-                // this->transfer(level).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level]);
             }
 
 
@@ -497,7 +492,7 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
             Scalar radius = this->memory_.delta[level];
 
@@ -517,16 +512,16 @@ namespace utopia
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
 
-            // // setting should be really parameters from outside ...
-            // this->_tr_subproblems[level]->atol(1e-16);
+            // setting should be really parameters from outside ...
+            this->_tr_subproblems[level]->atol(1e-14);
 
-            // To do this, we need to do some casting to QP solver, not to matrix free thing... 
-            // if(flg){
-            //     this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
-            // }
-            // else{
-            //     this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
-            // }
+            //To do this, we need to do some casting to QP solver, not to matrix free thing... 
+            if(flg){
+                this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
+            }
+            else{
+                this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
+            }
 
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
@@ -564,15 +559,6 @@ namespace utopia
 
             this->memory_.s[level] = s_new; 
 
-
-            // std::cout<< "norm_infty(test)  "<< norm_infty(test) <<"  \n"; 
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-            // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
-            //         tr_subproblem->tr_constrained_solve(*multiplication_action, this->memory_.g[level], this->memory_.s[level], box);
-
             return true;
         }
 
@@ -594,13 +580,6 @@ namespace utopia
             // swap back....
             this->memory_.g[level] = grad_old;
 
-            // std::cout<<"grad_old: "<< norm2(grad_old) << "   \n"; 
-            // std::cout<<"norm2( this->memory_.g[level]): "<< norm2( this->memory_.g[level]) << "   \n"; 
-            // std::cout<<"norm2(y): "<< norm2(y) << "   \n"; 
-            // std::cout<<"norm2(this->memory_.s[level]): "<< norm2(this->memory_.s[level]) << "   \n"; 
-
-
-            // hessian_approxs_[level]->update(this->memory_.s[level], y);
             hessian_approxs_[level]->update(this->memory_.s[level], y, this->memory_.x[level], this->memory_.g[level]);
 
             return true;

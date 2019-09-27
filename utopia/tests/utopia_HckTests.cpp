@@ -1,6 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
 namespace utopia
 {
@@ -33,7 +34,7 @@ namespace utopia
             input_params_.set("pre_smoothing_steps", 5); 
             input_params_.set("post_smoothing_steps", 5); 
             input_params_.set("max_sucessful_smoothing_it", 1);   
-            input_params_.set("max_QP_smoothing_it", 10);   
+            input_params_.set("max_QP_smoothing_it", 3);   
             input_params_.set("delta0", 1);   
             input_params_.set("grad_smoothess_termination", 1e-8);      
         }
@@ -64,7 +65,10 @@ namespace utopia
             // UTOPIA_RUN_TEST(TR_tril_test); 
             UTOPIA_RUN_TEST(RMTR_tril_test_lin_un_inf); 
 
+            // UTOPIA_RUN_TEST(chop_test_sparse); 
+
         }
+
 
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const 
@@ -507,35 +511,31 @@ namespace utopia
 
                 #endif //WITH_TRILINOS                     
 
-
             #endif //WITH_PETSC 
-
 
         }
 
 
-        std::shared_ptr<QuadraticExtendedFunction<TpetraMatrixd, TpetraVectord> > copy_QPfun_to_tril(const Poisson3D<PetscMatrix, PetscVector> & fun)
+        template<class Matrix1, class Vector1, class Matrix2, class Vector2>
+        std::shared_ptr<QuadraticExtendedFunction<Matrix2, Vector2> > copy_QPfun_to_tril(const Poisson3D<Matrix1, Vector1> & fun)
         {
-            PetscMatrix H; 
-            PetscVector g, x_eq, x_bc_marker; 
+            Matrix1 H; 
+            Vector1 g, x_eq, x_bc_marker; 
 
             fun.get_A_rhs(H, g); 
             fun.get_eq_constrains_values(x_eq); 
             fun.get_eq_constrains_flg(x_bc_marker); 
 
-            TpetraMatrixd H_tril; 
-            TpetraVectord g_tril; 
-            TpetraVectord x_eq_tril, x_bc_marker_tril, empty_rhs_tril; 
+            Matrix2 H_tril; 
+            Vector2 g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril; 
             backend_convert_sparse(H, H_tril);
             backend_convert(g, g_tril);
             backend_convert(x_eq, x_eq_tril);
             backend_convert(x_bc_marker, x_bc_marker_tril);
             empty_rhs_tril = 0.0*x_eq_tril; 
 
-            return std::make_shared<QuadraticExtendedFunction<TpetraMatrixd, TpetraVectord> >(H_tril, g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril); 
-
+            return std::make_shared<QuadraticExtendedFunction<Matrix2, Vector2> >(H_tril, g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril); 
         }
-
 
 
         void RMTR_tril_test_lin_un_inf()
@@ -553,39 +553,44 @@ namespace utopia
 
                 #ifdef WITH_TRILINOS
 
-                    TpetraVectord x_tril; 
+                    typedef TpetraVectord VectorTril;
+                    typedef TpetraMatrixd MatrixTril;
+
+
+                    VectorTril x_tril; 
                     
                     backend_convert(x, x_tril);
-                    TpetraVectord lb_tril = local_values(local_size(x_tril).get(0), -9e9); 
-                    TpetraVectord ub_tril = local_values(local_size(x_tril).get(0), 9e9); 
+                    VectorTril lb_tril = local_values(local_size(x_tril).get(0), -9e9); 
+                    VectorTril ub_tril = local_values(local_size(x_tril).get(0), 9e9); 
 
 
-                    std::vector<std::shared_ptr<Transfer<TpetraMatrixd, TpetraVectord> > > transfers_tril; 
+                    std::vector<std::shared_ptr<Transfer<MatrixTril, VectorTril> > > transfers_tril; 
                     for(auto i=0; i < multilevel_problem.transfers_.size(); i++)
                     {
                         MatrixTransfer<Matrix, Vector> * mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector> *>(multilevel_problem.transfers_[i].get());
 
-                        TpetraMatrixd I_tril; 
+                        MatrixTril I_tril; 
                         backend_convert_sparse(mat_transfer->I(), I_tril); 
-                        transfers_tril.push_back( std::make_shared<MatrixTransfer<TpetraMatrixd, TpetraVectord> >( std::make_shared<TpetraMatrixd>(I_tril)));
+                        transfers_tril.push_back( std::make_shared<MatrixTransfer<MatrixTril, VectorTril> >( std::make_shared<MatrixTril>(I_tril)));
                     }
 
 
-                    std::vector<std::shared_ptr<ExtendedFunction<TpetraMatrixd, TpetraVectord> > >  level_functions_tril;
+                    std::vector<std::shared_ptr<ExtendedFunction<MatrixTril, VectorTril> > >  level_functions_tril;
                     level_functions_tril.resize(multilevel_problem.level_functions_.size()); 
                     for(auto i=0; i < multilevel_problem.level_functions_.size(); i++)
                     {
-                        
                         Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(multilevel_problem.level_functions_[i].get());
-                        level_functions_tril[i] = copy_QPfun_to_tril(*fun_Laplace); 
+                        level_functions_tril[i] = copy_QPfun_to_tril<Matrix, Vector, TpetraMatrixd, TpetraVectord>(*fun_Laplace); 
                     }   
 
 
-                    auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<TpetraMatrixd, TpetraVectord> >();
-                    auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<TpetraMatrixd, TpetraVectord> >();
-                    // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<TpetraMatrixd, TpetraVectord> >();                
+                    auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<MatrixTril, VectorTril> >();
+                    // auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<MatrixTril, VectorTril> >();
+                    auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<TpetraMatrixd, TpetraVectord> >();                
                     
-                    auto rmtr = std::make_shared<RMTR_inf<TpetraMatrixd, TpetraVectord, FIRST_ORDER> >(n_levels_);
+                    auto rmtr = std::make_shared<RMTR_inf<MatrixTril, VectorTril, GALERKIN> >(n_levels_);
+
+            
 
                     // Set TR-QP strategies 
                     rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -599,6 +604,7 @@ namespace utopia
                     rmtr->read(input_params_); 
                     rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
                     rmtr->verbose(true);
+                    rmtr->delta0(1e5);
                     // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
                     rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
                     
