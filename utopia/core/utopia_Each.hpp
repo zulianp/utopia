@@ -274,15 +274,19 @@ namespace utopia {
         }
     };
 
-    //FIXME
     template<class Tensor>
     class Each<Tensor, 2, FillType::POLYMORPHIC> : public Each<Tensor, 2, FillType::SPARSE> {
     public:
         template<class Fun>
         inline static void apply_write(Tensor &m, Fun fun)
         {
-            #warning "Using apply_write in polymorphic without checking if matrix is dense first"
-            Each<Tensor, 2, FillType::DENSE>::apply_write(m, fun);
+            if(m.is_dense()) {
+                Each<Tensor, 2, FillType::DENSE>::apply_write(m, fun);
+            } else {
+                // Each<Tensor, 2, FillType::SPARSE>::apply_write(m, fun);
+                assert(false && "IMPLEMENT ME");
+                m_utopia_error("NOT IMPLEMENTED FOR SPARSE MATRICES");
+            }
         }
 
     };

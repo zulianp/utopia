@@ -117,6 +117,13 @@ namespace utopia {
 		virtual ~SparseMatrix() {}
 	};
 
+	class PolymorphicMatrix {
+	public:
+		virtual ~PolymorphicMatrix() {}
+		virtual bool is_dense() const { return !is_sparse(); }
+		virtual bool is_sparse() const = 0;
+	};
+
 	//parallel types, collective operations
 	template<typename Scalar_, typename SizeType_>
 	class DistributedMatrix : public MatrixBase<Scalar_, SizeType_>, public DistributedObject {

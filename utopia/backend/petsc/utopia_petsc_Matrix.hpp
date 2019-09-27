@@ -115,6 +115,7 @@ namespace utopia {
     class PetscMatrix :
         // Dynamic polymorphic types
         public DistributedMatrix<PetscScalar, PetscInt>,
+        public PolymorphicMatrix,
         public Constructible<PetscScalar, PetscInt, 2>,
         public Normed<PetscScalar>,
         public Reducible<PetscScalar>,
@@ -728,7 +729,7 @@ namespace utopia {
         void copy_to(Mat mat) const;
         void copy_to(Mat *mat) const;
 
-        bool is_sparse() const;
+        bool is_sparse() const override;
 
         void select(const PetscIndexSet &row_index,
                     const PetscIndexSet &col_index,
