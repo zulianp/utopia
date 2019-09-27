@@ -231,9 +231,10 @@ namespace utopia {
 
         static_assert(Traits<Matrix>::Order == 2, "Tensor order of matrix must be 2");
 
+        static const int n = is_dense<Matrix>::value? 600 : 8000; 
+
         void sparse_chop_test()
         {
-            SizeType n = is_dense<Matrix>::value? 600 : 8000; 
             Matrix M = sparse(n, n, 3);
             assemble_laplacian_1D(M);
 
@@ -252,9 +253,30 @@ namespace utopia {
             utopia_test_assert(approxeq(0.0, norm2(M), 1e-13));
         }
 
+        void transform_test()
+        {   
+            Matrix M = sparse(n, n, 3);
+            assemble_laplacian_1D(M);
+            Matrix M_abs = abs(M);
+            const Scalar sum_M_abs = sum(M_abs);
+            
+            Scalar expected = 2*2 + (n - 2) * 4;
+            utopia_test_assert(approxeq(expected, sum_M_abs, 1e-13));
+
+            Matrix sqrt_M_abs = sqrt(M_abs);
+            const Scalar sum_sqrt_M_abs = sum(sqrt_M_abs);
+
+            expected = 2*2 + (n - 2) * (2 + std::sqrt(2.0));
+            utopia_test_assert(approxeq(expected, sum_sqrt_M_abs, 1e-8));
+
+            Matrix M_abs_2 = pow2(sqrt_M_abs);
+            utopia_test_assert(approxeq(M_abs, M_abs_2, 1e-8));
+        }
+
         void run()
         {
             UTOPIA_RUN_TEST(sparse_chop_test);
+            UTOPIA_RUN_TEST(transform_test);
         }
     };
 
