@@ -285,7 +285,7 @@ namespace utopia {
             } else {
                 // Each<Tensor, 2, FillType::SPARSE>::apply_write(m, fun);
                 assert(false && "IMPLEMENT ME");
-                m_utopia_error("NOT IMPLEMENTED FOR SPARSE MATRICES");
+                // m_utopia_error("NOT IMPLEMENTED FOR SPARSE MATRICES");
             }
         }
 
