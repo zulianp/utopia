@@ -661,7 +661,9 @@ namespace utopia {
 
     PetscVector::SizeType PetscVector::amax() const
     {
-         assert(false && "IMPLEMENT ME");
-         return -1;
+        SizeType idx = 0;
+        Scalar val = 0.0;
+        VecMax(raw_type(), &idx, &val);
+        return idx;
     }
 }

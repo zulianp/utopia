@@ -2,6 +2,7 @@
 #include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
+#include "utopia_kokkos_ParallelEach.hpp"
 
 #include <TpetraExt_MatrixMatrix_def.hpp>
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
@@ -113,16 +114,26 @@ namespace utopia {
 
     void TpetraMatrix::multiply(const TpetraMatrix &right, TpetraMatrix &result) const
     {
-        multiply(false, right, false, result);
+        multiply(false, false, right, result);
+    }
+
+    void TpetraMatrix::multiply(const Scalar &alpha, const TpetraMatrix &B, TpetraMatrix &C) const
+    {
+        multiply(B, C);
+        C.scale(alpha);
     }
 
     void TpetraMatrix::transpose_multiply(const TpetraMatrix &right, TpetraMatrix &result) const
     {
-        multiply(true, right, false, result);
+        multiply(true, false, right, result);
     }
 
     //result op(*this) * op
-    void TpetraMatrix::multiply(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const
+    void TpetraMatrix::multiply(
+        const bool transpose_this,
+        const bool transpose_right,
+        const TpetraMatrix &right,
+        TpetraMatrix &result) const
     {
         m_utopia_status_once("TpetraMatrix::multiply Proper thing to do would be to check if the maps are compatible");
         //IMPROVEME
@@ -239,7 +250,7 @@ namespace utopia {
         }
     }
 
-    void TpetraMatrix::axpy(const Scalar alpha, const TpetraMatrix &x)
+    void TpetraMatrix::axpy(const Scalar &alpha, const TpetraMatrix &x)
     {
         try {
             mat_ = Tpetra::MatrixMatrix::add(
@@ -405,9 +416,11 @@ namespace utopia {
         implementation().getLocalDiagCopy(d.implementation());
     }
 
-    void TpetraMatrix::diag(const TpetraMatrix &d)
+    void TpetraMatrix::diag(const TpetraMatrix &mat)
     {
-        assert(false && "IMPLEMENT ME");
+        TpetraVector d;
+        mat.build_diag(d);
+        diag(d);
     }
 
     void TpetraMatrix::diag(const TpetraVector &d)
@@ -709,4 +722,141 @@ namespace utopia {
         );
     }
 
+    template<class Op>
+    inline static void aux_transform(const Op &op, TpetraMatrix &mat)
+    {
+        using Scalar = Traits<TpetraMatrix>::Scalar;
+
+        KokkosOp<Scalar, Op> k_op(op);
+        parallel_each_transform(mat, KOKKOS_LAMBDA(const Scalar value) -> Scalar {
+            return k_op.apply(value);
+        });
+    }
+
+    void TpetraMatrix::transform(const Sqrt &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Pow2 &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Log &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Exp &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Cos &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Sin &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Abs &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Minus &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Pow &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::transform(const Reciprocal<Scalar> &op)
+    {
+        aux_transform(op, *this);
+    }
+
+    void TpetraMatrix::swap(TpetraMatrix &x)
+    {
+        using std::swap;
+        swap(comm_, x.comm_);
+        swap(mat_, x.mat_);
+        swap(owner_, x.owner_);
+    }
+
+    void TpetraMatrix::scale(const Scalar &alpha)
+    {
+        //Why???
+        write_lock();
+        implementation().scale(alpha);
+        write_unlock();
+    }
+
+    TpetraMatrix::Scalar TpetraMatrix::dot(const TpetraMatrix &other) const
+    {
+        if(raw_type() == other.raw_type()) {
+            const Scalar ret = norm2();
+            return ret*ret;
+        }
+
+        assert(false && "IMPLEMENT ME");
+    }
+
+    //(y := alpha * A * x + beta * y)
+    void TpetraMatrix::gemv(
+        const bool transpose,
+        const Scalar &alpha,
+        const TpetraVector &x,
+        const Scalar &beta,
+        TpetraVector &y) const
+    {   
+        if(alpha == 0.0) {
+            y.scale(beta);
+            return;
+        }
+
+        if(beta == 0.0) {
+            if(transpose) {
+                transpose_multiply(x, y);
+            } else {
+                multiply(x, y);
+            }
+
+            y.scale(alpha);
+            return;
+        }
+
+        //BAD we have a temporary here
+        TpetraVector temp;
+
+        if(transpose) {
+            transpose_multiply(x, temp);
+        } else {
+            multiply(x, temp);
+        }
+
+        temp.scale(alpha);
+        temp.axpy(beta, y);
+        y.copy(temp);
+    }
+
+    bool TpetraMatrix::equals(const TpetraMatrix &other, const Scalar &tol) const
+    {
+        if(raw_type() == other.raw_type()) {
+            return true;
+        }
+
+        if(rows() != other.rows() || cols() != other.cols()) return false;
+
+        TpetraMatrix diff = *this;
+        diff.axpy(-1.0, other);
+        return diff.norm_infty() < tol;
+    }
 }

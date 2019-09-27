@@ -63,7 +63,7 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 #################################################################################
 #################################################################################
 set(UTOPIA_DEV_FLAGS
-    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
+    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=inconsistent-missing-override"
 )
 
 # More annoying

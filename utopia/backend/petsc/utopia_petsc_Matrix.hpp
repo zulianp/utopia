@@ -557,12 +557,12 @@ namespace utopia {
          }
 
          ///I<Scalar>AMAX - index of max abs value
-         SizeType amax() const override
-         {
-            // MatGetRowMaxAbs()
-            assert(false && "IMPLEMENT ME");
-            return 1.0;
-         }
+         // SizeType amax() const override
+         // {
+         //    // MatGetRowMaxAbs()
+         //    assert(false && "IMPLEMENT ME");
+         //    return 1.0;
+         // }
 
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR Operator //////////////////////////////////
@@ -634,24 +634,6 @@ namespace utopia {
             const PetscMatrix &B,
             PetscMatrix &C) const override;
 
-         /// C := alpha * op(A) * op(B)
-         void multiply(
-            const bool transpose_A,
-            const Scalar alpha,
-            const bool transpose_B,
-            const PetscMatrix &B,
-            PetscMatrix &C) const override;
-
-         // <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
-         void gemm(
-            const bool transpose_A,
-            const Scalar alpha,
-            const bool transpose_B,
-            const PetscMatrix &B,
-            const Scalar beta,
-            PetscMatrix &C) const override;
-
-
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR Comparable //////////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
@@ -703,17 +685,12 @@ namespace utopia {
             return wrapper_->implementation();
         }
 
-
-
-
         inline Scalar get(const SizeType row, const SizeType col) const
         {
             Scalar value;
             check_error( MatGetValues(implementation(), 1, &row, 1, &col, &value) );
             return value;
         }
-
-
 
         void add_matrix(const std::vector<SizeType> &rows,
                         const std::vector<SizeType> &cols,
@@ -845,25 +822,6 @@ namespace utopia {
             SizeType global_cols,
             Scalar scale_factor);
 
-        // void matij_init_identity(
-        // 	MPI_Comm comm,
-        // 	SizeType local_rows,
-        // 	SizeType local_cols,
-        // 	SizeType global_rows,
-        // 	SizeType global_cols,
-        // 	Scalar scale_factor);
-
-        // void matij_init(
-        // 	MPI_Comm comm,
-        // 	SizeType rows_local,
-        // 	SizeType cols_local,
-        // 	SizeType rows_global,
-        // 	SizeType cols_global,
-        // 	SizeType d_nnz,
-        // 	SizeType o_nnz
-        // );
-
-
         void matij_init(
             MPI_Comm comm,
             MatType type,
@@ -874,16 +832,6 @@ namespace utopia {
             SizeType d_nnz,
             SizeType o_nnz
         );
-
-     //    void matij_init(
-        // 	MPI_Comm comm,
-        // 	SizeType rows_local,
-        // 	SizeType cols_local,
-        // 	SizeType rows_global,
-        // 	SizeType cols_global,
-        // 	const std::vector<SizeType> &d_nnz,
-        // 	const std::vector<SizeType> &o_nnz
-        // );
 
         void matij_init(
                MPI_Comm comm,

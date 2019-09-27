@@ -14,6 +14,8 @@
 #include "utopia_Transformable.hpp"
 #include "utopia_Comparable.hpp"
 #include "utopia_Vector.hpp"
+#include "utopia_BLAS_Operands.hpp"
+#include "utopia_Normed.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -33,13 +35,15 @@ namespace utopia {
 
     class TpetraVector : 
     public DistributedVector<TpetraScalar, TpetraSizeType>,
-    public ElementWiseOperand<TpetraVector>,
-    public ElementWiseOperand<TpetraScalar>,
+    public Normed<TpetraScalar>,
     public Transformable<TpetraScalar>,
-    public Tensor<TpetraVector, 1>,
-    public Constructible<TpetraScalar, TpetraSizeType, 1>,
     public Reducible<TpetraScalar>,
-    public Comparable<TpetraVector>
+    public Constructible<TpetraScalar, TpetraSizeType, 1>,
+    public ElementWiseOperand<TpetraScalar>,
+    public ElementWiseOperand<TpetraVector>,
+    public Comparable<TpetraVector>,
+    public BLAS1Tensor<TpetraVector>,
+    public Tensor<TpetraVector, 1>
     {
     public:
 
@@ -150,7 +154,7 @@ namespace utopia {
 
         void select(const IndexSet &index, TpetraVector &result) const override;
 
-        void copy(const TpetraVector &other);
+        void copy(const TpetraVector &other) override;
 
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Constructible ////////////////////
@@ -259,9 +263,18 @@ namespace utopia {
                      const std::vector<GO> &ghost_index
         );
 
-        inline void axpy(const Scalar &alpha, const TpetraVector &x)
+        inline void axpy(const Scalar &alpha, const TpetraVector &x) override
         {
             implementation().update(alpha, *x.vec_, 1.);
+        }
+
+        inline void swap(TpetraVector &x) override
+        {
+            using std::swap;
+
+            swap(comm_, x.comm_);
+            swap(vec_, x.vec_);
+            swap(ghosted_vec_, x.ghosted_vec_);
         }
 
         inline void describe(std::ostream &os) const
@@ -270,7 +283,7 @@ namespace utopia {
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
         }
 
-        inline void describe() const
+        inline void describe() const override
         {
             describe(std::cout);
         }
@@ -404,12 +417,12 @@ namespace utopia {
             free_view();
         }
 
-        inline Range range() const
+        inline Range range() const override
         {
             return { implementation().getMap()->getMinGlobalIndex(), implementation().getMap()->getMaxGlobalIndex() + 1 };
         }
 
-        inline SizeType size() const
+        inline SizeType size() const override
         {
             if(is_null()) {
                 return 0;
@@ -418,7 +431,7 @@ namespace utopia {
             return implementation().getMap()->getGlobalNumElements();
         }
 
-        inline SizeType local_size() const
+        inline SizeType local_size() const override
         {
             if(is_null()) {
                 return 0;
@@ -427,26 +440,26 @@ namespace utopia {
             return implementation().getMap()->getNodeNumElements();
         }
 
-        inline Scalar norm2() const {
+        inline Scalar norm2() const override {
            return implementation().norm2();
         }
 
-        inline Scalar norm1() const {
+        inline Scalar norm1() const override {
            return implementation().norm1();
         }
 
-        inline Scalar norm_infty() const {
+        inline Scalar norm_infty() const override {
           return implementation().normInf();
         }
 
         bool has_nan_or_inf() const;
 
-        inline void scale(const Scalar alpha)
+        inline void scale(const Scalar &alpha) override
         {
             implementation().scale(alpha);
         }
 
-        inline Scalar dot(const TpetraVector &other) const
+        inline Scalar dot(const TpetraVector &other) const override
         {
             return implementation().dot(other.implementation());
         }
@@ -515,7 +528,7 @@ namespace utopia {
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
 
-        inline bool empty() const
+        inline bool empty() const  override
         {
             return vec_.is_null();
         }

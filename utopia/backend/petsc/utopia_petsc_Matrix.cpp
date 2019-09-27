@@ -1544,33 +1544,7 @@ namespace utopia {
 
     bool PetscMatrix::create_vecs(Vec *x, Vec *y) const
     {
-        // if(is_cuda()) {
-        //     auto vec_type = compatible_cuda_vec_type();
-        //     Size s = size();
-        //     Size ls = local_size();
-
-        //     MPI_Comm comm = communicator();
-
-        // 	if(x) {
-        //         check_error( VecCreate(comm, x) );
-        //         check_error( VecSetFromOptions(*x) );
-        //         check_error( VecSetType(*x, vec_type) );
-
-        //         check_error( VecSetSizes(*x, ls.get(1), s.get(1)) );
-        // 	}
-
-        // 	if(y) {
-        //         check_error( VecCreate(comm, y) );
-        //         check_error( VecSetFromOptions(*y) );
-        //         check_error( VecSetType(*y, vec_type) );
-        //         check_error( VecSetSizes(*y, ls.get(0), s.get(0)) );
-        // 	}
-
-        // } else {
-
-            MatCreateVecs(raw_type(), x, y);
-        // }
-
+        MatCreateVecs(raw_type(), x, y);
         return true;
     }
 
@@ -1664,29 +1638,6 @@ namespace utopia {
 
         B.multiply(*this, C);
         C.transpose();
-    }
-
-    /// C := alpha * op(A) * op(B)
-    void PetscMatrix::multiply(
-       const bool transpose_A,
-       const Scalar alpha,
-       const bool transpose_B,
-       const PetscMatrix &B,
-       PetscMatrix &C) const
-    {
-        assert(false && "IMPLEMENT ME");
-    }
-
-    // <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
-    void PetscMatrix::gemm(
-       const bool transpose_A,
-       const Scalar alpha,
-       const bool transpose_B,
-       const PetscMatrix &B,
-       const Scalar beta,
-       PetscMatrix &C) const
-    {
-        assert(false && "IMPLEMENT ME");
     }
     
     bool PetscMatrix::valid() const {
