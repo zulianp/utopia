@@ -156,7 +156,7 @@
             g_norm = this->criticality_measure_infty(x_k, g);
           }
 
-          s_norm = norm2(p_k);
+          s_norm = norm_infty(p_k);
 
           if(this->verbose_)
             PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm});

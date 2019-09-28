@@ -45,6 +45,8 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
+            // UTOPIA_RUN_TEST(ProjectedGS);
+
 
             // UTOPIA_RUN_TEST(TR_unconstrained);
             // UTOPIA_RUN_TEST(TR_constrained); 
@@ -119,10 +121,20 @@ namespace utopia
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
             QP_solver->max_it(n_*n_);
-            QP_solver->verbose(false); 
+            QP_solver->verbose(verbose_); 
     
             QP_solve(QP_solver); 
         }
+
+        void ProjectedGS()
+        {
+            auto QP_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            QP_solver->atol(1e-10);
+            QP_solver->max_it(n_*n_);
+            QP_solver->verbose(true); 
+    
+            QP_solve(QP_solver); 
+        }        
 
         void Poisson_test()
         {
@@ -316,15 +328,17 @@ namespace utopia
 
         void TR_constrained()
         {
-            Bratu2D<Matrix, Vector> fun(n_, 5.0);
+            Bratu2D<Matrix, Vector> fun(100, 5.0);
             Vector x = fun.initial_guess(); 
             
             if(verbose_)
                 fun.describe(); 
 
-            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();                
             qp_solver->atol(1e-10);
             qp_solver->max_it(n_*n_);
+            qp_solver->use_line_search(false);
             qp_solver->verbose(false); 
        
 
@@ -337,11 +351,14 @@ namespace utopia
 
             tr_solver.set_box_constraints(box);
             tr_solver.read(input_params_); 
+            tr_solver.verbose(true);
+            tr_solver.delta0(1e-2);
             tr_solver.solve(fun, x);
 
             if(output_vtk_)
                 fun.output_to_VTK(x);
         }        
+
 
         void QuasiTR_constrained()
         {

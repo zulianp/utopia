@@ -78,11 +78,6 @@ namespace utopia {
 
             const Matrix &A = *this->get_operator();
 
-            //TODO generic version
-            assert(!this->has_lower_bound() );
-            std::cout<<"has lower bound: "<<this->has_lower_bound()  << "  \n";  
-            // init(A);
-
             x_old = x;
             bool converged = false;
             const SizeType check_s_norm_each = 5;
@@ -203,14 +198,19 @@ namespace utopia {
         bool step(const Matrix &A, const Vector &b, Vector &x)
         {
             r = b - A * x;
+            
             //localize gap function for correction
+            this->fill_empty_bounds(); 
             ub_loc = this->get_upper_bound() - x;
+            lb_loc = this->get_lower_bound() - x;
+
+
             c *= 0.;
 
             Range rr = row_range(A);
             {
                 ReadAndWrite<Vector> rw_c(c);
-                Read<Vector> r_r(r), r_d_inv(d_inv), r_g(ub_loc);
+                Read<Vector> r_r(r), r_d_inv(d_inv), r_g(ub_loc), rl(lb_loc);
                 Read<Matrix> r_A(A);
 
                 for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
@@ -231,7 +231,7 @@ namespace utopia {
                         }
 
                         //update correction
-                        c.set(i, std::min( d_inv.get(i) * s, ub_loc.get(i)) );
+                        c.set(i, std::max(std::min( d_inv.get(i) * s, ub_loc.get(i)), lb_loc.get(i)) );
                     }
 
                     if(use_symmetric_sweep_) {
@@ -251,7 +251,8 @@ namespace utopia {
                             }
 
                             //update correction
-                            c.set(i, std::min( d_inv.get(i) * s, ub_loc.get(i)) );
+                            // c.set(i, std::min( d_inv.get(i) * s, ub_loc.get(i)) );
+                            c.set(i, std::max(std::min( d_inv.get(i) * s, ub_loc.get(i)), lb_loc.get(i)) );                            
                         }
                     }
                 }
@@ -262,11 +263,11 @@ namespace utopia {
                 inactive_set_ *= 0.;
 
                 {
-                    Read<Vector> r_c(c), r_g(ub_loc);
+                    Read<Vector> r_c(c), r_g(ub_loc), r_l(lb_loc);
                     Write<Vector> w_a(inactive_set_);
 
                     for(auto i = rr.begin(); i != rr.end(); ++i) {
-                        if(c.get(i) < ub_loc.get(i)) {
+                        if((c.get(i) < ub_loc.get(i)) && (c.get(i) > lb_loc.get(i))) {
                             inactive_set_.set(i, 1.);
                         }
                     }
@@ -289,11 +290,11 @@ namespace utopia {
                 if(alpha <= 0) {
                     std::cerr << "[Warning] negative alpha" << std::endl;
                     alpha = 1.;
-                    descent_dir = utopia::min(r, ub_loc);
+                    descent_dir = utopia::max(utopia::min(r, ub_loc), ub_loc);
                 } else if(alpha <= 1.) {
                     descent_dir = alpha * c;
                 } else {
-                    descent_dir = utopia::min(alpha * c, ub_loc);
+                    descent_dir = utopia::max(utopia::min(alpha * c, ub_loc), ub_loc);
                 }
                 x += descent_dir;
             }
@@ -351,7 +352,7 @@ namespace utopia {
         bool use_symmetric_sweep_;
         SizeType n_local_sweeps_;
 
-        Vector r, d, ub_loc, c, d_inv, x_old, descent_dir;
+        Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir;
         Vector inactive_set_;
         Vector is_c_;
     };
