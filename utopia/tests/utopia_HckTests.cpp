@@ -66,7 +66,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(RMTR_tril_test_lin_un_inf); 
 
 
-            UTOPIA_RUN_TEST(Bratu_utopia_fun); 
+            // UTOPIA_RUN_TEST(Bratu_utopia_fun); 
 
         }
 
@@ -83,6 +83,8 @@ namespace utopia
             fun.gradient(x, g); 
             x *= 0.0;
 
+            // monitor(0, H, "Hessian.m", "H"); 
+            // monitor(0, g, "gradient.m", "g"); 
 
             if(dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get()))
             {
@@ -93,7 +95,7 @@ namespace utopia
                 qp_box->solve(H, -1.0*g, x); 
             }
             else
-            {
+            {   
                 qp_solver->solve(H, -1.0*g, x); 
             }
         }
@@ -103,10 +105,11 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+
             QP_solver->atol(1e-10);
             QP_solver->max_it(n_*n_);
             QP_solver->verbose(verbose_); 
-            QP_solver->current_radius(9e9); 
+            QP_solver->current_radius(2.0); 
 
             QP_solve(QP_solver); 
         }
@@ -209,7 +212,7 @@ namespace utopia
             // Bratu2D<Matrix, Vector> fun(10, 0.0);
             // Vector x = fun.initial_guess(); 
 
-            SizeType n = 40; 
+            SizeType n = 60; 
 
             Poisson3D<Matrix, Vector> fun_Poisson3D(n); 
             Vector x = fun_Poisson3D.initial_guess(); 
@@ -221,34 +224,45 @@ namespace utopia
             fun_Poisson3D.get_eq_constrains_values(x_eq); 
             fun_Poisson3D.get_eq_constrains_flg(x_bc_marker); 
 
-            // disp(H); 
-            // exit(0);
-
 
             empty_rhs = 0.0*x_eq; 
 
-            Scalar lambda = 1.5; 
+            Scalar lambda = 2.3; 
             Scalar dx = 1./n; 
-            Scalar dy = 1./n; 
-            Scalar dz = 1./n; 
 
-            Bratu3D<Matrix, Vector> fun3D(H, x_eq,  x_bc_marker, empty_rhs, lambda, dx, dy, dz);
+            Bratu3D<Matrix, Vector> fun3D(H, x_eq,  x_bc_marker, empty_rhs, lambda, dx, dx, dx);
 
             
             // if(verbose_)
             //     fun.describe(); 
 
-#ifdef WITH_PETSC
-            auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", false);
-#else
-            auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
-#endif
+// #ifdef WITH_PETSC
+//             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", false);
+// #else
+//             auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
+// #endif
             
-            TrustRegion<Matrix, Vector> tr_solver(subproblem);
-            tr_solver.read(input_params_); 
-            // tr_solver.verbose(verbose_);
-            tr_solver.verbose(true);
-            tr_solver.solve(fun3D, x); 
+//             TrustRegion<Matrix, Vector> tr_solver(subproblem);
+//             tr_solver.read(input_params_); 
+//             // tr_solver.verbose(verbose_);
+//             tr_solver.verbose(true);
+//             tr_solver.solve(fun3D, x); 
+
+
+                PetscVector lb = local_values(local_size(x), -9e9); 
+                PetscVector ub = local_values(local_size(x), 1.0); 
+
+                auto QP_solver_petsc = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+                // QP_solver_petsc->max_it(3); 
+
+                TrustRegionVariableBound<Matrix, Vector> tr_solver_petsc(QP_solver_petsc);
+                tr_solver_petsc.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));     
+
+
+                tr_solver_petsc.verbose(true);
+                tr_solver_petsc.solve(fun3D, x); 
+
+
 
             // if(output_vtk_)
                 fun_Poisson3D.output_to_VTK(x);

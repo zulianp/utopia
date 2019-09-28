@@ -246,8 +246,8 @@ namespace utopia
 
                 s_norm_new = s_norm + (2.0* alpha * sMp) + (alpha * alpha * p_norm);
 
-                // ||s_k||_M > \Delta => terminate
-                if(s_norm_new >= this->current_radius())
+                // ||s_k||_M > \Delta => terminate - TBD:: we are using squared norm, so delta has to be also squared
+                if(s_norm_new >= r2)
                 {
                     Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm));
                     Scalar tau = (std::sqrt(term1) - sMp)/p_norm;
