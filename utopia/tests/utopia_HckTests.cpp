@@ -63,9 +63,10 @@ namespace utopia
 
 
             // UTOPIA_RUN_TEST(TR_tril_test); 
-            UTOPIA_RUN_TEST(RMTR_tril_test_lin_un_inf); 
+            // UTOPIA_RUN_TEST(RMTR_tril_test_lin_un_inf); 
 
-            // UTOPIA_RUN_TEST(chop_test_sparse); 
+
+            UTOPIA_RUN_TEST(Bratu_utopia_fun); 
 
         }
 
@@ -201,6 +202,58 @@ namespace utopia
             if(output_vtk_)
                 fun.output_to_VTK(x);
         }
+
+
+        void Bratu_utopia_fun()
+        {
+            // Bratu2D<Matrix, Vector> fun(10, 0.0);
+            // Vector x = fun.initial_guess(); 
+
+            SizeType n = 40; 
+
+            Poisson3D<Matrix, Vector> fun_Poisson3D(n); 
+            Vector x = fun_Poisson3D.initial_guess(); 
+
+            PetscMatrix H; 
+            PetscVector g, x_eq, x_bc_marker, empty_rhs; 
+
+            fun_Poisson3D.get_A_rhs(H, g); 
+            fun_Poisson3D.get_eq_constrains_values(x_eq); 
+            fun_Poisson3D.get_eq_constrains_flg(x_bc_marker); 
+
+            // disp(H); 
+            // exit(0);
+
+
+            empty_rhs = 0.0*x_eq; 
+
+            Scalar lambda = 1.5; 
+            Scalar dx = 1./n; 
+            Scalar dy = 1./n; 
+            Scalar dz = 1./n; 
+
+            Bratu3D<Matrix, Vector> fun3D(H, x_eq,  x_bc_marker, empty_rhs, lambda, dx, dy, dz);
+
+            
+            // if(verbose_)
+            //     fun.describe(); 
+
+#ifdef WITH_PETSC
+            auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", false);
+#else
+            auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
+#endif
+            
+            TrustRegion<Matrix, Vector> tr_solver(subproblem);
+            tr_solver.read(input_params_); 
+            // tr_solver.verbose(verbose_);
+            tr_solver.verbose(true);
+            tr_solver.solve(fun3D, x); 
+
+            // if(output_vtk_)
+                fun_Poisson3D.output_to_VTK(x);
+        }        
+
 
 
         void newton_test()
@@ -553,8 +606,11 @@ namespace utopia
 
                 #ifdef WITH_TRILINOS
 
-                    typedef TpetraVectord VectorTril;
-                    typedef TpetraMatrixd MatrixTril;
+                    // typedef TpetraVectord VectorTril;
+                    // typedef TpetraMatrixd MatrixTril;
+
+                    typedef PetscVector VectorTril;
+                    typedef PetscMatrix MatrixTril;
 
 
                     VectorTril x_tril; 
@@ -580,12 +636,12 @@ namespace utopia
                     for(auto i=0; i < multilevel_problem.level_functions_.size(); i++)
                     {
                         Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(multilevel_problem.level_functions_[i].get());
-                        level_functions_tril[i] = copy_QPfun_to_tril<Matrix, Vector, TpetraMatrixd, TpetraVectord>(*fun_Laplace); 
+                        level_functions_tril[i] = copy_QPfun_to_tril<Matrix, Vector, MatrixTril, VectorTril>(*fun_Laplace); 
                     }   
 
                     auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<MatrixTril, VectorTril> >();
                     // auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<MatrixTril, VectorTril> >();
-                    auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<TpetraMatrixd, TpetraVectord> >();                
+                    auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<MatrixTril, VectorTril> >();                
                     
                     auto rmtr = std::make_shared<RMTR_inf<MatrixTril, VectorTril, GALERKIN> >(n_levels_);
 

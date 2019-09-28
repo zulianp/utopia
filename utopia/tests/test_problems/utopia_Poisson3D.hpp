@@ -255,6 +255,7 @@ namespace utopia
 
 
             ierr    = DMDAGetInfo(da_, 0, &mx, &my, &mz, 0, 0, 0, &dof, 0, 0, 0, 0, 0);CHKERRQ(ierr);
+
             Hx      = 1.0 / (PetscReal)(mx);
             Hy      = 1.0 / (PetscReal)(my);
             Hz      = 1.0 / (PetscReal)(mz);
