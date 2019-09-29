@@ -6,16 +6,6 @@
 #include "utopia_LinearSolverInterfaces.hpp"
 
 
-#include <petscpc.h>
-#include <petscksp.h>
-
-// extern "C"
-// {
-#include "petscmat.h"
-#include "petscvec.h"
-// }
-
-
 namespace utopia {
 
     /**
