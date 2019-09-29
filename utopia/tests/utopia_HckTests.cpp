@@ -44,7 +44,7 @@ namespace utopia
             UTOPIA_RUN_TEST(newton_test);            
 
             UTOPIA_RUN_TEST(STCG_test); 
-            UTOPIA_RUN_TEST(MPGRP); 
+            UTOPIA_RUN_TEST(MPGRP_test); 
             UTOPIA_RUN_TEST(ProjectedGS);
 
 
@@ -68,10 +68,11 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(TR_tril_test); 
 
-            UTOPIA_RUN_TEST(RMTR_l2_test); 
+            // UTOPIA_RUN_TEST(RMTR_l2_test); 
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
-            // UTOPIA_RUN_TEST(RMTR_l2); 
+            // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
+            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
         }
 
 
@@ -130,7 +131,7 @@ namespace utopia
             QP_solve(QP_solver); 
         }
 
-        void MPGRP()
+        void MPGRP_test()
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
@@ -654,7 +655,7 @@ namespace utopia
 
             rmtr->read(input_params_); 
             rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
-            rmtr->verbose(true);
+            rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
                 
@@ -681,7 +682,7 @@ namespace utopia
 
 
             auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-            auto precond_coarse = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >(); 
+            // auto precond_coarse = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >(); 
             // precond_coarse->max_it(1); 
             // tr_strategy_coarse->set_preconditioner(precond);            
             tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
@@ -699,12 +700,136 @@ namespace utopia
 
             rmtr->read(input_params_); 
             rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
-            rmtr->verbose(true);
+            rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
                 
             // Solve 
             rmtr->solve(x_fine);
+        }     
+
+
+        void Quasi_RMTR_l2_test()
+        {
+            Vector x_fine; 
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_tril; 
+            std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_tril;
+            get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine); 
+
+            auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+
+            // auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+
+            // auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            // tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+
+            // Set TR-QP strategies 
+            // rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+            // rmtr->set_fine_tr_strategy(tr_strategy_fine);               
+
+            // // here, we can set also hessian approx strategy for individually
+            // SizeType memory_size = 5; 
+            // auto hes_approx   = std::make_shared< LBFGS<Vector> >(memory_size);
+            // rmtr->set_hessian_approximation_strategy(); 
+
+            const SizeType memory_size = 5;
+            std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(n_levels_);
+            for(auto l=0; l < n_levels_; l++)
+            {
+                auto hes_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
+                hess_approxs[l] = hes_approx;
+            }
+            rmtr->set_hessian_approximation_strategies(hess_approxs);
+
+
+            std::vector<std::shared_ptr<utopia::MatrixFreeTRSubproblem<Vector> > > subproblems(n_levels_);
+            for(auto l=0; l < n_levels_; l++)
+            {
+                auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+                tr_strategy->atol(1e-14); 
+
+                auto precond = hess_approxs[l]->build_Hinv_precond();
+                tr_strategy->set_preconditioner(precond);
+
+                subproblems[l] = tr_strategy;
+            }
+            rmtr->set_tr_strategies(subproblems);
+
+            // Transfers and objective functions
+            rmtr->set_transfer_operators(transfers_tril);
+            rmtr->set_functions(level_functions_tril);    
+
+            rmtr->read(input_params_); 
+            rmtr->pre_smoothing_steps(10);
+            rmtr->post_smoothing_steps(10);
+            rmtr->max_coarse_it(10);
+
+            rmtr->max_sucessful_smoothing_it(5);
+            rmtr->max_sucessful_coarse_it(10);
+
+
+            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->verbose(verbose_);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+                
+            // Solve 
+            rmtr->solve(x_fine);
+        }     
+
+
+        void Quasi_RMTR_inf_test()
+        {
+            Vector x_fine; 
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_tril; 
+            std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_tril;
+            get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine); 
+
+            auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+
+            auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            tr_strategy_fine->atol(1e-12); 
+            // tr_strategy_fine->verbose(true);
+            auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            tr_strategy_coarse->atol(1e-12); 
+
+            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+            rmtr->set_fine_tr_strategy(tr_strategy_fine);               
+
+            // here, we can set also hessian approx strategy for individually
+            SizeType memory_size = 5; 
+            auto hes_approx   = std::make_shared< LBFGS<Vector> >(memory_size);
+            rmtr->set_hessian_approximation_strategy(hes_approx); 
+
+            // Transfers and objective functions
+            rmtr->set_transfer_operators(transfers_tril);
+            rmtr->set_functions(level_functions_tril);    
+
+            // add constraints 
+            // Vector lb = local_values(local_size(x_fine), -9e9); 
+            // Vector ub = local_values(local_size(x_fine), 1.1); 
+
+            // auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+            // rmtr->set_box_constraints(box);             
+
+            rmtr->read(input_params_); 
+            rmtr->pre_smoothing_steps(10);
+            rmtr->post_smoothing_steps(10);
+            rmtr->max_coarse_it(10);
+
+            rmtr->max_sucessful_smoothing_it(5);
+            rmtr->max_sucessful_coarse_it(10);
+
+            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->verbose(verbose_);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+                
+            // Solve 
+            rmtr->solve(x_fine);
+
+            // disp(x_fine);
         }     
 
 
@@ -728,14 +853,14 @@ namespace utopia
         // auto coarse_dofs = 5; 
 
         auto n_levels = 3; 
-        auto coarse_dofs = 10; 
+        auto coarse_dofs = 5; 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
 
-// #ifdef WITH_TRILINOS
-//         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
-// #endif
+#ifdef WITH_TRILINOS
+        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
+#endif
 
 
 #endif

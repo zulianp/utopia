@@ -315,23 +315,22 @@ namespace utopia
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
 
-            // setting should be really parameters from outside ...
-            this->_tr_subproblems[level]->atol(1e-14);
+            // cast to iterative solver to do this... 
+            // this->_tr_subproblems[level]->atol(1e-14);
 
-            //To do this, we need to do some casting to QP solver, not to matrix free thing... 
-            if(flg){
-                this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
-            }
-            else{
-                this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
-            }
+            // //To do this, we need to do some casting to QP solver, not to matrix free thing... 
+            // if(flg){
+            //     this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
+            // }
+            // else{
+            //     this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
+            // }
 
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
             _tr_subproblems[level]->set_box_constraints(box);
 
             this->_tr_subproblems[level]->solve(*multiplication_action, -1.0 * this->memory_.g[level], this->memory_.s[level]);
-
 
 
             // ----- just for debugging pourposes ----------------

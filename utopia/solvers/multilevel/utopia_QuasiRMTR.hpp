@@ -170,15 +170,19 @@ namespace utopia
         }
 
 
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
-            // this->_tr_subproblems[level]->atol(1e-16);
-            // if(flg)
+            // TODO:: cast to iterative solvers
+            // this->_tr_subproblems[level]->atol(1e-14);
+            // if(flg){
             //     this->_tr_subproblems[level]->max_it(this->_max_QP_coarse_it);
-            // else
+            // }
+            // else{
             //     this->_tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
+            // }
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
+
             _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
             _tr_subproblems[level]->solve(*multiplication_action, -1.0 * this->memory_.g[level], this->memory_.s[level]);
 

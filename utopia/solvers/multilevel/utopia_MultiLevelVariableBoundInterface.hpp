@@ -63,7 +63,6 @@ namespace utopia
 
         virtual void init_constr_memory(const SizeType & n_levels, const SizeType & fine_local_size)
         {
-            std::cout<<"-------- start init constr ------ \n"; 
             constraints_memory_.init(n_levels);
 
             const SizeType fine_level = n_levels-1;
@@ -94,8 +93,6 @@ namespace utopia
             // inherited tr bound constraints...
             constraints_memory_.tr_upper[fine_level] = local_values(fine_local_size, inf);
             constraints_memory_.tr_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
-
-            std::cout<<"-------- end init constr ------ \n"; 
 
             // // precompute norms of prolongation operators needed for projections of constraints...
             // for(auto l = 0; l < fine_level; l++)
