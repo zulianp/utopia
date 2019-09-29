@@ -3,7 +3,7 @@
 
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_GaussSeidel.hpp"
 
 
 #include <petscpc.h>
@@ -122,26 +122,6 @@ namespace utopia {
         }
 
 
-        /**
-         * @brief      Nonlinear smoothing. First it calls GS smoother and then it project constrains.
-         * !!!! THIS DOES NOT GIVE CORRECT RESULTS IN A SIMULATION THE PROJECTION CANNOT HAPPEN OUTSIDE A GS STEP
-         *
-         * @param[in]  A            The stiffness matrix.
-         * @param[in]  rhs          The right hand side.
-         * @param      x            The solution.
-         * @param[in]  ub           The upper bound.
-         * @param[in]  lb           The lower bound.
-         * @param      active_set   The vector containing indices of active set.
-         */
-        // bool nonlinear_smooth(const Matrix &A, const Vector &rhs, const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set) override
-        // {
-
-        //     smooth(A, rhs, x);
-        //     project_constraints(ub, lb, x, active_set);
-        //     return true;
-
-        // }
-
         inline GaussSeidel * clone() const override
         {
             return new GaussSeidel(*this);
@@ -150,36 +130,6 @@ namespace utopia {
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             Solver::update(op);
-        }
-
-    private:
-        /**
-         * @brief      Function projects constraints, such that \f$ lb < x < ub \f$
-         *
-         * @param[in]  ub           The upper bound.
-         * @param[in]  lb           The lower bound.
-         * @param      x            The solution.
-         * @param      active_set   The vector containing indices of active set.
-         * !!!! THIS DOES NOT GIVE CORRECT RESULTS IN A SIMULATION THE PROJECTION CANNOT HAPPEN OUTSIDE A GS STEP
-         */
-        bool project_constraints(const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set)
-        {
-            Vector x_0 = x;
-            {
-                Read<Vector> r_ub(ub), r_lb(lb);
-                each_transform(x_0, x, [&ub, &lb, &active_set](const SizeType i, const Scalar entry) -> double
-                               {
-                                   Scalar ui = ub.get(i), li = lb.get(i);
-                                   if(entry > ui && entry < li)
-                                   {
-                                       active_set.push_back(i);
-                                       return (std::max(li, std::min(ui, entry)));
-                                   }
-                                   else
-                                       return entry;
-                               }    );
-            }
-            return true;
         }
 
     };

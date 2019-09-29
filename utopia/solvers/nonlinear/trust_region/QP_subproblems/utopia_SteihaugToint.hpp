@@ -162,7 +162,7 @@ namespace utopia
             SizeType it=0;
 
             s_k = local_zeros(local_size(g));
-            r = g;
+            r = -g;
 
             Scalar g_norm = norm2(r);
 
@@ -174,6 +174,7 @@ namespace utopia
             it++;
 
             v_k = local_zeros(local_size(g));
+            
             this->precond_->apply(r, v_k);
 
             p_k = -1.0 * v_k;
@@ -299,7 +300,7 @@ namespace utopia
                 g_norm = norm2(r);
 
                 if(this->verbose()){
-                    PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});
+                    PrintInfo::print_iter_status(it, {g_norm, std::sqrt(s_norm), p_norm, sMp});
                 }
 
                 if(!std::isfinite(g_norm))
