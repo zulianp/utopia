@@ -171,20 +171,30 @@ namespace utopia {
 
         auto &m = V.mesh();
 
+
         Read<UVector> r(error_);
+        auto el = elements_begin(m);
+        auto el_end = elements_end(m);
 
         bool refined = false;
-        for(auto e_it = elements_begin(m); e_it != elements_end(m); ++e_it) {
-            auto &e = **e_it;
+        for(; el != el_end; ++el) {
+            auto &e = **el;
             auto idx = e.dof_number(system_num_, error_var_num_, 0);
 
+            assert(idx < grad_space_.subspace(0).dof_map().n_dofs());
+            assert(idx < size(error_).get(0));
+
             auto err = error_.get(idx);
+            //max_local_error_*=n_refinements_;
 
             if(err > max_local_error_) {
                 refined = true;
                 e.set_refinement_flag(libMesh::Elem::REFINE);
             }
         }
+
+
+        std::cout<<"I am refining::end "<<std::endl;
 
 
         libMesh::MeshRefinement refinement(m);
@@ -259,30 +269,45 @@ namespace utopia {
         copy_values(V, sol, P, p_interp_buff);
         synchronize(p_interp_buff);
 
+        assert(!has_nan_or_inf(p_interp_buff));
+
         auto p_interp = interpolate(p_interp_buff, p);
         auto grad_form = inner(grad(p_interp), v) * dX;
 
         auto mass_form = inner(u, v) * dX;
 
-        UVector grad_ph, grad_p_projected, mass_vec;
+        UVector grad_ph, grad_p_projected, mass_vec, inv_mass_vec;
         USparseMatrix mass_mat;
         utopia::assemble(grad_form, grad_ph);
         utopia::assemble(mass_form, mass_mat);
+
+        assert(!has_nan_or_inf(grad_ph));
+        assert(!has_nan_or_inf(mass_mat));
+
+        mass_vec = sum(mass_mat, 1);
+        e_pseudo_inv(mass_vec, inv_mass_vec);
 
         if(!mortar.empty()) {
             grad_ph  = transpose(mortar_matrix) * grad_ph;
             // //FIXME
             mass_mat = USparseMatrix(transpose(mortar_matrix) * mass_mat * mortar_matrix);
-            mass_vec = sum(mass_mat, 1);
-            grad_p_projected = mortar_matrix * e_mul(grad_ph, 1./mass_vec);
+            
+            grad_p_projected = mortar_matrix * e_mul(grad_ph, inv_mass_vec);
         } else {
-            mass_vec = sum(mass_mat, 1);
-            grad_p_projected = e_mul(grad_ph, 1./mass_vec);
+            grad_p_projected = e_mul(grad_ph, inv_mass_vec);
         }
+
+        assert(!has_nan_or_inf(grad_ph));
+        assert(!has_nan_or_inf(mass_vec));
+        assert(!has_nan_or_inf(inv_mass_vec));
+        assert(!has_nan_or_inf(grad_p_projected));
 
         UVector grad_p_projected_buff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         grad_p_projected_buff = grad_p_projected;
         synchronize(grad_p_projected_buff);
+
+
+        assert(!has_nan_or_inf(grad_p_projected_buff));
 
         auto grad_interp = interpolate(grad_p_projected_buff, u);
         auto error_form  = inner(norm2(grad_interp - grad(p_interp)), test_e) * dX;
@@ -294,8 +319,11 @@ namespace utopia {
         utopia::assemble(vol_form,   vol);
         // error = e_div(error, vol);
 
+        assert(!has_nan_or_inf(error_));
+
         all_values_ = p_interp_buff + grad_p_projected + error_;
 
+        assert(!has_nan_or_inf(all_values_));
 
 
         chrono.stop();

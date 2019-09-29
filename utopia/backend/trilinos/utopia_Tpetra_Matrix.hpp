@@ -25,10 +25,16 @@ namespace utopia {
     //template<class NodeType>
     class TpetraMatrix :
     public DistributedSparseMatrix<TpetraScalar, TpetraSizeType>,
-    public Tensor<TpetraMatrix, 2>,
     public SparseConstructible<TpetraScalar, TpetraSizeType>,
     public Normed<TpetraScalar>,
-    public Operator<TpetraVector>
+    public Transformable<TpetraScalar>,
+    // Static polymorphic types
+    public BLAS1Tensor<TpetraMatrix>,
+    public BLAS2Matrix<TpetraMatrix, TpetraVector>,
+    public BLAS3Matrix<TpetraMatrix>,
+    public Comparable<TpetraMatrix>,
+    public Operator<TpetraVector>,
+    public Tensor<TpetraMatrix, 2>
     {
     public:
 
@@ -64,7 +70,7 @@ namespace utopia {
         typedef Teuchos::RCP<const Teuchos::Comm<int> >       rcp_comm_type;
         typedef Tpetra::Map<LO, GO, NT>                       map_type;
         typedef Teuchos::RCP<const map_type>                  rcp_map_type;
-        
+
         using IndexSet    = Traits<TpetraMatrix>::IndexSet;
         using IndexArray  = Traits<TpetraMatrix>::IndexArray;
         using ScalarArray = Traits<TpetraMatrix>::ScalarArray;
@@ -144,8 +150,8 @@ namespace utopia {
             mat_ = std::move(other.mat_);
          }
 
-        
-        void copy(const TpetraMatrix &other)
+
+        void copy(const TpetraMatrix &other) override
         {
             if(this == &other) return;
 
@@ -161,8 +167,8 @@ namespace utopia {
 
 
         void select(
-            const IndexSet &row_index, 
-            const IndexSet &col_index, 
+            const IndexSet &row_index,
+            const IndexSet &col_index,
             TpetraMatrix &result) const override;
 
         ///////////////////////////////////////////////////////////////////////////
@@ -185,12 +191,12 @@ namespace utopia {
 
         void c_set(const SizeType &i, const SizeType &j, const Scalar &value) override;
         void c_add(const SizeType &i, const SizeType &j, const Scalar &value) override;
-       
+
         SizeType rows() const override;
         SizeType cols() const override;
         SizeType local_rows() const override;
         SizeType local_cols() const override;
-        
+
         inline Range row_range() const override
         {
             return  { implementation().getRowMap()->getMinGlobalIndex(), implementation().getRowMap()->getMaxGlobalIndex() + 1 };
@@ -360,30 +366,30 @@ namespace utopia {
                       const Scalar factor);
 
 
-        inline void read_lock()
+        inline void read_lock() override
         {
             //TODO?
         }
 
-        inline void read_unlock()
+        inline void read_unlock() override
         {
             //TODO?
         }
 
-        inline void write_lock(WriteMode mode = utopia::AUTO)
+        inline void write_lock(WriteMode mode = utopia::AUTO) override
         {
             //TODO?
             implementation().resumeFill();
         }
 
-        inline void write_unlock(WriteMode mode = utopia::AUTO)
+        inline void write_unlock(WriteMode mode = utopia::AUTO) override
         {
             this->finalize();
         }
 
-        void set(const SizeType &row, const SizeType &col, const Scalar &value);
+        void set(const SizeType &row, const SizeType &col, const Scalar &value) override;
         Scalar get(const SizeType &row, const SizeType &col) const;
-        void add(const SizeType &row, const SizeType &col, const Scalar &value);
+        void add(const SizeType &row, const SizeType &col, const Scalar &value) override;
 
         template<typename Integer>
         void add_matrix(
@@ -451,29 +457,27 @@ namespace utopia {
             return true;
         }
 
-        void multiply(const TpetraVector &vec, TpetraVector &result) const;
-        void transpose_multiply(const TpetraVector &vec, TpetraVector &result) const;
+        void multiply(const TpetraVector &vec, TpetraVector &result) const override;
+        void transpose_multiply(const TpetraVector &vec, TpetraVector &result) const override;
 
-        void multiply(const TpetraMatrix &right, TpetraMatrix &result) const;
+        void multiply(const TpetraMatrix &right, TpetraMatrix &result) const override;
+        void multiply(const Scalar &alpha, const TpetraMatrix &B, TpetraMatrix &C) const override;
         //result = tranpose(*this) * mat
-        void transpose_multiply(const TpetraMatrix &right, TpetraMatrix &result) const;
+        void transpose_multiply(const TpetraMatrix &right, TpetraMatrix &result) const override;
 
-        //result op(*this) * op
-        void multiply(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const;
-        void axpy(const Scalar alpha, const TpetraMatrix &x);
-        void transpose(TpetraMatrix &mat) const;
+        void multiply(
+            const bool transpose_A,
+            const bool transpose_B,
+            const TpetraMatrix &B,
+            TpetraMatrix &C) const override;
+        
+        void axpy(const Scalar &alpha, const TpetraMatrix &x) override;
+        void transpose(TpetraMatrix &mat) const override;
 
         void build_diag(TpetraVector &d) const;
         void diag(const TpetraVector &d);
         void diag(const TpetraMatrix &d);
 
-        inline void scale(const Scalar alpha)
-        {
-            //Why???
-            write_lock();
-            implementation().scale(alpha);
-            write_unlock();
-        }
 
 
         inline rcp_crs_mat_type &raw_type()
@@ -550,6 +554,45 @@ namespace utopia {
 
 
         void set_zero_rows(const IndexSet &index, const Scalar &diag);
+
+        ////////////////////////////////////////////////////////////////////////
+        //////////////////////////// Transormable //////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+
+
+        void transform(const Sqrt &) override;
+        void transform(const Pow2 &) override;
+        void transform(const Log &) override;
+        void transform(const Exp &) override;
+        void transform(const Cos &) override;
+        void transform(const Sin &) override;
+        void transform(const Abs &) override;
+        void transform(const Minus &) override;
+
+        void transform(const Pow &p) override;
+        void transform(const Reciprocal<Scalar> &f) override;
+
+        ////////////////////////////////////////////////////////////////////////
+        //////////////////////////// Blas1Tensor //////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+
+        void swap(TpetraMatrix &x) override;
+        void scale(const Scalar &alpha) override;
+        Scalar dot(const TpetraMatrix &other) const override;
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //////////////////////////// Blas2Matrix //////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+
+        void gemv(const bool transpose, const Scalar &alpha, const TpetraVector &x, const Scalar &beta, TpetraVector &y) const override;
+
+        ////////////////////////////////////////////////////////////////////////
+        //////////////////////////// Comparable //////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+
+        bool equals(const TpetraMatrix &other, const Scalar &tol = 0.0) const override;
+        
 
     private:
         TrilinosCommunicator comm_;

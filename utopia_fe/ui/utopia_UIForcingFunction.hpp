@@ -3,6 +3,7 @@
 
 #include "utopia_ForcedMaterial.hpp"
 #include "utopia_ui.hpp"
+#include "utopia_AdaptiveFunction.hpp"
 
 namespace utopia {
 
@@ -38,6 +39,20 @@ namespace utopia {
 
         void read(Input &is) override {
             is.get_all([this](Input &is) {
+                std::string clazz = "";
+
+                is.get("class", clazz);
+
+                if(clazz == "AdaptiveFunction") {
+                    auto ff = std::make_shared<AdaptiveFunction<FunctionSpace,Vector>>(V_);
+                    //auto ff = make_ref<AdaptiveFunction<FunctionSpace,Vector>>(V_);
+                    ff->read(is);
+                    //ff->read(is);
+                    this->add(ff);
+                    std::cout << "AdaptiveFunction" << std::endl;
+                    return;
+                }
+
 
                 int block = -1;
 

@@ -170,7 +170,7 @@ namespace utopia {
         }
 
         ///I<Scalar>AMAX - index of max abs value
-        inline unsigned short amax() const override
+        inline unsigned short amax() const //override
         {
             return 0;
         }

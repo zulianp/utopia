@@ -38,7 +38,7 @@ namespace utopia {
         public Tensor<BlasMatrix<T>, 2>,
         public BLAS1Tensor<BlasMatrix<T>>,
         public BLAS2Matrix<BlasMatrix<T>, BlasVector<T>>,
-        public BLAS3Matrix<BlasMatrix<T>>,
+        public BLAS3DenseMatrix<BlasMatrix<T>>,
         public Comparable<BlasMatrix<T>>,
         public ElementWiseOperand<BlasMatrix<T>>,
         public ElementWiseOperand<T>,
@@ -50,9 +50,10 @@ namespace utopia {
        
         using BlasVector = utopia::BlasVector<T>;
         using BLAS2Matrix<BlasMatrix, BlasVector>::multiply;
-        using BLAS3Matrix<BlasMatrix>::multiply;
         using BLAS2Matrix<BlasMatrix, BlasVector>::transpose_multiply;
-        using BLAS3Matrix<BlasMatrix>::transpose_multiply;
+
+        using BLAS3DenseMatrix<BlasMatrix>::multiply;
+        using BLAS3DenseMatrix<BlasMatrix>::transpose_multiply;
 
 
         ////////////////////////////////////////////////////////////////////
@@ -244,8 +245,10 @@ namespace utopia {
         //locks (No Op)
         inline void read_lock() override {}
         inline void write_lock(WriteMode) override {}
+        inline void read_and_write_lock(WriteMode) override {}
         inline void read_unlock() override {}
         inline void write_unlock(WriteMode) override {}
+        inline void read_and_write_unlock(WriteMode) override {}
 
         //basic mutators
         inline void set(const SizeType &i, const SizeType &j, const T &value) override
@@ -387,7 +390,7 @@ namespace utopia {
       
 
         ///<T>AMAX - index of max abs value
-        inline SizeType amax() const override
+        inline SizeType amax() const// override
         {
             return BLASAlgorithms<T>::amax(n_elements(), ptr(), 1);
         }

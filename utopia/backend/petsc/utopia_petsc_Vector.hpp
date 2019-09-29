@@ -344,7 +344,7 @@ namespace utopia {
        ///<Scalar>AXPY - y = a*x + y
        void axpy(const Scalar &alpha, const PetscVector &x) override;
 
-        SizeType amax() const override;
+        SizeType amax() const; //override;
 
        ///<Scalar>DOT - dot product
        Scalar dot(const PetscVector &other) const override;
