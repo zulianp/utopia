@@ -21,7 +21,7 @@ namespace utopia
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
 
-        SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>()
+        SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>(), use_precond_direction_(true)
         {  }
 
         void read(Input &in) override
@@ -62,6 +62,18 @@ namespace utopia
                 return unpreconditioned_solve(*A_ptr, -1.0 * b, x);
             }
         }
+
+        void use_precond_direction(const bool & use_precond_direction)
+        {
+            use_precond_direction_ = use_precond_direction; 
+        }
+
+
+        bool use_precond_direction()
+        {
+            return use_precond_direction_; 
+        }
+
 
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
         {
@@ -162,7 +174,7 @@ namespace utopia
             SizeType it=0;
 
             s_k = local_zeros(local_size(g));
-            r = -g;
+            r = g;
 
             Scalar g_norm = norm2(r);
 
@@ -174,7 +186,6 @@ namespace utopia
             it++;
 
             v_k = local_zeros(local_size(g));
-            
             this->precond_->apply(r, v_k);
 
             p_k = -1.0 * v_k;
@@ -184,7 +195,16 @@ namespace utopia
 
             Scalar s_norm=0.0, s_norm_new=0.0,  sMp=0.0;
             Scalar r2 = this->current_radius() * this->current_radius();
-            Scalar p_norm = dot(r, v_k);
+            Scalar p_norm; 
+
+            if(use_precond_direction_)
+            {
+                p_norm = dot(r, v_k);
+            }
+            else
+            {
+                p_norm = dot(p_k, p_k); 
+            }
 
             // if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step
             // if(!std::isfinite(p_norm) || p_norm < 0.0)
@@ -193,7 +213,7 @@ namespace utopia
                 Scalar alpha_termination;
                 if(r2 >= g_norm)
                 {
-                    alpha_termination = 1.0;  		// grad. step is inside of tr boundary, just take it
+                    alpha_termination = 1.0;        // grad. step is inside of tr boundary, just take it
                 }
                 else
                 {
@@ -247,7 +267,8 @@ namespace utopia
 
                 s_norm_new = s_norm + (2.0* alpha * sMp) + (alpha * alpha * p_norm);
 
-                // ||s_k||_M > \Delta => terminate - TBD:: we are using squared norm, so delta has to be also squared
+                // ||s_k||_M > \Delta => terminate
+                // norm squared should be used
                 if(s_norm_new >= r2)
                 {
                     Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm));
@@ -278,7 +299,8 @@ namespace utopia
 
                 r += alpha * B_p_k;
 
-                v_k = local_zeros(local_size(r));
+                // v_k = local_zeros(local_size(r));
+                v_k = -1.0*B_p_k; 
                 this->precond_->apply(r, v_k);
 
                 g_v_prod_new = dot(r, v_k);
@@ -293,14 +315,21 @@ namespace utopia
                 p_k = betta * p_k - v_k;
 
                 // updating norms recursively  - see TR book
-                sMp = betta * ( sMp + (alpha * p_norm));
-                p_norm = g_v_prod_new + (betta*betta * p_norm);
-                s_norm = s_norm_new;
+                if(use_precond_direction_)
+                {
+                    sMp = betta * ( sMp + (alpha * p_norm));
+                    p_norm = g_v_prod_new + (betta*betta * p_norm);
+                    s_norm = s_norm_new;
+                }
+                else
+                {
+                    dots(p_k, s_k, sMp, p_k, p_k, p_norm, s_k, s_k, s_norm); 
+                }
 
                 g_norm = norm2(r);
 
                 if(this->verbose()){
-                    PrintInfo::print_iter_status(it, {g_norm, std::sqrt(s_norm), p_norm, sMp});
+                    PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});
                 }
 
                 if(!std::isfinite(g_norm))
@@ -342,8 +371,9 @@ namespace utopia
 
 
     private:
-         Vector v_k, r, p_k, B_p_k;
+        Vector v_k, r, p_k, B_p_k;
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
+        bool use_precond_direction_; 
 
     };
 

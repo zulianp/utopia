@@ -43,7 +43,7 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(newton_test);            
 
-            // UTOPIA_RUN_TEST(STCG_test); 
+            UTOPIA_RUN_TEST(STCG_test); 
             // UTOPIA_RUN_TEST(MPGRP); 
             // UTOPIA_RUN_TEST(ProjectedGS);
 
@@ -99,19 +99,31 @@ namespace utopia
             else
             {   
                 qp_solver->solve(H, -1.0*g, x); 
+                std::cout<<"----------norm(x): " << norm2(x) << "  \n"; 
             }
         }
 
 
         void STCG_test()
-        {
+        {         
+
+            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            // QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >(); 
+            precond->verbose(true); 
+            precond->max_it(1); 
+            precond->use_line_search(false); 
+            QP_solver->set_preconditioner(precond);
+            QP_solver->use_precond_direction(true); 
+            
+        
 
             QP_solver->atol(1e-10);
-            QP_solver->max_it(n_*n_);
-            QP_solver->verbose(verbose_); 
-            QP_solver->current_radius(2.0); 
+            // QP_solver->max_it(n_*n_);
+            QP_solver->max_it(10);
+            QP_solver->verbose(true); 
+            QP_solver->current_radius(1.6); 
 
             QP_solve(QP_solver); 
         }
