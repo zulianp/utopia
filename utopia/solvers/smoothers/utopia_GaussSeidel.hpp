@@ -222,9 +222,6 @@ namespace utopia {
         }        
 
 
-
-
-
       private:
         bool use_line_search_;
         bool use_symmetric_sweep_;

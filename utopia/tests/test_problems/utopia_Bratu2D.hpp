@@ -26,7 +26,6 @@ namespace utopia
                     dy_(dy), 
                     dz_(dz)
         {
-            assert(H);
             dxyzLambda_ = dx_ * dy_ * dz_ * lambda_; 
         }
 

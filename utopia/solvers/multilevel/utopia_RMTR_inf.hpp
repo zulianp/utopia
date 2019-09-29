@@ -167,7 +167,7 @@ namespace utopia
             RMTR::init_level(level);
 
             const SizeType finer_level = level+1;
-            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.delta[finer_level], this->transfer(level)); 
+            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level], this->transfer(level)); 
 
         }
 

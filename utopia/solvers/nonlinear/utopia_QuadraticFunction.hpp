@@ -89,9 +89,6 @@ namespace utopia {
                                     rhs_(rhs), 
                                     H_(H)
         {
-            assert(H);
-            assert(rhs);
-
             // this->data()->H = H;
         }
 
