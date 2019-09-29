@@ -115,7 +115,7 @@ namespace utopia
             precond->max_it(1); 
             precond->use_line_search(false); 
             QP_solver->set_preconditioner(precond);
-            QP_solver->use_precond_direction(true); 
+            QP_solver->use_precond_direction(false); 
             
         
 

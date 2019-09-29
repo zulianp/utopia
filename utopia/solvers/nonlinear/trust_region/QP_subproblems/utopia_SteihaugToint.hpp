@@ -21,7 +21,7 @@ namespace utopia
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
 
-        SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>(), use_precond_direction_(true)
+        SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>(), use_precond_direction_(false)
         {  }
 
         void read(Input &in) override
@@ -239,7 +239,9 @@ namespace utopia
             while(!converged)
             {
                 B.apply(p_k, B_p_k);
-                kappa = dot(p_k,B_p_k);
+                // kappa = dot(p_k,B_p_k);
+
+                dots(p_k, B_p_k, kappa, r, v_k, g_v_prod_old);
 
                 // identify negative curvature
                 if(kappa <= 0.0)
@@ -262,7 +264,7 @@ namespace utopia
                     return true;
                 }
 
-                g_v_prod_old = dot(r, v_k);
+                // g_v_prod_old = dot(r, v_k);
                 alpha = g_v_prod_old/kappa;
 
                 s_norm_new = s_norm + (2.0* alpha * sMp) + (alpha * alpha * p_norm);
