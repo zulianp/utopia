@@ -24,8 +24,8 @@ namespace utopia {
             val = initial_value_;
         }
 
-        const KokkosOp& op_;
-        const Data& data_;
+        const KokkosOp op_;
+        const Data data_;
         const Scalar initial_value_;
     };
 
