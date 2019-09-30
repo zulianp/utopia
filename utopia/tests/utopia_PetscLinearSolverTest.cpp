@@ -585,25 +585,26 @@ namespace utopia {
             PetscVector x_0 = zeros(A.size().get(0));
 
             // plain cg
-            cg.atol(1e-18);
-            cg.rtol(1e-18);
-            cg.stol(1e-18);
-            cg.solve(A, -1.0 * rhs, x_0);
+            cg.atol(1e-13);
+            cg.rtol(1e-13);
+            cg.stol(1e-13);
+            cg.verbose(false);
+            cg.solve(A, rhs, x_0);
 
 
             //CG with diagonal preconditioner
             x_0 = zeros(A.size().get(0));
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector> >());
-            cg.solve(A, -1.0 * rhs, x_0);
-
-
-            //CG with multigrid preconditioner
-            x_0 = zeros(A.size().get(0));
-            cg.set_preconditioner(make_ref(multigrid));
             cg.solve(A, rhs, x_0);
 
-
+            // CG with multigrid preconditioner
+            x_0 = zeros(A.size().get(0));
+            cg.set_preconditioner(make_ref(multigrid));
+            cg.max_it(50);
+            cg.solve(A, rhs, x_0);
+    
             utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
+    
 
             //Multigrid only
             // x_0 = zeros(A.size().get(0));
@@ -612,6 +613,7 @@ namespace utopia {
             // multigrid.solve(rhs, x_0);
 
             //! [MG solve example]
+
         }
 
 

@@ -301,8 +301,9 @@ namespace utopia
 
                 r += alpha * B_p_k;
 
-                // v_k = local_zeros(local_size(r));
-                v_k = -1.0*B_p_k; 
+                v_k = local_zeros(local_size(r));
+                // Petsc version, does not work nicely with generic preconditioners, such as MG ...
+                // v_k = -1.0*B_p_k; 
                 this->precond_->apply(r, v_k);
 
                 g_v_prod_new = dot(r, v_k);
