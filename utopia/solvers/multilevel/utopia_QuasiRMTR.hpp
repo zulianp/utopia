@@ -158,16 +158,10 @@ namespace utopia
         virtual void init_memory(const SizeType & fine_local_size) override
         {
             RMTR::init_memory(fine_local_size);
-            std::cout<<"----- QUasiRMTR: - verify ..... \n"; 
 
             SizeType fine_lev=this->n_levels() - 1; 
             hessian_approxs_[fine_lev]->initialize(this->memory_.x[fine_lev], this->memory_.g[fine_lev]);
         }
-
-        // virtual void init_level(const SizeType & level) override
-        // {
-        //     RMTR::init_level(level);
-        // }
 
 
         virtual bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) override
@@ -176,15 +170,19 @@ namespace utopia
         }
 
 
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & /*flg*/) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
-            // this->_tr_subproblems[level]->atol(1e-16);
-            // if(flg)
+            // TODO:: cast to iterative solvers
+            // this->_tr_subproblems[level]->atol(1e-14);
+            // if(flg){
             //     this->_tr_subproblems[level]->max_it(this->_max_QP_coarse_it);
-            // else
+            // }
+            // else{
             //     this->_tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
+            // }
 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
+
             _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
             _tr_subproblems[level]->solve(*multiplication_action, -1.0 * this->memory_.g[level], this->memory_.s[level]);
 

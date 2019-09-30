@@ -271,7 +271,6 @@ namespace utopia {
         template<typename T>
         inline static T apply(const T &left, const T &right) {
             using std::min;
-
             return min(left, right);
         }
     };

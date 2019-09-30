@@ -66,9 +66,9 @@ namespace utopia {
 
         inline void fill_empty_bounds()
         {
-            if(lower_bound_ == nullptr && upper_bound_ == nullptr) {
-                return;
-            }
+            // if(lower_bound_ == nullptr && upper_bound_ == nullptr) {
+            //     return;
+            // }
 
             if(!lower_bound_) {
                 lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_), min_val_));

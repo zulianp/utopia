@@ -64,6 +64,13 @@ namespace utopia
             }
         }
 
+
+        void get_A_rhs(Matrix & A, Vector & rhs) const
+        {
+            A = A_no_bc_; 
+            convert(snes_->vec_rhs, rhs); 
+        }
+
         virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
@@ -248,6 +255,7 @@ namespace utopia
 
 
             ierr    = DMDAGetInfo(da_, 0, &mx, &my, &mz, 0, 0, 0, &dof, 0, 0, 0, 0, 0);CHKERRQ(ierr);
+
             Hx      = 1.0 / (PetscReal)(mx);
             Hy      = 1.0 / (PetscReal)(my);
             Hz      = 1.0 / (PetscReal)(mz);
