@@ -190,7 +190,7 @@ namespace  utopia
 
                 {
                     Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(g);
-                    Write<Matrix> w1(fi); 
+                    Write<Vector> w1(fi); 
                     
                     each_write(fi, [&ub, &lb, &x, &g](const SizeType i) -> double 
                     {
@@ -266,7 +266,7 @@ namespace  utopia
 
                 {
                     Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(g);
-                    Write<Matrix> w1(beta); 
+                    Write<Vector> w1(beta); 
                     
                     each_write(beta, [&ub, &lb, &x, &g](const SizeType i) -> double 
                     {
