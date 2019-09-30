@@ -483,9 +483,9 @@ namespace utopia {
             void sub_ksp_pc_type(const std::string sub_ksp_type, const std::string sub_pc_type)
             {
                 if(!ksp_->setupstage)
-                {
-                    utopia_error("sub_ksp_pc_type can be only called after update(). ");
-                    return;
+                {   
+                    // ksp setup has to be called before setting up preconditioner
+                    KSPSetUp(ksp_);  
                 }
 
                 PetscErrorCode ierr;
