@@ -68,10 +68,12 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(TR_tril_test); 
 
-            // UTOPIA_RUN_TEST(RMTR_l2_test); 
+            UTOPIA_RUN_TEST(RMTR_l2_test); 
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
+
+            //THIS
             UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
         }
 
@@ -852,14 +854,14 @@ namespace utopia
         // auto n_levels = 3; 
         // auto coarse_dofs = 5; 
 
-        auto n_levels = 3; 
-        auto coarse_dofs = 5; 
-        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
+        auto n_levels = 4; 
+        auto coarse_dofs = 9; 
 
-        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
+        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
+        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
+        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, true, true).run_trilinos();
 #endif
 
 

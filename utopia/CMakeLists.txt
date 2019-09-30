@@ -41,7 +41,6 @@ option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable fo
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
 
 option(TRY_WITH_MPI "Enable the cuda backend" ON)
-# option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
 # option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
@@ -51,7 +50,6 @@ option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF
 
 option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
@@ -66,6 +64,8 @@ set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
 
 )
+
+# set(CMAKE_CXX_FLAGS "-Wall -Wno-clobbered -Wno-vla -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-local-typedefs -Wno-literal-suffix -Wno-deprecated-declarations -Wno-misleading-indentation -Wno-int-in-bool-context -Wno-maybe-uninitialized -Wno-nonnull-compare -Wno-address -Wno-inline -DTRILINOS_HIDE_DEPRECATED_HEADER_WARNINGS -Werror" CACHE STRING "Warnings as errors settings")
 
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=inconsistent-missing-override")
 
@@ -284,10 +284,6 @@ if(TRY_WITH_PETSC)
     add_subdirectory(backend/petsc)
 endif()
 
-
-if(TRY_WITH_CUDA)
-    add_subdirectory(backend/cuda)
-endif()
 
 if(TRY_WITH_OPENCL)
     add_subdirectory(backend/opencl)

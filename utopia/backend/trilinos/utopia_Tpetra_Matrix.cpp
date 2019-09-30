@@ -2,6 +2,7 @@
 #include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
+#include "utopia_trilinos_Utils.hpp"
 #include "utopia_kokkos_ParallelEach.hpp"
 
 #include <TpetraExt_MatrixMatrix_def.hpp>
@@ -30,6 +31,30 @@ namespace utopia {
     }
 
     void TpetraMatrix::add(const GO &row, const GO &col, const Scalar &value)
+    {
+        m_utopia_status_once(
+            "> TpetraMatrix::add does what is supposed to do with respect to the edsl. "
+            "However it might be slow because of the double trilinos call and branching."
+        );
+
+        if(implementation().sumIntoGlobalValues(row, 1, &value, &col, false) != 1) {
+            implementation().insertGlobalValues(row, 1, &value, &col);
+        }
+    }
+
+    void TpetraMatrix::c_set(const SizeType &row, const SizeType &col, const Scalar &value)
+    {
+        m_utopia_status_once(
+            "> TpetraMatrix::set does what is supposed to do with respect to the edsl. "
+            "However it might be slow because of the double trilinos call and branching."
+        );
+
+        if(implementation().replaceGlobalValues(row, 1, &value, &col) != 1) {
+            implementation().insertGlobalValues(row, 1, &value, &col);
+        }
+    }
+
+    void TpetraMatrix::c_add(const SizeType &row, const SizeType &col, const Scalar &value)
     {
         m_utopia_status_once(
             "> TpetraMatrix::add does what is supposed to do with respect to the edsl. "
@@ -156,6 +181,7 @@ namespace utopia {
                     implementation().getDomainMap(),
                     // col_map,
                     0, Tpetra::DynamicProfile));
+                    // 0, Tpetra::StaticProfile));
 
         } else {
 
@@ -164,49 +190,68 @@ namespace utopia {
                     implementation().getRowMap(),
                     // col_map,
                     0, Tpetra::DynamicProfile));
+                    // 0, Tpetra::StaticProfile));
         }
 
         result.owner_ = true;
         // }
 
         try {
-                //C = op(A)*op(B),
-                Tpetra::MatrixMatrix::Multiply(
-                    this->implementation(),
-                    transpose_this,
-                    right.implementation(),
-                    transpose_right,
-                    result.implementation(),
-                    false
-                );
+            Teuchos::RCP<Teuchos::ParameterList> params = rcp(new Teuchos::ParameterList());
+            params->set("Optimize Storage", true);
 
-
-            auto dm = this->implementation().getDomainMap();
-            auto rm = this->implementation().getRangeMap();
-
-            result.init_ = std::make_shared<InitStructs>();
-            result.init_->domain_map = right.implementation().getDomainMap();
-            result.init_->range_map  = (transpose_this ? dm : rm);
-
-            result.implementation().fillComplete(
-                result.init_->domain_map,
-                result.init_->range_map
+            Tpetra::MatrixMatrix::Multiply(
+                this->implementation(),
+                transpose_this,
+                right.implementation(),
+                transpose_right,
+                result.implementation(),
+                true,
+                "TpetraMatrix::multiply",
+                params
             );
 
-            // std::cout << ("---------------------------") << std::endl;
-            // std::cout << transpose_this << std::endl;
-            // disp(this->size());
-            // disp(right.size());
-            // disp(result.size());
-            // std::cout << ("---------------------------") << std::endl;
-            // disp(this->local_size());
-            // disp(right.local_size());
-            // disp(result.local_size());
-            // std::cout << ("---------------------------") << std::endl;
+            /////////////////////////////////////////////////////////////////
 
-            assert(transpose_this  || (this->local_size().get(0) == result.local_size().get(0) && this->size().get(0) == result.size().get(0) ) );
-            assert(!transpose_this || (this->local_size().get(1) == result.local_size().get(0) && this->size().get(1) == result.size().get(0) ) );
-            assert(transpose_right || (right.local_size().get(1) == result.local_size().get(1) && right.size().get(1) == result.size().get(1) ) );
+                // C = op(A)*op(B),
+            //     Tpetra::MatrixMatrix::Multiply(
+            //         this->implementation(),
+            //         transpose_this,
+            //         right.implementation(),
+            //         transpose_right,
+            //         result.implementation(),
+            //         false
+            //     );
+
+
+            // auto dm = this->implementation().getDomainMap();
+            // auto rm = this->implementation().getRangeMap();
+
+            // result.init_ = std::make_shared<InitStructs>();
+            // result.init_->domain_map = right.implementation().getDomainMap();
+            // result.init_->range_map  = (transpose_this ? dm : rm);
+
+            // result.implementation().fillComplete(
+            //     result.init_->domain_map,
+            //     result.init_->range_map
+            // );
+
+            /////////////////////////////////////////////////////////////////
+
+            // // std::cout << ("---------------------------") << std::endl;
+            // // std::cout << transpose_this << std::endl;
+            // // disp(this->size());
+            // // disp(right.size());
+            // // disp(result.size());
+            // // std::cout << ("---------------------------") << std::endl;
+            // // disp(this->local_size());
+            // // disp(right.local_size());
+            // // disp(result.local_size());
+            // // std::cout << ("---------------------------") << std::endl;
+
+            // assert(transpose_this  || (this->local_size().get(0) == result.local_size().get(0) && this->size().get(0) == result.size().get(0) ) );
+            // assert(!transpose_this || (this->local_size().get(1) == result.local_size().get(0) && this->size().get(1) == result.size().get(0) ) );
+            // assert(transpose_right || (right.local_size().get(1) == result.local_size().get(1) && right.size().get(1) == result.size().get(1) ) );
 
 
         } catch(const std::exception &ex) {
@@ -307,7 +352,9 @@ namespace utopia {
         const int index_base = 0;
 
         if(rows_local == INVALID_INDEX) {
-            row_map.reset(new map_type(rows_global, index_base, comm));
+            //NEW SIZE
+            const SizeType rows_local = utopia::decompose(comm_, rows_global);
+            row_map.reset(new map_type(rows_global, rows_local, index_base, comm));
         } else {
             row_map.reset(new map_type(rows_global, rows_local, index_base, comm));
         }
@@ -325,7 +372,9 @@ namespace utopia {
 
         init_ = std::make_shared<InitStructs>();
         if(cols_local == INVALID_INDEX) {
-            init_->domain_map.reset(new map_type(cols_global, index_base, comm));
+            //NEW SIZE
+            const SizeType cols_local = utopia::decompose(comm_, cols_global);
+            init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
         } else {
             init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
         }
@@ -346,8 +395,11 @@ namespace utopia {
       rcp_map_type col_map;
       const int index_base = 0;
       if (rows_local == INVALID_INDEX) {
-          row_map.reset(new map_type(rows_global, index_base, comm));
-          assert(cols_local == INVALID_INDEX);
+         assert(cols_local == INVALID_INDEX);
+
+          const SizeType rows_local_auto = utopia::decompose(comm_, rows_global);
+          
+          row_map.reset(new map_type(rows_global, rows_local_auto, index_base, comm));
           col_map.reset(new map_type(cols_global, index_base, comm));
           //~ Kokkos::View<LO*> colInds("Column Map", cols_global);
           //~ Kokkos::parallel_for(cols_global, KOKKOS_LAMBDA(size_t i) { colInds(i) = i; });
@@ -362,7 +414,8 @@ namespace utopia {
 
       init_ = std::make_shared<InitStructs>();
       if(cols_local == INVALID_INDEX) {
-        init_->domain_map.reset(new map_type(cols_global, index_base, comm));
+        const SizeType cols_local_auto = utopia::decompose(comm_, cols_global);
+        init_->domain_map.reset(new map_type(cols_global, cols_local_auto, index_base, comm));
       } else {
         init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
       }
@@ -555,17 +608,7 @@ namespace utopia {
         return ret_global;
     }
 
-    void TpetraMatrix::c_set(const SizeType &i, const SizeType &j, const Scalar &value)
-    {
-        //FIXME
-        set(i, j, value);
-    }
 
-    void TpetraMatrix::c_add(const SizeType &i, const SizeType &j, const Scalar &value)
-    {
-        //FIXME
-        add(i, j, value);
-    }
 
     TpetraMatrix::SizeType TpetraMatrix::rows() const
     {
@@ -807,6 +850,7 @@ namespace utopia {
         }
 
         assert(false && "IMPLEMENT ME");
+        return -1.0;
     }
 
     //(y := alpha * A * x + beta * y)
@@ -859,4 +903,14 @@ namespace utopia {
         diff.axpy(-1.0, other);
         return diff.norm_infty() < tol;
     }
+
+    void TpetraMatrix::build_from_structure(const TpetraMatrix &rhs)
+    {
+        auto rhs_ptr = rhs.raw_type();
+        owner_ = true;
+           mat_.reset(
+            new crs_mat_type(rhs_ptr->getCrsGraph())
+        );
+    }
+
 }

@@ -51,33 +51,8 @@ namespace utopia {
             // return derived().implementation().get(row, col);
         }
 
-#ifdef ENABLE_LOCK_CHECK
-        Readable()
-        : lock_active_(false)
-        { }
-
-        inline bool is_read_locked() const
-        {
-            return lock_active_;
-        }
-
-        inline void read_lock() const
-        {
-            lock_active_ = true;
-        }
-
-        inline void read_unlock() const
-        {
-            lock_active_ = false;
-        }
-#endif //NDEBUG
-
     private:
         CONST_DERIVED_CRT(Derived);
-
-#ifdef ENABLE_LOCK_CHECK
-        mutable bool lock_active_;
-#endif //NDEBUG
 
     };
 
@@ -116,35 +91,10 @@ namespace utopia {
             Backend<Scalar, Traits<Implementation>::Backend >::get(derived().implementation(), index, values);
         }
 
-// #ifdef ENABLE_LOCK_CHECK
-//         Readable()
-//         : lock_active_(false)
-//         { }
-
-//         inline bool is_read_locked() const
-//         {
-//             return lock_active_;
-//         }
-
-//         inline void read_lock() const
-//         {
-//             lock_active_ = true;
-//         }
-
-//         inline void read_unlock() const
-//         {
-//             lock_active_ = false;
-//         }
-// #endif //NDEBUG
-
     private:
         CONST_DERIVED_CRT(Derived);
 
-// #ifdef ENABLE_LOCK_CHECK
-//         mutable bool lock_active_;
-// #endif //NDEBUG
     };
-
 
     template<class Tensor>
     class Read {
@@ -171,7 +121,6 @@ namespace utopia {
     private:
         const Tensor &tensor_;
     };
-
 
     template<class T, int Order>
     class Read< std::vector<Tensor<T, Order> > > {
