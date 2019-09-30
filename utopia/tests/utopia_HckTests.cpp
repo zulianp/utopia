@@ -2,7 +2,7 @@
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-
+#include "utopia_trilinos_DeviceView.hpp"
 namespace utopia
 {
 

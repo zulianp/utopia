@@ -4,6 +4,7 @@
 #include <string>
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_DeviceView.hpp"
 
 namespace  utopia
 {
@@ -211,13 +212,17 @@ namespace  utopia
                 Vector alpha_f2 = local_values(local_size(x), 1e15); 
 
                 {
-                    Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(p);
-                    
-                    each_write(alpha_f1, [&lb, &x, &p](const SizeType i) -> double 
+                    // Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(p);
+                    auto d_lb = const_device_view(lb);
+                    auto d_ub = const_device_view(ub);
+                    auto d_x  = const_device_view(x);
+                    auto d_p  = const_device_view(p);
+
+                    parallel_each_write(alpha_f1, [d_lb, d_x, d_p](const SizeType i) -> double 
                     {
-                        Scalar li = lb.get(i); 
-                        Scalar xi = x.get(i); 
-                        Scalar pi = p.get(i);
+                        Scalar li = d_lb.get(i); 
+                        Scalar xi = d_x.get(i); 
+                        Scalar pi = d_p.get(i);
 
                         if(pi > 0)
                         {
@@ -228,15 +233,13 @@ namespace  utopia
                             return 1e15; 
                         }
 
-                    }   );
+                    });
 
-
-
-                    each_write(alpha_f2, [&ub, &x, &p](const SizeType i) -> double 
+                    parallel_each_write(alpha_f2, [d_ub, d_x, d_p](const SizeType i) -> double 
                     {
-                        Scalar ui = ub.get(i); 
-                        Scalar xi = x.get(i); 
-                        Scalar pi = p.get(i);
+                        Scalar ui = d_ub.get(i); 
+                        Scalar xi = d_x.get(i); 
+                        Scalar pi = d_p.get(i);
 
                         if(pi < 0)
                         {
