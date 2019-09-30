@@ -2,7 +2,7 @@
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-
+#include "utopia_trilinos_DeviceView.hpp"
 namespace utopia
 {
 
@@ -68,10 +68,12 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(TR_tril_test); 
 
-            // UTOPIA_RUN_TEST(RMTR_l2_test); 
+            UTOPIA_RUN_TEST(RMTR_l2_test); 
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
+
+            //THIS
             UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
         }
 
@@ -852,8 +854,9 @@ namespace utopia
         // auto n_levels = 3; 
         // auto coarse_dofs = 5; 
 
-        auto n_levels = 3; 
-        auto coarse_dofs = 10; 
+
+        auto n_levels = 2; 
+        auto coarse_dofs = 3; 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
 
        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();

@@ -11,7 +11,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class TestFunctionND_1 final : public Function<Matrix, Vector> {
 
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
     public:
@@ -125,7 +125,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class SimpleQuadraticFunction : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         using SizeType = typename Traits<Vector>::SizeType;
 
         SimpleQuadraticFunction(const SizeType &n) : n_(n) {}

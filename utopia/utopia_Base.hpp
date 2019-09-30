@@ -130,7 +130,7 @@ namespace utopia {
 CONST_DERIVED_CRT(Derived)        \
 DERIVED_CRT(Derived)
 
-#define DEF_UTOPIA_SCALAR(Tensor) typedef typename utopia::Traits<Tensor>::Scalar Scalar;
+#define DEF_UTOPIA_SCALAR(Tensor) typedef typename utopia::Traits<Tensor>::Scalar Scalar
 #define UTOPIA_SCALAR(Tensor) typename utopia::Traits<Tensor>::Scalar
 #define UTOPIA_SIZE_TYPE(Tensor) typename utopia::Traits<Tensor>::SizeType
 #define UTOPIA_MATRIX(Tensor) typename utopia::Traits<Tensor>::Matrix

@@ -9,7 +9,7 @@ namespace utopia
     class LeastSquaresFunctionBase
     {
         public:
-            DEF_UTOPIA_SCALAR(Vector)
+            DEF_UTOPIA_SCALAR(Vector);
 
             virtual ~LeastSquaresFunctionBase() { }
 
@@ -32,7 +32,7 @@ namespace utopia
     class LeastSquaresFunction  : public LeastSquaresFunctionBase<Vector>
     {
         public:
-            DEF_UTOPIA_SCALAR(Matrix)
+            DEF_UTOPIA_SCALAR(Vector);
 
             virtual ~LeastSquaresFunction() { }
 

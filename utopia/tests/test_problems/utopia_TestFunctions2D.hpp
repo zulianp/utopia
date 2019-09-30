@@ -62,7 +62,7 @@ namespace utopia
     class SmallSingularExample : public Function<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         SmallSingularExample()
         {

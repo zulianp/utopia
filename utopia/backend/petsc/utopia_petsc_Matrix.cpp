@@ -9,6 +9,7 @@
 #include <set>
 
 //PetscObjectTypeCompare((PetscObject)mat,newtype,&sametype);
+//Experts: Mark Hoemmen, Chris Siefert
 
 namespace utopia {
 

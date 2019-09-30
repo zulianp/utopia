@@ -37,6 +37,14 @@ namespace utopia {
             comm_ = comm;
         }
 
+        template<typename T>
+        inline T sum(const T &val) const {
+
+            T ret_global = 0.0;
+            Teuchos::reduceAll(*get(), Teuchos::REDUCE_SUM, 1, &val, &ret_global);
+            return ret_global;
+        }
+
         TrilinosCommunicator(const CommPtr &comm) : comm_(comm) {}
         TrilinosCommunicator();
 

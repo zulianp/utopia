@@ -59,6 +59,5 @@ int main(const int argc, char *argv[])
         }
     }
 
-
     return Utopia::Finalize();
 }

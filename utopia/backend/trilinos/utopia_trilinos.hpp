@@ -24,6 +24,7 @@
 #include "utopia_trilinos_solvers.hpp"
 #include "utopia_trilinos_Each.hpp"
 #include "utopia_trilinos_Eval_Factory.hpp"
+#include "utopia_trilinos_DeviceView.hpp"
 
 //optimizations
 #include "utopia_trilinos_Eval_RAP.hpp"

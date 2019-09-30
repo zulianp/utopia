@@ -12,7 +12,7 @@ namespace utopia
     class ExtendedPowell22 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         ExtendedPowell22(const SizeType & n): n_(n)
