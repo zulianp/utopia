@@ -792,7 +792,7 @@ namespace utopia
 
             auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             tr_strategy_fine->atol(1e-12); 
-            // tr_strategy_fine->verbose(true);
+           //  tr_strategy_fine->verbose(true);
             auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             tr_strategy_coarse->atol(1e-12); 
 
@@ -825,7 +825,7 @@ namespace utopia
 
             rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+           //  rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
                 
             // Solve 
@@ -854,11 +854,12 @@ namespace utopia
         // auto n_levels = 3; 
         // auto coarse_dofs = 5; 
 
-        auto n_levels = 4; 
-        auto coarse_dofs = 9; 
 
+        auto n_levels = 3; 
+        auto coarse_dofs = 10; 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
+
+       // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, true, true).run_trilinos();
