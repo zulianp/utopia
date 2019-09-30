@@ -91,7 +91,7 @@ namespace  utopia
                 Scalar gnorm; 
 
                 Scalar alpha_cg, alpha_f, beta_sc; 
-
+	
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
 
@@ -99,6 +99,7 @@ namespace  utopia
                 g = Ax - rhs; 
 
                 this->get_fi(x, g, *lb, *ub, fi); 
+             
                 this->get_beta(x, g, *lb, *ub, beta); 
                 gp = fi + beta; 
                 p = fi; 
@@ -122,11 +123,10 @@ namespace  utopia
                         // }
 
 
-
                         alpha_cg = dot(g, p)/pAp;
                         y = x - alpha_cg*p;
 
-                        alpha_f = get_alpha_f(x, p, *lb, *ub);                       
+                        alpha_f = get_alpha_f(x, p, *lb, *ub);         
 
                         if(alpha_cg <= alpha_f)
                         {
@@ -175,7 +175,6 @@ namespace  utopia
 
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
-
     
                 return true;
             }
@@ -232,8 +231,6 @@ namespace  utopia
 
                     }   );
 
-
-
                     each_write(alpha_f2, [&ub, &x, &p](const SizeType i) -> double 
                     {
                         Scalar ui = ub.get(i); 
@@ -253,9 +250,11 @@ namespace  utopia
 
                 }
 
+
                 Scalar alpha_f2_min = min(alpha_f2); 
                 Scalar alpha_f1_min = min(alpha_f1); 
                 
+
                 return std::min(alpha_f1_min, alpha_f2_min); 
             }
 
