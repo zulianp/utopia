@@ -182,22 +182,26 @@ namespace utopia {
             multigrid.v_cycle_repetition(2);
 
             multigrid.apply(rhs, x_0);
+            double diff = norm2(A * x_0 - rhs);
+            std::cout<<"diff: "<< diff << " \n"; 
+
 
             multigrid.max_it(1);
             multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
             auto gmres = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
             gmres->set_preconditioner(make_ref(multigrid));
-            x_0.set(0.);
+            
+            x_0 = 0.0*x_0; 
             gmres->verbose(false);
             gmres->atol(1e-16);
             gmres->rtol(1e-16);
             gmres->solve(A, rhs, x_0);
 
-            double diff = norm2(rhs - A *x_0);
             if(diff > 1e-6) {
                 utopia_error("petsc_mg: gmres preconditioned with mg does not do what it is supposed to");
             }
-            // utopia_test_assert( approxeq(diff, 0., 1e-6) );
+
+            utopia_test_assert( approxeq(diff, 0., 1e-6) );
         }
 
         void petsc_bicgstab()
