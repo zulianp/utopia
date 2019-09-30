@@ -15,7 +15,7 @@ namespace utopia
     class TestFunctionInterface
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~TestFunctionInterface() { }
@@ -60,7 +60,7 @@ namespace utopia
     class UnconstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public Function<Matrix, Vector>
     {
         public:
-            DEF_UTOPIA_SCALAR(Matrix)
+            DEF_UTOPIA_SCALAR(Matrix);
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~UnconstrainedTestFunction() { }
@@ -70,7 +70,7 @@ namespace utopia
     class UnconstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public ExtendedFunction<Matrix, Vector>
     {
         public:
-            DEF_UTOPIA_SCALAR(Matrix)
+            DEF_UTOPIA_SCALAR(Matrix);
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~UnconstrainedExtendedTestFunction() { }
@@ -80,7 +80,7 @@ namespace utopia
     class ConstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public Function<Matrix, Vector>
     {
         public:
-            DEF_UTOPIA_SCALAR(Matrix)
+            DEF_UTOPIA_SCALAR(Matrix);
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~ConstrainedTestFunction() { }
@@ -97,7 +97,7 @@ namespace utopia
     class ConstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public ExtendedFunction<Matrix, Vector>
     {
         public:
-            DEF_UTOPIA_SCALAR(Matrix)
+            DEF_UTOPIA_SCALAR(Matrix);
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~ConstrainedExtendedTestFunction() { }

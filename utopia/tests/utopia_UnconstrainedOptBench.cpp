@@ -17,7 +17,7 @@ namespace utopia
 	class UnconstrainedOptimizationBenchmark : public Benchmark 
 	{
 	public:
-		DEF_UTOPIA_SCALAR(Vector)
+		DEF_UTOPIA_SCALAR(Vector);
 
 		virtual std::string name() override
 		{

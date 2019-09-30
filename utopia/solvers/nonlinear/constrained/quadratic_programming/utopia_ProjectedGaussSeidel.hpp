@@ -17,7 +17,7 @@ namespace utopia {
     {
     public:
 
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         ProjectedGaussSeidel()
         : use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)

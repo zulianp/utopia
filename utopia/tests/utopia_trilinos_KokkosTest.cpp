@@ -18,10 +18,15 @@
 #include "utopia_IPTransfer.hpp"
 #include <cmath>
 
+// #define UTOPIA_LAMBDA KOKKOS_LAMBDA
+
 namespace utopia {
 
     void kokkos_max()
     {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+        
         auto n = 10;
 
         TpetraVectord v = local_values(n, 1.);
@@ -35,6 +40,9 @@ namespace utopia {
 
     void kokkos_min()
     {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+
         auto n = 10;
 
         TpetraVectord v = local_values(n, 1.);
@@ -48,6 +56,9 @@ namespace utopia {
 
     void kokkos_sum_reduction()
     {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+
         auto n = 10;
 
         TpetraVectord v = local_values(n, 1.);
@@ -59,13 +70,16 @@ namespace utopia {
 
     void kokkos_min_reduction()
     {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+
         auto n = 10;
 
         TpetraVectord v = local_values(n, 1.);
 
         auto r = range(v);
 
-        each_write(v,  KOKKOS_LAMBDA(const SizeType i) -> double {
+        each_write(v,  UTOPIA_LAMBDA(const SizeType i) -> double {
             return i - r.begin();
         });
 
@@ -76,13 +90,16 @@ namespace utopia {
 
     void kokkos_max_reduction()
     {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+
         auto n = 10;
 
         TpetraVectord v = local_values(n, 1.);
 
         auto r = range(v);
 
-        each_write(v, KOKKOS_LAMBDA(const SizeType i) -> double {
+        each_write(v, UTOPIA_LAMBDA(const SizeType i) -> double {
             return i - r.begin();
         });
 
@@ -91,12 +108,16 @@ namespace utopia {
         utopia_test_assert(approxeq(9., z));
     }
 
-    void kokkos_write() {
+    void kokkos_write()
+    {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+
         auto n = 10;
 
         TpetraVectord w = local_values(n, -1.);
 
-        parallel_each_write(w, KOKKOS_LAMBDA(const SizeType i) -> double {
+        parallel_each_write(w, UTOPIA_LAMBDA(const SizeType i) -> double {
             return i;
         });
 
@@ -110,12 +131,16 @@ namespace utopia {
         }
     }
 
-    void kokkos_parallel_each_mat() {
+    void kokkos_parallel_each_mat()
+    {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+
         auto n = 10;
 
         TpetraMatrixd w = local_identity(n, n);
 
-        parallel_each_write(w, KOKKOS_LAMBDA(const SizeType i, const SizeType j) -> double {
+        parallel_each_write(w, UTOPIA_LAMBDA(const SizeType i, const SizeType j) -> double {
             return i * n + j;
         });
 
@@ -125,17 +150,23 @@ namespace utopia {
         });
     }
 
-    void kokkos_read() {
+    void kokkos_read()
+    {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
 
         auto n = 10;
         TpetraVectord w = local_values(n, 50);
 
-        parallel_each_read(w, KOKKOS_LAMBDA(const SizeType i, const double entry)
+        parallel_each_read(w, UTOPIA_LAMBDA(const SizeType i, const double entry)
         { });
     }
 
     void kokkos_apply()
     {
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType = Traits<TpetraVectord>::SizeType;
+
         auto nr = 3;
         auto nc = 3;
 
@@ -155,7 +186,7 @@ namespace utopia {
             }
         }
 
-        parallel_transform(P, KOKKOS_LAMBDA(const double value) -> double {
+        parallel_transform(P, UTOPIA_LAMBDA(const double value) -> double {
             return value * 2.;
         });
 

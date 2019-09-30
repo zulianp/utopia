@@ -20,7 +20,7 @@ namespace utopia {
     class ProjectedGradient final: public QPSolver<Matrix, Vector>, public MatrixFreeQPSolver<Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         using QPSolver<Matrix, Vector>::solve;
 

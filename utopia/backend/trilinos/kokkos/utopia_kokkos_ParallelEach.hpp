@@ -6,6 +6,8 @@
 #include "utopia_Each.hpp"
 #include "utopia_trilinos_Types.hpp"
 #include "utopia_ParallelEach.hpp"
+#include "utopia_For.hpp"
+
 
 #include <Kokkos_Core.hpp>
 
@@ -187,6 +189,28 @@ namespace utopia {
             });
         });
     }
+
+    template<>
+    class ParallelFor<TRILINOS> {
+    public:
+        template<typename F>
+        inline static void apply(const Range &r, F f)
+        {
+            apply(r.begin(), r.end(), f);
+        }
+
+        template<typename F>
+        inline static void apply(
+            const std::size_t &begin,
+            const std::size_t &end,
+            F f)
+        {
+            auto extent = end - begin;
+            Kokkos::parallel_for(extent, KOKKOS_LAMBDA(const int i) {
+                f(begin + i);
+            });
+        }
+    };
 
 }
 

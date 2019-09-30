@@ -15,7 +15,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BenchmarkAccess : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector)
+        DEF_UTOPIA_SCALAR(Vector);
         using SizeType = UTOPIA_SIZE_TYPE(Vector);
 
         virtual std::string name() override

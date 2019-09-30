@@ -5,6 +5,7 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_QPSolver.hpp"
 #include "utopia_DeviceView.hpp"
+#include "utopia_For.hpp"
 
 namespace  utopia
 {
@@ -12,8 +13,9 @@ namespace  utopia
     template<class Matrix, class Vector>
     class MPGRP final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef utopia::LinearSolver<Matrix, Vector>    Solver;
+        using Scalar  = typename Traits<Vector>::Scalar;
+        using Solver  = utopia::LinearSolver<Matrix, Vector>;
+        using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
 
         public:
             MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10)
@@ -217,44 +219,72 @@ namespace  utopia
                     auto d_x  = const_device_view(x);
                     auto d_p  = const_device_view(p);
 
-                    parallel_each_write(alpha_f1, [d_lb, d_x, d_p](const SizeType i) -> double 
+                    ////////////////////////////////////////////////////////////////////////
+                    //Variant 1)
+                    auto d_alpha_f1 = device_view(alpha_f1);
+                    auto d_alpha_f2 = device_view(alpha_f2);
+                    
+                    ForLoop::apply(range(alpha_f1), UTOPIA_LAMBDA(const SizeType i)
                     {
-                        Scalar li = d_lb.get(i); 
-                        Scalar xi = d_x.get(i); 
-                        Scalar pi = d_p.get(i);
+                        const Scalar li = d_lb.get(i); 
+                        const Scalar ui = d_ub.get(i); 
+                        const Scalar xi = d_x.get(i); 
+                        const Scalar pi = d_p.get(i);
 
-                        if(pi > 0)
-                        {
-                            return (xi-li)/pi; 
-                        }
-                        else
-                        {
-                            return 1e15; 
+                        if(pi > 0) {
+                            d_alpha_f1.set(i, (xi-li)/pi); 
+                        } else {
+                            d_alpha_f1.set(i, 1e15); 
                         }
 
+                        if(pi < 0) {
+                            d_alpha_f2.set(i, (xi-ui)/pi); 
+                        } else {
+                            d_alpha_f2.set(i, 1e15); 
+                        }
                     });
 
-                    parallel_each_write(alpha_f2, [d_ub, d_x, d_p](const SizeType i) -> double 
-                    {
-                        Scalar ui = d_ub.get(i); 
-                        Scalar xi = d_x.get(i); 
-                        Scalar pi = d_p.get(i);
+                    ////////////////////////////////////////////////////////////////////////
+                    //Variant 2)
+                    // parallel_each_write(alpha_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                    // {
+                    //     Scalar li = d_lb.get(i); 
+                    //     Scalar xi = d_x.get(i); 
+                    //     Scalar pi = d_p.get(i);
 
-                        if(pi < 0)
-                        {
-                            return (xi-ui)/pi; 
-                        }
-                        else
-                        {
-                            return 1e15; 
-                        }
+                    //     if(pi > 0)
+                    //     {
+                    //         return (xi-li)/pi; 
+                    //     }
+                    //     else
+                    //     {
+                    //         return 1e15; 
+                    //     }
+                    // });
 
-                    });
+                    // parallel_each_write(alpha_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                    // {
+                    //     Scalar ui = d_ub.get(i); 
+                    //     Scalar xi = d_x.get(i); 
+                    //     Scalar pi = d_p.get(i);
+
+                    //     if(pi < 0)
+                    //     {
+                    //         return (xi-ui)/pi; 
+                    //     }
+                    //     else
+                    //     {
+                    //         return 1e15; 
+                    //     }
+
+                    // });
+
+                    ////////////////////////////////////////////////////////////////////////
 
                 }
 
-                Scalar alpha_f2_min = min(alpha_f2); 
-                Scalar alpha_f1_min = min(alpha_f1); 
+                const Scalar alpha_f2_min = min(alpha_f2); 
+                const Scalar alpha_f1_min = min(alpha_f1); 
                 return std::min(alpha_f1_min, alpha_f2_min); 
             }
 

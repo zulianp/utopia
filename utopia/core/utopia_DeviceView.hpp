@@ -3,6 +3,7 @@
 
 #include "utopia_Traits.hpp"
 #include "utopia_Readable.hpp"
+#include <memory>
 
 namespace utopia {
 
@@ -30,11 +31,11 @@ namespace utopia {
             tensor_.add(idx, value);
         }
 
-        DeviceView(T &tensor) : tensor_(tensor), lock_(tensor) {}
+        DeviceView(T &tensor) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor)) {}
 
     private:
         T &tensor_;
-        ReadAndWrite<T> lock_;
+        std::shared_ptr<ReadAndWrite<T>> lock_;
     };
 
     template<class T>
@@ -48,11 +49,11 @@ namespace utopia {
             return tensor_.get(idx);
         }
 
-        DeviceView(const T &tensor) : tensor_(tensor), lock_(tensor) {}
+        DeviceView(const T &tensor) : tensor_(tensor), lock_(std::make_shared<Read<T>>(tensor)) {}
 
     private:
         const T &tensor_;
-        Read<T> lock_;
+        std::shared_ptr<Read<T>> lock_;
     };
 
     template<class Derived, int Order>
