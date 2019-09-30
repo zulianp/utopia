@@ -588,7 +588,7 @@ namespace utopia {
             cg.atol(1e-13);
             cg.rtol(1e-13);
             cg.stol(1e-13);
-            cg.verbose(false);
+            cg.verbose(verbose);
             cg.solve(A, rhs, x_0);
 
 
