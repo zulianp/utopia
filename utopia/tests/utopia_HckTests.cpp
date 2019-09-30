@@ -72,7 +72,11 @@ namespace utopia
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
-            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
+            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
+
+            UTOPIA_RUN_TEST(MPGRP_test); 
+
+            // UTOPIA_RUN_TEST(STCG_test); 
         }
 
 
@@ -80,30 +84,40 @@ namespace utopia
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const 
         {
-            Bratu2D<Matrix, Vector> fun(n_);
-            Vector x = fun.initial_guess(); 
-            Matrix H;
-            Vector g; 
+            Matrix H_working; 
+            Vector g_working, x_working; 
 
-            fun.hessian(x, H); 
-            fun.gradient(x, g); 
-            x *= 0.0;
+            #ifdef WITH_PETSC
+                Bratu2D<PetscMatrix, PetscVector> fun(n_);
+                PetscVector x = fun.initial_guess(); 
+                PetscMatrix H;
+                PetscVector g; 
 
-            // monitor(0, H, "Hessian.m", "H"); 
-            // monitor(0, g, "gradient.m", "g"); 
+                fun.hessian(x, H); 
+                fun.gradient(x, g); 
+    
+                backend_convert_sparse(H, H_working);
+                backend_convert(g, g_working);
+                x_working =  0.0 * g_working;                 
+    
+                // monitor(0, H, "Hessian.m", "H"); 
+                // monitor(0, g, "gradient.m", "g"); 
 
-            if(dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get()))
-            {
-                QPSolver<Matrix, Vector> * qp_box = dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get());
-                Vector lb = local_values(local_size(x).get(0), -9e9); 
-                Vector ub = local_values(local_size(x).get(0), 9e9); 
-                qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));      
-                qp_box->solve(H, -1.0*g, x); 
-            }
-            else
-            {   
-                qp_solver->solve(H, -1.0*g, x); 
-            }
+                if(dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get()))
+                {
+                    QPSolver<Matrix, Vector> * qp_box = dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get());
+                    Vector lb = local_values(local_size(x_working).get(0), -9e9); 
+                    Vector ub = local_values(local_size(x_working).get(0), 9e9); 
+                    qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));      
+                    qp_box->solve(H_working, -1.0*g_working, x_working); 
+                }
+                else
+                {   
+                    qp_solver->solve(H_working, -1.0*g_working, x_working); 
+                }     
+
+            #endif
+
         }
 
 
@@ -859,7 +873,7 @@ namespace utopia
        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, true, true).run_trilinos();
+        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
 #endif
 
 
