@@ -487,26 +487,29 @@ namespace utopia {
             //! [KSPSolver solve example1]
 
             x_0 = zeros(A.size().get(0));
-            multigrid.verbose(false);
+            multigrid.verbose(verbose);
             multigrid.max_it(1);
             multigrid.mg_type(1);
             multigrid.pre_smoothing_steps(1);
             multigrid.post_smoothing_steps(1);
             utopia_ksp.set_preconditioner(make_ref(multigrid));
-            // utopia_ksp.verbose(true);
+            utopia_ksp.verbose(verbose);
 
             utopia_ksp.atol(1e-18);
             utopia_ksp.rtol(1e-18);
             utopia_ksp.stol(1e-16);
+            utopia_ksp.max_it(10);
+            utopia_ksp.norm_type("preconditioned"); 
 
             utopia_ksp.solve(A, rhs, x_0);
 
-            double diff = norm2(rhs - A * x_0);
+            double diff = norm2(A * x_0 - rhs);
 
             if(diff > 1e-6) {
                 utopia_error("petsc_superlu_mg fails. Known problem that needs to be fixed!");
             }
-            // utopia_test_assert( diff < 1e-6 );
+
+            utopia_test_assert( diff < 1e-6 );
         }
 
 

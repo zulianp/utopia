@@ -456,6 +456,25 @@ namespace utopia {
                 }
             }
 
+            void norm_type(const std::string & norm_type)
+            {
+                if(norm_type=="preconditioned") {
+                    KSPSetNormType(ksp_, KSP_NORM_PRECONDITIONED);
+                }
+                else if(norm_type=="unpreconditioned") {
+                    KSPSetNormType(ksp_, KSP_NORM_UNPRECONDITIONED);
+                }
+                else if(norm_type=="none") {
+                    KSPSetNormType(ksp_, KSP_NORM_NONE);              
+                }
+                else if(norm_type=="natural"){ 
+                    KSPSetNormType(ksp_, KSP_NORM_NATURAL);  
+                }
+                else{
+                    utopia_warning("KSP::norm_type:: norm not supported... \n"); 
+                }
+            }
+
             void overlap(const PetscInt &n_overlap)
             {
                 PetscErrorCode ierr;
@@ -847,6 +866,12 @@ namespace utopia {
     {
         return this->ksp_->number_of_subdomains(n);
     }
+
+    template<typename Matrix, typename Vector>
+    void KSPSolver<Matrix, Vector, PETSC>::norm_type(const std::string & norm_type)
+    {
+        return this->ksp_->norm_type(norm_type);
+    } 
 
     template<typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::overlap(const SizeType & n)
