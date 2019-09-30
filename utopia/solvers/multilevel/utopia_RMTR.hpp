@@ -1140,7 +1140,7 @@ namespace utopia
         virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg)
         {
             // this params should not be as hardcodded as they are...
-            _tr_subproblems[level]->atol(1e-16);
+            _tr_subproblems[level]->atol(1e-14);
             
             if(flg){
                 _tr_subproblems[level]->max_it(_max_QP_coarse_it);

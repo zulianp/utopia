@@ -103,7 +103,6 @@ namespace  utopia
                 gp = fi + beta; 
                 p = fi; 
 
-
                 while(!converged)
                 {
                     if(dot(beta, beta) <= (gamma*gamma * dot(fi,fi)))
@@ -112,6 +111,7 @@ namespace  utopia
 
                         // curvature condition check?? 
                         pAp = dot(p, Ap); 
+
                         // if(pAp <= 0.0)
                         // {   
                         //     if(this->verbose())
@@ -121,9 +121,12 @@ namespace  utopia
                         //     return true;
                         // }
 
+
+
                         alpha_cg = dot(g, p)/pAp;
                         y = x - alpha_cg*p;
-                        alpha_f = get_alpha_f(x, p, *lb, *ub);
+
+                        alpha_f = get_alpha_f(x, p, *lb, *ub);                       
 
                         if(alpha_cg <= alpha_f)
                         {
@@ -131,8 +134,7 @@ namespace  utopia
                             g = g - alpha_cg*Ap;
                             this->get_fi(x, g, *lb, *ub, fi); 
                             beta_sc = dot(fi,Ap)/pAp;
-                            p = fi - beta_sc*p;
-
+                            p = fi - beta_sc*p;                                               
                         }
                         else
                         {
@@ -251,7 +253,7 @@ namespace  utopia
 
                 Scalar alpha_f2_min = min(alpha_f2); 
                 Scalar alpha_f1_min = min(alpha_f1); 
-
+                
                 return std::min(alpha_f1_min, alpha_f2_min); 
             }
 
