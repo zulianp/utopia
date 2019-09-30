@@ -284,11 +284,6 @@ if(TRY_WITH_PETSC)
     add_subdirectory(backend/petsc)
 endif()
 
-
-if(TRY_WITH_CUDA)
-    add_subdirectory(backend/cuda)
-endif()
-
 if(TRY_WITH_OPENCL)
     add_subdirectory(backend/opencl)
 endif()
