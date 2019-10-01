@@ -858,9 +858,9 @@ namespace utopia
 
         void for_each_loop_test()
         {
-            Vector x = local_values(n_, 2.); 
-            Vector y = local_values(n_, 1.); 
-            Vector z = local_values(n_, 0.); 
+            Vector x = values(n_, 2.); 
+            Vector y = values(n_, 1.); 
+            Vector z = values(n_, 0.); 
 
             using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
 
@@ -873,25 +873,22 @@ namespace utopia
                 {
                     const Scalar xi = d_x.get(i); 
                     const Scalar yi = d_y.get(i); 
-
-                    return xi - yi; 
-
+                    d_z.set(i, xi - yi); 
                 });
             }            
 
-            disp(z); 
-
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(Scalar(n_), sum_z));
         }
 
 
         void parallel_each_write_test()
         {
-            Vector x = local_values(n_, 2.); 
-            Vector y = local_values(n_, 1.); 
-            Vector z = local_values(n_, 0.);             
+            Vector x = values(n_, 2.); 
+            Vector y = values(n_, 1.); 
+            Vector z = values(n_, 0.);             
 
             {
-
                 auto d_x = const_device_view(x);
                 auto d_y = const_device_view(y);
                 auto d_z = device_view(z);
@@ -900,12 +897,12 @@ namespace utopia
                 {
                     const Scalar xi = d_x.get(i); 
                     const Scalar yi = d_y.get(i); 
-
                     return xi - yi; 
                 });
             }
 
-            disp(z);
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(Scalar(n_), sum_z));
         }
 
 
@@ -934,7 +931,7 @@ namespace utopia
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         auto verbose = true;
-       HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+       // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
