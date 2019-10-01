@@ -31,10 +31,7 @@ namespace utopia
 
         }
 
-        virtual ~MultilevelVariableBoundSolverInterface()
-        {
-
-        }
+        virtual ~MultilevelVariableBoundSolverInterface() = default;
 
         /**
          * @brief      Sets the box constraints.

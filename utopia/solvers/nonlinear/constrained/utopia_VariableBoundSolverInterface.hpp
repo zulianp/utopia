@@ -26,15 +26,8 @@ namespace utopia
 
 
     public:
-        VariableBoundSolverInterface()
-        {
-
-        }
-
-        virtual ~VariableBoundSolverInterface()
-        {
-
-        }
+        VariableBoundSolverInterface() = default;
+        virtual ~VariableBoundSolverInterface() = default;
 
         virtual bool set_box_constraints(const BoxConstraints & box)
         {
@@ -91,6 +84,7 @@ namespace utopia
       virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g) const
       {
 
+        //FIXME remove temporaries
         Vector Pc;
         Vector x_g = x - g;
         Vector ub, lb;
@@ -149,6 +143,7 @@ namespace utopia
         if(!constraints_.has_upper_bound() && !constraints_.has_lower_bound())
             return;
 
+        //FIXME remove temporaries
         const Vector x_old = x;
 
         if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
@@ -219,6 +214,7 @@ namespace utopia
 
       virtual BoxConstraints  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform) const
       {
+          //FIXME remove temporaries
           Vector l_f, u_f;
 
           if(constraints_.has_upper_bound())
@@ -269,6 +265,7 @@ namespace utopia
 
       virtual BoxConstraints  build_correction_constraints(const Vector & x_k) const
       {
+          //FIXME remove temporaries
           Vector l_f, u_f;
 
           if(constraints_.has_upper_bound())
