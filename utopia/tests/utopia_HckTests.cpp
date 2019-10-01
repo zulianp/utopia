@@ -68,7 +68,7 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(TR_tril_test); 
 
-            UTOPIA_RUN_TEST(RMTR_l2_test); 
+//            UTOPIA_RUN_TEST(RMTR_l2_test); 
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
@@ -101,7 +101,9 @@ namespace utopia
     
                 backend_convert_sparse(H, H_working);
                 backend_convert(g, g_working);
-                x_working =  0.0 * g_working;                 
+                x_working =  0.0 * g_working;           
+
+                std::cout<<"size: "<< size(x).get(0) << "  \n";       
     
                 // monitor(0, H, "Hessian.m", "H"); 
                 // monitor(0, g, "gradient.m", "g"); 
@@ -152,7 +154,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(10);
+            QP_solver->max_it(5);
             QP_solver->verbose(verbose_); 
     
             QP_solve(QP_solver); 
@@ -871,7 +873,7 @@ namespace utopia
 
 
         auto n_levels = 3; 
-        auto coarse_dofs = 20; 
+        auto coarse_dofs = 200; 
 
         // auto n_levels = 2; 
         // auto coarse_dofs = 3; 
