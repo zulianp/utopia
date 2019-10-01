@@ -39,7 +39,9 @@ namespace utopia {
      void join(const Op &op, const volatile Tuple &other) volatile
      {
          for(int i = 0; i < N; ++i) {
-             data_[i] = op.apply(data_[i], other.data_[i]);
+            Scalar temp       = data_[i];
+            Scalar temp_other = other.data_[i];
+             data_[i] = op.apply(temp, temp_other);
          }
      }
 
@@ -101,7 +103,7 @@ namespace utopia {
 
       KOKKOS_INLINE_FUNCTION
       void join(volatile value_type& dest, const volatile value_type& src) const {
-        dest += src;
+        dest.join(op_, src);
       }
 
       KOKKOS_INLINE_FUNCTION
