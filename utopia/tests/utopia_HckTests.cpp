@@ -2,7 +2,10 @@
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "utopia_trilinos_DeviceView.hpp"
+// #include "utopia_trilinos_DeviceView.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_For.hpp"
+
 namespace utopia
 {
 
@@ -68,15 +71,18 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(TR_tril_test); 
 
-            UTOPIA_RUN_TEST(RMTR_l2_test); 
+            // UTOPIA_RUN_TEST(RMTR_l2_test); 
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
 
-            UTOPIA_RUN_TEST(MPGRP_test); 
+            // UTOPIA_RUN_TEST(MPGRP_test); 
 
             // UTOPIA_RUN_TEST(STCG_test); 
+
+            UTOPIA_RUN_TEST(for_each_loop_test); 
+            UTOPIA_RUN_TEST(parallel_each_write_test); 
 
             //THIS
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
@@ -848,6 +854,59 @@ namespace utopia
 
             // disp(x_fine);
         }     
+
+
+        void for_each_loop_test()
+        {
+            Vector x = local_values(n_, 2.); 
+            Vector y = local_values(n_, 1.); 
+            Vector z = local_values(n_, 0.); 
+
+            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
+
+           {
+                auto d_x = const_device_view(x);
+                auto d_y = const_device_view(y);
+                auto d_z = device_view(z);
+                
+                ForLoop::apply(range(z), UTOPIA_LAMBDA(const SizeType i)
+                {
+                    const Scalar xi = d_x.get(i); 
+                    const Scalar yi = d_y.get(i); 
+
+                    return xi - yi; 
+
+                });
+            }            
+
+            disp(z); 
+
+        }
+
+
+        void parallel_each_write_test()
+        {
+            Vector x = local_values(n_, 2.); 
+            Vector y = local_values(n_, 1.); 
+            Vector z = local_values(n_, 0.);             
+
+            {
+
+                auto d_x = const_device_view(x);
+                auto d_y = const_device_view(y);
+                auto d_z = device_view(z);
+
+                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                {
+                    const Scalar xi = d_x.get(i); 
+                    const Scalar yi = d_y.get(i); 
+
+                    return xi - yi; 
+                });
+            }
+
+            disp(z);
+        }
 
 
 
