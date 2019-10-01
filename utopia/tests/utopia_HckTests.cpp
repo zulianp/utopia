@@ -78,11 +78,9 @@ namespace utopia
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
             UTOPIA_RUN_TEST(multi_reduce_test);
-
             UTOPIA_RUN_TEST(MPGRP_test);
 
             // UTOPIA_RUN_TEST(STCG_test);
-
             UTOPIA_RUN_TEST(for_each_loop_test);
             UTOPIA_RUN_TEST(parallel_each_write_test);
 
