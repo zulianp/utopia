@@ -10,24 +10,13 @@ namespace utopia {
     public:
       Scalar data_[N];
 
-      KOKKOS_INLINE_FUNCTION
-      Tuple() {
-         // init();
-      }
-
-      KOKKOS_INLINE_FUNCTION
-      Tuple(const Tuple & rhs) {
-         for (int i = 0; i < N; i++ ){
-            data_[i] = rhs.data_[i];
-         }
-      }
-
       KOKKOS_INLINE_FUNCTION  // initialize data_ to 0
       void init(const Scalar val) {
           for (int i = 0; i < N; i++ ) { data_[i] = val; }
        }
 
    template<class Op>
+    KOKKOS_INLINE_FUNCTION
     void join(const Op &op, const Tuple &other)
     {
         for(int i = 0; i < N; ++i) {
@@ -36,20 +25,25 @@ namespace utopia {
     }
 
     template<class Op>
+     KOKKOS_INLINE_FUNCTION
      void join(const Op &op, const volatile Tuple &other) volatile
      {
          for(int i = 0; i < N; ++i) {
-             data_[i] = op.apply(data_[i], other.data_[i]);
+             auto v = data_[i];
+             auto v2 = other.data_[i];
+             data_[i] = op.apply(v, v2);
          }
      }
 
-    inline const Scalar &operator[](const int i) const
+    KOKKOS_INLINE_FUNCTION
+    const Scalar &operator[](const int i) const
     {
         // assert(i < N);
         return data_[i];
     }
 
-    inline Scalar &operator[](const int i)
+    KOKKOS_INLINE_FUNCTION
+    Scalar &operator[](const int i)
     {
         // assert(i < N);
         return data_[i];
@@ -72,7 +66,7 @@ namespace utopia {
 
     };
 
-    template<class T, class Space, class Op, int N>
+    template<class T, class Data, class Space, class Op, int N>
     struct MultiOpReducer {
     public:
       //Required
@@ -82,16 +76,23 @@ namespace utopia {
 
     private:
       Op op_;
+      Tuple<Data, N> data_;
       T init_val_;
-      value_type & value;
-      
+
     public:
 
       KOKKOS_INLINE_FUNCTION
       MultiOpReducer(
         const Op &op,
-        const T &init_val,
-        value_type& value_): op_(op), init_val_(init_val), value(value_) {}
+        Tuple<Data, N> data,
+        const T &init_val) : op_(op), data_(data), init_val_(init_val) {}
+
+
+      KOKKOS_INLINE_FUNCTION
+      void join(volatile value_type  &val, const volatile value_type &other) const {
+          // Kokkos forces us to have the input values being declared volatile. Hence we need to make copies for the reduction operations
+          val.join(op_, other);
+      }
 
       //Required
       KOKKOS_INLINE_FUNCTION
@@ -99,32 +100,16 @@ namespace utopia {
         dest.join(op_, src);
       }
 
-      KOKKOS_INLINE_FUNCTION
-      void join(volatile value_type& dest, const volatile value_type& src) const {
-        dest += src;
+
+      KOKKOS_INLINE_FUNCTION void operator()(const int& i, value_type &val) const {
+          for (int valIdx=0; valIdx<N; ++valIdx) val[valIdx] = op_.apply(val[valIdx], data_[valIdx](i, 0));
       }
 
       KOKKOS_INLINE_FUNCTION
-      void init( value_type& val)  const {
+      void init(value_type& val)  const {
         val.init(init_val_);
       }
-
-      KOKKOS_INLINE_FUNCTION
-      value_type& reference() const {
-        return value;
-      }
-
-      KOKKOS_INLINE_FUNCTION
-      result_view_type view() const {
-        return result_view_type(&value);
-      }
-
-      KOKKOS_INLINE_FUNCTION
-      bool references_scalar() const {
-        return true;
-      }
     };
-
 
     template<class Vector, class Op>
     class KokkosEvalMultiReduce {
@@ -142,17 +127,14 @@ namespace utopia {
         {
             using Data = decltype(t1.raw_type()->template getLocalView<ExecutionSpaceT>());
 
-            Data d1 = t1.raw_type()->template getLocalView<ExecutionSpaceT>();
-            Data d2 = t2.raw_type()->template getLocalView<ExecutionSpaceT>();
+            Tuple<Data,2> data{t1.raw_type()->template getLocalView<ExecutionSpaceT>(),
+                         t2.raw_type()->template getLocalView<ExecutionSpaceT>()};
 
             KokkosOp<Scalar, Op> kop;
-            MultiOpReducer<Scalar, ExecutionSpaceT, KokkosOp<Scalar, Op>, 2> reducer(kop, initial_value, result);
-            
-            Kokkos::parallel_reduce(d1.extent(0),
-                KOKKOS_LAMBDA(const int i, Tuple<Scalar, 2> &tuple) {
-                    tuple[0] = d1(i, 0);
-                    tuple[1] = d2(i, 0);
-                }, reducer);
+            MultiOpReducer<Scalar, Data, ExecutionSpaceT, KokkosOp<Scalar, Op>, 2> reducer(kop, data, initial_value);
+
+
+            Kokkos::parallel_reduce(data[0].extent(0), reducer, result);
         }
     };
 
