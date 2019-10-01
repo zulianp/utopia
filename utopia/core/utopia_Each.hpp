@@ -32,11 +32,6 @@ namespace utopia {
         // 	}
         // }
 
-        template<class Fun>
-        inline static void apply_read(const Tensor &v, Fun fun, const std::string &)
-        {
-            apply_read(v,fun);
-        }
 
         template<class Fun>
         inline static void apply_read(const Tensor &v, Fun fun)
@@ -67,12 +62,6 @@ namespace utopia {
             for(auto i = r.begin(); i != r.end(); ++i) {
                 v.set(i, fun());
             }
-        }
-
-        template<class Fun>
-        inline static void apply_write(Tensor &v, Fun fun, const std::string &)
-        {
-            apply_write(v, fun);
         }
 
         template<class Fun>
