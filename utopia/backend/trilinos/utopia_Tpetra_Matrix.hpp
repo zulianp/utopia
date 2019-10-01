@@ -547,10 +547,7 @@ namespace utopia {
             init_->range_map = range_map;
         }
 
-        inline void build_from_structure(const TpetraMatrix &rhs)
-        {
-            copy(rhs);
-        }
+        void build_from_structure(const TpetraMatrix &rhs);
 
 
         void set_zero_rows(const IndexSet &index, const Scalar &diag);
@@ -592,6 +589,14 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////
 
         bool equals(const TpetraMatrix &other, const Scalar &tol = 0.0) const override;
+
+
+
+        inline std::string get_class() const override
+        {
+            return "TpetraMatrix";
+        }
+        
         
 
     private:

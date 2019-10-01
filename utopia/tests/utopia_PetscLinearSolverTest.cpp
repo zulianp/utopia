@@ -588,6 +588,7 @@ namespace utopia {
 
             SteihaugToint<PetscMatrix, PetscVector, HOMEMADE> cg;
             cg.verbose(verbose);
+            cg.atol(1e-14);
 
             PetscVector x_0 = zeros(A.size().get(0));
 

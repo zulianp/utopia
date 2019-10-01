@@ -10,7 +10,7 @@ namespace utopia {
     template<class Matrix, class Vector, class Fun>
     class AutoDiffProblem : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
 
         inline bool value(const Vector &point, Scalar &result) const override {

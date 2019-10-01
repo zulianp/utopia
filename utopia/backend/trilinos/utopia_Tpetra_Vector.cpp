@@ -1,6 +1,7 @@
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_trilinos_Utils.hpp"
 #include "utopia_kokkos_Eval_Reduce.hpp"
 
 #include <Tpetra_CrsMatrix_decl.hpp>
@@ -472,8 +473,11 @@ namespace utopia {
     {
         assert(s > 0);
 
+        //NEW SIZE
+        const SizeType local_s = utopia::decompose(comm_, s);
+
         rcp_map_type map;
-        map = Teuchos::rcp(new map_type(s, 0, comm().get()));
+        map = Teuchos::rcp(new map_type(s, local_s, 0, comm().get()));
         vec_.reset(new vector_type(map));
         implementation().putScalar(val);
 
