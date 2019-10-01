@@ -120,11 +120,11 @@ namespace utopia {
     {
         //FIXME
 #ifdef WITH_BLAS
-        SelectionTest<BlasMatrixd, BlasVectord>().run();
+   //     SelectionTest<BlasMatrixd, BlasVectord>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        SelectionTest<PetscMatrix, PetscVector>().run();
+     //   SelectionTest<PetscMatrix, PetscVector>().run();
 #endif //WITH_PETSC
 
 // #ifdef WITH_TRILINOS

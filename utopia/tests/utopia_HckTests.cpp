@@ -77,12 +77,12 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
 
-            // UTOPIA_RUN_TEST(MPGRP_test); 
+            UTOPIA_RUN_TEST(MPGRP_test); 
 
             // UTOPIA_RUN_TEST(STCG_test); 
 
-            UTOPIA_RUN_TEST(for_each_loop_test); 
-            UTOPIA_RUN_TEST(parallel_each_write_test); 
+            // UTOPIA_RUN_TEST(for_each_loop_test); 
+            // UTOPIA_RUN_TEST(parallel_each_write_test); 
 
             //THIS
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
@@ -158,7 +158,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(10);
+            QP_solver->max_it(200);
             QP_solver->verbose(verbose_); 
     
             QP_solve(QP_solver); 
@@ -926,7 +926,7 @@ namespace utopia
         // auto coarse_dofs = 5; 
 
         auto n_levels = 3; 
-        auto coarse_dofs = 5; 
+        auto coarse_dofs = 500; 
 
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
