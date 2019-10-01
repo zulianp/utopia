@@ -53,7 +53,6 @@ namespace utopia {
     {
         each_transform(in_out, in_out, fun);
     }
-
 }
 
 #endif //UTOPIA_TRILINOS_EACH_HPP

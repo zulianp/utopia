@@ -6,6 +6,7 @@
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
+#include "utopia_trilinos_Utils.hpp"
 
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_MultiLevelTestProblem.hpp"
@@ -1406,6 +1407,34 @@ namespace utopia {
         utopia_test_assert(val == 2.);
     }
 
+    void trilinos_decompose()
+    {
+        TrilinosCommunicator comm;
+
+        SizeType n = 17;
+        SizeType n_local = decompose(comm, n);
+
+        SizeType n_sum = comm.sum(n_local);
+        utopia_test_assert(n_sum == n);
+
+    }
+
+    void test_global_matrix()
+    {
+        using Scalar = Traits<TpetraVectord>::Scalar;
+
+        SizeType n = 17;
+        TpetraMatrixd A = sparse(n, n, 3);
+        assemble_laplacian_1D(A);
+
+        TpetraVectord x = values(n, 2.0);
+        TpetraVectord b = A * x;
+
+        const Scalar zero = sum(b);
+
+        utopia_test_assert(approxeq(zero, 0.0));
+    }
+
     static void trilinos_specific()
     {
         UTOPIA_RUN_TEST(stcg_pt_test);
@@ -1462,6 +1491,8 @@ namespace utopia {
 
         UTOPIA_RUN_TEST(trilinos_rap);
         UTOPIA_RUN_TEST(trilinos_rap_square_mat);
+        UTOPIA_RUN_TEST(trilinos_decompose);
+        UTOPIA_RUN_TEST(test_global_matrix);
 
 
 #ifdef HAVE_BELOS_TPETRA

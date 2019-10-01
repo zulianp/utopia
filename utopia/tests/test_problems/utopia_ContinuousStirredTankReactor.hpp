@@ -24,7 +24,7 @@ namespace utopia
     class ContinuousStirredReactor : public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         ContinuousStirredReactor(): 

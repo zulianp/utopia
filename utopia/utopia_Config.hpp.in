@@ -30,6 +30,12 @@
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR
 #cmakedefine UTOPIA_PETSC_VERSION_SUBMINOR
 
+#ifdef WITH_TRILINOS
+#define UTOPIA_LAMBDA [=]//KOKKOS_LAMBDA
+#else
+#define UTOPIA_LAMBDA [=]
+#endif
+
 
 #ifdef WITH_OPEN_BLAS
 #define WITH_BLAS

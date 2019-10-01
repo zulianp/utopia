@@ -87,16 +87,16 @@ namespace utopia {
                 utopia_test_assert(selection.get(s_r.begin(), 1) == rr.begin() * n + 2);
             }
 
-            Matrix row_selection = select(m, r_s);
-
-            {
-                auto s_r = row_range(row_selection);
-                Read<Matrix> r_s(row_selection);
-
-                for(SizeType i = 0; i < n; ++i) {
-                    utopia_test_assert(row_selection.get(s_r.begin(), i) == (rr.begin() * n + i));
-                }
-            }
+//            Matrix row_selection = select(m, r_s);
+//
+//            {
+//                auto s_r = row_range(row_selection);
+//                Read<Matrix> r_s(row_selection);
+//
+//                for(SizeType i = 0; i < n; ++i) {
+//                    utopia_test_assert(row_selection.get(s_r.begin(), i) == (rr.begin() * n + i));
+//                }
+//            }
 
         }
 

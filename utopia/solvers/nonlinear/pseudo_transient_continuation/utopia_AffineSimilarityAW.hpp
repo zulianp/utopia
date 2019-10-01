@@ -19,7 +19,7 @@ namespace utopia
     class ODEFormFunction final: public Function<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::Function<Matrix, Vector>    Fun;
