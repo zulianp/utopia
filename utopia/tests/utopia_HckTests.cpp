@@ -77,12 +77,12 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
 
-            // UTOPIA_RUN_TEST(MPGRP_test); 
+            UTOPIA_RUN_TEST(MPGRP_test); 
 
             // UTOPIA_RUN_TEST(STCG_test); 
 
-            UTOPIA_RUN_TEST(for_each_loop_test); 
-            UTOPIA_RUN_TEST(parallel_each_write_test); 
+            // UTOPIA_RUN_TEST(for_each_loop_test); 
+            // UTOPIA_RUN_TEST(parallel_each_write_test); 
 
             //THIS
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
@@ -926,7 +926,7 @@ namespace utopia
         // auto coarse_dofs = 5; 
 
         auto n_levels = 3; 
-        auto coarse_dofs = 5; 
+        auto coarse_dofs = 200; 
 
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
