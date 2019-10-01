@@ -12,7 +12,7 @@ namespace utopia
     class Chebyquad35 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Chebyquad35()

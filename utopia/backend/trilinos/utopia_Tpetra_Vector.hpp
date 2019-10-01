@@ -553,6 +553,12 @@ namespace utopia {
 
         void clear() override;
 
+
+        inline std::string get_class() const override
+        {
+            return "TpetraVector";
+        }
+        
     private:
         TrilinosCommunicator comm_;
         rcpvector_type vec_;

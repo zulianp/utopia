@@ -12,7 +12,7 @@ namespace utopia
     class Box12 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Box12()

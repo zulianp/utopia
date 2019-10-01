@@ -14,7 +14,7 @@ namespace utopia
     class ProjectedConjugateGradient : public QPSolver<Matrix, Vector> {
     public:
 
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         ProjectedConjugateGradient() {}
 

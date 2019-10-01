@@ -15,7 +15,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BenchmarkBlas1 : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector)
+        DEF_UTOPIA_SCALAR(Vector);
 
         virtual std::string name() override
         {

@@ -18,7 +18,7 @@ namespace utopia {
         template<class Matrix>
         class HessianFD<Matrix, FillType::DENSE> {
         public:
-            DEF_UTOPIA_SCALAR(Matrix)
+            DEF_UTOPIA_SCALAR(Matrix);
 
             template<class Fun, class Vector>
             void apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
@@ -72,7 +72,7 @@ namespace utopia {
         template<class Matrix>
         class HessianFD<Matrix, FillType::SPARSE> {
         public:
-            DEF_UTOPIA_SCALAR(Matrix)
+            DEF_UTOPIA_SCALAR(Matrix);
 
             template<class Fun, class Vector>
             void apply(Fun & /*fun*/, const Vector & /*x*/, const Scalar  /*h*/, Matrix & /*H */) {

@@ -12,7 +12,7 @@ namespace utopia
     class PenaltyI23 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         PenaltyI23(const SizeType & n_loc): n_loc_(n_loc)

@@ -18,7 +18,7 @@ namespace utopia
     class FunctionBase
     {
     public:
-        DEF_UTOPIA_SCALAR(Vector)
+        DEF_UTOPIA_SCALAR(Vector);
 
         virtual ~FunctionBase() { }
 
@@ -33,7 +33,7 @@ namespace utopia
     class Function : public FunctionBase<Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Vector);
 
         virtual ~Function() { }
 

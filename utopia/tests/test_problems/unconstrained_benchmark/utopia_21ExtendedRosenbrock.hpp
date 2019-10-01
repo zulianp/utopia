@@ -13,7 +13,7 @@ namespace utopia
     {
     public:
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         ExtendedRosenbrock21(const SizeType & n_loc): n_loc_(n_loc)
         {
