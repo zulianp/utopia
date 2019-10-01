@@ -149,7 +149,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(n_*n_);
+            QP_solver->max_it(10);
             QP_solver->verbose(verbose_); 
     
             QP_solve(QP_solver); 
@@ -867,13 +867,13 @@ namespace utopia
         // auto coarse_dofs = 5; 
 
         auto n_levels = 3; 
-        auto coarse_dofs = 10; 
+        auto coarse_dofs = 20; 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
 
        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
+        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, true, true).run_trilinos();
 #endif
 
 
