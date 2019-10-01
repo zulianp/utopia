@@ -96,6 +96,11 @@ namespace utopia {
         void number_of_subdomains(const SizeType & n);
 
         /**
+         * @brief      Set norm type
+         */
+        void norm_type(const std::string & norm_type);        
+
+        /**
          * @brief      Setter for overlap used inside of Additive Schwarz method
          */
         void overlap(const SizeType & n);
