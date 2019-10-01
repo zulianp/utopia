@@ -243,6 +243,7 @@ namespace utopia {
     {
         Smoother<Matrix, Vector>::print_usage(os);
         PreconditionedSolver::print_usage(os);
+        impl_->param_list->print();
           //TODO
           //m_utopia_warning_once("not implemented");
 
