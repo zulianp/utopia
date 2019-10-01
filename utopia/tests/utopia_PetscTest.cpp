@@ -1192,7 +1192,7 @@ namespace utopia {
 
             for(auto i = r.begin(); i != r.end(); ++i)
             {
-                for(auto j = c.begin(); j != c.end(); ++j)
+                for(auto j = 0; j < m; ++j)
                 {
                     M.set(i, j, j);
                 }
@@ -1202,6 +1202,8 @@ namespace utopia {
         PetscVector col_result = zeros(n);
         // mat_get_col(M, col_result, col_id);
         M.col(col_id, col_result);
+
+        disp(col_result);
 
         PetscVector col_expected = local_values(local_size(col_result).get(0), col_id);
         utopia_test_assert(approxeq(col_result, col_expected));

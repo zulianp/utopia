@@ -22,26 +22,32 @@ namespace utopia {
     class ParallelEach<TpetraVector, 1, FILL_TYPE>{
     public:
         template<class Fun>
-        inline static void apply_write(const TpetraVector &v, Fun fun)
+        inline static void apply_write(const TpetraVector &v, Fun fun, const std::string &name)
         {
             using ExecutionSpaceT = TpetraVector::vector_type::execution_space;
 
             auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
             auto offset = range(v).begin();
-            Kokkos::parallel_for(k_v.extent(0), KOKKOS_LAMBDA(const int i) {
-                k_v(i, 0) = fun(offset + i);
+            Kokkos::parallel_for(
+                name,
+                k_v.extent(0),
+                KOKKOS_LAMBDA(const int i) {
+                    k_v(i, 0) = fun(offset + i);
             });
         }
 
         template<class Fun>
-        inline static void apply_read(const TpetraVector &v, Fun fun)
+        inline static void apply_read(const TpetraVector &v, Fun fun, const std::string &name)
         {
             using ExecutionSpaceT = TpetraVector::vector_type::execution_space;
 
             auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
             auto offset = range(v).begin();
-            Kokkos::parallel_for(k_v.extent(0), KOKKOS_LAMBDA(const int i) {
-                fun(offset + i, k_v(i, 0));
+            Kokkos::parallel_for(
+                name,
+                k_v.extent(0),
+                KOKKOS_LAMBDA(const int i) {
+                    fun(offset + i, k_v(i, 0));
             });
         }
     };
@@ -51,7 +57,7 @@ namespace utopia {
     class ParallelEach<TpetraMatrixd, 2, FILL_TYPE>{
     public:
         template<class Fun>
-        inline static void apply_write(TpetraMatrixd &mat, Fun fun)
+        inline static void apply_write(TpetraMatrixd &mat, Fun fun, const std::string &name)
         {
              typedef Kokkos::TeamPolicy<>               team_policy;
              typedef Kokkos::TeamPolicy<>::member_type  member_type;
@@ -70,7 +76,7 @@ namespace utopia {
              auto row_map = impl->getRowMap()->getLocalMap();
              auto col_map = impl->getColMap()->getLocalMap();
 
-             Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+             Kokkos::parallel_for(name, team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
                  const int row_ind = team_member.league_rank();
                  auto row = local_mat.row(row_ind);
                  auto n_values = row.length;
@@ -87,7 +93,7 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_read(const TpetraMatrixd &mat, Fun fun)
+        inline static void apply_read(const TpetraMatrixd &mat, Fun fun, const std::string &name)
         {
             typedef Kokkos::TeamPolicy<>               team_policy;
             typedef Kokkos::TeamPolicy<>::member_type  member_type;
@@ -106,7 +112,7 @@ namespace utopia {
             auto row_map = impl->getRowMap()->getLocalMap();
             auto col_map = impl->getColMap()->getLocalMap();
 
-            Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+            Kokkos::parallel_for(name, team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
                 const int row_ind = team_member.league_rank();
                 auto row = local_mat.row(row_ind);
                 auto n_values = row.length;

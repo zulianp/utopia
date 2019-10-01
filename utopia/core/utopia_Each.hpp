@@ -32,6 +32,7 @@ namespace utopia {
         // 	}
         // }
 
+
         template<class Fun>
         inline static void apply_read(const Tensor &v, Fun fun)
         {

@@ -25,7 +25,10 @@ namespace utopia {
 
         DeviceView(const TpetraVector &tensor) : 
         view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) 
-        {}
+        {
+            assert(!tensor.has_ghosts() && "GHOST HANDLING NOT IMPLEMENTED YET");
+            map_ = tensor.raw_type()->getMap()->getLocalMap();
+        }
 
     private:
         DeviceViewType view_;
@@ -62,7 +65,10 @@ namespace utopia {
 
         DeviceView(const TpetraVector &tensor) : 
         view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) 
-        {}
+        {
+            assert(!tensor.has_ghosts() && "GHOST HANDLING NOT IMPLEMENTED YET");
+            map_ = tensor.raw_type()->getMap()->getLocalMap();
+        }
 
     private:
         DeviceViewType view_;

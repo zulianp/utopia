@@ -87,7 +87,7 @@ namespace  utopia
 
                 const Scalar gamma = 1.0; 
                 const Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs)); 
-                Scalar pAp; 
+                Scalar pAp, beta_beta, fi_fi, gp_dot; 
 
                 SizeType it =0; 
                 bool converged= false; 
@@ -102,34 +102,27 @@ namespace  utopia
                 g = Ax - rhs; 
 
                 this->get_fi(x, g, *lb, *ub, fi); 
-             
                 this->get_beta(x, g, *lb, *ub, beta); 
+                
                 gp = fi + beta; 
                 p = fi; 
 
+                dots(beta, beta, beta_beta, fi, fi, fi_fi); 
+
                 while(!converged)
                 {
-                    if(dot(beta, beta) <= (gamma*gamma * dot(fi,fi)))
+                    // dots(beta, beta, beta_beta, fi, fi, fi_fi); 
+
+                    if(beta_beta <= (gamma*gamma * fi_fi))
                     {
                         A.apply(p, Ap);
 
-                        // curvature condition check?? 
-                        pAp = dot(p, Ap); 
+                        dots(p, Ap, pAp, g, p, gp_dot); 
 
-                        // if(pAp <= 0.0)
-                        // {   
-                        //     if(this->verbose())
-                        //     {
-                        //         std::cout<<"MPRGP::curvature condition violated, terminating.... \n"; 
-                        //     }
-                        //     return true;
-                        // }
-
-
-                        alpha_cg = dot(g, p)/pAp;
+                        alpha_cg = gp_dot/pAp;
                         y = x - alpha_cg*p;
 
-                        alpha_f = get_alpha_f(x, p, *lb, *ub);         
+                        alpha_f = get_alpha_f(x, p, *lb, *ub, alpha_f1, alpha_f2);         
 
                         if(alpha_cg <= alpha_f)
                         {
@@ -168,8 +161,10 @@ namespace  utopia
                     this->get_beta(x, g, *lb, *ub, beta); 
 
                     gp = fi+beta;
+
+                    dots(beta, beta, beta_beta, fi, fi, fi_fi, gp, gp, gnorm); 
                     
-                    gnorm = norm2(gp); 
+                    gnorm = std::sqrt(gnorm); 
                     it++; 
 
                     if(this->verbose()){
@@ -188,57 +183,46 @@ namespace  utopia
 
             void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & fi) const
             {
-                fi = local_values(local_size(x), 0); 
-
-                // {
-                //     Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(g);
-                //     Write<Vector> w1(fi); 
-                    
-                //     each_write(fi, [&ub, &lb, &x, &g](const SizeType i) -> double 
-                //     {
-                //         Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);
-                //         if(li < xi && xi < ui){
-                //             return g.get(i);
-                //         }
-                //         else{
-                //             return 0.0; 
-                //         }
-                //     }   );
-                // }
+                if(empty(fi)){
+                    fi = local_values(local_size(x), 0); 
+                }
 
                 {
-                    // Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(g);
-                    // Write<Vector> w1(fi); 
-
                     auto d_lb = const_device_view(lb);
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
-                    auto d_g  = const_device_view(g);                    
+                    auto d_g  = const_device_view(g);
 
+                    auto d_fi = device_view(fi);
                     
-                    parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> double 
+                    parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
                     {
-                        Scalar li =  d_lb.get(i); 
-                        Scalar ui =  d_ub.get(i); 
-                        Scalar xi =  d_x.get(i);
-                        
+                        Scalar li = d_lb.get(i); 
+                        Scalar ui = d_ub.get(i); 
+                        Scalar xi = d_x.get(i); 
+
                         if(li < xi && xi < ui){
                             return d_g.get(i);
                         }
                         else{
                             return 0.0; 
                         }
-                    }   );
+
+                    });
 
                 }
-                
             }
 
 
-            Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub) const
+            Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & alpha_f1, Vector & alpha_f2) const
             {
-                Vector alpha_f1 = local_values(local_size(x), 1e15); 
-                Vector alpha_f2 = local_values(local_size(x), 1e15); 
+                if(empty(alpha_f1)){
+                    alpha_f1 = local_values(local_size(x), 1e15); 
+                }
+
+                if(empty(alpha_f2)){
+                    alpha_f2 = local_values(local_size(x), 1e15); 
+                }
 
                 {
                     auto d_lb = const_device_view(lb);
@@ -246,9 +230,9 @@ namespace  utopia
                     auto d_x  = const_device_view(x);
                     auto d_p  = const_device_view(p);
 
-
-                    //////////////////////////////////////////////////////////////////////
-                    //Variant 2)
+                    auto d_alpha_f1 = device_view(alpha_f1);
+                    auto d_alpha_f2 = device_view(alpha_f2);
+                    
                     parallel_each_write(alpha_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
                     {
                         Scalar li = d_lb.get(i); 
@@ -281,31 +265,32 @@ namespace  utopia
                         }
 
                     });
-
-
                 }
 
-
-                const Scalar alpha_f2_min = min(alpha_f2); 
-                const Scalar alpha_f1_min = min(alpha_f1); 
-                return std::min(alpha_f1_min, alpha_f2_min); 
+                return multi_min(alpha_f1, alpha_f2); 
             }
 
 
             void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & beta) const
             {
-                beta = local_values(local_size(x), 0.0); 
+                if(empty(beta)){
+                    beta = local_values(local_size(x), 0.0); 
+                }
 
                 {
-                    Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_g(g);
-                    Write<Vector> w1(beta); 
-                    
-                    each_write(beta, [&ub, &lb, &x, &g](const SizeType i) -> double 
+                    auto d_lb = const_device_view(lb);
+                    auto d_ub = const_device_view(ub);
+                    auto d_x  = const_device_view(x);
+                    auto d_g  = const_device_view(g);
+
+                    auto d_beta = device_view(beta);
+
+                    parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
                     {
-                        Scalar li = lb.get(i); 
-                        Scalar ui = ub.get(i); 
-                        Scalar xi = x.get(i); 
-                        Scalar gi = g.get(i);
+                        Scalar li = d_lb.get(i); 
+                        Scalar ui = d_ub.get(i); 
+                        Scalar xi = d_x.get(i); 
+                        Scalar gi = d_g.get(i);
 
                         if(std::abs(li -  xi) < 1e-14)
                         {
@@ -319,8 +304,8 @@ namespace  utopia
                         {
                             return 0.0; 
                         }
-
                     });
+
                 }
             }
 
@@ -397,12 +382,21 @@ namespace  utopia
 
                 if(!empty(g)) {
                     g = zero_expr;
-                }                            
+                }  
+
+                if(!empty(alpha_f1)) {
+                    alpha_f1 = zero_expr;
+                }            
+
+                if(!empty(alpha_f2)) {
+                    alpha_f2 = zero_expr;
+                }                                            
             }
 
 
         private:
-            Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g; 
+            Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, alpha_f1, alpha_f2; 
+
             Scalar eps_eig_est_; 
             SizeType power_method_max_it_; 
 

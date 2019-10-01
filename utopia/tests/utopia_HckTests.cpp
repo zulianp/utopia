@@ -2,7 +2,10 @@
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "utopia_trilinos_DeviceView.hpp"
+// #include "utopia_trilinos_DeviceView.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_For.hpp"
+
 namespace utopia
 {
 
@@ -68,7 +71,7 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(TR_tril_test); 
 
-//            UTOPIA_RUN_TEST(RMTR_l2_test); 
+            // UTOPIA_RUN_TEST(RMTR_l2_test); 
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
@@ -77,6 +80,9 @@ namespace utopia
             UTOPIA_RUN_TEST(MPGRP_test); 
 
             // UTOPIA_RUN_TEST(STCG_test); 
+
+            // UTOPIA_RUN_TEST(for_each_loop_test); 
+            // UTOPIA_RUN_TEST(parallel_each_write_test); 
 
             //THIS
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
@@ -101,9 +107,7 @@ namespace utopia
     
                 backend_convert_sparse(H, H_working);
                 backend_convert(g, g_working);
-                x_working =  0.0 * g_working;           
-
-                std::cout<<"size: "<< size(x).get(0) << "  \n";       
+                x_working =  0.0 * g_working;                 
     
                 // monitor(0, H, "Hessian.m", "H"); 
                 // monitor(0, g, "gradient.m", "g"); 
@@ -154,7 +158,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(5);
+            QP_solver->max_it(200);
             QP_solver->verbose(verbose_); 
     
             QP_solve(QP_solver); 
@@ -852,6 +856,56 @@ namespace utopia
         }     
 
 
+        void for_each_loop_test()
+        {
+            Vector x = values(n_, 2.); 
+            Vector y = values(n_, 1.); 
+            Vector z = values(n_, 0.); 
+
+            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
+
+           {
+                auto d_x = const_device_view(x);
+                auto d_y = const_device_view(y);
+                auto d_z = device_view(z);
+                
+                ForLoop::apply(range(z), UTOPIA_LAMBDA(const SizeType i)
+                {
+                    const Scalar xi = d_x.get(i); 
+                    const Scalar yi = d_y.get(i); 
+                    d_z.set(i, xi - yi); 
+                });
+            }            
+
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(Scalar(n_), sum_z));
+        }
+
+
+        void parallel_each_write_test()
+        {
+            Vector x = values(n_, 2.); 
+            Vector y = values(n_, 1.); 
+            Vector z = values(n_, 0.);             
+
+            {
+                auto d_x = const_device_view(x);
+                auto d_y = const_device_view(y);
+                auto d_z = device_view(z);
+
+                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                {
+                    const Scalar xi = d_x.get(i); 
+                    const Scalar yi = d_y.get(i); 
+                    return xi - yi; 
+                });
+            }
+
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(Scalar(n_), sum_z));
+        }
+
+
 
     private: 
         SizeType n_; 
@@ -871,18 +925,16 @@ namespace utopia
         // auto n_levels = 3; 
         // auto coarse_dofs = 5; 
 
-
         auto n_levels = 3; 
-        auto coarse_dofs = 200; 
+        auto coarse_dofs = 500; 
 
-        // auto n_levels = 2; 
-        // auto coarse_dofs = 3; 
+
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-
-       // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_trilinos();
+        auto verbose = true;
+       // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, true, true).run_trilinos();
+        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 #endif
 
 
