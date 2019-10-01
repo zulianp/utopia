@@ -6,7 +6,7 @@
 
 namespace utopia {
 
-    template<class Tensor>
+    template<class Tensor, int Backend = Traits<Tensor>::Backend>
     class MultiReduce {
     public:
         using Scalar = typename Traits<Tensor>::Scalar;
