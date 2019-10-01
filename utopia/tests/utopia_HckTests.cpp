@@ -2,7 +2,10 @@
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "utopia_trilinos_DeviceView.hpp"
+// #include "utopia_trilinos_DeviceView.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_For.hpp"
+
 namespace utopia
 {
 
@@ -68,13 +71,21 @@ namespace utopia
         {
             // UTOPIA_RUN_TEST(TR_tril_test); 
 
-            UTOPIA_RUN_TEST(RMTR_l2_test); 
+            // UTOPIA_RUN_TEST(RMTR_l2_test); 
             // UTOPIA_RUN_TEST(RMTR_inf_test); 
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test); 
 
+            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
+
+            // UTOPIA_RUN_TEST(MPGRP_test); 
+
+            // UTOPIA_RUN_TEST(STCG_test); 
+
+            UTOPIA_RUN_TEST(for_each_loop_test); 
+            UTOPIA_RUN_TEST(parallel_each_write_test); 
 
             //THIS
-            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
+            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test); 
         }
 
 
@@ -82,30 +93,40 @@ namespace utopia
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const 
         {
-            Bratu2D<Matrix, Vector> fun(n_);
-            Vector x = fun.initial_guess(); 
-            Matrix H;
-            Vector g; 
+            Matrix H_working; 
+            Vector g_working, x_working; 
 
-            fun.hessian(x, H); 
-            fun.gradient(x, g); 
-            x *= 0.0;
+            #ifdef WITH_PETSC
+                Bratu2D<PetscMatrix, PetscVector> fun(n_);
+                PetscVector x = fun.initial_guess(); 
+                PetscMatrix H;
+                PetscVector g; 
 
-            // monitor(0, H, "Hessian.m", "H"); 
-            // monitor(0, g, "gradient.m", "g"); 
+                fun.hessian(x, H); 
+                fun.gradient(x, g); 
+    
+                backend_convert_sparse(H, H_working);
+                backend_convert(g, g_working);
+                x_working =  0.0 * g_working;                 
+    
+                // monitor(0, H, "Hessian.m", "H"); 
+                // monitor(0, g, "gradient.m", "g"); 
 
-            if(dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get()))
-            {
-                QPSolver<Matrix, Vector> * qp_box = dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get());
-                Vector lb = local_values(local_size(x).get(0), -9e9); 
-                Vector ub = local_values(local_size(x).get(0), 9e9); 
-                qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));      
-                qp_box->solve(H, -1.0*g, x); 
-            }
-            else
-            {   
-                qp_solver->solve(H, -1.0*g, x); 
-            }
+                if(dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get()))
+                {
+                    QPSolver<Matrix, Vector> * qp_box = dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get());
+                    Vector lb = local_values(local_size(x_working).get(0), -9e9); 
+                    Vector ub = local_values(local_size(x_working).get(0), 9e9); 
+                    qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));      
+                    qp_box->solve(H_working, -1.0*g_working, x_working); 
+                }
+                else
+                {   
+                    qp_solver->solve(H_working, -1.0*g_working, x_working); 
+                }     
+
+            #endif
+
         }
 
 
@@ -137,7 +158,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(n_*n_);
+            QP_solver->max_it(10);
             QP_solver->verbose(verbose_); 
     
             QP_solve(QP_solver); 
@@ -835,6 +856,59 @@ namespace utopia
         }     
 
 
+        void for_each_loop_test()
+        {
+            Vector x = local_values(n_, 2.); 
+            Vector y = local_values(n_, 1.); 
+            Vector z = local_values(n_, 0.); 
+
+            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
+
+           {
+                auto d_x = const_device_view(x);
+                auto d_y = const_device_view(y);
+                auto d_z = device_view(z);
+                
+                ForLoop::apply(range(z), UTOPIA_LAMBDA(const SizeType i)
+                {
+                    const Scalar xi = d_x.get(i); 
+                    const Scalar yi = d_y.get(i); 
+
+                    return xi - yi; 
+
+                });
+            }            
+
+            disp(z); 
+
+        }
+
+
+        void parallel_each_write_test()
+        {
+            Vector x = local_values(n_, 2.); 
+            Vector y = local_values(n_, 1.); 
+            Vector z = local_values(n_, 0.);             
+
+            {
+
+                auto d_x = const_device_view(x);
+                auto d_y = const_device_view(y);
+                auto d_z = device_view(z);
+
+                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                {
+                    const Scalar xi = d_x.get(i); 
+                    const Scalar yi = d_y.get(i); 
+
+                    return xi - yi; 
+                });
+            }
+
+            disp(z);
+        }
+
+
 
     private: 
         SizeType n_; 
@@ -854,8 +928,10 @@ namespace utopia
         // auto n_levels = 3; 
         // auto coarse_dofs = 5; 
 
-        auto n_levels = 5; 
+        auto n_levels = 3; 
         auto coarse_dofs = 5; 
+
+
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         auto verbose = true;
        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
