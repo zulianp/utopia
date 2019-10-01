@@ -283,9 +283,13 @@ namespace  utopia
 
                 }
 
-                const Scalar alpha_f2_min = min(alpha_f2); 
-                const Scalar alpha_f1_min = min(alpha_f1); 
-                return std::min(alpha_f1_min, alpha_f2_min); 
+                // const Scalar alpha_f2_min = min(alpha_f2); 
+                // const Scalar alpha_f1_min = min(alpha_f1); 
+                // return std::min(alpha_f1_min, alpha_f2_min); 
+
+                //        const Scalar alpha_f2_min = min(alpha_f2); 
+                // const Scalar alpha_f1_min = min(alpha_f1); 
+                return multi_min(alpha_f1, alpha_f2); 
             }
 
 
