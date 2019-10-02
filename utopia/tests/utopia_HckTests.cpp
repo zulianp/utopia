@@ -78,9 +78,9 @@ namespace utopia
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
             // UTOPIA_RUN_TEST(multi_reduce_test);
-            // UTOPIA_RUN_TEST(MPGRP_test);
+             UTOPIA_RUN_TEST(MPGRP_test);
 
-            UTOPIA_RUN_TEST(STCG_test);
+//            UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(for_each_loop_test);
             // UTOPIA_RUN_TEST(parallel_each_write_test);
 
@@ -935,7 +935,7 @@ namespace utopia
     {
 #ifdef WITH_PETSC
         auto n_levels    = 3;
-        auto coarse_dofs = 5;
+        auto coarse_dofs = 1000;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
