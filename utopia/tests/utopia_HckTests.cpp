@@ -77,6 +77,8 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
+            UTOPIA_RUN_TEST(quad_form_test);
+
             UTOPIA_RUN_TEST(multi_reduce_test);
             UTOPIA_RUN_TEST(MPGRP_test);
 
@@ -88,7 +90,17 @@ namespace utopia
             UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
         }
 
+        void quad_form_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 2.0);
 
+            auto expr = 0.5 * dot(x, y) - 0.5 * dot(x, y);
+
+            Scalar val = expr;
+
+            utopia_test_assert(approxeq(val, 0.0));
+        }
 
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const
