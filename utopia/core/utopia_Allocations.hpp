@@ -9,13 +9,16 @@
 #define UTOPIA_NO_ALLOC_END() utopia::Allocations::instance().no_alloc_region_end()
 #define UTOPIA_REPORT_ALLOC(macro_name_) utopia::Allocations::instance().report_alloc(macro_name_, __FILE__, __LINE__)
 
+#include <stack>
+#include <string>
+
 namespace utopia {
 
-    class Allocations {
+    class Allocations final {
     public:
         using Counter = unsigned long long;
 
-        static Allocations &instance()
+        inline static Allocations &instance()
         {
             static Allocations instance_;
             return instance_;
@@ -43,7 +46,7 @@ namespace utopia {
             region_name_.pop();
         }
 
-        ~Allocations()
+        inline ~Allocations()
         {
             std::cout << "[Status] total allocations " << count_ << std::endl;
         }
@@ -51,9 +54,9 @@ namespace utopia {
     private:
         int is_no_allocation_region_;
         Counter count_;
-        std::stack<std::sting> region_name_;
+        std::stack<std::string> region_name_;
 
-        Allocations() : is_no_allocation_region_(0), count_(0)
+        inline Allocations() : is_no_allocation_region_(0), count_(0)
         {}
     };
 
