@@ -56,10 +56,10 @@ namespace utopia
             if(this->precond_)
             {
                 auto A_ptr = utopia::op(this->get_operator());
-                return preconditioned_solve(*A_ptr, b, x);
+                return preconditioned_solve(*A_ptr, -1.0 * b, x);
             } else {
                 auto A_ptr = utopia::op(this->get_operator());
-                return unpreconditioned_solve(*A_ptr, b, x);
+                return unpreconditioned_solve(*A_ptr, -1.0 * b, x);
             }
         }
 
@@ -84,11 +84,11 @@ namespace utopia
         {
             if(this->precond_)
             {
-                return preconditioned_solve(A, rhs, sol);
+                return preconditioned_solve(A, -1.0*rhs, sol);
             }
             else
             {
-                return unpreconditioned_solve(A, rhs, sol);
+                return unpreconditioned_solve(A, -1.0 * rhs, sol);
             }
         }
 
@@ -108,7 +108,7 @@ namespace utopia
         bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr)
         {
             init(local_size(g));
-            r = g;
+            r = -1.0 * g;
             v_k = r;
             Scalar alpha, g_norm, d_B_d, z, z1;
             SizeType it = 1;
@@ -174,7 +174,7 @@ namespace utopia
             SizeType it=0;
 
             s_k = local_zeros(local_size(g));
-            r = -1.0*g;
+            r = g;
 
             Scalar g_norm = norm2(r);
 
@@ -185,11 +185,7 @@ namespace utopia
             }
             it++;
 
-            if(empty(v_k))
-                v_k = local_zeros(local_size(g));
-            else
-                v_k.set(0.0); 
-
+            v_k = local_zeros(local_size(g));
             this->precond_->apply(r, v_k);
 
             p_k = -1.0 * v_k;
@@ -305,14 +301,7 @@ namespace utopia
 
                 r += alpha * B_p_k;
 
-
-                if(empty(v_k)){
-                    v_k = local_zeros(local_size(r));
-                }
-                else{
-                    v_k.set(0.); 
-                }                
-                // v_k = local_zeros(local_size(r));
+                v_k = local_zeros(local_size(r));
                 // Petsc version, does not work nicely with generic preconditioners, such as MG ...
                 // v_k = -1.0*B_p_k; 
                 this->precond_->apply(r, v_k);
