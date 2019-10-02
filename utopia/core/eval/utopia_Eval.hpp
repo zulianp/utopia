@@ -25,5 +25,7 @@
 #include "utopia_Eval_KroneckerProduct.hpp"
 #include "utopia_Eval_View.hpp"
 #include "utopia_DotVecVecs.hpp"
+#include "utopia_MultiReduce.hpp"
+#include "utopia_Eval_DotOpDot.hpp"
 
 #endif //UTOPIA_EVAL_HPP

@@ -940,6 +940,13 @@ namespace utopia {
         SizeType global_nnz() const;
         SizeType local_nnz() const;
 
+        inline bool same_object(const PetscMatrix &other) const
+        {
+            if(empty()) return false;
+            if(other.empty()) return false;
+            return raw_type() == other.raw_type();
+        }
+
     private:
         PetscCommunicator comm_;
         std::shared_ptr<PetscMatrixMemory> wrapper_;

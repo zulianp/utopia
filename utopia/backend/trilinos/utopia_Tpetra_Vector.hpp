@@ -146,7 +146,7 @@ namespace utopia {
         TpetraVector &operator=(TpetraVector &&other)
         {
             if(this == &other) return *this;
-            comm_ = std::move(comm_);
+            comm_ = std::move(other.comm_);
             vec_ = std::move(other.vec_);
             ghosted_vec_ = std::move(other.ghosted_vec_);
             return *this;
@@ -557,6 +557,11 @@ namespace utopia {
         inline std::string get_class() const override
         {
             return "TpetraVector";
+        }
+
+        inline bool same_object(const TpetraVector &other) const
+        {
+            return vec_ == other.vec_;
         }
         
     private:

@@ -182,21 +182,25 @@ namespace utopia {
             multigrid.v_cycle_repetition(2);
 
             multigrid.apply(rhs, x_0);
+            double diff = norm2(A * x_0 - rhs);
+            std::cout<<"diff: "<< diff << " \n"; 
+
 
             multigrid.max_it(1);
             multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
             auto gmres = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
             gmres->set_preconditioner(make_ref(multigrid));
-            x_0.set(0.);
+            
+            x_0 = 0.0*x_0; 
             gmres->verbose(false);
             gmres->atol(1e-16);
             gmres->rtol(1e-16);
             gmres->solve(A, rhs, x_0);
 
-            double diff = norm2(rhs - A *x_0);
             if(diff > 1e-6) {
                 utopia_error("petsc_mg: gmres preconditioned with mg does not do what it is supposed to");
             }
+
             // utopia_test_assert( approxeq(diff, 0., 1e-6) );
         }
 
@@ -487,26 +491,29 @@ namespace utopia {
             //! [KSPSolver solve example1]
 
             x_0 = zeros(A.size().get(0));
-            multigrid.verbose(false);
+            multigrid.verbose(verbose);
             multigrid.max_it(1);
             multigrid.mg_type(1);
             multigrid.pre_smoothing_steps(1);
             multigrid.post_smoothing_steps(1);
             utopia_ksp.set_preconditioner(make_ref(multigrid));
-            // utopia_ksp.verbose(true);
+            utopia_ksp.verbose(verbose);
 
             utopia_ksp.atol(1e-18);
             utopia_ksp.rtol(1e-18);
             utopia_ksp.stol(1e-16);
+            utopia_ksp.max_it(10);
+            utopia_ksp.norm_type("preconditioned"); 
 
             utopia_ksp.solve(A, rhs, x_0);
 
-            double diff = norm2(rhs - A * x_0);
+            double diff = norm2(A * x_0 - rhs);
 
             if(diff > 1e-6) {
                 utopia_error("petsc_superlu_mg fails. Known problem that needs to be fixed!");
             }
-            // utopia_test_assert( diff < 1e-6 );
+
+            utopia_test_assert( diff < 1e-6 );
         }
 
 
@@ -586,25 +593,26 @@ namespace utopia {
             PetscVector x_0 = zeros(A.size().get(0));
 
             // plain cg
-            cg.atol(1e-18);
-            cg.rtol(1e-18);
-            cg.stol(1e-18);
-            cg.solve(A, -1.0 * rhs, x_0);
+            cg.atol(1e-13);
+            cg.rtol(1e-13);
+            cg.stol(1e-13);
+            cg.verbose(verbose);
+            cg.solve(A, rhs, x_0);
 
 
             //CG with diagonal preconditioner
             x_0 = zeros(A.size().get(0));
             cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector> >());
-            cg.solve(A, -1.0 * rhs, x_0);
-
-
-            //CG with multigrid preconditioner
-            x_0 = zeros(A.size().get(0));
-            cg.set_preconditioner(make_ref(multigrid));
             cg.solve(A, rhs, x_0);
 
-
+            // CG with multigrid preconditioner
+            x_0 = zeros(A.size().get(0));
+            cg.set_preconditioner(make_ref(multigrid));
+            cg.max_it(50);
+            cg.solve(A, rhs, x_0);
+    
             utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
+    
 
             //Multigrid only
             // x_0 = zeros(A.size().get(0));
@@ -613,6 +621,7 @@ namespace utopia {
             // multigrid.solve(rhs, x_0);
 
             //! [MG solve example]
+
         }
 
 

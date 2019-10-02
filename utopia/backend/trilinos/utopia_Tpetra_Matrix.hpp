@@ -597,7 +597,10 @@ namespace utopia {
             return "TpetraMatrix";
         }
         
-        
+        inline bool same_object(const TpetraMatrix &other) const
+        {
+            return mat_ == other.mat_;
+        }
 
     private:
         TrilinosCommunicator comm_;
