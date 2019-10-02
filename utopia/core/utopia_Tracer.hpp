@@ -109,6 +109,9 @@ namespace utopia {
 #define UTOPIA_TRACE_BEGIN(...)   ((void)0)
 #define UTOPIA_TRACE_END(...)     ((void)0)
 
+#define UTOPIA_TRACE_BEGIN_SPECIALIZED(...) ((void)0)
+#define UTOPIA_TRACE_END_SPECIALIZED(...) ((void)0)
+
 #endif  //UTOPIA_TRACE_ENABLED
 
 
