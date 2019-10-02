@@ -4,8 +4,6 @@
 #include <Tpetra_Operator.hpp>
 #include <vector>
 
-#define UTOPIA_LAMBDA KOKKOS_LAMBDA
-
 namespace utopia {
 
     using TpetraScalar        = Tpetra::Operator<>::scalar_type;
