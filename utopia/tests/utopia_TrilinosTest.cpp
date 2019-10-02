@@ -1062,7 +1062,7 @@ namespace utopia {
         ok = fun_petsc->value(x_petsc,   val_petsc);  assert(ok);
 
         utopia_test_assert(cross_backend_approxeq(x_petsc, x_tpetra));
-        utopia_test_assert(approxeq(val_tpetra, val_petsc));
+        utopia_test_assert(approxeq(val_tpetra, val_petsc, 1e-8));
 
         TpetraVectord grad_tpetra;
         PetscVector grad_petsc;

@@ -208,8 +208,7 @@ namespace  utopia
             }
 
           
-
-        private:
+        public:
 
             void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & fi) const
             {
@@ -225,17 +224,17 @@ namespace  utopia
 
                     auto d_fi = device_view(fi);
                     
-                    parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                    parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
-                        Scalar li = d_lb.get(i); 
-                        Scalar ui = d_ub.get(i); 
-                        Scalar xi = d_x.get(i); 
+                        Scalar li = d_lb.get(i);
+                        Scalar ui = d_ub.get(i);
+                        Scalar xi = d_x.get(i);
 
                         if(li < xi && xi < ui){
                             return d_g.get(i);
                         }
                         else{
-                            return 0.0; 
+                            return 0.0;
                         }
 
                     });
@@ -263,35 +262,35 @@ namespace  utopia
                     auto d_alpha_f1 = device_view(alpha_f1);
                     auto d_alpha_f2 = device_view(alpha_f2);
                     
-                    parallel_each_write(alpha_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                    parallel_each_write(alpha_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
-                        Scalar li = d_lb.get(i); 
-                        Scalar xi = d_x.get(i); 
+                        Scalar li = d_lb.get(i);
+                        Scalar xi = d_x.get(i);
                         Scalar pi = d_p.get(i);
 
                         if(pi > 0)
                         {
-                            return (xi-li)/pi; 
+                            return (xi-li)/pi;
                         }
                         else
                         {
-                            return 1e15; 
+                            return 1e15;
                         }
                     });
 
-                    parallel_each_write(alpha_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                    parallel_each_write(alpha_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
-                        Scalar ui = d_ub.get(i); 
-                        Scalar xi = d_x.get(i); 
+                        Scalar ui = d_ub.get(i);
+                        Scalar xi = d_x.get(i);
                         Scalar pi = d_p.get(i);
 
                         if(pi < 0)
                         {
-                            return (xi-ui)/pi; 
+                            return (xi-ui)/pi;
                         }
                         else
                         {
-                            return 1e15; 
+                            return 1e15;
                         }
 
                     });
@@ -315,30 +314,31 @@ namespace  utopia
 
                     auto d_beta = device_view(beta);
 
-                    parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                    parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
-                        Scalar li = d_lb.get(i); 
-                        Scalar ui = d_ub.get(i); 
-                        Scalar xi = d_x.get(i); 
+                        Scalar li = d_lb.get(i);
+                        Scalar ui = d_ub.get(i);
+                        Scalar xi = d_x.get(i);
                         Scalar gi = d_g.get(i);
 
                         if(std::abs(li -  xi) < 1e-14)
                         {
-                            return std::min(0.0, gi); 
+                            return std::min(0.0, gi);
                         }
                         else if(std::abs(ui -  xi) < 1e-14)
                         {
-                            return std::max(0.0, gi); 
+                            return std::max(0.0, gi);
                         }
                         else
                         {
-                            return 0.0; 
+                            return 0.0;
                         }
                     });
 
                 }
             }
 
+        private:
 
             Scalar get_normA(const Operator<Vector> &A, const SizeType & n_loc)
             {
