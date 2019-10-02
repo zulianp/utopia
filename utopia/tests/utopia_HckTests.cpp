@@ -77,15 +77,15 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
-            UTOPIA_RUN_TEST(multi_reduce_test);
-            UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(multi_reduce_test);
+            // UTOPIA_RUN_TEST(MPGRP_test);
 
-            // UTOPIA_RUN_TEST(STCG_test);
-            UTOPIA_RUN_TEST(for_each_loop_test);
-            UTOPIA_RUN_TEST(parallel_each_write_test);
+            UTOPIA_RUN_TEST(STCG_test);
+            // UTOPIA_RUN_TEST(for_each_loop_test);
+            // UTOPIA_RUN_TEST(parallel_each_write_test);
 
-            //THIS
-            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            // //THIS
+            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
         }
 
 
@@ -399,7 +399,7 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);
 
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->read(input_params_);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -443,7 +443,7 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);
 
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
             rmtr->read(input_params_);
@@ -488,7 +488,7 @@ namespace utopia
 
 
                 rmtr->read(input_params_);
-                rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+                rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
                 rmtr->verbose(verbose_);
                 // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
                 rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -677,7 +677,7 @@ namespace utopia
 
 
             rmtr->read(input_params_);
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -722,7 +722,7 @@ namespace utopia
             rmtr->set_functions(level_functions_tril);
 
             rmtr->read(input_params_);
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -792,7 +792,7 @@ namespace utopia
             rmtr->max_sucessful_coarse_it(10);
 
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -844,7 +844,7 @@ namespace utopia
             rmtr->max_sucessful_smoothing_it(5);
             rmtr->max_sucessful_coarse_it(10);
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
            //  rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
