@@ -219,21 +219,133 @@ namespace utopia {
         {
           Smoother<Matrix, Vector>::read(in);
           PreconditionedSolver::read(in);
+          bool enable_adv_opt = false;
+          bool enable_flexible_gmres = false;
 
-          //TODO
-          std::string exotic = "";
-          in.get("exotic", exotic);
+         //in.get("sweeps", sweeps);
+         //in.get("relaxation_parameter", _relaxation_parameter);
 
-          if(!exotic.empty()) {
+         //in.get("atol", atol_);
+         //in.get("rtol", rtol_);
+         //in.get("stol", stol_);
+         //in.get("max-it",v max_it_);
+         //in.get("verbose", verbose_ );
 
+          in.get("enable_flexible_gmres",  enable_flexible_gmres );
+          impl_->param_list->set( "Flexible Gmres", enable_flexible_gmres );
+          in.get("enable_adv_opt", enable_adv_opt);
+
+          if (enable_adv_opt){
+                        int frequency = 10;
+          double pol_tol = 1.0e-5;
+          int maxrestarts = 20;
+          int blocksize = 0;
+          int num_blocks = 0;
+          int maxdegree = 2;
+          bool userandomrhs = false;
+          std::string ortho = "ICGS"; //IMGS is Iterated Modified Gram Schmidt
+                                      //ICGS is Iterated Classical Gram Schmidt, other is DKGS
+          int recycle = 0;
+          bool maxresnorm = true;
+          bool estimate_cond_num = true;
+          bool assertPositiveDefiniteness = false;
+          bool keepHessenberg = false;
+          int maxSave = 0;
+          int maxDeflate = 0;
+          bool use_single_red = false;
+          double impTolScale = 0.;
+          double impResScale = 0.;
+          double expResScale = 0.;
+          double expResTest = 0.;
+          double damp = 0.;
+          double addRoots = 0.;
+          double lambda = 0.;
+          bool combineConvInner = false;
+          int maxiters = 100;
+
+          in.get("frequency", frequency );
+          in.get("pol_tol",  pol_tol );
+          in.get("maxrestarts",  maxrestarts );
+          in.get("blocksize",  blocksize );
+          in.get("num_blocks",  num_blocks );
+          in.get("maxdegree",  maxdegree );
+          in.get("userandomrhs",  userandomrhs );
+          in.get("estimate_cond_numortho",  ortho );
+          in.get("recycle",  recycle );
+          in.get("maxresnorm",  maxresnorm );
+          in.get("ortho",  ortho );
+          in.get("maxSave",  maxSave );
+          in.get("maxDeflate",  maxDeflate );
+          in.get("estimate_cond_num",  estimate_cond_num );
+          in.get("assertPositiveDefiniteness", assertPositiveDefiniteness  );
+          in.get("keepHessenberg",  keepHessenberg );
+          in.get("use_single_red",  use_single_red );
+          in.get("impTolScale",  impTolScale );
+          in.get("impResScale",  impResScale );
+          in.get("expResScale",  expResScale );
+          in.get("expResTest",  expResTest );
+          in.get("damp",  damp );
+          in.get("addRoots",  addRoots );
+          in.get("lambda",  lambda );
+          in.get("combineConvInner", combineConvInner);
+          in.get("maxiters", maxiters);
+
+          impl_->param_list->set("Output Frequency", frequency);
+          //impl_->param_list->set("S tolerance", this->stol(), "CG");
+          //impl_->param_list->set("A tolerance", this->atol(), "CG");
+          impl_->param_list->set("Polynomial Tolerance", pol_tol ); // Polynomial convergence tolerance
+          impl_->param_list->set("Convergence Tolerance", this->rtol());
+          impl_->param_list->set("Maximum iterations", this->max_it());
+          impl_->param_list->set( "Maximum Restarts", maxrestarts );      // Maximum number of restarts allowed
+          impl_->param_list->set( "Block Size", blocksize );              // Blocksize to be used by iterative solver
+          impl_->param_list->set( "Num Blocks", num_blocks);             // Maximum number of blocks in Krylov factorization
+          impl_->param_list->set( "Orthogonalization", ortho );
+          impl_->param_list->set( "Num Recycled Blocks", recycle );
+          impl_->param_list->set( "Show Maximum Residual Norm Only", maxresnorm );
+          //PCPG
+          impl_->param_list->set( "Num Saved Blocks", maxSave );
+          impl_->param_list->set( "Num Deflated Blocks", maxDeflate );    // Number of vectors in seed space
+          //block GMRES
+          //impl_->param_list->set( "Outer Solver", outersolver );
+          //impl_->param_list->set( "Outer Solver Params", belosList ); //two nested belos solvers
+          impl_->param_list->set( "Estimate Condition Number", estimate_cond_num );
+          impl_->param_list->set( "Use Single Reduction", use_single_red ); // Use single reduction CG iteration
+          impl_->param_list->set( "Fold Convergence Detection Into Allreduce", combineConvInner );
+          impl_->param_list->set("Keep Hessenberg", keepHessenberg);
+          impl_->param_list->set("Implicit Tolerance Scale Factor", impTolScale );
+          impl_->param_list->set("Implicit Residual Scaling", impResScale );
+          impl_->param_list->set("Explicit Residual Scaling", expResScale );
+          impl_->param_list->set("Explicit Residual Test", expResTest);
+          //impl_->param_list->set("Deflation Quorum", static_cast<int>(defQuorum_default_)
+          //impl_->param_list->set("Adaptive Block Size", static_cast<bool>(adaptiveBlockSize_default_),
+          //impl_->param_list->set("Show Maximum Residual Norm Only", static_cast<bool>(showMaxResNormOnly_default_),
+          //impl_->param_list->set("Implicit Residual Scaling", resScale_default_,
+          impl_->param_list->set("Damped Poly", damp);
+          impl_->param_list->set("Add Roots", addRoots);
+          impl_->param_list->set("Assert Positive Definiteness",assertPositiveDefiniteness);
+          impl_->param_list->set("Max Size For Condest",maxiters);
+          impl_->param_list->set( "Lambda", lambda );
+          impl_->param_list->set( "Maximum Degree", maxdegree );          // Maximum degree of the GMRES polynomial
+          impl_->param_list->set( "Random RHS", userandomrhs );
+        }
+
+          if (this->verbose()) {
+              impl_->param_list->set("Verbose", Belos::Errors + Belos::Warnings + Belos::TimingDetails + Belos::StatusTestDetails + Belos::FinalSummary);
+              impl_->param_list->set("Output Style", Belos::General);
+          }
+          else{
+              impl_->param_list->set("Verbose", Belos::Errors);
+              impl_->param_list->set("Output Style", Belos::Brief);
           }
 
-          impl_->param_list->set("Relative tolerance", this->rtol(), "CG");
-          impl_->param_list->set("S tolerance", this->stol(), "CG");
-          impl_->param_list->set("A tolerance", this->atol(), "CG");
-          impl_->param_list->set("Maximum iteration", this->max_it(),"CG");
-          impl_->param_list->set("Verbose", this->verbose(), "CG");
-          //auto in = open_istream(const Path &path);
+          if (this->verbose()) {
+              std::cout << "Valid Paramenters: " << std::endl;
+              impl_->belos_solver->getValidParameters()->print();
+              std::cout << "Current Paramenters: " << std::endl;
+              impl_->belos_solver->getCurrentParameters()->print();
+          }
+
+
     }
 
     // available parameters
@@ -244,6 +356,8 @@ namespace utopia {
         Smoother<Matrix, Vector>::print_usage(os);
         PreconditionedSolver::print_usage(os);
         impl_->param_list->print();
+        impl_->belos_solver->getValidParameters()->print();
+        impl_->belos_solver->getCurrentParameters()->print();
           //TODO
           //m_utopia_warning_once("not implemented");
 

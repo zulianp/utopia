@@ -1310,6 +1310,9 @@ namespace utopia {
 
         BelosSolver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
+        solver.import("Belos", Utopia::instance().get("data_path") + "/json/belos.json");
+        InputParameters input;
+        solver.read(input);
 
         MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
         TpetraVectord x = zeros(size(*ml_problem.rhs));
@@ -1319,6 +1322,7 @@ namespace utopia {
 
         x = *ml_problem.rhs;
         solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+        solver.print_usage();
 
         double diff = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
