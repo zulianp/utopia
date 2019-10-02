@@ -275,8 +275,8 @@ void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
         int num_blocks = 0;
         int maxdegree = 2;
         bool userandomrhs = false;
-        std::string ortho = "ICGS"; //IMGS is Iterated Modified Gram Schmidt
-        //ICGS is Iterated Classical Gram Schmidt, other is DKGS
+        std::string ortho = "ICGS"; /* IMGS is Iterated Modified Gram Schmidt
+                                       ICGS is Iterated Classical Gram Schmidt, other is DKGS */
         int recycle = 0;
         bool maxresnorm = true;
         bool estimate_cond_num = true;
