@@ -87,7 +87,7 @@ namespace utopia
                 return new LBFGS<Vector>(*this);
             }
 
-            bool update(const Vector &  s, const Vector &  y, const Vector & /*x*/, const Vector &  /* g */ ) override
+            bool update(const Vector &s, const Vector &y, const Vector & /*x*/, const Vector &  /* g */ ) override
             {
 
                 if(!this->initialized())
@@ -100,7 +100,7 @@ namespace utopia
                     return true;
                 }
 
-
+                //FIXME remove temporaries
                 Vector y_hat = y; 
                 bool skip_update = init_damping(y, s, y_hat);
                 
@@ -184,7 +184,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_Hinv(const Vector & g, Vector & q) const override
+            bool apply_Hinv(const Vector &g, Vector &q) const override
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n");
@@ -200,6 +200,7 @@ namespace utopia
                     q -=  alpha_inv[i] * Y_[i];
                 }
 
+                //FIXME remove temporaries?
                 Vector q2 = q;
                 this->apply_H0_inv(q2, q); 
 
@@ -231,6 +232,7 @@ namespace utopia
                     utopia_error("utopia::LBFGS::apply_H:: missing initialization... \n");
                 }
 
+                //FIXME remove temporaries
                 std::vector<Vector> a, b; 
                 a.resize(m_);
                 b.resize(m_);
@@ -524,6 +526,7 @@ namespace utopia
 
             bool init_damping_powel(const Vector & y, const Vector & s, Vector & y_hat)
             {
+                //FIXME remove temporaries
                 Vector Bs = 0.0*s; 
                 this->apply_H(s, Bs); 
 

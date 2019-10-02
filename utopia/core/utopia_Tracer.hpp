@@ -22,6 +22,9 @@ namespace utopia {
     public:
         template<class T>
         MeasurementId apply_begin(const Expression<T> &expr);
+
+        template<class T>
+        MeasurementId apply_begin_specialized(const Expression<T> &expr);
         void apply_end();
         static Tracer &instance();
 
@@ -41,9 +44,9 @@ namespace utopia {
         // version of size that takes T, because that can be a recusive call that can fail later
         // (example: Wrapper<PetscSerialSparseMatrix>). Size logging has been removed.
         template<class T>
-        Measurement(const Expression<T> &expr) {
+        Measurement(const Expression<T> &expr, const std::string &prefix = "") {
             id_ = generate_unique_id();
-            class_ = expr.get_class();
+            class_ = prefix + expr.get_class();
         }
 
         inline MeasurementId get_id() const {
@@ -77,6 +80,15 @@ namespace utopia {
         return m.get_id();
     }
 
+    template<class T>
+    inline MeasurementId Tracer::apply_begin_specialized(const Expression<T> &expr) {
+        Measurement m(expr, "specialized_");
+        running_events_.push(m.get_id());
+        event_map_.insert(std::make_pair(m.get_id(), m));
+        event_map_.at(m.get_id()).begin();
+        return m.get_id();
+    }
+
     inline void Tracer::apply_end() {
         const MeasurementId &id = running_events_.top();
         event_map_.at(id).end();
@@ -87,6 +99,9 @@ namespace utopia {
 
 #define UTOPIA_TRACE_BEGIN(expr)  utopia::Tracer::instance().apply_begin(expr)
 #define UTOPIA_TRACE_END(expr)    utopia::Tracer::instance().apply_end()
+
+#define UTOPIA_TRACE_BEGIN_SPECIALIZED(expr)  utopia::Tracer::instance().apply_begin_specialized(expr)
+#define UTOPIA_TRACE_END_SPECIALIZED(expr)    utopia::Tracer::instance().apply_end()
 
 
 #else  //UTOPIA_TRACE_ENABLED

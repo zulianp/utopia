@@ -508,6 +508,12 @@ namespace utopia {
             return false;
         }
 
+        inline bool same_object(const BlasVector &other) const
+        {
+            return this == &other;
+        }
+
+
     private:
     	Entries entries_;
 

@@ -326,7 +326,11 @@ namespace utopia
                 }
                 else
                 {
-                    dots(p_k, s_k, sMp, p_k, p_k, p_norm, s_k, s_k, s_norm); 
+                    dots(
+                        p_k, s_k, sMp,
+                        p_k, p_k, p_norm,
+                        s_k, s_k, s_norm
+                    ); 
                 }
 
                 g_norm = norm2(r);
