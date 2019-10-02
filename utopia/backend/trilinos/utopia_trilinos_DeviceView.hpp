@@ -17,7 +17,7 @@ namespace utopia {
         using DeviceViewType  = typename DualViewType::t_dev;
         using LocalMapType    = typename TpetraVector::vector_type::map_type::local_map_type;
 
-        inline Scalar get(const SizeType &idx) const
+        UTOPIA_INLINE_FUNCTION Scalar get(const SizeType &idx) const
         {
             auto local_idx = map_.getLocalElement(idx);
             return view_(local_idx, 0);
@@ -45,19 +45,19 @@ namespace utopia {
         using DeviceViewType  = typename DualViewType::t_dev;
         using LocalMapType    = typename TpetraVector::vector_type::map_type::local_map_type;
 
-        inline Scalar get(const SizeType &idx) const
+        UTOPIA_INLINE_FUNCTION Scalar get(const SizeType &idx) const
         {
             auto local_idx = map_.getLocalElement(idx);
             return view_(local_idx, 0);
         }
 
-        inline void set(const SizeType &idx, const Scalar &value) const
+        UTOPIA_INLINE_FUNCTION void set(const SizeType &idx, const Scalar &value) const
         {
             auto local_idx = map_.getLocalElement(idx);
             view_(local_idx, 0) = value;
         }
 
-        inline void add(const SizeType &idx, const Scalar &value) const
+        UTOPIA_INLINE_FUNCTION void add(const SizeType &idx, const Scalar &value) const
         {
             auto local_idx = map_.getLocalElement(idx);
             view_(local_idx, 0) += value;

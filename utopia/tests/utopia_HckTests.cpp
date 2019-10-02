@@ -76,7 +76,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
-
+            UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(quad_form_test);
 
             UTOPIA_RUN_TEST(multi_reduce_test);
@@ -113,6 +113,17 @@ namespace utopia
             // r = A*x - b;
 
             r = x - b;
+        }
+
+        void axpy_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 1.0);
+            Vector p = values(n_, 2.0);
+            
+            x = x - 0.5 * p;
+
+            y = x - 0.5 * p;
         }
 
         template<class QPSolverTemp>
