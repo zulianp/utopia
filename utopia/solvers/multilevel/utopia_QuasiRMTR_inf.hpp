@@ -262,6 +262,7 @@ namespace utopia
          */
         virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
+            //FIXME remove temporary
             Vector Pc;
 
             Vector x_g = this->memory_.x[level] - g_restricted;
@@ -311,6 +312,7 @@ namespace utopia
             );
 
 
+            //FIXME remove the fact that you are creating copies of l and u
             // generating constraints to go for QP solve
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 

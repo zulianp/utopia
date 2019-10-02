@@ -850,6 +850,14 @@ namespace utopia {
             return "PetscVector";
         }
 
+
+        inline bool same_object(const PetscVector &other) const
+        {
+            if(is_null()) return false;
+            if(other.is_null()) return false;
+            return raw_type() == other.raw_type();
+        }
+
     private:
         PetscCommunicator comm_;
 
