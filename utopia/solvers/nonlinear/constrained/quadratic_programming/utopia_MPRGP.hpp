@@ -6,6 +6,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "cuda_profiler_api.h"
 
 namespace  utopia
 {
@@ -98,10 +99,23 @@ namespace  utopia
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
 
+
+                cudaProfilerStart();
                 A.apply(x, Ax);
                 g = Ax - rhs; 
 
+
+                for(auto i=0; i < 40; i++){
+
                 this->get_fi(x, g, *lb, *ub, fi); 
+
+                }
+
+                cudaProfilerStop();
+
+                return false; 
+
+                // this->get_fi(x, g, *lb, *ub, fi); 
                 this->get_beta(x, g, *lb, *ub, beta); 
                 
                 gp = fi + beta; 
