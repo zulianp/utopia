@@ -31,9 +31,12 @@
 #cmakedefine UTOPIA_PETSC_VERSION_SUBMINOR
 
 #ifdef WITH_TRILINOS
-#define UTOPIA_LAMBDA [=]//KOKKOS_LAMBDA
+#include <Kokkos_Macros.hpp>
+#define UTOPIA_LAMBDA KOKKOS_LAMBDA
+#define UTOPIA_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
 #else
 #define UTOPIA_LAMBDA [=]
+#define UTOPIA_INLINE_FUNCTION inline
 #endif
 
 

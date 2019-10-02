@@ -27,36 +27,43 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            auto &R = expr.left().left().expr();
-            auto &A = expr.left().right();
-            auto &P = expr.right();
+            try {
 
-            result.raw_type().reset(
-                new typename Result::crs_mat_type(
-                    raw_type(R)->getDomainMap(),
-                    0,
-                    Tpetra::DynamicProfile
-                )
-            );
+                auto &&R = expr.left().left().expr();
+                auto &&A = expr.left().right();
+                auto &&P = expr.right();
 
-            //Performs optimal triple product
-            //Ac = R*A*P,
-            Tpetra::TripleMatrixMultiply::MultiplyRAP(
-                *raw_type(R),
-                true, //transposeR
-                *raw_type(A),
-                false, //transposeA
-                *raw_type(P),
-                false, //transposeP
-                *result.raw_type(),
-                true  //call_FillComplete_on_result
-            );
+                result.raw_type().reset(
+                    new typename Result::crs_mat_type(
+                        raw_type(R)->getDomainMap(),
+                        0,
+                        Tpetra::DynamicProfile
+                    )
+                );
 
-            // result.set_domain_and_range(raw_type(P)->getDomainMap(), raw_type(R)->getRangeMap());
-            // result.finalize();
+                assert(!empty(R));
+                assert(!empty(A));
+                assert(!empty(P));
+
+                //Performs optimal triple product
+                //Ac = R*A*P,
+                Tpetra::TripleMatrixMultiply::MultiplyRAP(
+                    *raw_type(R),
+                    true, //transposeR
+                    *raw_type(A),
+                    false, //transposeA
+                    *raw_type(P),
+                    false, //transposeP
+                    *result.raw_type(),
+                    true  //call_FillComplete_on_result
+                );
+
+            } catch(const std::exception &ex) {
+                std::cerr << "RAP: " << ex.what() << std::endl;
+                assert(false);
+            }
 
             UTOPIA_TRACE_END(expr);
-                // assert(result.same_type(Eval<Tensor<M3, 2>, Traits>::apply(expr.right())));
             return result;
         }
     };
