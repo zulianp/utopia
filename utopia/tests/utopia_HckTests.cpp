@@ -193,7 +193,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(2);
+            QP_solver->max_it(100);
             QP_solver->verbose(verbose_);
 
             QP_solve(QP_solver);
