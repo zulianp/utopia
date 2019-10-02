@@ -102,7 +102,7 @@ namespace  utopia
                 x = Ax; 
 
 
-                cudaProfilerStart();
+                // cudaProfilerStart();
 
                 A.apply(x, Ax);
                 g = Ax - rhs; 
@@ -114,12 +114,50 @@ namespace  utopia
 
                 dots(beta, beta, beta_beta, fi, fi, fi_fi); 
 
+                // cudaProfilerStop();
+            
 
-                // for(auto i=0; i < 40; i++){
+                cudaProfilerStart();
 
-                //     g = Ax - rhs;           
+                for(auto i=0; i < 50; i++){
 
-                // }
+                    // A.apply(p, Ap);
+
+                    // dots(   p, Ap, pAp, 
+                    //         g, p, gp_dot);    
+
+
+                    A.apply(p, Ap);
+
+                    dots(   p, Ap, pAp, 
+                            g, p, gp_dot);                            
+
+                    alpha_cg = gp_dot/pAp;
+                    // y = x - alpha_cg*p;      
+                    alpha_f = get_alpha_f(x, p, *lb, *ub, alpha_f1, alpha_f2);        
+
+                    this->get_fi(x, g, *lb, *ub, fi); 
+                    beta_sc = dot(fi,Ap)/pAp;               
+
+                    // Vector help = x;
+                    this->get_projection(x, *lb, *ub, x);       
+                    g = Ax - rhs;                 
+
+                    // g = g - alpha_f*Ap;
+
+                    // this->get_fi(x, g, *lb, *ub, fi); 
+                    this->get_beta(x, g, *lb, *ub, beta);                     
+
+                    gp = fi+beta;
+
+                    dots(   beta, beta, beta_beta, 
+                            fi, fi, fi_fi, 
+                            gp, gp, gnorm); 
+                }
+
+                cudaProfilerStop();
+
+                return false;
 
 
                 // cudaProfilerStop();
@@ -202,7 +240,7 @@ namespace  utopia
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
 
-                cudaProfilerStop();
+                // cudaProfilerStop();
     
                 return true;
             }
@@ -312,7 +350,7 @@ namespace  utopia
                     auto d_x  = const_device_view(x);
                     auto d_g  = const_device_view(g);
 
-                    auto d_beta = device_view(beta);
+                    // auto d_beta = device_view(beta);
 
                     parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {

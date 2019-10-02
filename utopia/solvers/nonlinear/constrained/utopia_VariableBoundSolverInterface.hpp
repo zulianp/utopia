@@ -119,7 +119,7 @@ namespace utopia
             auto d_ub = const_device_view(ub);
             auto d_x  = const_device_view(x);
 
-            auto d_Pc = device_view(Pc);
+            // auto d_Pc = device_view(Pc);
 
             parallel_each_write(Pc, UTOPIA_LAMBDA(const SizeType i) -> Scalar
             {
