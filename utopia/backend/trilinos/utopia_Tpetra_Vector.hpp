@@ -558,6 +558,11 @@ namespace utopia {
         {
             return "TpetraVector";
         }
+
+        inline bool same_object(const TpetraVector &other) const
+        {
+            return vec_ == other.vec_;
+        }
         
     private:
         TrilinosCommunicator comm_;

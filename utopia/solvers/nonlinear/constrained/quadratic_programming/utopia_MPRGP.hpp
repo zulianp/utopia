@@ -14,7 +14,9 @@ namespace  utopia
     template<class Matrix, class Vector>
     class MPGRP final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
     {
-        using Scalar  = typename Traits<Vector>::Scalar;
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+
         using Solver  = utopia::LinearSolver<Matrix, Vector>;
         using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
 
@@ -101,27 +103,36 @@ namespace  utopia
 
 
                 cudaProfilerStart();
+
                 A.apply(x, Ax);
                 g = Ax - rhs; 
-
-
-                for(auto i=0; i < 40; i++){
-
                 this->get_fi(x, g, *lb, *ub, fi); 
-
-                }
-
-                cudaProfilerStop();
-
-                return false; 
-
-                // this->get_fi(x, g, *lb, *ub, fi); 
                 this->get_beta(x, g, *lb, *ub, beta); 
-                
+
                 gp = fi + beta; 
                 p = fi; 
 
                 dots(beta, beta, beta_beta, fi, fi, fi_fi); 
+
+
+                // for(auto i=0; i < 40; i++){
+
+                //     g = Ax - rhs;           
+
+                // }
+
+
+                // cudaProfilerStop();
+
+                // return false; 
+
+                // this->get_fi(x, g, *lb, *ub, fi); 
+                // this->get_beta(x, g, *lb, *ub, beta); 
+                
+                // gp = fi + beta; 
+                // p = fi; 
+
+                // dots(beta, beta, beta_beta, fi, fi, fi_fi); 
 
                 while(!converged)
                 {
@@ -131,7 +142,8 @@ namespace  utopia
                     {
                         A.apply(p, Ap);
 
-                        dots(p, Ap, pAp, g, p, gp_dot); 
+                        dots(   p, Ap, pAp, 
+                                g, p, gp_dot); 
 
                         alpha_cg = gp_dot/pAp;
                         y = x - alpha_cg*p;
@@ -176,7 +188,9 @@ namespace  utopia
 
                     gp = fi+beta;
 
-                    dots(beta, beta, beta_beta, fi, fi, fi_fi, gp, gp, gnorm); 
+                    dots(   beta, beta, beta_beta, 
+                            fi, fi, fi_fi, 
+                            gp, gp, gnorm); 
                     
                     gnorm = std::sqrt(gnorm); 
                     it++; 
@@ -187,6 +201,8 @@ namespace  utopia
 
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
+
+                cudaProfilerStop();
     
                 return true;
             }

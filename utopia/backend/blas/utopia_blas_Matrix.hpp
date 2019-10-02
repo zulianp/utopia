@@ -908,6 +908,11 @@ namespace utopia {
             return "BlasMatrix";
         }
 
+        inline bool same_object(const BlasMatrix &other) const
+        {
+            return this == &other;
+        }
+
     private:
         Entries entries_;
         SizeType rows_;
