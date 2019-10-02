@@ -42,17 +42,17 @@ namespace utopia {
     };
 
 
-    template<class Left, class L, class R, class Traits, int Backend>
-    class Eval<Assign<Left, Binary<L, R, Minus>>, Traits, Backend> {
+    template<class Left, class L, class R, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Minus>>, Traits, Backend> {
     public:
-        using Expr = utopia::Assign<Left, Binary<L, R, Minus>>;
+        using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Minus>>;
 
         inline static bool apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
 
             auto &&l   = Eval<Left, Traits>::apply(expr.left());
-            auto &&b_l = Eval<L, Traits>::apply(expr.right().left());
-            auto &&b_r = Eval<R, Traits>::apply(expr.right().right());
+            auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
+            auto &&b_r = Eval<Tensor<R, Order>, Traits>::apply(expr.right().right());
             
             apply_aux(b_l, expr.right().operation(), b_r, l);
 
@@ -80,17 +80,17 @@ namespace utopia {
     };
 
 
-    template<class Left, class L, class R, class Traits, int Backend>
-    class Eval<Assign<Left, Binary<L, R, Plus>>, Traits, Backend> {
+    template<class Left, class L, class R, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Plus>>, Traits, Backend> {
     public:
-        using Expr = utopia::Assign<Left, Binary<L, R, Plus>>;
+        using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Plus>>;
 
         inline static bool apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
 
             auto &&l   = Eval<Left, Traits>::apply(expr.left());
-            auto &&b_l = Eval<L, Traits>::apply(expr.right().left());
-            auto &&b_r = Eval<R, Traits>::apply(expr.right().right());
+            auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
+            auto &&b_r = Eval<Tensor<R, Order>, Traits>::apply(expr.right().right());
             
             apply_aux(b_l, expr.right().operation(), b_r, l);
 
