@@ -340,7 +340,9 @@ namespace utopia
                     dots(p_k, s_k, sMp, p_k, p_k, p_norm, s_k, s_k, s_norm); 
                 }
 
-                g_norm = norm2(r);
+                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                    g_norm = norm2(r);  
+                }
 
                 if(this->verbose()){
                     PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});

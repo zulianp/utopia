@@ -24,9 +24,6 @@ namespace utopia
                             POST_SMOOTHING = 2,
                             COARSE_SOLVE   = 0};
 
-    enum MultilevelNormSchedule{    ALWAYS = 1,
-                                    OUTER_CYCLE = 2};
-
 
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
