@@ -60,6 +60,27 @@ namespace utopia {
          }
      }
 
+     template<class Op>
+      KOKKOS_INLINE_FUNCTION
+      Tuple operator +=(const Tuple &other)
+      {
+          for(int i = 0; i < N; ++i) {
+              data_[i] = other.data_[i];
+          }
+      }
+
+      template<class Op>
+       KOKKOS_INLINE_FUNCTION
+       volatile Tuple operator +=(const volatile Tuple &other) volatile
+       {
+           for(int i = 0; i < N; ++i) {
+               // auto v = data_[i];
+               auto v2 = other.data_[i];
+               data_[i] += v2;
+           }
+       }
+
+
     KOKKOS_INLINE_FUNCTION
     const Scalar &operator[](const int i) const
     {
@@ -312,7 +333,7 @@ namespace utopia {
         comm.sum(result);
         result1 = result[0];
         result2 = result[1];
-        result3 = result[1];
+        result3 = result[2];
     }
 
 }
