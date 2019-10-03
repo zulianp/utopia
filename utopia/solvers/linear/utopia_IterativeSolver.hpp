@@ -13,6 +13,7 @@
 
 namespace  utopia
 {
+
     /**
      * @brief      The base class for linear solvers.
      * @tparam     Matrix
@@ -27,7 +28,7 @@ namespace  utopia
         typedef UTOPIA_SCALAR(Matrix)           Scalar;
         typedef UTOPIA_SIZE_TYPE(Matrix)        SizeType;
 
-        IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false)
+        IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false), norm_scheduler_(EVERY_ITER)
         {
 
         }
@@ -146,28 +147,32 @@ namespace  utopia
         virtual bool check_convergence(const SizeType &it, const Scalar &g_norm, const Scalar & r_norm, const Scalar &s_norm) override
         {
             bool converged = false;
-            // termination because norm of grad is down
-            if(g_norm < atol_)
-            {
-                exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS;
-                converged = true;
-            }
 
-            // step size so small that we rather exit than wait for nan's
-            if(s_norm < stol_)
+            if(norm_scheduler_ != NEVER)
             {
-                exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-                this->solution_status_.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE;
-                converged = true;
-            }
+                // termination because norm of grad is down
+                if(g_norm < atol_)
+                {
+                    exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
+                    this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS;
+                    converged = true;
+                }
 
-            // step size so small that we rather exit than wait for nan's
-            if(r_norm < rtol_)
-            {
-                exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-                this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE;
-                converged = true;
+                // step size so small that we rather exit than wait for nan's
+                if(s_norm < stol_)
+                {
+                    exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
+                    this->solution_status_.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE;
+                    converged = true;
+                }
+
+                // step size so small that we rather exit than wait for nan's
+                if(r_norm < rtol_)
+                {
+                    exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
+                    this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE;
+                    converged = true;
+                }
             }
 
             // check number of iterations
@@ -198,6 +203,8 @@ namespace  utopia
         virtual SizeType    max_it()  const            { return max_it_; }
         virtual bool verbose() const                     { return verbose_; }
 
+        virtual NormSchedule norm_schedule() const      { return norm_scheduler_; }
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual void atol(const Scalar & atol_in ) { atol_ = atol_in; };
@@ -205,6 +212,8 @@ namespace  utopia
         virtual void stol(const Scalar & stol_in ) { stol_ = stol_in; };
         virtual void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; };
         virtual void verbose(const bool & verbose_in ) {verbose_ = verbose_in; };
+
+        virtual void norm_schedule(const NormSchedule & norm_scheduler) {norm_scheduler_ = norm_scheduler; };  
 
 
     private:
@@ -219,6 +228,7 @@ namespace  utopia
         bool verbose_;                  /*!< Verobse enable? . */
 
         Chrono _time;                 /*!<Timing of solver. */
+        NormSchedule norm_scheduler_; 
     };
 }
 

@@ -3,6 +3,7 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Preconditioner.hpp"
+#include "cuda_profiler_api.h"
 
 namespace utopia
 {
@@ -123,6 +124,8 @@ namespace utopia
 
             bool converged = false;
 
+            // cudaProfilerStart();
+
             while(!converged)
             {
                 B.apply(v_k, B_p_k);
@@ -163,6 +166,8 @@ namespace utopia
                 it++;
             }
 
+            // cudaProfilerStop();
+
             return true;
         }
 
@@ -173,10 +178,15 @@ namespace utopia
             bool converged = false;
             SizeType it=0;
 
-            s_k = local_zeros(local_size(g));
+            if(empty(s_k))
+                s_k = local_zeros(local_size(g));
+            else
+                s_k.set(0.0); 
+
             r = g;
 
-            Scalar g_norm = norm2(r);
+            Scalar g_norm=9e9; 
+            // cudaProfilerStart();
 
             this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
             if(this->verbose())
@@ -185,7 +195,11 @@ namespace utopia
             }
             it++;
 
-            v_k = local_zeros(local_size(g));
+            if(empty(v_k))
+                v_k = local_zeros(local_size(g));
+            else
+                v_k.set(0.0); 
+
             this->precond_->apply(r, v_k);
 
             p_k = -1.0 * v_k;
@@ -199,11 +213,25 @@ namespace utopia
 
             if(use_precond_direction_)
             {
-                p_norm = dot(r, v_k);
+                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                    dots(r, v_k, p_norm, r, r, g_norm); 
+                    g_norm = std::sqrt(g_norm); 
+                }
+                else
+                {
+                    p_norm = dot(r, v_k);    
+                }
             }
             else
             {
-                p_norm = dot(p_k, p_k); 
+                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                    dots(p_k, p_k, p_norm, r, r, g_norm); 
+                    g_norm = std::sqrt(g_norm); 
+                }
+                else
+                {
+                    p_norm = dot(p_k, p_k); 
+                }
             }
 
             // if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step
@@ -301,10 +329,13 @@ namespace utopia
 
                 r += alpha * B_p_k;
 
-                v_k = local_zeros(local_size(r));
-                // Petsc version, does not work nicely with generic preconditioners, such as MG ...
-                // v_k = -1.0*B_p_k; 
+                // apply preconditioner 
+                if(empty(v_k))
+                    v_k = local_zeros(local_size(r));
+                else
+                    v_k.set(0.0); 
                 this->precond_->apply(r, v_k);
+
 
                 g_v_prod_new = dot(r, v_k);
 
@@ -333,7 +364,10 @@ namespace utopia
                     ); 
                 }
 
-                g_norm = norm2(r);
+                // TODO:: check if there is something else possible 
+                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                    g_norm = norm2(r);  
+                }
 
                 if(this->verbose()){
                     PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});
@@ -347,6 +381,8 @@ namespace utopia
                 converged = this->check_convergence(it, g_norm, 1, 1);
                 it++;
             }
+
+            // cudaProfilerStop();
 
             return true;
         }

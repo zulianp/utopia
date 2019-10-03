@@ -116,7 +116,6 @@ namespace  utopia
 
                 while(!converged)
                 {
-                    // dots(beta, beta, beta_beta, fi, fi, fi_fi); 
 
                     if(beta_beta <= (gamma*gamma * fi_fi))
                     {
@@ -198,8 +197,6 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_g  = const_device_view(g);
-
-                    auto d_fi = device_view(fi);
                     
                     parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
@@ -219,7 +216,6 @@ namespace  utopia
                 }
             }
 
-
             Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & help_f1, Vector & help_f2) const
             {
                 if(empty(help_f1)){
@@ -235,9 +231,6 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_p  = const_device_view(p);
-
-                    auto d_alpha_f1 = device_view(help_f1);
-                    auto d_alpha_f2 = device_view(help_f2);
                     
                     parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
@@ -288,8 +281,6 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_g  = const_device_view(g);
-
-                    auto d_beta = device_view(beta);
 
                     parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
