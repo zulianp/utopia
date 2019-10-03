@@ -280,6 +280,7 @@ namespace utopia {
             ghost_map = map;
         }
 
+        UTOPIA_REPORT_ALLOC("TpetraVector::ghosted");
         ghosted_vec_ = Teuchos::rcp(new vector_type(ghost_map, 1));
         vec_ = ghosted_vec_->offsetViewNonConst(map, 0);
 
@@ -313,7 +314,8 @@ namespace utopia {
             GO,
             vector_type::node_type> exporter(ghost_map, map);
 
-
+        //FIXME can we avoid this? 
+        //UTOPIA_REPORT_ALLOC(TpetraVector::export_ghosts_add)
         Teuchos::RCP<vector_type> y(new vector_type(map, 1));
 
         y->doExport(*ghosted_vec_, exporter, Tpetra::ADD);
@@ -339,11 +341,13 @@ namespace utopia {
         }
 
         if(other.has_ghosts()) {
+            UTOPIA_REPORT_ALLOC("TpetraVector::copy");
             ghosted_vec_ = Teuchos::rcp(new vector_type(other.ghosted_vec_->getMap(), 1));
             ghosted_vec_->assign(*other.ghosted_vec_);
             vec_ = ghosted_vec_->offsetViewNonConst(other.vec_->getMap(), 0);
         } else {
             if(vec_.is_null() || other.size() != size()) {
+                UTOPIA_REPORT_ALLOC("TpetraVector::copy");
                 vec_ = (Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)));
             } else {
                 vec_->assign(other.implementation());
@@ -462,6 +466,8 @@ namespace utopia {
         assert(n_local >= 0);
 
         rcp_map_type map;
+
+        UTOPIA_REPORT_ALLOC("TpetraVector::values");
         map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
         vec_.reset(new vector_type(map));
         implementation().putScalar(val);
@@ -477,6 +483,8 @@ namespace utopia {
         const SizeType local_s = utopia::decompose(comm_, s);
 
         rcp_map_type map;
+
+        UTOPIA_REPORT_ALLOC("TpetraVector::values");
         map = Teuchos::rcp(new map_type(s, local_s, 0, comm().get()));
         vec_.reset(new vector_type(map));
         implementation().putScalar(val);
@@ -489,6 +497,8 @@ namespace utopia {
         assert(s > 0);
 
         rcp_map_type map;
+
+        UTOPIA_REPORT_ALLOC("TpetraVector::values");
         map = Teuchos::rcp(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), s, 0, comm().get()));
         vec_.reset(new vector_type(map));
         implementation().putScalar(val);

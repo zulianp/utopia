@@ -383,7 +383,10 @@ namespace utopia {
             x_0 = rhs;
             cg.solve(A, rhs, x_0);
 
-            utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
+            if(!approxeq(A*x_0, rhs, 1e-6) ) {
+                m_utopia_error("utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) )");
+            }
+            // utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
 
             //Multigrid only
             // x_0 = zeros(A.size().get(0));
