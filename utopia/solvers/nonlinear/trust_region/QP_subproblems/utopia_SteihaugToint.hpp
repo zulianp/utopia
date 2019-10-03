@@ -4,6 +4,7 @@
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "cuda_profiler_api.h"
+#include "utopia_Allocations.hpp"
 
 namespace utopia
 {
@@ -124,7 +125,7 @@ namespace utopia
 
             bool converged = false;
 
-            // cudaProfilerStart();
+            cudaProfilerStart();
 
             while(!converged)
             {
@@ -166,7 +167,7 @@ namespace utopia
                 it++;
             }
 
-            // cudaProfilerStop();
+            cudaProfilerStop();
 
             return true;
         }
@@ -186,7 +187,7 @@ namespace utopia
             r = g;
 
             Scalar g_norm=9e9; 
-            // cudaProfilerStart();
+            cudaProfilerStart();
 
             this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
             if(this->verbose())
@@ -266,10 +267,14 @@ namespace utopia
 
             while(!converged)
             {
+                UTOPIA_NO_ALLOC_BEGIN("region1");
                 B.apply(p_k, B_p_k);
                 // kappa = dot(p_k,B_p_k);
 
                 dots(p_k, B_p_k, kappa, r, v_k, g_v_prod_old);
+
+                UTOPIA_NO_ALLOC_END();
+
 
                 // identify negative curvature
                 if(kappa <= 0.0)
@@ -292,11 +297,15 @@ namespace utopia
                     return true;
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("region2");
                 // g_v_prod_old = dot(r, v_k);
                 alpha = g_v_prod_old/kappa;
 
                 s_norm_new = s_norm + (2.0* alpha * sMp) + (alpha * alpha * p_norm);
+                UTOPIA_NO_ALLOC_END();
 
+
+                UTOPIA_NO_ALLOC_BEGIN("region3");
                 // ||s_k||_M > \Delta => terminate
                 // norm squared should be used
                 if(s_norm_new >= r2)
@@ -317,7 +326,9 @@ namespace utopia
 
                     return true;
                 }
+                UTOPIA_NO_ALLOC_END();
 
+                UTOPIA_NO_ALLOC_BEGIN("region4");
                 if(std::isfinite(alpha))
                 {
                     s_k += alpha * p_k;
@@ -326,15 +337,23 @@ namespace utopia
                 {
                     return false;
                 }
+                UTOPIA_NO_ALLOC_END();
 
+
+                UTOPIA_NO_ALLOC_BEGIN("region5");
                 r += alpha * B_p_k;
+                UTOPIA_NO_ALLOC_END();
 
                 // apply preconditioner 
                 if(empty(v_k))
                     v_k = local_zeros(local_size(r));
                 else
                     v_k.set(0.0); 
+
+
+                UTOPIA_NO_ALLOC_BEGIN("region6");
                 this->precond_->apply(r, v_k);
+                UTOPIA_NO_ALLOC_END();
 
 
                 g_v_prod_new = dot(r, v_k);
@@ -346,7 +365,12 @@ namespace utopia
                 }
 
                 betta  = g_v_prod_new/ g_v_prod_old;
+                
+                UTOPIA_NO_ALLOC_BEGIN("region6.2");
                 p_k = betta * p_k - v_k;
+
+                UTOPIA_NO_ALLOC_END();
+
 
                 // updating norms recursively  - see TR book
                 if(use_precond_direction_)
@@ -357,11 +381,13 @@ namespace utopia
                 }
                 else
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("region7");
                     dots(
                         p_k, s_k, sMp,
                         p_k, p_k, p_norm,
                         s_k, s_k, s_norm
                     ); 
+                    UTOPIA_NO_ALLOC_END();
                 }
 
                 // TODO:: check if there is something else possible 
@@ -382,7 +408,7 @@ namespace utopia
                 it++;
             }
 
-            // cudaProfilerStop();
+            cudaProfilerStop();
 
             return true;
         }

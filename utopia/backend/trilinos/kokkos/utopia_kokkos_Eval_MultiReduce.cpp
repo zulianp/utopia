@@ -60,7 +60,7 @@ namespace utopia {
          }
      }
 
-     template<class Op>
+     // template<class Op>
       KOKKOS_INLINE_FUNCTION
       Tuple operator +=(const Tuple &other)
       {
@@ -69,7 +69,7 @@ namespace utopia {
           }
       }
 
-      template<class Op>
+      // template<class Op>
        KOKKOS_INLINE_FUNCTION
        volatile Tuple operator +=(const volatile Tuple &other) volatile
        {

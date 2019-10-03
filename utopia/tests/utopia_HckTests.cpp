@@ -40,7 +40,7 @@ namespace utopia
             input_params_.set("post_smoothing_steps", 5);
             input_params_.set("max_sucessful_smoothing_it", 1);
             input_params_.set("max_QP_smoothing_it", 10);
-            input_params_.set("delta0", 1e3);
+            input_params_.set("delta0", 1e-3);
             input_params_.set("grad_smoothess_termination", 1e-8);
         }
 
@@ -71,7 +71,7 @@ namespace utopia
 
         void run_trilinos()
         {
-            // UTOPIA_RUN_TEST(TR_tril_test);
+            UTOPIA_RUN_TEST(TR_tril_test);
 
             // UTOPIA_RUN_TEST(RMTR_l2_test);
             // UTOPIA_RUN_TEST(RMTR_inf_test);
@@ -85,7 +85,7 @@ namespace utopia
 
 
 
-           UTOPIA_RUN_TEST(STCG_test);
+           // UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(for_each_loop_test);
             // UTOPIA_RUN_TEST(parallel_each_write_test);
 
@@ -568,7 +568,7 @@ namespace utopia
         void TR_tril_test()
         {
             #ifdef WITH_PETSC
-                Poisson3D<PetscMatrix, PetscVector> fun(50);
+                Poisson3D<PetscMatrix, PetscVector> fun(3);
                 PetscVector x = fun.initial_guess();
 
                 PetscMatrix H;
@@ -595,9 +595,10 @@ namespace utopia
                     backend_convert(x, x_tril);
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                    QP_solver->verbose(true); 
 
-                    Vector lb_tril = local_values(local_size(x_tril).get(0), -9e9);
-                    Vector ub_tril = local_values(local_size(x_tril).get(0), 9e9);
+                    Vector lb_tril = local_values(local_size(x_tril), -9e9);
+                    Vector ub_tril = local_values(local_size(x_tril), 9e9);
 
                     empty_rhs_tril = 0.0*x_tril;
                     backend_convert(x_eq, x_eq_tril);
@@ -608,6 +609,7 @@ namespace utopia
                     TrustRegionVariableBound<Matrix, Vector> tr_solver(QP_solver);
                     tr_solver.set_box_constraints(make_box_constaints(make_ref(lb_tril), make_ref(ub_tril)));
                     tr_solver.read(input_params_);
+                    // tr_solver.delta0(1e-5); 
                     tr_solver.verbose(verbose_);
                     tr_solver.solve(fun_QP_tril, x_tril);
 
@@ -998,7 +1000,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 5000;
+        auto coarse_dofs = 100;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();

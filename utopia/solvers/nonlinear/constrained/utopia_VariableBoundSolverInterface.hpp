@@ -226,6 +226,8 @@ namespace utopia
           else
               u_f = local_values(local_size(x_k), ub_uniform); ;
 
+
+
           if(constraints_.has_lower_bound())
           {
               Vector l = *(constraints_.lower_bound()) - x_k;
@@ -240,9 +242,6 @@ namespace utopia
                   return  (val >= lb_uniform)  ? val : lb_uniform;
               });
             }
-
-
-
           }
           else
               l_f = local_values(local_size(x_k), lb_uniform);

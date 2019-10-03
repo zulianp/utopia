@@ -98,7 +98,8 @@ namespace  utopia
 
                 Scalar alpha_cg, alpha_f, beta_sc; 
 
-                cudaProfilerStart();
+
+                // cudaProfilerStart();
     
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
@@ -125,7 +126,6 @@ namespace  utopia
 
                         alpha_cg = gp_dot/pAp;
                         y = x - alpha_cg*p;
-
                         alpha_f = get_alpha_f(x, p, *lb, *ub, help_f1, help_f2);         
 
                         if(alpha_cg <= alpha_f)
@@ -134,10 +134,10 @@ namespace  utopia
                             g = g - alpha_cg*Ap;
                             this->get_fi(x, g, *lb, *ub, fi); 
                             beta_sc = dot(fi,Ap)/pAp;
-                            p = fi - beta_sc*p;                                               
+                            p = fi - beta_sc*p;                                           
                         }
                         else
-                        {
+                        {                                
                             x = x-alpha_f*p;
                             g = g - alpha_f*Ap;
                             this->get_fi(x, g, *lb, *ub, fi); 
@@ -147,7 +147,7 @@ namespace  utopia
               
                             A.apply(x, Ax);
                             g = Ax - rhs; 
-                            this->get_fi(x, g, *lb, *ub, p); 
+                            this->get_fi(x, g, *lb, *ub, p);                                 
                         }
 
                     }
@@ -158,7 +158,7 @@ namespace  utopia
                         x = x - alpha_cg*beta;
                         g = g - alpha_cg*Abeta;
 
-                        this->get_fi(x, g, *lb, *ub, p); 
+                        this->get_fi(x, g, *lb, *ub, p);                                 
                     }
 
                     this->get_fi(x, g, *lb, *ub, fi); 
@@ -178,7 +178,7 @@ namespace  utopia
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
     
-                cudaProfilerStop();
+                // cudaProfilerStop();
 
                 return true;
             }
@@ -203,9 +203,10 @@ namespace  utopia
                         Scalar li = d_lb.get(i);
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
+                        Scalar gi = d_g.get(i); 
 
                         if(li < xi && xi < ui){
-                            return d_g.get(i);
+                            return gi; 
                         }
                         else{
                             return 0.0;
@@ -289,13 +290,16 @@ namespace  utopia
                         Scalar xi = d_x.get(i);
                         Scalar gi = d_g.get(i);
 
-                        if(std::abs(li -  xi) < 1e-14)
+
+                        if(utopia::abs(li -  xi) < 1e-14)
                         {
-                            return std::min(0.0, gi);
+                            // return utopia::min(0.0, gi);
+                            return gi < 0.0 ? gi : 0.0; 
                         }
-                        else if(std::abs(ui -  xi) < 1e-14)
+                        else if(utopia::abs(ui -  xi) < 1e-14)
                         {
-                            return std::max(0.0, gi);
+                            // return utopia::max(0.0, gi);
+                            return gi > 0.0 ? gi : 0.0; 
                         }
                         else
                         {
