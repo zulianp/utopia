@@ -70,7 +70,7 @@ namespace utopia
 
         void run_trilinos()
         {
-            // UTOPIA_RUN_TEST(TR_tril_test);
+            UTOPIA_RUN_TEST(TR_tril_test);
 
             // UTOPIA_RUN_TEST(RMTR_l2_test);
             // UTOPIA_RUN_TEST(RMTR_inf_test);
@@ -80,7 +80,7 @@ namespace utopia
 
 
             // UTOPIA_RUN_TEST(multi_reduce_test);
-             UTOPIA_RUN_TEST(MPGRP_test);
+             // UTOPIA_RUN_TEST(MPGRP_test);
 
            // UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(for_each_loop_test);
@@ -974,7 +974,7 @@ namespace utopia
         auto n_levels    = 3;
 
         auto coarse_dofs = 100;
-        auto verbose     = false;
+        auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
