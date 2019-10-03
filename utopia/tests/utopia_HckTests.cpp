@@ -190,7 +190,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(2);
+            QP_solver->max_it(100);
             QP_solver->verbose(true);
 
             QP_solve(QP_solver);
@@ -968,7 +968,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 1000;
+        auto coarse_dofs = 5000;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
