@@ -312,7 +312,7 @@ namespace utopia {
         comm.sum(result);
         result1 = result[0];
         result2 = result[1];
-        result3 = result[1];
+        result3 = result[2];
     }
 
 }
