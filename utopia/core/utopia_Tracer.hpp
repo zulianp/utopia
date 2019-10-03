@@ -97,11 +97,11 @@ namespace utopia {
 
 }
 
-#define UTOPIA_TRACE_BEGIN(expr)  utopia::Tracer::instance().apply_begin(expr)
-#define UTOPIA_TRACE_END(expr)    utopia::Tracer::instance().apply_end()
+#define UTOPIA_TRACE_BEGIN(macro_expr_)  utopia::Tracer::instance().apply_begin(macro_expr_)
+#define UTOPIA_TRACE_END(macro_expr_)    utopia::Tracer::instance().apply_end()
 
-#define UTOPIA_TRACE_BEGIN_SPECIALIZED(expr)  utopia::Tracer::instance().apply_begin_specialized(expr)
-#define UTOPIA_TRACE_END_SPECIALIZED(expr)    utopia::Tracer::instance().apply_end()
+#define UTOPIA_TRACE_BEGIN_SPECIALIZED(macro_expr_)  utopia::Tracer::instance().apply_begin_specialized(macro_expr_)
+#define UTOPIA_TRACE_END_SPECIALIZED(macro_expr_)    utopia::Tracer::instance().apply_end()
 
 
 #else  //UTOPIA_TRACE_ENABLED

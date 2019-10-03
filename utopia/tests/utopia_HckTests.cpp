@@ -5,6 +5,7 @@
 // #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "utopia_Allocations.hpp"
 
 namespace utopia
 {
@@ -76,7 +77,11 @@ namespace utopia
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
-
+            UTOPIA_RUN_TEST(transform_test);
+            UTOPIA_RUN_TEST(e_mul_test);
+            UTOPIA_RUN_TEST(e_div_test);
+            UTOPIA_RUN_TEST(negate_alpha_test);
+            UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(quad_form_test);
 
             UTOPIA_RUN_TEST(multi_reduce_test);
@@ -89,6 +94,38 @@ namespace utopia
 
             //THIS
             UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+        }
+
+        void e_mul_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 2.0);
+            Vector z = values(n_, 0.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
+            z = e_mul(x, y);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void e_div_test()
+        {
+            Vector x = values(n_, 6.0);
+            Vector z = values(n_, 3.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_div_test");
+            z = x / z;
+            
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 2.0*n_));
+            z = x / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0*n_));
+
+            z = z / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
+
+            UTOPIA_NO_ALLOC_END();
         }
 
         void quad_form_test()
@@ -110,10 +147,49 @@ namespace utopia
             Matrix A = sparse(n_, n_, 3);
             Vector r = values(n_, 0.0);
 
-            // r = A*x - b;
-
+            UTOPIA_NO_ALLOC_BEGIN("residual_test");
             r = x - b;
+            UTOPIA_NO_ALLOC_END();
         }
+
+        void axpy_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 1.0);
+            Vector p = values(n_, 2.0);
+            
+            UTOPIA_NO_ALLOC_BEGIN("axpy_test");
+            x = x - 0.5 * p;
+            y = x - 0.5 * p;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void transform_test()
+        {
+            Vector x = values(n_, 1.0);
+            
+            parallel_transform(
+                x,
+                UTOPIA_LAMBDA(const SizeType &i, const Scalar &v) -> Scalar {
+                    return (i+1)*v;
+            });
+            
+            Scalar expected = ((n_ + 1) * n_)/2.0;
+            Scalar sum_x = sum(x);
+
+            utopia_test_assert(approxeq(sum_x, expected, 1e-10));
+        }
+
+        void negate_alpha_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 1.0);
+            
+            UTOPIA_NO_ALLOC_BEGIN("negate_alpha_test");
+            y = -0.5 * x;
+            UTOPIA_NO_ALLOC_END();
+        }
+
 
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const

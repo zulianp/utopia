@@ -10,6 +10,13 @@
 #include <cmath>
 
 namespace utopia {
+
+    template<class Op>
+    class is_commutative {
+    public:
+        static const int value = 0;
+    };
+
     class Minus {
     public:
         std::string get_class() const { return "Minus"; }
@@ -38,6 +45,13 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<Plus> {
+    public:
+        static const int value = 1;
+    };
+
+
     class PlusEqual {
     public:
         std::string get_class() const { return "PlusEqual"; }
@@ -60,6 +74,13 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<AbsPlus> {
+    public:
+        static const int value = 1;
+    };
+
+
     class And {
     public:
         std::string get_class() const { return "And"; }
@@ -70,6 +91,13 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<And> {
+    public:
+        static const int value = 1;
+    };
+
+
     class Multiplies {
     public:
         std::string get_class() const { return "Multiplies"; }
@@ -79,6 +107,13 @@ namespace utopia {
             return left * right;
         }
     };
+
+    template<>
+    class is_commutative<Multiplies> {
+    public:
+        static const int value = 1;
+    };
+
 
     class Divides {
     public:
@@ -99,6 +134,13 @@ namespace utopia {
             return left * right;
         }
     };
+
+    template<>
+    class is_commutative<EMultiplies> {
+    public:
+        static const int value = 1;
+    };
+
 
     class KroneckerProduct {
     public:
@@ -136,6 +178,13 @@ namespace utopia {
     private:
         double _tol;
     };
+
+    template<>
+    class is_commutative<ApproxEqual> {
+    public:
+        static const int value = 1;
+    };
+
 
     //UNARY
     class Sqrt {
@@ -275,6 +324,13 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<Min> {
+    public:
+        static const int value = 1;
+    };
+
+
     class Max {
     public:
         std::string get_class() const { return "Max"; }
@@ -285,6 +341,13 @@ namespace utopia {
             return max(left, right);
         }
     };
+
+    template<>
+    class is_commutative<Max> {
+    public:
+        static const int value = 1;
+    };
+
 
     class IsNaNOrInf {
     public:
