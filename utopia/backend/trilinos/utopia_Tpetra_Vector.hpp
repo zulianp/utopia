@@ -16,6 +16,7 @@
 #include "utopia_Vector.hpp"
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Normed.hpp"
+#include "utopia_Allocations.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -246,6 +247,7 @@ namespace utopia {
 
         inline void init(const rcp_map_type &map)
         {
+            UTOPIA_REPORT_ALLOC("TpetraVector::init");
             vec_.reset(new vector_type(map));
         }
 

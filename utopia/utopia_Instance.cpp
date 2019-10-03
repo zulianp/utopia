@@ -3,6 +3,7 @@
 #include "utopia_Tracer.hpp"
 #include "utopia_Config.hpp"
 #include "utopia_MPI.hpp"
+#include "utopia_Allocations.hpp"
 
 #ifdef WITH_TRILINOS
 #include <Tpetra_Core.hpp>
@@ -53,6 +54,9 @@ namespace utopia {
 #ifdef WITH_TRILINOS
         Tpetra::initialize(&argc, &argv);
 #endif //WITH_TRILINOS
+
+
+        instance().read_input(argc, argv);
     }
 
 
@@ -129,5 +133,17 @@ namespace utopia {
 #else
         exit(error_code);
 #endif
+    }
+
+
+    void Utopia::read_input(int argc, char *argv[])
+    {
+        for(int i = 1; i < argc; i++) {
+#ifdef ENABLE_NO_ALLOC_REGIONS
+           if(argv[i] == std::string("-on_alloc_violation_abort")) {
+                Allocations::instance().abort_on_violation(true);
+            } 
+        }
+#endif //ENABLE_NO_ALLOC_REGIONS
     }
 }

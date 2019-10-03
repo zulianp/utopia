@@ -4,6 +4,7 @@
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 #include "utopia_kokkos_ParallelEach.hpp"
+#include "utopia_Allocations.hpp"
 
 #include <TpetraExt_MatrixMatrix_def.hpp>
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
@@ -176,6 +177,8 @@ namespace utopia {
         if(transpose_this) {
 
             assert(!right.implementation().getDomainMap().is_null());
+
+            UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(
                 new crs_mat_type(
                     implementation().getDomainMap(),
@@ -185,6 +188,7 @@ namespace utopia {
 
         } else {
 
+            UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(
                 new crs_mat_type(
                     implementation().getRowMap(),
@@ -367,6 +371,8 @@ namespace utopia {
 
         // auto col_map = Teuchos::rcp(new map_type(cols_global, index_base, comm, Tpetra::LocallyReplicated));
         // mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+
+        UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
         mat_.reset(new crs_mat_type(row_map, nnz_x_row, Tpetra::DynamicProfile));
         owner_ = true;
 
@@ -409,6 +415,7 @@ namespace utopia {
           assert(false && "Sparse distributed matrix assembly with CRS structures is not implemented yet.");
       }
 
+      UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
       mat_.reset(new crs_mat_type(row_map, col_map, rowPtr, cols, values));
       owner_ = true;
 
@@ -906,6 +913,7 @@ namespace utopia {
 
     void TpetraMatrix::build_from_structure(const TpetraMatrix &rhs)
     {
+        UTOPIA_REPORT_ALLOC("TpetraMatrix::build_from_structure");
         auto rhs_ptr = rhs.raw_type();
         owner_ = true;
            mat_.reset(

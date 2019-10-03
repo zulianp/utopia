@@ -2,7 +2,9 @@
 #define UTOPIA_ALLOCATIONS_HPP
 
 //FIXME removeme
-#define ENABLE_NO_ALLOC_REGIONS
+// #define ENABLE_NO_ALLOC_REGIONS
+
+#include "utopia_Base.hpp"
 
 #ifdef ENABLE_NO_ALLOC_REGIONS
 #define UTOPIA_NO_ALLOC_BEGIN(macro_name_) utopia::Allocations::instance().no_alloc_region_begin(macro_name_)
@@ -11,6 +13,7 @@
 
 #include <stack>
 #include <string>
+#include <iostream>
 
 namespace utopia {
 
@@ -30,7 +33,11 @@ namespace utopia {
 
             if(is_no_allocation_region_) {
                 std::cerr << "[VIOLATION] allocation (" << name << ") in region (" << region_name_.top() << ") at " << file << ":" << line_number << std::endl;
-                assert(false);
+
+                if(abort_on_violation_) {
+                    assert(false);
+                    abort();
+                }
             }
         }
 
@@ -51,12 +58,18 @@ namespace utopia {
             std::cout << "[Status] total allocations " << count_ << std::endl;
         }
 
+        inline void abort_on_violation(const bool val)
+        {
+            abort_on_violation_ = val;
+        }
+
     private:
         int is_no_allocation_region_;
         Counter count_;
         std::stack<std::string> region_name_;
+        bool abort_on_violation_;
 
-        inline Allocations() : is_no_allocation_region_(0), count_(0)
+        inline Allocations() : is_no_allocation_region_(0), count_(0), abort_on_violation_(false)
         {}
     };
 
