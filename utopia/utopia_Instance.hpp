@@ -45,6 +45,8 @@ namespace utopia {
             exit_code_ = code;
         }
 
+        void read_input(int argc, char *argv[]);
+
     private:
         Utopia();
         std::map<std::string, std::string> settings_;

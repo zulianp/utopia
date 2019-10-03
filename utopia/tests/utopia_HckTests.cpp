@@ -6,6 +6,7 @@
 // #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "utopia_Allocations.hpp"
 
 namespace utopia
 {
@@ -78,15 +79,20 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
+            // UTOPIA_RUN_TEST(negate_alpha_test);
+            // UTOPIA_RUN_TEST(axpy_test);
+            // UTOPIA_RUN_TEST(quad_form_test);
 
-           // UTOPIA_RUN_TEST(STCG_test);
+
+
+           UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(for_each_loop_test);
             // UTOPIA_RUN_TEST(parallel_each_write_test);
 
             // UTOPIA_RUN_TEST(quad_form_test);
 
             // UTOPIA_RUN_TEST(multi_reduce_test);
-            UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(MPGRP_test);
 
 
             // UTOPIA_RUN_TEST(residual_test);
@@ -117,8 +123,33 @@ namespace utopia
 
             // r = A*x - b;
 
+            UTOPIA_NO_ALLOC_BEGIN("residual_test");
             r = x - b;
+            UTOPIA_NO_ALLOC_END();
         }
+
+        void axpy_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 1.0);
+            Vector p = values(n_, 2.0);
+            
+            UTOPIA_NO_ALLOC_BEGIN("axpy_test");
+            x = x - 0.5 * p;
+            y = x - 0.5 * p;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void negate_alpha_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 1.0);
+            
+            UTOPIA_NO_ALLOC_BEGIN("negate_alpha_test");
+            y = -0.5 * x;
+            UTOPIA_NO_ALLOC_END();
+        }
+
 
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const
@@ -172,7 +203,6 @@ namespace utopia
             // precond->use_line_search(false);
             // QP_solver->set_preconditioner(precond);
             QP_solver->use_precond_direction(false);
-
 
 
             QP_solver->atol(1e-10);

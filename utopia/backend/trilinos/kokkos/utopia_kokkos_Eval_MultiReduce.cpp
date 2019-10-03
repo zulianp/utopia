@@ -4,11 +4,36 @@
 #include "KokkosBlas1_dot.hpp"
 
 namespace utopia {
+    // template<class T, int N, class Init>
+    // class Tuple;
+
+    // class EmptyTupleInit {
+    // public:
+    //     template<class T, int N>
+    //     KOKKOS_INLINE_FUNCTION static void apply(Tuple<T, N, EmptyTupleInit> &) {}
+    // };
+
+
+    // class ZeroTupleInit {
+    // public:
+    //     template<class T, int N>
+    //     KOKKOS_INLINE_FUNCTION static void apply(Tuple<T, N, ZeroTupleInit> &t) {
+    //         for(auto &d : t.data_) {
+    //             d = 0.0;
+    //         }
+    //     }
+    // };
+
 
     template<class Scalar, int N>
     class Tuple {
     public:
       Scalar data_[N];
+
+      // Tuple()
+      // {
+      //   Init::apply(*this);
+      // }
 
       KOKKOS_INLINE_FUNCTION  // initialize data_ to 0
       void init(const Scalar val) {
@@ -71,8 +96,8 @@ namespace utopia {
     public:
       //Required
       typedef MultiOpReducer reducer;
-      typedef utopia::Tuple<T,N> value_type;
-      typedef Kokkos::View<value_type*, Space, Kokkos::MemoryUnmanaged> result_view_type;
+      typedef utopia::Tuple<T,N> TupleT;
+      typedef Kokkos::View<TupleT*, Space, Kokkos::MemoryUnmanaged> result_view_type;
 
     private:
       Op op_;
@@ -89,24 +114,24 @@ namespace utopia {
 
 
       KOKKOS_INLINE_FUNCTION
-      void join(volatile value_type  &val, const volatile value_type &other) const {
+      void join(volatile TupleT  &val, const volatile TupleT &other) const {
           // Kokkos forces us to have the input values being declared volatile. Hence we need to make copies for the reduction operations
           val.join(op_, other);
       }
 
       //Required
       KOKKOS_INLINE_FUNCTION
-      void join(value_type& dest, const value_type& src)  const {
+      void join(TupleT& dest, const TupleT& src)  const {
         dest.join(op_, src);
       }
 
 
-      KOKKOS_INLINE_FUNCTION void operator()(const int& i, value_type &val) const {
+      KOKKOS_INLINE_FUNCTION void operator()(const int& i, TupleT &val) const {
           for (int valIdx=0; valIdx<N; ++valIdx) val[valIdx] = op_.apply(val[valIdx], data_[valIdx](i, 0));
       }
 
       KOKKOS_INLINE_FUNCTION
-      void init(value_type& val)  const {
+      void init(TupleT& val)  const {
         val.init(init_val_);
       }
     };
@@ -127,8 +152,13 @@ namespace utopia {
         {
             using Data = decltype(t1.raw_type()->template getLocalView<ExecutionSpaceT>());
 
-            Tuple<Data,2> data{t1.raw_type()->template getLocalView<ExecutionSpaceT>(),
-                         t2.raw_type()->template getLocalView<ExecutionSpaceT>()};
+            // Tuple<Data,2> data{t1.raw_type()->template getLocalView<ExecutionSpaceT>(),
+            //              t2.raw_type()->template getLocalView<ExecutionSpaceT>()};
+
+
+            Tuple<Data,2> data;
+            data[0] = t1.raw_type()->template getLocalView<ExecutionSpaceT>();
+            data[1] = t2.raw_type()->template getLocalView<ExecutionSpaceT>();
 
             KokkosOp<Scalar, Op> kop;
             MultiOpReducer<Scalar, Data, ExecutionSpaceT, KokkosOp<Scalar, Op>, 2> reducer(kop, data, initial_value);
@@ -164,55 +194,6 @@ namespace utopia {
 
     //////////////////////////////////////////////////////////////////////////
 
-    // void EvalDots<TpetraVector, TRILINOS>::apply(
-    //     const TpetraVector &v1,
-    //     const std::vector<std::shared_ptr<TpetraVector> > &vectors,
-    //     std::vector<Scalar> & results)
-    // {
-    //     typename utopia::Traits<Vector>::SizeType n =  vectors.size();
-
-    //     if(n!=static_cast<SizeType>(results.size()))
-    //         results.resize(n);
-
-    //     std::vector<Vec> vecs(n);
-
-    //     for(auto i=0; i < static_cast<SizeType>(vectors.size()); i++)
-    //         vecs[i]=(raw_type(*vectors[i]));
-
-    //      VecMDot(raw_type(v1), n, vecs.data(), results.data());
-    // }
-
-    // void EvalDots<TpetraVector, TRILINOS>::apply(
-    //     const TpetraVector &v1,
-    //     const std::vector<TpetraVector> &vectors,
-    //     std::vector<Scalar> & results)
-    // {
-    //     std::vector<Vec> vecs;
-    //     for(auto i=0; i < static_cast<SizeType>(vectors.size()); i++)
-    //     {
-    //         if(!empty(vectors[i]))
-    //             vecs.push_back(raw_type(vectors[i]));
-    //     }
-
-    //     typename utopia::Traits<Vector>::SizeType n =  vecs.size();
-
-    //     if(n != vectors.size() || n != results.size())
-    //     {
-    //         std::vector<Scalar> result_new(n);
-    //         VecMDot(raw_type(v1), n, vecs.data(), result_new.data());
-
-    //         for(auto i=0; i < n; i++)
-    //             results[i] = result_new[i];
-    //     }
-    //     else
-    //     {
-    //         if(n!=results.size())
-    //             results.resize(n);
-
-    //         VecMDot(raw_type(v1), n, vecs.data(), results.data());
-    //     }
-    // }
-
     void EvalDots<TpetraVector, TRILINOS>::apply(
         const TpetraVector &v11,
         const TpetraVector &v12,
@@ -234,15 +215,33 @@ namespace utopia {
         Data d22 = v22.raw_type()->template getLocalView<ExecutionSpaceT>();
 
         std::array<Scalar, 2> result;
-        result[0] = KokkosBlas::dot(
+        if(v11.local_size() == v21.local_size()) {
+            Tuple<Scalar, 2> tuple_result;
+            tuple_result.init(0.0);
+
+            Kokkos::parallel_reduce(d11.extent(0), 
+                KOKKOS_LAMBDA(const int i, Tuple<Scalar, 2> &t) {
+                    t[0] += d11(i, 0) * d12(i, 0);
+                    t[1] += d21(i, 0) * d22(i, 0);
+                }, tuple_result);
+
+            result[0] = tuple_result[0];
+            result[1] = tuple_result[1];
+
+        } else {
+            
+            result[0] = KokkosBlas::dot(
                 Kokkos::subview(d11, Kokkos::ALL(), 0),
                 Kokkos::subview(d12, Kokkos::ALL(), 0)
-        );
+                );
 
-        result[1] = KokkosBlas::dot(
+            result[1] = KokkosBlas::dot(
                 Kokkos::subview(d21, Kokkos::ALL(), 0),
                 Kokkos::subview(d22, Kokkos::ALL(), 0)
-        );
+                );
+
+           
+        }
 
         comm.sum(result);
         result1 = result[0];
@@ -275,6 +274,25 @@ namespace utopia {
         Data d32 = v32.raw_type()->template getLocalView<ExecutionSpaceT>();
 
         std::array<Scalar, 3> result;
+
+        if(v11.local_size() == v21.local_size() && v11.local_size() == v31.local_size()) {
+            Tuple<Scalar, 3> tuple_result;
+            tuple_result.init(0.0);
+
+            Kokkos::parallel_reduce(d11.extent(0), 
+                KOKKOS_LAMBDA(const int i, Tuple<Scalar, 3> &t) {
+                    t[0] += d11(i, 0) * d12(i, 0);
+                    t[1] += d21(i, 0) * d22(i, 0);
+                    t[2] += d31(i, 0) * d32(i, 0);
+                }, tuple_result);
+
+            result[0] = tuple_result[0];
+            result[1] = tuple_result[1];
+            result[2] = tuple_result[2];
+
+        } else {
+
+
         result[0] = KokkosBlas::dot(
                 Kokkos::subview(d11, Kokkos::ALL(), 0),
                 Kokkos::subview(d12, Kokkos::ALL(), 0)
@@ -289,6 +307,7 @@ namespace utopia {
                 Kokkos::subview(d31, Kokkos::ALL(), 0),
                 Kokkos::subview(d32, Kokkos::ALL(), 0)
         );
+        }
 
         comm.sum(result);
         result1 = result[0];
