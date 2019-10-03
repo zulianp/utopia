@@ -970,7 +970,7 @@ namespace utopia
     {
 #ifdef WITH_PETSC
         auto n_levels    = 3;
-        auto coarse_dofs = 1000;
+        auto coarse_dofs = 5000;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
