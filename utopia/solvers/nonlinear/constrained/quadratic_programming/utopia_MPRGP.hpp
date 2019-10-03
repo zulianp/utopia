@@ -6,6 +6,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "cuda_profiler_api.h"
 
 namespace  utopia
 {
@@ -13,7 +14,9 @@ namespace  utopia
     template<class Matrix, class Vector>
     class MPGRP final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
     {
-        using Scalar  = typename Traits<Vector>::Scalar;
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+
         using Solver  = utopia::LinearSolver<Matrix, Vector>;
         using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
 
@@ -94,7 +97,9 @@ namespace  utopia
                 Scalar gnorm; 
 
                 Scalar alpha_cg, alpha_f, beta_sc; 
-	
+
+                cudaProfilerStart();
+    
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
 
@@ -111,7 +116,6 @@ namespace  utopia
 
                 while(!converged)
                 {
-                    // dots(beta, beta, beta_beta, fi, fi, fi_fi); 
 
                     if(beta_beta <= (gamma*gamma * fi_fi))
                     {
@@ -122,7 +126,7 @@ namespace  utopia
                         alpha_cg = gp_dot/pAp;
                         y = x - alpha_cg*p;
 
-                        alpha_f = get_alpha_f(x, p, *lb, *ub, alpha_f1, alpha_f2);         
+                        alpha_f = get_alpha_f(x, p, *lb, *ub, help_f1, help_f2);         
 
                         if(alpha_cg <= alpha_f)
                         {
@@ -138,8 +142,8 @@ namespace  utopia
                             g = g - alpha_f*Ap;
                             this->get_fi(x, g, *lb, *ub, fi); 
 
-                            Vector help = x - (alpha_bar * fi); 
-                            this->get_projection(help, *lb, *ub, x);   
+                            help_f1 = x - (alpha_bar * fi); 
+                            this->get_projection(help_f1, *lb, *ub, x);   
               
                             A.apply(x, Ax);
                             g = Ax - rhs; 
@@ -174,6 +178,8 @@ namespace  utopia
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
     
+                cudaProfilerStop();
+
                 return true;
             }
 
@@ -191,8 +197,6 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_g  = const_device_view(g);
-
-                    auto d_fi = device_view(fi);
                     
                     parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
@@ -212,15 +216,14 @@ namespace  utopia
                 }
             }
 
-
-            Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & alpha_f1, Vector & alpha_f2) const
+            Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & help_f1, Vector & help_f2) const
             {
-                if(empty(alpha_f1)){
-                    alpha_f1 = local_values(local_size(x), 1e15); 
+                if(empty(help_f1)){
+                    help_f1 = local_values(local_size(x), 1e15); 
                 }
 
-                if(empty(alpha_f2)){
-                    alpha_f2 = local_values(local_size(x), 1e15); 
+                if(empty(help_f2)){
+                    help_f2 = local_values(local_size(x), 1e15); 
                 }
 
                 {
@@ -228,11 +231,8 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_p  = const_device_view(p);
-
-                    auto d_alpha_f1 = device_view(alpha_f1);
-                    auto d_alpha_f2 = device_view(alpha_f2);
                     
-                    parallel_each_write(alpha_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         Scalar li = d_lb.get(i);
                         Scalar xi = d_x.get(i);
@@ -248,7 +248,7 @@ namespace  utopia
                         }
                     });
 
-                    parallel_each_write(alpha_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
@@ -266,7 +266,7 @@ namespace  utopia
                     });
                 }
 
-                return multi_min(alpha_f1, alpha_f2); 
+                return multi_min(help_f1, help_f2); 
             }
 
 
@@ -281,8 +281,6 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_g  = const_device_view(g);
-
-                    auto d_beta = device_view(beta);
 
                     parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
@@ -384,18 +382,18 @@ namespace  utopia
                     g = zero_expr;
                 }  
 
-                if(!empty(alpha_f1)) {
-                    alpha_f1 = zero_expr;
+                if(!empty(help_f1)) {
+                    help_f1 = zero_expr;
                 }            
 
-                if(!empty(alpha_f2)) {
-                    alpha_f2 = zero_expr;
+                if(!empty(help_f2)) {
+                    help_f2 = zero_expr;
                 }                                            
             }
 
 
         private:
-            Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, alpha_f1, alpha_f2; 
+            Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, help_f1, help_f2; 
 
             Scalar eps_eig_est_; 
             SizeType power_method_max_it_; 

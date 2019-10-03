@@ -119,8 +119,6 @@ namespace utopia
             auto d_ub = const_device_view(ub);
             auto d_x  = const_device_view(x);
 
-            auto d_Pc = device_view(Pc);
-
             parallel_each_write(Pc, UTOPIA_LAMBDA(const SizeType i) -> Scalar
             {
                 Scalar li = d_lb.get(i);
@@ -156,8 +154,6 @@ namespace utopia
             auto d_ub     = const_device_view(ub);
             auto d_xold   = const_device_view(x_old);
 
-            auto d_x = device_view(x);
-
             parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
             {
                 Scalar li = d_lb.get(i);
@@ -180,8 +176,6 @@ namespace utopia
               auto d_ub     = const_device_view(ub);
               auto d_xold   = const_device_view(x_old);
 
-              auto d_x = device_view(x);
-
               parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
               {
                 Scalar ui = d_ub.get(i);
@@ -197,8 +191,6 @@ namespace utopia
             {
               auto d_lb     = const_device_view(lb);
               auto d_xold   = const_device_view(x_old);
-
-              auto d_x = device_view(x);
 
               parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
               {
@@ -223,7 +215,6 @@ namespace utopia
 
               {
                 auto d_u    = const_device_view(u);
-                auto d_uf   = device_view(u_f);
 
                 parallel_each_write(u_f, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
@@ -242,7 +233,6 @@ namespace utopia
 
             {
               auto d_l    = const_device_view(l);
-              auto d_l_f  = device_view(l_f);
 
               parallel_each_write(l_f, UTOPIA_LAMBDA(const SizeType i) -> Scalar
               {

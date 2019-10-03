@@ -1,3 +1,4 @@
+// #include "utopia_trilinos_Base.hpp"
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
@@ -77,18 +78,22 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
-            UTOPIA_RUN_TEST(quad_form_test);
 
-            UTOPIA_RUN_TEST(multi_reduce_test);
+           // UTOPIA_RUN_TEST(STCG_test);
+            // UTOPIA_RUN_TEST(for_each_loop_test);
+            // UTOPIA_RUN_TEST(parallel_each_write_test);
+
+            // UTOPIA_RUN_TEST(quad_form_test);
+
+            // UTOPIA_RUN_TEST(multi_reduce_test);
             UTOPIA_RUN_TEST(MPGRP_test);
 
-            // UTOPIA_RUN_TEST(STCG_test);
-            UTOPIA_RUN_TEST(for_each_loop_test);
-            UTOPIA_RUN_TEST(parallel_each_write_test);
-            UTOPIA_RUN_TEST(residual_test);
 
-            //THIS
-            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            // UTOPIA_RUN_TEST(residual_test);
+
+
+            // //THIS
+            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
         }
 
         void quad_form_test()
@@ -160,12 +165,12 @@ namespace utopia
 
             // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            // QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
-            auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
-            precond->verbose(verbose_);
-            precond->max_it(1);
-            precond->use_line_search(false);
-            QP_solver->set_preconditioner(precond);
+            QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            // auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
+            // precond->verbose(verbose_);
+            // precond->max_it(1);
+            // precond->use_line_search(false);
+            // QP_solver->set_preconditioner(precond);
             QP_solver->use_precond_direction(false);
 
 
@@ -174,7 +179,9 @@ namespace utopia
             // QP_solver->max_it(n_*n_);
             QP_solver->max_it(10);
             QP_solver->verbose(verbose_);
-            QP_solver->current_radius(1.6);
+            // QP_solver->norm_schedule(NormSchedule::NEVER); 
+            QP_solver->norm_schedule(NormSchedule::EVERY_ITER); 
+            QP_solver->current_radius(1e5);
 
             QP_solve(QP_solver);
         }
@@ -183,8 +190,8 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(10);
-            QP_solver->verbose(verbose_);
+            QP_solver->max_it(2);
+            QP_solver->verbose(true);
 
             QP_solve(QP_solver);
         }
@@ -424,7 +431,7 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);
 
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->read(input_params_);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -468,7 +475,7 @@ namespace utopia
             rmtr->set_functions( multilevel_problem.level_functions_);
 
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
             rmtr->read(input_params_);
@@ -513,7 +520,7 @@ namespace utopia
 
 
                 rmtr->read(input_params_);
-                rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+                rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
                 rmtr->verbose(verbose_);
                 // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
                 rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -702,7 +709,7 @@ namespace utopia
 
 
             rmtr->read(input_params_);
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -747,7 +754,7 @@ namespace utopia
             rmtr->set_functions(level_functions_tril);
 
             rmtr->read(input_params_);
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -817,7 +824,7 @@ namespace utopia
             rmtr->max_sucessful_coarse_it(10);
 
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -869,7 +876,7 @@ namespace utopia
             rmtr->max_sucessful_smoothing_it(5);
             rmtr->max_sucessful_coarse_it(10);
 
-            rmtr->norm_schedule(NormSchedule::OUTER_CYCLE);
+            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
             rmtr->verbose(verbose_);
            //  rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -960,7 +967,8 @@ namespace utopia
     {
 #ifdef WITH_PETSC
         auto n_levels    = 3;
-        auto coarse_dofs = 5;
+
+        auto coarse_dofs = 1000;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();

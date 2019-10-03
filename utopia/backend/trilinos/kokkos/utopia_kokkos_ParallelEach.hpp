@@ -26,10 +26,11 @@ namespace utopia {
         {
             using ExecutionSpaceT = TpetraVector::vector_type::execution_space;
 
-            auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
+            auto k_v = raw_type(v)->getLocalView<TpetraVector::vector_type::execution_space>();
             auto offset = range(v).begin();
             Kokkos::parallel_for(
                 name,
+                // Kokkos::RangePolicy<ExecutionSpaceT>(0,k_v.extent(0)),
                 k_v.extent(0),
                 KOKKOS_LAMBDA(const int i) {
                     k_v(i, 0) = fun(offset + i);
