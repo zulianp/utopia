@@ -48,7 +48,7 @@ namespace utopia {
         using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Minus>>;
 
         inline static bool apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto &&l   = Eval<Left, Traits>::apply(expr.left());
             auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
@@ -56,7 +56,7 @@ namespace utopia {
             
             apply_aux(b_l, expr.right().operation(), b_r, l);
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
 
@@ -86,7 +86,7 @@ namespace utopia {
         using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Plus>>;
 
         inline static bool apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto &&l   = Eval<Left, Traits>::apply(expr.left());
             auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
@@ -94,7 +94,7 @@ namespace utopia {
             
             apply_aux(b_l, expr.right().operation(), b_r, l);
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
 
@@ -165,6 +165,33 @@ namespace utopia {
             auto &&right = Eval<Tensor<Right, 2>, Traits>::apply(expr.right().expr());
 
             right.transpose(left);
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+
+    template<class Tensor, typename T, class Traits, int Backend>
+    class Eval< Assign<Tensor, Binary<Number<T>, Tensor, Multiplies> >, Traits, Backend> {
+    public:
+        using Expr = utopia::Assign<Tensor, Binary<Number<T>, Tensor, Multiplies> >;
+        using Scalar = typename Traits::Scalar;
+
+        inline static bool apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&l = Eval<Tensor, Traits>::apply(expr.left());
+            auto &&r = Eval<Tensor, Traits>::apply(expr.right().right());
+            const Scalar alpha = expr.right().left();
+
+            if(l.same_object(r)) {
+                l.scale(alpha);
+            } else {
+                l.construct(r);
+                l.scale(alpha);
+            }
 
             UTOPIA_TRACE_END(expr);
             return true;

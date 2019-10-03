@@ -1203,11 +1203,8 @@ namespace utopia {
         // mat_get_col(M, col_result, col_id);
         M.col(col_id, col_result);
 
-        disp(col_result);
-
         PetscVector col_expected = local_values(local_size(col_result).get(0), col_id);
         utopia_test_assert(approxeq(col_result, col_expected));
-
     }
 
     void petsc_memcheck()

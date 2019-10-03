@@ -176,6 +176,48 @@ namespace utopia {
         }
     };
 
+
+    //axpy specialization
+    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
+    class Eval<
+            Assign<Left,
+                   Binary<Left,
+                          Binary<Number<ScalarT>,
+                                 Right,
+                                 Multiplies>,
+                          Minus
+                         >
+                    >, Traits, Backend> {
+        public:
+            typedef utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Minus> RExpr;
+            typedef utopia::Assign<Left, RExpr> Expr;
+            using Scalar = typename Traits::Scalar;
+
+        inline static bool apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&res = Eval<Left, Traits, Backend>::apply(expr.left());
+            auto &&l = Eval<Left, Traits, Backend>::apply(expr.right().left());
+            auto &&r = Eval<Right, Traits, Backend>::apply(expr.right().right().right());
+            Scalar alpha = expr.right().right().left();
+
+            //res = l -alpha * r;
+            if(res.same_object(l)) {
+                res.axpy(-alpha, r);
+            } else if(res.same_object(r)) {
+                res.scale(-alpha);
+                res.axpy(1.0, l);
+            } else {
+                res.construct(l);
+                res.axpy(-alpha, r);
+            }
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
     //axpy specialization
     template<class Left, class Right, typename ScalarT, class Traits, int Backend>
     class Eval<
@@ -224,6 +266,8 @@ namespace utopia {
     };
 
     //FIXME WHY IS THIS NEVER INSTANTIATED?
+
+
     // template<class Left, class Right, typename ScalarT, class Traits, int Backend>
     // class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {
     // public:

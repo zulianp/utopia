@@ -21,7 +21,7 @@ namespace utopia {
         using T1     = utopia::Tensor<X, 1>;
 
         inline static Scalar apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto &&t1 = Eval<T1, Traits>::apply(expr.left().expr().left());
             auto &&t2 = Eval<T1, Traits>::apply(expr.left().expr().right());
@@ -37,7 +37,7 @@ namespace utopia {
 
             const Scalar ret = expr.operation().apply(left, right);
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
             return ret;
         }
     };
@@ -58,7 +58,7 @@ namespace utopia {
         using T1     = utopia::Tensor<X, 1>;
 
         inline static Scalar apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto &&t1 = Eval<T1, Traits>::apply(expr.left().right().expr().left());
             auto &&t2 = Eval<T1, Traits>::apply(expr.left().right().expr().right());
@@ -83,7 +83,7 @@ namespace utopia {
                     right_op.apply(beta, right)
                 );
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
             return ret;
         }
     };

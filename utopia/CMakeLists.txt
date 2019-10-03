@@ -49,6 +49,7 @@ option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
 
 option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
+option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" ON)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
@@ -272,9 +273,6 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 # using this to defining UTOPIA_LAMBDA correctly
 if(TRY_WITH_TRILINOS)
     find_package(Trilinos)
-    # if(Kokkos_FOUND)
-    #     message(STATUS "SHDUASHDIUASBUDIASBHD")
-    # endif()
     if(Trilinos_FOUND)
         include_directories(${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
         set(WITH_TRILINOS ON)
