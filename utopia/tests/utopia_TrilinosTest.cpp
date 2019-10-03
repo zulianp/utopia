@@ -1307,7 +1307,7 @@ namespace utopia {
 
     void trilinos_belos()
     {
-        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_belos.xml";
+        std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_belos.xml";
 
         BelosSolver<TpetraMatrixd, TpetraVectord> solver;
         //solver.read_xml(xml_file);
@@ -1334,7 +1334,7 @@ namespace utopia {
 
     void trilinos_amesos2()
     {
-        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_amesos.xml";
+        std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml";
 
         Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
