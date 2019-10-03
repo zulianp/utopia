@@ -39,7 +39,7 @@ namespace utopia {
         /*!
          * @return beginning of the range
          */
-        inline SizeType begin() const
+        UTOPIA_INLINE_FUNCTION SizeType begin() const
         {
             return begin_;
         }
@@ -47,7 +47,7 @@ namespace utopia {
         /*!
          * @return ending of the range. Hence, larger index contained in the range + 1
          */
-        inline SizeType end() const
+        UTOPIA_INLINE_FUNCTION SizeType end() const
         {
             return end_;
         }
@@ -55,7 +55,7 @@ namespace utopia {
         /**
          * @return extent of the range => number of elements between 1st and the last element in the range.
          */
-        inline SizeType extent() const
+        UTOPIA_INLINE_FUNCTION SizeType extent() const
         {
             return extent_;
         }
@@ -63,21 +63,21 @@ namespace utopia {
         /**
          * @brief      Checks if range is empty.
          */
-        inline bool empty() const {
+        UTOPIA_INLINE_FUNCTION bool empty() const {
             return extent_ == 0;
         }
 
         /**
          * @brief      Checks if range is valid.
          */
-        inline bool valid() const {
+        UTOPIA_INLINE_FUNCTION bool valid() const {
             return extent_ >= 0;
         }
 
         /**
          * @brief      Checks if given index is inside of the range.
          */
-        inline bool inside(const SizeType index) const
+        UTOPIA_INLINE_FUNCTION bool inside(const SizeType index) const
         {
             return index >= begin_ && index < end_;
         }

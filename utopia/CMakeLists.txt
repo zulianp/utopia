@@ -269,6 +269,15 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 #################################################################################
 #################################################################################
 
+# using this to defining UTOPIA_LAMBDA correctly
+if(TRY_WITH_TRILINOS)
+    find_package(Trilinos)
+    if(Trilinos_FOUND)
+        include_directories(${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
+        set(WITH_TRILINOS ON)
+    endif()
+endif()
+
 add_subdirectory(backend/polymorphic)
 
 # backend modules

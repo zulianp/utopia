@@ -32,6 +32,10 @@
 //FIXME this should not be necessary
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_kokkos_Eval_MultiReduce.hpp"
+#include "utopia_kokkos_ParallelEach.hpp"
+#include "utopia_kokkos_Eval_Reduce.hpp"
+#include "utopia_kokkos_Eval_Binary.hpp"
+#include "utopia_kokkos_Eval_Unary.hpp"
 
 
 //FIXME re-introduce later

@@ -26,15 +26,8 @@ namespace utopia
 
 
     public:
-        VariableBoundSolverInterface()
-        {
-
-        }
-
-        virtual ~VariableBoundSolverInterface()
-        {
-
-        }
+        VariableBoundSolverInterface() = default;
+        virtual ~VariableBoundSolverInterface() = default;
 
         virtual bool set_box_constraints(const BoxConstraints & box)
         {
@@ -91,6 +84,7 @@ namespace utopia
       virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g) const
       {
 
+        //FIXME remove temporaries
         Vector Pc;
         Vector x_g = x - g;
         Vector ub, lb;
@@ -113,30 +107,30 @@ namespace utopia
         return norm2(Pc);
       }
 
-
+  public:  // expose it for CUDA
       bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc) const
       {
         if(empty(Pc)){
             Pc = 0.0*x;
-        } 
+        }
 
         {
             auto d_lb = const_device_view(lb);
             auto d_ub = const_device_view(ub);
             auto d_x  = const_device_view(x);
 
-            auto d_Pc = device_view(Pc);
+            // auto d_Pc = device_view(Pc);
 
-            parallel_each_write(Pc, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+            parallel_each_write(Pc, UTOPIA_LAMBDA(const SizeType i) -> Scalar
             {
-                Scalar li = d_lb.get(i); 
-                Scalar ui = d_ub.get(i); 
-                Scalar xi = d_x.get(i); 
+                Scalar li = d_lb.get(i);
+                Scalar ui = d_ub.get(i);
+                Scalar xi = d_x.get(i);
 
                 if(li >= xi)
                   return li;
                 else
-                  return (ui <= xi) ? ui : xi; 
+                  return (ui <= xi) ? ui : xi;
 
             });
         }
@@ -149,6 +143,7 @@ namespace utopia
         if(!constraints_.has_upper_bound() && !constraints_.has_lower_bound())
             return;
 
+        //FIXME remove temporaries
         const Vector x_old = x;
 
         if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
@@ -163,11 +158,11 @@ namespace utopia
 
             auto d_x = device_view(x);
 
-            parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+            parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
             {
-                Scalar li = d_lb.get(i); 
-                Scalar ui = d_ub.get(i); 
-                Scalar xi = d_xold.get(i); 
+                Scalar li = d_lb.get(i);
+                Scalar ui = d_ub.get(i);
+                Scalar xi = d_xold.get(i);
 
                 if(li >= xi)
                   return li;
@@ -187,11 +182,11 @@ namespace utopia
 
               auto d_x = device_view(x);
 
-              parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+              parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
               {
-                Scalar ui = d_ub.get(i); 
-                Scalar xi = d_xold.get(i); 
-                return (ui <= xi) ? ui : xi; 
+                Scalar ui = d_ub.get(i);
+                Scalar xi = d_xold.get(i);
+                return (ui <= xi) ? ui : xi;
               });
             }
         }
@@ -205,9 +200,9 @@ namespace utopia
 
               auto d_x = device_view(x);
 
-              parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+              parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
               {
-                Scalar li =  d_lb.get(i); 
+                Scalar li =  d_lb.get(i);
                 Scalar xi =  d_xold.get(i);
                 return (li >= xi) ? li : xi;
               });
@@ -216,9 +211,9 @@ namespace utopia
 
     }
 
-
       virtual BoxConstraints  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform) const
       {
+          //FIXME remove temporaries
           Vector l_f, u_f;
 
           if(constraints_.has_upper_bound())
@@ -230,7 +225,7 @@ namespace utopia
                 auto d_u    = const_device_view(u);
                 auto d_uf   = device_view(u_f);
 
-                parallel_each_write(u_f, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+                parallel_each_write(u_f, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
                   auto val = d_u.get(i);
                   return  (val <= ub_uniform)  ? val : ub_uniform;
@@ -249,7 +244,7 @@ namespace utopia
               auto d_l    = const_device_view(l);
               auto d_l_f  = device_view(l_f);
 
-              parallel_each_write(l_f, UTOPIA_LAMBDA(const SizeType i) -> Scalar 
+              parallel_each_write(l_f, UTOPIA_LAMBDA(const SizeType i) -> Scalar
               {
                   auto val = d_l.get(i);
                   return  (val >= lb_uniform)  ? val : lb_uniform;
@@ -266,9 +261,9 @@ namespace utopia
       }
 
 
-
       virtual BoxConstraints  build_correction_constraints(const Vector & x_k) const
       {
+          //FIXME remove temporaries
           Vector l_f, u_f;
 
           if(constraints_.has_upper_bound())

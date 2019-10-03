@@ -41,6 +41,82 @@ namespace utopia {
         }
     };
 
+
+    template<class Left, class L, class R, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Minus>>, Traits, Backend> {
+    public:
+        using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Minus>>;
+
+        inline static bool apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+
+            auto &&l   = Eval<Left, Traits>::apply(expr.left());
+            auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
+            auto &&b_r = Eval<Tensor<R, Order>, Traits>::apply(expr.right().right());
+            
+            apply_aux(b_l, expr.right().operation(), b_r, l);
+
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            return true;
+        }
+
+        template<class TL, class TR, class Result>
+        static void apply_aux(const TL &tl, const Minus &, const TR &tr, Result &res)
+        {
+            if(tl.same_object(res)) {
+                res.axpy(-1.0, tr);
+                return;
+            }
+
+            if(tr.same_object(res)) {
+                res.scale(-1.0);
+                res.axpy(1.0, tl);
+                return;
+            }
+
+            res = tl;
+            res.axpy(-1.0, tr);
+        }
+    };
+
+
+    template<class Left, class L, class R, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Plus>>, Traits, Backend> {
+    public:
+        using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Plus>>;
+
+        inline static bool apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+
+            auto &&l   = Eval<Left, Traits>::apply(expr.left());
+            auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
+            auto &&b_r = Eval<Tensor<R, Order>, Traits>::apply(expr.right().right());
+            
+            apply_aux(b_l, expr.right().operation(), b_r, l);
+
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            return true;
+        }
+
+        template<class TL, class TR, class Result>
+        static void apply_aux(const TL &tl, const Plus &, const TR &tr, Result &res)
+        {
+            if(tl.same_object(res)) {
+                res.axpy(1.0, tr);
+                return;
+            }
+
+            if(tr.same_object(res)) {
+                res.axpy(1.0, tl);
+                return;
+            }
+
+            res = tl;
+            res.axpy(1.0, tr);
+        }
+
+    };
+
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Assign<Left, Unary<Right, Abs> >, Traits, Backend> {
     public:
