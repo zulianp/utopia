@@ -136,9 +136,7 @@ bool BelosSolver<Matrix, Vector, TRILINOS>::apply(const Vector &rhs, Vector &lhs
                                     raw_type(rhs)
                                 )
                             );
-
     set_problem();
-
     assert(!(impl_->belos_solver.is_null()));
     impl_->belos_solver->solve();
     return true;
@@ -166,8 +164,8 @@ void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared
 template <typename Matrix, typename Vector>
 void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const Matrix &precond)
 {
-    bool direct_solver = impl_->param_list->sublist("UTOPIA", true).template get<bool>("Direct Preconditioner", false);
-    std::string dir_prec_type = impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
+    bool direct_solver = impl_->param_list->template get<bool>("Direct Preconditioner", false);
+    std::string dir_prec_type = impl_->param_list->get("Ifpack2 Preconditioner", "prec_type_unset");
     if ( direct_solver )
     {
 #ifdef WITH_TRILINOS_IFPACK2
@@ -176,7 +174,7 @@ void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const Matrix &pre
         impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
         impl_->M_ifpack->initialize();
         impl_->M_ifpack->compute();
-        std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+        std::string preconditioner_type = impl_->param_list->get("Preconditioner Side", "right");
         std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c)
         {
             return std::tolower(c);
@@ -203,7 +201,7 @@ void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const Matrix &pre
                                                           );
 
         assert(!impl_->M_muelu.is_null());
-        std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+        std::string preconditioner_type = impl_->param_list->get("Preconditioner Side", "right");
         std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c)
         {
             return std::tolower(c);
@@ -252,6 +250,7 @@ void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
     PreconditionedSolver::read(in);
     bool enable_adv_opt = false;
     bool enable_flexible_gmres = false;
+    std::string solver_type = "CG";
 
     //in.get("sweeps", sweeps);
     //in.get("relaxation_parameter", _relaxation_parameter);
@@ -261,10 +260,35 @@ void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
     //in.get("stol", stol_);
     //in.get("max-it",v max_it_);
     //in.get("verbose", verbose_ );
-
-    in.get("enable_flexible_gmres",  enable_flexible_gmres );
-    impl_->param_list->set( "Flexible Gmres", enable_flexible_gmres );
+    impl_->param_list = Teuchos::rcp(new Teuchos::ParameterList);
+    in.get("solver_type", solver_type);
     in.get("enable_adv_opt", enable_adv_opt);
+    in.get("enable_flexible_gmres",  enable_flexible_gmres );
+
+
+
+    in.get("preconditioner", [this](Input &in) {
+            std::string precond_type = "prec_type_unset";
+            std::string precond_side = "right";
+            bool enable_direct_precond = false;
+                in.get("enable_direct_precond", enable_direct_precond);
+                this->impl_->param_list->set("Direct Preconditioner", enable_direct_precond);
+                in.get("precond_side", precond_side);
+                in.get("precond_type", precond_type);
+                if (enable_direct_precond) {
+                    this->impl_->param_list->set("Ifpack2 Preconditioner", precond_type);
+                }
+                this->impl_->param_list->set("Muelu", precond_type); //TODO create a sublist for Muelu
+                this->impl_->param_list->get("Preconditioner Side", precond_side);
+              /*this->set_prec(enable_direct_precond);
+                this->set_prec(precond_side);
+                this->set_prec(precond_type);*/
+                });
+
+    impl_->param_list->set("Solver Type", solver_type );
+    impl_->param_list->set("Convergence Tolerance", this->rtol());
+    impl_->param_list->set("Maximum iterations", this->max_it());
+    impl_->param_list->set( "Flexible Gmres", enable_flexible_gmres );
 
     if (enable_adv_opt)
     {
@@ -326,8 +350,6 @@ void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
         //impl_->param_list->set("S tolerance", this->stol(), "CG");
         //impl_->param_list->set("A tolerance", this->atol(), "CG");
         impl_->param_list->set("Polynomial Tolerance", pol_tol ); // Polynomial convergence tolerance
-        impl_->param_list->set("Convergence Tolerance", this->rtol());
-        impl_->param_list->set("Maximum iterations", this->max_it());
         impl_->param_list->set( "Maximum Restarts", maxrestarts );      // Maximum number of restarts allowed
         impl_->param_list->set( "Block Size", blocksize );              // Blocksize to be used by iterative solver
         impl_->param_list->set( "Num Blocks", num_blocks);             // Maximum number of blocks in Krylov factorization
@@ -374,28 +396,26 @@ void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
 
     if (this->verbose())
     {
-        std::cout << "Valid Paramenters: " << std::endl;
-        impl_->belos_solver->getValidParameters()->print();
-        std::cout << "Current Paramenters: " << std::endl;
-        impl_->belos_solver->getCurrentParameters()->print();
+        std::cout << "Current Parameters:" << std::endl;
+        impl_->param_list->print();
+        if (impl_->belos_solver.is_null())
+        {std::cout << "Belos solver is currently null" << std::endl;}
     }
 
 
 }
 
 // available parameters
-// TODO print setted parameters??
 template <typename Matrix, typename Vector>
 void BelosSolver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os ) const
 {
     Smoother<Matrix, Vector>::print_usage(os);
     PreconditionedSolver::print_usage(os);
     impl_->param_list->print();
+    std::cout << "Valid solver Parameters:" << std::endl;
     impl_->belos_solver->getValidParameters()->print();
+    std::cout << "Current solver Parameters:" << std::endl;
     impl_->belos_solver->getCurrentParameters()->print();
-    //TODO
-    //m_utopia_warning_once("not implemented");
-
 }
 
 template <typename Matrix, typename Vector>
@@ -420,6 +440,7 @@ bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem()
     impl_->belos_solver->setProblem(impl_->linear_problem);
     if (this->verbose())
     {
+        std::cout << "Current Parameters when setting the Problem" << std::endl;
         impl_->belos_solver->getCurrentParameters()->print();
     }
     set_preconditioner();
@@ -437,6 +458,7 @@ bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A)
     impl_->belos_solver->setProblem(impl_->linear_problem);
     if (this->verbose())
     {
+        std::cout << std::endl << "Actual Parameters used by Belos:" << std::endl;
         impl_->belos_solver->getCurrentParameters()->print();
     }
     return true;
@@ -445,8 +467,8 @@ bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A)
 template <typename Matrix, typename Vector>
 void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner()//const std::shared_ptr<Preconditioner> &precond)
 {
-    bool direct_solver = impl_->param_list->sublist("UTOPIA", true).template get<bool>("Direct Preconditioner", false);
-    std::string dir_prec_type = impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
+    bool direct_solver = impl_->param_list->template get<bool>("Direct Preconditioner", false);
+    std::string dir_prec_type = impl_->param_list->get("Ifpack2 Preconditioner", "prec_type_unset");
 
     if ( direct_solver )
     {
@@ -456,7 +478,7 @@ void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner()//const std::sha
         impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
         impl_->M_ifpack->initialize();
         impl_->M_ifpack->compute();
-        std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+        std::string preconditioner_type = impl_->param_list->get("Preconditioner Type", "right");
         std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c)
         {
             return std::tolower(c);
@@ -479,7 +501,7 @@ void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner()//const std::sha
         // Multigrid Hierarchy
         impl_->M_muelu = MueLu::CreateTpetraPreconditioner(raw_type(*this->get_operator()), impl_->param_list->sublist("MueLu", false));
         assert(!impl_->M_muelu.is_null());
-        std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+        std::string preconditioner_type = impl_->param_list->get("Preconditioner Type", "right");
         std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c)
         {
             return std::tolower(c);

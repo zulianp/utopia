@@ -347,7 +347,7 @@ namespace utopia {
         }
 
         TpetraVectord v    = local_values(rows, 1.);
-        //Expilcit transpose
+        //Explicit transpose
         TpetraMatrixd At  = transpose(A);
         TpetraVectord At_v = At * v;
 
@@ -1309,10 +1309,8 @@ namespace utopia {
         std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA_belos.xml";
 
         BelosSolver<TpetraMatrixd, TpetraVectord> solver;
-        solver.read_xml(xml_file);
-        solver.import("Belos", Utopia::instance().get("data_path") + "/json/belos.json");
-        InputParameters input;
-        solver.read(input);
+        //solver.read_xml(xml_file);
+        solver.import("linear-solver", Utopia::instance().get("data_path") + "/json/belos.json");
 
         MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
         TpetraVectord x = zeros(size(*ml_problem.rhs));
