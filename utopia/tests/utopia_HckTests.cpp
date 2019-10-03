@@ -77,6 +77,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            UTOPIA_RUN_TEST(e_mul_test);
             UTOPIA_RUN_TEST(negate_alpha_test);
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(quad_form_test);
@@ -91,6 +92,17 @@ namespace utopia
 
             //THIS
             UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+        }
+
+        void e_mul_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 2.0);
+            Vector z = values(n_, 0.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
+            z = e_mul(x, y);
+            UTOPIA_NO_ALLOC_END();
         }
 
         void quad_form_test()
@@ -111,8 +123,6 @@ namespace utopia
             Vector b = values(n_, 1.0);
             Matrix A = sparse(n_, n_, 3);
             Vector r = values(n_, 0.0);
-
-            // r = A*x - b;
 
             UTOPIA_NO_ALLOC_BEGIN("residual_test");
             r = x - b;
