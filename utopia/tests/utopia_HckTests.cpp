@@ -78,6 +78,7 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
             UTOPIA_RUN_TEST(e_mul_test);
+            UTOPIA_RUN_TEST(e_div_test);
             UTOPIA_RUN_TEST(negate_alpha_test);
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(quad_form_test);
@@ -102,6 +103,27 @@ namespace utopia
 
             UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
             z = e_mul(x, y);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void e_div_test()
+        {
+            Vector x = values(n_, 6.0);
+            Vector z = values(n_, 3.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_div_test");
+            z = x / z;
+            
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 2.0*n_));
+            z = x / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0*n_));
+
+            z = z / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
+
             UTOPIA_NO_ALLOC_END();
         }
 

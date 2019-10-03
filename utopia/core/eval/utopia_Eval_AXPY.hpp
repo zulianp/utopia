@@ -195,7 +195,7 @@ namespace utopia {
 
         inline static bool apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto &&res = Eval<Left, Traits, Backend>::apply(expr.left());
             auto &&l = Eval<Left, Traits, Backend>::apply(expr.right().left());
@@ -213,7 +213,7 @@ namespace utopia {
                 res.axpy(-alpha, r);
             }
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };

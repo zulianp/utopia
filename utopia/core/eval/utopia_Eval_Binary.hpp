@@ -258,7 +258,7 @@ namespace utopia {
                 if(!utopia::is_commutative<Op>::value) {
                     if(std::is_same<Divides, Op>::value) {
                         result.reciprocal(1.0);
-                        result.e_mul(r);
+                        result.e_mul(l);
                     } else {
                         assert(false && "IMPLEMENT ME");
                     }
@@ -289,24 +289,24 @@ namespace utopia {
         template<class Expr>
         inline static void apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
             EvalAssignElWise<Tensor<T, 1>, EMultiplies, Traits>::apply(expr);
-            UTOPIA_TRACE_END(expr);
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
         }
     };
 
-    // template<class T, class Traits, int Backend>
-    // class Eval<TensorAssignElWise<T, Divides>, Traits, Backend> {
-    // public:
+    template<class T, class Traits, int Backend>
+    class Eval<TensorAssignElWise<T, Divides>, Traits, Backend> {
+    public:
         
-    //     template<class Expr>
-    //     inline static void apply(const Expr &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-    //         EvalAssignElWise<Tensor<T, 1>, Divides, Traits>::apply(expr);
-    //         UTOPIA_TRACE_END(expr);
-    //     }
-    // };
+        template<class Expr>
+        inline static void apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            EvalAssignElWise<Tensor<T, 1>, Divides, Traits>::apply(expr);
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+        }
+    };
 
     template<class T, class Traits, int Backend>
     class Eval<TensorAssignElWise<T, Min>, Traits, Backend> {
@@ -315,9 +315,9 @@ namespace utopia {
         template<class Expr>
         inline static void apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
             EvalAssignElWise<Tensor<T, 1>, Min, Traits>::apply(expr);
-            UTOPIA_TRACE_END(expr);
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
         }
     };
 
@@ -328,9 +328,9 @@ namespace utopia {
         template<class Expr>
         inline static void apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
             EvalAssignElWise<Tensor<T, 1>, Max, Traits>::apply(expr);
-            UTOPIA_TRACE_END(expr);
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
         }
     };
    
