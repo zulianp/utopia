@@ -71,6 +71,10 @@ namespace utopia {
             instance().maintenance_logger().flush();
         }
 
+#ifdef WITH_TRILINOS
+        Tpetra::finalize();
+#endif //WITH_TRILINOS
+
 #ifdef WITH_PETSC
         #ifdef WITH_SLEPC
             SlepcFinalize(); // calls PetscFinalize inside
@@ -84,9 +88,6 @@ namespace utopia {
 #endif //WITH_MPI
 #endif //WITH_PETSC
 
-#ifdef WITH_TRILINOS
-        Tpetra::finalize();
-#endif //WITH_TRILINOS
 
         if(instance().exit_code_ != EXIT_SUCCESS) {
             std::cerr << "[Warning] exiting with code: " << instance().exit_code_ << std::endl;
