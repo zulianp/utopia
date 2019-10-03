@@ -63,6 +63,11 @@ namespace utopia {
             abort_on_violation_ = val;
         }
 
+        inline Counter count() const
+        {
+            return count_;
+        }
+
     private:
         int is_no_allocation_region_;
         Counter count_;

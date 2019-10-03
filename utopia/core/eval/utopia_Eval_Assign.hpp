@@ -171,6 +171,33 @@ namespace utopia {
         }
     };
 
+
+    template<class Tensor, typename T, class Traits, int Backend>
+    class Eval< Assign<Tensor, Binary<Number<T>, Tensor, Multiplies> >, Traits, Backend> {
+    public:
+        using Expr = utopia::Assign<Tensor, Binary<Number<T>, Tensor, Multiplies> >;
+        using Scalar = typename Traits::Scalar;
+
+        inline static bool apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&l = Eval<Tensor, Traits>::apply(expr.left());
+            auto &&r = Eval<Tensor, Traits>::apply(expr.right().right());
+            const Scalar alpha = expr.right().left();
+
+            if(l.same_object(r)) {
+                l.scale(alpha);
+            } else {
+                l.construct(r);
+                l.scale(alpha);
+            }
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_ASSIGN_HPP_HPP
