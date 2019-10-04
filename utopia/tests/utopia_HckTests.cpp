@@ -79,6 +79,16 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
+            // UTOPIA_RUN_TEST(negate_test);
+            // UTOPIA_RUN_TEST(mv_test);
+            // UTOPIA_RUN_TEST(transform_test);
+            // UTOPIA_RUN_TEST(e_mul_test);
+            // UTOPIA_RUN_TEST(e_div_test);
+            // UTOPIA_RUN_TEST(negate_alpha_test);
+            // UTOPIA_RUN_TEST(axpy_test);
+            // UTOPIA_RUN_TEST(quad_form_test);
+
+
             // UTOPIA_RUN_TEST(e_mul_test);
             // UTOPIA_RUN_TEST(e_div_test);
             // UTOPIA_RUN_TEST(negate_alpha_test);
@@ -108,6 +118,30 @@ namespace utopia
             // //THIS
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
         }
+
+        void negate_test()
+        {
+            Vector x = values(n_, 1.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("negate_test");
+            x = -x;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void mv_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector b = values(n_, 1.0);
+            Vector p = values(n_, 1.0);
+
+            Matrix A = sparse(n_, n_, 3);
+            assemble_laplacian_1D(A);
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test");
+            p = A * x + b;
+            UTOPIA_NO_ALLOC_END();
+        }
+
 
         void e_mul_test()
         {
@@ -175,6 +209,22 @@ namespace utopia
             x = x - 0.5 * p;
             y = x - 0.5 * p;
             UTOPIA_NO_ALLOC_END();
+        }
+
+        void transform_test()
+        {
+            Vector x = values(n_, 1.0);
+            
+            parallel_transform(
+                x,
+                UTOPIA_LAMBDA(const SizeType &i, const Scalar &v) -> Scalar {
+                    return (i+1)*v;
+            });
+            
+            Scalar expected = ((n_ + 1) * n_)/2.0;
+            Scalar sum_x = sum(x);
+
+            utopia_test_assert(approxeq(sum_x, expected, 1e-10));
         }
 
         void negate_alpha_test()

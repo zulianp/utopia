@@ -306,19 +306,19 @@ namespace utopia {
 #ifdef KOKKOS_INLINE_FUNCTION
 
         template<typename T>
-        KOKKOS_INLINE_FUNCTION T abs(const T &v)
+        UTOPIA_INLINE_FUNCTION T abs(const T &v)
         {
             return Kokkos::Details::ArithTraits<T>::abs(v);
         }
 
         template<typename T>
-        KOKKOS_INLINE_FUNCTION T min(const T &left, const T &right)
+        UTOPIA_INLINE_FUNCTION T min(const T &left, const T &right)
         {
             return left < right ? left : right;
         }
 
         template<typename T>
-        KOKKOS_INLINE_FUNCTION T max(const T &left, const T &right)
+        UTOPIA_INLINE_FUNCTION T max(const T &left, const T &right)
         {
             return left > right ? left : right;
         }

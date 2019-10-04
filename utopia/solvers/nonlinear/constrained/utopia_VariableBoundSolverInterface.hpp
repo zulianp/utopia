@@ -139,7 +139,7 @@ namespace utopia
             return;
 
         //FIXME remove temporaries
-        const Vector x_old = x;
+        // const Vector x_old = x;
 
         if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
         {
@@ -149,19 +149,33 @@ namespace utopia
           {
             auto d_lb     = const_device_view(lb);
             auto d_ub     = const_device_view(ub);
-            auto d_xold   = const_device_view(x_old);
 
-            parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-            {
-                Scalar li = d_lb.get(i);
-                Scalar ui = d_ub.get(i);
-                Scalar xi = d_xold.get(i);
+            // auto d_xold   = const_device_view(x_old);
 
-                if(li >= xi)
-                  return li;
-                else
-                  return (ui <= xi) ? ui : xi;
-            });
+            // parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+            // {
+            //     Scalar li = d_lb.get(i);
+            //     Scalar ui = d_ub.get(i);
+            //     Scalar xi = d_xold.get(i);
+
+            //     if(li >= xi)
+            //       return li;
+            //     else
+            //       return (ui <= xi) ? ui : xi;
+            // });
+
+
+          parallel_transform(
+                          x,
+                          UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                            Scalar li = d_lb.get(i);
+                            Scalar ui = d_ub.get(i);
+                            if(li >= xi)
+                              return li;
+                            else
+                              return (ui <= xi) ? ui : xi;
+                      });
+
           }
 
         }
@@ -171,14 +185,21 @@ namespace utopia
 
             {
               auto d_ub     = const_device_view(ub);
-              auto d_xold   = const_device_view(x_old);
+              // auto d_xold   = const_device_view(x_old);
 
-              parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-              {
-                Scalar ui = d_ub.get(i);
-                Scalar xi = d_xold.get(i);
-                return (ui <= xi) ? ui : xi;
-              });
+              // parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+              // {
+              //   Scalar ui = d_ub.get(i);
+              //   Scalar xi = d_xold.get(i);
+              //   return (ui <= xi) ? ui : xi;
+              // });
+
+              parallel_transform(
+                              x,
+                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                                Scalar ui = d_ub.get(i);
+                                return (ui <= xi) ? ui : xi;
+                          });
             }
         }
         else
@@ -187,14 +208,22 @@ namespace utopia
 
             {
               auto d_lb     = const_device_view(lb);
-              auto d_xold   = const_device_view(x_old);
+              // auto d_xold   = const_device_view(x_old);
 
-              parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-              {
-                Scalar li =  d_lb.get(i);
-                Scalar xi =  d_xold.get(i);
-                return (li >= xi) ? li : xi;
-              });
+              // parallel_each_write(x, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+              // {
+              //   Scalar li =  d_lb.get(i);
+              //   Scalar xi =  d_xold.get(i);
+              //   return (li >= xi) ? li : xi;
+              // });
+
+              parallel_transform(
+                              x,
+                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                                Scalar li =  d_lb.get(i);
+                                return (li >= xi) ? li : xi;
+                          });
+
             }
         }
 

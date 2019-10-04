@@ -12,6 +12,7 @@ namespace utopia {
 
         using Super::apply_read;
         using Super::apply_write;
+        using Super::apply_transform;
 
         template<class Fun>
         inline static void apply_read(const Tensor &v, Fun fun, const std::string &)
@@ -23,6 +24,12 @@ namespace utopia {
         inline static void apply_write(Tensor &v, Fun fun, const std::string &)
         {
             Super::apply_write(v, fun);
+        }
+
+        template<class Fun>
+        inline static void apply_transform(Tensor &v, Fun fun, const std::string &)
+        {
+            Super::apply_transform(v, fun);
         }
 
     };
@@ -37,6 +44,12 @@ namespace utopia {
     inline void parallel_each_write(Tensor &v, Fun fun, const std::string &name = "utopia::parallel_each_write")
     {
         ParallelEach<Tensor>::apply_write(v, fun, name);
+    }
+
+    template<class Tensor, class Fun>
+    inline void parallel_transform(Tensor &v, Fun fun, const std::string &name = "utopia::parallel_transform")
+    {
+        ParallelEach<Tensor>::apply_transform(v, fun, name);
     }
 }
 
