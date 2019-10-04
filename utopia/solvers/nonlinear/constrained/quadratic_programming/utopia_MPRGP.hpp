@@ -6,7 +6,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
-#include "cuda_profiler_api.h"
+//#include "cuda_profiler_api.h"
 
 namespace  utopia
 {
@@ -104,7 +104,7 @@ namespace  utopia
                 Scalar alpha_cg, alpha_f, beta_sc; 
 
 
-                // cudaProfilerStart();
+                // //cudaProfilerStart();
     
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
@@ -183,7 +183,7 @@ namespace  utopia
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
     
-                // cudaProfilerStop();
+                // //cudaProfilerStop();
 
                 return true;
             }

@@ -3,7 +3,7 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Preconditioner.hpp"
-#include "cuda_profiler_api.h"
+//#include "cuda_profiler_api.h"
 #include "utopia_Allocations.hpp"
 
 namespace utopia
@@ -125,7 +125,7 @@ namespace utopia
 
             bool converged = false;
 
-            cudaProfilerStart();
+            //cudaProfilerStart();
 
             while(!converged)
             {
@@ -167,7 +167,7 @@ namespace utopia
                 it++;
             }
 
-            cudaProfilerStop();
+            //cudaProfilerStop();
 
             return true;
         }
@@ -187,7 +187,7 @@ namespace utopia
             r = g;
 
             Scalar g_norm=9e9; 
-            cudaProfilerStart();
+            //cudaProfilerStart();
 
             this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
             if(this->verbose())
@@ -408,7 +408,7 @@ namespace utopia
                 it++;
             }
 
-            cudaProfilerStop();
+            //cudaProfilerStop();
 
             return true;
         }
