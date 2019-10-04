@@ -1438,10 +1438,39 @@ namespace utopia {
         utopia_test_assert(approxeq(zero, 0.0));
     }
 
+    template<typename T> using ArrayT = Teuchos::ArrayRCP<T>;
+    static void trilinos_crs_construct()
+    {
+        using SizeType = Traits<TpetraVectord>::SizeType;
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+
+        const SizeType n_rows = 2;
+        const SizeType n_cols = 3;
+
+        ArrayT<std::size_t> row_ptr(n_rows+1);
+        row_ptr[0] = 0;
+        row_ptr[1] = 2;
+        row_ptr[2] = 4;
+
+        ArrayT<SizeType> columns(row_ptr[n_rows]);
+        columns[0] = 0;
+        columns[1] = 1;
+        columns[2] = 1;
+        columns[3] = 2;
+
+        ArrayT<Scalar> values(row_ptr[n_rows]);
+        values[0] = 1;
+        values[1] = -1;
+        values[2] = -1;
+        values[3] = 1;
+
+        TpetraMatrixd A = utopia::crs(n_rows, n_cols, row_ptr, columns, values);
+    }
+
     static void trilinos_specific()
     {
+        UTOPIA_RUN_TEST(trilinos_crs_construct);
         UTOPIA_RUN_TEST(stcg_pt_test);
-
         UTOPIA_RUN_TEST(trilinos_structure);
         UTOPIA_RUN_TEST(trilinos_build);
         UTOPIA_RUN_TEST(trilinos_build_identity);
@@ -1496,7 +1525,6 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_rap_square_mat);
         UTOPIA_RUN_TEST(trilinos_decompose);
         UTOPIA_RUN_TEST(test_global_matrix);
-
 
 #ifdef HAVE_BELOS_TPETRA
         UTOPIA_RUN_TEST(trilinos_belos);

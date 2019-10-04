@@ -69,6 +69,12 @@ namespace utopia {
         }
 
         template<class Fun>
+        inline static void apply_transform(PetscVector &in_out, Fun fun)
+        {
+            apply_transform(in_out, in_out, fun);
+        }
+
+        template<class Fun>
         inline static void apply_transform(const PetscVector &in, PetscVector &out, Fun fun)
         {
             PetscErrorCode ierr;

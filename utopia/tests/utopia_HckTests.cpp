@@ -40,7 +40,7 @@ namespace utopia
             input_params_.set("post_smoothing_steps", 5);
             input_params_.set("max_sucessful_smoothing_it", 1);
             input_params_.set("max_QP_smoothing_it", 10);
-            input_params_.set("delta0", 1e3);
+            input_params_.set("delta0", 1e-3);
             input_params_.set("grad_smoothess_termination", 1e-8);
         }
 
@@ -71,19 +71,35 @@ namespace utopia
 
         void run_trilinos()
         {
-            // UTOPIA_RUN_TEST(TR_tril_test);
+            UTOPIA_RUN_TEST(TR_tril_test);
 
             // UTOPIA_RUN_TEST(RMTR_l2_test);
             // UTOPIA_RUN_TEST(RMTR_inf_test);
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
-            UTOPIA_RUN_TEST(transform_test);
-            UTOPIA_RUN_TEST(e_mul_test);
-            UTOPIA_RUN_TEST(e_div_test);
-            UTOPIA_RUN_TEST(negate_alpha_test);
-            UTOPIA_RUN_TEST(axpy_test);
-            UTOPIA_RUN_TEST(quad_form_test);
+
+            // UTOPIA_RUN_TEST(negate_test);
+            // UTOPIA_RUN_TEST(mv_test);
+            // UTOPIA_RUN_TEST(transform_test);
+            // UTOPIA_RUN_TEST(e_mul_test);
+            // UTOPIA_RUN_TEST(e_div_test);
+            // UTOPIA_RUN_TEST(negate_alpha_test);
+            // UTOPIA_RUN_TEST(axpy_test);
+            // UTOPIA_RUN_TEST(quad_form_test);
+
+
+            // UTOPIA_RUN_TEST(e_mul_test);
+            // UTOPIA_RUN_TEST(e_div_test);
+            // UTOPIA_RUN_TEST(negate_alpha_test);
+            // UTOPIA_RUN_TEST(axpy_test);
+            // UTOPIA_RUN_TEST(quad_form_test);
+
+
+            // UTOPIA_RUN_TEST(negate_alpha_test);
+            // UTOPIA_RUN_TEST(axpy_test);
+            // UTOPIA_RUN_TEST(quad_form_test);
+
 
 
            // UTOPIA_RUN_TEST(STCG_test);
@@ -93,7 +109,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(quad_form_test);
 
             // UTOPIA_RUN_TEST(multi_reduce_test);
-            UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(MPGRP_test);
 
 
             // UTOPIA_RUN_TEST(residual_test);
@@ -102,6 +118,30 @@ namespace utopia
             // //THIS
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
         }
+
+        void negate_test()
+        {
+            Vector x = values(n_, 1.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("negate_test");
+            x = -x;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void mv_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector b = values(n_, 1.0);
+            Vector p = values(n_, 1.0);
+
+            Matrix A = sparse(n_, n_, 3);
+            assemble_laplacian_1D(A);
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test");
+            p = A * x + b;
+            UTOPIA_NO_ALLOC_END();
+        }
+
 
         void e_mul_test()
         {
@@ -252,7 +292,6 @@ namespace utopia
             QP_solver->use_precond_direction(false);
 
 
-
             QP_solver->atol(1e-10);
             // QP_solver->max_it(n_*n_);
             QP_solver->max_it(10);
@@ -268,7 +307,7 @@ namespace utopia
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
-            QP_solver->max_it(2);
+            QP_solver->max_it(100);
             QP_solver->verbose(true);
 
             QP_solve(QP_solver);
@@ -616,7 +655,7 @@ namespace utopia
         void TR_tril_test()
         {
             #ifdef WITH_PETSC
-                Poisson3D<PetscMatrix, PetscVector> fun(50);
+                Poisson3D<PetscMatrix, PetscVector> fun(3);
                 PetscVector x = fun.initial_guess();
 
                 PetscMatrix H;
@@ -643,9 +682,10 @@ namespace utopia
                     backend_convert(x, x_tril);
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                    QP_solver->verbose(false); 
 
-                    Vector lb_tril = local_values(local_size(x_tril).get(0), -9e9);
-                    Vector ub_tril = local_values(local_size(x_tril).get(0), 9e9);
+                    Vector lb_tril = local_values(local_size(x_tril), -9e9);
+                    Vector ub_tril = local_values(local_size(x_tril), 9e9);
 
                     empty_rhs_tril = 0.0*x_tril;
                     backend_convert(x_eq, x_eq_tril);
@@ -656,6 +696,8 @@ namespace utopia
                     TrustRegionVariableBound<Matrix, Vector> tr_solver(QP_solver);
                     tr_solver.set_box_constraints(make_box_constaints(make_ref(lb_tril), make_ref(ub_tril)));
                     tr_solver.read(input_params_);
+                    tr_solver.max_it(20);
+                    tr_solver.delta0(1e-3); 
                     tr_solver.verbose(verbose_);
                     tr_solver.solve(fun_QP_tril, x_tril);
 
@@ -1046,7 +1088,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 1000;
+        auto coarse_dofs = 100;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
