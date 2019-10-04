@@ -472,15 +472,15 @@ namespace utopia {
             KokkosEvalUnary<TpetraVector, Op>::eval(op, *this);
         }
 
-        void reciprocal(TpetraVector &result) const
-        {
-            if(result.empty() || result.size() != this->size())
-            {
-                result.init(this->implementation().getMap());
-            }
+        // void reciprocal(TpetraVector &result) const
+        // {
+        //     if(result.empty() || result.size() != this->size())
+        //     {
+        //         result.init(this->implementation().getMap());
+        //     }
 
-            result.implementation().reciprocal(this->implementation());
-        }
+        //     result.implementation().reciprocal(this->implementation());
+        // }
 
         template<typename Op>
         inline void apply_binary(const Op op, const TpetraVector &rhs, TpetraVector &result) const

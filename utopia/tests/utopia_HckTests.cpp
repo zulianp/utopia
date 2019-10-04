@@ -79,6 +79,13 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
+            // UTOPIA_RUN_TEST(e_mul_test);
+            // UTOPIA_RUN_TEST(e_div_test);
+            // UTOPIA_RUN_TEST(negate_alpha_test);
+            // UTOPIA_RUN_TEST(axpy_test);
+            // UTOPIA_RUN_TEST(quad_form_test);
+
+
             // UTOPIA_RUN_TEST(negate_alpha_test);
             // UTOPIA_RUN_TEST(axpy_test);
             // UTOPIA_RUN_TEST(quad_form_test);
@@ -102,6 +109,38 @@ namespace utopia
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
         }
 
+        void e_mul_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 2.0);
+            Vector z = values(n_, 0.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
+            z = e_mul(x, y);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void e_div_test()
+        {
+            Vector x = values(n_, 6.0);
+            Vector z = values(n_, 3.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_div_test");
+            z = x / z;
+            
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 2.0*n_));
+            z = x / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0*n_));
+
+            z = z / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
+
+            UTOPIA_NO_ALLOC_END();
+        }
+
         void quad_form_test()
         {
             Vector x = values(n_, 1.0);
@@ -120,8 +159,6 @@ namespace utopia
             Vector b = values(n_, 1.0);
             Matrix A = sparse(n_, n_, 3);
             Vector r = values(n_, 0.0);
-
-            // r = A*x - b;
 
             UTOPIA_NO_ALLOC_BEGIN("residual_test");
             r = x - b;
@@ -595,7 +632,7 @@ namespace utopia
                     backend_convert(x, x_tril);
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                    QP_solver->verbose(true); 
+                    QP_solver->verbose(false); 
 
                     Vector lb_tril = local_values(local_size(x_tril), -9e9);
                     Vector ub_tril = local_values(local_size(x_tril), 9e9);
@@ -609,7 +646,8 @@ namespace utopia
                     TrustRegionVariableBound<Matrix, Vector> tr_solver(QP_solver);
                     tr_solver.set_box_constraints(make_box_constaints(make_ref(lb_tril), make_ref(ub_tril)));
                     tr_solver.read(input_params_);
-                    // tr_solver.delta0(1e-5); 
+                    tr_solver.max_it(20);
+                    tr_solver.delta0(1e-3); 
                     tr_solver.verbose(verbose_);
                     tr_solver.solve(fun_QP_tril, x_tril);
 

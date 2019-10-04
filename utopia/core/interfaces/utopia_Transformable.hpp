@@ -21,6 +21,12 @@ namespace utopia {
 
 		virtual void transform(const Pow &p)  = 0;
 		virtual void transform(const Reciprocal<T> &f) = 0;
+
+		template<typename Scalar>
+		void reciprocal(const Scalar &num) 
+		{
+			transform(Reciprocal<Scalar>(num));
+		}
 	};
 }
 

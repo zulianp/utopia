@@ -8,6 +8,7 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "utopia_Allocations.hpp"
 
 
 #include <iomanip>
@@ -81,30 +82,26 @@ namespace utopia
 
 
     protected:
-      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g) const
+      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
       {
+        if(empty(Pc_) || local_size(Pc_) != local_size(x)){
+          Pc_ = 0.0 * x; 
+        }
 
-        //FIXME remove temporaries
-        Vector Pc;
-        Vector x_g = x - g;
-        Vector ub, lb;
+        xg_ = x - g;
 
-        Scalar n = local_size(x);
+        if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
+        {
+          this->fill_empty_bounds(); 
+        }
 
-        if(constraints_.has_upper_bound())
-          ub = *constraints_.upper_bound();
-        else
-          ub =  local_values(n, 9e15);
+        const auto &ub = *constraints_.upper_bound();
+        const auto &lb = *constraints_.lower_bound();
 
-        if(constraints_.has_lower_bound())
-          lb = *constraints_.lower_bound();
-        else
-          lb =  local_values(n, -9e15);
+        get_projection(xg_, lb, ub, Pc_);
+        Pc_ -= x;
 
-        get_projection(x_g, lb, ub, Pc);
-
-        Pc -= x;
-        return norm2(Pc);
+        return norm2(Pc_);
       }
 
   public:  // expose it for CUDA
@@ -271,6 +268,8 @@ namespace utopia
 
     protected:
         BoxConstraints                  constraints_;
+        Vector Pc_;
+        Vector xg_; 
 
 
     };
