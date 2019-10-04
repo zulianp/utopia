@@ -24,9 +24,6 @@ namespace utopia
                             POST_SMOOTHING = 2,
                             COARSE_SOLVE   = 0};
 
-    enum NormSchedule{  ALWAYS = 1,
-                        OUTER_CYCLE = 2};
-
 
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
@@ -155,12 +152,12 @@ namespace utopia
             _verbosity_level = this->verbose() ? level : VERBOSITY_LEVEL_QUIET;
         }
 
-        virtual NormSchedule norm_schedule() const
+        virtual MultilevelNormSchedule norm_schedule() const
         {
             return _norm_schedule;
         }
 
-        virtual void norm_schedule(const NormSchedule & schedule)
+        virtual void norm_schedule(const MultilevelNormSchedule & schedule)
         {
             _norm_schedule = schedule; 
         }        
@@ -972,8 +969,9 @@ namespace utopia
          */
         virtual Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
         {
-            if(current_l == this->n_levels()-1)
+            if(current_l == this->n_levels()-1){
                 return norm2(u);
+            }
             else
             {
                 Vector s; // carries over prolongated correction
@@ -1300,7 +1298,7 @@ namespace utopia
         Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
 
         VerbosityLevel                  _verbosity_level;
-        NormSchedule                    _norm_schedule; 
+        MultilevelNormSchedule          _norm_schedule; 
 
         ColorModifier red_;
         ColorModifier def_;

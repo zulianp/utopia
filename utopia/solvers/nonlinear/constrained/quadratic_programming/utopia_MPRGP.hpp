@@ -6,6 +6,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "cuda_profiler_api.h"
 
 namespace  utopia
 {
@@ -13,12 +14,14 @@ namespace  utopia
     template<class Matrix, class Vector>
     class MPGRP final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
     {
-        using Scalar  = typename Traits<Vector>::Scalar;
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+
         using Solver  = utopia::LinearSolver<Matrix, Vector>;
         using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
 
         public:
-            MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10)
+            MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false), loc_size_(0)
             {
 
             }
@@ -53,8 +56,10 @@ namespace  utopia
                 this->fill_empty_bounds(); 
                 auto &box = this->get_box_constraints();
 
+                SizeType loc_size_rhs = local_size(rhs); 
+                if(!initialized_ || loc_size_!=loc_size_rhs)
+                    init(local_size(rhs));
 
-                init(local_size(rhs));
                 return aux_solve(A, rhs, sol, box);
             }
 
@@ -64,7 +69,10 @@ namespace  utopia
                 this->fill_empty_bounds(); 
                 auto &box = this->get_box_constraints();
 
-                init(local_size(rhs));
+                SizeType loc_size_rhs = local_size(rhs); 
+                if(!initialized_ || loc_size_!=loc_size_rhs)
+                    init(loc_size_rhs);
+
                 return aux_solve(*A_op_ptr, rhs, sol, box);
             }
 
@@ -94,7 +102,10 @@ namespace  utopia
                 Scalar gnorm; 
 
                 Scalar alpha_cg, alpha_f, beta_sc; 
-	
+
+
+                // cudaProfilerStart();
+    
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
 
@@ -111,7 +122,6 @@ namespace  utopia
 
                 while(!converged)
                 {
-                    // dots(beta, beta, beta_beta, fi, fi, fi_fi); 
 
                     if(beta_beta <= (gamma*gamma * fi_fi))
                     {
@@ -121,8 +131,7 @@ namespace  utopia
 
                         alpha_cg = gp_dot/pAp;
                         y = x - alpha_cg*p;
-
-                        alpha_f = get_alpha_f(x, p, *lb, *ub, alpha_f1, alpha_f2);         
+                        alpha_f = get_alpha_f(x, p, *lb, *ub, help_f1, help_f2);         
 
                         if(alpha_cg <= alpha_f)
                         {
@@ -130,20 +139,20 @@ namespace  utopia
                             g = g - alpha_cg*Ap;
                             this->get_fi(x, g, *lb, *ub, fi); 
                             beta_sc = dot(fi,Ap)/pAp;
-                            p = fi - beta_sc*p;                                               
+                            p = fi - beta_sc*p;                                           
                         }
                         else
-                        {
+                        {                                
                             x = x-alpha_f*p;
                             g = g - alpha_f*Ap;
                             this->get_fi(x, g, *lb, *ub, fi); 
 
-                            Vector help = x - (alpha_bar * fi); 
-                            this->get_projection(help, *lb, *ub, x);   
+                            help_f1 = x - (alpha_bar * fi); 
+                            this->get_projection(help_f1, *lb, *ub, x);   
               
                             A.apply(x, Ax);
                             g = Ax - rhs; 
-                            this->get_fi(x, g, *lb, *ub, p); 
+                            this->get_fi(x, g, *lb, *ub, p);                                 
                         }
 
                     }
@@ -154,7 +163,7 @@ namespace  utopia
                         x = x - alpha_cg*beta;
                         g = g - alpha_cg*Abeta;
 
-                        this->get_fi(x, g, *lb, *ub, p); 
+                        this->get_fi(x, g, *lb, *ub, p);                                 
                     }
 
                     this->get_fi(x, g, *lb, *ub, fi); 
@@ -174,6 +183,8 @@ namespace  utopia
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
     
+                // cudaProfilerStop();
+
                 return true;
             }
 
@@ -182,7 +193,7 @@ namespace  utopia
 
             void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & fi) const
             {
-                if(empty(fi)){
+                if(empty(fi) || loc_size_!=local_size(x)){
                     fi = local_values(local_size(x), 0); 
                 }
 
@@ -191,17 +202,16 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_g  = const_device_view(g);
-
-                    auto d_fi = device_view(fi);
                     
                     parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         Scalar li = d_lb.get(i);
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
+                        Scalar gi = d_g.get(i); 
 
                         if(li < xi && xi < ui){
-                            return d_g.get(i);
+                            return gi; 
                         }
                         else{
                             return 0.0;
@@ -212,15 +222,14 @@ namespace  utopia
                 }
             }
 
-
-            Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & alpha_f1, Vector & alpha_f2) const
+            Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & help_f1, Vector & help_f2) const
             {
-                if(empty(alpha_f1)){
-                    alpha_f1 = local_values(local_size(x), 1e15); 
+                if(empty(help_f1)|| loc_size_!=local_size(x)){
+                    help_f1 = local_values(local_size(x), 1e15); 
                 }
 
-                if(empty(alpha_f2)){
-                    alpha_f2 = local_values(local_size(x), 1e15); 
+                if(empty(help_f2) || loc_size_!=local_size(x)){
+                    help_f2 = local_values(local_size(x), 1e15); 
                 }
 
                 {
@@ -228,11 +237,8 @@ namespace  utopia
                     auto d_ub = const_device_view(ub);
                     auto d_x  = const_device_view(x);
                     auto d_p  = const_device_view(p);
-
-                    auto d_alpha_f1 = device_view(alpha_f1);
-                    auto d_alpha_f2 = device_view(alpha_f2);
                     
-                    parallel_each_write(alpha_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         Scalar li = d_lb.get(i);
                         Scalar xi = d_x.get(i);
@@ -248,7 +254,7 @@ namespace  utopia
                         }
                     });
 
-                    parallel_each_write(alpha_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
@@ -266,13 +272,13 @@ namespace  utopia
                     });
                 }
 
-                return multi_min(alpha_f1, alpha_f2); 
+                return multi_min(help_f1, help_f2); 
             }
 
 
             void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & beta) const
             {
-                if(empty(beta)){
+                if(empty(beta)|| loc_size_!=local_size(x)){
                     beta = local_values(local_size(x), 0.0); 
                 }
 
@@ -282,8 +288,6 @@ namespace  utopia
                     auto d_x  = const_device_view(x);
                     auto d_g  = const_device_view(g);
 
-                    auto d_beta = device_view(beta);
-
                     parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         Scalar li = d_lb.get(i);
@@ -291,13 +295,13 @@ namespace  utopia
                         Scalar xi = d_x.get(i);
                         Scalar gi = d_g.get(i);
 
-                        if(std::abs(li -  xi) < 1e-14)
+                        if(device::abs(li -  xi) < 1e-14)
                         {
-                            return std::min(0.0, gi);
+                            return device::min(0.0, gi);
                         }
-                        else if(std::abs(ui -  xi) < 1e-14)
+                        else if(device::abs(ui -  xi) < 1e-14)
                         {
-                            return std::max(0.0, gi);
+                            return device::max(0.0, gi);
                         }
                         else
                         {
@@ -313,23 +317,31 @@ namespace  utopia
             Scalar get_normA(const Operator<Vector> &A, const SizeType & n_loc)
             {
                 // Super simple power method to estimate the biggest eigenvalue 
-                Vector y_old; 
-                Vector y = local_values(n_loc, 1.0); 
+                // Vector y_old; 
+                // Vector y = local_values(n_loc, 1.0); 
+
+                if(empty(help_f2))
+                    help_f2 = local_values(n_loc, 1.0); 
+                else
+                    help_f2.set(1.0);
+
                 SizeType it = 0; 
                 bool converged = false; 
                 Scalar gnorm, lambda = 0.0, lambda_old; 
 
                 while(!converged)
                 {
-                    y_old = y; 
-                    A.apply(y_old, y);
-                    y  = Scalar(1.0/Scalar(norm2(y)))*y; 
-                    gnorm = norm2(y - y_old);
+                    help_f1 = help_f2; 
+                    A.apply(help_f1, help_f2);
+                    help_f2  = Scalar(1.0/Scalar(norm2(help_f2)))*help_f2; 
 
                     lambda_old = lambda; 
 
-                    A.apply(y, y_old);
-                    lambda = dot(y, y_old);
+                    A.apply(help_f2, help_f1);
+                    lambda = dot(help_f2, help_f1);
+
+                    fi = help_f2 - help_f1; 
+                    gnorm = norm2(fi);
                     
                     converged  = ((gnorm < eps_eig_est_) || (std::abs(lambda_old-lambda) < eps_eig_est_) || it > power_method_max_it_) ?  true: false; 
                     
@@ -348,57 +360,63 @@ namespace  utopia
                 auto zero_expr = local_zeros(ls);
 
                 //resets all buffers in case the size has changed
-                if(!empty(fi)) {
+                if(empty(fi)) {
                     fi = zero_expr;
                 }
 
-                if(!empty(beta)) {
+                if(empty(beta)) {
                     beta = zero_expr;
                 }
 
-                if(!empty(gp)) {
+                if(empty(gp)) {
                     gp = zero_expr;
                 }                
 
-                if(!empty(p)) {
+                if(empty(p)) {
                     p = zero_expr;
                 }
 
-                if(!empty(y)) {
+                if(empty(y)) {
                     y = zero_expr;
                 }
 
-                if(!empty(Ap)) {
+                if(empty(Ap)) {
                     Ap = zero_expr;
                 }
 
-                if(!empty(Abeta)) {
+                if(empty(Abeta)) {
                     Abeta = zero_expr;
                 }
 
-                if(!empty(Ax)) {
+                if(empty(Ax)) {
                     Ax = zero_expr;
                 }            
 
-                if(!empty(g)) {
+                if(empty(g)) {
                     g = zero_expr;
                 }  
 
-                if(!empty(alpha_f1)) {
-                    alpha_f1 = zero_expr;
+                if(empty(help_f1)) {
+                    help_f1 = zero_expr;
                 }            
 
-                if(!empty(alpha_f2)) {
-                    alpha_f2 = zero_expr;
-                }                                            
+                if(empty(help_f2)) {
+                    help_f2 = zero_expr;
+                }          
+
+                initialized_ = true;    
+                loc_size_ = ls;                                
             }
 
 
         private:
-            Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, alpha_f1, alpha_f2; 
+            Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, help_f1, help_f2; 
 
             Scalar eps_eig_est_; 
             SizeType power_method_max_it_; 
+
+            bool initialized_; 
+            SizeType loc_size_; 
 
     };
 }
