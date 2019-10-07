@@ -42,9 +42,6 @@ namespace utopia {
         auto u = trial(V);
         auto v = test(V);
 
-
-        //forcing_function_ = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
-
         auto linear_form = inner(coeff(0.0), v) * dX;
         auto bilinear_form = inner(grad(u), grad(v)) * dX;
 

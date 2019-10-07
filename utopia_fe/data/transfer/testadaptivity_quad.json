@@ -16,7 +16,7 @@
                 "refinements" : 0,
                 "order" : 1,
                 "random-refine" : true,
-                "random-refinements": 5,
+                "random-refinements": 3,
                 "refine-0" : false
             },
             "space": {
@@ -35,12 +35,16 @@
             "mesh": {
                 "type": "square",
                 "elem-type" : "quad",
-                "n-x" : 8,
+                "min-x":0.4,
+                "max-x":0.8,
+                "min-y":0.2,
+                "max-y":0.8,
+                "n-x" : 4,
                 "n-y" : 4,
                 "refinements" : 0,
                 "order" : 1,
                 "random-refine" : true,
-                "random-refinements": 5
+                "random-refinements": 3
             },
             "space": {
                 "system-name" : "slave",
