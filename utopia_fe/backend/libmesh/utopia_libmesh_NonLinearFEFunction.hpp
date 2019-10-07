@@ -321,7 +321,7 @@ namespace utopia {
     template<class Matrix, class Vector, class Eqs>
     class NonLinearFEFunction : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         NonLinearFEFunction(const Eqs &eqs, const bool compute_linear_residual = false)
         : eqs_(eqs), first_(true), compute_linear_residual_(compute_linear_residual)

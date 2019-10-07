@@ -177,7 +177,7 @@ namespace utopia {
     }
 
 #ifdef WITH_TRILINOS
-    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TUSerialVector &utopia_vec)
+    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TpetraVectord &utopia_vec)
     {
         //FIXME inefficient
         PetscVector temp;
@@ -186,7 +186,7 @@ namespace utopia {
     }
 
 
-    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TSUSerialMatrix &utopia_mat) {
+    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TpetraMatrixd &utopia_mat) {
         using namespace libMesh;
 
         Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();

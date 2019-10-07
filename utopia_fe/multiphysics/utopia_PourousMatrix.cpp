@@ -194,9 +194,6 @@ namespace utopia {
         }
 
 
-        std::cout<<"I am refining::end "<<std::endl;
-
-
         libMesh::MeshRefinement refinement(m);
         
 
