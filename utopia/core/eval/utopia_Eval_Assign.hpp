@@ -4,6 +4,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_Tracer.hpp"
+#include "utopia_Eval_Binary.hpp"
 
 namespace utopia {
 
@@ -42,13 +43,80 @@ namespace utopia {
     };
 
 
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<Assign<Left, Unary<Right, Minus>>, Traits, Backend> {
+    public:
+        inline static bool apply(const Assign<Left, Unary<Right, Minus>> &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &l = Eval<Left, Traits>::apply(expr.left());
+            
+            l.construct(
+                Eval<Right, Traits>::apply(expr.right().expr())
+            );
+
+            l.scale(-1.0);
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+    template<class Matrix, class Vector, class Op>
+    using MatVecOpVec = 
+        utopia::Binary<Multiply<Tensor<Matrix, 2>, 
+                                Tensor<Vector, 1> >, 
+                       Tensor<Vector, 1>, 
+                       Op>;
+
+    template<class Matrix, class Vector, class Op>
+    using AssignMatVecOpVec = utopia::Assign<
+                                        Tensor<Vector, 1>,
+                                        MatVecOpVec<Matrix, Vector, Op>>;
+
+
+    /// y = A * x op b
+    template<class Matrix, class Vector, class Op, class Traits, int Backend>
+    class Eval<AssignMatVecOpVec<Matrix, Vector, Op>, Traits, Backend> {
+    public:
+        using T1 = utopia::Tensor<Vector, 1>;
+        using T2 = utopia::Tensor<Matrix, 2>;
+        using Expr = utopia::AssignMatVecOpVec<Matrix, Vector, Op>;
+
+        inline static bool apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+
+            auto &y  = Eval<T1, Traits>::apply(expr.left());
+            auto &&A = Eval<T2, Traits>::apply(expr.right().left().left());
+            auto &&x = Eval<T1, Traits>::apply(expr.right().left().right());
+            auto &&b = Eval<T1, Traits>::apply(expr.right().right());
+            auto &&op = expr.right().operation();
+
+            if(y.same_object(x)) {
+                //temporary here
+                Vector temp = x;
+                A.multiply(temp, y);
+
+            } else {
+                A.multiply(x, y);
+            }
+
+            EvalBinaryAux<T1>::apply(y, b, op, y);
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            return true;
+        }
+    };
+
+
+
+
     template<class Left, class L, class R, int Order, class Traits, int Backend>
     class Eval<Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Minus>>, Traits, Backend> {
     public:
         using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Minus>>;
 
         inline static bool apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto &&l   = Eval<Left, Traits>::apply(expr.left());
             auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
@@ -56,7 +124,7 @@ namespace utopia {
             
             apply_aux(b_l, expr.right().operation(), b_r, l);
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
 
@@ -86,7 +154,7 @@ namespace utopia {
         using Expr = utopia::Assign<Left, Binary<Tensor<L, Order>, Tensor<R, Order>, Plus>>;
 
         inline static bool apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto &&l   = Eval<Left, Traits>::apply(expr.left());
             auto &&b_l = Eval<Tensor<L, Order>, Traits>::apply(expr.right().left());
@@ -94,7 +162,7 @@ namespace utopia {
             
             apply_aux(b_l, expr.right().operation(), b_r, l);
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
 
@@ -165,6 +233,33 @@ namespace utopia {
             auto &&right = Eval<Tensor<Right, 2>, Traits>::apply(expr.right().expr());
 
             right.transpose(left);
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+
+    template<class Tensor, typename T, class Traits, int Backend>
+    class Eval< Assign<Tensor, Binary<Number<T>, Tensor, Multiplies> >, Traits, Backend> {
+    public:
+        using Expr = utopia::Assign<Tensor, Binary<Number<T>, Tensor, Multiplies> >;
+        using Scalar = typename Traits::Scalar;
+
+        inline static bool apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&l = Eval<Tensor, Traits>::apply(expr.left());
+            auto &&r = Eval<Tensor, Traits>::apply(expr.right().right());
+            const Scalar alpha = expr.right().left();
+
+            if(l.same_object(r)) {
+                l.scale(alpha);
+            } else {
+                l.construct(r);
+                l.scale(alpha);
+            }
 
             UTOPIA_TRACE_END(expr);
             return true;

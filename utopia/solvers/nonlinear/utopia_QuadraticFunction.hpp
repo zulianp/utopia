@@ -101,13 +101,13 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            value = 0.5 * dot(x, (H_) * x) + dot(x, rhs_);
+            value = 0.5 * dot(x, H_ * x) + dot(x, rhs_);
             return true;
         }
 
         bool gradient_no_rhs(const Vector &x, Vector &result) const override
         {
-            result = (H_ * x)+ (rhs_);
+            result = H_ * x+ rhs_;
 
             {
                 Vector bc_flg = this->get_eq_constrains_flg(); 
@@ -163,6 +163,7 @@ namespace utopia {
     private:
         Vector rhs_;
         Matrix H_;
+
     };
 
 }

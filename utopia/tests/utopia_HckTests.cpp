@@ -168,8 +168,14 @@ namespace utopia
         void STCG_test()
         {
 
-            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            auto precond = std::make_shared<KSPSolver<Matrix, Vector> >();
+            precond->ksp_type("preonly");
+            precond->pc_type("hypre");
+            QP_solver->set_preconditioner(precond); 
+
+            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
+            // auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
             // auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
             // precond->verbose(verbose_);
