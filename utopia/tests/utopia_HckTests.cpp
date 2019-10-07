@@ -71,7 +71,7 @@ namespace utopia
 
         void run_trilinos()
         {
-            UTOPIA_RUN_TEST(TR_tril_test);
+            // UTOPIA_RUN_TEST(TR_tril_test);
 
             // UTOPIA_RUN_TEST(RMTR_l2_test);
             // UTOPIA_RUN_TEST(RMTR_inf_test);
@@ -109,7 +109,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(quad_form_test);
 
             // UTOPIA_RUN_TEST(multi_reduce_test);
-            // UTOPIA_RUN_TEST(MPGRP_test);
+            UTOPIA_RUN_TEST(MPGRP_test);
 
 
             // UTOPIA_RUN_TEST(residual_test);
@@ -256,6 +256,8 @@ namespace utopia
             backend_convert_sparse(H, H_working);
             backend_convert(g, g_working);
             x_working =  0.0 * g_working;
+
+            std::cout<<"size: "<< size(x_working) << "  \n"; 
 
             // monitor(0, H, "Hessian.m", "H");
             // monitor(0, g, "gradient.m", "g");
@@ -1088,7 +1090,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 100;
+        auto coarse_dofs = 5;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();

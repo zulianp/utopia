@@ -34,7 +34,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class ContactSolver : public Configurable {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
         typedef libMesh::Nemesis_IO Exporter;
         // using ContactT = utopia::ContactAssembler;
