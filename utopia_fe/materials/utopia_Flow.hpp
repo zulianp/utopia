@@ -183,6 +183,8 @@ namespace utopia {
             lower_dimensional_tags_.clear();
             lower_dimensional_tags_.clear();
 
+            std::cout << "lower-dimensional-permeability:\n";
+
             in.get("lower-dimensional-permeability", [this](Input &in) {
                 in.get_all([this](Input &in) {
                     int tag = -1;
@@ -190,6 +192,8 @@ namespace utopia {
                     Scalar value = 1.0;
                     in.get("value", value);
                     in.get("side", tag);
+
+                    std::cout << "side(" << tag << "): " << value << std::endl;
                     
                     if(tag != -1) {
                         auto fun = std::make_shared<UIConstantFunction<Scalar>>(value);

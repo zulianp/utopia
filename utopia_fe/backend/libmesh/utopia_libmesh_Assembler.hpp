@@ -86,6 +86,8 @@ namespace utopia {
             Chrono c;
             c.start();
 
+            const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
+
             typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
             typedef typename TraitsT::Matrix ElementMatrix;
             typedef typename TraitsT::Vector ElementVector;
@@ -121,11 +123,14 @@ namespace utopia {
 
 
             libMesh::DofConstraints constraints;
-            Adaptivity::compute_all_constraints(
-                m,
-                dof_map,
-                constraints
-            );
+
+            if(!disable_adaptivity) {
+                Adaptivity::compute_all_constraints(
+                    m,
+                    dof_map,
+                    constraints
+                );
+            }
 
             {
                 Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
@@ -168,14 +173,17 @@ namespace utopia {
 
                         } else {
                             //std::cout<<"Adaptivity::constrain_matrix_and_vector"<<std::endl;
-                            Adaptivity::constrain_matrix_and_vector(
-                                *it,
-                                dof_map,
-                                constraints,
-                                el_mat,
-                                el_vec,
-                                dof_indices
-                            );
+
+                            if(!disable_adaptivity) {
+                                Adaptivity::constrain_matrix_and_vector(
+                                    *it,
+                                    dof_map,
+                                    constraints,
+                                    el_mat,
+                                    el_vec,
+                                    dof_indices
+                                );
+                            }
                         }
 
 
@@ -212,6 +220,9 @@ namespace utopia {
         template<class Expr>
         bool assemble(/*const*/ Expr &expr, GlobalMatrix &mat)
         {
+
+            const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
+            
             //perf
             Chrono c;
             c.start();
@@ -229,11 +240,14 @@ namespace utopia {
 
 
             libMesh::DofConstraints constraints;
-            Adaptivity::compute_all_constraints(
-                m,
-                dof_map,
-                constraints
-            );
+
+            if(!disable_adaptivity) {
+                Adaptivity::compute_all_constraints(
+                    m,
+                    dof_map,
+                    constraints
+                );
+            }
 
             //FIXME trilinos backend is buggy
             if(Traits<GlobalMatrix>::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
@@ -276,7 +290,10 @@ namespace utopia {
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
 
-                        Adaptivity::constrain_matrix(*it, dof_map, constraints, el_mat, dof_indices);
+
+                        if(!disable_adaptivity) {
+                            Adaptivity::constrain_matrix(*it, dof_map, constraints, el_mat, dof_indices);
+                        }
 
                         if(ctx_.has_assembled()) {
                             add_matrix(el_mat, dof_indices, dof_indices, mat);
@@ -301,7 +318,7 @@ namespace utopia {
         bool assemble(/*const*/ Expr &expr, GlobalVector &vec, const bool apply_constraints = false)
         {
 
-
+            const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
 
             //perf
             Chrono c;
@@ -329,11 +346,14 @@ namespace utopia {
             // }
 
             libMesh::DofConstraints constraints;
-            Adaptivity::compute_all_constraints(
-                m,
-                dof_map,
-                constraints
-            );
+
+            if(!disable_adaptivity) {
+                Adaptivity::compute_all_constraints(
+                    m,
+                    dof_map,
+                    constraints
+                );
+            }
 
 
             {
@@ -359,7 +379,9 @@ namespace utopia {
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
 
-                        Adaptivity::constrain_vector(*it, dof_map, constraints, el_vec, dof_indices);
+                        if(!disable_adaptivity) {
+                            Adaptivity::constrain_vector(*it, dof_map, constraints, el_vec, dof_indices);
+                        }
 
                         if(ctx_.has_assembled()) {
                             add_vector(el_vec, dof_indices, temp_vec);
