@@ -17,6 +17,7 @@
 #include "utopia_blas_IndexSet.hpp"
 #include "utopia_Operations.hpp"
 #include "utopia_Operator.hpp"
+#include "utopia_Allocations.hpp"
 
 
 #include <vector>
@@ -120,10 +121,14 @@ namespace utopia {
         }
 
         BlasMatrix(SizeType rows, SizeType cols) : entries_(rows * cols), rows_(rows), cols_(cols)
-        {}
+        {
+            UTOPIA_REPORT_ALLOC("BlasMatrix::BlasMatrix(SizeType, SizeType)");
+        }
 
         BlasMatrix(SizeType rows, SizeType cols, T value) : entries_(rows * cols, value), rows_(rows), cols_(cols)
-        {}
+        {
+            UTOPIA_REPORT_ALLOC("BlasMatrix::BlasMatrix(SizeType, SizeType)");
+        }
 
         ~BlasMatrix() { }
 
@@ -135,6 +140,8 @@ namespace utopia {
 
             entries_.resize(rows_*cols_);
             copy(args.begin(), args.end(), entries_.begin());
+
+            UTOPIA_REPORT_ALLOC("BlasMatrix::BlasMatrix(SizeType, SizeType, std::initializer_list<T>)");
         }
 
         BlasMatrix(const Entries& e)
@@ -142,6 +149,15 @@ namespace utopia {
             rows_ = e.n_elements();
             cols_ = 1;
             entries_ = e;
+
+            UTOPIA_REPORT_ALLOC("BlasMatrix::BlasMatrix(const Entries &)");
+        }
+
+        BlasMatrix(Entries&& e)
+        {
+            rows_ = e.n_elements();
+            cols_ = 1;
+            entries_ = std::move(e);
         }
 
         SizeType rows() const override {
@@ -194,6 +210,8 @@ namespace utopia {
             this->rows_ = rows;
             this->cols_ = cols;
             this->entries_.resize(rows_ * cols_);
+
+            UTOPIA_REPORT_ALLOC("BlasMatrix::resize(const SizeType, const SizeType)");
         }
 
         void resize(const Size &s)
@@ -201,6 +219,8 @@ namespace utopia {
             this->rows_ = s.get(0);
             this->cols_ = s.get(1);
             this->entries_.resize(rows_ * cols_);
+
+            UTOPIA_REPORT_ALLOC("BlasMatrix::resize(const Size &)");
         }
 
         T* ptr()

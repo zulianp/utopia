@@ -13,6 +13,7 @@
 #include "utopia_Constructible.hpp"
 #include "utopia_Reducible.hpp"
 #include "utopia_blas_IndexSet.hpp"
+#include "utopia_Allocations.hpp"
 
 #include <vector>
 #include <memory>
@@ -84,12 +85,14 @@ namespace utopia {
         BlasVector(std::initializer_list<T> args)
         : entries_(args)
         {
-
+            UTOPIA_REPORT_ALLOC("BlasVector::BlasVector(std::initializer_list<T> args)");
         }
 
         BlasVector(const BlasVector &other)
         : entries_(other.entries_)
-        {}
+        {
+            UTOPIA_REPORT_ALLOC("BlasVector::BlasVector(const BlasVector &other)");
+        }
 
         BlasVector(BlasVector &&other)
         : entries_(std::move(other.entries_))
@@ -116,11 +119,13 @@ namespace utopia {
 
         inline void resize(const SizeType n)
         {
+            UTOPIA_REPORT_ALLOC("BlasVector::resize(const SizeType n)");
         	entries_.resize(n);
         }
 
         inline void resize(const Size &s)
         {
+            UTOPIA_REPORT_ALLOC("BlasVector::resize(const Size &s)");
             entries_.resize(s.get(0));
         }
 

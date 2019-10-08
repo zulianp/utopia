@@ -6,6 +6,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "utopia_Allocations.hpp"
 //#include "cuda_profiler_api.h"
 
 namespace  utopia
@@ -89,6 +90,9 @@ namespace  utopia
         private:
             bool aux_solve(const Operator<Vector> &A, const Vector &rhs, Vector &x, const BoxConstraints<Vector> & constraints)
             {
+                // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
+                // //cudaProfilerStart();
+
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
 
@@ -106,9 +110,6 @@ namespace  utopia
 
                 Scalar alpha_cg, alpha_f, beta_sc; 
 
-
-                // //cudaProfilerStart();
-    
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
 
@@ -125,7 +126,6 @@ namespace  utopia
 
                 while(!converged)
                 {
-
                     if(beta_beta <= (gamma*gamma * fi_fi))
                     {
                         A.apply(p, Ap);
@@ -157,7 +157,6 @@ namespace  utopia
                             g = Ax - rhs; 
                             this->get_fi(x, g, *lb, *ub, p);                                 
                         }
-
                     }
                     else
                     {
@@ -187,7 +186,7 @@ namespace  utopia
                 }
     
                 // //cudaProfilerStop();
-
+                // UTOPIA_NO_ALLOC_END();
                 return true;
             }
 
@@ -197,7 +196,7 @@ namespace  utopia
             void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & fi) const
             {
                 assert(!empty(fi));
-                
+
                 {
                     auto d_lb = const_device_view(lb);
                     auto d_ub = const_device_view(ub);
@@ -275,9 +274,6 @@ namespace  utopia
             void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & beta) const
             {
                 assert(!empty(beta));
-                // if(empty(beta)|| loc_size_!=local_size(x)){
-                //     beta = local_values(local_size(x), 0.0); 
-                // }
 
                 {
                     auto d_lb = const_device_view(lb);

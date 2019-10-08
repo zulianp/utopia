@@ -67,6 +67,12 @@ namespace utopia {
         } 
     }
 
+    TestRegistry::~TestRegistry() {
+        // if(mpi_world_rank() == 0) {
+            std::cout << "[Status] test ran " << n_test_ran_ << std::endl;
+        // }
+    }
+
     int TestRegistry::run_all()
     {
         if(mpi_world_rank() == 0) {
@@ -83,8 +89,7 @@ namespace utopia {
         }
 
         if(mpi_world_rank() == 0) {
-            std::cout << "[End testing]" << std::endl;
-            std::cout << "Run " << n_runned << " units " << std::endl;
+            std::cout << "[End testing" <<  ", Ran " << n_runned << " units]" << std::endl;
         }
 
         mpi_world_barrier();

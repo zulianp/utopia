@@ -62,11 +62,11 @@ namespace utopia
         void run_trilinos()
         {
             //FIXME (mem allocs)
-            // UTOPIA_RUN_TEST(TR_tril_test);
-            // UTOPIA_RUN_TEST(RMTR_l2_test);
-            // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
-            // UTOPIA_RUN_TEST(RMTR_inf_test);
-            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            UTOPIA_RUN_TEST(TR_tril_test);
+            UTOPIA_RUN_TEST(RMTR_l2_test);
+            UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
+            UTOPIA_RUN_TEST(RMTR_inf_test);
+            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(e_div_test);

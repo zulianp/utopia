@@ -305,11 +305,13 @@ namespace utopia
                 UTOPIA_NO_ALLOC_END();
 
 
-                UTOPIA_NO_ALLOC_BEGIN("region3");
+                
                 // ||s_k||_M > \Delta => terminate
                 // norm squared should be used
                 if(s_norm_new >= r2)
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("region3");
+                    
                     Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm));
                     Scalar tau = (std::sqrt(term1) - sMp)/p_norm;
 
@@ -324,20 +326,23 @@ namespace utopia
 
                     this->check_convergence(it, g_norm, 1, 1e-15);
 
+                    UTOPIA_NO_ALLOC_END();
                     return true;
                 }
-                UTOPIA_NO_ALLOC_END();
+                
 
-                UTOPIA_NO_ALLOC_BEGIN("region4");
+                
                 if(std::isfinite(alpha))
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("region4");
                     s_k += alpha * p_k;
+                    UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {
                     return false;
                 }
-                UTOPIA_NO_ALLOC_END();
+                
 
 
                 UTOPIA_NO_ALLOC_BEGIN("region5");
@@ -368,7 +373,6 @@ namespace utopia
                 
                 UTOPIA_NO_ALLOC_BEGIN("region6.2");
                 p_k = betta * p_k - v_k;
-
                 UTOPIA_NO_ALLOC_END();
 
 
