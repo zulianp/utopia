@@ -18,13 +18,11 @@
 #include "utopia_IPTransfer.hpp"
 #include <cmath>
 
-// #define UTOPIA_LAMBDA KOKKOS_LAMBDA
-
 namespace utopia {
 
     void kokkos_max()
     {
-        using Scalar   = Traits<TpetraVectord>::Scalar;
+        // using Scalar   = Traits<TpetraVectord>::Scalar;
         using SizeType = Traits<TpetraVectord>::SizeType;
         
         auto n = 10;
@@ -40,8 +38,8 @@ namespace utopia {
 
     void kokkos_min()
     {
-        using Scalar   = Traits<TpetraVectord>::Scalar;
-        using SizeType = Traits<TpetraVectord>::SizeType;
+        // using Scalar   = Traits<TpetraVectord>::Scalar;
+        // using SizeType = Traits<TpetraVectord>::SizeType;
 
         auto n = 10;
 
@@ -56,8 +54,8 @@ namespace utopia {
 
     void kokkos_sum_reduction()
     {
-        using Scalar   = Traits<TpetraVectord>::Scalar;
-        using SizeType = Traits<TpetraVectord>::SizeType;
+        // using Scalar   = Traits<TpetraVectord>::Scalar;
+        // using SizeType = Traits<TpetraVectord>::SizeType;
 
         auto n = 10;
 
@@ -79,11 +77,11 @@ namespace utopia {
 
         auto r = range(v);
 
-        each_write(v,  UTOPIA_LAMBDA(const SizeType i) -> double {
+        each_write(v,  UTOPIA_LAMBDA(const SizeType &i) -> Scalar {
             return i - r.begin();
         });
 
-        double z = min(v);
+        Scalar z = min(v);
 
         utopia_test_assert(approxeq(0., z));
     }
@@ -99,11 +97,11 @@ namespace utopia {
 
         auto r = range(v);
 
-        each_write(v, UTOPIA_LAMBDA(const SizeType i) -> double {
+        each_write(v, UTOPIA_LAMBDA(const SizeType &i) -> Scalar {
             return i - r.begin();
         });
 
-        double z = max(v);
+        Scalar z = max(v);
 
         utopia_test_assert(approxeq(9., z));
     }
@@ -117,7 +115,7 @@ namespace utopia {
 
         TpetraVectord w = local_values(n, -1.);
 
-        parallel_each_write(w, UTOPIA_LAMBDA(const SizeType i) -> double {
+        parallel_each_write(w, UTOPIA_LAMBDA(const SizeType &i) -> Scalar {
             return i;
         });
 
@@ -126,7 +124,7 @@ namespace utopia {
             auto r = range(w);
 
             for(auto i = r.begin(); i < r.end(); ++i) {
-                utopia_test_assert(approxeq(w.get(i), double(i)));
+                utopia_test_assert(approxeq(w.get(i), Scalar(i)));
             }
         }
     }
@@ -140,13 +138,13 @@ namespace utopia {
 
         TpetraMatrixd w = local_identity(n, n);
 
-        parallel_each_write(w, UTOPIA_LAMBDA(const SizeType i, const SizeType j) -> double {
+        parallel_each_write(w, UTOPIA_LAMBDA(const SizeType &i, const SizeType &j) -> Scalar {
             return i * n + j;
         });
 
         //serial implementation for test
-        each_read(w, [=](const SizeType i, const SizeType j, const double val) {
-            utopia_test_assert(approxeq(double(i * n + j), val));
+        each_read(w, [=](const SizeType &i, const SizeType &j, const Scalar &val) {
+            utopia_test_assert(approxeq(Scalar(i * n + j), val));
         });
     }
 
@@ -158,7 +156,7 @@ namespace utopia {
         auto n = 10;
         TpetraVectord w = local_values(n, 50);
 
-        parallel_each_read(w, UTOPIA_LAMBDA(const SizeType i, const double entry)
+        parallel_each_read(w, UTOPIA_LAMBDA(const SizeType &i, const Scalar &entry)
         { });
     }
 
@@ -186,7 +184,7 @@ namespace utopia {
             }
         }
 
-        parallel_transform(P, UTOPIA_LAMBDA(const double value) -> double {
+        parallel_transform(P, UTOPIA_LAMBDA(const Scalar &value) -> Scalar {
             return value * 2.;
         });
 

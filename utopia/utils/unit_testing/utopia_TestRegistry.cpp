@@ -76,13 +76,15 @@ namespace utopia {
         Chrono c;
         c.start();
 
-        
+        int n_runned = 0;
         for(std::map<std::string, RunTest>::const_iterator it = units_.begin(); it != units_.end(); ++it) {
             run_unit(it->first, it->second);
+            ++n_runned;
         }
 
         if(mpi_world_rank() == 0) {
             std::cout << "[End testing]" << std::endl;
+            std::cout << "Run " << n_runned << " units " << std::endl;
         }
 
         mpi_world_barrier();

@@ -14,17 +14,14 @@ namespace  utopia
     template<class Matrix, class Vector>
     class MPGRP final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-
-        using Solver  = utopia::LinearSolver<Matrix, Vector>;
-        using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Solver   = utopia::LinearSolver<Matrix, Vector>;
+        using ForLoop  = utopia::ParallelFor<Traits<Vector>::Backend>;
 
         public:
             MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false), loc_size_(0)
-            {
-
-            }
+            {}
 
             void read(Input &in) override
             {
@@ -58,9 +55,10 @@ namespace  utopia
 
                 SizeType loc_size_rhs = local_size(rhs); 
 
-
-                if(!(initialized_ && loc_size_==loc_size_rhs))
-                    init(local_size(rhs));
+                //If it is the first time we are here does not make sense to check the sizes
+                if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+                }
 
                 return aux_solve(A, rhs, sol, box);
             }
@@ -73,8 +71,10 @@ namespace  utopia
 
                 SizeType loc_size_rhs = local_size(rhs); 
 
-                if(!(initialized_ && loc_size_==loc_size_rhs))
+                //If it is the first time we are here does not make sense to check the sizes
+                if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
                     init(loc_size_rhs);
+                }
 
                 return aux_solve(*A_op_ptr, rhs, sol, box);
             }
@@ -196,10 +196,8 @@ namespace  utopia
 
             void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & fi) const
             {
-                if(empty(fi) || loc_size_!=local_size(x)){
-                    fi = local_values(local_size(x), 0); 
-                }
-
+                assert(!empty(fi));
+                
                 {
                     auto d_lb = const_device_view(lb);
                     auto d_ub = const_device_view(ub);
@@ -227,13 +225,8 @@ namespace  utopia
 
             Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & help_f1, Vector & help_f2) const
             {
-                if(empty(help_f1)|| loc_size_!=local_size(x)){
-                    help_f1 = local_values(local_size(x), 1e15); 
-                }
-
-                if(empty(help_f2) || loc_size_!=local_size(x)){
-                    help_f2 = local_values(local_size(x), 1e15); 
-                }
+                assert(!empty(help_f1));
+                assert(!empty(help_f2));
 
                 {
                     auto d_lb = const_device_view(lb);
@@ -281,9 +274,10 @@ namespace  utopia
 
             void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & beta) const
             {
-                if(empty(beta)|| loc_size_!=local_size(x)){
-                    beta = local_values(local_size(x), 0.0); 
-                }
+                assert(!empty(beta));
+                // if(empty(beta)|| loc_size_!=local_size(x)){
+                //     beta = local_values(local_size(x), 0.0); 
+                // }
 
                 {
                     auto d_lb = const_device_view(lb);
@@ -322,11 +316,12 @@ namespace  utopia
                 // Super simple power method to estimate the biggest eigenvalue 
                 // Vector y_old; 
                 // Vector y = local_values(n_loc, 1.0); 
+                assert(!empty(help_f2));
 
-                if(empty(help_f2))
-                    help_f2 = local_values(n_loc, 1.0); 
-                else
-                    help_f2.set(1.0);
+                // if(empty(help_f2))
+                //     help_f2 = local_values(n_loc, 1.0); 
+                // else
+                help_f2.set(1.0);
 
                 SizeType it = 0; 
                 bool converged = false; 

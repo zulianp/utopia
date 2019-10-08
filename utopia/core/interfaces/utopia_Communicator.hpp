@@ -16,6 +16,9 @@ namespace utopia {
 		virtual int size() const = 0;
 		virtual Communicator * clone() const = 0;
 
+		virtual bool conjunction(const bool &val) const = 0;
+		virtual bool disjunction(const bool &val) const = 0;
+
 // #ifdef WITH_MPI
 // 		virtual MPI_Comm get() const = 0;
 // #endif //WITH_MPI
@@ -35,11 +38,11 @@ namespace utopia {
 			return new SelfCommunicator();
 		}
 
-		inline bool conjunction(const bool &val) const {
+		inline bool conjunction(const bool &val) const override {
 			return val;
 		}
 
-		inline bool disjunction(const bool &val) const {
+		inline bool disjunction(const bool &val) const override  {
 			return val;
 		}
 

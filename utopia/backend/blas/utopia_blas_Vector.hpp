@@ -513,6 +513,11 @@ namespace utopia {
             return this == &other;
         }
 
+        inline static SelfCommunicator &comm()
+        {
+            static SelfCommunicator instance_;
+            return instance_;
+        }
 
     private:
     	Entries entries_;
