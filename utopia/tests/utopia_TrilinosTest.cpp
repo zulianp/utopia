@@ -1467,7 +1467,7 @@ namespace utopia {
 
     static void trilinos_specific()
     {
-        UTOPIA_RUN_TEST(trilinos_crs_construct);
+        
         UTOPIA_RUN_TEST(stcg_pt_test);
         UTOPIA_RUN_TEST(trilinos_structure);
         UTOPIA_RUN_TEST(trilinos_build);
@@ -1548,9 +1548,10 @@ namespace utopia {
         }
 
         //tests that fail in parallel
-        // if(mpi_world_size() == 1) {
-
-        // } else {
+        if(mpi_world_size() == 1) {
+            UTOPIA_RUN_TEST(trilinos_crs_construct);
+        } 
+        // else {
         //     m_utopia_warning_once("several tests left out for parallel execution");
         // }
 

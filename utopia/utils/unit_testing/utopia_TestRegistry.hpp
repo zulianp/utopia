@@ -10,6 +10,8 @@ namespace utopia {
 
     class TestRegistry {
     public:
+        using Count = long;
+
         typedef void (*RunTest)();
 
         static char add_test_unit(const std::string &unit_name, RunTest run_test);
@@ -21,13 +23,18 @@ namespace utopia {
         void describe(std::ostream &os = std::cout) const;
         inline bool verbose() const { return verbose_; }
         inline void verbose(const bool val) { verbose_ = val; }
+        inline static void test_ran() { ++(instance().n_test_ran_); }
 
     private:
-        TestRegistry() : verbose_(false), error_code_(0) {}
+        TestRegistry() : verbose_(false), error_code_(0), n_test_ran_(0) {}
+        ~TestRegistry() {
+            std::cout << "[Status] test ran " << n_test_ran_ << std::endl;
+        }
         std::map<std::string, RunTest> units_;
         std::map<std::string, RunTest> optional_units_;
         bool verbose_;
         int error_code_ = 0;
+        Count n_test_ran_;
 
         void run_unit(const std::string &unit_name, RunTest run_test);
         int run_aux(const std::map<std::string, RunTest> &units, const std::string &unit_name);
