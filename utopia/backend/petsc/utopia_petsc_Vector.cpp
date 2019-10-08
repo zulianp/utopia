@@ -1,6 +1,7 @@
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_petsc_quirks.hpp"
 
+
 #include <set>
 #include <cstring>
 #include <map>
@@ -113,11 +114,13 @@ namespace utopia {
         const std::string type_copy = type;
 
         if(is_null()) {
+            UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
             VecCreate(comm, &vec_);
         } else {
             if(comm != PetscObjectComm((PetscObject)vec_) || has_type(type)) {
                 destroy();
 
+                UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
                 check_error( VecCreate(comm, &vec_) );
             } else {
                 PetscInt old_n_global;
@@ -159,6 +162,7 @@ namespace utopia {
     {
         assert(vec_ == nullptr);
 
+        UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
         check_error( VecCreate(comm, &vec_) );
         check_error( VecSetFromOptions(vec_) );
         check_error( VecSetType(vec_, type) );
@@ -180,6 +184,7 @@ namespace utopia {
     {
         if(use_vec_nest_type) {
             destroy();
+            UTOPIA_REPORT_ALLOC("PetscVector::nest");
             VecCreateNest(comm, nb, is, x, &vec_);
         } else {
 
@@ -231,6 +236,7 @@ namespace utopia {
 
         destroy();
 
+        UTOPIA_REPORT_ALLOC("PetscVector::ghosted");
         check_error(
             VecCreateGhost(
                 comm,
@@ -325,6 +331,7 @@ namespace utopia {
     {
         destroy();
 
+        UTOPIA_REPORT_ALLOC("PetscVector::copy_from");
         VecDuplicate(vec, &implementation());
         VecCopy(vec, implementation());
 
@@ -351,6 +358,7 @@ namespace utopia {
 
         bool err = check_error( PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd) );
 
+        UTOPIA_REPORT_ALLOC("PetscVector::read");
         err = err && check_error( VecCreate(comm, &implementation()) );
         err = err && check_error( VecSetType(implementation(), type_override()) );
         err = err && check_error( VecLoad(implementation(), fd));
@@ -637,6 +645,7 @@ namespace utopia {
          destroy();
 
          if(other.vec_) {
+             UTOPIA_REPORT_ALLOC("PetscVector::copy");
              PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
              PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
              ghost_values_ = other.ghost_values_;

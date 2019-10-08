@@ -15,6 +15,7 @@
 #include "utopia_Reducible.hpp"
 #include "utopia_Comparable.hpp"
 #include "utopia_Operator.hpp"
+#include "utopia_Allocations.hpp"
 
 //Backend includes
 #include "utopia_petsc_Base.hpp"
@@ -73,11 +74,15 @@ namespace utopia {
             other.destroy();
 
             PetscErrorHandler::Check(MatDuplicate(_mat, opt, &other._mat));
+
+            UTOPIA_REPORT_ALLOC("PetscMatrix::duplicate");
         }
 
         inline void convert(PetscMatrixMemory &other, MatType newtype) {
             //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
             PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
+
+            UTOPIA_REPORT_ALLOC("PetscMatrix::convert");
         }
 
         inline void convert(MatType newtype) {
