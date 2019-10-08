@@ -57,7 +57,9 @@ namespace  utopia
                 auto &box = this->get_box_constraints();
 
                 SizeType loc_size_rhs = local_size(rhs); 
-                if(!initialized_ || loc_size_!=loc_size_rhs)
+
+
+                if(!(initialized_ && loc_size_==loc_size_rhs))
                     init(local_size(rhs));
 
                 return aux_solve(A, rhs, sol, box);
@@ -70,7 +72,8 @@ namespace  utopia
                 auto &box = this->get_box_constraints();
 
                 SizeType loc_size_rhs = local_size(rhs); 
-                if(!initialized_ || loc_size_!=loc_size_rhs)
+
+                if(!(initialized_ && loc_size_==loc_size_rhs))
                     init(loc_size_rhs);
 
                 return aux_solve(*A_op_ptr, rhs, sol, box);
@@ -359,50 +362,17 @@ namespace  utopia
             {
                 auto zero_expr = local_zeros(ls);
 
-                //resets all buffers in case the size has changed
-                if(empty(fi)) {
-                    fi = zero_expr;
-                }
-
-                if(empty(beta)) {
-                    beta = zero_expr;
-                }
-
-                if(empty(gp)) {
-                    gp = zero_expr;
-                }                
-
-                if(empty(p)) {
-                    p = zero_expr;
-                }
-
-                if(empty(y)) {
-                    y = zero_expr;
-                }
-
-                if(empty(Ap)) {
-                    Ap = zero_expr;
-                }
-
-                if(empty(Abeta)) {
-                    Abeta = zero_expr;
-                }
-
-                if(empty(Ax)) {
-                    Ax = zero_expr;
-                }            
-
-                if(empty(g)) {
-                    g = zero_expr;
-                }  
-
-                if(empty(help_f1)) {
-                    help_f1 = zero_expr;
-                }            
-
-                if(empty(help_f2)) {
-                    help_f2 = zero_expr;
-                }          
+                fi = zero_expr;
+                beta = zero_expr;
+                gp = zero_expr;
+                p = zero_expr;
+                y = zero_expr;
+                Ap = zero_expr;
+                Abeta = zero_expr;
+                Ax = zero_expr;
+                g = zero_expr;
+                help_f1 = zero_expr;
+                help_f2 = zero_expr;
 
                 initialized_ = true;    
                 loc_size_ = ls;                                

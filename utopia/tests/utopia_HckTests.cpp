@@ -6,7 +6,6 @@
 // #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
-#include "utopia_Allocations.hpp"
 
 namespace utopia
 {
@@ -40,7 +39,7 @@ namespace utopia
             input_params_.set("post_smoothing_steps", 5);
             input_params_.set("max_sucessful_smoothing_it", 1);
             input_params_.set("max_QP_smoothing_it", 10);
-            input_params_.set("delta0", 1e-3);
+            input_params_.set("delta0", 1e3);
             input_params_.set("grad_smoothess_termination", 1e-8);
         }
 
@@ -71,7 +70,7 @@ namespace utopia
 
         void run_trilinos()
         {
-            // UTOPIA_RUN_TEST(TR_tril_test);
+            UTOPIA_RUN_TEST(TR_tril_test);
 
             // UTOPIA_RUN_TEST(RMTR_l2_test);
             // UTOPIA_RUN_TEST(RMTR_inf_test);
@@ -79,28 +78,9 @@ namespace utopia
 
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
-            // UTOPIA_RUN_TEST(negate_test);
-            // UTOPIA_RUN_TEST(mv_test);
-            // UTOPIA_RUN_TEST(transform_test);
-            // UTOPIA_RUN_TEST(e_mul_test);
-            // UTOPIA_RUN_TEST(e_div_test);
-            // UTOPIA_RUN_TEST(negate_alpha_test);
-            // UTOPIA_RUN_TEST(axpy_test);
-            // UTOPIA_RUN_TEST(quad_form_test);
 
-
-            // UTOPIA_RUN_TEST(e_mul_test);
-            // UTOPIA_RUN_TEST(e_div_test);
-            // UTOPIA_RUN_TEST(negate_alpha_test);
-            // UTOPIA_RUN_TEST(axpy_test);
-            // UTOPIA_RUN_TEST(quad_form_test);
-
-
-            // UTOPIA_RUN_TEST(negate_alpha_test);
-            // UTOPIA_RUN_TEST(axpy_test);
-            // UTOPIA_RUN_TEST(quad_form_test);
-
-
+            // UTOPIA_RUN_TEST(multi_reduce_test);
+             // UTOPIA_RUN_TEST(MPGRP_test);
 
            // UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(for_each_loop_test);
@@ -109,70 +89,16 @@ namespace utopia
             // UTOPIA_RUN_TEST(quad_form_test);
 
             // UTOPIA_RUN_TEST(multi_reduce_test);
-            UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(MPGRP_test);
 
-
+            // UTOPIA_RUN_TEST(STCG_test);
+            // UTOPIA_RUN_TEST(for_each_loop_test);
+            // UTOPIA_RUN_TEST(parallel_each_write_test);
             // UTOPIA_RUN_TEST(residual_test);
 
 
             // //THIS
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
-        }
-
-        void negate_test()
-        {
-            Vector x = values(n_, 1.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("negate_test");
-            x = -x;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void mv_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector b = values(n_, 1.0);
-            Vector p = values(n_, 1.0);
-
-            Matrix A = sparse(n_, n_, 3);
-            assemble_laplacian_1D(A);
-
-            UTOPIA_NO_ALLOC_BEGIN("mv_test");
-            p = A * x + b;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-
-        void e_mul_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-            Vector z = values(n_, 0.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
-            z = e_mul(x, y);
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void e_div_test()
-        {
-            Vector x = values(n_, 6.0);
-            Vector z = values(n_, 3.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("e_div_test");
-            z = x / z;
-            
-            Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 2.0*n_));
-            z = x / x;
-            sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0*n_));
-
-            z = z / x;
-            sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
-
-            UTOPIA_NO_ALLOC_END();
         }
 
         void quad_form_test()
@@ -194,49 +120,10 @@ namespace utopia
             Matrix A = sparse(n_, n_, 3);
             Vector r = values(n_, 0.0);
 
-            UTOPIA_NO_ALLOC_BEGIN("residual_test");
+            // r = A*x - b;
+
             r = x - b;
-            UTOPIA_NO_ALLOC_END();
         }
-
-        void axpy_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
-            Vector p = values(n_, 2.0);
-            
-            UTOPIA_NO_ALLOC_BEGIN("axpy_test");
-            x = x - 0.5 * p;
-            y = x - 0.5 * p;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void transform_test()
-        {
-            Vector x = values(n_, 1.0);
-            
-            parallel_transform(
-                x,
-                UTOPIA_LAMBDA(const SizeType &i, const Scalar &v) -> Scalar {
-                    return (i+1)*v;
-            });
-            
-            Scalar expected = ((n_ + 1) * n_)/2.0;
-            Scalar sum_x = sum(x);
-
-            utopia_test_assert(approxeq(sum_x, expected, 1e-10));
-        }
-
-        void negate_alpha_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
-            
-            UTOPIA_NO_ALLOC_BEGIN("negate_alpha_test");
-            y = -0.5 * x;
-            UTOPIA_NO_ALLOC_END();
-        }
-
 
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const
@@ -256,8 +143,6 @@ namespace utopia
             backend_convert_sparse(H, H_working);
             backend_convert(g, g_working);
             x_working =  0.0 * g_working;
-
-            std::cout<<"size: "<< size(x_working) << "  \n"; 
 
             // monitor(0, H, "Hessian.m", "H");
             // monitor(0, g, "gradient.m", "g");
@@ -283,8 +168,14 @@ namespace utopia
         void STCG_test()
         {
 
-            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            auto precond = std::make_shared<KSPSolver<Matrix, Vector> >();
+            precond->ksp_type("preonly");
+            precond->pc_type("hypre");
+            QP_solver->set_preconditioner(precond); 
+
+            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
+            // auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
             // auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
             // precond->verbose(verbose_);
@@ -292,6 +183,7 @@ namespace utopia
             // precond->use_line_search(false);
             // QP_solver->set_preconditioner(precond);
             QP_solver->use_precond_direction(false);
+
 
 
             QP_solver->atol(1e-10);
@@ -310,7 +202,7 @@ namespace utopia
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
             QP_solver->max_it(100);
-            QP_solver->verbose(true);
+            QP_solver->verbose(verbose_);
 
             QP_solve(QP_solver);
         }
@@ -657,7 +549,7 @@ namespace utopia
         void TR_tril_test()
         {
             #ifdef WITH_PETSC
-                Poisson3D<PetscMatrix, PetscVector> fun(3);
+                Poisson3D<PetscMatrix, PetscVector> fun(50);
                 PetscVector x = fun.initial_guess();
 
                 PetscMatrix H;
@@ -684,10 +576,9 @@ namespace utopia
                     backend_convert(x, x_tril);
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                    QP_solver->verbose(false); 
 
-                    Vector lb_tril = local_values(local_size(x_tril), -9e9);
-                    Vector ub_tril = local_values(local_size(x_tril), 9e9);
+                    Vector lb_tril = local_values(local_size(x_tril).get(0), -9e9);
+                    Vector ub_tril = local_values(local_size(x_tril).get(0), 9e9);
 
                     empty_rhs_tril = 0.0*x_tril;
                     backend_convert(x_eq, x_eq_tril);
@@ -698,8 +589,6 @@ namespace utopia
                     TrustRegionVariableBound<Matrix, Vector> tr_solver(QP_solver);
                     tr_solver.set_box_constraints(make_box_constaints(make_ref(lb_tril), make_ref(ub_tril)));
                     tr_solver.read(input_params_);
-                    tr_solver.max_it(20);
-                    tr_solver.delta0(1e-3); 
                     tr_solver.verbose(verbose_);
                     tr_solver.solve(fun_QP_tril, x_tril);
 
