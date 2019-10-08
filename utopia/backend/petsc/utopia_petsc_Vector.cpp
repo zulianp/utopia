@@ -532,6 +532,8 @@ namespace utopia {
 
     bool PetscVector::equals(const PetscVector &other, const Scalar &tol) const
     {
+        if(this->same_object(other)) return true;
+        
         PetscVector diff = other;
         diff.axpy(-1.0, *this);
         return diff.norm_infty() < tol;
