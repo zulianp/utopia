@@ -265,9 +265,42 @@ namespace utopia {
         }
     };
 
+
+    /// l = alpha * r1 - r2;
+    template<class Left, typename ScalarT, class RFirst, class RSecond, class Traits, int Backend>
+    class Eval<
+            Assign<Left, Binary<Binary<Number<ScalarT>, RFirst, Multiplies>, RSecond, Minus>>,
+            Traits,
+            Backend> {
+    public:
+        template<class Expr>
+        inline static void apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            auto &l   = Eval<Left, Traits>::apply(expr.left());
+            auto &&r1 = Eval<RFirst, Traits>::apply(expr.right().left().right());
+            auto &&r2 = Eval<RSecond, Traits>::apply(expr.right().right());
+            const ScalarT alpha = expr.right().left().left();
+
+            if(l.same_object(r2)) {
+                l.scale(-1.0);
+                l.axpy(alpha, r1);
+            } else if(l.same_object(r1)) {
+                l.scale(alpha);
+                l.axpy(-1.0, r2);
+            } else {
+                l.assign(r1);
+                l.scale(alpha);
+                l.axpy(-1.0, r2);
+            }
+
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+        }
+
+    };
+
+
     //FIXME WHY IS THIS NEVER INSTANTIATED?
-
-
     // template<class Left, class Right, typename ScalarT, class Traits, int Backend>
     // class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {
     // public:

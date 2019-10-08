@@ -373,7 +373,6 @@ namespace utopia
                 
                 UTOPIA_NO_ALLOC_BEGIN("region6.2");
                 p_k = betta * p_k - v_k;
-
                 UTOPIA_NO_ALLOC_END();
 
 

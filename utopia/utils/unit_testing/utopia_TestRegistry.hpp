@@ -27,9 +27,8 @@ namespace utopia {
 
     private:
         TestRegistry() : verbose_(false), error_code_(0), n_test_ran_(0) {}
-        ~TestRegistry() {
-            std::cout << "[Status] test ran " << n_test_ran_ << std::endl;
-        }
+        ~TestRegistry();
+        
         std::map<std::string, RunTest> units_;
         std::map<std::string, RunTest> optional_units_;
         bool verbose_;
