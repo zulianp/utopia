@@ -47,22 +47,22 @@ namespace utopia {
 		}
 
 		template<typename T>
-		inline T sum(const T &val) const {
+		inline T sum(const T &val) const noexcept  {
 			return val;
 		}
 
 		template<typename T>
-		inline T min(const T &val) const {
+		inline T min(const T &val) const noexcept  {
 			return val;
 		}
 
 		template<typename T>
-		inline T max(const T &val) const {
+		inline T max(const T &val) const noexcept  {
 			return val;
 		}
 
 #ifdef WITH_MPI
-		inline MPI_Comm get() const //override 
+		inline MPI_Comm get() const noexcept
 		{
 			return MPI_COMM_SELF;
 		}
@@ -77,31 +77,31 @@ namespace utopia {
 	template<>
 	class MPIType<double> {
 	public:
-		inline static MPI_Datatype value() { return MPI_DOUBLE; }
+		inline static MPI_Datatype value() noexcept { return MPI_DOUBLE; }
 	};
 
 	template<>
 	class MPIType<float> {
 	public:
-		inline static MPI_Datatype value() { return MPI_FLOAT; }
+		inline static MPI_Datatype value() noexcept { return MPI_FLOAT; }
 	};
 
 	template<>
 	class MPIType<long> {
 	public:
-		inline static MPI_Datatype value() { return MPI_LONG; }
+		inline static MPI_Datatype value() noexcept { return MPI_LONG; }
 	};
 
 	template<>
 	class MPIType<int> {
 	public:
-		inline static MPI_Datatype value() { return MPI_INT; }
+		inline static MPI_Datatype value() noexcept { return MPI_INT; }
 	};
 
 	template<>
 	class MPIType<char> {
 	public:
-		inline static MPI_Datatype value() { return MPI_CHAR; }
+		inline static MPI_Datatype value() noexcept { return MPI_CHAR; }
 	};
 
 	class MPICommunicator : public Communicator {
@@ -112,8 +112,8 @@ namespace utopia {
 
 		/////////////////////////////////////////////
 
-		bool conjunction(const bool &val) const;
-		bool disjunction(const bool &val) const;
+		bool conjunction(const bool &val) const override;
+		bool disjunction(const bool &val) const override;
 
 		inline int rank() const override
 		{
