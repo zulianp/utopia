@@ -32,16 +32,21 @@ namespace utopia {
             ++count_;
 
             if(is_no_allocation_region_) {
-                ++n_violations_;
+               handle_violation(name, file, line_number);
+            }
+        }
 
-                if(abort_on_violation_ || verbose_) {
-                    std::cerr << "[VIOLATION] allocation (" << name << ") in region (" << region_name_.top() << ") at " << file << ":" << line_number << std::endl;
-                }
-                
-                if(abort_on_violation_) {
-                    assert(false);
-                    abort();
-                }
+        void handle_violation(const std::string &name, const std::string &file, int line_number)
+        {
+            ++n_violations_;
+
+            if(abort_on_violation_ || verbose_) {
+                std::cerr << "[VIOLATION] allocation (" << name << ") in region (" << region_name_.top() << ") at " << file << ":" << line_number << std::endl;
+            }
+            
+            if(abort_on_violation_) {
+                assert(false);
+                abort();
             }
         }
 

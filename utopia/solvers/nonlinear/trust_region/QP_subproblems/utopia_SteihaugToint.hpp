@@ -54,7 +54,6 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
-            init(local_size(b));
             if(this->precond_)
             {
                 auto A_ptr = utopia::op(this->get_operator());
@@ -84,13 +83,17 @@ namespace utopia
 
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
         {
+            init(local_size(rhs));
+            minus_rhs = rhs;
+            minus_rhs *= -1.0;
+
             if(this->precond_)
             {
-                return preconditioned_solve(A, -1.0*rhs, sol);
+                return preconditioned_solve(A, minus_rhs, sol);
             }
             else
             {
-                return unpreconditioned_solve(A, -1.0 * rhs, sol);
+                return unpreconditioned_solve(A, minus_rhs, sol);
             }
         }
 
@@ -104,12 +107,13 @@ namespace utopia
                     ls_ptr->update(op);
                 }
              }
+
+             init(local_size(*op).get(0));
          }
 
     private:
         bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr)
         {
-            init(local_size(g));
             r = -1.0 * g;
             v_k = r;
             Scalar alpha, g_norm, d_B_d, z, z1;
@@ -175,7 +179,6 @@ namespace utopia
 
         bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k)
         {
-            init(local_size(g));
             bool converged = false;
             SizeType it=0;
 
@@ -425,26 +428,15 @@ namespace utopia
             auto zero_expr = local_zeros(ls);
 
             //resets all buffers in case the size has changed
-            if(!empty(v_k)) {
-                v_k = zero_expr;
-            }
-
-            if(!empty(r)) {
-                r = zero_expr;
-            }
-
-            if(!empty(p_k)) {
-                p_k = zero_expr;
-            }
-
-            if(!empty(B_p_k)) {
-                B_p_k = zero_expr;
-            }
+            v_k   = zero_expr;
+            r     = zero_expr;
+            p_k   = zero_expr;
+            B_p_k = zero_expr;
         }
 
 
     private:
-        Vector v_k, r, p_k, B_p_k;
+        Vector v_k, r, p_k, B_p_k, minus_rhs;
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
         bool use_precond_direction_; 
 

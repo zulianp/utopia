@@ -6,6 +6,7 @@
 // #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "utopia_Eval_Residual.hpp"
 
 namespace utopia
 {
