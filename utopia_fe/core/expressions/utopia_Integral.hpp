@@ -6,6 +6,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_FEExpression.hpp"
 #include "utopia_FEIsSubTree.hpp"
+#include "utopia_FunctionalTraits.hpp"
 
 namespace utopia {
 
