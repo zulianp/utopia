@@ -8,6 +8,7 @@
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_Flow.hpp"
 #include "utopia_LibMeshToMoonolithConvertions.hpp"
+#include "utopia_ElementWisePseudoInverse.hpp"
 #include "moonolith_l2_assembler.hpp"
 
 #include <iostream>
@@ -61,43 +62,83 @@ namespace utopia {
                 in.get("length", length);
                 in.get("permeability", permeability);
 
+                static const std::string type_defualt = "center+tangent";
+                std::string type = type_defualt;
+
+                in.get("type", type);
+
                 const SizeType n = size(center); 
 
-                for(SizeType i = 0; i < n; ++i) {
-                    Scalar v = 0.0;
-                    in.get("center-" + coord_str(i), v);
-                    center.set(i, v);
+                if(type == "line") {
+                    ElementVector p0 = center;
+                    ElementVector p1 = center;
 
-                    // v = 0.0;
-                    // in.get("normal-" + coord_str(i), v);
-                    // normal.set(i, v);
+                    for(SizeType i = 0; i < n; ++i) {
+                        Scalar v = 0.0;
+                        in.get("p0-" + coord_str(i), v);
+                        p0.set(i, v);
 
-                    for(SizeType k = 0; k < n-1; ++k) {
-                        v = 0.0;
-                        in.get("tangent-" + std::to_string(k) + "-" + coord_str(i), v);
-                        tangents.set(k, i, v);
+                        in.get("p1-" + coord_str(i), v);
+                        p1.set(i, v);
+                    }
+
+                    center = 0.5 * (p0 + p1);
+
+                    ElementVector u = p1 - p0;
+                    length = norm2(u);
+
+                    u /= length;
+                    normal.set(0, -u.get(1));
+                    normal.set(1,  u.get(0));
+
+                    for(SizeType i = 0; i < n; ++i) {
+                        for(SizeType k = 0; k < n-1; ++k) {
+                            tangents.set(0, 0, u.get(0));
+                            tangents.set(0, 1, u.get(1));
+                        }
+                    }
+                } else if(type_defualt == type) {
+                    for(SizeType i = 0; i < n; ++i) {
+                        Scalar v = 0.0;
+                        in.get("center-" + coord_str(i), v);
+                        center.set(i, v);
+
+                        for(SizeType k = 0; k < n-1; ++k) {
+                            v = 0.0;
+                            in.get("tangent-" + std::to_string(k) + "-" + coord_str(i), v);
+                            tangents.set(k, i, v);
+                        }
+                    }
+
+                    if(n == 2) {
+                        normal.set(0, -tangents.get(0, 1));
+                        normal.set(1,  tangents.get(0, 0));
+                    } else 
+                    // if(n == 3) 
+                    {
+                        //TODO
+                        assert(false);
+                        // ElementVector u = zeros(2), v = zeros(2);
+
+                        // u.set(0, tangents.get(0, 1));
+                        // u.set(1, tangents.get(0, 0));
+
+                        // v.set(0, tangents.get(1, 1));
+                        // v.set(1, tangents.get(1, 0));
+
+                        // normal = cross(u, v);
+                        // normal /= norm2(normal);
                     }
                 }
 
-                if(n == 2) {
-                    normal.set(0, -tangents.get(0, 1));
-                    normal.set(1,  tangents.get(0, 0));
-                } else 
-                // if(n == 3) 
-                {
-                    //TODO
-                    assert(false);
-                    // ElementVector u = zeros(2), v = zeros(2);
-
-                    // u.set(0, tangents.get(0, 1));
-                    // u.set(1, tangents.get(0, 0));
-
-                    // v.set(0, tangents.get(1, 1));
-                    // v.set(1, tangents.get(1, 0));
-
-                    // normal = cross(u, v);
-                    // normal /= norm2(normal);
-                }
+                disp("--------------------");
+                disp("center: ");
+                disp(center);
+                disp("tangents: ");
+                disp(tangents);
+                disp("length: ");
+                disp(length);
+                disp("--------------------");
             }
         };
 
@@ -117,18 +158,33 @@ namespace utopia {
 
         };
 
+        class FractureTangentSampler final : public UIFunction<USerialMatrix>  {    
+        public:
+            static const int Order = 2;
+            typedef double Scalar;
+
+            FractureTangentSampler(const FractureSampler &sampler) : sampler_(sampler)
+            {}
+
+            USerialMatrix eval(const std::vector<Scalar> &x) const override
+            {
+                return sampler_.fractures[sampler_.active_fracture]->tangents;
+            }
+
+        private:
+            const FractureSampler &sampler_;
+        };
+
         template<int Dim>
         class Cut {};
 
         template<>
         class Cut<2> {
         public:
-            static const int Dim = 2;
-
-            using CellElem = moonolith::Elem<double, Dim, Dim>;
-            using SurfElem = moonolith::Edge1<double, Dim>;
-            using QuadratureT = moonolith::Quadrature<double, Dim>;
-            using Algo = moonolith::BuildQuadratureAlgo<double, Dim, Dim, Dim -1>;
+            using CellElem = moonolith::Elem<double, 2, 2>;
+            using SurfElem = moonolith::Edge1<double, 2>;
+            using QuadratureT = moonolith::Quadrature<double, 2>;
+            using Algo = moonolith::BuildQuadratureAlgo<double, 2, 2, 2 -1>;
 
             moonolith::Storage<std::shared_ptr<Fracture>> fractures;
             
@@ -136,14 +192,14 @@ namespace utopia {
             std::shared_ptr<CellElem> cell_elem;
             std::shared_ptr<SurfElem> surf_elem;
 
-            std::shared_ptr<moonolith::Transform<double, Dim, Dim>>         cell_trafo;
-            std::shared_ptr<moonolith::AffineTransform<double, Dim-1, Dim>> surf_trafo;
+            std::shared_ptr<moonolith::Transform<double, 2, 2>>         cell_trafo;
+            std::shared_ptr<moonolith::AffineTransform<double, 2-1, 2>> surf_trafo;
 
             Algo algo;
 
             Cut()
             {
-               surf_trafo = std::make_shared<moonolith::AffineTransform<double, Dim-1, Dim>>();
+               surf_trafo = std::make_shared<moonolith::AffineTransform<double, 2-1, 2>>();
             }
 
             bool compute(
@@ -179,13 +235,18 @@ namespace utopia {
 
             void make_elem(const Fracture &f, SurfElem &e) const
             {
-                e.point(0)[0] = f.center.get(0) - f.tangents.get(0, 0) * (f.length/2.);
-                e.point(0)[1] = f.center.get(1) - f.tangents.get(0, 1) * (f.length/2.);
-                e.point(1)[0] = f.center.get(0) + f.tangents.get(0, 0) * (f.length/2.);
-                e.point(1)[1] = f.center.get(1) + f.tangents.get(0, 1) * (f.length/2.);
+                auto half_len = (f.length/2.);
+                const auto &c = f.center;
+                const auto &t = f.tangents;
 
-                e.node(0)[0] =  f.center.get(0);
-                e.node(0)[1] =  f.center.get(1);
+                e.point(0)[0] = c.get(0) - t.get(0, 0) * half_len;
+                e.point(0)[1] = c.get(1) - t.get(0, 1) * half_len;
+
+                e.point(1)[0] = c.get(0) + t.get(0, 0) * half_len;
+                e.point(1)[1] = c.get(1) + t.get(0, 1) * half_len;
+
+                e.node(0)[0] =  c.get(0);
+                e.node(0)[1] =  c.get(1);
             }
 
             bool intersect(const CellElem &cell, const SurfElem &surf, std::shared_ptr<libMesh::QBase> &q)
@@ -200,12 +261,20 @@ namespace utopia {
                 algo.trafo_slave  = surf_trafo;
 
                 if(algo.compute()) {
-                    auto q_mortar = std::make_shared<QMortar>(Dim);
+                    auto q_mortar = std::make_shared<QMortar>(2);
 
                     utopia::convert(
                         algo.q_master,
-                        1.0,
-                        *q_mortar);
+                        cell.reference_measure(),
+                        *q_mortar
+                    );
+
+                    // moonolith::MatlabScripter script;
+                    // script.close_all();
+                    // script.plot(algo.master, "b.-");
+                    // script.hold_on();
+                    // script.plot(algo.slave, "r*-");
+                    // script.save("isect.m");
 
                     q = q_mortar;
                     return true;
@@ -225,11 +294,33 @@ namespace utopia {
             auto u = trial(space_);
             auto v = test(space_);
 
+            auto ts = tangent_sampler();
             auto bilinear_form = inner(
-                    grad(u), 
-                    ctx_fun(sampler()) * grad(v)
+                    ctx_fun(ts) * grad(u), 
+                    ctx_fun(sampler()) * ctx_fun(ts) * grad(v)
                 ) * dX;
 
+
+            Vector perm, mass_vector;
+            assemble(
+                inner(ctx_fun(sampler()), v) * dX,
+                perm,
+                false
+            );
+
+            assemble(inner(coeff(1.0), v) * dX, mass_vector);
+            // perm /= mass_vector;
+
+            double surf_fracs = sum(mass_vector);
+
+            std::cout << "surf_fracs: " << surf_fracs << std::endl;
+            e_pseudo_inv(mass_vector, mass_vector, 1e-10);
+            perm = e_mul(mass_vector, perm);
+
+            double sum_g = sum(gradient);
+            std::cout << "sum_g: " << sum_g << std::endl;
+
+            write("perm.e", space_, perm);
             return assemble(bilinear_form, hessian, true);
         }
 
@@ -249,6 +340,9 @@ namespace utopia {
             moonolith::Storage<std::shared_ptr<libMesh::QBase>> q;
             USerialMatrix el_mat;
             std::vector<libMesh::dof_id_type> dof_indices;
+
+
+            Write<Matrix> w(hessian);
 
             AssemblyContext<LIBMESH_TAG> ctx;
             const int order = functional_order(bilinear_form, ctx);
@@ -294,6 +388,70 @@ namespace utopia {
             return true;
         }
 
+
+        template<class LinearForm>
+        bool assemble(LinearForm &&linear_form, Vector &v, const bool append_mode = true)
+        {
+            Chrono c;
+            c.start();
+
+            const auto &dof_map = space_.dof_map();
+
+            if(empty(v) || !append_mode) {
+                v = local_zeros(dof_map.n_local_dofs());
+            } 
+
+            Cut<2> cut;
+            moonolith::Storage<std::shared_ptr<libMesh::QBase>> q;
+            USerialVector el_vec;
+            std::vector<libMesh::dof_id_type> dof_indices;
+
+
+            Write<Vector> w(v);
+
+            AssemblyContext<LIBMESH_TAG> ctx;
+            const int order = functional_order(linear_form, ctx);
+            for(auto e_it = space_.mesh().active_local_elements_begin(); e_it != space_.mesh().active_local_elements_end(); ++e_it) {
+                if(!cut.compute(
+                    order,
+                    **e_it,
+                    space_.type(), 
+                    fracture_sampler_.fractures,
+                    q)) continue;
+
+                ctx.set_current_element((*e_it)->id());
+
+                //reset the fracture id
+                fracture_sampler_.active_fracture = 0;
+                for(auto q_it = q.begin(); q_it != q.end(); ++q_it)
+                {       
+                    if(*q_it) {
+                        ctx.set_has_assembled(false);   
+                        ctx.init( linear_form, *q_it );
+
+                        el_vec.set(0.0);
+
+                        FormEvaluator<LIBMESH_TAG> eval;
+                        eval.eval(linear_form, el_vec, ctx, true);
+
+                        if(ctx.has_assembled()) {
+                            dof_map.dof_indices((*e_it), dof_indices);
+                            add_vector(el_vec, dof_indices, v);
+                        }
+                    }
+
+                    //increment the fracture id
+                    ++fracture_sampler_.active_fracture;
+                }
+            }
+            
+            if(rescale_ != 1.0) {
+                v *= rescale_;
+            }
+
+            c.stop();
+            return true;
+        }
         inline bool is_linear() const override { return true; }
 
         inline void clear() override {}
@@ -320,6 +478,11 @@ namespace utopia {
         inline std::shared_ptr<UIFunction<Scalar>> sampler()
         {
             return make_ref(fracture_sampler_);
+        }
+
+        inline std::shared_ptr<UIFunction<USerialMatrix>> tangent_sampler()
+        {
+            return std::make_shared<FractureTangentSampler>(fracture_sampler_);
         }
 
     private:

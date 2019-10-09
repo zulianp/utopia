@@ -12,7 +12,7 @@ namespace utopia {
     class Eval<InPlace<Left, Right, Operation>, Traits, Backend> {
     public:
 
-        inline static bool apply(const InPlace<Left, Right, Operation> &expr)
+        inline static void apply(const InPlace<Left, Right, Operation> &expr)
         {
             //FIXME connect to backend without tree transformation
             typedef utopia::Binary<Left, Right, Operation> TransformedExpr;
@@ -20,7 +20,7 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            bool out = Eval<AssignExpr, Traits>::apply(
+            Eval<AssignExpr, Traits>::apply(
                     AssignExpr(
                             expr.left(),
                             TransformedExpr(
@@ -32,7 +32,6 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return out;
         }
     };
 
@@ -40,14 +39,13 @@ namespace utopia {
     class Eval<InPlace<Left, Right, Plus>, Traits, Backend> {
     public:
 
-        inline static bool apply(const InPlace<Left, Right, Plus> &expr)
+        inline static void apply(const InPlace<Left, Right, Plus> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
             Eval<Left, Traits>::apply(expr.left()).axpy(1.0, Eval<Right, Traits>::apply(expr.right()));
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
@@ -55,7 +53,7 @@ namespace utopia {
     class Eval<InPlace<Left, Right, Minus>, Traits, Backend> {
     public:
 
-        inline static bool apply(const InPlace<Left, Right, Minus> &expr)
+        inline static void apply(const InPlace<Left, Right, Minus> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -65,7 +63,6 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
@@ -74,14 +71,13 @@ namespace utopia {
     public:
         typedef utopia::InPlace<Left, Binary<Number<T>, Right, Multiplies>, Plus> Expr;
 
-        inline static bool apply(const Expr &expr)
+        inline static void apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
             Eval<Left, Traits>::apply(expr.left()).axpy(expr.right().left(), Eval<Right, Traits>::apply(expr.right().right()));
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
@@ -90,7 +86,7 @@ namespace utopia {
     public:
         typedef utopia::InPlace<Left, Binary<Number<T>, Right, Multiplies>, Minus> Expr;
 
-        inline static bool apply(const Expr &expr)
+        inline static void apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -100,35 +96,32 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval<InPlace<Left, Number<Right>, Multiplies>, Traits, Backend> {
     public:
-        inline static bool apply(const InPlace<Left, Number<Right>, Multiplies> &expr)
+        inline static void apply(const InPlace<Left, Number<Right>, Multiplies> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
             Eval<Left, Traits>::apply(expr.left()).scale(expr.right());
             
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval<InPlace<Left, Number<Right>, Divides>, Traits, Backend> {
     public:
-        inline static bool apply(const InPlace<Left, Number<Right>, Divides> &expr)
+        inline static void apply(const InPlace<Left, Number<Right>, Divides> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
             Eval<Left, Traits>::apply(expr.left()).e_div(expr.right().get());
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
