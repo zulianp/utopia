@@ -121,7 +121,7 @@ namespace utopia {
 
             libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
 
-            //Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
+            Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
         }
 
         std::cout << "--------------------------------------------------\n";
@@ -922,14 +922,14 @@ namespace utopia {
 
                 if(!check_2) {
                     index.push_back(*it);
-                    std::cout<<"index_to_skip"<<*it<<std::endl;
+                    //std::cout<<"index_to_skip"<<*it<<std::endl;
                 }
             }
         }
 
 
 
-            std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::END "<<std::endl;
+            std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::END "<<tmp.size()<<" and "<<index.size()<<std::endl;
     }
             
 }
