@@ -1,4 +1,4 @@
-#include "utopia_PoissonApp.hpp"
+#include "utopia_MassApp.hpp"
 
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_L2LocalAssembler.hpp"
@@ -21,65 +21,93 @@
 
 namespace utopia {
 
-    void PoissonApp::run(Input &in)
+    void MassApp::run(Input &in)
     {
         UIMesh<libMesh::DistributedMesh> mesh(comm());
         UIFunctionSpace<LibMeshFunctionSpace> space(make_ref(mesh));
+
+
         in.get("mesh", mesh);
         in.get("space", space);
-    
-        UIForcingFunction<LibMeshFunctionSpace, UVector> forcing_function(space.subspace(0));
-        in.get("forcing-function", forcing_function);
 
     
+        UIForcingFunction<LibMeshFunctionSpace, UVector> forcing_function(space.subspace(0));
+
+        in.get("forcing-function", forcing_function);
+
+        
         auto &V = space.space().subspace(0);
+       
+
         auto u = trial(V);
         auto v = test(V);
 
-        auto linear_form = inner(coeff(10.0), v) * dX;
-        auto bilinear_form = inner(grad(u), grad(v)) * dX;
+        Adaptivity a;
 
-        USparseMatrix A;
+        USparseMatrix pre_constraint;
+
+        USparseMatrix post_constraint;
+        
+        a.constraint_matrix(V.mesh(), V.dof_map(), 0, pre_constraint, post_constraint);
+
+
+        USparseMatrix Mass;
         UVector rhs, x, forcing_term;
         
 
-        //rhs.set(1.0);
-        assemble(bilinear_form == linear_form, A, rhs);
+        auto linear_form = inner(coeff(0.0), v) * dX;
 
+        auto bilinear_form = inner(u, v) * dX;
+
+        rhs = local_zeros(V.dof_map().n_local_dofs());
 
         x = local_zeros(local_size(rhs));
 
+        
+        utopia::assemble(inner(u, v) * dX, Mass);
+
 
         forcing_term = local_zeros(local_size(rhs));
+
         forcing_function.eval(x,forcing_term);
-        rhs+= forcing_term;
 
-        apply_boundary_conditions(V, A, rhs);
+        rhs += forcing_term;
 
-
-        // utopia::disp(size(A).get(0));
-
-        // utopia::disp(size(A).get(1));
-
-        // utopia::write("A_before.m", A);
-
-
-        // utopia::rename("a", A);
-
-        // utopia::write("A.m", A);
-
-        // utopia::rename("b", rhs);
-
-        // utopia::write("rhs.m", rhs);
+        rhs += post_constraint * rhs;
 
 
 
         Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
         fact.describe(std::cout);
-        fact.solve(A, rhs, x);
+        fact.solve(Mass, rhs, x);
 
+
+
+        UVector sum_row = sum(Mass, 1);
+
+        UVector m_inv = 1./sum_row;
+
+        UVector test = e_mul(m_inv , forcing_term); 
+
+        utopia::disp(post_constraint);
+
+        test+= post_constraint * test;
 
         write("rhs.e", V, rhs);
+
+        write("test.e", V, test);
+
+        write("rhs.e", V, rhs);
+
         write("sol.e", V, x);
     }
 }
+
+
+
+
+
+
+
+
+

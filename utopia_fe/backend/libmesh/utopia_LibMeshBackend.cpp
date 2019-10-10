@@ -49,11 +49,17 @@ namespace utopia {
 
             for(auto it=index.begin(); it < index.end(); ++it)
             {
-              int i = *it;
-              auto valpos = rhs_values.find(i);
-              I[0] = i;
-              value[0]=valpos->second;
-              vec.set(I, value);
+                int i = *it;
+                auto valpos = rhs_values.find(i);
+                I[0] = i;
+                value[0]=valpos->second;
+
+
+                // if (V.mesh().processor_id()==0) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                // if (V.mesh().processor_id()==1) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                // if (V.mesh().processor_id()==2) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                // if (V.mesh().processor_id()==3) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                vec.set(I, value);
 
           }
         }
