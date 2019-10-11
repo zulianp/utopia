@@ -1139,7 +1139,7 @@ namespace utopia {
                                             std::vector<int> & index)
     {
 
-        std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::BEGIN "<<std::endl;
+        // std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::BEGIN "<<std::endl;
 
        // Only constrain elements in 2,3D.
         if (mesh.mesh_dimension() == 1)
@@ -1371,7 +1371,7 @@ namespace utopia {
 
 
 
-            std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::END "<<tmp.size()<<" and "<<index.size()<<std::endl;
+            // std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::END "<<tmp.size()<<" and "<<index.size()<<std::endl;
     }
             
 }
