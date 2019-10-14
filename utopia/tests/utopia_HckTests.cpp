@@ -143,18 +143,18 @@ namespace utopia
             solver->max_it(10);
             solver->verbose(verbose_);
             // solver->norm_schedule(NormSchedule::EVERY_ITER); 
-            std::cout<<"---- Unprecond solve --- \n"; 
+            // std::cout<<"---- Unprecond solve --- \n"; 
             QP_solve(solver);
 
-            std::cout<<"---- Unprecond solve 2 --- \n"; 
+            // std::cout<<"---- Unprecond solve 2 --- \n"; 
             // Just to check initialization 
             QP_solve(solver);            
 
-            std::cout<<"---- Inv Diag --- \n"; 
+            // std::cout<<"---- Inv Diag --- \n"; 
             solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
             QP_solve(solver);
 
-            std::cout<<"---- Point Jacobi --- \n"; 
+            // std::cout<<"---- Point Jacobi --- \n"; 
             solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());            
             QP_solve(solver);
         }
