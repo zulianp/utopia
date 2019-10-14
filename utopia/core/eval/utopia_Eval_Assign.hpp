@@ -6,6 +6,8 @@
 #include "utopia_Tracer.hpp"
 #include "utopia_Eval_Binary.hpp"
 
+#include <type_traits>
+
 namespace utopia {
 
     template<class Left, class Right, int Order, class Traits, int Backend>
@@ -62,10 +64,13 @@ namespace utopia {
         }
     };
 
+
+    template<class Matrix, class Vector>
+    using MatVecMult = Multiply<Tensor<Matrix, 2>, Tensor<Vector, 1> >;
+
     template<class Matrix, class Vector, class Op>
     using MatVecOpVec = 
-        utopia::Binary<Multiply<Tensor<Matrix, 2>, 
-                                Tensor<Vector, 1> >, 
+        utopia::Binary<MatVecMult<Matrix, Vector>, 
                        Tensor<Vector, 1>, 
                        Op>;
 
@@ -107,7 +112,8 @@ namespace utopia {
         }
     };
 
-
+    
+   
 
 
     template<class Left, class L, class R, int Order, class Traits, int Backend>
@@ -221,6 +227,147 @@ namespace utopia {
     //         return true;
     //     }
     // };   
+
+    template<class Vector, typename T, class Traits, int Backend>
+    class Eval<Assign<Tensor<Vector, 1>, Unary<Tensor<Vector, 1>, Reciprocal<T>> >, Traits, Backend> {
+    public:
+        using T1   = utopia::Tensor<Vector, 1>;
+        using Expr = utopia::Assign<Tensor<Vector, 1>, Unary<Tensor<Vector, 1>, Reciprocal<T>> >;
+
+        inline static bool apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            
+            Vector &l = expr.left().derived();
+            const Vector &r = expr.right().expr().derived();
+
+            if(!l.same_object(r)) {
+                l.construct(r);
+            } 
+            
+            const T num = expr.right().operation().numerator();
+            l.reciprocal(num);                              
+
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            return true;
+        }
+    };   
+
+
+    template<typename T, class Vector>
+    using ScaledVecExpr = utopia::Binary<Number<T>, Tensor<Vector, 1>, Multiplies>;
+
+
+    template<class Matrix, class Vector, typename T, class Op>
+    using AssignScaledVecOpMatVecMult = 
+    utopia::Assign<Tensor<Vector, 1>, utopia::Binary<ScaledVecExpr<T, Vector>, MatVecMult<Matrix, Vector>, Op>>;
+
+    template<class Matrix, class Vector, class Op>
+    class EvalAssignScaledVecOpMatVecMult {
+    public:
+        using T1 = utopia::Tensor<Vector, 1>;
+        using T2 = utopia::Tensor<Matrix, 2>;
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
+
+        template<typename T>
+        static void apply(
+            const ScaledVecExpr<T, Vector> &left_expr,
+            const Op &op,
+            const Matrix &A,
+            const Vector &x,
+            Vector &result)
+        {
+            auto &&left = Eval<T1, Traits>::apply(left_expr.right());
+            const Scalar alpha = left_expr.left();
+
+            if(result.same_object(left)) {
+                Vector temp;
+                A.multiply(x, temp);
+                result.scale(alpha);
+                EvalBinaryAux<T1>::apply(result, temp, op, result);
+
+            } else if(result.same_object(x)) {
+                Vector temp;
+                A.multiply(x, temp);
+
+                EvalBinaryAux<T1>::apply(left, temp, op, result);
+            } else {
+                A.multiply(x, result);
+
+                if(std::is_same<Op, Minus>::value) {
+                    result.axpy(-alpha, left);
+                    result.scale(-1.0);
+                } else if(std::is_same<Op, Plus>::value) {
+                    result.axpy(alpha, left);
+                } else {
+                    assert(false && "Should not come here at the moment");
+                    result = Binary<ScaledVecExpr<T, Vector>, Tensor<Vector, 1>, Op>(left_expr, result);
+                }
+            }
+        }
+    };
+
+    /// result = fun(left) op A * right
+    template<class Matrix, class Vector, typename T, class Traits, int Backend>
+    class Eval<AssignScaledVecOpMatVecMult<Matrix, Vector, T, Plus>, Traits, Backend> {
+    public:
+        using T1 = utopia::Tensor<Vector, 1>;
+        using T2 = utopia::Tensor<Matrix, 2>;
+        using Scalar = typename Traits::Scalar;
+
+        using Expr = utopia::AssignScaledVecOpMatVecMult<Matrix, Vector, T, Plus>;
+        static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+
+            auto &result  = Eval<T1, Traits>::apply(expr.left());
+            auto &&A = Eval<T2, Traits>::apply(expr.right().right().left());
+            auto &&right = Eval<T1, Traits>::apply(expr.right().right().right());
+
+            auto &&op = expr.right().operation();
+
+            EvalAssignScaledVecOpMatVecMult<Matrix, Vector, Plus>::apply(
+                expr.right().left(),
+                op,
+                A,
+                right,
+                result
+            );
+
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+        }
+    };
+
+
+    /// result = fun(left) op A * right
+    template<class Matrix, class Vector, typename T, class Traits, int Backend>
+    class Eval<AssignScaledVecOpMatVecMult<Matrix, Vector, T, Minus>, Traits, Backend> {
+    public:
+        using T1 = utopia::Tensor<Vector, 1>;
+        using T2 = utopia::Tensor<Matrix, 2>;
+        using Scalar = typename Traits::Scalar;
+
+        using Expr = utopia::AssignScaledVecOpMatVecMult<Matrix, Vector, T, Minus>;
+        static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+
+            auto &result  = Eval<T1, Traits>::apply(expr.left());
+            auto &&A = Eval<T2, Traits>::apply(expr.right().right().left());
+            auto &&right = Eval<T1, Traits>::apply(expr.right().right().right());
+
+            auto &&op = expr.right().operation();
+
+            EvalAssignScaledVecOpMatVecMult<Matrix, Vector, Minus>::apply(
+                expr.right().left(),
+                op,
+                A,
+                right,
+                result
+            );
+
+            UTOPIA_TRACE_END_SPECIALIZED(expr);
+        }
+    };
+
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval< Assign<Left, Transposed <Tensor<Right, 2> > >, Traits, Backend> {

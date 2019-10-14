@@ -48,6 +48,12 @@ namespace utopia {
         return Binary<Left, Right, Plus>(left.derived(), right.derived());
     }
 
+    //Switch left with right 
+    template<class Left, class L, class R>
+    Binary<Multiply<Tensor<L, 2>, Tensor<R, 1>>, Tensor<Left, 1>, Plus> operator+(const Tensor<Left, 1> &left, const Multiply<Tensor<L, 2>, Tensor<R, 1>> &right) {
+        return Binary<Multiply<Tensor<L, 2>, Tensor<R, 1>>, Tensor<Left, 1>, Plus>(right.derived(), left.derived());
+    }
+
     template<class Left, class Right>
     Multiply<Left, Right> operator*(const Expression<Left> &left, const Expression<Right> &right) {
         return Multiply<Left, Right>(left.derived(), right.derived());

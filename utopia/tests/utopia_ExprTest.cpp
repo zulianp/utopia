@@ -10,7 +10,6 @@
 
 namespace utopia
 {
-
     template<typename Matrix, typename Vector>
     class ExpressionTests
     {
@@ -20,10 +19,7 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
         ExpressionTests(const SizeType & n): n_(n)
-        {
-
-        }
-
+        {}
 
         void run()
         {
@@ -41,7 +37,7 @@ namespace utopia
             UTOPIA_RUN_TEST(residual_test);
             UTOPIA_RUN_TEST(transform_test);
             UTOPIA_RUN_TEST(mat_copy); 
-            UTOPIA_RUN_TEST(pointwise_divide_test); 
+            UTOPIA_RUN_TEST(reciprocal_test); 
         }
 
         void negate_test()
@@ -91,11 +87,13 @@ namespace utopia
             p = 0.5 * b - A * x;
             UTOPIA_NO_ALLOC_END();   
 
-            // seq. faults 
-            // UTOPIA_NO_ALLOC_BEGIN("mv_test7");
-            // b = b - A * x;
-            // UTOPIA_NO_ALLOC_END();   
-                                  
+            //This will always create a copy (A * x needs to put the result somewhere, unless the backend specialization is used and does not allocate anything)
+            //a better way would be to use a third vector p = b - A * x;
+            b = b - A * x;
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test7");
+            p = b - A * x;
+            UTOPIA_NO_ALLOC_END();      
         }
 
         void mat_copy()
@@ -106,33 +104,36 @@ namespace utopia
             Vector v = diag(I); 
 
             // I do not know how relevant are these tests, as sparsity pattern might be different... 
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy1");
-            D = I; 
-            UTOPIA_NO_ALLOC_END();     
+            //create same_sparsity_copy()
+            // UTOPIA_NO_ALLOC_BEGIN("mat_copy1");
+            // D = I; 
+            // UTOPIA_NO_ALLOC_END();     
 
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy2");
-            D = -1.0 * I; 
-            UTOPIA_NO_ALLOC_END();     
+            // UTOPIA_NO_ALLOC_BEGIN("mat_copy2");
+            // D = -1.0 * I; 
+            // UTOPIA_NO_ALLOC_END();     
 
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy3");
-            D -= I; 
-            UTOPIA_NO_ALLOC_END();     
+            // UTOPIA_NO_ALLOC_BEGIN("mat_copy3");
+            // D -= I; 
+            // UTOPIA_NO_ALLOC_END();     
 
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy4");
-            D += I; 
-            UTOPIA_NO_ALLOC_END();        
+            // UTOPIA_NO_ALLOC_BEGIN("mat_copy4");
+            // D += I; 
+            // UTOPIA_NO_ALLOC_END();        
 
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
-            D += 5.0*D; 
-            UTOPIA_NO_ALLOC_END();                             
+            // UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
+            // D += 5.0*D; 
+            // UTOPIA_NO_ALLOC_END();                             
 
             // seq. faults
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
             D += Matrix(diag(v)); 
+            
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
+            // D += diag(v); //bad way D += Matrix(diag(v)); 
             UTOPIA_NO_ALLOC_END();  
 
             UTOPIA_NO_ALLOC_BEGIN("mat_copy6");
-            D -= Matrix(diag(v)); 
+            // D -= diag(v); //bad way D -= Matrix(diag(v)); 
             UTOPIA_NO_ALLOC_END();  
         }
 
@@ -148,11 +149,11 @@ namespace utopia
             UTOPIA_NO_ALLOC_END();
         }
 
-        void pointwise_divide_test()
+        void reciprocal_test()
         {
             Vector x = values(n_, 1.0);
 
-            UTOPIA_NO_ALLOC_BEGIN("pointwise_divide_test");
+            UTOPIA_NO_ALLOC_BEGIN("reciprocal_test");
             x = 1./x; 
             UTOPIA_NO_ALLOC_END();
         }        

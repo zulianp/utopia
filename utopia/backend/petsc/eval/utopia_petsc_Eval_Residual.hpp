@@ -50,8 +50,15 @@ namespace utopia {
                 r.repurpose(b.comm().get(), b.type(), b.local_size(), b.size());
             }
 
-            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
-            ierr = MatResidual(a.raw_type(), b.raw_type(), x.raw_type(), r.raw_type()); assert(ierr == 0);
+            if(r.same_object(b) || r.same_object(x)) {
+                auto temp = b;
+                PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+                ierr = MatResidual(a.raw_type(), b.raw_type(), x.raw_type(), temp.raw_type()); assert(ierr == 0);
+                r = std::move(temp);
+            } else {
+                PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+                ierr = MatResidual(a.raw_type(), b.raw_type(), x.raw_type(), r.raw_type()); assert(ierr == 0);
+            }
 
             UTOPIA_TRACE_END(assign_expr);
             return true;

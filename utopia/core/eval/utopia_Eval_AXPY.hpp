@@ -130,7 +130,7 @@ namespace utopia {
         }
     };
 
-    //axpy specialization
+    /// axpy specialization l = x + alpha * y
     template<class Left, class Right, typename ScalarT, class Traits, int Backend>
     class Eval<
             Assign<Left,
@@ -145,32 +145,28 @@ namespace utopia {
             typedef utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Plus> RExpr;
             typedef utopia::Assign<Left, RExpr> Expr;
 
+
+
         inline static bool apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
             auto &&alpha = expr.right().right().left();
             auto &&l = Eval<Left, Traits, Backend>::apply(expr.left());
+            auto &&y = Eval<Left, Traits, Backend>::apply(expr.right().left());
+            auto &&x = Eval<Right, Traits, Backend>::apply(expr.right().right().right());
 
-            if(&expr.left() == &expr.right().left()) {
-                
-                l.axpy(
-                    alpha,
-                    Eval<Right, Traits, Backend>::apply(expr.right().right().right())
-                );
-
+            if(l.same_object(y)) {
+                l.axpy(alpha, x);
+            } else if(l.same_object(x)) {
+                l.scale(alpha);
+                l.axpy(1.0, y);
             } else {
-                auto &&ll = Eval<Left, Traits, Backend>::apply(expr.right().left());
-                auto &&rr = Eval<Right, Traits, Backend>::apply(expr.right().right().right());
-
-                if(&rr == &l) {
-                    l.construct( Eval<RExpr, Traits, Backend>::apply(expr.right()) );
-                } else {
-                    l = ll;
-                    l.axpy(alpha, rr);
-                }
+                l.construct(x);
+                l.scale(alpha);
+                l.axpy(1.0, y);
             }
-
+            
             UTOPIA_TRACE_END(expr);
             return true;
         }
