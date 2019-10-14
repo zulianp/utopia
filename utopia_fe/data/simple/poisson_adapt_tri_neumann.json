@@ -1,5 +1,5 @@
 {
-    "*mesh": {
+    "mesh": {
         "type": "square",
         "elem-type" : "tri",
         "n-x" : 5,
@@ -9,7 +9,7 @@
         "random-refinements": 5
 
     },
-    "mesh" : {
+    "*mesh" : {
         "type" : "file",
         "path" : "regular_equidim_embedded_matrix.e",
         "refinements" : 0,
@@ -27,18 +27,18 @@
         ],
         "boundary-conditions" :[
                 {
-                "side"  : 4,
+                "side"  : 3,
                 "*type" : "expr",
                 "value" : "2"
             }
         ]
     },
 
-    "*forcing-function" : [
+    "forcing-function" : [
     {
         "block":  1,
         "value" : 1,
-        "type" : "volume",
+        "type" : "surface",
         "class" : "AdaptiveFunction"
     }
     ]

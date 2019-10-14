@@ -2,9 +2,9 @@
     "mesh": {
         "type": "cube",
         "elem-type" : "tet",
-        "n-x" : 2,
-        "n-y" : 2,
-        "n-z" : 2,
+        "n-x" : 3,
+        "n-y" : 3,
+        "n-z" : 3,
         "refinements" : 0,
         "random-refine" : true,
         "random-refinements": 3

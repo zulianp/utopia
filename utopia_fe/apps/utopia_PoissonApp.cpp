@@ -36,7 +36,7 @@ namespace utopia {
         auto u = trial(V);
         auto v = test(V);
 
-        auto linear_form = inner(coeff(10.0), v) * dX;
+        auto linear_form = inner(coeff(0.0), v) * dX;
         auto bilinear_form = inner(grad(u), grad(v)) * dX;
 
         USparseMatrix A;

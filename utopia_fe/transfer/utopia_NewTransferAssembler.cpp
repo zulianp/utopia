@@ -742,8 +742,8 @@ namespace utopia {
 
         if(handle_adaptive_refinement_) {
             Adaptivity a;
-            a.constraint_matrix(*from_mesh, *from_dofs, opts.from_var_num, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
-            a.constraint_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   *data.constraint_matrix_to, *data.post_constraint_matrix_to);
+            a.constraint_matrix(*from_mesh, *from_dofs, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
+            a.constraint_matrix(*to_mesh,   *to_dofs, *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
             // disp("from");
             // disp(*data.constraint_matrix_from);
@@ -789,8 +789,8 @@ namespace utopia {
 
         if(handle_adaptive_refinement_) {
             Adaptivity a;
-            a.constraint_matrix(*from_mesh, *from_dofs, opts.from_var_num, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
-            a.constraint_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   *data.constraint_matrix_to, *data.post_constraint_matrix_to);
+            a.constraint_matrix(*from_mesh, *from_dofs, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
+            a.constraint_matrix(*to_mesh,   *to_dofs, *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
             // disp("from");
             // disp(*data.constraint_matrix_from);
@@ -865,8 +865,8 @@ namespace utopia {
             Adaptivity a;
 //            a.constraint_matrix(*from_mesh, *from_dofs, opts.from_var_num, *data.constraint_matrix_from, *data.constraint_matrix_from_2);
 //            a.constraint_matrix(*to_mesh,   *to_dofs,   opts.to_var_num,   *data.constraint_matrix_to,*data.constraint_matrix_to_2);
-            a.constraint_matrix(from_mesh, from_dofs, opts.from_var_num, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
-            a.constraint_matrix(to_mesh,to_dofs,opts.to_var_num,
+            a.constraint_matrix(from_mesh, from_dofs, *data.constraint_matrix_from, *data.post_constraint_matrix_from);
+            a.constraint_matrix(to_mesh,to_dofs,
                 *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
             // disp("from");
@@ -906,9 +906,9 @@ namespace utopia {
     {
         if(handle_adaptive_refinement_) {
             Adaptivity a;
-            a.constraint_matrix(mesh, dofs, opts.from_var_num,
+            a.constraint_matrix(mesh, dofs,
                                 *data.constraint_matrix_from, *data.post_constraint_matrix_from);
-            a.constraint_matrix(mesh, dofs, opts.to_var_num,
+            a.constraint_matrix(mesh, dofs, 
                                 *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
             // disp("from");
