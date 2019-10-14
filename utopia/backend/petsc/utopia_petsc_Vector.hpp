@@ -13,6 +13,7 @@
 #include "utopia_Constructible.hpp"
 #include "utopia_Comparable.hpp"
 #include "utopia_BLAS_Operands.hpp"
+#include "utopia_Allocations.hpp"
 
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -444,6 +445,7 @@ namespace utopia {
         PetscVector(const PetscVector &other)
         {
             if(other.vec_) {
+                UTOPIA_REPORT_ALLOC("PetscVector::PetscVector(const PetscVector &)");
                 PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
@@ -523,6 +525,7 @@ namespace utopia {
             destroy();
 
             if(other.vec_) {
+                UTOPIA_REPORT_ALLOC("PetscVector::operator=(const PetscVector &)");
                 PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 ghost_values_ = other.ghost_values_;

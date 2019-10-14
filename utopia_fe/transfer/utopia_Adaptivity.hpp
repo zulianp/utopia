@@ -84,7 +84,8 @@ namespace utopia {
                                         const libMesh::DofMap &dof_map,
                                         const unsigned int variable_number,
                                         const libMesh::Elem * elem,
-                                        const unsigned mesh_dim
+                                        const unsigned mesh_dim,
+                                        std::vector<int> & index
                                         );
 
         static void compute_all_constraints(
@@ -97,6 +98,19 @@ namespace utopia {
                                            unsigned int sys_number, 
                                            unsigned int var_number,
                                            std::vector<int> & index);
+
+
+        static void compute_boundary_nodes_top_parent(const libMesh::MeshBase &mesh, 
+                                                       libMesh::DofMap &dof_map,
+                                                       unsigned int sys_number, 
+                                                       unsigned int var_number,
+                                                       std::vector<int> & index);
+
+
+        static void compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh, 
+                                            libMesh::DofMap &dof_map,
+                                            unsigned int sys_number, unsigned int var_number, 
+                                            std::vector<int> & index);
 
 
         static void process_constraints (libMesh::MeshBase  &mesh, 

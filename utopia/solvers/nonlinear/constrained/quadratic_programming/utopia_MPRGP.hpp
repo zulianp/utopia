@@ -6,6 +6,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "utopia_Allocations.hpp"
 //#include "cuda_profiler_api.h"
 
 namespace  utopia
@@ -14,17 +15,14 @@ namespace  utopia
     template<class Matrix, class Vector>
     class MPGRP final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-
-        using Solver  = utopia::LinearSolver<Matrix, Vector>;
-        using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Solver   = utopia::LinearSolver<Matrix, Vector>;
+        using ForLoop  = utopia::ParallelFor<Traits<Vector>::Backend>;
 
         public:
             MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false), loc_size_(0)
-            {
-
-            }
+            {}
 
             void read(Input &in) override
             {
@@ -58,9 +56,10 @@ namespace  utopia
 
                 SizeType loc_size_rhs = local_size(rhs); 
 
-
-                if(!(initialized_ && loc_size_==loc_size_rhs))
-                    init(local_size(rhs));
+                //If it is the first time we are here does not make sense to check the sizes
+                if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+                }
 
                 return aux_solve(A, rhs, sol, box);
             }
@@ -73,8 +72,10 @@ namespace  utopia
 
                 SizeType loc_size_rhs = local_size(rhs); 
 
-                if(!(initialized_ && loc_size_==loc_size_rhs))
+                //If it is the first time we are here does not make sense to check the sizes
+                if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
                     init(loc_size_rhs);
+                }
 
                 return aux_solve(*A_op_ptr, rhs, sol, box);
             }
@@ -89,6 +90,9 @@ namespace  utopia
         private:
             bool aux_solve(const Operator<Vector> &A, const Vector &rhs, Vector &x, const BoxConstraints<Vector> & constraints)
             {
+                // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
+                // //cudaProfilerStart();
+
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
 
@@ -106,9 +110,6 @@ namespace  utopia
 
                 Scalar alpha_cg, alpha_f, beta_sc; 
 
-
-                // //cudaProfilerStart();
-    
                 this->get_projection(x, *lb, *ub, Ax); 
                 x = Ax; 
 
@@ -125,7 +126,6 @@ namespace  utopia
 
                 while(!converged)
                 {
-
                     if(beta_beta <= (gamma*gamma * fi_fi))
                     {
                         A.apply(p, Ap);
@@ -157,7 +157,6 @@ namespace  utopia
                             g = Ax - rhs; 
                             this->get_fi(x, g, *lb, *ub, p);                                 
                         }
-
                     }
                     else
                     {
@@ -187,7 +186,7 @@ namespace  utopia
                 }
     
                 // //cudaProfilerStop();
-
+                // UTOPIA_NO_ALLOC_END();
                 return true;
             }
 
@@ -196,9 +195,7 @@ namespace  utopia
 
             void get_fi(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & fi) const
             {
-                if(empty(fi) || loc_size_!=local_size(x)){
-                    fi = local_values(local_size(x), 0); 
-                }
+                assert(!empty(fi));
 
                 {
                     auto d_lb = const_device_view(lb);
@@ -227,13 +224,8 @@ namespace  utopia
 
             Scalar get_alpha_f(const Vector &x, const Vector &p, const Vector &lb, const Vector &ub, Vector & help_f1, Vector & help_f2) const
             {
-                if(empty(help_f1)|| loc_size_!=local_size(x)){
-                    help_f1 = local_values(local_size(x), 1e15); 
-                }
-
-                if(empty(help_f2) || loc_size_!=local_size(x)){
-                    help_f2 = local_values(local_size(x), 1e15); 
-                }
+                assert(!empty(help_f1));
+                assert(!empty(help_f2));
 
                 {
                     auto d_lb = const_device_view(lb);
@@ -281,9 +273,7 @@ namespace  utopia
 
             void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector & beta) const
             {
-                if(empty(beta)|| loc_size_!=local_size(x)){
-                    beta = local_values(local_size(x), 0.0); 
-                }
+                assert(!empty(beta));
 
                 {
                     auto d_lb = const_device_view(lb);
@@ -322,11 +312,12 @@ namespace  utopia
                 // Super simple power method to estimate the biggest eigenvalue 
                 // Vector y_old; 
                 // Vector y = local_values(n_loc, 1.0); 
+                assert(!empty(help_f2));
 
-                if(empty(help_f2))
-                    help_f2 = local_values(n_loc, 1.0); 
-                else
-                    help_f2.set(1.0);
+                // if(empty(help_f2))
+                //     help_f2 = local_values(n_loc, 1.0); 
+                // else
+                help_f2.set(1.0);
 
                 SizeType it = 0; 
                 bool converged = false; 

@@ -39,6 +39,18 @@ namespace utopia {
             comm_ = comm;
         }
 
+        inline bool conjunction(const bool &val) const override  {
+            int i = val;
+            i = sum(i);
+            return i == this->size();
+        }
+
+        inline bool disjunction(const bool &val) const override  {
+            int i = val;
+            i = sum(i);
+            return i > 0;
+        }
+
         template<typename T>
         inline T sum(const T &val) const {
 

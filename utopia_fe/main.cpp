@@ -52,6 +52,8 @@ int main(int argc, char *argv[])
             } else if(argv[i] == std::string("-data_path")) {
                 utopia::Utopia::instance().set("data_path", argv[ip1]);
                 std::cout << "setting data_path to: " << argv[ip1] << std::endl;
+            } else if(argv[i] == std::string("-disable-adaptivity")) {
+                utopia::Utopia::instance().set("disable-adaptivity", "true");
             }
         }
 

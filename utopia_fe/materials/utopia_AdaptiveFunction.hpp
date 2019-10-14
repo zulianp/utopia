@@ -13,16 +13,16 @@ namespace utopia
         	using Scalar   = typename Traits<Vector>::Scalar;
         	using SizeType = typename Traits<Vector>::SizeType;
 
-            AdaptiveFunction(FunctionSpace &V) : V_(V), value_("0"), block_(-1), area_(1)  {}
+            AdaptiveFunction(FunctionSpace &V) : V_(V), value_("0"), block_(-1), area_(1), type_("volume") {}
 
             ~AdaptiveFunction() {}
 
     		void read(Input &is) override {
 
 
-                std::string type = "volume";
+                //std::string type = "volume";
                 is.get("block", block_);
-                is.get("type", type);
+                is.get("type", type_);
 
                 if(block_ == -1) {
                     std::cerr << "[Error] ForcingFunction block not specified" << std::endl;
@@ -32,7 +32,7 @@ namespace utopia
 
                 is.get("value", value_);
 
-                if(type == "surface") {
+                if(type_ == "surface") {
     	            int normalize_by_area = 0;
     	            is.get("normalize-by-area", normalize_by_area);
 
@@ -41,9 +41,7 @@ namespace utopia
     	                area_ = surface_area(V_, block_);
     	                std::cout << "normalizing by area: " << area_ << std::endl;
     	            }
-            	} else {
-            		  std::cout << "to be implemented" << area_ << std::endl;
-            	}
+            	} 
     	    }
 
 
@@ -56,11 +54,18 @@ namespace utopia
                 auto f = coeff(value);
     #endif //WITH_TINY_EXPR
 
-                std::cout<<"Ciao"<<std::endl;
+                //std::cout<<"Ciao"<<std::endl;
+                if (type_ == "surface") {
+                    auto v = test(V_);
+                    auto l_form = surface_integral((1./area_) * inner(f, v), block_);
+                    assemble(l_form, result);
+                }
+                else{
 
-            	auto v = test(V_);
-            	auto l_form = surface_integral((1./area_) * inner(f, v), block_);
-            	assemble(l_form, result);
+                    auto v = test(V_);
+                    auto l_form = integral(inner(f, v), block_);
+                    assemble(l_form, result);
+                }
 
                // disp(result);
 
@@ -72,6 +77,7 @@ namespace utopia
         	std::string value_;
         	int block_;
         	Scalar area_;
+            std::string type_;
         };  
 
 }

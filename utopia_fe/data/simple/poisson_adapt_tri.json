@@ -14,7 +14,7 @@
         "path" : "square.e",
         "refinements" : 0,
         "random-refine" : true,
-        "random-refinements": 5
+        "random-refinements": 3
     },
     "space": {
         "system-name" : "poisson",

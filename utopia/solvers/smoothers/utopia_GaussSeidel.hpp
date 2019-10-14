@@ -4,18 +4,19 @@
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_Allocations.hpp"
 
 
 namespace utopia {
 
     /**
-     * @brief      Wrapper for PETSC implementation of SOR.
+     * @brief      Homemade implementation of SOR.
      *
      * @tparam     Matrix
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class GaussSeidel: public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
+    class GaussSeidel final : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
@@ -23,10 +24,8 @@ namespace utopia {
         typedef utopia::Smoother<Matrix, Vector>        Smoother;
 
     public:
-        GaussSeidel(): use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(1)
-        {
-
-        }
+        GaussSeidel(): use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(1), check_convergence_each_(10)
+        {}
 
         void read(Input &in) override
         {
@@ -51,13 +50,16 @@ namespace utopia {
         bool smooth(const Vector &rhs, Vector &x) override
         {
             const Matrix &A = *this->get_operator();
-
-            // init(A);
             SizeType it = 0;
             SizeType n_sweeps = this->sweeps();
 
-            while(unconstrained_step(A, rhs, x) && it++ < n_sweeps) {}
-            
+            bool success = true;
+            while(success && it++ < n_sweeps) {
+                r = rhs - A * x;
+                success = local_sweeps(A, r, c);
+                x += c;
+            }
+
             return it == SizeType(this->sweeps() - 1);
         }
 
@@ -69,33 +71,44 @@ namespace utopia {
          */
         bool apply(const Vector &rhs, Vector &x) override
         {
+            UTOPIA_NO_ALLOC_BEGIN("GaussSeidel::apply");
+
             if(this->verbose())
                 this->init_solver("utopia GaussSeidel", {" it. ", "|| r ||"});
 
             const Matrix &A = *this->get_operator();
             bool converged = false;
-
             int iteration = 0;
+            Scalar r_norm;
 
-            Scalar r_norm = norm2(A * x - rhs); 
+            r = rhs - A * x;
+            r_norm = norm2(r); 
+
             if(this->verbose()) {
                 PrintInfo::print_iter_status(iteration, {r_norm});
             }            
 
             while(!converged) {
-                unconstrained_step(A, rhs, x);
-                r_norm = norm2(A * x - rhs); 
-                
+                local_sweeps(A, r, c);
+                x += c;
+                r = rhs - A * x;
+
                 ++iteration;
-                if(this->verbose()) {
-                    PrintInfo::print_iter_status(iteration, {r_norm});
+
+                if(iteration % check_convergence_each_ == 0) {
+                    r_norm = norm2(r); 
+
+                    if(this->verbose()) {
+                        PrintInfo::print_iter_status(iteration, {r_norm});
+                    }
+
+                    converged = this->check_convergence(iteration, 1, 1, r_norm);
+
+                    if(converged) break;
                 }
-
-                converged = this->check_convergence(iteration, 1, 1, r_norm);
-
-                if(converged) break;
             }
 
+            UTOPIA_NO_ALLOC_END();
             return converged;
         }
 
@@ -131,12 +144,9 @@ namespace utopia {
             use_symmetric_sweep_ = use_symmetric_sweep;
         }
 
-
-
-  protected:
-        bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x)
+  private:
+        bool local_sweeps(const Matrix &A, const Vector &r, Vector &c)
         {
-            r = b - A * x;
             c *= 0.;
 
             Range rr = row_range(A);
@@ -191,8 +201,8 @@ namespace utopia {
             Scalar alpha = 1.;
 
             if(use_line_search_) {
-
-                alpha = dot(c, r)/dot(A * c, c);
+                Ac = A*c;
+                alpha = dot(c, r)/dot(Ac, c);
 
                 if(std::isinf(alpha)) {
                     return true;
@@ -209,25 +219,29 @@ namespace utopia {
                 }
             }
 
-            x += alpha * c;
+            c *= alpha;
             return true;
         }
 
-
         void init(const Matrix &A)
         {
+            SizeType n = local_size(A).get(0);
             d = diag(A);
             d_inv = 1./d;
-            c = local_zeros(local_size(A).get(0));
+            c = local_zeros(n);
+            r = local_zeros(n);
+
+            if(use_line_search_) {
+                Ac = local_zeros(n);
+            }
         }        
 
-
-      private:
         bool use_line_search_;
         bool use_symmetric_sweep_;
         SizeType n_local_sweeps_;
+        SizeType check_convergence_each_;
 
-        Vector r, d, c, d_inv, x_old, descent_dir;
+        Vector r, d, c, d_inv, Ac;
 
     };
 

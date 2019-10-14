@@ -6,7 +6,6 @@
 namespace utopia
 {
 
-
 #ifdef  WITH_PETSC
     class NonlinearBratuSolverTest {
     public:

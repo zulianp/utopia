@@ -15,7 +15,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class ContactStabilizedNewmark : public ContactSolver<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
+        
         using super = ContactSolver<Matrix, Vector>;
         using FunctionSpaceT = typename super::FunctionSpaceT;
         using ContactT       = typename super::ContactT;

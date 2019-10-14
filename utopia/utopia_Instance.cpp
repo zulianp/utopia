@@ -136,14 +136,24 @@ namespace utopia {
 #endif
     }
 
-
     void Utopia::read_input(int argc, char *argv[])
     {
         for(int i = 1; i < argc; i++) {
+            std::string str(argv[i]);
+
+            if(str == "-verbose") {
+                instance().set("verbose", "true");
+            }
+
 #ifdef ENABLE_NO_ALLOC_REGIONS
-           if(argv[i] == std::string("-on_alloc_violation_abort")) {
+
+            if(str == "-on_alloc_violation_abort") {
                 Allocations::instance().abort_on_violation(true);
             } 
+
+            if(str == "-mute-allocation-ctrl") {
+                Allocations::instance().verbose(false);
+            }
         }
 #endif //ENABLE_NO_ALLOC_REGIONS
     }

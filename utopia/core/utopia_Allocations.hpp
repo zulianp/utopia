@@ -32,12 +32,21 @@ namespace utopia {
             ++count_;
 
             if(is_no_allocation_region_) {
-                std::cerr << "[VIOLATION] allocation (" << name << ") in region (" << region_name_.top() << ") at " << file << ":" << line_number << std::endl;
+               handle_violation(name, file, line_number);
+            }
+        }
 
-                if(abort_on_violation_) {
-                    assert(false);
-                    abort();
-                }
+        void handle_violation(const std::string &name, const std::string &file, int line_number)
+        {
+            ++n_violations_;
+
+            if(abort_on_violation_ || verbose_) {
+                std::cerr << "[VIOLATION] allocation (" << name << ") in region (" << region_name_.top() << ") at " << file << ":" << line_number << std::endl;
+            }
+            
+            if(abort_on_violation_) {
+                assert(false);
+                abort();
             }
         }
 
@@ -55,7 +64,7 @@ namespace utopia {
 
         inline ~Allocations()
         {
-            std::cout << "[Status] total allocations " << count_ << std::endl;
+            std::cout << "[Status] total allocations " << count_ << ", " << n_violations_ <<  " violations " << std::endl;
         }
 
         inline void abort_on_violation(const bool val)
@@ -68,13 +77,17 @@ namespace utopia {
             return count_;
         }
 
+        inline void verbose(const bool val) { verbose_ = val; }
+
     private:
         int is_no_allocation_region_;
         Counter count_;
+        Counter n_violations_;
         std::stack<std::string> region_name_;
         bool abort_on_violation_;
+        bool verbose_;
 
-        inline Allocations() : is_no_allocation_region_(0), count_(0), abort_on_violation_(false)
+        inline Allocations() : is_no_allocation_region_(0), count_(0), n_violations_(0), abort_on_violation_(false), verbose_(true)
         {}
     };
 

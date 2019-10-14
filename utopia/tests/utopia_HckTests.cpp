@@ -6,6 +6,7 @@
 // #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
+#include "utopia_Eval_Residual.hpp"
 
 namespace utopia
 {
@@ -45,60 +46,128 @@ namespace utopia
 
         void run_petsc()
         {
-            UTOPIA_RUN_TEST(newton_test);
-
-            UTOPIA_RUN_TEST(STCG_test);
             UTOPIA_RUN_TEST(MPGRP_test);
-            UTOPIA_RUN_TEST(ProjectedGS);
-
-
-            UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(TR_constrained);
-
             UTOPIA_RUN_TEST(Poisson_test);
-
-            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            UTOPIA_RUN_TEST(ProjectedGS);
             UTOPIA_RUN_TEST(QuasiTR_constrained);
-
-
-            UTOPIA_RUN_TEST(RMTR_unconstrained);
-            UTOPIA_RUN_TEST(RMTR_l2_linear);
-
+            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
             UTOPIA_RUN_TEST(RMTR_inf_linear_unconstr);
-
+            UTOPIA_RUN_TEST(RMTR_l2_linear);
+            UTOPIA_RUN_TEST(RMTR_unconstrained);
+            UTOPIA_RUN_TEST(STCG_test);
+            UTOPIA_RUN_TEST(TR_constrained);
+            UTOPIA_RUN_TEST(TR_unconstrained);
+            UTOPIA_RUN_TEST(newton_test);
         }
 
         void run_trilinos()
         {
+            //FIXME (mem allocs)
             UTOPIA_RUN_TEST(TR_tril_test);
+            UTOPIA_RUN_TEST(RMTR_l2_test);
+            UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
+            UTOPIA_RUN_TEST(RMTR_inf_test);
+            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
-            // UTOPIA_RUN_TEST(RMTR_l2_test);
-            // UTOPIA_RUN_TEST(RMTR_inf_test);
-            // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
+            UTOPIA_RUN_TEST(axpy_test);
+            UTOPIA_RUN_TEST(e_div_test);
+            UTOPIA_RUN_TEST(e_div_test);
+            UTOPIA_RUN_TEST(e_mul_test);
+            UTOPIA_RUN_TEST(for_each_loop_test);
+            UTOPIA_RUN_TEST(multi_reduce_test);
+            UTOPIA_RUN_TEST(mv_test);
+            UTOPIA_RUN_TEST(negate_alpha_test);
+            UTOPIA_RUN_TEST(negate_test);
+            UTOPIA_RUN_TEST(parallel_each_write_test);
+            UTOPIA_RUN_TEST(quad_form_test);
+            UTOPIA_RUN_TEST(residual_test);
+            UTOPIA_RUN_TEST(transform_test);
+            UTOPIA_RUN_TEST(MPGRP_test);
 
-            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
-
-            // UTOPIA_RUN_TEST(multi_reduce_test);
-             // UTOPIA_RUN_TEST(MPGRP_test);
-
-           // UTOPIA_RUN_TEST(STCG_test);
-            // UTOPIA_RUN_TEST(for_each_loop_test);
-            // UTOPIA_RUN_TEST(parallel_each_write_test);
-
-            // UTOPIA_RUN_TEST(quad_form_test);
-
-            // UTOPIA_RUN_TEST(multi_reduce_test);
-            // UTOPIA_RUN_TEST(MPGRP_test);
-
+            //FIME does not compile
             // UTOPIA_RUN_TEST(STCG_test);
-            // UTOPIA_RUN_TEST(for_each_loop_test);
-            // UTOPIA_RUN_TEST(parallel_each_write_test);
-            // UTOPIA_RUN_TEST(residual_test);
+        }
 
+        void negate_test()
+        {
+            Vector x = values(n_, 1.0);
 
-            // //THIS
-            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            UTOPIA_NO_ALLOC_BEGIN("negate_test");
+            x = -x;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void mv_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector b = values(n_, 1.0);
+            Vector p = values(n_, 1.0);
+
+            Matrix A = sparse(n_, n_, 3);
+            assemble_laplacian_1D(A);
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test");
+            p = A * x + b;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void e_mul_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 2.0);
+            Vector z = values(n_, 0.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
+            z = e_mul(x, y);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void e_div_test()
+        {
+            Vector x = values(n_, 6.0);
+            Vector z = values(n_, 3.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("e_div_test");
+            z = x / z;
+            
+            Scalar sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 2.0*n_));
+            z = x / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0*n_));
+
+            z = z / x;
+            sum_z = sum(z);
+            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
+
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void transform_test()
+        {
+            Vector x = values(n_, 1.0);
+            
+            parallel_transform(
+                x,
+                UTOPIA_LAMBDA(const SizeType &i, const Scalar &v) -> Scalar {
+                    return (i+1)*v;
+            });
+            
+            Scalar expected = ((n_ + 1) * n_)/2.0;
+            Scalar sum_x = sum(x);
+
+            utopia_test_assert(approxeq(sum_x, expected, 1e-10));
+        }
+
+        void negate_alpha_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 1.0);
+            
+            UTOPIA_NO_ALLOC_BEGIN("negate_alpha_test");
+            y = -0.5 * x;
+            UTOPIA_NO_ALLOC_END();
         }
 
         void quad_form_test()
@@ -120,9 +189,21 @@ namespace utopia
             Matrix A = sparse(n_, n_, 3);
             Vector r = values(n_, 0.0);
 
-            // r = A*x - b;
-
+            UTOPIA_NO_ALLOC_BEGIN("residual_test");
             r = x - b;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void axpy_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 1.0);
+            Vector p = values(n_, 2.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("axpy_test");
+            x = x - 0.5 * p;
+            y = x - 0.5 * p;
+            UTOPIA_NO_ALLOC_END();
         }
 
         template<class QPSolverTemp>
@@ -979,7 +1060,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 100;
+        auto coarse_dofs = 5;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();

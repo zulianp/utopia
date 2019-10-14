@@ -5,6 +5,7 @@
 #include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMesh.hpp"
 #include "utopia_Flow.hpp"
+#include "utopia_FlowWithFractures.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_NewTransferAssembler.hpp"
 #include "utopia_FluxPostProcessor.hpp"
@@ -279,10 +280,19 @@ namespace utopia {
             in.get("space", space_);
 
             //FIXME allow also other models
-            auto flow = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
-            flow->rescale(this->rescale());
-            flow->read(in);
-            flow_model_ = flow;
+            std::string type;
+            in.get("type", type);
+            if("FlowWithFractures" == type)  {
+                auto flow = std::make_shared<FlowWithFractures<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+                flow->rescale(this->rescale());
+                flow->read(in);
+                flow_model_ = flow;
+            } else {
+                auto flow = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+                flow->rescale(this->rescale());
+                flow->read(in);
+                flow_model_ = flow;
+            }
 
             in.get("mortar", mortar_);
             in.get("gradient-recovery", gradient_recovery_);

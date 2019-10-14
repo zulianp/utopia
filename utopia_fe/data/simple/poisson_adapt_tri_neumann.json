@@ -14,7 +14,7 @@
         "path" : "regular_equidim_embedded_matrix.e",
         "refinements" : 0,
         "random-refine" : true,
-        "random-refinements": 1
+        "random-refinements": 2
     },
     "space": {
         "system-name" : "poisson",
@@ -28,17 +28,17 @@
         "boundary-conditions" :[
                 {
                 "side"  : 4,
-                "*type"  : "expr",
+                "*type" : "expr",
                 "value" : "2"
             }
         ]
     },
 
-    "forcing-function" : [
+    "*forcing-function" : [
     {
-        "block":  3,
+        "block":  1,
         "value" : 1,
-        "type" : "surface",
+        "type" : "volume",
         "class" : "AdaptiveFunction"
     }
     ]

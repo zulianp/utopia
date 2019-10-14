@@ -14,7 +14,8 @@
 #include "utopia_make_unique.hpp"
 #include "utopia_MixedPoissonApp.hpp"
 #include "utopia_RefineApp.hpp"
-
+#include "utopia_FlowWithFracturesApp.hpp"
+#include "utopia_MassApp.hpp"
 #include <iostream>
 
 namespace utopia {
@@ -83,5 +84,7 @@ namespace utopia {
         add_app(WearApp::command(),                  utopia::make_unique<WearApp>());
         add_app(MixedPoissonApp::command(),          utopia::make_unique<MixedPoissonApp>());
         add_app(RefineApp::command(),                utopia::make_unique<RefineApp>());
+        add_app(FlowWithFracturesApp::command(),     utopia::make_unique<FlowWithFracturesApp>());
+        add_app(MassApp::command(),                  utopia::make_unique<MassApp>());
     }
 }
