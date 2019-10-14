@@ -32,7 +32,7 @@ namespace utopia
         using IterativeSolver<Matrix, Vector>::solve;
 
         ConjugateGradient()
-        : reset_initial_guess_(false)
+        : reset_initial_guess_(false), initialized_(false), loc_size_(0)
         {
 
         }
@@ -76,13 +76,22 @@ namespace utopia
         bool apply(const Vector &b, Vector &x) override
         {
             auto A_ptr = utopia::op(this->get_operator());
+
+            SizeType loc_size_rhs = local_size(b); 
+            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+            }        
+
             return solve(*A_ptr, b, x);
         }
 
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
         {
-            init(local_size(b));
+            SizeType loc_size_rhs   = local_size(b); 
+            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+            }            
 
             if(precond_) {
                 return preconditioned_solve(A, b, x);
@@ -106,8 +115,6 @@ namespace utopia
         void update(const std::shared_ptr<const Matrix> &op) override
         {
             IterativeSolver<Matrix, Vector>::update(op);
-
-            init(local_size(*op).get(0));
 
             if(precond_) {
                 auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(precond_.get());
@@ -232,12 +239,14 @@ namespace utopia
             SizeType it = 0;
             Scalar beta = 0., alpha = 1., r_norm = 9e9;
 
-            z     = local_zeros(local_size(b));
-            z_new = local_zeros(local_size(b));
+            z.set(0.0); 
+            z_new.set(0.0); 
 
             if(empty(x) || size(x) != size(b)) {
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region0");
                 x = local_zeros(local_size(b));
                 r = b;
+                UTOPIA_NO_ALLOC_END();
             } else {
                 assert(local_size(x) == local_size(b));
 
@@ -245,12 +254,16 @@ namespace utopia
                     x.set(0.);
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region1");
                 A.apply(x, r);
                 r = b - r;
+                UTOPIA_NO_ALLOC_END();
             }
 
+            UTOPIA_NO_ALLOC_BEGIN("CG_pre:region2");
             precond_->apply(r, z);
             p = z;
+            UTOPIA_NO_ALLOC_END();
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||" });
             bool stop = false;
@@ -258,18 +271,27 @@ namespace utopia
             while(!stop)
             {
                 // Ap = A*p;
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region3");
                 A.apply(p, Ap);
                 alpha = dot(r, z)/dot(p, Ap);
+                UTOPIA_NO_ALLOC_END();
 
                 if(std::isinf(alpha) || std::isnan(alpha)) {
                     stop = this->check_convergence(it, r_norm, 1, 1);
                     break;
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region4");
                 x += alpha * p;
-                r_new = r - alpha * Ap;
+                UTOPIA_NO_ALLOC_END();
 
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region4.1");
+                r_new = r - alpha * Ap;
+                UTOPIA_NO_ALLOC_END();
+
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region4.2");
                 r_norm = norm2(r_new);
+                UTOPIA_NO_ALLOC_END();
 
                 if(r_norm < this->atol()) {
                     if(this->verbose()) {
@@ -280,12 +302,17 @@ namespace utopia
                     break;
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region5");
+                z_new.set(0.0); 
                 precond_->apply(r_new, z_new);
                 beta = dot(z_new, r_new)/dot(z, r);
+                UTOPIA_NO_ALLOC_END();
 
+                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region5.1");
                 p = z_new + beta * p;
                 r = r_new;
                 z = z_new;
+                UTOPIA_NO_ALLOC_END();
 
                 if(this->verbose()) {
                     PrintInfo::print_iter_status(it, {r_norm});
@@ -327,38 +354,23 @@ namespace utopia
             auto zero_expr = local_zeros(ls);
 
             //resets all buffers in case the size has changed
-            if(!empty(r)) {
-                r = zero_expr;
-            }
+            r = zero_expr;
+            p = zero_expr;
+            q = zero_expr;
+            Ap = zero_expr;
+            r_new = zero_expr;
+            z = zero_expr;
+            z_new = zero_expr;
 
-            if(!empty(p)) {
-                p = zero_expr;
-            }
-
-            if(!empty(q)) {
-                q = zero_expr;
-            }
-
-            if(!empty(Ap)) {
-                Ap = zero_expr;
-            }
-
-            if(!empty(r_new)) {
-                r_new = zero_expr;
-            }
-
-            if(!empty(z)) {
-                z = zero_expr;
-            }
-
-            if(!empty(z_new)) {
-                z_new = zero_expr;
-            }
+            initialized_ = true;    
+            loc_size_ = ls;                    
         }
 
         std::shared_ptr<Preconditioner> precond_;
         Vector r, p, q, Ap, r_new, z, z_new;
         bool reset_initial_guess_;
+        bool initialized_; 
+        SizeType loc_size_;         
     };
 }
 

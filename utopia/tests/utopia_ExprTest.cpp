@@ -28,7 +28,6 @@ namespace utopia
         void run()
         {
             //FIXME (mem allocs)
-
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(e_div_test);
             UTOPIA_RUN_TEST(e_mul_test);
@@ -41,15 +40,22 @@ namespace utopia
             UTOPIA_RUN_TEST(quad_form_test);
             UTOPIA_RUN_TEST(residual_test);
             UTOPIA_RUN_TEST(transform_test);
+            UTOPIA_RUN_TEST(mat_copy); 
+            UTOPIA_RUN_TEST(pointwise_divide_test); 
         }
 
         void negate_test()
         {
             Vector x = values(n_, 1.0);
+            Vector y = values(n_, 10.0);
 
             UTOPIA_NO_ALLOC_BEGIN("negate_test");
             x = -x;
             UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("copy_test");
+            x = y;
+            UTOPIA_NO_ALLOC_END();            
         }
 
         void mv_test()
@@ -61,10 +67,75 @@ namespace utopia
             Matrix A = sparse(n_, n_, 3);
             assemble_laplacian_1D(A);
 
-            UTOPIA_NO_ALLOC_BEGIN("mv_test");
+            UTOPIA_NO_ALLOC_BEGIN("mv_test1");
             p = A * x + b;
             UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test2");
+            p = A * x - b;
+            UTOPIA_NO_ALLOC_END();     
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test3");
+            p = b - A * x;
+            UTOPIA_NO_ALLOC_END();   
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test4");
+            p = b + A * x;
+            UTOPIA_NO_ALLOC_END();                 
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test5");
+            p = 0.5 * b + A * x;
+            UTOPIA_NO_ALLOC_END();         
+
+            UTOPIA_NO_ALLOC_BEGIN("mv_test6");
+            p = 0.5 * b - A * x;
+            UTOPIA_NO_ALLOC_END();   
+
+            // seq. faults 
+            // UTOPIA_NO_ALLOC_BEGIN("mv_test7");
+            // b = b - A * x;
+            // UTOPIA_NO_ALLOC_END();   
+                                  
         }
+
+        void mat_copy()
+        {
+
+            Matrix I = identity(n_, n_); 
+            Matrix D = identity(n_, n_); 
+            Vector v = diag(I); 
+
+            // I do not know how relevant are these tests, as sparsity pattern might be different... 
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy1");
+            D = I; 
+            UTOPIA_NO_ALLOC_END();     
+
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy2");
+            D = -1.0 * I; 
+            UTOPIA_NO_ALLOC_END();     
+
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy3");
+            D -= I; 
+            UTOPIA_NO_ALLOC_END();     
+
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy4");
+            D += I; 
+            UTOPIA_NO_ALLOC_END();        
+
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
+            D += 5.0*D; 
+            UTOPIA_NO_ALLOC_END();                             
+
+            // seq. faults
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
+            D += Matrix(diag(v)); 
+            UTOPIA_NO_ALLOC_END();  
+
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy6");
+            D -= Matrix(diag(v)); 
+            UTOPIA_NO_ALLOC_END();  
+        }
+
 
         void e_mul_test()
         {
@@ -76,6 +147,15 @@ namespace utopia
             z = e_mul(x, y);
             UTOPIA_NO_ALLOC_END();
         }
+
+        void pointwise_divide_test()
+        {
+            Vector x = values(n_, 1.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("pointwise_divide_test");
+            x = 1./x; 
+            UTOPIA_NO_ALLOC_END();
+        }        
 
         void e_div_test()
         {

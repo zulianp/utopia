@@ -19,7 +19,9 @@ namespace utopia
     public:
         bool apply(const Vector &rhs, Vector &sol) override
         {
+            UTOPIA_NO_ALLOC_BEGIN("InvDiagPreconditioner:region3");
             sol = e_mul(d, rhs);
+            UTOPIA_NO_ALLOC_END();
             return true;
         }
 
@@ -28,8 +30,13 @@ namespace utopia
         void update(const std::shared_ptr<const Matrix> &op) override
         {
             LinearSolver<Matrix, Vector>::update(op);
+            UTOPIA_NO_ALLOC_BEGIN("InvDiagPreconditioner:region1");
             d = diag(*op);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("InvDiagPreconditioner:region2");
             d  = 1.0 / d;
+            UTOPIA_NO_ALLOC_END();
         }
 
 
