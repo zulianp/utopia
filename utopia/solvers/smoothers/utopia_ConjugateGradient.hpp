@@ -1,9 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-06-06
- * @Last Modified by:   alenakopanicakova
- * @Last Modified time: 2016-11-06
- */
 #ifndef UTOPIA_CONJUGATE_GRAD_H
 #define UTOPIA_CONJUGATE_GRAD_H
 
@@ -11,6 +5,7 @@
 #include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_Smoother.hpp"
+#include "utopia_Allocations.hpp"
 
 #include <memory>
 
@@ -154,8 +149,10 @@ namespace utopia
                     x.set(0.);
                 }
                 // r = b - A * x;
+                UTOPIA_NO_ALLOC_BEGIN("CG:region1");
                 A.apply(x, r);
                 r = b - r;
+                UTOPIA_NO_ALLOC_END();
             }
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||" });
@@ -175,17 +172,24 @@ namespace utopia
                 if(it > 0)
                 {
                     beta = rho/rho_1;
+                    UTOPIA_NO_ALLOC_BEGIN("CG:region2");
                     p = r + beta * p;
+                    UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("CG:region3");
                     p = r;
+                    UTOPIA_NO_ALLOC_END();
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("CG:region4");
                 // q = A * p;
                 A.apply(p, q);
 
                 Scalar dot_pq = dot(p, q);
+
+                UTOPIA_NO_ALLOC_END();
 
                 if(dot_pq == 0.) {
                     //TODO handle properly
@@ -194,12 +198,14 @@ namespace utopia
                     break;
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("CG:region5");
                 alpha = rho / dot_pq;
 
                 x += alpha * p;
                 r -= alpha * q;
 
                 rho_1 = rho;
+                UTOPIA_NO_ALLOC_END();
 
                 if((it % check_norm_each) == 0) {
                     // r =

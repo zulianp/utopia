@@ -63,30 +63,30 @@ namespace utopia
         void run_trilinos()
         {
             //FIXME (mem allocs)
-            UTOPIA_RUN_TEST(TR_tril_test);
-            UTOPIA_RUN_TEST(RMTR_l2_test);
-            UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
-            UTOPIA_RUN_TEST(RMTR_inf_test);
-            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            // UTOPIA_RUN_TEST(TR_tril_test);
+            // UTOPIA_RUN_TEST(RMTR_l2_test);
+            // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
+            // UTOPIA_RUN_TEST(RMTR_inf_test);
+            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
-            UTOPIA_RUN_TEST(axpy_test);
-            UTOPIA_RUN_TEST(e_div_test);
-            UTOPIA_RUN_TEST(e_div_test);
-            UTOPIA_RUN_TEST(e_mul_test);
-            UTOPIA_RUN_TEST(for_each_loop_test);
-            UTOPIA_RUN_TEST(multi_reduce_test);
-            UTOPIA_RUN_TEST(mv_test);
-            UTOPIA_RUN_TEST(negate_alpha_test);
-            UTOPIA_RUN_TEST(negate_test);
-            UTOPIA_RUN_TEST(parallel_each_write_test);
-            UTOPIA_RUN_TEST(quad_form_test);
-            UTOPIA_RUN_TEST(residual_test);
-            UTOPIA_RUN_TEST(transform_test);
-            UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(axpy_test);
+            // UTOPIA_RUN_TEST(e_div_test);
+            // UTOPIA_RUN_TEST(e_mul_test);
+            // UTOPIA_RUN_TEST(for_each_loop_test);
+            // UTOPIA_RUN_TEST(multi_reduce_test);
+            // UTOPIA_RUN_TEST(mv_test);
+            // UTOPIA_RUN_TEST(negate_alpha_test);
+            // UTOPIA_RUN_TEST(negate_test);
+            // UTOPIA_RUN_TEST(parallel_each_write_test);
+            // UTOPIA_RUN_TEST(quad_form_test);
+            // UTOPIA_RUN_TEST(residual_test);
+            // UTOPIA_RUN_TEST(transform_test);
+            
 
-
-            //FIME does not compile
+            // Linear/QP solver tests 
             // UTOPIA_RUN_TEST(STCG_test);
+            UTOPIA_RUN_TEST(CG_test); 
+            // UTOPIA_RUN_TEST(MPGRP_test);
         }
 
         void negate_test()
@@ -248,23 +248,10 @@ namespace utopia
 
         void STCG_test()
         {
-
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            auto precond = std::make_shared<KSPSolver<Matrix, Vector> >();
-            precond->ksp_type("preonly");
-            precond->pc_type("hypre");
-            QP_solver->set_preconditioner(precond); 
-
-            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
-            // auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
-            // auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
             // precond->verbose(verbose_);
-            // precond->max_it(1);
-            // precond->use_line_search(false);
-            // QP_solver->set_preconditioner(precond);
             QP_solver->use_precond_direction(false);
-
 
 
             QP_solver->atol(1e-10);
@@ -277,6 +264,20 @@ namespace utopia
 
             QP_solve(QP_solver);
         }
+
+        void CG_test()
+        {
+            auto solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE> >();
+            // solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+
+            solver->atol(1e-10);
+            solver->max_it(10);
+            solver->verbose(verbose_);
+            solver->norm_schedule(NormSchedule::EVERY_ITER); 
+
+            QP_solve(solver);
+        }
+
 
         void MPGRP_test()
         {
@@ -1060,11 +1061,11 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 5;
+        auto coarse_dofs = 30;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
