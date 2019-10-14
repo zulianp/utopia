@@ -63,148 +63,19 @@ namespace utopia
         void run_trilinos()
         {
             //FIXME (mem allocs)
-            UTOPIA_RUN_TEST(TR_tril_test);
-            UTOPIA_RUN_TEST(RMTR_l2_test);
-            UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
-            UTOPIA_RUN_TEST(RMTR_inf_test);
-            UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            // UTOPIA_RUN_TEST(TR_tril_test);
+            // UTOPIA_RUN_TEST(RMTR_l2_test);
+            // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
+            // UTOPIA_RUN_TEST(RMTR_inf_test);
+            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
+            
 
-            UTOPIA_RUN_TEST(axpy_test);
-            UTOPIA_RUN_TEST(e_div_test);
-            UTOPIA_RUN_TEST(e_div_test);
-            UTOPIA_RUN_TEST(e_mul_test);
-            UTOPIA_RUN_TEST(for_each_loop_test);
-            UTOPIA_RUN_TEST(multi_reduce_test);
-            UTOPIA_RUN_TEST(mv_test);
-            UTOPIA_RUN_TEST(negate_alpha_test);
-            UTOPIA_RUN_TEST(negate_test);
-            UTOPIA_RUN_TEST(parallel_each_write_test);
-            UTOPIA_RUN_TEST(quad_form_test);
-            UTOPIA_RUN_TEST(residual_test);
-            UTOPIA_RUN_TEST(transform_test);
-            UTOPIA_RUN_TEST(MPGRP_test);
-
-
-            //FIME does not compile
+            // Linear/QP solver tests 
             // UTOPIA_RUN_TEST(STCG_test);
+            UTOPIA_RUN_TEST(CG_test); 
+            // UTOPIA_RUN_TEST(MPGRP_test);
         }
 
-        void negate_test()
-        {
-            Vector x = values(n_, 1.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("negate_test");
-            x = -x;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void mv_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector b = values(n_, 1.0);
-            Vector p = values(n_, 1.0);
-
-            Matrix A = sparse(n_, n_, 3);
-            assemble_laplacian_1D(A);
-
-            UTOPIA_NO_ALLOC_BEGIN("mv_test");
-            p = A * x + b;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void e_mul_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-            Vector z = values(n_, 0.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
-            z = e_mul(x, y);
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void e_div_test()
-        {
-            Vector x = values(n_, 6.0);
-            Vector z = values(n_, 3.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("e_div_test");
-            z = x / z;
-            
-            Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 2.0*n_));
-            z = x / x;
-            sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0*n_));
-
-            z = z / x;
-            sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
-
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void transform_test()
-        {
-            Vector x = values(n_, 1.0);
-            
-            parallel_transform(
-                x,
-                UTOPIA_LAMBDA(const SizeType &i, const Scalar &v) -> Scalar {
-                    return (i+1)*v;
-            });
-            
-            Scalar expected = ((n_ + 1) * n_)/2.0;
-            Scalar sum_x = sum(x);
-
-            utopia_test_assert(approxeq(sum_x, expected, 1e-10));
-        }
-
-        void negate_alpha_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
-            
-            UTOPIA_NO_ALLOC_BEGIN("negate_alpha_test");
-            y = -0.5 * x;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void quad_form_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-
-            auto expr = 0.5 * dot(x, y) - 0.5 * dot(x, y);
-
-            Scalar val = expr;
-
-            utopia_test_assert(approxeq(val, 0.0));
-        }
-
-        void residual_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector b = values(n_, 1.0);
-            Matrix A = sparse(n_, n_, 3);
-            Vector r = values(n_, 0.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("residual_test");
-            r = x - b;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void axpy_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
-            Vector p = values(n_, 2.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("axpy_test");
-            x = x - 0.5 * p;
-            y = x - 0.5 * p;
-            UTOPIA_NO_ALLOC_END();
-        }
 
         template<class QPSolverTemp>
         void QP_solve(QPSolverTemp &qp_solver) const
@@ -248,23 +119,10 @@ namespace utopia
 
         void STCG_test()
         {
-
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            auto precond = std::make_shared<KSPSolver<Matrix, Vector> >();
-            precond->ksp_type("preonly");
-            precond->pc_type("hypre");
-            QP_solver->set_preconditioner(precond); 
-
-            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
-            // auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
-            // auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
             // precond->verbose(verbose_);
-            // precond->max_it(1);
-            // precond->use_line_search(false);
-            // QP_solver->set_preconditioner(precond);
             QP_solver->use_precond_direction(false);
-
 
 
             QP_solver->atol(1e-10);
@@ -277,6 +135,30 @@ namespace utopia
 
             QP_solve(QP_solver);
         }
+
+        void CG_test()
+        {
+            auto solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE> >();
+            solver->atol(1e-10);
+            solver->max_it(10);
+            solver->verbose(verbose_);
+            // solver->norm_schedule(NormSchedule::EVERY_ITER); 
+            // std::cout<<"---- Unprecond solve --- \n"; 
+            QP_solve(solver);
+
+            // std::cout<<"---- Unprecond solve 2 --- \n"; 
+            // Just to check initialization 
+            QP_solve(solver);            
+
+            // std::cout<<"---- Inv Diag --- \n"; 
+            solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            QP_solve(solver);
+
+            // std::cout<<"---- Point Jacobi --- \n"; 
+            solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());            
+            QP_solve(solver);
+        }
+
 
         void MPGRP_test()
         {
@@ -979,70 +861,7 @@ namespace utopia
             // disp(x_fine);
         }
 
-        void for_each_loop_test()
-        {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-            Vector z = values(n_, 0.);
 
-            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
-
-           {
-                auto d_x = const_device_view(x);
-                auto d_y = const_device_view(y);
-                auto d_z = device_view(z);
-
-                ForLoop::apply(range(z), UTOPIA_LAMBDA(const SizeType i)
-                {
-                    const Scalar xi = d_x.get(i);
-                    const Scalar yi = d_y.get(i);
-                    d_z.set(i, xi - yi);
-                });
-            }
-
-            Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(Scalar(n_), sum_z));
-        }
-
-        void parallel_each_write_test()
-        {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-            Vector z = values(n_, 0.);
-
-            {
-                auto d_x = const_device_view(x);
-                auto d_y = const_device_view(y);
-                auto d_z = device_view(z);
-
-                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-                {
-                    const Scalar xi = d_x.get(i);
-                    const Scalar yi = d_y.get(i);
-                    return xi - yi;
-                });
-            }
-
-            Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(Scalar(n_), sum_z));
-        }
-        
-        void multi_reduce_test()
-        {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-
-            each_write(x, [](const SizeType &i) -> Scalar {
-                return -(i + 1.0);
-            });
-
-            each_write(y, [](const SizeType &i) -> Scalar {
-                return (i + 1.0);
-            });
-
-            const Scalar m = multi_min(x, y);
-            utopia_test_assert(approxeq(m, Scalar(-n_)));
-        }
 
     private:
         SizeType n_;
@@ -1060,11 +879,11 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 5;
+        auto coarse_dofs = 30;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
 #ifdef WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();

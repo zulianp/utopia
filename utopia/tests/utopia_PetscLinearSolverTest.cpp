@@ -197,6 +197,8 @@ namespace utopia {
             gmres->rtol(1e-16);
             gmres->solve(A, rhs, x_0);
 
+            // std::cout<<"gmres.get_num_it(): "<< gmres->get_num_it() << "   \n"; 
+
             if(diff > 1e-6) {
                 utopia_error("petsc_mg: gmres preconditioned with mg does not do what it is supposed to");
             }
