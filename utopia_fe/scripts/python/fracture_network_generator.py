@@ -70,16 +70,21 @@ class CubItScript:
         self.n_curves += n
         return(id_surface) 
 
-    def create_volume(self, coords, surface, sidesets = None):
+    def create_volume(self, coords, surface, sidesets = None, perpendicular=False):
         n = len(coords) 
+        if perpendicular == True:
+              self.file.write("sweep surface %d perpendicular distance 0.01\n" % (surface)) # perpendicular version, modify the desired distance here
+        else: 
 
-        self.file.write("sweep surface %d vector " % surface)
+            self.file.write("sweep surface %d vector " % surface) # along vector version
+        
 
-        for i in range(1, n+1):
-            if i != n:
-                self.file.write("%s," % coords[i-1])
-            else:
-                self.file.write("%s\n" % coords[i-1])
+            for i in range(1, n+1):
+                if i != n:
+                    self.file.write("%s," % coords[i-1])
+                else:
+                    self.file.write("%s\n" % coords[i-1])
+
 
         self.n_volumes = self.n_volumes+ 1 
         self.n_surfaces = self.n_surfaces+5
@@ -159,7 +164,7 @@ class Surface:
         dir[1] *= scale_factor
         dir[2] *= scale_factor
 
-        script.create_volume(dir, self.id)
+        script.create_volume(dir, self.id, perpendicular=True)
     
 
 class Line: 
