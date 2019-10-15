@@ -81,7 +81,6 @@ namespace utopia {
         template<class FunctionT>
         bool get_alpha_aux_home_made(FunctionT &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha)
         {
-            Vector x_0 = x, x_k = x;
             Scalar alpha_c, alpha_p, dg = dot(d,g);
             Scalar f, f0, fc, fp, t1, t2, t3, a, b, disc;
             alpha = 1.0;
@@ -97,7 +96,7 @@ namespace utopia {
                 return false;
             }
 
-            fun.value(x_k, f);
+            fun.value(x, f);
             f0 = f;
             fc = f;
             alpha_c = alpha;
@@ -109,7 +108,7 @@ namespace utopia {
 
             while(alpha > c2_ && it < this->max_it())
             {
-                x_k = x_0 + alpha * d;
+                x_k = x + alpha * d;
                 fun.value(x_k, f);
 
                 // check decrease condition (wolfe condition)
@@ -174,6 +173,7 @@ namespace utopia {
 
     private:
         Scalar c2_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
+        Vector x_k; 
 
     };
 }
