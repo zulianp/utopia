@@ -38,7 +38,7 @@ namespace utopia {
 
             if (fe_type.order>0){
 
-                compute_boundary_nodes_to_skip(mesh, dof_copy, 0,0, index);
+                //compute_boundary_nodes(mesh, dof_copy, 0,0, index);
             }
         }
         
@@ -82,7 +82,7 @@ namespace utopia {
 
             if (fe_type.order>0)
             {
-                dof_copy.process_constraints(mesh_copy);
+                cdof_copy.process_constraints(mesh_copy);
                 process_constraints(mesh_copy, dof_copy, constraints);
             }
         }
@@ -111,7 +111,7 @@ namespace utopia {
 
         libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
 
-        compute_boundary_nodes_to_skip(mesh, dof_copy, 0,0, index);
+        //compute_boundary_nodes_to_skip(mesh, dof_copy, 0,0, index);
 
         libMesh::FEType fe_type = dof_map.variable_type(0);
 
@@ -136,7 +136,25 @@ namespace utopia {
                 
             }
 
-            Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
+
+        uint n_variables = dof_map.n_variables();
+
+        for(uint var_num = 0; var_num < n_variables; ++var_num) 
+        {
+
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+
+            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
+
+            if (fe_type.order>0)
+            {
+                cdof_copy.process_constraints(mesh_copy);
+
+                Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
+            }
+        }   
+
+            
         }
 
         std::cout << "--------------------------------------------------\n";
@@ -407,147 +425,687 @@ namespace utopia {
         }
     }
 
-
-
     void Adaptivity::process_constraints (libMesh::MeshBase &mesh, libMesh::DofMap &dof_map, libMesh::DofConstraints &_dof_constraints)
     {
 
-        std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
+        using namespace libMesh;
+        
+        //dof_map.allgather_recursive_constraints(mesh);
 
-       
+        auto _primal_constraint_values = dof_map.get_primal_constraint_values();
+
         std::vector<int> index; 
 
-        std::vector<int> index_2; 
+        compute_boundary_nodes(mesh, dof_map, 0,0, index);
 
-        using namespace libMesh;
-
-        //check_for_constraint_loops(dof_map, _dof_constraints);
-
-        dof_map.allgather_recursive_constraints(mesh);
-
-        //compute_boundary_nodes_to_skip(mesh, dof_map, 0,0, index);
-
-        compute_boundary_nodes(mesh, dof_map, 0,0, index);         
-    
         typedef std::set<dof_id_type> RCSet;
-
-        std::set<dof_id_type> unexpanded_set;
+        RCSet unexpanded_set;
 
         for (const auto & i : _dof_constraints)
-             unexpanded_set.insert(i.first);
+        unexpanded_set.insert(i.first);
 
         while (!unexpanded_set.empty())
-            for (RCSet::iterator i = unexpanded_set.begin(); i != unexpanded_set.end();)
+        for (RCSet::iterator i = unexpanded_set.begin();i != unexpanded_set.end(); /* nothing */)
+        {
+            // If the DOF is constrained
+            DofConstraints::iterator pos = _dof_constraints.find(*i);
+
+            libmesh_assert (pos != _dof_constraints.end());
+
+            DofConstraintRow & constraint_row = pos->second;
+
+            // DofConstraintValueMap::iterator rhsit =
+            //   _primal_constraint_values.find(*i);
+            // libMesh::Number constraint_rhs = (rhsit == _primal_constraint_values.end()) ?
+            //   0 : rhsit->second;
+
+            std::vector<dof_id_type> constraints_to_expand;
+
+            for (const auto & item : constraint_row)
             {
-           
-                DofConstraints::iterator pos = _dof_constraints.find(*i);
+                // if (item.first != *i && dof_map.is_constrained_dof(item.first))
+                // {
+                // unexpanded_set.insert(item.first);
+                // constraints_to_expand.push_back(item.first);
 
-                DofConstraintRow & constraint_row = pos->second;
-
-                std::vector<dof_id_type> constraints_to_expand;
-
-                for (const auto & item : constraint_row)
+                if (item.first != *i && dof_map.is_constrained_dof(item.first))
                 {
-                    if (item.first != *i && dof_map.is_constrained_dof(item.first))
+                    bool check =true;
+
+                    for(auto it=index.begin(); it < index.end(); ++it)
                     {
-                        bool check =true;
+                        int b_id=*it;
+                        
+                        if(b_id==item.first) {
 
-                        for(auto it=index.begin(); it < index.end(); ++it)
-                        {
-                            int b_id=*it;
-                            
-                            if(b_id==item.first) {
-
-                                check = false;
-                            }
+                            check = false;
                         }
-             
-                        if (check == true) {
-
-                            unexpanded_set.insert(item.first);     
-
-                            constraints_to_expand.push_back(item.first);
-                        }
-                    
                     }
+
+                    if (check == true) {
+
+                        unexpanded_set.insert(item.first);     
+
+                        constraints_to_expand.push_back(item.first);
+                    }
+
                 }
+            }
 
-                
+            for (const auto & expandable : constraints_to_expand)
+            {
+                const Real this_coef = constraint_row[expandable];
 
-                for (const auto & expandable : constraints_to_expand)
-                {
-                    const Real this_coef = constraint_row[expandable];
+                DofConstraints::const_iterator
+                subpos = _dof_constraints.find(expandable);
 
-                    DofConstraints::const_iterator
-                                    subpos = _dof_constraints.find(expandable);
+                libmesh_assert (subpos != _dof_constraints.end());
 
+                if(subpos==_dof_constraints.end()) return;
 
-                    const DofConstraintRow & subconstraint_row = subpos->second;
-                   
-                    libMesh::processor_id_type constraining_proc_id = 0;
-                    
+                const DofConstraintRow & subconstraint_row = subpos->second;
+
                     for (const auto & item : subconstraint_row)
                     {
-                       // Assert that the constraint does not form a cycle.
-                       if(item.first == expandable) return; 
-
-                        
-                        
-                        // const dof_id_type constraining = item.first;
-                       
-                        // while (constraining >= dof_map.end_dof(constraining_proc_id))
-                        //   constraining_proc_id++;
-
-                        // if (constraining_proc_id != dof_map.processor_id())
-                        // continue;
-
+                        // Assert that the constraint does not form a cycle.
+                        libmesh_assert(item.first != expandable);
                         constraint_row[item.first] += item.second * this_coef;
                     }
 
-                    // DofConstraintValueMap::const_iterator subrhsit =
-                    //   _primal_constraint_values.find(expandable);
-                    // if (subrhsit != _primal_constraint_values.end())
-                    //   constraint_rhs += subrhsit->second * & dof_map_coef;
+                // DofConstraintValueMap::const_iterator subrhsit =
+                // _primal_constraint_values.find(expandable);
+                // if (subrhsit != _primal_constraint_values.end())
+                // constraint_rhs += subrhsit->second * this_coef;
 
-                    constraint_row.erase(expandable);
+                constraint_row.erase(expandable);
+            }
+
+            if (rhsit == _primal_constraint_values.end())
+            {
+                if (constraint_rhs != libMesh::Number(0))
+                  _primal_constraint_values[*i] = constraint_rhs;
+                else
+                  _primal_constraint_values.erase(*i);
+            }
+            else
+            {
+                if (constraint_rhs != libMesh::Number(0))
+                  rhsit->second = constraint_rhs;
+                else
+                  _primal_constraint_values.erase(rhsit);
+            }
+
+            if (constraints_to_expand.empty())
+            i = unexpanded_set.erase(i);
+            else
+            ++i;
+        }
+
+        //dof_map.scatter_constraints(mesh);
+        //dof_map.add_constraints_to_send_list();
+    }
+    
+
+    void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh, 
+                                            libMesh::DofMap &dof_map,
+                                            unsigned int sys_number, unsigned int var_number, 
+                                            std::vector<int> & index)
+    {
+
+       
+       std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
+       
+       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
+
+       std::vector<int> dirichlet_id, index_local;
+
+       index_local.clear();
+
+       dirichlet_id.clear();
+
+       // dirichlet_id.push_back(2);
+
+       // dirichlet_id.push_back(4);
+
+       index.clear(); 
+
+       if(mesh.mesh_dimension()<3)
+       {
+
+            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+            
+            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
+            
+            for ( ; it != end_it; ++it)
+            {
+                const libMesh::Elem * ele = *it;
+
+                for(int kk=0; kk<ele->n_sides(); kk++) {       
+                    
+                    auto neigh = ele->neighbor_ptr(kk);    
+
+                    if (neigh != libMesh::remote_elem && mesh.get_boundary_info().boundary_id(ele, kk)>0)
+                    {
+                        auto side = ele->build_side_ptr(kk);
+
+                        index_local.clear();
+
+                        for (int ll=0; ll<ele->n_nodes(); ll++)
+                        {
+
+                           const libMesh::Node * node = ele->node_ptr(ll);
+
+                           const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0);                
+
+                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
+                            {
+                                   
+                                index_local.push_back(node_dof);
+           
+                            }
+
+                        }
+
+                        if(index_local.size()==side->n_nodes())
+                        {
+
+                           index.insert(index.end(), index_local.begin(), index_local.end());
+                        }
+                    }
+                }
+            }
+        }
+
+       else
+       {
+            {
+                libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+                libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+              
+                const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
+
+                std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
+            
+                std::unique_ptr<const libMesh::Elem> my_side, parent_side_0;
+
+                libMesh::FEType fe_type = dof_map.variable_type(0);
+          
+
+              
+                for ( ; it != end_it; ++it)
+                {
+                    const libMesh::Elem * ele = *it; 
+
+                    const auto *ele_parent_0 = ele->top_parent();
+
+                    for(int jj=0; jj<ele_parent_0->n_sides(); jj++) 
+                    {
+
+                                
+                      libmesh_assert(ele_parent_0);
+
+                      auto parent_side_0 = ele_parent_0->build_side_ptr(jj);
+
+                      index_local.clear();
+
+                       for (int ll=0; ll<parent_side_0->n_nodes(); ll++)
+                       {
+                    
+                            const libMesh::Node * node_0 = parent_side_0->node_ptr(ll);
+
+                            const libMesh::dof_id_type node_dof_0 = node_0->dof_number(sys_number, var_number, 0); 
+                           
+                            if(dof_map.is_constrained_dof(node_dof_0)) {
+                                
+                                index_local.push_back(node_dof_0);
+
+                                auto valpos = rhs_values.find(node_dof_0);
+
+                                index.push_back(node_dof_0);                                               
+                            }
+                        }
+
+                           if(index_local.size()==parent_side_0->n_nodes()){
+
+                            auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0,jj);
+
+                            auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
+
+
+                            if (!check) dirichlet_id.push_back(bc_id);
+                        }
+                    }
+                }
+            }
+
+            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
+                
+            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
+                
+            for ( ; it != end_it; ++it)
+            {
+                const libMesh::Elem * ele = *it;
+
+                for(int kk=0; kk<ele->n_sides(); kk++) 
+                {     
+
+                    auto neigh = ele->neighbor_ptr(kk); 
+
+                    auto bc_id = mesh.get_boundary_info().boundary_id(ele,kk);
+
+                    auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
+
+                    if(check)
+                    {
+                         index_local.clear();
+
+                         auto side = ele->build_side_ptr(kk);
+
+                        for (int ll=0; ll<side->n_nodes(); ll++)
+                        {
+                          
+                            const libMesh::Node * node = side->node_ptr(ll);
+
+                            const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
+
+                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) index.push_back(node_dof);
+                        }
+                    }
+                }
+            }
+        }
+
+
+    std::cout<<"Adaptivity::compute_boundary_nodes::END "<<std::endl; 
+    }
+
+
+    void Adaptivity::compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh, 
+                                            libMesh::DofMap &dof_map,
+                                            unsigned int sys_number, unsigned int var_number, 
+                                            std::vector<int> & index)
+    {
+
+        std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::BEGIN "<<std::endl;
+
+       // Only constrain elements in 2,3D.
+        if (mesh.mesh_dimension() == 1)
+        return;
+
+        unsigned int mesh_dim = mesh.mesh_dimension();
+        
+        // std::cout<<"lagrange_compute_constraints libmesh mio prima:"<<constraints.size()<<std::endl;
+        //libmesh_assert(elem);
+
+        std::vector<int> index_self;
+
+        index_self.clear();
+
+        unsigned int var_num = 0;
+
+
+        libMesh::MeshBase::const_element_iterator it_0 = mesh.active_elements_begin();
+      
+        const libMesh::MeshBase::const_element_iterator end_it_0 = mesh.active_elements_end();        
+        
+
+
+        for ( ; it_0 != end_it_0; ++it_0)
+        {
+            const libMesh::Elem * elem = *it_0;
+
+            // Only constrain active and ancestor elements
+            if (elem->subactive()) // if the element is subactive (i.e. has no active descendants)
+            return;
+            
+            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+            fe_type.order = static_cast<libMesh::Order>(fe_type.order + elem->p_level());
+            
+
+            std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
+            std::unique_ptr<const libMesh::Elem> my_side, parent_side;
+
+            for (auto s : elem->side_index_range())
+            {
+                if (elem->neighbor_ptr(s) != nullptr && elem->neighbor_ptr(s) != libMesh::remote_elem)
+                {
+                    if (elem->neighbor_ptr(s)->level() < elem->level()) 
+                    
+                    {
+                        const auto * parent = elem->parent();
+                        libmesh_assert(parent);
+                        
+                        elem->build_side_ptr(my_side, s); 
+                        
+                        parent->build_side_ptr(parent_side, s);
+                        
+                        my_dof_indices.reserve (my_side->n_nodes()); 
+                        
+                        parent_dof_indices.reserve (parent_side->n_nodes());
+                        
+                        dof_map.dof_indices (my_side.get(), my_dof_indices,  var_num);
+
+                        dof_map.dof_indices (parent_side.get(), parent_dof_indices, var_num);
+                        
+                        const unsigned int n_side_dofs = libMesh::FEInterface::n_dofs(mesh_dim-1, fe_type, my_side->type());
+                        
+                        const unsigned int n_parent_side_dofs = libMesh::FEInterface::n_dofs(mesh_dim-1, fe_type, parent_side->type());
+                        
+
+                       for (unsigned int my_dof=0; my_dof != n_side_dofs; my_dof++)
+                       {
+                        
+                        libmesh_assert_less (my_dof, my_side->n_nodes());
+                        assert(my_dof < n_side_dofs);
+                        
+                        const libMesh::dof_id_type my_dof_g = my_dof_indices[my_dof];
+                  
+                        bool self_constraint = false;
+                        
+                            for (unsigned int their_dof=0; their_dof != n_parent_side_dofs; their_dof++)
+                            {
+                                libmesh_assert_less (their_dof, parent_side->n_nodes());
+                                
+                                const libMesh::dof_id_type their_dof_g = parent_dof_indices[their_dof];
+                                
+                                if (their_dof_g == my_dof_g)
+                                {
+                                    //self_constraint = true;
+
+                                    auto check_2 = (std::find(index_self.begin(), index_self.end(), their_dof_g) != index_self.end());
+
+                                    if(!check_2) {index_self.push_back(their_dof_g);
+
+                                    //std::cout<<"their_dof_g"<<their_dof_g<<std::endl;
+
+                                    }
+
+                                    //index_self.push_back(their_dof_g);
+
+                                    //std::cout<<"their_dof_g"<<their_dof_g<<std::endl;
+                                    //break;
+                                }
+                            }                        
+                        }
+                    }
+                }
+            }
+        }
+            // std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
+       
+        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
+
+        std::vector<int> dirichlet_id, index_local, tmp;
+
+        index_local.clear();
+
+        dirichlet_id.clear();
+
+        index.clear(); 
+
+            
+
+
+        libMesh::MeshBase::const_element_iterator it_1 = mesh.active_elements_begin();
+      
+        const libMesh::MeshBase::const_element_iterator end_it_1 = mesh.active_elements_end();
+    
+        std::unique_ptr<const libMesh::Elem> parent_side_0_new;
+          
+        for ( ; it_1 != end_it_1; ++it_1)
+        {
+            const libMesh::Elem * ele = *it_1; 
+
+            const auto *ele_parent_0 = ele->top_parent();
+
+            for(int jj=0; jj<ele_parent_0->n_sides(); jj++) 
+            {
+
+                        
+              libmesh_assert(ele_parent_0);
+
+              auto parent_side_0_new = ele_parent_0->build_side_ptr(jj);
+
+              index_local.clear();
+
+               for (int ll=0; ll<parent_side_0_new->n_nodes(); ll++)
+               {
+            
+                    const libMesh::Node * node_0 = parent_side_0_new->node_ptr(ll);
+
+                    const libMesh::dof_id_type node_dof_0 = node_0->dof_number(sys_number, var_number, 0); 
+                   
+                    if(dof_map.is_constrained_dof(node_dof_0)) {
+                        
+                        index_local.push_back(node_dof_0);                                            
+                    }
                 }
 
-                // if (rhsit == _primal_constraint_values.end())
-                //   {
-                //     if (constraint_rhs != Number(0))
-                //       _primal_constraint_values[*i] = constraint_rhs;
-                //     else
-                //       _primal_constraint_values.erase(*i);
-                //   }
-                // else
-                //   {
-                //     if (constraint_rhs != Number(0))
-                //       rhsit->second = constraint_rhs;
-                //     else
-                //       _primal_constraint_values.erase(rhsit);
-                //   }
+                   if(index_local.size()==parent_side_0_new->n_nodes()){
 
-                if (constraints_to_expand.empty()) i = unexpanded_set.erase(i);
-                else ++i;
+                    auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0,jj);
+
+                    auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
+
+
+                    if (!check) dirichlet_id.push_back(bc_id);
+                }
             }
+        }
+        
+
+        libMesh::MeshBase::const_element_iterator it_2 = mesh.active_elements_begin();
+            
+        const libMesh::MeshBase::const_element_iterator end_it_2 = mesh.active_elements_end();
+            
+        for ( ; it_2 != end_it_2; ++it_2)
+        {
+            const libMesh::Elem * ele = *it_2;
+
+           // if (ele->subactive()) 
+            {// if the element is subactive (i.e. has no active descendants)
+ 
+                for(int kk=0; kk<ele->n_sides(); kk++) 
+                {     
+
+                    auto neigh = ele->neighbor_ptr(kk);
+                   if(ele->neighbor_ptr(kk) == nullptr && ele->neighbor_ptr(kk) !=  libMesh::remote_elem)
+                   {
+
+                        auto bc_id = mesh.get_boundary_info().boundary_id(ele,kk);
+
+                        auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
+
+                        if(check)
+                        {
+                             index_local.clear();
+
+                             auto side = ele->build_side_ptr(kk); 
+
+                            for (int ll=0; ll<side->n_nodes(); ll++)
+                            {
+                              
+                                const libMesh::Node * node = side->node_ptr(ll);
+
+                                const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
+
+                                if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) {
+
+                                  auto check_2 = (std::find(tmp.begin(), tmp.end(), node_dof) != tmp.end());
+
+                                   if(!check_2) {tmp.push_back(node_dof);}
+                                    //std::cout<<"tmp"<<node_dof<<std::endl;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        for(auto it=tmp.begin(); it!=tmp.end(); ++it){
+
+            auto check = (std::find(index_self.begin(), index_self.end(), *it) != index_self.end());
+
+            if(!check){
+
+                auto check_2 = (std::find(index.begin(), index.end(), *it) != index.end());
+
+                if(!check_2) {
+                    index.push_back(*it);
+                    //std::cout<<"index_to_skip"<<*it<<std::endl;
+                }
+            }
+        }
+
+
+
+        std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::END "<<tmp.size()<<" and "<<index.size()<<std::endl;
+    }
+
+
+
+    // void Adaptivity::process_constraints (libMesh::MeshBase &mesh, libMesh::DofMap &dof_map, libMesh::DofConstraints &_dof_constraints)
+    // {
+
+    //     std::cout<<"Adaptivity::process_constraints::BEGIN "<<std::endl;
+
+       
+    //     std::vector<int> index; 
+
+    //     std::vector<int> index_2; 
+
+    //     using namespace libMesh;
+
+    //     //check_for_constraint_loops(dof_map, _dof_constraints);
+
+    //     dof_map.allgather_recursive_constraints(mesh);
+
+    //     //compute_boundary_nodes_to_skip(mesh, dof_map, 0,0, index);
+
+    //     compute_boundary_nodes(mesh, dof_map, 0,0, index);         
+    
+    //     typedef std::set<dof_id_type> RCSet;
+
+    //     std::set<dof_id_type> unexpanded_set;
+
+    //     for (const auto & i : _dof_constraints)
+    //          unexpanded_set.insert(i.first);
+
+    //     while (!unexpanded_set.empty())
+    //         for (RCSet::iterator i = unexpanded_set.begin(); i != unexpanded_set.end();)
+    //         {
+           
+    //             DofConstraints::iterator pos = _dof_constraints.find(*i);
+
+    //             DofConstraintRow & constraint_row = pos->second;
+
+    //             std::vector<dof_id_type> constraints_to_expand;
+
+    //             for (const auto & item : constraint_row)
+    //             {
+    //                 if (item.first != *i && dof_map.is_constrained_dof(item.first))
+    //                 {
+    //                     bool check =true;
+
+    //                     for(auto it=index.begin(); it < index.end(); ++it)
+    //                     {
+    //                         int b_id=*it;
+                            
+    //                         if(b_id==item.first) {
+
+    //                             check = false;
+    //                         }
+    //                     }
+             
+    //                     if (check == true) {
+
+    //                         unexpanded_set.insert(item.first);     
+
+    //                         constraints_to_expand.push_back(item.first);
+    //                     }
+                    
+    //                 }
+    //             }
+
+                
+
+    //             for (const auto & expandable : constraints_to_expand)
+    //             {
+    //                 const Real this_coef = constraint_row[expandable];
+
+    //                 DofConstraints::const_iterator
+    //                                 subpos = _dof_constraints.find(expandable);
+
+
+    //                 const DofConstraintRow & subconstraint_row = subpos->second;
+                   
+    //                 libMesh::processor_id_type constraining_proc_id = 0;
+                    
+    //                 for (const auto & item : subconstraint_row)
+    //                 {
+    //                    // Assert that the constraint does not form a cycle.
+    //                    //if(item.first == expandable) return; 
+
+                        
+                        
+    //                     // const dof_id_type constraining = item.first;
+                       
+    //                     // while (constraining >= dof_map.end_dof(constraining_proc_id))
+    //                     //   constraining_proc_id++;
+
+    //                     // if (constraining_proc_id != dof_map.processor_id())
+    //                     // continue;
+
+    //                     constraint_row[item.first] += item.second * this_coef;
+    //                 }
+
+    //                 // DofConstraintValueMap::const_iterator subrhsit =
+    //                 //   _primal_constraint_values.find(expandable);
+    //                 // if (subrhsit != _primal_constraint_values.end())
+    //                 //   constraint_rhs += subrhsit->second * & dof_map_coef;
+
+    //                 constraint_row.erase(expandable);
+    //             }
+
+    //             // if (rhsit == _primal_constraint_values.end())
+    //             //   {
+    //             //     if (constraint_rhs != Number(0))
+    //             //       _primal_constraint_values[*i] = constraint_rhs;
+    //             //     else
+    //             //       _primal_constraint_values.erase(*i);
+    //             //   }
+    //             // else
+    //             //   {
+    //             //     if (constraint_rhs != Number(0))
+    //             //       rhsit->second = constraint_rhs;
+    //             //     else
+    //             //       _primal_constraint_values.erase(rhsit);
+    //             //   }
+
+    //             if (constraints_to_expand.empty()) i = unexpanded_set.erase(i);
+    //             else ++i;
+    //         }
         
 
 
-        //dof_map.prepare_send_list();
+    //     //dof_map.prepare_send_list();
 
 
-        // dof_map.reinit_send_list(mesh);
+    //     // dof_map.reinit_send_list(mesh);
 
-        // std::shared_ptr<std::vector<libMesh::dof_id_type>> _send_list = std::make_shared<std::vector<libMesh::dof_id_type>>(dof_map.get_send_list());
+    //     // std::shared_ptr<std::vector<libMesh::dof_id_type>> _send_list = std::make_shared<std::vector<libMesh::dof_id_type>>(dof_map.get_send_list());
 
-        dof_map.scatter_constraints(mesh);
+    //     dof_map.scatter_constraints(mesh);
       
-        dof_map.add_constraints_to_send_list();
+    //     dof_map.add_constraints_to_send_list();
  
         
-        std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
+    //     std::cout<<"Adaptivity::process_constraints::END "<<std::endl;    
 
-    }
+    // }
  
 
     
@@ -1576,424 +2134,6 @@ namespace utopia {
    //      }
    //  }
 
-    void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh, 
-                                            libMesh::DofMap &dof_map,
-                                            unsigned int sys_number, unsigned int var_number, 
-                                            std::vector<int> & index)
-    {
-
-       
-       std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
-       
-       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
-
-       std::vector<int> dirichlet_id, index_local;
-
-       index_local.clear();
-
-       dirichlet_id.clear();
-
-       // dirichlet_id.push_back(2);
-
-       // dirichlet_id.push_back(4);
-
-       index.clear(); 
-
-       if(mesh.mesh_dimension()<3)
-       {
-
-            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
-            
-            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
-            
-            for ( ; it != end_it; ++it)
-            {
-                const libMesh::Elem * ele = *it;
-
-                for(int kk=0; kk<ele->n_sides(); kk++) {       
-                    
-                    auto neigh = ele->neighbor_ptr(kk);    
-
-                    if (neigh != libMesh::remote_elem && mesh.get_boundary_info().boundary_id(ele, kk)>0)
-                    {
-                        auto side = ele->build_side_ptr(kk);
-
-                        index_local.clear();
-
-                        for (int ll=0; ll<ele->n_nodes(); ll++)
-                        {
-
-                           const libMesh::Node * node = ele->node_ptr(ll);
-
-                           const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0);                
-
-                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
-                            {
-                                   
-                                index_local.push_back(node_dof);
-           
-                            }
-
-                        }
-
-                        if(index_local.size()==side->n_nodes())
-                        {
-
-                           index.insert(index.end(), index_local.begin(), index_local.end());
-                        }
-                    }
-                }
-            }
-        }
-
-       else
-       {
-            {
-                libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
-
-                libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
-              
-                const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
-
-                std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
-            
-                std::unique_ptr<const libMesh::Elem> my_side, parent_side_0;
-
-                libMesh::FEType fe_type = dof_map.variable_type(0);
-          
-
-              
-                for ( ; it != end_it; ++it)
-                {
-                    const libMesh::Elem * ele = *it; 
-
-                    const auto *ele_parent_0 = ele->top_parent();
-
-                    for(int jj=0; jj<ele_parent_0->n_sides(); jj++) 
-                    {
-
-                                
-                      libmesh_assert(ele_parent_0);
-
-                      auto parent_side_0 = ele_parent_0->build_side_ptr(jj);
-
-                      index_local.clear();
-
-                       for (int ll=0; ll<parent_side_0->n_nodes(); ll++)
-                       {
-                    
-                            const libMesh::Node * node_0 = parent_side_0->node_ptr(ll);
-
-                            const libMesh::dof_id_type node_dof_0 = node_0->dof_number(sys_number, var_number, 0); 
-                           
-                            if(dof_map.is_constrained_dof(node_dof_0)) {
-                                
-                                index_local.push_back(node_dof_0);
-
-                                auto valpos = rhs_values.find(node_dof_0);
-
-                                index.push_back(node_dof_0);                                               
-                            }
-                        }
-
-                           if(index_local.size()==parent_side_0->n_nodes()){
-
-                            auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0,jj);
-
-                            auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
-
-
-                            if (!check) dirichlet_id.push_back(bc_id);
-                        }
-                    }
-                }
-            }
-
-            libMesh::MeshBase::const_element_iterator it = mesh.active_elements_begin();
-                
-            const libMesh::MeshBase::const_element_iterator end_it = mesh.active_elements_end();
-                
-            for ( ; it != end_it; ++it)
-            {
-                const libMesh::Elem * ele = *it;
-
-                for(int kk=0; kk<ele->n_sides(); kk++) 
-                {     
-
-                    auto neigh = ele->neighbor_ptr(kk); 
-
-                    auto bc_id = mesh.get_boundary_info().boundary_id(ele,kk);
-
-                    auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
-
-                    if(check)
-                    {
-                         index_local.clear();
-
-                         auto side = ele->build_side_ptr(kk);
-
-                        for (int ll=0; ll<side->n_nodes(); ll++)
-                        {
-                          
-                            const libMesh::Node * node = side->node_ptr(ll);
-
-                            const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
-
-                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) index.push_back(node_dof);
-                        }
-                    }
-                }
-            }
-        }
-
-
-    std::cout<<"Adaptivity::compute_boundary_nodes::END "<<std::endl; 
-    }
-
-
-    void Adaptivity::compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh, 
-                                            libMesh::DofMap &dof_map,
-                                            unsigned int sys_number, unsigned int var_number, 
-                                            std::vector<int> & index)
-    {
-
-        std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::BEGIN "<<std::endl;
-
-       // Only constrain elements in 2,3D.
-        if (mesh.mesh_dimension() == 1)
-        return;
-
-        unsigned int mesh_dim = mesh.mesh_dimension();
-        
-        // std::cout<<"lagrange_compute_constraints libmesh mio prima:"<<constraints.size()<<std::endl;
-        //libmesh_assert(elem);
-
-        std::vector<int> index_self;
-
-        index_self.clear();
-
-        unsigned int var_num = 0;
-
-
-        libMesh::MeshBase::const_element_iterator it_0 = mesh.active_elements_begin();
-      
-        const libMesh::MeshBase::const_element_iterator end_it_0 = mesh.active_elements_end();        
-        
-
-
-        for ( ; it_0 != end_it_0; ++it_0)
-        {
-            const libMesh::Elem * elem = *it_0;
-
-            // Only constrain active and ancestor elements
-            if (elem->subactive()) // if the element is subactive (i.e. has no active descendants)
-            return;
-            
-            libMesh::FEType fe_type = dof_map.variable_type(var_num);
-            fe_type.order = static_cast<libMesh::Order>(fe_type.order + elem->p_level());
-            
-
-            std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
-            std::unique_ptr<const libMesh::Elem> my_side, parent_side;
-
-            for (auto s : elem->side_index_range())
-            {
-                if (elem->neighbor_ptr(s) != nullptr && elem->neighbor_ptr(s) != libMesh::remote_elem)
-                {
-                    if (elem->neighbor_ptr(s)->level() < elem->level()) 
-                    
-                    {
-                        const auto * parent = elem->parent();
-                        libmesh_assert(parent);
-                        
-                        elem->build_side_ptr(my_side, s); 
-                        
-                        parent->build_side_ptr(parent_side, s);
-                        
-                        my_dof_indices.reserve (my_side->n_nodes()); 
-                        
-                        parent_dof_indices.reserve (parent_side->n_nodes());
-                        
-                        dof_map.dof_indices (my_side.get(), my_dof_indices,  var_num);
-
-                        dof_map.dof_indices (parent_side.get(), parent_dof_indices, var_num);
-                        
-                        const unsigned int n_side_dofs = libMesh::FEInterface::n_dofs(mesh_dim-1, fe_type, my_side->type());
-                        
-                        const unsigned int n_parent_side_dofs = libMesh::FEInterface::n_dofs(mesh_dim-1, fe_type, parent_side->type());
-                        
-
-                       for (unsigned int my_dof=0; my_dof != n_side_dofs; my_dof++)
-                       {
-                        
-                        libmesh_assert_less (my_dof, my_side->n_nodes());
-                        assert(my_dof < n_side_dofs);
-                        
-                        const libMesh::dof_id_type my_dof_g = my_dof_indices[my_dof];
-                  
-                        bool self_constraint = false;
-                        
-                            for (unsigned int their_dof=0; their_dof != n_parent_side_dofs; their_dof++)
-                            {
-                                libmesh_assert_less (their_dof, parent_side->n_nodes());
-                                
-                                const libMesh::dof_id_type their_dof_g = parent_dof_indices[their_dof];
-                                
-                                if (their_dof_g == my_dof_g)
-                                {
-                                    //self_constraint = true;
-
-                                    auto check_2 = (std::find(index_self.begin(), index_self.end(), their_dof_g) != index_self.end());
-
-                                    if(!check_2) {index_self.push_back(their_dof_g);
-
-                                    //std::cout<<"their_dof_g"<<their_dof_g<<std::endl;
-
-                                    }
-
-                                    //index_self.push_back(their_dof_g);
-
-                                    //std::cout<<"their_dof_g"<<their_dof_g<<std::endl;
-                                    //break;
-                                }
-                            }                        
-                        }
-                    }
-                }
-            }
-        }
-            // std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
-       
-        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
-
-        std::vector<int> dirichlet_id, index_local, tmp;
-
-        index_local.clear();
-
-        dirichlet_id.clear();
-
-        index.clear(); 
-
-            
-
-
-        libMesh::MeshBase::const_element_iterator it_1 = mesh.active_elements_begin();
-      
-        const libMesh::MeshBase::const_element_iterator end_it_1 = mesh.active_elements_end();
-    
-        std::unique_ptr<const libMesh::Elem> parent_side_0_new;
-          
-        for ( ; it_1 != end_it_1; ++it_1)
-        {
-            const libMesh::Elem * ele = *it_1; 
-
-            const auto *ele_parent_0 = ele->top_parent();
-
-            for(int jj=0; jj<ele_parent_0->n_sides(); jj++) 
-            {
-
-                        
-              libmesh_assert(ele_parent_0);
-
-              auto parent_side_0_new = ele_parent_0->build_side_ptr(jj);
-
-              index_local.clear();
-
-               for (int ll=0; ll<parent_side_0_new->n_nodes(); ll++)
-               {
-            
-                    const libMesh::Node * node_0 = parent_side_0_new->node_ptr(ll);
-
-                    const libMesh::dof_id_type node_dof_0 = node_0->dof_number(sys_number, var_number, 0); 
-                   
-                    if(dof_map.is_constrained_dof(node_dof_0)) {
-                        
-                        index_local.push_back(node_dof_0);                                            
-                    }
-                }
-
-                   if(index_local.size()==parent_side_0_new->n_nodes()){
-
-                    auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0,jj);
-
-                    auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
-
-
-                    if (!check) dirichlet_id.push_back(bc_id);
-                }
-            }
-        }
-        
-
-        libMesh::MeshBase::const_element_iterator it_2 = mesh.active_elements_begin();
-            
-        const libMesh::MeshBase::const_element_iterator end_it_2 = mesh.active_elements_end();
-            
-        for ( ; it_2 != end_it_2; ++it_2)
-        {
-            const libMesh::Elem * ele = *it_2;
-
-           // if (ele->subactive()) 
-            {// if the element is subactive (i.e. has no active descendants)
- 
-                for(int kk=0; kk<ele->n_sides(); kk++) 
-                {     
-
-                    auto neigh = ele->neighbor_ptr(kk);
-                   if(ele->neighbor_ptr(kk) == nullptr && ele->neighbor_ptr(kk) !=  libMesh::remote_elem)
-                   {
-
-                        auto bc_id = mesh.get_boundary_info().boundary_id(ele,kk);
-
-                        auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
-
-                        if(check)
-                        {
-                             index_local.clear();
-
-                             auto side = ele->build_side_ptr(kk); 
-
-                            for (int ll=0; ll<side->n_nodes(); ll++)
-                            {
-                              
-                                const libMesh::Node * node = side->node_ptr(ll);
-
-                                const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
-
-                                if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) {
-
-                                  auto check_2 = (std::find(tmp.begin(), tmp.end(), node_dof) != tmp.end());
-
-                                   if(!check_2) {tmp.push_back(node_dof);}
-                                    //std::cout<<"tmp"<<node_dof<<std::endl;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
-        for(auto it=tmp.begin(); it!=tmp.end(); ++it){
-
-            auto check = (std::find(index_self.begin(), index_self.end(), *it) != index_self.end());
-
-            if(!check){
-
-                auto check_2 = (std::find(index.begin(), index.end(), *it) != index.end());
-
-                if(!check_2) {
-                    index.push_back(*it);
-                    //std::cout<<"index_to_skip"<<*it<<std::endl;
-                }
-            }
-        }
-
-
-
-        std::cout<<"Adaptivity::compute_boundary_nodes_to_skip::END "<<tmp.size()<<" and "<<index.size()<<std::endl;
-    }
 
           
 }
