@@ -82,7 +82,7 @@ namespace utopia {
 
             if (fe_type.order>0)
             {
-                cdof_copy.process_constraints(mesh_copy);
+                dof_copy.process_constraints(mesh_copy);
                 process_constraints(mesh_copy, dof_copy, constraints);
             }
         }
@@ -148,7 +148,7 @@ namespace utopia {
 
             if (fe_type.order>0)
             {
-                cdof_copy.process_constraints(mesh_copy);
+                dof_copy.process_constraints(mesh_copy);
 
                 Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
             }
@@ -520,20 +520,20 @@ namespace utopia {
                 constraint_row.erase(expandable);
             }
 
-            if (rhsit == _primal_constraint_values.end())
-            {
-                if (constraint_rhs != libMesh::Number(0))
-                  _primal_constraint_values[*i] = constraint_rhs;
-                else
-                  _primal_constraint_values.erase(*i);
-            }
-            else
-            {
-                if (constraint_rhs != libMesh::Number(0))
-                  rhsit->second = constraint_rhs;
-                else
-                  _primal_constraint_values.erase(rhsit);
-            }
+            // if (rhsit == _primal_constraint_values.end())
+            // {
+            //     if (constraint_rhs != libMesh::Number(0))
+            //       _primal_constraint_values[*i] = constraint_rhs;
+            //     else
+            //       _primal_constraint_values.erase(*i);
+            // }
+            // else
+            // {
+            //     if (constraint_rhs != libMesh::Number(0))
+            //       rhsit->second = constraint_rhs;
+            //     else
+            //       _primal_constraint_values.erase(rhsit);
+            // }
 
             if (constraints_to_expand.empty())
             i = unexpanded_set.erase(i);
