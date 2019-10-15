@@ -76,11 +76,12 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
 
+
             const Matrix &A = *this->get_operator();
 
             x_old = x;
             bool converged = false;
-            const SizeType check_s_norm_each = 5;
+            const SizeType check_s_norm_each = 1;
 
             int iteration = 0;
             while(!converged) {
@@ -106,6 +107,8 @@ namespace utopia {
 
                 x_old = x;
             }
+
+            
 
             return converged;
         }
@@ -260,8 +263,11 @@ namespace utopia {
 
             if(use_line_search_) 
             {
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel21");
                 inactive_set_ *= 0.;
+                UTOPIA_NO_ALLOC_END(); 
 
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel22");
                 {
                     Read<Vector> r_c(c), r_g(ub_loc), r_l(lb_loc);
                     Write<Vector> w_a(inactive_set_);
@@ -272,10 +278,13 @@ namespace utopia {
                         }
                     }
                 }
+                UTOPIA_NO_ALLOC_END(); 
 
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel23");
                 is_c_ = e_mul(c, inactive_set_);
 
                 Scalar alpha = dot(is_c_, r)/dot(A * is_c_, is_c_);
+                UTOPIA_NO_ALLOC_END(); 
 
                 if(std::isinf(alpha)) {
                     return true;
@@ -290,17 +299,27 @@ namespace utopia {
                 if(alpha <= 0) {
                     std::cerr << "[Warning] negative alpha" << std::endl;
                     alpha = 1.;
+                    UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel24");
                     descent_dir = utopia::max(utopia::min(r, ub_loc), ub_loc);
+                    UTOPIA_NO_ALLOC_END(); 
                 } else if(alpha <= 1.) {
+                    UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel25");
                     descent_dir = alpha * c;
+                    UTOPIA_NO_ALLOC_END(); 
                 } else {
+                    UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel26");
                     descent_dir = utopia::max(utopia::min(alpha * c, ub_loc), ub_loc);
+                    UTOPIA_NO_ALLOC_END(); 
                 }
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel27");
                 x += descent_dir;
+                UTOPIA_NO_ALLOC_END(); 
             }
             else
             {
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel3");
                 x += c;
+                UTOPIA_NO_ALLOC_END(); 
             }
 
             
@@ -311,10 +330,20 @@ namespace utopia {
         {
             d = diag(A);
             d_inv = 1./d;
-            c = local_zeros(local_size(A).get(0));
+            
+            if(empty(c) || size(c) != size(d)){
+                c = local_zeros(local_size(A).get(0));
+            }
+            else{
+                c.set(0); 
+            }
 
             if(use_line_search_) {
-                inactive_set_ = local_zeros(local_size(c));
+                if(empty(inactive_set_) || size(inactive_set_) != size(d))
+                    inactive_set_ = local_zeros(local_size(c));
+                else
+                    inactive_set_.set(0); 
+
             }
         }
 

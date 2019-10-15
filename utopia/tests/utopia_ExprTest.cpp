@@ -23,7 +23,6 @@ namespace utopia
 
         void run()
         {
-            //FIXME (mem allocs)
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(e_div_test);
             UTOPIA_RUN_TEST(e_mul_test);
@@ -38,6 +37,9 @@ namespace utopia
             UTOPIA_RUN_TEST(transform_test);
             UTOPIA_RUN_TEST(mat_copy); 
             UTOPIA_RUN_TEST(reciprocal_test); 
+
+            //FIXME (mem allocs)
+            UTOPIA_RUN_TEST(max_min_test); 
         }
 
         void negate_test()
@@ -147,15 +149,43 @@ namespace utopia
             UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
             z = e_mul(x, y);
             UTOPIA_NO_ALLOC_END();
+            utopia_test_assert(approxeq(sum(z), 2*n_));
         }
+
+
+        void max_min_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 2.0);
+            Vector z = values(n_, 0.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("max_min_test1");
+            z = utopia::max(x,y); 
+            UTOPIA_NO_ALLOC_END();
+            utopia_test_assert(approxeq(sum(z), 2*n_));
+
+            UTOPIA_NO_ALLOC_BEGIN("max_min_test2");
+            z = utopia::min(x,y); 
+            UTOPIA_NO_ALLOC_END();
+            utopia_test_assert(approxeq(sum(z), n_));
+
+            UTOPIA_NO_ALLOC_BEGIN("max_min_test3");
+            z = utopia::max(utopia::min(x,y), y); 
+            UTOPIA_NO_ALLOC_END();
+
+            utopia_test_assert(approxeq(sum(z), 2*n_));
+
+        }
+
 
         void reciprocal_test()
         {
-            Vector x = values(n_, 1.0);
+            Vector x = values(n_, 2.0);
 
             UTOPIA_NO_ALLOC_BEGIN("reciprocal_test");
             x = 1./x; 
             UTOPIA_NO_ALLOC_END();
+            utopia_test_assert(approxeq(sum(x), 0.5*n_));
         }        
 
         void e_div_test()

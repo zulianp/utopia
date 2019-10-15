@@ -72,7 +72,8 @@ namespace utopia
 
             // Linear/QP solver tests 
             // UTOPIA_RUN_TEST(STCG_test);
-            UTOPIA_RUN_TEST(CG_test); 
+            // UTOPIA_RUN_TEST(CG_test); 
+            UTOPIA_RUN_TEST(ProjectedGS);
             // UTOPIA_RUN_TEST(MPGRP_test);
         }
 
@@ -879,7 +880,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 30;
+        auto coarse_dofs = 100;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
