@@ -296,11 +296,11 @@ namespace utopia {
 
 
         //UNCOMMENT ME once the bug is fixed
-        // Adaptivity a;
-        // USparseMatrix pre_constraint, post_constraint;
-        // auto &W_i = W.subspace(0);
-        // a.constraint_matrix(W_i, pre_constraint, post_constraint);
-        // grad_p_projected += post_constraint * grad_p_projected;
+        Adaptivity a;
+        USparseMatrix pre_constraint, post_constraint;
+        auto &W_i = W.subspace(0);
+        a.constraint_matrix(W_i, pre_constraint, post_constraint);
+        grad_p_projected += post_constraint * grad_p_projected;
 
         assert(!has_nan_or_inf(grad_ph));
         assert(!has_nan_or_inf(mass_vec));

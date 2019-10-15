@@ -18,8 +18,6 @@ namespace utopia {
         const libMesh::DofMap &dof_map,
         libMesh::DofConstraints &constraints)
     {
-
-      
         using uint = unsigned int;
 
         std::vector<int> index;
@@ -28,16 +26,15 @@ namespace utopia {
 
         libMesh::DofMap &dof_copy=const_cast<libMesh::DofMap&>(dof_map);
 
-        uint vars = dof_map.n_variables();
+        uint n_vars = dof_map.n_variables();
         
-        for(uint var_num = 0; var_num < vars; ++var_num) {
+        for(uint var_num = 0; var_num < n_vars; ++var_num) {
 
             libMesh::FEType fe_type = dof_map.variable_type(var_num);
 
             fe_type.order = static_cast<libMesh::Order>(fe_type.order);
 
             if (fe_type.order>0){
-
                 //compute_boundary_nodes(mesh, dof_copy, 0,0, index);
             }
         }
@@ -51,49 +48,28 @@ namespace utopia {
             const auto * elem = *el;
             
             auto * ele = *el;
-
             libmesh_assert (mesh.is_prepared());
             
-            uint n_vars = dof_map.n_variables();
-
             for(uint var_num = 0; var_num < n_vars; ++var_num) {
-
-            libMesh::FEType fe_type = dof_map.variable_type(var_num);
-
-            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
-
-                if (fe_type.order>0){
-
+                libMesh::FEType fe_type = dof_map.variable_type(var_num);
+                if(fe_type.order>0){
                     compute_constraints(constraints, dof_map, var_num, elem, mesh.mesh_dimension(), index);
                 }
             }
         }
-
-
-
-        uint n_vars = dof_map.n_variables();
-
-        for(uint var_num = 0; var_num < n_vars; ++var_num) 
-        {
-
+        
+        for(uint var_num = 0; var_num < n_vars; ++var_num) {
             libMesh::FEType fe_type = dof_map.variable_type(var_num);
-
-            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
-
-            if (fe_type.order>0)
-            {
+            if(fe_type.order>0) {
                 dof_copy.process_constraints(mesh_copy);
                 process_constraints(mesh_copy, dof_copy, constraints);
             }
         }
       
-        std::cout << "--------------------------------------------------\n";
+        // std::cout << "--------------------------------------------------\n";
 //        std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
-        std::cout << "--------------------------------------------------\n";
+        // std::cout << "--------------------------------------------------\n";
 
-      
-
-        
     }
     
     void Adaptivity::assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map)
@@ -113,53 +89,39 @@ namespace utopia {
 
         //compute_boundary_nodes_to_skip(mesh, dof_copy, 0,0, index);
 
-        libMesh::FEType fe_type = dof_map.variable_type(0);
-
-        fe_type.order = static_cast<libMesh::Order>(fe_type.order);
-
-        if(fe_type.order>0)
-        {
-        
-        
-            for ( ; el != end_el; ++el)
-            {
-                const auto * elem = *el;
-                
-                auto * ele = *el;
-                libmesh_assert (mesh.is_prepared());
-                
-
-                for (unsigned int var_num=0; var_num<dof_map.n_variables();
-                     ++var_num) {
-                    compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension(), index);
-                }
-                
-            }
-
-
         uint n_variables = dof_map.n_variables();
 
-        for(uint var_num = 0; var_num < n_variables; ++var_num) 
+        
+        for ( ; el != end_el; ++el)
         {
+            const auto * elem = *el;
+            
+            auto * ele = *el;
+            libmesh_assert (mesh.is_prepared());
+            
 
-            libMesh::FEType fe_type = dof_map.variable_type(var_num);
-
-            fe_type.order = static_cast<libMesh::Order>(fe_type.order);
-
-            if (fe_type.order>0)
-            {
-                dof_copy.process_constraints(mesh_copy);
-
-                Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
+            for(unsigned int var_num=0; var_num < n_variables; ++var_num) {
+                libMesh::FEType fe_type = dof_map.variable_type(var_num);
+                if(fe_type.order>0) {
+                    compute_constraints(dof_constraints_, dof_map,  var_num, elem, mesh.mesh_dimension(), index);
+                }
             }
-        }   
+
+            for(uint var_num = 0; var_num < n_variables; ++var_num) {
+                libMesh::FEType fe_type = dof_map.variable_type(var_num);
+
+                if(fe_type.order>0) {
+                    dof_copy.process_constraints(mesh_copy);
+                    Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_);
+                }
+            }   
 
             
         }
 
-        std::cout << "--------------------------------------------------\n";
+        // std::cout << "--------------------------------------------------\n";
 //        std::cout<< "[Adaptivity::assemble_constraint] n_constraints: " << dof_constraints_.size() << std::endl;
-        std::cout << "--------------------------------------------------\n";
+        // std::cout << "--------------------------------------------------\n";
     }
     
     void Adaptivity::constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S)
