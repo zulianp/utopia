@@ -48,7 +48,7 @@ namespace utopia {
 
         USparseMatrix post_constraint;
         
-        a.constraint_matrix(V.mesh(), V.dof_map(), 0, pre_constraint, post_constraint);
+        a.constraint_matrix(V.mesh(), V.dof_map(), pre_constraint, post_constraint);
 
 
         USparseMatrix Mass;

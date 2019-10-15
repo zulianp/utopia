@@ -18,7 +18,6 @@ namespace utopia {
         
         void constraint_matrix(const libMesh::MeshBase &mesh, 
                                const libMesh::DofMap &dof_map, 
-                               int var_num, 
                                USparseMatrix &M, USparseMatrix &S);
 
 
@@ -26,7 +25,7 @@ namespace utopia {
         libMesh::DofConstraints dof_constraints_;
 
         // void assemble_constraint(const LibMeshFunctionSpace &V);
-        void assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, int var_num);
+        void assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map);
 
     public:
         static void compute_constraints(libMesh::DofConstraints &constraints,
@@ -67,7 +66,7 @@ namespace utopia {
                                          libMesh::DofConstraints &_dof_constraints);
 
         static  void add_constraints_to_send_list(libMesh::DofMap &dof_map, 
-                                                  libMesh::DofConstraints &_dof_constraints);
+                                                  libMesh::DofConstraints &_dof_constraints, std::vector<libMesh::dof_id_type> &_send_list );
 
         static void gather_constraints (libMesh::MeshBase  & mesh,
                                          std::set<libMesh::dof_id_type> & unexpanded_dofs, 
@@ -85,6 +84,18 @@ namespace utopia {
         static void scatter_constraints(libMesh::MeshBase  & mesh, 
                                         libMesh::DofMap &dof_map, 
                                         libMesh::DofConstraints &_dof_constraints);
+
+
+
+        static void merge_ghost_functor_outputs(libMesh::GhostingFunctor::map_type & elements_to_ghost,
+                            std::set<libMesh::CouplingMatrix *> & temporary_coupling_matrices,
+                            const std::set<libMesh::GhostingFunctor *>::iterator & gf_begin,
+                            const std::set<libMesh::GhostingFunctor *>::iterator & gf_end,
+                            const libMesh::MeshBase::const_element_iterator & elems_begin,
+                            const libMesh::MeshBase::const_element_iterator & elems_end,
+                            libMesh::processor_id_type p);
+        static 
+        void check_for_constraint_loops(libMesh::DofMap &dof_map, libMesh::DofConstraints &_dof_constraints);
 
         // static void compute_boundary_nodes(const libMesh::MeshBase &mesh, 
         //                                     const libMesh::DofMap &dof_map,

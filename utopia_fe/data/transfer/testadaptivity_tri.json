@@ -16,7 +16,7 @@
                 "refinements" : 0,
                 "order" : 1,
                 "random-refine" : true,
-                "random-refinements": 2,
+                "random-refinements": 5,
                 "refine-0" : false
             },
             "space": {
@@ -40,7 +40,7 @@
                 "refinements" : 0,
                 "order" : 1,
                 "random-refine" : true,
-                 "random-refinements": 2
+                 "random-refinements": 5
             },
             "space": {
                 "system-name" : "slave",
