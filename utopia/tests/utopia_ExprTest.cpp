@@ -125,10 +125,10 @@ namespace utopia
             // D += 5.0*D; 
             // UTOPIA_NO_ALLOC_END();                             
 
-            // seq. faults
             D += Matrix(diag(v)); 
             
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");//
+            //https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
             // D += diag(v); //bad way D += Matrix(diag(v)); 
             UTOPIA_NO_ALLOC_END();  
 
