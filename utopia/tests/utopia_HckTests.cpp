@@ -72,8 +72,13 @@ namespace utopia
 
             // Linear/QP solver tests 
             // UTOPIA_RUN_TEST(STCG_test);
-            UTOPIA_RUN_TEST(CG_test); 
+            // UTOPIA_RUN_TEST(CG_test); 
+            // UTOPIA_RUN_TEST(ProjectedGS);
             // UTOPIA_RUN_TEST(MPGRP_test);
+
+            // nonlinear solver tests 
+            UTOPIA_RUN_TEST(newton_test);
+
         }
 
 
@@ -271,16 +276,24 @@ namespace utopia
             if(verbose_)
                 fun.describe();
 
-            auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
+            // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
             // lsolver->pc_type("bjacobi");
+            
+            // auto lsolver = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            auto lsolver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE> >();
+            // auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector> >();
+            auto strategy_sbc = std::make_shared<utopia::Backtracking<Vector> >();
 
             Newton<Matrix, Vector> solver(lsolver);
             solver.read(input_params_);
+            solver.set_line_search_strategy(strategy_sbc); 
+
             solver.solve(fun, x);
 
             if(output_vtk_)
                 fun.output_to_VTK(x);
         }
+
 
         void QuasiTR_unconstrained()
         {
@@ -879,7 +892,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 30;
+        auto coarse_dofs = 100;
         auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();

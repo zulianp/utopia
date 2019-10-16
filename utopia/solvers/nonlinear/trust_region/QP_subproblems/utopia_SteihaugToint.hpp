@@ -23,7 +23,7 @@ namespace utopia
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
 
-        SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>(), use_precond_direction_(false)
+        SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>(), use_precond_direction_(false), initialized_(false), loc_size_(0)
         {  }
 
         void read(Input &in) override
@@ -54,13 +54,20 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
+            SizeType loc_size_rhs   = local_size(b); 
+            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+            }   
+
+            minus_rhs = -1.0*b;
+
             if(this->precond_)
             {
                 auto A_ptr = utopia::op(this->get_operator());
-                return preconditioned_solve(*A_ptr, -1.0 * b, x);
+                return preconditioned_solve(*A_ptr, minus_rhs, x);
             } else {
                 auto A_ptr = utopia::op(this->get_operator());
-                return unpreconditioned_solve(*A_ptr, -1.0 * b, x);
+                return unpreconditioned_solve(*A_ptr, minus_rhs, x);
             }
         }
 
@@ -83,9 +90,13 @@ namespace utopia
 
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
         {
-            init(local_size(rhs));
             minus_rhs = rhs;
             minus_rhs *= -1.0;
+
+            SizeType loc_size_rhs   = local_size(rhs); 
+            if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+            }                      
 
             if(this->precond_)
             {
@@ -107,8 +118,6 @@ namespace utopia
                     ls_ptr->update(op);
                 }
              }
-
-             init(local_size(*op).get(0));
          }
 
     private:
@@ -432,6 +441,9 @@ namespace utopia
             r     = zero_expr;
             p_k   = zero_expr;
             B_p_k = zero_expr;
+
+            initialized_ = true;    
+            loc_size_ = ls;                  
         }
 
 
@@ -439,6 +451,8 @@ namespace utopia
         Vector v_k, r, p_k, B_p_k, minus_rhs;
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
         bool use_precond_direction_; 
+        bool initialized_; 
+        SizeType loc_size_;            
 
     };
 

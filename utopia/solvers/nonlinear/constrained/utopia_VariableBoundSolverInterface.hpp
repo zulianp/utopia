@@ -84,7 +84,7 @@ namespace utopia
     protected:
       virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
       {
-        if(empty(Pc_) || local_size(Pc_) != local_size(x)){
+        if(empty(Pc_) || size(Pc_) != size(x)){
           Pc_ = 0.0 * x; 
         }
 
@@ -107,7 +107,7 @@ namespace utopia
   public:  // expose it for CUDA
       bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc) const
       {
-        if(empty(Pc)){
+        if(empty(Pc_) || size(Pc_) != size(x)){
             Pc = 0.0*x;
         }
 
