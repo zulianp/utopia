@@ -279,7 +279,7 @@ namespace utopia
 
             while(!converged)
             {
-                UTOPIA_NO_ALLOC_BEGIN("region1");
+                UTOPIA_NO_ALLOC_BEGIN("STCG::region1");
                 B.apply(p_k, B_p_k);
                 // kappa = dot(p_k,B_p_k);
 
@@ -309,7 +309,7 @@ namespace utopia
                     return true;
                 }
 
-                UTOPIA_NO_ALLOC_BEGIN("region2");
+                UTOPIA_NO_ALLOC_BEGIN("STCG::region2");
                 // g_v_prod_old = dot(r, v_k);
                 alpha = g_v_prod_old/kappa;
 
@@ -322,7 +322,7 @@ namespace utopia
                 // norm squared should be used
                 if(s_norm_new >= r2)
                 {
-                    UTOPIA_NO_ALLOC_BEGIN("region3");
+                    UTOPIA_NO_ALLOC_BEGIN("STCG::region3");
                     
                     Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm));
                     Scalar tau = (std::sqrt(term1) - sMp)/p_norm;
@@ -346,7 +346,7 @@ namespace utopia
                 
                 if(std::isfinite(alpha))
                 {
-                    UTOPIA_NO_ALLOC_BEGIN("region4");
+                    UTOPIA_NO_ALLOC_BEGIN("STCG::region4");
                     s_k += alpha * p_k;
                     UTOPIA_NO_ALLOC_END();
                 }
@@ -357,7 +357,7 @@ namespace utopia
                 
 
 
-                UTOPIA_NO_ALLOC_BEGIN("region5");
+                UTOPIA_NO_ALLOC_BEGIN("STCG::region5");
                 r += alpha * B_p_k;
                 UTOPIA_NO_ALLOC_END();
 
@@ -368,7 +368,7 @@ namespace utopia
                     v_k.set(0.0); 
 
 
-                UTOPIA_NO_ALLOC_BEGIN("region6");
+                UTOPIA_NO_ALLOC_BEGIN("STCG::region6");
                 this->precond_->apply(r, v_k);
                 UTOPIA_NO_ALLOC_END();
 
@@ -383,7 +383,7 @@ namespace utopia
 
                 betta  = g_v_prod_new/ g_v_prod_old;
                 
-                UTOPIA_NO_ALLOC_BEGIN("region6.2");
+                UTOPIA_NO_ALLOC_BEGIN("STCG::region6.2");
                 p_k = betta * p_k - v_k;
                 UTOPIA_NO_ALLOC_END();
 
@@ -397,7 +397,7 @@ namespace utopia
                 }
                 else
                 {
-                    UTOPIA_NO_ALLOC_BEGIN("region7");
+                    UTOPIA_NO_ALLOC_BEGIN("STCG::region7");
                     dots(
                         p_k, s_k, sMp,
                         p_k, p_k, p_norm,

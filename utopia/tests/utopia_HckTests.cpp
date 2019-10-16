@@ -77,7 +77,8 @@ namespace utopia
             // UTOPIA_RUN_TEST(MPGRP_test);
 
             // nonlinear solver tests 
-            UTOPIA_RUN_TEST(newton_test);
+            // UTOPIA_RUN_TEST(newton_test);
+            UTOPIA_RUN_TEST(TR_unconstrained);
 
         }
 
@@ -898,9 +899,9 @@ namespace utopia
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
-#ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
-#endif
+// #ifdef WITH_TRILINOS
+//         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+// #endif
 #endif
 
     }
