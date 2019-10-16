@@ -106,7 +106,6 @@
     //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            // UTOPIA_NO_ALLOC_BEGIN("TR:1");
               if(empty(p_k)){
                 p_k = 0.0*x_k; 
               }
@@ -114,11 +113,12 @@
                 p_k.set(0.0); 
               }
               
+              // UTOPIA_NO_ALLOC_BEGIN("TR:1");
               tr_subproblem->current_radius(delta);
               g_minus_ = -1.0*g; 
               tr_subproblem->solve(H, g_minus_, p_k);
               this->solution_status_.num_linear_solves++;
-            // UTOPIA_NO_ALLOC_END();
+              // UTOPIA_NO_ALLOC_END();
           }
           else
           {

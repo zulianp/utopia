@@ -37,10 +37,22 @@ namespace utopia {
             UTOPIA_RUN_TEST(transform_test);
             UTOPIA_RUN_TEST(mat_copy); 
             UTOPIA_RUN_TEST(reciprocal_test); 
-
-            //FIXME (mem allocs)
             UTOPIA_RUN_TEST(max_min_test); 
+            
+            // FIXME (mem allocs)
+            
+
+            // Seq. fault 
+            UTOPIA_RUN_TEST(mat_transp_mult_test); 
         }
+
+        void mat_transp_mult_test()
+        {
+            Matrix H = values(n_, n_, 2.0); 
+            Matrix D = diag(diag(H));
+            H = H + transpose(H) - D;
+        }
+
 
         void negate_test()
         {

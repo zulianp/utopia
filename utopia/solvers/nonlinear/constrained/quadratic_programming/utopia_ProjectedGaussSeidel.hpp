@@ -308,7 +308,8 @@ namespace utopia {
                     UTOPIA_NO_ALLOC_END(); 
                 } else {
                     UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel26");
-                    descent_dir = utopia::max(utopia::min(alpha * c, ub_loc), ub_loc);
+                    c *= alpha; 
+                    descent_dir = utopia::max(utopia::min(c, ub_loc), ub_loc);
                     UTOPIA_NO_ALLOC_END(); 
                 }
                 UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel27");

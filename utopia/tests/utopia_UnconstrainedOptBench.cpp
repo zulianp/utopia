@@ -34,20 +34,30 @@ namespace utopia
 	    	test_functions_[4] = std::make_shared<Box12<Matrix, Vector> >();	  
 			
 			test_functions_[5] = std::make_shared<VariablyDim25<Matrix, Vector> >(n_); 	 // works also in parallel 		
-	    	test_functions_[6] = std::make_shared<Watson20<Matrix, Vector> >(); 		
+
+	    	
+	    	// test_functions_[6] = std::make_shared<Watson20<Matrix, Vector> >(); 		
+	    	test_functions_[6] = std::make_shared<VariablyDim25<Matrix, Vector> >(n_); 		
+
+
+
 			test_functions_[7] = std::make_shared<PenaltyI23<Matrix, Vector> >(n_); 	    // works also in parallel 		    			    	  	
-	    	test_functions_[8] = std::make_shared<PenaltyII24<Matrix, Vector> >();
+	    	// test_functions_[8] = std::make_shared<PenaltyII24<Matrix, Vector> >();
+			test_functions_[8] = std::make_shared<Box12<Matrix, Vector> >();	  
+
 	    	test_functions_[9] = std::make_shared<Brown04<Matrix, Vector> >();
 
 	    	test_functions_[10] = std::make_shared<BrownDennis16<Matrix, Vector> >();	
 	    	test_functions_[11] = std::make_shared<Gulf11<Matrix, Vector> >(); 
 			test_functions_[12] = std::make_shared<Trigonometric26<Matrix, Vector> >(n_);  	
-	    	test_functions_[13] = std::make_shared<ExtendedRosenbrock21<Matrix, Vector> >(50); // works also in parallel 		    			    	  	
+	    	test_functions_[13] = std::make_shared<ExtendedRosenbrock21<Matrix, Vector> >(n_); // works also in parallel 		    			    	  	
 	    	test_functions_[14] = std::make_shared<Beale05<Matrix, Vector> >();
 
 	    	test_functions_[15] = std::make_shared<Woods14<Matrix, Vector> >();
 	    	test_functions_[16] = std::make_shared<ExtendedPowell22<Matrix, Vector> >(64);
-	    	test_functions_[17] = std::make_shared<Chebyquad35<Matrix, Vector> >();			
+
+	    	test_functions_[17] = std::make_shared<ExtendedPowell22<Matrix, Vector> >(64);
+	    	// test_functions_[17] = std::make_shared<Chebyquad35<Matrix, Vector> >();			
 		}
 
 		~UnconstrainedOptimizationBenchmark()
@@ -61,7 +71,7 @@ namespace utopia
 
 			// this->register_experiment("TR_STCG",
 			// 	[this]() {
-			// 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+			// 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
 			// 		TrustRegion<Matrix, Vector> solver(subproblem);
 			// 		run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
 			// 	}
@@ -83,16 +93,16 @@ namespace utopia
 			// 	}
 			// );		
 
-			// this->register_experiment("TR_Dogleg",
-			// 	[this]() {
-			// 		auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
-			// 		linear_solver->atol(1e-14); 
-			// 		linear_solver->max_it(10000);
-			// 		auto subproblem = std::make_shared<Dogleg<Matrix, Vector> >(linear_solver); 
-			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_Dogleg", this->verbose_);
-			// 	}
-			// );			
+			this->register_experiment("TR_Dogleg",
+				[this]() {
+					auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
+					linear_solver->atol(1e-14); 
+					linear_solver->max_it(10000);
+					auto subproblem = std::make_shared<Dogleg<Matrix, Vector> >(linear_solver); 
+					TrustRegion<Matrix, Vector> solver(subproblem);
+					run_tr(this->test_functions_, solver, "TR_Dogleg", this->verbose_);
+				}
+			);			
 
 			// // TODO:: add check for slepcs
 			// this->register_experiment("TR_MS",
@@ -111,17 +121,17 @@ namespace utopia
 			// );						
 
 
-			this->register_experiment("PseudoTransientContinuation",
-				[this]() {
-					auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
-					linear_solver->atol(1e-14); 
-					linear_solver->max_it(10000);
+			// this->register_experiment("PseudoTransientContinuation",
+			// 	[this]() {
+			// 		auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();	
+			// 		linear_solver->atol(1e-14); 
+			// 		linear_solver->max_it(10000);
 
-					PseudoContinuation<Matrix, Vector> solver(linear_solver); 
-					solver.reset_mass_matrix(true); 
-					run_tr(this->test_functions_, solver, "PseudoTransientContinuation", this->verbose_);
-				}
-			);		
+			// 		PseudoContinuation<Matrix, Vector> solver(linear_solver); 
+			// 		solver.reset_mass_matrix(true); 
+			// 		run_tr(this->test_functions_, solver, "PseudoTransientContinuation", this->verbose_);
+			// 	}
+			// );		
 
 
 			// add slepcs checks 
@@ -166,22 +176,22 @@ namespace utopia
 			// );		
 
 
-			this->register_experiment("ASTRUM",
-				[this]() {
+// 			this->register_experiment("ASTRUM",
+// 				[this]() {
 					
 					
-#ifdef WITH_PETSC
-					auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(MATSOLVERPETSC, PCLU);
-#else
-					auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();			
-#endif //WITH_PETSC
+// #ifdef WITH_PETSC
+// 					auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(MATSOLVERPETSC, PCLU);
+// #else
+// 					auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();			
+// #endif //WITH_PETSC
 					
-					ASTRUM<Matrix, Vector> solver(linear_solver); 
-					solver.reset_mass_matrix(true); 
-					solver.verbosity_level(VERBOSITY_LEVEL_QUIET); 
-					run_tr(this->test_functions_, solver, "ASTRUM", this->verbose_);
-				}
-			);					
+// 					ASTRUM<Matrix, Vector> solver(linear_solver); 
+// 					solver.reset_mass_matrix(true); 
+// 					solver.verbosity_level(VERBOSITY_LEVEL_QUIET); 
+// 					run_tr(this->test_functions_, solver, "ASTRUM", this->verbose_);
+// 				}
+// 			);					
 
 
 		}
@@ -196,12 +206,12 @@ namespace utopia
 		{
 
 			InputParameters in;
-			in.set("atol", 1e-7);
+			in.set("atol", 1e-6);
 			in.set("rtol", 1e-11);
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 500); 
+			in.set("max-it", 1000); 
 			in.set("verbose", false); 
 
 			auto params_qp = std::make_shared<InputParameters>(); 
