@@ -25,7 +25,7 @@ namespace utopia {
             const auto op1 = expr.right().left().operation();
             const auto op2 = expr.right().operation();
 
-            const static bool order_matters = !(is_associative<Op1>::value && is_commutative<Op1>::value && is_associative<Op2>::value && is_commutative<Op2>::value);
+            const static bool order_matters = !eval_order_changable<Op1, Op2>::value;
 
             if(result.same_object(t3)) {
                 if(!order_matters) {
