@@ -123,7 +123,7 @@ namespace utopia {
             UTOPIA_TRACE_BEGIN(expr);
 
             auto result = Eval<Left, Traits>::apply(expr.left());
-            result.shift_diag(expr.right().left());
+            result.shift_diag(expr.right().left().get());
 
             UTOPIA_TRACE_END(expr);
             return result;

@@ -320,7 +320,6 @@ namespace utopia {
 
         UVector vol;
         utopia::assemble(error_form, error_);
-        std::cout << tree_format(error_form.get_class()) << std::endl;
         utopia::assemble(vol_form,   vol);
         // error = e_div(error, vol);
 

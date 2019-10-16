@@ -267,7 +267,6 @@ namespace utopia {
         }
     };
 
-
     //////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////// Specialized /////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -283,8 +282,48 @@ namespace utopia {
         
         inline static void apply(const Expr &expr)
         {
+            UTOPIA_TRACE_BEGIN(expr);
+            
             auto &l = Eval<Tensor<T, 2>, Traits>::apply(expr.left());
             l.zeros(size(expr.right()));
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<InPlace<Tensor<Left, 2>, Diag<Tensor<Right, 1>>, Plus>, Traits, Backend> {
+    public:
+        using Expr = utopia::InPlace<Tensor<Left, 2>, Diag<Tensor<Right, 1>>, Plus>;
+
+        inline static void apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &l = expr.left().derived();
+            auto &r = expr.right().expr().derived();
+
+            l.shift_diag(r);
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<InPlace<Tensor<Left, 2>, Diag<Tensor<Right, 1>>, Minus>, Traits, Backend> {
+    public:
+        using Expr = utopia::InPlace<Tensor<Left, 2>, Diag<Tensor<Right, 1>>, Minus>;
+
+        inline static void apply(const Expr &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &l = expr.left().derived();
+            Right r = expr.right().expr().derived();
+            r.scale(-1.0);
+            l.shift_diag(r);
+
+            UTOPIA_TRACE_END(expr);
         }
     };
 
