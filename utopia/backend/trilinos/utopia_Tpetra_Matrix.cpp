@@ -921,4 +921,16 @@ namespace utopia {
         );
     }
 
+    void TpetraMatrix::shift_diag(const TpetraVector &d)
+    {
+        const auto r = utopia::range(d);
+        assert(r == utopia::row_range(*this));
+
+        Read<TpetraVector> rd(d);
+        Write<TpetraMatrix> w(*this);
+        for(SizeType i = r.begin(); i < r.end(); ++i) {
+            add(i, i, d.get(i));
+        }
+    }
+
 }

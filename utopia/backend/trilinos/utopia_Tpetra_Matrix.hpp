@@ -602,6 +602,9 @@ namespace utopia {
             return mat_ == other.mat_;
         }
 
+
+        void shift_diag(const TpetraVector &d);
+
     private:
         TrilinosCommunicator comm_;
         rcp_crs_mat_type  mat_;

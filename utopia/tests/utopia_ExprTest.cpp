@@ -1,15 +1,15 @@
-// #include "utopia_trilinos_Base.hpp"
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-// #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
 #include "utopia_Eval_Residual.hpp"
+#include <utility>
 
-namespace utopia
-{
+namespace utopia {
+
+
     template<typename Matrix, typename Vector>
     class ExpressionTests
     {
@@ -108,35 +108,39 @@ namespace utopia
             // I do not know how relevant are these tests, as sparsity pattern might be different... 
             //create same_sparsity_copy()
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy1");
+            //FIME
             // D = I; 
             // UTOPIA_NO_ALLOC_END();     
 
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy2");
-            // D = -1.0 * I; 
+            //FIXME this it is equivalent to making a copy (but it could be treated as an AXPY)
+            D = -1.0 * I;
+            D = -I;
             // UTOPIA_NO_ALLOC_END();     
 
-            // UTOPIA_NO_ALLOC_BEGIN("mat_copy3");
-            // D -= I; 
-            // UTOPIA_NO_ALLOC_END();     
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy3");
+            D -= I; 
+            UTOPIA_NO_ALLOC_END();     
 
-            // UTOPIA_NO_ALLOC_BEGIN("mat_copy4");
-            // D += I; 
-            // UTOPIA_NO_ALLOC_END();        
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy4");
+            D += I; 
+            UTOPIA_NO_ALLOC_END();        
 
-            // UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
-            // D += 5.0*D; 
-            // UTOPIA_NO_ALLOC_END();                             
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
+            D += 5.0*D; 
+            UTOPIA_NO_ALLOC_END();                             
 
-            // seq. faults
             D += Matrix(diag(v)); 
             
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
-            // D += diag(v); //bad way D += Matrix(diag(v)); 
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");//
+            //https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
+            D += diag(v); //bad way D += Matrix(diag(v)); 
             UTOPIA_NO_ALLOC_END();  
 
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy6");
-            // D -= diag(v); //bad way D -= Matrix(diag(v)); 
-            UTOPIA_NO_ALLOC_END();  
+            // UTOPIA_NO_ALLOC_BEGIN("mat_copy6");
+            //FIME still creates a temporary (but now it is just a vector)
+            D -= diag(v); //bad way D -= Matrix(diag(v)); 
+            // UTOPIA_NO_ALLOC_END();  
         }
 
 

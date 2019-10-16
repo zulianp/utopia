@@ -64,6 +64,10 @@ namespace utopia {
 
         inline ~Allocations()
         {
+            if(!region_name_.empty()) {
+                std::cerr << "[Error] incorrect regions are present in the code. number of open regions is " << region_name_.size() << std::endl;
+            }
+
             std::cout << "[Status] total allocations " << count_ << ", " << n_violations_ <<  " violations " << std::endl;
         }
 

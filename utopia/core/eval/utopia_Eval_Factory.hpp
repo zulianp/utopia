@@ -487,13 +487,14 @@ namespace utopia {
    class Eval<AssignMatrixWithIdShit<Derived, T>, Traits, Backend> {
    public:
       using Matrix = utopia::Tensor<Derived, 2>;
+      using Scalar = typename Traits::Scalar;
 
       inline static void apply(const AssignMatrixWithIdShit<Derived, T> &expr)
       {
           UTOPIA_TRACE_BEGIN(expr);
 
           auto &&l = Eval<Matrix, Traits>::apply(expr.left());
-          auto &&diag = expr.right().right().left();
+          const Scalar diag = expr.right().right().left();
 
           l.construct( Eval<Matrix, Traits>::apply(expr.right().left()) );
           l.shift_diag(diag);

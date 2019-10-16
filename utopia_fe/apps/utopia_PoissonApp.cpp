@@ -13,6 +13,7 @@
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_MeshTransferOperator.hpp"
+#include "utopia_Flow.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/boundary_mesh.h"
@@ -31,50 +32,31 @@ namespace utopia {
         UIForcingFunction<LibMeshFunctionSpace, UVector> forcing_function(space.subspace(0));
         in.get("forcing-function", forcing_function);
 
-    
+        // UIScalarFunction<double> diffusivity;
+        // in.get("diffusivity", diffusivity);
+
         auto &V = space.space().subspace(0);
         auto u = trial(V);
         auto v = test(V);
 
-        auto linear_form = inner(coeff(10.0), v) * dX;
+        auto linear_form = inner(coeff(0.0), v) * dX;
+        // auto bilinear_form = inner(ctx_fun(diffusivity.sampler()) * grad(u), grad(v)) * dX;
         auto bilinear_form = inner(grad(u), grad(v)) * dX;
 
         USparseMatrix A;
         UVector rhs, x, forcing_term;
         
-
-        //rhs.set(1.0);
         assemble(bilinear_form == linear_form, A, rhs);
-
 
         x = local_zeros(local_size(rhs));
 
-
         forcing_term = local_zeros(local_size(rhs));
-        forcing_function.eval(x,forcing_term);
-        rhs+= forcing_term;
+        forcing_function.eval(x, forcing_term);
+        rhs += forcing_term;
 
         apply_boundary_conditions(V, A, rhs);
 
-
-        // utopia::disp(size(A).get(0));
-
-        // utopia::disp(size(A).get(1));
-
-        // utopia::write("A_before.m", A);
-
-
-        // utopia::rename("a", A);
-
-        // utopia::write("A.m", A);
-
-        // utopia::rename("b", rhs);
-
-        // utopia::write("rhs.m", rhs);
-
-
-
-        Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
+        Factorization<USparseMatrix, UVector> fact;//(MATSOLVERMUMPS,PCLU);
         fact.describe(std::cout);
         fact.solve(A, rhs, x);
 

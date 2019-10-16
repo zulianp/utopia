@@ -793,6 +793,8 @@ namespace utopia {
             check_error( MatShift(implementation(), factor) );
         }
 
+
+        void shift_diag(const PetscVector &d);
         void dense_init_diag(MatType dense_type, const PetscVector &diag);
         void matij_init_diag(const PetscVector &diag);
 

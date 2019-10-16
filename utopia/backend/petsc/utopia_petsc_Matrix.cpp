@@ -1706,4 +1706,9 @@ namespace utopia {
         return ret;
     }
 
+    void PetscMatrix::shift_diag(const PetscVector &d)
+    {
+        check_error( MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES) );
+    }
+
 }

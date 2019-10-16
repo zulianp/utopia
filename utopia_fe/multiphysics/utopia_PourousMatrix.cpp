@@ -296,11 +296,16 @@ namespace utopia {
 
 
         //UNCOMMENT ME once the bug is fixed
-        // Adaptivity a;
-        // USparseMatrix pre_constraint, post_constraint;
-        // auto &W_i = W.subspace(0);
-        // a.constraint_matrix(W_i, pre_constraint, post_constraint);
-        // grad_p_projected += post_constraint * grad_p_projected;
+
+        const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
+
+        if(!disable_adaptivity) {
+            Adaptivity a;
+            USparseMatrix pre_constraint, post_constraint;
+            auto &W_i = W.subspace(0);
+            a.constraint_matrix(W_i, pre_constraint, post_constraint);
+            grad_p_projected += post_constraint * grad_p_projected;
+        }
 
         assert(!has_nan_or_inf(grad_ph));
         assert(!has_nan_or_inf(mass_vec));
@@ -320,7 +325,6 @@ namespace utopia {
 
         UVector vol;
         utopia::assemble(error_form, error_);
-        std::cout << tree_format(error_form.get_class()) << std::endl;
         utopia::assemble(vol_form,   vol);
         // error = e_div(error, vol);
 
