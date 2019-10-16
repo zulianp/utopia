@@ -17,6 +17,12 @@ namespace utopia {
         static const int value = 0;
     };
 
+    template<class Op>
+    class is_associative {
+    public:
+        static const int value = 0;
+    };
+
     class Minus {
     public:
         std::string get_class() const { return "Minus"; }
@@ -51,6 +57,11 @@ namespace utopia {
         static const int value = 1;
     };
 
+    template<>
+    class is_associative<Plus> {
+    public:
+        static const int value = 1;
+    };
 
     class PlusEqual {
     public:
@@ -80,6 +91,12 @@ namespace utopia {
         static const int value = 1;
     };
 
+    template<>
+    class is_associative<AbsPlus> {
+    public:
+        static const int value = 1;
+    };
+
 
     class And {
     public:
@@ -97,6 +114,12 @@ namespace utopia {
         static const int value = 1;
     };
 
+    template<>
+    class is_associative<And> {
+    public:
+        static const int value = 1;
+    };
+
 
     class Multiplies {
     public:
@@ -110,6 +133,12 @@ namespace utopia {
 
     template<>
     class is_commutative<Multiplies> {
+    public:
+        static const int value = 0;
+    };
+
+    template<>
+    class is_associative<Multiplies> {
     public:
         static const int value = 1;
     };
@@ -137,6 +166,12 @@ namespace utopia {
 
     template<>
     class is_commutative<EMultiplies> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class is_associative<EMultiplies> {
     public:
         static const int value = 1;
     };
@@ -183,6 +218,12 @@ namespace utopia {
     class is_commutative<ApproxEqual> {
     public:
         static const int value = 1;
+    };
+
+    template<>
+    class is_associative<ApproxEqual> {
+    public:
+        static const int value = 0;
     };
 
 
