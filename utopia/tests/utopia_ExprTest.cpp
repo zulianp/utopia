@@ -48,7 +48,8 @@ namespace utopia {
 
         void mat_transp_mult_test()
         {
-            Matrix H = values(n_, n_, 2.0); 
+            Matrix H = sparse(n_, n_, 3); 
+            assemble_laplacian_1D(H);
             Matrix D = diag(diag(H));
             H = H + transpose(H) - D;
         }
