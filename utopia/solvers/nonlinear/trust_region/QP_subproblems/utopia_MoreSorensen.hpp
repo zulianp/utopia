@@ -30,7 +30,9 @@ namespace utopia
                             linear_solver_(linear_solver),
                             eigen_solver_(eigen_solver),
                             kappa_easy_(1e-10),
-                            lambda_eps_(1e-5)
+                            lambda_eps_(1e-5), 
+                            initialized_(false), 
+                            loc_size_(0)
         {  };
 
 
@@ -66,8 +68,11 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
-            Vector g = -1.0 *b;
-            return aux_solve(*this->get_operator(), g, x);
+            SizeType loc_size_rhs = local_size(b); 
+            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+            }               
+            return aux_solve(*this->get_operator(), b, x);
         }
 
         void read(Input &in) override
@@ -99,35 +104,35 @@ namespace utopia
     private:
         bool aux_solve(const Matrix &H, const Vector &g, Vector &s_k)
         {
-            Scalar lambda, s_norm;
-            Vector eigenvector;
-            // init vector...
-            s_k = 0.0 * g;
+            Scalar lambda, s_norm, lambda_old;
+            
+            // UTOPIA_NO_ALLOC_BEGIN("MoreSorensen:region1");
+            if(empty(s_k) || size(s_k) != size(g))
+                s_k = 0.0 * g;
+            else
+                s_k.set(0.0); 
 
             // ---------------------- initialization  of lambda_0 ------------------------
             eigen_solver_->portion_of_spectrum("smallest_real");
             eigen_solver_->number_of_eigenvalues(1);
             eigen_solver_->solve(H);
 
-            eigen_solver_->get_real_eigenpair(0, lambda, eigenvector);
+            eigen_solver_->get_real_eigenpair(0, lambda, eigenvector_);
 
             // 	decide if PD case or not
             lambda = (lambda > 0.0) ? 0.0 : - 1.0 * (lambda - lambda_eps_);
 
 
-            Matrix H_lambda = H;
+            H_lambda_ = H;
             if(lambda != 0.0)
             {
-                Write<Matrix> w(H_lambda);
-                Range r = row_range(H_lambda);
-
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                    H_lambda.add(i, i, lambda);
+                H_lambda_.shift_diag(lambda); 
             }
 
 
-            linear_solver_->solve(H_lambda, -1 * g, s_k);
+            linear_solver_->solve(H_lambda_, g, s_k);
             s_norm = norm2(s_k);
+            // UTOPIA_NO_ALLOC_END();
 
             if(s_norm <= this->current_radius())
             {
@@ -136,10 +141,15 @@ namespace utopia
                     return true;
                 else
                 {
+                    // UTOPIA_NO_ALLOC_BEGIN("MoreSorensen:region2");
+                    Scalar s_k_eigen, sk_sk; 
+                    dots(s_k, eigenvector_, s_k_eigen, s_k, s_k, sk_sk); 
+
                     // we are in hard case, let's find solution on boundary, which is orthogonal to E_1
                     //                     because eigenvector is normalized
-                    Scalar alpha = this->quadratic_function(1.0, 2.0 * dot(s_k, eigenvector), dot(s_k, s_k) - (this->current_radius() * this->current_radius()));
-                    s_k += alpha * eigenvector;
+                    Scalar alpha = this->quadratic_function(1.0, 2.0 * s_k_eigen, sk_sk - (this->current_radius() * this->current_radius()));
+                    s_k += alpha * eigenvector_;
+                    // UTOPIA_NO_ALLOC_END();
                     return true;
                 }
             }
@@ -149,45 +159,62 @@ namespace utopia
                 if( std::abs(s_norm - this->current_radius()) <= kappa_easy_ *  this->current_radius())
                     return true;
 
-                Vector grad_s_lambda = 0 * s_k;
-                linear_solver_->solve(H_lambda, -1 * s_k, grad_s_lambda);
+                lambda_old = lambda; 
+
+                // UTOPIA_NO_ALLOC_BEGIN("MoreSorensen:region3");
+                grad_s_lambda_.set(0); 
+
+                s_k *= -1.0; 
+                linear_solver_->solve(H_lambda_, s_k, grad_s_lambda_);
 
                 Scalar grad 	= 1.0/s_norm - 1.0/ this->current_radius();
-                Scalar hessian 	= -1.0 * dot(s_k, grad_s_lambda)/ std::pow(s_norm, 3);
+                Scalar hessian 	= dot(s_k, grad_s_lambda_)/ std::pow(s_norm, 3);
 
 
                 lambda -=  grad/hessian;
 
                 // H should be H + \lambda I
-                // TODO:: investigate why it does not work with mat multiply... something is wrong with mat allocations...
-                H_lambda = H;
-                {
-                    Write<Matrix> w(H_lambda);
-                    Range r = row_range(H_lambda);
+                H_lambda_.shift_diag(lambda - lambda_old); 
 
-                    //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-                    for(SizeType i = r.begin(); i != r.end(); ++i)
-                        H_lambda.add(i, i, lambda);
-                }
-
-                s_k *= 0.0;
-                   linear_solver_->solve(H_lambda, -1 * g, s_k);
+                s_k.set(0.0);
+                linear_solver_->solve(H_lambda_, g, s_k);
                 s_norm = norm2(s_k);
+                // UTOPIA_NO_ALLOC_END();
             }
 
             return true;
         }
 
 
-    private:
-         std::shared_ptr<LinearSolver> linear_solver_;
-         std::shared_ptr<EigenSolver> eigen_solver_;
+        void init(const SizeType &ls)
+        {
+            auto zero_expr = local_zeros(ls);
 
-         Scalar kappa_easy_;
-         Scalar lambda_eps_;
+            //resets all buffers in case the size has changed
+            eigenvector_ = zero_expr;
+            grad_s_lambda_ = zero_expr;
+
+            initialized_ = true;    
+            loc_size_ = ls;                    
+        }
+
+
+    private:
+        std::shared_ptr<LinearSolver> linear_solver_;
+        std::shared_ptr<EigenSolver> eigen_solver_;
+
+        Scalar kappa_easy_;
+        Scalar lambda_eps_;
+        
+        bool initialized_; 
+        SizeType loc_size_;      
+
+        Vector eigenvector_; 
+        Vector grad_s_lambda_; 
+
+        Matrix H_lambda_; 
 
     };
-
 
 }
 

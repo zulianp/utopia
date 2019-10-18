@@ -39,7 +39,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Gaussaian";
+            return "Gaussian";
         }
 
         SizeType dim() const override

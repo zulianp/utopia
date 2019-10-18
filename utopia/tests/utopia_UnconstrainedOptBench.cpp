@@ -6,6 +6,11 @@
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_UnconstrainedBenchmark.hpp"
 
+#ifdef WITH_PETSC
+	#ifdef WITH_SLEPC
+		#include "utopia_petsc_Slepc.hpp"
+	#endif //WITH_SLEPC
+#endif //WITH_PETSC
 
 #include <string>
 #include <cassert>
@@ -69,29 +74,39 @@ namespace utopia
 		void initialize() override
 		{
 
-			// this->register_experiment("TR_STCG",
-			// 	[this]() {
-			// 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
-			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
-			// 	}
-			// );
+			this->register_experiment("TR_STCG_HOMEMADE",
+				[this]() {
+					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+					subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+					TrustRegion<Matrix, Vector> solver(subproblem);
+					run_tr(this->test_functions_, solver, "TR_STCG_HOMEMADE", this->verbose_);
+				}
+			);
 
-			// this->register_experiment("TR_Lanczos",
-			// 	[this]() {
-			// 		auto subproblem = std::make_shared<Lanczos<Matrix, Vector> >();
-			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_Lanczos", this->verbose_);
-			// 	}
-			// );			
+			this->register_experiment("TR_STCG",
+				[this]() {
+					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+					// subproblem->pc_type("none");
+					TrustRegion<Matrix, Vector> solver(subproblem);
+					run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
+				}
+			);			
 
-			// this->register_experiment("TR_Nash",
-			// 	[this]() {
-			// 		auto subproblem = std::make_shared<Nash<Matrix, Vector> >();
-			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_Nash", this->verbose_);
-			// 	}
-			// );		
+			this->register_experiment("TR_Lanczos",
+				[this]() {
+					auto subproblem = std::make_shared<Lanczos<Matrix, Vector> >();
+					TrustRegion<Matrix, Vector> solver(subproblem);
+					run_tr(this->test_functions_, solver, "TR_Lanczos", this->verbose_);
+				}
+			);			
+
+			this->register_experiment("TR_Nash",
+				[this]() {
+					auto subproblem = std::make_shared<Nash<Matrix, Vector> >();
+					TrustRegion<Matrix, Vector> solver(subproblem);
+					run_tr(this->test_functions_, solver, "TR_Nash", this->verbose_);
+				}
+			);		
 
 			this->register_experiment("TR_Dogleg",
 				[this]() {
@@ -102,23 +117,37 @@ namespace utopia
 					TrustRegion<Matrix, Vector> solver(subproblem);
 					run_tr(this->test_functions_, solver, "TR_Dogleg", this->verbose_);
 				}
-			);			
+			);		
 
-			// // TODO:: add check for slepcs
-			// this->register_experiment("TR_MS",
-			// 	[this]() {
-			// 		auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
-			// 		// TODO:: add checks if has arpack
-			// 		eigen_solver->solver_type("arpack");
-					
-			// 		auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
-			// 		linear_solver->set_library_type(PETSC_TAG); 
+			this->register_experiment("TR_Cauchy_Point",
+				[this]() {
+					auto subproblem = std::make_shared<CauchyPoint<Matrix, Vector> >(); 
+					TrustRegion<Matrix, Vector> solver(subproblem);
+					run_tr(this->test_functions_, solver, "TR_Cauchy_Point", this->verbose_);
+				}
+			);						
 
-			// 		auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
-			// 		TrustRegion<Matrix, Vector> solver(subproblem);
-			// 		run_tr(this->test_functions_, solver, "TR_MS", this->verbose_);
-			// 	}
-			// );						
+
+			#ifdef WITH_PETSC
+				#ifdef WITH_SLEPC
+				// TODO:: add check for slepcs
+				this->register_experiment("TR_MS",
+					[this]() {
+						auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
+						// TODO:: add checks if has arpack
+						eigen_solver->solver_type("arpack");
+						
+						auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
+						linear_solver->set_library_type("petsc"); 
+
+						auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
+						TrustRegion<Matrix, Vector> solver(subproblem);
+						run_tr(this->test_functions_, solver, "TR_MS", this->verbose_);
+					}
+				);	
+				#endif //WITH_SLEPC
+			#endif //WITH_PETSC									
+
 
 
 			// this->register_experiment("PseudoTransientContinuation",
@@ -211,7 +240,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 1000); 
+			in.set("max-it", 5000); 
 			in.set("verbose", false); 
 
 			auto params_qp = std::make_shared<InputParameters>(); 
