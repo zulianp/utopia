@@ -50,7 +50,7 @@ namespace utopia {
             const auto actual_slave_order = slave_order * (is_quad(slave_el.type()) ? 2 : 1 );
             order = master_order * (is_quad(master_el.type())? 2 : 1 ) + actual_slave_order; 
             if(slave_has_affine_map) {
-                order += (actual_slave_order - 1) * 2;
+                order += std::max(actual_slave_order - 1, 0) * 2;
             }
 
         } else if(dim == 3) {
