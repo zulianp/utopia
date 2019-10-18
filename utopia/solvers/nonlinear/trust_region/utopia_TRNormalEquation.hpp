@@ -151,9 +151,7 @@
           {
             rho = 1; 
           } 
-          // this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
-          std::cout<<"TR_NORMAL_EQ::error...... \n"; 
-          exit(1);
+          this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
 
     //----------------------------------------------------------------------------
     //    convergence check 

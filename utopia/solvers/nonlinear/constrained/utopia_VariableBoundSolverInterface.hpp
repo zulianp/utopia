@@ -242,27 +242,33 @@ namespace utopia
       }
 
 
-      virtual BoxConstraints  build_correction_constraints(const Vector & x_k) const
+      virtual const BoxConstraints & build_correction_constraints(const Vector & x_k) 
       {
-          //FIXME remove temporaries
-          Vector l_f, u_f;
+          correction_constraints_.fill_empty_bounds(); 
 
-          if(constraints_.has_upper_bound())
-              u_f =  *constraints_.upper_bound() - x_k;
-          else
-              u_f = local_values(local_size(x_k), 9e12);
+          if(constraints_.has_upper_bound()){
+            *correction_constraints_.upper_bound() =  *constraints_.upper_bound() - x_k;
+          }
+          else{
+            correction_constraints_.upper_bound()->set(9e12); 
+          }
 
-          if(constraints_.has_lower_bound())
-              l_f = *(constraints_.lower_bound()) - x_k;
-          else
-              l_f = local_values(local_size(x_k), -9e12);
 
-          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
+          if(constraints_.has_lower_bound()){
+            *correction_constraints_.lower_bound() = *(constraints_.lower_bound()) - x_k;
+          }
+          else{
+            correction_constraints_.lower_bound()->set(-9e12); 
+          }
+
+          return correction_constraints_; 
       }
 
 
     protected:
-        BoxConstraints                  constraints_;
+        BoxConstraints                  constraints_;             // variable bound constraints 
+        BoxConstraints                  correction_constraints_;  // constraints needed for correction 
+
         Vector Pc_;
         Vector xg_; 
 

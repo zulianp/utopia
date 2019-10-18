@@ -64,18 +64,26 @@ namespace utopia {
             return has_lower_bound() || has_upper_bound();
         }
 
-        inline void fill_empty_bounds()
+        inline void fill_empty_bounds(const SizeType & loc_size = 0)
         {
             // if(lower_bound_ == nullptr && upper_bound_ == nullptr) {
             //     return;
             // }
-
-            if(!lower_bound_) {
-                lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_), min_val_));
+            
+            if(!lower_bound_ && !upper_bound_)
+            {
+                lower_bound_ = std::make_shared<Vector>(local_values(loc_size, min_val_));
+                upper_bound_ = std::make_shared<Vector>(local_values(loc_size, max_val_));
             }
+            else
+            {
+                if(!lower_bound_) {
+                    lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_), min_val_));
+                }
 
-            if(!upper_bound_) {
-                upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_), max_val_));
+                if(!upper_bound_) {
+                    upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_), max_val_));
+                }
             }
         }  
 

@@ -164,23 +164,23 @@ namespace utopia
     \param x_k            - curren iterate
     \param x_k1           - new iterate
       */
-    // virtual bool trial_point_acceptance(const Scalar &rho, Scalar &E, const Scalar &E_k, const Scalar &E_k1,  const Vector & p_k, const Vector & x_k, Vector & x_k1)
-    // {
-    //   // good reduction, accept trial point
-    //   if (rho >= rho_tol_)
-    //   {
-    //     x_k1 = x_k + p_k;
-    //     E = E_k1;
-    //     return true;
-    //   }
-    //   // otherwise, keep old point
-    //   else
-    //   {
-    //     x_k1 = x_k;
-    //     E = E_k;
-    //     return false;
-    //   }
-    // }
+    virtual bool trial_point_acceptance(const Scalar &rho, Scalar &E, const Scalar &E_k, const Scalar &E_k1,  const Vector & p_k, const Vector & x_k, Vector & x_k1)
+    {
+      // good reduction, accept trial point
+      if (rho >= rho_tol_)
+      {
+        x_k1 = x_k + p_k;
+        E = E_k1;
+        return true;
+      }
+      // otherwise, keep old point
+      else
+      {
+        x_k1 = x_k;
+        E = E_k;
+        return false;
+      }
+    }
 
 
     /**
