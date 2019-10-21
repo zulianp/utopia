@@ -10,6 +10,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Expression.hpp"
+#include "utopia_Allocations.hpp"
 
 #ifdef UTOPIA_TRACE_ENABLED
 
@@ -55,10 +56,12 @@ namespace utopia {
 
         inline void begin() {
             start_time_ = std::chrono::high_resolution_clock::now();
+            count_allocs_ = Allocations::instance().count();
         }
 
         inline void end() {
             end_time_ = std::chrono::high_resolution_clock::now();
+            count_allocs_ = Allocations::instance().count() - count_allocs_;
         }
 
         friend void Tracer::save_collected_log();
@@ -69,6 +72,7 @@ namespace utopia {
         MeasurementId id_;
         std::string class_;
         std::chrono::high_resolution_clock::time_point start_time_, end_time_;
+        Allocations::Counter count_allocs_;
     };
 
     template<class T>
