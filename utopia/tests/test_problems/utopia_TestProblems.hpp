@@ -17,5 +17,6 @@
 #include "utopia_ContinuousStirredTankReactor.hpp"
 
 #include "utopia_PetscMultilevelTestProblem.hpp"
+#include "utopia_MultiLevelTestProblem.hpp"
 
 #endif

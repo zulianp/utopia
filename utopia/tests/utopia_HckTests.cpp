@@ -78,7 +78,9 @@ namespace utopia
 
             // nonlinear solver tests 
             // UTOPIA_RUN_TEST(newton_test);
-            UTOPIA_RUN_TEST(TR_unconstrained);
+            // UTOPIA_RUN_TEST(TR_unconstrained);
+            UTOPIA_RUN_TEST(TR_constrained);
+
 
         }
 
@@ -342,11 +344,11 @@ namespace utopia
             if(verbose_)
                 fun.describe();
 
-            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             qp_solver->atol(1e-10);
             qp_solver->max_it(n_*n_);
-            qp_solver->use_line_search(false);
+            // qp_solver->use_line_search(false);
             qp_solver->verbose(false);
 
 
