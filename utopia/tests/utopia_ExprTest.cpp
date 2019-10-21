@@ -386,7 +386,7 @@ namespace utopia {
         void inv_diag()
         {   
             Matrix H = sparse(n_, n_, 3);
-            Vector d = values(n_, 2.);
+            Vector d = zeros(n_);
 
             assemble_laplacian_1D(H);
 
