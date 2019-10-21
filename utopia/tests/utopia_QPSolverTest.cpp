@@ -257,9 +257,9 @@ namespace utopia {
         QPSolverTest<TpetraMatrixd, TpetraVectord>().run();
 #endif //WITH_TRILINOS
 
-#ifdef WITH_BLAS
-        QPSolverTest<BlasMatrixd, BlasVectord>().run(); // TODO:: because blas is missing min operation .... 
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+//         QPSolverTest<BlasMatrixd, BlasVectord>().run(); // TODO:: because blas is missing min operation .... 
+// #endif //WITH_BLAS
 
     }
 
