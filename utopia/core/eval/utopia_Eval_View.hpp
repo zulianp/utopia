@@ -118,46 +118,46 @@ namespace utopia {
         }
     };
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval< Construct<Left, View<Right> >, Traits, Backend> {
-    public:
-        inline static bool apply(const Construct<Left, View<Right> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval< Construct<Left, View<Right> >, Traits, Backend> {
+    // public:
+    //     inline static bool apply(const Construct<Left, View<Right> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            apply_aux(
-                Eval<Left, Traits>::apply(expr.left()),
-                row_range(expr.right()),
-                col_range(expr.right()),
-                Eval<Right, Traits>::apply(expr.right().expr())
-            );
+    //         apply_aux(
+    //             Eval<Left, Traits>::apply(expr.left()),
+    //             row_range(expr.right()),
+    //             col_range(expr.right()),
+    //             Eval<Right, Traits>::apply(expr.right().expr())
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
 
-        template<class Derived>
-        inline static void apply_aux(
-            Tensor<Derived, 1> &left,
-            const Range &row_range,
-            const Range &,
-            const Tensor<Derived, 1> &right
-        )
-        {
-            right.derived().select(row_range, left.derived());
-        }
+    //     template<class Derived>
+    //     inline static void apply_aux(
+    //         Tensor<Derived, 1> &left,
+    //         const Range &row_range,
+    //         const Range &,
+    //         const Tensor<Derived, 1> &right
+    //     )
+    //     {
+    //         right.derived().select(row_range, left.derived());
+    //     }
 
-        template<class Derived>
-        inline static void apply_aux(
-            Tensor<Derived, 2> &left,
-            const Range &row_range,
-            const Range &col_range,
-            const Tensor<Derived, 2> &right
-        )
-        {
-            right.derived().select(row_range, col_range, left.derived());
-        }
-    };
+    //     template<class Derived>
+    //     inline static void apply_aux(
+    //         Tensor<Derived, 2> &left,
+    //         const Range &row_range,
+    //         const Range &col_range,
+    //         const Tensor<Derived, 2> &right
+    //     )
+    //     {
+    //         right.derived().select(row_range, col_range, left.derived());
+    //     }
+    // };
 
 
 	///////TODOs

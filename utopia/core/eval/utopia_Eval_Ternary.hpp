@@ -52,6 +52,107 @@ namespace utopia {
         }
     };
 
+
+    //result = a op1 (alpha * b) op2 (beta * c);
+    //Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
+    template<class V, typename T, class Op1, class Op2>
+    using ScaledTernaryExpr = utopia::Assign<
+                                Tensor<V, 1>, 
+                                Binary<
+                                    Binary<
+                                        Tensor<V, 1>, 
+                                        Binary<
+                                            Number<T>, 
+                                            Tensor<V, 1>,
+                                            Multiplies
+                                            >,
+                                        Op1
+                                        >,
+                                    Binary<
+                                        Number<T>,
+                                        Tensor<V, 1>,
+                                        Multiplies
+                                        >, 
+                                    Op2>
+                                >;
+
+    template<class V, typename T, class Traits, int Backend>
+    class Eval< ScaledTernaryExpr<V, T, Plus, Minus>, Traits, Backend> {
+    public:
+        using T1 = utopia::Tensor<V, 1>;
+        using Scalar = typename Traits::Scalar;
+
+        static void apply(const ScaledTernaryExpr<V, T, Plus, Minus> &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+            //result = (a + (alpha * b)) - (beta * c);
+            auto &result = Eval<T1, Traits>::apply(expr.left());
+            auto &a = Eval<T1, Traits>::apply(expr.right().left().left());
+            const Scalar alpha = expr.right().left().right().left();
+            auto &b = Eval<T1, Traits>::apply(expr.right().left().right().right());
+            const Scalar beta = expr.right().right().left(); 
+            auto &c = Eval<T1, Traits>::apply(expr.right().right().right());
+
+            if(result.same_object(b)) {
+                result.scale(alpha);
+                result.axpy(1.0, a);
+                result.axpy(-beta, c);
+            } else if(result.same_object(c)) {
+                result.scale(-beta);
+                result.axpy(alpha, b);
+                result.axpy(1.0, a);
+            } else if(result.same_object(a)) {
+                result.axpy(alpha, b);
+                result.axpy(-beta, c);
+            } else {
+                result = a;
+                result.axpy(alpha, b);
+                result.axpy(-beta, c);
+            }
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+
+    template<class V, typename T, class Traits, int Backend>
+    class Eval< ScaledTernaryExpr<V, T, Minus, Plus>, Traits, Backend> {
+    public:
+        using T1 = utopia::Tensor<V, 1>;
+        using Scalar = typename Traits::Scalar;
+
+        static void apply(const ScaledTernaryExpr<V, T, Minus, Plus> &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+            //result = (a - (alpha * b)) + (beta * c);
+            auto &result = Eval<T1, Traits>::apply(expr.left());
+            auto &a = Eval<T1, Traits>::apply(expr.right().left().left());
+            const Scalar alpha = expr.right().left().right().left();
+            auto &b = Eval<T1, Traits>::apply(expr.right().left().right().right());
+            const Scalar beta = expr.right().right().left(); 
+            auto &c = Eval<T1, Traits>::apply(expr.right().right().right());
+
+            if(result.same_object(b)) {
+                result.scale(-alpha);
+                result.axpy(1.0, a);
+                result.axpy(beta, c);
+            } else if(result.same_object(c)) {
+                result.scale(beta);
+                result.axpy(-alpha, b);
+                result.axpy(1.0, a);
+            } else if(result.same_object(a)) {
+                result.axpy(-alpha, b);
+                result.axpy(beta, c);
+            } else {
+                result = a;
+                result.axpy(-alpha, b);
+                result.axpy(beta, c);
+            }
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_TERNARY_HPP

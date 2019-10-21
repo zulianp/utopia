@@ -26,23 +26,23 @@ namespace utopia {
         }
     };
 
-    template<class Left, class Right, class Traits>
-    class Eval< Construct<Tensor<Left, 2>, Blocks<Right> >, Traits, PETSC> {
-    public:
-        inline static bool apply(const Construct<Tensor<Left, 2>, Blocks<Right> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // template<class Left, class Right, class Traits>
+    // class Eval< Construct<Tensor<Left, 2>, Blocks<Right> >, Traits, PETSC> {
+    // public:
+    //     inline static bool apply(const Construct<Tensor<Left, 2>, Blocks<Right> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            // if(is_sparse<Right>::value) {
-                build_blocks(Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),   expr.right());
-            // } else {
-            //     Eval<Construct<Tensor<Left, 2>, Blocks<Right> >, Traits, HOMEMADE>::apply(expr);
-            // }
+    //         // if(is_sparse<Right>::value) {
+    //             build_blocks(Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),   expr.right());
+    //         // } else {
+    //         //     Eval<Construct<Tensor<Left, 2>, Blocks<Right> >, Traits, HOMEMADE>::apply(expr);
+    //         // }
 
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
+    // };
 
 }
 

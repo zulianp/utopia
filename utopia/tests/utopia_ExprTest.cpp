@@ -8,8 +8,7 @@
 #include <utility>
 
 namespace utopia {
-
-
+   
     template<typename Matrix, typename Vector>
     class ExpressionTests
     {
@@ -38,6 +37,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(mat_copy); 
             UTOPIA_RUN_TEST(reciprocal_test); 
             UTOPIA_RUN_TEST(max_min_test); 
+            UTOPIA_RUN_TEST(multi_axpy);
             
             // FIXME (mem allocs)
             
@@ -366,6 +366,20 @@ namespace utopia {
 
             const Scalar m = multi_min(x, y);
             utopia_test_assert(approxeq(m, Scalar(-n_)));
+        }
+
+        void multi_axpy()
+        {
+            //Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
+            Vector a = values(n_, 2.);
+            Vector b = values(n_, 2.);
+            Vector c = values(n_, 2.);
+            Vector result = zeros(n_);
+
+            UTOPIA_NO_ALLOC_BEGIN("multi_axpy");
+            Scalar alpha = 1.0, beta = 2.0; 
+            result = a + (alpha * b) - (beta * c);
+            UTOPIA_NO_ALLOC_END();
         }
 
     private:

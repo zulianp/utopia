@@ -77,8 +77,11 @@ namespace utopia {
     template<class Left, class Right>
     class Assign;
 
+    // template<class Left, class Right>
+    // class Construct;
+
     template<class Left, class Right>
-    class Construct;
+    using Construct = utopia::Assign<Left, Right>;
 
     template<class Left, class Right>
     class Equality;
