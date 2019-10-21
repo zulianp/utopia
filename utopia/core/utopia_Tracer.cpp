@@ -42,8 +42,19 @@ namespace utopia {
         f_detail.close();
 
         std::ofstream f_summary("summary." + std::to_string(mpi_world_rank()) + ".csv");
-        f_summary << std::fixed <<
-            "Class;Total time spent (s);Count;Allocations;Mean time (s);Std deviation (s);Relative std dev\n";
+        std::ofstream f_problematic("problematic." + std::to_string(mpi_world_rank()) + ".csv");
+
+        {
+            std::stringstream ss;
+            ss << std::fixed <<
+                "Class;Total time spent (s);Count;Allocations;Mean time (s);Std deviation (s);Relative std dev\n";
+
+            std::string str = ss.str();
+            f_summary << str;
+            f_problematic << str;
+        }
+
+     
 
         for (auto it = class_group.cbegin(); it != class_group.cend(); ++it) {
             std::vector<double> values;
@@ -70,13 +81,26 @@ namespace utopia {
                     return v + (t - mean) * (t - mean);
                 }) / values.size());
 
-            f_summary << std::setprecision(9)
+            std::stringstream ss;
+
+            ss << std::setprecision(9)
                 << it->first << ';' << total_time << ';' << values.size() << ";" << n_allocs 
                 << ';' << mean << ';' << stddev << ';'
                 << std::setprecision(2) << stddev / mean << std::endl;
+
+            
+            std::string str = ss.str();
+            f_summary << str;
+
+            if(n_allocs > values.size()) {
+                f_problematic << str;
+            }
+
+            ss.clear();
         }
 
         f_summary.close();
+        f_problematic.close();
     }
 }
 
