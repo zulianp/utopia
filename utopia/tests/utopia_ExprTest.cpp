@@ -8,7 +8,7 @@
 #include <utility>
 
 namespace utopia {
-   
+
     template<typename Matrix, typename Vector>
     class ExpressionTests
     {
@@ -38,6 +38,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(reciprocal_test); 
             UTOPIA_RUN_TEST(max_min_test); 
             UTOPIA_RUN_TEST(multi_axpy);
+            UTOPIA_RUN_TEST(inv_diag);
             
             // FIXME (mem allocs)
             
@@ -379,6 +380,18 @@ namespace utopia {
             UTOPIA_NO_ALLOC_BEGIN("multi_axpy");
             Scalar alpha = 1.0, beta = 2.0; 
             result = a + (alpha * b) - (beta * c);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void inv_diag()
+        {   
+            Matrix H = sparse(n_, n_, 3);
+            Vector d = values(n_, 2.);
+
+            assemble_laplacian_1D(H);
+
+            UTOPIA_NO_ALLOC_BEGIN("inv_diag");
+            d = 1./diag(H);
             UTOPIA_NO_ALLOC_END();
         }
 

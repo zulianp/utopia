@@ -65,6 +65,54 @@ namespace utopia {
     };
 
 
+    template<class Left, typename T, class Right, class Op, class Traits, int Backend>
+    class Eval<
+            Assign<Left, Binary<Number<T>, Unary<Right, Op>, Multiplies>>,
+            Traits,
+            Backend
+            > {
+    public:
+        using Scalar = typename Traits::Scalar;
+
+        inline static bool apply(const Assign<Left, Binary<Number<T>, Unary<Right, Op>, Multiplies>> &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &l = Eval<Left, Traits>::apply(expr.left());
+            
+            l.construct(
+                Eval<Right, Traits>::apply(expr.right().right().expr())
+            );
+
+            l.transform(expr.right().right().operation());
+
+            const Scalar alpha = expr.right().left();
+            l.scale(alpha);
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+    //Assign<V, Unary<Diag<M>, Op>>
+    template<class V, class M, class Op, class Traits, int Backend>
+    class Eval< Assign<Tensor<V, 1>, Unary<Diag<M>, Op>>, Traits, Backend> {
+    public:
+        static void apply(const Assign<Tensor<V, 1>, Unary<Diag<M>, Op>> &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+            auto &v = Eval<Tensor<V, 1>, Traits>::apply(expr.left());
+            auto &&m = Eval<M, Traits>::apply(expr.right().expr().expr());
+            auto &&op = expr.right().operation();
+
+            m.build_diag(v);
+            v.transform(op);
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+
+
     template<class Matrix, class Vector>
     using MatVecMult = Multiply<Tensor<Matrix, 2>, Tensor<Vector, 1> >;
 

@@ -660,9 +660,17 @@ namespace utopia {
     {
         auto gs = size();
 
+        const bool r_less_than_c = gs.get(0) < gs.get(1);
+        const SizeType n = r_less_than_c ? gs.get(0) : gs.get(1);
+
+        if(!result.empty() && n == result.size()) {
+            MatGetDiagonal(raw_type(), result.raw_type());
+            return;
+        }
+
         result.destroy();
 
-        if(gs.get(0) < gs.get(1)) {
+        if(r_less_than_c) {
             MatCreateVecs(raw_type(), nullptr, &result.raw_type());
         } else {
             MatCreateVecs(raw_type(), &result.raw_type(), nullptr);
