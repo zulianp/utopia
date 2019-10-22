@@ -105,19 +105,23 @@
     //----------------------------------------------------------------------------
           if(QPSolver * tr_subproblem = dynamic_cast<QPSolver*>(this->linear_solver_.get()))
           {
-            UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound0");
+            // UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound0");
             p_k.set(0.0); 
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
-            UTOPIA_NO_ALLOC_END();
+            // UTOPIA_NO_ALLOC_END();
             
             UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound1");
             tr_subproblem->set_box_constraints(box);
-            g = -g; 
+            
+            if(accepted){
+              g = -g; 
+            }
+            
             UTOPIA_NO_ALLOC_END();
 
-            UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound2");
+            // UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound2");
             tr_subproblem->solve(H, g, p_k);
-            UTOPIA_NO_ALLOC_END();
+            // UTOPIA_NO_ALLOC_END();
             this->solution_status_.num_linear_solves++;
           }
           else

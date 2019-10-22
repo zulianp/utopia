@@ -351,7 +351,7 @@ namespace utopia
             // qp_solver->use_line_search(false);
             qp_solver->verbose(false);
 
-
+            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
 
             Vector ub, lb;

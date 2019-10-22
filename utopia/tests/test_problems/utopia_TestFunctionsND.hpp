@@ -207,6 +207,8 @@ namespace utopia {
                                                                         B_(B),
                                                                         ub_(ub)
         { 
+
+            std::cout<<"FIX BOUNDS IN QuadraticFunctionConstrained ..... \n"; 
             // to be figured out
             exact_sol_ = zeros(1); 
         }
@@ -229,15 +231,15 @@ namespace utopia {
             return true;
         }
 
-        virtual bool upper_bound(Vector & ub) const override{
-            ub = ub_;
-            return true;
-        }
+        // virtual bool upper_bound(Vector & ub) const override{
+        //     ub = ub_;
+        //     return true;
+        // }
 
-        virtual bool lower_bound(Vector &/*lb*/) const override {
-            assert("utopia::QuadraticFunctionConstrained:: This function doesnt have lower bound, just upper. \n");
-            return false;
-        }
+        // virtual bool lower_bound(Vector &/*lb*/) const override {
+        //     assert("utopia::QuadraticFunctionConstrained:: This function doesnt have lower bound, just upper. \n");
+        //     return false;
+        // }
 
         virtual bool has_upper_bound() const override
         {
