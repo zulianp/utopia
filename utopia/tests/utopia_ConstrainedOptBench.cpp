@@ -19,7 +19,7 @@ namespace utopia
 
 		virtual std::string name() override
 		{
-			return "TR: Constrained optimization benchmark";
+			return "TR: Bound constrained optimization benchmark";
 		}
 
 		ConstrainedOptimizationBenchmark(): verbose_(true)
@@ -85,18 +85,18 @@ namespace utopia
 				}
 			);	
 
-		// #ifdef WITH_PETSC
-		// 	this->register_experiment("TR_Variable_Tao",
-		// 		[this]() {
-		//             auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
-		//             lsolver->set_library_type("petsc"); 
-		//             auto subproblem =  std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(lsolver);
+		#ifdef WITH_PETSC
+			this->register_experiment("TR_Variable_Tao",
+				[this]() {
+		            auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
+		            lsolver->set_library_type("petsc"); 
+		            auto subproblem =  std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(lsolver);
 
-		//             TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
-		//             run_tr(this->test_functions_, tr_solver, "TR_Variable_Tao", this->verbose_);
-		// 		}
-		// 	);		
-		// #endif //WITH_PETSC							
+		            TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
+		            run_tr(this->test_functions_, tr_solver, "TR_Variable_Tao", this->verbose_);
+				}
+			);		
+		#endif //WITH_PETSC							
 
 
 
