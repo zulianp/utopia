@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 29/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_EVAL_MULTIPLY_HPP
 #define UTOPIA_UTOPIA_EVAL_MULTIPLY_HPP
 
@@ -16,8 +12,12 @@ namespace utopia {
         typedef typename TypeAndFill<Traits, Multiply<Left, Right> >::Type Result;
 
         inline static Result apply(const Multiply<Left, Right> &expr) {
-            Result result;
+            Result result; 
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Multiply<Left, Right> &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
             EvalBinaryAux<Result>::apply(
@@ -28,7 +28,6 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 
@@ -41,7 +40,11 @@ namespace utopia {
 
         inline static Result apply(const Expr &expr) {
             Result result;
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
             auto &&l = Eval<Left,  Traits>::apply(expr.left().expr());
@@ -53,7 +56,6 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 
@@ -61,20 +63,16 @@ namespace utopia {
     class Eval<Multiply<Left, Transposed<Right> >, Traits, Backend> {
     public:
         typedef typename TypeAndFill<Traits, Multiply<Left, Transposed<Right> > >::Type Result;
+        using Expr = utopia::Multiply<Left, Transposed<Right> >;
 
-        inline static Result apply(const Multiply<Left, Transposed<Right> > &expr) {
+        inline static Result apply(const Expr &expr) {
             Result result;
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).multiply(
-            //     result,
-            //     false,
-            //     Eval<Left, Traits>::apply(expr.left()),
-            //     true,
-            //     Eval<Right, Traits>::apply(expr.right().expr())
-            //     );
-
 
             Eval<Left, Traits>::apply(expr.left()).multiply_transpose(
                 Eval<Right, Traits>::apply(expr.right().expr()),
@@ -82,28 +80,25 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Multiply<Transposed<Left>, Transposed<Right> >, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Multiply<Transposed<Left>, Transposed<Right> > >::Type Result;
+        using Expr = utopia::Multiply< Transposed<Left>, Transposed<Right> >;
+        typedef typename TypeAndFill<Traits, Expr>::Type Result;
 
-        inline static Result apply(const Multiply< Transposed<Left>, Transposed<Right> > &expr)
+        inline static Result apply(const Expr &expr)
         {
             Result result;
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Expr &expr, Result &result)
+        {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).multiply(
-            //     result,
-            //     true,
-            //     Eval<Left,  Traits>::apply(expr.left().expr()),
-            //     true,
-            //     Eval<Right, Traits>::apply(expr.right().expr())
-            //     );
 
             Eval<Left, Traits>::apply(expr.left().expr()).multiply(
                 true,
@@ -113,28 +108,26 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Transposed< Multiply<Left, Right> >, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Transposed< Multiply<Left, Right> > >::Type Result;
+        using Expr = utopia::Transposed< Multiply<Left, Right> >;
 
-        inline static Result apply(const Transposed< Multiply<Left, Right> > &expr)
+        typedef typename TypeAndFill<Traits, Expr>::Type Result;
+
+        inline static Result apply(const Expr &expr)
         {
             Result result;
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Expr &expr, Result &result)
+        {
             UTOPIA_TRACE_BEGIN(expr);
-
-            // UTOPIA_BACKEND(Traits).multiply(
-            //     result,
-            //     true,
-            //     Eval<Right, Traits>::apply(expr.expr().right()),
-            //     true,
-            //     Eval<Left, Traits>::apply(expr.expr().left())
-            //     );
 
             Eval<Right, Traits>::apply(expr.expr().right()).multiply(
                 true,
@@ -144,7 +137,6 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
     

@@ -399,14 +399,15 @@ namespace utopia {
 
         void comp_mat()
         {
-            Matrix H = sparse(n_, n_, 3);
-            assemble_laplacian_1D(H);
-
+            Matrix H = identity(n_, n_);
             Matrix R = H;
 
             UTOPIA_NO_ALLOC_BEGIN("comp_mat");
             R = H + H * H;
             UTOPIA_NO_ALLOC_END();
+
+            Matrix Id = 2.0 * identity(n_, n_);
+            utopia_test_assert(approxeq(Id, R));
         }
 
         void bratu_grad()
