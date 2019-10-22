@@ -44,11 +44,8 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_newton_test);
             UTOPIA_RUN_TEST(petsc_sparse_newton_test_inexact); 
             UTOPIA_RUN_TEST(petsc_newton_rosenbrock_test);
-
-            std::cout<<"------- TO be fixed.... \n"; 
-            // UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test); //petsc 3.11.3 ERROR here
-            // UTOPIA_RUN_TEST(petsc_sparse_nonlinear_semismooth_newton_test);
-            
+            UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test); //petsc 3.11.3 ERROR here
+            UTOPIA_RUN_TEST(petsc_sparse_nonlinear_semismooth_newton_test);
             UTOPIA_RUN_TEST(petsc_direct_solver_newton_test);
             UTOPIA_RUN_TEST(petsc_newton_test_out_info);
             UTOPIA_RUN_TEST(petsc_sparse_newton_test);

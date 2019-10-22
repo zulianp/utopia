@@ -41,7 +41,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Beale, constrained";
+            return "Beale, bound constrained";
         }
 
         SizeType dim() const override

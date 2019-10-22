@@ -162,8 +162,7 @@ namespace utopia {
 
 //FIXME
 #ifdef PETSC_HAVE_MUMPS
-        // UTOPIA_RUN_TEST(petsc_tao_tr_bound);
-        std::cout<<"------- to be fixed... test commented out... \n"; 
+        UTOPIA_RUN_TEST(petsc_tao_tr_bound);
 #endif //PETSC_HAVE_MUMPS
     }
 

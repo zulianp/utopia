@@ -49,7 +49,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Biggs Exp6, constrained";
+            return "Biggs Exp6, bound constrained";
         }
 
         SizeType dim() const override

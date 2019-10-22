@@ -41,7 +41,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Brown badly scaled, constrained";
+            return "Brown badly scaled, bound constrained";
         }
 
 

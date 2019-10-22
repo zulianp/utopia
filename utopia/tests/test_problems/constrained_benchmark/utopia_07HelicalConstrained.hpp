@@ -42,7 +42,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Hellical valley, bound constrained. ";
+            return "Hellical valley, bound constrained";
         }
 
         SizeType dim() const override

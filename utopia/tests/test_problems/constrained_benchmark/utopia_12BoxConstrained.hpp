@@ -43,7 +43,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Box three-dimensional, bound constrained.";
+            return "Box three-dimensional, bound constrained";
         }
 
         SizeType dim() const override

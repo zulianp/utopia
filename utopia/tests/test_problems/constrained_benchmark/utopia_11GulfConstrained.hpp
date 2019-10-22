@@ -44,7 +44,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Gulf reasearch and development, box constrained";
+            return "Gulf reasearch and development, bound constrained";
         }
 
         SizeType dim() const override

@@ -52,7 +52,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Chebyquad, bound constrained.";
+            return "Chebyquad, bound constrained";
         }
 
         SizeType dim() const override

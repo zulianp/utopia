@@ -57,7 +57,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Trigonometric, variable bound.";
+            return "Trigonometric, bound constrained";
         }
 
         SizeType dim() const override

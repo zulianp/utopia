@@ -41,7 +41,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Rosenbrock, bound constrained.";
+            return "Rosenbrock, bound constrained";
         }
 
         SizeType dim() const override

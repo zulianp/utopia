@@ -47,7 +47,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Extended Powell singular, bound constrained.";
+            return "Extended Powell singular, bound constrained";
         }
 
 

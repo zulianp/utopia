@@ -42,7 +42,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Powell badly scaled, bound constrained.";
+            return "Powell badly scaled, bound constrained";
         }
 
         SizeType dim() const override
