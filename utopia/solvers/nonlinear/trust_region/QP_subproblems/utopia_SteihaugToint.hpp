@@ -279,13 +279,13 @@ namespace utopia
 
             while(!converged)
             {
-                UTOPIA_NO_ALLOC_BEGIN("STCG::region1");
+                // UTOPIA_NO_ALLOC_BEGIN("STCG::region1");
                 B.apply(p_k, B_p_k);
                 // kappa = dot(p_k,B_p_k);
 
                 dots(p_k, B_p_k, kappa, r, v_k, g_v_prod_old);
 
-                UTOPIA_NO_ALLOC_END();
+                // UTOPIA_NO_ALLOC_END();
 
 
                 // identify negative curvature

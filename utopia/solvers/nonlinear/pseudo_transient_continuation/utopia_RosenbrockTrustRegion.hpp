@@ -102,8 +102,11 @@ namespace utopia
 
             while(!converged)
             {
-                H_damped = (lambda * I);
-                H_damped += (scaling_factor_mat * H);
+                // H_damped = (lambda * I);
+                // H_damped += (scaling_factor_mat * H);
+                H_damped = (scaling_factor_mat * H);
+                // H_damped += (lambda * I);
+                H_damped.shift_diag(lambda); 
 
                 eigen_solver_->portion_of_spectrum("smallest_real");
                 eigen_solver_->number_of_eigenvalues(1);

@@ -327,29 +327,29 @@ namespace utopia {
         utopia_test_assert(n_vals == 3 * 3);
     }
 
-    void blas_pgs_test()
-    {
-        int n = 3;
-        BlasMatrixd A = zeros(n, n);
+    // void blas_pgs_test()
+    // {
+    //     int n = 3;
+    //     BlasMatrixd A = zeros(n, n);
 
-        {
-            Write<BlasMatrixd> w_A(A);
-            A.set(0, 0, 1);
-            A.set(1, 1, 1);
-            A.set(2, 2, 1);
-        }
+    //     {
+    //         Write<BlasMatrixd> w_A(A);
+    //         A.set(0, 0, 1);
+    //         A.set(1, 1, 1);
+    //         A.set(2, 2, 1);
+    //     }
 
-        BlasVectord rhs = values(n, 2.);
-        BlasVectord x   = zeros(n);
+    //     BlasVectord rhs = values(n, 2.);
+    //     BlasVectord x   = zeros(n);
 
-        ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
-        pgs.solve(A, rhs, x);
-    }
+    //     ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
+    //     pgs.solve(A, rhs, x);
+    // }
 
 
 
     static void blas() {
-        UTOPIA_RUN_TEST(blas_pgs_test);
+        // UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
         UTOPIA_RUN_TEST(blas_row_view_test);
         UTOPIA_RUN_TEST(blas_test);

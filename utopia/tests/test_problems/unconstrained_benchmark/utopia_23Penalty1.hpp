@@ -15,7 +15,7 @@ namespace utopia
         DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        PenaltyI23(const SizeType & n_loc): n_loc_(n_loc)
+        PenaltyI23(const SizeType & n_loc=10): n_loc_(n_loc)
         {
             x_init_ = local_zeros(n_loc_);
             x_exact_ = local_values(n_loc_, 0.15812); // depends on size.. this is valid for n=10

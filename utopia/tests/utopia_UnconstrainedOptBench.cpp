@@ -37,19 +37,11 @@ namespace utopia
 			test_functions_[2] = std::make_shared<Gaussian09<Matrix, Vector> >();	    			
 	    	test_functions_[3] = std::make_shared<Powell03<Matrix, Vector> >(); 
 	    	test_functions_[4] = std::make_shared<Box12<Matrix, Vector> >();	  
-			
+
 			test_functions_[5] = std::make_shared<VariablyDim25<Matrix, Vector> >(n_); 	 // works also in parallel 		
-
-	    	
-	    	// test_functions_[6] = std::make_shared<Watson20<Matrix, Vector> >(); 		
-	    	test_functions_[6] = std::make_shared<VariablyDim25<Matrix, Vector> >(n_); 		
-
-
-
+	    	test_functions_[6] = std::make_shared<Watson20<Matrix, Vector> >(); 		
 			test_functions_[7] = std::make_shared<PenaltyI23<Matrix, Vector> >(n_); 	    // works also in parallel 		    			    	  	
-	    	// test_functions_[8] = std::make_shared<PenaltyII24<Matrix, Vector> >();
-			test_functions_[8] = std::make_shared<Box12<Matrix, Vector> >();	  
-
+	    	test_functions_[8] = std::make_shared<PenaltyII24<Matrix, Vector> >();
 	    	test_functions_[9] = std::make_shared<Brown04<Matrix, Vector> >();
 
 	    	test_functions_[10] = std::make_shared<BrownDennis16<Matrix, Vector> >();	
@@ -60,9 +52,7 @@ namespace utopia
 
 	    	test_functions_[15] = std::make_shared<Woods14<Matrix, Vector> >();
 	    	test_functions_[16] = std::make_shared<ExtendedPowell22<Matrix, Vector> >(64);
-
-	    	test_functions_[17] = std::make_shared<ExtendedPowell22<Matrix, Vector> >(64);
-	    	// test_functions_[17] = std::make_shared<Chebyquad35<Matrix, Vector> >();			
+	    	test_functions_[17] = std::make_shared<Chebyquad35<Matrix, Vector> >();			
 		}
 
 		~UnconstrainedOptimizationBenchmark()

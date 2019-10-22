@@ -70,15 +70,14 @@
         Vector g = 0*x_k, p_k = 0*x_k, x_k1 = 0*x_k;
         Matrix H;
 
-        fun.gradient(x_k, g);
-
         this->make_iterate_feasible(x_k);
+        fun.gradient(x_k, g);
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
         // delta = 10;        // testing
 
-        g0_norm = norm2(g);
+        g0_norm = this->criticality_measure_infty(x_k, g);
         g_norm = g0_norm;
 
         // print out - just to have idea how we are starting
@@ -106,17 +105,21 @@
     //----------------------------------------------------------------------------
           if(QPSolver * tr_subproblem = dynamic_cast<QPSolver*>(this->linear_solver_.get()))
           {
-            
-            // p_k = 0 * p_k;
+            // UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound0");
             p_k.set(0.0); 
-            // UTOPIA_NO_ALLOC_BEGIN("TR0");
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             // UTOPIA_NO_ALLOC_END();
+            
+            UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound1");
             tr_subproblem->set_box_constraints(box);
-            // UTOPIA_NO_ALLOC_BEGIN("TR1");
-            g = -g; 
-            // UTOPIA_NO_ALLOC_END();
-            // UTOPIA_NO_ALLOC_BEGIN("TR2");
+            
+            if(accepted){
+              g = -g; 
+            }
+            
+            UTOPIA_NO_ALLOC_END();
+
+            // UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound2");
             tr_subproblem->solve(H, g, p_k);
             // UTOPIA_NO_ALLOC_END();
             this->solution_status_.num_linear_solves++;
@@ -126,19 +129,17 @@
             utopia_warning("TrustRegionVariableBound::Set suitable TR subproblem.... \n ");
           }
 
-          // UTOPIA_NO_ALLOC_BEGIN("TR3");
+          UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound3");
           pred = this->get_pred(g, H, p_k);
-          // UTOPIA_NO_ALLOC_END();
+          UTOPIA_NO_ALLOC_END();
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           // trial point
           x_k1 = x_k + p_k;
           // this->make_iterate_feasible(x_k1);
 
-          // UTOPIA_NO_ALLOC_BEGIN("TR_val");
           // value of the objective function with correction
-          fun.value(x_k1, E_new);
-          // UTOPIA_NO_ALLOC_END();
+          fun.value(x_k1, E_new); 
 
           // decrease ratio
           ared = E_old - E_new;                // reduction observed on objective function
@@ -153,9 +154,9 @@
           else if(rho != rho)
             rho = 0.0;
 
-          // UTOPIA_NO_ALLOC_BEGIN("TR_acceptance");
+          UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound5");
           accepted = this->trial_point_acceptance(rho, x_k1, x_k);
-          // UTOPIA_NO_ALLOC_END();
+          UTOPIA_NO_ALLOC_END();
 
           if (rho >= this->rho_tol())
             it_successful++;
@@ -166,12 +167,14 @@
           if(accepted)
           {
             fun.gradient(x_k, g);
-            // UTOPIA_NO_ALLOC_BEGIN("crit_measure");
+            UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound6");
             g_norm = this->criticality_measure_infty(x_k, g);
-            // UTOPIA_NO_ALLOC_END();
+            UTOPIA_NO_ALLOC_END();
           }
 
+          UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound7");
           s_norm = norm_infty(p_k);
+          UTOPIA_NO_ALLOC_END();
 
           if(this->verbose_)
             PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm});
@@ -181,7 +184,9 @@
     //----------------------------------------------------------------------------
     //      tr. radius update
     //----------------------------------------------------------------------------
+          UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound8");
           this->delta_update(rho, p_k, delta, true);
+          UTOPIA_NO_ALLOC_END();
           it++;
         }
 

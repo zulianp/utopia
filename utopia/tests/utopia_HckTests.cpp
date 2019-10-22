@@ -78,7 +78,9 @@ namespace utopia
 
             // nonlinear solver tests 
             // UTOPIA_RUN_TEST(newton_test);
-            UTOPIA_RUN_TEST(TR_unconstrained);
+            // UTOPIA_RUN_TEST(TR_unconstrained);
+            UTOPIA_RUN_TEST(TR_constrained);
+
 
         }
 
@@ -258,24 +260,24 @@ namespace utopia
             if(verbose_)
                 fun.describe();
 
-// #ifdef WITH_PETSC
-//             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", false);
-// #else
-//             auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
-// #endif
+#ifdef WITH_PETSC
+            auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", false);
+#else
+            auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
+#endif
 
-            #ifdef WITH_PETSC
-                #ifdef WITH_SLEPC
-                    auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
-                    // TODO:: add checks if has arpack
-                    eigen_solver->solver_type("arpack");
+            // #ifdef WITH_PETSC
+            //     #ifdef WITH_SLEPC
+            //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
+            //         // TODO:: add checks if has arpack
+            //         eigen_solver->solver_type("arpack");
                     
-                    auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
-                    linear_solver->set_library_type("petsc"); 
+            //         auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
+            //         linear_solver->set_library_type("petsc"); 
 
-                    auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
-                #endif //WITH_SLEPC
-            #endif //WITH_PETSC     
+            //         auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
+            //     #endif //WITH_SLEPC
+            // #endif //WITH_PETSC
 
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_);
@@ -347,14 +349,14 @@ namespace utopia
             if(verbose_)
                 fun.describe();
 
-            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             qp_solver->atol(1e-10);
             qp_solver->max_it(n_*n_);
-            qp_solver->use_line_search(false);
+            // qp_solver->use_line_search(false);
             qp_solver->verbose(false);
 
-
+            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
 
             Vector ub, lb;
@@ -911,8 +913,8 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 3;
 
-        auto coarse_dofs = 100;
-        auto verbose     = true;
+        auto coarse_dofs = 10;
+        auto verbose     = false;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
