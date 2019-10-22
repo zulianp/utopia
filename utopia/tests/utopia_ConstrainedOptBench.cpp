@@ -24,29 +24,29 @@ namespace utopia
 
 		ConstrainedOptimizationBenchmark(): verbose_(true)
 		{
-			test_functions_.resize(14); 
+			test_functions_.resize(18); 
 			test_functions_[0] = std::make_shared<Powell03Constrained<Matrix, Vector> >();
 			test_functions_[1] = std::make_shared<Beale05Constrained<Matrix, Vector> >();
 			test_functions_[2] = std::make_shared<Hellical07Constrained<Matrix, Vector> >();
 			test_functions_[3] = std::make_shared<Gaussian09Constrained<Matrix, Vector> >();
 			test_functions_[4] = std::make_shared<Gulf11Constrained<Matrix, Vector> >();
+
 			test_functions_[5] = std::make_shared<Box12Constrained<Matrix, Vector> >();
 			test_functions_[6] = std::make_shared<Woods14Constrained<Matrix, Vector> >();
 			test_functions_[7] = std::make_shared<BrownDennis16Constrained<Matrix, Vector> >();
 			test_functions_[8] = std::make_shared<Biggs18Constrained<Matrix, Vector> >();
 			test_functions_[9] = std::make_shared<Rosenbrock21Constrained<Matrix, Vector> >();
+			
 			test_functions_[10] = std::make_shared<ExtendedPowell22Constrained<Matrix, Vector> >();
 			test_functions_[11] = std::make_shared<PenaltyI23Constrained<Matrix, Vector> >();
 			test_functions_[12] = std::make_shared<VariablyDim25Constrained<Matrix, Vector> >();
 			test_functions_[13] = std::make_shared<Trigonometric26Constrained<Matrix, Vector> >();
+			test_functions_[14] = std::make_shared<Chebyquad35Constrained<Matrix, Vector> >(); 
 			
+			test_functions_[15] = std::make_shared<Brown04Constrained<Matrix, Vector> >(); 
+			test_functions_[16] = std::make_shared<Watson20Constrained<Matrix, Vector> >(); 
+			test_functions_[17] = std::make_shared<PenaltyII24Constrained<Matrix, Vector> >();
 
-			// test_functions_[14] = std::make_shared<Chebyquad35Constrained<Matrix, Vector> >(); // mat seq. faults
-			// test_functions_[15] = std::make_shared<Brown04Constrained<Matrix, Vector> >(); // mat seq. faults
-			// test_functions_[16] = std::make_shared<Watson20Constrained<Matrix, Vector> >(); // mat seq. faults
-			// test_functions_[17] = std::make_shared<PenaltyII24Constrained<Matrix, Vector> >();// mat seq. faults
-
-	
 		}
 
 		~ConstrainedOptimizationBenchmark()
