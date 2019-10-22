@@ -24,7 +24,12 @@ namespace utopia {
         inline static Result apply(const Expr &expr)
         {
             Result result;
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Expr &expr, Result &result)
+        {
             UTOPIA_TRACE_BEGIN(expr);
 
             try {
@@ -64,7 +69,6 @@ namespace utopia {
             }
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 
