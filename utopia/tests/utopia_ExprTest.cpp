@@ -39,6 +39,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(max_min_test); 
             UTOPIA_RUN_TEST(multi_axpy);
             UTOPIA_RUN_TEST(inv_diag);
+            UTOPIA_RUN_TEST(comp_mat);
+            UTOPIA_RUN_TEST(bratu_grad);
             
             // FIXME (mem allocs)
             
@@ -392,6 +394,28 @@ namespace utopia {
 
             UTOPIA_NO_ALLOC_BEGIN("inv_diag");
             d = 1./diag(H);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void comp_mat()
+        {
+            Matrix H = sparse(n_, n_, 3);
+            assemble_laplacian_1D(H);
+
+            Matrix R = H;
+
+            UTOPIA_NO_ALLOC_BEGIN("comp_mat");
+            R = H + H * H;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void bratu_grad()
+        {
+            Vector result = zeros(n_);
+            Vector x = zeros(n_);
+
+            UTOPIA_NO_ALLOC_BEGIN("bratu_grad");
+            result = x - (0.5 * exp(x)); 
             UTOPIA_NO_ALLOC_END();
         }
 

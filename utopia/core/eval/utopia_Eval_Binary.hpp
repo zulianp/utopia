@@ -43,17 +43,40 @@ namespace utopia {
         ///////////////////////////// PLUS /////////////////////////////
 
         template<class Left, class Right>
-        static void apply(Left &&left, const Tensor<Right, Order> &right, const Plus &, Result &result)
+        static void apply(Left &&left, Right &&right, const Plus &, Result &result)
         {
-            result.construct(std::forward<Left>(left));
-            result.axpy(1.0, right.derived());
+            if(result.same_object(left)) {
+                result.axpy(1.0, right);
+            } else if(result.same_object(right)) {
+                result.axpy(1.0, left);
+            } else {
+                if(std::is_rvalue_reference<Right>::value) {
+                    result.construct(std::forward<Right>(right));
+                    result.axpy(1.0, left);
+                } else {
+                    result.construct(std::forward<Left>(left));
+                    result.axpy(1.0, right);
+                }
+            }
         }
 
         ///////////////////////////// MINUS /////////////////////////////
 
         template<class Left, class Right>
-        static void apply(Left &&left, const Tensor<Right, Order> &right, const Minus &, Result &result)
+        static void apply(Left &&left, Right &&right, const Minus &, Result &result)
         {
+            if(result.same_object(left)) {
+                result.axpy(-1.0, right);
+                return;
+            }
+
+            if(result.same_object(right)) {
+                //necessary for petsc
+                result.axpy(-1.0, left);
+                result.scale(-1.0);
+                return;
+            }
+
             result.construct(std::forward<Left>(left));
             result.axpy(-1.0, right.derived());
         }

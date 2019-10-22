@@ -153,6 +153,101 @@ namespace utopia {
         }
     };
 
+
+    
+    //Assign<PetscMatrix, Plus<PetscMatrix, Multiply<PetscMatrix, PetscMatrix>>>
+    template<class M, class Op, class Traits, int Backend>
+    class Eval< Assign<M, Binary<M, Multiply<M, M>, Op>>, Traits, Backend> {
+    public:
+        static void apply(const Assign<M, Binary<M, Multiply<M, M>, Op>> &expr)
+        {
+            // result = A op (B * C)
+            auto &result = Eval<M, Traits>::apply(expr.left());
+            auto &&A = Eval<M, Traits>::apply(expr.right().left());
+            auto &&B = Eval<M, Traits>::apply(expr.right().right().left());
+            auto &&C = Eval<M, Traits>::apply(expr.right().right().right());
+            auto && op = expr.right().operation();
+
+            if(result.same_object(A) || result.same_object(B) || result.same_object(C)) {
+                typename Unwrap<M>::Type temp;
+                B.multiply(C, temp);
+                apply_aux(A, std::move(temp), op, result);
+            } else {
+                apply_aux(A, result, op, result);
+            }
+        }
+
+        template<class MLeft, class MRight, class MResult>
+        inline static void apply_aux(const MLeft &left, MRight &&right, const Op &op, MResult &result)
+        {
+            EvalBinaryAux<MResult>::apply(left, std::forward<MRight>(right), op, result);
+        }
+
+    };
+
+
+    template<class V, class Op2, typename T, class Traits, int Backend>
+    class Eval< Assign<
+                    Tensor<V, 1>,
+                    Binary<
+                        Tensor<V, 1>,
+                        Binary<Number<T>, Unary<Tensor<V, 1>, Op2>, Multiplies>,
+                        Minus
+                    >
+                    >, Traits, Backend> {
+    public:
+        using Expr = Assign<
+                        Tensor<V, 1>,
+                        Binary<
+                            Tensor<V, 1>,
+                            Binary<Number<T>, Unary<Tensor<V, 1>, Op2>, Multiplies>,
+                            Minus
+                        >
+                    >;
+        using Scalar = typename Traits::Scalar;
+
+        static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            // result = (v1) op1 (alpha * unary(v2, op2)); 
+            auto &result = Eval<Tensor<V, 1>, Traits>::apply(expr.left());
+            auto &&v1 = Eval<Tensor<V, 1>, Traits>::apply(expr.right().left());
+            auto &&v2 = Eval<Tensor<V, 1>, Traits>::apply(expr.right().right().right().expr());
+
+            const Minus &op1 = expr.right().operation();
+            const Op2 &op2 = expr.right().right().right().operation();
+            const Scalar alpha = expr.right().right().left();
+
+            if(result.same_object(v1)) {
+                assert(false && "avoid using the same object for result and v1");
+                V temp;
+                temp = v2;
+                temp.transform(op2);
+                temp.scale(alpha);
+                apply_aux(result, temp, op1, result);
+
+            } if(result.same_object(v2)) {
+                result.transform(op2);
+                result.scale(alpha);
+                apply_aux(v1, result, op1, result);
+            } else {
+                result = v2;
+                result.transform(op2);
+                result.scale(alpha);
+                apply_aux(v1, result, op1, result);
+            }
+            
+            UTOPIA_TRACE_END(expr);
+        }
+
+        template<class MLeft, class MRight, class MResult>
+        inline static void apply_aux(MLeft &&left, MRight &&right, const Minus &op, MResult &result)
+        {
+            EvalBinaryAux<MResult>::apply(std::forward<MLeft>(left), std::forward<MRight>(right), op, result);
+        }
+
+    };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_TERNARY_HPP
