@@ -399,14 +399,17 @@ namespace utopia {
 
         void comp_mat()
         {
-            Matrix H = identity(n_, n_);
-            Matrix R = H;
+            Matrix H1 = identity(n_, n_);
+            Matrix H2 = 2.0 * identity(n_, n_);
+            Matrix H3 = 3.0 * identity(n_, n_);
+            Matrix R = H1;
 
             UTOPIA_NO_ALLOC_BEGIN("comp_mat");
-            R = H + H * H;
+            R = H3 + H1 * H2;
             UTOPIA_NO_ALLOC_END();
 
-            Matrix Id = 2.0 * identity(n_, n_);
+            Matrix Id = 5.0 * identity(n_, n_);
+            
             utopia_test_assert(approxeq(Id, R));
         }
 

@@ -173,6 +173,7 @@ namespace utopia {
                 B.multiply(C, temp);
                 apply_aux(A, std::move(temp), op, result);
             } else {
+                B.multiply(C, result);
                 apply_aux(A, result, op, result);
             }
         }
