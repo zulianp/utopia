@@ -404,12 +404,17 @@ namespace utopia {
             Matrix H3 = 3.0 * identity(n_, n_);
             Matrix R = H1;
 
-            UTOPIA_NO_ALLOC_BEGIN("comp_mat");
-            R = H3 + H1 * H2;
-            UTOPIA_NO_ALLOC_END();
+            if(Traits<Matrix>::Backend == PETSC) {
+                UTOPIA_NO_ALLOC_BEGIN("comp_mat");
+                R = H3 + H1 * H2;
+                UTOPIA_NO_ALLOC_END();
+            } else {
+                //FIXME
+                R = H3 + H1 * H2;
+            }
 
             Matrix Id = 5.0 * identity(n_, n_);
-            
+
             utopia_test_assert(approxeq(Id, R));
         }
 
