@@ -761,7 +761,10 @@ namespace utopia {
         inline void build_diag(BlasVector &v) const 
         {
             auto n = std::min(rows_, cols_);
-            v.resize(n);
+
+            if(n != v.size()) {
+                v.resize(n);
+            }
 
             for(SizeType i = 0; i < n; ++i) {
                 v.set(i, get(i, i));

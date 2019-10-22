@@ -10,6 +10,15 @@ namespace utopia {
     {
         using SizeType = Traits<UVector>::SizeType;
 
+
+        const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
+        
+        if(disable_adaptivity) {
+            //fall-back to default method
+            apply_boundary_conditions(V.dof_map(), mat, vec);
+            return;
+        }
+
         if(utopia::Utopia::instance().verbose()) {
             std::cout << "apply_boundary_conditions Adaptivity begin: "  << std::endl;
         }

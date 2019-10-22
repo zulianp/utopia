@@ -166,6 +166,11 @@ namespace utopia {
             init();
         }
 
+        inline void residual(const Matrix &A, const Vector &b, const Vector &x, Vector &r) const
+        {
+            r = b - A * x;
+        }
+
         inline bool assemble_flow(const Vector &x, Matrix &hessian, Vector &gradient)
         {
             assert(flow_model_);

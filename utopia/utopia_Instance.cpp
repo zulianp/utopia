@@ -154,7 +154,21 @@ namespace utopia {
             if(str == "-mute-allocation-ctrl") {
                 Allocations::instance().verbose(false);
             }
-        }
+
 #endif //ENABLE_NO_ALLOC_REGIONS
+
+#ifdef UTOPIA_TRACE_ENABLED
+            if(str == "-intercept") {
+                if(i + 1 < argc) {
+                    Tracer::instance().interceptor().expr(argv[i+1]);
+                    Tracer::instance().interceptor().abort_on_intercept(true);
+                    std::cout << "Added intercept: " << argv[i+1] << std::endl;
+                }
+
+                i++;
+            }
+#endif //UTOPIA_TRACE_ENABLED
+        
+        }
     }
 }

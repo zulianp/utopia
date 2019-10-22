@@ -7,7 +7,7 @@
 namespace utopia {
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval< Construct<Left, Structure<Right> >, Traits, Backend> {
+    class Eval< Assign<Left, Structure<Right> >, Traits, Backend> {
     public:
         inline static bool apply(const Construct<Left, Structure<Right> > &expr)
         {

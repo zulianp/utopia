@@ -57,20 +57,20 @@ namespace utopia {
             return -eval_at(expr.expr(), i, j);
         }
 
-        template<class Left, class Right>
-        inline static void eval(const Construct<Left, Right> &expr){
-            eval(expr.right(), expr.left());
-        }
+        // template<class Left, class Right>
+        // inline static void eval(const Construct<Left, Right> &expr){
+        //     eval(expr.right(), expr.left());
+        // }
 
-        template<class Left, class Right>
-        inline static void eval(const Construct<Number<Left>, Right> &expr){
-            expr.left() = eval_at(expr.right(), 0, 0);
-        }
+        // template<class Left, class Right>
+        // inline static void eval(const Construct<Number<Left>, Right> &expr){
+        //     expr.left() = eval_at(expr.right(), 0, 0);
+        // }
 
-        template<class Left, class Right>
-        inline static void eval(const Construct<Number<Left>, Determinant<Right>> &expr){
-            expr.left() = Eval<Determinant<Right>, Traits, Traits::Backend>::apply(expr);
-        }
+        // template<class Left, class Right>
+        // inline static void eval(const Construct<Number<Left>, Determinant<Right>> &expr){
+        //     expr.left() = Eval<Determinant<Right>, Traits, Traits::Backend>::apply(expr);
+        // }
 
         template<class InnerExpr>
         inline static Scalar eval(const Determinant<InnerExpr> &expr) {

@@ -183,10 +183,10 @@ namespace utopia {
                 auto op = transfer_assembler.build_operator();
                 coupling_matrix_ = op->matrix();
 
-                Vector d = sum(*coupling_matrix_, 1);
-                e_pseudo_inv(d, d, 1e-16);
+                inverse_mass_vector_ = sum(*coupling_matrix_, 1);
+                e_pseudo_inv(inverse_mass_vector_, inverse_mass_vector_, 1e-16);
 
-                *mass_matrix_ = diag(d);
+                *mass_matrix_ = diag(inverse_mass_vector_);
 
             } else if(is_same()) {
                
@@ -267,6 +267,10 @@ namespace utopia {
             return is_constrained_;
         }
 
+        inline void remove_mass(UVector &in_out) {
+            in_out = in_out / inverse_mass_vector_;
+        }
+
     private:
         std::string type_;
         bool use_interpolation_;
@@ -285,6 +289,7 @@ namespace utopia {
         TransferOptions opts_;
 
         UVector is_constrained_;
+        UVector inverse_mass_vector_;
 
     };
 
@@ -710,6 +715,16 @@ namespace utopia {
                 for(std::size_t i = 0; i < n_dfn; ++i) {
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
                     *x_f_[i] = (*T) * x;
+
+                    static const bool plot_residual = true;
+                    if(plot_residual) {
+                        Vector r;
+                        fracture_network_[i]->residual(*A_f_[i], *rhs_f_[i], *x_f_[i], r);
+                        lagrange_multiplier_[i]->remove_mass(r);
+                        write("multiplier_" + std::to_string(i) + ".e", fracture_network_[i]->space(), r);
+                    }
+
+
                     fracture_network_[i]->disassemble_flow(*x_f_[i]);
                 }
             }  else //if(assembly_strategy_ == "monolithic") 

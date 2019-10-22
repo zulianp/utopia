@@ -15,7 +15,6 @@ namespace utopia {
 
             inline static Derived apply(const Expr &expr)
             {
-                UTOPIA_TRACE_BEGIN(expr);
                 Tensor2 ret;
                 apply(expr, ret);
                 return ret;
@@ -34,17 +33,18 @@ namespace utopia {
                 const Scalar d =  det(m);
                 result = zeros(s);
 
-                if(d == 0.) {
+                const bool failed = d == 0.;
+
+                if(failed) {
                     std::cerr << "[Error] zero determinant returning zero matrix" << std::endl;
-                    return false;
+                } else {
+                    Read<Tensor2> r(m);
+                    Write<Tensor2> w(result);
+                    inverse(m, d, result);
                 }
 
-                Read<Tensor2> r(m);
-                Write<Tensor2> w(result);
-                inverse(m, d, result);
-
                 UTOPIA_TRACE_END(expr);
-                return true;
+                return failed;
             }
 
         private:

@@ -10,6 +10,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Expression.hpp"
+#include "utopia_Allocations.hpp"
 
 #ifdef UTOPIA_TRACE_ENABLED
 
@@ -17,6 +18,35 @@ namespace utopia {
 
     class Measurement;
     typedef long MeasurementId;
+
+    class Interceptor {
+    public:
+
+        void abort_on_intercept(const bool val)
+        {
+            abort_on_intercept_ = val;
+        }
+
+        template<class T>
+        void intercept(const Expression<T> &expr) 
+        {
+            if(abort_on_intercept_ && !expr_.empty() && expr.get_class() == expr_)  {
+                abort();
+            }
+        }
+
+        inline void expr(const std::string &expr) {
+            expr_ = expr;
+        }
+
+        Interceptor() : expr_(), abort_on_intercept_(false) {}
+
+    private:
+
+        std::string expr_;
+        bool abort_on_intercept_;
+        
+    };
 
     class Tracer {
     public:
@@ -29,12 +59,15 @@ namespace utopia {
         static Tracer &instance();
 
         void save_collected_log();
+        inline Interceptor &interceptor() { return interceptor_; }
 
     private:
         Tracer();
         std::chrono::high_resolution_clock::time_point start_time_;
         std::stack<MeasurementId> running_events_;
         std::map<MeasurementId, Measurement> event_map_;
+
+        Interceptor interceptor_;
     };
 
 
@@ -55,10 +88,12 @@ namespace utopia {
 
         inline void begin() {
             start_time_ = std::chrono::high_resolution_clock::now();
+            count_allocs_ = Allocations::instance().count();
         }
 
         inline void end() {
             end_time_ = std::chrono::high_resolution_clock::now();
+            count_allocs_ = Allocations::instance().count() - count_allocs_;
         }
 
         friend void Tracer::save_collected_log();
@@ -69,10 +104,13 @@ namespace utopia {
         MeasurementId id_;
         std::string class_;
         std::chrono::high_resolution_clock::time_point start_time_, end_time_;
+        Allocations::Counter count_allocs_;
     };
 
     template<class T>
     inline MeasurementId Tracer::apply_begin(const Expression<T> &expr) {
+        interceptor().intercept(expr);
+
         Measurement m(expr);
         running_events_.push(m.get_id());
         event_map_.insert(std::make_pair(m.get_id(), m));
@@ -82,6 +120,8 @@ namespace utopia {
 
     template<class T>
     inline MeasurementId Tracer::apply_begin_specialized(const Expression<T> &expr) {
+        interceptor().intercept(expr);
+
         Measurement m(expr, "specialized_");
         running_events_.push(m.get_id());
         event_map_.insert(std::make_pair(m.get_id(), m));
@@ -94,6 +134,9 @@ namespace utopia {
         event_map_.at(id).end();
         running_events_.pop();
     }
+
+
+
 
 }
 

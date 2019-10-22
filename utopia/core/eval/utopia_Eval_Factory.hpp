@@ -155,15 +155,15 @@ namespace utopia {
 
     //NEW
     template<class Left, class Right, int Order, class Traits, int Backend>
-    class Eval<Assign<Left, Binary<Number<Right>, Factory<Identity, Order>, Multiplies>>, Traits, Backend> {
+    class Eval<Assign<Tensor<Left, Order>, Binary<Number<Right>, Factory<Identity, Order>, Multiplies>>, Traits, Backend> {
     public:
-        using Expr = utopia::Assign<Left, Binary<Number<Right>, Factory<Identity, Order>, Multiplies>>;
+        using Expr = utopia::Assign<Tensor<Left, Order>, Binary<Number<Right>, Factory<Identity, Order>, Multiplies>>;
 
         inline static void apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).identity(expr.right().right().size(), expr.right().left());
+            Eval<Tensor<Left, Order>, Traits>::apply(expr.left()).identity(expr.right().right().size(), expr.right().left());
 
             UTOPIA_TRACE_END(expr);
         }
@@ -184,144 +184,144 @@ namespace utopia {
     };
 
     //NEW
-    template<class Left, int Order, class Traits, int Backend>
-    class Eval<Construct<Left, Factory<LocalZeros, Order> >, Traits, Backend> {
-    public:
-        inline static void apply(const Construct<Left, Factory<LocalZeros, Order>  > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // template<class Left, int Order, class Traits, int Backend>
+    // class Eval<Construct<Left, Factory<LocalZeros, Order> >, Traits, Backend> {
+    // public:
+    //     inline static void apply(const Construct<Left, Factory<LocalZeros, Order>  > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).local_zeros( expr.right().size() );
+    //         Eval<Left, Traits>::apply(expr.left()).local_zeros( expr.right().size() );
 
-            UTOPIA_TRACE_END(expr);
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
-    //NEW
-    template<class Left, class Right, int Order, class Traits, int Backend>
-    class Eval<Construct<Left, Factory<LocalValues<Right>, Order> >, Traits, Backend> {
-    public:
-        inline static void apply(const Construct<Left, Factory<LocalValues<Right>, Order> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // //NEW
+    // template<class Left, class Right, int Order, class Traits, int Backend>
+    // class Eval<Construct<Left, Factory<LocalValues<Right>, Order> >, Traits, Backend> {
+    // public:
+    //     inline static void apply(const Construct<Left, Factory<LocalValues<Right>, Order> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).local_values(
-                expr.right().size(),
-                expr.right().type().value()
-            );
+    //         Eval<Left, Traits>::apply(expr.left()).local_values(
+    //             expr.right().size(),
+    //             expr.right().type().value()
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
-    //NEW
-    template<class Left, class Right, int Order, class Traits, int Backend>
-    class Eval<Construct<Left, Factory<Values<Right>, Order> >, Traits, Backend> {
-    public:
-        inline static void apply(const Construct<Left, Factory<Values<Right>, Order> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // //NEW
+    // template<class Left, class Right, int Order, class Traits, int Backend>
+    // class Eval<Construct<Left, Factory<Values<Right>, Order> >, Traits, Backend> {
+    // public:
+    //     inline static void apply(const Construct<Left, Factory<Values<Right>, Order> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).values(
-                expr.right().size(),
-                expr.right().type().value()
-            );
+    //         Eval<Left, Traits>::apply(expr.left()).values(
+    //             expr.right().size(),
+    //             expr.right().type().value()
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
-    //NEW
-    template<class Left, int Order, class Traits, int Backend>
-    class Eval<Construct<Left, Factory<Identity, Order> >, Traits, Backend> {
-    public:
-        inline static void apply(const Construct<Left, Factory<Identity, Order> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // //NEW
+    // template<class Left, int Order, class Traits, int Backend>
+    // class Eval<Construct<Left, Factory<Identity, Order> >, Traits, Backend> {
+    // public:
+    //     inline static void apply(const Construct<Left, Factory<Identity, Order> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).identity(expr.right().size());
+    //         Eval<Left, Traits>::apply(expr.left()).identity(expr.right().size());
 
-            UTOPIA_TRACE_END(expr);
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
-    //NEW
-    template<class Left, int Order, class Traits, int Backend>
-    class Eval<Construct<Left, Factory<DenseIdentity, Order> >, Traits, Backend> {
-    public:
-        inline static void apply(const Construct<Left, Factory<DenseIdentity, Order> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // //NEW
+    // template<class Left, int Order, class Traits, int Backend>
+    // class Eval<Construct<Tensor<Left, Order>, Factory<DenseIdentity, Order> >, Traits, Backend> {
+    // public:
+    //     inline static void apply(const Construct<Tensor<Left, Order>, Factory<DenseIdentity, Order> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).dense_identity(expr.right().size());
+    //         Eval<Tensor<Left, Order>, Traits>::apply(expr.left()).dense_identity(expr.right().size());
 
-            UTOPIA_TRACE_END(expr);
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
-
-    //NEW
-    template<class Left, int Order, class Traits, int Backend>
-    class Eval<Assign<Left, Factory<DenseIdentity, Order> >, Traits, Backend> {
-    public:
-        inline static void apply(const Assign<Left, Factory<DenseIdentity, Order> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            Eval<Left, Traits>::apply(expr.left()).dense_identity(expr.right().size());
-
-            UTOPIA_TRACE_END(expr);
-        }
-    };
 
     //NEW
     template<class Left, int Order, class Traits, int Backend>
-    class Eval<Construct<Left, Factory<Zeros, Order> >, Traits, Backend> {
+    class Eval<Assign<Tensor<Left, Order>, Factory<DenseIdentity, Order> >, Traits, Backend> {
     public:
-        inline static void apply(const Construct<Left, Factory<Zeros, Order> > &expr)
+        inline static void apply(const Assign<Tensor<Left, Order>, Factory<DenseIdentity, Order> > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).zeros(expr.right().size());
+            Eval<Tensor<Left, Order>, Traits>::apply(expr.left()).dense_identity(expr.right().size());
 
             UTOPIA_TRACE_END(expr);
         }
     };
+
+    //NEW
+    // template<class Left, int Order, class Traits, int Backend>
+    // class Eval<Construct<Left, Factory<Zeros, Order> >, Traits, Backend> {
+    // public:
+    //     inline static void apply(const Construct<Left, Factory<Zeros, Order> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
+
+    //         Eval<Left, Traits>::apply(expr.left()).zeros(expr.right().size());
+
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
    
    //NEW
-   template<class Left, class Right, int Order, class Traits, int Backend>
-   class Eval<Construct<Left, Factory<NNZ<Right>, Order> >, Traits, Backend> {
-   public:
-       inline static void apply(const Construct<Left, Factory<NNZ<Right>, Order> > &expr)
-       {
-           UTOPIA_TRACE_BEGIN(expr);
+   // template<class Left, class Right, int Order, class Traits, int Backend>
+   // class Eval<Construct<Left, Factory<NNZ<Right>, Order> >, Traits, Backend> {
+   // public:
+   //     inline static void apply(const Construct<Left, Factory<NNZ<Right>, Order> > &expr)
+   //     {
+   //         UTOPIA_TRACE_BEGIN(expr);
 
-           Eval<Left, Traits>::apply(expr.left()).sparse(
-               expr.right().size(),
-               expr.right().type().nnz()
-           );
+   //         Eval<Left, Traits>::apply(expr.left()).sparse(
+   //             expr.right().size(),
+   //             expr.right().type().nnz()
+   //         );
 
-           UTOPIA_TRACE_END(expr);
-       }
-   };
+   //         UTOPIA_TRACE_END(expr);
+   //     }
+   // };
 
    //NEW
-   template<class Left, class Right, int Order, class Traits, int Backend>
-   class Eval<Construct<Left, Factory<LocalNNZ<Right>, Order> >, Traits, Backend> {
-   public:
-       inline static void apply(const Construct<Left, Factory<LocalNNZ<Right>, Order> > &expr)
-       {
-           UTOPIA_TRACE_BEGIN(expr);
+   // template<class Left, class Right, int Order, class Traits, int Backend>
+   // class Eval<Construct<Left, Factory<LocalNNZ<Right>, Order> >, Traits, Backend> {
+   // public:
+   //     inline static void apply(const Construct<Left, Factory<LocalNNZ<Right>, Order> > &expr)
+   //     {
+   //         UTOPIA_TRACE_BEGIN(expr);
 
-           Eval<Left, Traits>::apply(expr.left()).local_sparse(
-               expr.right().size(),
-               expr.right().type().nnz()
-           );
+   //         Eval<Left, Traits>::apply(expr.left()).local_sparse(
+   //             expr.right().size(),
+   //             expr.right().type().nnz()
+   //         );
 
-           UTOPIA_TRACE_END(expr);
-       }
-   };
+   //         UTOPIA_TRACE_END(expr);
+   //     }
+   // };
 
    //NEW
    template<class Left, class Right, int Order, class Traits, int Backend>
@@ -334,6 +334,22 @@ namespace utopia {
            UTOPIA_TRACE_BEGIN(expr);
 
            Eval<Left, Traits>::apply(expr.left()).identity(expr.right().right().size(), expr.right().left());
+
+           UTOPIA_TRACE_END(expr);
+       }
+   };
+
+   //NEW
+   template<class Left, class Right, int Order, class Traits, int Backend>
+   class Eval<Construct<Left, Binary<Number<Right>, Factory<LocalIdentity, Order>, Multiplies>>, Traits, Backend> {
+   public:
+       using Expr = utopia::Construct<Left, Binary<Number<Right>, Factory<LocalIdentity, Order>, Multiplies>>;
+
+       inline static void apply(const Expr &expr)
+       {
+           UTOPIA_TRACE_BEGIN(expr);
+
+           Eval<Left, Traits>::apply(expr.left()).local_identity(expr.right().right().size(), expr.right().left());
 
            UTOPIA_TRACE_END(expr);
        }
@@ -458,20 +474,20 @@ namespace utopia {
        }
    };
 
-   template<class Left, int Order, class Traits, int Backend>
-   class Eval<Construct<Left, Factory<Resize, Order> >, Traits, Backend> {
-   public:
-       inline static void apply(const Construct<Left, Factory<Resize, Order> > &expr)
-       {
-           UTOPIA_TRACE_BEGIN(expr);
+   // template<class Left, int Order, class Traits, int Backend>
+   // class Eval<Construct<Left, Factory<Resize, Order> >, Traits, Backend> {
+   // public:
+   //     inline static void apply(const Construct<Left, Factory<Resize, Order> > &expr)
+   //     {
+   //         UTOPIA_TRACE_BEGIN(expr);
 
-           Eval<Left, Traits>::apply(expr.left()).zeros(
-               expr.right().size()
-           );
+   //         Eval<Left, Traits>::apply(expr.left()).zeros(
+   //             expr.right().size()
+   //         );
 
-           UTOPIA_TRACE_END(expr);
-       }
-   };
+   //         UTOPIA_TRACE_END(expr);
+   //     }
+   // };
 
    template<class Derived, typename T>
    using AssignMatrixWithIdShit = utopia::Assign<

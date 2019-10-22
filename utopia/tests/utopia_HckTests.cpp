@@ -249,6 +249,11 @@ namespace utopia
 
         void TR_unconstrained()
         {
+            if(mpi_world_size() > 1) {
+                m_utopia_error("TR_unconstrained crashed with more than 1 process (petsc LUDecomposition does not work in parallel)");
+                return;
+            }
+
             Bratu2D<Matrix, Vector> fun(100, 5.0);
             Vector x = fun.initial_guess();
 

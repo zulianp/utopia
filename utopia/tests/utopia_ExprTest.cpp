@@ -9,7 +9,6 @@
 
 namespace utopia {
 
-
     template<typename Matrix, typename Vector>
     class ExpressionTests
     {
@@ -38,6 +37,10 @@ namespace utopia {
             UTOPIA_RUN_TEST(mat_copy); 
             UTOPIA_RUN_TEST(reciprocal_test); 
             UTOPIA_RUN_TEST(max_min_test); 
+            UTOPIA_RUN_TEST(multi_axpy);
+            UTOPIA_RUN_TEST(inv_diag);
+            UTOPIA_RUN_TEST(comp_mat);
+            UTOPIA_RUN_TEST(bratu_grad);
             
             // FIXME (mem allocs)
             
@@ -48,7 +51,8 @@ namespace utopia {
 
         void mat_transp_mult_test()
         {
-            Matrix H = values(n_, n_, 2.0); 
+            Matrix H = sparse(n_, n_, 3); 
+            assemble_laplacian_1D(H);
             Matrix D = diag(diag(H));
             H = H + transpose(H) - D;
         }
@@ -365,6 +369,54 @@ namespace utopia {
 
             const Scalar m = multi_min(x, y);
             utopia_test_assert(approxeq(m, Scalar(-n_)));
+        }
+
+        void multi_axpy()
+        {
+            //Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
+            Vector a = values(n_, 2.);
+            Vector b = values(n_, 2.);
+            Vector c = values(n_, 2.);
+            Vector result = zeros(n_);
+
+            UTOPIA_NO_ALLOC_BEGIN("multi_axpy");
+            Scalar alpha = 1.0, beta = 2.0; 
+            result = a + (alpha * b) - (beta * c);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void inv_diag()
+        {   
+            Matrix H = sparse(n_, n_, 3);
+            Vector d = zeros(n_);
+
+            assemble_laplacian_1D(H);
+
+            UTOPIA_NO_ALLOC_BEGIN("inv_diag");
+            d = 1./diag(H);
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void comp_mat()
+        {
+            Matrix H = sparse(n_, n_, 3);
+            assemble_laplacian_1D(H);
+
+            Matrix R = H;
+
+            UTOPIA_NO_ALLOC_BEGIN("comp_mat");
+            R = H + H * H;
+            UTOPIA_NO_ALLOC_END();
+        }
+
+        void bratu_grad()
+        {
+            Vector result = zeros(n_);
+            Vector x = zeros(n_);
+
+            UTOPIA_NO_ALLOC_BEGIN("bratu_grad");
+            result = x - (0.5 * exp(x)); 
+            UTOPIA_NO_ALLOC_END();
         }
 
     private:

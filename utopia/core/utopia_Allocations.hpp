@@ -1,19 +1,20 @@
 #ifndef UTOPIA_ALLOCATIONS_HPP
 #define UTOPIA_ALLOCATIONS_HPP
 
-//FIXME removeme
-// #define ENABLE_NO_ALLOC_REGIONS
-
 #include "utopia_Base.hpp"
+#include <stack>
+#include <string>
+#include <iostream>
 
 #ifdef ENABLE_NO_ALLOC_REGIONS
 #define UTOPIA_NO_ALLOC_BEGIN(macro_name_) utopia::Allocations::instance().no_alloc_region_begin(macro_name_)
 #define UTOPIA_NO_ALLOC_END() utopia::Allocations::instance().no_alloc_region_end()
 #define UTOPIA_REPORT_ALLOC(macro_name_) utopia::Allocations::instance().report_alloc(macro_name_, __FILE__, __LINE__)
-
-#include <stack>
-#include <string>
-#include <iostream>
+#else
+#define UTOPIA_NO_ALLOC_BEGIN(...) ((void)0)
+#define UTOPIA_NO_ALLOC_END() ((void)0)
+#define UTOPIA_REPORT_ALLOC(...) ((void)0)
+#endif
 
 namespace utopia {
 
@@ -96,13 +97,5 @@ namespace utopia {
     };
 
 }
-
-#else
-
-#define UTOPIA_NO_ALLOC_BEGIN(...) ((void)0)
-#define UTOPIA_NO_ALLOC_END() ((void)0)
-#define UTOPIA_REPORT_ALLOC(...) ((void)0)
-
-#endif
 
 #endif //UTOPIA_ALLOCATIONS_HPP

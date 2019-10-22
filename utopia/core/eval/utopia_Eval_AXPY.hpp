@@ -263,9 +263,9 @@ namespace utopia {
 
 
     /// l = alpha * r1 - r2;
-    template<class Left, typename ScalarT, class RFirst, class RSecond, class Traits, int Backend>
+    template<class Left, int Order, typename ScalarT, class RFirst, class RSecond, class Traits, int Backend>
     class Eval<
-            Assign<Left, Binary<Binary<Number<ScalarT>, RFirst, Multiplies>, RSecond, Minus>>,
+            Assign<Tensor<Left, Order>, Binary<Binary<Number<ScalarT>, RFirst, Multiplies>, RSecond, Minus>>,
             Traits,
             Backend> {
     public:
@@ -273,7 +273,7 @@ namespace utopia {
         inline static void apply(const Expr &expr)
         {
             UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
-            auto &l   = Eval<Left, Traits>::apply(expr.left());
+            auto &l   = Eval<Tensor<Left, Order>, Traits>::apply(expr.left());
             auto &&r1 = Eval<RFirst, Traits>::apply(expr.right().left().right());
             auto &&r2 = Eval<RSecond, Traits>::apply(expr.right().right());
             const ScalarT alpha = expr.right().left().left();
