@@ -9,21 +9,27 @@ namespace utopia {
     template<class T1, class T2, class T3, int Order, class Op1, class Op2>
     using TernaryExpr = utopia::Binary<utopia::Binary<Tensor<T1, Order>, Tensor<T2, Order>, Op1>, Tensor<T3, Order>, Op2>;
 
-    template<class Result, class T1, class T2, class T3, int Order, class Op1, class Op2, class Traits, int Backend>
-    class Eval<Assign<Tensor<Result, Order>, TernaryExpr<T1, T2, T3, Order, Op1, Op2>>, Traits, Backend> {
+    template<class T1, class T2, class T3, int Order, class Op1, class Op2, class Traits, int Backend>
+    class Eval<TernaryExpr<T1, T2, T3, Order, Op1, Op2>, Traits, Backend> {
     public:
-        using Expr = utopia::Assign<Tensor<Result, Order>, TernaryExpr<T1, T2, T3, Order, Op1, Op2>>;
+        using Expr   = utopia::TernaryExpr<T1, T2, T3, Order, Op1, Op2>;
+        using Result = T1;
+
+        inline static Result apply(const Expr &expr) {
+            Result result;
+            apply(expr, result);
+            return result;
+        }
         
-        inline static void apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+        inline static void apply(const Expr &expr, Result &result) {
+            UTOPIA_TRACE_BEGIN(expr);
 
-            auto &result = Eval<Tensor<Result, Order>, Traits>::apply(expr.left());
-            auto &&t1    = Eval<Tensor<T1, Order>, Traits>::apply(expr.right().left().left());
-            auto &&t2    = Eval<Tensor<T1, Order>, Traits>::apply(expr.right().left().right());
-            auto &&t3    = Eval<Tensor<T3, Order>, Traits>::apply(expr.right().right());
+            auto &&t1 = Eval<Tensor<T1, Order>, Traits>::apply(expr.left().left());
+            auto &&t2 = Eval<Tensor<T2, Order>, Traits>::apply(expr.left().right());
+            auto &&t3 = Eval<Tensor<T3, Order>, Traits>::apply(expr.right());
 
-            const auto op1 = expr.right().left().operation();
-            const auto op2 = expr.right().operation();
+            const auto op1 = expr.left().operation();
+            const auto op2 = expr.operation();
 
             const static bool order_matters = !eval_order_changable<Op1, Op2>::value;
 
@@ -40,7 +46,7 @@ namespace utopia {
                 apply_aux(result, t1, t2, t3, op1, op2);
             }
 
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
         }
 
     private:
@@ -52,12 +58,24 @@ namespace utopia {
         }
     };
 
+    template<class T1, class T2, class T3, int Order, class Op1, class Op2, class Traits, int Backend>
+    using EvalTernary = utopia::Eval<TernaryExpr<T1, T2, T3, Order, Op1, Op2>, Traits, Backend>;
+
+    template<class Result, class T1, class T2, class T3, int Order, class Op1, class Op2, class Traits, int Backend>
+    class Eval<Assign<Tensor<Result, Order>, TernaryExpr<T1, T2, T3, Order, Op1, Op2>>, Traits, Backend> {
+    public:
+        using Expr = utopia::Assign<Tensor<Result, Order>, TernaryExpr<T1, T2, T3, Order, Op1, Op2>>;
+        
+        inline static void apply(const Expr &expr) {
+            EvalTernary<T1, T2, T3, Order, Op1, Op2, Traits, Backend>::apply(expr.right(), expr.left().derived());
+        }
+    };
+
 
     //result = a op1 (alpha * b) op2 (beta * c);
     //Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
     template<class V, typename T, class Op1, class Op2>
-    using ScaledTernaryExpr = utopia::Assign<
-                                Tensor<V, 1>, 
+    using ScaledTernaryExpr = utopia::
                                 Binary<
                                     Binary<
                                         Tensor<V, 1>, 
@@ -73,25 +91,31 @@ namespace utopia {
                                         Tensor<V, 1>,
                                         Multiplies
                                         >, 
-                                    Op2>
-                                >;
+                                    Op2>;
 
     template<class V, typename T, class Traits, int Backend>
     class Eval< ScaledTernaryExpr<V, T, Plus, Minus>, Traits, Backend> {
     public:
         using T1 = utopia::Tensor<V, 1>;
         using Scalar = typename Traits::Scalar;
+        using Result = V;
+        
+        static Result apply(const ScaledTernaryExpr<V, T, Plus, Minus> &expr)
+        {
+            Result result;
+            apply(expr, result);
+            return result;
+        }
 
-        static void apply(const ScaledTernaryExpr<V, T, Plus, Minus> &expr)
+        static void apply(const ScaledTernaryExpr<V, T, Plus, Minus> &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
             //result = (a + (alpha * b)) - (beta * c);
-            auto &result = Eval<T1, Traits>::apply(expr.left());
-            auto &a = Eval<T1, Traits>::apply(expr.right().left().left());
-            const Scalar alpha = expr.right().left().right().left();
-            auto &b = Eval<T1, Traits>::apply(expr.right().left().right().right());
-            const Scalar beta = expr.right().right().left(); 
-            auto &c = Eval<T1, Traits>::apply(expr.right().right().right());
+            auto &a = Eval<T1, Traits>::apply(expr.left().left());
+            const Scalar alpha = expr.left().right().left();
+            auto &b = Eval<T1, Traits>::apply(expr.left().right().right());
+            const Scalar beta = expr.right().left(); 
+            auto &c = Eval<T1, Traits>::apply(expr.right().right());
 
             if(result.same_object(b)) {
                 result.scale(alpha);
@@ -114,23 +138,39 @@ namespace utopia {
         }
     };
 
+    template<class V, typename T, class Traits, int Backend>
+    class Eval< Assign<Tensor<V, 1>, ScaledTernaryExpr<V, T, Plus, Minus>>, Traits, Backend> {
+    public:
+        static void apply(const Assign<Tensor<V, 1>, ScaledTernaryExpr<V, T, Plus, Minus>> &expr)
+        {
+            Eval< ScaledTernaryExpr<V, T, Plus, Minus> >::apply(expr.right(), expr.left().derived());
+        }
+    };
+
 
     template<class V, typename T, class Traits, int Backend>
     class Eval< ScaledTernaryExpr<V, T, Minus, Plus>, Traits, Backend> {
     public:
         using T1 = utopia::Tensor<V, 1>;
         using Scalar = typename Traits::Scalar;
+        using Result = V;
 
-        static void apply(const ScaledTernaryExpr<V, T, Minus, Plus> &expr)
+        static Result apply(const ScaledTernaryExpr<V, T, Minus, Plus> &expr)
+        {
+            Result result;
+            apply(expr, result);
+            return result;
+        }
+
+        static void apply(const ScaledTernaryExpr<V, T, Minus, Plus> &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
             //result = (a - (alpha * b)) + (beta * c);
-            auto &result = Eval<T1, Traits>::apply(expr.left());
-            auto &a = Eval<T1, Traits>::apply(expr.right().left().left());
-            const Scalar alpha = expr.right().left().right().left();
-            auto &b = Eval<T1, Traits>::apply(expr.right().left().right().right());
-            const Scalar beta = expr.right().right().left(); 
-            auto &c = Eval<T1, Traits>::apply(expr.right().right().right());
+            auto &a = Eval<T1, Traits>::apply(expr.left().left());
+            const Scalar alpha = expr.left().right().left();
+            auto &b = Eval<T1, Traits>::apply(expr.left().right().right());
+            const Scalar beta = expr.right().left(); 
+            auto &c = Eval<T1, Traits>::apply(expr.right().right());
 
             if(result.same_object(b)) {
                 result.scale(-alpha);
@@ -154,7 +194,16 @@ namespace utopia {
     };
 
 
-    
+    template<class V, typename T, class Traits, int Backend>
+    class Eval< Assign<Tensor<V, 1>, ScaledTernaryExpr<V, T, Minus, Plus>>, Traits, Backend> {
+    public:
+        static void apply(const Assign<Tensor<V, 1>, ScaledTernaryExpr<V, T, Minus, Plus>> &expr)
+        {
+            Eval< ScaledTernaryExpr<V, T, Minus, Plus> >::apply(expr.right(), expr.left().derived());
+        }
+    };
+
+
     //Assign<PetscMatrix, Plus<PetscMatrix, Multiply<PetscMatrix, PetscMatrix>>>
     template<class M, class Op, class Traits, int Backend>
     class Eval< Assign<M, Binary<M, Multiply<M, M>, Op>>, Traits, Backend> {

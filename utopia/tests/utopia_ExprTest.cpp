@@ -10,55 +10,7 @@
 namespace utopia {
 
 
-    template<class T1, class T2, class T3, int Order, class Op1, class Op2, class Traits, int Backend>
-    class Eval<TernaryExpr<T1, T2, T3, Order, Op1, Op2>, Traits, Backend> {
-    public:
-        using Expr   = utopia::TernaryExpr<T1, T2, T3, Order, Op1, Op2>;
-        using Result = utopia::Tensor<T1, Order>;
-
-        inline static Result apply(const Expr &expr) {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
-        
-        inline static void apply(const Expr &expr, Result &result) {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            auto &&t1 = Eval<Tensor<T1, Order>, Traits>::apply(expr.left().left());
-            auto &&t2 = Eval<Tensor<T2, Order>, Traits>::apply(expr.left().right());
-            auto &&t3 = Eval<Tensor<T3, Order>, Traits>::apply(expr.right());
-
-            const auto op1 = expr.left().operation();
-            const auto op2 = expr.operation();
-
-            const static bool order_matters = !eval_order_changable<Op1, Op2>::value;
-
-            if(result.same_object(t3)) {
-                if(!order_matters) {
-                    apply_aux(result, t3, t2, t1, op1, op2);
-                } else {
-                    //Temporary is created here
-                    auto temp = t3;
-                    apply_aux(result, t1, t2, temp, op1, op2);
-                }
-
-            } else {
-                apply_aux(result, t1, t2, t3, op1, op2);
-            }
-
-            UTOPIA_TRACE_END(expr);
-        }
-
-    private:
-        template<class AuxR, class AuxT1, class AuxT2, class AuxT3, class AuxOp1, class AuxOp2>
-        inline static void apply_aux(AuxR &result, AuxT1 &&t1, AuxT2 &&t2, AuxT3 &&t3, const AuxOp1 &op1, const AuxOp2 &op2)
-        {
-            EvalBinaryAux<AuxR>::apply(t1, t2, op1, result);
-            EvalBinaryAux<AuxR>::apply(result, t3, op2, result);
-        }
-    };
-
+   
 
     template<typename Matrix, typename Vector>
     class ExpressionTests
