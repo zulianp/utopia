@@ -62,23 +62,38 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Multiply< Diag<Left>, Right>, Traits, Backend> {
     public:
-        inline static EXPR_TYPE(Traits, Right) apply(const Multiply< Diag<Left>, Right> &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
+        using Expr = utopia::Multiply< Diag<Left>, Right>;
+        using Result = EXPR_TYPE(Traits, Right);
 
+        inline static Result apply(const Expr &expr)
+        {
+            Result result;
+            apply(expr, result);
+            return result;
+        }
+
+        inline static void apply(const Expr &expr, Result &result)
+        {
             UTOPIA_TRACE_BEGIN(expr);
 
-            result.construct(
-                Eval<Right, Traits>::apply(expr.right())
-            );
+            auto &&r = Eval<Right, Traits>::apply(expr.right());
+            auto &&l = Eval<Left,  Traits>::apply(expr.left().expr());
+
+            if(!result.same_object(r)) {
+                result.construct(
+                    r
+                );
+            }
+
+            // assert(!result.same_object(l));
 
             aux_apply(
-                Eval<Left,  Traits>::apply(expr.left().expr()),
+                l,
                 result
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
+            
         }
 
         template<class T, class DiagVector>

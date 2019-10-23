@@ -478,6 +478,8 @@ namespace utopia {
         void diag(const TpetraVector &d);
         void diag(const TpetraMatrix &d);
 
+        void diag_scale_left(const TpetraVector &d);
+
 
 
         inline rcp_crs_mat_type &raw_type()

@@ -933,4 +933,9 @@ namespace utopia {
         }
     }
 
+    void TpetraMatrix::diag_scale_left(const TpetraVector &d)
+    {
+        assert(false && "IMPLEMENT ME");
+    }
+
 }
