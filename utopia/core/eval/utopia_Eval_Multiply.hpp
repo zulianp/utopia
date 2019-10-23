@@ -140,16 +140,16 @@ namespace utopia {
         }
     };
 
-    // template<class Result, class Left, class Right, class Traits, int Backend>
-    // class Eval< Assign< Tensor<Result, 2>, Multiply<Left, Right>>, Traits, Backend> {
-    // public:
-    //     using EvalMultiply = utopia::Eval<Multiply<Left, Right>, Traits, Backend>;
-    //     using Expr = utopia::Assign< Tensor<Result, 2>, Multiply<Left, Right>>;
-    //     inline static void apply(const Expr &expr)
-    //     {
-    //         EvalMultiply::apply(expr.right(), expr.left().derived());
-    //     }
-    // };
+    template<class Result, class Left, class Right, class Traits, int Backend>
+    class Eval< Assign< Tensor<Result, 2>, Multiply<Left, Right>>, Traits, Backend> {
+    public:
+        using EvalMultiply = utopia::Eval<Multiply<Left, Right>, Traits, Backend>;
+        using Expr = utopia::Assign< Tensor<Result, 2>, Multiply<Left, Right>>;
+        inline static void apply(const Expr &expr)
+        {
+            EvalMultiply::apply(expr.right(), expr.left().derived());
+        }
+    };
 
     
 }

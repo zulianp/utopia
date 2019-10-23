@@ -120,7 +120,7 @@ namespace utopia {
 	        	return result;
 	        }
 
-	        inline static Result apply(const Expr &expr, Result &result)
+	        inline static void apply(const Expr &expr, Result &result)
 	        {
 	            UTOPIA_TRACE_BEGIN(expr);
 
