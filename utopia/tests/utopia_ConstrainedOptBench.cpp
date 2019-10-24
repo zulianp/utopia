@@ -129,7 +129,7 @@ namespace utopia
 
 			this->register_experiment("TR_Variable_SemiSmoothNewton",
 				[this]() {
-					auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
+					auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
 		            auto subproblem = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(lsolver);
 		            subproblem->atol(1e-14); 
 		            subproblem->stol(1e-14); 

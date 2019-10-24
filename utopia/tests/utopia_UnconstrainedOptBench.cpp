@@ -81,14 +81,15 @@ namespace utopia
 					run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
 				}
 			);			
-
+#ifdef WITH_PETSC
 			this->register_experiment("TR_Lanczos",
 				[this]() {
 					auto subproblem = std::make_shared<Lanczos<Matrix, Vector> >();
 					TrustRegion<Matrix, Vector> solver(subproblem);
 					run_tr(this->test_functions_, solver, "TR_Lanczos", this->verbose_);
 				}
-			);			
+			);	
+
 
 			this->register_experiment("TR_Nash",
 				[this]() {
@@ -96,7 +97,9 @@ namespace utopia
 					TrustRegion<Matrix, Vector> solver(subproblem);
 					run_tr(this->test_functions_, solver, "TR_Nash", this->verbose_);
 				}
-			);		
+			);	
+
+#endif //WITH_PETSC			
 
 			this->register_experiment("TR_Dogleg",
 				[this]() {

@@ -478,14 +478,15 @@ namespace utopia {
 
     void expr()
     {
-#ifdef WITH_PETSC
         auto n_dofs     = 10;
 
+#ifdef WITH_PETSC
         ExpressionTests<PetscMatrix, PetscVector>(n_dofs).run();
+#endif
+
 
 #ifdef WITH_TRILINOS
         ExpressionTests<TpetraMatrixd, TpetraVectord>(n_dofs).run();
-#endif
 #endif
 
     }

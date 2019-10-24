@@ -5,45 +5,6 @@
 
 namespace utopia {
     
-
-    //TODO
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval< Assign<Left, Select<Right, 1> >, Traits, Backend> {
-    // public:
-    //     inline static bool apply(const Assign<Left, Select<Right, 1> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         UTOPIA_BACKEND(Traits).select(
-    //             Eval<Left,  Traits>::apply(expr.left()),
-    //             Eval<Right, Traits>::apply(expr.right().expr()),
-    //             expr.right().index()
-    //             );
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
-
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval< Construct<Left, Select<Right, 1> >, Traits, Backend> {
-    // public:
-    //     inline static bool apply(const Construct<Left, Select<Right, 1> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         Eval<Right, Traits>::apply(expr.right().expr()).select(
-    //             expr.right().index(),
-    //             Eval<Left,  Traits>::apply(expr.left())
-    //             );
-
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
-
     template<class InnerExpr, class Traits, int Backend>
     class Eval< Select<InnerExpr, 1>, Traits, Backend> {
     public:
@@ -76,45 +37,6 @@ namespace utopia {
             UTOPIA_TRACE_END(expr);
         }
     };
-
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval< Assign<Left, Select<Right, 2> >, Traits, Backend> {
-    // public:
-    //     inline static bool apply(const Assign<Left, Select<Right, 2> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         Eval<Right, Traits>::apply(expr.right().expr()).select(
-    //             expr.right().row_index(),
-    //             expr.right().col_index(),
-    //             Eval<Left,  Traits>::apply(expr.left())
-    //             );
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
-
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval< Construct<Left, Select<Right, 2> >, Traits, Backend> {
-    // public:
-    //     inline static bool apply(const Construct<Left, Select<Right, 2> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         Eval<Right, Traits>::apply(expr.right().expr()).select(
-    //             expr.right().row_index(),
-    //             expr.right().col_index(),
-    //             Eval<Left,  Traits>::apply(expr.left())
-    //             );
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
-
 
     template<class InnerExpr, class Traits, int Backend>
     class Eval< Select<InnerExpr, 2>, Traits, Backend> {
