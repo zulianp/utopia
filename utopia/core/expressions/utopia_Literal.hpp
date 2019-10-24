@@ -18,17 +18,13 @@ namespace utopia {
                    public Normed<_Scalar> {
     public:
         static const int Order = 0;
-        // static const int  StoreAs = UTOPIA_BY_VALUE;
+        // static const int StoreAs = UTOPIA_BY_VALUE;
 
         enum {
              StoreAs = UTOPIA_BY_VALUE
         };
 
         typedef _Scalar Scalar;
-        // inline operator Scalar() const
-        // {
-        //     return value_;
-        // }
 
         inline operator Scalar &()
         {
@@ -64,18 +60,10 @@ namespace utopia {
             return *this;
         }
 
-        // template<typename TOther>
-        // inline constexpr Number &operator=(const Number<TOther> &other)
-        // {
-        //     value_ = other.value_;
-        //     return *this;
-        // }
-
-        // inline constexpr Number &operator=(const Scalar &other)
-        // {
-        //     value_ = other;
-        //     return *this;
-        // }
+        inline bool is_alias(const Number &other) const
+        {
+            return this == &other;
+        }
 
         inline Scalar get() const
         {
@@ -120,6 +108,12 @@ namespace utopia {
         {
             value_ = expr.value_;
         }
+
+        inline void assign(const Number<Scalar> &expr)
+        {
+            value_ = expr.value_;
+        }
+
 
         ///<Scalar>SWAP - swap x and y
         inline void swap(Number &x) override

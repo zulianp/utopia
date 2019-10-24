@@ -458,6 +458,16 @@ namespace utopia {
             immutable_ = other.immutable_;
         }
 
+        PetscVector(PetscVector &&other)
+        : comm_(std::move(other.comm_)),
+          vec_(std::move(other.vec_)),
+          initialized_(std::move(other.initialized_)),
+          ghost_values_(std::move(other.ghost_values_)),
+          immutable_(std::move(other.immutable_))
+        {
+            other.vec_ = nullptr;
+        }
+
         inline std::string name() const
         {
             const char *name;
@@ -854,7 +864,7 @@ namespace utopia {
         }
 
 
-        inline bool same_object(const PetscVector &other) const
+        inline bool is_alias(const PetscVector &other) const
         {
             if(is_null()) return false;
             if(other.is_null()) return false;

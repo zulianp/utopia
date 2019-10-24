@@ -9,6 +9,9 @@
 
 namespace utopia {
 
+
+   
+
     template<typename Matrix, typename Vector>
     class ExpressionTests
     {
@@ -41,6 +44,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(inv_diag);
             UTOPIA_RUN_TEST(comp_mat);
             UTOPIA_RUN_TEST(bratu_grad);
+            UTOPIA_RUN_TEST(diag_mult);
+            UTOPIA_RUN_TEST(rotate_test);
             
             UTOPIA_RUN_TEST(rotate_test); 
 
@@ -451,6 +456,45 @@ namespace utopia {
             UTOPIA_NO_ALLOC_BEGIN("bratu_grad");
             result = x - (0.5 * exp(x)); 
             UTOPIA_NO_ALLOC_END();
+        }
+
+        void diag_mult()
+        {
+            //FIXME
+            if(Traits<Matrix>::Backend == PETSC) {
+
+                Vector d = values(n_, 2);
+                Matrix B = 2*identity(n_, n_);
+                Matrix T = sparse(n_, n_, 1);
+
+                // UTOPIA_NO_ALLOC_BEGIN("diag_mult");
+                T = diag(1./d) * B;
+                // UTOPIA_NO_ALLOC_END();
+
+                Matrix Id = identity(n_, n_);
+                utopia_test_assert(approxeq(Id, T));
+
+            }
+        }
+
+        void rotate_test()
+        {
+            Vector x1 = local_values(n_, 1.0); 
+            Vector x2 = local_values(n_, 2.0); 
+            Vector x3 = local_values(n_, 3.0); 
+            Vector x4 = local_values(n_, 3.0); 
+
+
+            std::vector<Vector> vecs(4); 
+            vecs[0] = x1; 
+            vecs[1] = x2; 
+            vecs[2] = x3; 
+            vecs[3] = x4; 
+
+            //testing that move operations are implemented 
+            UTOPIA_NO_ALLOC_BEGIN("rotate_test");
+            std::rotate(vecs.begin(), vecs.begin() + 1, vecs.end());
+            UTOPIA_NO_ALLOC_END();                     
         }
 
     private:

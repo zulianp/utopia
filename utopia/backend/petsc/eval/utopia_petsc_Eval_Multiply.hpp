@@ -18,27 +18,32 @@ namespace utopia {
 	    // mat-mat-mat multiplication
 	    template<class M1, class M2, class M3, class Traits>
 	    class Eval< Multiply< Multiply< Tensor<M1, 2>, Tensor<M2, 2> >, Tensor<M3, 2> >, Traits, PETSC> {
-	        public:
-	            typedef utopia::Multiply< Multiply< Tensor<M1, 2>, Tensor<M2, 2> >, Tensor<M3, 2> > Expr;
+        public:
+            typedef utopia::Multiply< Multiply< Tensor<M1, 2>, Tensor<M2, 2> >, Tensor<M3, 2> > Expr;
+            using Result = EXPR_TYPE(Traits, Expr);
 
-	            inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
-	            {
-	                EXPR_TYPE(Traits, Expr) result;
+            inline static Result apply(const Expr &expr)
+            {
+                Result result;
+                apply(expr, result);
+                return result;
+            }
 
-	                UTOPIA_TRACE_BEGIN(expr);
+            inline static void apply(const Expr &expr, Result &result)
+            {
+                UTOPIA_TRACE_BEGIN(expr);
 
-	                //Performs optimal triple product
-	                PetscEvalTripleMatrixProduct::abc(
-	                    result,
-	                    Eval<Tensor<M1, 2>, Traits>::apply(expr.left().left()),
-	                    Eval<Tensor<M2, 2>, Traits>::apply(expr.left().right()),
-	                    Eval<Tensor<M3, 2>, Traits>::apply(expr.right())
-	                    );
+                //Performs optimal triple product
+                PetscEvalTripleMatrixProduct::abc(
+                    result,
+                    Eval<Tensor<M1, 2>, Traits>::apply(expr.left().left()),
+                    Eval<Tensor<M2, 2>, Traits>::apply(expr.left().right()),
+                    Eval<Tensor<M3, 2>, Traits>::apply(expr.right())
+                    );
 
-	                UTOPIA_TRACE_END(expr);
-	                // assert(result.same_type(Eval<Tensor<M3, 2>, Traits>::apply(expr.right())));
-	                return result;
-	            }
+                UTOPIA_TRACE_END(expr);
+            }
+	            
 	    };
 
 	    //! [pattern matching and optimizations]
@@ -56,11 +61,17 @@ namespace utopia {
 	        PETSC> {
 	    public:
 	        typedef utopia::Multiply< Multiply<Transposed<M1>, M2>, M1> Expr;
+	        using Result = EXPR_TYPE(Traits, Expr);
 
-	        inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+	        inline static Result apply(const Expr &expr)
 	        {
-	            EXPR_TYPE(Traits, Expr) result;
+	            Result result;
+	            apply(expr, result);
+	            return result;
+			}
 
+	        inline static void apply(const Expr &expr, Result &result)
+	        {
 	            UTOPIA_TRACE_BEGIN(expr);
 
 	            //Check if left and right operands are the same object
@@ -84,11 +95,8 @@ namespace utopia {
 
 	            // assert( result.same_type(Eval<M1, Traits>::apply(expr.right())) );
 	            UTOPIA_TRACE_END(expr);
-	            return result;
 	        }
 	    };
-
-
 
 	    /*!
 	    * @brief Triple product (m1 * m2 * m1^T := m1 * m2 * transpose(m1)) optimization for the petsc backend
@@ -103,11 +111,17 @@ namespace utopia {
 	        PETSC> {
 	    public:
 	        typedef utopia::Multiply< Multiply<M1, M2>, Transposed<M1>> Expr;
+	        using Result = EXPR_TYPE(Traits, Expr);
 
-	        inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+	        inline static Result apply(const Expr &expr)
 	        {
-	            EXPR_TYPE(Traits, Expr) result;
+	        	Result result;
+	        	apply(expr, result);
+	        	return result;
+	        }
 
+	        inline static void apply(const Expr &expr, Result &result)
+	        {
 	            UTOPIA_TRACE_BEGIN(expr);
 
 	            //Check if left and right operands are the same object
@@ -129,9 +143,7 @@ namespace utopia {
 	                );
 	            }
 
-	            // assert( result.same_type(Eval<M1, Traits>::apply(expr.right())) );
 	            UTOPIA_TRACE_END(expr);
-	            return result;
 	        }
 	    };
 

@@ -513,7 +513,7 @@ namespace utopia {
             return false;
         }
 
-        inline bool same_object(const BlasVector &other) const
+        inline bool is_alias(const BlasVector &other) const
         {
             return this == &other;
         }

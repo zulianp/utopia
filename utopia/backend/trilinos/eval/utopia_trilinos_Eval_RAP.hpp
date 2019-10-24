@@ -24,7 +24,12 @@ namespace utopia {
         inline static Result apply(const Expr &expr)
         {
             Result result;
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Expr &expr, Result &result)
+        {
             UTOPIA_TRACE_BEGIN(expr);
 
             try {
@@ -33,14 +38,13 @@ namespace utopia {
                 auto &&A = expr.left().right();
                 auto &&P = expr.right();
 
-                result.raw_type().reset(
-                    new typename Result::crs_mat_type(
-                        raw_type(R)->getDomainMap(),
-                        0,
-                        Tpetra::DynamicProfile
-                    )
-                );
-
+                UTOPIA_REPORT_ALLOC("Eval_RAP");
+                auto raw_result = Teuchos::rcp(new typename Result::crs_mat_type(
+                    raw_type(R)->getDomainMap(),
+                    0,
+                    Tpetra::DynamicProfile
+                ));
+                
                 assert(!empty(R));
                 assert(!empty(A));
                 assert(!empty(P));
@@ -54,9 +58,12 @@ namespace utopia {
                     false, //transposeA
                     *raw_type(P),
                     false, //transposeP
-                    *result.raw_type(),
+                    // *result.raw_type(),
+                    *raw_result,
                     true  //call_FillComplete_on_result
                 );
+
+                result.raw_type() = raw_result;
 
             } catch(const std::exception &ex) {
                 std::cerr << "RAP: " << ex.what() << std::endl;
@@ -64,7 +71,6 @@ namespace utopia {
             }
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 

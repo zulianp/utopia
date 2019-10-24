@@ -20,6 +20,12 @@ namespace utopia {
         using Expr   = utopia::DotOpDot<X, FunOfX, Op>;
         using T1     = utopia::Tensor<X, 1>;
 
+        template<typename Real>
+        inline static void apply(const Expr &expr, Number<Real> &num)
+        {
+            num = apply(expr);
+        }
+
         inline static Scalar apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -56,6 +62,13 @@ namespace utopia {
 
         using Scalar = typename Traits::Scalar;
         using T1     = utopia::Tensor<X, 1>;
+
+        template<typename Real>
+        inline static void apply(const Expr &expr, Number<Real> &num)
+        {
+            num = apply(expr);
+        }
+
 
         inline static Scalar apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);

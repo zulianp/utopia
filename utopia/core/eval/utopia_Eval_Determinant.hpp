@@ -35,6 +35,12 @@ namespace utopia {
                    m02 * m11 * m20;
         }
 
+        template<typename Real>
+        inline static void apply(const Determinant<T2> &expr, Number<Real> &num)
+        {
+            num = apply(expr);
+        }
+
         inline static Scalar apply(const Determinant<T2> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);

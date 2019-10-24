@@ -50,7 +50,7 @@ namespace utopia {
                 r.repurpose(b.comm().get(), b.type(), b.local_size(), b.size());
             }
 
-            if(r.same_object(b) || r.same_object(x)) {
+            if(r.is_alias(b) || r.is_alias(x)) {
                 auto temp = b;
                 PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
                 ierr = MatResidual(a.raw_type(), b.raw_type(), x.raw_type(), temp.raw_type()); assert(ierr == 0);

@@ -161,7 +161,7 @@ namespace utopia {
             if(str == "-intercept") {
                 if(i + 1 < argc) {
                     Tracer::instance().interceptor().expr(argv[i+1]);
-                    Tracer::instance().interceptor().abort_on_intercept(true);
+                    Tracer::instance().interceptor().interrupt_on_intercept(true);
                     std::cout << "Added intercept: " << argv[i+1] << std::endl;
                 }
 

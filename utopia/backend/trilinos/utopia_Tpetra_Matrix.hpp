@@ -478,6 +478,8 @@ namespace utopia {
         void diag(const TpetraVector &d);
         void diag(const TpetraMatrix &d);
 
+        void diag_scale_left(const TpetraVector &d);
+
 
 
         inline rcp_crs_mat_type &raw_type()
@@ -597,7 +599,7 @@ namespace utopia {
             return "TpetraMatrix";
         }
         
-        inline bool same_object(const TpetraMatrix &other) const
+        inline bool is_alias(const TpetraMatrix &other) const
         {
             return mat_ == other.mat_;
         }

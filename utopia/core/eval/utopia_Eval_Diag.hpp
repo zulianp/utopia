@@ -13,27 +13,31 @@
 namespace utopia {
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval<Multiply< Left, Diag<Right> >, Traits, Backend> {
+    class Eval<Multiply<Left, Diag<Right>>, Traits, Backend> {
     public:
+        using Expr   = utopia::Multiply<Left, Diag<Right>>;
         using Result = EXPR_TYPE(Traits, Left);
 
-        inline static EXPR_TYPE(Traits, Left) apply(const Multiply<Left, Diag<Right> > &expr) {
-            static_assert(Right::Order == 1, "Right has to be a vector");
-            Result result;
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
+        inline static void apply(const Expr &expr, Result &result) {
+            static_assert(Right::Order == 1, "Right has to be a vector");
             UTOPIA_TRACE_BEGIN(expr);
 
-            result.construct(
-                Eval<Left,  Traits>::apply(expr.left())
-            );
+            auto &&left = Eval<Left, Traits>::apply(expr.left());
 
+            if(!result.is_alias(left)) {
+                result.construct(
+                    left
+                );
+            }
+           
             aux_apply(
                 Eval<Right, Traits>::apply(expr.right().expr()),
                 result
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
 
         template<class T, class DiagVector>
@@ -62,23 +66,38 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Multiply< Diag<Left>, Right>, Traits, Backend> {
     public:
-        inline static EXPR_TYPE(Traits, Right) apply(const Multiply< Diag<Left>, Right> &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
+        using Expr = utopia::Multiply< Diag<Left>, Right>;
+        using Result = EXPR_TYPE(Traits, Right);
 
+        inline static Result apply(const Expr &expr)
+        {
+            Result result;
+            apply(expr, result);
+            return result;
+        }
+
+        inline static void apply(const Expr &expr, Result &result)
+        {
             UTOPIA_TRACE_BEGIN(expr);
 
-            result.construct(
-                Eval<Right, Traits>::apply(expr.right())
-            );
+            auto &&r = Eval<Right, Traits>::apply(expr.right());
+            auto &&l = Eval<Left,  Traits>::apply(expr.left().expr());
+
+            if(!result.is_alias(r)) {
+                result.construct(
+                    r
+                );
+            }
+
+            // assert(!result.is_alias(l));
 
             aux_apply(
-                Eval<Left,  Traits>::apply(expr.left().expr()),
+                l,
                 result
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
+            
         }
 
         template<class T, class DiagVector>
@@ -173,79 +192,6 @@ namespace utopia {
             return true;
         }
     };
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////// Construct /////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval<Construct<Left, Diag<Right> >, Traits, Backend> {
-    // public:
-    //     inline static bool apply(const Construct<Left, Diag<Right> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-            
-    //         auto &&r = Eval<Right, Traits>::apply(expr.right().expr());
-            
-    //         Eval<Left,  Traits>::apply(expr.left()).diag(r);
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval<Construct<Tensor<Left, 2>, Diag< Diag<Right> > >, Traits, Backend> {
-    // public:
-    //     typedef utopia::Tensor<Left, 2> WLeft;
-
-    //     inline static bool apply(const Construct<WLeft, Diag< Diag<Right> > > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         Eval<WLeft,  Traits>::apply(expr.left()).diag(
-    //             Eval<Diag<Right>, Traits>::apply(expr.right().expr())
-    //         );
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval<Construct<Tensor<Left, 1>, Diag<Right>>, Traits, Backend> {
-    // public:
-    //     using LeftExpr  = utopia::Tensor<Left, 1>;
-    //     using RightExpr = utopia::Diag<Right>;
-
-    //     inline static bool apply(const Construct<LeftExpr, RightExpr> &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         Eval<Right, Traits>::apply(expr.right().expr()).build_diag(
-    //             Eval<LeftExpr,  Traits>::apply(expr.left())
-    //         );
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval<Construct<Tensor<Left, 1>, Diag< Diag<Right> > >, Traits, Backend> {
-    // public:
-    //     inline static bool apply(const Construct<Tensor<Left, 1>, Diag< Diag<Right> > > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         Eval<Left,  Traits>::apply(expr.left()).assign(
-    //         Eval<Left,  Traits>::apply(expr.right().expr().expr())
-    //         );
-
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
 
     template<class T, class Traits, int Backend>
     class Eval< Diag<Tensor<T, 2> >, Traits, Backend> {
