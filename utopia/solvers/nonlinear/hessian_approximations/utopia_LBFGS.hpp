@@ -100,21 +100,26 @@ namespace utopia
                     return true;
                 }
 
-                //FIXME remove temporaries
-                Vector y_hat = y; 
-                bool skip_update = init_damping(y, s, y_hat);
+                y_hat_ = y; 
+
+                UTOPIA_NO_ALLOC_BEGIN("LBFGS1");
+                bool skip_update = init_damping(y, s, y_hat_);
+                UTOPIA_NO_ALLOC_END();
                 
                 if(skip_update)
                 {
-                    this->init_scaling_factors(y_hat, s); 
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS2");
+                    this->init_scaling_factors(y_hat_, s); 
+                    UTOPIA_NO_ALLOC_END();
                     return true; 
                 }
 
-                Scalar denom    = dot(y_hat,s);
+                Scalar denom    = dot(y_hat_,s);
 
                 if(current_m_ < m_)
                 {
-                    Y_[current_m_]      = y_hat;
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS3");
+                    Y_[current_m_]      = y_hat_;
                     S_[current_m_]      = s;
                     rho_[current_m_]    = 1./denom;
 
@@ -123,42 +128,60 @@ namespace utopia
 
                     if(scaling_tech_==LBFGSScalingTechnique::FORBENIUS)
                     {
-                        SY_point_wise_[current_m_] = e_mul(s, y_hat); 
-                        YY_point_wise_[current_m_] = e_mul(y_hat, y_hat);                     
+                        SY_point_wise_[current_m_] = e_mul(s, y_hat_); 
+                        YY_point_wise_[current_m_] = e_mul(y_hat_, y_hat_);                     
                     }
+                    UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {
-                    Y_[0]       = y_hat;
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS41");
+                    Y_[0]       = y_hat_;
                     S_[0]       = s;
                     rho_[0]     = 1./denom;
                     yts_[0]     = denom; 
+                    UTOPIA_NO_ALLOC_END();   
 
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS421");
                     std::rotate(Y_.begin(), Y_.begin() + 1, Y_.end());
+                    UTOPIA_NO_ALLOC_END();   
+
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS422");
                     std::rotate(S_.begin(), S_.begin() + 1, S_.end());
+                    UTOPIA_NO_ALLOC_END();   
+
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS423");
                     std::rotate(rho_.begin(), rho_.begin() + 1, rho_.end());
                     std::rotate(yts_.begin(), yts_.begin() + 1, yts_.end());
+                    UTOPIA_NO_ALLOC_END();   
 
+
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS43");
                     if(scaling_tech_==LBFGSScalingTechnique::FORBENIUS)
                     {
-                        SY_point_wise_[0] = e_mul(s, y_hat); 
-                        YY_point_wise_[0] = e_mul(y_hat, y_hat);    
+                        SY_point_wise_[0] = e_mul(s, y_hat_); 
+                        YY_point_wise_[0] = e_mul(y_hat_, y_hat_);    
 
                         std::rotate(SY_point_wise_.begin(), SY_point_wise_.begin() + 1, SY_point_wise_.end());
                         std::rotate(YY_point_wise_.begin(), YY_point_wise_.begin() + 1, YY_point_wise_.end());
-                    }                    
+                    }  
+                    UTOPIA_NO_ALLOC_END();                  
                 }
 
                 current_m_++;
 
                 // updating the factors... 
-                this->init_scaling_factors(y_hat, s); 
+                UTOPIA_NO_ALLOC_BEGIN("LBFGS5");
+                this->init_scaling_factors(y_hat_, s); 
+                UTOPIA_NO_ALLOC_END();      
+
 
 
                 // preallocation for forward product ... 
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
                 for(auto i =0; i < current_memory_size; i++)
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS6");
                     this->apply_H0(S_[i], P_[i]); 
 
                     for(auto j=0; j < i; j++)
@@ -177,6 +200,8 @@ namespace utopia
                         P_[i] = P_[i]  - (mult1 * P_[j]) + (mult2 * Y_[j]); 
                     }
 
+                    UTOPIA_NO_ALLOC_END();      
+
                     stp_[i] = dot(S_[i], P_[i]); 
                 }     
 
@@ -184,7 +209,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_Hinv(const Vector &g, Vector &q) const override
+            bool apply_Hinv(const Vector &g, Vector &q) override 
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n");
@@ -201,8 +226,9 @@ namespace utopia
                 }
 
                 //FIXME remove temporaries?
-                Vector q2 = q;
-                this->apply_H0_inv(q2, q); 
+                // Vector q2 = q;
+                help1_ = q; 
+                this->apply_H0_inv(help1_, q); 
 
                 for(auto i=0; i < current_memory_size; i++)
                 {
@@ -217,7 +243,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_H(const Vector & v , Vector & result) const  override
+            bool apply_H(const Vector & v , Vector & result)  override
             {   
                 return this-apply_H_new(v, result); 
 
@@ -226,7 +252,7 @@ namespace utopia
             }
 
             // version used for debugging purposes 
-            bool apply_H_slow(const Vector & v , Vector & result) const
+            bool apply_H_slow(const Vector & v , Vector & result)
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LBFGS::apply_H:: missing initialization... \n");
@@ -274,7 +300,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_H_new(const Vector & v , Vector & result) const
+            bool apply_H_new(const Vector & v , Vector & result)
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LBFGS::apply_H:: missing initialization... \n");
@@ -387,8 +413,20 @@ namespace utopia
                 {
                     theta_ = 1.0; 
                     gamma_ = 1.0; 
-                    D_ = local_values(local_size(y).get(0), 1.0); 
-                    D_inv_ = local_values(local_size(y).get(0), 1.0); 
+
+                    if(empty(D_) || size(D_)!= size(y))
+                        D_ = local_values(local_size(y).get(0), 1.0); 
+                    else
+                        D_.set(1.0); 
+
+                    if(empty(D_inv_) || size(D_inv_)!= size(y))
+                        D_inv_ = local_values(local_size(y).get(0), 1.0); 
+                    else
+                        D_inv_.set(1.0); 
+
+                    // D_ = local_values(local_size(y).get(0), 1.0); 
+                    // D_inv_ = local_values(local_size(y).get(0), 1.0); 
+
                 }
                 else if(scaling_tech_ == LBFGSScalingTechnique::INITIAL)
                 {
@@ -404,8 +442,23 @@ namespace utopia
                             gamma_ = 1.0; 
                         }                     
 
-                        D_ = local_values(local_size(y).get(0), theta_); 
-                        D_inv_ = local_values(local_size(y).get(0), gamma_); 
+                        // D_ = local_values(local_size(y).get(0), theta_); 
+                        // D_inv_ = local_values(local_size(y).get(0), gamma_); 
+
+                        if(empty(D_) || size(D_)!= size(y)){
+                            D_ = local_values(local_size(y).get(0), theta_); 
+                        }
+                        else{
+                            D_.set(theta_); 
+                        }
+
+                        if(empty(D_inv_) || size(D_inv_)!= size(y)){
+                            D_inv_ = local_values(local_size(y).get(0), gamma_); 
+                        }
+                        else{
+                            D_inv_.set(gamma_); 
+                        }
+
                     }
                 }
                 else if(scaling_tech_ == LBFGSScalingTechnique::ADAPTIVE)
@@ -420,11 +473,26 @@ namespace utopia
                         gamma_ = 1.0; 
                     }                     
 
-                    D_ = local_values(local_size(y).get(0), theta_); 
-                    D_inv_ = local_values(local_size(y).get(0), gamma_); 
+                    // D_ = local_values(local_size(y).get(0), theta_); 
+                    // D_inv_ = local_values(local_size(y).get(0), gamma_); 
+
+                    if(empty(D_) || size(D_)!= size(y)){
+                        D_ = local_values(local_size(y).get(0), theta_); 
+                    }
+                    else{
+                        D_.set(theta_); 
+                    }
+
+                    if(empty(D_inv_) || size(D_inv_)!= size(y)){
+                        D_inv_ = local_values(local_size(y).get(0), gamma_); 
+                    }
+                    else{
+                        D_inv_.set(gamma_);                     
+                    }
 
                 }
                 // FORBENIUS
+                // check for allocations! 
                 else
                 {
                     SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
@@ -527,14 +595,16 @@ namespace utopia
             bool init_damping_powel(const Vector & y, const Vector & s, Vector & y_hat)
             {
                 //FIXME remove temporaries
-                Vector Bs = 0.0*s; 
-                this->apply_H(s, Bs); 
+                // Vector Bs = 0.0*s; 
+
+                help1_ = 0.0*s; 
+                this->apply_H(s, help1_); 
 
                 // Scalar sy   = dot(y,s);
                 // Scalar sBs  = dot(s, Bs); 
 
                 Scalar sy, sBs; 
-                dots(y, s, sy, s, Bs, sBs); 
+                dots(y, s, sy, s, help1_, sBs); 
 
                 Scalar psi; 
 
@@ -545,13 +615,13 @@ namespace utopia
                     psi = (0.8* sBs)/(sBs - sy); 
                 }
 
-                y_hat = (psi*y) +((1.0-psi) * Bs);
+                y_hat = (psi*y) +((1.0-psi) * help1_);
 
                 return false; 
             }
 
 
-            void apply_H0(const Vector & v, Vector & result) const 
+            void apply_H0(const Vector & v, Vector & result) 
             {
 
                 if(H0_action_)
@@ -571,7 +641,7 @@ namespace utopia
                 }
             }
 
-            void apply_H0_inv(const Vector & v, Vector & result) const 
+            void apply_H0_inv(const Vector & v, Vector & result) 
             {
 
                 if(H0_inv_action_)
@@ -614,6 +684,8 @@ namespace utopia
 
             Vector D_; 
             Vector D_inv_; 
+            Vector y_hat_; 
+            Vector help1_; 
 
             std::vector<Vector> SY_point_wise_; 
             std::vector<Vector> YY_point_wise_; 
@@ -623,6 +695,7 @@ namespace utopia
             std::function< void(const Vector &, Vector &) > H0_inv_action_;            
 
         };
+
 
 
 }

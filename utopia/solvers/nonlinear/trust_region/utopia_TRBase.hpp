@@ -76,9 +76,12 @@ namespace utopia
 
     virtual Scalar get_pred(const Vector &g, const Operator<Vector> &B, const Vector & p_k)
     {
-      Vector Bp;
-      B.apply(p_k, Bp);
-      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp, p_k);
+      if(empty(Bp_) || size(Bp_) != size(g)){
+        Bp_ = 0.0*g; 
+      }
+
+      B.apply(p_k, Bp_);
+      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp_, p_k);
     }
 
 
@@ -353,6 +356,9 @@ namespace utopia
     Scalar eta2_;
     Scalar rho_tol_;
     Scalar eps_;
+
+    Vector Bp_;
+
   };
 
 }

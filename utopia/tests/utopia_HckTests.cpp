@@ -79,7 +79,10 @@ namespace utopia
             // nonlinear solver tests 
             // UTOPIA_RUN_TEST(newton_test);
             // UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(TR_constrained);
+            // UTOPIA_RUN_TEST(TR_constrained);
+
+
+            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
 
 
         }
@@ -914,7 +917,7 @@ namespace utopia
         auto n_levels    = 3;
 
         auto coarse_dofs = 10;
-        auto verbose     = false;
+        auto verbose     = true;
 
         // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();

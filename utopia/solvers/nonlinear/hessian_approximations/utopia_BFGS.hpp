@@ -84,7 +84,7 @@ namespace utopia
                 return H_prev_;
             }
 
-            bool apply_Hinv(const Vector & g , Vector & s) const override
+            bool apply_Hinv(const Vector & g , Vector & s) override
             {
                 if(this->initialized())
                 {
@@ -100,7 +100,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_H(const Vector & v, Vector & result) const override
+            bool apply_H(const Vector & v, Vector & result) override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -116,7 +116,7 @@ namespace utopia
                 return true;
             }
 
-            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const override
+            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) override
             {
                 if(this->initialized())
                 {
@@ -131,7 +131,7 @@ namespace utopia
                 }
             }
 
-            Scalar compute_uHv_dot(const Vector & u, const Vector & v) const override
+            Scalar compute_uHv_dot(const Vector & u, const Vector & v) override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -147,7 +147,7 @@ namespace utopia
                 }
             }
 
-            Scalar compute_uHu_dot(const Vector & u) const override
+            Scalar compute_uHu_dot(const Vector & u) override
             {
                 if(update_hessian_ && this->initialized())
                 {
