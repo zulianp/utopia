@@ -45,6 +45,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(comp_mat);
             UTOPIA_RUN_TEST(bratu_grad);
             UTOPIA_RUN_TEST(diag_mult);
+            UTOPIA_RUN_TEST(rotate_test);
             
             // FIXME (mem allocs)
             
@@ -449,6 +450,26 @@ namespace utopia {
                 utopia_test_assert(approxeq(Id, T));
 
             }
+        }
+
+        void rotate_test()
+        {
+            Vector x1 = local_values(n_, 1.0); 
+            Vector x2 = local_values(n_, 2.0); 
+            Vector x3 = local_values(n_, 3.0); 
+            Vector x4 = local_values(n_, 3.0); 
+
+
+            std::vector<Vector> vecs(4); 
+            vecs[0] = x1; 
+            vecs[1] = x2; 
+            vecs[2] = x3; 
+            vecs[3] = x4; 
+
+            //testing that move operations are implemented 
+            UTOPIA_NO_ALLOC_BEGIN("rotate_test");
+            std::rotate(vecs.begin(), vecs.begin() + 1, vecs.end());
+            UTOPIA_NO_ALLOC_END();                     
         }
 
     private:

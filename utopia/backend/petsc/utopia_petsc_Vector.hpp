@@ -458,6 +458,16 @@ namespace utopia {
             immutable_ = other.immutable_;
         }
 
+        PetscVector(PetscVector &&other)
+        : comm_(std::move(other.comm_)),
+          vec_(std::move(other.vec_)),
+          initialized_(std::move(other.initialized_)),
+          ghost_values_(std::move(other.ghost_values_)),
+          immutable_(std::move(other.immutable_))
+        {
+            other.vec_ = nullptr;
+        }
+
         inline std::string name() const
         {
             const char *name;
