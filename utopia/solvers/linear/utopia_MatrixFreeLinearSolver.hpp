@@ -18,6 +18,8 @@ namespace  utopia
 
             virtual void read(Input &/*in*/) override{ }
             virtual void print_usage(std::ostream & /*os*/) const override{ }
+
+            virtual void init_memory(const SizeType & /* ls */) {}
     };
 
 

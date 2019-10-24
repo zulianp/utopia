@@ -56,7 +56,7 @@ namespace utopia
         {
             SizeType loc_size_rhs   = local_size(b); 
             if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
+                    init_memory(loc_size_rhs);
             }   
 
             minus_rhs = -1.0*b;
@@ -95,7 +95,7 @@ namespace utopia
 
             SizeType loc_size_rhs   = local_size(rhs); 
             if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
+                    init_memory(loc_size_rhs);
             }                      
 
             if(this->precond_)
@@ -432,7 +432,7 @@ namespace utopia
 
 
     private:
-        void init(const SizeType &ls)
+        void init_memory(const SizeType &ls)
         {
             auto zero_expr = local_zeros(ls);
 
@@ -441,6 +441,7 @@ namespace utopia
             r     = zero_expr;
             p_k   = zero_expr;
             B_p_k = zero_expr;
+            minus_rhs = zero_expr;
 
             initialized_ = true;    
             loc_size_ = ls;                  

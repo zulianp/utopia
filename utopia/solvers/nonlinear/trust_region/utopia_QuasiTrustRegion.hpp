@@ -67,7 +67,6 @@
 
          bool rad_flg = false;
 
-         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)), x_trial;
 
         // #define DEBUG_mode
 
@@ -79,7 +78,8 @@
         g_norm = g0_norm;
 
 
-        this->initialize_approximation(x_k, g); 
+        // this->initialize_approximation(x_k, g); 
+        this->init_memory(x_k, g); 
 
 
 
@@ -116,7 +116,7 @@
     //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            p_k *= 0;
+            p_k.set(0);
             tr_subproblem->current_radius(delta);
             UTOPIA_NO_ALLOC_BEGIN("QUasiTR2");
             g *=  -1.0; 
@@ -225,6 +225,31 @@
     {
       NonLinearSolver::set_linear_solver(tr_linear_solver);
     }
+
+
+  private: 
+    void init_memory(const Vector & x_k, const Vector &g)
+    {
+      const SizeType ls = local_size(x_k); 
+
+      if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get())){
+        tr_subproblem->init_memory(ls); 
+      }
+
+      auto zero_expr = local_zeros(ls);
+
+      y         = zero_expr; 
+      p_k       = zero_expr; 
+      x_trial   = zero_expr; 
+
+      this->initialize_approximation(x_k, g); 
+
+    }
+
+
+    private:
+      Vector g, y, p_k, x_trial;
+
 
 
   };

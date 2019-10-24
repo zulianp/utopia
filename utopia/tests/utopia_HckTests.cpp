@@ -329,17 +329,23 @@ namespace utopia
             subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
             subproblem->atol(1e-14);
             subproblem->max_it(100000);
+            subproblem->use_precond_direction(true);
+            
 
             auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
             hess_approx->theta_min(1.0);
+
             // hess_approx->damping_tech(POWEL);
             hess_approx->damping_tech(NOCEDAL); 
 
 
-            // hess_approx->scaling_tech(ADAPTIVE);
+            hess_approx->scaling_tech(ADAPTIVE);
             // hess_approx->scaling_tech(INITIAL);
             // hess_approx->scaling_tech(NONE);
-            hess_approx->scaling_tech(FORBENIUS);
+            // hess_approx->scaling_tech(FORBENIUS);
+
+            // auto precond = hess_approx->build_Hinv_precond();
+            // subproblem->set_preconditioner(precond);
 
 
 
