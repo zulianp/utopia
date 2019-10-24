@@ -332,8 +332,16 @@ namespace utopia
 
             auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
             hess_approx->theta_min(1.0);
-            hess_approx->damping_tech(POWEL);
-            hess_approx->scaling_tech(ADAPTIVE);
+            // hess_approx->damping_tech(POWEL);
+            hess_approx->damping_tech(NOCEDAL); 
+
+
+            // hess_approx->scaling_tech(ADAPTIVE);
+            // hess_approx->scaling_tech(INITIAL);
+            // hess_approx->scaling_tech(NONE);
+            hess_approx->scaling_tech(FORBENIUS);
+
+
 
             QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
             tr_solver.read(input_params_);

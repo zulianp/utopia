@@ -78,9 +78,9 @@
         g0_norm = norm2(g);
         g_norm = g0_norm;
 
-        UTOPIA_NO_ALLOC_BEGIN("QUasiTR1");
+
         this->initialize_approximation(x_k, g); 
-        UTOPIA_NO_ALLOC_END();
+
 
 
         // print out - just to have idea how we are starting

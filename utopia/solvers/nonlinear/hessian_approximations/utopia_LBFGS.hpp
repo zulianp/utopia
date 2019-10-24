@@ -38,7 +38,7 @@ namespace utopia
 
             }
 
-            void initialize(const Vector & /*x_k*/, const Vector & /* g */) override
+            void initialize(const Vector & x_k, const Vector & /* g */) override
             {
                 theta_ = 1.0;
                 gamma_ = 1.0;
@@ -49,11 +49,37 @@ namespace utopia
                 S_.resize(m_);
                 P_.resize(m_); 
 
+                auto zero_expr = local_zeros(local_size(x_k));
+
+                for(auto i=0; i < m_; i++)
+                {
+                    Y_[i] = zero_expr; 
+                    S_[i] = zero_expr; 
+                    P_[i] = zero_expr; 
+                }
 
                 if(scaling_tech_==LBFGSScalingTechnique::FORBENIUS)
                 {
                     SY_point_wise_.resize(m_); 
                     YY_point_wise_.resize(m_); 
+
+                    for(auto i=0; i < m_; i++)
+                    {
+                        SY_point_wise_[i] = zero_expr; 
+                        YY_point_wise_[i] = zero_expr; 
+                    }
+
+                }
+
+                D_          = zero_expr; 
+                D_inv_      = zero_expr; 
+                y_hat_      = zero_expr; 
+                help1_      = zero_expr; 
+
+                if(scaling_tech_ == LBFGSScalingTechnique::FORBENIUS)
+                {
+                    SY_sum_ = zero_expr; 
+                    YY_sum_ = zero_expr; 
                 }
 
 
@@ -144,13 +170,7 @@ namespace utopia
 
                     UTOPIA_NO_ALLOC_BEGIN("LBFGS421");
                     std::rotate(Y_.begin(), Y_.begin() + 1, Y_.end());
-                    UTOPIA_NO_ALLOC_END();   
-
-                    UTOPIA_NO_ALLOC_BEGIN("LBFGS422");
                     std::rotate(S_.begin(), S_.begin() + 1, S_.end());
-                    UTOPIA_NO_ALLOC_END();   
-
-                    UTOPIA_NO_ALLOC_BEGIN("LBFGS423");
                     std::rotate(rho_.begin(), rho_.begin() + 1, rho_.end());
                     std::rotate(yts_.begin(), yts_.begin() + 1, yts_.end());
                     UTOPIA_NO_ALLOC_END();   
@@ -183,7 +203,9 @@ namespace utopia
                 {
                     UTOPIA_NO_ALLOC_BEGIN("LBFGS6");
                     this->apply_H0(S_[i], P_[i]); 
+                    UTOPIA_NO_ALLOC_END();   
 
+                    UTOPIA_NO_ALLOC_BEGIN("LBFGS62");
                     for(auto j=0; j < i; j++)
                     {
                         // Scalar mult1 = dot(S_[j], P_[i])/stp_[j]; 
@@ -199,8 +221,8 @@ namespace utopia
 
                         P_[i] = P_[i]  - (mult1 * P_[j]) + (mult2 * Y_[j]); 
                     }
+                    UTOPIA_NO_ALLOC_END();   
 
-                    UTOPIA_NO_ALLOC_END();      
 
                     stp_[i] = dot(S_[i], P_[i]); 
                 }     
@@ -414,23 +436,13 @@ namespace utopia
                     theta_ = 1.0; 
                     gamma_ = 1.0; 
 
-                    if(empty(D_) || size(D_)!= size(y))
-                        D_ = local_values(local_size(y).get(0), 1.0); 
-                    else
-                        D_.set(1.0); 
-
-                    if(empty(D_inv_) || size(D_inv_)!= size(y))
-                        D_inv_ = local_values(local_size(y).get(0), 1.0); 
-                    else
-                        D_inv_.set(1.0); 
-
-                    // D_ = local_values(local_size(y).get(0), 1.0); 
-                    // D_inv_ = local_values(local_size(y).get(0), 1.0); 
+                    D_.set(1.0); 
+                    D_inv_.set(1.0); 
 
                 }
                 else if(scaling_tech_ == LBFGSScalingTechnique::INITIAL)
                 {
-                    if(current_m_ ==0 )
+                    if(current_m_ ==1)
                     {   
                         theta_ = dot(y, y)/ dot(y,s);
                         theta_ = std::max(theta_min_, theta_);
@@ -442,23 +454,8 @@ namespace utopia
                             gamma_ = 1.0; 
                         }                     
 
-                        // D_ = local_values(local_size(y).get(0), theta_); 
-                        // D_inv_ = local_values(local_size(y).get(0), gamma_); 
-
-                        if(empty(D_) || size(D_)!= size(y)){
-                            D_ = local_values(local_size(y).get(0), theta_); 
-                        }
-                        else{
-                            D_.set(theta_); 
-                        }
-
-                        if(empty(D_inv_) || size(D_inv_)!= size(y)){
-                            D_inv_ = local_values(local_size(y).get(0), gamma_); 
-                        }
-                        else{
-                            D_inv_.set(gamma_); 
-                        }
-
+                        D_.set(theta_); 
+                        D_inv_.set(gamma_); 
                     }
                 }
                 else if(scaling_tech_ == LBFGSScalingTechnique::ADAPTIVE)
@@ -473,38 +470,22 @@ namespace utopia
                         gamma_ = 1.0; 
                     }                     
 
-                    // D_ = local_values(local_size(y).get(0), theta_); 
-                    // D_inv_ = local_values(local_size(y).get(0), gamma_); 
-
-                    if(empty(D_) || size(D_)!= size(y)){
-                        D_ = local_values(local_size(y).get(0), theta_); 
-                    }
-                    else{
-                        D_.set(theta_); 
-                    }
-
-                    if(empty(D_inv_) || size(D_inv_)!= size(y)){
-                        D_inv_ = local_values(local_size(y).get(0), gamma_); 
-                    }
-                    else{
-                        D_inv_.set(gamma_);                     
-                    }
-
+                    D_.set(theta_); 
+                    D_inv_.set(gamma_); 
                 }
-                // FORBENIUS
-                // check for allocations! 
+                // FORBENIUS 
                 else
                 {
                     SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
 
-                    Vector SY_sum = local_values(local_size(y).get(0), 0.0); 
-                    Vector YY_sum = local_values(local_size(y).get(0), 0.0); 
+                    SY_sum_.set(0.0); 
+                    YY_sum_.set(0.0); 
                 
 
                     for(auto i=0; i <current_memory_size; i++)
                     {
-                        SY_sum += SY_point_wise_[i];  
-                        YY_sum += YY_point_wise_[i]; 
+                        SY_sum_ += SY_point_wise_[i];  
+                        YY_sum_ += YY_point_wise_[i]; 
                     }
 
                     Scalar theta_working = dot(y, y)/ dot(y,s);
@@ -515,17 +496,15 @@ namespace utopia
                         theta_working = 1.0; 
                     }     
 
-                    Vector D_help =  0.0*y; 
-                    Vector D_inv_help = 0.0*y; 
 
- 
                     {
-                        Read<Vector> r_ub(YY_sum), r_lb(SY_sum);
-                        Write<Vector> wv(D_help);
+                        auto d_YY_sum = const_device_view(YY_sum_);
+                        auto d_SY_sum = const_device_view(SY_sum_);
 
-                        each_write(D_help, [&YY_sum, &SY_sum, theta_working](const SizeType i) -> double 
+                        parallel_each_write(D_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                         {
-                            Scalar yy =  YY_sum.get(i); Scalar sy =  SY_sum.get(i); 
+                            Scalar yy =  YY_sum_.get(i); 
+                            Scalar sy =  SY_sum_.get(i); 
 
                             if(!std::isfinite(yy) || !std::isfinite(sy))
                             {
@@ -541,18 +520,17 @@ namespace utopia
                             else
                             {
                                 return theta_working;
-                            }
+                            }                            
 
-                        }   );   
-                    }
+                        });
+                    }                    
 
                     {
-                        Read<Vector> r_ub(D_help); 
-                        Write<Vector> wv(D_inv_help);
+                        auto d_D = const_device_view(D_);
 
-                        each_write(D_inv_help, [&D_help, theta_working](const SizeType i) -> double 
+                        parallel_each_write(D_inv_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                         {
-                            Scalar dii =  D_help.get(i);
+                            Scalar dii =  D_.get(i);
 
                             if(std::isfinite(dii) && dii!=0.0)
                             {
@@ -566,11 +544,10 @@ namespace utopia
                         } );   
                     }
 
-                    D_ = D_help; 
-                    D_inv_ = D_inv_help; 
-                }
 
-            }
+                } // end FORM norm 
+
+            } // init_scaling_factors()
 
 
             bool init_damping_nocedal(const Vector & y, const Vector & s, Vector & y_hat)
@@ -626,18 +603,24 @@ namespace utopia
 
                 if(H0_action_)
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("LBGFS:A1");
                     H0_action_(v, result); 
+                    UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("LBGFS:A2");
                     if(current_m_ ==0)
                     {
                         result = theta_ * v; 
                     }
                     else
                     {
+                        UTOPIA_NO_ALLOC_BEGIN("LBGFS:A22");
                         result = e_mul(D_, v); 
+                        UTOPIA_NO_ALLOC_END();
                     }
+                    UTOPIA_NO_ALLOC_END();
                 }
             }
 
@@ -686,6 +669,9 @@ namespace utopia
             Vector D_inv_; 
             Vector y_hat_; 
             Vector help1_; 
+
+            Vector SY_sum_; 
+            Vector YY_sum_; 
 
             std::vector<Vector> SY_point_wise_; 
             std::vector<Vector> YY_point_wise_; 
