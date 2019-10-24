@@ -9,15 +9,12 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Multiply<Left, Right>, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Multiply<Left, Right> >::Type Result;
+        using Expr = utopia::Multiply<Left, Right>;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        inline static Result apply(const Multiply<Left, Right> &expr) {
-            Result result; 
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        inline static void apply(const Multiply<Left, Right> &expr, Result &result) {
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
             EvalBinaryAux<Result>::apply(
@@ -34,15 +31,10 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval< Multiply<Transposed<Left>, Right>, Traits, Backend> {
     public:
-        typedef utopia::Multiply< Transposed<Left>, Right>  Expr;
+        using Expr = utopia::Multiply< Transposed<Left>, Right>;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
-
-        inline static Result apply(const Expr &expr) {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
         inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
@@ -62,14 +54,10 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Multiply<Left, Transposed<Right> >, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Multiply<Left, Transposed<Right> > >::Type Result;
         using Expr = utopia::Multiply<Left, Transposed<Right> >;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        inline static Result apply(const Expr &expr) {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
         inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
@@ -86,15 +74,10 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Multiply<Transposed<Left>, Transposed<Right> >, Traits, Backend> {
     public:
-        using Expr = utopia::Multiply< Transposed<Left>, Transposed<Right> >;
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
+        using Expr   = utopia::Multiply< Transposed<Left>, Transposed<Right> >;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        inline static Result apply(const Expr &expr)
-        {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
         inline static void apply(const Expr &expr, Result &result)
         {
@@ -115,15 +98,9 @@ namespace utopia {
     class Eval<Transposed< Multiply<Left, Right> >, Traits, Backend> {
     public:
         using Expr = utopia::Transposed< Multiply<Left, Right> >;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
-
-        inline static Result apply(const Expr &expr)
-        {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
         inline static void apply(const Expr &expr, Result &result)
         {
@@ -141,10 +118,11 @@ namespace utopia {
     };
 
     template<class Result, class Left, class Right, class Traits, int Backend>
-    class Eval< Assign< Tensor<Result, 2>, Multiply<Left, Right>>, Traits, Backend> {
+    class Eval< Assign<Result, Multiply<Left, Right>>, Traits, Backend> {
     public:
         using EvalMultiply = utopia::Eval<Multiply<Left, Right>, Traits, Backend>;
-        using Expr = utopia::Assign< Tensor<Result, 2>, Multiply<Left, Right>>;
+        using Expr = utopia::Assign<Result, Multiply<Left, Right>>;
+        
         inline static void apply(const Expr &expr)
         {
             EvalMultiply::apply(expr.right(), expr.left().derived());

@@ -15,11 +15,7 @@ namespace utopia {
         using Expr   = utopia::TernaryExpr<T1, T2, T3, Order, Op1, Op2>;
         using Result = T1;
 
-        inline static Result apply(const Expr &expr) {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
         
         inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
@@ -33,7 +29,7 @@ namespace utopia {
 
             const static bool order_matters = !eval_order_changable<Op1, Op2>::value;
 
-            if(result.same_object(t3)) {
+            if(result.is_alias(t3)) {
                 if(!order_matters) {
                     apply_aux(result, t3, t2, t1, op1, op2);
                 } else {
@@ -98,16 +94,12 @@ namespace utopia {
     public:
         using T1 = utopia::Tensor<V, 1>;
         using Scalar = typename Traits::Scalar;
+        using Expr   = utopia::ScaledTernaryExpr<V, T, Plus, Minus>;
         using Result = V;
         
-        static Result apply(const ScaledTernaryExpr<V, T, Plus, Minus> &expr)
-        {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        static void apply(const ScaledTernaryExpr<V, T, Plus, Minus> &expr, Result &result)
+        static void apply(const Expr &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
             //result = (a + (alpha * b)) - (beta * c);
@@ -117,15 +109,15 @@ namespace utopia {
             const Scalar beta = expr.right().left(); 
             auto &c = Eval<T1, Traits>::apply(expr.right().right());
 
-            if(result.same_object(b)) {
+            if(result.is_alias(b)) {
                 result.scale(alpha);
                 result.axpy(1.0, a);
                 result.axpy(-beta, c);
-            } else if(result.same_object(c)) {
+            } else if(result.is_alias(c)) {
                 result.scale(-beta);
                 result.axpy(alpha, b);
                 result.axpy(1.0, a);
-            } else if(result.same_object(a)) {
+            } else if(result.is_alias(a)) {
                 result.axpy(alpha, b);
                 result.axpy(-beta, c);
             } else {
@@ -153,16 +145,12 @@ namespace utopia {
     public:
         using T1 = utopia::Tensor<V, 1>;
         using Scalar = typename Traits::Scalar;
+        using Expr = utopia::ScaledTernaryExpr<V, T, Minus, Plus>;
         using Result = V;
 
-        static Result apply(const ScaledTernaryExpr<V, T, Minus, Plus> &expr)
-        {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        static void apply(const ScaledTernaryExpr<V, T, Minus, Plus> &expr, Result &result)
+        static void apply(const Expr &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
             //result = (a - (alpha * b)) + (beta * c);
@@ -172,15 +160,15 @@ namespace utopia {
             const Scalar beta = expr.right().left(); 
             auto &c = Eval<T1, Traits>::apply(expr.right().right());
 
-            if(result.same_object(b)) {
+            if(result.is_alias(b)) {
                 result.scale(-alpha);
                 result.axpy(1.0, a);
                 result.axpy(beta, c);
-            } else if(result.same_object(c)) {
+            } else if(result.is_alias(c)) {
                 result.scale(beta);
                 result.axpy(-alpha, b);
                 result.axpy(1.0, a);
-            } else if(result.same_object(a)) {
+            } else if(result.is_alias(a)) {
                 result.axpy(-alpha, b);
                 result.axpy(beta, c);
             } else {
@@ -203,21 +191,16 @@ namespace utopia {
         }
     };
 
-
     //Assign<PetscMatrix, Plus<PetscMatrix, Multiply<PetscMatrix, PetscMatrix>>>
     template<class M, class Op, class Traits, int Backend>
     class Eval< Binary<M, Multiply<M, M>, Op>, Traits, Backend> {
     public:
+        using Expr   = utopia::Binary<M, Multiply<M, M>, Op>;
         using Result = EXPR_TYPE(Traits, M);
 
-        static Result apply(const Binary<M, Multiply<M, M>, Op> &expr)
-        {
-            Result result;
-            apply(expr, result);
-            return result;
-        }
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        static void apply(const Binary<M, Multiply<M, M>, Op> &expr, Result &result)
+        static void apply(const Expr &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
             // result = A op (B * C)
@@ -226,7 +209,7 @@ namespace utopia {
             auto &&C = Eval<M, Traits>::apply(expr.right().right());
             auto && op = expr.operation();
 
-            if(result.same_object(A) || result.same_object(B) || result.same_object(C)) {
+            if(result.is_alias(A) || result.is_alias(B) || result.is_alias(C)) {
                 typename Unwrap<M>::Type temp;
                 B.multiply(C, temp);
                 apply_aux(A, std::move(temp), op, result);
@@ -293,7 +276,7 @@ namespace utopia {
             const Op2 &op2 = expr.right().right().operation();
             const Scalar alpha = expr.right().left();
 
-            if(result.same_object(v1)) {
+            if(result.is_alias(v1)) {
                 assert(false && "avoid using the same object for result and v1");
                 V temp;
                 temp = v2;
@@ -301,7 +284,7 @@ namespace utopia {
                 temp.scale(alpha);
                 apply_aux(result, temp, op1, result);
 
-            } if(result.same_object(v2)) {
+            } if(result.is_alias(v2)) {
                 result.transform(op2);
                 result.scale(alpha);
                 apply_aux(v1, result, op1, result);

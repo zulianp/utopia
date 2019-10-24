@@ -44,44 +44,57 @@ namespace utopia {
     //     }
     // };
 
-    template<class Expr, class Traits, int Backend>
-    class Eval< Select<Expr, 1>, Traits, Backend> {
+    template<class InnerExpr, class Traits, int Backend>
+    class Eval< Select<InnerExpr, 1>, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
+        using Expr = utopia::Select<InnerExpr, 1>;
+        using Result = EXPR_TYPE(Traits, InnerExpr);
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        inline static Result apply(const Select<Expr, 1> &expr)
+        inline static void apply(const Expr &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
-            Result result;
+            auto &&left = Eval<Expr, Traits>::apply(expr.expr());
 
-            Eval<Expr, Traits>::apply(expr.expr()).select(
-                expr.index(),
-                result
+            if(result.is_alias(left)) {
+                Result temp;
+
+                left.select(
+                    expr.index(),
+                    temp
                 );
 
+                result.construct(std::move(temp));
+
+            } else {
+                left.select(
+                    expr.index(),
+                    result
+                );
+            }
+
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval< Assign<Left, Select<Right, 2> >, Traits, Backend> {
-    public:
-        inline static bool apply(const Assign<Left, Select<Right, 2> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval< Assign<Left, Select<Right, 2> >, Traits, Backend> {
+    // public:
+    //     inline static bool apply(const Assign<Left, Select<Right, 2> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Right, Traits>::apply(expr.right().expr()).select(
-                expr.right().row_index(),
-                expr.right().col_index(),
-                Eval<Left,  Traits>::apply(expr.left())
-                );
+    //         Eval<Right, Traits>::apply(expr.right().expr()).select(
+    //             expr.right().row_index(),
+    //             expr.right().col_index(),
+    //             Eval<Left,  Traits>::apply(expr.left())
+    //             );
 
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
+    // };
 
 
     // template<class Left, class Right, class Traits, int Backend>
@@ -103,24 +116,39 @@ namespace utopia {
     // };
 
 
-    template<class Expr, class Traits, int Backend>
-    class Eval< Select<Expr, 2>, Traits, Backend> {
+    template<class InnerExpr, class Traits, int Backend>
+    class Eval< Select<InnerExpr, 2>, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
+        using Expr = utopia::Select<InnerExpr, 1>;
+        using Result = EXPR_TYPE(Traits, InnerExpr);
+        
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        inline static Result apply(const Select<Expr, 2> &expr)
+        inline static void apply(const Expr &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
-            Result result;
+            auto &&mat = Eval<Expr, Traits>::apply(expr.expr());
 
-            Eval<Expr, Traits>::apply(expr.expr()).select(
-                expr.row_index(),
-                expr.col_index(),
-                result
+            if(result.is_alias(mat)) {
+                Result temp;
+
+                mat.select(
+                    expr.row_index(),
+                    expr.col_index(),
+                    temp
                 );
 
+                mat.construct(std::move(temp));
+
+            } else {
+                mat.select(
+                    expr.row_index(),
+                    expr.col_index(),
+                    result
+                );
+            }
+
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 }

@@ -14,57 +14,69 @@ namespace utopia {
         typedef utopia::ResidualExpr<A, X, B> Expr;
         typedef X Result;
 
-        inline static Result apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
+            UTOPIA_TRACE_BEGIN(expr);
 
             const auto &a = expr.right().left().derived();
             const auto &x = expr.right().right().derived();
             const auto &b = expr.left().derived();
 
-            Result r;
-            a.multiply(x, r);
-            r.scale(-1.0);
-            r.axpy(1.0, b);
-
-            UTOPIA_TRACE_END_SPECIALIZED();
-            return r;
-        }
-    };
-
-    template<class Left, class A, class X, class B, class Traits, int Backend>
-    class Eval<Assign<Left, ResidualExpr<A, X, B>>, Traits, Backend> {
-    public:
-        typedef utopia::ResidualExpr<A, X, B> Right;
-        typedef utopia::Assign<Left, Right> Expr;
-
-        inline static void apply(const Expr &assign_expr) {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(assign_expr);
-            auto &&expr = assign_expr.right();
-
-            auto &r = assign_expr.left().derived();
-            const auto &a = expr.right().left().derived();
-            const auto &x = expr.right().right().derived();
-            const auto &b = expr.left().derived();
-
-            if(r.same_object(x) || r.same_object(b)) {
+            if(result.is_alias(x) || result.is_alias(b)) {
                 X temp;
                 a.multiply(x, temp);
 
-                if(r.same_object(b)) {
-                    r.axpy(-1.0, temp);
+                if(result.is_alias(b)) {
+                    result.axpy(-1.0, temp);
                 } else {
-                    r = b;
-                    r.axpy(-1.0, temp);
+                    result = b;
+                    result.axpy(-1.0, temp);
                 }
             } else {
-                a.multiply(x, r);
-                r.scale(-1.0);
-                r.axpy(1.0, b);
+                a.multiply(x, result);
+                result.scale(-1.0);
+                result.axpy(1.0, b);
             }
 
-            UTOPIA_TRACE_END_SPECIALIZED(assign_expr);
+            UTOPIA_TRACE_END();
         }
     };
+
+    // template<class Left, class A, class X, class B, class Traits, int Backend>
+    // class Eval<Assign<Left, ResidualExpr<A, X, B>>, Traits, Backend> {
+    // public:
+    //     typedef utopia::ResidualExpr<A, X, B> Right;
+    //     typedef utopia::Assign<Left, Right> Expr;
+
+    //     inline static void apply(const Expr &assign_expr) {
+    //         UTOPIA_TRACE_BEGIN(assign_expr);
+    //         auto &&expr = assign_expr.right();
+
+    //         auto &r = assign_expr.left().derived();
+    //         const auto &a = expr.right().left().derived();
+    //         const auto &x = expr.right().right().derived();
+    //         const auto &b = expr.left().derived();
+
+    //         if(r.is_alias(x) || r.is_alias(b)) {
+    //             X temp;
+    //             a.multiply(x, temp);
+
+    //             if(r.is_alias(b)) {
+    //                 r.axpy(-1.0, temp);
+    //             } else {
+    //                 r = b;
+    //                 r.axpy(-1.0, temp);
+    //             }
+    //         } else {
+    //             a.multiply(x, r);
+    //             r.scale(-1.0);
+    //             r.axpy(1.0, b);
+    //         }
+
+    //         UTOPIA_TRACE_END(assign_expr);
+    //     }
+    // };
 }
 
 

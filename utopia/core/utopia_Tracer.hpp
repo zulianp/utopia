@@ -6,6 +6,7 @@
 #include <map>
 #include <stack>
 #include <chrono>
+#include <csignal>
 
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"
@@ -22,16 +23,18 @@ namespace utopia {
     class Interceptor {
     public:
 
-        void abort_on_intercept(const bool val)
+        void interrupt_on_intercept(const bool val)
         {
-            abort_on_intercept_ = val;
+            interrupt_on_intercept_ = val;
         }
 
         template<class T>
         void intercept(const Expression<T> &expr) 
         {
-            if(abort_on_intercept_ && !expr_.empty() && expr.get_class() == expr_)  {
-                abort();
+            if(interrupt_on_intercept_ && !expr_.empty() && expr.get_class() == expr_)  {
+                // abort();
+                std::raise(SIGINT);
+
             }
         }
 
@@ -39,12 +42,12 @@ namespace utopia {
             expr_ = expr;
         }
 
-        Interceptor() : expr_(), abort_on_intercept_(false) {}
+        Interceptor() : expr_(), interrupt_on_intercept_(false) {}
 
     private:
 
         std::string expr_;
-        bool abort_on_intercept_;
+        bool interrupt_on_intercept_;
         
     };
 

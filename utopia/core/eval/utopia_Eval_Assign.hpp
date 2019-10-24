@@ -35,9 +35,11 @@ namespace utopia {
         inline static bool apply(const Assign<Left, Right> &expr) {
             UTOPIA_TRACE_BEGIN(expr);
             
-            expr.left().construct(
-                Eval<Right, Traits>::apply(expr.right())
-            );
+            // expr.left().construct(
+            //     Eval<Right, Traits>::apply(expr.right())
+            // );
+
+            Eval<Right, Traits, Backend>::apply(expr.right(), expr.left().derived());
 
             UTOPIA_TRACE_END(expr);
             return true;
@@ -74,7 +76,7 @@ namespace utopia {
     public:
         using Scalar = typename Traits::Scalar;
 
-        inline static bool apply(const Assign<Left, Binary<Number<T>, Unary<Right, Op>, Multiplies>> &expr) {
+        inline static void apply(const Assign<Left, Binary<Number<T>, Unary<Right, Op>, Multiplies>> &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
             auto &l = Eval<Left, Traits>::apply(expr.left());
@@ -89,7 +91,6 @@ namespace utopia {
             l.scale(alpha);
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
@@ -145,7 +146,7 @@ namespace utopia {
             auto &&b = Eval<T1, Traits>::apply(expr.right().right());
             auto &&op = expr.right().operation();
 
-            if(y.same_object(x)) {
+            if(y.is_alias(x)) {
                 //temporary here
                 Vector temp = x;
                 A.multiply(temp, y);
@@ -185,12 +186,12 @@ namespace utopia {
         template<class TL, class TR, class Result>
         static void apply_aux(const TL &tl, const Minus &, const TR &tr, Result &res)
         {
-            if(tl.same_object(res)) {
+            if(tl.is_alias(res)) {
                 res.axpy(-1.0, tr);
                 return;
             }
 
-            if(tr.same_object(res)) {
+            if(tr.is_alias(res)) {
                 res.scale(-1.0);
                 res.axpy(1.0, tl);
                 return;
@@ -223,12 +224,12 @@ namespace utopia {
         template<class TL, class TR, class Result>
         static void apply_aux(const TL &tl, const Plus &, const TR &tr, Result &res)
         {
-            if(tl.same_object(res)) {
+            if(tl.is_alias(res)) {
                 res.axpy(1.0, tr);
                 return;
             }
 
-            if(tr.same_object(res)) {
+            if(tr.is_alias(res)) {
                 res.axpy(1.0, tl);
                 return;
             }
@@ -288,7 +289,7 @@ namespace utopia {
             Vector &l = expr.left().derived();
             const Vector &r = expr.right().expr().derived();
 
-            if(!l.same_object(r)) {
+            if(!l.is_alias(r)) {
                 l.construct(r);
             } 
             
@@ -328,13 +329,13 @@ namespace utopia {
             auto &&left = Eval<T1, Traits>::apply(left_expr.right());
             const Scalar alpha = left_expr.left();
 
-            if(result.same_object(left)) {
+            if(result.is_alias(left)) {
                 Vector temp;
                 A.multiply(x, temp);
                 result.scale(alpha);
                 EvalBinaryAux<T1>::apply(result, temp, op, result);
 
-            } else if(result.same_object(x)) {
+            } else if(result.is_alias(x)) {
                 Vector temp;
                 A.multiply(x, temp);
 
@@ -449,7 +450,7 @@ namespace utopia {
             auto &&r = Eval<Tensor, Traits>::apply(expr.right().right());
             const Scalar alpha = expr.right().left();
 
-            if(l.same_object(r)) {
+            if(l.is_alias(r)) {
                 l.scale(alpha);
             } else {
                 l.construct(r);
@@ -460,6 +461,43 @@ namespace utopia {
             return true;
         }
     };
+
+
+        
+    template<class Left, class RowPtr, class ColIndex, class Values, class Traits, int Backend>
+    class Eval< Assign<
+                        Left,
+                        Factory< CRS<RowPtr, ColIndex, Values>, 2>>,
+                        Traits,
+                        Backend
+                        > {
+    public:
+        inline static bool apply(const Assign<Left, Factory<CRS<RowPtr, ColIndex, Values>, 2>> &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+            auto && left = Eval<Left, Traits>::apply(expr.left());
+            auto && crs  = expr.right().type();
+            auto s       = expr.right().size();
+
+            //FIXME
+            left.crs_init(
+                left.comm().get(),
+                INVALID_INDEX,
+                INVALID_INDEX,
+                s.get(0),
+                s.get(1),
+                crs.rowPtr(),
+                crs.cols(),
+                crs.values()
+            );
+
+            UTOPIA_TRACE_END(expr);
+            return true;
+        }
+    };
+
+
+
 
 }
 

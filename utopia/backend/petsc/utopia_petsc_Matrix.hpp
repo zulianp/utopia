@@ -947,7 +947,7 @@ namespace utopia {
         SizeType global_nnz() const;
         SizeType local_nnz() const;
 
-        inline bool same_object(const PetscMatrix &other) const
+        inline bool is_alias(const PetscMatrix &other) const
         {
             if(empty()) return false;
             if(other.empty()) return false;

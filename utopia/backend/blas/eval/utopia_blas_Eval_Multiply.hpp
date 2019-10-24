@@ -159,11 +159,11 @@ namespace utopia {
             auto &&alpha = expr.left().left().left();
             auto &&beta  =  expr.right().left();
 
-            if(result.same_object(a)) {
+            if(result.is_alias(a)) {
                 Result temp = std::move(result);
                 result = c;
                 temp.gemm(false, alpha, false, b, beta, result);
-            } else if(result.same_object(b)) {
+            } else if(result.is_alias(b)) {
                 Result temp = std::move(result);
                 result = c;
                 a.gemm(false, alpha, false, temp, beta, result);

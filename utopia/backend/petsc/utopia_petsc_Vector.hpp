@@ -854,7 +854,7 @@ namespace utopia {
         }
 
 
-        inline bool same_object(const PetscVector &other) const
+        inline bool is_alias(const PetscVector &other) const
         {
             if(is_null()) return false;
             if(other.is_null()) return false;
