@@ -1,4 +1,4 @@
-#include "utopia_FlowWIthFracturesApp.hpp"
+#include "utopia_FlowWithFracturesApp.hpp"
 
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_L2LocalAssembler.hpp"
