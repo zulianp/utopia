@@ -16,6 +16,7 @@
 #include "utopia_Comparable.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 //Backend includes
 #include "utopia_petsc_Base.hpp"
@@ -133,7 +134,8 @@ namespace utopia {
         public Comparable<PetscMatrix>,
         // public Ranged<PetscMatrix, 2>,
         public Operator<PetscVector>,
-        public Tensor<PetscMatrix, 2>
+        public Tensor<PetscMatrix, 2>,
+        public Selectable<PetscMatrix, 2>
         {
     public:
         using Scalar   = PetscScalar;

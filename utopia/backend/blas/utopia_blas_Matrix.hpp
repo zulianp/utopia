@@ -18,6 +18,7 @@
 #include "utopia_Operations.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 
 #include <vector>
@@ -37,6 +38,7 @@ namespace utopia {
         public Reducible<T>,
         // Static polymorphic types
         public Tensor<BlasMatrix<T>, 2>,
+        public Selectable<BlasMatrix<T>, 2>,
         public BLAS1Tensor<BlasMatrix<T>>,
         public BLAS2Matrix<BlasMatrix<T>, BlasVector<T>>,
         public BLAS3DenseMatrix<BlasMatrix<T>>,
@@ -480,7 +482,7 @@ namespace utopia {
             BlasMatrix &C) const override
         {
             //handle aliases
-            if(&B == &C || this == &C) {
+            if(B.is_alias(C) || this->is_alias(C)) {
                 //TEMPORARY-CREATED
                 BlasMatrix temp;
                 gemm(transpose_A, alpha, transpose_B, B, beta, temp);
@@ -522,7 +524,7 @@ namespace utopia {
         inline void transpose(BlasMatrix &C) const override {
             bool is_squared = rows_ == cols_;
 
-            if(this == &C) {
+            if(this->is_alias(C)) {
                 if(is_squared) {
                     //in place
                     for(SizeType i = 0; i < rows_; ++i) {

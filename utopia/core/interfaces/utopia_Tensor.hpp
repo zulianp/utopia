@@ -19,8 +19,9 @@ namespace utopia {
 	//  */
 	template<typename Derived, int Order_>
 	class Tensor : 
-	public Expression<Tensor<Derived, Order_>>,
-	public Selectable<Tensor<Derived, Order_>>
+	public Expression<Tensor<Derived, Order_>>
+	// ,
+	// public Selectable<Tensor<Derived, Order_>>
 	{
 	public:
 		static const int Order   = Order_;
