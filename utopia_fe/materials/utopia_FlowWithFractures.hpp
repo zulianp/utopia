@@ -175,11 +175,10 @@ namespace utopia {
             const FractureSampler &sampler_;
         };
 
-        template<int Dim>
-        class Cut {};
+        // template<int Dim>
+        // class Cut {};
 
-        template<>
-        class Cut<2> {
+        class Cut2 {
         public:
             using CellElem = moonolith::Elem<double, 2, 2>;
             using SurfElem = moonolith::Edge1<double, 2>;
@@ -197,7 +196,7 @@ namespace utopia {
 
             Algo algo;
 
-            Cut()
+            Cut2()
             {
                surf_trafo = std::make_shared<moonolith::AffineTransform<double, 2-1, 2>>();
             }
@@ -336,7 +335,7 @@ namespace utopia {
                 LibMeshAssembler::allocate_matrix(dof_map, hessian);
             }
 
-            Cut<2> cut;
+            Cut2 cut;
             moonolith::Storage<std::shared_ptr<libMesh::QBase>> q;
             USerialMatrix el_mat;
             std::vector<libMesh::dof_id_type> dof_indices;
@@ -401,7 +400,7 @@ namespace utopia {
                 v = local_zeros(dof_map.n_local_dofs());
             } 
 
-            Cut<2> cut;
+            Cut2 cut;
             moonolith::Storage<std::shared_ptr<libMesh::QBase>> q;
             USerialVector el_vec;
             std::vector<libMesh::dof_id_type> dof_indices;
@@ -490,7 +489,7 @@ namespace utopia {
         FunctionSpace &space_;
         Scalar rescale_;
         
-        moonolith::Storage<std::shared_ptr<Cut<2>>> intersections_;
+        moonolith::Storage<std::shared_ptr<Cut2>> intersections_;
         FractureSampler fracture_sampler_;
     };
 
