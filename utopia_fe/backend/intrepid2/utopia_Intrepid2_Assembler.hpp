@@ -307,7 +307,10 @@ namespace utopia {
 			//assemble energy
 
 			//global reduce
-			m.comm().sum(val);
+			// m.comm().sum(val);
+			//FIXME (once libmesh is fixed go back to previous version)
+			UVector dump; 
+			val = dump.comm().sum(val);
 
 			//perf
 			c.stop();
