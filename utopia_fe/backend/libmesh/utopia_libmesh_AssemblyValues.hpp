@@ -528,6 +528,20 @@ namespace utopia {
             }
 
             template<class T>
+            inline int visit(const TrialFunction<FiniteElement<T, LIBMESH_TAG>> &expr)
+            {
+                init_phi(expr.space_ptr()->space());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const TestFunction<FiniteElement<T, LIBMESH_TAG>> &expr)
+            {
+                init_phi(expr.space_ptr()->space());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
             inline int visit(const LinearIntegrator<T> &expr)
             {
                 expr.init_values(ctx);

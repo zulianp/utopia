@@ -1,10 +1,39 @@
 #include "utopia_FETensorTest.hpp"
 #include "utopia_MultiTensor.hpp"
+#include "utopia_FormTensor.hpp"
+#include "utopia_FiniteElement.hpp"
+#include "utopia_libmesh_FiniteElement.hpp"
 
 #include "utopia_libmesh.hpp"
 #include "libmesh/mesh_generation.h"
 
 namespace utopia {
+    template<class Traits, int Backend>
+    class Eval<
+        Gradient<
+            TrialFunction<
+                FiniteElement<LibMeshFunctionSpace>
+                >
+            >, Traits, Backend> {
+    public:
+
+        using Expr = Gradient<
+            TrialFunction<
+                FiniteElement<LibMeshFunctionSpace>
+                >
+            >;
+
+        template<class T>
+        inline static void apply(const Expr &expr, FormTensor<T, 1> &result)
+        {
+            std::cout << expr.get_class() << std::endl;
+        }   
+
+    };
+
+    // template<class T>
+    // void assemble(
+    //     const FunctionSpace<T> &V, )
 
     void FETensorTest::run(Input &in)
     {
@@ -27,21 +56,19 @@ namespace utopia {
 
         auto V = FunctionSpaceT(es);
 
-        MultiMatrixd t2;
-        MultiVectord t1;
-        MultiScalard t0;
+        FormVectord g;
+        FiniteElement<FunctionSpaceT> element(V);
 
-        t0.resize(1);
-        t0[0] = 0.5;
+        //Which basis-function
+        auto u = trial(element);
 
-        t1.resize(1);
-        t1[0] = values(3, 1.0);
-        // t1 = t1 + t1;
+        for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
+            //Change element
+            element.set((*e_it)->id());
+            //What we need
+            element.init(grad(u) + u);
 
-        // MultiVectord t1_2 = t0 * t1;
-
-        // MultiScalard dot_t1 = dot(t1, t1);
-
-        // disp(dot_t1);
+            g = grad(u);
+        }
     }
 }

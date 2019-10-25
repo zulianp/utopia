@@ -6,6 +6,7 @@
 #include "utopia_blas.hpp"
 
 #include <iostream>
+#include <cmath>
 
 namespace utopia {
 
@@ -48,14 +49,54 @@ namespace utopia {
     UTOPIA_MAKE_TRAITS(MultiVectord, BlasMultiTensorTraitsd, 1);
     UTOPIA_MAKE_TRAITS_DENSE(MultiMatrixd, BlasMultiTensorTraitsd, 2);
 
+
+    template<typename T>
+    class Math<MultiTensor<T, 0>> {
+    public:
+        inline static MultiTensor<T, 0> abs(const MultiTensor<T, 0> &x) { 
+            auto n = x.size();
+            MultiTensor<T, 0> ret = x;
+            for(SizeType i = 0; i < n; ++i) {
+                ret[i] = std::abs(ret[i]);
+            }
+            
+            return ret;
+        }
+
+        inline static MultiTensor<T, 0> abs(MultiTensor<T, 0> &&x) { 
+            auto n = x.size();
+            MultiTensor<T, 0> ret = x;
+            for(SizeType i = 0; i < n; ++i) {
+                ret[i] = std::abs(ret[i]);
+            }
+            
+            return ret;
+        }
+
+    };
+
+    template<typename T>
+    MultiTensor<T, 0> operator*(const MultiTensor<T, 0> &left, const MultiTensor<T, 0> &right)
+    {
+        auto n = left.size();
+        MultiTensor<T, 0> ret = left;
+        for(SizeType i = 0; i < n; ++i) {
+            ret[i] *= right[i];
+        }
+
+        return ret;
+    }
+
     template<class T_, int Order_ = Traits<T_>::Order>
     class MultiTensor : public Tensor<MultiTensor<T_>, Order_> {
     public:
         using T = T_;
+        static const int Order = Order_;
+        
         using SizeType = typename Traits<MultiTensor>::SizeType;
         using Scalar   = typename Traits<MultiTensor>::Scalar;
         using ScalarValue = typename Traits<MultiTensor>::ScalarValue;
-        static const int Order = Order_;
+        
         
         using Super = utopia::Tensor<MultiTensor, Order_>;
         using Super::Super;
@@ -116,7 +157,7 @@ namespace utopia {
             assert(n == x.size());
 
             for(SizeType i = 0; i < n; ++i) {
-                at(i).axpy(alpha[i], x[i]);
+                at(i) += alpha[i] * x[i];
             }
         }
 
@@ -126,7 +167,7 @@ namespace utopia {
             assert(n == x.size());
 
             for(SizeType i = 0; i < n; ++i) {
-                at(i).axpy(alpha, x[i]);
+                at(i) += alpha * x[i];
             }
         }
 
@@ -138,22 +179,14 @@ namespace utopia {
             result.resize(n);
 
             for(SizeType i = 0; i < n; ++i) {
-                result[i] = at(i).dot(other[i]);
+                result[i] = utopia::dot(at(i), other[i]);
             }
         }
 
         Scalar dot(const MultiTensor &other) const
         {
-            const auto n = size();
-            assert(n == other.size());
-
             Scalar result;
-            result.resize(n);
-
-            for(SizeType i = 0; i < n; ++i) {
-                result[i] = at(i).dot(other[i]);
-            }
-
+            dot(other, result);
             return result;
         }
 
