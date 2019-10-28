@@ -108,8 +108,11 @@ namespace utopia {
                     auto u = trial(element);
                     uk = grad(interpolate(x, u));
 
+                    disp("HERE");
                     disp(uk);
+
                     exit(0);
+
 
                     //Symbolic to Numeric conversion
                     // f = u;

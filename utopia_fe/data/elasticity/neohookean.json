@@ -1,0 +1,21 @@
+{
+    "mesh": {
+        "type": "square",
+        "order" : 1
+    },
+    "space": {
+        "system-name": "contact_sol",
+        "variables": [
+            {
+                "name": "disp_x",
+                "order" : 1
+            },
+            {
+                "name": "disp_y",
+                "order" : 1
+            }
+        ],
+
+        "*boundary-conditions": []
+    }
+}
