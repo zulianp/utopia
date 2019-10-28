@@ -8,9 +8,12 @@
 
 namespace utopia {
 
-    template<class LocalAssembler, class InitExpr>
-    void assemble(
-        FunctionSpace<LibMeshFunctionSpace> &V_w,
+
+
+    template<class Derived, class FE, class LocalAssembler, class InitExpr>
+    void libmesh_assemble_aux(
+        FunctionSpace<Derived> &V_w,
+        FE &element,
         const Expression<InitExpr> &init_expr,
         USparseMatrix &matrix,
         LocalAssembler assembler
@@ -45,7 +48,6 @@ namespace utopia {
         USerialMatrix mat;
 
         std::vector<libMesh::dof_id_type> dofs;
-        FiniteElement<LibMeshFunctionSpace> element(V);
 
         {
             Write<USparseMatrix> w(matrix, utopia::GLOBAL_ADD);
@@ -156,6 +158,31 @@ namespace utopia {
 
         c.stop();
         std::cout << "assemble vec(E=" << mesh.n_active_local_elem() << "): " << c << std::endl;
+    }
+
+
+    template<class LocalAssembler, class InitExpr>
+    void assemble(
+        FunctionSpace<LibMeshFunctionSpace> &V_w,
+        const Expression<InitExpr> &init_expr,
+        USparseMatrix &matrix,
+        LocalAssembler assembler
+        )
+    {
+        FiniteElement<LibMeshFunctionSpace> element(V_w.derived());
+        libmesh_assemble_aux(V_w, element, init_expr, matrix, assembler);
+    }
+
+    template<class LocalAssembler, class InitExpr>
+    void assemble(
+        ProductFunctionSpace<LibMeshFunctionSpace> &V_w,
+        const Expression<InitExpr> &init_expr,
+        USparseMatrix &matrix,
+        LocalAssembler assembler
+        )
+    {
+        FiniteElement<ProductFunctionSpace<LibMeshFunctionSpace> > element(V_w.derived());
+        libmesh_assemble_aux(V_w.derived().subspace(0), element, init_expr, matrix, assembler);
     }
 
 }
