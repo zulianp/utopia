@@ -716,7 +716,7 @@ namespace utopia {
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
                     *x_f_[i] = (*T) * x;
 
-                    static const bool plot_residual = true;
+                    static const bool plot_residual = false;
                     if(plot_residual) {
                         Vector r;
                         fracture_network_[i]->residual(*A_f_[i], *rhs_f_[i], *x_f_[i], r);
