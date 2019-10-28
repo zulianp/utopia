@@ -27,6 +27,13 @@ namespace utopia {
             ctx_.init(expr);
         }
 
+        template<class Expr>
+        void reinit(const Expr &expr)
+        {
+            ctx_.reinit(expr);
+        }
+
+
         AssemblyContext<LIBMESH_TAG> &ctx()
         {
             return ctx_;
@@ -42,7 +49,12 @@ namespace utopia {
             return space_;
         }
 
-        FiniteElement(const Space &space) : space_(space)
+        inline Space &space()
+        {
+            return space_;
+        }
+
+        FiniteElement(Space &space) : space_(space)
         {}
 
         inline static std::string get_class() 
@@ -51,7 +63,7 @@ namespace utopia {
         }
 
     private:
-        const Space &space_;
+        Space &space_;
         AssemblyContext<LIBMESH_TAG> ctx_;
 
 

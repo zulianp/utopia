@@ -22,7 +22,7 @@ namespace utopia {
             //DO SOMETHING
         }
 
-        FiniteElement(const Space &space) : space_(space)
+        FiniteElement(Space &space) : space_(space)
         {}
 
         inline const Space &space() const
@@ -30,8 +30,14 @@ namespace utopia {
             return space_;
         }
 
+
+        inline Space &space()
+        {
+            return space_;
+        }
+
     private:
-        const Space &space_;
+        Space &space_;
 
         FiniteElement(const FiniteElement &other)
         : space_(other.space_)
@@ -59,10 +65,18 @@ namespace utopia {
 
 
     template<class Space>
-    TrialFunction<FiniteElement<Space>> trial(const FiniteElement<Space> &space)
+    TrialFunction<FiniteElement<Space>> trial(FiniteElement<Space> &space)
     {
         return TrialFunction<FiniteElement<Space>>(make_ref(space));
     }
+
+
+    template<class Space, class AssemblyContext>
+    class FunctionalTraits<FiniteElement<Space>, AssemblyContext> {
+    public:
+        inline static int type(const FiniteElement<Space> &expr, const AssemblyContext &ctx)  { return FunctionalTraits<Space, AssemblyContext>::type(expr.space(), ctx);  }
+        inline static int order(const FiniteElement<Space> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Space, AssemblyContext>::order(expr.space(), ctx); }
+    };
 
 }
 

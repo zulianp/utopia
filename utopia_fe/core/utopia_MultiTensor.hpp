@@ -19,8 +19,8 @@ namespace utopia {
     class BlasMultiTensorTraits {
     public:
         using BlasTraitsT = utopia::Traits<BlasVector<T>>;
-        using Scalar      = utopia::MultiTensor<T, 0>;
-        using ScalarValue = T;
+        using Scalar      = T;
+        using MultiScalar = utopia::MultiTensor<T, 0>;
         using Matrix      = utopia::MultiTensor<utopia::BlasMatrix<T>, 2>;
         using Vector      = utopia::MultiTensor<utopia::BlasVector<T>, 1>;
 
@@ -95,8 +95,7 @@ namespace utopia {
         
         using SizeType = typename Traits<MultiTensor>::SizeType;
         using Scalar   = typename Traits<MultiTensor>::Scalar;
-        using ScalarValue = typename Traits<MultiTensor>::ScalarValue;
-        
+        using MultiScalar   = typename Traits<MultiTensor>::MultiScalar;        
         
         using Super = utopia::Tensor<MultiTensor, Order_>;
         using Super::Super;
@@ -161,7 +160,7 @@ namespace utopia {
             }
         }
 
-        void axpy(const ScalarValue &alpha, const MultiTensor &x)
+        void axpy(const Scalar &alpha, const MultiTensor &x)
         {
             const auto n = size();
             assert(n == x.size());
@@ -171,7 +170,7 @@ namespace utopia {
             }
         }
 
-        void dot(const MultiTensor &other, Scalar &result) const
+        void dot(const MultiTensor &other, MultiScalar &result) const
         {
             const auto n = size();
             assert(n == other.size());
@@ -183,14 +182,14 @@ namespace utopia {
             }
         }
 
-        Scalar dot(const MultiTensor &other) const
+        MultiScalar dot(const MultiTensor &other) const
         {
-            Scalar result;
+            MultiScalar result;
             dot(other, result);
             return result;
         }
 
-        void scale(const Scalar &alpha)
+        void scale(const MultiScalar &alpha)
         {
             const auto n = size();
             assert(n == alpha.size());
@@ -200,11 +199,9 @@ namespace utopia {
             }
         }
 
-        void scale(const ScalarValue &alpha)
+        void scale(const Scalar &alpha)
         {
             const auto n = size();
-            assert(n == alpha.size());
-
             for(SizeType i = 0; i < n; ++i) {
                 at(i) *= alpha;
             }

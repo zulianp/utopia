@@ -14,8 +14,8 @@ namespace utopia {
     class BlasFormTensorTraits {
     public:
         using BlasTraitsT = utopia::Traits<BlasVector<T>>;
-        using Scalar      = utopia::FormTensor<T, 0>;
-        using ScalarValue = T;
+        using Scalar = T;
+        using MultiScalar = utopia::FormTensor<T, 0>;
         using Matrix      = utopia::FormTensor<utopia::BlasMatrix<T>, 2>;
         using Vector      = utopia::FormTensor<utopia::BlasVector<T>, 1>;
 
@@ -35,7 +35,7 @@ namespace utopia {
         }
     };
 
-    using BlasFormTensorTraitsd = utopia::BlasMultiTensorTraits<double>;
+    using BlasFormTensorTraitsd = utopia::BlasFormTensorTraits<double>;
     using FormVectord = utopia::FormTensor<BlasVectord, 1>;
     using FormMatrixd = utopia::FormTensor<BlasMatrixd, 2>;
     using FormScalard = utopia::FormTensor<double, 0>;
@@ -44,16 +44,23 @@ namespace utopia {
     UTOPIA_MAKE_TRAITS(FormVectord, BlasFormTensorTraitsd, 1);
     UTOPIA_MAKE_TRAITS_DENSE(FormMatrixd, BlasFormTensorTraitsd, 2);
 
+
+    template<typename T2, int Order>
+    Binary<Number<typename FormTensor<T2, Order>::Scalar>, FormTensor<T2, Order>, Multiplies> 
+    operator*(const typename FormTensor<T2, Order>::Scalar &left, const FormTensor<T2, Order> &right)
+    {
+        return Binary<Number<typename FormTensor<T2, Order>::Scalar>, FormTensor<T2, Order>, Multiplies>(left, right);
+    }
+
     template<class T_, int Order_>
     class FormTensor : public Tensor<FormTensor<T_, Order_>, Order_> {
     public:
         using T = T_;
         static const int Order = Order_;
 
-        using SizeType = typename Traits<FormTensor>::SizeType;
-        using Scalar   = typename Traits<FormTensor>::Scalar;
-        using ScalarValue = typename Traits<FormTensor>::ScalarValue;
-        
+        using SizeType    = typename Traits<FormTensor>::SizeType;
+        using MultiScalar = typename Traits<FormTensor>::MultiScalar;
+        using Scalar      = typename Traits<FormTensor>::Scalar;
         
         using Super = utopia::Tensor<FormTensor, Order_>;
         using Super::Super;
@@ -102,6 +109,62 @@ namespace utopia {
         void assign(FormTensor &&other) override
         {
             values_ = std::move(other.values_);
+        }
+
+        void resize(const SizeType n)
+        {
+            values_.resize(n);
+        }
+
+        inline SizeType size() const
+        {
+            return values_.size();
+        }
+
+        inline const MultiTensor<T, Order> &operator[](const SizeType i) const
+        {
+            assert(i < size());
+            return values_[i];
+        }
+
+        inline MultiTensor<T, Order> &operator[](const SizeType i)
+        {
+            assert(i < size());
+            return values_[i];
+        }
+
+        inline MultiTensor<T, Order> &at(const SizeType i)
+        {
+            assert(i < size());
+            return values_[i];
+        }
+
+        inline const MultiTensor<T, Order> &at(const SizeType i) const
+        {
+            assert(i < size());
+            return values_[i];
+        }
+
+        void describe() const
+        {
+            SizeType idx = 0;
+            for(const auto &v : values_)
+            {
+                std::cout << idx++ << "]\n";
+                disp(v);
+            }
+        }
+
+        inline void scale(const Scalar &factor)
+        {
+            for(auto &v : values_) {
+                v.scale(factor);
+            }
+        }
+
+        inline bool is_alias(const FormTensor &other) const
+        {
+            return this == &other;
         }
 
     private:

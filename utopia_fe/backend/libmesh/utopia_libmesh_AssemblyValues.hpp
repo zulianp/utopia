@@ -50,13 +50,22 @@ namespace utopia {
             {
                 const std::size_t n = v.size();
                 const std::size_t n_qp = v[0].size();
-                g.resize(n);
+
+                if(n != g.size()) {
+                    g.resize(n);
+                }
 
                 for(std::size_t i = 0; i < n; ++i) {
-                    g[i].resize(n_qp);
+                    if(g[i].size() != n_qp) {
+                        g[i].resize(n_qp);
+                    }
+
                     for(std::size_t k = 0; k < n_qp; ++k) {
 
-                        g[i][k].resize(spatial_dim);
+                        if(g[i][k].size() != spatial_dim) {
+                            g[i][k].resize(spatial_dim);
+                        }
+                        
                         for(int d = 0; d < spatial_dim; ++d) {
                             g[i][k].set(d, v[i][k](d));
                         }
@@ -695,6 +704,15 @@ namespace utopia {
                 init_dphi(*expr.expr().space_ptr());
                 return TRAVERSE_CONTINUE;
             }
+
+
+            template<template<class> class Function, class Space, int Backend>
+            inline int visit(const Gradient<Function<FiniteElement<Space, Backend>>> &expr)
+            {
+                init_dphi(expr.expr().space_ptr()->space());
+                return TRAVERSE_CONTINUE;
+            }
+
 
             template<class C, template<class> class Function>
             inline int visit(const Gradient<Interpolate<C, Function<LibMeshFunctionSpace>> > &expr)
