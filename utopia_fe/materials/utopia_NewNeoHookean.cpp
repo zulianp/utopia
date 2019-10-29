@@ -61,7 +61,10 @@ namespace utopia {
 
                 const SizeType n_funs = gu.size();
 
-                mat.resize(n_funs, n_funs);
+                if(mat.rows() != n_funs || mat.cols() != n_funs) {
+                    mat.resize(n_funs, n_funs);
+                }
+                
                 mat.set(0.0);
                 
                 loop(dx.size(), [&](const SizeType &q) {
@@ -129,7 +132,9 @@ namespace utopia {
 
                 const SizeType n_funs = gu.size();
 
-                vec.resize(n_funs);
+                if(vec.size() != n_funs) { vec.resize(n_funs); }
+
+
                 vec.set(0.0);
                 
                 loop(dx.size(), [&](const SizeType &q) {

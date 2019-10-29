@@ -76,7 +76,9 @@
             ]
         },
         "model": {
-            "material": "LinearElasticity",
+            "*material": "LinearElasticity",
+            "*material": "NeoHookean",
+            "material": "NewNeoHookean",
             "stabilization": "none",
             "stabilization-mag": 0.00001,
             "parameters": {
