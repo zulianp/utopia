@@ -4,6 +4,7 @@
 #include "moonolith_expanding_array.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_blas.hpp"
+#include "utopia_LocalFEForwardDeclarations.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -11,10 +12,6 @@
 namespace utopia {
 
     static const int FEBLAS = BLAS + 1;
-
-    template<class T_, int Order_>
-    class MultiTensor;
-
     template<typename T>
     class BlasMultiTensorTraits {
     public:
@@ -48,6 +45,13 @@ namespace utopia {
     UTOPIA_MAKE_TRAITS(MultiScalard, BlasMultiTensorTraitsd, 0);
     UTOPIA_MAKE_TRAITS(MultiVectord, BlasMultiTensorTraitsd, 1);
     UTOPIA_MAKE_TRAITS_DENSE(MultiMatrixd, BlasMultiTensorTraitsd, 2);
+
+
+    template<class T, int Order, int Sparsity>
+    class TensorQuery<Traits<MultiTensor<T, Order>>, 0, Sparsity> {
+    public:
+        using Type = utopia::MultiTensor<T, 0>;
+    };
 
 
     template<typename T>
@@ -87,15 +91,106 @@ namespace utopia {
         return ret;
     }
 
+    template<class Derived, int Order>
+    class MultiTensorSpecificImpl {};
+
+    // template<class Derived>
+    // class MultiTensorSpecificImpl<Derived, 0> {
+    // public:
+    //     static const int Order = 0;
+    //     using Traits = utopia::Traits<Derived>;
+
+    //     using SizeType     = typename Traits::SizeType;
+    //     using Scalar       = typename Traits::Scalar;
+
+    //     // void axpy(
+    //     //     const Scalar &alpha,
+    //     //     const Scalar &x)
+    //     // {
+    //     //     auto &d = derived_();
+    //     //     const Scalar offset = alpha * x;
+
+    //     //     const SizeType n = d.size();
+    //     //     for(SizeType i = 0; i < n; ++i) {
+    //     //         d[i] += offset;
+    //     //     }
+    //     // }
+
+    // private:
+    //     inline Derived &derived_()
+    //     {
+    //         return static_cast<Derived &>(*this);
+    //     }
+
+    //     inline const Derived &derived_() const
+    //     {
+    //         return static_cast<const Derived &>(*this);
+    //     }
+    // };
+
+    template<class Derived>
+    class MultiTensorSpecificImpl<Derived, 2> {
+    public:
+        static const int Order = 2;
+        using Traits = utopia::Traits<Derived>;
+
+        using T            = typename Traits::Matrix;
+        using SizeType     = typename Traits::SizeType;
+        using Scalar       = typename Traits::Scalar;
+        // using MultiScalar  = typename Traits::MultiScalar;   
+
+        virtual ~MultiTensorSpecificImpl() {}     
+        
+        void shift_diag(const Scalar &alpha)
+        {
+            auto &d = derived_();
+            const auto n = d.size();
+            for(SizeType i = 0; i < n; ++i) {
+                d.at(i).shift_diag(alpha);
+            }
+        }
+
+        void transpose(Derived &result) const
+        {
+            auto &d = derived_();
+            const auto n = d.size();
+
+            if(result.size() != n) {
+                result.resize(n);
+            }
+
+            for(SizeType i = 0; i < n; ++i) {
+                d.at(i).transpose(result.at(i));
+            }
+        }
+
+    private:
+
+        inline Derived &derived_()
+        {
+            return static_cast<Derived &>(*this);
+        }
+
+        inline const Derived &derived_() const
+        {
+            return static_cast<const Derived &>(*this);
+        }
+
+    };
+
     template<class T_, int Order_ = Traits<T_>::Order>
-    class MultiTensor : public Tensor<MultiTensor<T_>, Order_> {
+    class MultiTensor final : 
+        public Tensor<MultiTensor<T_>, Order_>,
+        public MultiTensorSpecificImpl<MultiTensor<T_>, Order_> {
     public:
         using T = T_;
         static const int Order = Order_;
+
+        using Traits = utopia::Traits<MultiTensor<T, Order>>;
         
-        using SizeType = typename Traits<MultiTensor>::SizeType;
-        using Scalar   = typename Traits<MultiTensor>::Scalar;
-        using MultiScalar   = typename Traits<MultiTensor>::MultiScalar;        
+        using SizeType    = typename Traits::SizeType;
+        using Scalar      = typename Traits::Scalar;
+        using MultiScalar = utopia::MultiTensor<Scalar, 0>;        
         
         using Super = utopia::Tensor<MultiTensor, Order_>;
         using Super::Super;
@@ -170,6 +265,17 @@ namespace utopia {
             }
         }
 
+        void axpy(
+            const Scalar &alpha,
+            const Scalar &x)
+        {
+            const Scalar offset = alpha * x;
+            const SizeType n = size();
+            for(SizeType i = 0; i < n; ++i) {
+                at(i) += offset;
+            }
+        }
+
         void dot(const MultiTensor &other, MultiScalar &result) const
         {
             const auto n = size();
@@ -199,12 +305,48 @@ namespace utopia {
             }
         }
 
+        template<class OtherT, int OtherOrder>
+        void multiply(const MultiTensor<OtherT, OtherOrder> &other, MultiTensor<OtherT, OtherOrder> &result) const
+        {
+            const auto n = size();
+            assert(n == other.size());
+
+            if(n != result.size()) {
+                result.resize(n);
+            }
+
+            for(SizeType i = 0; i < n; ++i) {
+                result[i] = at(i) * other.at(i);
+            }
+        }
+
         void scale(const Scalar &alpha)
         {
             const auto n = size();
             for(SizeType i = 0; i < n; ++i) {
                 at(i) *= alpha;
             }
+        }
+
+        template<class Op>
+        void transform(const Op &op)
+        {
+            const auto n = size();
+            for(SizeType i = 0; i < n; ++i) {
+                transform_aux(op, at(i));
+            }
+        }
+
+        template<class Op, class Derived, int TOrder>
+        static void transform_aux(const Op &op, Tensor<Derived, TOrder> &t)
+        {
+            t.derived().transform(op);
+        }
+
+        template<class Op>
+        static void transform_aux(const Op &op, Scalar &value)
+        {
+            value = op.apply(value);
         }
 
         inline SizeType size() const
@@ -246,6 +388,11 @@ namespace utopia {
             return this == &other;
             //if we move to views this is actually better
             //return &values_[0] == &other.values_[0];
+        }
+
+        inline static bool is_alias(const Number<Scalar> &other)
+        {
+            return false;
         }
 
         inline void describe() const

@@ -10,11 +10,10 @@ namespace utopia {
     //[optimized] provide a backend specific implementation by specializing the templa
 
     ///backend generic det for small matrices
-    template<class T, class Traits, int Backend>
-    class Eval<Determinant< Tensor<T, 2> >, Traits, Backend> {
+    template<class Matrix, int Backend = Traits<Matrix>::Backend>
+    class EvalDeterminant {
     public:
-        typedef utopia::Tensor<T, 2> T2;
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits<Matrix>::Scalar;
 
         inline static Scalar det_3(
             const Scalar m00,
@@ -34,22 +33,13 @@ namespace utopia {
                    m01 * m10 * m22  -
                    m02 * m11 * m20;
         }
-
-        template<typename Real>
-        inline static void apply(const Determinant<T2> &expr, Number<Real> &num)
+        
+        inline static Scalar apply(const Matrix &t)
         {
-            num = apply(expr);
-        }
-
-        inline static Scalar apply(const Determinant<T2> &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            auto &t = expr.expr().derived();
             auto s = size(t);
             assert(s.get(0) == s.get(1));
 
-            Read<T> r(t);
+            Read<Matrix> r(t);
             Scalar out;
 
             switch(s.get(0)) {
@@ -120,13 +110,32 @@ namespace utopia {
                 {
                     assert(false && "not implemented");
                     std::cerr << "det not implemented for matrices with n > 3" << std::endl;
-                    UTOPIA_TRACE_END(expr);
                     return -1;
                 }
             }
 
-            UTOPIA_TRACE_END(expr);
             return out;
+        }
+    };
+
+    template<class T, class Traits, int Backend>
+    class Eval<Determinant< Tensor<T, 2> >, Traits, Backend> {
+    public:
+        using T2 = utopia::Tensor<T, 2>;
+        using Scalar = typename Traits::Scalar;
+
+        template<typename Real>
+        inline static void apply(const Determinant<T2> &expr, Number<Real> &num)
+        {
+            num = apply(expr);
+        }
+
+        inline static Scalar apply(const Determinant<T2> &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+            const Scalar ret = EvalDeterminant<T>::apply(expr.expr().derived());
+            UTOPIA_TRACE_END(expr);
+            return ret;
         }
     };
 }

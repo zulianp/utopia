@@ -2,13 +2,10 @@
 #define UTOPIA_FORM_TENSOR_HPP
 
 #include "moonolith_expanding_array.hpp"
+#include "utopia_LocalFEForwardDeclarations.hpp"
 #include "utopia_MultiTensor.hpp"
 
-
 namespace utopia {
-
-    template<class T_, int Order>
-    class FormTensor;
 
     template<typename T>
     class BlasFormTensorTraits {

@@ -28,12 +28,18 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Scalar   = typename Traits::Scalar;
 
-        template<class T>
-        inline static void apply(const Expr &expr, FormTensor<T, 1> &result)
+        template<class T, int Order>
+        inline static void apply(const Expr &expr, FormTensor<T, Order> &result)
+        {
+            const auto &fe = *expr.expr().space_ptr();
+            eval_grad(fe, result);
+        }
+
+        template<class T1, class T2>
+        inline static void eval_grad(const FiniteElement<T1> &fe, FormTensor<T2, 1> &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            const auto &fe = *expr.expr().space_ptr();
             const auto &ctx = fe.ctx();
             const auto &space = fe.space();
             const SizeType id = space.subspace_id();
@@ -60,6 +66,41 @@ namespace utopia {
 
             UTOPIA_TRACE_END(expr);
         }   
+
+
+        template<class T1, class T2>
+        inline static void eval_grad(const FiniteElement<ProductFunctionSpace<T1>> &fe, FormTensor<T2, 2> &result)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            const auto &ctx = fe.ctx();
+            const auto &space = fe.space();
+            const SizeType id = space.subspace(0).subspace_id();
+            const auto &g = ctx.vector_fe()[id]->grad;
+
+            assert(!g.empty());
+
+            const SizeType n = g.size();
+            const SizeType n_qp = g[0].size();
+
+            if(n != result.size()) {
+                result.resize(n);
+            }
+
+            for(SizeType i = 0; i < n; ++i) {
+                if(n_qp != result[i].size()) {
+                    result[i].resize(n_qp);
+                }
+
+                for(SizeType k = 0; k < n_qp; ++k) {
+                    result[i][k] = g[i][k];
+                }
+            }
+          
+
+            UTOPIA_TRACE_END(expr);
+        }   
+
 
     };
 

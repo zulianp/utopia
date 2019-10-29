@@ -213,7 +213,7 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            auto &&alpha = expr.left().left();
+            const Scalar alpha = expr.left().left();
             auto &&left  = Eval<Left, Traits, Backend>::apply(expr.left().right());
             auto &&right = Eval<Right, Traits, Backend>::apply(expr.right());
 

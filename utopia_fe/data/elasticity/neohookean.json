@@ -1,6 +1,6 @@
 {
     "mesh": {
-        "type": "square",
+        "type": "cube",
         "order" : 1
     },
     "space": {
@@ -12,6 +12,10 @@
             },
             {
                 "name": "disp_y",
+                "order" : 1
+            },
+            {
+                "name": "disp_z",
                 "order" : 1
             }
         ],
