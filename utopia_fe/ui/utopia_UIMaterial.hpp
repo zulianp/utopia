@@ -6,6 +6,7 @@
 #include "utopia_LameeParameters.hpp"
 #include "utopia_LinearElasticity.hpp"
 #include "utopia_NeoHookean.hpp"
+#include "utopia_NewNeoHookean.hpp"
 #include "utopia_SaintVenantKirchoff.hpp"
 
 #include "utopia_ui.hpp"
@@ -38,6 +39,9 @@ namespace utopia {
             if(material == "NeoHookean") {
                 std::cout << "Using: NeoHookean" << std::endl;
                 material_ = std::make_shared<NeoHookean<FunctionSpace, Matrix, Vector>>(V_, params);
+            } else if(material == "NewNeoHookean") {
+                std::cout << "Using: NewNeoHookean" << std::endl;
+                material_ = std::make_shared<NewNeoHookean<FunctionSpace, Matrix, Vector>>(V_, params);
             } else if(material == "SaintVenantKirchoff") {
                 std::cout << "Using: SaintVenantKirchoff" << std::endl;
                 material_ = std::make_shared<SaintVenantKirchoff<FunctionSpace, Matrix, Vector>>(V_, params);

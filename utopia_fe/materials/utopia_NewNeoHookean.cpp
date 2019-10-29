@@ -14,6 +14,7 @@ namespace utopia {
     {
         using FE = utopia::FiniteElement<FunctionSpace>;
 
+        //FIXME
         // auto mu     = params_.var_mu();
         // auto lambda = params_.var_lambda();
 
@@ -79,6 +80,7 @@ namespace utopia {
     {
         using FE = utopia::FiniteElement<FunctionSpace>;
 
+        //FIXME
         // auto mu     = params_.var_mu();
         // auto lambda = params_.var_lambda();default_value_
         auto mu     = params_.var_mu().default_value_;

@@ -31,14 +31,16 @@ namespace utopia {
         template<class T, int Order>
         inline static void apply(const Expr &expr, FormTensor<T, Order> &result)
         {
+            UTOPIA_TRACE_BEGIN(expr);
             const auto &fe = *expr.expr().space_ptr();
             eval_grad(fe, result);
+            UTOPIA_TRACE_END(expr);
         }
 
         template<class T1, class T2>
         inline static void eval_grad(const FiniteElement<T1> &fe, FormTensor<T2, 1> &result)
         {
-            UTOPIA_TRACE_BEGIN(expr);
+            
 
             const auto &ctx = fe.ctx();
             const auto &space = fe.space();
@@ -64,15 +66,13 @@ namespace utopia {
                 }
             }
 
-            UTOPIA_TRACE_END(expr);
+            
         }   
 
 
         template<class T1, class T2>
         inline static void eval_grad(const FiniteElement<ProductFunctionSpace<T1>> &fe, FormTensor<T2, 2> &result)
         {
-            UTOPIA_TRACE_BEGIN(expr);
-
             const auto &ctx = fe.ctx();
             const auto &space = fe.space();
             const SizeType id = space.subspace(0).subspace_id();
@@ -96,9 +96,6 @@ namespace utopia {
                     result[i][k] = g[i][k];
                 }
             }
-          
-
-            UTOPIA_TRACE_END(expr);
         }   
 
 
