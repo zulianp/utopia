@@ -62,6 +62,11 @@ namespace utopia {
         using Super = utopia::Tensor<FormTensor, Order_>;
         using Super::Super;
 
+        inline std::string get_class() const override
+        {
+            return "Form" + Order2String<Order>::Value();
+        }
+
         FormTensor(FormTensor &&other) 
         : values_(std::move(other.values_))
         {}

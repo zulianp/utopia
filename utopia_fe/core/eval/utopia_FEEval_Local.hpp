@@ -162,6 +162,8 @@ namespace utopia {
 
         inline FE &fe() { return fe_; }
         inline const FE &fe() const { return fe_; }
+
+        inline std::string get_class() const override { return "Measure"; }
     private:
         FE &fe_;
     };
@@ -224,6 +226,9 @@ namespace utopia {
         inline const Right &right() const { return right_; }
         inline const MeasureT &measure() const { return measure_; }
 
+
+        inline std::string get_class() const override { return "Form2<" + left().get_class() + ", " + right().get_class() + ">"; }
+
     private:
         const MeasureT &measure_;
         UTOPIA_STORE_CONST(Left)  left_;
@@ -240,6 +245,8 @@ namespace utopia {
 
         inline const Expr &expr() const { return expr_; }
         inline const MeasureT &measure() const { return measure_; }
+
+        inline std::string get_class() const override { return "Form1<" + expr().get_class() + ">"; }
 
     private:
         const MeasureT &measure_;
@@ -307,9 +314,7 @@ namespace utopia {
 
             UTOPIA_TRACE_END(expr);
         }
-
     };
-
 
     template<class MeasureT, class Left, class Right, class Traits, int Backend>
     class Eval<Form<2, MeasureT, Left, Right>, Traits, Backend> {
@@ -354,7 +359,6 @@ namespace utopia {
 
     };
 
-
     template<class Vector, class Space, int FEBackendTag, class Traits, int Backend>
     class Eval<Interpolate<
                 Vector,
@@ -393,7 +397,6 @@ namespace utopia {
         }
 
     };
-
 
     template<class Vector, class Space, class Traits, int Backend>
     class Eval<Gradient<Interpolate<

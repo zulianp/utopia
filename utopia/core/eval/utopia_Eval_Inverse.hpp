@@ -13,12 +13,18 @@ namespace utopia {
         inline static bool apply(const Matrix &m, Matrix &result)
         {
             auto s = size(m);
+            auto n = s.get(0);
 
-            assert(s.get(0) == s.get(1));
-            assert(s.get(0) <= 3);
+            assert(n == s.get(1));
+            assert(n <= 3);
 
             const Scalar d =  det(m);
-            result = zeros(s);
+
+            if(result.rows() != n || result.cols() != n) {
+                result = zeros(s);
+            } else {
+                result.set(0.0);
+            }
 
             const bool failed = d == 0.;
 

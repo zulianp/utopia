@@ -211,8 +211,11 @@ namespace utopia {
         {
             this->rows_ = rows;
             this->cols_ = cols;
-            this->entries_.resize(rows_ * cols_);
 
+            std::size_t n = rows_ * cols_;
+            if(n == this->entries_.size()) return;
+
+            this->entries_.resize(n);
             UTOPIA_REPORT_ALLOC("BlasMatrix::resize(const SizeType, const SizeType)");
         }
 
@@ -220,7 +223,11 @@ namespace utopia {
         {
             this->rows_ = s.get(0);
             this->cols_ = s.get(1);
-            this->entries_.resize(rows_ * cols_);
+
+            std::size_t n = rows_ * cols_;
+            if(n == this->entries_.size()) return;
+
+            this->entries_.resize(n);
 
             UTOPIA_REPORT_ALLOC("BlasMatrix::resize(const Size &)");
         }

@@ -195,6 +195,12 @@ namespace utopia {
         using Super = utopia::Tensor<MultiTensor, Order_>;
         using Super::Super;
 
+        inline std::string get_class() const override
+        {
+            return "Multi" + Order2String<Order>::Value();
+        }
+
+
         MultiTensor(MultiTensor &&other) 
         : values_(std::move(other.values_))
         {}
