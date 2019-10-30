@@ -79,7 +79,7 @@ namespace utopia {
                     beta = (rescaling_ * (lambda  * log_J - mu));
 
                     for(SizeType i = 0; i < n_funs; ++i) {
-                        FG = F_inv_t * gu[i][q];
+                        FG = F_inv_t * transpose(gu[i][q]);
                         FGF = FG * F_inv_t;
                         alpha_gu = (rescaling_ * mu) * gu[i][q];
                         inner_Fg = inner(F_inv_t, gu[i][q]);
