@@ -140,12 +140,12 @@ namespace utopia {
                     log_J = std::log(J);
                     lambda_log_J = (rescaling_ * lambda) * log_J;
 
-                    for(SizeType i = 0; i < n_funs; ++i) {
-                        P = F - F_inv_t;
-                        P *= (rescaling_ * mu);
+                    P = F - F_inv_t;
+                    P *= (rescaling_ * mu);
+                    P += lambda_log_J * F_inv_t;
 
+                    for(SizeType i = 0; i < n_funs; ++i) {
                         //axpy with multi-scalar a
-                        P += lambda_log_J * F_inv_t;
                         const Scalar v = inner(P, gu[i][q]) * dx[q];
                         vec.add(i, v);
                     }
