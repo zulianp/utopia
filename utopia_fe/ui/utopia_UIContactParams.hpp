@@ -5,12 +5,16 @@
 #include "utopia_Contact.hpp"
 
 #include <vector>
+#include <iostream>
 
 namespace utopia {
 
     class UIContactParams final : public Configurable {
     public:
         void read(Input &is) override;
+        void describe(std::ostream &os = std::cout) const;
+
+        UIContactParams();
 
         ContactParams contact_params;
         std::vector<int> contact_surfaces;

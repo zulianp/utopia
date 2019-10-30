@@ -22,10 +22,6 @@ namespace utopia {
     {
         using FE = utopia::FiniteElement<FunctionSpace>;
 
-        //FIXME
-        // auto mu     = params_.var_mu();
-        // auto lambda = params_.var_lambda();
-
         //x element
         MultiScalard dx;
         FormMatrixd gu;
@@ -133,7 +129,6 @@ namespace utopia {
                 const SizeType n_funs = gu.size();
 
                 if(vec.size() != n_funs) { vec.resize(n_funs); }
-
 
                 vec.set(0.0);
                 

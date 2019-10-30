@@ -4,7 +4,7 @@
         "is-steady" : true,
         "outer-loop-tol" : 1e-4,
         "max-outer-loops" : 2,
-        "plot-gap": true,
+        "plot-gap": false,
         "discretization" : "new",
         "mesh": {
             "type": "file",
