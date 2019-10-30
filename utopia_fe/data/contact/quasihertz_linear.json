@@ -83,9 +83,7 @@
             "stabilization-mag": 0.00001,
             "parameters": {
                 "mu": 0.3,
-                "lambda": 0.3,
-                "E" : 100,
-                "comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3"
+                "lambda": 0.3
             }
         },
 
