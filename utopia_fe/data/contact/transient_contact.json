@@ -30,8 +30,9 @@
 
         "mesh": {
             "type": "file",
-            "*path"   : "../data/contact/pseudo-signorini.e",
+            "path"   : "../data/contact/pseudo-signorini.e",
             "path"   : "../data/contact/pseudo-signorini-refined.e",
+            "*path"   : "pseudo-signorini-refined.e",
             "refinements" : 0,
             "order" : 1
         },
