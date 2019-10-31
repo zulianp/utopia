@@ -51,14 +51,14 @@ RUN cd /moonolith_cloned/bin && \
 
 RUN cd /moonolith_cloned/bin && make -j && make install
 
-# compile moonolith (DEBUG)
+# compile moonolith (DEBUG) (skip because of Docker Hub time limit)
 
-RUN cd /moonolith_cloned && mkdir bin_debug
-RUN cd /moonolith_cloned/bin_debug && \
+# RUN cd /moonolith_cloned && mkdir bin_debug
+# RUN cd /moonolith_cloned/bin_debug && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=/par_moonolith_debug -DCMAKE_BUILD_TYPE=Debug \
 			 -DMPI_CXX_COMPILER=$MPI_DIR/bin/mpic++ -DMPI_C_COMPILER=$MPI_DIR/bin/mpicc -DMPI_FOUND=TRUE
 
-RUN cd /moonolith_cloned/bin_debug && make -j && make install
+# RUN cd /moonolith_cloned/bin_debug && make -j && make install
 
 ##########################################################################
 ##########################################################################
@@ -72,23 +72,24 @@ RUN cd /utopia_cloned/utopia_fe/bin && \
 RUN cd /utopia_cloned/utopia_fe/bin && make -j
 RUN cd /utopia_cloned/utopia_fe/bin && make install
 
-# compile utopia_fe (DEBUG) (skip because of Docker Hub time limit?)
+# compile utopia_fe (DEBUG) (skip because of Docker Hub time limit)
 
-RUN cd /utopia_cloned/utopia_fe && mkdir bin_debug
-RUN cd /utopia_cloned/utopia_fe/bin_debug && cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_fe_debug -DUTOPIA_DIR=/utopia_debug -DCMAKE_BUILD_TYPE=Debug -DMOONOLITH_DIR=/par_moonolith_debug
+# RUN cd /utopia_cloned/utopia_fe && mkdir bin_debug
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_fe_debug -DUTOPIA_DIR=/utopia_debug -DCMAKE_BUILD_TYPE=Debug -DMOONOLITH_DIR=/par_moonolith_debug
 
-RUN cd /utopia_cloned/utopia_fe/bin_debug && make -j
-RUN cd /utopia_cloned/utopia_fe/bin_debug && make install
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && make -j
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && make install
 
 ##########################################################################
 ##########################################################################
 
 # run tests
 
-# RUN echo 'UTOPIA TESTING' 											   > /utopia_test_out.txt
-# RUN cd /utopia_cloned/utopia/bin       && ./utopia_test -verbose -bench >> /utopia_test_out.txt
-# RUN echo 'UTOPIA TESTING (DEBUG)' 									  >> /utopia_test_out.txt
-# RUN cd /utopia_cloned/utopia/bin_debug && ./utopia_test -verbose -bench >> /utopia_test_out.txt
+RUN echo 'UTOPIA TESTING' 											   > /utopia_test_out.txt
+RUN cd /utopia_cloned/utopia/bin       && ./utopia_test -verbose -bench >> /utopia_test_out.txt
+
+RUN echo 'UTOPIA TESTING (DEBUG)' 									  >> /utopia_test_out.txt
+RUN cd /utopia_cloned/utopia/bin_debug && ./utopia_test -verbose -bench >> /utopia_test_out.txt
 
 # RUN echo 'UTOPIA_FE TESTING' 											   > /utopia_fe_test_out.txt
 # RUN cd /utopia_cloned/utopia_fe/bin       && ./utopia_fe_exec -test all >> /utopia_fe_test_out.txt

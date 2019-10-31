@@ -65,18 +65,17 @@ namespace utopia {
                     element.reinit(init_expr.derived());
                 }
 
+                V.dof_map().dof_indices(*e_it, dofs);
+                mat.resize(dofs.size(), dofs.size());
+                mat.set(0.0);
+
                 assembler(element, mat);
 
-                // if(element.ctx().has_assembled()) {
-                    V.dof_map().dof_indices(*e_it, dofs);
+                if(!disable_adaptivity) {
+                    Adaptivity::constrain_matrix(*e_it, dof_map, constraints, mat, dofs);
+                }
 
-                    if(!disable_adaptivity) {
-                        Adaptivity::constrain_matrix(*e_it, dof_map, constraints, mat, dofs);
-                    }
-
-
-                    add_matrix(mat, dofs, dofs, matrix);
-                // }
+                add_matrix(mat, dofs, dofs, matrix);
             }
         }
 
@@ -137,17 +136,17 @@ namespace utopia {
                     element.reinit(init_expr.derived());
                 }
 
+                V.dof_map().dof_indices(*e_it, dofs);
+                vec.resize(dofs.size());
+                vec.set(0.0);
+
                 assembler(element, vec);
+                    
+                if(!disable_adaptivity) {
+                    Adaptivity::constrain_vector(*e_it, dof_map, constraints, vec, dofs);
+                }
 
-                // if(element.ctx().has_assembled()) {
-                    V.dof_map().dof_indices(*e_it, dofs);
-
-                    if(!disable_adaptivity) {
-                        Adaptivity::constrain_vector(*e_it, dof_map, constraints, vec, dofs);
-                    }
-
-                    add_vector(vec, dofs, temp_vec);
-                // }
+                add_vector(vec, dofs, temp_vec);
             }
         }
 

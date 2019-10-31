@@ -46,6 +46,13 @@ ENV CPATH opt/petsc/include
 #############################################################################
 
 RUN git clone https://bitbucket.org/slepc/slepc slepc_cloned
+RUN cd slepc_cloned && git checkout maint
+
+# Dependencies for Arpack
+RUN apk add --no-cache \
+          autoconf automake libtool
+
+ENV F77=/opt/mpich/bin/mpif77
 RUN cd slepc_cloned && ./configure --prefix=/opt/slepc --download-arpack
 RUN cd slepc_cloned && \
     make && \

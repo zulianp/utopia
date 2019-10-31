@@ -51,9 +51,7 @@ namespace utopia {
 
         USparseMatrix H;
         UVector g;
-        // material.assemble_hessian_and_gradient(x, H, g);
-
-        material.stress(x, g);
+        material.assemble_hessian_and_gradient(x, H, g);
     }
 
 }
