@@ -82,8 +82,8 @@ RUN cd /utopia_cloned/utopia_fe/bin && ./utopia_fe_exec -test all
 
 # run tests
 
-RUN cd /utopia_cloned/utopia/bin && ./utopia_test -verbose -bench > /utopia_test_out.txt
-RUN cd /utopia_cloned/utopia_fe/bin_debug && ./utopia_fe_exec -test all > /utopia_fe_test_out.txt
+# RUN cd /utopia_cloned/utopia/bin && ./utopia_test -verbose -bench > /utopia_test_out.txt
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && ./utopia_fe_exec -test all > /utopia_fe_test_out.txt
 
 ##########################################################################
 ##########################################################################
