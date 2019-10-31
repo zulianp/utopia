@@ -53,7 +53,7 @@ namespace utopia {
         {
             const SizeType n_funs = grad_u.size();
 
-            const Scalar r_mu     = ((2. * rescaling) * mu);
+            const Scalar r_mu     = (rescaling * mu) * 0.5;
             const Scalar r_lambda = (rescaling * lambda);
 
             loop(dx.size(), [&](const SizeType &q) {
@@ -62,7 +62,7 @@ namespace utopia {
                 const Scalar r_lambda_dx = r_lambda * dx[q];
 
                 for(SizeType i = 0; i < n_funs; ++i) {
-                    strain[i] = 0.5 * ( transpose(grad_u[i][q]) + grad_u[i][q] );
+                    strain[i] = transpose(grad_u[i][q]) + grad_u[i][q];
                 }
 
                 for(SizeType i = 0; i < n_funs; ++i) {
@@ -70,7 +70,7 @@ namespace utopia {
 
                     //exploit symmetry
                     const Scalar v_ii = 
-                            r_mu_dx *     inner(strain[i] , strain[i]) +
+                            r_mu_dx     * inner(strain[i] , strain[i]) +
                             r_lambda_dx * inner(div_i, div_i);
 
                     mat.add(i, i, v_ii);

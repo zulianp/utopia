@@ -1,8 +1,8 @@
 {
     "mesh": {
         "type": "square",
-        "n-x" : 100,
-        "n-y" : 100,
+        "n-x" : 2,
+        "n-y" : 2,
         "order" : 1
     },
     "space": {
