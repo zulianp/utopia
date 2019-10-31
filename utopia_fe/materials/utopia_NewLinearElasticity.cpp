@@ -73,7 +73,10 @@ namespace utopia {
                             r_mu_dx *     inner(strain[i] , strain[i]) +
                             r_lambda_dx * inner(div_i, div_i);
 
+                    mat.add(i, i, v_ii);
+
                     for(SizeType j = i+1; j < n_funs; ++j) {
+                        
                         const Scalar v_ij = 
                             r_mu_dx     * inner(strain[i] , strain[j]) +
                             r_lambda_dx * inner(div_i, div_u[j][q]);

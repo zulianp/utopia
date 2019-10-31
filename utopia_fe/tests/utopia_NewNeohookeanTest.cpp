@@ -14,6 +14,8 @@
 #include "utopia_FEEval_MultiTensor.hpp"
 #include "utopia_libmesh_AssembleLocal.hpp"
 #include "utopia_NewNeoHookean.hpp"
+#include "utopia_NewLinearElasticity.hpp"
+#include "utopia_LinearElasticity.hpp"
 
 #include "utopia_libmesh.hpp"
 #include "libmesh/mesh_generation.h"
@@ -43,15 +45,29 @@ namespace utopia {
         //FIXME
         double lambda = 1.0, mu = 1.0, rescaling = 1.0;
 
-        //FIXME use ghost
+        //FIXME use ghosts
         UVector x = local_zeros(V[0].dof_map().n_local_dofs());
 
         LameeParameters params;
-        NewNeoHookean<ProductFunctionSpace<Space>, USparseMatrix, UVector> material(V, params);
+        NewNeoHookean<ProductFunctionSpace<Space>, USparseMatrix, UVector> neohookean(V, params);
 
         USparseMatrix H;
         UVector g;
-        material.assemble_hessian_and_gradient(x, H, g);
+        neohookean.assemble_hessian_and_gradient(x, H, g);
+
+        NewLinearElasticity<ProductFunctionSpace<Space>, USparseMatrix, UVector> new_linear(V, params);
+        USparseMatrix H_new_lin;
+        UVector g_new_lin;
+        new_linear.assemble_hessian_and_gradient(x, H_new_lin, g_new_lin);
+
+        utopia_test_assert(approxeq(H_new_lin, H));
+
+        LinearElasticity<ProductFunctionSpace<Space>, USparseMatrix, UVector> linear(V, params);
+        USparseMatrix H_lin;
+        UVector g_lin;
+        linear.assemble_hessian_and_gradient(x, H_lin, g_lin);
+
+        utopia_test_assert(approxeq(H_lin, H));
     }
 
 }

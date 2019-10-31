@@ -1,10 +1,12 @@
 {
     "mesh": {
-        "type": "cube",
+        "type": "square",
+        "n-x" : 100,
+        "n-y" : 100,
         "order" : 1
     },
     "space": {
-        "system-name": "contact_sol",
+        "system-name": "simple-square",
         "variables": [
             {
                 "name": "disp_x",
@@ -12,10 +14,6 @@
             },
             {
                 "name": "disp_y",
-                "order" : 1
-            },
-            {
-                "name": "disp_z",
                 "order" : 1
             }
         ],
