@@ -104,6 +104,112 @@ namespace utopia {
     //FIXME (specialize and move to libmesh backend)
     template<class Space, class Traits, int Backend>
     class Eval<
+        Divergence<
+            TrialFunction<
+                FiniteElement<Space>
+                >
+            >, Traits, Backend> {
+    public:
+
+        using Expr = Divergence<
+            TrialFunction<
+                FiniteElement<Space>
+                >
+            >;
+
+        using SizeType = typename Traits::SizeType;
+        using Scalar   = typename Traits::Scalar;
+
+        template<class T, int Order>
+        inline static void apply(const Expr &expr, FormTensor<T, Order> &result)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+            const auto &fe = *expr.expr().space_ptr();
+            eval_div(fe, result);
+            UTOPIA_TRACE_END(expr);
+        }
+
+        // template<class T1, class T2>
+        // inline static void eval_div(const FiniteElement<T1> &fe, FormTensor<T2, 0> &result)
+        // {
+            
+
+        //     const auto &ctx = fe.ctx();
+        //     const auto &space = fe.space();
+        //     const SizeType id = space.subspace_id();
+        //     const auto &g = ctx.grad(id);
+
+        //     assert(!g.empty());
+
+        //     const SizeType n = g.size();
+        //     const SizeType n_qp = g[0].size();
+
+        //     if(result.size() != n) {
+        //         result.resize(n);
+        //     }
+
+        //     for(SizeType i = 0; i < n; ++i) {
+        //         if(result[i].size() != n_qp) {
+        //             result[i].resize(n_qp);
+        //         }
+
+        //         for(SizeType k = 0; k < n_qp; ++k) {
+        //             result[i][k] = g[i][k];
+        //         }
+        //     }
+
+            
+        // }   
+
+
+        template<class SubSpace, class T2>
+        inline static void eval_div(const FiniteElement<ProductFunctionSpace<SubSpace>> &fe_in, FormTensor<T2, 0> &result)
+        {
+            const auto &ctx = fe_in.ctx();
+            const auto &space = fe_in.space();
+            const auto &sub_0 = space.subspace(0);
+            auto &fe_object = ctx.trial();
+            
+            assert(!fe_object.empty());
+            const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_dphi()[0].size();
+            const uint dim = space[0].mesh().spatial_dimension();
+
+            uint n_shape_functions = 0;
+            space.each([&fe_object, &n_shape_functions](const int, const SubSpace &subspace) {
+                n_shape_functions += fe_object[subspace.subspace_id()]->n_shape_functions();
+            });
+
+            if(result.size() != n_shape_functions) {
+                result.resize(n_shape_functions);
+            }
+
+            for(std::size_t i = 0; i < n_shape_functions; ++i) {
+                if(result[i].size() != n_quad_points) {
+                    result[i].resize(n_quad_points);
+                }
+
+                result[i].set(0.0);
+            }
+
+            for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+                int offset = 0;
+                space.each([&offset, &fe_object, &result, &space, qp, dim](const int sub_index, const SubSpace &s) {
+                    const auto &fe = fe_object[s.subspace_id()];
+                    const uint n_shape_i = fe->n_shape_functions();
+
+                    for(uint j = 0; j < n_shape_i; ++j, offset++) {
+                        const auto &grad = fe->get_dphi()[j][qp];
+                        result[offset][qp] = grad(sub_index);
+                    }
+                });
+            }
+        }   
+
+    };
+
+    //FIXME (specialize and move to libmesh backend)
+    template<class Space, class Traits, int Backend>
+    class Eval<
             TrialFunction<
                 FiniteElement<Space>
             >, Traits, Backend> {

@@ -94,14 +94,14 @@ namespace utopia {
     template<class Derived, int Order>
     class MultiTensorSpecificImpl {};
 
-    // template<class Derived>
-    // class MultiTensorSpecificImpl<Derived, 0> {
-    // public:
-    //     static const int Order = 0;
-    //     using Traits = utopia::Traits<Derived>;
+    template<class Derived>
+    class MultiTensorSpecificImpl<Derived, 0> {
+    public:
+        static const int Order = 0;
+        using Traits = utopia::Traits<Derived>;
 
     //     using SizeType     = typename Traits::SizeType;
-    //     using Scalar       = typename Traits::Scalar;
+        using Scalar       = typename Traits::Scalar;
 
     //     // void axpy(
     //     //     const Scalar &alpha,
@@ -116,17 +116,24 @@ namespace utopia {
     //     //     }
     //     // }
 
-    // private:
-    //     inline Derived &derived_()
-    //     {
-    //         return static_cast<Derived &>(*this);
-    //     }
+        void set(const Scalar &val)
+        {
+            auto &d = derived_();
+            const SizeType n = d.size();
+            for(SizeType i = 0; i < n; ++i) { d.at(i) = val; } 
+        }
 
-    //     inline const Derived &derived_() const
-    //     {
-    //         return static_cast<const Derived &>(*this);
-    //     }
-    // };
+    private:
+        inline Derived &derived_()
+        {
+            return static_cast<Derived &>(*this);
+        }
+
+        inline const Derived &derived_() const
+        {
+            return static_cast<const Derived &>(*this);
+        }
+    };
 
     template<class Derived>
     class MultiTensorSpecificImpl<Derived, 2> {
