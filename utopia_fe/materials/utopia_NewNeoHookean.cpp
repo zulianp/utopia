@@ -63,9 +63,13 @@ namespace utopia {
                     inner_Fg = inner(F_inv_t, gu[i][q]);
                     stress_lin = alpha_gu - beta * FGF + lambda * (inner_Fg * F_inv_t);
 
-                    for(SizeType j = 0; j < n_funs; ++j) {
+                    //exploit symmetry
+                    mat.add(i, i, inner(stress_lin, gu[i][q]) * dx[q]);
+
+                    for(SizeType j = i+1; j < n_funs; ++j) {
                         const Scalar v = inner(stress_lin, gu[j][q]) * dx[q];
                         mat.add(i, j, v);
+                        mat.add(j, i, v);
                     }
                 }
             });
