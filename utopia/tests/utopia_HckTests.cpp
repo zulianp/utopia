@@ -911,7 +911,7 @@ namespace utopia
     void hck()
     {
 #ifdef WITH_PETSC
-        auto n_levels    = 3;
+        auto n_levels    = 2;
 
         auto coarse_dofs = 10;
         auto verbose     = false;
