@@ -551,7 +551,26 @@ namespace utopia {
                 }
 
             }
+        }
 
+        //(*this) = transpose(*this) + other
+        inline void transpose_add(const BlasMatrix &other)
+        {
+            if(is_alias(other)) {
+                for(SizeType r = 0; r < rows_; ++r) {
+                    add(r, r, get(r, r));
+
+                    for(SizeType c = r+1; c < cols_; ++c) {
+                        auto v = get(r, c) + get(c, r);
+                        set(r, c, v);
+                        set(c, r, v);
+                    }
+                }
+
+            } else {
+                this->transpose(*this);
+                this->axpy(1.0, other);
+            }
         }
 
         inline void transpose(BlasMatrix &C) const override {
@@ -576,8 +595,8 @@ namespace utopia {
             } else {
                 C.resize(cols_, rows_);
 
-                for(SizeType i = 0; i < rows_; ++i) {
-                    for(SizeType j = 0; j < cols_; ++j) {
+                for(SizeType i = 0; i < cols_; ++i) {
+                    for(SizeType j = 0; j < rows_; ++j) {
                         C.set(i, j, get(j, i));
                     }
                 }

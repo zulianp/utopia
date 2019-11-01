@@ -327,29 +327,66 @@ namespace utopia {
         utopia_test_assert(n_vals == 3 * 3);
     }
 
-    // void blas_pgs_test()
-    // {
-    //     int n = 3;
-    //     BlasMatrixd A = zeros(n, n);
+    void blas_pgs_test()
+    {
+        int n = 3;
+        BlasMatrixd A = zeros(n, n);
 
-    //     {
-    //         Write<BlasMatrixd> w_A(A);
-    //         A.set(0, 0, 1);
-    //         A.set(1, 1, 1);
-    //         A.set(2, 2, 1);
-    //     }
+        {
+            Write<BlasMatrixd> w_A(A);
+            A.set(0, 0, 1);
+            A.set(1, 1, 1);
+            A.set(2, 2, 1);
+        }
 
-    //     BlasVectord rhs = values(n, 2.);
-    //     BlasVectord x   = zeros(n);
+        BlasVectord rhs = values(n, 2.);
+        BlasVectord x   = zeros(n);
 
-    //     ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
-    //     pgs.solve(A, rhs, x);
-    // }
+        ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
+        pgs.solve(A, rhs, x);
+    }
+
+    void test_transpose_add()
+    {
+        int n = 3, m = 4;
+        BlasMatrixd A = zeros(n, n);
+
+        {
+            Write<BlasMatrixd> w_A(A);
+            A.set(0, 0, 1);
+            A.set(0, 1, 1);
+            A.set(0, 2, 1);
+        }
+
+        BlasMatrixd result = zeros(n, n);
+
+        UTOPIA_NO_ALLOC_BEGIN("transpose_add_1");
+        result = A + transpose(A);
+        result += transpose(result);
+        UTOPIA_NO_ALLOC_END();
+
+        BlasMatrixd B = zeros(n, m);
+        BlasMatrixd C = zeros(m, n);
+
+        {
+            Write<BlasMatrixd> w_B(B), w_C(C);
+            B.set(0, 0, 1.0);
+            C.set(2, 0, 2.0);
+        }
+
+        UTOPIA_NO_ALLOC_BEGIN("transpose_add_2");
+        B += transpose(C);
+        UTOPIA_NO_ALLOC_END();
+
+        // UTOPIA_NO_ALLOC_BEGIN("transpose_add_3");
+        B = transpose(B) + C;
+        // UTOPIA_NO_ALLOC_END();
+    }
 
 
 
     static void blas() {
-        // UTOPIA_RUN_TEST(blas_pgs_test);
+        UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
         UTOPIA_RUN_TEST(blas_row_view_test);
         UTOPIA_RUN_TEST(blas_test);
@@ -362,6 +399,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(blas_norm_test);
         UTOPIA_RUN_TEST(blas_composite_test);
         UTOPIA_RUN_TEST(blas_pow_test);
+        UTOPIA_RUN_TEST(test_transpose_add);
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(blas);

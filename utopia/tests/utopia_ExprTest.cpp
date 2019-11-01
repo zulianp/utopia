@@ -9,9 +9,6 @@
 
 namespace utopia {
 
-
-   
-
     template<typename Matrix, typename Vector>
     class ExpressionTests
     {

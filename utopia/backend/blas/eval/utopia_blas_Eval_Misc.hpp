@@ -27,8 +27,7 @@ namespace utopia {
 	        	if(result.is_alias(right)) {
 	        		result.add_transpose(result);
 	        	} else {
-	            	result.transpose(result);
-	            	result.axpy(1.0, right);
+	            	result.transpose_add(right);
 	            }
 
 	        } else {
@@ -54,6 +53,33 @@ namespace utopia {
 	                result.set(r, c, left.get(c, r) + right.get(r, c));
 	            }
 	        }
+	    }
+
+	};
+
+	template<class T, class Traits>
+	class Eval< Binary<T, Transposed<T>, Plus>, Traits, utopia::BLAS > {
+	public:
+	    using Expr = utopia::Binary<T, Transposed<T>, Plus>;
+	    using Result = EXPR_TYPE(Traits, Expr);
+
+	    inline static void apply(const Expr &expr, Result &result)
+	    {
+	        UTOPIA_TRACE_BEGIN(expr);
+
+	        auto &&left  = Eval<T, Traits>::apply(expr.left());
+	        auto &&right = Eval<T, Traits>::apply(expr.right().expr());
+
+	        if(result.is_alias(left)) {
+	            result.add_transpose(right);
+	        } else if(result.is_alias(right)) {
+	            result.transpose_add(left);
+	        } else {
+	            result.construct( left );
+	            result.add_transpose(left);
+	        }
+
+	        UTOPIA_TRACE_END(expr);
 	    }
 
 	};
