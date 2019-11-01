@@ -1,5 +1,6 @@
 #include "utopia_NewLinearElasticity.hpp"
 
+#include "utopia_blas_Eval_Misc.hpp"
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 
@@ -20,7 +21,9 @@
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_AssembleLocal.hpp"
 
+
 namespace utopia {
+
 
     template<class FE>
     class LocalLinearElasticity final : public LocalMaterial<FE> {

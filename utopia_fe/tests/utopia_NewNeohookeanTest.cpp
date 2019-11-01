@@ -60,14 +60,14 @@ namespace utopia {
         UVector g_new_lin;
         new_linear.assemble_hessian_and_gradient(x, H_new_lin, g_new_lin);
 
-        assert(approxeq(H_new_lin, H));
+        utopia_test_assert(approxeq(H_new_lin, H));
 
-        LinearElasticity<ProductFunctionSpace<Space>, USparseMatrix, UVector> linear(V, params);
-        USparseMatrix H_lin;
-        UVector g_lin;
-        linear.assemble_hessian_and_gradient(x, H_lin, g_lin);
+        // LinearElasticity<ProductFunctionSpace<Space>, USparseMatrix, UVector> linear(V, params);
+        // USparseMatrix H_lin;
+        // UVector g_lin;
+        // linear.assemble_hessian_and_gradient(x, H_lin, g_lin);
 
-        assert(approxeq(H_lin, H));
+        // assert(approxeq(H_lin, H));
     }
 
 }
