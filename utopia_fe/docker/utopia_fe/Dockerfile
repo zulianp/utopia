@@ -55,8 +55,8 @@ RUN cd /moonolith_cloned/bin && make -j && make install
 
 # RUN cd /moonolith_cloned && mkdir bin_debug
 # RUN cd /moonolith_cloned/bin_debug && \
-	cmake .. -DCMAKE_INSTALL_PREFIX=/par_moonolith_debug -DCMAKE_BUILD_TYPE=Debug \
-			 -DMPI_CXX_COMPILER=$MPI_DIR/bin/mpic++ -DMPI_C_COMPILER=$MPI_DIR/bin/mpicc -DMPI_FOUND=TRUE
+#	cmake .. -DCMAKE_INSTALL_PREFIX=/par_moonolith_debug -DCMAKE_BUILD_TYPE=Debug \
+#			 -DMPI_CXX_COMPILER=$MPI_DIR/bin/mpic++ -DMPI_C_COMPILER=$MPI_DIR/bin/mpicc -DMPI_FOUND=TRUE
 
 # RUN cd /moonolith_cloned/bin_debug && make -j && make install
 
