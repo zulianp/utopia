@@ -23,8 +23,14 @@ namespace utopia {
 	        assert(left.cols() == right.rows());
 
 	        if(result.is_alias(left)) {
-	            Result temp = left;
-	            apply_aux(temp, right, result);
+	        	
+	        	if(result.is_alias(right)) {
+	        		result.add_transpose(result);
+	        	} else {
+	            	result.transpose(result);
+	            	result.axpy(1.0, right);
+	            }
+
 	        } else {
 	            apply_aux(left, right, result);
 	        } 
@@ -69,11 +75,7 @@ namespace utopia {
 			const auto rows = left.rows();
 			const auto cols = left.cols();
 
-			for(SizeType r = 0; r < rows; ++r) {
-			    for(SizeType c = 0; c < cols; ++c) {
-			        left.set(r, c, right.get(c, r) + left.get(r, c));
-			    }
-			}
+			left.add_transpose(right);
 
 			UTOPIA_TRACE_END(expr);
 		}
