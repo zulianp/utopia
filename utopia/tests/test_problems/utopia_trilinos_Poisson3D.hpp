@@ -246,12 +246,22 @@ namespace utopia
         void assemble_element_matrices()
         {
             Kokkos::parallel_for(
-                "Poisson::init_mesh",
+                "Poisson::assemble_element_matrices",
                 TeamPolicy(n_elements_, Kokkos::AUTO),
                 KOKKOS_LAMBDA(const MemberType &team_member) {
                     const SizeType e_id = team_member.league_rank();
                     DeviceMatrix mat(Kokkos::subview(element_matrix_, e_id, Kokkos::ALL(), Kokkos::ALL()));
                     mat.set(0.0);
+
+                    Kokkos::parallel_for(
+                        Kokkos::TeamThreadRange(team_member, NDofs), [&] (const SizeType i) {
+                            //TODO
+                            for(SizeType j = i+1; j < NDofs; ++j) {
+                                const Scalar v = 0.0;
+                                mat.add(i, j, v);
+                            }
+
+                    });
                 }
             );
         }
