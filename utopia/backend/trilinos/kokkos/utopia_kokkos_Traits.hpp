@@ -14,11 +14,14 @@ namespace utopia {
 
         using Scalar   = Scalar_;
         using SizeType = utopia::TpetraSizeType;
-        // using Matrix   = utopia::TpetraMatrix;
-        // using SparseMatrix = utopia::TpetraMatrix;
+
 
         using KokkosView1 = Kokkos::View<Scalar *>;
         using Vector      = utopia::VectorView<KokkosView1>;
+
+
+        using KokkosView2 = Kokkos::View<Scalar **>;
+        using Matrix      = utopia::MatrixView<KokkosView2>;
 
         //FIXME use Kokkos compatible wrapper
         using IndexSet    = utopia::TpetraIndexSet;
@@ -39,7 +42,11 @@ namespace utopia {
     template<typename Scalar>
     using DefaultVectorView = utopia::VectorView<Kokkos::View<Scalar *>>;
 
+    template<typename Scalar>
+    using DefaultMatrixView = utopia::MatrixView<Kokkos::View<Scalar **>>;
+
     UTOPIA_MAKE_TRAITS_TPL_1(DefaultVectorView, KokkosTraits, 1);
+    UTOPIA_MAKE_TRAITS_TPL_1(DefaultMatrixView, KokkosTraits, 1);
 }
 
 #endif //UTOPIA_KOKKOS_TRAITS_HPP

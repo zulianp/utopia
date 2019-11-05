@@ -110,6 +110,11 @@ namespace utopia {
             }
         }
 
+        UTOPIA_INLINE_FUNCTION void wrap(const KokkosView &view)
+        {
+            view_ = view;
+        }
+
     private:
         KokkosView view_;
 

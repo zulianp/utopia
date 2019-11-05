@@ -8,6 +8,7 @@
 #include "utopia_Core.hpp"
 
 #include "utopia_kokkos_VectorView.hpp"
+#include "utopia_kokkos_MatrixView.hpp"
 #include "utopia_kokkos_Traits.hpp"
 
 #include <cmath>
@@ -16,9 +17,13 @@ namespace utopia {
 
     static void kokkos_vector_view()
     {
-        using ViewType = Kokkos::View<double *>;
+        using ViewType  = Kokkos::View<double *>;
+        using ViewType2 = Kokkos::View<double **>;
 
+        //kokkos view
         ViewType kokkos_x("x", 10);
+
+        //utopia view wrapper
         VectorView<ViewType> x(kokkos_x);
         x.set(1.0);
         x.axpy(2., x);
@@ -27,13 +32,53 @@ namespace utopia {
         x *= 2.0;
 
         const double x_dot_x = dot(x, x);
+        // disp(x_dot_x);
 
-        disp(x_dot_x);
+        const std::size_t n = 2;
+
+        ViewType2 kokkos_x2("x2", n, 10);
+        Kokkos::parallel_for(n, UTOPIA_LAMBDA(const int i ) {
+            VectorView<ViewType> x2(Kokkos::subview(kokkos_x2, i, Kokkos::ALL()));
+            x2.set(i);
+        });
+
+        // for(SizeType i = 0; i < n; ++i) {
+        //     VectorView<ViewType> x2(Kokkos::subview(kokkos_x2, i, Kokkos::ALL()));
+        //     x2.describe();
+        // }
+    }
+
+    static void kokkos_matrix_view()
+    {
+        using ViewType  = Kokkos::View<double **>;
+        using ViewType2 = Kokkos::View<double ***>;
+
+        //kokkos view
+        ViewType kokkos_A("A", 4, 4);
+        MatrixView<ViewType> A(kokkos_A);
+
+        A.set(1.0);
+        A += 0.5 * A;
+
+        std::size_t n = 2;        
+        ViewType2 kokkos_A2("A2", n, 4, 4);
+
+        Kokkos::parallel_for(n, UTOPIA_LAMBDA(const int i ) {
+            MatrixView<ViewType> A2(Kokkos::subview(kokkos_A2, i, Kokkos::ALL(), Kokkos::ALL()));
+            A2.set(i);
+            A2 += 0.5 * A2;
+        });
+
+        for(SizeType i = 0; i < n; ++i) {
+            MatrixView<ViewType> A2(Kokkos::subview(kokkos_A2, i, Kokkos::ALL(), Kokkos::ALL()));
+            A2.describe();
+        }
     }
 
     static void kokkos_view()
     {
         UTOPIA_RUN_TEST(kokkos_vector_view);
+        UTOPIA_RUN_TEST(kokkos_matrix_view);
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(kokkos_view);
