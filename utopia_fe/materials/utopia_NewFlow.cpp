@@ -32,7 +32,7 @@ namespace utopia {
 	}
 
 	template<class FE>
-	class LocalFlow final : LocalMaterial<FE> {
+	class LocalFlow final : public LocalMaterial<FE> {
 	public:
 		using Scalar   = typename Traits<FE>::Scalar;
 		// using SizeType = typename Traits<FE>::SizeType;

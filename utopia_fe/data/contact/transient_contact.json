@@ -33,7 +33,7 @@
             "path"   : "../data/contact/pseudo-signorini.e",
             "path"   : "../data/contact/pseudo-signorini-refined.e",
             "*path"   : "pseudo-signorini-refined.e",
-            "refinements" : 0,
+            "refinements" :2,
             "order" : 1
         },
 

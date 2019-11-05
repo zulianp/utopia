@@ -342,5 +342,4 @@ namespace utopia {
     }   
 
     template class GradientRecovery<USparseMatrix, UVector>;
-
 }
