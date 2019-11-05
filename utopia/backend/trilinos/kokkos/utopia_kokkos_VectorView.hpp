@@ -76,7 +76,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION void set(const SizeType &i, const Scalar &value)
         {
-            return view_(i) = value;
+            view_(i) = value;
         }
 
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)

@@ -10,6 +10,7 @@
 #include "utopia_kokkos_VectorView.hpp"
 #include "utopia_kokkos_MatrixView.hpp"
 #include "utopia_kokkos_Traits.hpp"
+#include "test_problems/utopia_trilinos_Poisson3D.hpp"
 
 #include <cmath>
 
@@ -34,7 +35,7 @@ namespace utopia {
         const double x_dot_x = dot(x, x);
         // disp(x_dot_x);
 
-        const std::size_t n = 2;
+        const SizeType n = 2;
 
         ViewType2 kokkos_x2("x2", n, 10);
         Kokkos::parallel_for(n, UTOPIA_LAMBDA(const int i ) {
@@ -60,7 +61,7 @@ namespace utopia {
         A.set(1.0);
         A += 0.5 * A;
 
-        std::size_t n = 2;        
+        SizeType n = 2;        
         ViewType2 kokkos_A2("A2", n, 4, 4);
 
         Kokkos::parallel_for(n, UTOPIA_LAMBDA(const int i ) {
@@ -75,10 +76,20 @@ namespace utopia {
         }
     }
 
+    static void kokkos_poisson_3D()
+    {
+        using VectorViewT = utopia::VectorView<Kokkos::View<double *>>;
+        using MatrixViewT = utopia::MatrixView<Kokkos::View<double **>>;
+
+        SizeType n = 200;
+        Poisson<TpetraMatrix, TpetraVector> poisson(n);
+    }
+
     static void kokkos_view()
     {
         UTOPIA_RUN_TEST(kokkos_vector_view);
         UTOPIA_RUN_TEST(kokkos_matrix_view);
+        UTOPIA_RUN_TEST(kokkos_poisson_3D);
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(kokkos_view);

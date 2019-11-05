@@ -46,7 +46,7 @@ namespace utopia {
     using DefaultMatrixView = utopia::MatrixView<Kokkos::View<Scalar **>>;
 
     UTOPIA_MAKE_TRAITS_TPL_1(DefaultVectorView, KokkosTraits, 1);
-    UTOPIA_MAKE_TRAITS_TPL_1(DefaultMatrixView, KokkosTraits, 1);
+    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(DefaultMatrixView, KokkosTraits, 2);
 }
 
 #endif //UTOPIA_KOKKOS_TRAITS_HPP

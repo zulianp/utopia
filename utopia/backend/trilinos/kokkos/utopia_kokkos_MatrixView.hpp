@@ -1,5 +1,5 @@
-#ifndef UTOPIA_KOKKOS_MATRI_VIEW_HPP
-#define UTOPIA_KOKKOS_MATRI_VIEW_HPP
+#ifndef UTOPIA_KOKKOS_MATRIX_VIEW_HPP
+#define UTOPIA_KOKKOS_MATRIX_VIEW_HPP
 
 #include "utopia_Tensor.hpp"
 #include "utopia_kokkos_Base.hpp"
@@ -9,6 +9,8 @@
 #include <KokkosBlas1_fill.hpp>
 #include <KokkosBlas1_dot.hpp>
 #include <KokkosBlas1_scal.hpp>
+#include <KokkosBlas3_gemm.hpp>
+#include <Kokkos_Core.hpp>
 
 namespace utopia {
 
@@ -18,6 +20,10 @@ namespace utopia {
         using KokkosView = KokkosView2D_;
         using Scalar = typename KokkosView::value_type;
         using SizeType = std::size_t;
+        
+        //FIXME
+        typedef Kokkos::TeamPolicy<>               TeamPolicy;
+        typedef Kokkos::TeamPolicy<>::member_type  MemberType;
 
         using Super = utopia::Tensor<MatrixView, 2>;
         using Super::Super;
@@ -47,10 +53,18 @@ namespace utopia {
             UTOPIA_DEVICE_ASSERT(rows() == other.rows());
             UTOPIA_DEVICE_ASSERT(cols() == other.cols());
 
-            UTOPIA_DEVICE_ASSERT(false && "IMPLEMENT ME");
-            // Kokkos::parallel_for("MatrixView::assign", view_.size(), KOKKOS_LAMBDA (const int& i) {
-            //     view_(i) = other.view_(i);
-            // });
+            const SizeType r = rows();
+            const SizeType c = cols();
+
+            Kokkos::parallel_for(
+                "MatrixView::assign",
+                TeamPolicy(r, Kokkos::AUTO),
+                KOKKOS_LAMBDA(const MemberType &team_member) {
+                    const int i = team_member.league_rank();
+                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, c), [&] (const int j) {
+                    view_(i, j) = other.view_(i, j);
+                });
+            });
         }
 
         UTOPIA_FUNCTION void assign(MatrixView &&other) override
@@ -83,7 +97,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION void set(const SizeType &i, const SizeType &j, const Scalar &value)
         {
-            return view_(i, j) = value;
+            view_(i, j) = value;
         }
 
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)
@@ -99,6 +113,13 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Scalar dot(const MatrixView &other) const
         {
             return KokkosBlas::dot(view_, other.view_);
+        }
+
+        UTOPIA_INLINE_FUNCTION void multiply(const MatrixView &right, MatrixView &result) const
+        {
+            assert(!result.is_alias(right));
+            assert(!is_alias(result));
+            KokkosBlas::gemm("N", "N", 1.0, view_, right.view_, 0.0, result.view_);
         }
 
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)
@@ -128,6 +149,13 @@ namespace utopia {
             view_ = view;
         }
 
+        inline bool is_alias(const 
+
+            MatrixView &other) const
+        {
+            return &(view_(0, 0)) == &(other.view_(0, 0));
+        }
+
     private:
         KokkosView view_;
 
@@ -138,4 +166,4 @@ namespace utopia {
 
 }
 
-#endif //UTOPIA_KOKKOS_MATRI_VIEW_HPP
+#endif //UTOPIA_KOKKOS_MATRIX_VIEW_HPP

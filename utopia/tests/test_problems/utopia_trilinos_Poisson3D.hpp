@@ -1,0 +1,301 @@
+#include "utopia_Base.hpp"
+#include "utopia_Poisson3D.hpp"
+
+#ifdef  WITH_TRILINOS
+
+namespace utopia
+{
+    template<typename Matrix, typename Vector, int Backend = Traits<Vector>::Backend>
+    class Poisson {};
+
+    template<typename Matrix, typename Vector>
+    class Poisson<Matrix, Vector, TRILINOS> final :
+        virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
+        virtual public ConstrainedExtendedTestFunction<Matrix, Vector> {
+
+    public:
+        static const int Dim      = 2;
+        static const int NDofs    = 4;
+        static const int NQPoints = 6;
+
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+
+        //FIXME
+        typedef Kokkos::TeamPolicy<>               TeamPolicy;
+        typedef Kokkos::TeamPolicy<>::member_type  MemberType;
+
+        //FIXME
+        using DeviceMatrix      = utopia::MatrixView<Kokkos::View<Scalar **>>;
+        using DeviceVector      = utopia::VectorView<Kokkos::View<Scalar *>>;
+
+        using DofView           = Kokkos::View<SizeType **>;
+        using PointView         = Kokkos::View<Scalar **>;
+        using JacobianDeterminantView = Kokkos::View<Scalar *>;
+        using JacobianView      = Kokkos::View<Scalar ***>;
+        using GradView          = Kokkos::View<Scalar ****>;
+        using ElementMatrixView = Kokkos::View<Scalar ***>;
+
+        //reference element
+        using RefFunView   = Kokkos::DualView<Scalar **>;
+        using RefGradView  = Kokkos::DualView<Scalar ***>;
+        using QPointView   = Kokkos::DualView<Scalar **>;
+        using QWeightView  = Kokkos::DualView<Scalar *>;
+
+        static SizeType compute_n_elements(const SizeType &n)
+        {
+            SizeType ret = n;
+            for(int i = 1; i < Dim; ++i) {
+                ret *= n;
+            }
+
+            return ret;
+        }
+
+        static SizeType compute_n_points(const SizeType &n)
+        {
+            SizeType ret = n + 1;
+            for(int i = 1; i < Dim; ++i) {
+                ret *= (n + 1);
+            }
+
+            return ret;
+        }
+
+        Poisson(const SizeType &n) :
+        n_(n),
+        n_elements_(compute_n_elements(n)),
+        n_points_(compute_n_points(n)),
+        dof_("dof", n_elements_, NDofs),
+        point_("point", n_points_, Dim),
+        jacobian_("jacobian", n_elements_, Dim, Dim),
+        jacobian_inverse_("jacobian_inverse", n_elements_, Dim, Dim),
+        jacobian_determinant_("jacobian_determinant", n_elements_),
+        grad_("grad", n_elements_, NQPoints, Dim, Dim),
+        element_matrix_("mat", n_elements_, NDofs, NDofs),
+        //reference element
+        ref_fun_("ref_fun", NQPoints, NDofs),
+        ref_grad_("ref_grad", NQPoints, Dim, Dim),
+        q_points_("q_points", NQPoints, Dim),
+        q_weights_("q_weights", NQPoints)
+        {
+            init_mesh();
+        }
+
+        ~Poisson()
+        {}
+
+        void get_A_rhs(Matrix &A, Vector &rhs) const
+        {
+
+        }
+
+        bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        {
+
+            return false;
+        }
+
+        bool hessian(const Vector & /*x*/, Matrix &hessian) const override
+        {
+            // YES, wrap is more effiicient, but we do not want to own matrix ....
+            // as RMTR, needs to modify hessian ...
+            // wrap(snes_->jacobian, hessian);
+
+            return false;
+        }
+
+        bool value(const Vector &x, Scalar &result) const override
+        {
+
+            return false;
+        }
+
+        Vector initial_guess() const override
+        {
+            return initial_guess_;
+        }
+
+        const Vector &exact_sol() const override
+        {
+            return exact_sol_;
+        }
+
+        Scalar min_function_value() const override
+        {
+            return -1.013634375000014e+01;
+        }
+
+        std::string name() const override
+        {
+            return "Poisson_Kokkos";
+        }
+
+        SizeType dim() const override
+        {
+            return n_*n_*n_;
+        }
+
+        bool exact_sol_known() const override
+        {
+            return true;
+        }
+
+        bool parallel() const override
+        {
+            return true;
+        }
+
+        bool upper_bound(Vector &ub) const override
+        {
+            assert(false);
+            return true;
+        }
+
+        bool lower_bound(Vector &lb) const override
+        {
+            assert(false);
+            return true;
+        }
+
+        bool has_upper_bound() const override
+        {
+            return false;
+        }
+
+        bool has_lower_bound() const override
+        {
+            return false;
+        }
+
+    private:
+        SizeType n_;
+        SizeType n_elements_;
+        SizeType n_points_;
+        Vector exact_sol_, initial_guess_;
+
+        DofView dof_;
+        PointView point_;
+
+        JacobianView jacobian_, jacobian_inverse_;
+        JacobianDeterminantView jacobian_determinant_;
+        GradView grad_;
+
+        ElementMatrixView element_matrix_;
+
+        //reference element
+        RefFunView ref_fun_;
+        RefGradView ref_grad_;
+        QPointView  q_points_;
+        QWeightView q_weights_;
+
+        void init_q_rule()
+        {
+            auto host_q_points  = q_points_.view_host();
+            auto host_q_weights = q_weights_.view_host();
+            auto host_fun       = ref_fun_.view_host();
+            auto host_grad      = ref_grad_.view_host();
+
+            host_q_points(0, 0) = 0.5; 
+            host_q_points(0, 1) = 0.5;
+            host_q_points(1, 0) = 0.5; 
+            host_q_points(1, 1) = 0.0;
+            host_q_points(2, 0) = 0.0; 
+            host_q_points(2, 1) = 0.5;
+            host_q_points(3, 0) = 1.0/6.0; 
+            host_q_points(3, 1) = 1.0/6.0;
+            host_q_points(4, 0) = 1.0/6.0; 
+            host_q_points(4, 1) = 2.0/3.0;
+            host_q_points(5, 0) = 2.0/3.0; 
+            host_q_points(5, 1) = 1.0/6.0;
+
+            host_q_weights(0) = 1.0/30.0;
+            host_q_weights(1) = 1.0/30.0;
+            host_q_weights(2) = 1.0/30.0;
+            host_q_weights(3) = 0.3;
+            host_q_weights(4) = 0.3;
+            host_q_weights(5) = 0.3;
+
+            for(SizeType i = 0; i < NQPoints; ++i) {
+                const Scalar x = host_q_points(i, 0); 
+                const Scalar y = host_q_points(i, 1);
+                
+                //fun 
+                host_fun(i, 0) = (1 - x) * (1 - y);
+                host_fun(i, 1) = x * (1 - y);
+                host_fun(i, 2) = x*y;
+                host_fun(i, 3) = (1 - x) * y;
+
+                //grad 
+                host_grad(i, 0, 0) = -(1 - y);
+                host_grad(i, 0, 1) = -(1 - x);
+
+                host_grad(i, 1, 0) = (1 - y);
+                host_grad(i, 1, 1) = 0.0;
+
+                host_grad(i, 2, 0) = y;
+                host_grad(i, 2, 1) = x;
+
+                host_grad(i, 3, 0) = 0.0;
+                host_grad(i, 3, 1) = (1 - x);
+            }
+
+            //FIXME synch with device?
+        }
+
+        void init_mesh()
+        {
+            init_q_rule();
+
+            auto device_q_points  = q_points_.view_device();
+            auto device_q_weights = q_weights_.view_device();
+            auto device_fun       = ref_fun_.view_device();
+            auto device_grad      = ref_grad_.view_host();
+
+            const Scalar h = 1./n_;
+            Kokkos::parallel_for(
+                "Poisson::init_mesh",
+                TeamPolicy(n_, Kokkos::AUTO),
+                KOKKOS_LAMBDA(const MemberType &team_member) {
+                    const int i = team_member.league_rank();
+
+                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_), [&] (const int j) {
+                        const SizeType e_id = i * n_ + j;
+                        DeviceVector p(Kokkos::subview(point_, e_id, Kokkos::ALL()));
+
+                        p.set(0, i * h);
+                        p.set(1, j * h);
+
+                        dof_(e_id, 0) = e_id;
+                        dof_(e_id, 1) = i * n_ + (j + 1);
+                        dof_(e_id, 2) = (i + 1) * n_ + (j + 1);
+                        dof_(e_id, 3) = (i + 1) * n_ + j;
+
+                        DeviceMatrix J(Kokkos::subview(jacobian_, e_id, Kokkos::ALL(), Kokkos::ALL()));
+                        DeviceMatrix J_inv(Kokkos::subview(jacobian_inverse_, e_id, Kokkos::ALL(), Kokkos::ALL()));
+                       
+                        J.set(0.0);
+                        J.set(0, 0, h);
+                        J.set(1, 1, h);
+
+                        J_inv.set(0.0);
+                        J_inv.set(0, 0, 1./h);
+                        J_inv.set(1, 1, 1./h);
+
+                        jacobian_determinant_(e_id) = h*h;
+
+                        for(SizeType k = 0; k < NQPoints; ++k) {
+                            DeviceMatrix g(Kokkos::subview(device_grad, k, Kokkos::ALL(), Kokkos::ALL()));
+                            DeviceMatrix J_inv_g(Kokkos::subview(grad_, e_id, k, Kokkos::ALL(), Kokkos::ALL()));
+
+                            J_inv_g = J_inv * g;
+                        }
+
+                    });
+                }
+            );
+        }
+    };
+}
+
+#endif //WITH_PETSC
