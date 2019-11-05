@@ -79,6 +79,11 @@ namespace utopia {
             view_(i) = value;
         }
 
+        UTOPIA_INLINE_FUNCTION void add(const SizeType &i, const Scalar &value)
+        {
+            view_(i) += value;
+        }
+
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)
         {
             KokkosBlas::scal(view_,alpha,view_);
@@ -113,6 +118,11 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void wrap(const KokkosView &view)
         {
             view_ = view;
+        }
+
+        UTOPIA_INLINE_FUNCTION bool is_alias(const VectorView &other) const
+        {
+            return &(view_(0)) == &(other.view_(0));
         }
 
     private:

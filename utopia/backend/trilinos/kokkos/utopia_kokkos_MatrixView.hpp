@@ -9,6 +9,7 @@
 #include <KokkosBlas1_fill.hpp>
 #include <KokkosBlas1_dot.hpp>
 #include <KokkosBlas1_scal.hpp>
+#include <KokkosBlas2_gemv.hpp>
 #include <KokkosBlas3_gemm.hpp>
 #include <Kokkos_Core.hpp>
 
@@ -100,6 +101,13 @@ namespace utopia {
             view_(i, j) = value;
         }
 
+
+        UTOPIA_INLINE_FUNCTION void add(const SizeType &i, const SizeType &j, const Scalar &value)
+        {
+            view_(i, j) += value;
+        }
+
+
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)
         {
             KokkosBlas::scal(view_,alpha,view_);
@@ -115,11 +123,51 @@ namespace utopia {
             return KokkosBlas::dot(view_, other.view_);
         }
 
+        template<class OtherView>
+        UTOPIA_INLINE_FUNCTION void multiply(const VectorView<OtherView> &right, VectorView<OtherView> &result) const
+        {
+            UTOPIA_DEVICE_ASSERT(!result.is_alias(right));
+            UTOPIA_DEVICE_ASSERT(result.size() == rows());
+            UTOPIA_DEVICE_ASSERT(right.size() == cols());
+
+            result.set(0.0);
+
+            const SizeType r = rows();
+            const SizeType c = right.size();
+
+            for(SizeType i = 0; i < r; ++i) {
+                for(SizeType j = 0; j < c; ++j) {
+                    result.add(i, get(i, j) * right.get(j));
+                }
+            }
+
+            // KokkosBlas::gemv("N", 1.0, view_, right.raw_type(), 0.0, result.raw_type());
+        }
+
+
         UTOPIA_INLINE_FUNCTION void multiply(const MatrixView &right, MatrixView &result) const
         {
-            assert(!result.is_alias(right));
-            assert(!is_alias(result));
-            KokkosBlas::gemm("N", "N", 1.0, view_, right.view_, 0.0, result.view_);
+            UTOPIA_DEVICE_ASSERT(!result.is_alias(right));
+            UTOPIA_DEVICE_ASSERT(!is_alias(result));
+            UTOPIA_DEVICE_ASSERT(rows() == result.rows());
+            UTOPIA_DEVICE_ASSERT(right.cols() == result.cols());
+            UTOPIA_DEVICE_ASSERT(cols() == right.rows());
+
+            const SizeType r = rows();
+            const SizeType m = cols();
+            const SizeType c = right.cols();
+
+            result.set(0.0);
+
+            for(SizeType i = 0; i < r; ++i) {
+                for(SizeType j = 0; j < c; ++j) {
+                    for(SizeType k = 0; k < m; ++k) {
+                        result.add(i, j, get(i, k) * right.get(k, j));
+                    }
+                }
+            }
+
+            // KokkosBlas::gemm("N", "N", 1.0, view_, right.view_, 0.0, result.view_);
         }
 
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)
@@ -149,9 +197,7 @@ namespace utopia {
             view_ = view;
         }
 
-        inline bool is_alias(const 
-
-            MatrixView &other) const
+        UTOPIA_INLINE_FUNCTION bool is_alias(const MatrixView &other) const
         {
             return &(view_(0, 0)) == &(other.view_(0, 0));
         }
