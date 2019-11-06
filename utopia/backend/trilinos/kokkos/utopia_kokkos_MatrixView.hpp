@@ -130,18 +130,18 @@ namespace utopia {
             UTOPIA_DEVICE_ASSERT(result.size() == rows());
             UTOPIA_DEVICE_ASSERT(right.size() == cols());
 
-            result.set(0.0);
+            // result.set(0.0);
 
-            const SizeType r = rows();
-            const SizeType c = right.size();
+            // const SizeType r = rows();
+            // const SizeType c = right.size();
 
-            for(SizeType i = 0; i < r; ++i) {
-                for(SizeType j = 0; j < c; ++j) {
-                    result.add(i, get(i, j) * right.get(j));
-                }
-            }
+            // for(SizeType i = 0; i < r; ++i) {
+            //     for(SizeType j = 0; j < c; ++j) {
+            //         result.add(i, get(i, j) * right.get(j));
+            //     }
+            // }
 
-            // KokkosBlas::gemv("N", 1.0, view_, right.raw_type(), 0.0, result.raw_type());
+            KokkosBlas::gemv("N", 1.0, view_, right.raw_type(), 0.0, result.raw_type());
         }
 
 
@@ -157,17 +157,17 @@ namespace utopia {
             const SizeType m = cols();
             const SizeType c = right.cols();
 
-            result.set(0.0);
+            // result.set(0.0);
 
-            for(SizeType i = 0; i < r; ++i) {
-                for(SizeType j = 0; j < c; ++j) {
-                    for(SizeType k = 0; k < m; ++k) {
-                        result.add(i, j, get(i, k) * right.get(k, j));
-                    }
-                }
-            }
+            // for(SizeType i = 0; i < r; ++i) {
+            //     for(SizeType j = 0; j < c; ++j) {
+            //         for(SizeType k = 0; k < m; ++k) {
+            //             result.add(i, j, get(i, k) * right.get(k, j));
+            //         }
+            //     }
+            // }
 
-            // KokkosBlas::gemm("N", "N", 1.0, view_, right.view_, 0.0, result.view_);
+            KokkosBlas::gemm("N", "N", 1.0, view_, right.view_, 0.0, result.view_);
         }
 
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)

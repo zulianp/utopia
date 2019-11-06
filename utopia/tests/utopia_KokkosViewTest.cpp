@@ -81,8 +81,9 @@ namespace utopia {
         using VectorViewT = utopia::VectorView<Kokkos::View<double *>>;
         using MatrixViewT = utopia::MatrixView<Kokkos::View<double **>>;
 
-        SizeType n = 200;
+        SizeType n = 1;
         Poisson<TpetraMatrix, TpetraVector> poisson(n);
+        poisson.describe();
     }
 
     static void kokkos_view()
