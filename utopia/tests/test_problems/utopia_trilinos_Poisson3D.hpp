@@ -176,10 +176,12 @@ namespace utopia
             std::cout << "n_elements: " << n_elements_ << std::endl;
             std::cout << "n: " << n_ << std::endl;
 
-            for(SizeType i = 0; i < n_elements_; ++i) {
-                DeviceMatrix m(Kokkos::subview(element_matrix_, i, Kokkos::ALL(), Kokkos::ALL()));
-                disp(m);
-            }
+            // for(SizeType i = 0; i < n_elements_; ++i) {
+            //     DeviceMatrix m(Kokkos::subview(element_matrix_, i, Kokkos::ALL(), Kokkos::ALL()));
+            //     disp(m);
+            // }
+
+            disp(laplacian_);
         }
 
 
@@ -203,6 +205,30 @@ namespace utopia
         RefGradView ref_grad_;
         QPointView  q_points_;
         QWeightView q_weights_;
+
+        Matrix laplacian_, mass_matrix_;
+
+        void assemble_matrix(Matrix &mat)
+        {
+            if(empty(mat)) {
+                mat = sparse(n_points_, n_points_, NDofs);
+            } else {
+                mat *= 0.;
+            }
+
+
+            Write<Matrix> w_(mat, utopia::GLOBAL_ADD);
+            for(SizeType k = 0; k < n_elements_; ++k) {
+                auto dof_k = Kokkos::subview(dof_, k, Kokkos::ALL());
+                auto el_mat = Kokkos::subview(element_matrix_, k, Kokkos::ALL(), Kokkos::ALL());
+
+                for(SizeType i = 0; i < NDofs; ++i) {
+                    for(SizeType j = 0; j < NDofs; ++j) {
+                        mat.c_add(dof_k(i), dof_k(j), el_mat(i, j));
+                    }
+                }
+            }
+        }
 
         void init_q_rule()
         {
@@ -261,7 +287,6 @@ namespace utopia
 
         void assemble_mass_element_matrices()
         {
-
             auto q_weights_device = q_weights_.view_device();
             auto ref_fun_device    = ref_fun_.view_device();
 
@@ -295,6 +320,8 @@ namespace utopia
                         });
 
                 });
+
+            assemble_matrix(mass_matrix_);
         }
 
 
@@ -333,6 +360,9 @@ namespace utopia
 
                         });
                 });
+
+
+            assemble_matrix(laplacian_);
         }
 
         void init_mesh()
