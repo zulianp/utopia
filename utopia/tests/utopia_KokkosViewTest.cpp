@@ -78,9 +78,6 @@ namespace utopia {
 
     static void kokkos_poisson_2D()
     {
-        using VectorViewT = utopia::VectorView<Kokkos::View<double *>>;
-        using MatrixViewT = utopia::MatrixView<Kokkos::View<double **>>;
-
         SizeType n = 20;
 
         Chrono c;
