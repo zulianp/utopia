@@ -42,6 +42,8 @@ namespace utopia
         using QPointView   = Kokkos::DualView<Scalar **>;
         using QWeightView  = Kokkos::DualView<Scalar *>;
 
+        // using VectorD = utopia::VectorView<Kokkos::View<Scalar[Dim]>>;
+
         static SizeType compute_n_elements(const SizeType &n)
         {
             SizeType ret = n;
@@ -80,7 +82,11 @@ namespace utopia
         q_weights_("q_weights", NQPoints)
         {
             init_mesh();
+            init_vectors();
             assemble_laplace_element_matrices();
+            // assemble_rhs(UTOPIA_LAMBDA(const VectorD &p) {
+
+            // });
             // assemble_mass_element_matrices();
 
         }
@@ -110,7 +116,8 @@ namespace utopia
 
         bool value(const Vector &x, Scalar &result) const override
         {
-
+            Vector Ax = laplacian_ * x;
+            result = 0.5 * dot(Ax, x) + dot(x, rhs_);
             return false;
         }
 
@@ -151,13 +158,13 @@ namespace utopia
 
         bool upper_bound(Vector &ub) const override
         {
-            assert(false);
+            ub = local_values(n_points_, 0.45); 
             return true;
         }
 
         bool lower_bound(Vector &lb) const override
         {
-            assert(false);
+            lb = local_values(n_points_, -9e9); 
             return true;
         }
 
@@ -171,7 +178,7 @@ namespace utopia
             return false;
         }
 
-        void describe() const
+        void describe() const override
         {
             std::cout << "n_elements: " << n_elements_ << std::endl;
             std::cout << "n: " << n_ << std::endl;
@@ -189,7 +196,7 @@ namespace utopia
         SizeType n_;
         SizeType n_elements_;
         SizeType n_points_;
-        Vector exact_sol_, initial_guess_;
+        Vector exact_sol_, initial_guess_, rhs_;
 
         DofView dof_;
         PointView point_;
@@ -207,6 +214,13 @@ namespace utopia
         QWeightView q_weights_;
 
         Matrix laplacian_, mass_matrix_;
+
+        void init_vectors()
+        {
+            exact_sol_ = zeros(n_points_);
+            initial_guess_ = zeros(n_points_); 
+            rhs_ = zeros(n_points_);
+        }
 
         void assemble_matrix(Matrix &mat)
         {
@@ -281,14 +295,50 @@ namespace utopia
                 host_grad(3, i, 1) = (1 - x);
             }
 
-            //FIXME synch with device?
+            //FIXME?
+            // q_points_.sync<DeviceType>();
+            // q_weights_.sync<DeviceType>();
+            // ref_fun_.sync<DeviceType>();
+            // ref_grad_.sync<DeviceType>();
+        }
+
+        template<class Fun>
+        void assemble_rhs(Fun fun)
+        {
+            
+
+            auto device_q_points  = q_points_.view_device();
+
+            Kokkos::parallel_for(
+                "Poisson::assemble_mass_element_matrices",
+                TeamPolicy(n_elements_, Kokkos::AUTO),
+                KOKKOS_LAMBDA(const MemberType &team_member) 
+                {
+                    const SizeType e_id = team_member.league_rank();
+                    DeviceMatrix mat(Kokkos::subview(element_matrix_, e_id, Kokkos::ALL(), Kokkos::ALL()));
+                    mat.set(0.0);
+                    const Scalar det_J = jacobian_determinant_(e_id);
+
+                    DeviceMatrix J(Kokkos::subview(jacobian_, e_id, Kokkos::ALL(), Kokkos::ALL()));
+                    // VectorD p;
+
+                    for(SizeType k = 0; k < NQPoints; ++k) {
+                        // DeviceVector p_ref(Kokkos::subview(device_q_points, k, Kokkos::ALL()));
+                        // p = J * p_ref;
+                        // fun(p);
+                    }
+                    
+
+                    
+                }
+            );
         }
 
 
         void assemble_mass_element_matrices()
         {
             auto q_weights_device = q_weights_.view_device();
-            auto ref_fun_device    = ref_fun_.view_device();
+            auto ref_fun_device   = ref_fun_.view_device();
 
             Kokkos::parallel_for(
                 "Poisson::assemble_mass_element_matrices",
@@ -406,7 +456,6 @@ namespace utopia
 
                         jacobian_determinant_(e_id) = h*h;
 
-                        
                         for(SizeType l = 0; l < NDofs; ++l) {
                             for(SizeType k = 0; k < NQPoints; ++k) {
                                 DeviceVector g(Kokkos::subview(device_grad, l, k, Kokkos::ALL()));

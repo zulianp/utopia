@@ -8,6 +8,34 @@
 
 namespace utopia {
 
+    // template<
+    //     class Matrix_,
+    //     class Vector_
+    //     class Scalar_,
+    //     class SizeType_>
+    // class KokkosBaseTraits {
+    // public:
+    //     using Scalar   = Scalar_;
+    //     using SizeType = SizeType_;
+    //     using Vector   = Vector_;
+    //     using Matrix   = Matrix_;
+
+    //     //FIXME use Kokkos compatible wrapper
+    //     using IndexSet    = utopia::TpetraIndexSet;
+    //     using IndexArray  = utopia::TpetraIndexArray;
+    //     using ScalarArray = utopia::TpetraScalarArray;
+
+    //     enum {
+    //         Backend = KOKKOS
+    //     };
+
+    //     static BackendInfo &backend_info()
+    //     {
+    //         static BackendInfo instance_("kokkos");
+    //         return instance_;
+    //     }
+    // };
+
     template<class Scalar_>
     class KokkosTraits {
     public:

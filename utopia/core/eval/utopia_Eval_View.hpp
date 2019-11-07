@@ -35,7 +35,7 @@ namespace utopia {
             const Tensor<Derived, 1> &right
         )
         {
-            left.derived().assign(row_range, right);
+            left.derived().assign(row_range, right.derived());
         }
 
         template<class Derived>
@@ -46,7 +46,7 @@ namespace utopia {
             const Tensor<Derived, 2> &right
         )
         {
-            left.derived().assign(row_range, col_range, right);
+            left.derived().assign(row_range, col_range, right.derived());
         }
     };
 
