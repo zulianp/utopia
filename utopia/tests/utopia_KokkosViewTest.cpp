@@ -76,21 +76,36 @@ namespace utopia {
         }
     }
 
-    static void kokkos_poisson_3D()
+    static void kokkos_poisson_2D()
     {
         using VectorViewT = utopia::VectorView<Kokkos::View<double *>>;
         using MatrixViewT = utopia::MatrixView<Kokkos::View<double **>>;
 
-        SizeType n = 200;
+        SizeType n = 20;
+
+        Chrono c;
+        c.start();
         Poisson<TpetraMatrix, TpetraVector> poisson(n);
+        c.stop();
+
+        std::cout << c << std::endl;
         // poisson.describe();
+
+        TpetraVector x = 0.0 * poisson.rhs();
+        ConjugateGradient<TpetraMatrix, TpetraVector> cg;
+        cg.set_preconditioner(std::make_shared<PointJacobi<TpetraMatrix, TpetraVector> >());
+        cg.verbose(true);
+        cg.solve(poisson.laplacian(), poisson.rhs(), x);
+
+        // disp(x);
+        write("x.m", x);
     }
 
     static void kokkos_view()
     {
         UTOPIA_RUN_TEST(kokkos_vector_view);
         UTOPIA_RUN_TEST(kokkos_matrix_view);
-        UTOPIA_RUN_TEST(kokkos_poisson_3D);
+        UTOPIA_RUN_TEST(kokkos_poisson_2D);
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(kokkos_view);

@@ -153,6 +153,11 @@ namespace utopia {
             UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r1");
             r_ = rhs - (LU_ * x);
             x = e_mul(d_inv_, r_);
+
+            // const Matrix &A = *this->get_operator();
+            // r_ = rhs - A * x;
+            // x += e_mul(d_inv_, r_);
+
             UTOPIA_NO_ALLOC_END();
             return true;
         }

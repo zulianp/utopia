@@ -5,14 +5,6 @@
 #include "utopia_Traits.hpp"
 
 #include "utopia_Expression.hpp"
-// #include "utopia_Evaluator.hpp"
-// #include "utopia_Assign.hpp"
-// #include "utopia_Traits.hpp"
-// #include "utopia_InPlace.hpp"
-// #include "utopia_Mutable.hpp"
-// #include "utopia_Readable.hpp"
-// #include "utopia_Writable.hpp"
-// #include "utopia_Ranged.hpp"
 
 #include <iostream>
 #include <type_traits>
@@ -28,7 +20,6 @@ namespace utopia {
         w.derived().set_zero_rows(index, diag);
     }
 
-
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class ApplyEqualityConstraintsToSystem {
     public:
@@ -42,6 +33,16 @@ namespace utopia {
     //FIXME not sure how to name this one: change name to apply_equality_constraints_to_system
     template<class MatDerived, class VecDerived>
     void apply_BC_to_system(
+        Tensor<MatDerived, 2> &A,
+        Tensor<VecDerived, 1> &x,
+        Tensor<VecDerived, 1> &rhs,
+        const typename Traits<MatDerived>::IndexSet &constrained_idx)
+    {
+        ApplyEqualityConstraintsToSystem<MatDerived, VecDerived>::apply(A.derived(), x.derived(), rhs.derived(), constrained_idx);
+    }
+
+    template<class MatDerived, class VecDerived>
+    void apply_equality_constraints_to_system(
         Tensor<MatDerived, 2> &A,
         Tensor<VecDerived, 1> &x,
         Tensor<VecDerived, 1> &rhs,
@@ -73,7 +74,6 @@ namespace utopia {
         set_zero_rows(w, index, diag);
     }
 
-
     template<class Vector, int Backend = Traits<Vector>::Backend>
     class EvalVecUniqueSortSerial
     {
@@ -90,7 +90,6 @@ namespace utopia {
         EvalVecUniqueSortSerial<Vector>::apply(x, sorted, used_values);
     }
 
-
     template<class Matrix>
     void chop_abs(Tensor<Matrix, 2> &A, const double eps)
     {
@@ -105,9 +104,9 @@ namespace utopia {
 
         static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
         {
-              each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
-                  return v < eps ? 0.0 : v;
-              });
+            each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
+                return v < eps ? 0.0 : v;
+            });
         }
     };
 
@@ -119,9 +118,9 @@ namespace utopia {
 
         static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
         {
-          each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
-              return v > eps ? 0.0 : v;
-          });
+            each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
+                return v > eps ? 0.0 : v;
+            });
         }
     };
 
