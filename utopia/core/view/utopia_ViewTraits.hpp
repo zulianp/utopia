@@ -1,80 +1,26 @@
 #ifndef UTOPIA_KOKKOS_TRAITS_HPP
 #define UTOPIA_KOKKOS_TRAITS_HPP
 
-#include "utopia_kokkos_ForwardDeclarations.hpp"
-#include "utopia_trilinos_Base.hpp"
+#include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_Traits.hpp"
-#include "utopia_BackendInfo.hpp"
 
 namespace utopia {
 
-    // template<
-    //     class Matrix_,
-    //     class Vector_
-    //     class Scalar_,
-    //     class SizeType_>
-    // class KokkosBaseTraits {
-    // public:
-    //     using Scalar   = Scalar_;
-    //     using SizeType = SizeType_;
-    //     using Vector   = Vector_;
-    //     using Matrix   = Matrix_;
-
-    //     //FIXME use Kokkos compatible wrapper
-    //     using IndexSet    = utopia::TpetraIndexSet;
-    //     using IndexArray  = utopia::TpetraIndexArray;
-    //     using ScalarArray = utopia::TpetraScalarArray;
-
-    //     enum {
-    //         Backend = KOKKOS
-    //     };
-
-    //     static BackendInfo &backend_info()
-    //     {
-    //         static BackendInfo instance_("kokkos");
-    //         return instance_;
-    //     }
-    // };
-
-    template<class Scalar_>
-    class KokkosTraits {
+    template<typename T, Size_t... Args>
+    class Traits< ArrayView<T, Args...> > {
     public:
+        using Scalar = T;
+        using SizeType = Size_t;
 
-        using Scalar   = Scalar_;
-        using SizeType = utopia::TpetraSizeType;
-
-
-        using KokkosView1 = Kokkos::View<Scalar *>;
-        using Vector      = utopia::VectorView<KokkosView1>;
-
-
-        using KokkosView2 = Kokkos::View<Scalar **>;
-        using Matrix      = utopia::MatrixView<KokkosView2>;
-
-        //FIXME use Kokkos compatible wrapper
-        using IndexSet    = utopia::TpetraIndexSet;
-        using IndexArray  = utopia::TpetraIndexArray;
-        using ScalarArray = utopia::TpetraScalarArray;
-
-        enum {
-            Backend = KOKKOS
-        };
-
-        static BackendInfo &backend_info()
-        {
-            static BackendInfo instance_("kokkos");
-            return instance_;
-        }
+        static const int Backend = SERIAL_HOMEMADE;
+        static const int FILL_TYPE = FillType::DENSE;
     };
 
-    template<typename Scalar>
-    using DefaultVectorView = utopia::VectorView<Kokkos::View<Scalar *>>;
+    template<class View>
+    class Traits< VectorView<View> > : public Traits<View> {};
 
-    template<typename Scalar>
-    using DefaultMatrixView = utopia::MatrixView<Kokkos::View<Scalar **>>;
-
-    UTOPIA_MAKE_TRAITS_TPL_1(DefaultVectorView, KokkosTraits, 1);
-    UTOPIA_MAKE_TRAITS_DENSE_TPL_1(DefaultMatrixView, KokkosTraits, 2);
+    template<class View>
+    class Traits< MatrixView<View> > : public Traits<View> {};
 }
 
 #endif //UTOPIA_KOKKOS_TRAITS_HPP

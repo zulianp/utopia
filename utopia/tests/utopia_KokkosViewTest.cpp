@@ -19,11 +19,8 @@ namespace utopia {
         using ViewType  = Kokkos::View<double *>;
         using ViewType2 = Kokkos::View<double **>;
 
-        //kokkos view
-        ViewType kokkos_x("x", 10);
-
-        //utopia view wrapper
-        VectorView<ViewType> x(kokkos_x);
+        //utopia view wrapper forwards constructor arguments to view
+        VectorView<ViewType> x("x", 10);
         x.set(1.0);
         x.axpy(2., x);
 
@@ -53,8 +50,7 @@ namespace utopia {
         using ViewType2 = Kokkos::View<double ***>;
 
         //kokkos view
-        ViewType kokkos_A("A", 4, 4);
-        MatrixView<ViewType> A(kokkos_A);
+        MatrixView<ViewType> A("A", 4, 4);
 
         A.set(1.0);
         A += 0.5 * A;
@@ -84,16 +80,13 @@ namespace utopia {
         c.stop();
 
         std::cout << c << std::endl;
-        // poisson.describe();
 
         TpetraVector x = 0.0 * poisson.rhs();
         ConjugateGradient<TpetraMatrix, TpetraVector> cg;
         cg.set_preconditioner(std::make_shared<Jacobi<TpetraMatrix, TpetraVector> >());
-        // cg.set_preconditioner(std::make_shared<PointJacobi<TpetraMatrix, TpetraVector> >());
         cg.verbose(true);
         cg.solve(poisson.laplacian(), poisson.rhs(), x);
 
-        // disp(x);
         write("x.m", x);
     }
 

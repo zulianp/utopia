@@ -3,6 +3,7 @@
 
 #include "utopia_Tensor.hpp"
 #include "utopia_Algorithms.hpp"
+#include <utility>
 
 namespace utopia {
 
@@ -10,8 +11,8 @@ namespace utopia {
     class MatrixView final : public Tensor<MatrixView<ArrayView2D_>, 2> {
     public:
         using ArrayView2D = ArrayView2D_;
-        using Scalar = typename ArrayView2D::value_type;
-        using SizeType = std::size_t;
+        using Scalar   = typename Traits<ArrayView2D>::Scalar;
+        using SizeType = typename Traits<ArrayView2D>::SizeType;
         
         using Super = utopia::Tensor<MatrixView, 2>;
         using Super::Super;
@@ -20,6 +21,11 @@ namespace utopia {
         {
             return "MatrixView";
         }
+
+        template<class... Args>
+        UTOPIA_FUNCTION MatrixView(Args && ...args)
+        : view_(std::forward<Args>(args)...)
+        {}
 
         template<class Expr>
         UTOPIA_FUNCTION MatrixView(const Expression<Expr> &expr)

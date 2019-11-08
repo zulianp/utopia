@@ -140,6 +140,20 @@ namespace utopia {
         }
     };
 
+    template<class Scalar_>
+    class Traits< Kokkos::View<Scalar_ *> > {
+    public:
+        using Scalar = Scalar_;
+        using SizeType = std::size_t;
+    };
+
+    template<class Scalar_>
+    class Traits< Kokkos::View<Scalar_ **> > {
+    public:
+        using Scalar = Scalar_;
+        using SizeType = std::size_t;
+    };
+
     template<typename Scalar>
     using DefaultVectorView = utopia::VectorView<Kokkos::View<Scalar *>>;
 

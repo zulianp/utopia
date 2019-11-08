@@ -10,8 +10,8 @@ namespace utopia {
     class VectorView final : public Tensor<VectorView<ArrayView_>, 1> {
     public:
         using ArrayView = ArrayView_;
-        using Scalar = typename ArrayView::value_type;
-        using SizeType = std::size_t;
+        using Scalar   = typename Traits<ArrayView>::Scalar;
+        using SizeType = typename Traits<ArrayView>::SizeType;
 
         using Super = utopia::Tensor<VectorView, 1>;
         using Super::Super;
@@ -20,6 +20,13 @@ namespace utopia {
         {
             return "VectorView";
         }
+
+        
+        template<class... Args>
+        UTOPIA_FUNCTION VectorView(Args && ...args)
+        : view_(std::forward<Args>(args)...)
+        {}
+
 
         template<class Expr>
         UTOPIA_FUNCTION VectorView(const Expression<Expr> &expr)
