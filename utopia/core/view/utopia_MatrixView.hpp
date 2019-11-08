@@ -160,6 +160,13 @@ namespace utopia {
             return &(view_(0, 0)) == &(other.view_(0, 0));
         }
 
+        
+        template<class OtherView>
+        UTOPIA_INLINE_FUNCTION constexpr static bool is_alias(const MatrixView<OtherView> &)
+        {
+            return false;
+        }
+
     private:
         ArrayView2D view_;
 

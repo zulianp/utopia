@@ -140,7 +140,7 @@ namespace utopia {
         }
 
         template<class OtherView>
-        UTOPIA_INLINE_FUNCTION constexpr static bool is_alias(const VectorView<OtherView> &other)
+        UTOPIA_INLINE_FUNCTION constexpr static bool is_alias(const VectorView<OtherView> &)
         {
             return false;
         }

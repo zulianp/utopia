@@ -46,9 +46,7 @@ namespace utopia {
     template<typename T>
     using Matrix4x4 = utopia::StaticMatrix<T, 4, 4>;
 
-
     //////////////////////////////////////// Type system extensions //////////
-
 
     template<class Left, class Right>
     class MultiplyResultType {
@@ -85,8 +83,6 @@ namespace utopia {
         using LeftType  = typename TypeAndFill<Traits, Left, Sparsity>::Type;
         using RightType = typename TypeAndFill<Traits, Right, Sparsity>::Type;
         using Type = typename MultiplyResultType<LeftType, RightType>::Type;
-
-        // typedef typename TensorQuery<Traits, Expr::Order>::Type Type;
     };
 }
 
