@@ -47,7 +47,7 @@ namespace utopia {
 
         void vector_view_test()
         {
-            VectorView< ArrayView<double, 2> > a;
+            Vector2<double> a;
             a.set(1.0);
 
             double dot_a = dot(a, a);
@@ -56,7 +56,7 @@ namespace utopia {
 
         void matrix_view_test()
         {
-            MatrixView< ArrayView<double, 2, 2> > a;
+            StaticMatrix<double, 2, 2> a;
             a.set(1.0);
 
             double dot_a = dot(a, a);
