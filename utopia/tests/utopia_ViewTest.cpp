@@ -12,6 +12,7 @@ namespace utopia {
 
     class ViewTest {
     public:
+        using Scalar = double;
 
         ViewTest()
         {}
@@ -27,15 +28,15 @@ namespace utopia {
 
         void array_view_test()
         {
-            std::vector<double> a_v(2, 1.0);
-            ArrayView<double> a(&a_v[0], a_v.size());
+            std::vector<Scalar> a_v(2, 1.0);
+            ArrayView<Scalar> a(&a_v[0], a_v.size());
             device::axpy(4.0, a, a);
         }
 
         void static_array_view_test()
         {
-            ArrayView<double, 2> a;
-            ArrayView<double, 2, 2> b;
+            ArrayView<Scalar, 2> a;
+            ArrayView<Scalar, 2, 2> b;
 
             device::fill(2.0, a);
             device::fill(3.0, b);
@@ -47,28 +48,28 @@ namespace utopia {
 
         void vector_view_test()
         {
-            Vector2<double> a;
+            Vector2<Scalar> a;
             a.set(1.0);
 
-            double dot_a = dot(a, a);
+            Scalar dot_a = dot(a, a);
             utopia_test_assert(approxeq(2.0, dot_a));
         }
 
         void matrix_view_test()
         {
-            StaticMatrix<double, 2, 2> a;
+            StaticMatrix<Scalar, 2, 2> a;
             a.set(1.0);
 
-            double dot_a = dot(a, a);
+            Scalar dot_a = dot(a, a);
             utopia_test_assert(approxeq(4.0, dot_a));
         }
 
         void mv_view_test()
         {
-            StaticMatrix<double, 3, 2> A;
-            Vector2<double> x;
-            Vector3<double> y;
-            Vector3<double> expected;
+            StaticMatrix<Scalar, 3, 2> A;
+            Vector2<Scalar> x;
+            Vector3<Scalar> y;
+            Vector3<Scalar> expected;
            
             A.set(1.0);
             x.set(2.0);

@@ -51,7 +51,10 @@ namespace utopia {
 
 
     template<class Left, class Right>
-    class MultiplyResultType {};
+    class MultiplyResultType {
+    public:
+        using Type = Right;
+    };
 
     template<
         class LeftT, Size_t Rows, Size_t Cols,
