@@ -159,10 +159,8 @@ namespace utopia {
 
             UTOPIA_INLINE_FUNCTION static void apply(const Matrix &m, const InVector &in, OutVector &out)
             {
-                UTOPIA_DEVICE_ASSERT(in.size() == extent(m, 1));
+                UTOPIA_DEVICE_ASSERT(in.size()  == extent(m, 1));
                 UTOPIA_DEVICE_ASSERT(out.size() == extent(m, 0));
-
-                
 
                 const SizeType r = out.size();
                 const SizeType c = in.size();
@@ -213,6 +211,30 @@ namespace utopia {
             MM<Matrix, InMatrix, OutMatrix>::apply(m, in, out);
         }
 
+        template<class X, class Y>
+        class ApproxEq {
+        public:
+            template<typename Scalar>
+            UTOPIA_INLINE_FUNCTION static bool apply(const X &x, Y &y, const Scalar &tol)
+            {
+                UTOPIA_DEVICE_ASSERT(x.size() == y.size());
+
+                const SizeType n = x.size();
+                for(SizeType i = 0; i < n; ++i) {
+                    if(device::abs(x[i] - y[i]) > tol) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }  
+        };
+
+        template<class X, class Y, class Scalar>
+        UTOPIA_INLINE_FUNCTION bool approxeq(const X &x, Y &y, const Scalar &tol)
+        {
+            return ApproxEq<X, Y>::apply(x, y, tol);
+        }
     }
 
 }

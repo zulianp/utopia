@@ -104,8 +104,10 @@ namespace utopia {
             return device::dot(view_, other.view_);
         }
 
-        template<class OtherView>
-        UTOPIA_INLINE_FUNCTION void multiply(const VectorView<OtherView> &right, VectorView<OtherView> &result) const
+        template<class RightView, class ResultView>
+        UTOPIA_INLINE_FUNCTION void multiply(
+            const VectorView<RightView> &right,
+            VectorView<ResultView> &result) const
         {
             UTOPIA_DEVICE_ASSERT(!result.is_alias(right));
             UTOPIA_DEVICE_ASSERT(result.size() == rows());
@@ -114,7 +116,8 @@ namespace utopia {
             device::mv(view_, right.raw_type(), result.raw_type());
         }
 
-        UTOPIA_INLINE_FUNCTION void multiply(const MatrixView &right, MatrixView &result) const
+        template<class RightView, class ResultView>
+        UTOPIA_INLINE_FUNCTION void multiply(const MatrixView<RightView> &right, MatrixView<ResultView> &result) const
         {
             UTOPIA_DEVICE_ASSERT(!result.is_alias(right));
             UTOPIA_DEVICE_ASSERT(!is_alias(result));

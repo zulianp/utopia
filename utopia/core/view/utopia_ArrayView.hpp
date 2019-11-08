@@ -138,7 +138,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION constexpr const T &operator()(const SizeType &i, const SizeType &j) const
         {
-            return data_[i*Rows_ + j];
+            return data_[i*Cols_ + j];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType extent(const SizeType &i) const
@@ -198,7 +198,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION constexpr const T &operator()(const SizeType &i, const SizeType &j) const
         {
-            return data_[i*rows_ + j];
+            return data_[i*cols_ + j];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType extent(const SizeType &i) const

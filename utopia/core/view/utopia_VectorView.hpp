@@ -48,12 +48,13 @@ namespace utopia {
         {
             UTOPIA_DEVICE_ASSERT(size() == other.size());
 
-            const SizeType n = size();
-            assert(n == x.size());
+            // const SizeType n = size();
 
-            for(SizeType i = 0; i < n; ++i) {
-                view_[i] = other.get(i);
-            }
+            // for(SizeType i = 0; i < n; ++i) {
+            //     view_[i] = other.get(i);
+            // }
+
+            device::copy(other.view_, view_);
         }
 
         template<class OtherArrayView>
@@ -136,6 +137,19 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION bool is_alias(const VectorView &other) const
         {
             return &(view_[0]) == &(other.view_[0]);
+        }
+
+        template<class OtherView>
+        UTOPIA_INLINE_FUNCTION constexpr static bool is_alias(const VectorView<OtherView> &other)
+        {
+            return false;
+        }
+
+        template<class OtherView>
+        inline bool equals(const VectorView<OtherView> &other, const Scalar &tol) const
+        {
+            if(size() != other.size()) return false;
+            return device::approxeq(view_, other.view_, tol);
         }
 
     private:

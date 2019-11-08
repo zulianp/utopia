@@ -65,15 +65,19 @@ namespace utopia {
 
         void mv_view_test()
         {
-            MatrixView< ArrayView<double, 2, 2> > A;
-            VectorView< ArrayView<double, 2> > x, y;
+            StaticMatrix<double, 3, 2> A;
+            Vector2<double> x;
+            Vector3<double> y;
+            Vector3<double> expected;
+           
             A.set(1.0);
             x.set(2.0);
 
-            // y = A * x;
-            A.multiply(x, y);
+            expected.set(4.0);
 
-            disp(y);
+            y = A * x;
+
+            utopia_test_assert(approxeq(expected, y, 1e-10));
         }
     };
 
