@@ -12,11 +12,11 @@
 
 namespace utopia {
 
-    template<class KokkosView_>
-    class VectorView final : public Tensor<VectorView<KokkosView_>, 1> {
+    template<class ArrayView_>
+    class VectorView final : public Tensor<VectorView<ArrayView_>, 1> {
     public:
-        using KokkosView = KokkosView_;
-        using Scalar = typename KokkosView::value_type;
+        using ArrayView = ArrayView_;
+        using Scalar = typename ArrayView::value_type;
         using SizeType = std::size_t;
 
         using Super = utopia::Tensor<VectorView, 1>;
@@ -42,13 +42,32 @@ namespace utopia {
             return *this;
         }
 
-        UTOPIA_FUNCTION void assign(const VectorView &other) override
+        template<class OtherArrayView>
+        UTOPIA_FUNCTION void copy(const VectorView<OtherArrayView> &other)
         {
             UTOPIA_DEVICE_ASSERT(size() == other.size());
 
-            Kokkos::parallel_for("VectorView::assign", view_.size(), KOKKOS_LAMBDA (const int& i) {
-                view_(i) = other.view_(i);
-            });
+            const SizeType n = size();
+            assert(n == x.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                view_[i] = other.get(i);
+            }
+
+            // Kokkos::parallel_for("VectorView::assign", view_.size(), KOKKOS_LAMBDA (const int& i) {
+            //     view_[i] = other.view_[i];
+            // });
+        }
+
+        template<class OtherArrayView>
+        UTOPIA_FUNCTION void assign(const VectorView<OtherArrayView> &other)
+        {
+            copy(other);
+        }
+
+        UTOPIA_FUNCTION void assign(const VectorView &other) override
+        {
+            copy(other);
         }
 
         UTOPIA_FUNCTION void assign(VectorView &&other) override
@@ -56,13 +75,13 @@ namespace utopia {
             view_ = std::move(other.view_);
         }
 
-        UTOPIA_INLINE_FUNCTION KokkosView &raw_type() { return view_; }
-        UTOPIA_INLINE_FUNCTION const KokkosView &raw_type() const { return view_; }
+        UTOPIA_INLINE_FUNCTION ArrayView &raw_type() { return view_; }
+        UTOPIA_INLINE_FUNCTION const ArrayView &raw_type() const { return view_; }
 
-        UTOPIA_INLINE_FUNCTION void resize(const SizeType &n)
-        {
-            Kokkos::resize(view_, n);
-        }
+        // UTOPIA_INLINE_FUNCTION void resize(const SizeType &n)
+        // {
+        //     Kokkos::resize(view_, n);
+        // }
 
         UTOPIA_INLINE_FUNCTION SizeType size() const
         {
@@ -71,40 +90,65 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION const Scalar &get(const SizeType &i) const
         {
-            return view_(i);
+            return view_[i];
         }
 
         UTOPIA_INLINE_FUNCTION void set(const SizeType &i, const Scalar &value)
         {
-            view_(i) = value;
+            view_[i] = value;
         }
 
         UTOPIA_INLINE_FUNCTION void add(const SizeType &i, const Scalar &value)
         {
-            view_(i) += value;
+            view_[i] += value;
         }
 
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)
         {
-            KokkosBlas::scal(view_,alpha,view_);
+            const SizeType n = size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                view_[i] *= alpha;
+            }
+
+            // KokkosBlas::scal(view_,alpha,view_);
         }
 
-        UTOPIA_INLINE_FUNCTION void axpy(const Scalar &alpha, const VectorView &x)
+        template<class OtherArrayView>
+        UTOPIA_INLINE_FUNCTION void axpy(const Scalar &alpha, const VectorView<OtherArrayView> &x)
         {
-            KokkosBlas::axpy(alpha,x.view_,view_);
+            const SizeType n = size();
+            assert(n == x.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                view_[i] += alpha * x.get(i);
+            }
+
+            // KokkosBlas::axpy(alpha,x.view_,view_);
         }
 
-        UTOPIA_INLINE_FUNCTION Scalar dot(const VectorView &other) const
+        template<class OtherArrayView>
+        UTOPIA_INLINE_FUNCTION Scalar dot(const VectorView<OtherArrayView> &other) const
         {
-            return KokkosBlas::dot(view_, other.view_);
+            Scalar ret = 0.0;
+            const SizeType n = size();
+            assert(n == other.size());
+
+            for(SizeType i = 0; i < n; ++i) {
+                ret += get(i) * other.get(i);
+            }
+
+            return ret;
+            // return KokkosBlas::dot(view_, other.view_);
         }
 
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)
         {
-            KokkosBlas::fill(view_, alpha);
+            std::fill(&view_[0], &view_[0] + size(), alpha);
+            // KokkosBlas::fill(view_, alpha);
         }
 
-        UTOPIA_FUNCTION VectorView(const KokkosView &view)
+        UTOPIA_FUNCTION VectorView(const ArrayView &view)
         : view_(view) {}
 
         inline void describe() const
@@ -115,20 +159,20 @@ namespace utopia {
             }
         }
 
-        UTOPIA_INLINE_FUNCTION void wrap(const KokkosView &view)
+        UTOPIA_INLINE_FUNCTION void wrap(const ArrayView &view)
         {
             view_ = view;
         }
 
         UTOPIA_INLINE_FUNCTION bool is_alias(const VectorView &other) const
         {
-            return &(view_(0)) == &(other.view_(0));
+            return &(view_[0]) == &(other.view_[0]);
         }
 
     private:
-        KokkosView view_;
+        ArrayView view_;
 
-        UTOPIA_FUNCTION VectorView(const VectorView &) {
+        UTOPIA_FUNCTION VectorView(const VectorView &other) : view_(other.view_) {
             UTOPIA_DEVICE_ASSERT(false);
         }
     };

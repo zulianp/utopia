@@ -6,7 +6,7 @@
 
 //include edsl components
 #include "utopia_Core.hpp"
-
+#include "utopia_Jacobi.hpp"
 #include "utopia_kokkos_VectorView.hpp"
 #include "utopia_kokkos_MatrixView.hpp"
 #include "utopia_kokkos_Traits.hpp"
@@ -78,7 +78,7 @@ namespace utopia {
 
     static void kokkos_poisson_2D()
     {
-        SizeType n = 20;
+        SizeType n = 400;
 
         Chrono c;
         c.start();
@@ -90,7 +90,8 @@ namespace utopia {
 
         TpetraVector x = 0.0 * poisson.rhs();
         ConjugateGradient<TpetraMatrix, TpetraVector> cg;
-        cg.set_preconditioner(std::make_shared<PointJacobi<TpetraMatrix, TpetraVector> >());
+        cg.set_preconditioner(std::make_shared<Jacobi<TpetraMatrix, TpetraVector> >());
+        // cg.set_preconditioner(std::make_shared<PointJacobi<TpetraMatrix, TpetraVector> >());
         cg.verbose(true);
         cg.solve(poisson.laplacian(), poisson.rhs(), x);
 

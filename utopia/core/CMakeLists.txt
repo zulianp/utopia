@@ -4,6 +4,7 @@ list(APPEND CORE_MODULES
     expressions
     expressions_parallel
     interfaces
+    view
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR CORE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
