@@ -72,7 +72,7 @@ namespace utopia {
 
     static void kokkos_poisson_2D()
     {
-        SizeType n = 400;
+        SizeType n = 1000;
 
         Chrono c;
         c.start();
@@ -81,11 +81,30 @@ namespace utopia {
 
         std::cout << c << std::endl;
 
+        c.start();
+
         TpetraVector x = 0.0 * poisson.rhs();
         ConjugateGradient<TpetraMatrix, TpetraVector> cg;
-        cg.set_preconditioner(std::make_shared<Jacobi<TpetraMatrix, TpetraVector> >());
+       
+        // auto prec = std::make_shared<PointJacobi<TpetraMatrix, TpetraVector>>();
+        // prec->verbose(true);
+
+        // auto prec = std::make_shared<Jacobi<TpetraMatrix, TpetraVector>>();
+        // maybe put this in the preconditioner interface
+        // prec->preconditioner_mode(true);
+        // prec->max_it(50);
+
+        auto prec = std::make_shared<InvDiagPreconditioner<TpetraMatrix, TpetraVector>>();
+
+        cg.set_preconditioner(prec);
         cg.verbose(true);
+        cg.max_it(n*n);
+        cg.rtol(1e-8);
         cg.solve(poisson.laplacian(), poisson.rhs(), x);
+
+        c.stop();
+
+        std::cout << c << std::endl;
 
         write("x.m", x);
     }

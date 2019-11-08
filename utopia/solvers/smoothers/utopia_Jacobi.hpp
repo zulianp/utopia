@@ -25,9 +25,8 @@ namespace utopia {
          * @param[in]  omega  The relaxation parameter (unused atm).
          */
         Jacobi()
-        {
-
-        }
+        : compute_norm_each_(10), preconditioner_mode_(false)
+        {}
 
         void read(Input &in) override
         {
@@ -41,6 +40,15 @@ namespace utopia {
             Smoother::print_usage(os);
         }
 
+        void compute_norm_each(const SizeType &n_iter)
+        {
+            compute_norm_each_ = n_iter;
+        }
+
+        void preconditioner_mode(const bool &val)
+        {
+            preconditioner_mode_ = val;
+        }
 
         bool apply(const Vector &rhs, Vector &x) override
         {
@@ -51,26 +59,38 @@ namespace utopia {
             r_ = rhs - A * x;
             UTOPIA_NO_ALLOC_END();
 
-            Scalar g_norm0 = norm2(r_);
-            Scalar g_norm = g_norm0;
-            SizeType compute_norm_each = 50;
+            Scalar g_norm0 = 0.0;
 
+            if(!preconditioner_mode_) {
+                g_norm0 = norm2(r_);
+            }
+
+            Scalar g_norm = g_norm0;
+            
             this->init_solver("Point Jacobi", {"it. ", "||r||" });
 
             //First step for using r0
             x += e_mul(d_inv_, r_);
 
             while(true) {
-                
-                if(it++ % compute_norm_each == 0) {
-                    g_norm = norm2(r_);
+                it++;
 
-                    if(this->verbose()) {
-                        PrintInfo::print_iter_status(it, {g_norm});
+                if(preconditioner_mode_) {
+                    if(it >= this->max_it()){
+                        //g_norms are just zero
+                        return this->check_convergence(it, g_norm, g_norm/g_norm0, 1);
                     }
+                } else  {
+                    if(it % compute_norm_each_ == 0 || it >= this->max_it()) {
+                        g_norm = norm2(r_);
 
-                    if(this->check_convergence(it, g_norm, g_norm/g_norm0, 1)) {
-                        return true;
+                        if(this->verbose()) {
+                            PrintInfo::print_iter_status(it, {g_norm});
+                        }
+
+                        if(this->check_convergence(it, g_norm, g_norm/g_norm0, 1)) {
+                            return true;
+                        }
                     }
                 }
 
@@ -113,6 +133,9 @@ namespace utopia {
     private:
         Vector d_inv_;
         Vector r_;
+        SizeType compute_norm_each_;
+        bool preconditioner_mode_;
+
 
         /**
          * @brief      Checks if there is a zero in the vector, if yes turn it into 1.

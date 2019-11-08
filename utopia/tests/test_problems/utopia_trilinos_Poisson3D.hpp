@@ -310,7 +310,7 @@ namespace utopia
             assemble_laplacian();
             
             assemble_rhs(UTOPIA_LAMBDA(const DeviceVector &p) {
-                return std::sin(20*p.get(0) + 10*p.get(1));
+                return std::sin(20*p.get(0) + 10*p.get(1)) * std::cos(30*p.get(0) + 6*p.get(1));
             });
 
             init_boundary_conditions();
