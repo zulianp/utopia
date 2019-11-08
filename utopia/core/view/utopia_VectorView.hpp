@@ -2,13 +2,7 @@
 #define UTOPIA_KOKKOS_VECTOR_VIEW_HPP
 
 #include "utopia_Tensor.hpp"
-#include "utopia_kokkos_Base.hpp"
-
-#include <Kokkos_View.hpp>
-#include <KokkosBlas1_axpby.hpp>
-#include <KokkosBlas1_fill.hpp>
-#include <KokkosBlas1_dot.hpp>
-#include <KokkosBlas1_scal.hpp>
+#include "utopia_Algorithms.hpp"
 
 namespace utopia {
 
@@ -53,10 +47,6 @@ namespace utopia {
             for(SizeType i = 0; i < n; ++i) {
                 view_[i] = other.get(i);
             }
-
-            // Kokkos::parallel_for("VectorView::assign", view_.size(), KOKKOS_LAMBDA (const int& i) {
-            //     view_[i] = other.view_[i];
-            // });
         }
 
         template<class OtherArrayView>
@@ -77,11 +67,6 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION ArrayView &raw_type() { return view_; }
         UTOPIA_INLINE_FUNCTION const ArrayView &raw_type() const { return view_; }
-
-        // UTOPIA_INLINE_FUNCTION void resize(const SizeType &n)
-        // {
-        //     Kokkos::resize(view_, n);
-        // }
 
         UTOPIA_INLINE_FUNCTION SizeType size() const
         {
@@ -105,47 +90,24 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)
         {
-            const SizeType n = size();
-
-            for(SizeType i = 0; i < n; ++i) {
-                view_[i] *= alpha;
-            }
-
-            // KokkosBlas::scal(view_,alpha,view_);
+            device::scale(alpha, view_);
         }
 
         template<class OtherArrayView>
         UTOPIA_INLINE_FUNCTION void axpy(const Scalar &alpha, const VectorView<OtherArrayView> &x)
         {
-            const SizeType n = size();
-            assert(n == x.size());
-
-            for(SizeType i = 0; i < n; ++i) {
-                view_[i] += alpha * x.get(i);
-            }
-
-            // KokkosBlas::axpy(alpha,x.view_,view_);
+            return device::axpy(alpha, x.view_, view_);
         }
 
         template<class OtherArrayView>
         UTOPIA_INLINE_FUNCTION Scalar dot(const VectorView<OtherArrayView> &other) const
         {
-            Scalar ret = 0.0;
-            const SizeType n = size();
-            assert(n == other.size());
-
-            for(SizeType i = 0; i < n; ++i) {
-                ret += get(i) * other.get(i);
-            }
-
-            return ret;
-            // return KokkosBlas::dot(view_, other.view_);
+            return device::dot(view_, other.view_);
         }
 
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)
         {
-            std::fill(&view_[0], &view_[0] + size(), alpha);
-            // KokkosBlas::fill(view_, alpha);
+            device::fill(alpha, view_);
         }
 
         UTOPIA_FUNCTION VectorView(const ArrayView &view)

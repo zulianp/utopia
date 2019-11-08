@@ -7,8 +7,6 @@
 //include edsl components
 #include "utopia_Core.hpp"
 #include "utopia_Jacobi.hpp"
-#include "utopia_kokkos_VectorView.hpp"
-#include "utopia_kokkos_MatrixView.hpp"
 #include "utopia_kokkos_Traits.hpp"
 #include "test_problems/utopia_trilinos_Poisson3D.hpp"
 
