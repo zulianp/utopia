@@ -282,10 +282,17 @@ namespace utopia {
         assert(!has_nan_or_inf(mass_mat));
 
         mass_vec = sum(mass_mat, 1);
+        inv_mass_vec = mass_vec;
         e_pseudo_inv(mass_vec, inv_mass_vec);
 
-        // disp(grad_ph.size());
         disp(mass_vec.size());
+        disp(inv_mass_vec.size());
+        disp(mass_mat.size());
+
+        assert(mass_vec.local_size() == inv_mass_vec.local_size());
+
+        // disp(grad_ph.size());
+      
 
         if(!mortar.empty()) {
             grad_ph  = transpose(mortar_matrix) * grad_ph;

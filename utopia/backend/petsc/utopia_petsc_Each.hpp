@@ -81,7 +81,7 @@ namespace utopia {
 
             const auto s = size(in);
             if(s != size(out)) {
-                out = local_zeros(s);
+                out = local_zeros(local_size(out));
             }
 
             const auto &impl_in = raw_type(in);
