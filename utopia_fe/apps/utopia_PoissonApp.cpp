@@ -63,7 +63,7 @@ namespace utopia {
 
         apply_boundary_conditions(V, A, rhs);
 
-        Factorization<USparseMatrix, UVector> fact;//(MATSOLVERMUMPS,PCLU);
+        Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
         fact.describe(std::cout);
         fact.solve(A, rhs, x);
 

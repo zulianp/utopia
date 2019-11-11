@@ -9,6 +9,8 @@
 #include "libmesh/petsc_matrix.h"
 #include "libmesh/petsc_vector.h"
 #include "libmesh/elem.h"
+#include "libmesh/fe_abstract.h"
+#include "libmesh/fe_base.h"
 
 namespace utopia {
 
@@ -74,7 +76,9 @@ namespace utopia {
 
     private:
         libMesh::DofConstraints dof_constraints_;
-
+        #ifdef LIBMESH_ENABLE_NODE_CONSTRAINTS
+        libMesh::NodeConstraints  _node_constraints;
+        #endif
         // void assemble_constraint(const LibMeshFunctionSpace &V);
         void assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map);
 
@@ -83,14 +87,13 @@ namespace utopia {
                                         const libMesh::DofMap &dof_map,
                                         const unsigned int variable_number,
                                         const libMesh::Elem * elem,
-                                        const unsigned mesh_dim,
-                                        std::vector<int> & index
+                                        const unsigned mesh_dim
+                                        /*std::vector<int> & index*/
                                         );
 
-        static void compute_all_constraints(
-            const libMesh::MeshBase &mesh,
-            const libMesh::DofMap &dof_map,
-            libMesh::DofConstraints &constraints);
+        static void compute_all_constraints(const libMesh::MeshBase &mesh,
+                                           const libMesh::DofMap &dof_map,
+                                           libMesh::DofConstraints &constraints);
 
         static void compute_boundary_nodes(const libMesh::MeshBase &mesh, 
                                            libMesh::DofMap &dof_map,
@@ -114,10 +117,12 @@ namespace utopia {
 
         static void process_constraints (libMesh::MeshBase  &mesh, 
                                          libMesh::DofMap &dof_map, 
-                                         libMesh::DofConstraints &_dof_constraints);
+                                         libMesh::DofConstraints &_dof_constraints,
+                                         std::vector<int> & index);
 
         static  void add_constraints_to_send_list(libMesh::DofMap &dof_map, 
-                                                  libMesh::DofConstraints &_dof_constraints, std::vector<libMesh::dof_id_type> &_send_list );
+                                                  libMesh::DofConstraints &_dof_constraints, 
+                                                  std::vector<libMesh::dof_id_type> &_send_list );
 
         static void gather_constraints (libMesh::MeshBase  & mesh,
                                          std::set<libMesh::dof_id_type> & unexpanded_dofs, 
