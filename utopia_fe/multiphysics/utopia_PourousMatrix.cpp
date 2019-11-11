@@ -284,6 +284,9 @@ namespace utopia {
         mass_vec = sum(mass_mat, 1);
         e_pseudo_inv(mass_vec, inv_mass_vec);
 
+        // disp(grad_ph.size());
+        disp(mass_vec.size());
+
         if(!mortar.empty()) {
             grad_ph  = transpose(mortar_matrix) * grad_ph;
             // //FIXME
