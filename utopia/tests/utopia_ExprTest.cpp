@@ -471,13 +471,15 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();                     
         }
 
-
         void e_pseudo_inv_test()
         {
             Vector x1, x2;
 
             x1 = local_values(n_ * (x1.comm().rank() + 1), 1.0); 
             e_pseudo_inv(x1, x2);
+
+            utopia_test_assert(!x2.empty());
+            utopia_test_assert(range(x1) == range(x2));
 
             UTOPIA_NO_ALLOC_BEGIN("e_pseudo_inv_test");
             e_pseudo_inv(x1, x2);
