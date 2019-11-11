@@ -6,6 +6,7 @@
 #include "utopia_MatrixView.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_ViewAssign.hpp"
+#include "utopia_ViewBinary.hpp"
 
 #include <utility>
 
@@ -26,6 +27,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(matrix_view_test);
             UTOPIA_RUN_TEST(mv_view_test);
             UTOPIA_RUN_TEST(view_assign_test);
+            UTOPIA_RUN_TEST(view_binary_test);
         }
 
         void array_view_test()
@@ -95,6 +97,21 @@ namespace utopia {
             va.apply();
 
             utopia_test_assert(approxeq(x, y));
+        }
+
+        void view_binary_test()
+        {
+            // using V = utopia::Vector3<Scalar>;
+            // V x;
+            // V y;
+            // x.set(0.0);
+            // y.set(1.0);
+
+            // ViewAssign<V, ViewBinary<V, V, Plus>> va(x, ViewBinary<V, V, Plus>(y, y));
+            // va.apply();
+
+            // y.scale(2.0);
+            // utopia_test_assert(approxeq(x, y));
         }
     };
 
