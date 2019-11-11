@@ -20,7 +20,7 @@ namespace utopia {
             StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE
         };
 
-        Derived &derived() { return static_cast<Derived &>(*this); }
+        UTOPIA_INLINE_FUNCTION Derived &derived() { return static_cast<Derived &>(*this); }
 
         // virtual ~ViewExpression() { }
 
