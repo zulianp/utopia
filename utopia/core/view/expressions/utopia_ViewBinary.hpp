@@ -18,12 +18,12 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION ViewBinary(Left &left, const Right &right) : left_(left), right_(right) {}
 
-        UTOPIA_INLINE_FUNCTION void apply(const SizeType &i, const SizeType &j) const
+        UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const
         {
             return DeviceOp<Scalar, Op>::apply(left_(i, j), right_(i, j));
         }
 
-        UTOPIA_INLINE_FUNCTION void apply(const SizeType &i) const
+        UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i) const
         {
             return DeviceOp<Scalar, Op>::apply(left_(i), right_(i));
         }

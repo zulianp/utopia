@@ -101,17 +101,17 @@ namespace utopia {
 
         void view_binary_test()
         {
-            // using V = utopia::Vector3<Scalar>;
-            // V x;
-            // V y;
-            // x.set(0.0);
-            // y.set(1.0);
+            using V = utopia::Vector3<Scalar>;
+            V x;
+            V y;
+            x.set(0.0);
+            y.set(1.0);
 
-            // ViewAssign<V, ViewBinary<V, V, Plus>> va(x, ViewBinary<V, V, Plus>(y, y));
-            // va.apply();
+            ViewAssign<V, ViewBinary<V, V, Plus>> va(x, ViewBinary<V, V, Plus>(y, y));
+            va.apply();
 
-            // y.scale(2.0);
-            // utopia_test_assert(approxeq(x, y));
+            y.scale(2.0);
+            utopia_test_assert(approxeq(x, y));
         }
     };
 

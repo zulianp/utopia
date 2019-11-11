@@ -18,7 +18,7 @@ namespace utopia {
     template<class Scalar>
     class DeviceOp<Scalar, Min> {
     public:
-        UTOPIA_INLINE_FUNCTION Scalar apply(const Scalar &a, const Scalar &b) const {
+        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
             return (a < b)? a : b;
         }
     };
@@ -28,6 +28,14 @@ namespace utopia {
     public:
         UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
             return a + b;
+        }
+    };
+
+    template<class Scalar>
+    class DeviceOp<Scalar, Minus> {
+    public:
+        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            return a - b;
         }
     };
 
