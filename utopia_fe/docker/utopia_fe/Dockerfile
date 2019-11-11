@@ -30,12 +30,12 @@ RUN cd /utopia_cloned/utopia/bin && make install
 
 # compile utopia (DEBUG)
 
-RUN cd /utopia_cloned/utopia && mkdir bin_debug
-RUN cd /utopia_cloned/utopia/bin_debug && \
-    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_debug -DCMAKE_BUILD_TYPE=Debug
+# RUN cd /utopia_cloned/utopia && mkdir bin_debug
+# RUN cd /utopia_cloned/utopia/bin_debug && \
+#    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_debug -DCMAKE_BUILD_TYPE=Debug
 
-RUN cd /utopia_cloned/utopia/bin_debug && make -j
-RUN cd /utopia_cloned/utopia/bin_debug && make install
+# RUN cd /utopia_cloned/utopia/bin_debug && make -j
+# RUN cd /utopia_cloned/utopia/bin_debug && make install
 
 ##########################################################################
 
@@ -88,8 +88,8 @@ RUN cd /utopia_cloned/utopia_fe/bin && make install
 RUN echo 'UTOPIA TESTING' 											   > /utopia_test_out.txt
 RUN cd /utopia_cloned/utopia/bin       && ./utopia_test -verbose -bench >> /utopia_test_out.txt
 
-RUN echo 'UTOPIA TESTING (DEBUG)' 									  >> /utopia_test_out.txt
-RUN cd /utopia_cloned/utopia/bin_debug && ./utopia_test -verbose -bench >> /utopia_test_out.txt
+# RUN echo 'UTOPIA TESTING (DEBUG)' 									  >> /utopia_test_out.txt
+# RUN cd /utopia_cloned/utopia/bin_debug && ./utopia_test -verbose -bench >> /utopia_test_out.txt
 
 # RUN echo 'UTOPIA_FE TESTING' 											   > /utopia_fe_test_out.txt
 # RUN cd /utopia_cloned/utopia_fe/bin       && ./utopia_fe_exec -test all >> /utopia_fe_test_out.txt
