@@ -456,6 +456,8 @@ namespace utopia
         {
             auto q_weights_device = q_weights_.view_device();
 
+            UTOPIA_TRACE_REGION_BEGIN("Poisson::assemble_laplacian");
+
             Kokkos::parallel_for(
                 "Poisson::assemble_laplacian",
                 TeamPolicy(n_elements_, Kokkos::AUTO),
@@ -487,6 +489,7 @@ namespace utopia
                         });
                 });
 
+            UTOPIA_TRACE_REGION_END("Poisson::assemble_laplacian");
 
             assemble_matrix(laplacian_);
         }

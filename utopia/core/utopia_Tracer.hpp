@@ -7,6 +7,7 @@
 #include <stack>
 #include <chrono>
 #include <csignal>
+#include <string>
 
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"
@@ -38,6 +39,15 @@ namespace utopia {
             }
         }
 
+        void intercept(const std::string &name) 
+        {
+            if(interrupt_on_intercept_ && !expr_.empty() && name == expr_)  {
+                // abort();
+                std::raise(SIGINT);
+
+            }
+        }
+
         inline void expr(const std::string &expr) {
             expr_ = expr;
         }
@@ -55,10 +65,12 @@ namespace utopia {
     public:
         template<class T>
         MeasurementId apply_begin(const Expression<T> &expr);
+        MeasurementId region_begin(const std::string &region_name);//, const std::string &file, int line);
 
         template<class T>
         MeasurementId apply_begin_specialized(const Expression<T> &expr);
-        void apply_end();
+        inline void apply_end();
+        inline void region_end();
         static Tracer &instance();
 
         void save_collected_log();
@@ -83,6 +95,11 @@ namespace utopia {
         Measurement(const Expression<T> &expr, const std::string &prefix = "") {
             id_ = generate_unique_id();
             class_ = prefix + expr.get_class();
+        }
+
+        inline Measurement(const std::string &region_name) {
+            id_ = generate_unique_id();
+            class_ = region_name;
         }
 
         inline MeasurementId get_id() const {
@@ -132,19 +149,34 @@ namespace utopia {
         return m.get_id();
     }
 
+    inline MeasurementId Tracer::region_begin(const std::string &region_name)//, const std::string &file, int line)
+    {
+       interceptor().intercept(region_name); 
+
+       Measurement m(region_name);// + "  [" + file + ":" + std::to_string(line) + "]");
+       running_events_.push(m.get_id());
+       event_map_.insert(std::make_pair(m.get_id(), m));
+       event_map_.at(m.get_id()).begin();
+       return m.get_id();
+    }
+
     inline void Tracer::apply_end() {
         const MeasurementId &id = running_events_.top();
         event_map_.at(id).end();
         running_events_.pop();
     }
 
-
-
+    inline void Tracer::region_end() {
+       apply_end();
+    }
 
 }
 
 #define UTOPIA_TRACE_BEGIN(macro_expr_)  utopia::Tracer::instance().apply_begin(macro_expr_)
 #define UTOPIA_TRACE_END(macro_expr_)    utopia::Tracer::instance().apply_end()
+
+#define UTOPIA_TRACE_REGION_BEGIN(macro_region_name_)  utopia::Tracer::instance().region_begin(macro_region_name_);//, __FILE__, __LINE__)
+#define UTOPIA_TRACE_REGION_END(macro_region_name_)    utopia::Tracer::instance().region_end()
 
 #define UTOPIA_TRACE_BEGIN_SPECIALIZED(macro_expr_)  utopia::Tracer::instance().apply_begin_specialized(macro_expr_)
 #define UTOPIA_TRACE_END_SPECIALIZED(macro_expr_)    utopia::Tracer::instance().apply_end()
@@ -154,6 +186,9 @@ namespace utopia {
 
 #define UTOPIA_TRACE_BEGIN(...)   ((void)0)
 #define UTOPIA_TRACE_END(...)     ((void)0)
+
+#define UTOPIA_TRACE_REGION_BEGIN(...) ((void)0)
+#define UTOPIA_TRACE_REGION_END(...) ((void)0)
 
 #define UTOPIA_TRACE_BEGIN_SPECIALIZED(...) ((void)0)
 #define UTOPIA_TRACE_END_SPECIALIZED(...) ((void)0)

@@ -72,7 +72,7 @@ namespace utopia {
 
     static void kokkos_poisson_2D()
     {
-        SizeType n = 1000;
+        SizeType n = 20;
 
         Chrono c;
         c.start();
