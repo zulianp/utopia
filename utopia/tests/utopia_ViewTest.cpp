@@ -5,8 +5,8 @@
 #include "utopia_VectorView.hpp"
 #include "utopia_MatrixView.hpp"
 #include "utopia_Algorithms.hpp"
-#include "utopia_ViewAssign.hpp"
-#include "utopia_ViewBinary.hpp"
+#include "utopia_DeviceAssign.hpp"
+#include "utopia_DeviceBinary.hpp"
 
 #include <utility>
 
@@ -93,7 +93,7 @@ namespace utopia {
             x.set(0.0);
             y.set(1.0);
 
-            ViewAssign<V, V> va(x, y);
+            DeviceAssign<V, V> va(x, y);
             va.apply();
 
             utopia_test_assert(approxeq(x, y));
@@ -107,7 +107,7 @@ namespace utopia {
             x.set(0.0);
             y.set(1.0);
 
-            ViewAssign<V, ViewBinary<V, V, Plus>> va(x, ViewBinary<V, V, Plus>(y, y));
+            DeviceAssign<V, DeviceBinary<V, V, Plus>> va(x, DeviceBinary<V, V, Plus>(y, y));
             va.apply();
 
             y.scale(2.0);

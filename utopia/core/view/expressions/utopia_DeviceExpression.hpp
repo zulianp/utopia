@@ -10,11 +10,11 @@ namespace utopia {
     /*!
      * @brief Every result of an algebraic
      * operation is an expression.
-     * @tparam Derived is the most specific subclass of ViewExpression.
+     * @tparam Derived is the most specific subclass of DeviceExpression.
      * It is using the Curiously Recurring Template (CRT) pattern.
      */
     template<class Derived>
-    class ViewExpression {
+    class DeviceExpression {
     public:
         enum {
             StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE
@@ -22,7 +22,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION Derived &derived() { return static_cast<Derived &>(*this); }
 
-        // virtual ~ViewExpression() { }
+        // virtual ~DeviceExpression() { }
 
         ///@return itself as its Derived type
         UTOPIA_INLINE_FUNCTION constexpr const Derived &derived() const {
@@ -41,7 +41,7 @@ namespace utopia {
 
         ///@return a string with the name of the class
         virtual std::string get_class() const {
-            return "ViewExpression";
+            return "DeviceExpression";
         }
     };
 }

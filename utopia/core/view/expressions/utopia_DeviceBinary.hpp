@@ -6,17 +6,17 @@
 #include "utopia_StoreAs.hpp"
 #include "utopia_InlineEval.hpp"
 #include "utopia_DeviceOp.hpp"
-#include "utopia_ViewExpression.hpp"
+#include "utopia_DeviceExpression.hpp"
 
 namespace utopia {
 
     template<class Left, class Right, class Op>
-    class ViewBinary : public ViewExpression<ViewBinary<Left, Right, Op>>{
+    class DeviceBinary : public DeviceExpression<DeviceBinary<Left, Right, Op>>{
     public:
         using SizeType = typename Traits<Left>::SizeType;
         using Scalar = typename Traits<Left>::Scalar;
 
-        UTOPIA_INLINE_FUNCTION ViewBinary(Left &left, const Right &right) : left_(left), right_(right) {}
+        UTOPIA_INLINE_FUNCTION DeviceBinary(Left &left, const Right &right) : left_(left), right_(right) {}
 
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const
         {
