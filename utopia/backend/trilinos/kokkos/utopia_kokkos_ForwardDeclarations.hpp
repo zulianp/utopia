@@ -2,11 +2,14 @@
 #define UTOPIA_KOKKOS_FORWARD_DECLARATIONS_HPP
 
 namespace utopia {
-    template<class KokkosView_>
-    class VectorView;
+    // template<class View, int Order>
+    // class TensorView;
+    
+    // template<class View>
+    // using VectorView = utopia::TensorView<View, 1>;
 
-    template<class KokkosView_>
-    class MatrixView;
+    // template<class KokkosView_>
+    // class MatrixView;
 }
 
 #endif //UTOPIA_KOKKOS_FORWARD_DECLARATIONS_HPP

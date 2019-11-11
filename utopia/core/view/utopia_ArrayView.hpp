@@ -54,8 +54,8 @@ namespace utopia {
             return data_ + size_;
         }
 
-        ArrayView() : data_(nullptr), size_(0) {}
-        ArrayView(T * data, const T &size) : data_(data), size_(size) {}
+        UTOPIA_FUNCTION ArrayView() : data_(nullptr), size_(0) {}
+        UTOPIA_FUNCTION ArrayView(T * data, const T &size) : data_(data), size_(size) {}
 
     private:
         T *data_;
@@ -226,16 +226,16 @@ namespace utopia {
             return data_.end();
         }
 
-        ArrayView(T * data, const SizeType &rows, const SizeType &cols)
+        UTOPIA_FUNCTION ArrayView(T * data, const SizeType &rows, const SizeType &cols)
         : data_(data), rows_(rows), cols_(cols)
         {}
 
-        ArrayView()
+        UTOPIA_FUNCTION ArrayView()
         : data_(nullptr), rows_(0), cols_(0)
         {}
 
     private:
-        ArrayView<T, DYNAMIC_SIZE> data_;
+        ArrayView<T> data_;
         SizeType rows_, cols_;
     };
  

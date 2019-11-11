@@ -8,11 +8,14 @@ namespace utopia {
     template<typename T, Size_t... Args>
     class ArrayView;
 
-    template<class ArrayView_>
-    class VectorView;
+    template<class View, int Order>
+    class TensorView;
+    
+    template<class View>
+    using VectorView = utopia::TensorView<View, 1>;
 
-    template<class ArrayView_>
-    class MatrixView;
+    template<class View>
+    using MatrixView = utopia::TensorView<View, 2>;
 }
 
 #endif

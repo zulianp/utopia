@@ -1,42 +1,41 @@
 #ifndef UTOPIA_KOKKOS_VECTOR_VIEW_HPP
 #define UTOPIA_KOKKOS_VECTOR_VIEW_HPP
 
-#include "utopia_Tensor.hpp"
+#include "utopia_TensorView.hpp"
 #include "utopia_Algorithms.hpp"
 
 namespace utopia {
 
     template<class ArrayView_>
-    class VectorView final : public Tensor<VectorView<ArrayView_>, 1> {
+    class TensorView<ArrayView_, 1> final : public Tensor<TensorView<ArrayView_, 1>, 1> {
     public:
         using ArrayView = ArrayView_;
         using Scalar   = typename Traits<ArrayView>::Scalar;
         using SizeType = typename Traits<ArrayView>::SizeType;
 
-        using Super = utopia::Tensor<VectorView, 1>;
+        using Super = utopia::Tensor<TensorView, 1>;
         using Super::Super;
 
         inline std::string get_class() const override
         {
-            return "VectorView";
+            return "TensorView";
         }
 
-        
         template<class... Args>
-        UTOPIA_FUNCTION VectorView(Args && ...args)
+        UTOPIA_FUNCTION TensorView(Args && ...args)
         : view_(std::forward<Args>(args)...)
         {}
 
 
         template<class Expr>
-        UTOPIA_FUNCTION VectorView(const Expression<Expr> &expr)
+        UTOPIA_FUNCTION TensorView(const Expression<Expr> &expr)
         {
             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
             Super::construct_eval(expr.derived());
         }
 
         template<class Expr>
-        UTOPIA_INLINE_FUNCTION VectorView &operator=(const Expression<Expr> &expr)
+        UTOPIA_INLINE_FUNCTION TensorView &operator=(const Expression<Expr> &expr)
         {
             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
             Super::assign_eval(expr.derived());
@@ -44,31 +43,24 @@ namespace utopia {
         }
 
         template<class OtherArrayView>
-        UTOPIA_FUNCTION void copy(const VectorView<OtherArrayView> &other)
+        UTOPIA_FUNCTION void copy(const TensorView<OtherArrayView, 1> &other)
         {
             UTOPIA_DEVICE_ASSERT(size() == other.size());
-
-            // const SizeType n = size();
-
-            // for(SizeType i = 0; i < n; ++i) {
-            //     view_[i] = other.get(i);
-            // }
-
             device::copy(other.view_, view_);
         }
 
         template<class OtherArrayView>
-        UTOPIA_FUNCTION void assign(const VectorView<OtherArrayView> &other)
+        UTOPIA_FUNCTION void assign(const TensorView<OtherArrayView, 1> &other)
         {
             copy(other);
         }
 
-        UTOPIA_FUNCTION void assign(const VectorView &other) override
+        UTOPIA_FUNCTION void assign(const TensorView &other) override
         {
             copy(other);
         }
 
-        UTOPIA_FUNCTION void assign(VectorView &&other) override
+        UTOPIA_FUNCTION void assign(TensorView &&other) override
         {
             view_ = std::move(other.view_);
         }
@@ -102,13 +94,13 @@ namespace utopia {
         }
 
         template<class OtherArrayView>
-        UTOPIA_INLINE_FUNCTION void axpy(const Scalar &alpha, const VectorView<OtherArrayView> &x)
+        UTOPIA_INLINE_FUNCTION void axpy(const Scalar &alpha, const TensorView<OtherArrayView, 1> &x)
         {
             return device::axpy(alpha, x.view_, view_);
         }
 
         template<class OtherArrayView>
-        UTOPIA_INLINE_FUNCTION Scalar dot(const VectorView<OtherArrayView> &other) const
+        UTOPIA_INLINE_FUNCTION Scalar dot(const TensorView<OtherArrayView, 1> &other) const
         {
             return device::dot(view_, other.view_);
         }
@@ -118,7 +110,7 @@ namespace utopia {
             device::fill(alpha, view_);
         }
 
-        UTOPIA_FUNCTION VectorView(const ArrayView &view)
+        UTOPIA_FUNCTION TensorView(const ArrayView &view)
         : view_(view) {}
 
         inline void describe() const
@@ -134,19 +126,19 @@ namespace utopia {
             view_ = view;
         }
 
-        UTOPIA_INLINE_FUNCTION bool is_alias(const VectorView &other) const
+        UTOPIA_INLINE_FUNCTION bool is_alias(const TensorView &other) const
         {
             return &(view_[0]) == &(other.view_[0]);
         }
 
-        template<class OtherView>
-        UTOPIA_INLINE_FUNCTION constexpr static bool is_alias(const VectorView<OtherView> &)
+        template<class OtherArrayView>
+        UTOPIA_INLINE_FUNCTION constexpr static bool is_alias(const TensorView<OtherArrayView, 1> &)
         {
             return false;
         }
 
-        template<class OtherView>
-        inline bool equals(const VectorView<OtherView> &other, const Scalar &tol) const
+        template<class OtherArrayView>
+        inline bool equals(const TensorView<OtherArrayView, 1> &other, const Scalar &tol) const
         {
             if(size() != other.size()) return false;
             return device::approxeq(view_, other.view_, tol);
@@ -155,7 +147,7 @@ namespace utopia {
     private:
         ArrayView view_;
 
-        UTOPIA_FUNCTION VectorView(const VectorView &other) : view_(other.view_) {
+        UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {
             UTOPIA_DEVICE_ASSERT(false);
         }
     };
