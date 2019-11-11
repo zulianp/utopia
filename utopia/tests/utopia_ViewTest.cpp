@@ -5,6 +5,7 @@
 #include "utopia_VectorView.hpp"
 #include "utopia_MatrixView.hpp"
 #include "utopia_Algorithms.hpp"
+#include "utopia_ViewAssign.hpp"
 
 #include <utility>
 
@@ -24,6 +25,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(vector_view_test);
             UTOPIA_RUN_TEST(matrix_view_test);
             UTOPIA_RUN_TEST(mv_view_test);
+            UTOPIA_RUN_TEST(view_assign_test);
         }
 
         void array_view_test()
@@ -79,6 +81,20 @@ namespace utopia {
             y = A * x;
 
             utopia_test_assert(approxeq(expected, y, 1e-10));
+        }
+
+        void view_assign_test()
+        {
+            using V = utopia::Vector3<Scalar>;
+            V x;
+            V y;
+            x.set(0.0);
+            y.set(1.0);
+
+            ViewAssign<V, V> va(x, y);
+            va.apply();
+
+            utopia_test_assert(approxeq(x, y));
         }
     };
 

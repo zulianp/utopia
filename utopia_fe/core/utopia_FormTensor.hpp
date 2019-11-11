@@ -66,6 +66,8 @@ namespace utopia {
         {
             return "Form" + Order2String<Order>::Value();
         }
+        
+        FormTensor() {}
 
         FormTensor(FormTensor &&other) 
         : values_(std::move(other.values_))

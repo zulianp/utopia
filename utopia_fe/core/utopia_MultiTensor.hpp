@@ -207,6 +207,7 @@ namespace utopia {
             return "Multi" + Order2String<Order>::Value();
         }
 
+        MultiTensor() {}
 
         MultiTensor(MultiTensor &&other) 
         : values_(std::move(other.values_))

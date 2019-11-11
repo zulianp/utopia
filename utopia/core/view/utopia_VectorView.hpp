@@ -73,6 +73,17 @@ namespace utopia {
             return view_.size();
         }
 
+        UTOPIA_INLINE_FUNCTION Scalar &operator()(const SizeType &i)
+        {
+            return view_[i];
+        }
+
+        UTOPIA_INLINE_FUNCTION const Scalar &operator()(const SizeType &i) const
+        {
+            return view_[i];
+        }
+
+
         UTOPIA_INLINE_FUNCTION const Scalar &get(const SizeType &i) const
         {
             return view_[i];
@@ -141,7 +152,7 @@ namespace utopia {
         inline bool equals(const TensorView<OtherArrayView, 1> &other, const Scalar &tol) const
         {
             if(size() != other.size()) return false;
-            return device::approxeq(view_, other.view_, tol);
+            return device::approxeq(view_, other.raw_type(), tol);
         }
 
     private:

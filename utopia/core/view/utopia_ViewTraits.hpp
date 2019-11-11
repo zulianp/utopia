@@ -16,12 +16,6 @@ namespace utopia {
         static const int FILL_TYPE = FillType::DENSE;
     };
 
-    template<class View>
-    class Traits< VectorView<View> > : public Traits<View> {};
-
-    template<class View>
-    class Traits< MatrixView<View> > : public Traits<View> {};
-
     template<typename T, Size_t Size>
     using StaticVector = utopia::VectorView<ArrayView<T, Size>>; 
 
