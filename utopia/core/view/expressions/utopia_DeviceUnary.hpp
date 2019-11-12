@@ -34,6 +34,10 @@ namespace utopia {
 
     template<class InnerExpr>
     using DeviceNegate = utopia::DeviceUnary<InnerExpr, Minus>;
+
+
+    template<class InnerExpr, class Op>
+    class Traits<DeviceUnary<InnerExpr, Op>> : public Traits<InnerExpr> {};
 }
 
 #endif

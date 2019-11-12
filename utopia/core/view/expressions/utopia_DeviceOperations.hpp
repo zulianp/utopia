@@ -102,50 +102,67 @@ namespace utopia {
      * @brief   \f$ x_i^2  \f$.
      */
     template<class Derived>
-    auto pow2(const DeviceExpression<Derived> &expr) -> decltype(transform(expr, Pow2())) {
-        return transform(expr, Pow2());
-    }
-    template<class Derived>
-    auto power(const DeviceExpression<Derived> &expr, const double &a) -> decltype(transform(expr, Pow(a))) {
-        return transform(expr, Pow(a));
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Pow2> pow2(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceUnary<Derived, Pow2>(expr.derived());
     }
 
     template<class Derived>
-    auto logn(const DeviceExpression<Derived> &expr) -> decltype(transform(expr, Log())) {
-        return transform(expr, Log());
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Log> logn(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceUnary<Derived, Log>(expr.derived());
     }
 
     template<class Derived>
-    auto exp(const DeviceExpression<Derived> &expr) -> decltype(transform(expr, Exp())) {
-        return transform(expr, Exp());
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Exp> exp(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceUnary<Derived, Exp>(expr.derived());
     }
 
     template<class Derived>
-    auto cos(const DeviceExpression<Derived> &expr) -> decltype(transform(expr, Cos())) {
-        return transform(expr, Cos());
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Cos> cos(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceUnary<Derived, Cos>(expr.derived());
     }
 
     template<class Derived>
-    auto sin(const DeviceExpression<Derived> &expr) -> decltype(transform(expr, Sin())) {
-        return transform(expr, Sin());
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Sin> sin(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceUnary<Derived, Sin>(expr.derived());
     }
 
+ 
+  
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Pow> power(
+        const DeviceExpression<Derived> &expr,
+        const typename Traits<Derived>::Scalar &a)
+    {
+        return DeviceBinary<
+            Derived,
+            DeviceNumber<typename Traits<Derived>::Scalar>,
+            Pow
+            >(expr.derived(), a);
+    }
+    
     /**
      * @ingroup transforms
      * @brief   \f$ | x_i |  \f$.
      */
     template<class Derived>
-    auto abs(const DeviceExpression<Derived> &expr) -> decltype(transform(expr, Abs())) {
-        return transform(expr, Abs());
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Abs> abs(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceUnary<Derived, Abs>(expr.derived());
     }
-
+    
     /**
      * @ingroup transforms
      * @brief   \f$ \sqrt(x_i)  \f$.
      */
     template<class Derived>
-    auto sqrt(const DeviceExpression<Derived> &expr) -> decltype(transform(expr, Sqrt())) {
-        return transform(expr, Sqrt());
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Sqrt> sqrt(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceUnary<Derived, Sqrt>(expr.derived());
     }
 
     /**
@@ -153,14 +170,26 @@ namespace utopia {
      * @brief   \f$ \frac 1 {x_i}  \f$.
      */
     template<class Derived>
-    auto operator / (const typename Derived::Scalar &left,
-                     const DeviceExpression<Derived> &expr) -> decltype( transform(expr, Reciprocal<typename Derived::Scalar>(left)) ) {
-        return transform(expr, Reciprocal<typename Derived::Scalar>(left));
+    UTOPIA_INLINE_FUNCTION
+    DeviceBinary<
+        DeviceNumber<typename Derived::Scalar>,
+        Derived,
+        Divides
+    > operator / (const typename Derived::Scalar &left,
+                  const DeviceExpression<Derived> &expr)
+    {
+        return DeviceBinary<
+            DeviceNumber<typename Derived::Scalar>,
+            Derived,
+            Divides
+        >(left, expr.derived());
     }
 
     template<class LDerived, class RDerived>
-    DeviceBinary<LDerived, RDerived, Divides> operator / (const DeviceExpression<LDerived> &left,
-                                                    const DeviceExpression<RDerived> &right)
+    UTOPIA_INLINE_FUNCTION DeviceBinary<LDerived, RDerived, Divides> operator / (
+        const DeviceExpression<LDerived> &left,
+        const DeviceExpression<RDerived> &right
+        )
     {
         return DeviceBinary<LDerived, RDerived, Divides>(left.derived(), right.derived());
     }

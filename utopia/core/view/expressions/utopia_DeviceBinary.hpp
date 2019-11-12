@@ -58,6 +58,9 @@ namespace utopia {
         const Left left_;
         UTOPIA_STORE_CONST(Right) right_;
     };
+
+    template<class Left, class Right, class Operation>
+    class Traits< DeviceBinary<Left, Right, Operation> > : public Traits< typename MostDescriptive<Left, Right>::Type > {};
 }
 
 #endif

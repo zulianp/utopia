@@ -22,6 +22,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(mv_view_test);
             UTOPIA_RUN_TEST(view_assign_test);
             UTOPIA_RUN_TEST(view_binary_test);
+            UTOPIA_RUN_TEST(view_unary_test);
+            UTOPIA_RUN_TEST(view_composite_test);
         }
 
         void array_view_test()
@@ -105,6 +107,32 @@ namespace utopia {
             va.apply();
 
             y.scale(2.0);
+            utopia_test_assert(approxeq(x, y));
+        }
+
+        void view_unary_test()
+        {
+            using V = utopia::Vector3<Scalar>;
+            V x, y;
+            x.set(2.0);
+            y.set(4.0);
+
+            x = pow2(x);
+            x = abs(x);
+
+            utopia_test_assert(approxeq(x, y));
+        }
+
+        void view_composite_test()
+        {
+            using V = utopia::Vector3<Scalar>;
+            V x, y;
+
+            x.set(2.0);
+            y.set(6.0);
+
+            x = pow2(x) + abs(x);
+
             utopia_test_assert(approxeq(x, y));
         }
     };

@@ -84,6 +84,14 @@ namespace utopia {
         }
     };
 
+    template<class Scalar>
+    class DeviceOp<Scalar, Abs> {
+    public:
+        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &a) {
+            return a < 0.0 ? -a : a;
+        }
+    };
+
 }
 
 #endif
