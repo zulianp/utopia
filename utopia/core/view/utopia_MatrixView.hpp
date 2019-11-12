@@ -11,9 +11,7 @@
 namespace utopia {
 
     template<class ArrayView2D_>
-    class TensorView<ArrayView2D_, 2> final : 
-    // public Tensor<TensorView<ArrayView2D_, 2>, 2>
-    public DeviceExpression< TensorView<ArrayView2D_, 2> >
+    class TensorView<ArrayView2D_, 2> final : public DeviceExpression< TensorView<ArrayView2D_, 2> >
     {
     public:
         using ArrayView2D = ArrayView2D_;

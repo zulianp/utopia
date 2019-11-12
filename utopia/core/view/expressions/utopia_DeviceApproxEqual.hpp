@@ -57,6 +57,9 @@ namespace utopia {
             return device::approxeq(left, right, tol);
         }
     };
+
+    template<class Left, class Right>
+    class Traits< DeviceApproxEqual<Left, Right> > : public Traits< typename MostDescriptive<Left, Right>::Type > {};
 }
 
 #endif

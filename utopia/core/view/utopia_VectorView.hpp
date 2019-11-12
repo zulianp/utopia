@@ -9,9 +9,7 @@
 namespace utopia {
 
     template<class ArrayView_>
-    class TensorView<ArrayView_, 1> final : 
-    // public Tensor<TensorView<ArrayView_, 1>, 1>
-    public DeviceExpression< TensorView<ArrayView_, 1> >
+    class TensorView<ArrayView_, 1> final : public DeviceExpression< TensorView<ArrayView_, 1> >
     {
     public:
         using ArrayView = ArrayView_;
@@ -22,9 +20,6 @@ namespace utopia {
             StoreAs = UTOPIA_BY_REFERENCE
         };
 
-        // using Super = utopia::Tensor<TensorView, 1>;
-        // using Super::Super;
-
         inline std::string get_class() const override
         {
             return "VectorView";
@@ -34,22 +29,6 @@ namespace utopia {
         UTOPIA_FUNCTION TensorView(Args && ...args)
         : view_(std::forward<Args>(args)...)
         {}
-
-
-        // template<class Expr>
-        // UTOPIA_FUNCTION TensorView(const Expression<Expr> &expr)
-        // {
-        //     //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
-        //     Super::construct_eval(expr.derived());
-        // }
-
-        // template<class Expr>
-        // UTOPIA_INLINE_FUNCTION TensorView &operator=(const Expression<Expr> &expr)
-        // {
-        //     //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
-        //     Super::assign_eval(expr.derived());
-        //     return *this;
-        // }
 
         template<class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)

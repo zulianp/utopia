@@ -47,6 +47,9 @@ namespace utopia {
         UTOPIA_STORE_CONST(Right) right_;
 
     };
+
+    template<class Left, class Right>
+    class Traits< DeviceMultiply<Left, Right> > : public Traits<typename ChooseType<Left, Right, Right>::Type > {};
 }
 
 #endif

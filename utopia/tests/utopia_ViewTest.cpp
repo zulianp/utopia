@@ -125,8 +125,11 @@ namespace utopia {
 
         void view_composite_test()
         {
-            using V = utopia::Vector3<Scalar>;
-            V x, y;
+            using V3 = utopia::Vector3<Scalar>;
+            using V2 = utopia::Vector2<Scalar>;
+            using Mat3x2 = utopia::StaticMatrix<Scalar, 3, 2>;
+
+            V3 x, y;
 
             x.set(2.0);
             y.set(6.0);
@@ -134,6 +137,17 @@ namespace utopia {
             x = pow2(x) + abs(x);
 
             utopia_test_assert(approxeq(x, y));
+
+
+            Mat3x2 A;
+            A.set(2.0);
+
+            x.set(1.0);
+
+            V2 w; w.set(1.0);
+
+            V2 z;
+            z = A * x + w;
         }
     };
 
