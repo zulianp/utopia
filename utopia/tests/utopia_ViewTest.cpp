@@ -1,12 +1,6 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
-#include "utopia_ArrayView.hpp"
-#include "utopia_ViewTraits.hpp"
-#include "utopia_VectorView.hpp"
-#include "utopia_MatrixView.hpp"
-#include "utopia_Algorithms.hpp"
-#include "utopia_DeviceAssign.hpp"
-#include "utopia_DeviceBinary.hpp"
+#include "utopia_Views.hpp"
 
 #include <utility>
 

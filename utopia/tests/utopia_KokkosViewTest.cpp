@@ -8,7 +8,10 @@
 #include "utopia_Core.hpp"
 #include "utopia_Jacobi.hpp"
 #include "utopia_kokkos_Traits.hpp"
+#include "utopia_Views.hpp"
 #include "test_problems/utopia_trilinos_Poisson3D.hpp"
+
+
 
 #include <cmath>
 

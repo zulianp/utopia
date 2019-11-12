@@ -16,6 +16,33 @@ namespace utopia {
 
     template<class View>
     using MatrixView = utopia::TensorView<View, 2>;
+
+    template<class InnerExpr, class Op>
+    class DeviceUnary;
+
+    template<class Left, class Right>
+    class DeviceAssign;
+
+    template<class Left, class Right, class Op>
+    class DeviceBinary;
+
+    template<class Left, class Right, class Op, int Order>
+    class DeviceInPlace;
+
+    template<class Left, class Right, int Order>
+    class DeviceApproxEqual;
+
+    template<class Left, class Right>
+    class DeviceMultiply;
+
+    template<class Left, class Right, int Order>
+    class DeviceDot;
+
+    template<class Derived>
+    class DeviceExpression;
+
+    template<class T>
+    class DeviceNumber;
 }
 
 #endif

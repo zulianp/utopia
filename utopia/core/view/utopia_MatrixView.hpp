@@ -1,27 +1,35 @@
 #ifndef UTOPIA_KOKKOS_MATRIX_VIEW_HPP
 #define UTOPIA_KOKKOS_MATRIX_VIEW_HPP
 
-#include "utopia_Tensor.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
+#include "utopia_Tensor.hpp"
 #include "utopia_Algorithms.hpp"
+#include "utopia_DeviceExpression.hpp"
 
 #include <utility>
 
 namespace utopia {
 
     template<class ArrayView2D_>
-    class TensorView<ArrayView2D_, 2> final : public Tensor<TensorView<ArrayView2D_, 2>, 2> {
+    class TensorView<ArrayView2D_, 2> final : 
+    // public Tensor<TensorView<ArrayView2D_, 2>, 2>
+    public DeviceExpression< TensorView<ArrayView2D_, 2> >
+    {
     public:
         using ArrayView2D = ArrayView2D_;
         using Scalar   = typename Traits<ArrayView2D>::Scalar;
         using SizeType = typename Traits<ArrayView2D>::SizeType;
+
+        enum {
+            StoreAs = UTOPIA_BY_REFERENCE
+        };
         
-        using Super = utopia::Tensor<TensorView, 2>;
-        using Super::Super;
+        // using Super = utopia::Tensor<TensorView, 2>;
+        // using Super::Super;
 
         inline std::string get_class() const override
         {
-            return "TensorView";
+            return "MatrixView";
         }
 
         template<class... Args>
@@ -29,20 +37,83 @@ namespace utopia {
         : view_(std::forward<Args>(args)...)
         {}
 
+        // template<class Expr>
+        // UTOPIA_FUNCTION TensorView(const Expression<Expr> &expr)
+        // {
+        //     //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+        //     Super::construct_eval(expr.derived());
+        // }
+
+
         template<class Expr>
-        UTOPIA_FUNCTION TensorView(const Expression<Expr> &expr)
+        UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)
         {
             //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
-            Super::construct_eval(expr.derived());
+            // Super::construct_eval(expr.derived());
+            DeviceAssign<TensorView, Expr>::apply(expr.derived());
+        }
+
+        // template<class Expr>
+        // UTOPIA_INLINE_FUNCTION TensorView &operator=(const Expression<Expr> &expr)
+        // {
+        //     //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+        //     Super::assign_eval(expr.derived());
+        //     return *this;
+        // }
+
+        template<class Expr>
+        UTOPIA_INLINE_FUNCTION TensorView &operator=(const DeviceExpression<Expr> &expr)
+        {
+            //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
+            // Super::assign_eval(expr.derived());
+            DeviceAssign<TensorView, Expr>::apply(expr.derived());
+            return *this;
         }
 
         template<class Expr>
-        UTOPIA_INLINE_FUNCTION TensorView &operator=(const Expression<Expr> &expr)
+        UTOPIA_INLINE_FUNCTION TensorView &operator+=(const DeviceExpression<Expr> &expr)
         {
-            //THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
-            Super::assign_eval(expr.derived());
+            DeviceInPlace<TensorView, Expr, Plus, 2>::apply(*this, expr.derived());
             return *this;
         }
+
+        template<class Expr>
+        UTOPIA_INLINE_FUNCTION TensorView &operator*=(const DeviceExpression<Expr> &expr)
+        {
+            DeviceInPlace<TensorView, Expr, Multiplies, 2>::apply(*this, expr.derived());
+            return *this;
+        }
+
+        template<class Expr>
+        UTOPIA_INLINE_FUNCTION TensorView &operator/=(const DeviceExpression<Expr> &expr)
+        {
+            DeviceInPlace<TensorView, Expr, Divides, 2>::apply(*this, expr.derived());
+            return *this;
+        }
+
+
+        /////////////////////////////////////////////////////////////
+
+        UTOPIA_INLINE_FUNCTION TensorView &operator+=(const Scalar &expr)
+        {
+            device::shift(expr, view_);
+            return *this;
+        }
+
+        UTOPIA_INLINE_FUNCTION TensorView &operator*=(const Scalar &expr)
+        {
+            scale(expr);
+            return *this;
+        }
+
+        UTOPIA_INLINE_FUNCTION TensorView &operator/=(const Scalar &expr)
+        {
+            scale(1./expr);
+            return *this;
+        }
+
+        /////////////////////////////////////////////////////////////
+
 
         template<class OtherArrayView2D>
         UTOPIA_FUNCTION void copy(const TensorView<OtherArrayView2D, 2> &other)
@@ -53,15 +124,15 @@ namespace utopia {
             device::copy(other.view_, view_);
         }
 
-        UTOPIA_FUNCTION void assign(const TensorView &other) override
-        {
-            copy(other);
-        }
+        // UTOPIA_FUNCTION void assign(const TensorView &other) override
+        // {
+        //     copy(other);
+        // }
 
-        UTOPIA_FUNCTION void assign(TensorView &&other) override
-        {
-            view_ = std::move(other.view_);
-        }
+        // UTOPIA_FUNCTION void assign(TensorView &&other) override
+        // {
+        //     view_ = std::move(other.view_);
+        // }
 
         UTOPIA_INLINE_FUNCTION ArrayView2D &raw_type() { return view_; }
         UTOPIA_INLINE_FUNCTION const ArrayView2D &raw_type() const { return view_; }
@@ -74,6 +145,21 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION SizeType cols() const
         {
             return device::extent(view_, 1);
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType size() const
+        {
+            return view_.size();
+        }
+
+        UTOPIA_INLINE_FUNCTION Scalar &operator()(const SizeType &i, const SizeType &j)
+        {
+            return view_(i, j);
+        }
+
+        UTOPIA_INLINE_FUNCTION const Scalar &operator()(const SizeType &i, const SizeType &j) const
+        {
+            return view_(i, j);
         }
 
         UTOPIA_INLINE_FUNCTION const Scalar &get(const SizeType &i, const SizeType &j) const

@@ -15,7 +15,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION static void apply(Left &left, const Right &right)
         {
-            const auto n = left.size();
+            const SizeType n = left.size();
             for(SizeType i = 0; i < n; ++i) {
                 left(i) = right(i);
             }
@@ -29,8 +29,8 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION static void apply(Left &left, const Right &right)
         {
-            const auto rows = left.rows();
-            const auto cols = left.cols();
+            const SizeType rows = left.rows();
+            const SizeType cols = left.cols();
 
             for(SizeType i = 0; i < rows; ++i) {
                 for(SizeType j = 0; j < cols; ++j) {

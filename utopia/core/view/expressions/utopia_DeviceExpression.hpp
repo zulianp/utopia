@@ -1,5 +1,5 @@
-#ifndef UTOPIA_VIEW_EXPRESSION_HPP
-#define UTOPIA_VIEW_EXPRESSION_HPP
+#ifndef UTOPIA_DEVICE_EXPRESSION_HPP
+#define UTOPIA_DEVICE_EXPRESSION_HPP
 
 #include "utopia_Base.hpp"
 #include "utopia_StoreAs.hpp"
@@ -46,4 +46,4 @@ namespace utopia {
     };
 }
 
-#endif //UTOPIA_VIEW_EXPRESSION_HPP
+#endif //UTOPIA_DEVICE_EXPRESSION_HPP

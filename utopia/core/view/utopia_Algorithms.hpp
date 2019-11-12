@@ -215,7 +215,7 @@ namespace utopia {
         class ApproxEq {
         public:
             template<typename Scalar>
-            UTOPIA_INLINE_FUNCTION static bool apply(const X &x, Y &y, const Scalar &tol)
+            UTOPIA_INLINE_FUNCTION static bool apply(const X &x, const Y &y, const Scalar &tol)
             {
                 UTOPIA_DEVICE_ASSERT(x.size() == y.size());
 
@@ -231,10 +231,36 @@ namespace utopia {
         };
 
         template<class X, class Y, class Scalar>
-        UTOPIA_INLINE_FUNCTION bool approxeq(const X &x, Y &y, const Scalar &tol)
+        UTOPIA_INLINE_FUNCTION bool approxeq(const X &x, const Y &y, const Scalar &tol)
         {
             return ApproxEq<X, Y>::apply(x, y, tol);
         }
+
+        template<class Scalar>
+        UTOPIA_INLINE_FUNCTION bool approxeq(const Scalar &x, const Scalar &y, const Scalar &tol)
+        {
+            return device::abs(x - y) <= tol;
+        }
+
+        template<class Array>
+        class Shift {
+        public:
+            template<typename Scalar>
+            UTOPIA_INLINE_FUNCTION static void apply(const Scalar &alpha, Array &in_out)
+            {
+                const SizeType n = in_out.size();
+                for(SizeType i = 0; i < n; ++i) {
+                    in_out[i] += alpha;
+                }
+            }  
+        };
+
+        template<class Array, typename Scalar>
+        UTOPIA_INLINE_FUNCTION void shift(const Scalar &alpha, Array &in_out) 
+        {
+            Shift<Array>::apply(alpha, in_out);
+        }
+
     }
 
 }

@@ -16,7 +16,12 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION void apply()
         {
-            InlineEval<Left, Right>::apply(left_, right_);
+            apply(left_, right_);
+        }
+
+        UTOPIA_INLINE_FUNCTION static void apply(Left &left, const Right &right)
+        {
+            InlineEval<Left, Right>::apply(left, right);
         }
 
     private:
