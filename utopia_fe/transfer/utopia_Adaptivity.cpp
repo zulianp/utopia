@@ -63,13 +63,13 @@ namespace utopia {
             }
         }
         
-        for(uint var_num = 0; var_num < n_vars; ++var_num) {
-            libMesh::FEType fe_type = dof_map.variable_type(var_num);
+        //for(uint var_num = 0; var_num < n_vars; ++var_num) {
+            //libMesh::FEType fe_type = dof_map.variable_type(var_num);
             if(fe_type.order>0) {
                 dof_copy.process_constraints(mesh_copy);
                 process_constraints(mesh_copy, dof_copy, constraints, index_new);
             }
-        }
+       // }
       
         // std::cout << "--------------------------------------------------\n";
         // std::cout<< "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
@@ -127,14 +127,14 @@ namespace utopia {
                 }
             }
 
-            for(uint var_num = 0; var_num < n_variables; ++var_num) {
-                libMesh::FEType fe_type = dof_map.variable_type(var_num);
+           // for(uint var_num = 0; var_num < n_variables; ++var_num) {
+              //  libMesh::FEType fe_type = dof_map.variable_type(var_num);
 
                 if(fe_type.order>0) {
                     dof_copy.process_constraints(mesh_copy);
                     Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_, index_new);
                 }
-            }   
+            //}   
 
             
         }
