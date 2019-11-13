@@ -2,7 +2,6 @@
 #define UTOPIA_ALGORITHMS_HPP
 
 #include "utopia_Base.hpp"
-#define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
 
 namespace utopia {
     namespace device {

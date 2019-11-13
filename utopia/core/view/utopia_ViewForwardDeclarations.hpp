@@ -1,6 +1,9 @@
 #ifndef UTOPIA_VIEW_FORWARD_DECLARATIONS_HPP
 #define UTOPIA_VIEW_FORWARD_DECLARATIONS_HPP
 
+//FIXME check if there is a device compilation
+#define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
+
 namespace utopia {
     using Size_t = std::size_t;
     static const Size_t DYNAMIC_SIZE = 0;

@@ -16,7 +16,11 @@ namespace utopia {
         using SizeType = typename Traits<Left>::SizeType;
         using Scalar   = typename Traits<Left>::Scalar;
 
-        UTOPIA_INLINE_FUNCTION DeviceMultiply(const Left &left, const Right &right) : left_(left), right_(right) {}
+        UTOPIA_INLINE_FUNCTION DeviceMultiply(const Left &left, const Right &right) 
+        : left_(left), right_(right)
+        {
+            // UTOPIA_DEVICE_ASSERT(left.cols() == right.size());
+        }
 
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const
         {
