@@ -12,6 +12,17 @@ namespace utopia {
     public:
         static const int Order = Order_;
     };
+
+
+    template<class ArrayView, int Order>
+    inline void disp(const TensorView<ArrayView, Order> &t)
+    {
+        t.describe();
+    }
+
+    //hacks until I find a way to avoid this
+    class DelegateArgs {};
+    static const DelegateArgs args__;
 }
 
 #endif

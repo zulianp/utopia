@@ -23,7 +23,7 @@ namespace utopia {
         using ViewType2 = Kokkos::View<double **>;
 
         //utopia view wrapper forwards constructor arguments to view
-        VectorView<ViewType> x("x", 10);
+        VectorView<ViewType> x(args__, "x", 10);
         x.set(1.0);
         x.axpy(2., x);
 
@@ -53,7 +53,7 @@ namespace utopia {
         using ViewType2 = Kokkos::View<double ***>;
 
         //kokkos view
-        MatrixView<ViewType> A("A", 4, 4);
+        MatrixView<ViewType> A(args__, "A", 4, 4);
 
         A.set(1.0);
         A += 0.5 * A;

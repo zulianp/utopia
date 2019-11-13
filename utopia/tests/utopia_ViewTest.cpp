@@ -70,7 +70,7 @@ namespace utopia {
             Vector2<Scalar> x;
             Vector3<Scalar> y;
             Vector3<Scalar> expected;
-           
+
             A.set(1.0);
             x.set(2.0);
 
@@ -127,7 +127,7 @@ namespace utopia {
         {
             using V3 = utopia::Vector3<Scalar>;
             using V2 = utopia::Vector2<Scalar>;
-            using Mat3x2 = utopia::StaticMatrix<Scalar, 3, 2>;
+            using Mat2x3 = utopia::StaticMatrix<Scalar, 2, 3>;
 
             V3 x, y;
 
@@ -138,16 +138,15 @@ namespace utopia {
 
             utopia_test_assert(approxeq(x, y));
 
-
-            Mat3x2 A;
+            Mat2x3 A;
             A.set(2.0);
-
             x.set(1.0);
 
             V2 w; w.set(1.0);
+            V2 z = A * x + w;
+            w.set(7.0);
 
-            V2 z;
-            z = A * x + w;
+            utopia_test_assert(approxeq(z, w));
         }
     };
 

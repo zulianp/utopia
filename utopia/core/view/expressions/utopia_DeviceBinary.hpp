@@ -11,8 +11,7 @@
 namespace utopia {
 
     template<class Left, class Right, class Op>
-    class DeviceBinary :
-        public DeviceExpression<DeviceBinary<Left, Right, Op>>{
+    class DeviceBinary : public DeviceExpression<DeviceBinary<Left, Right, Op>> {
     public:
         using SizeType = typename Traits<Left>::SizeType;
         using Scalar   = typename Traits<Left>::Scalar;
@@ -27,6 +26,11 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i) const
         {
             return DeviceOp<Scalar, Op>::apply(left_(i), right_(i));
+        }
+
+        inline std::string get_class() const override
+        {
+            return std::string("DeviceBinary<") + left_.get_class() + ", " + right_.get_class() + ", " + GetClass<Op>() + ">";
         }
 
     private:

@@ -1,5 +1,6 @@
 #include "utopia_Base.hpp"
 #include "utopia_Poisson3D.hpp"
+#include "utopia_Views.hpp"
 
 #ifdef  WITH_TRILINOS
 

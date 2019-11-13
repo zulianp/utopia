@@ -9,8 +9,7 @@
 namespace utopia {
 
     template<class ArrayView_>
-    class TensorView<ArrayView_, 1> final : public DeviceExpression< TensorView<ArrayView_, 1> >
-    {
+    class TensorView<ArrayView_, 1> final : public DeviceExpression< TensorView<ArrayView_, 1> > {
     public:
         using ArrayView = ArrayView_;
         using Scalar   = typename Traits<ArrayView>::Scalar;
@@ -25,15 +24,32 @@ namespace utopia {
             return "VectorView";
         }
 
+        UTOPIA_FUNCTION TensorView() {}
+        UTOPIA_FUNCTION TensorView(ArrayView &&view) : view_(std::move(view)) {}
+        UTOPIA_FUNCTION TensorView(const ArrayView &view) : view_(view) {}
+
         template<class... Args>
-        UTOPIA_FUNCTION TensorView(Args && ...args)
+        UTOPIA_FUNCTION TensorView(const DelegateArgs &, Args && ...args)
         : view_(std::forward<Args>(args)...)
         {}
+
+        // template<class... Args>
+        // UTOPIA_FUNCTION TensorView(Args && ...args)
+        // : view_(std::forward<Args>(args)...)
+        // {}
+
+        UTOPIA_FUNCTION TensorView(TensorView &&other) : view_(std::move(other.view_)) {}
 
         template<class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)
         {
             DeviceAssign<TensorView, Expr>::apply(*this, expr.derived());
+        }
+
+        template<class Expr>
+        UTOPIA_FUNCTION TensorView(DeviceExpression<Expr> &&expr)
+        {
+            DeviceAssign<TensorView, Expr>::apply(*this, std::move(expr.derived()));
         }
 
         template<class Expr>
@@ -88,30 +104,12 @@ namespace utopia {
 
         /////////////////////////////////////////////////////////////
 
-
-
         template<class OtherArrayView>
         UTOPIA_FUNCTION void copy(const TensorView<OtherArrayView, 1> &other)
         {
             UTOPIA_DEVICE_ASSERT(size() == other.size());
             device::copy(other.view_, view_);
         }
-
-        // template<class OtherArrayView>
-        // UTOPIA_FUNCTION void assign(const TensorView<OtherArrayView, 1> &other)
-        // {
-        //     copy(other);
-        // }
-
-        // UTOPIA_FUNCTION void assign(const TensorView &other) override
-        // {
-        //     copy(other);
-        // }
-
-        // UTOPIA_FUNCTION void assign(TensorView &&other) override
-        // {
-        //     view_ = std::move(other.view_);
-        // }
 
         UTOPIA_INLINE_FUNCTION ArrayView &raw_type() { return view_; }
         UTOPIA_INLINE_FUNCTION const ArrayView &raw_type() const { return view_; }
@@ -130,7 +128,6 @@ namespace utopia {
         {
             return view_[i];
         }
-
 
         UTOPIA_INLINE_FUNCTION const Scalar &get(const SizeType &i) const
         {
@@ -169,17 +166,6 @@ namespace utopia {
             device::fill(alpha, view_);
         }
 
-        UTOPIA_FUNCTION TensorView(const ArrayView &view)
-        : view_(view) {}
-
-        inline void describe() const
-        {
-            const SizeType n = size();
-            for(SizeType i = 0; i < n; ++i) {
-                std::cout << get(i) << std::endl;
-            }
-        }
-
         UTOPIA_INLINE_FUNCTION void wrap(const ArrayView &view)
         {
             view_ = view;
@@ -197,15 +183,23 @@ namespace utopia {
         }
 
         template<class OtherArrayView>
-        inline bool equals(const TensorView<OtherArrayView, 1> &other, const Scalar &tol) const
+        UTOPIA_INLINE_FUNCTION bool equals(const TensorView<OtherArrayView, 1> &other, const Scalar &tol) const
         {
             if(size() != other.size()) return false;
             return device::approxeq(view_, other.raw_type(), tol);
         }
 
+        inline void describe() const
+        {
+            const SizeType n = size();
+            for(SizeType i = 0; i < n; ++i) {
+                std::cout << get(i) << std::endl;
+            }
+        }
+
     private:
         ArrayView view_;
-
+        
         UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {
             UTOPIA_DEVICE_ASSERT(false);
         }

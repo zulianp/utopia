@@ -1,7 +1,6 @@
 #ifndef UTOPIA_DEVICE_OPERATIONS_HPP
 #define UTOPIA_DEVICE_OPERATIONS_HPP
 
-
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Operators.hpp"
 #include "utopia_DeviceUnary.hpp"
@@ -49,7 +48,9 @@ namespace utopia {
 
     //Switch left with right 
     template<class Left, class L, class R>
-    DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus> operator+(const TensorView<Left, 1> &left, const DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>> &right) {
+    DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus> operator+(
+        const TensorView<Left, 1> &left,
+        const DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>> &right) {
         return DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus>(right.derived(), left.derived());
     }
 

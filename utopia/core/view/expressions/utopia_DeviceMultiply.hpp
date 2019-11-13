@@ -11,7 +11,7 @@
 namespace utopia {
 
     template<class Left, class Right>
-    class DeviceMultiply : public DeviceExpression<DeviceMultiply<Left, Right>>{
+    class DeviceMultiply : public DeviceExpression<DeviceMultiply<Left, Right>> {
     public:
         using SizeType = typename Traits<Left>::SizeType;
         using Scalar   = typename Traits<Left>::Scalar;
@@ -40,6 +40,11 @@ namespace utopia {
             }
 
             return ret;
+        }
+
+        inline std::string get_class() const override
+        {
+            return "DeviceMultiply<" + left_.get_class() + ", " + right_.get_class() + ">";
         }
 
     private:
