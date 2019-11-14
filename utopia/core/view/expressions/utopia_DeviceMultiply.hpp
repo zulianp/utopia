@@ -3,10 +3,11 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_StoreAs.hpp"
-#include "utopia_InlineEval.hpp"
-#include "utopia_DeviceOp.hpp"
-#include "utopia_DeviceExpression.hpp"
+// #include "utopia_InlineEval.hpp"
+// #include "utopia_DeviceOp.hpp"
+// #include "utopia_DeviceExpression.hpp"
 
 namespace utopia {
 

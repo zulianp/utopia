@@ -19,11 +19,28 @@ namespace utopia {
             return DeviceOp<Scalar, Conjugate>::apply(expr_(j, i));
         }
 
+        UTOPIA_INLINE_FUNCTION const Expr &expr() const
+        {
+            return expr_;
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType rows() const
+        {
+            return expr_.cols();
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType cols() const
+        {
+            return expr_.rows();
+        }
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
 
     };
+
+    template<class InnerExpr>
+    class Traits<DeviceTranspose<InnerExpr>> : public Traits<InnerExpr> {};
 }
 
 #endif //UTOPIA_DEVICE_TRANSPOSE_HPP

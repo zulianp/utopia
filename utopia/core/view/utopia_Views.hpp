@@ -15,6 +15,8 @@
 #include "utopia_DeviceOperations.hpp"
 #include "utopia_DeviceInPlace.hpp"
 #include "utopia_DeviceDot.hpp"
+#include "utopia_DeviceDeterminant.hpp"
+#include "utopia_DeviceInverse.hpp"
 
 namespace utopia {
 

@@ -154,7 +154,12 @@ namespace utopia {
             Mat3x2 expected; expected.set(2.0);
 
             utopia_test_assert(approxeq(expected, A_t));
+
+            double det_A = det(A);
+            disp(det_A);
         }
+
+
     };
 
     void view()

@@ -2,9 +2,66 @@
 #define UTOPIA_ALGORITHMS_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_ViewForwardDeclarations.hpp"
+
+#ifdef WITH_TRILINOS
+#include <Kokkos_ArithTraits.hpp>
+#endif
 
 namespace utopia {
     namespace device {
+
+#ifdef KOKKOS_INLINE_FUNCTION
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T abs(const T &v)
+        {
+            return Kokkos::Details::ArithTraits<T>::abs(v);
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T min(const T &left, const T &right)
+        {
+            return left < right ? left : right;
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T max(const T &left, const T &right)
+        {
+            return left > right ? left : right;
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T sqrt(const T &value) {
+            return Kokkos::Details::ArithTraits<T>::sqrt(value);
+        }
+    
+#else
+
+        template<typename T>
+        inline T abs(const T &v)
+        {
+            return std::abs(v);
+        }
+
+        template<typename T>
+        inline T min(const T &left, const T &right)
+        {
+            return std::min(left, right);
+        }
+
+        template<typename T>
+        inline T max(const T &left, const T &right)
+        {
+            return std::max(left, right);
+        }
+
+        inline Scalar sqrt(const Scalar &value) {
+            return std::sqrt(value);
+        }
+    
+#endif //KOKKOS_INLINE_FUNCTION
+
 
         //FIXME use impl and specialize based on Input type
         template<class InputIterator, class OutputIterator>
@@ -259,7 +316,6 @@ namespace utopia {
         {
             Shift<Array>::apply(alpha, in_out);
         }
-
     }
 
 }

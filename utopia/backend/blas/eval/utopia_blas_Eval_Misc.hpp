@@ -9,6 +9,7 @@ namespace utopia {
 	template<class T, class Traits>
 	class Eval< Binary<Transposed<T>, T, Plus>, Traits, utopia::BLAS > {
 	public:
+		using SizeType = typename Traits::SizeType;
 	    using Expr = utopia::Binary<Transposed<T>, T, Plus>;
 	    using Result = EXPR_TYPE(Traits, Expr);
 

@@ -156,6 +156,7 @@ namespace utopia {
 
     template<class Left, class Right, class Traits, int Backend>
     class EvalAssignToView;
+
 }
 
 #endif //UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

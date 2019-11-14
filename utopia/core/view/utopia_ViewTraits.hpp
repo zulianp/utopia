@@ -16,29 +16,6 @@ namespace utopia {
         static const int FILL_TYPE = FillType::DENSE;
     };
 
-    template<typename T, Size_t Size>
-    using StaticVector = utopia::VectorView<ArrayView<T, Size>>; 
-
-    template<typename T>
-    using Vector2 = utopia::StaticVector<T, 2>;
-
-    template<typename T>
-    using Vector3 = utopia::StaticVector<T, 3>;
-
-    template<typename T>
-    using Vector4 = utopia::StaticVector<T, 4>;
-
-    template<typename T, Size_t Rows, Size_t Cols>
-    using StaticMatrix = utopia::MatrixView<ArrayView<T, Rows, Cols>>; 
-
-    template<typename T>
-    using Matrix2x2 = utopia::StaticMatrix<T, 2, 2>;
-
-    template<typename T>
-    using Matrix3x3 = utopia::StaticMatrix<T, 3, 3>;
-
-    template<typename T>
-    using Matrix4x4 = utopia::StaticMatrix<T, 4, 4>;
 
     //////////////////////////////////////// Type system extensions //////////
 

@@ -281,6 +281,19 @@ namespace utopia {
         return DeviceTranspose<Derived>(expr.derived());
     }
 
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION UTOPIA_STORE_CONST(Derived) transpose(const DeviceTranspose<Derived> &expr)
+    {
+        return expr.expr();
+    }
+
+    template<class Expr>
+    UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar det(
+        const DeviceExpression<Expr> &expr)
+    {
+        return DeviceDeterminant<Expr>::apply(expr.derived());
+    }
+
 }
 
 #endif //UTOPIA_DEVICE_OPERATIONS_HPP
