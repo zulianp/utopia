@@ -41,7 +41,7 @@ namespace utopia {
     template<class T>
     class DeviceDeterminant;
 
-    template<class Left, class Right>
+    template<class Expr>
     class DeviceInverse;
 
     template<typename T, Size_t... Args>
@@ -49,7 +49,7 @@ namespace utopia {
 
     template<class View, int Order>
     class TensorView;
-    
+
     template<class View>
     using VectorView = utopia::TensorView<View, 1>;
 
@@ -57,7 +57,7 @@ namespace utopia {
     using MatrixView = utopia::TensorView<View, 2>;
 
     template<typename T, Size_t Size>
-    using StaticVector = utopia::VectorView<ArrayView<T, Size>>; 
+    using StaticVector = utopia::VectorView<ArrayView<T, Size>>;
 
     template<typename T>
     using Vector2 = utopia::StaticVector<T, 2>;
@@ -69,7 +69,7 @@ namespace utopia {
     using Vector4 = utopia::StaticVector<T, 4>;
 
     template<typename T, Size_t Rows, Size_t Cols>
-    using StaticMatrix = utopia::MatrixView<ArrayView<T, Rows, Cols>>; 
+    using StaticMatrix = utopia::MatrixView<ArrayView<T, Rows, Cols>>;
 
     template<typename T>
     using Matrix2x2 = utopia::StaticMatrix<T, 2, 2>;

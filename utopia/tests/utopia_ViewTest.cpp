@@ -24,6 +24,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(view_binary_test);
             UTOPIA_RUN_TEST(view_unary_test);
             UTOPIA_RUN_TEST(view_composite_test);
+            UTOPIA_RUN_TEST(view_inv_test);
         }
 
         void array_view_test()
@@ -129,6 +130,7 @@ namespace utopia {
             using V2 = utopia::Vector2<Scalar>;
             using Mat2x3 = utopia::StaticMatrix<Scalar, 2, 3>;
             using Mat3x2 = utopia::StaticMatrix<Scalar, 3, 2>;
+            using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
 
             V3 x, y;
 
@@ -155,11 +157,41 @@ namespace utopia {
 
             utopia_test_assert(approxeq(expected, A_t));
 
-            double det_A = det(A);
-            disp(det_A);
+            A(0, 0) = 1.0;
+            A(0, 1) = 2.0;
+            A(0, 2) = 3.0;
+
+            A(1, 0) = 3.0;
+            A(1, 1) = 2.0;
+            A(1, 2) = 1.0;
+
+            Mat2x2 AAt = A * transpose(A);
+
+            double det_A = det(AAt);
+            utopia_test_assert(approxeq(96.0, det_A, 1e-8));
         }
 
+        void view_inv_test()
+        {
+            using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
 
+            Mat2x2 A;
+            A(0, 0) = 1.0;
+            A(0, 1) = 2.0;
+
+            A(1, 0) = 3.0;
+            A(1, 1) = 2.0;
+
+            Mat2x2 A_inv = inv(A);
+            Mat2x2 Id = A * A_inv;
+            Mat2x2 expected_Id; expected_Id.set(0.0);
+
+            expected_Id(0, 0) = 1.0;
+            expected_Id(1, 1) = 1.0;
+
+            utopia_test_assert(approxeq(Id, expected_Id, 1e-8));
+            utopia_test_assert(inv(inv(A)).is_alias(A));
+        }
     };
 
     void view()

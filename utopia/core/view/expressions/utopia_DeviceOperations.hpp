@@ -294,6 +294,18 @@ namespace utopia {
         return DeviceDeterminant<Expr>::apply(expr.derived());
     }
 
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION DeviceInverse<Derived> inv(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceInverse<Derived>(expr.derived());
+    }
+
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION UTOPIA_STORE_CONST(Derived) inv(const DeviceInverse<Derived> &expr)
+    {
+        return expr.expr();
+    }
+
 }
 
 #endif //UTOPIA_DEVICE_OPERATIONS_HPP
