@@ -25,6 +25,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(view_unary_test);
             UTOPIA_RUN_TEST(view_composite_test);
             UTOPIA_RUN_TEST(view_inv_test);
+            UTOPIA_RUN_TEST(view_transpose_test);
         }
 
         void array_view_test()
@@ -169,6 +170,37 @@ namespace utopia {
 
             double det_A = det(AAt);
             utopia_test_assert(approxeq(96.0, det_A, 1e-8));
+        }
+
+        void view_transpose_test()
+        {
+            using Mat2x3 = utopia::StaticMatrix<Scalar, 2, 3>;
+            using Mat3x2 = utopia::StaticMatrix<Scalar, 3, 2>;
+
+            Mat2x3 A;
+
+            A(0, 0) = 1.0;
+            A(0, 1) = 2.0;
+            A(0, 2) = 3.0;
+
+            A(1, 0) = 3.0;
+            A(1, 1) = 2.0;
+            A(1, 2) = 1.0;
+
+
+            Mat3x2 A_t = transpose(A);
+            Mat3x2 A_t_expected;
+
+            A_t_expected(0, 0) = 1.0;
+            A_t_expected(1, 0) = 2.0;
+            A_t_expected(2, 0) = 3.0;
+
+            A_t_expected(0, 1) = 3.0;
+            A_t_expected(1, 1) = 2.0;
+            A_t_expected(2, 1) = 1.0;
+
+            utopia_test_assert(approxeq(A_t, A_t_expected));
+            utopia_test_assert(transpose(transpose(A)).is_alias(A));
         }
 
         void view_inv_test()
