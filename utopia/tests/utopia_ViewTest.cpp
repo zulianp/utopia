@@ -241,7 +241,6 @@ namespace utopia {
 
             V2 v; v.set(2.0);
 
-
             double n1 = norm1(v);
             double n2 = norm2(v);
             double n_infty = norm_infty(v);
@@ -250,17 +249,15 @@ namespace utopia {
             utopia_test_assert(approxeq(std::sqrt(8.0), n2, 1e-8));
             utopia_test_assert(approxeq(2.0, n_infty));
 
-
             Mat2x3 m; m.set(2.0);
 
             n1 = norm1(m);
             n2 = norm2(m);
             n_infty = norm_infty(m);
 
-            // utopia_test_assert(approxeq(4.0, n1));
-            utopia_test_assert(approxeq(std::sqrt(16.0), n2, 1e-8));
+            utopia_test_assert(approxeq(2*3*2.0, n1));
+            utopia_test_assert(approxeq(std::sqrt(2*3*4.0), n2, 1e-8));
             utopia_test_assert(approxeq(2.0, n_infty));
-
         }
     };
 
