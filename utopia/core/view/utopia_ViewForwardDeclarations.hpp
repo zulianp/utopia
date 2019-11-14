@@ -44,6 +44,9 @@ namespace utopia {
     template<class Derived>
     class DeviceExpression;
 
+    template<class Derived>
+    class DeviceTranspose;
+
     template<class T>
     class DeviceNumber;
 }

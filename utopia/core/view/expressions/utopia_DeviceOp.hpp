@@ -92,6 +92,14 @@ namespace utopia {
         }
     };
 
+    template<class Scalar>
+    class DeviceOp<Scalar, Conjugate> {
+    public:
+        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &a) {
+            //FIXME Missing conj, it has to work on the device 
+            return a;
+        }
+    };
 }
 
 #endif

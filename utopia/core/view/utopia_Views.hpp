@@ -10,6 +10,7 @@
 #include "utopia_DeviceBinary.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_DeviceMultiply.hpp"
+#include "utopia_DeviceTranspose.hpp"
 #include "utopia_DeviceApproxEqual.hpp"
 #include "utopia_DeviceOperations.hpp"
 #include "utopia_DeviceInPlace.hpp"

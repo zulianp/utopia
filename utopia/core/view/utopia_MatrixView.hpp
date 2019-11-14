@@ -45,19 +45,19 @@ namespace utopia {
         template<class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)
         {
-            DeviceAssign<TensorView, Expr>::apply(expr.derived());
+            DeviceAssign<TensorView, Expr>::apply(*this, expr.derived());
         }
 
         template<class Expr>
         UTOPIA_FUNCTION TensorView(DeviceExpression<Expr> &&expr)
         {
-            DeviceAssign<TensorView, Expr>::apply(std::move(expr.derived()));
+            DeviceAssign<TensorView, Expr>::apply(*this, std::move(expr.derived()));
         }
 
         template<class Expr>
         UTOPIA_INLINE_FUNCTION TensorView &operator=(const DeviceExpression<Expr> &expr)
         {
-            DeviceAssign<TensorView, Expr>::apply(expr.derived());
+            DeviceAssign<TensorView, Expr>::apply(*this, expr.derived());
             return *this;
         }
 

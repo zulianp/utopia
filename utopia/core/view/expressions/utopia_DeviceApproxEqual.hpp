@@ -34,12 +34,17 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION static bool apply(const Left &left, const Right &right, const Scalar &tol)
         {
-            const SizeType n = left.size();
-            bool ret = n != 0;
-            for(SizeType i = 0; i < n; ++i) {
-                if(!device::approxeq(left(i), right(i), tol)) {
-                    ret = false;
-                    break;
+            const SizeType rows = left.rows();
+            const SizeType cols = left.cols();
+
+            bool ret = rows != 0;
+            
+            for(SizeType i = 0; i < rows; ++i) {
+                for(SizeType j = 0; j < cols; ++j) {
+                    if(!device::approxeq(left(i, j), right(i, j), tol)) {
+                        ret = false;
+                        break;
+                    }
                 }
             }
 

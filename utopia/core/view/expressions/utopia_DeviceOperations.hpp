@@ -46,7 +46,7 @@ namespace utopia {
         return DeviceBinary<Left, Right, Plus>(left.derived(), right.derived());
     }
 
-    //Switch left with right 
+    //Switch left with right
     template<class Left, class L, class R>
     DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus> operator+(
         const TensorView<Left, 1> &left,
@@ -67,7 +67,7 @@ namespace utopia {
         DeviceNumber<typename Left::Scalar>,
         Left,
         Multiplies
-    > 
+    >
     operator*(
         const DeviceExpression<Left> &left,
         const typename Left::Scalar &right
@@ -132,8 +132,8 @@ namespace utopia {
         return DeviceUnary<Derived, Sin>(expr.derived());
     }
 
- 
-  
+
+
     template<class Derived>
     UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Pow> power(
         const DeviceExpression<Derived> &expr,
@@ -145,7 +145,7 @@ namespace utopia {
             Pow
             >(expr.derived(), a);
     }
-    
+
     /**
      * @ingroup transforms
      * @brief   \f$ | x_i |  \f$.
@@ -155,7 +155,7 @@ namespace utopia {
     {
         return DeviceUnary<Derived, Abs>(expr.derived());
     }
-    
+
     /**
      * @ingroup transforms
      * @brief   \f$ \sqrt(x_i)  \f$.
@@ -199,7 +199,7 @@ namespace utopia {
     UTOPIA_INLINE_FUNCTION bool approxeq(const DeviceExpression<Left> &left,
                                          const DeviceExpression<Right> &right,
                                          const typename Right::Scalar tol = 1e-6)
-    {    
+    {
         return DeviceApproxEqual<Left, Right>::apply(left.derived(), right.derived(), tol);
     }
 
@@ -207,7 +207,7 @@ namespace utopia {
     UTOPIA_INLINE_FUNCTION typename Traits<Right>::Scalar dot(
         const DeviceExpression<Left> &left,
         const DeviceExpression<Right> &right)
-    {    
+    {
         return DeviceDot<Left, Right, Traits<Left>::Order>::apply(left.derived(), right.derived());
     }
 
@@ -274,6 +274,13 @@ namespace utopia {
     UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Max> max(const Factory<Values<Right>, Order> &right, const DeviceExpression<Left> &left) {
         return DeviceBinary<Left, DeviceNumber<Right>, Max>(left.derived(), right.type().value());
     }
+
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION DeviceTranspose<Derived> transpose(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceTranspose<Derived>(expr.derived());
+    }
+
 }
 
 #endif //UTOPIA_DEVICE_OPERATIONS_HPP

@@ -128,6 +128,7 @@ namespace utopia {
             using V3 = utopia::Vector3<Scalar>;
             using V2 = utopia::Vector2<Scalar>;
             using Mat2x3 = utopia::StaticMatrix<Scalar, 2, 3>;
+            using Mat3x2 = utopia::StaticMatrix<Scalar, 3, 2>;
 
             V3 x, y;
 
@@ -147,6 +148,12 @@ namespace utopia {
             w.set(7.0);
 
             utopia_test_assert(approxeq(z, w));
+
+            Mat3x2 A_t = transpose(A);
+
+            Mat3x2 expected; expected.set(2.0);
+
+            utopia_test_assert(approxeq(expected, A_t));
         }
     };
 
