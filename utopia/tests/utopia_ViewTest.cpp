@@ -26,6 +26,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(view_composite_test);
             UTOPIA_RUN_TEST(view_inv_test);
             UTOPIA_RUN_TEST(view_transpose_test);
+            UTOPIA_RUN_TEST(view_trace_test);
+            UTOPIA_RUN_TEST(view_norm_test);
         }
 
         void array_view_test()
@@ -223,6 +225,42 @@ namespace utopia {
 
             utopia_test_assert(approxeq(Id, expected_Id, 1e-8));
             utopia_test_assert(inv(inv(A)).is_alias(A));
+        }
+
+        void view_trace_test()
+        {
+            using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
+            Mat2x2 A; A.set(2.0);
+            utopia_test_assert(approxeq(trace(A), 4.0, 1e-8));
+        }
+
+        void view_norm_test()
+        {
+            using V2 = utopia::Vector2<Scalar>;
+            using Mat2x3 = utopia::StaticMatrix<Scalar, 2, 3>;
+
+            V2 v; v.set(2.0);
+
+
+            double n1 = norm1(v);
+            double n2 = norm2(v);
+            double n_infty = norm_infty(v);
+
+            utopia_test_assert(approxeq(4.0, n1));
+            utopia_test_assert(approxeq(std::sqrt(8.0), n2, 1e-8));
+            utopia_test_assert(approxeq(2.0, n_infty));
+
+
+            Mat2x3 m; m.set(2.0);
+
+            n1 = norm1(m);
+            n2 = norm2(m);
+            n_infty = norm_infty(m);
+
+            // utopia_test_assert(approxeq(4.0, n1));
+            utopia_test_assert(approxeq(std::sqrt(16.0), n2, 1e-8));
+            utopia_test_assert(approxeq(2.0, n_infty));
+
         }
     };
 

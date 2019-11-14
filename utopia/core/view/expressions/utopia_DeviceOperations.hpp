@@ -2,12 +2,12 @@
 #define UTOPIA_DEVICE_OPERATIONS_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_Operators.hpp"
-#include "utopia_DeviceUnary.hpp"
-#include "utopia_DeviceBinary.hpp"
-#include "utopia_Literal.hpp"
-#include "utopia_Boolean.hpp"
-#include "utopia_Factory.hpp"
+// #include "utopia_DeviceUnary.hpp"
+// #include "utopia_DeviceBinary.hpp"
+#include "utopia_DeviceNorm.hpp"
+// #include "utopia_Factory.hpp"
 
 #ifdef WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
@@ -211,6 +211,34 @@ namespace utopia {
         return DeviceDot<Left, Right, Traits<Left>::Order>::apply(left.derived(), right.derived());
     }
 
+    template<class Expr>
+    UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar trace(
+        const DeviceExpression<Expr> &expr)
+    {
+        return DeviceTrace<Expr>::apply(expr.derived());
+    }
+
+    template<class Expr>
+    UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar norm1(
+        const DeviceExpression<Expr> &expr)
+    {
+        return DeviceNorm<Expr, 1>::apply(expr.derived());
+    }
+
+    template<class Expr>
+    UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar norm2(
+        const DeviceExpression<Expr> &expr)
+    {
+        return DeviceNorm<Expr, 2>::apply(expr.derived());
+    }
+
+    template<class Expr>
+    UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar norm_infty(
+        const DeviceExpression<Expr> &expr)
+    {
+        return DeviceNorm<Expr, INFINITY_NORM_TAG>::apply(expr.derived());
+    }
+
     /**
      * @ingroup elementwise
      * @brief   Pointwise multiplication.
@@ -234,19 +262,19 @@ namespace utopia {
      * @ingroup elementwise
      * @brief   Pointwise min.
      */
-    template<class Left, class Right, int Order>
-    UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Min> min(const DeviceExpression<Left> &left, const Factory<Values<Right>, Order> &right) {
-        return DeviceBinary<Left, DeviceNumber<Right>, Min>(left.derived(), right.type().value());
-    }
+    // template<class Left, class Right, int Order>
+    // UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Min> min(const DeviceExpression<Left> &left, const Factory<Values<Right>, Order> &right) {
+    //     return DeviceBinary<Left, DeviceNumber<Right>, Min>(left.derived(), right.type().value());
+    // }
 
     /**
      * @ingroup elementwise
      * @brief   Pointwise min.
      */
-    template<class Left, class Right, int Order>
-    UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Min> min(const Factory<Values<Right>, Order> &right, const DeviceExpression<Left> &left) {
-        return DeviceBinary<Left, DeviceNumber<Right>, Min>(left.derived(), right.type().value());
-    }
+    // template<class Left, class Right, int Order>
+    // UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Min> min(const Factory<Values<Right>, Order> &right, const DeviceExpression<Left> &left) {
+    //     return DeviceBinary<Left, DeviceNumber<Right>, Min>(left.derived(), right.type().value());
+    // }
 
     /**
      * @ingroup elementwise
@@ -261,19 +289,19 @@ namespace utopia {
      * @ingroup elementwise
      * @brief   Pointwise max.
      */
-    template<class Left, class Right, int Order>
-    UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Max> max(const DeviceExpression<Left> &left, const Factory<Values<Right>, Order> &right) {
-        return DeviceBinary<Left, DeviceNumber<Right>, Max>(left.derived(), right.type().value());
-    }
+    // template<class Left, class Right, int Order>
+    // UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Max> max(const DeviceExpression<Left> &left, const Factory<Values<Right>, Order> &right) {
+    //     return DeviceBinary<Left, DeviceNumber<Right>, Max>(left.derived(), right.type().value());
+    // }
 
     /**
      * @ingroup elementwise
      * @brief   Pointwise max.
      */
-    template<class Left, class Right, int Order>
-    UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Max> max(const Factory<Values<Right>, Order> &right, const DeviceExpression<Left> &left) {
-        return DeviceBinary<Left, DeviceNumber<Right>, Max>(left.derived(), right.type().value());
-    }
+    // template<class Left, class Right, int Order>
+    // UTOPIA_INLINE_FUNCTION DeviceBinary<Left, DeviceNumber<Right>, Max> max(const Factory<Values<Right>, Order> &right, const DeviceExpression<Left> &left) {
+    //     return DeviceBinary<Left, DeviceNumber<Right>, Max>(left.derived(), right.type().value());
+    // }
 
     template<class Derived>
     UTOPIA_INLINE_FUNCTION DeviceTranspose<Derived> transpose(const DeviceExpression<Derived> &expr)

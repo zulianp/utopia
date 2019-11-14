@@ -11,6 +11,9 @@ namespace utopia {
     template<class InnerExpr, class Op>
     class DeviceUnary;
 
+    template<class InnerExpr>
+    using DeviceNegate = utopia::DeviceUnary<InnerExpr, Minus>;
+
     template<class Left, class Right>
     class DeviceAssign;
 
@@ -44,11 +47,17 @@ namespace utopia {
     template<class Expr>
     class DeviceInverse;
 
+    template<class Expr>
+    class DeviceTrace;
+
     template<typename T, Size_t... Args>
     class ArrayView;
 
     template<class View, int Order>
     class TensorView;
+
+    template<class Expr, int Order, int TensorOrder>
+    class DeviceNorm;
 
     template<class View>
     using VectorView = utopia::TensorView<View, 1>;

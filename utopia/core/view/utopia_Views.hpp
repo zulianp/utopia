@@ -7,6 +7,7 @@
 #include "utopia_MatrixView.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_DeviceAssign.hpp"
+#include "utopia_DeviceUnary.hpp"
 #include "utopia_DeviceBinary.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_DeviceMultiply.hpp"
@@ -17,6 +18,8 @@
 #include "utopia_DeviceDot.hpp"
 #include "utopia_DeviceDeterminant.hpp"
 #include "utopia_DeviceInverse.hpp"
+#include "utopia_DeviceTrace.hpp"
+#include "utopia_DeviceNorm.hpp"
 
 namespace utopia {
 
