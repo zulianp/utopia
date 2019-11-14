@@ -271,7 +271,7 @@ namespace utopia {
             V2 e;
 
             eig(A, e);
-            disp(e);
+            // disp(e);
         }
 
         void view_diag_test()
@@ -282,7 +282,9 @@ namespace utopia {
 
             V2 d = diag(A);
 
-            disp(d);
+            V2 expected; expected.set(2.0);
+
+            utopia_test_assert(approxeq(d, expected));
         }
     };
 
