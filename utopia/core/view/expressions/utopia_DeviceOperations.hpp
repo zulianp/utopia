@@ -334,6 +334,33 @@ namespace utopia {
         return expr.expr();
     }
 
+
+    /////////////////////////////////////
+
+    template<class Expr, class Result>
+    UTOPIA_INLINE_FUNCTION void eig(
+        const DeviceExpression<Expr> &expr,
+        Result &eigen_values
+        )
+    {
+        DeviceEigenValues<Expr>::apply(expr.derived(), eigen_values);
+    }
+
+    template<class Expr, class Result>
+    UTOPIA_INLINE_FUNCTION void sv(
+        const DeviceExpression<Expr> &expr,
+        Result &singular_values
+        )
+    {
+        DeviceSingularValues<Expr>::apply(expr.derived(), singular_values);
+    }
+
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION DeviceDiag<Derived> diag(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceDiag<Derived>(expr.derived());
+    }
+
 }
 
 #endif //UTOPIA_DEVICE_OPERATIONS_HPP

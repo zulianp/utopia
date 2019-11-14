@@ -20,6 +20,8 @@
 #include "utopia_DeviceInverse.hpp"
 #include "utopia_DeviceTrace.hpp"
 #include "utopia_DeviceNorm.hpp"
+#include "utopia_DeviceEigenValues.hpp"
+#include "utopia_DeviceDiag.hpp"
 
 namespace utopia {
 

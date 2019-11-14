@@ -28,6 +28,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(view_transpose_test);
             UTOPIA_RUN_TEST(view_trace_test);
             UTOPIA_RUN_TEST(view_norm_test);
+            UTOPIA_RUN_TEST(view_eig_test);
+            UTOPIA_RUN_TEST(view_diag_test);
         }
 
         void array_view_test()
@@ -258,6 +260,29 @@ namespace utopia {
             utopia_test_assert(approxeq(2*3*2.0, n1));
             utopia_test_assert(approxeq(std::sqrt(2*3*4.0), n2, 1e-8));
             utopia_test_assert(approxeq(2.0, n_infty));
+        }
+
+        void view_eig_test()
+        {
+            using V2 = utopia::Vector2<Scalar>;
+            using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
+            Mat2x2 A; A.set(2.0);
+
+            V2 e;
+
+            eig(A, e);
+            disp(e);
+        }
+
+        void view_diag_test()
+        {
+            using V2 = utopia::Vector2<Scalar>;
+            using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
+            Mat2x2 A; A.set(2.0);
+
+            V2 d = diag(A);
+
+            disp(d);
         }
     };
 

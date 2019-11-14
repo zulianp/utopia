@@ -50,6 +50,15 @@ namespace utopia {
     template<class Expr>
     class DeviceTrace;
 
+    template<class Expr>
+    class DeviceDiag;
+
+    template<class Expr>
+    class DeviceEigenValues;
+
+    template<class Expr>
+    class DeviceSingularValues;
+
     template<typename T, Size_t... Args>
     class ArrayView;
 
