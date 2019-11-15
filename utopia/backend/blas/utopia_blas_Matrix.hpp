@@ -996,6 +996,21 @@ namespace utopia {
             return instance_;
         }
 
+        template<class IndexT>
+        inline void set_zero_rows(const IndexT &index, const Scalar &diag)
+        {
+            const SizeType n = index.size();
+            for(SizeType k = 0; k < n; ++k) {
+                const SizeType i = index[k];
+
+                for(SizeType j = 0; j < cols_; ++j) {
+                    set(i, j, 0.0);
+                }
+
+                set(i, i, diag);
+            }
+        }
+
     private:
         Entries entries_;
         SizeType rows_;

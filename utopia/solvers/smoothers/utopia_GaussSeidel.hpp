@@ -24,13 +24,14 @@ namespace utopia {
         typedef utopia::Smoother<Matrix, Vector>        Smoother;
 
     public:
-        GaussSeidel(): use_line_search_(true), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(1), check_convergence_each_(10)
+        GaussSeidel(): use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(1), check_convergence_each_(10)
         {}
 
         void read(Input &in) override
         {
             Solver::read(in);
             Smoother::read(in);
+            in.get("l1", l1_);
         }
 
         void print_usage(std::ostream &os) const override

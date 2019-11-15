@@ -20,7 +20,7 @@ namespace utopia {
         DEF_UTOPIA_SCALAR(Matrix);
 
         ProjectedGaussSeidel()
-        : use_line_search_(true), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
+        : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
         {
 
         }
@@ -43,6 +43,7 @@ namespace utopia {
             in.get("use_line_search", use_line_search_);
             in.get("use_symmetric_sweep", use_symmetric_sweep_);
             in.get("n_local_sweeps", n_local_sweeps_);
+            in.get("l1", l1_);
         }
 
 
@@ -100,7 +101,7 @@ namespace utopia {
                     const Scalar diff = norm2(x_old - x);
 
                     if(this->verbose()) {
-                        PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                        PrintInfo::print_iter_status(iteration, {diff});
                     }
 
                     converged = this->check_convergence(iteration, 1, 1, diff);
@@ -182,7 +183,8 @@ namespace utopia {
 
             if(use_line_search_) {
 
-                alpha = dot(c, r)/dot(A * c, c);
+                Ac = A * c;
+                alpha = dot(c, r)/dot(Ac, c);
 
                 if(std::isinf(alpha)) {
                     return true;
@@ -288,7 +290,8 @@ namespace utopia {
                 UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel23");
                 is_c_ = e_mul(c, inactive_set_);
 
-                Scalar alpha = dot(is_c_, r)/dot(A * is_c_, is_c_);
+                Ac = A * is_c_;
+                Scalar alpha = dot(is_c_, r)/dot(Ac, is_c_);
                 UTOPIA_NO_ALLOC_END();
 
                 if(std::isinf(alpha)) {
@@ -353,10 +356,14 @@ namespace utopia {
             }
 
             if(use_line_search_) {
-                if(empty(inactive_set_) || size(inactive_set_) != size(d))
+                if(empty(inactive_set_) || size(inactive_set_) != size(d)) {
                     inactive_set_ = local_zeros(local_size(c));
-                else
+                    Ac = local_zeros(local_size(c));
+                    is_c_ = local_zeros(local_size(c));
+                    descent_dir = local_zeros(local_size(c));
+                } else {
                     inactive_set_.set(0);
+                }
 
             }
         }
@@ -400,7 +407,7 @@ namespace utopia {
         bool l1_;
         SizeType n_local_sweeps_;
 
-        Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir;
+        Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
         Vector inactive_set_;
         Vector is_c_;
     };

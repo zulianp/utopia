@@ -19,6 +19,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <fstream>
 
 namespace utopia {
     template<typename T>
@@ -266,7 +267,7 @@ namespace utopia {
             return BLASAlgorithms<T>::ddot(size(), ptr(), 1, other.ptr(), 1);
         }
 
-    
+
 
         ///<T>AMAX - index of max abs value
         inline SizeType amax() const //override
@@ -524,6 +525,27 @@ namespace utopia {
         {
             static SelfCommunicator instance_;
             return instance_;
+        }
+
+        inline bool write(const std::string &path) const
+        {
+            std::ofstream os(path.c_str());
+            bool ok = os.good();
+
+            if(ok) {
+                const SizeType n = size();
+
+                os << "x = [\n";
+
+                for(SizeType i = 0; i < n; ++i) {
+                    os << "\t" << get(i) << "\n";
+                }
+
+                os << "];\n";
+            }
+
+            os.close();
+            return ok;
         }
 
     private:
