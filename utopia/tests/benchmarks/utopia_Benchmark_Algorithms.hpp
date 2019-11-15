@@ -54,6 +54,29 @@ namespace utopia {
                     }
                 );
 
+                // this->register_experiment(
+                //     "gs_" + std::to_string(i),
+                //     [n]() {
+                //         GaussSeidel<Matrix, Vector, HOMEMADE> gs;
+                //         gs.verbose(true);
+                //         gs.max_it(100*n * mpi_world_size());
+                //         gs.check_convergence_each(50);
+                //         run_linear_solver(n, gs);
+                //     }
+                // );
+
+                // this->register_experiment(
+                //     "l1_gs_" + std::to_string(i),
+                //     [n]() {
+                //         GaussSeidel<Matrix, Vector, HOMEMADE> gs;
+                //         gs.l1(true);
+                //         gs.verbose(true);
+                //         gs.max_it(100*n * mpi_world_size());
+                //         gs.check_convergence_each(50);
+                //         run_linear_solver(n, gs);
+                //     }
+                // );
+
                 this->register_experiment(
                     "bicgstab_" + std::to_string(i),
                     [n]() {
@@ -131,6 +154,16 @@ namespace utopia {
                     "projected_gauss_seidel_" + std::to_string(i),
                     [i]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
+                        run_qp_solver((base_n/2) * (i + 1), pg);
+                    }
+                );
+
+                this->register_experiment(
+                    "projected_l1_gauss_seidel_" + std::to_string(i),
+                    [i]() {
+                        ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
+                        pg.l1(true);
+                        pg.verbose(true);
                         run_qp_solver((base_n/2) * (i + 1), pg);
                     }
                 );

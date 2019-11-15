@@ -2,7 +2,8 @@
 #define UTOPIA_VIEW_FORWARD_DECLARATIONS_HPP
 
 //FIXME check if there is a device compilation
-#define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
+// #define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
+#define UTOPIA_DEVICE_ASSERT(...)
 
 namespace utopia {
     using Size_t = std::size_t;
@@ -78,25 +79,25 @@ namespace utopia {
     using StaticVector = utopia::VectorView<ArrayView<T, Size>>;
 
     template<typename T>
-    using Vector2 = utopia::StaticVector<T, 2>;
+    using StaticVector2 = utopia::StaticVector<T, 2>;
 
     template<typename T>
-    using Vector3 = utopia::StaticVector<T, 3>;
+    using StaticVector3 = utopia::StaticVector<T, 3>;
 
     template<typename T>
-    using Vector4 = utopia::StaticVector<T, 4>;
+    using StaticVector4 = utopia::StaticVector<T, 4>;
 
     template<typename T, Size_t Rows, Size_t Cols>
     using StaticMatrix = utopia::MatrixView<ArrayView<T, Rows, Cols>>;
 
     template<typename T>
-    using Matrix2x2 = utopia::StaticMatrix<T, 2, 2>;
+    using StaticMatrix2x2 = utopia::StaticMatrix<T, 2, 2>;
 
     template<typename T>
-    using Matrix3x3 = utopia::StaticMatrix<T, 3, 3>;
+    using StaticMatrix3x3 = utopia::StaticMatrix<T, 3, 3>;
 
     template<typename T>
-    using Matrix4x4 = utopia::StaticMatrix<T, 4, 4>;
+    using StaticMatrix4x4 = utopia::StaticMatrix<T, 4, 4>;
 
 }
 

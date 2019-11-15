@@ -35,7 +35,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION T sqrt(const T &value) {
             return Kokkos::Details::ArithTraits<T>::sqrt(value);
         }
-    
+
 #else
 
         template<typename T>
@@ -56,10 +56,11 @@ namespace utopia {
             return std::max(left, right);
         }
 
-        inline Scalar sqrt(const Scalar &value) {
+        template<typename T>
+        inline T sqrt(const T &value) {
             return std::sqrt(value);
         }
-    
+
 #endif //KOKKOS_INLINE_FUNCTION
 
 
@@ -72,7 +73,7 @@ namespace utopia {
         {
             auto in_it = in_begin;
             auto out_it = out_begin;
-            
+
             for(; in_it != in_end; ++in_it, ++out_it)
             {
                 *out_it = *in_it;
@@ -134,7 +135,7 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION static auto apply(const NDimArray &in, const S &s) -> decltype(in.extent(s))
             {
                 return in.extent(s);
-            }  
+            }
         };
 
         template<class NDimArray, typename S>
@@ -153,11 +154,11 @@ namespace utopia {
                 for(SizeType i = 0; i < n; ++i) {
                     in_out[i] *= alpha;
                 }
-            }  
+            }
         };
 
         template<class Array, typename Scalar>
-        UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha, Array &in_out) 
+        UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha, Array &in_out)
         {
             Scale<Array>::apply(alpha, in_out);
         }
@@ -174,7 +175,7 @@ namespace utopia {
                 for(SizeType i = 0; i < n; ++i) {
                     y[i] += alpha * x[i];
                 }
-            }  
+            }
         };
 
         template<class X, class Y, class Scalar>
@@ -200,7 +201,7 @@ namespace utopia {
                 }
 
                 return ret;
-            }  
+            }
         };
 
         template<class X, class Y>
@@ -227,7 +228,7 @@ namespace utopia {
                         out[i] += m(i, j) * in[j];
                     }
                 }
-            }  
+            }
         };
 
         template<class Matrix, class InVector, class OutVector>
@@ -258,7 +259,7 @@ namespace utopia {
                         }
                     }
                 }
-            }  
+            }
         };
 
         template<class Matrix, class InMatrix, class OutMatrix>
@@ -283,7 +284,7 @@ namespace utopia {
                 }
 
                 return true;
-            }  
+            }
         };
 
         template<class X, class Y, class Scalar>
@@ -308,11 +309,11 @@ namespace utopia {
                 for(SizeType i = 0; i < n; ++i) {
                     in_out[i] += alpha;
                 }
-            }  
+            }
         };
 
         template<class Array, typename Scalar>
-        UTOPIA_INLINE_FUNCTION void shift(const Scalar &alpha, Array &in_out) 
+        UTOPIA_INLINE_FUNCTION void shift(const Scalar &alpha, Array &in_out)
         {
             Shift<Array>::apply(alpha, in_out);
         }

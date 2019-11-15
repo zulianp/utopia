@@ -24,7 +24,7 @@ namespace utopia {
         typedef utopia::Smoother<Matrix, Vector>        Smoother;
 
     public:
-        GaussSeidel(): use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(1), check_convergence_each_(10)
+        GaussSeidel(): use_line_search_(true), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(1), check_convergence_each_(10)
         {}
 
         void read(Input &in) override
@@ -37,6 +37,11 @@ namespace utopia {
         {
             Solver::print_usage(os);
             Smoother::print_usage(os);
+        }
+
+        void check_convergence_each(const SizeType &n)
+        {
+            check_convergence_each_ = n;
         }
 
 
@@ -73,8 +78,13 @@ namespace utopia {
         {
             UTOPIA_NO_ALLOC_BEGIN("GaussSeidel::apply");
 
-            if(this->verbose())
-                this->init_solver("utopia GaussSeidel", {" it. ", "|| r ||"});
+            if(this->verbose()) {
+                if(l1_) {
+                    this->init_solver("utopia L1GaussSeidel", {" it. ", "|| r ||"});
+                } else {
+                    this->init_solver("utopia GaussSeidel", {" it. ", "|| r ||"});
+                }
+            }
 
             const Matrix &A = *this->get_operator();
             bool converged = false;
@@ -82,11 +92,11 @@ namespace utopia {
             Scalar r_norm;
 
             r = rhs - A * x;
-            r_norm = norm2(r); 
+            r_norm = norm2(r);
 
             if(this->verbose()) {
                 PrintInfo::print_iter_status(iteration, {r_norm});
-            }            
+            }
 
             while(!converged) {
                 local_sweeps(A, r, c);
@@ -96,7 +106,7 @@ namespace utopia {
                 ++iteration;
 
                 if(iteration % check_convergence_each_ == 0) {
-                    r_norm = norm2(r); 
+                    r_norm = norm2(r);
 
                     if(this->verbose()) {
                         PrintInfo::print_iter_status(iteration, {r_norm});
@@ -142,6 +152,11 @@ namespace utopia {
         inline void use_symmetric_sweep(const bool use_symmetric_sweep)
         {
             use_symmetric_sweep_ = use_symmetric_sweep;
+        }
+
+        inline void l1(const bool val)
+        {
+            l1_ = val;
         }
 
   private:
@@ -227,6 +242,14 @@ namespace utopia {
         {
             SizeType n = local_size(A).get(0);
             d = diag(A);
+
+            if(l1_) {
+                Write<Vector> w(d);
+                each_read(A, [this](const SizeType &i, const SizeType &j, const Scalar &value) {
+                    d.add(i, std::abs(value));
+                });
+            }
+
             d_inv = 1./d;
             c = local_zeros(n);
             r = local_zeros(n);
@@ -234,10 +257,11 @@ namespace utopia {
             if(use_line_search_) {
                 Ac = local_zeros(n);
             }
-        }        
+        }
 
         bool use_line_search_;
         bool use_symmetric_sweep_;
+        bool l1_;
         SizeType n_local_sweeps_;
         SizeType check_convergence_each_;
 

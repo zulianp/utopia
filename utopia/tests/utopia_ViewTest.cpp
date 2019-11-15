@@ -54,7 +54,7 @@ namespace utopia {
 
         void vector_view_test()
         {
-            Vector2<Scalar> a;
+            StaticVector2<Scalar> a;
             a.set(1.0);
 
             Scalar dot_a = dot(a, a);
@@ -73,9 +73,9 @@ namespace utopia {
         void mv_view_test()
         {
             StaticMatrix<Scalar, 3, 2> A;
-            Vector2<Scalar> x;
-            Vector3<Scalar> y;
-            Vector3<Scalar> expected;
+            StaticVector2<Scalar> x;
+            StaticVector3<Scalar> y;
+            StaticVector3<Scalar> expected;
 
             A.set(1.0);
             x.set(2.0);
@@ -89,7 +89,7 @@ namespace utopia {
 
         void view_assign_test()
         {
-            using V = utopia::Vector3<Scalar>;
+            using V = utopia::StaticVector3<Scalar>;
             V x;
             V y;
             x.set(0.0);
@@ -103,7 +103,7 @@ namespace utopia {
 
         void view_binary_test()
         {
-            using V = utopia::Vector3<Scalar>;
+            using V = utopia::StaticVector3<Scalar>;
             V x;
             V y;
             x.set(0.0);
@@ -118,7 +118,7 @@ namespace utopia {
 
         void view_unary_test()
         {
-            using V = utopia::Vector3<Scalar>;
+            using V = utopia::StaticVector3<Scalar>;
             V x, y;
             x.set(2.0);
             y.set(4.0);
@@ -131,8 +131,8 @@ namespace utopia {
 
         void view_composite_test()
         {
-            using V3 = utopia::Vector3<Scalar>;
-            using V2 = utopia::Vector2<Scalar>;
+            using V3 = utopia::StaticVector3<Scalar>;
+            using V2 = utopia::StaticVector2<Scalar>;
             using Mat2x3 = utopia::StaticMatrix<Scalar, 2, 3>;
             using Mat3x2 = utopia::StaticMatrix<Scalar, 3, 2>;
             using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
@@ -238,7 +238,7 @@ namespace utopia {
 
         void view_norm_test()
         {
-            using V2 = utopia::Vector2<Scalar>;
+            using V2 = utopia::StaticVector2<Scalar>;
             using Mat2x3 = utopia::StaticMatrix<Scalar, 2, 3>;
 
             V2 v; v.set(2.0);
@@ -264,7 +264,7 @@ namespace utopia {
 
         void view_eig_test()
         {
-            using V2 = utopia::Vector2<Scalar>;
+            using V2 = utopia::StaticVector2<Scalar>;
             using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
             Mat2x2 A; A.set(2.0);
 
@@ -276,7 +276,7 @@ namespace utopia {
 
         void view_diag_test()
         {
-            using V2 = utopia::Vector2<Scalar>;
+            using V2 = utopia::StaticVector2<Scalar>;
             using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
             Mat2x2 A; A.set(2.0);
 
