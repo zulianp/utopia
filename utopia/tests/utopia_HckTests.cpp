@@ -325,12 +325,13 @@ namespace utopia
             Vector x = fun.initial_guess();
             SizeType memory_size = 5;
 
-            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            auto subproblem = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
             subproblem->atol(1e-14);
             subproblem->max_it(100000);
-            subproblem->use_precond_direction(true);
-            
+            // subproblem->use_precond_direction(true);
+
 
             auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
             hess_approx->theta_min(1.0);
@@ -349,7 +350,9 @@ namespace utopia
 
 
 
-            QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
+            // QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
+            QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, subproblem);
+
             tr_solver.read(input_params_);
             tr_solver.solve(fun, x);
 
