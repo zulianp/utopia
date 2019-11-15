@@ -44,6 +44,13 @@ namespace utopia
         using QPointView   = Kokkos::DualView<Scalar **>;
         using QWeightView  = Kokkos::DualView<Scalar *>;
 
+        template<typename... Args>
+        inline static void parallel_for(Args&&... args)
+        {
+            using ForLoop  = utopia::ParallelFor<Traits<Vector>::Backend>;
+            return ForLoop::apply(std::forward<Args>(args)...);
+        }
+
         // using VectorD = utopia::VectorView<Kokkos::View<Scalar[Dim]>>;
 
         static SizeType compute_n_elements(const SizeType &n)
@@ -154,13 +161,13 @@ namespace utopia
 
         bool upper_bound(Vector &ub) const override
         {
-            ub = local_values(n_points_, 0.45); 
+            ub = local_values(n_points_, 0.45);
             return true;
         }
 
         bool lower_bound(Vector &lb) const override
         {
-            lb = local_values(n_points_, -9e9); 
+            lb = local_values(n_points_, -9e9);
             return true;
         }
 
@@ -181,7 +188,7 @@ namespace utopia
             disp(rhs_);
         }
 
-        inline const Matrix &laplacian() const 
+        inline const Matrix &laplacian() const
         {
             return laplacian_;
         }
@@ -203,7 +210,7 @@ namespace utopia
         JacobianView jacobian_, jacobian_inverse_;
         JacobianDeterminantView jacobian_determinant_;
         GradView grad_;
-        
+
 
         ElementMatrixView element_matrix_;
 
@@ -218,7 +225,7 @@ namespace utopia
         void init_vectors()
         {
             exact_sol_ = zeros(n_points_);
-            initial_guess_ = zeros(n_points_); 
+            initial_guess_ = zeros(n_points_);
             rhs_ = zeros(n_points_);
         }
 
@@ -274,16 +281,16 @@ namespace utopia
             host_q_weights(5) = 0.16067975044591917148618518733485;
 
             for(SizeType i = 0; i < NQPoints; ++i) {
-                const Scalar x = host_q_points(i, 0); 
+                const Scalar x = host_q_points(i, 0);
                 const Scalar y = host_q_points(i, 1);
-                
-                //fun 
+
+                //fun
                 host_fun(0, i) = (1 - x) * (1 - y);
                 host_fun(1, i) = x * (1 - y);
                 host_fun(2, i) = x*y;
                 host_fun(3, i) = (1 - x) * y;
 
-                //grad 
+                //grad
                 host_grad(0, i, 0) = y - 1.;
                 host_grad(0, i, 1) = x - 1.;
 
@@ -309,7 +316,7 @@ namespace utopia
             init_mesh();
             init_vectors();
             assemble_laplacian();
-            
+
             assemble_rhs(UTOPIA_LAMBDA(const DeviceVector &p) {
                 return std::sin(20*p.get(0) + 10*p.get(1)) * std::cos(30*p.get(0) + 6*p.get(1));
             });
@@ -323,32 +330,26 @@ namespace utopia
             Vector bc_values  = values(n_points_, 0.0);
 
             auto bcm_view = device_view(bc_markers);
-            // auto bcv_view = device_view(bc_values); 
+            // auto bcv_view = device_view(bc_values);
 
-            Kokkos::parallel_for(
-                "Poisson::init_boundary_conditions",
-                TeamPolicy(n_ + 1, Kokkos::AUTO),
-                UTOPIA_LAMBDA(const MemberType &team_member) 
-                {
-                    const SizeType i = team_member.league_rank();
+            parallel_for(n_ + 1, UTOPIA_LAMBDA(const SizeType &i)
+            {
+                //lower boundary
+                bcm_view.set(i, 1.0);
 
-                    //lower boundary
-                    bcm_view.set(i, 1.0);
+                //left boundary
+                bcm_view.set(i * (n_ + 1), 1.0);
 
-                    //left boundary
-                    bcm_view.set(i * (n_ + 1), 1.0);
+                //right boundary
+                bcm_view.set(i * (n_ + 1) + n_, 1.0);
 
-                    //right boundary
-                    bcm_view.set(i * (n_ + 1) + n_, 1.0);
-
-                    //top boundary
-                    bcm_view.set((n_ + 1) * n_ + i, 1.0);
-                });
-
+                //top boundary
+                bcm_view.set((n_ + 1) * n_ + i, 1.0);
+            });
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);
 
-            const auto &index = this->get_indices_related_to_BC(); 
+            const auto &index = this->get_indices_related_to_BC();
             set_zero_rows(laplacian_, index, 1.);
 
             rhs_ -= e_mul(bc_markers, rhs_);
@@ -362,12 +363,10 @@ namespace utopia
             auto device_fun        = ref_fun_.view_device();
             auto device_qp_weights = q_weights_.view_device();
 
-            Kokkos::parallel_for(
-                "Poisson::assemble_mass_matrix",
-                TeamPolicy(n_elements_, Kokkos::AUTO),
-                UTOPIA_LAMBDA(const MemberType &team_member) 
+            parallel_for(
+                n_elements_,
+                UTOPIA_LAMBDA(const SizeType &e_id)
                 {
-                    const SizeType e_id = team_member.league_rank();
                     DeviceVector vec(Kokkos::subview(element_matrix_, e_id, 0, Kokkos::ALL()));
                     vec.set(0.0);
                     const Scalar det_J = jacobian_determinant_(e_id);
@@ -376,7 +375,7 @@ namespace utopia
 
                     for(SizeType i = 0; i < NDofs; ++i) {
                         Scalar val = 0.0;
-                        
+
                         for(SizeType k = 0; k < NQPoints; ++k) {
                             const Scalar dx = det_J * device_qp_weights(k);
 
@@ -419,34 +418,31 @@ namespace utopia
             auto device_q_points  = q_points_.view_device();
             auto ref_fun_device   = ref_fun_.view_device();
 
-            Kokkos::parallel_for(
-                "Poisson::assemble_mass_matrix",
-                TeamPolicy(n_elements_, Kokkos::AUTO),
-                UTOPIA_LAMBDA(const MemberType &team_member) 
+            parallel_for(
+                n_elements_,
+                UTOPIA_LAMBDA(const SizeType &e_id)
                 {
-                    const SizeType e_id = team_member.league_rank();
+                    // const SizeType e_id = team_member.league_rank();
                     DeviceMatrix mat(Kokkos::subview(element_matrix_, e_id, Kokkos::ALL(), Kokkos::ALL()));
                     mat.set(0.0);
                     const Scalar det_J = jacobian_determinant_(e_id);
 
-                    Kokkos::parallel_for(
-                        Kokkos::TeamThreadRange(team_member, NDofs), [&] (const SizeType i)
-                        {
-                            for(SizeType k = 0; k < NQPoints; ++k) {
-                                const Scalar meas = q_weights_device(k) * det_J;
-                                const Scalar fi = ref_fun_device(i, k);
+                    for(SizeType i = 0; i < NDofs; ++i) {
 
-                                mat.add(i, i, fi * fi * meas );
+                        for(SizeType k = 0; k < NQPoints; ++k) {
+                            const Scalar meas = q_weights_device(k) * det_J;
+                            const Scalar fi = ref_fun_device(i, k);
 
-                                for(SizeType j = i+1; j < NDofs; ++j) {
-                                    const Scalar fj = ref_fun_device(j, k);
-                                    const Scalar v = fi * fj * meas;
-                                    mat.add(i, j, v);
-                                    mat.add(j, i, v);
-                                }
+                            mat.add(i, i, fi * fi * meas );
+
+                            for(SizeType j = i+1; j < NDofs; ++j) {
+                                const Scalar fj = ref_fun_device(j, k);
+                                const Scalar v = fi * fj * meas;
+                                mat.add(i, j, v);
+                                mat.add(j, i, v);
                             }
-
-                        });
+                        }
+                    }
 
                 });
 
@@ -459,35 +455,30 @@ namespace utopia
 
             UTOPIA_TRACE_REGION_BEGIN("Poisson::assemble_laplacian");
 
-            Kokkos::parallel_for(
-                "Poisson::assemble_laplacian",
-                TeamPolicy(n_elements_, Kokkos::AUTO),
-                UTOPIA_LAMBDA(const MemberType &team_member) 
+            parallel_for(
+                n_elements_,
+                UTOPIA_LAMBDA(const SizeType &e_id)
                 {
-                    const SizeType e_id = team_member.league_rank();
                     DeviceMatrix mat(Kokkos::subview(element_matrix_, e_id, Kokkos::ALL(), Kokkos::ALL()));
                     mat.set(0.0);
                     const Scalar det_J = jacobian_determinant_(e_id);
 
-                    Kokkos::parallel_for(
-                        Kokkos::TeamThreadRange(team_member, NDofs), [&] (const SizeType i)
-                        {
-                            for(SizeType k = 0; k < NQPoints; ++k) {
-                                const Scalar meas = q_weights_device(k) * det_J;
+                    for(SizeType i = 0; i < NDofs; ++i) {
+                        for(SizeType k = 0; k < NQPoints; ++k) {
+                            const Scalar meas = q_weights_device(k) * det_J;
 
-                                DeviceVector g_i(Kokkos::subview(grad_, e_id, i, k, Kokkos::ALL()));
-                                mat.add(i, i, dot(g_i, g_i) * meas );
+                            DeviceVector g_i(Kokkos::subview(grad_, e_id, i, k, Kokkos::ALL()));
+                            mat.add(i, i, dot(g_i, g_i) * meas );
 
-                                for(SizeType j = i+1; j < NDofs; ++j) {
-                                    DeviceVector g_j(Kokkos::subview(grad_, e_id, j, k, Kokkos::ALL()));
+                            for(SizeType j = i+1; j < NDofs; ++j) {
+                                DeviceVector g_j(Kokkos::subview(grad_, e_id, j, k, Kokkos::ALL()));
 
-                                    const Scalar v = dot(g_i, g_j) * meas;
-                                    mat.add(i, j, v);
-                                    mat.add(j, i, v);
-                                }
+                                const Scalar v = dot(g_i, g_j) * meas;
+                                mat.add(i, j, v);
+                                mat.add(j, i, v);
                             }
-
-                        });
+                        }
+                    }
                 });
 
             UTOPIA_TRACE_REGION_END("Poisson::assemble_laplacian");
@@ -505,13 +496,13 @@ namespace utopia
             auto device_grad      = ref_grad_.view_device();
 
             const Scalar h = 1./n_;
-            Kokkos::parallel_for(
-                "Poisson::init_mesh",
-                TeamPolicy(n_, Kokkos::AUTO),
-                UTOPIA_LAMBDA(const MemberType &team_member) {
-                    const SizeType i = team_member.league_rank();
+            parallel_for(
+                n_,
+                UTOPIA_LAMBDA(const SizeType &i)
+                {
+                    // Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_), [&] (const SizeType j) {
+                    for(SizeType j = 0; j < n_; ++j) {
 
-                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_), [&] (const SizeType j) {
                         const SizeType e_id = i * n_ + j;
                         DeviceVector p(Kokkos::subview(point_, e_id, Kokkos::ALL()));
 
@@ -525,10 +516,10 @@ namespace utopia
                         //flipped for dof-consistency and ccw local
                         dof_(e_id, 2) = (i + 1) * n_p + (j + 1);
                         dof_(e_id, 3) = (i + 1) * n_p + j;
-                        
+
                         DeviceMatrix J(Kokkos::subview(jacobian_, e_id, Kokkos::ALL(), Kokkos::ALL()));
                         DeviceMatrix J_inv(Kokkos::subview(jacobian_inverse_, e_id, Kokkos::ALL(), Kokkos::ALL()));
-                       
+
                         J.set(0.0);
                         J.set(0, 0, h);
                         J.set(1, 1, h);
@@ -551,11 +542,11 @@ namespace utopia
                             for(SizeType k = 0; k < NQPoints; ++k) {
                                 DeviceVector g(Kokkos::subview(device_grad, l, k, Kokkos::ALL()));
                                 DeviceVector J_inv_g(Kokkos::subview(grad_, e_id, l, k, Kokkos::ALL()));
-                                
+
                                 J_inv_g = J_inv * g;
                             }
                         }
-                    });
+                    }//);
                 }
             );
         }

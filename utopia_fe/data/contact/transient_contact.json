@@ -17,11 +17,22 @@
             ]
         },
 
-        "qp-solver" : {
+        "*qp-solver" : {
             "backend" : "petsc",
             "type" : "tron",
             "max-it" : 5,
-            "verbose" : false,
+            "verbose" : true,
+
+            "linear-solver" : {
+                "type" : "direct"
+            }
+        },
+
+        "qp-solver" : {
+            "backend" : "any",
+            "type" : "ssnewton",
+            "max-it" : 5,
+            "verbose" : true,
 
             "linear-solver" : {
                 "type" : "direct"
@@ -33,7 +44,7 @@
             "path"   : "../data/contact/pseudo-signorini.e",
             "path"   : "../data/contact/pseudo-signorini-refined.e",
             "*path"   : "pseudo-signorini-refined.e",
-            "refinements" :2,
+            "refinements" : 0,
             "order" : 1
         },
 

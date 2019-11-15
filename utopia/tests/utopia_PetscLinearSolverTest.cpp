@@ -172,13 +172,14 @@ namespace utopia {
 
             PetscVector x_0 = zeros(A.size().get(0));
 
-            multigrid.verbose(true);
+            // multigrid.verbose(true);
             multigrid.apply(rhs, x_0);
 
             double diff = norm2(A * x_0 - rhs);
-            std::cout<<"diff: "<< diff << " \n";
+            utopia_test_assert(diff < 1e-6);
+            // std::cout<<"diff: "<< diff << " \n";
 
-            multigrid.verbose(false);
+            // multigrid.verbose(false);
 
             x_0 = zeros(A.size().get(0));
             multigrid.cycle_type(FULL_CYCLE);

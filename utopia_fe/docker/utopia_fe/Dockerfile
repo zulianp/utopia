@@ -85,8 +85,8 @@ RUN cd /utopia_cloned/utopia_fe/bin && make install
 
 # run tests
 
-RUN echo 'UTOPIA TESTING' 											   > /utopia_test_out.txt
-RUN cd /utopia_cloned/utopia/bin       && ./utopia_test -verbose -bench >> /utopia_test_out.txt
+# RUN echo 'UTOPIA TESTING' 											   > /utopia_test_out.txt
+# RUN cd /utopia_cloned/utopia/bin       && ./utopia_test -verbose -bench >> /utopia_test_out.txt
 
 # RUN echo 'UTOPIA TESTING (DEBUG)' 									  >> /utopia_test_out.txt
 # RUN cd /utopia_cloned/utopia/bin_debug && ./utopia_test -verbose -bench >> /utopia_test_out.txt
