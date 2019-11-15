@@ -7,6 +7,7 @@
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestFunctions2D.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
+#include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "utopia_Testing.hpp"
 
 typedef double Real;
@@ -277,7 +278,7 @@ namespace utopia {
 
         {
             Write<MatrixT> write(mat);
-            
+
             for(SizeType i = 0; i < n; ++i) {
                 mat.set(i, i, 2);
             }
@@ -329,21 +330,49 @@ namespace utopia {
 
     void blas_pgs_test()
     {
-        int n = 3;
+        using IndexSet = Traits<BlasMatrixd>::IndexSet;
+
+        int n = 30;
         BlasMatrixd A = zeros(n, n);
+        double h = 1./n;
 
-        {
-            Write<BlasMatrixd> w_A(A);
-            A.set(0, 0, 1);
-            A.set(1, 1, 1);
-            A.set(2, 2, 1);
-        }
+        assemble_laplacian_1D(A, false);
+        A *= h;
 
-        BlasVectord rhs = values(n, 2.);
-        BlasVectord x   = zeros(n);
+        IndexSet index(2);
+        index[0] = 0;
+        index[1] = n-1;
+        index.describe();
+
+        set_zero_rows(A, index, 1.0);
+
+        BlasVectord rhs = values(n, 0.1);
+
+        rhs *= h;
+
+        rhs.set(0, 0.0);
+        rhs.set(n-1, 0.0);
+
+        BlasVectord x = zeros(n);
 
         ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
-        pgs.solve(A, rhs, x);
+
+        BoxConstraints<BlasVectord> box(
+            nullptr,
+            std::make_shared<BlasVectord>(values(n, 25))
+        );
+
+        pgs.set_box_constraints(box);
+        // pgs.verbose(true);
+        pgs.max_it(10000);
+        pgs.use_line_search(false);
+        pgs.l1(true);
+        bool ok = pgs.solve(A, rhs, x);
+
+        utopia_test_assert(ok);
+
+        // rename("x", x);
+        // write("X.m", x);
     }
 
     void test_transpose_add()

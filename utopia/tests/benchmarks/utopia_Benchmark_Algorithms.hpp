@@ -162,8 +162,7 @@ namespace utopia {
                     "projected_l1_gauss_seidel_" + std::to_string(i),
                     [i]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
-                        pg.l1(true);
-                        pg.verbose(true);
+                        // pg.l1(true);
                         run_qp_solver((base_n/2) * (i + 1), pg);
                     }
                 );

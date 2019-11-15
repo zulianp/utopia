@@ -31,6 +31,7 @@ namespace utopia {
         {
             Solver::read(in);
             Smoother::read(in);
+            in.get("l1", l1_);
         }
 
         void print_usage(std::ostream &os) const override
