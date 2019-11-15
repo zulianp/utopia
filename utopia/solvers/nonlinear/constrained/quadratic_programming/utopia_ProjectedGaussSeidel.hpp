@@ -389,7 +389,7 @@ namespace utopia {
             use_symmetric_sweep_ = use_symmetric_sweep;
         }
 
-        inline bool l1(const bool val)
+        inline void l1(const bool val)
         {
             l1_ = val;
         }
