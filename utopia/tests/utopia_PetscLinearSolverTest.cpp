@@ -27,7 +27,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
             UTOPIA_RUN_TEST(petsc_st_cg_mg);
-            UTOPIA_RUN_TEST(petsc_redundant_test); 
+            UTOPIA_RUN_TEST(petsc_redundant_test);
 
 #endif //PETSC_HAVE_MUMPS
         }
@@ -159,6 +159,8 @@ namespace utopia {
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
 
+            // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector, HOMEMADE>>(); smoother->l1(true);
+
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
             // multigrid.set_use_line_search(true);
             // multigrid.verbose(true);
@@ -170,8 +172,13 @@ namespace utopia {
 
             PetscVector x_0 = zeros(A.size().get(0));
 
-            // multigrid.verbose(true);
+            multigrid.verbose(true);
             multigrid.apply(rhs, x_0);
+
+            double diff = norm2(A * x_0 - rhs);
+            std::cout<<"diff: "<< diff << " \n";
+
+            multigrid.verbose(false);
 
             x_0 = zeros(A.size().get(0));
             multigrid.cycle_type(FULL_CYCLE);
@@ -182,22 +189,22 @@ namespace utopia {
             multigrid.v_cycle_repetition(2);
 
             multigrid.apply(rhs, x_0);
-            double diff = norm2(A * x_0 - rhs);
-            std::cout<<"diff: "<< diff << " \n"; 
+            diff = norm2(A * x_0 - rhs);
+            std::cout<<"diff: "<< diff << " \n";
 
 
             multigrid.max_it(1);
             multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
             auto gmres = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
             gmres->set_preconditioner(make_ref(multigrid));
-            
-            x_0 = 0.0*x_0; 
+
+            x_0 = 0.0*x_0;
             gmres->verbose(false);
             gmres->atol(1e-16);
             gmres->rtol(1e-16);
             gmres->solve(A, rhs, x_0);
 
-            // std::cout<<"gmres.get_num_it(): "<< gmres->get_num_it() << "   \n"; 
+            // std::cout<<"gmres.get_num_it(): "<< gmres->get_num_it() << "   \n";
 
             if(diff > 1e-6) {
                 utopia_error("petsc_mg: gmres preconditioned with mg does not do what it is supposed to");
@@ -248,10 +255,10 @@ namespace utopia {
             PetscVector sol = zeros(_n);
 
             auto solver = std::make_shared<utopia::RedundantLinearSolver<PetscMatrix, PetscVector> >();
-            solver->number_of_parallel_solves(mpi_world_size()); 
-            // solver->number_of_parallel_solves(1); 
-            solver->ksp_type("gmres"); 
-            solver->pc_type("lu"); 
+            solver->number_of_parallel_solves(mpi_world_size());
+            // solver->number_of_parallel_solves(1);
+            solver->ksp_type("gmres");
+            solver->pc_type("lu");
 
             solver->verbose(false);
             solver->solve(mat, rhs, sol);
@@ -508,7 +515,7 @@ namespace utopia {
             utopia_ksp.rtol(1e-18);
             utopia_ksp.stol(1e-16);
             utopia_ksp.max_it(10);
-            utopia_ksp.norm_type("preconditioned"); 
+            utopia_ksp.norm_type("preconditioned");
 
             utopia_ksp.solve(A, rhs, x_0);
 
@@ -615,9 +622,9 @@ namespace utopia {
             cg.set_preconditioner(make_ref(multigrid));
             cg.max_it(50);
             cg.solve(A, rhs, x_0);
-    
+
             utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
-    
+
 
             //Multigrid only
             // x_0 = zeros(A.size().get(0));
