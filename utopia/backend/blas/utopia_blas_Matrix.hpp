@@ -18,6 +18,7 @@
 #include "utopia_Operations.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 
 #include <vector>
@@ -27,7 +28,7 @@
 
 namespace utopia {
     template<typename T>
-    class BlasMatrix : 
+    class BlasMatrix :
         // Dynamic polymorphic types
         public DenseMatrix<T, std::size_t>,
         public ReducibleMatrix<T, std::size_t>,
@@ -37,6 +38,7 @@ namespace utopia {
         public Reducible<T>,
         // Static polymorphic types
         public Tensor<BlasMatrix<T>, 2>,
+        public Selectable<BlasMatrix<T>, 2>,
         public BLAS1Tensor<BlasMatrix<T>>,
         public BLAS2Matrix<BlasMatrix<T>, BlasVector<T>>,
         public BLAS3DenseMatrix<BlasMatrix<T>>,
@@ -48,7 +50,7 @@ namespace utopia {
         typedef std::vector<T> Entries;
         using SizeType = std::size_t;
         using Scalar = T;
-       
+
         using BlasVector = utopia::BlasVector<T>;
         using BLAS2Matrix<BlasMatrix, BlasVector>::multiply;
         using BLAS2Matrix<BlasMatrix, BlasVector>::transpose_multiply;
@@ -93,13 +95,13 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
 
         BlasMatrix(BlasMatrix &&other)
-        : entries_(std::move(other.entries_)), 
+        : entries_(std::move(other.entries_)),
           rows_(std::move(other.rows_)),
           cols_(std::move(other.cols_))
         {}
 
         BlasMatrix(const BlasMatrix &other)
-        : entries_(other.entries_), 
+        : entries_(other.entries_),
           rows_(other.rows_),
           cols_(other.cols_)
         {}
@@ -209,8 +211,11 @@ namespace utopia {
         {
             this->rows_ = rows;
             this->cols_ = cols;
-            this->entries_.resize(rows_ * cols_);
 
+            std::size_t n = rows_ * cols_;
+            if(n == this->entries_.size()) return;
+
+            this->entries_.resize(n);
             UTOPIA_REPORT_ALLOC("BlasMatrix::resize(const SizeType, const SizeType)");
         }
 
@@ -218,7 +223,11 @@ namespace utopia {
         {
             this->rows_ = s.get(0);
             this->cols_ = s.get(1);
-            this->entries_.resize(rows_ * cols_);
+
+            std::size_t n = rows_ * cols_;
+            if(n == this->entries_.size()) return;
+
+            this->entries_.resize(n);
 
             UTOPIA_REPORT_ALLOC("BlasMatrix::resize(const Size &)");
         }
@@ -407,7 +416,7 @@ namespace utopia {
             return BLASAlgorithms<T>::ddot(n_elements(), ptr(), 1, other.ptr(), 1);
         }
 
-      
+
 
         ///<T>AMAX - index of max abs value
         inline SizeType amax() const// override
@@ -480,7 +489,7 @@ namespace utopia {
             BlasMatrix &C) const override
         {
             //handle aliases
-            if(&B == &C || this == &C) {
+            if(B.is_alias(C) || this->is_alias(C)) {
                 //TEMPORARY-CREATED
                 BlasMatrix temp;
                 gemm(transpose_A, alpha, transpose_B, B, beta, temp);
@@ -503,13 +512,13 @@ namespace utopia {
             }
 
             BLASAlgorithms<T>::gemm(
-                t_A_flag, 
-                t_B_flag, 
-                m, 
-                n, 
-                k, 
+                t_A_flag,
+                t_B_flag,
+                m,
+                n,
+                k,
                 alpha,
-                this->ptr(), 
+                this->ptr(),
                 transpose_A ? k : m,
                 B.ptr(),
                 transpose_B ? n : k,
@@ -519,10 +528,55 @@ namespace utopia {
             );
         }
 
+        //(*this) += transpose(other)
+        inline void add_transpose(const BlasMatrix &other)
+        {
+            if(is_alias(other)) {
+                for(SizeType r = 0; r < rows_; ++r) {
+                    add(r, r, get(r, r));
+
+                    for(SizeType c = r+1; c < cols_; ++c) {
+                        auto v = get(r, c) + get(c, r);
+                        set(r, c, v);
+                        set(c, r, v);
+                    }
+                }
+
+            } else {
+
+                for(SizeType r = 0; r < rows_; ++r) {
+                    for(SizeType c = 0; c < cols_; ++c) {
+                        set(r, c, other.get(c, r) + get(r, c));
+                    }
+                }
+
+            }
+        }
+
+        //(*this) = transpose(*this) + other
+        inline void transpose_add(const BlasMatrix &other)
+        {
+            if(is_alias(other)) {
+                for(SizeType r = 0; r < rows_; ++r) {
+                    add(r, r, get(r, r));
+
+                    for(SizeType c = r+1; c < cols_; ++c) {
+                        auto v = get(r, c) + get(c, r);
+                        set(r, c, v);
+                        set(c, r, v);
+                    }
+                }
+
+            } else {
+                this->transpose(*this);
+                this->axpy(1.0, other);
+            }
+        }
+
         inline void transpose(BlasMatrix &C) const override {
             bool is_squared = rows_ == cols_;
 
-            if(this == &C) {
+            if(this->is_alias(C)) {
                 if(is_squared) {
                     //in place
                     for(SizeType i = 0; i < rows_; ++i) {
@@ -541,8 +595,8 @@ namespace utopia {
             } else {
                 C.resize(cols_, rows_);
 
-                for(SizeType i = 0; i < rows_; ++i) {
-                    for(SizeType j = 0; j < cols_; ++j) {
+                for(SizeType i = 0; i < cols_; ++i) {
+                    for(SizeType j = 0; j < rows_; ++j) {
                         C.set(i, j, get(j, i));
                     }
                 }
@@ -559,8 +613,8 @@ namespace utopia {
             identity(s.get(0), s.get(1), diag);
         }
 
-        inline void values(const Size &s, const T &val) override 
-        {   
+        inline void values(const Size &s, const T &val) override
+        {
             if(s.dims() == 1) {
                 resize(s.get(0), s.get(0));
             } else {
@@ -598,7 +652,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] *= other.entries_[i];
-            }  
+            }
         }
 
         inline void e_div(const BlasMatrix &other) override
@@ -608,7 +662,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] /= other.entries_[i];
-            }  
+            }
         }
 
         inline void e_min(const BlasMatrix &other) override
@@ -618,7 +672,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] = std::min(other.entries_[i], entries_[i]);
-            }  
+            }
         }
 
         inline void e_max(const BlasMatrix &other) override
@@ -628,7 +682,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] = std::max(other.entries_[i], entries_[i]);
-            }  
+            }
         }
 
         //////////////////////////////////////////////////////////////////////
@@ -640,7 +694,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] *= other;
-            }  
+            }
         }
 
         inline void e_div(const T &other) override
@@ -649,7 +703,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] /= other;
-            }  
+            }
         }
 
         inline void e_min(const T &other) override
@@ -658,7 +712,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] = std::min(other, entries_[i]);
-            }  
+            }
         }
 
         inline void e_max(const T &other) override
@@ -667,7 +721,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 entries_[i] = std::max(other, entries_[i]);
-            }  
+            }
         }
 
         ////////////// OVERRIDES FOR Normed //////////////////////////////////
@@ -758,7 +812,7 @@ namespace utopia {
         }
 
         //FIXME make use of interface
-        inline void build_diag(BlasVector &v) const 
+        inline void build_diag(BlasVector &v) const
         {
             auto n = std::min(rows_, cols_);
 
@@ -771,7 +825,7 @@ namespace utopia {
             }
         }
 
-        inline void diag(const BlasVector &v) 
+        inline void diag(const BlasVector &v)
         {
             auto n = v.size();
             resize(n, n);
@@ -781,7 +835,7 @@ namespace utopia {
             }
         }
 
-        inline void diag(const BlasMatrix &m) 
+        inline void diag(const BlasMatrix &m)
         {
             auto n = std::min(m.rows_, m.cols_);
             resize(n, n);
@@ -807,7 +861,7 @@ namespace utopia {
         {
             assert(row_range.valid());
             assert(col_range.valid());
-            
+
             if(&block == this) {
                 BlasMatrix temp = block;
                 assign(row_range, col_range, temp);
@@ -852,8 +906,8 @@ namespace utopia {
         }
 
         inline void select(
-            const BlasIndexSet &row_index, 
-            const BlasIndexSet &col_index, 
+            const BlasIndexSet &row_index,
+            const BlasIndexSet &col_index,
             BlasMatrix &result) const override
         {
             const SizeType r = row_index.size();

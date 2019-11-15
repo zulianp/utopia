@@ -14,6 +14,7 @@
 #include "utopia_Comparable.hpp"
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -41,7 +42,8 @@ namespace utopia {
         public Comparable<PetscVector>,
         // public Ranged<PetscVector, 1>,
         public BLAS1Tensor<PetscVector>,
-        public Tensor<PetscVector, 1>
+        public Tensor<PetscVector, 1>,
+        public Selectable<PetscVector, 1>
     {
     public:
             using Scalar   = PetscScalar;

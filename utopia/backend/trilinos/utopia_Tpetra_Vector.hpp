@@ -17,6 +17,7 @@
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Normed.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -44,7 +45,8 @@ namespace utopia {
     public ElementWiseOperand<TpetraVector>,
     public Comparable<TpetraVector>,
     public BLAS1Tensor<TpetraVector>,
-    public Tensor<TpetraVector, 1>
+    public Tensor<TpetraVector, 1>,
+    public Selectable<TpetraVector, 1>
     {
     public:
 

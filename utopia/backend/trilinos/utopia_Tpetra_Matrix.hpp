@@ -9,6 +9,7 @@
 #include "utopia_Tensor.hpp"
 #include "utopia_Normed.hpp"
 #include "utopia_Operator.hpp"
+#include "utopia_Select.hpp"
 
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_Communicator.hpp"
@@ -34,7 +35,8 @@ namespace utopia {
     public BLAS3Matrix<TpetraMatrix>,
     public Comparable<TpetraMatrix>,
     public Operator<TpetraVector>,
-    public Tensor<TpetraMatrix, 2>
+    public Tensor<TpetraMatrix, 2>,
+    public Selectable<TpetraMatrix, 2>
     {
     public:
 

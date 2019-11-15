@@ -14,6 +14,7 @@
 #include "utopia_Reducible.hpp"
 #include "utopia_blas_IndexSet.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 #include <vector>
 #include <memory>
@@ -31,6 +32,7 @@ namespace utopia {
         public ElementWiseOperand<T>,
         // Static polymorphic types
         public Tensor<BlasVector<T>, 1>,
+        public Selectable<BlasVector<T>, 1>,
         public BLAS1Tensor<BlasVector<T>>,
         public Comparable<BlasVector<T>>,
         public ElementWiseOperand<BlasVector<T>>

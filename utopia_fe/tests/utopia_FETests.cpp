@@ -20,6 +20,8 @@
 #include "utopia_RefactoredContactTest.hpp"
 #include "utopia_DualBasisTest.hpp"
 #include "utopia_IntegratorTest.hpp"
+#include "utopia_FETensorTest.hpp"
+#include "utopia_NewNeohookeanTest.hpp"
 
 namespace utopia {
 
@@ -128,6 +130,8 @@ namespace utopia {
         add_test(RefactoredContactTest::command(), utopia::make_unique<RefactoredContactTest>());
         add_test(DualBasisTest::command(), utopia::make_unique<DualBasisTest>());
         add_test(IntegratorTest::command(), utopia::make_unique<IntegratorTest>());
+        add_test(FETensorTest::command(), utopia::make_unique<FETensorTest>());
+        add_test(NewNeohookeanTest::command(), utopia::make_unique<NewNeohookeanTest>());
     }
 
 }

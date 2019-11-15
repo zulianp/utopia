@@ -1,5 +1,5 @@
-#ifndef UTOPIA_JACOBI_HPP
-#define UTOPIA_JACOBI_HPP
+#ifndef UTOPIA_POINT_JACOBI_HPP
+#define UTOPIA_POINT_JACOBI_HPP
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Smoother.hpp"
 
@@ -153,6 +153,11 @@ namespace utopia {
             UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r1");
             r_ = rhs - (LU_ * x);
             x = e_mul(d_inv_, r_);
+
+            // const Matrix &A = *this->get_operator();
+            // r_ = rhs - A * x;
+            // x += e_mul(d_inv_, r_);
+
             UTOPIA_NO_ALLOC_END();
             return true;
         }
@@ -161,5 +166,5 @@ namespace utopia {
 
 }
 
-#endif //UTOPIA_JACOBI_HPP
+#endif //UTOPIA_POINT_JACOBI_HPP
 

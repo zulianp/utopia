@@ -71,6 +71,10 @@ namespace utopia {
             return sampler_;
         }
 
+        bool set_current_block(const int subdomain_id) override
+        {
+            return sampler_->set_current_block(subdomain_id);
+        }
 
         inline Scalar eval(const std::vector<Scalar> &x) const override
         {

@@ -102,11 +102,13 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval<InPlace<Left, Number<Right>, Multiplies>, Traits, Backend> {
     public:
+        using Scalar = typename Traits::Scalar;
+
         inline static void apply(const InPlace<Left, Number<Right>, Multiplies> &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Left, Traits>::apply(expr.left()).scale(expr.right());
+            Eval<Left, Traits>::apply(expr.left()).scale(expr.right().get());
             
             UTOPIA_TRACE_END(expr);
         }

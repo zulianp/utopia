@@ -1,13 +1,10 @@
-//
-// Created by Patrick Zulian on 15/05/15.
-//
-
 #ifndef SIMMOD_utopia_OPERATORS_HPP
 #define SIMMOD_utopia_OPERATORS_HPP
 
 #include <string>
 #include <functional>
 #include <cmath>
+#include <complex>
 
 namespace utopia {
 
@@ -316,6 +313,16 @@ namespace utopia {
         inline static T apply(const T &x) {
             using std::sin;
             return sin(x);
+        }
+    };
+
+    class Conjugate {
+    public:
+        std::string get_class() const { return "Conjugate"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            return std::conj(x);
         }
     };
 

@@ -126,10 +126,16 @@ namespace utopia {
     template<class Fun>
     void TpetraVectorEach::apply_transform(const TpetraVector &in, TpetraVector &out, Fun fun)
     {
-        const auto r = range(out);
+        const auto r = range(in);
 
+        if(out.empty() || in.size() != out.size()) {
+            //make copy
+            out = in;
+        }
 
-        if(&in == &out) {
+        assert(r == range(out));
+
+        if(in.is_alias(out)) {
             auto impl = raw_type(out);
             auto view = impl->getLocalView<Kokkos::HostSpace>();
             auto map  = impl->getMap()->getLocalMap();

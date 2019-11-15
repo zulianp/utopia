@@ -7,6 +7,8 @@
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Algorithms.hpp"
+
 //#include "cuda_profiler_api.h"
 
 namespace  utopia

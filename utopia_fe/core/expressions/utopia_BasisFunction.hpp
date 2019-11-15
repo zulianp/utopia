@@ -15,7 +15,7 @@ namespace utopia {
         : space_ptr_(std::make_shared<FunctionSpaceT>(space))
         {}
 
-        BasisFunction(std::shared_ptr<FunctionSpaceT> &space_ptr)
+        BasisFunction(const std::shared_ptr<FunctionSpaceT> &space_ptr)
         : space_ptr_(space_ptr)
         {}
 

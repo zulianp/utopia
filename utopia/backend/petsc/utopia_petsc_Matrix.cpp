@@ -1279,7 +1279,7 @@ namespace utopia {
     void PetscMatrix::multiply(const PetscVector &vec, PetscVector &result) const
     {
         //handle alias
-        if(vec.raw_type() == result.raw_type()) {
+        if(result.is_alias(vec)) {
             PetscVector x = vec;
             multiply(x, result);
             return;
@@ -1319,8 +1319,11 @@ namespace utopia {
 
     void PetscMatrix::transpose_multiply(const PetscVector &vec, PetscVector &result) const
     {
-        if(vec.raw_type() == result.raw_type()) {
-            assert(false && "handle me");
+        if(result.is_alias(vec)) {
+            PetscVector temp;
+            transpose_multiply(vec, temp);
+            result = std::move(temp);
+            return;
         }
 
         MPI_Comm comm = vec.communicator();

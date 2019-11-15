@@ -5,12 +5,10 @@
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
 #include "utopia_Eval_Residual.hpp"
+#include "utopia_ElementWisePseudoInverse.hpp"
 #include <utility>
 
 namespace utopia {
-
-
-   
 
     template<typename Matrix, typename Vector>
     class ExpressionTests
@@ -46,6 +44,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(bratu_grad);
             UTOPIA_RUN_TEST(diag_mult);
             UTOPIA_RUN_TEST(rotate_test);
+            UTOPIA_RUN_TEST(e_pseudo_inv_test);
             
 
 
@@ -478,20 +477,34 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();                     
         }
 
+        void e_pseudo_inv_test()
+        {
+            Vector x1, x2;
+
+            x1 = local_values(n_ * (x1.comm().rank() + 1), 1.0); 
+            e_pseudo_inv(x1, x2);
+
+            utopia_test_assert(!x2.empty());
+            utopia_test_assert(range(x1) == range(x2));
+
+            UTOPIA_NO_ALLOC_BEGIN("e_pseudo_inv_test");
+            e_pseudo_inv(x1, x2);
+            UTOPIA_NO_ALLOC_END(); 
+        }
+
     private:
         SizeType n_;
     };
 
     void expr()
     {
-#ifdef WITH_PETSC
         auto n_dofs     = 10;
-
+#ifdef WITH_PETSC
         ExpressionTests<PetscMatrix, PetscVector>(n_dofs).run();
+#endif
 
 #ifdef WITH_TRILINOS
         ExpressionTests<TpetraMatrixd, TpetraVectord>(n_dofs).run();
-#endif
 #endif
 
     }

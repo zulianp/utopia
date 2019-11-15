@@ -1164,6 +1164,60 @@ namespace utopia {
         }
     }
 
+    template<class Space, int Backend, class Visitor>
+    inline static int traverse(FiniteElement<Space, Backend> &expr, Visitor &visitor)
+    {
+        switch(visitor.visit(expr))
+        {
+            case TRAVERSE_CONTINUE:
+            {
+                return traverse(expr.space(), visitor);
+            }
+
+            case TRAVERSE_STOP:
+            {
+                return TRAVERSE_STOP;
+            }
+
+            case TRAVERSE_SKIP_SUBTREE:
+            {
+                return TRAVERSE_CONTINUE;
+            }
+
+            default: {
+                std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+                return TRAVERSE_STOP;
+            }
+        }
+    }
+
+    template<class Space, int Backend, class Visitor>
+    inline static int traverse(const FiniteElement<Space, Backend> &expr, Visitor &visitor)
+    {
+        switch(visitor.visit(expr))
+        {
+            case TRAVERSE_CONTINUE:
+            {
+                return traverse(expr.space(), visitor);
+            }
+
+            case TRAVERSE_STOP:
+            {
+                return TRAVERSE_STOP;
+            }
+
+            case TRAVERSE_SKIP_SUBTREE:
+            {
+                return TRAVERSE_CONTINUE;
+            }
+
+            default: {
+                std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+                return TRAVERSE_STOP;
+            }
+        }
+    }
+
     template<class FunctionSpaceT, class Visitor>
     inline static int traverse(const TrialFunction<FunctionSpaceT> &expr, Visitor &visitor)
     {

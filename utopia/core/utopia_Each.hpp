@@ -116,7 +116,7 @@ namespace utopia {
             }
 
             if(size(in) != size(out)) {
-                out = zeros(size(in));
+                out = local_zeros(local_size(in));
             }
 
             Read<Tensor>  read_lock(in);

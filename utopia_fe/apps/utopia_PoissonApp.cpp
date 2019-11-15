@@ -32,6 +32,9 @@ namespace utopia {
         UIForcingFunction<LibMeshFunctionSpace, UVector> forcing_function(space.subspace(0));
         in.get("forcing-function", forcing_function);
 
+        bool no_solve = false;
+        in.get("no-solve", no_solve);
+
         // UIScalarFunction<double> diffusivity;
         // in.get("diffusivity", diffusivity);
 
@@ -46,7 +49,11 @@ namespace utopia {
         USparseMatrix A;
         UVector rhs, x, forcing_term;
         
-        assemble(bilinear_form == linear_form, A, rhs);
+        // assemble(bilinear_form == linear_form, A, rhs);
+        assemble(bilinear_form, A);
+        assemble(linear_form,   rhs);
+
+        if(no_solve) return;
 
         x = local_zeros(local_size(rhs));
 
@@ -56,7 +63,7 @@ namespace utopia {
 
         apply_boundary_conditions(V, A, rhs);
 
-        Factorization<USparseMatrix, UVector> fact;//(MATSOLVERMUMPS,PCLU);
+        Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
         fact.describe(std::cout);
         fact.solve(A, rhs, x);
 

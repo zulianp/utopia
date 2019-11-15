@@ -1,11 +1,20 @@
 {
     "mesh": {
         "type": "square",
-        "n-x" : 10,
-        "n-y" : 10,
+        "n-x" : 600,
+        "n-y" : 600,
         "refinements" : 0,
-        "random-refine" : true,
-        "random-refinements" : 4
+        "random-refine" : false,
+        "random-refinements" : 0
+    },
+    "*mesh": {
+        "type": "cube",
+        "n-x" : 20,
+        "n-y" : 20,
+        "n-z" : 20,
+        "refinements" : 0,
+        "random-refine" : false,
+        "random-refinements" : 0
 
     },
     "space": {
@@ -24,5 +33,7 @@
             }
 
         ]
-    }
+    },
+
+    "no-solve" : false
 }
