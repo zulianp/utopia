@@ -342,7 +342,6 @@ namespace utopia {
         IndexSet index(2);
         index[0] = 0;
         index[1] = n-1;
-        index.describe();
 
         set_zero_rows(A, index, 1.0);
 

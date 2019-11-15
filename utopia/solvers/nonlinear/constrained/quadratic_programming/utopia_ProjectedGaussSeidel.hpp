@@ -20,7 +20,7 @@ namespace utopia {
         DEF_UTOPIA_SCALAR(Matrix);
 
         ProjectedGaussSeidel()
-        : use_line_search_(true), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
+        : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
         {
 
         }
@@ -360,6 +360,7 @@ namespace utopia {
                     inactive_set_ = local_zeros(local_size(c));
                     Ac = local_zeros(local_size(c));
                     is_c_ = local_zeros(local_size(c));
+                    descent_dir = local_zeros(local_size(c));
                 } else {
                     inactive_set_.set(0);
                 }
