@@ -30,10 +30,10 @@ namespace utopia
                 // UTOPIA_RUN_TEST(quasi_newton_test_sparse);
 
                 // UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
-                UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+                // UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+                UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
 
-
-            //     UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+                
             //     UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
             //     UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
             //     UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
