@@ -5,6 +5,7 @@
 namespace utopia {
     class TpetraMatrix;
     class TpetraVector;
+    class TrilinosCommunicator;
 }
 
 #endif //UTOPIA_TRILINOS_FORWARD_DECLARATIONS_HPP

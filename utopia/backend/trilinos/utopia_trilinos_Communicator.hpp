@@ -24,7 +24,7 @@ namespace utopia {
             return comm_->getSize();
         }
 
-        inline Communicator * clone() const override
+        inline TrilinosCommunicator * clone() const override
         {
             return new TrilinosCommunicator(get());
         }

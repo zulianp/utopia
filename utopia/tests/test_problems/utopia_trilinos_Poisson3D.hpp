@@ -198,99 +198,99 @@ namespace utopia
             return rhs_;
         }
 
-        template<typename Scalar, int Dim>
-        class UniformGridElement {
-        public:
-            ArrayView<SizeType, Dim> idx;
-        };
+        // template<typename Scalar, int Dim>
+        // class UniformGridElement {
+        // public:
+        //     ArrayView<SizeType, Dim> idx;
+        // };
 
-        template<typename Scalar, int Dim>
-        class UniformGrid {
-        public:
+        // template<typename Scalar, int Dim>
+        // class UniformGrid {
+        // public:
 
-            using DofView   = Kokkos::View<SizeType **>;
-            using PointView = Kokkos::View<Scalar **>;
-            using DimView   = Kokkos::DualView<SizeType[Dim]>;
-            using Point     = utopia::StaticVector<Scalar, Dim>;
-            using Jacobian  = utopia::StaticMatrix<Scalar, Dim, Dim>;
-            using Element   = utopia::UniformGridElement<Dim>;
+        //     using DofView   = Kokkos::View<SizeType **>;
+        //     using PointView = Kokkos::View<Scalar **>;
+        //     using DimView   = Kokkos::DualView<SizeType[Dim]>;
+        //     using Point     = utopia::StaticVector<Scalar, Dim>;
+        //     using Jacobian  = utopia::StaticMatrix<Scalar, Dim, Dim>;
+        //     using Element   = utopia::UniformGridElement<Dim>;
 
-            UTOPIA_INLINE_FUNCTION void element(const SizeType &el_index, UniformGridElement &el)
-            {
-                SizeType current = el_index;
-                const SizeType last = Dim - 1;
+        //     UTOPIA_INLINE_FUNCTION void element(const SizeType &el_index, UniformGridElement &el)
+        //     {
+        //         SizeType current = el_index;
+        //         const SizeType last = Dim - 1;
 
-                for(SizeType i = last; i >= 0; --i) {
-                    const SizeType next = current / dims[i];
-                    el.idx[i] = current - next * dims[i];
-                    current = next;
-                }
-            }
+        //         for(SizeType i = last; i >= 0; --i) {
+        //             const SizeType next = current / dims[i];
+        //             el.idx[i] = current - next * dims[i];
+        //             current = next;
+        //         }
+        //     }
 
-            UTOPIA_INLINE_FUNCTION void point(const SizeType &i, const SizeType &j, Point &p) const
-            {
-                for(int d = 0; d < Dim; ++d) {
-                    const Scalar h = 1./size_[d];
-                    p(d) = i * h;
-                }
-            }
+        //     UTOPIA_INLINE_FUNCTION void point(const SizeType &i, const SizeType &j, Point &p) const
+        //     {
+        //         for(int d = 0; d < Dim; ++d) {
+        //             const Scalar h = 1./size_[d];
+        //             p(d) = i * h;
+        //         }
+        //     }
 
-            UTOPIA_INLINE_FUNCTION void jacobian(const SizeType &element_id, Jacobian &J) const
-            {
-                J.set(0.0);
+        //     UTOPIA_INLINE_FUNCTION void jacobian(const SizeType &element_id, Jacobian &J) const
+        //     {
+        //         J.set(0.0);
 
-                for(int d = 0; d < Dim; ++d) {
-                    const Scalar h = 1./size_[d];
-                    J.set(d, d, h);
-                }
-            }
+        //         for(int d = 0; d < Dim; ++d) {
+        //             const Scalar h = 1./size_[d];
+        //             J.set(d, d, h);
+        //         }
+        //     }
 
-            UTOPIA_INLINE_FUNCTION void jacobian_inverse(const SizeType &element_id, Jacobian &J) const
-            {
-                J.set(0.0);
+        //     UTOPIA_INLINE_FUNCTION void jacobian_inverse(const SizeType &element_id, Jacobian &J) const
+        //     {
+        //         J.set(0.0);
 
-                for(int d = 0; d < Dim; ++d) {
-                    const Scalar h = 1./size_[d];
-                    J.set(d, d, 1./h);
-                }
-            }
+        //         for(int d = 0; d < Dim; ++d) {
+        //             const Scalar h = 1./size_[d];
+        //             J.set(d, d, 1./h);
+        //         }
+        //     }
 
-            UTOPIA_INLINE_FUNCTION Scalar jacobian_determinant(const SizeType &element_id) const
-            {
-                return J_det_;
-            }
+        //     UTOPIA_INLINE_FUNCTION Scalar jacobian_determinant(const SizeType &element_id) const
+        //     {
+        //         return J_det_;
+        //     }
 
-            UniformGrid(const DimView &size) : size_(size)
-            {
-                init();
-            }
+        //     UniformGrid(const DimView &size) : size_(size)
+        //     {
+        //         init();
+        //     }
 
-        private:
-            DimView size_;
-            Scalar J_det_;
+        // private:
+        //     DimView size_;
+        //     Scalar J_det_;
 
-            void init()
-            {
-                auto host_size = size_.view_host();
+        //     void init()
+        //     {
+        //         auto host_size = size_.view_host();
 
-                J_det_ = 1./host_size[d];
-                for(int d = 1; d < Dim; ++d) {
-                    const Scalar h = 1./host_size[d];
-                    J_det_ *= h;
-                }
-            }
-        };
+        //         J_det_ = 1./host_size[d];
+        //         for(int d = 1; d < Dim; ++d) {
+        //             const Scalar h = 1./host_size[d];
+        //             J_det_ *= h;
+        //         }
+        //     }
+        // };
 
 
-        class FunctionSpace {
-        public:
+        // class FunctionSpace {
+        // public:
 
-        };
+        // };
 
-        class FiniteElement {
-        public:
+        // class FiniteElement {
+        // public:
 
-        };
+        // };
 
     private:
         SizeType n_;

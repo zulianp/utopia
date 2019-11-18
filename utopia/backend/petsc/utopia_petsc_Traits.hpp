@@ -29,6 +29,8 @@ namespace utopia {
         using IndexArray  = utopia::PetscArray<SizeType>;
         using ScalarArray = utopia::PetscArray<Scalar>;
 
+        using Communicator = utopia::PetscCommunicator;
+
         enum
         {
             Backend = PETSC
@@ -43,7 +45,7 @@ namespace utopia {
 
     UTOPIA_MAKE_TRAITS_POLYMORPHIC(PetscMatrix, PetscTraits, 2);
     UTOPIA_MAKE_TRAITS(PetscVector, PetscTraits, 1);
-    
+
     UTOPIA_MAKE_PARALLEL_TRAITS(PetscMatrix);
     UTOPIA_MAKE_PARALLEL_TRAITS(PetscVector);
 }

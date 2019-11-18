@@ -2,6 +2,7 @@
 #define UTOPIA_COMMUNICATOR_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Clonable.hpp"
 
 #ifdef WITH_MPI
 #include <mpi.h>
@@ -9,12 +10,12 @@
 
 namespace utopia {
 
-	class Communicator {
+	class Communicator : public Clonable {
 	public:
 		virtual ~Communicator() {}
 		virtual int rank() const = 0;
 		virtual int size() const = 0;
-		virtual Communicator * clone() const = 0;
+		virtual Communicator * clone() const override = 0;
 
 		virtual bool conjunction(const bool &val) const = 0;
 		virtual bool disjunction(const bool &val) const = 0;
@@ -33,7 +34,7 @@ namespace utopia {
 		int rank() const noexcept override { return 0; }
 		int size() const noexcept override { return 1; }
 
-		SelfCommunicator * clone() const noexcept override 
+		SelfCommunicator * clone() const noexcept override
 		{
 			return new SelfCommunicator();
 		}

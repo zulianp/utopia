@@ -8,8 +8,8 @@ namespace utopia {
 
 	class PetscCommunicator final : public MPICommunicator {
 	public:
-		
-		inline Communicator * clone() const override
+
+		inline PetscCommunicator * clone() const override
 		{
 			return new PetscCommunicator(get());
 		}

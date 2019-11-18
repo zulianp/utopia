@@ -40,7 +40,7 @@ namespace utopia {
 		virtual SizeType cols() const = 0;
 
 		virtual Size size() const { return {rows(), cols() }; }
-		
+
 	};
 
 	template<typename Scalar_, typename SizeType_>
@@ -49,7 +49,7 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-		
+
 		virtual ~Matrix() {}
 
 		//face methods for treaing matrix and distrubed-matrix in the same way
@@ -126,7 +126,7 @@ namespace utopia {
 
 	//parallel types, collective operations
 	template<typename Scalar_, typename SizeType_>
-	class DistributedMatrix : public MatrixBase<Scalar_, SizeType_>, public DistributedObject {
+	class DistributedMatrix : public MatrixBase<Scalar_, SizeType_>, public virtual DistributedObject {
 	public:
 		using Scalar = Scalar_;
 		using SizeType = SizeType_;

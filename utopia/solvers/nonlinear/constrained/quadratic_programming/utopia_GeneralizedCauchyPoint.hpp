@@ -66,9 +66,9 @@ namespace  utopia
 
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
-                auto A_op_ptr = utopia::op_ref(A);
+                // auto A_op_ptr = utopia::op_ref(A);
                 auto &box = this->get_box_constraints();
-                return aux_solve(*A_op_ptr, -1.0 *rhs, sol, box);
+                return aux_solve(A, -1.0 *rhs, sol, box);
             }
 
 

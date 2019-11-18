@@ -40,8 +40,8 @@ namespace utopia {
     {
         SizeType temp = this->max_it();
         this->max_it(this->sweeps());
-        auto A_ptr = utopia::op(this->get_operator());
-        solve_unpreconditioned(*A_ptr, rhs, x);
+        // auto A_ptr = utopia::op(this->get_operator());
+        solve_unpreconditioned(*this->get_operator(), rhs, x);
         this->max_it(temp);
         return true;
     }
@@ -184,7 +184,7 @@ namespace utopia {
             A.apply(p_, v_);
 
             const Scalar r0_dot_v = dot(r0_, v_);
-            
+
             if(r0_dot_v == 0.0) {
                 assert(false);
             }
@@ -213,7 +213,7 @@ namespace utopia {
 
             if(std::isnan(omega) || std::isinf(omega)) {
                 r_norm = norm2(s_);
-                
+
                 if(this->verbose()) {
                     PrintInfo::print_iter_status({ Scalar(it), r_norm });
                 }

@@ -53,8 +53,7 @@ namespace utopia {
 
         bool apply(const Vector &b, Vector &x) override
         {
-            auto A_ptr = utopia::op(this->get_operator());
-            return solve(*A_ptr, b, x);
+            return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
         bool solve_unconstrained(const Operator<Vector> &A, const Vector &b, Vector &x)
