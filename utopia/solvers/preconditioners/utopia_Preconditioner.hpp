@@ -89,6 +89,8 @@ namespace utopia {
 
         }
 
+        virtual void update(const Operator<Vector> &) {}
+
         virtual Preconditioner * clone() const override = 0;
     };
 

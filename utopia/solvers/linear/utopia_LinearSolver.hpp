@@ -54,7 +54,7 @@ namespace  utopia
 
         /*! @brief if overriden the subclass has to also call this one first
          */
-        virtual void update(const std::shared_ptr<const Matrix> &op)
+        virtual void update(const std::shared_ptr<const Matrix> &op) //override
         {
             op_ = op;
         }
