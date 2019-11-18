@@ -46,7 +46,7 @@ namespace utopia
         }
 
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
-        {
+        {   
             energy = 0.5 * dot(x, A_*x);
             energy -=  lambda_ * sum(exp(x));
 

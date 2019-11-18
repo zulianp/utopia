@@ -21,26 +21,26 @@ namespace utopia
             void run_dense()
             {
                 UTOPIA_RUN_TEST(quasi_newton_test);
-                UTOPIA_RUN_TEST(Quasi_TR_test);
+                // UTOPIA_RUN_TEST(Quasi_TR_test);
             }
 
             void run_sparse()
             {
-                UTOPIA_RUN_TEST(Quasi_TR_test_sparse);
+            //     UTOPIA_RUN_TEST(Quasi_TR_test_sparse);
                 UTOPIA_RUN_TEST(quasi_newton_test_sparse);
-                UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
-                UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
-                UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
-                UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
-                UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-                UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
-                UTOPIA_RUN_TEST(MPRGP_test); 
+            //     UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+            //     UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
+            //     UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
+            //     UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+            //     UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+            //     UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+            //     UTOPIA_RUN_TEST(MPRGP_test); 
             }
 
             void run_multilevel()
             {
-                UTOPIA_RUN_TEST(Quasi_RMTR_test);
-                UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
+            //     UTOPIA_RUN_TEST(Quasi_RMTR_test);
+            //     UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
             }
 
             void quasi_newton_test()
@@ -59,7 +59,8 @@ namespace utopia
                 nlsolver.atol(1e-5);
                 nlsolver.rtol(1e-15);
                 nlsolver.stol(1e-15);
-                nlsolver.verbose(_verbose);
+                // nlsolver.verbose(_verbose);
+                nlsolver.verbose(true);
 
                 auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
                 nlsolver.set_line_search_strategy(line_search);
@@ -158,7 +159,8 @@ namespace utopia
                 nlsolver.rtol(1e-15);
                 nlsolver.stol(1e-15);
                 nlsolver.max_it(1000);
-                nlsolver.verbose(_verbose);
+                // nlsolver.verbose(_verbose);
+                nlsolver.verbose(true);
 
                 auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
                 nlsolver.set_line_search_strategy(line_search);
@@ -542,7 +544,7 @@ namespace utopia
     {
 #ifdef WITH_PETSC
         QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
-        QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
+        // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
 
         QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
         
@@ -552,7 +554,7 @@ namespace utopia
 
 #ifdef WITH_BLAS
             QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
-            QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
+            // QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
 #endif //WITH_BLAS
 
     // #ifdef WITH_TRILINOS

@@ -234,7 +234,7 @@ namespace utopia
                 trust_region_solve(fun2, x, Solver::cauchypoint(), in);
                 utopia_test_assert(approxeq(expected, x));
 
-                Vector expected_rosenbrock = values(2, 1);
+                Vector expected_rosenbrock = values(2, 1.0);
                 Rosenbrock01<Matrix, Vector> rosenbrock;
                 Vector x0 = values(2, 2.0);
 
@@ -243,9 +243,10 @@ namespace utopia
                 in.set("rtol", 1e-17);
                 trust_region_solve(rosenbrock, x0, Solver::steihaug_toint(), in);
 
-                auto diff_norm = norm2(expected_rosenbrock - x0);
+                auto diff_norm = norm_infty(expected_rosenbrock - x0);
 
-                if(diff_norm > 1e-12) {
+
+                if(diff_norm > 1e-11) {
                     utopia_error("tr_test: Solver::steihaug_toint() with rosenbrock is failing");
                 }
             }

@@ -61,7 +61,7 @@
 
         Scalar delta, ared, pred, rho, E_old, E_new, E_print; 
 
-        this->fill_empty_bounds(); 
+        this->fill_empty_bounds(local_size(x_k)); 
         this->make_iterate_feasible(x_k); 
 
         SizeType it = 0;
