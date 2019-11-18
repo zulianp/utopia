@@ -26,8 +26,13 @@ namespace utopia
 
             void run_sparse()
             {
-            //     UTOPIA_RUN_TEST(Quasi_TR_test_sparse);
-                UTOPIA_RUN_TEST(quasi_newton_test_sparse);
+                // UTOPIA_RUN_TEST(Quasi_TR_test_sparse);
+                // UTOPIA_RUN_TEST(quasi_newton_test_sparse);
+
+                // UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
+                UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+
+
             //     UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
             //     UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
             //     UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
@@ -59,8 +64,7 @@ namespace utopia
                 nlsolver.atol(1e-5);
                 nlsolver.rtol(1e-15);
                 nlsolver.stol(1e-15);
-                // nlsolver.verbose(_verbose);
-                nlsolver.verbose(true);
+                nlsolver.verbose(_verbose);
 
                 auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
                 nlsolver.set_line_search_strategy(line_search);
@@ -142,6 +146,8 @@ namespace utopia
                 tr_solver.delta0(1);
                 tr_solver.solve(fun, x);
             }
+
+
 
             void quasi_newton_test_sparse()
             {
@@ -346,6 +352,7 @@ namespace utopia
 
                 auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
                 qp_solver->max_it(_n); 
+                qp_solver->atol(1e-14); 
 
                 // qp_solver->verbose(true); 
 
@@ -354,7 +361,7 @@ namespace utopia
                 tr_solver.atol(1e-13);
                 tr_solver.rtol(1e-10);
                 tr_solver.stol(1e-10);
-                // tr_solver.verbose(true);
+                tr_solver.verbose(_verbose);
                 tr_solver.max_it(15);
 
                 tr_solver.delta0(0.01);
@@ -373,7 +380,9 @@ namespace utopia
                 fun.apply_bc_to_initial_guess(x);
 
                 auto hess_approx   = std::make_shared<ApproxType >(memory_size);
-                auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+                // auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+                auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+                qp_solver->max_it(_n);                 
 
                 QuasiNewtonBound<Vector> solver(hess_approx, qp_solver);
 
@@ -531,7 +540,7 @@ namespace utopia
 
 
         QuasiNewtonTest()
-        : _n(10), _verbose(false) { }
+        : _n(10), _verbose(true) { }
 
     private:
         int _n;

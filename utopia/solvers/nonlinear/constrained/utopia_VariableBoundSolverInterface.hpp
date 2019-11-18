@@ -147,11 +147,7 @@ namespace utopia
         {
             const auto &ub = *constraints_.upper_bound();
             const auto &lb = *constraints_.lower_bound();
-
-            std::cout<<"ub: "<< ub.size() << "  \n"; 
-            std::cout<<"lb: "<< lb.size() << "  \n"; 
-            std::cout<<"x: "<< x.size() << "  \n"; 
-
+            
           {
             auto d_lb     = const_device_view(lb);
             auto d_ub     = const_device_view(ub);

@@ -78,7 +78,6 @@
         g_norm = g0_norm;
 
 
-        // this->initialize_approximation(x_k, g); 
         this->init_memory(x_k, g); 
 
 
