@@ -78,12 +78,14 @@ namespace utopia {
         {
             MatrixFreeLinearSolver<Vector>::read(in);
             PreconditionedSolver<Matrix, Vector>::read(in);
+            Smoother<Matrix, Vector>::read(in);
         }
 
         virtual void print_usage(std::ostream &os) const override
         {
             MatrixFreeLinearSolver<Vector>::print_usage(os);
             PreconditionedSolver<Matrix, Vector>::print_usage(os);
+            Smoother<Matrix, Vector>::print_usage(os);
         }
     };
 
