@@ -52,7 +52,8 @@ namespace utopia
         {   
             *A_help_ = A_*x; 
             energy = 0.5 * dot(x, *A_help_);
-            energy -=  lambda_ * sum(exp(x));
+            *A_help_  = exp(x); 
+            energy -=  lambda_ * sum(*A_help_ );
 
             return true;
         }

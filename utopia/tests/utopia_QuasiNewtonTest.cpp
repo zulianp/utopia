@@ -20,32 +20,32 @@ namespace utopia
 
             void run_dense()
             {
-                UTOPIA_RUN_TEST(quasi_newton_test);
+                // UTOPIA_RUN_TEST(quasi_newton_test);
                 // UTOPIA_RUN_TEST(Quasi_TR_test);
             }
 
             void run_sparse()
             {
                 // UTOPIA_RUN_TEST(Quasi_TR_test_sparse);
-                // UTOPIA_RUN_TEST(quasi_newton_test_sparse);
+                UTOPIA_RUN_TEST(quasi_newton_test_sparse);
 
                 // UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
                 // UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
-                UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+                // UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
 
                 
-            //     UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
-            //     UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
-            //     UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
-            //     UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-            //     UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
-            //     UTOPIA_RUN_TEST(MPRGP_test); 
+                // UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
+                // UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
+                // UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+                // UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+                // UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+                // UTOPIA_RUN_TEST(MPRGP_test); 
             }
 
             void run_multilevel()
             {
-            //     UTOPIA_RUN_TEST(Quasi_RMTR_test);
-            //     UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
+                UTOPIA_RUN_TEST(Quasi_RMTR_test);
+                UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
             }
 
             void quasi_newton_test()

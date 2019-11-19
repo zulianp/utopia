@@ -526,7 +526,7 @@ namespace utopia {
 
 
             if(is_compatible(other) && !other.has_ghosts()) {
-                assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
+                assert((same_type(other) || this->has_ghosts()) || this->comm().size()==1 && "Inconsistent vector types. Handle types properly before copying" );
                 assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;

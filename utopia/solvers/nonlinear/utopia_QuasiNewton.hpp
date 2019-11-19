@@ -58,6 +58,8 @@ namespace utopia
 
             this->initialize_approximation(x, g); 
 
+            
+
             if(this->verbose_) {
                 this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
                 PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
