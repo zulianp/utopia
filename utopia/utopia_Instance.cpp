@@ -149,7 +149,7 @@ namespace utopia {
 
             if(str == "-on_alloc_violation_abort") {
                 Allocations::instance().abort_on_violation(true);
-            } 
+            }
 
             if(str == "-mute-allocation-ctrl") {
                 Allocations::instance().verbose(false);
@@ -168,7 +168,22 @@ namespace utopia {
                 i++;
             }
 #endif //UTOPIA_TRACE_ENABLED
-        
+
         }
     }
+
+    void Utopia::read(Input &is)
+    {
+        for(auto &s : settings_) {
+            is.get(s.first, s.second);
+        }
+    }
+
+    void Utopia::print_usage(std::ostream &os) const
+    {
+        for(const auto &s : settings_) {
+            os << s.first << " : "  << s.second << "\n";
+        }
+    }
+
 }
