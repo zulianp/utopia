@@ -68,15 +68,15 @@ namespace utopia
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
             // UTOPIA_RUN_TEST(RMTR_inf_test);
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
-            
 
-            // Linear/QP solver tests 
+
+            // Linear/QP solver tests
             // UTOPIA_RUN_TEST(STCG_test);
-            // UTOPIA_RUN_TEST(CG_test); 
+            // UTOPIA_RUN_TEST(CG_test);
             // UTOPIA_RUN_TEST(ProjectedGS);
             // UTOPIA_RUN_TEST(MPGRP_test);
 
-            // nonlinear solver tests 
+            // nonlinear solver tests
             // UTOPIA_RUN_TEST(newton_test);
             // UTOPIA_RUN_TEST(TR_unconstrained);
             // UTOPIA_RUN_TEST(TR_constrained);
@@ -140,8 +140,8 @@ namespace utopia
             // QP_solver->max_it(n_*n_);
             QP_solver->max_it(10);
             QP_solver->verbose(verbose_);
-            // QP_solver->norm_schedule(NormSchedule::NEVER); 
-            QP_solver->norm_schedule(NormSchedule::EVERY_ITER); 
+            // QP_solver->norm_schedule(NormSchedule::NEVER);
+            QP_solver->norm_schedule(NormSchedule::EVERY_ITER);
             QP_solver->current_radius(1e5);
 
             QP_solve(QP_solver);
@@ -153,20 +153,20 @@ namespace utopia
             solver->atol(1e-10);
             solver->max_it(10);
             solver->verbose(verbose_);
-            // solver->norm_schedule(NormSchedule::EVERY_ITER); 
-            // std::cout<<"---- Unprecond solve --- \n"; 
+            // solver->norm_schedule(NormSchedule::EVERY_ITER);
+            // std::cout<<"---- Unprecond solve --- \n";
             QP_solve(solver);
 
-            // std::cout<<"---- Unprecond solve 2 --- \n"; 
-            // Just to check initialization 
-            QP_solve(solver);            
+            // std::cout<<"---- Unprecond solve 2 --- \n";
+            // Just to check initialization
+            QP_solve(solver);
 
-            // std::cout<<"---- Inv Diag --- \n"; 
+            // std::cout<<"---- Inv Diag --- \n";
             solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
             QP_solve(solver);
 
-            // std::cout<<"---- Point Jacobi --- \n"; 
-            solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());            
+            // std::cout<<"---- Point Jacobi --- \n";
+            solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());
             QP_solve(solver);
         }
 
@@ -236,8 +236,11 @@ namespace utopia
             direct_solver->number_of_parallel_solves(mpi_world_size());
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
+            // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector, HOMEMADE>>(); smoother->l1(true);
 
             Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
+            // multigrid.verbose(true);
+
             multigrid.set_transfer_operators(multilevel_problem.transfers_);
             multigrid.update(make_ref(H));
             multigrid.read(input_params_);
@@ -274,9 +277,9 @@ namespace utopia
             //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
             //         // TODO:: add checks if has arpack
             //         eigen_solver->solver_type("arpack");
-                    
+
             //         auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
-            //         linear_solver->set_library_type("petsc"); 
+            //         linear_solver->set_library_type("petsc");
 
             //         auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
             //     #endif //WITH_SLEPC
@@ -302,7 +305,7 @@ namespace utopia
 
             // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
             // lsolver->pc_type("bjacobi");
-            
+
             // auto lsolver = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
             auto lsolver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE> >();
             // auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector> >();
@@ -310,7 +313,7 @@ namespace utopia
 
             Newton<Matrix, Vector> solver(lsolver);
             solver.read(input_params_);
-            solver.set_line_search_strategy(strategy_sbc); 
+            solver.set_line_search_strategy(strategy_sbc);
 
             solver.solve(fun, x);
 
@@ -936,7 +939,7 @@ namespace utopia
         auto coarse_dofs = 10;
         auto verbose     = true;
 
-        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
 // #ifdef WITH_TRILINOS

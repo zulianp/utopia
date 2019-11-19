@@ -54,32 +54,33 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
-            SizeType loc_size_rhs   = local_size(b); 
+            SizeType loc_size_rhs   = local_size(b);
             if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init_memory(loc_size_rhs);
-            }   
+                init_memory(loc_size_rhs);
+            }
+
 
             minus_rhs = -1.0*b;
 
             if(this->precond_)
             {
-                auto A_ptr = utopia::op(this->get_operator());
-                return preconditioned_solve(*A_ptr, minus_rhs, x);
+                // auto A_ptr = utopia::op(this->get_operator());
+                return preconditioned_solve(*this->get_operator(), minus_rhs, x);
             } else {
-                auto A_ptr = utopia::op(this->get_operator());
-                return unpreconditioned_solve(*A_ptr, minus_rhs, x);
+                // auto A_ptr = utopia::op(this->get_operator());
+                return unpreconditioned_solve(*this->get_operator(), minus_rhs, x);
             }
         }
 
         void use_precond_direction(const bool & use_precond_direction)
         {
-            use_precond_direction_ = use_precond_direction; 
+            use_precond_direction_ = use_precond_direction;
         }
 
 
         bool use_precond_direction()
         {
-            return use_precond_direction_; 
+            return use_precond_direction_;
         }
 
 
@@ -93,10 +94,10 @@ namespace utopia
             minus_rhs = rhs;
             minus_rhs *= -1.0;
 
-            SizeType loc_size_rhs   = local_size(rhs); 
+            SizeType loc_size_rhs   = local_size(rhs);
             if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init_memory(loc_size_rhs);
-            }                      
+                init_memory(loc_size_rhs);
+            }
 
             if(this->precond_)
             {
@@ -194,11 +195,11 @@ namespace utopia
             if(empty(s_k))
                 s_k = local_zeros(local_size(g));
             else
-                s_k.set(0.0); 
+                s_k.set(0.0);
 
             r = g;
 
-            Scalar g_norm=9e9; 
+            Scalar g_norm=9e9;
             //cudaProfilerStart();
 
             this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
@@ -211,7 +212,7 @@ namespace utopia
             if(empty(v_k))
                 v_k = local_zeros(local_size(g));
             else
-                v_k.set(0.0); 
+                v_k.set(0.0);
 
             this->precond_->apply(r, v_k);
 
@@ -222,28 +223,28 @@ namespace utopia
 
             Scalar s_norm=0.0, s_norm_new=0.0,  sMp=0.0;
             Scalar r2 = this->current_radius() * this->current_radius();
-            Scalar p_norm; 
+            Scalar p_norm;
 
             if(use_precond_direction_)
             {
                 if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
-                    dots(r, v_k, p_norm, r, r, g_norm); 
-                    g_norm = std::sqrt(g_norm); 
+                    dots(r, v_k, p_norm, r, r, g_norm);
+                    g_norm = std::sqrt(g_norm);
                 }
                 else
                 {
-                    p_norm = dot(r, v_k);    
+                    p_norm = dot(r, v_k);
                 }
             }
             else
             {
                 if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
-                    dots(p_k, p_k, p_norm, r, r, g_norm); 
-                    g_norm = std::sqrt(g_norm); 
+                    dots(p_k, p_k, p_norm, r, r, g_norm);
+                    g_norm = std::sqrt(g_norm);
                 }
                 else
                 {
-                    p_norm = dot(p_k, p_k); 
+                    p_norm = dot(p_k, p_k);
                 }
             }
 
@@ -317,13 +318,13 @@ namespace utopia
                 UTOPIA_NO_ALLOC_END();
 
 
-                
+
                 // ||s_k||_M > \Delta => terminate
                 // norm squared should be used
                 if(s_norm_new >= r2)
                 {
                     UTOPIA_NO_ALLOC_BEGIN("STCG::region3");
-                    
+
                     Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm));
                     Scalar tau = (std::sqrt(term1) - sMp)/p_norm;
 
@@ -341,9 +342,9 @@ namespace utopia
                     UTOPIA_NO_ALLOC_END();
                     return true;
                 }
-                
 
-                
+
+
                 if(std::isfinite(alpha))
                 {
                     UTOPIA_NO_ALLOC_BEGIN("STCG::region4");
@@ -354,18 +355,18 @@ namespace utopia
                 {
                     return false;
                 }
-                
+
 
 
                 UTOPIA_NO_ALLOC_BEGIN("STCG::region5");
                 r += alpha * B_p_k;
                 UTOPIA_NO_ALLOC_END();
 
-                // apply preconditioner 
+                // apply preconditioner
                 if(empty(v_k))
                     v_k = local_zeros(local_size(r));
                 else
-                    v_k.set(0.0); 
+                    v_k.set(0.0);
 
 
                 UTOPIA_NO_ALLOC_BEGIN("STCG::region6");
@@ -382,7 +383,7 @@ namespace utopia
                 }
 
                 betta  = g_v_prod_new/ g_v_prod_old;
-                
+
                 UTOPIA_NO_ALLOC_BEGIN("STCG::region6.2");
                 p_k = betta * p_k - v_k;
                 UTOPIA_NO_ALLOC_END();
@@ -402,13 +403,13 @@ namespace utopia
                         p_k, s_k, sMp,
                         p_k, p_k, p_norm,
                         s_k, s_k, s_norm
-                    ); 
+                    );
                     UTOPIA_NO_ALLOC_END();
                 }
 
-                // TODO:: check if there is something else possible 
+                // TODO:: check if there is something else possible
                 if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
-                    g_norm = norm2(r);  
+                    g_norm = norm2(r);
                 }
 
                 if(this->verbose()){
@@ -443,17 +444,17 @@ namespace utopia
             B_p_k = zero_expr;
             minus_rhs = zero_expr;
 
-            initialized_ = true;    
-            loc_size_ = ls;                  
+            initialized_ = true;
+            loc_size_ = ls;
         }
 
 
     private:
         Vector v_k, r, p_k, B_p_k, minus_rhs;
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
-        bool use_precond_direction_; 
-        bool initialized_; 
-        SizeType loc_size_;            
+        bool use_precond_direction_;
+        bool initialized_;
+        SizeType loc_size_;
 
     };
 

@@ -8,7 +8,8 @@ namespace utopia {
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
     class EvalInverse {
     public:
-        using Scalar = typename Traits<Matrix>::Scalar;
+        using Scalar   = typename Traits<Matrix>::Scalar;
+        using SizeType = typename Traits<Matrix>::SizeType;
 
         inline static bool apply(const Matrix &m, Matrix &result)
         {
@@ -224,7 +225,7 @@ namespace utopia {
             bool ok = EvalInverse<Tensor2>::apply(expr.expr().derived(), result);
             UTOPIA_TRACE_END(expr);
             return ok;
-        }       
+        }
     };
 }
 

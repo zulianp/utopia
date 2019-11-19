@@ -7,6 +7,7 @@
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_MultiLevelTestProblem.hpp"
 #include "utopia_MSSolver.hpp"
+#include "utopia_SPStaticCondensationKrylov.hpp"
 
 namespace utopia
 {

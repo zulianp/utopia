@@ -62,14 +62,19 @@ namespace utopia {
             this->A_m = A_m;
             this->A_s = A_s;
 
-            S = utopia::op<Vector>([this](const Vector &b, Vector &x) -> bool {
-                apply_T(b, x);
-                Vector x_temp = (*this->A_s) * x;
-                apply_T_transpose(x_temp, x);
-                x_temp = (*this->A_m) * b;
-                x += x_temp;
-                return true;
-            });
+            // S = utopia::op<Vector>(
+            //     A_m->comm(),
+            //     A_m->size(),
+            //     A_m->local_size(),
+            //     [this](const Vector &b, Vector &x) -> bool
+            //     {
+            //         apply_T(b, x);
+            //         Vector x_temp = (*this->A_s) * x;
+            //         apply_T_transpose(x_temp, x);
+            //         x_temp = (*this->A_m) * b;
+            //         x += x_temp;
+            //         return true;
+            //     });
         }
 
         bool apply(

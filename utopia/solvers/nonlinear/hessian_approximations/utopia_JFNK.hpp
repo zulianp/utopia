@@ -25,6 +25,9 @@ namespace utopia
 
             void initialize(const Vector & x_k, const Vector & g) override
             {
+
+                HessianApproximation<Vector>::initialize(x_k, g); 
+                
                 x_k_ = x_k; 
                 g_ = g; 
 

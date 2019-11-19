@@ -236,6 +236,18 @@ namespace utopia {
             }
         }
 
+        inline void identity(const Scalar &diag_val = 1.0)
+        {
+            const SizeType r = rows();
+            const SizeType c = cols();
+            const SizeType n = device::min(r, c);
+
+            set(0.0);
+            for(SizeType i = 0; i < n; ++i) {
+                set(i, i, diag_val);
+            }
+        }
+
     private:
         ArrayView2D view_;
 

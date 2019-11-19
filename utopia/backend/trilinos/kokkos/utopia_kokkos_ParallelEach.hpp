@@ -232,6 +232,16 @@ namespace utopia {
                 f(begin + i);
             });
         }
+
+        template<typename F>
+        inline static void apply(
+            const std::size_t &n,
+            F f)
+        {
+            Kokkos::parallel_for(n, KOKKOS_LAMBDA(const int i) {
+                f(i);
+            });
+        }
     };
 
 }

@@ -24,6 +24,9 @@ namespace utopia
         n_(n),
         lambda_(lambda)
         {
+
+            A_help_ = make_unique<Vector>(values(n_, 0.0));
+
             h_ = 1.0/(n_ - 1.0);
             assemble_laplacian_1D();
 
@@ -47,7 +50,8 @@ namespace utopia
 
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {   
-            energy = 0.5 * dot(x, A_*x);
+            *A_help_ = A_*x; 
+            energy = 0.5 * dot(x, *A_help_);
             energy -=  lambda_ * sum(exp(x));
 
             return true;
@@ -166,6 +170,9 @@ namespace utopia
         Scalar h_; // grid size
         Scalar lambda_; // combustion factor
         Matrix A_; // constant part of eq...
+
+        std::unique_ptr<Vector>  A_help_; 
+
     };
 
 }

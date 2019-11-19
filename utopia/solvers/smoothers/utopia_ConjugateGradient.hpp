@@ -9,9 +9,7 @@
 
 #include <memory>
 
-namespace utopia
-{
-
+namespace utopia {
 
     //FIXME also use the PreconditionedSolver interface properly
     /**
@@ -20,7 +18,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class ConjugateGradient : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector>
+    class ConjugateGradient final : public OperatorBasedLinearSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) 	 Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -28,110 +26,51 @@ namespace utopia
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
     public:
-
-        using IterativeSolver<Matrix, Vector>::solve;
+        using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
+        using Super::solve;
+        using Super::update;
 
         ConjugateGradient()
         : reset_initial_guess_(false), initialized_(false), loc_size_(0)
-        {
-
-        }
+        {}
 
         void reset_initial_guess(const bool val)
         {
             reset_initial_guess_ = val;
         }
 
-
         void read(Input &in) override
         {
-            IterativeSolver<Matrix, Vector>::read(in);
+            OperatorBasedLinearSolver<Matrix, Vector>::read(in);
             Smoother<Matrix, Vector>::read(in);
 
             in.get("reset_initial_guess", reset_initial_guess_);
-
-            if(precond_) {
-                in.get("precond", *precond_);
-            }
         }
 
         void print_usage(std::ostream &os) const override
         {
-            IterativeSolver<Matrix, Vector>::print_usage(os);
+            OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
             Smoother<Matrix, Vector>::print_usage(os);
 
             this->print_param_usage(os, "reset_initial_guess", "bool", "Flag, which decides if initial guess should be reseted.", "false");
-            this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner", "-");
         }
-
-
-        /**
-         * @brief      Solution routine for CG.
-         *
-         * @param[in]  b     The right hand side.
-         * @param      x     The initial guess/solution.
-         *
-         * @return true if the linear system has been solved up to required tollerance. False otherwise
-         */
-        bool apply(const Vector &b, Vector &x) override
-        {
-            auto A_ptr = utopia::op(this->get_operator());
-
-            SizeType loc_size_rhs = local_size(b); 
-            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
-            }        
-
-            return solve(*A_ptr, b, x);
-        }
-
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
         {
-            SizeType loc_size_rhs   = local_size(b); 
-            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
-            }            
-
-            if(precond_) {
+            if(this->has_preconditioner()) {
                 return preconditioned_solve(A, b, x);
             } else {
                 return unpreconditioned_solve(A, b, x);
             }
         }
 
-        /**
-         * @brief      Sets the preconditioner.
-         *
-         * @param[in]  precond  The preconditioner.
-         */
-        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
+        void update(const Operator<Vector> &A) override
         {
-            precond_ = precond;
-        }
+            SizeType loc_size_rhs = A.local_size().get(0);
 
-        /*! @brief if overriden the subclass has to also call this one first
-         */
-        void update(const std::shared_ptr<const Matrix> &op) override
-        {
-            IterativeSolver<Matrix, Vector>::update(op);
-
-            if(precond_) {
-                auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(precond_.get());
-                if(ls_ptr) {
-                    ls_ptr->update(op);
-                }
+            if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                init(loc_size_rhs);
             }
-        }
-
-        bool smooth(const Vector &rhs, Vector &x) override
-        {
-            SizeType temp = this->max_it();
-            this->max_it(this->sweeps());
-            auto A_ptr = utopia::op(this->get_operator());
-            unpreconditioned_solve(*A_ptr, rhs, x);
-            this->max_it(temp);
-            return true;
         }
 
         ConjugateGradient * clone() const override
@@ -239,8 +178,10 @@ namespace utopia
             SizeType it = 0;
             Scalar beta = 0., alpha = 1., r_norm = 9e9;
 
-            z.set(0.0); 
-            z_new.set(0.0); 
+            z.set(0.0);
+            z_new.set(0.0);
+
+            auto precond = this->get_preconditioner();
 
             if(empty(x) || size(x) != size(b)) {
                 UTOPIA_NO_ALLOC_BEGIN("CG_pre:region0");
@@ -261,7 +202,7 @@ namespace utopia
             }
 
             UTOPIA_NO_ALLOC_BEGIN("CG_pre:region2");
-            precond_->apply(r, z);
+            precond->apply(r, z);
             p = z;
             UTOPIA_NO_ALLOC_END();
 
@@ -303,8 +244,8 @@ namespace utopia
                 }
 
                 UTOPIA_NO_ALLOC_BEGIN("CG_pre:region5");
-                z_new.set(0.0); 
-                precond_->apply(r_new, z_new);
+                z_new.set(0.0);
+                precond->apply(r_new, z_new);
                 beta = dot(z_new, r_new)/dot(z, r);
                 UTOPIA_NO_ALLOC_END();
 
@@ -351,6 +292,8 @@ namespace utopia
 
         void init(const SizeType &ls)
         {
+            assert(ls > 0);
+
             auto zero_expr = local_zeros(ls);
 
             //resets all buffers in case the size has changed
@@ -362,15 +305,15 @@ namespace utopia
             z = zero_expr;
             z_new = zero_expr;
 
-            initialized_ = true;    
-            loc_size_ = ls;                    
+            initialized_ = true;
+            loc_size_ = ls;
         }
 
-        std::shared_ptr<Preconditioner> precond_;
+        // std::shared_ptr<Preconditioner> precond_;
         Vector r, p, q, Ap, r_new, z, z_new;
         bool reset_initial_guess_;
-        bool initialized_; 
-        SizeType loc_size_;         
+        bool initialized_;
+        SizeType loc_size_;
     };
 }
 

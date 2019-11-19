@@ -66,9 +66,9 @@ namespace  utopia
 
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
-                auto A_op_ptr = utopia::op_ref(A);
+                // auto A_op_ptr = utopia::op_ref(A);
                 auto &box = this->get_box_constraints();
-                return aux_solve(*A_op_ptr, -1.0 *rhs, sol, box);
+                return aux_solve(A, -1.0 *rhs, sol, box);
             }
 
 
@@ -107,13 +107,13 @@ namespace  utopia
                 }
                 else if(size(feasible_set).get(0)==feasible_variables) // all variables are feasible, use Newton's method to solve the system
                 {
-                    Vector  local_corr = local_zeros(local_size(s).get(0));
-                    if(const MatrixOperator<Matrix, Vector> * H_matrix = dynamic_cast<const MatrixOperator<Matrix, Vector> *>(&H))
+                    Vector local_corr = local_zeros(local_size(s).get(0));
+                    if(const Matrix * H_matrix = dynamic_cast<const Matrix *>(&H))
                     {
                         if(linear_solver_)
                         {
                             auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >();
-                            linear_solver->solve(*(H_matrix->get_matrix()), -1.0 * grad_qp_fun, local_corr);
+                            linear_solver->solve(*H_matrix, -1.0 * grad_qp_fun, local_corr);
                         }
                         else if(precond_)
                             precond_->apply(-1.0 * grad_qp_fun, local_corr);

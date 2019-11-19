@@ -60,15 +60,17 @@ namespace  utopia
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 auto &box = this->get_box_constraints();
-                return aux_solve(A, -1.0 *rhs, sol, box);
+                rhs_minus_ = -1.0 *rhs; 
+                return aux_solve(A, rhs_minus_, sol, box);
             }
 
 
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
-                auto A_op_ptr = utopia::op_ref(A);
+                // auto A_op_ptr = utopia::op_ref(A);
                 auto &box = this->get_box_constraints();
-                return aux_solve(*A_op_ptr, -1.0 *rhs, sol, box);
+                rhs_minus_ = -1.0 *rhs; 
+                return aux_solve(A, rhs_minus_, sol, box);
             }
 
 
@@ -92,24 +94,24 @@ namespace  utopia
                 bool converged = false;
                 SizeType num_uniq_break_points, it=0;
 
-                Vector d = -1.0 * g;
-                s = 0 * d;
+                d_ = -1.0 * g;
+                s = 0.0 * d_;
 
-                this->get_breakpoints(d, *lb, *ub, break_points_);
+                this->get_breakpoints(d_, *lb, *ub, break_points_);
                 vec_unique_sort_serial(break_points_, sorted_break_points_, this->memory_size());
                 num_uniq_break_points = this->get_number_of_sorted_break_points(sorted_break_points_);
                 t_current = 0.0;
                 this->get_breakpoint_active_set(break_points_, t_current, active_set_);
-                e_ = e_mul(active_set_, d);
-                d = d - e_;
-                gd = dot(g, d);
-                H.apply(d, Hd_);
+                e_ = e_mul(active_set_, d_);
+                d_ = d_ - e_;
+                gd = dot(g, d_);
+                H.apply(d_, Hd_);
 
                 while(it < num_uniq_break_points && !converged)
                 {
 
                     f_p = gd + dot(s, Hd_);
-                    f_pp = dot(d, Hd_);
+                    f_pp = dot(d_, Hd_);
 
                     t_next = (it==num_uniq_break_points)? 9e9 : this->get_next_break_point(sorted_break_points_, it);
 
@@ -124,7 +126,7 @@ namespace  utopia
                         converged = true;
                     else if(f_pp >0 && dt < delta_diff)
                     {
-                        s += dt * d;
+                        s += dt * d_;
                         converged = true;
                     }
 
@@ -133,10 +135,10 @@ namespace  utopia
 
                     t_current = t_next;
                     this->get_breakpoint_active_set(break_points_, t_current, active_set_);
-                    e_ = e_mul(active_set_, d);
+                    e_ = e_mul(active_set_, d_);
 
-                    s = s + delta_diff * d;
-                    d = d - e_;
+                    s = s + delta_diff * d_;
+                    d_ = d_ - e_;
 
                     gd = gd - dot(g, e_);
 
@@ -254,6 +256,7 @@ namespace  utopia
                 active_set_             = zero_expr; 
                 e_                      = zero_expr; 
                 Hd_                     = zero_expr; 
+                d_                      = zero_expr; 
 
 
                 initialized_ = true;    
@@ -262,7 +265,7 @@ namespace  utopia
 
 
             SizeType cp_memory_;    // memory size
-            Vector t_help_, break_points_, sorted_break_points_, active_set_, e_, Hd_; 
+            Vector t_help_, break_points_, sorted_break_points_, active_set_, e_, Hd_, d_, rhs_minus_; 
 
             bool initialized_; 
             SizeType loc_size_;                 

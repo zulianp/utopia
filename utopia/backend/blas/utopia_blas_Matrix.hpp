@@ -363,6 +363,11 @@ namespace utopia {
             return {rows_, cols_};
         }
 
+        inline Size local_size() const override
+        {
+            return {rows_, cols_};
+        }
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR DenseMatrix //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -990,7 +995,13 @@ namespace utopia {
             return this == &other;
         }
 
-        inline static SelfCommunicator &comm()
+        inline const SelfCommunicator &comm() const override
+        {
+            static SelfCommunicator instance_;
+            return instance_;
+        }
+
+        inline SelfCommunicator &comm() override
         {
             static SelfCommunicator instance_;
             return instance_;
