@@ -37,6 +37,8 @@ namespace utopia {
                 in.get("side-set", side_set);
 
                 in.get("tol", tol);
+
+                in.get("block", block);
             }
 
             inline bool valid() const
@@ -47,18 +49,20 @@ namespace utopia {
             void describe(std::ostream &os = std::cout) const
             {
                 os << "selection " << selection << std::endl;
-                os << "nx        " << n(0)  << std::endl;
-                os << "ny        " << n(1)  << std::endl;
-                os << "nz        " << n(2)  << std::endl;
+                os << "nx        " << n(0)      << std::endl;
+                os << "ny        " << n(1)      << std::endl;
+                os << "nz        " << n(2)      << std::endl;
                 os << "side-set  " << side_set  << std::endl;
+                os << "block     " << block     << std::endl;
             }
 
-            Normal2SideSet() : selection(-1), n(), side_set(-1), tol(1e-8) {}
+            Normal2SideSet() : selection(-1), n(), side_set(-1), tol(1e-8), block(-1) {}
 
             int selection;
             libMesh::Point n;
             int side_set;
             double tol;
+            int block;
         };
 
         void read(Input &in) override
@@ -108,6 +112,8 @@ namespace utopia {
 
                     for(const auto &n : n2ss) {
                         if(n.selection == side_set) {
+                            if(n.block != -1 && n.block != elem_ptr->subdomain_id()) continue;
+
                             const double angle = normal * n.n;
 
                             if(std::abs(angle - 1) < n.tol) {
