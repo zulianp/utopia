@@ -690,12 +690,12 @@ namespace utopia {
 
                     Matrix A_temp = transpose(*T) * (*A_f_[i]) * (*T);
 
-                    utopia::write("A.m", A);
+                    //utopia::write("A.m", A);
                     A += A_temp;
 
-                    utopia::write("A_temp.m", *A_f_[i]);
+                    //utopia::write("A_temp.m", *A_f_[i]);
 
-                    utopia::write("T.m", *T);
+                    //utopia::write("T.m", *T);
 
 
                     rhs += transpose(*T) * (*rhs_f_[i]);
