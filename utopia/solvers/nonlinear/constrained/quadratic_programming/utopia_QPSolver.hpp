@@ -32,7 +32,55 @@ namespace utopia
             {}
 
             virtual MatrixFreeQPSolver * clone() const override = 0;
+            virtual void update(const Operator<Vector> &A) { UTOPIA_UNUSED(A); }
     };
+
+
+
+    template<class Matrix, class Vector>
+    class OperatorBasedQPSolver :   public MatrixFreeQPSolver<Vector>,
+                                    public QPSolver<Matrix, Vector>
+    {
+    public:
+        using MatrixFreeQPSolver<Vector>::update;
+        using QPSolver<Matrix, Vector>::update;
+        using MatrixFreeQPSolver<Vector>::solve;
+
+        virtual ~OperatorBasedQPSolver() {}
+
+        virtual bool solve(const Matrix &A, const Vector &b, Vector &x) override
+        {
+            update(make_ref(A));
+            return solve(operator_cast<Vector>(A), b, x);
+        }
+
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        {
+            QPSolver<Matrix, Vector>::update(op);
+            update(operator_cast<Vector>(*op));
+        }
+
+        bool apply(const Vector &b, Vector &x) override
+        {
+            return solve(operator_cast<Vector>(*this->get_operator()), b, x);
+        }
+
+        virtual OperatorBasedQPSolver * clone() const =0;
+
+        virtual void read(Input &in) override
+        {
+            MatrixFreeQPSolver<Vector>::read(in);
+            QPSolver<Matrix, Vector>::read(in);
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            MatrixFreeQPSolver<Vector>::print_usage(os);
+            QPSolver<Matrix, Vector>::print_usage(os);
+        }
+    };
+
+
 
 }
 

@@ -90,7 +90,7 @@ namespace utopia {
                 this->register_experiment(
                     "newton_cg_" + std::to_string(i),
                     [i]() {
-                        Rastrigin<Matrix, Vector> fun;
+                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
                         Vector x = local_values(10 * (i+1), 1.);
 
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
@@ -115,7 +115,7 @@ namespace utopia {
                 this->register_experiment(
                     "trust_region_" + std::to_string(i),
                     [i]() {
-                        Rastrigin<Matrix, Vector> fun;
+                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
                         Vector x = local_values(10 * (i+1), 1.);
 
                         auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();

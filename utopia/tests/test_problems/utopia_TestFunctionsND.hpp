@@ -18,6 +18,8 @@ namespace utopia {
 
         TestFunctionND_1(SizeType N = 10) : N(N), b(values(N, 3.0)), A(identity(N, N)), a(1.0) {
 
+            help_ = make_unique<Vector>(values(N, 0.0));
+
             static_assert(is_dense_or_polymorphic<Matrix>::value, "This function has a dense hessian do not use sparse implementations");
         }
 
@@ -29,7 +31,8 @@ namespace utopia {
         }
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
-            result =  0.5 * std::pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
+            *help_ = A * point;
+            result =  0.5 * std::pow(dot(point, *help_) + 1, 2.0) - dot(b, point);
             return true;
         }
 
@@ -120,6 +123,7 @@ namespace utopia {
         const Vector b;
         const Matrix A;
         const Scalar a;
+        std::unique_ptr<Vector>  help_; 
     };
 
     template<class Matrix, class Vector>

@@ -9,7 +9,7 @@ namespace  utopia
 {
 
     template<class Matrix, class Vector>
-    class GeneralizedCauchyPoint final: public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
+    class GeneralizedCauchyPoint final: public OperatorBasedQPSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -27,21 +27,16 @@ namespace  utopia
                 return new GeneralizedCauchyPoint(*this);
             }
 
-
             void read(Input &in) override
             {
-                MatrixFreeQPSolver<Vector>::read(in);
-                QPSolver<Matrix, Vector>::read(in);
-
+                OperatorBasedQPSolver<Matrix, Vector>::read(in);
                 in.get("memory_size", cp_memory_);
             }
 
 
             void print_usage(std::ostream &os) const override
             {
-                MatrixFreeQPSolver<Vector>::print_usage(os);
-                QPSolver<Matrix, Vector>::print_usage(os);
-
+                OperatorBasedQPSolver<Matrix, Vector>::print_usage(os);
                 this->print_param_usage(os, "memory_size", "int", "Memory (in terms of breakpoints) used during computation.", "5.0");
             }
 
@@ -56,10 +51,19 @@ namespace  utopia
                 return cp_memory_;
             }
 
+            void update(const Operator<Vector> &A) override
+            {
+                SizeType loc_size_rhs = A.local_size().get(0);
+                if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+                }
+            }                
+
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 auto &box = this->get_box_constraints();
+                update(A);
                 rhs_minus_ = -1.0 *rhs; 
                 return aux_solve(A, rhs_minus_, sol, box);
             }
@@ -67,8 +71,8 @@ namespace  utopia
 
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
-                // auto A_op_ptr = utopia::op_ref(A);
                 auto &box = this->get_box_constraints();
+                update(A);
                 rhs_minus_ = -1.0 *rhs; 
                 return aux_solve(A, rhs_minus_, sol, box);
             }
@@ -82,13 +86,6 @@ namespace  utopia
 
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
-
-
-                SizeType loc_size_g = local_size(g); 
-                if(!initialized_ || !g.comm().conjunction(loc_size_ == loc_size_g)) 
-                {
-                    init(loc_size_g);
-                }
 
 
                 bool converged = false;
