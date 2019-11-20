@@ -110,14 +110,14 @@
     //----------------------------------------------------------------------------          
           if(MatrixFreeQPSolver * tr_subproblem = dynamic_cast<MatrixFreeQPSolver*>(this->linear_solver().get()))
           {
-            UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:1");
+            // UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:1");
             p_k.set(0.0); 
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->set_box_constraints(box); 
             g_help = -1.0*g; 
             tr_subproblem->solve(*multiplication_action, g_help, p_k);     
             this->solution_status_.num_linear_solves++;  
-            UTOPIA_NO_ALLOC_END();
+            // UTOPIA_NO_ALLOC_END();
           }
           else
           {

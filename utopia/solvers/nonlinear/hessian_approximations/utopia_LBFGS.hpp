@@ -347,8 +347,6 @@ namespace utopia
             }
 
 
-
-
             void memory_size(const SizeType & m)
             {
                 m_ = m;
@@ -612,10 +610,12 @@ namespace utopia
                 }
                 else
                 {
-                    UTOPIA_NO_ALLOC_BEGIN("LBGFS:A2");
+                    
                     if(current_m_ ==0)
                     {
+                        UTOPIA_NO_ALLOC_BEGIN("LBGFS:A2");
                         result = theta_ * v; 
+                        UTOPIA_NO_ALLOC_END();
                     }
                     else
                     {
@@ -623,7 +623,6 @@ namespace utopia
                         result = e_mul(D_, v); 
                         UTOPIA_NO_ALLOC_END();
                     }
-                    UTOPIA_NO_ALLOC_END();
                 }
             }
 

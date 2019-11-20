@@ -15,14 +15,13 @@ namespace utopia {
 
             /*! @brief if overriden the subclass has to also call this one first
              */
-            virtual void update(const Operator<Vector> &A) { UTOPIA_UNUSED(A); }
+            virtual void update(const Operator<Vector> & /*A*/) =0; //{ UTOPIA_UNUSED(A); }
 
             virtual MatrixFreeLinearSolver * clone() const override = 0;
 
             virtual void read(Input &/*in*/) override{ }
             virtual void print_usage(std::ostream & /*os*/) const override{ }
 
-            virtual void init_memory(const SizeType & /* ls */) {}
     };
 
     template<class Matrix, class Vector>
@@ -145,6 +144,13 @@ namespace utopia {
                 }
             }
 
+            virtual void update(const Operator<Vector> &A) override
+            {
+                if(precond_)
+                {
+                    precond_->update(A); 
+                }
+            }
 
             void print_usage(std::ostream &os) const override
             {

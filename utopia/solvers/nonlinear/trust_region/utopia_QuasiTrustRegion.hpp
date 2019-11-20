@@ -117,11 +117,11 @@
           {
             p_k.set(0);
             tr_subproblem->current_radius(delta);
-            UTOPIA_NO_ALLOC_BEGIN("QUasiTR2");
+            // UTOPIA_NO_ALLOC_BEGIN("QUasiTR2");
             g *=  -1.0; 
             tr_subproblem->solve(*multiplication_action, g, p_k);
             g *=  -1.0; 
-            UTOPIA_NO_ALLOC_END();
+            // UTOPIA_NO_ALLOC_END();
             this->solution_status_.num_linear_solves++;
           }
           else
@@ -231,9 +231,10 @@
     {
       const SizeType ls = local_size(x_k); 
 
-      if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get())){
-        tr_subproblem->init_memory(ls); 
-      }
+      // bad idea, as we do not know size at this point ... 
+      // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get())){
+      //   tr_subproblem->init_memory(ls); 
+      // }
 
       auto zero_expr = local_zeros(ls);
 

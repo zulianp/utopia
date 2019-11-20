@@ -117,7 +117,7 @@ namespace utopia {
             in.get("type", type_);
             in.get("use-interpolation", use_interpolation_);
             opts_.read(in);
-            
+
             if(is_dual()) {
                 space_ = nullptr;
                 return;
@@ -146,7 +146,7 @@ namespace utopia {
         }
 
         LagrangeMultiplier(libMesh::Parallel::Communicator &comm)
-        : type_("dual"), use_interpolation_(false), ui_mesh_(comm), ui_space_(make_ref(ui_mesh_))
+        : type_("dual"), use_interpolation_(false), handle_adaptivity_(false), ui_mesh_(comm), ui_space_(make_ref(ui_mesh_))
         {}
 
         bool init(
@@ -160,6 +160,7 @@ namespace utopia {
             if(is_dual()) {
                 NewTransferAssembler transfer_assembler;
                 transfer_assembler.remove_incomplete_intersections(false);
+                transfer_assembler.handle_adaptive_refinement(handle_adaptivity_);
 
                 if(constraint_matrix_pm) {
                     transfer_assembler.constraint_matrix_from(constraint_matrix_pm);
@@ -171,11 +172,11 @@ namespace utopia {
 
                 if(!transfer_assembler.assemble(
                     pourous_matrix.mesh(),
-                    pourous_matrix.dof_map(), 
+                    pourous_matrix.dof_map(),
                     fracture_newtork.mesh(),
                     fracture_newtork.dof_map()
                     , opts_
-                    )) 
+                    ))
                 {
                     return false;
                 }
@@ -189,9 +190,9 @@ namespace utopia {
                 *mass_matrix_ = diag(inverse_mass_vector_);
 
             } else if(is_same()) {
-               
+
                 if(use_interpolation_) {
-                    
+
                     assemble_interpolation(
                         pourous_matrix,
                         fracture_newtork,
@@ -200,7 +201,7 @@ namespace utopia {
                     );
 
                 } else {
-                   
+
                     assemble_projection(
                         pourous_matrix,
                         fracture_newtork,
@@ -271,9 +272,16 @@ namespace utopia {
             in_out = in_out / inverse_mass_vector_;
         }
 
+        inline void handle_adaptivity(const bool val)
+        {
+            handle_adaptivity_ = val;
+        }
+
     private:
         std::string type_;
         bool use_interpolation_;
+        bool handle_adaptivity_;
+
         std::shared_ptr<FunctionSpace> space_;
 
         UIMesh<libMesh::DistributedMesh> ui_mesh_;
@@ -383,7 +391,7 @@ namespace utopia {
             if(!os.good()) {
                 os.close();
                 return false;
-            } 
+            }
 
             if(print_header_) {
                 os << "n_dofs,cond_num";
@@ -398,12 +406,12 @@ namespace utopia {
 
             os << std::setprecision(9);
             os << n_dofs_ << "," << condition_number_ ;
-            
+
             for(const auto &s : stats_) {
                 os << ",";
                 s.print(os);
             }
-           
+
             os << "\n";
 
             os.close();
@@ -480,11 +488,14 @@ namespace utopia {
         void read(Input &in) override
         {
             in.get("rescale", rescale_);
+
             pourous_matrix_.rescale(rescale_);
 
-            //read in the matrix model   
+            in.get("adaptivity", adaptivity_);
+
+            //read in the matrix model
             in.get("pourous-matrix",   pourous_matrix_);
-            
+
             //read in the fracture-network models (1 or more)
             in.get("fracture-networks", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -494,8 +505,8 @@ namespace utopia {
                     dfn->read(in);
                     fracture_network_.push_back(dfn);
 
-                    auto lm = std::make_shared<LagrangeMultiplier>(this->comm_); 
-
+                    auto lm = std::make_shared<LagrangeMultiplier>(this->comm_);
+                    lm->handle_adaptivity(adaptivity_);
                     in.get("multiplier", *lm);
                     lagrange_multiplier_.push_back(lm);
 
@@ -532,7 +543,7 @@ namespace utopia {
                 // matrix_processors_.push_back(report_);
             });
 
-            in.get("adaptivity", adaptivity_);
+
 
             in.get("solver", solver);
         }
@@ -607,7 +618,7 @@ namespace utopia {
             // }
 
             Vector x = local_zeros(local_size(rhs));
-         
+
             solver.describe(std::cout);
             if(!solver.solve(A, rhs, x)) {
                 std::cerr << "[Error] failed to solve" << std::endl;
@@ -625,8 +636,8 @@ namespace utopia {
         inline bool assemble_flow(Matrix &A, Vector &rhs)
         {
             A_m_   = std::make_shared<Matrix>();
-            rhs_m_ = std::make_shared<Vector>(); 
-            x_m_   = std::make_shared<Vector>(); 
+            rhs_m_ = std::make_shared<Vector>();
+            x_m_   = std::make_shared<Vector>();
 
             auto &dof_map_m = pourous_matrix_.space().dof_map();
 
@@ -653,7 +664,7 @@ namespace utopia {
                 x_f_.resize(n_dfn);
 
                 for(std::size_t i = 0; i < n_dfn; ++i) {
-                    
+
                     auto dfn = fracture_network_[i];
                     auto &dof_map_f = dfn->space().dof_map();
 
@@ -685,7 +696,7 @@ namespace utopia {
                 // apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
                 apply_boundary_conditions(pourous_matrix_.space(), *A_m_, *rhs_m_);
 
-            } else //if(assembly_strategy_ == "monolithic") 
+            } else //if(assembly_strategy_ == "monolithic")
             {
                 std::cerr << "[Error] in assemble_flow; assembly-strategy = " << assembly_strategy_ << " not supported yet" << std::endl;
                 assert(false && "TODO");
@@ -727,7 +738,7 @@ namespace utopia {
 
                     fracture_network_[i]->disassemble_flow(*x_f_[i]);
                 }
-            }  else //if(assembly_strategy_ == "monolithic") 
+            }  else //if(assembly_strategy_ == "monolithic")
             {
                 std::cerr << "[Error] in disassemble_flow; assembly-strategy = " << assembly_strategy_ << " not supported yet" << std::endl;
                 assert(false && "TODO");
@@ -735,7 +746,7 @@ namespace utopia {
         }
 
         inline bool export_flow()
-        {   
+        {
             // write(pourous_matrix_.space().equation_system().name() + ".e", pourous_matrix_.space(), *x_m_);
 
             pourous_matrix_.write(*x_m_);
@@ -784,7 +795,7 @@ namespace utopia {
         Factorization<Matrix, Vector> solver;
 
     };
-    
+
 }
 
 #endif //UTOPIA_FRACTURED_POUROUS_MEDIA_HPP

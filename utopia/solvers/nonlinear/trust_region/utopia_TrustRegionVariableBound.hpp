@@ -110,14 +110,14 @@
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             // UTOPIA_NO_ALLOC_END();
             
-            UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound1");
+            // UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound1");
             tr_subproblem->set_box_constraints(box);
             
             if(accepted){
               g = -g; 
             }
             
-            UTOPIA_NO_ALLOC_END();
+            // UTOPIA_NO_ALLOC_END();
 
             // UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound2");
             tr_subproblem->solve(H, g, p_k);

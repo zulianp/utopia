@@ -17,56 +17,6 @@
 
 namespace utopia {
 
-    // template<class Matrix, class Vector>
-    // class MatrixOperator final : public Operator<Vector> {
-    // public:
-    //     using Communicator = typename Traits<Vector>::Communicator;
-
-    //     MatrixOperator(const std::shared_ptr<Matrix> &mat)
-    //     : mat_(mat)
-    //     {}
-
-    //     bool apply(const Vector &rhs, Vector &ret) const override
-    //     {
-    //         ret = (*mat_) * rhs;
-    //         return true;
-    //     }
-
-    //    // const std::shared_ptr<const Matrix> &get_matrix() const
-    //    // {
-    //    //     return mat_;
-    //    // }
-
-    //    inline Size size() const override
-    //    {
-    //         assert(mat_);
-    //         return mat_->size();
-    //    }
-
-    //    inline Size local_size() const
-    //    {
-    //         assert(mat_);
-    //         return mat_->local_size();
-    //    }
-
-    //     Communicator &comm()
-    //    {
-    //         assert(mat_);
-    //         return mat_->comm();
-    //    }
-
-    //     const Communicator &comm() const
-    //    {
-    //         assert(mat_);
-    //         return mat_->comm();
-    //    }
-
-
-    // private:
-    //     std::shared_ptr<Matrix> mat_;
-    // };
-
-
     template<class Vector, class Fun>
     class LambdaOperator final : public Operator<Vector> {
     public:
@@ -129,18 +79,6 @@ namespace utopia {
         );
     }
 
-    // template<class Matrix>
-    // std::unique_ptr< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> > op(const std::shared_ptr<const Matrix> &mat)
-    // {
-    //     return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> >(mat);
-    // }
-
-    // template<class Matrix>
-    // std::unique_ptr< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> > op_ref(const Matrix &mat)
-    // {
-    //     return utopia::make_unique< MatrixOperator<Matrix, UTOPIA_VECTOR(Matrix)> >(make_ref(mat));
-    // }
-
 
     template<class Vector>
     class Preconditioner : public virtual Configurable, public virtual Clonable {
@@ -158,7 +96,8 @@ namespace utopia {
 
         }
 
-        // virtual void update(const Operator<Vector> &) {}
+        // TODO
+        virtual void update(const Operator<Vector> & A) { UTOPIA_UNUSED(A); }
 
         virtual Preconditioner * clone() const override = 0;
     };
@@ -196,6 +135,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class DelegatePreconditioner : public Preconditioner<Vector> {
     public:
+        using Preconditioner<Vector>::update;
 
         bool apply(const Vector &/*rhs*/, Vector &/*sol*/) override
         {
@@ -203,7 +143,7 @@ namespace utopia {
             return true;
         }
 
-        void update(const std::shared_ptr<const Matrix> &op)
+        void update(const std::shared_ptr<const Matrix> &op) 
         {
             op_ = op;
         }

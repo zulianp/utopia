@@ -63,8 +63,6 @@ namespace  utopia
 
         Scalar get_time() { return _time.get_seconds();  }
 
-        virtual void init_memory(const SizeType & /*ls*/) {} 
-
     protected:
 
         /**

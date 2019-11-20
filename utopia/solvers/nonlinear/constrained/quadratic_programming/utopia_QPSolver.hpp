@@ -32,7 +32,6 @@ namespace utopia
             {}
 
             virtual MatrixFreeQPSolver * clone() const override = 0;
-            virtual void update(const Operator<Vector> &A) { UTOPIA_UNUSED(A); }
     };
 
 

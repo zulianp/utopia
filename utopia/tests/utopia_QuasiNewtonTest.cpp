@@ -20,26 +20,26 @@ namespace utopia
 
             void run_dense()
             {
-                // UTOPIA_RUN_TEST(quasi_newton_test);
-                // UTOPIA_RUN_TEST(Quasi_TR_test);
+                UTOPIA_RUN_TEST(quasi_newton_test);
+                UTOPIA_RUN_TEST(Quasi_TR_test);
             }
 
             void run_sparse()
             {
-                // UTOPIA_RUN_TEST(Quasi_TR_test_sparse);
+                UTOPIA_RUN_TEST(Quasi_TR_test_sparse);
                 UTOPIA_RUN_TEST(quasi_newton_test_sparse);
 
-                // UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
-                // UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
-                // UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+                UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
+                UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+                UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
 
                 
-                // UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
-                // UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
-                // UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
-                // UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-                // UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
-                // UTOPIA_RUN_TEST(MPRGP_test); 
+                UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
+                UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
+                UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+                UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+                UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+                UTOPIA_RUN_TEST(MPRGP_test); 
             }
 
             void run_multilevel()
@@ -166,7 +166,7 @@ namespace utopia
                 nlsolver.stol(1e-15);
                 nlsolver.max_it(1000);
                 // nlsolver.verbose(_verbose);
-                nlsolver.verbose(true);
+                nlsolver.verbose(false);
 
                 auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
                 nlsolver.set_line_search_strategy(line_search);
@@ -541,7 +541,7 @@ namespace utopia
 
 
         QuasiNewtonTest()
-        : _n(10), _verbose(true) { }
+        : _n(10), _verbose(false) { }
 
     private:
         int _n;

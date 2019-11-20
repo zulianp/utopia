@@ -18,6 +18,7 @@ namespace utopia
 
     public:
         using TRSubproblem<Matrix, Vector>::solve;
+        using OperatorBasedTRSubproblem<Matrix, Vector>::update; 
 
         typedef utopia::Preconditioner<Vector> Preconditioner;
 

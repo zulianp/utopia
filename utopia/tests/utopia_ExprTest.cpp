@@ -63,6 +63,18 @@ namespace utopia {
             H = H + transpose(H) - D;
         }
 
+        void emul_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 10.0);
+            Vector z = values(n_, 10.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("emul_test");
+            z = e_mul(x, y); 
+            UTOPIA_NO_ALLOC_END();
+        }
+
+
 
         void negate_test()
         {
