@@ -5,8 +5,10 @@
         "*function": "1.0",
         "function-type" : "expr",
         "discretization" : "new",
+        "disable-adaptivity" : false,
         "use-convert-transfer" : true,
         "handle-adaptivity" : true,
+        "adaptivity" : true,
         "master": {
             "mesh": {
                 "type": "square",

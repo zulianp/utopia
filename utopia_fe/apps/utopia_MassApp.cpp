@@ -71,6 +71,8 @@ namespace utopia {
 
         forcing_function.eval(x,forcing_term);
 
+        //utopia::disp(forcing_term);
+
         rhs += forcing_term;
 
         rhs += post_constraint * rhs;
@@ -89,7 +91,9 @@ namespace utopia {
 
         UVector test = e_mul(m_inv , forcing_term); 
 
-        utopia::disp(post_constraint);
+        utopia::write("post.m",post_constraint);
+
+        utopia::write("pre.m",pre_constraint);
 
         test+= post_constraint * test;
 

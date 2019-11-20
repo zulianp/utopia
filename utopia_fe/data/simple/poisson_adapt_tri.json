@@ -9,6 +9,8 @@
         "random-refinements": 5
 
     },
+    "disable-adaptivity" : false,
+    "adaptivity" :true,
     "mesh" : {
         "type" : "file",
         "path" : "square.e",
@@ -29,7 +31,7 @@
                 {
                 "side"  : 1,
                 "type"  : "expr",
-                "value" : "sin(5*y)^2"
+                "value" : "sin(10*y)^2"
             },
             {
                 "side"  : 2,
