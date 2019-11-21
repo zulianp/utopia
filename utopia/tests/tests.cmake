@@ -7,6 +7,7 @@ list(APPEND TEST_MODULES
     test_problems
     test_problems/unconstrained_benchmark
     test_problems/constrained_benchmark
+    test_problems/large_scale_benchmark
     benchmarks
 )
 

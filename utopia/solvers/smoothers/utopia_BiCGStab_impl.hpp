@@ -99,6 +99,7 @@ namespace utopia {
                 if(converged) { break; }
             }
 
+            z_.set(0.0);
             precond->apply(s_, z_);
             A.apply(z_, t_);
 
