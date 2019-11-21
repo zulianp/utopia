@@ -382,9 +382,9 @@ namespace utopia
             // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
 
-            Vector ub, lb;
-            fun.upper_bound(ub);
-            fun.lower_bound(lb);
+            
+            Vector ub = fun.upper_bound();
+            Vector lb = fun.lower_bound();
             auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
             tr_solver.set_box_constraints(box);
@@ -413,9 +413,8 @@ namespace utopia
             // hess_approx->damping_tech(POWEL);
             // hess_approx->scaling_tech(ADAPTIVE);
 
-            Vector ub, lb;
-            fun.upper_bound(ub);
-            fun.lower_bound(lb);
+            Vector ub = fun.upper_bound();
+            Vector lb = fun.lower_bound();
             auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
 

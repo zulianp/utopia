@@ -136,14 +136,51 @@ namespace utopia
         public:
             DEF_UTOPIA_SCALAR(Matrix);
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+            typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
 
         virtual ~ConstrainedExtendedTestFunction() { }
 
-        virtual bool upper_bound(Vector &/*ub*/) const = 0;
-        virtual bool lower_bound(Vector &/*lb*/) const = 0;   
+        virtual const BoxConstraints & box_constraints() const
+        {
+            return constraints_;
+        }
 
-        virtual bool has_upper_bound() const = 0;
-        virtual bool has_lower_bound() const = 0;                     
+        virtual void set_box_constraints(const BoxConstraints & box)
+        {
+            constraints_ = box;
+        }        
+
+        virtual const Vector & upper_bound() const
+        {
+          if(!constraints_.upper_bound()){
+            utopia_error("ConstrainedTestFunction::upper bound does not exist. \n");
+          }
+
+          return *constraints_.upper_bound();
+        }
+
+        virtual const Vector & lower_bound() const
+        {
+          if(!constraints_.lower_bound()){
+            utopia_error("ConstrainedTestFunction::lower bound does not exist. \n");
+          }
+
+          return *constraints_.lower_bound();
+        }
+
+        virtual bool has_lower_bound() const
+        {
+          return constraints_.has_lower_bound();
+        }
+
+        virtual bool has_upper_bound() const
+        {
+          return constraints_.has_upper_bound();
+        }
+
+
+        protected:
+            BoxConstraints                  constraints_;               
     };      
 
 }
