@@ -8,6 +8,7 @@
 #include "libmesh/mesh_modification.h"
 #include "utopia_UIMorph.hpp"
 #include "utopia_MeshParamSmoother.hpp"
+#include "utopia_SideSetAssignment.hpp"
 
 #include <memory>
 
@@ -201,6 +202,11 @@ namespace utopia {
 
             scale_mesh(scale, *mesh_);
             shift_mesh(shift, *mesh_);
+
+
+            SideSetAssignment<libMesh::UnstructuredMesh> ssa;
+            is.get("side-set-assignement", ssa);
+            ssa.apply(*mesh_);
 
             refine(refinements, *mesh_);
 
