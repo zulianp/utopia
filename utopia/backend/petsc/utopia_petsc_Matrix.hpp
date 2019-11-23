@@ -554,7 +554,7 @@ namespace utopia {
          void axpy(const Scalar &a, const PetscMatrix &x) override;
 
          ///<Scalar>DOT - dot product
-         Scalar dot(const PetscMatrix &other) const override
+         Scalar dot(const PetscMatrix &/*other*/) const override
          {
             assert(false && "IMPLEMENT ME");
             return -1.0;

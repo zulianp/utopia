@@ -211,7 +211,7 @@ namespace utopia
 
           {
             parallel_transform(ub_merged,
-                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &xi) -> Scalar 
                               {
                                 return  (xi <= ub_uniform)  ? xi : ub_uniform; 
                               });
@@ -230,7 +230,7 @@ namespace utopia
 
           {
             parallel_transform(lb_merged,
-                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &xi) -> Scalar 
                               {
                                 return  (xi >= lb_uniform)  ? xi : lb_uniform; 
                               });
