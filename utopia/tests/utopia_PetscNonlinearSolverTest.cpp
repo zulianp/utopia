@@ -378,11 +378,11 @@ namespace utopia
             // hm_params.set("use-adaptive-tol", true);
             homemade_ss_newton.read(hm_params);
 
-            // initial guess
-            PetscVector x_0 = values(_n, 0.0);
-
-            ExampleTestCase2<PetscMatrix, PetscVector> example;
-            example.getOperators(_n, A, b, ub);
+            Poisson1D<PetscMatrix, PetscVector> ex2(_n, 2); 
+            PetscVector x_0 = ex2.initial_guess();
+            ex2.hessian(x_0, A); 
+            ex2.get_rhs(b); 
+            ub = ex2.upper_bound(); 
 
             const double scale_factor = 1;
             A *= scale_factor;

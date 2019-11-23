@@ -5,15 +5,8 @@
 #include "utopia_MPI.hpp"
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/utopia_RastriginTestFunction.hpp"
-#include "utopia_Preconditioner.hpp"
-#include "utopia_ProjectedGradient.hpp"
-#include "utopia_ProjectedConjugateGradient.hpp"
-#include "utopia_ProjectedGaussSeidel.hpp"
-#include "utopia_MultiLevelTestProblem.hpp"
-#include "utopia_IPTransfer.hpp"
-#include "utopia_BiCGStab.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
+#include "utopia_TestProblems.hpp"
 
 #include <string>
 #include <cassert>
