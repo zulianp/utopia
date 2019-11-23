@@ -18,8 +18,8 @@
 
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
-#include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
-#include "test_problems/utopia_TestProblems.hpp"
+#include "utopia_BratuMultilevelTestProblem.hpp"
+#include "utopia_TestProblems.hpp"
 #include "utopia_IPTransfer.hpp"
 #include <cmath>
 
