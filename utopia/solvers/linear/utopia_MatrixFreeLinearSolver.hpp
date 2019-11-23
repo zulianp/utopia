@@ -71,7 +71,7 @@ namespace utopia {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedLinearSolver * clone() const =0;
+        virtual OperatorBasedLinearSolver * clone() const override =0;
 
         virtual void read(Input &in) override
         {
@@ -87,27 +87,6 @@ namespace utopia {
             Smoother<Matrix, Vector>::print_usage(os);
         }
     };
-
-
-    // template<class Vector>
-    // class FunctionOperator final: public Operator<Vector>
-    // {
-    //     public:
-    //         using Communicator = typename Traits<Vector>::Communicator;
-
-    //         FunctionOperator(const std::function< void(const Vector &, Vector &) > operator_action)
-    //         : operator_action_(operator_action)
-    //         {}
-
-    //         bool apply(const Vector &rhs, Vector &ret) const override
-    //         {
-    //             operator_action_(rhs, ret);
-    //             return true;
-    //         }
-
-    //     private:
-    //         std::function< void(const Vector &, Vector &) > operator_action_;
-    // };
 
 
     template<class Vector>
