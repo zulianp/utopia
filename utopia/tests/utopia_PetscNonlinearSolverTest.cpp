@@ -433,26 +433,15 @@ namespace utopia
             nlsolver.enable_differentiation_control(false);
             nlsolver.verbose(false);
 
-            PetscMatrix A, B;
             PetscVector upbo;
-
-            ExampleTestCase<PetscMatrix, PetscVector> example;
-            example.getOperators(_n, A, B, upbo);
-
-            PetscVector rhs = values(_n, 60);
-            {
-                Write<PetscVector> w(rhs);
-                Range rhs_range = range(rhs);
-                if(rhs_range.begin() == 0) rhs.set(0, 0);
-                if(rhs_range.end() == _n) rhs.set(_n - 1, 0);
-            }
-
-            QuadraticFunctionConstrained<PetscMatrix, PetscVector> funn(rhs, A, B, upbo);
+            Poisson1D<PetscMatrix, PetscVector> fun(_n, 3); 
+            PetscVector x_0 = fun.initial_guess();
+            upbo = fun.upper_bound(); 
 
             auto box = make_upper_bound_constraints(make_ref(upbo));
             nlsolver.set_box_constraints(make_ref(box));
 
-            nlsolver.solve(funn, rhs);
+            nlsolver.solve(fun, x_0);
         }
 
         void petsc_direct_solver_newton_test()

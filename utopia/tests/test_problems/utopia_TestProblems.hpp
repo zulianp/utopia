@@ -2,8 +2,6 @@
 #define SOLVER_TEST_PROBLEMS_HPP
 
 
-#include "utopia_TestFunctionsND.hpp"
-#include "utopia_ExampleTestCase.hpp"
 #include "utopia_AutoDiffProblem.hpp"
 #include "utopia_QPwithConstraints.hpp"
 #include "utopia_Bratu2D.hpp"

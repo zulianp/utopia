@@ -26,7 +26,9 @@ namespace utopia
                 assembly_problem_type1(); 
             }else if(problem_type_==2){
                 assembly_problem_type2(); 
-            }
+            }else if(problem_type_==3){
+                assembly_problem_type3(); 
+            }            
             else{
                 utopia_error("Poisson1D:: problem type non-existent"); 
             }
@@ -306,6 +308,72 @@ namespace utopia
 
         }        
 
+
+
+        void assembly_problem_type3()
+        {
+            a_ = 0.0; 
+            b_ = 1.0;  
+
+            L_ = b_ - a_; 
+            h_ = L_ / (n_-1); 
+
+            init_memory(); 
+
+            {
+                parallel_each_write(rhs_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                {
+                    Scalar xi = (h_*i); 
+                    if(i==0){
+                        return 0.0;
+                    }
+                    else if(i==n_-1){
+                        return 0.0;
+                    }
+                    else
+                    {
+                        return 60.0; 
+                    }
+                });
+            }
+
+
+            Vector bc_markers = values(n_, 0.0);
+            {
+                Write<Vector> wv(bc_markers); 
+                Range r = range(bc_markers);
+
+                if(r.begin() == 0)  {
+                    bc_markers.set(0, 1.0);
+                }
+
+                if(r.end() == n_)  {
+                    bc_markers.set(n_-1, 1.0);
+                }
+            }
+
+            bc_indices_.push_back(0.0);
+            bc_indices_.push_back(n_-1);
+
+            ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
+            ExtendedFunction<Matrix, Vector>::set_rhs(rhs_);
+
+
+            Vector upper_bound = values(n_, 0.0); 
+            {
+                parallel_each_write(upper_bound, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                {
+                    Scalar xi = (h_*i); 
+                    Scalar periods = 4.0; 
+                    Scalar c = 2.0 * 3.14 * periods * (2.0*xi - 1.0)/2.0;
+                    // device::cos
+                    return  0.5 + ((std::cos(c)) - 0.5) * ((std::cos(c)) - 0.5);
+                });                
+            }            
+
+            this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound)); 
+
+        }   
 
 
     private: 
