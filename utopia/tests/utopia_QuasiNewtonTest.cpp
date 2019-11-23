@@ -1,8 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/utopia_TestProblems.hpp"
-#include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
+#include "utopia_TestProblems.hpp"
 
 namespace utopia
 {

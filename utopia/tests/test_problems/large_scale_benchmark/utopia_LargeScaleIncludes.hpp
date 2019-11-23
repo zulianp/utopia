@@ -7,5 +7,12 @@
     #include "utopia_Bratu1D.hpp"
 	#include "utopia_Bratu2D.hpp"
 	#include "utopia_Bratu3D.hpp"
+
+	#include "utopia_MultiLevelTestProblem.hpp"
+	#include "utopia_BratuMultilevelTestProblem.hpp"
+
+	#ifdef  WITH_PETSC
+		#include "utopia_PetscMultilevelTestProblem.hpp"
+	#endif
     
 #endif //UTOPIA_LARGE_SCALE_TEST_FUNCTIONS_HPP

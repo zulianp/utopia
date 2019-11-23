@@ -434,6 +434,7 @@ namespace utopia
             nlsolver.verbose(false);
 
             PetscVector upbo;
+
             Poisson1D<PetscMatrix, PetscVector> fun(_n, 3); 
             PetscVector x_0 = fun.initial_guess();
             upbo = fun.upper_bound(); 
