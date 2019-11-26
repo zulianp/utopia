@@ -70,7 +70,7 @@ namespace utopia {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedLinearSolver * clone() const =0;
+        virtual OperatorBasedLinearSolver * clone() const override = 0;
 
         virtual void read(Input &in) override
         {
