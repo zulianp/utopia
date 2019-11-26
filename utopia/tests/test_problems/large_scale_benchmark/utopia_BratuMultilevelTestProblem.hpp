@@ -16,7 +16,7 @@ namespace utopia {
 
             BratuMultilevelTestProblem(const SizeType &n_levels = 2, bool remove_BC_contributions = false, bool verbose = false):
                         n_levels(n_levels),
-                        n_coarse(10),
+                        n_coarse(11),
                         remove_BC_contributions(remove_BC_contributions),
                         verbose(verbose)
             {

@@ -13,11 +13,13 @@ namespace utopia {
         MultiLevelTestProblem(
             const SizeType n_coarse_elements,
             const SizeType n_levels,
-            const bool remove_bc_dofs_from_interp = false)
+            const bool remove_bc_dofs_from_interp = false, 
+            const Scalar scale_restriction = 0.5):  n_levels_(n_levels), 
+                                                    scale_restriction_(scale_restriction)
         {
 
             assert(n_coarse_elements > 0);
-            assert(n_levels > 1);
+            // assert(n_levels > 1);
 
             n_dofs.resize(n_levels);
             n_dofs[0] = n_coarse_elements + 1;
@@ -26,12 +28,12 @@ namespace utopia {
                 n_dofs[i] = (n_dofs[i-1] - 1) * 2 + 1;
             }
 
-            // Scalar h = 1.;//1./(n_dofs[n_levels -1]);
-            Scalar h = 1./(n_dofs[n_levels -1] - 1);
-
             interpolators.resize(n_levels - 1);
+            restrictions.resize(n_levels - 1); 
 
             for(SizeType i = 0; i < n_levels - 1; ++i) {
+                Scalar h = 1./(n_dofs[i -1] - 1);
+
                 const auto n_coarse = n_dofs[i];
                 const auto n_fine   = n_dofs[i + 1];
                 interpolators[i] = std::make_shared<Matrix>(sparse(n_fine, n_coarse, 2));
@@ -69,23 +71,23 @@ namespace utopia {
                 }
             }
 
-            SizeType n_finest = n_dofs.back();
-            matrix = std::make_shared<Matrix>(sparse(n_finest, n_finest, 3));
-            assemble_laplacian_1D(*matrix, true);
+            // SizeType n_finest = n_dofs.back();
+            // matrix = std::make_shared<Matrix>(sparse(n_finest, n_finest, 3));
+            // assemble_laplacian_1D(*matrix, true);
 
-            rhs = std::make_shared<Vector>(values(n_finest, h*10.));
+            // rhs = std::make_shared<Vector>(values(n_finest, h*10.));
 
 
-            Write<Vector> w_(*rhs);
+            // Write<Vector> w_(*rhs);
 
-            auto r = range(*rhs);
-            if(r.begin() == 0) {
-                rhs->set(0, -1.);
-            }
+            // auto r = range(*rhs);
+            // if(r.begin() == 0) {
+            //     rhs->set(0, -1.);
+            // }
 
-            if(r.end() == n_finest) {
-                rhs->set(n_finest - 1, -1.);
-            }
+            // if(r.end() == n_finest) {
+            //     rhs->set(n_finest - 1, -1.);
+            // }
 
             if(remove_bc_dofs_from_interp) {
                 auto &I = *interpolators.back();
@@ -103,6 +105,14 @@ namespace utopia {
                     I.set(last_node_h, last_node_H, 0.);
                 }
             }
+
+            for(std::size_t i = 0; i < interpolators.size(); ++i)
+            {
+                auto &I = *interpolators[i];
+                Matrix R =  scale_restriction_ * transpose(I);
+                restrictions[i] = std::make_shared<Matrix>(R);
+            }
+
         }
 
         void describe() const
@@ -130,14 +140,20 @@ namespace utopia {
             //REMOVE ME
             // matrix->implementation().set_name("A");
 
-            write("vec_r.m", *rhs);
-            write("mat_A.m", *matrix);
+            // write("vec_r.m", *rhs);
+            // write("mat_A.m", *matrix);
         }
 
         std::vector<SizeType> n_dofs;
+        
         std::vector<std::shared_ptr<Matrix>> interpolators;
-        std::shared_ptr<Matrix> matrix;
-        std::shared_ptr<Vector> rhs;
+        std::vector<std::shared_ptr<Matrix>> restrictions;
+
+        Scalar n_levels_; 
+        bool scale_restriction_; 
+
+        // std::shared_ptr<Matrix> matrix;
+        // std::shared_ptr<Vector> rhs;
     };
 }
 

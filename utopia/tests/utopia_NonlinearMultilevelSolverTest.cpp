@@ -21,16 +21,16 @@ namespace utopia
 
         void run()
         {
-            UTOPIA_RUN_TEST(TR_test);
-            UTOPIA_RUN_TEST(TR_constraint_test);
+            // UTOPIA_RUN_TEST(TR_test);s
+            // UTOPIA_RUN_TEST(TR_constraint_test);
 
             UTOPIA_RUN_TEST(newton_MG_test);
-            // UTOPIA_RUN_TEST(FAS_test);
-            std::cout<<"TODO:: Fix FAS test.... \n";
+            // // UTOPIA_RUN_TEST(FAS_test);
+            // std::cout<<"TODO:: Fix FAS test.... \n";
 
-            UTOPIA_RUN_TEST(RMTR_test);
-            UTOPIA_RUN_TEST(RMTR_inf_test);
-            UTOPIA_RUN_TEST(RMTR_inf_bound_test);
+            // UTOPIA_RUN_TEST(RMTR_test);
+            // UTOPIA_RUN_TEST(RMTR_inf_test);
+            // UTOPIA_RUN_TEST(RMTR_inf_bound_test);
         }
 
         void TR_test()
@@ -109,9 +109,9 @@ namespace utopia
 
         void newton_MG_test()
         {
-            Bratu1D<PetscMatrix, PetscVector> fun(problem.n_dofs[problem.n_levels - 1]);
-            PetscVector x = values(problem.n_dofs[problem.n_levels - 1], 1.0);
-            fun.apply_bc_to_initial_guess(x);
+            // Bratu1D<PetscMatrix, PetscVector> fun(problem.n_dofs[problem.n_levels - 1]);
+            // PetscVector x = values(problem.n_dofs[problem.n_levels - 1], 1.0);
+            // fun.apply_bc_to_initial_guess(x);
 
             auto lsolver = std::make_shared<utopia::BiCGStab<PetscMatrix, PetscVector> >();
             Newton<utopia::PetscMatrix, utopia::PetscVector> newton(lsolver);
@@ -120,17 +120,46 @@ namespace utopia
             auto gs = std::make_shared<GaussSeidel<PetscMatrix, PetscVector> >();
             auto multigrid = std::make_shared<Multigrid<PetscMatrix, PetscVector>  >(gs, direct_solver);
 
-            multigrid->set_transfer_operators(problem.prolongations);
+
+            // multigrid->set_transfer_operators(problem.prolongations);
+            // multigrid->must_generate_masks(false);
+            // multigrid->fix_semidefinite_operators(true);
+            // multigrid->verbose(false);
+            // multigrid->atol(1e-11);
+
+            // newton.set_linear_solver(multigrid);
+            // newton.verbose(problem.verbose);
+            // newton.atol(1e-9);
+            // newton.rtol(1e-10);
+            // newton.solve(fun, x);
+
+            auto n_levels = 3; 
+            auto n_coarse = 20; 
+            bool remove_bc = true; 
+
+            auto ml_problem_new = MultiLevelTestProblem1D<PetscMatrix, PetscVector, Bratu1D<PetscMatrix, PetscVector> >(n_levels, n_coarse, remove_bc); 
+
+            auto transfer = ml_problem_new.get_transfer();
+            auto funs = ml_problem_new.get_functions();
+
+            PetscVector x_0; 
+            funs[n_levels - 1]->get_eq_constrains_values(x_0); 
+
+            multigrid->set_transfer_operators(transfer);
             multigrid->must_generate_masks(false);
             multigrid->fix_semidefinite_operators(true);
             multigrid->verbose(false);
             multigrid->atol(1e-11);
+            multigrid->rtol(1e-11);
 
             newton.set_linear_solver(multigrid);
-            newton.verbose(problem.verbose);
+            newton.verbose(true);
             newton.atol(1e-9);
             newton.rtol(1e-10);
-            newton.solve(fun, x);
+            newton.solve(*funs[n_levels - 1], x_0);
+
+            // disp(x_0); 
+
         }
 
 
@@ -346,7 +375,7 @@ namespace utopia
 
             rmtr->set_functions(level_functions);
 
-               auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+            auto box = make_box_constaints(make_ref(lb), make_ref(ub));
             rmtr->set_box_constraints(box);
             rmtr->solve(x);
         }
