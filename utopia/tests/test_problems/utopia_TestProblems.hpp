@@ -4,6 +4,9 @@
 
 #include "utopia_AutoDiffProblem.hpp"
 
+// this file should be deleted... 
+// all tests can be replaced with test problem Poisson1D
+#include "utopia_assemble_laplacian_1D.hpp"
 
 #include "utopia_UnconstrainedBenchmark.hpp"
 #include "utopia_ConstrainedBenchmark.hpp"
