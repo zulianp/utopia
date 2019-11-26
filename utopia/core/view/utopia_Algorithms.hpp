@@ -36,6 +36,11 @@ namespace utopia {
             return Kokkos::Details::ArithTraits<T>::sqrt(value);
         }
 
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T atomic_add(volatile T * const dest, const T val) {
+            return Kokkos::atomic_fetch_add(dest, val);
+        }
+
 #else
 
         template<typename T>
@@ -59,6 +64,11 @@ namespace utopia {
         template<typename T>
         inline T sqrt(const T &value) {
             return std::sqrt(value);
+        }
+
+        template<typename T>
+        inline T atomic_add(volatile T * const dest, const T val) {
+            return (*dest) += val;
         }
 
 #endif //KOKKOS_INLINE_FUNCTION

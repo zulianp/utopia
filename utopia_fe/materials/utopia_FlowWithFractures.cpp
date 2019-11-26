@@ -158,13 +158,12 @@ namespace utopia {
         const FractureSampler &sampler_;
     };
 
-
     class Cut2 {
     public:
         using CellElem = moonolith::Elem<double, 2, 2>;
         using SurfElem = moonolith::Edge1<double, 2>;
         using QuadratureT = moonolith::Quadrature<double, 2>;
-        using Algo = moonolith::BuildQuadratureAlgo<double, 2, 2, 2 -1>;
+        using Algo = moonolith::BuildQuadratureAlgo<double, 2, 2, 2 - 1>;
 
         moonolith::Storage<std::shared_ptr<Fracture>> fractures;
 
