@@ -18,8 +18,7 @@ namespace utopia {
 #ifdef PETSC_HAVE_MUMPS
             UTOPIA_RUN_TEST(petsc_mg);
             UTOPIA_RUN_TEST(petsc_cg_mg);
-            // UTOPIA_RUN_TEST(petsc_mg_1D);
-            std::cout<<"---------- UNCOMMENT petsc_mg_1D test ------ \n";
+            UTOPIA_RUN_TEST(petsc_mg_1D);
 
             UTOPIA_RUN_TEST(petsc_block_mg_exp);  //petsc 3.11.3 ERROR here
             UTOPIA_RUN_TEST(petsc_block_mg);
@@ -56,44 +55,54 @@ namespace utopia {
             utopia_test_assert(approxeq(rhs, A*x, 1e-5));
         }
 
-        // void petsc_mg_1D()
-        // {
-        //     if(mpi_world_size() > 1) return;
+        void petsc_mg_1D()
+        {
+            if(mpi_world_size() > 1) return;
 
-        //     const static bool verbose = false;
+            const static bool verbose = false;
 
-        //     MultiLevelTestProblem<PetscMatrix, PetscVector> ml_problem(4, 2);
-        //     // ml_problem.write_matlab("./");
+            // MultiLevelTestProblem<PetscMatrix, PetscVector> ml_problem(4, 2);
+            // ml_problem.write_matlab("./");
 
-        //     auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
-        //     smoother->verbose(verbose);
+            MultiLevelTestProblem1D<PetscMatrix, PetscVector, Poisson1D<PetscMatrix, PetscVector> > ml_problem(4, 10, true); 
 
-        //     Multigrid<PetscMatrix, PetscVector> multigrid(
-        //         smoother,
-        //         std::make_shared<Factorization<PetscMatrix, PetscVector>>()
-        //         // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>(),
-        //         // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>()
-        //     );
+            auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
+            smoother->verbose(verbose);
 
-        //     multigrid.set_transfer_operators(ml_problem.interpolators);
-        //     multigrid.max_it(4);
-        //     multigrid.atol(1e-12);
-        //     multigrid.stol(1e-10);
-        //     multigrid.rtol(1e-10);
-        //     multigrid.pre_smoothing_steps(3);
-        //     multigrid.post_smoothing_steps(3);
-        //     multigrid.verbose(verbose);
+            Multigrid<PetscMatrix, PetscVector> multigrid(
+                smoother,
+                std::make_shared<Factorization<PetscMatrix, PetscVector>>()
+                // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>(),
+                // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>()
+            );
 
-        //     PetscVector x = zeros(size(*ml_problem.rhs));
-        //     multigrid.update(ml_problem.matrix);
+            multigrid.set_transfer_operators(ml_problem.get_transfer());
+            multigrid.max_it(4);
+            multigrid.atol(1e-12);
+            multigrid.stol(1e-10);
+            multigrid.rtol(1e-10);
+            multigrid.pre_smoothing_steps(3);
+            multigrid.post_smoothing_steps(3);
+            multigrid.verbose(false);
 
-        //     if(verbose) {
-        //         multigrid.describe();
-        //     }
+            auto fun = ml_problem.get_functions().back(); 
+            PetscMatrix A; 
+            PetscVector g, x; 
+            fun->get_eq_constrains_values(x); 
+            fun->gradient(x, g); 
+            fun->hessian(x, A); 
 
-        //     multigrid.apply(*ml_problem.rhs, x);
-        //     utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
-        // }
+
+            // PetscVector x = zeros(size(*ml_problem.rhs));
+            multigrid.update(std::make_shared<PetscMatrix>(A));
+
+            if(verbose) {
+                multigrid.describe();
+            }
+
+            multigrid.apply(g, x);
+            utopia_test_assert(approxeq(g, A*x, 1e-7));
+        }
 
         void petsc_mg_exp()
         {

@@ -8,7 +8,7 @@
 	#include "utopia_Bratu2D.hpp"
 	#include "utopia_Bratu3D.hpp"
 
-	#include "utopia_BratuMultilevelTestProblem.hpp"
+	#include "utopia_MultilevelTestProblem1D.hpp"
 
 	#ifdef  WITH_PETSC
 		#include "utopia_PetscMultilevelTestProblem.hpp"

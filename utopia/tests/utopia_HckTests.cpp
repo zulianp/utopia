@@ -223,7 +223,11 @@ namespace utopia
 
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
-            auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
+            // auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
+            auto funs = multilevel_problem.get_functions();
+            auto fun1 = funs.back(); 
+
+
             Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
 
 
@@ -241,7 +245,7 @@ namespace utopia
             Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
             // multigrid.verbose(true);
 
-            multigrid.set_transfer_operators(multilevel_problem.transfers_);
+            multigrid.set_transfer_operators(multilevel_problem.get_transfer());
             multigrid.update(make_ref(H));
             multigrid.read(input_params_);
             multigrid.apply(b, x);
@@ -434,7 +438,8 @@ namespace utopia
 //FIXME
 #ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > multilevel_problem(2, n_levels_, n_);
-            auto fun = multilevel_problem.level_functions_[n_levels_-1];
+            
+            auto fun = multilevel_problem.get_functions().back(); 
             Bratu2D<Matrix, Vector> * fun_Bratu2D = dynamic_cast<Bratu2D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Bratu2D->initial_guess();
 
@@ -457,8 +462,8 @@ namespace utopia
             rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
             // Transfers and objective functions
-            rmtr->set_transfer_operators(multilevel_problem.transfers_);
-            rmtr->set_functions( multilevel_problem.level_functions_);
+            rmtr->set_transfer_operators(multilevel_problem.get_transfer());
+            rmtr->set_functions(multilevel_problem.get_functions());
 
 
             rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
@@ -480,7 +485,8 @@ namespace utopia
 #ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
-            auto fun = multilevel_problem.level_functions_[n_levels_-1];
+            // auto fun = multilevel_problem.level_functions_[n_levels_-1];
+            auto fun = multilevel_problem.get_functions().back(); 
             Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Poisson3D->initial_guess();
 
@@ -501,8 +507,8 @@ namespace utopia
             rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
             // Transfers and objective functions
-            rmtr->set_transfer_operators(multilevel_problem.transfers_);
-            rmtr->set_functions( multilevel_problem.level_functions_);
+            rmtr->set_transfer_operators(multilevel_problem.get_transfer());
+            rmtr->set_functions( multilevel_problem.get_functions());
 
 
             rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
@@ -524,7 +530,9 @@ namespace utopia
             #ifdef WITH_PETSC
                 PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
-                auto fun = multilevel_problem.level_functions_[n_levels_-1];
+                auto funs = multilevel_problem.get_functions();
+                auto fun = funs.back(); 
+
                 Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
                 Vector x = fun_Poisson3D->initial_guess();
 
@@ -545,8 +553,8 @@ namespace utopia
                 rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
                 // Transfers and objective functions
-                rmtr->set_transfer_operators(multilevel_problem.transfers_);
-                rmtr->set_functions( multilevel_problem.level_functions_);
+                rmtr->set_transfer_operators(multilevel_problem.get_transfer());
+                rmtr->set_functions( multilevel_problem.get_functions());
 
 
                 rmtr->read(input_params_);
@@ -669,7 +677,8 @@ namespace utopia
             #ifdef WITH_PETSC
                 PetscMultilevelTestProblem<PetscMatrix, PetscVector, Poisson3D<PetscMatrix, PetscVector> > multilevel_problem(3, n_levels_, n_);
 
-                auto fun = multilevel_problem.level_functions_[n_levels_-1];
+                auto funs = multilevel_problem.get_functions();
+                auto fun = funs.back(); 
                 Poisson3D<PetscMatrix, PetscVector> * fun_Poisson3D = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
                 PetscVector x = fun_Poisson3D->initial_guess();
 
@@ -678,19 +687,21 @@ namespace utopia
 
                 backend_convert(x, x_fine);
 
-                for(auto i=0; i < multilevel_problem.transfers_.size(); i++)
+                auto transfers = multilevel_problem.get_transfer(); 
+
+                for(auto i=0; i < multilevel_problem.n_levels(); i++)
                 {
-                    MatrixTransfer<PetscMatrix, PetscVector> * mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(multilevel_problem.transfers_[i].get());
+                    MatrixTransfer<PetscMatrix, PetscVector> * mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(transfers[i].get());
 
                     Matrix I_tril;
                     backend_convert_sparse(mat_transfer->I(), I_tril);
                     transfers_tril.push_back( std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I_tril)));
                 }
 
-                level_functions_tril.resize(multilevel_problem.level_functions_.size());
-                for(auto i=0; i < multilevel_problem.level_functions_.size(); i++)
+                level_functions_tril.resize(multilevel_problem.n_levels());
+                for(auto i=0; i < multilevel_problem.n_levels(); i++)
                 {
-                    Poisson3D<PetscMatrix, PetscVector> * fun_Laplace = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(multilevel_problem.level_functions_[i].get());
+                    Poisson3D<PetscMatrix, PetscVector> * fun_Laplace = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
 
                     if(std::is_same<ProblemType, Bratu3D<Matrix1, Vector1>>::value)
                     {
