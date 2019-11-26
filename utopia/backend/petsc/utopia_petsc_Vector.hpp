@@ -423,6 +423,7 @@ namespace utopia {
         );
       }
 
+
       ///////////////////////////////////////////////////////////////////////////
       ////////////// OVERRIDES FOR Comparable ////////////////////////////
       ///////////////////////////////////////////////////////////////////////////
@@ -850,6 +851,9 @@ namespace utopia {
 
         void convert_from(const Vec &mat);
         void convert_to(Vec &mat) const;
+        void copy_data_to(Vec vec) const; 
+        void copy_data_from(Vec vec); 
+
         void wrap(Vec &mat);
 
         inline void ghosted(
