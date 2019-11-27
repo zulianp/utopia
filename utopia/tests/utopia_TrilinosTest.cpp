@@ -9,7 +9,7 @@
 #include "utopia_trilinos_Utils.hpp"
 
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/utopia_MultiLevelTestProblem.hpp"
+#include "test_problems/large_scale_benchmark/utopia_MultiLevelTestProblem1D.hpp"
 #include <algorithm>
 
 #ifdef WITH_PETSC
@@ -18,7 +18,8 @@
 
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
-#include "utopia_BratuMultilevelTestProblem.hpp"
+#include "test_problems/large_scale_benchmark/utopia_Bratu1D.hpp"
+#include "test_problems/large_scale_benchmark/utopia_Poisson1D.hpp"
 #include "utopia_TestProblems.hpp"
 #include "utopia_IPTransfer.hpp"
 #include <cmath>
@@ -577,21 +578,27 @@ namespace utopia {
 
     void trilinos_cg()
     {
-        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
-        TpetraVectord x = zeros(size(*ml_problem.rhs));
-        (*ml_problem.rhs) *= 0.0001;
+        SizeType n = 20;
+        Poisson1D<TpetraMatrixd, TpetraVectord> problem(n);
+
+        TpetraMatrixd H;
+        TpetraVectord g, x;
+
+        x = zeros(n);
+
+        problem.hessian(x, H);
+        problem.gradient(x, g);
+        g *= 0.0001;
 
         ConjugateGradient<TpetraMatrixd, TpetraVectord> cg;
         cg.rtol(1e-6);
         cg.atol(1e-6);
         cg.max_it(800);
         // cg.verbose(true);
-        cg.update(ml_problem.matrix);
+        cg.update(H);
+        cg.apply(g, x);
 
-        x = *ml_problem.rhs;
-        cg.apply(*ml_problem.rhs, x);
-
-        double diff = norm2(*ml_problem.rhs - *ml_problem.matrix * x);;
+        double diff = norm2(g - H * x);;
         utopia_test_assert(approxeq(diff, 0., 1e-6));
     }
 
@@ -605,7 +612,9 @@ namespace utopia {
         const static bool verbose   = false;
         const static bool use_masks = false;
 
-        MultiLevelTestProblem<Matrix, Vector> ml_problem(10, 4, !use_masks);
+        using ProblemType = utopia::Poisson1D<TpetraMatrixd, TpetraVectord>;
+
+        MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(10, 4, !use_masks);
         // ml_problem.describe();
         // ml_problem.write_matlab("./");
 
@@ -938,10 +947,13 @@ namespace utopia {
 
     void trilinos_each_read_transpose()
     {
-        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(5, 2, false);
+        int n = 10;
+        int m = 3;
 
+        TpetraMatrixd P;
+        build_rectangular_matrix(n, m, P);
 
-        TpetraMatrixd R = transpose(*ml_problem.interpolators[0]);
+        TpetraMatrixd R = transpose(P);
         TpetraMatrixd R_copy = R;
         R_copy *= 0.;
 
@@ -968,20 +980,24 @@ namespace utopia {
     {
         KSPSolver<TpetraMatrixd, TpetraVectord> solver;
 
-        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
-        TpetraVectord x = zeros(size(*ml_problem.rhs));
-        (*ml_problem.rhs) *= 0.0001;
+        SizeType n = 20;
+        Poisson1D<TpetraMatrixd, TpetraVectord> problem(n);
 
+        TpetraVectord x = zeros(n), g;
+        TpetraMatrixd H;
 
-        solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+        problem.gradient(x, g);
+        problem.hessian(x, H);
 
-        // disp(*ml_problem.matrix);
+        g *= 0.0001;
+
+        solver.solve(H, g, x);
 
         PetscMatrix p_mat;
-        backend_convert_sparse(*ml_problem.matrix, p_mat);
+        backend_convert_sparse(H, p_mat);
 
         // disp(p_mat);
-        double diff = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        double diff = norm2(g - H * x);
         utopia_test_assert(approxeq(diff, 0., 1e-8));
     }
 #endif //WITH_PETSC
@@ -1044,10 +1060,9 @@ namespace utopia {
     {
 #ifdef WITH_PETSC
         int n = 10;
-        double lambda = 1.9;
 
-        auto fun_tpetra = std::make_shared<Bratu1D<TpetraMatrixd, TpetraVectord> >(n, lambda);
-        auto fun_petsc  = std::make_shared<Bratu1D<PetscMatrix, PetscVector> >(n, lambda);
+        auto fun_tpetra = std::make_shared<Bratu1D<TpetraMatrixd, TpetraVectord>>(n);
+        auto fun_petsc  = std::make_shared<Bratu1D<PetscMatrix, PetscVector>>(n);
 
         auto init_expr = values(n, 1.);
 
@@ -1099,12 +1114,13 @@ namespace utopia {
     void rmtr_test()
     {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
+        using ProblemType = utopia::Bratu1D<Matrix, Vector>;
 
-        BratuMultilevelTestProblem<Matrix, Vector> problem(2, true);
+        MultilevelTestProblem<Matrix, Vector, ProblemType> problem(2, true);
         problem.verbose = false;
         // problem.verbose = tre;
 
-        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
+        Vector x = values(problem.n_dofs[problem.n_levels() -1 ], 0.0);
 
         std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
 
@@ -1213,7 +1229,7 @@ namespace utopia {
         }
 
         TpetraMatrixd A;
-        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
+        MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
         A = *ml_problem.interpolators[0];
 
         A = transpose(A);
@@ -1312,7 +1328,7 @@ namespace utopia {
         BelosSolver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
+        MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
         TpetraVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
@@ -1337,7 +1353,7 @@ namespace utopia {
         Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        MultiLevelTestProblem<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
+        MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
         TpetraVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
@@ -1467,7 +1483,7 @@ namespace utopia {
 
     static void trilinos_specific()
     {
-        
+
         UTOPIA_RUN_TEST(stcg_pt_test);
         UTOPIA_RUN_TEST(trilinos_structure);
         UTOPIA_RUN_TEST(trilinos_build);
@@ -1550,7 +1566,7 @@ namespace utopia {
         //tests that fail in parallel
         if(mpi_world_size() == 1) {
             UTOPIA_RUN_TEST(trilinos_crs_construct);
-        } 
+        }
         // else {
         //     m_utopia_warning_once("several tests left out for parallel execution");
         // }

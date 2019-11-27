@@ -25,7 +25,7 @@ RUN cd /utopia_cloned/utopia && mkdir bin
 RUN cd /utopia_cloned/utopia/bin && \
     cmake .. -DCMAKE_INSTALL_PREFIX=/utopia -DCMAKE_BUILD_TYPE=Release
 
-RUN cd /utopia_cloned/utopia/bin && make -j
+RUN cd /utopia_cloned/utopia/bin && make -j complete
 RUN cd /utopia_cloned/utopia/bin && make install
 
 # compile utopia (DEBUG)
@@ -34,7 +34,7 @@ RUN cd /utopia_cloned/utopia/bin && make install
 # RUN cd /utopia_cloned/utopia/bin_debug && \
 #    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_debug -DCMAKE_BUILD_TYPE=Debug
 
-# RUN cd /utopia_cloned/utopia/bin_debug && make -j
+# RUN cd /utopia_cloned/utopia/bin_debug && make -j complete
 # RUN cd /utopia_cloned/utopia/bin_debug && make install
 
 ##########################################################################
@@ -69,7 +69,7 @@ RUN cd /utopia_cloned/utopia_fe && mkdir bin
 RUN cd /utopia_cloned/utopia_fe/bin && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_fe -DUTOPIA_DIR=/utopia -DCMAKE_BUILD_TYPE=Release -DMOONOLITH_DIR=/par_moonolith
 
-RUN cd /utopia_cloned/utopia_fe/bin && make -j
+RUN cd /utopia_cloned/utopia_fe/bin && make -j complete
 RUN cd /utopia_cloned/utopia_fe/bin && make install
 
 # compile utopia_fe (DEBUG) (skip because of Docker Hub time limit)
@@ -77,7 +77,7 @@ RUN cd /utopia_cloned/utopia_fe/bin && make install
 # RUN cd /utopia_cloned/utopia_fe && mkdir bin_debug
 # RUN cd /utopia_cloned/utopia_fe/bin_debug && cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_fe_debug -DUTOPIA_DIR=/utopia_debug -DCMAKE_BUILD_TYPE=Debug -DMOONOLITH_DIR=/par_moonolith_debug
 
-# RUN cd /utopia_cloned/utopia_fe/bin_debug && make -j
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && make -j complete
 # RUN cd /utopia_cloned/utopia_fe/bin_debug && make install
 
 ##########################################################################

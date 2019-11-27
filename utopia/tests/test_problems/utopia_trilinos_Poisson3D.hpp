@@ -159,13 +159,13 @@ namespace utopia
             return true;
         }
 
-        bool upper_bound(Vector &ub) const override
+        bool upper_bound(Vector &ub) const
         {
             ub = local_values(n_points_, 0.45);
             return true;
         }
 
-        bool lower_bound(Vector &lb) const override
+        bool lower_bound(Vector &lb) const
         {
             lb = local_values(n_points_, -9e9);
             return true;

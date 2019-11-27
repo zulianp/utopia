@@ -122,6 +122,28 @@ macro(add_utopiafe_module module_name)
     install(FILES ${LOCAL_HEADERS} DESTINATION include)
 endmacro(add_utopiafe_module)
 
+
+macro(add_utopiafe_app app_name)
+    add_library(${app_name} EXCLUDE_FROM_ALL STATIC ${LOCAL_SOURCES})
+    target_link_libraries(${app_name} PUBLIC ${ARGN} ${UTOPIA_LIBRARIES})
+    target_include_directories(${app_name} BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+    foreach(app_dependency ${ARGN})
+        target_include_directories(${app_name} PUBLIC $<TARGET_PROPERTY:${app_dependency},INTERFACE_INCLUDE_DIRECTORIES>)
+    endforeach()
+    target_include_directories(${app_name} PRIVATE ${UTOPIA_INCLUDES})
+    set_utopia_compiler_features(${app_name})
+        if (NOT TOP_LEVEL)
+        set(UTOPIA_FE_APPS "${UTOPIA_FE_APPS};${app_name}" PARENT_SCOPE)
+    endif()
+    install(TARGETS ${app_name}
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
+    install(FILES ${LOCAL_HEADERS} DESTINATION include)
+endmacro(add_utopiafe_app)
+
+
 list(APPEND UTOPIA_FE_MODULES
     tests
     apps
@@ -155,20 +177,16 @@ ENDFOREACH(MODULE)
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
-
-
 #create main library
 list(APPEND LOCAL_HEADERS utopia_fe.hpp)
 list(APPEND LOCAL_SOURCES utopia_fe.cpp)
 set(TOP_LEVEL 1)
 add_utopiafe_module(utopia_fe ${UTOPIA_FE_LIBRARIES})
-add_executable(utopia_fe_exec  main.cpp ${LOCAL_HEADERS})
+add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${LOCAL_HEADERS})
 target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_INCLUDES})
-# target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})
-# these next three lines fix some issues on linux
-target_link_libraries(utopia_fe_exec utopia_fe)
+target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_APPS})
 
-install(TARGETS utopia_fe_exec
+install(TARGETS utopia_fe
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
@@ -291,5 +309,19 @@ append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_CXX_COMPIL
 file(WRITE ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake ${CONFIG_CONTENT})
 
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.makefile DESTINATION config)
-install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake 	 DESTINATION config)
+install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake 	DESTINATION config)
+
+
+##########################################################################################
+
+add_custom_target(apps)
+add_dependencies(apps utopia_fe utopia_fe_exec)
+
+##########################################################################################
+
+add_custom_target(complete)
+add_dependencies(complete apps)
+
+##########################################################################################
+
 

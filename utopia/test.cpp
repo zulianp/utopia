@@ -1,6 +1,5 @@
 
 #include "utopia.hpp"
-#include "utopia_benchmarks.hpp"
 #include "utopia_Testing.hpp"
 
 #include <memory>
@@ -37,8 +36,6 @@ int main(const int argc, char *argv[])
                 run_tests = false;
             } else if(argv[i] == std::string("-performance_test_verbose")) {
                 Utopia::instance().set("performance_test_verbose", "true");
-            } else if(argv[i] == std::string("-bench")) {
-                run_benchmarks();
             } else if(argv[i] == std::string("-list")) {
                 test_runner.describe();
                 run_tests = false;

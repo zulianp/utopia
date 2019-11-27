@@ -19,13 +19,13 @@ namespace utopia
             n_dofs_.resize(n_levels);
             transfers_.resize(n_levels-1);
             level_functions_.resize(n_levels);
-        }     
+        }
 
         virtual ~MultilevelTestProblemBase()
         {
-            level_functions_.clear(); 
-            transfers_.clear(); 
-            n_dofs_.clear(); 
+            level_functions_.clear();
+            transfers_.clear();
+            n_dofs_.clear();
         }
 
         SizeType n_levels() const
@@ -43,22 +43,22 @@ namespace utopia
             return n_dofs_[level];
         }
 
-        void n_dofs(const SizeType & level, const SizeType & dofs_l) 
+        void n_dofs(const SizeType & level, const SizeType & dofs_l)
         {
-            n_dofs_[level] = dofs_l; 
-        }        
-
-        bool remove_bc() const 
-        {
-            return remove_bc_; 
+            n_dofs_[level] = dofs_l;
         }
 
-        const std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > & get_transfer() const 
+        bool remove_bc() const
+        {
+            return remove_bc_;
+        }
+
+        const std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > & get_transfer() const
         {
             return transfers_;
         }
 
-        const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & get_functions() const 
+        const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & get_functions() const
         {
             return level_functions_;
         }
@@ -67,12 +67,12 @@ namespace utopia
         private:
             SizeType n_levels_;
             SizeType n_coarse_;
-            bool remove_bc_; 
+            bool remove_bc_;
             std::vector<SizeType> n_dofs_;
 
         protected:
             std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_;
-            std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_; 
+            std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_;
     };
 
 
@@ -80,37 +80,37 @@ namespace utopia
     template<class Matrix, class Vector, class ProblemType>
     class MultiLevelTestProblem1D final: public MultilevelTestProblemBase<Matrix, Vector>
     {
-    
+
     public:
         typedef UTOPIA_SCALAR(Vector)       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
 
-        MultiLevelTestProblem1D(const SizeType & n_levels, 
-                                const SizeType & n_coarse_elements, 
-                                const bool remove_bc = false, 
+        MultiLevelTestProblem1D(const SizeType & n_levels,
+                                const SizeType & n_coarse_elements,
+                                const bool remove_bc = false,
                                 const bool scale_by_h = false):  MultilevelTestProblemBase<Matrix, Vector>(n_levels, n_coarse_elements, remove_bc)
         {
 
             assert(n_coarse_elements > 0);
             assert(n_levels > 0);
 
-            this->n_dofs(0, n_coarse_elements + 1); 
+            this->n_dofs(0, n_coarse_elements + 1);
 
 
             for(SizeType i = 1; i < n_levels; ++i) {
-                this->n_dofs(i, (this->n_dofs(i-1) - 1) * 2 + 1); 
+                this->n_dofs(i, (this->n_dofs(i-1) - 1) * 2 + 1);
 
             }
 
             for(SizeType i = 0; i < n_levels - 1; ++i) {
 
-                Scalar h = scale_by_h ? (1./(this->n_dofs(i -1) - 1)) : 1.0; 
+                Scalar h = scale_by_h ? (1./(this->n_dofs(i -1) - 1)) : 1.0;
 
                 const auto n_coarse = this->n_dofs(i);
                 const auto n_fine   = this->n_dofs(i + 1);
 
-                Matrix I = sparse(n_fine, n_coarse, 2); 
-                // std::cout<<"n_coarse: "<< n_coarse << "  n_fine: "<< n_fine << "  \n"; 
+                Matrix I = sparse(n_fine, n_coarse, 2);
+                // std::cout<<"n_coarse: "<< n_coarse << "  n_fine: "<< n_fine << "  \n";
 
                 {
                     Write<Matrix> w_(I, utopia::GLOBAL_INSERT);
@@ -165,12 +165,12 @@ namespace utopia
 
             for(auto l=0; l <n_levels; l++)
             {
-                auto fun = std::make_shared<ProblemType >(this->n_dofs(l));
-                this->level_functions_[l] = fun;           
-            }      
+                auto fun = std::make_shared<ProblemType>(this->n_dofs(l));
+                this->level_functions_[l] = fun;
+            }
 
         }
 
     };
 }
-#endif 
+#endif

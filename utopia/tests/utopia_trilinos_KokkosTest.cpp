@@ -12,7 +12,6 @@
 
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
-#include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 
 #include "utopia_IPTransfer.hpp"
@@ -24,7 +23,7 @@ namespace utopia {
     {
         // using Scalar   = Traits<TpetraVectord>::Scalar;
         using SizeType = Traits<TpetraVectord>::SizeType;
-        
+
         auto n = 10;
 
         TpetraVectord v = local_values(n, 1.);
