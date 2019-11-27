@@ -37,7 +37,8 @@ endmacro()
 
 # install lcov for post-processing the coverage
 # see https://clang.llvm.org/docs/SourceBasedCodeCoverage.html#the-code-coverage-workflow
-# LLVM_PROFILE_FILE=$PWD/utopia_cov.proraw ./utopia_test -test blas
+# LLVM_PROFILE_FILE=$PWD/utopia_cov.proraw ./utopia_test -test blas -test views -test expr -test qp_solver -test solvers -test utilities
 # llvm-profdata merge -sparse utopia_cov.proraw -o utopia_cov.profdata
 # llvm-cov show ./utopia_test -instr-profile=utopia_cov.profdata
-# llvm-cov export -format=text -instr-profile  utopia_cov.profdata ./utopia_test  > utopia_cov.json
+# llvm-cov export -format=lcov -instr-profile  utopia_cov.profdata ./utopia_test  > cov.info
+# genhtml cov.info  --output-directory out
