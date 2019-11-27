@@ -675,8 +675,8 @@ namespace utopia {
                     *x_f_[i] = local_zeros(dof_map_f.n_local_dofs());
                     dfn->assemble_flow(*x_f_[i], *A_f_[i], *rhs_f_[i]);
 
-                    // apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
-                    apply_boundary_conditions(dfn->space(), *A_f_[i], *rhs_f_[i]);
+                    apply_boundary_conditions(dof_map_f, *A_f_[i], *rhs_f_[i]);
+                    //apply_boundary_conditions(dfn->space(), *A_f_[i], *rhs_f_[i]);
 
                     if(report_) {
                         report_->add_stat(dfn->space(), *A_f_[i]);
@@ -689,7 +689,15 @@ namespace utopia {
                     auto T = lagrange_multiplier_[i]->transfer_matrix();
 
                     Matrix A_temp = transpose(*T) * (*A_f_[i]) * (*T);
+
+                    //utopia::write("A.m", A);
                     A += A_temp;
+
+                    //utopia::write("A_temp.m", *A_f_[i]);
+
+                    //utopia::write("T.m", *T);
+
+
                     rhs += transpose(*T) * (*rhs_f_[i]);
                 }
 

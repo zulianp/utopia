@@ -3,18 +3,15 @@
 
 #include "utopia_fe_base.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
-#include "utopia_libmesh_Types.hpp"
 
 #include "libmesh/dof_map.h"
 #include "libmesh/petsc_matrix.h"
 #include "libmesh/petsc_vector.h"
 #include "libmesh/elem.h"
-#include "libmesh/fe_abstract.h"
-#include "libmesh/fe_base.h"
 
 namespace utopia {
 
-    inline void convert(const libMesh::DenseMatrix<double> &in, LMDenseMatrix &out) {
+        inline void convert(const libMesh::DenseMatrix<double> &in, LMDenseMatrix &out) {
         using uint = unsigned int;
         uint rows = in.m();
         uint cols = in.n();
@@ -76,9 +73,7 @@ namespace utopia {
 
     private:
         libMesh::DofConstraints dof_constraints_;
-        #ifdef LIBMESH_ENABLE_NODE_CONSTRAINTS
-        libMesh::NodeConstraints  _node_constraints;
-        #endif
+
         // void assemble_constraint(const LibMeshFunctionSpace &V);
         void assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map);
 
@@ -88,12 +83,12 @@ namespace utopia {
                                         const unsigned int variable_number,
                                         const libMesh::Elem * elem,
                                         const unsigned mesh_dim
-                                        /*std::vector<int> & index*/
                                         );
 
-        static void compute_all_constraints(const libMesh::MeshBase &mesh,
-                                           const libMesh::DofMap &dof_map,
-                                           libMesh::DofConstraints &constraints);
+        static void compute_all_constraints(
+            const libMesh::MeshBase &mesh,
+            const libMesh::DofMap &dof_map,
+            libMesh::DofConstraints &constraints);
 
         static void compute_boundary_nodes(const libMesh::MeshBase &mesh, 
                                            libMesh::DofMap &dof_map,
@@ -121,8 +116,7 @@ namespace utopia {
                                          std::vector<int> & index);
 
         static  void add_constraints_to_send_list(libMesh::DofMap &dof_map, 
-                                                  libMesh::DofConstraints &_dof_constraints, 
-                                                  std::vector<libMesh::dof_id_type> &_send_list );
+                                                  libMesh::DofConstraints &_dof_constraints, std::vector<libMesh::dof_id_type> &_send_list );
 
         static void gather_constraints (libMesh::MeshBase  & mesh,
                                          std::set<libMesh::dof_id_type> & unexpanded_dofs, 
@@ -264,7 +258,7 @@ namespace utopia {
 
             libMesh::DenseMatrix<double> mat;
 
-            //FIXME
+                       //FIXME
             convert(u_mat, mat);
 
             libMesh::DenseMatrix<double> C;
@@ -311,7 +305,6 @@ namespace utopia {
                 }
             }
 
-            //FIXME
             convert(mat, u_mat);
         }
 
@@ -334,12 +327,11 @@ namespace utopia {
                                         dof_indices,
                                         false //FIXME
                                         );
-
             libMesh::DenseVector<double> vec; 
             convert(u_vec, vec); //FIXME
             libMesh::DenseVector<double> old(vec);
             C.vector_mult_transpose(vec, old);
-            convert(vec, u_vec); //FIXME
+            convert(vec, u_vec);
         }
 
         template<class ElementMatrix, class ElementVector>
@@ -363,12 +355,12 @@ namespace utopia {
                                         false //FIXME
                                         );
 
+
             //FIXME
             libMesh::DenseMatrix<double> mat;
             libMesh::DenseVector<double> vec; 
             convert(u_vec, vec); 
             convert(u_mat, mat);
-
 
             libMesh::DenseVector<double> old(vec);
             
@@ -419,7 +411,7 @@ namespace utopia {
 
             convert(vec, u_vec); 
             convert(mat, u_mat);
-         }
+        }
    };
 }
 
