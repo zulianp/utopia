@@ -19,7 +19,7 @@
         "random-refinements": 3
     },
     "space": {
-        "system-name" : "poisson",
+        "system-name" : "mass",
         "variables" : [
             {
                 "name" : "u",
@@ -39,5 +39,12 @@
             }
 
         ]
-    }
+    },
+    "forcing-function" : [
+        {
+            "block":  1,
+            "type"  : "expr",
+            "value" : "x*x+y"
+        }
+    ]
 }

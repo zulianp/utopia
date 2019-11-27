@@ -318,6 +318,7 @@ namespace utopia {
             auto &W_i = W.subspace(0);
             a.constraint_matrix(W_i, pre_constraint, post_constraint);
             grad_p_projected += post_constraint * grad_p_projected;
+            //utopia::write("post_constraint.m",post_constraint);
         }
 
         assert(!has_nan_or_inf(grad_ph));
