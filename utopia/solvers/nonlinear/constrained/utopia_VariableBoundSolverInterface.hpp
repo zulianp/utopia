@@ -74,6 +74,11 @@ namespace utopia
           return constraints_.has_upper_bound();
         }
 
+        virtual void fill_empty_bounds(const SizeType & loc_size)
+        {
+          return constraints_.fill_empty_bounds(loc_size);
+        }
+
         virtual void fill_empty_bounds()
         {
           return constraints_.fill_empty_bounds();
@@ -142,7 +147,7 @@ namespace utopia
         {
             const auto &ub = *constraints_.upper_bound();
             const auto &lb = *constraints_.lower_bound();
-
+            
           {
             auto d_lb     = const_device_view(lb);
             auto d_ub     = const_device_view(ub);
@@ -206,7 +211,7 @@ namespace utopia
 
           {
             parallel_transform(ub_merged,
-                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &xi) -> Scalar 
                               {
                                 return  (xi <= ub_uniform)  ? xi : ub_uniform; 
                               });
@@ -225,7 +230,7 @@ namespace utopia
 
           {
             parallel_transform(lb_merged,
-                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &xi) -> Scalar 
                               {
                                 return  (xi >= lb_uniform)  ? xi : lb_uniform; 
                               });

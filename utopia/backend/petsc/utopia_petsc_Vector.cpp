@@ -226,6 +226,36 @@ namespace utopia {
         }
     }
 
+
+    void PetscVector::copy_data_from(Vec vec)
+    {
+        MPI_Comm comm = PetscObjectComm((PetscObject) vec);
+
+        PetscInt n_global;
+        check_error( VecGetSize(vec, &n_global) );
+
+        PetscInt n_local;
+        check_error( VecGetLocalSize(vec, &n_local) );
+
+        this->repurpose(
+            comm,
+            type_override(),
+            n_local,
+            n_global
+        );
+
+        VecCopy(vec, raw_type());
+
+        // assert(vec_ != nullptr);
+        set_initialized(true);
+        // assert(is_consistent());
+    }
+
+    void PetscVector::copy_data_to(Vec vec) const
+    {
+        VecCopy(raw_type(), vec);
+    }    
+
     void PetscVector::ghosted(MPI_Comm comm,
         PetscInt local_size,
         PetscInt global_size,
@@ -636,6 +666,10 @@ namespace utopia {
          assert(!immutable_);
 
          if(is_compatible(other) && !other.has_ghosts()) {
+
+            // assert(same_type(other) && "TYPE " );
+            // assert(this->has_ghosts() && "GHOST" );                
+
              assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
              assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
              PetscErrorHandler::Check(VecCopy(other.vec_, vec_));

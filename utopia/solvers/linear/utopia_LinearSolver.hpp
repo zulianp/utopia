@@ -71,6 +71,8 @@ namespace  utopia
         }
 
         virtual LinearSolver * clone() const override = 0;
+
+        
     private:
         std::shared_ptr<const Matrix> op_;
     };

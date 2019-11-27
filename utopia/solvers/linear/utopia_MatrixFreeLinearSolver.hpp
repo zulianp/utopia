@@ -15,12 +15,13 @@ namespace utopia {
 
             /*! @brief if overriden the subclass has to also call this one first
              */
-            virtual void update(const Operator<Vector> &A) { UTOPIA_UNUSED(A); }
+            virtual void update(const Operator<Vector> & /*A*/) =0; //{ UTOPIA_UNUSED(A); }
 
             virtual MatrixFreeLinearSolver * clone() const override = 0;
 
             virtual void read(Input &/*in*/) override{ }
             virtual void print_usage(std::ostream & /*os*/) const override{ }
+
     };
 
     template<class Matrix, class Vector>
@@ -70,41 +71,22 @@ namespace utopia {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedLinearSolver * clone() const override = 0;
+        virtual OperatorBasedLinearSolver * clone() const override =0;
 
         virtual void read(Input &in) override
         {
             MatrixFreeLinearSolver<Vector>::read(in);
             PreconditionedSolver<Matrix, Vector>::read(in);
+            Smoother<Matrix, Vector>::read(in);
         }
 
         virtual void print_usage(std::ostream &os) const override
         {
             MatrixFreeLinearSolver<Vector>::print_usage(os);
             PreconditionedSolver<Matrix, Vector>::print_usage(os);
+            Smoother<Matrix, Vector>::print_usage(os);
         }
     };
-
-
-    // template<class Vector>
-    // class FunctionOperator final: public Operator<Vector>
-    // {
-    //     public:
-    //         using Communicator = typename Traits<Vector>::Communicator;
-
-    //         FunctionOperator(const std::function< void(const Vector &, Vector &) > operator_action)
-    //         : operator_action_(operator_action)
-    //         {}
-
-    //         bool apply(const Vector &rhs, Vector &ret) const override
-    //         {
-    //             operator_action_(rhs, ret);
-    //             return true;
-    //         }
-
-    //     private:
-    //         std::function< void(const Vector &, Vector &) > operator_action_;
-    // };
 
 
     template<class Vector>
@@ -141,6 +123,13 @@ namespace utopia {
                 }
             }
 
+            virtual void update(const Operator<Vector> &A) override
+            {
+                if(precond_)
+                {
+                    precond_->update(A); 
+                }
+            }
 
             void print_usage(std::ostream &os) const override
             {

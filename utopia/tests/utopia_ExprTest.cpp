@@ -46,6 +46,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(rotate_test);
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
             
+
+
             // FIXME (mem allocs)
             
 
@@ -60,6 +62,18 @@ namespace utopia {
             Matrix D = diag(diag(H));
             H = H + transpose(H) - D;
         }
+
+        void emul_test()
+        {
+            Vector x = values(n_, 1.0);
+            Vector y = values(n_, 10.0);
+            Vector z = values(n_, 10.0);
+
+            UTOPIA_NO_ALLOC_BEGIN("emul_test");
+            z = e_mul(x, y); 
+            UTOPIA_NO_ALLOC_END();
+        }
+
 
 
         void negate_test()
@@ -169,6 +183,10 @@ namespace utopia {
             Vector x = values(n_, 1.0);
             Vector y = values(n_, 2.0);
             Vector z = values(n_, 0.0);
+
+
+            Matrix D = diag(z); 
+
 
             UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
             z = e_mul(x, y);

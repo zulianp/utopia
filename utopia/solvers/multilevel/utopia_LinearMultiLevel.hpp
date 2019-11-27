@@ -101,7 +101,6 @@ namespace utopia
 
         static void fix_semidefinite_operator(Matrix &A)
         {
-
             Vector d;
 
             Size s = local_size(A);

@@ -35,6 +35,12 @@ namespace utopia
             this->setup_application_context(); 
             setup_ = true;
 
+            PetscInt n_local_; 
+            VecGetLocalSize(snes_->vec_sol, &n_local_);
+            this->constraints_ = make_box_constaints(std::make_shared<Vector>(local_values(n_local_, -9e9)),
+                                                     std::make_shared<Vector>(local_values(n_local_, 0.45)));             
+
+
             // TD::fix this
             exact_sol_  = zeros(1, 0); 
         }     
@@ -163,34 +169,6 @@ namespace utopia
         virtual bool parallel() const override
         {
             return true;
-        }
-
-        virtual bool upper_bound(Vector & ub) const override
-        {   
-            PetscInt n; 
-            VecGetLocalSize(snes_->vec_sol, &n);
-            ub = local_values(n, 0.45); 
-            
-            return true; 
-        }
-
-        virtual bool lower_bound(Vector &lb) const override
-        {
-            PetscInt n; 
-            VecGetLocalSize(snes_->vec_sol, &n);
-            lb = local_values(n, -9e9); 
-
-            return true; 
-        }
-
-        virtual bool has_upper_bound() const override
-        {
-            return false;
-        }
-
-        virtual bool has_lower_bound() const override
-        {
-            return false;
         }
 
     private:

@@ -5,10 +5,7 @@
 
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
-#include "test_problems/utopia_TestFunctions2D.hpp"
-#include "test_problems/utopia_TestFunctionsND.hpp"
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "utopia_Testing.hpp"
+#include "utopia_TestProblems.hpp"
 
 typedef double Real;
 
@@ -109,7 +106,7 @@ namespace utopia {
     void blas_function_test() {
         BlasVectord point({1.0, -1.0});
 
-        TestFunction2D_1<BlasMatrixd, BlasVectord> fun;
+        QPTestFunction_2D<BlasMatrixd, BlasVectord> fun;
         BlasVectord g;
         BlasMatrixd H;
 

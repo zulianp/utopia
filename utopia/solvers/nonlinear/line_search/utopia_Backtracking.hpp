@@ -96,10 +96,12 @@ namespace utopia {
                 return false;
             }
 
+            UTOPIA_NO_ALLOC_BEGIN("Backtracking 1");
             fun.value(x, f);
             f0 = f;
             fc = f;
             alpha_c = alpha;
+            UTOPIA_NO_ALLOC_END();
 
             Scalar it = 0;
 
@@ -108,8 +110,10 @@ namespace utopia {
 
             while(alpha > c2_ && it < this->max_it())
             {
+                UTOPIA_NO_ALLOC_BEGIN("Backtracking 2");
                 x_k = x + alpha * d;
                 fun.value(x_k, f);
+                UTOPIA_NO_ALLOC_END();
 
                 // check decrease condition (wolfe condition)
                 if(f < f0 + this->c1() * alpha * dg )
@@ -118,19 +122,24 @@ namespace utopia {
                     return true;
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("Backtracking 3");
                 alpha_p = alpha_c;
                 alpha_c = alpha;
                 fp = fc;
                 fc = f;
+                UTOPIA_NO_ALLOC_END();
 
                 //  compute next step size alpha
                 if(it == 0)
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("Backtracking 4");
                     alpha = - dg / (2 * (fc - f0 -dg));
                     it++;
+                    UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("Backtracking 5");
                     // all subsequent backtracks: cubic fit
                     t1 = fc - f0 - alpha_c * dg;
                     t2 = fp - f0 - alpha_p * dg;
@@ -139,6 +148,7 @@ namespace utopia {
                     a = t3 * ( t1/std::pow(alpha_c, 2) - t2/std::pow(alpha_p, 2) );
                     b = t3 * ( t2 * alpha_c/ std::pow(alpha_p, 2) - t1 * alpha_p/std::pow(alpha_c, 2) );
                     disc = std::pow(b, 2)  - 3 * a * dg;
+                    UTOPIA_NO_ALLOC_END();
 
                     if( a != 0)
                     {
@@ -152,6 +162,7 @@ namespace utopia {
                     }
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("Backtracking 6");
                 //  saveguard the step size
                 if(alpha > 0.5 * alpha_c)
                 {
@@ -162,6 +173,8 @@ namespace utopia {
                 {
                     alpha = alpha_c/10;
                 }
+                UTOPIA_NO_ALLOC_END();
+                
                 it++;
                 if(this->verbose())
                     PrintInfo::print_iter_status({it, alpha});

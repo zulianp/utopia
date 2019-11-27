@@ -10,10 +10,10 @@
 
  namespace utopia
  {
-        template<class Matrix, class Vector>
-         class TrustRegion final: public NewtonBase<Matrix, Vector>,
-                               public TrustRegionBase<Vector>
-      {
+    template<class Matrix, class Vector>
+    class TrustRegion final:  public NewtonBase<Matrix, Vector>,
+                              public TrustRegionBase<Vector>
+    {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
@@ -125,8 +125,9 @@
             utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
           }
 
-          UTOPIA_NO_ALLOC_BEGIN("TR:2");
+          // UTOPIA_NO_ALLOC_BEGIN("TR:2");
           pred = this->get_pred(g_minus_, H, p_k);
+          // UTOPIA_NO_ALLOC_END();
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 
@@ -135,7 +136,7 @@
             delta = norm2(p_k);
             delta *= 0.2;
           }
-          UTOPIA_NO_ALLOC_END();
+          
 
           // value of the objective function with correction
           x_k = x_k + p_k; 

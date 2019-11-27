@@ -70,6 +70,7 @@ namespace utopia
         }
 
     };
+    
 
     template<class Vector>
     class FunctionPreconditioner final: public Preconditioner<Vector>

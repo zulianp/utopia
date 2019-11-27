@@ -3,7 +3,6 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Preconditioner.hpp"
-//#include "cuda_profiler_api.h"
 #include "utopia_Allocations.hpp"
 
 namespace utopia
@@ -13,36 +12,40 @@ namespace utopia
      * @brief      Class for Steihaug Toint conjugate gradient.
      */
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class SteihaugToint final: public TRSubproblem<Matrix, Vector>, public MatrixFreeTRSubproblem<Vector>
+    class SteihaugToint final:  public OperatorBasedTRSubproblem<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
     public:
         using TRSubproblem<Matrix, Vector>::solve;
+        using OperatorBasedTRSubproblem<Matrix, Vector>::update; 
 
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
 
-        SteihaugToint(): TRSubproblem<Matrix, Vector>(), MatrixFreeTRSubproblem<Vector>(), use_precond_direction_(false), initialized_(false), loc_size_(0)
-        {  }
+        SteihaugToint(): OperatorBasedTRSubproblem<Matrix, Vector>(), use_precond_direction_(false), initialized_(false), loc_size_(0)
+        {  
+
+        }
 
         void read(Input &in) override
         {
-            TRSubproblem<Matrix, Vector>::read(in);
-            MatrixFreeTRSubproblem<Vector>::read(in);
+            // TRSubproblem<Matrix, Vector>::read(in);
+            // MatrixFreeTRSubproblem<Vector>::read(in);
 
-            if(precond_) {
-                in.get("precond", *precond_);
-            }
+            // if(precond_) {
+            //     in.get("precond", *precond_);
+            // }
+            OperatorBasedTRSubproblem<Matrix, Vector>::read(in);
         }
 
 
         void print_usage(std::ostream &os) const override
         {
-            TRSubproblem<Matrix, Vector>::print_usage(os);
-            MatrixFreeTRSubproblem<Vector>::print_usage(os);
+            // TRSubproblem<Matrix, Vector>::print_usage(os);
+            // MatrixFreeTRSubproblem<Vector>::print_usage(os);
 
-            this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-");
+            OperatorBasedTRSubproblem<Matrix, Vector>::print_usage(os);
         }
 
 
@@ -51,16 +54,33 @@ namespace utopia
             return new SteihaugToint(*this);
         }
 
+        void update(const Operator<Vector> &A) override
+        {
+            SizeType loc_size_rhs = A.local_size().get(0);
+
+            if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                init_memory(loc_size_rhs);
+            }
+
+            if(this->precond_)
+            {
+                auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(this->precond_.get());
+                if(ls_ptr) {
+
+                    auto A_ptr = dynamic_cast<const Matrix *>(&A);
+                    if(A_ptr)
+                    {
+                        auto A_new = dynamic_cast<const Matrix &>(A); 
+                        ls_ptr->update(std::make_shared<const Matrix>(A_new)); 
+                    }
+                }
+            }
+        }       
+
 
         bool apply(const Vector &b, Vector &x) override
         {
-            SizeType loc_size_rhs   = local_size(b);
-            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
-            }
-
             minus_rhs = -1.0*b;
-
             if(this->precond_)
             {
                 // auto A_ptr = utopia::op(this->get_operator());
@@ -76,12 +96,10 @@ namespace utopia
             use_precond_direction_ = use_precond_direction;
         }
 
-
         bool use_precond_direction()
         {
             return use_precond_direction_;
         }
-
 
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
         {
@@ -95,7 +113,7 @@ namespace utopia
 
             SizeType loc_size_rhs   = local_size(rhs);
             if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
+                init_memory(loc_size_rhs);
             }
 
             if(this->precond_)
@@ -108,17 +126,6 @@ namespace utopia
             }
         }
 
-         void update(const std::shared_ptr<const Matrix> &op) override
-         {
-             IterativeSolver<Matrix, Vector>::update(op);
-             if(this->precond_)
-             {
-                auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(this->precond_.get());
-                if(ls_ptr) {
-                    ls_ptr->update(op);
-                }
-             }
-         }
 
     private:
         bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr)
@@ -317,7 +324,6 @@ namespace utopia
                 UTOPIA_NO_ALLOC_END();
 
 
-
                 // ||s_k||_M > \Delta => terminate
                 // norm squared should be used
                 if(s_norm_new >= r2)
@@ -342,8 +348,6 @@ namespace utopia
                     return true;
                 }
 
-
-
                 if(std::isfinite(alpha))
                 {
                     UTOPIA_NO_ALLOC_BEGIN("STCG::region4");
@@ -355,8 +359,6 @@ namespace utopia
                     return false;
                 }
 
-
-
                 UTOPIA_NO_ALLOC_BEGIN("STCG::region5");
                 r += alpha * B_p_k;
                 UTOPIA_NO_ALLOC_END();
@@ -367,14 +369,11 @@ namespace utopia
                 else
                     v_k.set(0.0);
 
-
                 UTOPIA_NO_ALLOC_BEGIN("STCG::region6");
                 this->precond_->apply(r, v_k);
                 UTOPIA_NO_ALLOC_END();
 
-
                 g_v_prod_new = dot(r, v_k);
-
 
                 // if preconditioner yields nans or inf, or is precond. dir is indefinite - just return current step
                 if(!std::isfinite(g_v_prod_new)){
@@ -432,7 +431,7 @@ namespace utopia
 
 
     private:
-        void init(const SizeType &ls)
+        void init_memory(const SizeType &ls)
         {
             auto zero_expr = local_zeros(ls);
 
@@ -441,6 +440,7 @@ namespace utopia
             r     = zero_expr;
             p_k   = zero_expr;
             B_p_k = zero_expr;
+            minus_rhs = zero_expr;
 
             initialized_ = true;
             loc_size_ = ls;

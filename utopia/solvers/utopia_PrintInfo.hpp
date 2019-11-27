@@ -24,6 +24,7 @@ namespace utopia
         {
             if(mpi_world_rank() == 0)
             {
+                std::cout<<"  \n"; 
                 std::cout << std::setw(10)  << std::right << std::string(80, '_') <<  std::setw(15)<< std::endl;
                 std::cout<<  std::setw(45) << std::right << " utopia:: "<< method << std::setw(15)<< std::endl;
                 std::cout << std::setw(10)  << std::right << std::string(80, '_') <<  std::setw(15)<< std::endl;

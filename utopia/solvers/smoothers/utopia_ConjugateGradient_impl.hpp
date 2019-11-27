@@ -27,8 +27,6 @@ namespace utopia {
     void ConjugateGradient<Matrix, Vector, Backend>::read(Input &in)
     {
         OperatorBasedLinearSolver<Matrix, Vector>::read(in);
-        Smoother<Matrix, Vector>::read(in);
-
         in.get("reset_initial_guess", reset_initial_guess_);
     }
 
@@ -36,8 +34,6 @@ namespace utopia {
     void ConjugateGradient<Matrix, Vector, Backend>::print_usage(std::ostream &os) const
     {
         OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
-        Smoother<Matrix, Vector>::print_usage(os);
-
         this->print_param_usage(os, "reset_initial_guess", "bool", "Flag, which decides if initial guess should be reseted.", "false");
     }
 

@@ -5,15 +5,8 @@
 #include "utopia_MPI.hpp"
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/utopia_RastriginTestFunction.hpp"
-#include "utopia_Preconditioner.hpp"
-#include "utopia_ProjectedGradient.hpp"
-#include "utopia_ProjectedConjugateGradient.hpp"
-#include "utopia_ProjectedGaussSeidel.hpp"
-#include "utopia_MultiLevelTestProblem.hpp"
-#include "utopia_IPTransfer.hpp"
-#include "utopia_BiCGStab.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
+#include "utopia_TestProblems.hpp"
 
 #include <string>
 #include <cassert>
@@ -90,7 +83,7 @@ namespace utopia {
                 this->register_experiment(
                     "newton_cg_" + std::to_string(i),
                     [i]() {
-                        Rastrigin<Matrix, Vector> fun;
+                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
                         Vector x = local_values(10 * (i+1), 1.);
 
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
@@ -115,7 +108,7 @@ namespace utopia {
                 this->register_experiment(
                     "trust_region_" + std::to_string(i),
                     [i]() {
-                        Rastrigin<Matrix, Vector> fun;
+                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
                         Vector x = local_values(10 * (i+1), 1.);
 
                         auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
@@ -281,9 +274,9 @@ namespace utopia {
 
             const static bool verbose   = false;
             const static bool use_masks = true;
-
             const SizeType n_levels = 5;
-            MultiLevelTestProblem<Matrix, Vector> ml_problem(n/pow(2, n_levels-1), n_levels, !use_masks);
+
+            MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > ml_problem(n/pow(2, n_levels-1), n_levels, !use_masks);
 
             multigrid.max_it(50);
             multigrid.atol(1e-13);
@@ -295,32 +288,28 @@ namespace utopia {
             multigrid.must_generate_masks(use_masks);;
             multigrid.verbose(verbose);
 
-            std::vector<std::shared_ptr<TransferT>> transfers;
-
-            for(auto &interp_ptr : ml_problem.interpolators) {
-                if(use_masks) {
-                    //compute transpose explicitly for restriction
-                    transfers.push_back( std::make_shared<MatrixTransferT>(interp_ptr) );
-                } else {
-                    //apply transpose for restriction
-                    transfers.push_back( std::make_shared<IPTransferT>(interp_ptr) );
-                }
-            }
+            auto transfers = ml_problem.get_transfer();
+            auto funs = ml_problem.get_functions();
 
             multigrid.set_transfer_operators(transfers);
 
-            Vector x = zeros(size(*ml_problem.rhs));
-            multigrid.update(ml_problem.matrix);
+            Vector x, g; 
+            funs[n_levels - 1]->get_eq_constrains_values(x); 
+
+            Matrix A; 
+            funs[n_levels - 1]->hessian(x, A); 
+            funs[n_levels - 1]->gradient(x, g); 
+            multigrid.update(std::make_shared<Matrix>(A));
 
             if(verbose) {
                 multigrid.describe();
             }
 
             // x = *ml_problem.rhs;
-            multigrid.apply(*ml_problem.rhs, x);
+            multigrid.apply(g, x);
 
-            double diff0 = norm2(*ml_problem.matrix * x);
-            double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+            double diff0 = norm2(A * x);
+            double diff  = norm2(g - A * x);
             double rel_diff = diff/diff0;
 
             utopia_test_assert(rel_diff < 1e-8);

@@ -1,6 +1,6 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
-#include "test_problems/utopia_TestFunctionsND.hpp"
+#include "utopia_TestProblems.hpp"
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_Device.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"

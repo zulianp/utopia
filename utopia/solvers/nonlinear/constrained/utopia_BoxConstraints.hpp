@@ -66,9 +66,6 @@ namespace utopia {
 
         inline void fill_empty_bounds(const SizeType & loc_size = 0)
         {
-            // if(lower_bound_ == nullptr && upper_bound_ == nullptr) {
-            //     return;
-            // }
             
             if(!lower_bound_ && !upper_bound_)
             {

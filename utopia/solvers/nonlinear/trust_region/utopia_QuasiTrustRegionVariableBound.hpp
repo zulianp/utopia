@@ -24,7 +24,9 @@
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx, 
                                     const std::shared_ptr<MatrixFreeQPSolver> &tr_subproblem) : 
                                     NonLinearSolver(hessian_approx, tr_subproblem), 
-                                    it_successful_(0)
+                                    it_successful_(0), 
+                                    initialized_(false), 
+                                    loc_size_(0)
 
       {
         
@@ -61,6 +63,7 @@
 
         Scalar delta, ared, pred, rho, E_old, E_new, E_print; 
 
+        this->fill_empty_bounds(local_size(x_k)); 
         this->make_iterate_feasible(x_k); 
 
         SizeType it = 0;
@@ -69,8 +72,12 @@
         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
         bool rad_flg = false; 
 
-        Vector g = 0*x_k, p_k = 0*x_k, x_k1 = 0*x_k;
-        Vector y =  local_zeros(local_size(x_k).get(0)); 
+
+        SizeType loc_size_x = local_size(x_k); 
+        if(!initialized_ || !g.comm().conjunction(loc_size_ == loc_size_x)) 
+        {
+            init_vectors(loc_size_x);
+        }
 
         fun.gradient(x_k, g);
 
@@ -78,8 +85,9 @@
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
 
         this->initialize_approximation(x_k, g); 
-        
-        g0_norm = norm2(g);
+        auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
+
+        g0_norm = this->criticality_measure_infty(x_k, g); 
         g_norm = g0_norm;
         
         // print out - just to have idea how we are starting 
@@ -92,10 +100,7 @@
 
         it++; 
         fun.value(x_k, E_old); 
-        fun.gradient(x_k, g);
 
-
-        auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
 
         // solve starts here 
         while(!converged)
@@ -105,25 +110,30 @@
     //----------------------------------------------------------------------------          
           if(MatrixFreeQPSolver * tr_subproblem = dynamic_cast<MatrixFreeQPSolver*>(this->linear_solver().get()))
           {
-            p_k = 0.0 * p_k; 
+            // UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:1");
+            p_k.set(0.0); 
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->set_box_constraints(box); 
-            tr_subproblem->solve(*multiplication_action, -1.0*g, p_k);     
+            g_help = -1.0*g; 
+            tr_subproblem->solve(*multiplication_action, g_help, p_k);     
             this->solution_status_.num_linear_solves++;  
+            // UTOPIA_NO_ALLOC_END();
           }
           else
           {
             utopia_warning("QUasiTrustRegionVariableBound::Set suitable TR subproblem.... \n "); 
           }
 
+          UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:2");
           pred = this->get_pred(g, *multiplication_action, p_k);    
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           // trial point 
-          x_k1 = x_k + p_k; 
+          x_trial = x_k + p_k; 
+          UTOPIA_NO_ALLOC_END();
 
           // value of the objective function with correction 
-          fun.value(x_k1, E_new);
+          fun.value(x_trial, E_new);
 
           // decrease ratio 
           ared = E_old - E_new;           // reduction observed on objective function
@@ -142,31 +152,39 @@
             rho = 1.0;
           }
 
-          if (rho >= this->rho_tol())
+          if (rho >= this->rho_tol()){
             it_successful_++;
+          }
 
           E_print = E_old; 
 
           // good reduction, accept trial point 
           if (rho >= this->rho_tol())
           {
-            // x_k += p_k;      
-            x_k = x_k1; 
+            UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:3");
+
+            x_k = x_trial;   
             E_old = E_new; 
             
             y = g; 
+            UTOPIA_NO_ALLOC_END();
             fun.gradient(x_k, g);
+
+            UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:3.1");
             y = g - y;       
+            UTOPIA_NO_ALLOC_END();
+            
           }
           // otherwise, keep old point
           else
           {
-            
-            Vector grad_trial; 
-            fun.gradient(x_k1, grad_trial);
-            y = grad_trial - g;       
+            fun.gradient(x_trial, g_help);
+            UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:4");
+            y = g_help - g;   
+            UTOPIA_NO_ALLOC_END();    
           }
 
+          UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:5");
           this->update(p_k, y, x_k, g);
     //----------------------------------------------------------------------------
     //    convergence check 
@@ -183,6 +201,7 @@
     //      tr. radius update 
     //----------------------------------------------------------------------------
           this->delta_update_inf(rho, p_k, delta); 
+          UTOPIA_NO_ALLOC_END();
 
           it++; 
         }
@@ -197,7 +216,25 @@
 
 
     private:
+        void init_vectors(const SizeType &ls)
+        {
+            auto zero_expr = local_zeros(ls);
+
+            p_k     = zero_expr;
+            g       = zero_expr;
+            g_help = zero_expr;
+            y       = zero_expr;
+            x_trial = zero_expr;
+                           
+            initialized_ = true;    
+            loc_size_ = ls;                                        
+        }
+
+
       SizeType it_successful_; 
+      Vector g, y, p_k, x_trial, g_help;
+      bool initialized_; 
+      SizeType loc_size_;         
 
   };
 

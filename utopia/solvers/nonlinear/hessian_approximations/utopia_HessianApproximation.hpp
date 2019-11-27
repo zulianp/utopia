@@ -83,8 +83,8 @@ public:
     virtual HessianApproximation<Vector> * clone() const override = 0;
 
     // applications of inverse of Hessian
-    virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
-    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0;
+    virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */)  = 0;
+    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */)  = 0;
 
 
 
@@ -120,21 +120,21 @@ public:
         initialized_ = init;
     }
 
-    virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const
+    virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) 
     {
         Vector help;
         this->apply_Hinv(v, help);
         return dot(u, help);
     }
 
-    virtual Scalar compute_uHv_dot(const Vector & u , const Vector & v) const
+    virtual Scalar compute_uHv_dot(const Vector & u , const Vector & v)
     {
         Vector help;
         this->apply_H(v, help);
         return dot(u, help);
     }
 
-    virtual Scalar compute_uHu_dot(const Vector & u) const
+    virtual Scalar compute_uHu_dot(const Vector & u)
     {
         Vector help;
         this->apply_H(u, help);

@@ -22,8 +22,10 @@ namespace utopia
 
             }
 
-            void initialize(const Vector & /*x_k*/, const Vector & /* g */) override
+            void initialize(const Vector & x_k, const Vector &  g) override
             {
+                HessianApproximation<Vector>::initialize(x_k, g); 
+
                 theta_ = 1.0;
                 gamma_ = 1.0;
 
@@ -103,7 +105,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_Hinv(const Vector & v, Vector & result) const override
+            bool apply_Hinv(const Vector & v, Vector & result) override
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n");
@@ -124,7 +126,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_H(const Vector & v, Vector & result) const  override
+            bool apply_H(const Vector & v, Vector & result)  override
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n");

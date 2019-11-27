@@ -15,7 +15,7 @@ namespace  utopia
 {
 
     template<class Matrix, class Vector>
-    class MPGRP final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
+    class MPGRP final:  public OperatorBasedQPSolver<Matrix, Vector>
     {
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
@@ -28,17 +28,17 @@ namespace  utopia
 
             void read(Input &in) override
             {
-                MatrixFreeQPSolver<Vector>::read(in);
-                QPSolver<Matrix, Vector>::read(in);
+                OperatorBasedQPSolver<Matrix, Vector>::read(in);
+                in.get("eig_comp_tol", eps_eig_est_);
+                in.get("power_method_max_it", power_method_max_it_);
             }
-
 
             void print_usage(std::ostream &os) const override
             {
-                MatrixFreeQPSolver<Vector>::print_usage(os);
-                QPSolver<Matrix, Vector>::print_usage(os);
+                OperatorBasedQPSolver<Matrix, Vector>::print_usage(os);
+                this->print_param_usage(os, "eig_comp_tol", "double", "Tolerance of eigen solver.", "1e-1");
+                this->print_param_usage(os, "power_method_max_it", "int", "Maximum number of iterations used inside of power method.", "10");
             }
-
 
 
             MPGRP * clone() const override
@@ -46,39 +46,22 @@ namespace  utopia
                 return new MPGRP(*this);
             }
 
-            // void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
-            // {
-            //     precond_ = precond;
-            // }
+
+            void update(const Operator<Vector> &A) override
+            {
+                SizeType loc_size_rhs = A.local_size().get(0);
+                if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+                }
+            }            
+
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 this->fill_empty_bounds();
                 auto &box = this->get_box_constraints();
 
-                SizeType loc_size_rhs = local_size(rhs);
-
-                //If it is the first time we are here does not make sense to check the sizes
-                if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
-                }
-
-                return aux_solve(A, rhs, sol, box);
-            }
-
-            bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
-            {
-                // auto A_op_ptr = utopia::op_ref(A);
-                this->fill_empty_bounds();
-                auto &box = this->get_box_constraints();
-
-                SizeType loc_size_rhs = local_size(rhs);
-
-                //If it is the first time we are here does not make sense to check the sizes
-                if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
-                }
-
+                this->update(A); 
                 return aux_solve(A, rhs, sol, box);
             }
 

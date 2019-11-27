@@ -1,8 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
-#include "test_problems/utopia_TestProblems.hpp"
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/utopia_MultiLevelTestProblem.hpp"
+#include "utopia_TestProblems.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 
 namespace utopia {
 
@@ -20,6 +19,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_mg);
             UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_1D);
+
             UTOPIA_RUN_TEST(petsc_block_mg_exp);  //petsc 3.11.3 ERROR here
             UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_mg_exp);
@@ -34,9 +34,13 @@ namespace utopia {
 
         void petsc_cg()
         {
-            MultiLevelTestProblem<PetscMatrix, PetscVector> ml_problem(100, 2);
-            PetscVector x = zeros(size(*ml_problem.rhs));
-            (*ml_problem.rhs) *= 0.0001;
+            Poisson1D<PetscMatrix, PetscVector> fun(100, 2); 
+            PetscVector x = fun.initial_guess(); 
+            PetscVector rhs; 
+            fun.get_rhs(rhs); 
+            PetscMatrix A; 
+            fun.hessian(x, A); 
+            rhs *= 0.00001;
 
             ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
             cg.rtol(1e-6);
@@ -44,11 +48,11 @@ namespace utopia {
             cg.max_it(500);
             // cg.verbose(true);
 
-            x = *ml_problem.rhs;
-            cg.update(ml_problem.matrix);
-            cg.apply(*ml_problem.rhs, x);
+            x = rhs;
+            cg.update(std::make_shared<PetscMatrix>(A));
+            cg.apply(rhs, x);
 
-            utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
+            utopia_test_assert(approxeq(rhs, A*x, 1e-5));
         }
 
         void petsc_mg_1D()
@@ -57,8 +61,10 @@ namespace utopia {
 
             const static bool verbose = false;
 
-            MultiLevelTestProblem<PetscMatrix, PetscVector> ml_problem(4, 2);
+            // MultiLevelTestProblem<PetscMatrix, PetscVector> ml_problem(4, 2);
             // ml_problem.write_matlab("./");
+
+            MultiLevelTestProblem1D<PetscMatrix, PetscVector, Poisson1D<PetscMatrix, PetscVector> > ml_problem(4, 10, true); 
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
             smoother->verbose(verbose);
@@ -70,24 +76,32 @@ namespace utopia {
                 // std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>()
             );
 
-            multigrid.set_transfer_operators(ml_problem.interpolators);
+            multigrid.set_transfer_operators(ml_problem.get_transfer());
             multigrid.max_it(4);
             multigrid.atol(1e-12);
             multigrid.stol(1e-10);
             multigrid.rtol(1e-10);
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
-            multigrid.verbose(verbose);
+            multigrid.verbose(false);
 
-            PetscVector x = zeros(size(*ml_problem.rhs));
-            multigrid.update(ml_problem.matrix);
+            auto fun = ml_problem.get_functions().back(); 
+            PetscMatrix A; 
+            PetscVector g, x; 
+            fun->get_eq_constrains_values(x); 
+            fun->gradient(x, g); 
+            fun->hessian(x, A); 
+
+
+            // PetscVector x = zeros(size(*ml_problem.rhs));
+            multigrid.update(std::make_shared<PetscMatrix>(A));
 
             if(verbose) {
                 multigrid.describe();
             }
 
-            multigrid.apply(*ml_problem.rhs, x);
-            utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
+            multigrid.apply(g, x);
+            utopia_test_assert(approxeq(g, A*x, 1e-7));
         }
 
         void petsc_mg_exp()

@@ -1,5 +1,5 @@
-#ifndef UTOPIA_SOLVER_TESTFUNCTIONS2D_HPP
-#define UTOPIA_SOLVER_TESTFUNCTIONS2D_HPP
+#ifndef UTOPIA_SMALL_SINGULAR_EXAMPLE_HPP
+#define UTOPIA_SMALL_SINGULAR_EXAMPLE_HPP
 
 #include <vector>
 #include <assert.h>
@@ -7,57 +7,8 @@
 #include "utopia_Function.hpp"
 
 
-
 namespace utopia
 {
-
-    /**
-     * @brief      Example of the nonlinear function. Used to test nonlinear solvers.
-     *
-     * @tparam     Matrix
-     * @tparam     Vector
-     */
-    template<class Matrix, class Vector>
-    class TestFunction2D_1 : public Function<Matrix, Vector>
-    {
-    public:
-
-        TestFunction2D_1() { };
-
-        bool value(const Vector &point, typename Vector::Scalar &result) const override {
-            const Read<Vector> read(point);
-
-            result = 4 * ((3.0 - 0.5 * point.get(0)) * (3.0 - 0.5 * point.get(0)) +
-                        (point.get(1) + 7.0) * (point.get(1) + 7.0));
-
-            return true;
-        }
-
-        bool gradient(const Vector &point, Vector &result) const override {
-
-            result = zeros(2);
-
-            const Read<Vector> read(point);
-            const Write<Vector> write(result);
-
-            result.set(0, 4.0 * (0.5 * point.get(0) - 3.0));
-            result.set(1, 8.0 * (point.get(1) + 7.0));
-            return true;
-        }
-
-        bool hessian(const Vector &/*point*/, Matrix &result) const override {
-
-            result = zeros(2, 2);
-
-            const Write<Matrix> write(result);
-
-            result.set(0, 0, 4.0);
-            result.set(1, 1, 8.0);
-            return true;
-        }
-    };
-
-
     template<class Matrix, class Vector>
     class SmallSingularExample : public Function<Matrix, Vector>
     {
@@ -119,4 +70,4 @@ namespace utopia
     };
 }
 
-#endif //UTOPIA_SOLVER_TESTFUNCTIONS2D_HPP
+#endif //UTOPIA_SMALL_SINGULAR_EXAMPLE_HPP

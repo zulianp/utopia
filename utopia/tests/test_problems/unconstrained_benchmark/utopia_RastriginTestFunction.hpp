@@ -23,13 +23,25 @@ namespace utopia
     class Rastrigin : public Function<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+        typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
-        Rastrigin() : pi(3.141592) {}
+        Rastrigin(const SizeType & n) : pi(3.141592), n_(n) 
+        {
+            help_1 = make_unique<Vector>(values(n_, 0.0));
+            help_2 = make_unique<Vector>(values(n_, 0.0));
+        }
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
-            result = 10. * point.size() + sum(pow2(point) - 10. * cos((2. * pi) * point));
+            // *help_1 = pow2(point) - 10. * cos((2. * pi) * point); 
+
+            *help_1 = pow2(point); 
+            *help_2 = (2. * pi) * point; 
+            *help_2 = cos(*help_2); 
+            *help_1 = *help_1 - 10.* *help_2; 
+
+            result = 10. * point.size() + sum(*help_1);
             return true;
         }
 
@@ -78,6 +90,9 @@ namespace utopia
 
     private:
         Scalar pi;
+        std::unique_ptr<Vector>  help_1; 
+        std::unique_ptr<Vector>  help_2; 
+        Scalar n_;  // global size
     };
 }
 

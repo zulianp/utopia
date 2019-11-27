@@ -67,7 +67,6 @@
 
          bool rad_flg = false;
 
-         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)), x_trial;
 
         // #define DEBUG_mode
 
@@ -79,7 +78,8 @@
         g_norm = g0_norm;
 
 
-        this->initialize_approximation(x_k, g); 
+        this->init_memory(x_k, g); 
+
 
 
         // print out - just to have idea how we are starting
@@ -101,7 +101,10 @@
         #endif
 
         it++;
+
+        UTOPIA_NO_ALLOC_BEGIN("QUasiTR2");
         auto multiplication_action = this->hessian_approx_strategy_->build_apply_H();
+        UTOPIA_NO_ALLOC_END();
 
         // solve starts here
         while(!converged)
@@ -112,9 +115,13 @@
     //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            p_k *= 0;
+            p_k.set(0);
             tr_subproblem->current_radius(delta);
-            tr_subproblem->solve(*multiplication_action, -1.0 * g, p_k);
+            // UTOPIA_NO_ALLOC_BEGIN("QUasiTR2");
+            g *=  -1.0; 
+            tr_subproblem->solve(*multiplication_action, g, p_k);
+            g *=  -1.0; 
+            // UTOPIA_NO_ALLOC_END();
             this->solution_status_.num_linear_solves++;
           }
           else
@@ -124,7 +131,9 @@
 
 
           x_trial = x_k + p_k;
+          UTOPIA_NO_ALLOC_BEGIN("QUasiTR3");
           pred = this->get_pred(g, *multiplication_action, p_k);
+          UTOPIA_NO_ALLOC_END();
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
@@ -180,7 +189,9 @@
             E_taken = E_old;
           }
 
+          UTOPIA_NO_ALLOC_BEGIN("QUasiTR5");
           this->update(p_k, y, x_k, g);
+          UTOPIA_NO_ALLOC_END();
 
     //----------------------------------------------------------------------------
     //    convergence check
@@ -213,6 +224,32 @@
     {
       NonLinearSolver::set_linear_solver(tr_linear_solver);
     }
+
+
+  private: 
+    void init_memory(const Vector & x_k, const Vector &g)
+    {
+      const SizeType ls = local_size(x_k); 
+
+      // bad idea, as we do not know size at this point ... 
+      // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get())){
+      //   tr_subproblem->init_memory(ls); 
+      // }
+
+      auto zero_expr = local_zeros(ls);
+
+      y         = zero_expr; 
+      p_k       = zero_expr; 
+      x_trial   = zero_expr; 
+
+      this->initialize_approximation(x_k, g); 
+
+    }
+
+
+    private:
+      Vector g, y, p_k, x_trial;
+
 
 
   };
