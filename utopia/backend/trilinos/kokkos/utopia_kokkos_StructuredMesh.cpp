@@ -1,2 +1,3 @@
-#include "utopia_kokkos_StructuredMesh.hpp"
-#include "utopia_kookos_Gauss_Quadrature.hpp"
+#include "utopia_kokkos_BasisFunction.hpp"
+#include "utopia_kokkos_GaussQuadrature.hpp"
+#include "utopia_kokkos_StructuredGrid.hpp"

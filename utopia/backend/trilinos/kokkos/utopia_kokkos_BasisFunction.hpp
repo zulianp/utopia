@@ -1,9 +1,8 @@
-#ifndef UTOPIA_KOKKOS_StructuredMesh_hpp
-#define UTOPIA_KOKKOS_StructuredMesh_hpp
+#ifndef UTOPIA_KOKKOS_BasisFunction_hpp
+#define UTOPIA_KOKKOS_BasisFunction_hpp
 
 #include "utopia_Base.hpp"
-// #include "mars_affine_transformation.hpp"
-// #include "generation/mars_mesh_kokkos.hpp"
+
 namespace utopia {
 
   template<typename T, int N_>
