@@ -17,7 +17,7 @@ namespace utopia
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
-        Poisson1D(const SizeType & n, const SizeType & problem_type=1):     pi_(3.14159265358979323846), 
+        Poisson1D(const SizeType & n, const SizeType & problem_type=2):     pi_(3.14159265358979323846), 
                                                                             problem_type_(problem_type),  
                                                                             n_(n)
         { 
@@ -233,15 +233,14 @@ namespace utopia
 
                 if(r.begin() == 0)  {
                     bc_markers.set(0, 1.0);
+                    bc_indices_.push_back(0.0);
                 }
 
                 if(r.end() == n_)  {
                     bc_markers.set(n_-1, 1.0);
+                    bc_indices_.push_back(n_-1);
                 }
             }
-
-            bc_indices_.push_back(0.0);
-            bc_indices_.push_back(n_-1);
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
         }
@@ -281,15 +280,14 @@ namespace utopia
 
                 if(r.begin() == 0)  {
                     bc_markers.set(0, 1.0);
+                    bc_indices_.push_back(0.0);
                 }
 
                 if(r.end() == n_)  {
                     bc_markers.set(n_-1, 1.0);
+                    bc_indices_.push_back(n_-1);
                 }
             }
-
-            bc_indices_.push_back(0.0);
-            bc_indices_.push_back(n_-1);
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
             ExtendedFunction<Matrix, Vector>::set_rhs(rhs_);
@@ -345,15 +343,14 @@ namespace utopia
 
                 if(r.begin() == 0)  {
                     bc_markers.set(0, 1.0);
+                    bc_indices_.push_back(0.0);
                 }
 
                 if(r.end() == n_)  {
                     bc_markers.set(n_-1, 1.0);
+                    bc_indices_.push_back(n_-1);
                 }
             }
-
-            bc_indices_.push_back(0.0);
-            bc_indices_.push_back(n_-1);
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
             ExtendedFunction<Matrix, Vector>::set_rhs(rhs_);

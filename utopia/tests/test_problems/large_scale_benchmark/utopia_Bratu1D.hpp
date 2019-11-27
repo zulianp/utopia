@@ -32,8 +32,8 @@ namespace utopia
             A_help_ = make_unique<Vector>(values(n_, 0.0));
 
 
-            bc_indices_.push_back(0);
-            bc_indices_.push_back(n-1);
+            // bc_indices_.push_back(0);
+            // bc_indices_.push_back(n-1);
             
             Vector bc_markers = values(n_, 0.0);
             {
@@ -43,13 +43,16 @@ namespace utopia
 
                 if(r.begin() == 0)  {
                     bc_markers.set(0, 1.0);
+                    bc_indices_.push_back(0);
                 }
 
                 if(r.end() == n_)  {
                     bc_markers.set(n-1, 1.0);
+                    bc_indices_.push_back(n-1);
                 }
             }
 
+            // disp(bc_markers); 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
 
 
