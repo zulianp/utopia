@@ -13,6 +13,8 @@ list(APPEND TEST_MODULES
 find_project_files(UTOPIA_TEST_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 target_sources(utopia_test PRIVATE ${LOCAL_SOURCES})
 target_link_libraries(utopia_test utopia)
+utopia_link_default_targets(utopia_test)
+
 target_include_directories(utopia_test PRIVATE ${UTOPIA_TEST_DIR})
 target_include_directories(utopia_test PRIVATE .)
 target_include_directories(utopia_test PRIVATE ${TEST_MODULES})

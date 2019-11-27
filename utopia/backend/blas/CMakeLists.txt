@@ -74,6 +74,7 @@ if(BLAS_FOUND OR OPEN_BLAS_FOUND)
 
 
     add_library(utopia_blas STATIC ${LOCAL_SOURCES})
+    utopia_link_default_targets(utopia_blas)
 
     foreach(MODULE ${BLAS_MODULES})
         target_include_directories(utopia_blas PUBLIC ${MODULE})

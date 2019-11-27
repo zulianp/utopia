@@ -6,6 +6,8 @@ list(APPEND UTILS_MODULES
 find_project_files(CMAKE_CURRENT_SOURCE_DIR UTILS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 add_library(utopia_utils STATIC ${LOCAL_SOURCES})
+utopia_link_default_targets(utopia_utils)
+
 target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/unit_testing)
