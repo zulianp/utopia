@@ -62,6 +62,7 @@ namespace utopia
 
         void run_trilinos()
         {
+            
             //FIXME (mem allocs)
             // UTOPIA_RUN_TEST(TR_tril_test);
             // UTOPIA_RUN_TEST(RMTR_l2_test);
@@ -83,7 +84,6 @@ namespace utopia
 
 
             UTOPIA_RUN_TEST(QuasiTR_unconstrained);
-
 
         }
 

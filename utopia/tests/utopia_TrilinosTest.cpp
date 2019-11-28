@@ -595,7 +595,7 @@ namespace utopia {
         cg.atol(1e-6);
         cg.max_it(800);
         // cg.verbose(true);
-        cg.update(H);
+        cg.update(std::make_shared<TpetraMatrixd>(H));
         cg.apply(g, x);
 
         double diff = norm2(g - H * x);;
@@ -612,9 +612,8 @@ namespace utopia {
         const static bool verbose   = false;
         const static bool use_masks = false;
 
-        using ProblemType = utopia::Poisson1D<TpetraMatrixd, TpetraVectord>;
-
-        MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(10, 4, !use_masks);
+        using ProblemType = utopia::Poisson1D<Matrix, Vector>;
+        MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(4, 10, !use_masks);
         // ml_problem.describe();
         // ml_problem.write_matlab("./");
 
@@ -629,7 +628,7 @@ namespace utopia {
                                             coarse_solver
                                             );
 
-        multigrid.max_it(8);
+        multigrid.max_it(10);
         multigrid.atol(1e-13);
         multigrid.stol(1e-13);
         multigrid.rtol(1e-9);
@@ -639,32 +638,27 @@ namespace utopia {
         multigrid.must_generate_masks(use_masks);;
         multigrid.verbose(verbose);
 
-        std::vector<std::shared_ptr<TransferT>> transfers;
+        multigrid.set_transfer_operators(ml_problem.get_transfer());
 
-        for(auto &interp_ptr : ml_problem.interpolators) {
-            if(use_masks) {
-                //compute transpose explicitly for restriction
-                transfers.push_back( std::make_shared<MatrixTransferT>(interp_ptr) );
-            } else {
-                //apply transpose for restriction
-                transfers.push_back( std::make_shared<IPTransferT>(interp_ptr) );
-            }
-            // utopia_test_assert(interp_ptr->is_valid(true));
-        }
+        auto funs = ml_problem.get_functions(); 
 
-        multigrid.set_transfer_operators(transfers);
+        Vector x, g; 
+        Matrix A; 
+        funs.back()->get_eq_constrains_values(x); 
+        funs.back()->gradient(x, g); 
+        funs.back()->hessian(x, A); 
 
-        Vector x = zeros(size(*ml_problem.rhs));
-        multigrid.update(ml_problem.matrix);
+
+        multigrid.update(std::make_shared<Matrix>(A));
 
         if(verbose) {
             multigrid.describe();
         }
 
-        multigrid.apply(*ml_problem.rhs, x);
+        multigrid.apply(g, x);
 
-        double diff0 = norm2(*ml_problem.matrix * x);
-        double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        double diff0 = norm2(A*x);
+        double diff  = norm2(g- A*x);
         double rel_diff = diff/diff0;
 
         utopia_test_assert(rel_diff < 1e-8);
@@ -1116,66 +1110,41 @@ namespace utopia {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
         using ProblemType = utopia::Bratu1D<Matrix, Vector>;
 
-        MultilevelTestProblem<Matrix, Vector, ProblemType> problem(2, true);
-        problem.verbose = false;
-        // problem.verbose = tre;
+        auto problem = MultiLevelTestProblem1D<Matrix, Vector, ProblemType>(2, 10, true); 
 
-        Vector x = values(problem.n_dofs[problem.n_levels() -1 ], 0.0);
+        auto funs = problem.get_functions();
 
-        std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
-
-        for(auto l = 0; l < problem.n_levels; l++)
-        {
-            auto fun = std::make_shared<Bratu1D<Matrix, Vector> >(problem.n_dofs[l]);
-            level_functions[l] = fun;
-
-            // making sure that fine level IG is feasible
-            if(l + 1 == problem.n_levels) {
-                fun->apply_bc_to_initial_guess(x);
-            }
-        }
+        Vector x; 
+        funs.back()->get_eq_constrains_values(x); 
 
         auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
         tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
 
         auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-
         tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
 
-        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(problem.n_levels);
+        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(problem.n_levels());
         rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
         rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
-        std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
-        for(std::size_t i = 0; i < problem.prolongations.size(); ++i) {
-            transfers.push_back( std::make_shared<IPTransferT>( problem.prolongations[i], 0.5) );
-        }
-
-        rmtr->set_transfer_operators(transfers);
+        rmtr->set_transfer_operators(problem.get_transfer());
 
         rmtr->max_it(1000);
         rmtr->max_coarse_it(1);
-        //rmtr->max_smoothing_it(1); //FIXME??
         rmtr->max_QP_smoothing_it(1);
         rmtr->delta0(1);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
         rmtr->set_grad_smoothess_termination(0.000001);
-        //rmtr->set_eps_grad_termination(1e-7); //FIXME??
-        rmtr->atol(1e-8);
-        rmtr->rtol(1e-7);
 
-        rmtr->verbose(problem.verbose);
+        rmtr->verbose(false);
         // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
         rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-        rmtr->set_functions(level_functions);
+        rmtr->set_functions(funs);
         rmtr->handle_equality_constraints();
         bool ok = rmtr->solve(x);
 
@@ -1229,13 +1198,21 @@ namespace utopia {
         }
 
         TpetraMatrixd A;
-        MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
-        A = *ml_problem.interpolators[0];
+        MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord, Poisson1D<TpetraMatrixd,TpetraVectord > > ml_problem(10, 2);
+        // A = *ml_problem.interpolators[0];
+        auto transfer = ml_problem.get_transfer();
+
+        if(dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get())){
+            MatrixTransfer<TpetraMatrixd, TpetraVectord> * mat_transfer = dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get());
+            A = mat_transfer->I(); 
+        }
+        else
+        {
+            utopia_error("trilinos_copy_write::error...");
+        }
 
         A = transpose(A);
-
         TpetraMatrixd A2 = A;
-
         A2 *= 0.;
 
         {
@@ -1244,6 +1221,7 @@ namespace utopia {
                 A2.set(i, j, 1.);
             });
         }
+
     }
 
 #ifdef WITH_PETSC
@@ -1328,16 +1306,19 @@ namespace utopia {
         BelosSolver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
-        TpetraVectord x = zeros(size(*ml_problem.rhs));
-        (*ml_problem.rhs) *= 0.0001;
+        Poisson1D<TpetraMatrixd, TpetraVectord> fun(10); 
+        TpetraVectord x = fun.initial_guess(); 
+        TpetraVectord g; 
+        TpetraMatrixd A; 
 
-        double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        fun.gradient(x, g); 
+        fun.hessian(x, A); 
 
-        x = *ml_problem.rhs;
-        solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+        g *= 0.0001;
 
-        double diff = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        double diff0 = norm2(g- A*x);
+        solver.solve(A, g, x);
+        double diff = norm2(g - A*x);
 
         utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
     }
@@ -1353,15 +1334,19 @@ namespace utopia {
         Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        MultiLevelTestProblem1D<TpetraMatrixd, TpetraVectord> ml_problem(10, 2);
-        TpetraVectord x = zeros(size(*ml_problem.rhs));
-        (*ml_problem.rhs) *= 0.0001;
+        Poisson1D<TpetraMatrixd, TpetraVectord> fun(10); 
+        TpetraMatrixd A; 
+        TpetraVectord x, g; 
+        x = fun.initial_guess(); 
+        fun.get_rhs(g); 
+        fun.hessian(x, A); 
 
-        double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        g *= 0.0001;
 
-        solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+        double diff0 = norm2(g - A*x);
 
-        double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        solver.solve(A, g, x);
+        double diff  = norm2(g - A * x);
 
         utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
     }

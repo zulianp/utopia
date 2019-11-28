@@ -25,7 +25,7 @@ namespace utopia
 		{
 			test_functions_.resize(2); 
 			test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
-			test_functions_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
+			// test_functions_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
 
 			// auto fun = Poisson1D<Matrix, Vector>(n_); 
 		}
@@ -39,21 +39,22 @@ namespace utopia
 		void initialize() override
 		{
 
-			this->register_experiment("NewtonTest_FACTORIZATION",
-				[this]() {
-		            auto lin_solver = std::make_shared<utopia::Factorization<Matrix, Vector> >();
-		            Newton<Matrix, Vector> solver(lin_solver);
-		            run_tr(this->test_functions_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
-				}
-			);
+			// this->register_experiment("NewtonTest_FACTORIZATION",
+			// 	[this]() {
+		 //            auto lin_solver = std::make_shared<utopia::Factorization<Matrix, Vector> >();
+		 //            Newton<Matrix, Vector> solver(lin_solver);
+		 //            run_tr(this->test_functions_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
+			// 	}
+			// );
 
 			// this->register_experiment("NewtonTest_CG_HOMEMADE_jacobi",
 			// 	[this]() {
 		 //            auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE> >();
-		 //            lin_solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());
+		 //            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
 		 //            lin_solver->atol(1e-10); 
-		 //            lin_solver->max_it(300);
+		 //            lin_solver->max_it(500);
+		 //            lin_solver->verbose(false); 
 
 		 //            Newton<Matrix, Vector> solver(lin_solver);
 		 //            run_tr(this->test_functions_, solver, "NewtonTest_CG_HOMEMADE_jacobi", this->verbose_);
@@ -63,10 +64,13 @@ namespace utopia
 			// this->register_experiment("NewtonTest_CG_PETSC_jacobi",
 			// 	[this]() {
 		 //            auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector> >();
-		 //            lin_solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());
+		 //            lin_solver->pc_type("sor"); 
+   //                 // lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+		 //            // lin_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
 
 		 //            lin_solver->atol(1e-10); 
-		 //            lin_solver->max_it(300);
+		 //            lin_solver->max_it(500);
+		 //            lin_solver->verbose(false); 
 
 		 //            Newton<Matrix, Vector> solver(lin_solver);
 		 //            run_tr(this->test_functions_, solver, "NewtonTest_CG_PETSC_inv_diag", this->verbose_);
@@ -175,8 +179,8 @@ namespace utopia
 				std::cout<<"--------------------------------------------------------- \n";
 			}
 
-	    	for(size_t i =0; i < test_functions.size(); i++)
-	    	// for(auto i =0; i < 1; i++)
+	    	// for(size_t i =0; i < test_functions.size(); i++)
+	    	for(auto i =0; i < 1; i++)
 	    	{
 				Vector x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
@@ -224,7 +228,7 @@ namespace utopia
 	static void unconstrained_large_scale()
 	{
 		int verbosity_level = 1;
-		const int n_global = 100; 
+		const int n_global = 10000; 
 		bool alg_verbose = true; 
 
 		if(Utopia::instance().verbose()) {
