@@ -110,7 +110,7 @@ namespace utopia {
             );
         }
 
-        void dof_indices(const SizeType &e_id, DeviceVector &dof_indices)
+        void dof_indices(const SizeType &e_id, DofView &dof_indices)
         {
            int size = 4;
 
