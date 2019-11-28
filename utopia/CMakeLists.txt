@@ -435,12 +435,12 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ##########################################################################################
 
-add_custom_target(test COMMAND ${CMAKE_BINARY_DIR}/utopia_test -verbose)
+add_custom_target(test COMMAND time ${CMAKE_BINARY_DIR}/utopia_test -verbose)
 add_dependencies(test utopia_test)
 
 ##########################################################################################
 
-add_custom_target(bench COMMAND ${CMAKE_BINARY_DIR}/utopia_bench -verbose)
+add_custom_target(bench COMMAND time ${CMAKE_BINARY_DIR}/utopia_bench -verbose)
 add_dependencies(bench utopia_bench)
 
 ##########################################################################################
