@@ -64,6 +64,10 @@ namespace utopia {
         }
 
 
+
+
+
+
       StructuredGrid(const SizeType &n) :
         n_(n),
         n_elements_(compute_n_elements(n)),
@@ -106,6 +110,19 @@ namespace utopia {
             );
         }
 
+        void dof_indices(const SizeType &e_id, DeviceVector &dof_indices)
+        {
+           int size = 4;
+
+                    // Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_), [&] (const SizeType j) {
+            for(SizeType j = 0; j < size; ++j){
+
+                dof_indices[j] = dof_(e_id, j);
+
+            }
+           
+        }
+
 
       private:
         SizeType n_;
@@ -113,6 +130,7 @@ namespace utopia {
         SizeType n_points_;
         DofView dof_;
         PointView point_;
+
       
 
   };
