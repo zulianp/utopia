@@ -33,6 +33,8 @@ endif(NOT CMAKE_BUILD_TYPE)
 #To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 
+
+set(CMAKE_CXX_EXTENSIONS OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -57,6 +59,11 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
+
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+
+# set(UTOPIA_DEFAULT_TARGETS)
+include(CodeCoverage)
 
 #################################################################################
 #################################################################################
@@ -364,16 +371,19 @@ install(FILES
 
 # archive
 add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
+utopia_link_default_targets(utopia)
 target_link_libraries(utopia ${UTOPIA_COMPONENTS})
 target_link_libraries(utopia ${UTOPIA_LIBRARIES})
 
 # test suite
 add_executable(utopia_test EXCLUDE_FROM_ALL test.cpp)
+utopia_link_default_targets(utopia_test)
 target_link_libraries(utopia_test utopia)
 include(tests/tests.cmake)
 
 # bench suite
 add_executable(utopia_bench EXCLUDE_FROM_ALL bench.cpp)
+utopia_link_default_targets(utopia_bench)
 target_link_libraries(utopia_bench utopia)
 include(benchmarks/benchmarks.cmake)
 

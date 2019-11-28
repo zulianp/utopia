@@ -92,6 +92,7 @@ if(PETSC_FOUND)
 
     find_project_files(CMAKE_CURRENT_SOURCE_DIR PETSC_MODULES LOCAL_HEADERS LOCAL_SOURCES)
     add_library(utopia_petsc STATIC utopia_petsc.cpp ${LOCAL_SOURCES})
+    utopia_link_default_targets(utopia_petsc)
 
     foreach(MODULE ${PETSC_MODULES})
         target_include_directories(utopia_petsc PUBLIC ${MODULE})

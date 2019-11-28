@@ -11,6 +11,8 @@ list(APPEND CORE_MODULES
 find_project_files(CMAKE_CURRENT_SOURCE_DIR CORE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 add_library(utopia_core STATIC utopia_core.cpp ${LOCAL_SOURCES})
+utopia_link_default_targets(utopia_core)
+
 target_include_directories(utopia_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 foreach(MODULE ${CORE_MODULES})
     target_include_directories(utopia_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
