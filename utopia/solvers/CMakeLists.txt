@@ -25,6 +25,8 @@ endforeach(MODULE)
 
 list(APPEND LOCAL_SOURCES utopia_solvers.cpp)
 add_library(utopia_solvers STATIC ${LOCAL_SOURCES})
+utopia_link_default_targets(utopia_solvers)
+
 target_include_directories(utopia_solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
 foreach(MODULE ${SOLVERS_MODULES})

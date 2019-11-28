@@ -92,6 +92,7 @@ if(TRILINOS_FOUND)
 
     find_project_files(CMAKE_CURRENT_SOURCE_DIR TRILINOS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
     add_library(utopia_trilinos STATIC ${LOCAL_SOURCES})
+    utopia_link_default_targets(utopia_trilinos)
 
     foreach(MODULE ${TRILINOS_MODULES})
         target_include_directories(utopia_trilinos PUBLIC ${MODULE})

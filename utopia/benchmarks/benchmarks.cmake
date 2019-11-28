@@ -8,6 +8,8 @@ list(APPEND BENCH_MODULES
 find_project_files(UTOPIA_BENCH_DIR BENCH_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 target_sources(utopia_bench PRIVATE ${LOCAL_SOURCES})
 target_link_libraries(utopia_bench utopia)
+utopia_link_default_targets(utopia_bench)
+
 target_include_directories(utopia_bench PRIVATE ${UTOPIA_BENCH_DIR})
 target_include_directories(utopia_bench PRIVATE .)
 target_include_directories(utopia_bench PRIVATE ${BENCH_MODULES})
