@@ -594,9 +594,7 @@ namespace utopia {
         cg.rtol(1e-6);
         cg.atol(1e-6);
         cg.max_it(800);
-        // cg.verbose(true);
-        cg.update(std::make_shared<TpetraMatrixd>(H));
-        cg.apply(g, x);
+        cg.solve(H, g, x);
 
         double diff = norm2(g - H * x);;
         utopia_test_assert(approxeq(diff, 0., 1e-6));
@@ -640,16 +638,16 @@ namespace utopia {
 
         multigrid.set_transfer_operators(ml_problem.get_transfer());
 
-        auto funs = ml_problem.get_functions(); 
+        auto funs = ml_problem.get_functions();
 
-        Vector x, g; 
-        Matrix A; 
-        funs.back()->get_eq_constrains_values(x); 
-        funs.back()->gradient(x, g); 
-        funs.back()->hessian(x, A); 
+        Vector x, g;
+        Matrix A;
+        funs.back()->get_eq_constrains_values(x);
+        funs.back()->gradient(x, g);
+        funs.back()->hessian(x, A);
 
 
-        multigrid.update(std::make_shared<Matrix>(A));
+        multigrid.update(make_ref(A));
 
         if(verbose) {
             multigrid.describe();
@@ -1110,12 +1108,12 @@ namespace utopia {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
         using ProblemType = utopia::Bratu1D<Matrix, Vector>;
 
-        auto problem = MultiLevelTestProblem1D<Matrix, Vector, ProblemType>(2, 10, true); 
+        auto problem = MultiLevelTestProblem1D<Matrix, Vector, ProblemType>(2, 10, true);
 
         auto funs = problem.get_functions();
 
-        Vector x; 
-        funs.back()->get_eq_constrains_values(x); 
+        Vector x;
+        funs.back()->get_eq_constrains_values(x);
 
         auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
         tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
@@ -1204,7 +1202,7 @@ namespace utopia {
 
         if(dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get())){
             MatrixTransfer<TpetraMatrixd, TpetraVectord> * mat_transfer = dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get());
-            A = mat_transfer->I(); 
+            A = mat_transfer->I();
         }
         else
         {
@@ -1306,13 +1304,13 @@ namespace utopia {
         BelosSolver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        Poisson1D<TpetraMatrixd, TpetraVectord> fun(10); 
-        TpetraVectord x = fun.initial_guess(); 
-        TpetraVectord g; 
-        TpetraMatrixd A; 
+        Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
+        TpetraVectord x = fun.initial_guess();
+        TpetraVectord g;
+        TpetraMatrixd A;
 
-        fun.gradient(x, g); 
-        fun.hessian(x, A); 
+        fun.gradient(x, g);
+        fun.hessian(x, A);
 
         g *= 0.0001;
 
@@ -1334,12 +1332,12 @@ namespace utopia {
         Amesos2Solver<TpetraMatrixd, TpetraVectord> solver;
         solver.read_xml(xml_file);
 
-        Poisson1D<TpetraMatrixd, TpetraVectord> fun(10); 
-        TpetraMatrixd A; 
-        TpetraVectord x, g; 
-        x = fun.initial_guess(); 
-        fun.get_rhs(g); 
-        fun.hessian(x, A); 
+        Poisson1D<TpetraMatrixd, TpetraVectord> fun(10);
+        TpetraMatrixd A;
+        TpetraVectord x, g;
+        x = fun.initial_guess();
+        fun.get_rhs(g);
+        fun.hessian(x, A);
 
         g *= 0.0001;
 

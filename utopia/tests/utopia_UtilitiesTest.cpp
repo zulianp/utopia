@@ -17,9 +17,6 @@ namespace utopia {
     private:
         void block_test()
         {
-            if(mpi_world_size() > 1)
-                return; 
-
             int n1 = 5;
             int n2 = 5;
             int n3 = 3;
@@ -349,7 +346,7 @@ namespace utopia {
             }
             utopia_test_assert(approxeq(28.001, num));
         }
-    
+
     public:
         static void print_backend_info()
         {

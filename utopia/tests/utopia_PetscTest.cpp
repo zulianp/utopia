@@ -956,7 +956,11 @@ namespace utopia {
             utopia_test_assert(approxeq(expected, r2));
 
             expected = values(n, n * d1 * d3 + d2);
-            utopia_test_assert(approxeq(expected, r3));
+
+            PetscVector diff = expected - r3;
+            PetscScalar n_diff = norm1(diff);
+
+            utopia_test_assert(n_diff < 1e-10);
         }
     }
 
@@ -1244,23 +1248,23 @@ namespace utopia {
                 }
                 else
                 {
-                    M.set(i,i, -1.0); 
+                    M.set(i,i, -1.0);
                 }
             }
         }
 
-        PetscMatrix M_p = M; 
-        PetscMatrix M_n = M;  
+        PetscMatrix M_p = M;
+        PetscMatrix M_n = M;
 
-        chop_smaller_than(M_p, 1e-15); 
-        chop_greater_than(M_n, 1e-15); 
+        chop_smaller_than(M_p, 1e-15);
+        chop_greater_than(M_n, 1e-15);
 
-        M_p += M_n; 
-        utopia_test_assert(approxeq(M_p, M));        
+        M_p += M_n;
+        utopia_test_assert(approxeq(M_p, M));
     }
 
     void petsc_zero_rows_to_id()
-    {   
+    {
         SizeType n = 4;
 
         PetscMatrix m = 2.*local_identity(n, n);
@@ -1319,7 +1323,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_get_col_test);
         UTOPIA_RUN_TEST(petsc_dense_mat_mult_test);
         UTOPIA_RUN_TEST(petsc_norm_test);
-        UTOPIA_RUN_TEST(petsc_chop_test); 
+        UTOPIA_RUN_TEST(petsc_chop_test);
         UTOPIA_RUN_TEST(petsc_zero_rows_to_id);
 
 
