@@ -64,7 +64,7 @@ namespace utopia
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedQPSolver * clone() const =0;
+        virtual OperatorBasedQPSolver * clone() const override = 0;
 
         virtual void read(Input &in) override
         {

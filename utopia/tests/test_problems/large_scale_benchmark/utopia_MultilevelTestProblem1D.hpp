@@ -6,12 +6,10 @@
 namespace utopia
 {
     template<typename Matrix, typename Vector>
-    class MultilevelTestProblemBase
-    {
-        public:
-            typedef UTOPIA_SIZE_TYPE(PetscVector)   SizeType;
-            typedef UTOPIA_SCALAR(PetscVector)      Scalar;
-
+    class MultilevelTestProblemBase {
+    public:
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Scalar   = typename Traits<Vector>::SizeType;
 
         MultilevelTestProblemBase(const SizeType &n_levels = 2, const SizeType & n_coarse = 10, const bool remove_bc = false):
         n_levels_(n_levels), n_coarse_(n_coarse), remove_bc_(remove_bc)

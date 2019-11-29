@@ -178,7 +178,7 @@ namespace  utopia
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedTRSubproblem * clone() const =0;
+        virtual OperatorBasedTRSubproblem * clone() const override = 0;
 
         virtual void read(Input &in) override
         {

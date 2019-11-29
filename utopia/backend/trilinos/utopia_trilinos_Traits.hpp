@@ -6,6 +6,7 @@
 #include "utopia_trilinos_ForwardDeclarations.hpp"
 #include "utopia_trilinos_Base.hpp"
 #include "utopia_BackendInfo.hpp"
+#include "utopia_Device.hpp"
 
 #include <vector>
 
@@ -25,6 +26,7 @@ namespace utopia {
         using ScalarArray = utopia::TpetraScalarArray;
 
         using Communicator = utopia::TrilinosCommunicator;
+        using Device = utopia::Device<TRILINOS>;
 
         enum {
             Backend = TRILINOS

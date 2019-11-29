@@ -56,6 +56,29 @@ namespace utopia {
         std::shared_ptr<Read<T>> lock_;
     };
 
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    template<class T>
+    class DeviceView<T, 2> {
+    public:
+        using Scalar   = typename Traits<T>::Scalar;
+        using SizeType = typename Traits<T>::SizeType;
+
+        //FIXME is not atomic
+        inline void atomic_add(const SizeType &i, const SizeType &j, const Scalar &value) const
+        {
+            tensor_.add(i, j, value);
+        }
+
+        DeviceView(T &tensor) : tensor_(tensor), lock_(std::make_shared<Write<T>>(tensor)) {}
+
+    private:
+        T &tensor_;
+        std::shared_ptr<Write<T>> lock_;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+
     template<class Derived, int Order>
     inline DeviceView<Derived, Order> device_view(Tensor<Derived, Order> &t)
     {

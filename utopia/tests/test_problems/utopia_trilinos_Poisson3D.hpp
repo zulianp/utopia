@@ -43,13 +43,8 @@ namespace utopia
         using RefGradView  = Kokkos::DualView<Scalar ***>;
         using QPointView   = Kokkos::DualView<Scalar **>;
         using QWeightView  = Kokkos::DualView<Scalar *>;
+        using Dev = typename Traits<Vector>::Device;
 
-        template<typename... Args>
-        inline static void parallel_for(Args&&... args)
-        {
-            using ForLoop  = utopia::ParallelFor<Traits<Vector>::Backend>;
-            return ForLoop::apply(std::forward<Args>(args)...);
-        }
 
         // using VectorD = utopia::VectorView<Kokkos::View<Scalar[Dim]>>;
 
@@ -97,6 +92,11 @@ namespace utopia
 
         ~Poisson()
         {}
+
+        void reinit()
+        {
+            init();
+        }
 
         void get_A_rhs(Matrix &A, Vector &rhs) const
         {
@@ -327,22 +327,37 @@ namespace utopia
         {
             if(empty(mat)) {
                 mat = sparse(n_points_, n_points_, NDofs);
-            } else {
-                mat *= 0.;
-            }
+                //First time we construct the graph on the cpu
 
+                Write<Matrix> w_(mat, utopia::GLOBAL_ADD);
+                for(SizeType k = 0; k < n_elements_; ++k) {
+                    auto dof_k  = Kokkos::subview(dof_, k, Kokkos::ALL());
+                    auto el_mat = Kokkos::subview(element_matrix_, k, Kokkos::ALL(), Kokkos::ALL());
 
-            Write<Matrix> w_(mat, utopia::GLOBAL_ADD);
-            for(SizeType k = 0; k < n_elements_; ++k) {
-                auto dof_k = Kokkos::subview(dof_, k, Kokkos::ALL());
-                auto el_mat = Kokkos::subview(element_matrix_, k, Kokkos::ALL(), Kokkos::ALL());
-
-                for(SizeType i = 0; i < NDofs; ++i) {
-                    for(SizeType j = 0; j < NDofs; ++j) {
-                        mat.c_add(dof_k(i), dof_k(j), el_mat(i, j));
+                    for(SizeType i = 0; i < NDofs; ++i) {
+                        for(SizeType j = 0; j < NDofs; ++j) {
+                            mat.c_add(dof_k(i), dof_k(j), el_mat(i, j));
+                        }
                     }
                 }
+
+            } else {
+                mat *= 0.;
+
+                auto device_mat = device_view(mat);
+
+                Dev::parallel_for(n_elements_, UTOPIA_LAMBDA(const SizeType &k) {
+                    auto dof_k  = Kokkos::subview(dof_, k, Kokkos::ALL());
+                    auto el_mat = Kokkos::subview(element_matrix_, k, Kokkos::ALL(), Kokkos::ALL());
+
+                    for(SizeType i = 0; i < NDofs; ++i) {
+                        for(SizeType j = 0; j < NDofs; ++j) {
+                            device_mat.atomic_add(dof_k(i), dof_k(j), el_mat(i, j));
+                        }
+                    }
+                });
             }
+
         }
 
         void init_q_rule()
@@ -407,6 +422,8 @@ namespace utopia
 
         void init()
         {
+            Chrono c;
+            c.start();
             init_mesh();
             init_vectors();
             assemble_laplacian();
@@ -416,6 +433,9 @@ namespace utopia
             });
 
             init_boundary_conditions();
+            c.stop();
+
+            std::cout << "Poisson::init() " << c << std::endl;
         }
 
         void init_boundary_conditions()
@@ -426,7 +446,7 @@ namespace utopia
             auto bcm_view = device_view(bc_markers);
             // auto bcv_view = device_view(bc_values);
 
-            parallel_for(n_ + 1, UTOPIA_LAMBDA(const SizeType &i)
+            Dev::parallel_for(n_ + 1, UTOPIA_LAMBDA(const SizeType &i)
             {
                 //lower boundary
                 bcm_view.set(i, 1.0);
@@ -457,7 +477,7 @@ namespace utopia
             auto device_fun        = ref_fun_.view_device();
             auto device_qp_weights = q_weights_.view_device();
 
-            parallel_for(
+            Dev::parallel_for(
                 n_elements_,
                 UTOPIA_LAMBDA(const SizeType &e_id)
                 {
@@ -512,7 +532,7 @@ namespace utopia
             auto device_q_points  = q_points_.view_device();
             auto ref_fun_device   = ref_fun_.view_device();
 
-            parallel_for(
+            Dev::parallel_for(
                 n_elements_,
                 UTOPIA_LAMBDA(const SizeType &e_id)
                 {
@@ -549,7 +569,7 @@ namespace utopia
 
             UTOPIA_TRACE_REGION_BEGIN("Poisson::assemble_laplacian");
 
-            parallel_for(
+            Dev::parallel_for(
                 n_elements_,
                 UTOPIA_LAMBDA(const SizeType &e_id)
                 {
@@ -590,11 +610,11 @@ namespace utopia
             auto device_grad      = ref_grad_.view_device();
 
             const Scalar h = 1./n_;
-            parallel_for(
+            Dev::parallel_for(
                 n_,
                 UTOPIA_LAMBDA(const SizeType &i)
                 {
-                    // Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_), [&] (const SizeType j) {
+                    // Kokkos::Dev::parallel_for(Kokkos::TeamThreadRange(team_member, n_), [&] (const SizeType j) {
                     for(SizeType j = 0; j < n_; ++j) {
 
                         const SizeType e_id = i * n_ + j;

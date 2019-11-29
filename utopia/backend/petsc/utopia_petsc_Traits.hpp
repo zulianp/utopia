@@ -8,6 +8,7 @@
 
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_Device.hpp"
 
 #include "petscsys.h"
 #include "petscmat.h"
@@ -30,6 +31,7 @@ namespace utopia {
         using ScalarArray = utopia::PetscArray<Scalar>;
 
         using Communicator = utopia::PetscCommunicator;
+        using Device = utopia::Device<PETSC>;
 
         enum
         {
