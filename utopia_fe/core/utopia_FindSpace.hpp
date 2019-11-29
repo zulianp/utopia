@@ -22,6 +22,14 @@ namespace utopia {
             return TRAVERSE_STOP;
         }
 
+        template<class T, int Backend>
+        inline int visit(const TestFunction<FiniteElement<T, Backend>> &expr)
+        {
+            space_ = utopia::make_ref(expr.space_ptr()->space());
+            return TRAVERSE_STOP;
+        }
+
+
         template<class T>
         inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
         {
@@ -131,6 +139,14 @@ namespace utopia {
             space_ = expr.space_ptr();
             return TRAVERSE_STOP;
         }
+
+        template<class T, int Backend>
+        inline int visit(const TrialFunction<FiniteElement<T, Backend>> &expr)
+        {
+            space_ = utopia::make_ref(expr.space_ptr()->space());
+            return TRAVERSE_STOP;
+        }
+
 
         template<class T>
         inline int visit(const TrialFunction<ProductFunctionSpace<T>> &expr)

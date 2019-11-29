@@ -4,11 +4,11 @@
 #include "utopia_FEModel.hpp"
 #include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMesh.hpp"
-#include "utopia_Flow.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_NewTransferAssembler.hpp"
 #include "utopia_FluxPostProcessor.hpp"
 #include "utopia_FractureFlowUtils.hpp"
+#include "utopia_UFlow.hpp"
 
 #include "libmesh/parallel_mesh.h"
 
@@ -278,8 +278,7 @@ namespace utopia {
             in.get("mesh", mesh_);
             in.get("space", space_);
 
-            //FIXME allow also other models
-            auto flow = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+            auto flow = std::make_shared<UFlow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
             flow->rescale(this->rescale());
             flow->read(in);
             flow_model_ = flow;

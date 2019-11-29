@@ -27,7 +27,7 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
-            return aux_solve(*this->get_operator(), -1.0 * b, x);
+            return aux_solve(*this->get_operator(), b, x);
         }
 
         inline CauchyPoint * clone() const override
@@ -38,12 +38,18 @@ namespace utopia
     private:
         bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k)
         {
-            Scalar g_norm = norm2(g);
-            Scalar g_B_g = dot(g, B * g);
+            Scalar g_norm, g_B_g; 
+            Bg_ = B * g; 
+
+            dots(g,g, g_norm, g, Bg_, g_B_g); 
+            g_norm = std::sqrt(g_norm); 
+
             Scalar tau = std::min(1.0, pow(g_norm,3.0) / (this->current_radius() * g_B_g));
-            p_k = -tau * (this->current_radius() / g_norm) * (g) ;
+            p_k = tau * (this->current_radius() / g_norm) * (g) ;
             return true;
         }
+
+        Vector Bg_; 
 
     };
 }

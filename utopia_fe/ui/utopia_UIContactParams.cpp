@@ -2,6 +2,10 @@
 
 namespace utopia {
 
+    UIContactParams::UIContactParams()
+    : step_tol(5e-6), max_nl_iter(30), is_steady(false), n_transient_steps(1), use_pg(false)
+    {}
+
     void UIContactParams::read(Input &is)
     {
         std::set<int> temp;
@@ -11,20 +15,14 @@ namespace utopia {
         std::string type;
         is.get("type", type);
 
-        step_tol = 5e-6;
         is.get("step-tol", step_tol);
 
-        max_nl_iter = 30;
         is.get("max-nl-iter", max_nl_iter);
-
-        is_steady = false;
-        n_transient_steps = 1;
 
         if(type == "steady") {
             is_steady = true;
         }
 
-        use_pg = false;
         std::string solver;
         is.get("solver", solver);
 
@@ -84,4 +82,17 @@ namespace utopia {
             contact_params.side_set_search_radius = std::make_shared<moonolith::SearchRadius<double>>(contact_params.search_radius);
         }
     }
+
+    void UIContactParams::describe(std::ostream &os) const
+    {
+        contact_params.describe(os);
+        std::vector<int> contact_surfaces;
+        
+        os << "is_steady:         " << is_steady << std::endl;
+        os << "n_transient_steps: " << n_transient_steps << std::endl;
+        os << "step_tol:          " << step_tol << std::endl;
+        os << "max_nl_iter:       " << max_nl_iter << std::endl;
+        os << "use_pg:            " << use_pg << std::endl;
+    }
+    
 }

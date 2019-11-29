@@ -8,21 +8,21 @@ namespace  utopia
 {
 
     template<class Matrix, class Vector>
-    class ProjectedGradientActiveSet final:  public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
+    class ProjectedGradientActiveSet final:  //public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
+                                            public OperatorBasedQPSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         public:
-            ProjectedGradientActiveSet()
+            ProjectedGradientActiveSet(): initialized_(false), loc_size_(0)
             {
 
             }
 
             void read(Input &in) override
             {
-                MatrixFreeQPSolver<Vector>::read(in);
-                QPSolver<Matrix, Vector>::read(in);
+                OperatorBasedQPSolver<Matrix, Vector>::read(in);
 
                 in.get("Cauchy-point", cp_);
 
@@ -37,8 +37,7 @@ namespace  utopia
 
             void print_usage(std::ostream &os) const override
             {
-                MatrixFreeQPSolver<Vector>::print_usage(os);
-                QPSolver<Matrix, Vector>::print_usage(os);
+                OperatorBasedQPSolver<Matrix, Vector>::print_usage(os);
 
                 this->print_param_usage(os, "Cauchy-point", "GeneralizedCauchyPoint", "Input parameters for Generalized Cauchy point solver.", "-");
                 this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for Preconditioner.", "-");
@@ -60,16 +59,24 @@ namespace  utopia
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 auto &box = this->get_box_constraints();
-                init(local_size(rhs).get(0));
+                update(A); 
                 return aux_solve(A, -1.0*rhs, sol, box);
             }
 
-            bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
+            void update(const Operator<Vector> &A) override
             {
-                auto A_op_ptr = utopia::op_ref(A);
-                auto &box = this->get_box_constraints();
-                return aux_solve(*A_op_ptr, -1.0 *rhs, sol, box);
-            }
+                SizeType loc_size_rhs = A.local_size().get(0);
+                if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+                }
+            }        
+
+            // bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
+            // {
+            //     // auto A_op_ptr = utopia::op_ref(A);
+            //     auto &box = this->get_box_constraints();
+            //     return aux_solve(A, -1.0 *rhs, sol, box);
+            // }
 
 
             void set_linear_solver(const std::shared_ptr<Solver> &linear_solver)
@@ -107,13 +114,13 @@ namespace  utopia
                 }
                 else if(size(feasible_set).get(0)==feasible_variables) // all variables are feasible, use Newton's method to solve the system
                 {
-                    Vector  local_corr = local_zeros(local_size(s).get(0));
-                    if(const MatrixOperator<Matrix, Vector> * H_matrix = dynamic_cast<const MatrixOperator<Matrix, Vector> *>(&H))
+                    Vector local_corr = local_zeros(local_size(s).get(0));
+                    if(const Matrix * H_matrix = dynamic_cast<const Matrix *>(&H))
                     {
                         if(linear_solver_)
                         {
                             auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >();
-                            linear_solver->solve(*(H_matrix->get_matrix()), -1.0 * grad_qp_fun, local_corr);
+                            linear_solver->solve(*H_matrix, -1.0 * grad_qp_fun, local_corr);
                         }
                         else if(precond_)
                             precond_->apply(-1.0 * grad_qp_fun, local_corr);
@@ -313,23 +320,14 @@ namespace  utopia
                 auto zero_expr = local_zeros(ls);
 
                 //resets all buffers in case the size has changed
-                if(!empty(r)) {
-                    r = zero_expr;
-                }
+                r = zero_expr;
+                q = zero_expr;
+                d = zero_expr;
+                Hd = zero_expr;
 
-                if(!empty(q)) {
-                    q = zero_expr;
-                }
-
-                if(!empty(d)) {
-                    d = zero_expr;
-                }
-
-                if(!empty(Hd)) {
-                    Hd = zero_expr;
-                }
+                initialized_ = true;
+                loc_size_ = ls;                
             }
-
 
         private:
             GeneralizedCauchyPoint<Matrix, Vector> cp_;
@@ -337,6 +335,9 @@ namespace  utopia
             std::shared_ptr<Solver> linear_solver_;
 
             Vector r, q, d, Hd;
+
+            bool initialized_;
+            SizeType loc_size_;
 
     };
 }

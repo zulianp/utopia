@@ -27,9 +27,12 @@ namespace utopia {
 
         PetscMatrix m;
         PetscVector rhs, upper_bound;
-        ExampleTestCase2<PetscMatrix, PetscVector> example;
-        example.getOperators(n, m, rhs, upper_bound);
-        PetscVector x = zeros(n);
+        Poisson1D<PetscMatrix, PetscVector> ex2(n, 2); 
+        PetscVector x = ex2.initial_guess();
+        ex2.hessian(x, m); 
+        ex2.get_rhs(rhs); 
+        upper_bound = ex2.upper_bound(); 
+
         auto lsolver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
 
         const double scale_factor = 1e-10;
@@ -107,9 +110,11 @@ namespace utopia {
 
         PetscMatrix m;
         PetscVector rhs, upper_bound;
-        ExampleTestCase2<PetscMatrix, PetscVector> example;
-        example.getOperators(n, m, rhs, upper_bound);
-        PetscVector x = zeros(n);
+        Poisson1D<PetscMatrix, PetscVector> ex2(n, 2); 
+        PetscVector x = ex2.initial_guess();
+        ex2.hessian(x, m); 
+        ex2.get_rhs(rhs); 
+        upper_bound = ex2.upper_bound();         
 
         const double scale_factor = 10e-10;
         rhs *= scale_factor;

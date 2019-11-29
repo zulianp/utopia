@@ -9,13 +9,13 @@ namespace  utopia
 {
 
     template<class Matrix, class Vector>
-    class GeneralizedCauchyPoint final: public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
+    class GeneralizedCauchyPoint final: public OperatorBasedQPSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
         public:
-            GeneralizedCauchyPoint(): cp_memory_(5)
+            GeneralizedCauchyPoint(): cp_memory_(5), initialized_(false),  loc_size_(0)
             {
 
             }
@@ -27,21 +27,16 @@ namespace  utopia
                 return new GeneralizedCauchyPoint(*this);
             }
 
-
             void read(Input &in) override
             {
-                MatrixFreeQPSolver<Vector>::read(in);
-                QPSolver<Matrix, Vector>::read(in);
-
+                OperatorBasedQPSolver<Matrix, Vector>::read(in);
                 in.get("memory_size", cp_memory_);
             }
 
 
             void print_usage(std::ostream &os) const override
             {
-                MatrixFreeQPSolver<Vector>::print_usage(os);
-                QPSolver<Matrix, Vector>::print_usage(os);
-
+                OperatorBasedQPSolver<Matrix, Vector>::print_usage(os);
                 this->print_param_usage(os, "memory_size", "int", "Memory (in terms of breakpoints) used during computation.", "5.0");
             }
 
@@ -56,56 +51,66 @@ namespace  utopia
                 return cp_memory_;
             }
 
+            void update(const Operator<Vector> &A) override
+            {
+                SizeType loc_size_rhs = A.local_size().get(0);
+                if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
+                    init(loc_size_rhs);
+                }
+            }                
+
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 auto &box = this->get_box_constraints();
-                return aux_solve(A, -1.0 *rhs, sol, box);
+                update(A);
+                rhs_minus_ = -1.0 *rhs; 
+                return aux_solve(A, rhs_minus_, sol, box);
             }
 
 
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
-                auto A_op_ptr = utopia::op_ref(A);
                 auto &box = this->get_box_constraints();
-                return aux_solve(*A_op_ptr, -1.0 *rhs, sol, box);
+                update(A);
+                rhs_minus_ = -1.0 *rhs; 
+                return aux_solve(A, rhs_minus_, sol, box);
             }
 
 
         private:
-
-
             bool aux_solve(const Operator<Vector> &H,  const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints)
             {
                 Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff;
-                Vector break_points, sorted_break_points, active_set, e, Hd;
+                // Vector break_points, sorted_break_points, active_set, e, Hd;
 
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
 
+
                 bool converged = false;
                 SizeType num_uniq_break_points, it=0;
 
-                Vector d = -1.0 * g;
-                s = 0 * d;
+                d_ = -1.0 * g;
+                s = 0.0 * d_;
 
-                this->get_breakpoints(d, *lb, *ub, break_points);
-                vec_unique_sort_serial(break_points, sorted_break_points, this->memory_size());
-                num_uniq_break_points = this->get_number_of_sorted_break_points(sorted_break_points);
+                this->get_breakpoints(d_, *lb, *ub, break_points_);
+                vec_unique_sort_serial(break_points_, sorted_break_points_, this->memory_size());
+                num_uniq_break_points = this->get_number_of_sorted_break_points(sorted_break_points_);
                 t_current = 0.0;
-                this->get_breakpoint_active_set(break_points, t_current, active_set);
-                e = e_mul(active_set, d);
-                d = d - e;
-                gd = dot(g, d);
-                H.apply(d, Hd);
+                this->get_breakpoint_active_set(break_points_, t_current, active_set_);
+                e_ = e_mul(active_set_, d_);
+                d_ = d_ - e_;
+                gd = dot(g, d_);
+                H.apply(d_, Hd_);
 
                 while(it < num_uniq_break_points && !converged)
                 {
 
-                    f_p = gd + dot(s, Hd);
-                    f_pp = dot(d, Hd);
+                    f_p = gd + dot(s, Hd_);
+                    f_pp = dot(d_, Hd_);
 
-                    t_next = (it==num_uniq_break_points)? 9e9 : this->get_next_break_point(sorted_break_points, it);
+                    t_next = (it==num_uniq_break_points)? 9e9 : this->get_next_break_point(sorted_break_points_, it);
 
                     if(f_pp ==0 || !std::isfinite(f_pp))
                         return true;
@@ -118,7 +123,7 @@ namespace  utopia
                         converged = true;
                     else if(f_pp >0 && dt < delta_diff)
                     {
-                        s += dt * d;
+                        s += dt * d_;
                         converged = true;
                     }
 
@@ -126,18 +131,18 @@ namespace  utopia
                         return true;
 
                     t_current = t_next;
-                    this->get_breakpoint_active_set(break_points, t_current, active_set);
-                    e = e_mul(active_set, d);
+                    this->get_breakpoint_active_set(break_points_, t_current, active_set_);
+                    e_ = e_mul(active_set_, d_);
 
-                    s = s + delta_diff * d;
-                    d = d - e;
+                    s = s + delta_diff * d_;
+                    d_ = d_ - e_;
 
-                    gd = gd - dot(g, e);
+                    gd = gd - dot(g, e_);
 
                     Vector help;
-                    H.apply(e, help);
+                    H.apply(e_, help);
 
-                    Hd = Hd - help;
+                    Hd_ = Hd_ - help;
                     it++;
                 }
 
@@ -145,19 +150,21 @@ namespace  utopia
             }
 
 
-            SizeType get_number_of_sorted_break_points(const Vector & sorted_break_points) const
+            SizeType get_number_of_sorted_break_points(const Vector & sorted_break_points)
             {
-                Vector help = local_values(1, 0.0);
+                // Vector help = local_values(1, 0.0);
+                t_help_.set(0.0); 
                 SizeType val = size(sorted_break_points).get(0);
 
                 {
-                    Write<Vector> w(help);
+                    Write<Vector> w(t_help_);
 
-                    if(mpi_world_rank()==0)
-                        help.set(0, val);
+                    if(mpi_world_rank()==0){
+                        t_help_.set(0, val);
+                    }
                 }
 
-                return sum(help);
+                return sum(t_help_);
             }
 
 
@@ -204,9 +211,10 @@ namespace  utopia
                 }
             }
 
-            Scalar get_next_break_point(const Vector & sorted_break_points, const SizeType & index) const
+            Scalar get_next_break_point(const Vector & sorted_break_points, const SizeType & index)
             {
-                Vector t_help = local_values(1, 0.0);
+                // Vector t_help = local_values(1, 0.0);
+                t_help_.set(0.0); 
                 Scalar value = 0.0;
 
                 {
@@ -221,19 +229,43 @@ namespace  utopia
                 }
 
                 {
-                    Write<Vector> w(t_help);
+                    Write<Vector> w(t_help_);
 
-                    auto rr = range(t_help);
+                    auto rr = range(t_help_);
                     for (SizeType i = rr.begin(); i != rr.end(); ++i)
-                            t_help.set(i, value);
+                            t_help_.set(i, value);
                 }
 
-                return sum(t_help);
+                return sum(t_help_);
             }
 
 
         private:
+
+
+            void init(const SizeType & ls)
+            {
+                t_help_ = local_values(1, 0.0);
+
+                auto zero_expr          = local_zeros(ls);
+                break_points_           = zero_expr; 
+                sorted_break_points_    = zero_expr; 
+                active_set_             = zero_expr; 
+                e_                      = zero_expr; 
+                Hd_                     = zero_expr; 
+                d_                      = zero_expr; 
+
+
+                initialized_ = true;    
+                loc_size_ = ls;      
+            }
+
+
             SizeType cp_memory_;    // memory size
+            Vector t_help_, break_points_, sorted_break_points_, active_set_, e_, Hd_, d_, rhs_minus_; 
+
+            bool initialized_; 
+            SizeType loc_size_;                 
 
     };
 }

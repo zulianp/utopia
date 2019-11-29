@@ -31,6 +31,13 @@ namespace utopia {
 
         typedef typename Traits::Scalar Scalar;
 
+        template<typename T>
+        inline static void apply(const Expr &expr, Number<T> &num)
+        {
+            num = apply(expr);
+        }
+
+
         inline static Scalar apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -94,6 +101,11 @@ namespace utopia {
 
             typedef typename Traits::Scalar Scalar;
 
+            template<typename T>
+            inline static void apply(const Expr &expr, Number<T> &num)
+            {
+                num = apply(expr);
+            }
 
             inline static Scalar apply(const Expr &expr) {
                 UTOPIA_TRACE_BEGIN(expr);

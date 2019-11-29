@@ -1,18 +1,31 @@
-//
-// Created by Patrick Zulian on 15/05/15.
-//
-
 #ifndef SIMMOD_utopia_OPERATORS_HPP
 #define SIMMOD_utopia_OPERATORS_HPP
 
 #include <string>
 #include <functional>
 #include <cmath>
+#include <complex>
 
 namespace utopia {
 
     template<class Op>
     class is_commutative {
+    public:
+        static const int value = 0;
+    };
+
+    template<class Op>
+    class is_associative {
+    public:
+        static const int value = 0;
+    };
+
+    /**
+     * @brief compile time information about the combination of operators
+     *  true if (A Op1 B Op2 C) == (A Op1 B) Op2 == A Op1 (B Op2 C)
+     */
+    template<class Op1, class Op2>
+    class eval_order_changable {
     public:
         static const int value = 0;
     };
@@ -51,6 +64,11 @@ namespace utopia {
         static const int value = 1;
     };
 
+    template<>
+    class is_associative<Plus> {
+    public:
+        static const int value = 1;
+    };
 
     class PlusEqual {
     public:
@@ -80,6 +98,12 @@ namespace utopia {
         static const int value = 1;
     };
 
+    template<>
+    class is_associative<AbsPlus> {
+    public:
+        static const int value = 1;
+    };
+
 
     class And {
     public:
@@ -97,6 +121,12 @@ namespace utopia {
         static const int value = 1;
     };
 
+    template<>
+    class is_associative<And> {
+    public:
+        static const int value = 1;
+    };
+
 
     class Multiplies {
     public:
@@ -110,6 +140,12 @@ namespace utopia {
 
     template<>
     class is_commutative<Multiplies> {
+    public:
+        static const int value = 0;
+    };
+
+    template<>
+    class is_associative<Multiplies> {
     public:
         static const int value = 1;
     };
@@ -137,6 +173,12 @@ namespace utopia {
 
     template<>
     class is_commutative<EMultiplies> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class is_associative<EMultiplies> {
     public:
         static const int value = 1;
     };
@@ -183,6 +225,12 @@ namespace utopia {
     class is_commutative<ApproxEqual> {
     public:
         static const int value = 1;
+    };
+
+    template<>
+    class is_associative<ApproxEqual> {
+    public:
+        static const int value = 0;
     };
 
 
@@ -265,6 +313,16 @@ namespace utopia {
         inline static T apply(const T &x) {
             using std::sin;
             return sin(x);
+        }
+    };
+
+    class Conjugate {
+    public:
+        std::string get_class() const { return "Conjugate"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            return std::conj(x);
         }
     };
 
@@ -401,7 +459,37 @@ namespace utopia {
 
     };
 
+    template<class T>
+    class eval_order_changable<T, T> {
+    public:
+        static const int value = is_associative<T>::value;
+    };
 
+
+    template<>
+    class eval_order_changable<Plus, Plus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class eval_order_changable<Minus, Minus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class eval_order_changable<Plus, Minus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class eval_order_changable<Minus, Plus> {
+    public:
+        static const int value = 1;
+    };
+    
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP

@@ -312,7 +312,8 @@ namespace utopia {
 
         void multiply_test()
         {
-            if(!is_sparse<Matrix>::value && Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
+            // if(!is_sparse<Matrix>::value && Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
+            if(Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
                 std::cerr << "[Warning] petsc does not support parallel dense matrix-matrix multiplication" << std::endl;
                 return;
             }

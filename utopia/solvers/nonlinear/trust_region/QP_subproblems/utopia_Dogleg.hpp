@@ -27,7 +27,7 @@ namespace utopia
 
             bool apply(const Vector &b, Vector &x) override
             {
-                return aux_solve(*this->get_operator(), -1.0 * b, x);
+                return aux_solve(*this->get_operator(), b, x);
             }
 
             void read(Input &in) override
@@ -39,7 +39,6 @@ namespace utopia
                 }
             }
 
-
             void print_usage(std::ostream &os) const override
             {
                 TRSubproblem<Matrix, Vector>::print_usage(os);
@@ -49,16 +48,13 @@ namespace utopia
         protected:
             bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k)
             {
-                Vector p_N = local_zeros(local_size(p_k)), p_SD = local_zeros(local_size(p_k));
-                Scalar g_B_g = dot(g, B * g);
-
                 if(ls_solver_)
                 {
-                    ls_solver_->solve(B, -1 * g, p_k);
+                    ls_solver_->solve(B, g, p_k);
                 }
                 else
                 {
-                    utopia_error("Dogleg:: linear solver is missing... \n");
+                    utopia_error("Dogleg:: linear solver not provided... \n");
                 }
 
                 if(norm2(p_k) <= this->current_radius())
@@ -67,30 +63,32 @@ namespace utopia
                 }
                 else
                 {
-                    p_SD = -1.0 *(dot(g, g)/g_B_g) * g;
-                    Scalar SD_norm = norm2(p_SD);
+                    Scalar g_dots, g_B_g;
+                    Bg_ = B* g; 
 
-                    if(SD_norm > this->current_radius())
+                    dots(g, g, g_dots, g, Bg_, g_B_g); 
+
+                    g_B_g = g_dots/g_B_g; 
+                    p_SD_ = g_B_g * g;
+                    Scalar SD_norm = std::abs(g_B_g) * std::sqrt(g_dots); 
+
+                    if(SD_norm >= this->current_radius())
                     {
-                        Scalar a = SD_norm*SD_norm;
-                        Scalar c = - 1.0 * std::pow(this->current_radius(), 2.);
-
-                        Scalar tau = this->quadratic_function(a, 0.0, c);
-                        p_k *= tau;
-
+                        p_k = (this->current_radius()/ SD_norm)*p_SD_; 
                         return true;
                     }
                     else
                     {
-                        Vector d = p_k - p_SD;
-                        Scalar d_norm = norm2(d);
+                        Bg_ = p_k - p_SD_; 
 
-                        Scalar a = d_norm*d_norm;
-                        Scalar b = 2.0 * dot(p_SD, p_N);
-                        Scalar c = SD_norm*SD_norm - 1.0 * std::pow(this->current_radius(), 2.);
+                        Scalar a, b; 
+                        dots(Bg_, Bg_, a, p_SD_, Bg_, b); 
+                        b *= 2.0; 
+
+                        Scalar c = (SD_norm*SD_norm) -  (this->current_radius() * this->current_radius());
 
                         Scalar tau = this->quadratic_function(a, b, c);
-                        p_k = p_SD + tau * d;
+                        p_k = p_SD_ + tau * Bg_;
 
                         return true;
                     }
@@ -105,6 +103,7 @@ namespace utopia
 
         private:
             std::shared_ptr<LinearSolver> ls_solver_;
+            Vector Bg_, p_SD_; 
     };
 }
 

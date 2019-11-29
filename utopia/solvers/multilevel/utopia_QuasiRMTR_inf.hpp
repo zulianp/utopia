@@ -200,6 +200,8 @@ namespace utopia
             }
 
             // Hessian approximations 
+            std::cout<< "RMTR init memory ---"<< fine_level << " ---  "<< this->memory_.x[fine_level].size() << "  \n"; 
+
             hessian_approxs_[fine_level]->initialize(this->memory_.x[fine_level], this->memory_.g[fine_level]);
         }
 
@@ -370,16 +372,22 @@ namespace utopia
 
         virtual void initialize_local_solve(const SizeType & level, const LocalSolveType & solve_type) override
         {
-            if(!(solve_type == PRE_SMOOTHING && level == this->n_levels()-1))
-            {
-                // this is interesting heuristic
-                if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
-                {
+
+            // std::cout<<"initialize_local_solve  \n"; 
+
+            // if(!(solve_type == PRE_SMOOTHING && level == this->n_levels()-1))
+            // {
+            //     // this is interesting heuristic
+            //     if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
+            //     {
                     hessian_approxs_[level]->reset();
                     // hessian_approxs_[level]->initialize();
+
+                    // std::cout<<"init local solve: "<< level << " sizee:  "<< this->memory_.x[level].size(); 
+
                     hessian_approxs_[level]->initialize(this->memory_.x[level], this->memory_.g[level]);    
-                }
-            }
+            //     }
+            // }
         }
 
         virtual bool check_initialization() override

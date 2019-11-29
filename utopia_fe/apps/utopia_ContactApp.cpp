@@ -50,7 +50,11 @@ namespace utopia {
 
                 is.get("mesh", mesh_);
                 is.get("space", space_);
+
+                params_.read(is);
                 is.get("contact", params_);
+
+                params_.describe();
 
                 auto model            = make_unique<MaterialT>(space_.space());
                 auto forcing_function = make_unique<ForcingFunctionT>(space_.space());

@@ -76,9 +76,12 @@ namespace utopia
 
     virtual Scalar get_pred(const Vector &g, const Operator<Vector> &B, const Vector & p_k)
     {
-      Vector Bp;
-      B.apply(p_k, Bp);
-      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp, p_k);
+      if(empty(Bp_) || size(Bp_) != size(g)){
+        Bp_ = 0.0*g; 
+      }
+
+      B.apply(p_k, Bp_);
+      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp_, p_k);
     }
 
 
@@ -202,10 +205,34 @@ namespace utopia
         return true;
       }
       // otherwise, keep old point
-      else
+      else{
         return false;
+      }
 
     }
+
+
+    /**
+     * @brief      Trial ponit acceptance
+     *
+     * @param[in]  rho   The rho
+     *
+     * @return     accepted or no
+     */
+    virtual bool trial_point_acceptance(const Scalar &rho)
+    {
+      // good reduction, accept trial point
+      if (rho >= rho_tol_)
+      {
+        return true;
+      }
+      // otherwise, keep old point
+      else{
+        return false;
+      }
+
+    }
+
 
 
 
@@ -329,6 +356,9 @@ namespace utopia
     Scalar eta2_;
     Scalar rho_tol_;
     Scalar eps_;
+
+    Vector Bp_;
+
   };
 
 }

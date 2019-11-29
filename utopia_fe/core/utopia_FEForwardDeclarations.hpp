@@ -40,6 +40,8 @@ namespace utopia {
     template<class> class BilinearIntegrator;
     template<class> class EquationIntegrator;
 
+    template<class,int> class FiniteElement;
+
 }
 
 #endif //UTOPIA_FE_FORWARD_DECLARATIONS_HPP

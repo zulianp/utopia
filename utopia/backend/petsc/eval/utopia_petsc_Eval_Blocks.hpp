@@ -33,11 +33,7 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // if(is_sparse<Right>::value) {
-                build_blocks(Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),   expr.right());
-            // } else {
-            //     Eval<Construct<Tensor<Left, 2>, Blocks<Right> >, Traits, HOMEMADE>::apply(expr);
-            // }
+            build_blocks(Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),   expr.right());
 
             UTOPIA_TRACE_END(expr);
             return true;

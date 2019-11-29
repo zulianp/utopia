@@ -1,0 +1,128 @@
+{
+    "contact-problem": {
+        "comment" : "I use * to disable options",
+        "is-steady" : false,
+        "n-transient-steps": 500,
+        "dt": 0.05,
+        "max-nl-iter": 20,
+        "discretization" : "new",
+
+        "contact": {
+            "radius": 0.1,
+            "pairs": [
+                {
+                    "master": 2,
+                    "slave": 3
+                }
+            ]
+        },
+
+        "qp-solver" : {
+            "backend" : "petsc",
+            "type" : "tron",
+            "max-it" : 5,
+            "verbose" : true,
+
+            "linear-solver" : {
+                "type" : "direct"
+            }
+        },
+
+        "*qp-solver" : {
+            "backend" : "any",
+            "type" : "ssnewton",
+            "max-it" : 5,
+            "verbose" : true,
+
+            "linear-solver" : {
+                "type" : "direct"
+            }
+        },
+
+        "mesh": {
+            "type": "file",
+            "path"   : "../data/contact/pseudo-signorini.e",
+            "refinements" : 0,
+            "order" : 1
+        },
+
+        "space": {
+            "system-name": "contact_sol",
+            "variables": [
+                {
+                    "name": "disp_x",
+                    "order" : 1
+                },
+                {
+                    "name": "disp_y",
+                    "order" : 1
+                },
+                {
+                    "name": "disp_z",
+                    "order" : 1
+                }
+            ],
+
+            "boundary-conditions": [
+                {
+                    "var": 0,
+                    "side": 4,
+                    "value": 0.0
+                },
+                {
+                    "var": 1,
+                    "side": 4,
+                    "value": 0.0
+                },
+
+                {
+                    "var": 0,
+                    "side": 1,
+                    "value": 0.0
+                },
+                {
+                    "var": 1,
+                    "side": 1,
+                    "value": 0.0
+                },
+                {
+                    "var": 2,
+                    "side": 1,
+                    "value": 0.0
+                }
+            ]
+        },
+
+        "forcing-functions": [
+            {
+                "block" : 4,
+                "type" : "surface",
+                "coord": 2,
+                "value": 1.5
+            }
+        ],
+
+        "model": {
+            "*material": "LinearElasticity",
+            "material": "NewNeoHookean",
+            "stabilization": "none",
+            "stabilization-mag": 0.00001,
+            "parameters": {
+                "mu": 40,
+                "lambda": 10,
+                "*sub-domains" : [
+                    {
+                        "block" : 1,
+                        "mu" : 1,
+                        "lambda" : 1
+                    },
+                    {
+                        "block" : 2,
+                        "mu" : 20.0,
+                        "lambda" : 20.0
+                    }
+                ]
+            }
+        }
+    }
+}

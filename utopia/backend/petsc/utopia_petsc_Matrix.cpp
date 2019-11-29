@@ -221,6 +221,8 @@ namespace utopia {
 
         check_error( MatSetOption(raw_type(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
         check_error( MatSetOption(raw_type(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::dense_init");
     }
 
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path)
@@ -235,6 +237,8 @@ namespace utopia {
         err = err && check_error( MatLoad(raw_type(), fd) );
 
         check_error( PetscViewerDestroy(&fd) );
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::read");
         return err;
     }
 
@@ -656,9 +660,17 @@ namespace utopia {
     {
         auto gs = size();
 
+        const bool r_less_than_c = gs.get(0) < gs.get(1);
+        const SizeType n = r_less_than_c ? gs.get(0) : gs.get(1);
+
+        if(!result.empty() && n == result.size()) {
+            MatGetDiagonal(raw_type(), result.raw_type());
+            return;
+        }
+
         result.destroy();
 
-        if(gs.get(0) < gs.get(1)) {
+        if(r_less_than_c) {
             MatCreateVecs(raw_type(), nullptr, &result.raw_type());
         } else {
             MatCreateVecs(raw_type(), &result.raw_type(), nullptr);
@@ -783,6 +795,8 @@ namespace utopia {
         check_error( MatZeroEntries(result.raw_type()) );
 
         check_error( MatDiagonalSet( result.raw_type(), vec.raw_type(), INSERT_VALUES ) );
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::build_diag");
     }
 
     bool PetscMatrix::empty() const
@@ -971,6 +985,8 @@ namespace utopia {
         check_error( MatSetOption(raw_type(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
 
         check_error( MatZeroEntries(raw_type()) );
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::matij_init");
     }
 
 
@@ -1009,6 +1025,8 @@ namespace utopia {
         check_error( MatSetOption(raw_type(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
 
         check_error( MatZeroEntries(raw_type()) );
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::matij_init");
     }
 
     // void PetscMatrix::mat_aij_cusparse_init(MPI_Comm comm,
@@ -1048,6 +1066,8 @@ namespace utopia {
         check_error( MatSetOption(raw_type(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
 
         check_error( MatZeroEntries(raw_type()) );
+
+        UTOPIA_REPORT_ALLOC("PetscMatrix::mat_baij_init");
     }
 
     bool PetscMatrix::has_nan_or_inf() const
@@ -1259,7 +1279,7 @@ namespace utopia {
     void PetscMatrix::multiply(const PetscVector &vec, PetscVector &result) const
     {
         //handle alias
-        if(vec.raw_type() == result.raw_type()) {
+        if(result.is_alias(vec)) {
             PetscVector x = vec;
             multiply(x, result);
             return;
@@ -1299,8 +1319,11 @@ namespace utopia {
 
     void PetscMatrix::transpose_multiply(const PetscVector &vec, PetscVector &result) const
     {
-        if(vec.raw_type() == result.raw_type()) {
-            assert(false && "handle me");
+        if(result.is_alias(vec)) {
+            PetscVector temp;
+            transpose_multiply(vec, temp);
+            result = std::move(temp);
+            return;
         }
 
         MPI_Comm comm = vec.communicator();
@@ -1692,6 +1715,11 @@ namespace utopia {
         });
 
         return ret;
+    }
+
+    void PetscMatrix::shift_diag(const PetscVector &d)
+    {
+        check_error( MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES) );
     }
 
 }

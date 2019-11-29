@@ -72,6 +72,7 @@ namespace utopia
         }
 
 
+        
         /**
          * @brief Returns number of levels in hierarchy.
          */

@@ -6,7 +6,7 @@
 // #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
-#include "utopia_Allocations.hpp"
+#include "utopia_Eval_Residual.hpp"
 
 namespace utopia
 {
@@ -40,201 +40,51 @@ namespace utopia
             input_params_.set("post_smoothing_steps", 5);
             input_params_.set("max_sucessful_smoothing_it", 1);
             input_params_.set("max_QP_smoothing_it", 10);
-            input_params_.set("delta0", 1e-3);
+            input_params_.set("delta0", 1e3);
             input_params_.set("grad_smoothess_termination", 1e-8);
         }
 
         void run_petsc()
         {
-            UTOPIA_RUN_TEST(newton_test);
-
-            UTOPIA_RUN_TEST(STCG_test);
             UTOPIA_RUN_TEST(MPGRP_test);
-            UTOPIA_RUN_TEST(ProjectedGS);
-
-
-            UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(TR_constrained);
-
             UTOPIA_RUN_TEST(Poisson_test);
-
-            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            UTOPIA_RUN_TEST(ProjectedGS);
             UTOPIA_RUN_TEST(QuasiTR_constrained);
-
-
-            UTOPIA_RUN_TEST(RMTR_unconstrained);
-            UTOPIA_RUN_TEST(RMTR_l2_linear);
-
+            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
             UTOPIA_RUN_TEST(RMTR_inf_linear_unconstr);
-
+            UTOPIA_RUN_TEST(RMTR_l2_linear);
+            UTOPIA_RUN_TEST(RMTR_unconstrained);
+            UTOPIA_RUN_TEST(STCG_test);
+            UTOPIA_RUN_TEST(TR_constrained);
+            UTOPIA_RUN_TEST(TR_unconstrained);
+            UTOPIA_RUN_TEST(newton_test);
         }
 
         void run_trilinos()
         {
-            UTOPIA_RUN_TEST(TR_tril_test);
-
+            
+            //FIXME (mem allocs)
+            // UTOPIA_RUN_TEST(TR_tril_test);
             // UTOPIA_RUN_TEST(RMTR_l2_test);
-            // UTOPIA_RUN_TEST(RMTR_inf_test);
             // UTOPIA_RUN_TEST(Quasi_RMTR_l2_test);
-
+            // UTOPIA_RUN_TEST(RMTR_inf_test);
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
 
-            // UTOPIA_RUN_TEST(negate_test);
-            // UTOPIA_RUN_TEST(mv_test);
-            // UTOPIA_RUN_TEST(transform_test);
-            // UTOPIA_RUN_TEST(e_mul_test);
-            // UTOPIA_RUN_TEST(e_div_test);
-            // UTOPIA_RUN_TEST(negate_alpha_test);
-            // UTOPIA_RUN_TEST(axpy_test);
-            // UTOPIA_RUN_TEST(quad_form_test);
 
-
-            // UTOPIA_RUN_TEST(e_mul_test);
-            // UTOPIA_RUN_TEST(e_div_test);
-            // UTOPIA_RUN_TEST(negate_alpha_test);
-            // UTOPIA_RUN_TEST(axpy_test);
-            // UTOPIA_RUN_TEST(quad_form_test);
-
-
-            // UTOPIA_RUN_TEST(negate_alpha_test);
-            // UTOPIA_RUN_TEST(axpy_test);
-            // UTOPIA_RUN_TEST(quad_form_test);
-
-
-
-           // UTOPIA_RUN_TEST(STCG_test);
-            // UTOPIA_RUN_TEST(for_each_loop_test);
-            // UTOPIA_RUN_TEST(parallel_each_write_test);
-
-            // UTOPIA_RUN_TEST(quad_form_test);
-
-            // UTOPIA_RUN_TEST(multi_reduce_test);
+            // Linear/QP solver tests
+            // UTOPIA_RUN_TEST(STCG_test);
+            // UTOPIA_RUN_TEST(CG_test);
+            // UTOPIA_RUN_TEST(ProjectedGS);
             // UTOPIA_RUN_TEST(MPGRP_test);
 
-
-            // UTOPIA_RUN_TEST(residual_test);
-
-
-            // //THIS
-            // UTOPIA_RUN_TEST(Quasi_RMTR_inf_test);
-        }
-
-        void negate_test()
-        {
-            Vector x = values(n_, 1.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("negate_test");
-            x = -x;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void mv_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector b = values(n_, 1.0);
-            Vector p = values(n_, 1.0);
-
-            Matrix A = sparse(n_, n_, 3);
-            assemble_laplacian_1D(A);
-
-            UTOPIA_NO_ALLOC_BEGIN("mv_test");
-            p = A * x + b;
-            UTOPIA_NO_ALLOC_END();
-        }
+            // nonlinear solver tests
+            // UTOPIA_RUN_TEST(newton_test);
+            // UTOPIA_RUN_TEST(TR_unconstrained);
+            // UTOPIA_RUN_TEST(TR_constrained);
 
 
-        void e_mul_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-            Vector z = values(n_, 0.0);
+            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
 
-            UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
-            z = e_mul(x, y);
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void e_div_test()
-        {
-            Vector x = values(n_, 6.0);
-            Vector z = values(n_, 3.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("e_div_test");
-            z = x / z;
-            
-            Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 2.0*n_));
-            z = x / x;
-            sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0*n_));
-
-            z = z / x;
-            sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
-
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void quad_form_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-
-            auto expr = 0.5 * dot(x, y) - 0.5 * dot(x, y);
-
-            Scalar val = expr;
-
-            utopia_test_assert(approxeq(val, 0.0));
-        }
-
-        void residual_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector b = values(n_, 1.0);
-            Matrix A = sparse(n_, n_, 3);
-            Vector r = values(n_, 0.0);
-
-            UTOPIA_NO_ALLOC_BEGIN("residual_test");
-            r = x - b;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void axpy_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
-            Vector p = values(n_, 2.0);
-            
-            UTOPIA_NO_ALLOC_BEGIN("axpy_test");
-            x = x - 0.5 * p;
-            y = x - 0.5 * p;
-            UTOPIA_NO_ALLOC_END();
-        }
-
-        void transform_test()
-        {
-            Vector x = values(n_, 1.0);
-            
-            parallel_transform(
-                x,
-                UTOPIA_LAMBDA(const SizeType &i, const Scalar &v) -> Scalar {
-                    return (i+1)*v;
-            });
-            
-            Scalar expected = ((n_ + 1) * n_)/2.0;
-            Scalar sum_x = sum(x);
-
-            utopia_test_assert(approxeq(sum_x, expected, 1e-10));
-        }
-
-        void negate_alpha_test()
-        {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
-            
-            UTOPIA_NO_ALLOC_BEGIN("negate_alpha_test");
-            y = -0.5 * x;
-            UTOPIA_NO_ALLOC_END();
         }
 
 
@@ -280,15 +130,9 @@ namespace utopia
 
         void STCG_test()
         {
-
-            // auto QP_solver = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "sor", false);
             auto QP_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             QP_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
-            // auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
             // precond->verbose(verbose_);
-            // precond->max_it(1);
-            // precond->use_line_search(false);
-            // QP_solver->set_preconditioner(precond);
             QP_solver->use_precond_direction(false);
 
 
@@ -296,19 +140,43 @@ namespace utopia
             // QP_solver->max_it(n_*n_);
             QP_solver->max_it(10);
             QP_solver->verbose(verbose_);
-            // QP_solver->norm_schedule(NormSchedule::NEVER); 
-            QP_solver->norm_schedule(NormSchedule::EVERY_ITER); 
+            // QP_solver->norm_schedule(NormSchedule::NEVER);
+            QP_solver->norm_schedule(NormSchedule::EVERY_ITER);
             QP_solver->current_radius(1e5);
 
             QP_solve(QP_solver);
         }
+
+        void CG_test()
+        {
+            auto solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE> >();
+            solver->atol(1e-10);
+            solver->max_it(10);
+            solver->verbose(verbose_);
+            // solver->norm_schedule(NormSchedule::EVERY_ITER);
+            // std::cout<<"---- Unprecond solve --- \n";
+            QP_solve(solver);
+
+            // std::cout<<"---- Unprecond solve 2 --- \n";
+            // Just to check initialization
+            QP_solve(solver);
+
+            // std::cout<<"---- Inv Diag --- \n";
+            solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            QP_solve(solver);
+
+            // std::cout<<"---- Point Jacobi --- \n";
+            solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());
+            QP_solve(solver);
+        }
+
 
         void MPGRP_test()
         {
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
             QP_solver->max_it(100);
-            QP_solver->verbose(true);
+            QP_solver->verbose(verbose_);
 
             QP_solve(QP_solver);
         }
@@ -355,7 +223,11 @@ namespace utopia
 
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
-            auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
+            // auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
+            auto funs = multilevel_problem.get_functions();
+            auto fun1 = funs.back(); 
+
+
             Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
 
 
@@ -368,9 +240,12 @@ namespace utopia
             direct_solver->number_of_parallel_solves(mpi_world_size());
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
+            // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector, HOMEMADE>>(); smoother->l1(true);
 
             Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
-            multigrid.set_transfer_operators(multilevel_problem.transfers_);
+            // multigrid.verbose(true);
+
+            multigrid.set_transfer_operators(multilevel_problem.get_transfer());
             multigrid.update(make_ref(H));
             multigrid.read(input_params_);
             multigrid.apply(b, x);
@@ -384,6 +259,11 @@ namespace utopia
 
         void TR_unconstrained()
         {
+            if(mpi_world_size() > 1) {
+                m_utopia_error("TR_unconstrained crashed with more than 1 process (petsc LUDecomposition does not work in parallel)");
+                return;
+            }
+
             Bratu2D<Matrix, Vector> fun(100, 5.0);
             Vector x = fun.initial_guess();
 
@@ -395,6 +275,19 @@ namespace utopia
 #else
             auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
 #endif
+
+            // #ifdef WITH_PETSC
+            //     #ifdef WITH_SLEPC
+            //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
+            //         // TODO:: add checks if has arpack
+            //         eigen_solver->solver_type("arpack");
+
+            //         auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
+            //         linear_solver->set_library_type("petsc");
+
+            //         auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver, eigen_solver);
+            //     #endif //WITH_SLEPC
+            // #endif //WITH_PETSC
 
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_);
@@ -414,16 +307,24 @@ namespace utopia
             if(verbose_)
                 fun.describe();
 
-            auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
+            // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
             // lsolver->pc_type("bjacobi");
+
+            // auto lsolver = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            auto lsolver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE> >();
+            // auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector> >();
+            auto strategy_sbc = std::make_shared<utopia::Backtracking<Vector> >();
 
             Newton<Matrix, Vector> solver(lsolver);
             solver.read(input_params_);
+            solver.set_line_search_strategy(strategy_sbc);
+
             solver.solve(fun, x);
 
             if(output_vtk_)
                 fun.output_to_VTK(x);
         }
+
 
         void QuasiTR_unconstrained()
         {
@@ -431,17 +332,34 @@ namespace utopia
             Vector x = fun.initial_guess();
             SizeType memory_size = 5;
 
-            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            auto subproblem = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
             subproblem->atol(1e-14);
             subproblem->max_it(100000);
+            // subproblem->use_precond_direction(true);
+
 
             auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
             hess_approx->theta_min(1.0);
-            hess_approx->damping_tech(POWEL);
-            hess_approx->scaling_tech(ADAPTIVE);
 
-            QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
+            // hess_approx->damping_tech(POWEL);
+            hess_approx->damping_tech(NOCEDAL); 
+
+
+            hess_approx->scaling_tech(ADAPTIVE);
+            // hess_approx->scaling_tech(INITIAL);
+            // hess_approx->scaling_tech(NONE);
+            // hess_approx->scaling_tech(FORBENIUS);
+
+            // auto precond = hess_approx->build_Hinv_precond();
+            // subproblem->set_preconditioner(precond);
+
+
+
+            // QuasiTrustRegion<Vector> tr_solver(hess_approx, subproblem);
+            QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, subproblem);
+
             tr_solver.read(input_params_);
             tr_solver.solve(fun, x);
 
@@ -458,19 +376,19 @@ namespace utopia
             if(verbose_)
                 fun.describe();
 
-            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             qp_solver->atol(1e-10);
             qp_solver->max_it(n_*n_);
-            qp_solver->use_line_search(false);
+            // qp_solver->use_line_search(false);
             qp_solver->verbose(false);
 
-
+            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
 
-            Vector ub, lb;
-            fun.upper_bound(ub);
-            fun.lower_bound(lb);
+            
+            Vector ub = fun.upper_bound();
+            Vector lb = fun.lower_bound();
             auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
             tr_solver.set_box_constraints(box);
@@ -499,9 +417,8 @@ namespace utopia
             // hess_approx->damping_tech(POWEL);
             // hess_approx->scaling_tech(ADAPTIVE);
 
-            Vector ub, lb;
-            fun.upper_bound(ub);
-            fun.lower_bound(lb);
+            Vector ub = fun.upper_bound();
+            Vector lb = fun.lower_bound();
             auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
 
@@ -521,7 +438,8 @@ namespace utopia
 //FIXME
 #ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > multilevel_problem(2, n_levels_, n_);
-            auto fun = multilevel_problem.level_functions_[n_levels_-1];
+            
+            auto fun = multilevel_problem.get_functions().back(); 
             Bratu2D<Matrix, Vector> * fun_Bratu2D = dynamic_cast<Bratu2D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Bratu2D->initial_guess();
 
@@ -544,8 +462,8 @@ namespace utopia
             rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
             // Transfers and objective functions
-            rmtr->set_transfer_operators(multilevel_problem.transfers_);
-            rmtr->set_functions( multilevel_problem.level_functions_);
+            rmtr->set_transfer_operators(multilevel_problem.get_transfer());
+            rmtr->set_functions(multilevel_problem.get_functions());
 
 
             rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
@@ -567,7 +485,8 @@ namespace utopia
 #ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
-            auto fun = multilevel_problem.level_functions_[n_levels_-1];
+            // auto fun = multilevel_problem.level_functions_[n_levels_-1];
+            auto fun = multilevel_problem.get_functions().back(); 
             Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Poisson3D->initial_guess();
 
@@ -588,8 +507,8 @@ namespace utopia
             rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
             // Transfers and objective functions
-            rmtr->set_transfer_operators(multilevel_problem.transfers_);
-            rmtr->set_functions( multilevel_problem.level_functions_);
+            rmtr->set_transfer_operators(multilevel_problem.get_transfer());
+            rmtr->set_functions( multilevel_problem.get_functions());
 
 
             rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
@@ -611,7 +530,9 @@ namespace utopia
             #ifdef WITH_PETSC
                 PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
-                auto fun = multilevel_problem.level_functions_[n_levels_-1];
+                auto funs = multilevel_problem.get_functions();
+                auto fun = funs.back(); 
+
                 Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
                 Vector x = fun_Poisson3D->initial_guess();
 
@@ -632,8 +553,8 @@ namespace utopia
                 rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
                 // Transfers and objective functions
-                rmtr->set_transfer_operators(multilevel_problem.transfers_);
-                rmtr->set_functions( multilevel_problem.level_functions_);
+                rmtr->set_transfer_operators(multilevel_problem.get_transfer());
+                rmtr->set_functions( multilevel_problem.get_functions());
 
 
                 rmtr->read(input_params_);
@@ -655,7 +576,7 @@ namespace utopia
         void TR_tril_test()
         {
             #ifdef WITH_PETSC
-                Poisson3D<PetscMatrix, PetscVector> fun(3);
+                Poisson3D<PetscMatrix, PetscVector> fun(50);
                 PetscVector x = fun.initial_guess();
 
                 PetscMatrix H;
@@ -682,10 +603,9 @@ namespace utopia
                     backend_convert(x, x_tril);
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                    QP_solver->verbose(false); 
 
-                    Vector lb_tril = local_values(local_size(x_tril), -9e9);
-                    Vector ub_tril = local_values(local_size(x_tril), 9e9);
+                    Vector lb_tril = local_values(local_size(x_tril).get(0), -9e9);
+                    Vector ub_tril = local_values(local_size(x_tril).get(0), 9e9);
 
                     empty_rhs_tril = 0.0*x_tril;
                     backend_convert(x_eq, x_eq_tril);
@@ -696,8 +616,6 @@ namespace utopia
                     TrustRegionVariableBound<Matrix, Vector> tr_solver(QP_solver);
                     tr_solver.set_box_constraints(make_box_constaints(make_ref(lb_tril), make_ref(ub_tril)));
                     tr_solver.read(input_params_);
-                    tr_solver.max_it(20);
-                    tr_solver.delta0(1e-3); 
                     tr_solver.verbose(verbose_);
                     tr_solver.solve(fun_QP_tril, x_tril);
 
@@ -759,7 +677,8 @@ namespace utopia
             #ifdef WITH_PETSC
                 PetscMultilevelTestProblem<PetscMatrix, PetscVector, Poisson3D<PetscMatrix, PetscVector> > multilevel_problem(3, n_levels_, n_);
 
-                auto fun = multilevel_problem.level_functions_[n_levels_-1];
+                auto funs = multilevel_problem.get_functions();
+                auto fun = funs.back(); 
                 Poisson3D<PetscMatrix, PetscVector> * fun_Poisson3D = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
                 PetscVector x = fun_Poisson3D->initial_guess();
 
@@ -768,19 +687,21 @@ namespace utopia
 
                 backend_convert(x, x_fine);
 
-                for(auto i=0; i < multilevel_problem.transfers_.size(); i++)
+                auto transfers = multilevel_problem.get_transfer(); 
+
+                for(auto i=0; i < multilevel_problem.n_levels(); i++)
                 {
-                    MatrixTransfer<PetscMatrix, PetscVector> * mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(multilevel_problem.transfers_[i].get());
+                    MatrixTransfer<PetscMatrix, PetscVector> * mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(transfers[i].get());
 
                     Matrix I_tril;
                     backend_convert_sparse(mat_transfer->I(), I_tril);
                     transfers_tril.push_back( std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I_tril)));
                 }
 
-                level_functions_tril.resize(multilevel_problem.level_functions_.size());
-                for(auto i=0; i < multilevel_problem.level_functions_.size(); i++)
+                level_functions_tril.resize(multilevel_problem.n_levels());
+                for(auto i=0; i < multilevel_problem.n_levels(); i++)
                 {
-                    Poisson3D<PetscMatrix, PetscVector> * fun_Laplace = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(multilevel_problem.level_functions_[i].get());
+                    Poisson3D<PetscMatrix, PetscVector> * fun_Laplace = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
 
                     if(std::is_same<ProblemType, Bratu3D<Matrix1, Vector1>>::value)
                     {
@@ -1007,70 +928,7 @@ namespace utopia
             // disp(x_fine);
         }
 
-        void for_each_loop_test()
-        {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-            Vector z = values(n_, 0.);
 
-            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
-
-           {
-                auto d_x = const_device_view(x);
-                auto d_y = const_device_view(y);
-                auto d_z = device_view(z);
-
-                ForLoop::apply(range(z), UTOPIA_LAMBDA(const SizeType i)
-                {
-                    const Scalar xi = d_x.get(i);
-                    const Scalar yi = d_y.get(i);
-                    d_z.set(i, xi - yi);
-                });
-            }
-
-            Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(Scalar(n_), sum_z));
-        }
-
-        void parallel_each_write_test()
-        {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-            Vector z = values(n_, 0.);
-
-            {
-                auto d_x = const_device_view(x);
-                auto d_y = const_device_view(y);
-                auto d_z = device_view(z);
-
-                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-                {
-                    const Scalar xi = d_x.get(i);
-                    const Scalar yi = d_y.get(i);
-                    return xi - yi;
-                });
-            }
-
-            Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(Scalar(n_), sum_z));
-        }
-        
-        void multi_reduce_test()
-        {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-
-            each_write(x, [](const SizeType &i) -> Scalar {
-                return -(i + 1.0);
-            });
-
-            each_write(y, [](const SizeType &i) -> Scalar {
-                return (i + 1.0);
-            });
-
-            const Scalar m = multi_min(x, y);
-            utopia_test_assert(approxeq(m, Scalar(-n_)));
-        }
 
     private:
         SizeType n_;
@@ -1086,17 +944,17 @@ namespace utopia
     void hck()
     {
 #ifdef WITH_PETSC
-        auto n_levels    = 3;
+        auto n_levels    = 2;
 
-        auto coarse_dofs = 100;
+        auto coarse_dofs = 10;
         auto verbose     = true;
 
-        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-        // HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
+        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
-#ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
-#endif
+// #ifdef WITH_TRILINOS
+//         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+// #endif
 #endif
 
     }

@@ -35,7 +35,11 @@
             "mesh": {
                 "type": "square",
                 "elem-type" : "quad",
-                "n-x" : 8,
+                "min-x":0.4,
+                "max-x":0.8,
+                "min-y":0.2,
+                "max-y":0.8,
+                "n-x" : 4,
                 "n-y" : 4,
                 "refinements" : 0,
                 "order" : 1,

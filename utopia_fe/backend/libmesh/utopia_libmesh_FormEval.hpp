@@ -270,7 +270,7 @@ namespace utopia {
             template<class Eq>
             void operator()(const int index, const Eq &eq) {
                 FormEval<Form, LIBMESH_TAG>::apply(eq, mat_buff, vec_buff, ctx);
-                if(empty(mat)) {
+                if(empty(mat) || size(mat) != size(mat_buff)) {
                     mat = mat_buff;
                     vec = vec_buff;
                 } else {

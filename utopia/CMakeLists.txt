@@ -33,6 +33,8 @@ endif(NOT CMAKE_BUILD_TYPE)
 #To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 
+
+set(CMAKE_CXX_EXTENSIONS OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -49,7 +51,7 @@ option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
 
 option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
-option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" ON)
+option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
@@ -58,11 +60,16 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+
+# set(UTOPIA_DEFAULT_TARGETS)
+include(CodeCoverage)
+
 #################################################################################
 #################################################################################
 #################################################################################
 set(UTOPIA_DEV_FLAGS
-    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
+    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type"
 
 )
 
@@ -307,15 +314,12 @@ if(USE_SPIKE_SOLVERS)
     list(APPEND UTOPIA_MODULES spike/solvers)
 endif()
 
-
 # core modules
 set(UTOPIA_MODULES interoperability backend solvers differentiable core ui utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
     add_subdirectory(${MODULE})
 endforeach(MODULE)
-
-
 
 add_definitions(${UTOPIA_DEFS})
 include_directories(${UTOPIA_INCLUDES})
@@ -365,41 +369,34 @@ install(FILES
 
 ##########################################################
 
-
+# archive
 add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
+utopia_link_default_targets(utopia)
 target_link_libraries(utopia ${UTOPIA_COMPONENTS})
 target_link_libraries(utopia ${UTOPIA_LIBRARIES})
 
-if(NOT UTOPIA_ARCHIVE_ONLY)
-    # add_library(utopia_dynamic SHARED utopia.cpp ${UTOPIA_SOURCES})
-    # target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
-    # target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
+# test suite
+add_executable(utopia_test EXCLUDE_FROM_ALL test.cpp)
+utopia_link_default_targets(utopia_test)
+target_link_libraries(utopia_test utopia)
+include(tests/tests.cmake)
 
-    # test suite
-    add_executable(utopia_test test.cpp)
-    target_link_libraries(utopia_test utopia)
-    # add_subdirectory(tests)
-    include(tests/tests.cmake)
+# bench suite
+add_executable(utopia_bench EXCLUDE_FROM_ALL bench.cpp)
+utopia_link_default_targets(utopia_bench)
+target_link_libraries(utopia_bench utopia)
+include(benchmarks/benchmarks.cmake)
 
-    add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
-    target_link_libraries(utopia_exec utopia)
-    target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
-    target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
+add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
+target_link_libraries(utopia_exec utopia)
+target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
+target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
-    # set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
-    
-    install(TARGETS utopia utopia_exec
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-    )
-else()
-    install(TARGETS utopia
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-    )
-endif()
+install(TARGETS utopia
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
 
 install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
 install(FILES ${UTOPIA_HEADERS} DESTINATION include)
@@ -417,7 +414,6 @@ append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_DEFS=" "\n" "" "${UTOP
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_CXX_FLAGS=${CMAKE_CXX_FLAGS}\n")
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_CXX_COMPILER=${CMAKE_CXX_COMPILER}\n")
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_C_COMPILER=${CMAKE_C_COMPILER}\n")
-
 
 file(WRITE ${CMAKE_BINARY_DIR}/utopia-config.makefile ${CONFIG_CONTENT})
 
@@ -437,7 +433,6 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake 	 DESTINATION config)
 
 print_dependency_table()
 
-
 # find_package(OpenMP)
 # if(OPENMP_FOUND)
 # 	SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
@@ -446,10 +441,26 @@ print_dependency_table()
 # 	set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
 # endif()
 
-
-
-
-#############################
-### petsc-cuda stuff
-
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+##########################################################################################
+
+add_custom_target(test COMMAND time ${CMAKE_BINARY_DIR}/utopia_test -verbose)
+add_dependencies(test utopia_test)
+
+##########################################################################################
+
+add_custom_target(bench COMMAND time ${CMAKE_BINARY_DIR}/utopia_bench -verbose)
+add_dependencies(bench utopia_bench)
+
+##########################################################################################
+
+add_custom_target(bench_and_test)
+add_dependencies(bench_and_test bench test)
+
+##########################################################################################
+
+add_custom_target(complete)
+add_dependencies(complete utopia utopia_test utopia_bench utopia_exec)
+
+##########################################################################################

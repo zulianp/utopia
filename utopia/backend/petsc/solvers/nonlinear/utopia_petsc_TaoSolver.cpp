@@ -5,7 +5,9 @@
 #include "utopia_Describable.hpp"
 
 #include "petsctao.h"
-#include <mpi.h>
+#include <petsc/private/taoimpl.h>
+#include  <mpi.h>
+
 
 #define U_CHECKERR(ierr) { if(ierr != 0) return false; }
 
@@ -340,10 +342,22 @@ namespace utopia {
             set_type(type.c_str());
         }
 
+        inline bool initialized(const SizeType & n_global) const
+        {
+            if(tao != nullptr)
+            {
+                PetscInt size; 
+                VecGetSize((*tao).solution, &size); 
+                return (size==n_global); 
+            }
+            else
+                return false; 
+        }
+
         inline bool initialized() const
         {
-            return tao != nullptr;
-        }
+            return (tao != nullptr); 
+        }        
 
         void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver)
         {
@@ -488,9 +502,10 @@ namespace utopia {
     template<class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::init(Function<Matrix, Vector> &fun, Vector & x)
     {
-        if(!impl_->initialized()) {
+        if(!impl_->initialized(size(x)))
+        {
             impl_->init(x.comm().get());
-
+            
              if(this->linear_solver()) {
                 impl_->set_linear_solver(this->linear_solver());
             }

@@ -5,7 +5,7 @@
 #include "utopia_FEModel.hpp"
 #include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMesh.hpp"
-#include "utopia_Flow.hpp"
+#include "utopia_UFlow.hpp"
 #include "utopia_LowerDimTransfer.hpp"
 
 #include "libmesh/parallel_mesh.h"
@@ -155,8 +155,7 @@ namespace utopia {
             in.get("space", space_);
             in.get("identity-on-constrained-dofs", identity_on_constrained_dofs_);
 
-            //FIXME
-            auto flow = std::make_shared<Flow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
+            auto flow = std::make_shared<UFlow<FunctionSpaceT, Matrix, Vector> >(space_.space().subspace(0));
             flow->rescale(rescale_);
             flow->read(in);
             flow_model_ = flow;
@@ -164,6 +163,11 @@ namespace utopia {
             in.get("intersection", coupling_);
 
             init();
+        }
+
+        inline void residual(const Matrix &A, const Vector &b, const Vector &x, Vector &r) const
+        {
+            r = b - A * x;
         }
 
         inline bool assemble_flow(const Vector &x, Matrix &hessian, Vector &gradient)

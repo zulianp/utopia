@@ -41,16 +41,15 @@ namespace utopia
         template<class FunctionT>
         bool get_alpha_aux(FunctionT &fun, const Vector &g, const Vector& x, const Vector &p_k, Scalar &alpha_k)
         {
-            Vector x_0 = x, x_k = x;
             Scalar E_k, E_k1, g_p;
 
-            fun.value(x_0, E_k);
+            fun.value(x, E_k);
             alpha_k = 1.0;
             g_p =  dot(g, p_k);
 
             E_k1 = E_k;
 
-            x_k = x_0 + alpha_k * p_k;
+            x_k = x + alpha_k * p_k;
             fun.value(x_k, E_k1);
 
             SizeType it = 0;
@@ -61,7 +60,7 @@ namespace utopia
             // Wolfe conditions
             while( E_k1 >(E_k + this->c1() * alpha_k * g_p) && it < this->max_it()  && alpha_k > this->alpha_min())
             {
-                x_k = x_0 + alpha_k * p_k;
+                x_k = x + alpha_k * p_k;
                 fun.value(x_k, E_k1);
                 it++;
                 alpha_k *= this->rho();
@@ -73,6 +72,10 @@ namespace utopia
            // std::cout<<"it:  "<< it << "  \n";
             return true;
         }
+
+
+    private:
+        Vector x_k; 
 
     };
 

@@ -23,8 +23,8 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            value = 0.5 * dot(x, *H_ * x);
-            value -= dot(x,  *rhs_);
+            Hx_ = *H_ * x; 
+            value = 0.5 * dot(x, Hx_) - dot(x,  *rhs_);
             return true;
         }
 
@@ -65,6 +65,7 @@ namespace utopia {
     private:
         std::shared_ptr<const Vector> rhs_;
         std::shared_ptr<const Matrix> H_;
+        Vector Hx_; 
     };
 }
 

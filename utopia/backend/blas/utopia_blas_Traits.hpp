@@ -6,6 +6,8 @@
 #include "utopia_Traits.hpp"
 #include "utopia_blas_ForwardDeclarations.hpp"
 #include "utopia_BackendInfo.hpp"
+#include "utopia_Communicator.hpp"
+
 #include <vector>
 
 namespace utopia {
@@ -20,6 +22,7 @@ namespace utopia {
         using IndexSet    = utopia::BlasIndexSet;
         using ScalarArray = utopia::BlasArray<T>;
         using IndexArray  = utopia::BlasArray<int>;
+        using Communicator = utopia::SelfCommunicator;
 
         enum {
             Backend = BLAS

@@ -43,17 +43,40 @@ namespace utopia {
         ///////////////////////////// PLUS /////////////////////////////
 
         template<class Left, class Right>
-        static void apply(Left &&left, const Tensor<Right, Order> &right, const Plus &, Result &result)
+        static void apply(Left &&left, Right &&right, const Plus &, Result &result)
         {
-            result.construct(std::forward<Left>(left));
-            result.axpy(1.0, right.derived());
+            if(result.is_alias(left)) {
+                result.axpy(1.0, right);
+            } else if(result.is_alias(right)) {
+                result.axpy(1.0, left);
+            } else {
+                if(std::is_rvalue_reference<Right>::value) {
+                    result.construct(std::forward<Right>(right));
+                    result.axpy(1.0, left);
+                } else {
+                    result.construct(std::forward<Left>(left));
+                    result.axpy(1.0, right);
+                }
+            }
         }
 
         ///////////////////////////// MINUS /////////////////////////////
 
         template<class Left, class Right>
-        static void apply(Left &&left, const Tensor<Right, Order> &right, const Minus &, Result &result)
+        static void apply(Left &&left, Right &&right, const Minus &, Result &result)
         {
+            if(result.is_alias(left)) {
+                result.axpy(-1.0, right);
+                return;
+            }
+
+            if(result.is_alias(right)) {
+                //necessary for petsc
+                result.axpy(-1.0, left);
+                result.scale(-1.0);
+                return;
+            }
+
             result.construct(std::forward<Left>(left));
             result.axpy(-1.0, right.derived());
         }
@@ -183,11 +206,12 @@ namespace utopia {
     template<class Left, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Left, Right, Operation>, Traits, Backend> {
     public:
-        typedef typename utopia::TypeAndFill<Traits, Binary<Left, Right, Operation> >::Type Result;
+        using Expr = utopia::Binary<Left, Right, Operation>;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        inline static Result apply(const Binary<Left, Right, Operation> &expr) {
-            Result result;
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
             apply_aux(
@@ -198,7 +222,6 @@ namespace utopia {
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
 
         template<class L, class R, class Res, int Order>
@@ -241,7 +264,7 @@ namespace utopia {
 
             auto &&op = expr.right().operation();
 
-            apply_aux(
+            apply(
                 Eval<TensorT, Traits>::apply(expr.right().left()),
                 Eval<TensorT, Traits>::apply(expr.right().right()),
                 op,
@@ -252,15 +275,17 @@ namespace utopia {
         }
 
         template<class TL, class TR, class Res>
-        inline static void apply_aux(TL &&l, TR &&r, const Op &op, Res &result)
+        inline static void apply(TL &&l, TR &&r, const Op &op, Res &result)
         {
-            if(r.same_object(result)) {
+            if(r.is_alias(result)) {
                 if(!utopia::is_commutative<Op>::value) {
                     if(std::is_same<Divides, Op>::value) {
                         result.reciprocal(1.0);
                         result.e_mul(l);
                     } else {
                         assert(false && "IMPLEMENT ME");
+                        std::cerr << "[Error] EvalAssignElWise: case not implemented " << std::endl;
+                        Utopia::Abort();
                     }
 
                 } else {
@@ -282,6 +307,24 @@ namespace utopia {
         }
     };
 
+    template<typename T, class Op, class Traits, int Backend>
+    class Eval< Binary<Tensor<T, 1>, Tensor<T, 1>, Op>, Traits, Backend> {
+    public:
+        using Expr = utopia::Binary<Tensor<T, 1>, Tensor<T, 1>, Op>;
+
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, T)
+
+        inline static void apply(const Expr &expr, T &result)
+        {
+            EvalAssignElWise<Tensor<T, 1>, Op, Traits>::apply(
+                Eval<Tensor<T, 1>, Traits>::apply(expr.left()),
+                Eval<Tensor<T, 1>, Traits>::apply(expr.right()),
+                expr.operation(),
+                result.derived()
+            );
+        }
+    };
+
     template<class T, class Traits, int Backend>
     class Eval<TensorAssignElWise<T, EMultiplies>, Traits, Backend> {
     public:
@@ -289,9 +332,9 @@ namespace utopia {
         template<class Expr>
         inline static void apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             EvalAssignElWise<Tensor<T, 1>, EMultiplies, Traits>::apply(expr);
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
         }
     };
 
@@ -302,9 +345,9 @@ namespace utopia {
         template<class Expr>
         inline static void apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             EvalAssignElWise<Tensor<T, 1>, Divides, Traits>::apply(expr);
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
         }
     };
 
@@ -315,9 +358,9 @@ namespace utopia {
         template<class Expr>
         inline static void apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             EvalAssignElWise<Tensor<T, 1>, Min, Traits>::apply(expr);
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
         }
     };
 
@@ -328,9 +371,9 @@ namespace utopia {
         template<class Expr>
         inline static void apply(const Expr &expr)
         {
-            UTOPIA_TRACE_BEGIN_SPECIALIZED(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             EvalAssignElWise<Tensor<T, 1>, Max, Traits>::apply(expr);
-            UTOPIA_TRACE_END_SPECIALIZED(expr);
+            UTOPIA_TRACE_END(expr);
         }
     };
    
@@ -338,19 +381,17 @@ namespace utopia {
     class Eval<OuterProduct<Left, Right>, Traits, Backend> {
     public:
         typedef utopia::OuterProduct<Left, Right> Expr;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr) {
-            EXPR_TYPE(Traits, Expr) result;
-
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            auto left  = Eval<Left, Traits>::apply(expr.left());
-            auto right = Eval<Left, Traits>::apply(expr.right());
+            auto &&left  = Eval<Left, Traits>::apply(expr.left());
+            auto &&right = Eval<Right, Traits>::apply(expr.right());
 
-            EvalKroneckerProduct<decltype(result), decltype(left)>::apply(left, right, result);
+            EvalKroneckerProduct<Result, typename Traits::Vector>::apply(left, right, result);
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 

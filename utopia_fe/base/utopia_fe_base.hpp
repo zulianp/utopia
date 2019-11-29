@@ -16,9 +16,11 @@ namespace utopia {
     using UIndexArray  = utopia::Traits<UVector>::IndexArray;
     using UScalarArray = utopia::Traits<UVector>::ScalarArray;
     using UIndexSet    = utopia::Traits<UVector>::IndexSet;
+    using UScalar      = utopia::Traits<UVector>::Scalar;
+    using USizeType    = utopia::Traits<UVector>::SizeType;
 
-    using USerialMatrix = utopia::BlasMatrix<double>;
-    using USerialVector = utopia::BlasVector<double>;
+    using USerialMatrix = utopia::BlasMatrix<UScalar>;
+    using USerialVector = utopia::BlasVector<UScalar>;
 }
 
 #endif //UTOPIA_FE_BASE_HPP

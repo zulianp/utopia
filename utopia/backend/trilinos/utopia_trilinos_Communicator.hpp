@@ -24,7 +24,7 @@ namespace utopia {
             return comm_->getSize();
         }
 
-        inline Communicator * clone() const override
+        inline TrilinosCommunicator * clone() const override
         {
             return new TrilinosCommunicator(get());
         }
@@ -37,6 +37,18 @@ namespace utopia {
         inline void set(const CommPtr &comm)
         {
             comm_ = comm;
+        }
+
+        inline bool conjunction(const bool &val) const override  {
+            int i = val;
+            i = sum(i);
+            return i == this->size();
+        }
+
+        inline bool disjunction(const bool &val) const override  {
+            int i = val;
+            i = sum(i);
+            return i > 0;
         }
 
         template<typename T>

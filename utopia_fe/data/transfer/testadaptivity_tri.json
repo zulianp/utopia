@@ -5,18 +5,20 @@
         "*function": "1.0",
         "function-type" : "expr",
         "discretization" : "new",
+        "disable-adaptivity" : false,
         "use-convert-transfer" : true,
         "handle-adaptivity" : true,
+        "adaptivity" : true,
         "master": {
             "mesh": {
                 "type": "square",
                 "elem-type" : "tri",
-                "n-x" : 20,
-                "n-y" : 10,
+                "n-x" : 10,
+                "n-y" : 5,
                 "refinements" : 0,
                 "order" : 1,
-                "random-refine" : true,
-                "random-refinements": 5,
+                "random-refine" : false,
+                "random-refinements": 0,
                 "refine-0" : false
             },
             "space": {
@@ -29,18 +31,18 @@
                     }
                 ]
             }
-            
+
         },
         "slave": {
             "mesh": {
                 "type": "square",
                 "elem-type" : "tri",
-                "n-x" : 8,
-                "n-y" : 4,
+                "n-x" : 2,
+                "n-y" : 2,
                 "refinements" : 0,
                 "order" : 1,
                 "random-refine" : true,
-                 "random-refinements": 5
+                 "random-refinements": 3
             },
             "space": {
                 "system-name" : "slave",

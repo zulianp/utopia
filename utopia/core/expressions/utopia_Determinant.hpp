@@ -27,6 +27,11 @@ namespace utopia {
 
         Determinant(const Expr &expr) : expr_(expr) {}
 
+        inline std::string get_class() const override
+        {
+            return "Determinant<" + expr().get_class() + ">";
+        }
+
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
     };

@@ -15,6 +15,8 @@
 #include "utopia_Reducible.hpp"
 #include "utopia_Comparable.hpp"
 #include "utopia_Operator.hpp"
+#include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 //Backend includes
 #include "utopia_petsc_Base.hpp"
@@ -73,11 +75,15 @@ namespace utopia {
             other.destroy();
 
             PetscErrorHandler::Check(MatDuplicate(_mat, opt, &other._mat));
+
+            UTOPIA_REPORT_ALLOC("PetscMatrix::duplicate");
         }
 
         inline void convert(PetscMatrixMemory &other, MatType newtype) {
             //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
             PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
+
+            UTOPIA_REPORT_ALLOC("PetscMatrix::convert");
         }
 
         inline void convert(MatType newtype) {
@@ -128,7 +134,8 @@ namespace utopia {
         public Comparable<PetscMatrix>,
         // public Ranged<PetscMatrix, 2>,
         public Operator<PetscVector>,
-        public Tensor<PetscMatrix, 2>
+        public Tensor<PetscMatrix, 2>,
+        public Selectable<PetscMatrix, 2>
         {
     public:
         using Scalar   = PetscScalar;
@@ -547,7 +554,7 @@ namespace utopia {
          void axpy(const Scalar &a, const PetscMatrix &x) override;
 
          ///<Scalar>DOT - dot product
-         Scalar dot(const PetscMatrix &other) const override
+         Scalar dot(const PetscMatrix &/*other*/) const override
          {
             assert(false && "IMPLEMENT ME");
             return -1.0;
@@ -788,6 +795,8 @@ namespace utopia {
             check_error( MatShift(implementation(), factor) );
         }
 
+
+        void shift_diag(const PetscVector &d);
         void dense_init_diag(MatType dense_type, const PetscVector &diag);
         void matij_init_diag(const PetscVector &diag);
 
@@ -940,7 +949,7 @@ namespace utopia {
         SizeType global_nnz() const;
         SizeType local_nnz() const;
 
-        inline bool same_object(const PetscMatrix &other) const
+        inline bool is_alias(const PetscMatrix &other) const
         {
             if(empty()) return false;
             if(other.empty()) return false;

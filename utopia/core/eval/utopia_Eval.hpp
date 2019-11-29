@@ -17,7 +17,6 @@
 #include "utopia_Eval_Unary.hpp"
 #include "utopia_Eval_Negate.hpp"
 #include "utopia_Eval_TensorReduce.hpp"
-#include "utopia_Eval_Construct_Multiply.hpp"
 #include "utopia_Eval_Determinant.hpp"
 #include "utopia_Eval_Select.hpp"
 #include "utopia_Eval_Inverse.hpp"
@@ -27,5 +26,6 @@
 #include "utopia_DotVecVecs.hpp"
 #include "utopia_MultiReduce.hpp"
 #include "utopia_Eval_DotOpDot.hpp"
+#include "utopia_Eval_Ternary.hpp"
 
 #endif //UTOPIA_EVAL_HPP

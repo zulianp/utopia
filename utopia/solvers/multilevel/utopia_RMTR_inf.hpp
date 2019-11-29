@@ -50,6 +50,7 @@ namespace utopia
 
 
         typedef utopia::MultilevelVariableBoundSolverInterface<Vector>  MLConstraints;
+        using utopia::MultilevelVariableBoundSolverInterface<Vector>::check_feasibility; 
 
     public:
 

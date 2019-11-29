@@ -15,7 +15,7 @@ namespace utopia
         DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        VariablyDim25(const SizeType & n_loc): n_loc_(n_loc)
+        VariablyDim25(const SizeType & n_loc=10): n_loc_(n_loc)
         {
             x_init_ = local_zeros(n_loc_);
             x_exact_ = local_values(n_loc_, 1.0);

@@ -1,5 +1,5 @@
-#ifndef UTOPIA_JACOBI_HPP
-#define UTOPIA_JACOBI_HPP
+#ifndef UTOPIA_POINT_JACOBI_HPP
+#define UTOPIA_POINT_JACOBI_HPP
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Smoother.hpp"
 
@@ -46,7 +46,10 @@ namespace utopia {
             const Matrix &A = *this->get_operator();
 
             SizeType it = 0;
+            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r2");
             r_ = rhs - A * x;
+            UTOPIA_NO_ALLOC_END();
+
             Scalar g_norm0 = norm2(r_);
             Scalar g_norm = g_norm0;
             SizeType compute_norm_each = 50;
@@ -57,8 +60,10 @@ namespace utopia {
                 sweep(rhs, x);
 
                 if(it++ % compute_norm_each == 0) {
+                    UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r21");
                     r_ = rhs - A * x;
                     g_norm = norm2(r_);
+                    UTOPIA_NO_ALLOC_END();
 
                     if(this->verbose()) {
                         PrintInfo::print_iter_status(it, {g_norm});
@@ -93,15 +98,25 @@ namespace utopia {
             Solver::update(op);
 
             const auto &A = *op;
-            Vector diag_A = diag(A);
-            d_inv_ = 1. / diag_A;
+
+            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4");
+            d_inv_ = diag(A);
+            UTOPIA_NO_ALLOC_END();
+
+            
+            // lower and upper part of A
+            LU_ = A;
+            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4.1");
+            LU_ -= Matrix(diag(d_inv_));
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4.2");
+            d_inv_ = 1. / d_inv_;
+            UTOPIA_NO_ALLOC_END();
 
             // prevents system from being indefinite
             check_indef(d_inv_);
 
-            // lower and upper part of A
-            LU_ = A;
-            LU_ -= Matrix(diag(diag_A));
         }
 
     private:
@@ -135,8 +150,15 @@ namespace utopia {
 
         inline bool sweep(const Vector &rhs, Vector &x)
         {
+            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r1");
             r_ = rhs - (LU_ * x);
             x = e_mul(d_inv_, r_);
+
+            // const Matrix &A = *this->get_operator();
+            // r_ = rhs - A * x;
+            // x += e_mul(d_inv_, r_);
+
+            UTOPIA_NO_ALLOC_END();
             return true;
         }
 
@@ -144,5 +166,5 @@ namespace utopia {
 
 }
 
-#endif //UTOPIA_JACOBI_HPP
+#endif //UTOPIA_POINT_JACOBI_HPP
 
