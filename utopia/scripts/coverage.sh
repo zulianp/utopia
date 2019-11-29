@@ -1,3 +1,5 @@
+#!/bin/bash
+
 alias llvm-cov=llvm-cov-mp-7.0
 alias llvm-profdata=llvm-profdata-mp-7.0
 
