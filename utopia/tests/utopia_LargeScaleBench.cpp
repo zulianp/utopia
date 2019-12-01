@@ -23,8 +23,14 @@ namespace utopia
 
 		LargeScaleUnconstrainedBenchmark(const SizeType & n = 10, const bool verbose = false): n_(n), verbose_(verbose)
 		{
-			test_functions_.resize(2); 
-			test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
+			test_functions_.resize(1);
+			// test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
+
+			test_functions_[0] = std::make_shared<Poisson3D<Matrix, Vector> >(n_, 1);
+
+			// test_functions_[0] = std::make_shared<Poisson2D<Matrix, Vector> >(n_);
+
+			// test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
 			// test_functions_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
 
 			// auto fun = Poisson1D<Matrix, Vector>(n_); 
@@ -43,6 +49,7 @@ namespace utopia
 			// 	[this]() {
 		 //            auto lin_solver = std::make_shared<utopia::Factorization<Matrix, Vector> >();
 		 //            Newton<Matrix, Vector> solver(lin_solver);
+		 //            solver.verbose(true);
 		 //            run_tr(this->test_functions_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
 			// 	}
 			// );
@@ -152,6 +159,17 @@ namespace utopia
 			// 	);		
 			// #endif
 
+
+			this->register_experiment("TR_STCG",
+				[this]() {
+					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+					subproblem->pc_type("asm");
+					TrustRegion<Matrix, Vector> solver(subproblem);
+					solver.delta0(1e10);
+					run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
+				}
+			);				
+
 		}
 
 	private:
@@ -161,13 +179,13 @@ namespace utopia
 		{
 
 			InputParameters in;
-			in.set("atol", 1e-6);
+			in.set("atol", 1e-7);
 			in.set("rtol", 1e-11);
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 3); 
-			in.set("verbose", exp_verbose);
+			in.set("max-it", 500); 
+			in.set("verbose", true);
 			solver.read(in); 
 
 
@@ -203,12 +221,17 @@ namespace utopia
 				}
 
 				// disp(x_init);
+				Poisson3D<Matrix, Vector> * fun_bratu = dynamic_cast<Poisson3D<Matrix, Vector> *>(test_functions.back().get());
+				// fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson2D_exact.vtk");
+				fun_bratu->output_to_VTK(x_init, "Poisson3D.vtk");
+				fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson3D_exact.vtk");
+
 
 				if(test_functions[i]->exact_sol_known())
 				{
 					// disp(x_init, "num_sol..."); 
 					// disp(test_functions[i]->exact_sol(), "exact solution"); 
-					// std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n"; 
+					std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n"; 
 					// disp(x_init);
 				}
 
@@ -228,7 +251,7 @@ namespace utopia
 	static void unconstrained_large_scale()
 	{
 		int verbosity_level = 1;
-		const int n_global = 10000; 
+		const int n_global = 50; 
 		bool alg_verbose = true; 
 
 		if(Utopia::instance().verbose()) {

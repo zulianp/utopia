@@ -28,7 +28,6 @@ namespace utopia
     {
       PetscReal lambda;          /* test problem parameter */
       PetscErrorCode (*mms_solution)(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
-      PetscErrorCode (*mms_forcing)(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
     };
 
     PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo*,PetscScalar**,PetscReal*,ParamsBratu2D*);
@@ -36,9 +35,7 @@ namespace utopia
     PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,ParamsBratu2D*);
     
     PetscErrorCode Bratu2DFormInitialGuess(DM,ParamsBratu2D*,Vec);
-    // PetscErrorCode Bratu2DFormExactSolution(DM,ParamsBratu2D*,Vec);
     PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
-    PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);    
 
     PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user,Vec BC_marker, Vec BC_flag);
 
@@ -52,13 +49,12 @@ namespace utopia
 
 
         Bratu2D(const SizeType & n,
-                const Scalar & lambda = 1.0):
+                const Scalar & lambda = 5.0):
                 n_(n), 
                 setup_(false)
         {
             application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
             application_context_.mms_solution   = Bratu2DMMSSolution; 
-            application_context_.mms_forcing    = Bratu2DMMSForcing;
 
             this->create_DM();
             this->setup_SNES();
@@ -80,7 +76,7 @@ namespace utopia
         {
             application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
             application_context_.mms_solution   = Bratu2DMMSSolution; 
-            application_context_.mms_forcing    = Bratu2DMMSForcing;
+            // application_context_.mms_forcing    = Bratu2DMMSForcing;
 
             da_ = dm; 
             // necessary to provide reasonable global dimension 
@@ -124,6 +120,9 @@ namespace utopia
 
             // yes, wrap would be nicer, but lets not use it ...
             convert(snes_->jacobian, hessian); 
+
+            // disp(hessian); 
+            write("hessian.m", hessian); 
             
             return true;
         }

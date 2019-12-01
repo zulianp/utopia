@@ -63,7 +63,7 @@ namespace utopia
             g0_norm = norm2(grad);
             g_norm = g0_norm;
 
-            this->init_solver("NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha_k"});
+            this->init_solver("NEWTON", {" it. ", "|| g ||", "J",  "r_norm", "|| p_k || ", "alpha_k"});
 
             if(this->verbose_)
                 PrintInfo::print_iter_status(it, {g_norm, 1, 0});
@@ -132,10 +132,13 @@ namespace utopia
                 norms2(grad, step, g_norm, s_norm);
                 r_norm = g_norm/g0_norm;
 
+                Scalar J; 
+                fun.value(x, J); 
+
 
                 // // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha_});
+                    PrintInfo::print_iter_status(it, {g_norm, J, r_norm, s_norm, alpha_});
 
                 // // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
