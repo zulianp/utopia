@@ -122,7 +122,7 @@ namespace utopia
             convert(snes_->jacobian, hessian); 
 
             // disp(hessian); 
-            write("hessian.m", hessian); 
+            // write("hessian.m", hessian); 
             
             return true;
         }

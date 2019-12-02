@@ -26,7 +26,7 @@ namespace utopia
 			test_functions_.resize(1);
 			// test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
 
-			test_functions_[0] = std::make_shared<Poisson3D<Matrix, Vector> >(n_, 1);
+			test_functions_[0] = std::make_shared<Poisson3D<Matrix, Vector> >(n_);
 
 			// test_functions_[0] = std::make_shared<Poisson2D<Matrix, Vector> >(n_);
 
@@ -45,14 +45,14 @@ namespace utopia
 		void initialize() override
 		{
 
-			// this->register_experiment("NewtonTest_FACTORIZATION",
-			// 	[this]() {
-		 //            auto lin_solver = std::make_shared<utopia::Factorization<Matrix, Vector> >();
-		 //            Newton<Matrix, Vector> solver(lin_solver);
-		 //            solver.verbose(true);
-		 //            run_tr(this->test_functions_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
-			// 	}
-			// );
+			this->register_experiment("NewtonTest_FACTORIZATION",
+				[this]() {
+		            auto lin_solver = std::make_shared<utopia::Factorization<Matrix, Vector> >();
+		            Newton<Matrix, Vector> solver(lin_solver);
+		            solver.verbose(true);
+		            run_tr(this->test_functions_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
+				}
+			);
 
 			// this->register_experiment("NewtonTest_CG_HOMEMADE_jacobi",
 			// 	[this]() {
@@ -160,15 +160,15 @@ namespace utopia
 			// #endif
 
 
-			this->register_experiment("TR_STCG",
-				[this]() {
-					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-					subproblem->pc_type("asm");
-					TrustRegion<Matrix, Vector> solver(subproblem);
-					solver.delta0(1e10);
-					run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
-				}
-			);				
+			// this->register_experiment("TR_STCG",
+			// 	[this]() {
+			// 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+			// 		subproblem->pc_type("asm");
+			// 		TrustRegion<Matrix, Vector> solver(subproblem);
+			// 		solver.delta0(1e10);
+			// 		run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
+			// 	}
+			// );				
 
 		}
 
@@ -224,7 +224,7 @@ namespace utopia
 				Poisson3D<Matrix, Vector> * fun_bratu = dynamic_cast<Poisson3D<Matrix, Vector> *>(test_functions.back().get());
 				// fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson2D_exact.vtk");
 				fun_bratu->output_to_VTK(x_init, "Poisson3D.vtk");
-				fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson3D_exact.vtk");
+				// fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson3D_exact.vtk");
 
 
 				if(test_functions[i]->exact_sol_known())
@@ -251,7 +251,7 @@ namespace utopia
 	static void unconstrained_large_scale()
 	{
 		int verbosity_level = 1;
-		const int n_global = 50; 
+		const int n_global = 10; 
 		bool alg_verbose = true; 
 
 		if(Utopia::instance().verbose()) {
