@@ -2,6 +2,7 @@
 #define UTOPIA_PETSC_MULTILEVEL_TEST_PROBLEM_HPP
 
 #include "utopia.hpp"
+#include "utopia_TestFunctions.hpp"
 
 #ifdef  WITH_PETSC
 #include <petscdm.h>

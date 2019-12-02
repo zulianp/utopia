@@ -1,4 +1,5 @@
 #include "utopia_Bratu2D.hpp"
+#include "utopia_TestFunctions.hpp"
 
 #ifdef  WITH_PETSC
 

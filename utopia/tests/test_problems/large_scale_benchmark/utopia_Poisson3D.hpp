@@ -1,4 +1,5 @@
 #include "utopia.hpp"
+#include "utopia_TestFunctions.hpp"
 
 namespace utopia
 {
@@ -17,7 +18,8 @@ namespace utopia
 {
 
     template<typename Matrix, typename Vector>
-    class Poisson3D<Matrix, Vector, PETSC> final: virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
+    class Poisson3D<Matrix, Vector, PETSC> final:   virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, 
+                                                    virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
         public:
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;

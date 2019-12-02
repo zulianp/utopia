@@ -128,7 +128,7 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-        void init_memory(const Sizetype & ls) override
+        void init_memory(const SizeType & ls) override
         {
             auto zero_expr = local_zeros(ls);
 

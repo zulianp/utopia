@@ -217,7 +217,6 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
         {
-          Smoother<Matrix, Vector>::read(in);
           PreconditionedSolver::read(in);
 
           //TODO
@@ -241,7 +240,6 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os ) const
     {
-        Smoother<Matrix, Vector>::print_usage(os);
         PreconditionedSolver::print_usage(os);
           //TODO
           //m_utopia_warning_once("not implemented");
@@ -254,11 +252,6 @@ namespace utopia {
         return new BelosSolver(*this);
     }
 
-    template <typename Matrix, typename Vector>
-    bool BelosSolver<Matrix, Vector, TRILINOS>::smooth(const Vector &rhs, Vector &x)
-    {
-        return false;
-    }
 
     template <typename Matrix, typename Vector>
     bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem()

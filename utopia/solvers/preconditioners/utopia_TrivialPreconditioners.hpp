@@ -16,7 +16,10 @@ namespace utopia
    template<class Matrix, class Vector>
     class InvDiagPreconditioner final : public LinearSolver<Matrix, Vector>
     {
-    public:
+        public:
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
         bool apply(const Vector &rhs, Vector &sol) override
         {
             UTOPIA_NO_ALLOC_BEGIN("InvDiagPreconditioner:region3");
@@ -48,6 +51,11 @@ namespace utopia
         InvDiagPreconditioner * clone() const override
         {
             return new InvDiagPreconditioner(*this);
+        }
+
+        void init_memory(const SizeType & ls) override
+        {
+            d = local_zeros(ls);
         }
 
     private:

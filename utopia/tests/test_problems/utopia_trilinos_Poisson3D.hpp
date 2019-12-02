@@ -1,6 +1,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Poisson3D.hpp"
 #include "utopia_Views.hpp"
+#include "utopia_TestFunctions.hpp"
 
 #ifdef  WITH_TRILINOS
 
@@ -10,17 +11,17 @@ namespace utopia
     class Poisson {};
 
     template<typename Matrix, typename Vector>
-    class Poisson<Matrix, Vector, TRILINOS> final :
-        virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
-        virtual public ConstrainedExtendedTestFunction<Matrix, Vector> {
-
+    class Poisson<Matrix, Vector, TRILINOS> final: virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
+                                                    virtual public ConstrainedExtendedTestFunction<Matrix, Vector> 
+    {
     public:
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+
         static const int Dim      = 2;
         static const int NDofs    = 4;
         static const int NQPoints = 6;
 
-        using Scalar   = typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;
 
         //FIXME
         typedef Kokkos::TeamPolicy<>               TeamPolicy;

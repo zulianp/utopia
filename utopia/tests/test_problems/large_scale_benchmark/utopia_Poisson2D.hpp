@@ -2,6 +2,7 @@
 #define UTOPIA_POISSON_2D_HPP
 
 #include "utopia.hpp"
+#include "utopia_TestFunctions.hpp"
 
 namespace utopia
 {

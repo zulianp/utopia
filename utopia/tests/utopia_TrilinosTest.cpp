@@ -8,8 +8,8 @@
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/large_scale_benchmark/utopia_MultiLevelTestProblem1D.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
+#include "utopia_MultilevelTestProblem1D.hpp"
 #include <algorithm>
 
 #ifdef WITH_PETSC
@@ -18,8 +18,8 @@
 
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
-#include "test_problems/large_scale_benchmark/utopia_Bratu1D.hpp"
-#include "test_problems/large_scale_benchmark/utopia_Poisson1D.hpp"
+#include "utopia_Bratu1D.hpp"
+#include "utopia_Poisson1D.hpp"
 #include "utopia_TestProblems.hpp"
 #include "utopia_IPTransfer.hpp"
 #include <cmath>
