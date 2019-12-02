@@ -26,12 +26,11 @@ namespace utopia {
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class GaussSeidel<Matrix, Vector, PETSC> : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
+    class GaussSeidel<Matrix, Vector, PETSC> : public IterativeSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
-        typedef utopia::Smoother<Matrix, Vector>        Smoother;
 
     public:
         GaussSeidel()
@@ -42,13 +41,13 @@ namespace utopia {
         void read(Input &in) override
         {
             Solver::read(in);
-            Smoother::read(in);
+            // Smoother::read(in);
         }
 
         void print_usage(std::ostream &os) const override
         {
             Solver::print_usage(os);
-            Smoother::print_usage(os);
+            // Smoother::print_usage(os);
         }
 
 

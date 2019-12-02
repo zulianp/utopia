@@ -15,7 +15,7 @@ namespace utopia {
 
         typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
-        typedef utopia::Smoother<Matrix, Vector>            Smoother;
+        typedef utopia::IterativeSolver<Matrix, Vector>     Smoother;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::MatrixTransfer<Matrix, Vector>      MatrixTransfer;

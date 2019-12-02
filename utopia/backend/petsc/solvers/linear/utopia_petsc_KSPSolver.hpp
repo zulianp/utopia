@@ -38,15 +38,13 @@ namespace utopia {
 
     template<typename Matrix, typename Vector>
     class KSPSolver<Matrix, Vector, PETSC> :
-        public PreconditionedSolver<Matrix, Vector>,
-        public Smoother<Matrix, Vector> {
+        public PreconditionedSolver<Matrix, Vector>{
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Preconditioner<Vector> Preconditioner;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
-        typedef utopia::Smoother<Matrix, Vector> Smoother;
 
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "only works with petsc types");
 

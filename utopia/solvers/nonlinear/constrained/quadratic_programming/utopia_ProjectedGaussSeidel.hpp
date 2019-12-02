@@ -13,7 +13,7 @@
 namespace utopia {
     //slow and innefficient implementation just for testing
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class ProjectedGaussSeidel : public QPSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
+    class ProjectedGaussSeidel : public QPSolver<Matrix, Vector>
     {
     public:
 
@@ -38,7 +38,6 @@ namespace utopia {
         void read(Input &in) override
         {
             QPSolver<Matrix, Vector>::read(in);
-            Smoother<Matrix, Vector>::read(in);
 
             in.get("use_line_search", use_line_search_);
             in.get("use_symmetric_sweep", use_symmetric_sweep_);
@@ -50,7 +49,6 @@ namespace utopia {
         void print_usage(std::ostream &os) const override
         {
             QPSolver<Matrix, Vector>::print_usage(os);
-            Smoother<Matrix, Vector>::print_usage(os);
 
             this->print_param_usage(os, "use_line_search", "bool", "Determines if line-search should be used.", "true");
             this->print_param_usage(os, "use_symmetric_sweep", "bool", "Determines if symmetric local should be used.", "true");

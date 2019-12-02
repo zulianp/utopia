@@ -17,7 +17,7 @@ namespace utopia  {
      * @tparam     Vector
      */
     template<typename Matrix, typename Vector>
-    class ConjugateGradient<Matrix, Vector, PETSC> : /*public Smoother<Matrix, Vector>,*/ public KSPSolver<Matrix, Vector, PETSC> {
+    class ConjugateGradient<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
     public:
         ConjugateGradient(const std::string &preconditioner = "jacobi")
         : KSPSolver<Matrix, Vector, PETSC>()

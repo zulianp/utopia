@@ -4,11 +4,10 @@
 #include <string>
 #include "utopia_Core.hpp"
 #include "utopia_Traits.hpp"
-#include "utopia_ConvergenceReason.hpp"
-#include "utopia_PrintInfo.hpp"
+#include "utopia_Monitor.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Preconditioner.hpp"
-#include "utopia_Monitor.hpp"
+#include "utopia_Smoother.hpp"
 
 
 namespace  utopia
@@ -49,6 +48,7 @@ namespace  utopia
         virtual void print_usage(std::ostream &os) const override
         {
             LinearSolver<Matrix, Vector>::print_usage(os);
+
             this->print_param_usage(os, "atol", "real", "Absolute tolerance.", std::to_string(atol_));
             this->print_param_usage(os, "rtol", "real", "Relative tolerance.", "1e-9");
             this->print_param_usage(os, "stol", "real", "Minimum step-size.", "1e-11");
@@ -61,7 +61,29 @@ namespace  utopia
             return this->solve(*this->get_operator(), rhs, sol);
         }
 
+
+        virtual bool smooth(const Vector &rhs, Vector &x)
+        {
+            SizeType temp = this->max_it();
+            this->max_it(this->sweeps());
+            this->solve(*this->get_operator(), rhs, x);
+            this->max_it(temp);
+            return true;
+        }
+
+        SizeType sweeps()
+        {
+            return max_it(); 
+        }
+
+        void sweeps(const SizeType & sweeps)
+        {
+            return max_it(sweeps); 
+        }
+
         Scalar get_time() { return _time.get_seconds();  }
+
+        virtual IterativeSolver<Matrix, Vector> * clone() const override = 0;
 
     protected:
 

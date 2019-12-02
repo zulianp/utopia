@@ -16,12 +16,11 @@ namespace utopia {
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class GaussSeidel final : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
+    class GaussSeidel final : public IterativeSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                   Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
-        typedef utopia::Smoother<Matrix, Vector>        Smoother;
 
     public:
         GaussSeidel(): use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(1), check_convergence_each_(10)
@@ -30,14 +29,12 @@ namespace utopia {
         void read(Input &in) override
         {
             Solver::read(in);
-            Smoother::read(in);
             in.get("l1", l1_);
         }
 
         void print_usage(std::ostream &os) const override
         {
             Solver::print_usage(os);
-            Smoother::print_usage(os);
         }
 
         void check_convergence_each(const SizeType &n)
