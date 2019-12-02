@@ -64,7 +64,8 @@ namespace utopia {
                 tensor_diffusivity
             );
 
-            auto bilinear_form = inner(tensor_interpolate(V, tensor_diffusivity, dim, dim) * grad(u), grad(v)) * dX;
+            auto D = tensor_interpolate(V, tensor_diffusivity, dim, dim);
+            auto bilinear_form = inner(D * grad(u), grad(v)) * dX;
             assemble(bilinear_form, A);
         } else {
             auto bilinear_form = inner(grad(u), grad(v)) * dX;

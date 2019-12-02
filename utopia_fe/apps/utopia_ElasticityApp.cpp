@@ -2,7 +2,7 @@
 
 #include "utopia_ContactSolver.hpp"
 
-
+#include "utopia_ElasticityApp.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_Newmark.hpp"
 #include "utopia_LibMeshBackend.hpp"
