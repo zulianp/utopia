@@ -6,22 +6,12 @@
 #include "utopia_Coefficient.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
-
+#include "utopia_PostProcessor.hpp"
 #include <memory>
 #include <vector>
 #include <fstream>
 
 namespace utopia {
-
-    template<class FunctionSpace, class Vector>
-    class PostProcessor : public Configurable {
-    public:
-        virtual ~PostProcessor() {}
-        virtual void apply(FunctionSpace &V, const Vector &sol) = 0;
-        virtual void apply(FunctionSpace &V, const Vector &sol,  const Vector &other) = 0;
-        virtual void describe(std::ostream &os = std::cout) const = 0;
-        virtual void export_values() const = 0;
-    };
 
 
     template<class FunctionSpace, class Vector>
@@ -34,7 +24,7 @@ namespace utopia {
         AverageHeadPostProcessor() : average_(0.0), rescale_(1.0)
         {}
 
-        void read(Input &in) override 
+        void read(Input &in) override
         {
             in.get("side", side_);
             // filename_ += std::to_string(side_) + ".txt";
@@ -43,12 +33,12 @@ namespace utopia {
 
 
         void apply(FunctionSpace &V, const Vector &sol) override
-        {   
+        {
             if(empty(mass_matrix_)) {
                 auto u = trial(V);
                 auto v = test(V);
                 auto form = surface_integral(inner(u, v), side_);
-               
+
                 utopia::assemble(form, mass_matrix_);
 
                 mass_ = sum(mass_matrix_);
@@ -96,7 +86,7 @@ namespace utopia {
         typedef utopia::Traits<FunctionSpace> TraitsT;
         typedef typename TraitsT::Matrix ElementMatrix;
 
-        void read(Input &in) override 
+        void read(Input &in) override
         {
             in.get("side", side_);
             in.get("diffusivity",  diffusivity_);
@@ -109,7 +99,7 @@ namespace utopia {
         }
 
         void apply(FunctionSpace &V, const Vector &pressure) override
-        {   
+        {
             auto u = trial(V);
             auto v = test(V);
 
@@ -120,7 +110,7 @@ namespace utopia {
             auto vel = coeff(diffusivity_/rescale_) * grad(p);
 
             auto form_1 = surface_integral(
-                inner( 
+                inner(
                     inner(vel, normal() ), v)
                 , side_
             );
@@ -146,7 +136,7 @@ namespace utopia {
         }
 
         void apply(FunctionSpace &V, const Vector &pressure, const Vector &concentration) override
-        {   
+        {
             // auto u = trial(V);
             // auto v = test(V);
 
@@ -158,7 +148,7 @@ namespace utopia {
             // auto vel = (sampler_fun * diffusion_tensor_) * grad(p);
 
             // auto form = surface_integral(
-            //     inner( 
+            //     inner(
             //         inner(vel, normal() ), c)
             //     , side_
             // );
@@ -197,7 +187,7 @@ namespace utopia {
             diffusion_tensor_ = d;
         }
 
-        inline Vector &flux() 
+        inline Vector &flux()
         {
             return flux_;
         }
@@ -215,7 +205,7 @@ namespace utopia {
         bool valid() const
         {
             assert(side_ != -1);
-            
+
             if(side_ == -1) {
                 return false;
             }
@@ -271,7 +261,7 @@ namespace utopia {
         Vector flux_;
         Vector weighted_flux_;
         Vector mass_vector_;
-       
+
         std::shared_ptr<UIFunction<double>> sampler_;
         ElementMatrix diffusion_tensor_;
         USparseMatrix flow_matrix_;
