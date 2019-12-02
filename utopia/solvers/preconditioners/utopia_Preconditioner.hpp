@@ -96,6 +96,8 @@ namespace utopia {
 
         }
 
+        // virtual void init_memory(const SizeType & ls) = 0; 
+
         // TODO
         virtual void update(const Operator<Vector> & A) { UTOPIA_UNUSED(A); }
 

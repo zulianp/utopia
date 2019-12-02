@@ -12,7 +12,7 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class QPSolver : public IterativeSolver<Matrix, Vector>,
+    class QPSolver : public PreconditionedSolver<Matrix, Vector>,
                      public virtual VariableBoundSolverInterface<Vector> {
         public:
             QPSolver() {}

@@ -130,6 +130,15 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
+        void init_memory(const Sizetype & ls) override
+        {
+            auto zero_expr = local_zeros(ls);
+
+            //resets all buffers in case the size has changed
+            d_inv_ = zero_expr;
+            r_ = zero_expr;
+        }
+
     private:
         Vector d_inv_;
         Vector r_;
