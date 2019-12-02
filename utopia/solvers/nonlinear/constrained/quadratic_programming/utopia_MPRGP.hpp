@@ -19,6 +19,8 @@ namespace  utopia
     {
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+
+        
         using Solver   = utopia::LinearSolver<Matrix, Vector>;
         using ForLoop  = utopia::ParallelFor<Traits<Vector>::Backend>;
 
@@ -51,7 +53,7 @@ namespace  utopia
             {
                 SizeType loc_size_rhs = A.local_size().get(0);
                 if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
+                    init_memory(loc_size_rhs);
                 }
             }            
 
@@ -333,8 +335,8 @@ namespace  utopia
                 return lambda;
             }
 
-
-            void init(const SizeType &ls)
+        public:
+            void init_memory(const SizeType & ls) override
             {
                 auto zero_expr = local_zeros(ls);
 

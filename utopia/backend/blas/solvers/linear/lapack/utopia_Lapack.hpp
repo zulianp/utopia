@@ -1,7 +1,3 @@
-//
-// Created by Alessandro Rigazzi on 22/05/15.
-//
-
 #ifndef UTOPIA_SOLVER_LAPACK_H
 #define UTOPIA_SOLVER_LAPACK_H
 
@@ -28,6 +24,7 @@ namespace utopia {
         {
             return new LUDecomposition();
         }
+
     };
 }
 

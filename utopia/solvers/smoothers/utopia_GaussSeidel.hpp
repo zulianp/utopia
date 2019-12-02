@@ -249,14 +249,30 @@ namespace utopia {
             }
 
             d_inv = 1./d;
+            // c = local_zeros(n);
+            // r = local_zeros(n);
+
+            // if(use_line_search_) {
+            //     Ac = local_zeros(n);
+            // }
+            init_memory(n); 
+        }
+
+
+    public: 
+        void init_memory(const SizeType & n) override
+        {
             c = local_zeros(n);
             r = local_zeros(n);
 
             if(use_line_search_) {
                 Ac = local_zeros(n);
             }
-        }
+        }        
 
+
+
+    private:
         bool use_line_search_;
         bool use_symmetric_sweep_;
         bool l1_;

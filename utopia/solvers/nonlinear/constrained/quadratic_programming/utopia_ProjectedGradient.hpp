@@ -17,11 +17,11 @@
 namespace utopia {
     //slow and innefficient implementation just for testing
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class ProjectedGradient final: //public QPSolver<Matrix, Vector>, public MatrixFreeQPSolver<Vector>
-                                    public OperatorBasedQPSolver<Matrix, Vector>
+    class ProjectedGradient final: public OperatorBasedQPSolver<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
         using QPSolver<Matrix, Vector>::solve;
 
@@ -61,7 +61,7 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init(local_size(b));
+            init_memory(local_size(b));
 
             x_old = x;
             A.apply(x, u);
@@ -126,7 +126,7 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init(local_size(b));
+            init_memory(local_size(b));
 
             // ideally, we have two separate implementations, or cases
             this->fill_empty_bounds();
@@ -226,10 +226,12 @@ namespace utopia {
         }
 
 
-        void init(const SizeType &ls)
+        void init_memory(const SizeType & ls) override
         {
             p  = local_zeros(ls);
             Ap = local_zeros(ls);
+            x_old = local_zeros(ls);
+            x_half = local_zeros(ls);
         }
 
         void update(const Operator<Vector> &A) override

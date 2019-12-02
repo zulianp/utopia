@@ -17,7 +17,8 @@ namespace utopia {
     {
     public:
 
-        DEF_UTOPIA_SCALAR(Matrix);
+        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
         ProjectedGaussSeidel()
         : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
@@ -365,7 +366,6 @@ namespace utopia {
 
             }
         }
-
 
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {

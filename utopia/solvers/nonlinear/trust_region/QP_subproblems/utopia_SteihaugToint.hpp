@@ -14,7 +14,8 @@ namespace utopia
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class SteihaugToint final:  public OperatorBasedTRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
     public:
         using TRSubproblem<Matrix, Vector>::solve;
@@ -30,21 +31,12 @@ namespace utopia
 
         void read(Input &in) override
         {
-            // TRSubproblem<Matrix, Vector>::read(in);
-            // MatrixFreeTRSubproblem<Vector>::read(in);
-
-            // if(precond_) {
-            //     in.get("precond", *precond_);
-            // }
             OperatorBasedTRSubproblem<Matrix, Vector>::read(in);
         }
 
 
         void print_usage(std::ostream &os) const override
         {
-            // TRSubproblem<Matrix, Vector>::print_usage(os);
-            // MatrixFreeTRSubproblem<Vector>::print_usage(os);
-
             OperatorBasedTRSubproblem<Matrix, Vector>::print_usage(os);
         }
 
@@ -430,8 +422,8 @@ namespace utopia
 
 
 
-    private:
-        void init_memory(const SizeType &ls)
+    public:
+        void init_memory(const SizeType & ls) override
         {
             auto zero_expr = local_zeros(ls);
 

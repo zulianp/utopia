@@ -40,14 +40,12 @@ namespace utopia {
 
         void read(Input &in) override
         {
-            Solver::read(in);
-            // Smoother::read(in);
+          Solver::read(in);
         }
 
         void print_usage(std::ostream &os) const override
         {
-            Solver::print_usage(os);
-            // Smoother::print_usage(os);
+          Solver::print_usage(os);
         }
 
 

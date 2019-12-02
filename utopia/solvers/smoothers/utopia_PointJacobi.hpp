@@ -117,6 +117,14 @@ namespace utopia {
 
         }
 
+
+        void init_memory(const SizeType & ls) override
+        {
+            auto zero_expr = local_zeros(ls);
+            r_ = zero_expr;
+            d_inv_ = zero_expr;            
+        }
+
     private:
         Vector d_inv_;
         Matrix LU_;

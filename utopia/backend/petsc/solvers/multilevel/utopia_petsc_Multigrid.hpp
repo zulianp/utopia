@@ -44,7 +44,7 @@ namespace utopia {
                 KSPSetOperators(smoother, raw_type(this->level(i).A()), raw_type(this->level(i).A()));
             }
         }
-
+        
         virtual bool apply(const Vector &rhs, Vector &x) override
         {
             if(this->verbose())

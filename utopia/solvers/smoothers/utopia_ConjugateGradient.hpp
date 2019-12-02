@@ -30,7 +30,7 @@ namespace utopia {
 
         void read(Input &in) override;
 
-        void init_memory(const SizeType & ls);
+        void init_memory(const SizeType & ls) override;
 
         void print_usage(std::ostream &os) const override;
 
