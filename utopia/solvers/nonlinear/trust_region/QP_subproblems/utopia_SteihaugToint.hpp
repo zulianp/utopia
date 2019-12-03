@@ -225,7 +225,7 @@ namespace utopia
 
             if(use_precond_direction_)
             {
-                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                if( this->compute_norm(it) || this->verbose()==true){
                     dots(r, v_k, p_norm, r, r, g_norm);
                     g_norm = std::sqrt(g_norm);
                 }
@@ -236,7 +236,8 @@ namespace utopia
             }
             else
             {
-                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                if( this->compute_norm(it) || this->verbose()==true)
+                {
                     dots(p_k, p_k, p_norm, r, r, g_norm);
                     g_norm = std::sqrt(g_norm);
                 }
@@ -398,7 +399,7 @@ namespace utopia
                 }
 
                 // TODO:: check if there is something else possible
-                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                if(this->compute_norm(it) || this->verbose()==true){
                     g_norm = norm2(r);
                 }
 

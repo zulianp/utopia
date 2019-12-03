@@ -27,7 +27,7 @@ namespace  utopia
         typedef UTOPIA_SCALAR(Matrix)           Scalar;
         typedef UTOPIA_SIZE_TYPE(Matrix)        SizeType;
 
-        IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false), norm_scheduler_(EVERY_ITER)
+        IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false), norm_freq_(1.0)
         {
 
         }
@@ -169,8 +169,7 @@ namespace  utopia
         virtual bool check_convergence(const SizeType &it, const Scalar &g_norm, const Scalar & r_norm, const Scalar &s_norm) override
         {
             bool converged = false;
-
-            if(norm_scheduler_ != NEVER)
+            if(compute_norm(it))
             {
                 // termination because norm of grad is down
                 if(g_norm < atol_)
@@ -225,7 +224,17 @@ namespace  utopia
         virtual SizeType    max_it()  const            { return max_it_; }
         virtual bool verbose() const                     { return verbose_; }
 
-        virtual NormSchedule norm_schedule() const      { return norm_scheduler_; }
+        virtual SizeType norm_frequency() const     { return norm_freq_; }
+
+        virtual bool compute_norm(const SizeType & it) const
+        {
+            if(norm_freq_==0.0){
+                return false;
+            }
+            else{
+                return (it % norm_freq_ == 0) ? true : false; 
+            }
+        }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -235,11 +244,16 @@ namespace  utopia
         virtual void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; };
         virtual void verbose(const bool & verbose_in ) {verbose_ = verbose_in; };
 
-        virtual void norm_schedule(const NormSchedule & norm_scheduler) {norm_scheduler_ = norm_scheduler; };  
+        /**
+         * @brief Define frequency with which we compute norms
+         * @details 0 - never, any other number uses modulo
+         * 
+         * @param freq - defines how often we compute norms
+         */
+        virtual void norm_frequency(const SizeType & freq) {norm_freq_ = freq; };  
 
 
     private:
-
         //FIXME these fields should be removed and set directly in the backend state variables
         // ... GENERAL Iterative SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */
@@ -250,7 +264,8 @@ namespace  utopia
         bool verbose_;                  /*!< Verobse enable? . */
 
         Chrono _time;                 /*!<Timing of solver. */
-        NormSchedule norm_scheduler_; 
+        SizeType norm_freq_; 
+
     };
 }
 

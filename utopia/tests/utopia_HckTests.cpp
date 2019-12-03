@@ -141,7 +141,7 @@ namespace utopia
             QP_solver->max_it(10);
             QP_solver->verbose(verbose_);
             // QP_solver->norm_schedule(NormSchedule::NEVER);
-            QP_solver->norm_schedule(NormSchedule::EVERY_ITER);
+            QP_solver->norm_frequency(0.0);
             QP_solver->current_radius(1e5);
 
             QP_solve(QP_solver);
