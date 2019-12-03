@@ -22,7 +22,7 @@
 
     public:                                                                      
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx, 
-                                    const std::shared_ptr<MatrixFreeQPSolver> &tr_subproblem) : 
+                                    const std::shared_ptr <MatrixFreeQPSolver> &tr_subproblem) : 
                                     NonLinearSolver(hessian_approx, tr_subproblem), 
                                     it_successful_(0), 
                                     initialized_(false), 

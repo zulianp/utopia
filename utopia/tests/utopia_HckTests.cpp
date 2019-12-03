@@ -30,7 +30,7 @@ namespace utopia
             input_params_.set("rtol", 1e-10);
             input_params_.set("stol", 1e-10);
             input_params_.set("verbose", verbose_);
-            input_params_.set("max-it", 20);
+            input_params_.set("max-it", 50);
 
             // RMTR specific parameters
             input_params_.set("max_coarse_it", 2);

@@ -18,7 +18,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
     public:
-        using TRSubproblem<Matrix, Vector>::solve;
+        using OperatorBasedTRSubproblem<Matrix, Vector>::solve;
         using OperatorBasedTRSubproblem<Matrix, Vector>::update; 
 
         typedef utopia::Preconditioner<Vector> Preconditioner;
@@ -106,7 +106,7 @@ namespace utopia
             SizeType loc_size_rhs   = local_size(rhs);
             if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
                 init_memory(loc_size_rhs);
-            }
+            }   
 
             if(this->precond_)
             {

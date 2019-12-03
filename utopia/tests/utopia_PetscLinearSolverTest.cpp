@@ -648,7 +648,6 @@ namespace utopia {
             // multigrid.solve(rhs, x_0);
 
             //! [MG solve example]
-
         }
 
 

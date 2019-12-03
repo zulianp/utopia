@@ -276,6 +276,18 @@ namespace utopia
 
 
 
+    // virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar &radius)
+    // {
+    //     if(rho >= eta2_)
+    //     {
+    //       radius = std::max( Scalar(gamma2_ * norm_infty(p_k)), radius);
+    //     }
+    //     else if (rho < eta1_ )
+    //     {
+    //       radius = gamma1_ * norm_infty(p_k); 
+    //     }
+    // }
+
     virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar &radius)
     {
         if(rho >= eta2_)
@@ -284,9 +296,9 @@ namespace utopia
         }
         else if (rho < eta1_ )
         {
-          radius = gamma1_ * norm_infty(p_k); 
+          radius = gamma1_ * radius; 
         }
-    }
+    }    
 
 
 
