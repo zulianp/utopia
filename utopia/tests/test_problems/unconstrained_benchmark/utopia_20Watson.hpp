@@ -50,7 +50,7 @@ namespace utopia
 
         bool exact_sol_known() const override
         {
-            return false;  // just because we can not fit into precision
+            return true;  // just because we can not fit into precision
         }
 
 

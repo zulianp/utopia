@@ -182,6 +182,10 @@ namespace utopia {
 
         }   
 
+        void init_memory(const SizeType & ls)
+        {
+            linear_solver_->init_memory(ls); 
+        }
 
 
         std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */
