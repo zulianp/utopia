@@ -2,6 +2,7 @@
 #include "utopia_Chrono.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia.hpp"
+#include "utopia_Base.hpp"
 #include "utopia_Benchmark.hpp"
 #include "utopia_LargeScaleIncludes.hpp"
 #include "utopia_UnconstrainedBenchmark.hpp"
@@ -147,7 +148,6 @@ namespace utopia
 			// );		
 
 
-
 			// this->register_experiment("NewtonTest_BiCGSTAB_Backtracking",
 			// 	[this]() {
 		 //            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
@@ -171,7 +171,6 @@ namespace utopia
 		            Newton<Matrix, Vector> solver(lin_solver);
 		            solver.forcing_strategy(InexactNewtonForcingStartegies::CAI); 
 		            run_newton(this->test_functions_parallel_, solver, "Inexact_Newton_test", this->verbose_);
-		            run_newton(this->test_functions_, solver, "Inexact_Newton_test", this->verbose_);
 				}
 			);				
 
@@ -203,7 +202,6 @@ namespace utopia
 			}
 
 	    	for(size_t i =0; i < test_functions.size(); i++)
-	    	// for(auto i =0; i < 1; i++)
 	    	{
 				Vector x_init = test_functions[i]->initial_guess(); 
 				solver.solve(*test_functions[i], x_init); 
@@ -213,18 +211,19 @@ namespace utopia
 				
 				const auto dim = test_functions[i]->dim(); 
 				const auto num_its = sol_status.iterates; 
-				// const auto conv_reason = sol_status.reason; 
+				const auto conv_reason = sol_status.reason; 
+
+				utopia_test_assert(conv_reason > 0);
 
 				if(exp_verbose && mpi_world_rank()==0)
 				{
 					std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_functions[i]->name() <<"_" << dim <<  std::right <<  std::setw(60-std::to_string(dim).size() - test_functions[i]->name().size())  << std::right << "its:  " << num_its << std::setw(5-std::to_string(num_its).size())<<  "  \n"; 
 				
-					// if(conv_reason< 0)
-					// {
-					// 	sol_status.describe(std::cout); 
-					// }
+					if(conv_reason< 0)
+					{
+						sol_status.describe(std::cout); 
+					}
 
-					// disp(x_init);
 				}
 
 				// if(test_functions[i]->exact_sol_known())
@@ -237,7 +236,6 @@ namespace utopia
 					// disp(x_init);
 					// disp(test_functions[i]->exact_sol());
 				// }
-
 
 			}
 		}
