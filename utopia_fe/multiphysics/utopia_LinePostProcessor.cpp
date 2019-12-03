@@ -162,10 +162,10 @@ namespace utopia {
 
         void describe(std::ostream &os) const override
         {
-            os << "arc-length,p_x,p_y,p_z";
+            os << "\"arc_length\",\"Points:0\",\"Points:1\",\"Points:2\"";
 
             for(const auto &sn : sample_name) {
-                os << "," << sn;
+                os << ",\"" << sn << "\"";
             }
 
             os << "\n";
