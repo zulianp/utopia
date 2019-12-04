@@ -478,12 +478,12 @@ void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner()//const std::sha
         impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
         impl_->M_ifpack->initialize();
         impl_->M_ifpack->compute();
-        std::string preconditioner_type = impl_->param_list->get("Preconditioner Type", "right");
-        std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c)
+        std::string preconditioner_side = impl_->param_list->get("Preconditioner Side", "right");
+        std::transform(preconditioner_side.begin(), preconditioner_side.end(), preconditioner_side.begin(), [](unsigned char c)
         {
             return std::tolower(c);
         });
-        if (preconditioner_type == "left")
+        if (preconditioner_side == "left")
         {
             impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
         }
@@ -501,12 +501,12 @@ void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner()//const std::sha
         // Multigrid Hierarchy
         impl_->M_muelu = MueLu::CreateTpetraPreconditioner(raw_type(*this->get_operator()), impl_->param_list->sublist("MueLu", false));
         assert(!impl_->M_muelu.is_null());
-        std::string preconditioner_type = impl_->param_list->get("Preconditioner Type", "right");
-        std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c)
+        std::string preconditioner_side = impl_->param_list->get("Preconditioner Side", "right");
+        std::transform(preconditioner_side.begin(), preconditioner_side.end(), preconditioner_side.begin(), [](unsigned char c)
         {
             return std::tolower(c);
         });
-        if (preconditioner_type == "left")
+        if (preconditioner_side == "left")
         {
             impl_->linear_problem->setLeftPrec(impl_->M_muelu);
         }
