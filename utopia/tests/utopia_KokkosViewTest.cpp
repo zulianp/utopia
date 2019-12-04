@@ -204,15 +204,38 @@ namespace utopia {
             maxNumEntriesPerRow
         ));
 
+        Range r(ownedRowMap->getMinGlobalIndex(), ownedRowMap->getMaxGlobalIndex() + 1);
+        SizeType cols[3];
+        for(SizeType i = r.begin(); i != r.end(); ++i) {
+            cols[0] = i;
+
+            if(i > 0) {
+                cols[1] = i-1;
+            } else {
+                cols[1] = n_global-1;
+            }
+
+            if(i < n_global-1) {
+                cols[2] = i + 1;
+            } else {
+                cols[2] = 0;
+            }
+
+            std::sort(std::begin(cols), std::end(cols));
+            graph->insertGlobalIndices(i, 3, cols);
+        }
+
         graph->fillComplete();
 
         mat.raw_type().reset(
             new TpetraMatrix::crs_mat_type(graph)
         );
 
-        // assemble_periodic_laplacian_1D(mat);
+        assemble_periodic_laplacian_1D(mat);
         // see example in /Users/zulianp/Desktop/code/installations/trilinos-git/packages/tpetra/core/example/Finite-Element-Assembly
-        disp(mat);
+        // disp(mat);
+
+        assemble_periodic_laplacian_1D(mat);
     }
 
     static void kokkos_view()
