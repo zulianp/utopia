@@ -445,8 +445,10 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ##########################################################################################
 
-add_custom_target(test COMMAND time ${CMAKE_BINARY_DIR}/utopia_test -verbose)
-add_dependencies(test utopia_test)
+# enable_testing()
+add_custom_target(utest COMMAND time ${CMAKE_BINARY_DIR}/utopia_test -verbose)
+# add_test(all_tests ${CMAKE_BINARY_DIR}/utopia_test -verbose)
+add_dependencies(utest utopia_test)
 
 ##########################################################################################
 
@@ -455,8 +457,8 @@ add_dependencies(bench utopia_bench)
 
 ##########################################################################################
 
-add_custom_target(bench_and_test)
-add_dependencies(bench_and_test bench test)
+# add_custom_target(bench_and_test)
+# add_dependencies(bench_and_test bench test)
 
 ##########################################################################################
 

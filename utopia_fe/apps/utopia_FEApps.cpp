@@ -16,6 +16,7 @@
 #include "utopia_RefineApp.hpp"
 #include "utopia_FlowWithFracturesApp.hpp"
 #include "utopia_MassApp.hpp"
+#include "utopia_DifferenceApp.hpp"
 #include <iostream>
 
 namespace utopia {
@@ -86,5 +87,6 @@ namespace utopia {
         add_app(RefineApp::command(),                utopia::make_unique<RefineApp>());
         add_app(FlowWithFracturesApp::command(),     utopia::make_unique<FlowWithFracturesApp>());
         add_app(MassApp::command(),                  utopia::make_unique<MassApp>());
+        add_app(DifferenceApp::command(),            utopia::make_unique<DifferenceApp>());
     }
 }

@@ -1,0 +1,40 @@
+{
+    "from" :
+    {
+        "mesh" :
+        {
+            "type" : "file",
+            "path" : "sol.e"
+        },
+        "space" :
+        {
+            "system-name" : "from",
+            "variables" : [
+                {
+                    "name" : "u",
+                    "order" : 1
+                }
+            ]
+        }
+    },
+
+    "to" :
+    {
+        "mesh" :
+        {
+            "type" : "file",
+            "path" : "sol.e"
+        },
+        "space" :
+        {
+            "system-name" : "from",
+            "variables" : [
+                {
+                    "name" : "u",
+                    "order" : 1
+                }
+            ]
+        }
+    }
+
+}
