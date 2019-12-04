@@ -4,7 +4,7 @@
         "mesh" :
         {
             "type" : "file",
-            "path" : "sol.e"
+            "path" : "my_solution.e"
         },
         "space" :
         {
@@ -23,11 +23,11 @@
         "mesh" :
         {
             "type" : "file",
-            "path" : "sol.e"
+            "path" : "reference_solution.e"
         },
         "space" :
         {
-            "system-name" : "from",
+            "system-name" : "to",
             "variables" : [
                 {
                     "name" : "u",

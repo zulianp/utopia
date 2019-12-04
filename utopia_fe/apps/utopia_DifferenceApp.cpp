@@ -64,6 +64,8 @@ namespace utopia {
 
         void read(Input &in) override
         {
+            utopia::Utopia::instance().read(in);
+
             in.get("from", from_);
             in.get("to", to_);
 
