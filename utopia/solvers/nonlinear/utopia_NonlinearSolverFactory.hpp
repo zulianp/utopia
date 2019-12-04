@@ -28,7 +28,7 @@ namespace utopia {
         using NLSolverFactoryMethod = FactoryMethod<NonLinearSolverT, Alg>;
 
         typedef std::shared_ptr< LinearSolver<Matrix, Vector> >  LinearSolverPtr;
-        std::map<std::string, FactoryMethodT> nl_solvers_;
+        std::map<std::string, std::shared_ptr<FactoryMethodT>> nl_solvers_;
 
         inline static NonLinearSolverPtr solver(const SolverType &tag, LinearSolverPtr & linear_solver)
         {

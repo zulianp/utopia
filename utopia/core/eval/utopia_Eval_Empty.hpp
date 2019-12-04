@@ -17,6 +17,7 @@
 #include "utopia_Norm.hpp"
 #include "utopia_FillTypeQuery.hpp"
 #include "utopia_MPI.hpp"
+#include "utopia_Macros.hpp"
 
 namespace utopia {
 
@@ -36,6 +37,14 @@ namespace utopia {
 
         inline static Derived && apply(Tensor<Derived, Order> &&expr) {
             return std::move(expr.derived());
+        }
+
+        inline static void apply(Tensor<Derived, Order> &&expr, Derived &result) {
+            result = std::move(expr.derived());
+        }
+
+        inline static void apply(const Tensor<Derived, Order> &expr, Derived &result) {
+            result = expr.derived();
         }
     };
 

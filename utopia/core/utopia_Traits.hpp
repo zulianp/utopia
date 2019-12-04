@@ -19,6 +19,8 @@ namespace utopia {
     static const int CUDA = 100;
     static const int OPENCL_TAG = 1000;
     static const int TRILINOS = 10000;
+    static const int KOKKOS   = 100000;
+    static const int SERIAL_HOMEMADE = 200000;
     static const int PETSC_EXPERIMENTAL = -1000;
 
     class FillType {

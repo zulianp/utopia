@@ -34,7 +34,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class ContactSolver : public Configurable {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
         typedef libMesh::Nemesis_IO Exporter;
         // using ContactT = utopia::ContactAssembler;
@@ -191,6 +191,7 @@ namespace utopia {
 
         bool solve_steady()
         {
+            std::cout << "solve_steady" << std::endl;
             initialize();
             first_ = true;
             if(!solve_contact()) {
@@ -218,6 +219,7 @@ namespace utopia {
 
         bool solve_dynamic(const int n_time_steps)
         {
+            std::cout << "solve_dynamic" << std::endl;
             initialize();
 
             n_exports = 0;
@@ -230,7 +232,7 @@ namespace utopia {
             ++n_exports;
             for(int t = 0; t < n_time_steps; ++t) {
                 std::cout << "-------------------------------------"<< std::endl;
-                std::cout << "time_step: " << t << std::endl;
+                std::cout << "time_step: " << t << "/" << n_time_steps << std::endl;
 
                 first_ = true;
                 if(!solve_contact() && exit_on_contact_solve_failure_) return false;

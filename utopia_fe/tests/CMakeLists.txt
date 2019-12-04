@@ -3,7 +3,7 @@ list(APPEND TEST_MODULES
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-add_utopiafe_module(utopia_fe_tests
+add_utopiafe_app(utopia_fe_tests
     transfer
     utopia_fe_visualization
     # utopia_fe_homemade

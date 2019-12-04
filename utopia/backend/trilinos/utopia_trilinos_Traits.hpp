@@ -24,6 +24,8 @@ namespace utopia {
         using IndexArray  = utopia::TpetraIndexArray;
         using ScalarArray = utopia::TpetraScalarArray;
 
+        using Communicator = utopia::TrilinosCommunicator;
+
         enum {
             Backend = TRILINOS
         };

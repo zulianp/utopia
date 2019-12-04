@@ -77,8 +77,11 @@ namespace utopia {
     template<class Left, class Right>
     class Assign;
 
+    // template<class Left, class Right>
+    // class Construct;
+
     template<class Left, class Right>
-    class Construct;
+    using Construct = utopia::Assign<Left, Right>;
 
     template<class Left, class Right>
     class Equality;
@@ -153,6 +156,7 @@ namespace utopia {
 
     template<class Left, class Right, class Traits, int Backend>
     class EvalAssignToView;
+
 }
 
 #endif //UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

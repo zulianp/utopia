@@ -6,29 +6,15 @@
 
 namespace utopia {
 
-	class PetscCommunicator final : public Communicator {
+	class PetscCommunicator final : public MPICommunicator {
 	public:
 
-		inline int rank() const override
-		{
-			int ret;
-			MPI_Comm_rank(get(), &ret);
-			return ret;
-		}
-
-		inline int size() const override
-		{
-			int ret;
-			MPI_Comm_size(get(), &ret);
-			return ret;
-		}
-
-		inline Communicator * clone() const override
+		inline PetscCommunicator * clone() const override
 		{
 			return new PetscCommunicator(get());
 		}
 
-		inline MPI_Comm get() const //override
+		inline MPI_Comm get() const override
 		{
 			return comm_;
 		}

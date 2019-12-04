@@ -969,8 +969,9 @@ namespace utopia
          */
         virtual Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
         {
-            if(current_l == this->n_levels()-1)
+            if(current_l == this->n_levels()-1){
                 return norm2(u);
+            }
             else
             {
                 Vector s; // carries over prolongated correction

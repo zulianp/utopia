@@ -13,10 +13,13 @@
 #include "utopia_Constructible.hpp"
 #include "utopia_Reducible.hpp"
 #include "utopia_blas_IndexSet.hpp"
+#include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <fstream>
 
 namespace utopia {
     template<typename T>
@@ -30,6 +33,7 @@ namespace utopia {
         public ElementWiseOperand<T>,
         // Static polymorphic types
         public Tensor<BlasVector<T>, 1>,
+        public Selectable<BlasVector<T>, 1>,
         public BLAS1Tensor<BlasVector<T>>,
         public Comparable<BlasVector<T>>,
         public ElementWiseOperand<BlasVector<T>>
@@ -84,12 +88,14 @@ namespace utopia {
         BlasVector(std::initializer_list<T> args)
         : entries_(args)
         {
-
+            UTOPIA_REPORT_ALLOC("BlasVector::BlasVector(std::initializer_list<T> args)");
         }
 
         BlasVector(const BlasVector &other)
         : entries_(other.entries_)
-        {}
+        {
+            UTOPIA_REPORT_ALLOC("BlasVector::BlasVector(const BlasVector &other)");
+        }
 
         BlasVector(BlasVector &&other)
         : entries_(std::move(other.entries_))
@@ -116,11 +122,13 @@ namespace utopia {
 
         inline void resize(const SizeType n)
         {
+            UTOPIA_REPORT_ALLOC("BlasVector::resize(const SizeType n)");
         	entries_.resize(n);
         }
 
         inline void resize(const Size &s)
         {
+            UTOPIA_REPORT_ALLOC("BlasVector::resize(const Size &s)");
             entries_.resize(s.get(0));
         }
 
@@ -259,7 +267,7 @@ namespace utopia {
             return BLASAlgorithms<T>::ddot(size(), ptr(), 1, other.ptr(), 1);
         }
 
-    
+
 
         ///<T>AMAX - index of max abs value
         inline SizeType amax() const //override
@@ -508,11 +516,37 @@ namespace utopia {
             return false;
         }
 
-        inline bool same_object(const BlasVector &other) const
+        inline bool is_alias(const BlasVector &other) const
         {
             return this == &other;
         }
 
+        inline static SelfCommunicator &comm()
+        {
+            static SelfCommunicator instance_;
+            return instance_;
+        }
+
+        inline bool write(const std::string &path) const
+        {
+            std::ofstream os(path.c_str());
+            bool ok = os.good();
+
+            if(ok) {
+                const SizeType n = size();
+
+                os << "x = [\n";
+
+                for(SizeType i = 0; i < n; ++i) {
+                    os << "\t" << get(i) << "\n";
+                }
+
+                os << "];\n";
+            }
+
+            os.close();
+            return ok;
+        }
 
     private:
     	Entries entries_;

@@ -17,7 +17,8 @@
 namespace utopia {
     //slow and innefficient implementation just for testing
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class ProjectedGradient final: public QPSolver<Matrix, Vector>, public MatrixFreeQPSolver<Vector>
+    class ProjectedGradient final: //public QPSolver<Matrix, Vector>, public MatrixFreeQPSolver<Vector>
+                                    public OperatorBasedQPSolver<Matrix, Vector>
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
@@ -40,21 +41,17 @@ namespace utopia {
 
         void read(Input &in) override
         {
-            MatrixFreeQPSolver<Vector>::read(in);
-            QPSolver<Matrix, Vector>::read(in);
+            OperatorBasedQPSolver<Matrix, Vector>::read(in);
         }
-
 
         void print_usage(std::ostream &os) const override
         {
-            MatrixFreeQPSolver<Vector>::print_usage(os);
-            QPSolver<Matrix, Vector>::print_usage(os);
+            OperatorBasedQPSolver<Matrix, Vector>::print_usage(os);
         }
 
         bool apply(const Vector &b, Vector &x) override
         {
-            auto A_ptr = utopia::op(this->get_operator());
-            return solve(*A_ptr, b, x);
+            return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
         bool solve_unconstrained(const Operator<Vector> &A, const Vector &b, Vector &x)
@@ -235,11 +232,9 @@ namespace utopia {
             Ap = local_zeros(ls);
         }
 
-
-        void update(const std::shared_ptr<const Matrix> &op) override
+        void update(const Operator<Vector> &A) override
         {
-            QPSolver<Matrix, Vector>::update(op);
-            // init(*op);
+
         }
 
     private:

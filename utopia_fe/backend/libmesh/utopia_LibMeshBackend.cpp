@@ -10,6 +10,15 @@ namespace utopia {
     {
         using SizeType = Traits<UVector>::SizeType;
 
+
+        const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
+        
+        if(disable_adaptivity) {
+            //fall-back to default method
+            apply_boundary_conditions(V.dof_map(), mat, vec);
+            return;
+        }
+
         if(utopia::Utopia::instance().verbose()) {
             std::cout << "apply_boundary_conditions Adaptivity begin: "  << std::endl;
         }
@@ -49,11 +58,17 @@ namespace utopia {
 
             for(auto it=index.begin(); it < index.end(); ++it)
             {
-              int i = *it;
-              auto valpos = rhs_values.find(i);
-              I[0] = i;
-              value[0]=valpos->second;
-              vec.set(I, value);
+                int i = *it;
+                auto valpos = rhs_values.find(i);
+                I[0] = i;
+                value[0]=valpos->second;
+
+
+                // if (V.mesh().processor_id()==0) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                // if (V.mesh().processor_id()==1) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                // if (V.mesh().processor_id()==2) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                // if (V.mesh().processor_id()==3) std::cout<<"i"<<i<<"=>"<<value[0]<<std::endl;
+                vec.set(I, value);
 
           }
         }

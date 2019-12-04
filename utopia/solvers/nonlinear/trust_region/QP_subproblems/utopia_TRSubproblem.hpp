@@ -138,6 +138,64 @@ namespace  utopia
             }
     };
 
+
+
+    template<class Matrix, class Vector>
+    class OperatorBasedTRSubproblem :   public MatrixFreeTRSubproblem<Vector>,
+                                        public TRSubproblem<Matrix, Vector>,
+                                        public Smoother<Matrix, Vector>
+    {
+    public:
+        using MatrixFreeTRSubproblem<Vector>::update;
+        using TRSubproblem<Matrix, Vector>::update;
+        using MatrixFreeTRSubproblem<Vector>::solve;
+
+        virtual ~OperatorBasedTRSubproblem() {}
+
+        virtual bool solve(const Matrix &A, const Vector &b, Vector &x) override
+        {
+            update(make_ref(A));
+            return solve(operator_cast<Vector>(A), b, x);
+        }
+
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        {
+            TRSubproblem<Matrix, Vector>::update(op);
+            update(operator_cast<Vector>(*op));
+        }
+
+        virtual bool smooth(const Vector &rhs, Vector &x) override
+        {
+            SizeType temp = this->max_it();
+            this->max_it(this->sweeps());
+            solve(operator_cast<Vector>(*this->get_operator()), rhs, x);
+            this->max_it(temp);
+            return true;
+        }
+
+        bool apply(const Vector &b, Vector &x) override
+        {
+            return solve(operator_cast<Vector>(*this->get_operator()), b, x);
+        }
+
+        virtual OperatorBasedTRSubproblem * clone() const =0;
+
+        virtual void read(Input &in) override
+        {
+            MatrixFreeTRSubproblem<Vector>::read(in);
+            TRSubproblem<Matrix, Vector>::read(in);
+            Smoother<Matrix, Vector>::read(in);
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            MatrixFreeTRSubproblem<Vector>::print_usage(os);
+            TRSubproblem<Matrix, Vector>::print_usage(os);
+            Smoother<Matrix, Vector>::print_usage(os);
+        }
+    };
+
+
 }
 
 #endif //TR_SUBPROBLEM_L2NORM_HPP

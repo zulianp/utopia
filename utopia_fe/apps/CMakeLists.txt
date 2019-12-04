@@ -7,7 +7,7 @@ find_project_files(CMAKE_CURRENT_SOURCE_DIR APPS_MODULES LOCAL_HEADERS LOCAL_SOU
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${MOONOLITH_DEV_FLAGS} ${UTOPIA_FE_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
-add_utopiafe_module(utopia_fe_apps
+add_utopiafe_app(utopia_fe_apps
     transfer
     utopia_fe_visualization
     # utopia_fe_homemade

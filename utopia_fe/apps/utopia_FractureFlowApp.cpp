@@ -11,6 +11,10 @@ namespace utopia {
         int version = 1;
         in.get("version", version);
 
+        utopia::Utopia::instance().read(in);
+
+        std::cout << "disable-adaptivity: " << utopia::Utopia::instance().get("disable-adaptivity")  << std::endl;
+
         if(version == 1) {
             std::string flow_type;
             in.get("flow-type", flow_type);

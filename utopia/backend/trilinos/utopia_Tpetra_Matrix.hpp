@@ -9,6 +9,7 @@
 #include "utopia_Tensor.hpp"
 #include "utopia_Normed.hpp"
 #include "utopia_Operator.hpp"
+#include "utopia_Select.hpp"
 
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_Communicator.hpp"
@@ -34,7 +35,8 @@ namespace utopia {
     public BLAS3Matrix<TpetraMatrix>,
     public Comparable<TpetraMatrix>,
     public Operator<TpetraVector>,
-    public Tensor<TpetraMatrix, 2>
+    public Tensor<TpetraMatrix, 2>,
+    public Selectable<TpetraMatrix, 2>
     {
     public:
 
@@ -478,6 +480,8 @@ namespace utopia {
         void diag(const TpetraVector &d);
         void diag(const TpetraMatrix &d);
 
+        void diag_scale_left(const TpetraVector &d);
+
 
 
         inline rcp_crs_mat_type &raw_type()
@@ -597,10 +601,13 @@ namespace utopia {
             return "TpetraMatrix";
         }
         
-        inline bool same_object(const TpetraMatrix &other) const
+        inline bool is_alias(const TpetraMatrix &other) const
         {
             return mat_ == other.mat_;
         }
+
+
+        void shift_diag(const TpetraVector &d);
 
     private:
         TrilinosCommunicator comm_;

@@ -44,7 +44,6 @@ namespace utopia {
         std::shared_ptr<const IndexSet > index_ptr_;
     };
 
-
     template<class Expr_>
     class Select<Expr_, 2> : public Expression< Select<Expr_, 2> > {
     public:
@@ -57,7 +56,7 @@ namespace utopia {
 
         //FIXME use Traits instead
         static const int Order = 2;
-        static_assert(Expr::Order == Order, "must be same order of the tensor");
+        static_assert(Traits<Expr>::Order == Order, "must be same order of the tensor");
 
 
         inline explicit Select(const Expr &expr, const IndexSet &row_index, const IndexSet &col_index)
@@ -96,12 +95,11 @@ namespace utopia {
     template<class Expr, int Order>
     class Traits< Select<Expr, Order> > : public Traits<Expr> {};
 
-
-    template<class Derived>
+    template<class Derived, int Order = Traits<Derived>::Order>
     class Selectable {};
 
     template<class Derived>
-    class Selectable<Tensor<Derived, 1>> {
+    class Selectable<Derived, 1> {
     public:
         using TensorT = utopia::Tensor<Derived, 1>;
         using That    = utopia::Selectable<Tensor<Derived, 1>>;
@@ -109,26 +107,26 @@ namespace utopia {
         // using SizeType = typename utopia::Traits<Derived>::SizeType;
         using IndexSet = typename utopia::Traits<Derived>::IndexSet;
 
-        //lazy evaluation
-        inline friend Select<TensorT, 1> select(const That &that, const IndexSet &index)
-        {
-            return Select<TensorT, 1>(that.derived(), index);
-        }
-
-        inline friend Select<TensorT, 1> select(const That &that, IndexSet &&index)
-        {
-            return Select<TensorT, 1>(that.derived(), std::move(index));
-        }
-
         //direct evaluation
         virtual void select(const IndexSet &index, Derived &result) const = 0;
-
-    private:
-        CONST_DERIVED_CRT(TensorT);
     };
 
+
+    //lazy evaluation
     template<class Derived>
-    class Selectable<Tensor<Derived, 2>> {
+    inline Select<Tensor<Derived, 1>, 1> select(const Selectable<Derived, 1> &that, const typename utopia::Traits<Derived>::IndexSet &index)
+    {
+        return Select<Tensor<Derived, 1>, 1>(static_cast<const Derived &>(that), index);
+    }
+
+    template<class Derived>
+    inline Select<Tensor<Derived, 1>, 1> select(const Selectable<Derived, 1> &that, typename utopia::Traits<Derived>::IndexSet &&index)
+    {
+        return Select<Tensor<Derived, 1>, 1>(static_cast<const Derived &>(that), std::move(index));
+    }
+
+    template<class Derived>
+    class Selectable<Derived, 2> {
     public:
         using TensorT = utopia::Tensor<Derived, 2>;
         using That = utopia::Selectable<Tensor<Derived, 2>>;
@@ -136,27 +134,27 @@ namespace utopia {
         // using SizeType = typename utopia::Traits<Derived>::SizeType;
         using IndexSet = typename utopia::Traits<Derived>::IndexSet;
 
-        //lazy evaluation
-        inline friend Select<TensorT, 2> select(const That &that, const IndexSet &row_index, const IndexSet &col_index = IndexSet())
-        {
-            return Select<TensorT, 2>(that.derived(), row_index, col_index);
-        }
-
-        inline friend Select<TensorT, 2> select(const That &that, IndexSet &&row_index, IndexSet &&col_index = IndexSet())
-        {
-            return Select<TensorT, 2>(that.derived(), std::move(row_index, col_index));
-        }
-
         /// if col_index is empty select all columns
         //direct evaluation
         virtual void select(
             const IndexSet &row_index, 
             const IndexSet &col_index, 
             Derived &result) const = 0;
-
-    private:
-        CONST_DERIVED_CRT(Derived);
     };
+
+    //lazy evaluation
+    template<class Derived>
+    inline Select<Tensor<Derived, 2>, 2> select(const Selectable<Derived, 2> &that, const typename utopia::Traits<Derived>::IndexSet &row_index, const typename utopia::Traits<Derived>::IndexSet &col_index = typename utopia::Traits<Derived>::IndexSet())
+    {
+        return Select<Tensor<Derived, 2>, 2>(static_cast<const Derived &>(that), row_index, col_index);
+    }
+
+    template<class Derived>
+    inline Select<Tensor<Derived, 2>, 2> select(const Selectable<Derived, 2> &that, typename utopia::Traits<Derived>::IndexSet &&row_index, typename utopia::Traits<Derived>::IndexSet &&col_index = typename utopia::Traits<Derived>::IndexSet())
+    {
+        return Select<Tensor<Derived, 2>, 2>(static_cast<const Derived &>(that), std::move(row_index, col_index));
+    }
+
 
 }
 

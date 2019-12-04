@@ -20,7 +20,7 @@ namespace utopia {
         DEF_UTOPIA_SCALAR(Matrix);
 
         ProjectedGaussSeidel()
-        : use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
+        : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
         {
 
         }
@@ -43,6 +43,7 @@ namespace utopia {
             in.get("use_line_search", use_line_search_);
             in.get("use_symmetric_sweep", use_symmetric_sweep_);
             in.get("n_local_sweeps", n_local_sweeps_);
+            in.get("l1", l1_);
         }
 
 
@@ -73,14 +74,20 @@ namespace utopia {
 
         bool apply(const Vector &b, Vector &x) override
         {
-            if(this->verbose())
-                this->init_solver("utopia ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
+            if(this->verbose()) {
+                if(l1_) {
+                    this->init_solver("utopia ProjectedL1GaussSeidel", {" it. ", "|| u - u_old ||"});
+                } else {
+                    this->init_solver("utopia ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
+                }
+            }
+
 
             const Matrix &A = *this->get_operator();
 
             x_old = x;
             bool converged = false;
-            const SizeType check_s_norm_each = 5;
+            const SizeType check_s_norm_each = 1;
 
             int iteration = 0;
             while(!converged) {
@@ -94,7 +101,7 @@ namespace utopia {
                     const Scalar diff = norm2(x_old - x);
 
                     if(this->verbose()) {
-                        PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                        PrintInfo::print_iter_status(iteration, {diff});
                     }
 
                     converged = this->check_convergence(iteration, 1, 1, diff);
@@ -106,6 +113,8 @@ namespace utopia {
 
                 x_old = x;
             }
+
+
 
             return converged;
         }
@@ -174,7 +183,8 @@ namespace utopia {
 
             if(use_line_search_) {
 
-                alpha = dot(c, r)/dot(A * c, c);
+                Ac = A * c;
+                alpha = dot(c, r)/dot(Ac, c);
 
                 if(std::isinf(alpha)) {
                     return true;
@@ -198,9 +208,9 @@ namespace utopia {
         bool step(const Matrix &A, const Vector &b, Vector &x)
         {
             r = b - A * x;
-            
+
             //localize gap function for correction
-            this->fill_empty_bounds(); 
+            this->fill_empty_bounds();
             ub_loc = this->get_upper_bound() - x;
             lb_loc = this->get_lower_bound() - x;
 
@@ -252,16 +262,19 @@ namespace utopia {
 
                             //update correction
                             // c.set(i, std::min( d_inv.get(i) * s, ub_loc.get(i)) );
-                            c.set(i, std::max(std::min( d_inv.get(i) * s, ub_loc.get(i)), lb_loc.get(i)) );                            
+                            c.set(i, std::max(std::min( d_inv.get(i) * s, ub_loc.get(i)), lb_loc.get(i)) );
                         }
                     }
                 }
             }
 
-            if(use_line_search_) 
+            if(use_line_search_)
             {
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel21");
                 inactive_set_ *= 0.;
+                UTOPIA_NO_ALLOC_END();
 
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel22");
                 {
                     Read<Vector> r_c(c), r_g(ub_loc), r_l(lb_loc);
                     Write<Vector> w_a(inactive_set_);
@@ -272,10 +285,14 @@ namespace utopia {
                         }
                     }
                 }
+                UTOPIA_NO_ALLOC_END();
 
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel23");
                 is_c_ = e_mul(c, inactive_set_);
 
-                Scalar alpha = dot(is_c_, r)/dot(A * is_c_, is_c_);
+                Ac = A * is_c_;
+                Scalar alpha = dot(is_c_, r)/dot(Ac, is_c_);
+                UTOPIA_NO_ALLOC_END();
 
                 if(std::isinf(alpha)) {
                     return true;
@@ -290,31 +307,64 @@ namespace utopia {
                 if(alpha <= 0) {
                     std::cerr << "[Warning] negative alpha" << std::endl;
                     alpha = 1.;
+                    UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel24");
                     descent_dir = utopia::max(utopia::min(r, ub_loc), ub_loc);
+                    UTOPIA_NO_ALLOC_END();
                 } else if(alpha <= 1.) {
+                    UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel25");
                     descent_dir = alpha * c;
+                    UTOPIA_NO_ALLOC_END();
                 } else {
-                    descent_dir = utopia::max(utopia::min(alpha * c, ub_loc), ub_loc);
+                    UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel26");
+                    c *= alpha;
+                    descent_dir = utopia::max(utopia::min(c, ub_loc), ub_loc);
+                    UTOPIA_NO_ALLOC_END();
                 }
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel27");
                 x += descent_dir;
+                UTOPIA_NO_ALLOC_END();
             }
             else
             {
+                UTOPIA_NO_ALLOC_BEGIN("ProjectedGaussSeidel3");
                 x += c;
+                UTOPIA_NO_ALLOC_END();
             }
 
-            
+
             return true;
         }
 
         void init(const Matrix &A)
         {
             d = diag(A);
+
+            if(l1_) {
+                Write<Vector> w(d);
+                each_read(A, [this](const SizeType &i, const SizeType &j, const Scalar &value) {
+                    d.add(i, std::abs(value));
+                });
+            }
+
             d_inv = 1./d;
-            c = local_zeros(local_size(A).get(0));
+
+            if(empty(c) || size(c) != size(d)){
+                c = local_zeros(local_size(A).get(0));
+            }
+            else{
+                c.set(0);
+            }
 
             if(use_line_search_) {
-                inactive_set_ = local_zeros(local_size(c));
+                if(empty(inactive_set_) || size(inactive_set_) != size(d)) {
+                    inactive_set_ = local_zeros(local_size(c));
+                    Ac = local_zeros(local_size(c));
+                    is_c_ = local_zeros(local_size(c));
+                    descent_dir = local_zeros(local_size(c));
+                } else {
+                    inactive_set_.set(0);
+                }
+
             }
         }
 
@@ -346,13 +396,18 @@ namespace utopia {
             use_symmetric_sweep_ = use_symmetric_sweep;
         }
 
+        inline void l1(const bool val)
+        {
+            l1_ = val;
+        }
 
     private:
         bool use_line_search_;
         bool use_symmetric_sweep_;
+        bool l1_;
         SizeType n_local_sweeps_;
 
-        Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir;
+        Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
         Vector inactive_set_;
         Vector is_c_;
     };

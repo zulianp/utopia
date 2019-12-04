@@ -3,6 +3,7 @@
 
 #include "utopia_IndexSet.hpp"
 #include <vector>
+#include <utility>
 
 namespace utopia {
 
@@ -10,6 +11,11 @@ namespace utopia {
 	public:
 		using Index    = int;
 		using SizeType = std::size_t;
+
+		template<class... Args>
+		BlasIndexSet(Args &&...args)
+		: index_(std::forward<Args>(args)...)
+		{}
 
 		virtual ~BlasIndexSet() {}
 

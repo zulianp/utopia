@@ -73,7 +73,12 @@ namespace utopia
             while(!converged)
             {
                 //find direction step
-                step = local_zeros(local_size(x));
+                if(empty(step) || size(step)!=size(x)){
+                  step = local_zeros(local_size(x));
+                }
+                else{
+                  step.set(0.0);
+                }
 
                 // setting up adaptive stopping criterium for linear solver
                 if(this->has_forcing_strategy())
@@ -91,12 +96,14 @@ namespace utopia
                 if(this->has_preconditioned_solver() && fun.has_preconditioner())
                 {
                   fun.hessian(x, hessian, preconditioner);
-                  this->linear_solve(hessian, preconditioner, -grad, step);
+                  grad_neg_ = -1.0*grad; 
+                  this->linear_solve(hessian, preconditioner, grad_neg_, step);
                 } 
                 else 
                 {
                   fun.hessian(x, hessian);
-                  this->linear_solve(hessian, -grad, step);
+                  grad_neg_ = -1.0*grad; 
+                  this->linear_solve(hessian, grad_neg_, step);
                 }
 
                 if(ls_strategy_) 
@@ -176,7 +183,7 @@ namespace utopia
     private:
         Scalar alpha_;   /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
-
+        Vector grad_neg_; 
     };
 
 }

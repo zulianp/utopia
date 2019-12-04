@@ -5,10 +5,12 @@
 #include "utopia_LinearSolverFactory.hpp"
 #include "utopia_SimpleBacktracking.hpp"
 #include "utopia_Backtracking.hpp"
+#include "utopia_FactoryMethod.hpp"
 
 #include <map>
 #include <string>
 #include <memory>
+#include <iostream>
 
 namespace utopia {
 
@@ -27,7 +29,13 @@ namespace utopia {
     {
         public:
             typedef std::shared_ptr< LSStrategy<Vector> > StrategyPtr;
-            std::map<std::string, StrategyPtr> strategies_;
+            typedef utopia::IFactoryMethod<LSStrategy<Vector>> FactoryMethodT;
+            
+
+            template<class Alg>
+            using LSFactoryMethodT = FactoryMethod<LSStrategy<Vector>, Alg>;
+
+            std::map<std::string, std::shared_ptr<FactoryMethodT>> strategies_;
 
             inline static StrategyPtr new_line_search_strategy(const SolverType &tag)
             {
@@ -39,7 +47,7 @@ namespace utopia {
                 }
                 else
                 {
-                    return it->second;
+                    return it->second->make();
                 }
             }
 
@@ -54,8 +62,8 @@ namespace utopia {
 
             void init()
             {
-                    strategies_[Solver::simple_backtracking()] = std::make_shared<utopia::SimpleBacktracking<Vector> >();
-                    strategies_[Solver::backtracking()] 	   = std::make_shared<utopia::Backtracking<Vector> >();
+                strategies_[Solver::simple_backtracking()] = std::make_shared<LSFactoryMethodT<SimpleBacktracking<Vector>> >();
+                strategies_[Solver::backtracking()] 	   = std::make_shared<LSFactoryMethodT<Backtracking<Vector>> >();
             }
     };
 

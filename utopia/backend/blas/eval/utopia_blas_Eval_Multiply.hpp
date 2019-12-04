@@ -21,9 +21,15 @@ namespace utopia {
 
         static_assert(std::is_same<C, B>::value, "output must be a 2nd order tensor");
 
-        inline static C apply(const Expr &expr) {
+        inline static C apply(const Expr &expr)
+        {
             C c;
+            apply(expr, c);
+            return c;
+        }   
 
+        inline static void apply(const Expr &expr, C &c)
+        {
             UTOPIA_TRACE_BEGIN(expr);
 
             auto &&a = Eval<A, Traits>::apply(expr.left().right());
@@ -34,7 +40,6 @@ namespace utopia {
             apply_aux(alpha, a, b, c);
 
             UTOPIA_TRACE_END(expr);
-            return c;
         }
 
     private:
@@ -139,19 +144,35 @@ namespace utopia {
         typedef typename TypeAndFill<Traits, Tensor<C, 2>>::Type Result;
 
         inline static Result apply(const Expr &expr) {
-            Result result = Eval<Tensor<C, 2>, Traits>::apply(expr.right().right());
+            Result result;
+            apply(expr, result);
+            return result;
+        }
 
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
             auto &&a = Eval<A, Traits>::apply(expr.left().left().right());
             auto &&b = Eval<B, Traits>::apply(expr.left().right());
+            auto &&c = Eval<Tensor<C, 2>, Traits>::apply(expr.right().right());
+
             auto &&alpha = expr.left().left().left();
             auto &&beta  =  expr.right().left();
 
-            a.gemm(false, alpha, false, b, beta, result);
+            if(result.is_alias(a)) {
+                Result temp = std::move(result);
+                result = c;
+                temp.gemm(false, alpha, false, b, beta, result);
+            } else if(result.is_alias(b)) {
+                Result temp = std::move(result);
+                result = c;
+                a.gemm(false, alpha, false, temp, beta, result);
+            } else {
+                result = c;
+                a.gemm(false, alpha, false, b, beta, result);
+            }
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 

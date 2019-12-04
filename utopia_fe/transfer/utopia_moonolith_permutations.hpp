@@ -25,7 +25,8 @@ namespace utopia {
         std::vector<SizeType> irows(1), icols(1);
         std::vector<Scalar>   vals(1, 1.0);
 
-        auto max_nnz = from.dof_map().max_nnz(); assert(max_nnz > 0);
+        // auto max_nnz = from.dof_map().max_nnz(); assert(max_nnz > 0);
+        auto max_nnz = to.dof_map().max_nnz(); assert(max_nnz > 0);
         mat = local_sparse(to.dof_map().n_local_dofs(), from.dof_map().n_local_dofs(), max_nnz);
 
         std::size_t n_elems = from.dof_map().n_elements();
@@ -64,7 +65,8 @@ namespace utopia {
         std::vector<SizeType> irows(1), icols(1);
         std::vector<Scalar>   vals(1, 1.0);
 
-        auto max_nnz =  from.dof_map().max_nnz(); assert(max_nnz > 0);
+        // auto max_nnz =  from.dof_map().max_nnz(); assert(max_nnz > 0);
+        auto max_nnz =  to.dof_map().max_nnz(); assert(max_nnz > 0);
         mat = local_sparse(to.dof_map().n_local_dofs(), from.dof_map().n_local_dofs() * dim, max_nnz);
 
         std::size_t n_elems = from.dof_map().n_elements();

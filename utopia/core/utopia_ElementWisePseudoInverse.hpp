@@ -15,7 +15,7 @@ namespace utopia {
 
         static void apply(const Vector &in, Vector &out, const Scalar tol = std::numeric_limits<Scalar>::epsilon())
         {
-            each_transform(in, out, [tol](const SizeType i, const Scalar value) -> Scalar {\
+            each_transform(in, out, [tol](const SizeType i, const Scalar value) -> Scalar {
                 UTOPIA_UNUSED(i);
 
                 if(std::abs(value) > tol) {

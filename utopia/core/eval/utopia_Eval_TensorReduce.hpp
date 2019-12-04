@@ -7,32 +7,26 @@
 
 namespace utopia {
 
-    template<class Expr, class Operation, class Traits, int Backend>
-    class Eval< TensorReduce<Expr, Operation>, Traits, Backend> {
+    template<class InnerExpr, class Operation, class Traits, int Backend>
+    class Eval< TensorReduce<InnerExpr, Operation>, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits,TensorReduce<Expr, Operation> >::Type Result;
+        using Expr   = utopia::TensorReduce<InnerExpr, Operation>;
+        using Result = EXPR_TYPE(Traits, Expr);
+        
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        inline static Result apply(const TensorReduce<Expr, Operation> &expr) {
-            Result result;
-
+        inline static void apply(const Expr &expr, Result &result)
+        {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // UTOPIA_BACKEND(Traits).apply_tensor_reduce(
-            //         result,
-            //         Eval<Expr,  Traits>::apply(expr.expr()),
-            //         expr.operation(),
-            //         expr.dim()
-            // );
-
             apply_aux(
-                Eval<Expr,  Traits>::apply(expr.expr()),
+                Eval<InnerExpr, Traits>::apply(expr.expr()),
                 expr.operation(),
                 expr.dim(),
                 result
             );
 
             UTOPIA_TRACE_END(expr);
-            return result;
         }
 
         template<class Operand>

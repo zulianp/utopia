@@ -6,7 +6,7 @@
 namespace utopia {
 
     template<typename Matrix, typename Vector, int Backend>
-    BiCGStab<Matrix, Vector, Backend>::BiCGStab()
+    BiCGStab<Matrix, Vector, Backend>::BiCGStab(): initialized_(false), loc_size_(0)
     {}
 
     template<typename Matrix, typename Vector, int Backend>
@@ -16,14 +16,18 @@ namespace utopia {
     }
 
     template<typename Matrix, typename Vector, int Backend>
-    void BiCGStab<Matrix, Vector, Backend>::update(const std::shared_ptr<const Matrix> &op)
+    void BiCGStab<Matrix, Vector, Backend>::update(const Operator<Vector> &A) 
     {
-        PreconditionedSolver<Matrix, Vector>::update(op);
-        // init({local_size(*op).get(0)});
+        SizeType loc_size_rhs = A.local_size().get(0);
+
+        if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
+            init(loc_size_rhs);
+        }
     }
 
+
     template<typename Matrix, typename Vector, int Backend>
-    void BiCGStab<Matrix, Vector, Backend>::init(const Size &ls)
+    void BiCGStab<Matrix, Vector, Backend>::init(const SizeType &ls)
     {
         v_ = local_zeros(ls);
         p_ = local_zeros(ls);
@@ -33,17 +37,6 @@ namespace utopia {
         s_ = local_zeros(ls);
         z_ = local_zeros(ls);
         K_inv_t_ = local_zeros(ls);
-    }
-
-    template<typename Matrix, typename Vector, int Backend>
-    bool BiCGStab<Matrix, Vector, Backend>::smooth(const Vector &rhs, Vector &x)
-    {
-        SizeType temp = this->max_it();
-        this->max_it(this->sweeps());
-        auto A_ptr = utopia::op(this->get_operator());
-        solve_unpreconditioned(*A_ptr, rhs, x);
-        this->max_it(temp);
-        return true;
     }
 
     //https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method (Preconditioned BiCGSTAB)
@@ -106,6 +99,7 @@ namespace utopia {
                 if(converged) { break; }
             }
 
+            z_.set(0.0);
             precond->apply(s_, z_);
             A.apply(z_, t_);
 
@@ -184,7 +178,7 @@ namespace utopia {
             A.apply(p_, v_);
 
             const Scalar r0_dot_v = dot(r0_, v_);
-            
+
             if(r0_dot_v == 0.0) {
                 assert(false);
             }
@@ -213,7 +207,7 @@ namespace utopia {
 
             if(std::isnan(omega) || std::isinf(omega)) {
                 r_norm = norm2(s_);
-                
+
                 if(this->verbose()) {
                     PrintInfo::print_iter_status({ Scalar(it), r_norm });
                 }

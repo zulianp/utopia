@@ -11,11 +11,13 @@
 #include "utopia_AffineSimilarity.hpp"
 #include "utopia_SaddlePoint.hpp"
 #include "utopia_BiCGStab_impl.hpp"
+#include "utopia_ConjugateGradient_impl.hpp"
 
 //explicit instantiations
 namespace utopia {
 
     template class ConjugateGradient<PetscMatrix, PetscVector>;
+    template class ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>;
     template class GaussSeidel<PetscMatrix, PetscVector>;
     template class SPBlockConjugateGradient<PetscMatrix, PetscVector>;
     template class BiCGStab<PetscMatrix, PetscVector, HOMEMADE>;

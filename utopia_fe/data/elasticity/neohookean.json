@@ -1,0 +1,23 @@
+{
+    "mesh": {
+        "type": "square",
+        "n-x" : 20,
+        "n-y" : 20,
+        "order" : 1
+    },
+    "space": {
+        "system-name": "simple-square",
+        "variables": [
+            {
+                "name": "disp_x",
+                "order" : 1
+            },
+            {
+                "name": "disp_y",
+                "order" : 1
+            }
+        ],
+
+        "*boundary-conditions": []
+    }
+}

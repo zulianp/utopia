@@ -23,7 +23,7 @@ namespace utopia {
         return std::move(ret);
     }
 
-    using GradientDiffExpr = 
+    using GradientDiffExpr =
     Binary<
     Interpolate<UVector, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace> > >,
     Gradient<Interpolate<UVector, TrialFunction<LibMeshFunctionSpace> > >,
@@ -69,7 +69,7 @@ namespace utopia {
         mat = local_sparse(to.n_local_dofs(), from.n_local_dofs(), max_nnz);
 
         std::size_t n_elems = from.dof_map().n_elements();
-        
+
         assert(n_elems == to.dof_map().n_elements());
 
         Write<USparseMatrix>  w(mat, utopia::GLOBAL_INSERT);
@@ -96,9 +96,9 @@ namespace utopia {
     static void make_permutation(
         const libMesh::MeshBase &mesh,
         const libMesh::DofMap &dof_map_from,
-        const int &var_num_from, 
+        const int &var_num_from,
         const libMesh::DofMap &dof_map_to,
-        const int &var_num_to, 
+        const int &var_num_to,
         USparseMatrix &mat,
         const int tensor_dim = 1)
     {
@@ -148,13 +148,13 @@ namespace utopia {
             error_var_num_ = aux.add_variable("error_estimate", libMesh::Order(0), libMesh::MONOMIAL);
             grad_space_ *= LibMeshFunctionSpace(aux, error_var_num_);
             grad_space_.subspace(0).initialize();
-        } 
+        }
 
 
 
 
         std::cout << "Aux " << system_num_ << "/" << V.equation_systems().n_systems() << std::endl;
-        std::cout << "Aux_n_var = " << V.equation_systems().get_system(system_num_).n_vars() << std::endl;   
+        std::cout << "Aux_n_var = " << V.equation_systems().get_system(system_num_).n_vars() << std::endl;
     }
 
     template<class Matrix, class Vector>
@@ -194,11 +194,8 @@ namespace utopia {
         }
 
 
-        std::cout<<"I am refining::end "<<std::endl;
-
-
         libMesh::MeshRefinement refinement(m);
-        
+
 
         auto e_it = elements_begin(m);
 
@@ -213,8 +210,11 @@ namespace utopia {
 
         V.equation_systems().reinit();
 
-        n_refinements_ += refined;
-        return refined;
+        int global_refined = refined;
+        global_refined = error_.comm().max(global_refined);
+
+        n_refinements_ += global_refined;
+        return global_refined;
     }
 
     template<class Matrix, class Vector>
@@ -249,7 +249,7 @@ namespace utopia {
             disp(s_mm);
         }
 
-      
+
         const int dim = V.mesh().spatial_dimension();
 
         auto &P = grad_space_.subspace(0);
@@ -285,16 +285,40 @@ namespace utopia {
         assert(!has_nan_or_inf(mass_mat));
 
         mass_vec = sum(mass_mat, 1);
+        inv_mass_vec = mass_vec;
         e_pseudo_inv(mass_vec, inv_mass_vec);
+
+        disp(mass_vec.size());
+        disp(inv_mass_vec.size());
+        disp(mass_mat.size());
+
+        assert(mass_vec.local_size() == inv_mass_vec.local_size());
+
+        // disp(grad_ph.size());
+
 
         if(!mortar.empty()) {
             grad_ph  = transpose(mortar_matrix) * grad_ph;
             // //FIXME
             mass_mat = USparseMatrix(transpose(mortar_matrix) * mass_mat * mortar_matrix);
-            
+
             grad_p_projected = mortar_matrix * e_mul(grad_ph, inv_mass_vec);
         } else {
             grad_p_projected = e_mul(grad_ph, inv_mass_vec);
+        }
+
+
+        //UNCOMMENT ME once the bug is fixed
+
+        const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
+
+        if(!disable_adaptivity) {
+            Adaptivity a;
+            USparseMatrix pre_constraint, post_constraint;
+            auto &W_i = W.subspace(0);
+            a.constraint_matrix(W_i, pre_constraint, post_constraint);
+            grad_p_projected += post_constraint * grad_p_projected;
+            //utopia::write("post_constraint.m",post_constraint);
         }
 
         assert(!has_nan_or_inf(grad_ph));
@@ -315,7 +339,6 @@ namespace utopia {
 
         UVector vol;
         utopia::assemble(error_form, error_);
-        std::cout << tree_format(error_form.get_class()) << std::endl;
         utopia::assemble(vol_form,   vol);
         // error = e_div(error, vol);
 
@@ -330,8 +353,7 @@ namespace utopia {
         std::cout << chrono << std::endl;
 
         append_error_estimate(V);
-    }   
+    }
 
     template class GradientRecovery<USparseMatrix, UVector>;
-
 }

@@ -11,9 +11,6 @@
 #include "utopia_Boolean.hpp"
 #include "utopia_Factory.hpp"
 
-#ifdef WITH_TRILINOS
-#include <Kokkos_ArithTraits.hpp>
-#endif
 
 #include <limits>
 #include <algorithm>
@@ -46,6 +43,12 @@ namespace utopia {
     template<class Left, class Right>
     Binary<Left, Right, Plus> operator+(const Expression<Left> &left, const Expression<Right> &right) {
         return Binary<Left, Right, Plus>(left.derived(), right.derived());
+    }
+
+    //Switch left with right 
+    template<class Left, class L, class R>
+    Binary<Multiply<Tensor<L, 2>, Tensor<R, 1>>, Tensor<Left, 1>, Plus> operator+(const Tensor<Left, 1> &left, const Multiply<Tensor<L, 2>, Tensor<R, 1>> &right) {
+        return Binary<Multiply<Tensor<L, 2>, Tensor<R, 1>>, Tensor<Left, 1>, Plus>(right.derived(), left.derived());
     }
 
     template<class Left, class Right>
@@ -300,50 +303,6 @@ namespace utopia {
     template<class Left, class Right, int Order>
     inline Binary<Left, Number<Right>, Max> max(const Factory<Values<Right>, Order> &right, const Expression<Left> &left) {
         return Binary<Left, Number<Right>, Max>(left.derived(), right.type().value());
-    }
-
-    namespace device {
-#ifdef KOKKOS_INLINE_FUNCTION
-
-        template<typename T>
-        UTOPIA_INLINE_FUNCTION T abs(const T &v)
-        {
-            return Kokkos::Details::ArithTraits<T>::abs(v);
-        }
-
-        template<typename T>
-        UTOPIA_INLINE_FUNCTION T min(const T &left, const T &right)
-        {
-            return left < right ? left : right;
-        }
-
-        template<typename T>
-        UTOPIA_INLINE_FUNCTION T max(const T &left, const T &right)
-        {
-            return left > right ? left : right;
-        }
-    
-#else
-
-        template<typename T>
-        inline T abs(const T &v)
-        {
-            return std::abs(v);
-        }
-
-        template<typename T>
-        inline T min(const T &left, const T &right)
-        {
-            return std::min(left, right);
-        }
-
-        template<typename T>
-        inline T max(const T &left, const T &right)
-        {
-            return std::max(left, right);
-        }
-    
-#endif //KOKKOS_INLINE_FUNCTION
     }
 
 }

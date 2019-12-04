@@ -13,6 +13,8 @@
 #include "utopia_Constructible.hpp"
 #include "utopia_Comparable.hpp"
 #include "utopia_BLAS_Operands.hpp"
+#include "utopia_Allocations.hpp"
+#include "utopia_Select.hpp"
 
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -40,7 +42,8 @@ namespace utopia {
         public Comparable<PetscVector>,
         // public Ranged<PetscVector, 1>,
         public BLAS1Tensor<PetscVector>,
-        public Tensor<PetscVector, 1>
+        public Tensor<PetscVector, 1>,
+        public Selectable<PetscVector, 1>
     {
     public:
             using Scalar   = PetscScalar;
@@ -420,6 +423,7 @@ namespace utopia {
         );
       }
 
+
       ///////////////////////////////////////////////////////////////////////////
       ////////////// OVERRIDES FOR Comparable ////////////////////////////
       ///////////////////////////////////////////////////////////////////////////
@@ -444,6 +448,7 @@ namespace utopia {
         PetscVector(const PetscVector &other)
         {
             if(other.vec_) {
+                UTOPIA_REPORT_ALLOC("PetscVector::PetscVector(const PetscVector &)");
                 PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
@@ -454,6 +459,16 @@ namespace utopia {
             }
 
             immutable_ = other.immutable_;
+        }
+
+        PetscVector(PetscVector &&other)
+        : comm_(std::move(other.comm_)),
+          vec_(std::move(other.vec_)),
+          initialized_(std::move(other.initialized_)),
+          ghost_values_(std::move(other.ghost_values_)),
+          immutable_(std::move(other.immutable_))
+        {
+            other.vec_ = nullptr;
         }
 
         inline std::string name() const
@@ -512,7 +527,7 @@ namespace utopia {
 
 
             if(is_compatible(other) && !other.has_ghosts()) {
-                assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
+                assert((same_type(other) || this->has_ghosts()) || this->comm().size()==1 && "Inconsistent vector types. Handle types properly before copying" );
                 assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
@@ -523,6 +538,7 @@ namespace utopia {
             destroy();
 
             if(other.vec_) {
+                UTOPIA_REPORT_ALLOC("PetscVector::operator=(const PetscVector &)");
                 PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 ghost_values_ = other.ghost_values_;
@@ -835,6 +851,9 @@ namespace utopia {
 
         void convert_from(const Vec &mat);
         void convert_to(Vec &mat) const;
+        void copy_data_to(Vec vec) const; 
+        void copy_data_from(Vec vec); 
+
         void wrap(Vec &mat);
 
         inline void ghosted(
@@ -851,7 +870,7 @@ namespace utopia {
         }
 
 
-        inline bool same_object(const PetscVector &other) const
+        inline bool is_alias(const PetscVector &other) const
         {
             if(is_null()) return false;
             if(other.is_null()) return false;

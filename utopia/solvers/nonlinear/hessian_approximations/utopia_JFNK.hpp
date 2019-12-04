@@ -25,6 +25,9 @@ namespace utopia
 
             void initialize(const Vector & x_k, const Vector & g) override
             {
+
+                HessianApproximation<Vector>::initialize(x_k, g); 
+                
                 x_k_ = x_k; 
                 g_ = g; 
 
@@ -51,13 +54,13 @@ namespace utopia
                 return true;
             }
 
-            bool apply_Hinv(const Vector & /*g*/, Vector & /*q*/) const override
+            bool apply_Hinv(const Vector & /*g*/, Vector & /*q*/) override
             {
                 utopia_error("utopia::JFNK::apply_Hinv:: not supported... \n");
                 return false;
             }
 
-            bool apply_H(const Vector & v , Vector & result) const  override
+            bool apply_H(const Vector & v , Vector & result)  override
             {
                 Vector aa = std::sqrt(eps_) * (local_values(local_size(v).get(0), 1.0) + x_k_);
                 Scalar sum_a = sum(aa);

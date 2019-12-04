@@ -346,7 +346,7 @@ namespace utopia {
             }
             utopia_test_assert(approxeq(28.001, num));
         }
-    
+
     public:
         static void print_backend_info()
         {

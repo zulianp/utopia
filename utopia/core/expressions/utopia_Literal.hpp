@@ -1,9 +1,5 @@
-//
-// Created by Patrick Zulian on 18/05/15.
-//
-
-#ifndef utopia_utopia_LITERAL_HPP
-#define utopia_utopia_LITERAL_HPP
+#ifndef UTOPIA_LITERAL_HPP
+#define UTOPIA_LITERAL_HPP
 
 #include <iostream>
 #include <cmath>
@@ -12,23 +8,33 @@
 #include "utopia_Normed.hpp"
 
 namespace utopia {
+
+    template<typename T>
+    class Zero {
+    public:
+        static T value() { return static_cast<T>(0); }
+    };
+
+    template<typename T>
+    class Math {
+    public:
+        inline static T abs(const T &x) { return std::abs(x); }
+
+    };
+
     template<typename _Scalar>
     class Number : public Expression< Number<_Scalar> >, 
                    public BLAS1Tensor< Number<_Scalar> >,
                    public Normed<_Scalar> {
     public:
         static const int Order = 0;
-        // static const int  StoreAs = UTOPIA_BY_VALUE;
+        // static const int StoreAs = UTOPIA_BY_VALUE;
 
         enum {
              StoreAs = UTOPIA_BY_VALUE
         };
 
         typedef _Scalar Scalar;
-        // inline operator Scalar() const
-        // {
-        //     return value_;
-        // }
 
         inline operator Scalar &()
         {
@@ -64,18 +70,10 @@ namespace utopia {
             return *this;
         }
 
-        // template<typename TOther>
-        // inline constexpr Number &operator=(const Number<TOther> &other)
-        // {
-        //     value_ = other.value_;
-        //     return *this;
-        // }
-
-        // inline constexpr Number &operator=(const Scalar &other)
-        // {
-        //     value_ = other;
-        //     return *this;
-        // }
+        inline bool is_alias(const Number &other) const
+        {
+            return this == &other;
+        }
 
         inline Scalar get() const
         {
@@ -86,7 +84,7 @@ namespace utopia {
         {
             value_ = value;
         }
-        inline constexpr Number(const Scalar &value = 0.0)  : value_(value)
+        inline constexpr Number(const Scalar &value = Zero<Scalar>::value())  : value_(value)
         {}
 
         inline std::string get_class() const override
@@ -97,6 +95,11 @@ namespace utopia {
         template<typename OtherScalar>
         constexpr Number(const Number<OtherScalar> &other)
         : value_(other.value_)
+        {}
+
+        template<typename OtherScalar>
+        constexpr Number(Number<OtherScalar> &&other)
+        : value_(std::move(other.value_))
         {}
 
         template<class Derived>
@@ -120,6 +123,12 @@ namespace utopia {
         {
             value_ = expr.value_;
         }
+
+        inline void assign(const Number<Scalar> &expr)
+        {
+            value_ = expr.value_;
+        }
+
 
         ///<Scalar>SWAP - swap x and y
         inline void swap(Number &x) override
@@ -154,19 +163,19 @@ namespace utopia {
         ///<Scalar>NRM2 - Euclidean norm
         inline Scalar norm2() const override
         {
-            return std::abs(value_);
+            return Math<Scalar>::abs(value_);
         }
 
         ///<Scalar>ASUM - sum of absolute values
         inline Scalar norm1() const override
         {
-            return std::abs(value_);
+            return Math<Scalar>::abs(value_);
         }
 
         ///<Scalar>ASUM - sum of absolute values
         inline Scalar norm_infty() const override
         {
-            return std::abs(value_);
+            return Math<Scalar>::abs(value_);
         }
 
         ///I<Scalar>AMAX - index of max abs value
@@ -240,4 +249,4 @@ namespace utopia {
         os << static_cast<T>(num) << std::endl;
     }
 }
-#endif //utopia_utopia_LITERAL_HPP
+#endif //UTOPIA_LITERAL_HPP

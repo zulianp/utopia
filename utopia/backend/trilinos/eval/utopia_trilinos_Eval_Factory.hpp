@@ -21,24 +21,24 @@ namespace utopia {
         }
     };
 
-    template<class Left, class Index, class Traits>
-    class Eval< Construct<Left, Ghosts<Index> >, Traits, TRILINOS> {
-    public:
-        typedef utopia::Construct<Left, Ghosts<Index> > Expr;
+    // template<class Left, class Index, class Traits>
+    // class Eval< Construct<Left, Ghosts<Index> >, Traits, TRILINOS> {
+    // public:
+    //     typedef utopia::Construct<Left, Ghosts<Index> > Expr;
 
-        inline static void apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN(expr);
-            auto &&g = expr.right();
+    //     inline static void apply(const Expr &expr) {
+    //         UTOPIA_TRACE_BEGIN(expr);
+    //         auto &&g = expr.right();
 
-            Eval<Left, Traits, TRILINOS>::apply(expr.left()).ghosted(
-                g.local_size(),
-                g.global_size(),
-                g.index()
-            );
+    //         Eval<Left, Traits, TRILINOS>::apply(expr.left()).ghosted(
+    //             g.local_size(),
+    //             g.global_size(),
+    //             g.index()
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
     template<class Left, class Index, class Traits>
     class Eval< Assign<Left, Ghosts<Index> >, Traits, TRILINOS> {

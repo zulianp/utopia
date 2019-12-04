@@ -140,19 +140,19 @@ namespace utopia {
         }
     };
 
-    template<class Left, int Order, class Right, class Traits, int Backend>
-    class Eval< Construct<Tensor<Left, Order>, Blocks<Right> >, Traits, Backend> {
-    public:
-        inline static bool apply(const Construct<Tensor<Left, Order>, Blocks<Right> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-            auto &l = Eval<Tensor<Left, Order>, Traits>::apply(expr.left());
-            const auto &b = expr.right();
-            EvalBlocks<Left, Right, Order>::apply(l, b);
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
+    // template<class Left, int Order, class Right, class Traits, int Backend>
+    // class Eval< Construct<Tensor<Left, Order>, Blocks<Right> >, Traits, Backend> {
+    // public:
+    //     inline static bool apply(const Construct<Tensor<Left, Order>, Blocks<Right> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
+    //         auto &l = Eval<Tensor<Left, Order>, Traits>::apply(expr.left());
+    //         const auto &b = expr.right();
+    //         EvalBlocks<Left, Right, Order>::apply(l, b);
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
+    // };
 
     template<class Left, int Order, class Right, class Traits, int Backend>
     class Eval< Assign<Tensor<Left, Order>, Blocks<Right> >, Traits, Backend> {

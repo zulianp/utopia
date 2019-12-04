@@ -19,6 +19,13 @@ namespace utopia {
     };
 
     template<>
+    struct Order2String<0> {
+        static std::string Value() {
+            return "Scalar";
+        }
+    };
+
+    template<>
     struct Order2String<1> {
         static std::string Value() {
             return "Vector";

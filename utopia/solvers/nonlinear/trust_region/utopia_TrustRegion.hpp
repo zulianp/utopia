@@ -10,10 +10,10 @@
 
  namespace utopia
  {
-        template<class Matrix, class Vector>
-         class TrustRegion final: public NewtonBase<Matrix, Vector>,
-                               public TrustRegionBase<Vector>
-      {
+    template<class Matrix, class Vector>
+    class TrustRegion final:  public NewtonBase<Matrix, Vector>,
+                              public TrustRegionBase<Vector>
+    {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
@@ -51,7 +51,7 @@
          bool converged = false;
          NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-         Scalar delta, product, ared, pred, rho, E, E_k, E_k1;
+         Scalar delta, product, ared, pred, rho, E_k, E_k1;
 
          SizeType it = 0;
          SizeType it_successful = 0;
@@ -61,25 +61,24 @@
 
          bool rad_flg = false;
 
-         Vector g, p_k = x_k, x_k1 = x_k;
+         Vector g, p_k;
          Matrix H;
 
 
-         fun.gradient(x_k, g);
+          fun.gradient(x_k, g);
           g0_norm = norm2(g);
           g_norm = g0_norm;
 
-          #define DEBUG_mode
 
+          #define DEBUG_mode
           // TR delta initialization
           delta =  this->delta_init(x_k , this->delta0(), rad_flg);
+          #ifdef DEBUG_mode
 
-        // print out - just to have idea how we are starting
-        #ifdef DEBUG_mode
           if(this->verbose_)
           {
               this->init_solver("TRUST_REGION_BASE",
-                                {" it. ", "|| g ||", "r_norm", "<g, dx>", "J_k", "J_{k+1/2}", "J_{k+1}", "ared", "pred",
+                                {" it. ", "|| g ||", "r_norm", "<g, dx>", "J_k", "J_{k+1}", "ared", "pred",
                                  "rho", "delta_k", "|| p_k || "});
             PrintInfo::print_iter_status(it, {g_norm});
           }
@@ -99,24 +98,36 @@
         {
           fun.value(x_k, E_k);
 
-          if(accepted)
+          if(accepted){
             fun.hessian(x_k, H);
+          }
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            p_k *= 0;
-            tr_subproblem->current_radius(delta);
-            tr_subproblem->solve(H, -1.0 * g, p_k);
-            this->solution_status_.num_linear_solves++;
+              if(empty(p_k)){
+                p_k = 0.0*x_k; 
+              }
+              else{
+                p_k.set(0.0); 
+              }
+              
+              // UTOPIA_NO_ALLOC_BEGIN("TR:1");
+              tr_subproblem->current_radius(delta);
+              g_minus_ = -1.0*g; 
+              tr_subproblem->solve(H, g_minus_, p_k);
+              this->solution_status_.num_linear_solves++;
+              // UTOPIA_NO_ALLOC_END();
           }
           else
           {
             utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
           }
 
-          pred = this->get_pred(g, H, p_k);
+          // UTOPIA_NO_ALLOC_BEGIN("TR:2");
+          pred = this->get_pred(g_minus_, H, p_k);
+          // UTOPIA_NO_ALLOC_END();
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 
@@ -125,9 +136,13 @@
             delta = norm2(p_k);
             delta *= 0.2;
           }
+          
 
           // value of the objective function with correction
-          fun.value(x_k + p_k, E_k1);
+          x_k = x_k + p_k; 
+          fun.value(x_k, E_k1);
+
+          UTOPIA_NO_ALLOC_BEGIN("TR:3");
           product = dot(g, p_k);            // just to do tests
 
           // decrease ratio
@@ -150,21 +165,24 @@
           if (rho >= this->rho_tol())
             it_successful++;
 
-          accepted = this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
+          accepted = this->trial_point_acceptance(rho);
+          UTOPIA_NO_ALLOC_END();
 
           if(accepted)
           {
-            x_k = x_k1;
             fun.gradient(x_k, g);
-            g_norm = norm2(g);
-            r_norm = g_norm/g0_norm;
-
+            UTOPIA_NO_ALLOC_BEGIN("TR:4"); 
             norms2(g, p_k, g_norm, s_norm);
             r_norm = g_norm/g0_norm;
+            E_k = E_k1; 
+            UTOPIA_NO_ALLOC_END();
           }
           else
           {
+            UTOPIA_NO_ALLOC_BEGIN("TR:5"); 
+            x_k -= p_k; 
             s_norm = norm2(p_k);
+            UTOPIA_NO_ALLOC_END();
           }
 
     //----------------------------------------------------------------------------
@@ -173,7 +191,7 @@
 
           #ifdef DEBUG_mode
             if(this->verbose_)
-              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E_k, E_k1, E, ared, pred, rho, delta, s_norm});
+              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E_k, E_k1,ared, pred, rho, delta, s_norm});
           #else
             if(this->verbose_)
               PrintInfo::print_iter_status(it, {g_norm, r_norm, E_k, E_k1, rho, delta, s_norm});
@@ -207,10 +225,13 @@
 
 
     private:
-      Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
+      Scalar get_pred(const Vector & g_minus, const Matrix & B, const Vector & p_k)
       {
-        return (-1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k));
+        return (dot(g_minus, p_k) -0.5 *dot(B * p_k, p_k));
       }
+
+
+      Vector g_minus_; 
 
   };
 

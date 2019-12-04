@@ -36,6 +36,12 @@ namespace utopia {
             }
 
             template<class Fun>
+            inline static void apply_transform(BlasVector &in_out, Fun fun)
+            {
+                apply_transform(in_out, in_out, fun);
+            }
+
+            template<class Fun>
             inline static void apply_transform(const BlasVector &in, BlasVector &out, Fun fun)
             {
                 auto s = in.size();

@@ -22,7 +22,7 @@
 			"path_4"   : "../data/contact/pseudo-signorini-refined-twice.e",
 			"path_5" : "../data/contact/pseudo-signorini-coarse-slave-3.e",
 			"refinements" : 0,
-			"order" : 2
+			"order" : 1
 
 		},
 		"space": {
@@ -30,15 +30,15 @@
 			"variables": [
 				{
 					"name": "disp_x",
-					"order" : 2
+					"order" : 1
 				},
 				{
 					"name": "disp_y",
-					"order" : 2
+					"order" : 1
 				},
 				{
 					"name": "disp_z",
-					"order" : 2
+					"order" : 1
 				}
 			],
 			"boundary-conditions": [

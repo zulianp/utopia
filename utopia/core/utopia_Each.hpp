@@ -91,6 +91,12 @@ namespace utopia {
         }
 
         template<class Fun>
+        inline static void apply_transform(Tensor &in_out, Fun fun)
+        {
+            apply_transform(in_out, in_out, fun);
+        }
+
+        template<class Fun>
         inline static void apply_transform(const Tensor &in, Tensor &out, Fun fun)
         {
             Range r = range(in);
@@ -110,7 +116,7 @@ namespace utopia {
             }
 
             if(size(in) != size(out)) {
-                out = zeros(size(in));
+                out = local_zeros(local_size(in));
             }
 
             Read<Tensor>  read_lock(in);

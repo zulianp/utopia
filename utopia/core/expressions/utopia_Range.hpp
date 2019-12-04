@@ -120,6 +120,11 @@ namespace utopia {
             return Range(begin_ - shift, end_ - shift);
         }
 
+        inline bool operator==(const Range &other) const
+        {
+            return begin_ == other.begin_ && end_ == other.end_;
+        }
+
         friend std::ostream & operator <<(std::ostream &os, const Range &range)
         {
             os << range.begin() << "\t";

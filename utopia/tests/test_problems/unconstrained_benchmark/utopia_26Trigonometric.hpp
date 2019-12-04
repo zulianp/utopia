@@ -15,7 +15,7 @@ namespace utopia
         DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        Trigonometric26(const SizeType & n_loc): n_loc_(n_loc)
+        Trigonometric26(const SizeType & n_loc=10): n_loc_(n_loc)
         {
             x_exact_ = local_values(n_loc_, 0.0);
             SizeType n_global = size(x_exact_).get(0);

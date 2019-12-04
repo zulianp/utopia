@@ -20,6 +20,8 @@ namespace utopia {
 
     template<class Matrix, class Vector>
     class TaoSolver;
+
+    class PetscCommunicator;
 }
 
 #endif //UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP

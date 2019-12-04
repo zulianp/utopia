@@ -63,7 +63,10 @@ namespace utopia {
                 }
             }
 
-            m.comm().sum(val);
+            //FIXME (once libmesh is fixed go back to previous version)
+            UVector dump; 
+            val = dump.comm().sum(val);
+            // m.comm().sum(val);
 
             //perf
             c.stop();
@@ -85,6 +88,8 @@ namespace utopia {
             //perf
             Chrono c;
             c.start();
+
+            const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
 
             typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
             typedef typename TraitsT::Matrix ElementMatrix;
@@ -121,11 +126,14 @@ namespace utopia {
 
 
             libMesh::DofConstraints constraints;
-            Adaptivity::compute_all_constraints(
-                m,
-                dof_map,
-                constraints
-            );
+
+            if(!disable_adaptivity) {
+                Adaptivity::compute_all_constraints(
+                    m,
+                    dof_map,
+                    constraints
+                );
+            }
 
             {
                 Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
@@ -168,14 +176,17 @@ namespace utopia {
 
                         } else {
                             //std::cout<<"Adaptivity::constrain_matrix_and_vector"<<std::endl;
-                            Adaptivity::constrain_matrix_and_vector(
-                                *it,
-                                dof_map,
-                                constraints,
-                                el_mat,
-                                el_vec,
-                                dof_indices
-                            );
+
+                            if(!disable_adaptivity) {
+                                Adaptivity::constrain_matrix_and_vector(
+                                    *it,
+                                    dof_map,
+                                    constraints,
+                                    el_mat,
+                                    el_vec,
+                                    dof_indices
+                                );
+                            }
                         }
 
 
@@ -208,10 +219,38 @@ namespace utopia {
             return true;
         }
 
+        static void allocate_matrix(
+            const libMesh::DofMap &dof_map,
+            GlobalMatrix &mat)
+        {
+
+            auto s_m = size(mat);
+            
+            if(Traits<GlobalMatrix>::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+                SizeType nnz_x_row = 0;
+                if(!dof_map.get_n_nz().empty()) {
+                    // nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+                    //  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
+                    nnz_x_row =
+                        *std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) +
+                        *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+                }
+
+                mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+            } else {
+                mat *= 0.;
+            }
+
+        }
+
 
         template<class Expr>
         bool assemble(/*const*/ Expr &expr, GlobalMatrix &mat)
         {
+
+            const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
+            
             //perf
             Chrono c;
             c.start();
@@ -229,28 +268,33 @@ namespace utopia {
 
 
             libMesh::DofConstraints constraints;
-            Adaptivity::compute_all_constraints(
-                m,
-                dof_map,
-                constraints
-            );
+
+            if(!disable_adaptivity) {
+                Adaptivity::compute_all_constraints(
+                    m,
+                    dof_map,
+                    constraints
+                );
+            }
 
             //FIXME trilinos backend is buggy
-            if(Traits<GlobalMatrix>::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
-                SizeType nnz_x_row = 0;
-                if(!dof_map.get_n_nz().empty()) {
-                    // nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-                    // 	*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+            // if(Traits<GlobalMatrix>::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+            //     SizeType nnz_x_row = 0;
+            //     if(!dof_map.get_n_nz().empty()) {
+            //         // nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+            //         // 	*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
-                    nnz_x_row =
-                        *std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) +
-                        *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
-                }
+            //         nnz_x_row =
+            //             *std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) +
+            //             *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+            //     }
 
-                mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
-            } else {
-                mat *= 0.;
-            }
+            //     mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+            // } else {
+            //     mat *= 0.;
+            // }
+
+            allocate_matrix(dof_map, mat);
 
             {
                 Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
@@ -276,7 +320,10 @@ namespace utopia {
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
 
-                        Adaptivity::constrain_matrix(*it, dof_map, constraints, el_mat, dof_indices);
+
+                        if(!disable_adaptivity) {
+                            Adaptivity::constrain_matrix(*it, dof_map, constraints, el_mat, dof_indices);
+                        }
 
                         if(ctx_.has_assembled()) {
                             add_matrix(el_mat, dof_indices, dof_indices, mat);
@@ -301,7 +348,7 @@ namespace utopia {
         bool assemble(/*const*/ Expr &expr, GlobalVector &vec, const bool apply_constraints = false)
         {
 
-
+            const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
 
             //perf
             Chrono c;
@@ -329,11 +376,14 @@ namespace utopia {
             // }
 
             libMesh::DofConstraints constraints;
-            Adaptivity::compute_all_constraints(
-                m,
-                dof_map,
-                constraints
-            );
+
+            if(!disable_adaptivity) {
+                Adaptivity::compute_all_constraints(
+                    m,
+                    dof_map,
+                    constraints
+                );
+            }
 
 
             {
@@ -359,7 +409,9 @@ namespace utopia {
                         std::vector<libMesh::dof_id_type> dof_indices;
                         dof_map.dof_indices(*it, dof_indices);
 
-                        Adaptivity::constrain_vector(*it, dof_map, constraints, el_vec, dof_indices);
+                        if(!disable_adaptivity) {
+                            Adaptivity::constrain_vector(*it, dof_map, constraints, el_vec, dof_indices);
+                        }
 
                         if(ctx_.has_assembled()) {
                             add_vector(el_vec, dof_indices, temp_vec);
