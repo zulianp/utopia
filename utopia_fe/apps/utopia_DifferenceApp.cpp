@@ -58,8 +58,72 @@ namespace utopia {
     class DifferenceApp::Impl : public Configurable {
     public:
 
+        class Diff {
+        public:
+            std::size_t n_elements;
+            std::size_t n_nodes;
+            double relative_l2_squared_norm;
+            double l2_squared_norm;
+            double ref_min;
+            double ref_max;
+            double delta;
+            double vol;
+            double norm_1;
+            double norm_2;
+            double norm_infty;
+
+            bool write(const Path &path) const
+            {
+                std::ofstream os(path.c_str());
+
+                if(os.good()) {
+                    describe(os);
+                    os.close();
+                    return true;;
+                }
+
+                os.close();
+                return false;
+            }
+
+            void describe(std::ostream &os) const
+            {
+                os << "\"n_elements\",\"n_nodes\",\"relative_l2_squared_norm\",\"l2_squared_norm\",\"ref_min\",\"ref_max\",\"delta\",\"vol\"";
+                os << "\"norm_1\",\"norm_2\",\"norm_infty\"\n";
+
+
+                os << n_elements << ","
+                   << n_nodes    << ","
+                   << relative_l2_squared_norm << ","
+                   << l2_squared_norm    << ","
+                   << ref_min    << ","
+                   << ref_max    << ","
+                   << delta      << ","
+                   << vol        << ","
+                   << norm_1     << ","
+                   << norm_2     << ","
+                   << norm_infty << "\n";
+
+            }
+
+            void describe_pretty(std::ostream &os) const
+            {
+                os << "n_elements               : " << n_elements               << std::endl;
+                os << "n_nodes                  : " << n_nodes                  << std::endl;
+                os << "relative_l2_squared_norm : " << relative_l2_squared_norm << std::endl;
+                os << "l2_squared_norm          : " << l2_squared_norm          << std::endl;
+                os << "ref_min                  : " << ref_min                  << std::endl;
+                os << "ref_max                  : " << ref_max                  << std::endl;
+                os << "delta                    : " << delta                    << std::endl;
+                os << "vol                      : " << vol                      << std::endl;
+                os << "norm_1                   : " << norm_1                   << std::endl;
+                os << "norm_2                   : " << norm_2                   << std::endl;
+                os << "norm_infty               : " << norm_infty               << std::endl;
+            }
+        };
+
         Impl(libMesh::Parallel::Communicator &comm)
-        : from_(comm), to_(comm), output_path_("diff.e")
+        : from_(comm), to_(comm), output_path_("diff.e"), csv_ouput_path_("diff.csv")
         {}
 
         void read(Input &in) override
@@ -78,6 +142,7 @@ namespace utopia {
 
             in.get("transfer", *transfer_);
             in.get("output-path", output_path_);
+            in.get("csv-ouput-path", csv_ouput_path_);
         }
 
         void run()
@@ -94,40 +159,41 @@ namespace utopia {
 
             /////////////////////////////////////////////////////////////////
 
-            std::cout << "measures:\n";
-
-            std::cout << "norm1      : " << double(norm1(diff_))      << std::endl;
-            std::cout << "norm2      : " << double(norm2(diff_))      << std::endl;
-            std::cout << "norm_infty : " << double(norm_infty(diff_)) << std::endl;
-
             auto &V = to_.space.space();
 
             /////////////////////////////////////////////////////////////////
 
-            double l2_norm = 0.0;
+            double l2_squared_norm = 0.0;
 
             auto u = trial(V);
             auto x = interpolate(diff_, u);
-            utopia::assemble(inner(x, x) * dX, l2_norm);
-            // l2_norm = std::sqrt(l2_norm);
-
-            std::cout << "l2_norm    : " << l2_norm << std::endl;
+            utopia::assemble(inner(x, x) * dX, l2_squared_norm);
 
             double ref_min = min(to_.data);
             double ref_max = max(to_.data);
             double delta = ref_max - ref_min;
 
-
             USparseMatrix mass_matrix; //FIXME
             utopia::assemble(inner(trial(V), test(V)) * dX, mass_matrix);
             double vol = sum(mass_matrix);
 
-            std::cout << "normalized measures (diff/(vol * (ref_max-ref_min)^2):\n";
-            std::cout << "ref_min : " << ref_min << std::endl;
-            std::cout << "ref_max : " << ref_max << std::endl;
-            std::cout << "vol     : " << vol << std::endl;
+            Diff diff;
+            diff.n_elements = from_.mesh.mesh().n_active_elem();
+            diff.n_nodes    = from_.mesh.mesh().n_nodes();
+            diff.relative_l2_squared_norm = l2_squared_norm/(vol * delta*delta);
+            diff.l2_squared_norm = l2_squared_norm;
+            diff.ref_min = ref_min;
+            diff.ref_max = ref_max;
+            diff.delta = delta;
+            diff.vol = vol;
+            diff.norm_1 = norm1(diff_);
+            diff.norm_2 = norm2(diff_);
+            diff.norm_infty = norm_infty(diff_);
 
-            std::cout << "l2_norm : " << l2_norm/(vol * delta*delta) << std::endl;
+            if(mass_matrix.comm().rank() == 0) {
+                diff.describe_pretty(std::cout);
+                diff.write(csv_ouput_path_);
+            }
 
             /////////////////////////////////////////////////////////////////
 
@@ -137,7 +203,7 @@ namespace utopia {
     private:
         MeshData from_, to_;
         std::unique_ptr<MeshTransferOperator> transfer_;
-        std::string output_path_;
+        std::string output_path_, csv_ouput_path_;
         UVector diff_;
     };
 
