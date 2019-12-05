@@ -94,6 +94,8 @@ namespace utopia {
 
             /////////////////////////////////////////////////////////////////
 
+            std::cout << "measures:\n";
+
             std::cout << "norm1      : " << double(norm1(diff_))      << std::endl;
             std::cout << "norm2      : " << double(norm2(diff_))      << std::endl;
             std::cout << "norm_infty : " << double(norm_infty(diff_)) << std::endl;
@@ -110,6 +112,21 @@ namespace utopia {
             l2_norm = std::sqrt(l2_norm);
 
             std::cout << "l2_norm    : " << l2_norm << std::endl;
+
+            double ref_min = min(to_.data);
+            double ref_max = max(to_.data);
+            double delta = ref_max - ref_min;
+
+            double mass = 0.0;
+            USparseMatrix mass_matrix; //FIXME
+            utopia::assemble(inner(trial(V), test(V)) * dX, mass_matrix);
+            mass = sum(mass_matrix);
+
+            std::cout << "normalized measures (diff/(vol * (ref_max-ref_min)^2):\n";
+            std::cout << "ref_min: " << ref_min << std::endl;
+            std::cout << "ref_max: " << ref_max << std::endl;
+
+            std::cout << "l2_norm: " << l2_norm/(mass * delta*delta) << std::endl;
 
             /////////////////////////////////////////////////////////////////
 
