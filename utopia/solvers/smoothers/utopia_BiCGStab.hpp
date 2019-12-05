@@ -10,9 +10,8 @@
 
 namespace utopia {
 
-
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    class BiCGStab final: public OperatorBasedLinearSolver<Matrix, Vector>{
+    class BiCGStab final : public OperatorBasedLinearSolver<Matrix, Vector>{
     public:
         typedef UTOPIA_SCALAR(Vector) 	 Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -61,8 +60,8 @@ namespace utopia {
         Vector z_;
         Vector K_inv_t_;
 
-        bool initialized_; 
-        SizeType loc_size_; 
+        bool initialized_;
+        SizeType loc_size_;
 
     };
 }

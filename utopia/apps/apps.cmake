@@ -2,6 +2,7 @@ set(UTOPIA_APPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/apps)
 
 list(APPEND APPS_MODULES
     .
+    gpu_assembler
 )
 
 set(LOCAL_HEADERS "")
@@ -9,6 +10,7 @@ set(LOCAL_SOURCES "")
 find_project_files(UTOPIA_APPS_DIR APPS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 target_sources(utopia_exec PRIVATE ${LOCAL_SOURCES})
 utopia_link_default_targets(utopia_exec)
+
 
 target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})
 target_include_directories(utopia_exec PRIVATE .)

@@ -3,6 +3,8 @@ list(APPEND INTERSECTION_MODULES
   clipper
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR INTERSECTION_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------

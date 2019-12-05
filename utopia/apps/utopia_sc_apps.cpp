@@ -9,6 +9,7 @@
 #include "utopia_kokkos_Traits.hpp"
 #include "utopia_trilinos_Poisson.hpp"
 #include "utopia_trilinos.hpp"
+#include "utopia_trilinos_StructuredGrid.hpp"
 #include <cmath>
 
 namespace utopia {
