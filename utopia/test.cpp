@@ -42,9 +42,6 @@ int main(const int argc, char *argv[])
             }
         }
 
-        // Utopia::instance().set("default_tollerance", "1e-15");
-        // Utopia::instance().set("n_threads", "2");
-
         test_runner.verbose(Utopia::instance().verbose());
 
         if(run_tests) {

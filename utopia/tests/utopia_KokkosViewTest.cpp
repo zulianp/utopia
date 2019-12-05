@@ -4,20 +4,47 @@
 #ifdef WITH_TRILINOS
 #include "utopia_Testing.hpp"
 
+#include "utopia_trilinos_FECrsGraph.hpp"
 //include edsl components
 #include "utopia_Core.hpp"
 #include "utopia_Jacobi.hpp"
 #include "utopia_kokkos_Traits.hpp"
 #include "utopia_Views.hpp"
-#include "test_problems/utopia_trilinos_Poisson3D.hpp"
 #include "utopia_trilinos.hpp"
 
-
 #include <cmath>
-
 #include <Tpetra_FECrsGraph.hpp>
 
 namespace utopia {
+
+    template<class Matrix>
+    void assemble_periodic_laplacian_1D(Matrix &m)
+    {
+        // n x n matrix with maximum 3 entries x row
+        Write<Matrix> w(m);
+        Range r = row_range(m);
+        auto n = size(m).get(0);
+
+        for(SizeType i = r.begin(); i != r.end(); ++i) {
+            if(i > 0) {
+                m.set(i, i - 1, -1.0);
+            } else {
+                m.set(i, n-1, -1.0);
+            }
+
+            if(i < n-1) {
+                m.set(i, i + 1, -1.0);
+            } else {
+                m.set(i, 0, -1.0);
+            }
+
+            if(i == 0 || i == n - 1) {
+                m.set(i, i, 1.);
+            } else {
+                m.set(i, i, 2.0);
+            }
+        }
+    }
 
     static void kokkos_vector_view()
     {
@@ -75,40 +102,6 @@ namespace utopia {
         }
     }
 
-    static void kokkos_poisson_2D()
-    {
-        SizeType n = 20;
-        Poisson<TpetraMatrix, TpetraVector> poisson(n);
-
-        Chrono c;
-        c.start();
-
-        TpetraVector x = 0.0 * poisson.rhs();
-        ConjugateGradient<TpetraMatrix, TpetraVector> cg;
-
-        // auto prec = std::make_shared<PointJacobi<TpetraMatrix, TpetraVector>>();
-        // prec->verbose(true);
-
-        // auto prec = std::make_shared<Jacobi<TpetraMatrix, TpetraVector>>();
-        // maybe put this in the preconditioner interface
-        // prec->preconditioner_mode(true);
-        // prec->max_it(50);
-        auto prec = std::make_shared<InvDiagPreconditioner<TpetraMatrix, TpetraVector>>();
-
-        cg.set_preconditioner(prec);
-        cg.verbose(true);
-        cg.max_it(n*n);
-        cg.rtol(1e-8);
-        cg.solve(poisson.laplacian(), poisson.rhs(), x);
-
-        c.stop();
-
-        std::cout << c << std::endl;
-
-        // poisson.reinit();
-        // write("x.m", x);
-    }
-
     static void device_matrix_view()
     {
         using Dev      = utopia::Traits<TpetraVector>::Device;
@@ -116,45 +109,14 @@ namespace utopia {
 
         SizeType n = 5;
 
-        Poisson<TpetraMatrix, TpetraVector> poisson(n);
+        TpetraMatrix L = sparse(n, n, 3);
+        assemble_periodic_laplacian_1D(L);
 
-        TpetraMatrix L = poisson.laplacian();
         auto device_L = device_view(L);
 
         Dev::parallel_for(row_range(L), UTOPIA_LAMBDA(const SizeType &i) {
             device_L.atomic_add(i, i, 1.0);
         });
-    }
-
-
-    template<class Matrix>
-    void assemble_periodic_laplacian_1D(Matrix &m)
-    {
-        // n x n matrix with maximum 3 entries x row
-        Write<Matrix> w(m);
-        Range r = row_range(m);
-        auto n = size(m).get(0);
-
-        for(SizeType i = r.begin(); i != r.end(); ++i) {
-            if(i > 0) {
-                m.set(i, i - 1, -1.0);
-            } else {
-                m.set(i, n-1, -1.0);
-            }
-
-            if(i < n-1) {
-                m.set(i, i + 1, -1.0);
-            } else {
-                m.set(i, 0, -1.0);
-            }
-
-            if(i == 0 || i == n - 1) {
-                m.set(i, i, 1.);
-            } else {
-                m.set(i, i, 2.0);
-            }
-        }
-
     }
 
     static void fe_crs_graph()
@@ -164,9 +126,10 @@ namespace utopia {
         using MapType   = Tpetra::Map<SizeType, SizeType>;
         using GraphType = Tpetra::FECrsGraph<SizeType, SizeType>;
         using View      = Kokkos::View<SizeType*>;
+        using DualView  = Kokkos::DualView<std::size_t*>;
 
         Teuchos::RCP<const MapType> ownedRowMap, ownedPlusSharedRowMap;
-        size_t maxNumEntriesPerRow = 3;
+        // size_t maxNumEntriesPerRow = 3;
 
         TpetraMatrix mat;
 
@@ -178,16 +141,22 @@ namespace utopia {
 
         SizeType n_ghosts = (size>0) * 2;
         View index_list("il", n_local + n_ghosts);
+        DualView nnz_z_row("nnz_z_row", n_local + n_ghosts);
 
+        auto nnz_z_row_dev = nnz_z_row.view_device();
 
         Dev::parallel_for(n_local, UTOPIA_LAMBDA(const SizeType &i) {
             index_list(i) = i + n_local * rank;
-        });
 
-        if(size > 0) {
-            index_list(n_local)     = rank == 0? n_global -1 : n_local * rank - 1;
-            index_list(n_local + 1) = rank == size-1? 0 : n_local * (rank + 1);
-        }
+            nnz_z_row_dev(i) = 3;
+
+            if(i == 0 && size > 0) {
+                index_list(n_local)     = rank == 0? n_global -1 : n_local * rank - 1;
+                index_list(n_local + 1) = rank == size-1? 0 : n_local * (rank + 1);
+                nnz_z_row_dev(n_local) = 3;
+                nnz_z_row_dev(n_local + 1) = 3;
+            }
+        });
 
         ownedRowMap = Teuchos::rcp(new MapType(n_global, n_local, 0, mat.comm().get()));
         ownedPlusSharedRowMap = Teuchos::rcp(
@@ -201,7 +170,8 @@ namespace utopia {
         auto graph =  Teuchos::rcp(new GraphType(
             ownedRowMap,
             ownedPlusSharedRowMap,
-            maxNumEntriesPerRow
+            // maxNumEntriesPerRow
+            nnz_z_row
         ));
 
         Range r(ownedRowMap->getMinGlobalIndex(), ownedRowMap->getMaxGlobalIndex() + 1);
@@ -245,10 +215,6 @@ namespace utopia {
 
         UTOPIA_RUN_TEST(device_matrix_view);
         UTOPIA_RUN_TEST(fe_crs_graph);
-
-        if(mpi_world_size() == 1) {
-            UTOPIA_RUN_TEST(kokkos_poisson_2D);
-        }
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(kokkos_view);

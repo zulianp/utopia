@@ -4,6 +4,10 @@ list(APPEND BENCH_MODULES
     .
 )
 
+
+
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(UTOPIA_BENCH_DIR BENCH_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 target_sources(utopia_bench PRIVATE ${LOCAL_SOURCES})
 target_link_libraries(utopia_bench utopia)

@@ -7,7 +7,7 @@
     {                               \
         utopia::Chrono private_c; private_c.start(); \
         if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "> " << std::left << std::setw(40) << (#test_name) << std::flush; } \
-        test_name();  utopia::TestRegistry::test_ran();                              \
+        test_name();                                \
         private_c.stop();                             \
          if(utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) { std::cout << "(" << private_c.get_seconds() << "s)" << std::endl; } \
     }
@@ -15,14 +15,12 @@
 
 namespace utopia {
 
-
-
-    class UnitTestBase {
-    public:
-        virtual ~UnitTestBase() {}
-        virtual void set_up() {}
-        virtual void tear_down() {}
-    };
+    // class UnitTestBase {
+    // public:
+    //     virtual ~UnitTestBase() {}
+    //     virtual void set_up() {}
+    //     virtual void tear_down() {}
+    // };
 
     #define UTOPIA_DEFINE_VAR(macro_in) dummy_test_variable_ ## macro_in ## __LINE__
 

@@ -20,8 +20,8 @@ if(M3ELINSOL_FOUND)
     )
 
 
-
-
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
     find_project_files(CMAKE_CURRENT_SOURCE_DIR M3ELINSOL_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 # compiling also m3elinsol c++ interface file
     list(APPEND LOCAL_SOURCES

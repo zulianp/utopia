@@ -18,9 +18,6 @@ set(UTOPIA_VERSION "${UTOPIA_VERSION_MAJOR}.${UTOPIA_VERSION_MINOR}.${UTOPIA_VER
 #################################################################################
 
 
-
-
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING
       "Choose the type of build, options are: Debug Release
@@ -387,10 +384,16 @@ utopia_link_default_targets(utopia_bench)
 target_link_libraries(utopia_bench utopia)
 include(benchmarks/benchmarks.cmake)
 
-add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
+# apps suite
+add_executable(utopia_exec EXCLUDE_FROM_ALL main.cpp)
+utopia_link_default_targets(utopia_exec)
 target_link_libraries(utopia_exec utopia)
-target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
-target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
+include(apps/apps.cmake)
+
+# add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
+# target_link_libraries(utopia_exec utopia)
+# target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
+# target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
 install(TARGETS utopia
     RUNTIME DESTINATION bin
@@ -457,8 +460,8 @@ add_dependencies(bench utopia_bench)
 
 ##########################################################################################
 
-# add_custom_target(bench_and_test)
-# add_dependencies(bench_and_test bench test)
+add_custom_target(bench_and_test)
+add_dependencies(bench_and_test bench utest)
 
 ##########################################################################################
 
