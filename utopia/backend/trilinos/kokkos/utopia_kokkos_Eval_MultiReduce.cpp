@@ -51,6 +51,8 @@ namespace utopia {
                 auto v2 = other.data_[i];
                 data_[i] += v2;
             }
+
+            return *this;
         }
 
         KOKKOS_INLINE_FUNCTION
