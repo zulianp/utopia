@@ -109,7 +109,7 @@ namespace utopia {
             auto u = trial(V);
             auto x = interpolate(diff_, u);
             utopia::assemble(inner(x, x) * dX, l2_norm);
-            l2_norm = std::sqrt(l2_norm);
+            // l2_norm = std::sqrt(l2_norm);
 
             std::cout << "l2_norm    : " << l2_norm << std::endl;
 
@@ -117,16 +117,17 @@ namespace utopia {
             double ref_max = max(to_.data);
             double delta = ref_max - ref_min;
 
-            double mass = 0.0;
+
             USparseMatrix mass_matrix; //FIXME
             utopia::assemble(inner(trial(V), test(V)) * dX, mass_matrix);
-            mass = sum(mass_matrix);
+            double vol = sum(mass_matrix);
 
             std::cout << "normalized measures (diff/(vol * (ref_max-ref_min)^2):\n";
-            std::cout << "ref_min: " << ref_min << std::endl;
-            std::cout << "ref_max: " << ref_max << std::endl;
+            std::cout << "ref_min : " << ref_min << std::endl;
+            std::cout << "ref_max : " << ref_max << std::endl;
+            std::cout << "vol     : " << vol << std::endl;
 
-            std::cout << "l2_norm: " << l2_norm/(mass * delta*delta) << std::endl;
+            std::cout << "l2_norm : " << l2_norm/(vol * delta*delta) << std::endl;
 
             /////////////////////////////////////////////////////////////////
 
