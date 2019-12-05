@@ -88,7 +88,7 @@ namespace utopia {
 
             void describe(std::ostream &os) const
             {
-                os << "\"n_elements\",\"n_nodes\",\"relative_l2_squared_norm\",\"l2_squared_norm\",\"ref_min\",\"ref_max\",\"delta\",\"vol\"";
+                os << "\"n_elements\",\"n_nodes\",\"relative_l2_squared_norm\",\"l2_squared_norm\",\"ref_min\",\"ref_max\",\"delta\",\"vol\",";
                 os << "\"norm_1\",\"norm_2\",\"norm_infty\"\n";
 
 
