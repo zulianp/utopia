@@ -60,7 +60,7 @@ namespace  utopia
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
-                this->fill_empty_bounds();
+                this->fill_empty_bounds(local_size(sol));
                 auto &box = this->get_box_constraints();
 
                 this->update(A); 

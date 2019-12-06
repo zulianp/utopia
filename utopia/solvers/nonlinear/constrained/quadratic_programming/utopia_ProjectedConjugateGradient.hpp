@@ -37,7 +37,7 @@ namespace utopia
             const Matrix &A = *this->get_operator();
 
             // ideally, we have two separate implementations, or cases
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(local_size(x));
 
             const auto &ub = this->get_upper_bound();
             const auto &lb = this->get_lower_bound();

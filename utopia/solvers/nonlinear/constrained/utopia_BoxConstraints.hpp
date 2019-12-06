@@ -64,10 +64,29 @@ namespace utopia {
             return has_lower_bound() || has_upper_bound();
         }
 
-        inline void fill_empty_bounds(const SizeType & loc_size = 0)
+        inline bool has_bounds() const
         {
-            
-            if(!lower_bound_ && !upper_bound_)
+            return has_lower_bound() && has_upper_bound();
+        }        
+
+        inline void fill_empty_bounds(const SizeType & loc_size)
+        {
+            if(this->has_bounds())  
+            {
+                if(!lower_bound_->comm().conjunction(loc_size == local_size(*lower_bound_))){
+                    lower_bound_ = std::make_shared<Vector>(local_values(loc_size, min_val_));
+                }
+
+                if(!upper_bound_->comm().conjunction(loc_size == local_size(*upper_bound_))){
+                    upper_bound_ = std::make_shared<Vector>(local_values(loc_size, max_val_));
+                }
+
+                // std::cout<<"has_lb: "<< has_lower_bound() << "has_ub: "<< has_upper_bound() <<  "   \n"; 
+                // std::cout<<"size_lb: "<< size(*lower_bound_) << "size_ub: "<< size(*upper_bound_) <<  "   \n"; 
+
+                return; 
+            }
+            else if(!lower_bound_ && !upper_bound_)
             {
                 lower_bound_ = std::make_shared<Vector>(local_values(loc_size, min_val_));
                 upper_bound_ = std::make_shared<Vector>(local_values(loc_size, max_val_));
@@ -75,11 +94,13 @@ namespace utopia {
             else
             {
                 if(!lower_bound_) {
-                    lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_), min_val_));
+                    const SizeType ls = (loc_size==0) ? local_size(*upper_bound_) : loc_size; 
+                    lower_bound_ = std::make_shared<Vector>(local_values(ls, min_val_));
                 }
 
                 if(!upper_bound_) {
-                    upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_), max_val_));
+                    const SizeType ls = (loc_size==0) ? local_size(*lower_bound_) : loc_size; 
+                    upper_bound_ = std::make_shared<Vector>(local_values(ls, max_val_));
                 }
             }
         }  

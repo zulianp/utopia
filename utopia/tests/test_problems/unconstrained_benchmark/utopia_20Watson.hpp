@@ -103,7 +103,10 @@ namespace utopia
             }
 
             assert(x.size() == this->dim());
-            g = zeros(this->dim());
+            
+            if(empty(g)){
+                g = zeros(this->dim());
+            }
 
             {
                 const Read<Vector> read(x);
@@ -162,9 +165,15 @@ namespace utopia
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
-
             assert(x.size() == this->dim());
-            H = zeros(this->dim(), this->dim());
+
+            if(empty(H)){
+                H = zeros(this->dim(), this->dim());
+            }
+            else
+            {
+                H *= 0.0; 
+            }
 
             std::vector<std::vector<Scalar> > hess(this->dim(), std::vector<Scalar>(this->dim()));
 

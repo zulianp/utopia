@@ -97,7 +97,12 @@ namespace utopia
             Read<Vector> read(point);
 
             SizeType d = point.size();
-            result = zeros(d);
+            if(empty(result)){
+                result = zeros(d);
+            }
+            else{
+                result.set(0.0);
+            }
 
             // for parallel access to result
             Range r_result = range(result);

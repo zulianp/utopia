@@ -209,10 +209,9 @@ namespace utopia {
             r = b - A * x;
 
             //localize gap function for correction
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(local_size(x));
             ub_loc = this->get_upper_bound() - x;
             lb_loc = this->get_lower_bound() - x;
-
 
             c *= 0.;
 

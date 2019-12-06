@@ -129,7 +129,7 @@ namespace utopia {
             init_memory(local_size(b));
 
             // ideally, we have two separate implementations, or cases
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(local_size(x));
 
             const auto &upbo = this->get_upper_bound();
             const auto &lobo = this->get_lower_bound();

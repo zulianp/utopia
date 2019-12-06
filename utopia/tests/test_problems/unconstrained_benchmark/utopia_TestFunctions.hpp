@@ -124,9 +124,83 @@ namespace utopia
           return constraints_.has_upper_bound();
         }
 
+        virtual bool is_feasible(Vector & x) 
+        {
+            if(!constraints_.has_upper_bound() && !constraints_.has_lower_bound())
+                return true;
+
+            if(empty(help_) || size(help_)!=size(x))
+            {
+                help_ = 0.0*x; 
+            }
+
+            if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
+            {
+                const auto &ub = *constraints_.upper_bound();
+                const auto &lb = *constraints_.lower_bound();
+                
+                {
+                    auto d_lb   = const_device_view(lb);
+                    auto d_ub   = const_device_view(ub);
+                    auto d_x    = const_device_view(x);
+
+                    parallel_each_write(help_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        Scalar li = d_lb.get(i);
+                        Scalar ui = d_ub.get(i);
+                        Scalar xi = d_x.get(i);
+
+                        return (xi < li || xi > ui) ? 1.0: 0.0; 
+                    });
+                }
+
+                return (sum(help_) > 0.0)? false : true; 
+            }
+            else if(constraints_.has_upper_bound() && !constraints_.has_lower_bound())
+            {
+                const auto &ub = *constraints_.upper_bound();
+
+                {
+                    auto d_ub   = const_device_view(ub);
+                    auto d_x    = const_device_view(x);
+
+                    parallel_each_write(help_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        Scalar ui = d_ub.get(i);
+                        Scalar xi = d_x.get(i);
+
+                        return (xi > ui)? 1.0: 0.0; 
+                    });
+                }
+
+                return (sum(help_) > 0.0)? false : true; 
+            }
+            else
+            {
+                const auto &lb = *constraints_.lower_bound();
+
+                {
+                    auto d_lb   = const_device_view(lb);
+                    auto d_x    = const_device_view(x);
+
+                    parallel_each_write(help_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        Scalar li = d_lb.get(i);
+                        Scalar xi = d_x.get(i);
+
+                        return (xi < li)? 1.0: 0.0; 
+                    });
+                }
+
+                return (sum(help_) > 0.0)? false : true; 
+            }
+        }
+
+
 
         protected:
-            BoxConstraints                  constraints_;    
+            BoxConstraints  constraints_;  
+            Vector          help_;   
 
     };
 

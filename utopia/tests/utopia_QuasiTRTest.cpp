@@ -6,6 +6,7 @@
 #include "utopia_Benchmark.hpp"
 #include "utopia_LargeScaleIncludes.hpp"
 #include "utopia_UnconstrainedBenchmark.hpp"
+#include "utopia_ConstrainedBenchmark.hpp"
 #include <string>
 #include <cassert>
 
@@ -36,6 +37,13 @@ namespace utopia
 				test_functions_[1] = std::make_shared<QPTestFunction_2D<Matrix, Vector> >();
 				test_functions_[2] = std::make_shared<Biggs18<Matrix, Vector> >();
 				test_functions_[3] = std::make_shared<VariablyDim25<Matrix, Vector> >();
+
+				test_functions_constrained_.resize(5); 
+				test_functions_constrained_[0] = std::make_shared<Beale05Constrained<Matrix, Vector> >();
+				test_functions_constrained_[1] = std::make_shared<Watson20Constrained<Matrix, Vector> >();
+				test_functions_constrained_[2] = std::make_shared<VariablyDim25Constrained<Matrix, Vector> >();
+				test_functions_constrained_[3] = std::make_shared<PenaltyII24Constrained<Matrix, Vector> >();
+				test_functions_constrained_[4] = std::make_shared<Rosenbrock21Constrained<Matrix, Vector> >();
 			}
 			else
 			{
@@ -55,74 +63,90 @@ namespace utopia
 		{
 
 
-			this->register_experiment("QuasiNewton_InvApprox_LBFGS",
-				[this]() {
-	                auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
-	                auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >();
+			// this->register_experiment("QuasiNewton_InvApprox_LBFGS",
+			// 	[this]() {
+	  //               auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
+	  //               auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >();
 
-	                auto precond = hessian_approx->build_Hinv_precond();
-	                lsolver->set_preconditioner(precond);
+	  //               auto precond = hessian_approx->build_Hinv_precond();
+	  //               lsolver->set_preconditioner(precond);
 
-	                QuasiNewton<Vector> solver(hessian_approx, lsolver);
+	  //               QuasiNewton<Vector> solver(hessian_approx, lsolver);
 
-	                auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
-	                solver.set_line_search_strategy(line_search);
+	  //               auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
+	  //               solver.set_line_search_strategy(line_search);
 
-		            run_tr(this->test_functions_parallel_, solver, "QuasiNewton_InvApprox_LBFGS", this->verbose_);
-		            run_tr(this->test_functions_, solver, "QuasiNewton_InvApprox_LBFGS", this->verbose_);
-				}
-			);
+		 //            run_tr(this->test_functions_parallel_, solver, "QuasiNewton_InvApprox_LBFGS", this->verbose_);
+		 //            run_tr(this->test_functions_, solver, "QuasiNewton_InvApprox_LBFGS", this->verbose_);
+			// 	}
+			// );
 
-			this->register_experiment("QuasiNewton_InvApprox_BFGS",
-				[this]() {
-	                auto hessian_approx   = std::make_shared<BFGS<Matrix, Vector> >();
-	                auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >();
+			// this->register_experiment("QuasiNewton_InvApprox_BFGS",
+			// 	[this]() {
+	  //               auto hessian_approx   = std::make_shared<BFGS<Matrix, Vector> >();
+	  //               auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >();
 
-	                auto precond = hessian_approx->build_Hinv_precond();
-	                lsolver->set_preconditioner(precond);
+	  //               auto precond = hessian_approx->build_Hinv_precond();
+	  //               lsolver->set_preconditioner(precond);
 
-	                QuasiNewton<Vector> solver(hessian_approx, lsolver);
+	  //               QuasiNewton<Vector> solver(hessian_approx, lsolver);
 
-	                auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
-	                solver.set_line_search_strategy(line_search);
+	  //               auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
+	  //               solver.set_line_search_strategy(line_search);
 
-		            run_tr(this->test_functions_parallel_, solver, "QuasiNewton_InvApprox_BFGS", this->verbose_);
-		            run_tr(this->test_functions_, solver, "QuasiNewton_InvApprox_BFGS", this->verbose_);
-				}
-			);			
-
-
-			this->register_experiment("QuasiTR_LBFGS",
-				[this]() {
-	                auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
-                    auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
-
-                    subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-                    // subproblem->atol(1e-10);
-
-                    QuasiTrustRegion<Vector> solver(hessian_approx, subproblem);
-
-		            run_tr(this->test_functions_parallel_, solver, "QuasiTR_LBFGS", this->verbose_);
-		            run_tr(this->test_functions_, solver, "QuasiTR_LBFGS", this->verbose_);
-				}
-			);
+		 //            run_tr(this->test_functions_parallel_, solver, "QuasiNewton_InvApprox_BFGS", this->verbose_);
+		 //            run_tr(this->test_functions_, solver, "QuasiNewton_InvApprox_BFGS", this->verbose_);
+			// 	}
+			// );			
 
 
-			this->register_experiment("QuasiTR_LSR1",
-				[this]() {
-	                auto hessian_approx   = std::make_shared<LSR1<Vector> >(7);
-                    auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+			// this->register_experiment("QuasiTR_LBFGS",
+			// 	[this]() {
+	  //               auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
+   //                  auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
 
-                    subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-                    // subproblem->atol(1e-10);
+   //                  subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+   //                  // subproblem->atol(1e-10);
 
-                    QuasiTrustRegion<Vector> solver(hessian_approx, subproblem);
+   //                  QuasiTrustRegion<Vector> solver(hessian_approx, subproblem);
 
-		            run_tr(this->test_functions_parallel_, solver, "QuasiTR_LSR1", this->verbose_);
-		            run_tr(this->test_functions_, solver, "QuasiTR_LSR1", this->verbose_);
-				}
-			);
+		 //            run_tr(this->test_functions_parallel_, solver, "QuasiTR_LBFGS", this->verbose_);
+		 //            run_tr(this->test_functions_, solver, "QuasiTR_LBFGS", this->verbose_);
+			// 	}
+			// );
+
+
+			// this->register_experiment("QuasiTR_LSR1",
+			// 	[this]() {
+	  //               auto hessian_approx   = std::make_shared<LSR1<Vector> >(7);
+   //                  auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+
+   //                  subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+   //                  // subproblem->atol(1e-10);
+
+   //                  QuasiTrustRegion<Vector> solver(hessian_approx, subproblem);
+
+		 //            run_tr(this->test_functions_parallel_, solver, "QuasiTR_LSR1", this->verbose_);
+		 //            run_tr(this->test_functions_, solver, "QuasiTR_LSR1", this->verbose_);
+			// 	}
+			// );
 					
+
+
+			this->register_experiment("QuasiNewton_Bound_LBFGS",
+				[this]() {
+	                auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
+	                auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+
+	                QuasiNewtonBound<Vector> solver(hessian_approx, qp_solver);
+
+	                auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
+	                solver.set_line_search_strategy(line_search);
+
+		            run_tr(this->test_functions_constrained_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
+				}
+			);
+
 	
 		}
 
@@ -138,7 +162,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
 			in.set("max-it", 500); 
-			in.set("verbose", false);
+			in.set("verbose", true);
 			solver.read(in); 
 
 			if(exp_verbose && mpi_world_rank()==0)
@@ -151,7 +175,27 @@ namespace utopia
 	    	for(size_t i =0; i < test_functions.size(); i++)
 	    	{
 				Vector x_init = test_functions[i]->initial_guess(); 
-				solver.solve(*test_functions[i], x_init); 
+
+				if(dynamic_cast<ConstrainedTestFunction<Matrix, Vector> *>(test_functions[i].get()))
+				{
+					ConstrainedTestFunction<Matrix, Vector> * fun_constrained = dynamic_cast<ConstrainedTestFunction<Matrix, Vector> *>(test_functions[i].get()); 
+					solver.set_box_constraints(fun_constrained->box_constraints()); 
+					solver.solve(*fun_constrained, x_init); 
+					
+					bool feas_flg = fun_constrained->is_feasible(x_init); 
+					utopia_test_assert(feas_flg);
+
+					// disp(x_init, "sol"); 
+					// auto lb = fun_constrained->lower_bound(); 
+					// auto ub = fun_constrained->upper_bound(); 
+					// disp(lb, "lb"); 
+					// disp(ub, "ub"); 
+					// std::cout<<"--------------------------\n";
+				}
+				else
+				{
+					solver.solve(*test_functions[i], x_init); 
+				}
 
 				auto sol_status = solver.solution_status(); 
 				//sol_status.describe(std::cout); 
@@ -191,6 +235,9 @@ namespace utopia
 	private:
 		std::vector<std::shared_ptr<UnconstrainedExtendedTestFunction<Matrix, Vector> > >  test_functions_parallel_;
 		std::vector<std::shared_ptr<UnconstrainedTestFunction<Matrix, Vector> > >  test_functions_;
+
+		std::vector<std::shared_ptr<ConstrainedTestFunction<Matrix, Vector> > >  test_functions_constrained_;
+
 		SizeType n_; 
 		bool verbose_; 
 

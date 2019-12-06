@@ -79,12 +79,6 @@ namespace utopia
           return constraints_.fill_empty_bounds(loc_size);
         }
 
-        virtual void fill_empty_bounds()
-        {
-          return constraints_.fill_empty_bounds();
-        }
-
-
 
     protected:
       virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
@@ -97,7 +91,7 @@ namespace utopia
 
         if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
         {
-          this->fill_empty_bounds(); 
+          this->fill_empty_bounds(local_size(x)); 
         }
 
         const auto &ub = *constraints_.upper_bound();
@@ -197,7 +191,6 @@ namespace utopia
 
             }
         }
-
     }
 
       virtual const BoxConstraints &  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform) 
@@ -266,6 +259,18 @@ namespace utopia
 
           return correction_constraints_; 
       }
+
+
+      void init_memory(const SizeType & ls)
+      {
+        auto zero_expr = local_zeros(ls);
+        Pc_  = zero_expr;
+        xg_  = zero_expr;
+
+        constraints_.fill_empty_bounds(ls); 
+        correction_constraints_.fill_empty_bounds(ls); 
+      }
+
 
 
     protected:

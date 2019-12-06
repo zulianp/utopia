@@ -514,7 +514,7 @@ namespace utopia {
         impl_->set_tol(this->atol(), this->rtol(), this->stol(), this->max_it());
 
         if(this->has_bound()) {
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(local_size(x));
             impl_->set_bounds(this->get_lower_bound(), this->get_upper_bound());
         }
 
