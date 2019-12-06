@@ -5,6 +5,7 @@
 #include "utopia_TensorView.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_DeviceExpression.hpp"
+#include "utopia_ViewTraits.hpp"
 
 namespace utopia {
 
@@ -129,6 +130,16 @@ namespace utopia {
             return view_[i];
         }
 
+        UTOPIA_INLINE_FUNCTION Scalar &operator[](const SizeType &i)
+        {
+            return view_[i];
+        }
+
+        UTOPIA_INLINE_FUNCTION const Scalar &operator[](const SizeType &i) const
+        {
+            return view_[i];
+        }
+
         UTOPIA_INLINE_FUNCTION const Scalar &get(const SizeType &i) const
         {
             return view_[i];
@@ -199,7 +210,7 @@ namespace utopia {
 
     private:
         ArrayView view_;
-        
+
         UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {
             UTOPIA_DEVICE_ASSERT(false);
         }

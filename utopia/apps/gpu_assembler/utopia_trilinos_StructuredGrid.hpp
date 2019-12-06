@@ -5,6 +5,7 @@
 #include "utopia_trilinos_FECrsGraph.hpp"
 #include "utopia_Views.hpp"
 
+
 namespace utopia {
 
     class FE {};
@@ -13,18 +14,13 @@ namespace utopia {
 
     template<
         class Elem_,
-        class MemType = typename Elem_::MemType,
-        int Dim = Elem_::Dim,
         typename...>
-    class Mesh {
-    public:
-        using Elem = Elem_;
-    };
+    class Mesh {};
 
-    template<class...>
+    template<class Mesh, int NComponents, typename ...>
     class FunctionSpace {};
 
-    template<typename T, int Order, int Dim, int NPoints, typename ...>
+    template<typename T, int Order, int Dim = T::Dim, typename ...>
     class Quadrature {};
 
     template<typename...>
@@ -73,6 +69,11 @@ namespace utopia {
         using Scalar = Scalar_;
         using MemType = Uniform<>;
         using DiscretizationType = FE;
+        static const int Dim = 2;
+        static const int NNodes = 4;
+
+        using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
+
 
         template<typename Point, typename Values>
         UTOPIA_INLINE_FUNCTION static void fun(const Point &p, Values &values)
@@ -81,7 +82,7 @@ namespace utopia {
         }
 
         template<typename Point, typename Values>
-        UTOPIA_INLINE_FUNCTION void grad(const Point &p, Values &values)
+        UTOPIA_INLINE_FUNCTION void grad(const Point &p, Values &values) const
         {
             RefQuad4::grad(p, values);
             for(int i = 0; i < 4; ++i)
@@ -91,10 +92,23 @@ namespace utopia {
             }
         }
 
+        template<typename RefPoint, typename PhysicalPoint>
+        UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const
+        {
+            out[0] = in[0] * h_[0] + translation_[0];
+            out[1] = in[1] * h_[1] + translation_[1];
+        }
+
         UTOPIA_INLINE_FUNCTION UniformQuad4(const Scalar &hx, const Scalar &hy)
         {
             h_[0] = hx;
             h_[1] = hy;
+        }
+
+        UTOPIA_INLINE_FUNCTION UniformQuad4()
+        {
+            h_[0] = 0.0;
+            h_[1] = 0.0;
         }
 
         template<class H>
@@ -102,23 +116,48 @@ namespace utopia {
             const StaticVector2<Scalar> &translation,
             const H &h)
         {
-            translation_ = translation;
+            translation_(0) = translation(0);
+            translation_(1) = translation(1);
+
             h_[0] = h[0];
             h_[1] = h[1];
+        }
+
+        UTOPIA_INLINE_FUNCTION NodeIndexView &nodes()
+        {
+            return nodes_;
+        }
+
+        UTOPIA_INLINE_FUNCTION const NodeIndexView &nodes() const
+        {
+            return nodes_;
+        }
+
+        UTOPIA_INLINE_FUNCTION const std::size_t &node(const std::size_t &i) const
+        {
+            return nodes_[i];
+        }
+
+        UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()
+        {
+            return NNodes;
         }
 
     private:
         Scalar h_[2];
         StaticVector2<Scalar> translation_;
+        NodeIndexView nodes_;
     };
 
     template<typename Scalar_>
-    class Quadrature<UniformQuad4<Scalar_>, 2, 2, 6> {
+    class Quadrature<UniformQuad4<Scalar_>, 2, 2> {
     public:
         using Scalar = Scalar_;
-        using PointView   = Kokkos::DualView<Scalar **>;
-        using WeightView  = Kokkos::DualView<Scalar *>;
+        using PointView   = Kokkos::View<Scalar **>;
+        using WeightView  = Kokkos::View<Scalar *>;
 
+        using DualPointView   = Kokkos::DualView<Scalar **>;
+        using DualWeightView  = Kokkos::DualView<Scalar *>;
 
         static const int Order   = 2;
         static const int Dim     = 2;
@@ -134,10 +173,30 @@ namespace utopia {
             return Dim;
         }
 
+        UTOPIA_INLINE_FUNCTION const PointView &points() const
+        {
+            return points_;
+        }
+
+        template<class Point>
+        UTOPIA_INLINE_FUNCTION void point(const int qp_idx, Point &p) const
+        {
+            p[0] = points_(qp_idx, 0);
+            p[1] = points_(qp_idx, 1);
+        }
+
+        UTOPIA_INLINE_FUNCTION const WeightView &weights() const
+        {
+            return weights_;
+        }
+
         void init()
         {
-            auto host_points  = points_.view_host();
-            auto host_weights = weights_.view_host();
+            DualPointView points("Quadrature::points", NPoints, Dim);
+            DualWeightView weights("Quadrature::weights", NPoints);
+
+            auto host_points  = points.view_host();
+            auto host_weights = weights.view_host();
 
             host_points(0, 0) = 0.5;
             host_points(0, 1) = 0.5;
@@ -158,12 +217,15 @@ namespace utopia {
             host_weights(3) = 0.14151805175188302631601261486295;
             host_weights(4) = 0.16067975044591917148618518733485;
             host_weights(5) = 0.16067975044591917148618518733485;
+
+            points_ = points.view_device();
+            weights_ = weights.view_device();
         }
 
-        Quadrature() :
-            points_("Quadrature::points", NPoints, Dim),
-            weights_("Quadrature::weights", NPoints)
-        {}
+        Quadrature()
+        {
+            init();
+        }
 
     private:
         PointView points_;
@@ -191,10 +253,8 @@ namespace utopia {
     class CellToNodeIndex<2> {
     public:
         using SizeType = std::size_t;
-        using TensorIndexView = SizeType[2];
-        using NodeIndexView   = SizeType[4];
 
-        template<class Dims>
+        template<class Dims, class TensorIndexView, class NodeIndexView>
         UTOPIA_INLINE_FUNCTION static void build(
             const Dims &dims,
             const TensorIndexView &cell_tensor_idx,
@@ -204,72 +264,213 @@ namespace utopia {
             const SizeType j = cell_tensor_idx[1];
             const SizeType n_p = dims[1] + 1;
 
-            node_idx[0] = i * n_p + j;
-            node_idx[1] = i * n_p + (j + 1);
             //flipped for dof-consistency and ccw local
-            node_idx[2] = (i + 1) * n_p + (j + 1);
-            node_idx[3] = (i + 1) * n_p + j;
-        }
 
+            node_idx[0] = i * n_p + j;
+            node_idx[3] = i * n_p + (j + 1);
+            node_idx[2] = (i + 1) * n_p + (j + 1);
+            node_idx[1] = (i + 1) * n_p + j;
+        }
     };
 
-    template<class Elem_, int Dim, class ExecutionSpace, typename...Args>
-    class Mesh<Elem_, Uniform<Args...>, Dim, ExecutionSpace> {
+    template<class Scalar, int Dim>
+    class Box {
+    public:
+        ArrayView<Scalar, Dim> min;
+        ArrayView<Scalar, Dim> max;
+    };
+
+    template<class Elem_, class Comm, class ExecutionSpace, typename...Args>
+    class Mesh<Elem_, Comm, ExecutionSpace, Uniform<Args...>> {
     public:
         using SizeType = std::size_t;
+        using Elem     = Elem_;
 
+        static const int Dim = Elem::Dim;
         static const int NNodesXElem = utopia::StaticPow<Dim, 2>::value;
 
-        using Elem            = Elem_;
         using Scalar          = typename Elem::Scalar;
-        using NodeIndexView   = SizeType[NNodesXElem];
-        using TensorIndexView = SizeType[Dim];
+        using NodeIndexView   = utopia::ArrayView<SizeType, NNodesXElem>;
+        using TensorIndexView = utopia::ArrayView<SizeType, Dim>;
         using IndexView1      = Kokkos::View<SizeType *, ExecutionSpace>;
         using ScalarView1     = Kokkos::View<Scalar   *, ExecutionSpace>;
+        using Dev             = utopia::TpetraTraits::Device;
 
+
+        template<class Array>
         UTOPIA_INLINE_FUNCTION void nodes(
             const SizeType &element_idx,
-            NodeIndexView &node_idx) const
+            Array &node_idx) const
         {
             TensorIndexView tensor_index;
             element_linear_to_tensor_index(element_idx, tensor_index);
             CellToNodeIndex<Dim>::build(dims_, tensor_index, node_idx);
         }
 
-        UTOPIA_INLINE_FUNCTION void elem(const SizeType &element_idx, Elem &elem) const
+        template<class Point>
+        UTOPIA_INLINE_FUNCTION void point(const SizeType &point_idx, Point &point)
         {
-            elem.set(h_);
+            TensorIndexView tensor_index;
+            node_linear_to_tensor_index(point_idx, tensor_index);
+
+            for(int d = 0; d < Dim; ++d) {
+                point[d] = tensor_index[d] * h_[d] + box_.min[d];
+            }
         }
 
-        Mesh()
-        {}
+        UTOPIA_INLINE_FUNCTION void elem(const SizeType &element_idx, Elem &elem) const
+        {
+            TensorIndexView tensor_index;
+            element_linear_to_tensor_index(element_idx, tensor_index);
+
+            StaticVector2<Scalar> translation;
+            for(int d = 0; d < Dim; ++d) {
+                translation(d) = tensor_index[d] * h_[d] + box_.min[d];
+            }
+
+            elem.set(translation, h_);
+            nodes(element_idx, elem.nodes());
+        }
+
+        //FIXME this
+        Mesh(
+            const Comm &comm,
+            const IndexView1 &dims,
+            const IndexView1 &local_elements_begin,
+            const IndexView1 &local_elements_end,
+            const Box<Scalar, Dim> &box
+            ) : comm_(comm),
+                dims_(dims),
+                local_elements_begin_(local_elements_begin),
+                local_elements_end_(local_elements_end),
+                box_(box),
+                h_("h", Dim)
+        {
+            for(int d = 0; d < Dim; ++d) {
+                h_[d] = (box_.max[d] - box_.min[d])/dims_[d];
+            }
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType n_elements() const
+        {
+           return prod_dim(dims_, 0);
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType n_local_elements() const
+        {
+            SizeType ret = local_elements_end_[0] - local_elements_begin_[0];
+            for(int d = 1; d < Dim; ++d) {
+                ret *= local_elements_end_[d] - local_elements_begin_[d];
+            }
+
+            return ret;
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType n_nodes() const
+        {
+            return prod_dim(dims_, 1);
+        }
+
+        class TensorIndexIterator {
+        public:
+            UTOPIA_INLINE_FUNCTION TensorIndexIterator &operator++()
+            {
+                for(int d = Dim-1; d > 0; --d) {
+                    index[d] += 1;
+                    if(index[d] < end[d]) break;
+
+                    index[d] = 0;
+                    index[d-1] += 1;
+                }
+
+                return *this;
+            }
+
+            UTOPIA_INLINE_FUNCTION operator bool() const
+            {
+                for(int d = 0; d < Dim; ++d) {
+                    if(index[d] < end[d]) return true;
+                }
+
+                return false;
+            }
+
+            const TensorIndexView & operator *() const
+            {
+                return index;
+            }
+
+            TensorIndexView index;
+            TensorIndexView end;
+        };
+
+        UTOPIA_INLINE_FUNCTION SizeType local_elements_index_begin() const
+        {
+            return element_tensor_to_linear_index(local_elements_begin_);
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType local_elements_index_end() const
+        {
+            SizeType result = local_elements_end_[0] -1;
+
+            for(int i = 1; i < Dim; ++i){
+                result *= dims_[i];
+                result += local_elements_end_[i] -1;
+            }
+
+            return result + 1;
+        }
+
+        Range local_element_range() const
+        {
+            return Range(local_elements_index_begin(), local_elements_index_end());
+        }
+
+        template<class Fun>
+        void each_element(Fun fun)
+        {
+            Dev::parallel_for(local_element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
+                Elem e;
+                elem(e_index, e);
+                fun(e_index, e);
+            });
+        }
 
     private:
+        Comm comm_;
         IndexView1  dims_;
+        IndexView1  local_elements_begin_;
+        IndexView1  local_elements_end_;
+
+        //FIXME
+        Box<Scalar, Dim> box_;
         ScalarView1 h_;
 
+
+        template<class Array>
         UTOPIA_INLINE_FUNCTION void element_linear_to_tensor_index(
             const SizeType &element_idx,
-            TensorIndexView &tensor_index
+            Array &tensor_index
             ) const
         {
             SizeType current = element_idx;
-            const SizeType last = Dim - 1;
+            const int last = Dim - 1;
 
-            for(SizeType i = last; i >= 0; --i) {
-                const SizeType next = current / dims_[i];
+            for(int i = last; i >= 0; --i) {
+                const int next = current / dims_[i];
                 tensor_index[i] = current - next * dims_[i];
                 current = next;
             }
 
-            DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
+            UTOPIA_DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType element_tensor_to_linear_index(const TensorIndexView &tensor_index) const
+        template<class Array>
+        UTOPIA_INLINE_FUNCTION SizeType element_tensor_to_linear_index(const Array &tensor_index) const
         {
             SizeType result = tensor_index[0];
 
-            for(SizeType i = 1; i < Dim; ++i){
+            for(int i = 1; i < Dim; ++i){
                 result *= dims_[i];
                 result += tensor_index[i];
             }
@@ -277,24 +478,26 @@ namespace utopia {
             return result;
         }
 
+        template<class Array>
         UTOPIA_INLINE_FUNCTION void node_linear_to_tensor_index(
             const SizeType &node_idx,
-            TensorIndexView &tensor_index
+            Array &tensor_index
             ) const
         {
             SizeType current = node_idx;
-            const SizeType last = Dim - 1;
+            const int last = Dim - 1;
 
-            for(SizeType i = last; i >= 0; --i) {
+            for(int i = last; i >= 0; --i) {
                 const SizeType next = current / (dims_[i] + 1);
                 tensor_index[i] = current - next * (dims_[i] + 1);
                 current = next;
             }
 
-            DEVICE_ASSERT(node_tensor_to_linear_index(tensor_index) == node_idx);
+            UTOPIA_DEVICE_ASSERT(node_tensor_to_linear_index(tensor_index) == node_idx);
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType node_tensor_to_linear_index(const TensorIndexView &tensor_index) const
+        template<class Array>
+        UTOPIA_INLINE_FUNCTION SizeType node_tensor_to_linear_index(const Array &tensor_index) const
         {
             SizeType result = tensor_index[0];
 
@@ -306,27 +509,87 @@ namespace utopia {
             return result;
         }
 
+        template<class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType prod_dim(Array &arr, const SizeType offset = 0)
+        {
+            SizeType ret = arr[0] + offset;
+            for(int d = 1; d < Dim; ++d) {
+                ret *= arr[d] + offset;
+            }
+
+            return ret;
+        }
     };
 
-    template<class Elem, typename...Args>
-    class FEValues<Mesh<Elem>, Uniform<Args...>> {
+
+    template<class Mesh_, int NComponents>
+    class FunctionSpace<Mesh_, NComponents> {
     public:
-        using Scalar   = typename Elem::Scalar;
-        using Mesh     = utopia::Mesh<Elem>;
-        using FunView  = Kokkos::DualView<Scalar **>;
-        using GradView = Kokkos::DualView<Scalar ***>;
+        using Mesh = Mesh_;
+        Mesh mesh_;
+    };
 
-        template<typename...GridArgs>
-        void init(const FunctionSpace<Mesh> &space)
+    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    class Jacobian {};
+
+    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    class PhysicalPoints {
+    public:
+        static const int Dim = Elem::Dim;
+
+        // using Point = utopia::StaticVector<Scalar, Dim>;
+
+        UTOPIA_INLINE_FUNCTION PhysicalPoints(const Elem &elem, const Quadrature &q)
+        : elem_(elem), q_(q)
+        {}
+
+        template<class Point>
+        UTOPIA_INLINE_FUNCTION void get(const int qp_idx, Point &p) const
         {
-
+            Point temp;
+            q_.point(qp_idx, temp);
+            elem_.point(temp, p);
         }
 
-        // void
+    private:
+        const Elem &elem_;
+        const Quadrature &q_;
     };
 
-    template<typename Scalar>
-    using UniformQuad4Mesh = utopia::Mesh<UniformQuad4<Scalar>>;
+    template<class Elem_, class Comm, class ExecutionSpace_, typename...Args>
+    class FunctionSpace< Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>, 1> {
+    public:
+        using Mesh = utopia::Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>;
+        using ExecutionSpace = ExecutionSpace_;
+        using SizeType = typename Mesh::SizeType;
+
+        template<class Array>
+        UTOPIA_INLINE_FUNCTION void dofs(const SizeType &element_idx, Array &indices) const
+        {
+            mesh_.nodes(element_idx, indices);
+        }
+
+        Mesh mesh_;
+    };
+
+    // template<class Elem, typename...Args>
+    // class FEValues<Mesh<Elem>, Uniform<Args...>> {
+    // public:
+    //     using Scalar   = typename Elem::Scalar;
+    //     using Mesh     = utopia::Mesh<Elem>;
+    //     using FunView  = Kokkos::DualView<Scalar **>;
+    //     using GradView = Kokkos::DualView<Scalar ***>;
+
+    //     template<typename...GridArgs>
+    //     void init(const FunctionSpace<Mesh> &space)
+    //     {
+
+    //     }
+
+    //     // void
+    // };
+
+    using Grid2d = utopia::Mesh<UniformQuad4<double>, TrilinosCommunicator, TpetraVector::vector_type::execution_space, Uniform<>>;
 }
 
 #endif
