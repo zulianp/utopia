@@ -171,10 +171,11 @@ namespace utopia {
             os << "\n";
 
             double h = 1.0/(n_samples - 1);
+            double arch_len = h * (p0 - p1).norm();
 
             std::size_t n_vars = sample_name.size();
             for(std::size_t i = 0; i < n_samples; ++i) {
-                os << (i*h);
+                os << (i*arch_len);
 
                 for(int d = 0; d <  LIBMESH_DIM; ++d) {
                     os << "," << points[i](d);
