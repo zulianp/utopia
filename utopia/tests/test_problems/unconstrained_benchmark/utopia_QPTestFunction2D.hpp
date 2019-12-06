@@ -42,7 +42,9 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override {
 
-            result = zeros(2);
+            if(empty(result)){
+                result = zeros(2);
+            }
 
             const Read<Vector> read(point);
             const Write<Vector> write(result);
@@ -54,7 +56,13 @@ namespace utopia
 
         bool hessian(const Vector &/*point*/, Matrix &result) const override {
 
-            result = zeros(2, 2);
+            if(empty(result)){
+                result = zeros(2, 2);
+            }
+            else
+            {
+                result *= 0.0; 
+            }
 
             const Write<Matrix> write(result);
 

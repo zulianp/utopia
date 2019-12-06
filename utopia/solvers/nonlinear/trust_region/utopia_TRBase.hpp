@@ -84,6 +84,11 @@ namespace utopia
       return -1.0 * dot(g, p_k) - 0.5 * dot(Bp_, p_k);
     }
 
+    virtual void init_memory(const SizeType & ls)
+    {
+      Bp_ = local_zeros(ls); 
+    }
+
 
     virtual bool check_convergence(
       Monitor<Vector> &monitor,

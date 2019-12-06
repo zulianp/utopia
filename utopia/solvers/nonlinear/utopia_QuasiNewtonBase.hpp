@@ -111,6 +111,20 @@ namespace utopia
             return alpha_;
         }
 
+        virtual void init_memory(const Vector &x, const Vector & g)
+        {
+            this->initialize_approximation(x, g); 
+            SizeType ls = local_size(x).get(0);
+
+            if(ls_strategy_){
+               ls_strategy_->init_memory(ls); 
+            }
+
+            if(mf_linear_solver_){
+               mf_linear_solver_->init_memory(ls); 
+            }            
+        }
+
 
     protected:
         inline bool linear_solve(const Vector &rhs, Vector &sol)

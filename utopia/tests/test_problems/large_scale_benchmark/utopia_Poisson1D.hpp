@@ -17,7 +17,7 @@ namespace utopia
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
-        Poisson1D(const SizeType & n, const SizeType & problem_type=2):     pi_(3.14159265358979323846), 
+        Poisson1D(const SizeType & n, const SizeType & problem_type=1):     pi_(3.14159265358979323846), 
                                                                             problem_type_(problem_type),  
                                                                             n_(n)
         { 

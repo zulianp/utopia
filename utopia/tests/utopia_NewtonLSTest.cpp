@@ -163,7 +163,6 @@ namespace utopia
 			// );		
 
 
-
 			this->register_experiment("Inexact_Newton_test",
 				[this]() {
 		            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();

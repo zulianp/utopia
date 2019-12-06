@@ -26,16 +26,25 @@ namespace utopia
             {
                 HessianApproximation<Vector>::initialize(x_k, g); 
 
-                theta_ = 1.0;
-                gamma_ = 1.0;
-
-                current_m_ = 0;
+                theta_      = 1.0;
+                gamma_      = 1.0;
+                current_m_  = 0;
 
                 Y_.resize(m_);
                 S_.resize(m_);
 
                 p_.resize(m_);
                 p_inv_.resize(m_);
+
+                auto zero_expr = local_zeros(local_size(x_k));
+
+                for(auto i=0; i < m_; i++)
+                {
+                    Y_[i]       = zero_expr; 
+                    S_[i]       = zero_expr; 
+                    p_[i]       = zero_expr; 
+                    p_inv_[i]   = zero_expr; 
+                }                
 
                 this->initialized(true);
             }
@@ -65,13 +74,19 @@ namespace utopia
                     utopia_error("BFGS::update: Initialization needs to be done before updating. \n");
                     return false;
                 }
-                else if(m_ == 0)
+                else if(m_ == 0){
                     return true;
+                }
 
-                Vector diff = y - s;
-                Scalar nom = std::abs(dot(s, diff));
-                Scalar denom = norm2(s) * norm2(diff);
+                diff_ = y - s;
+                // Scalar nom = std::abs(dot(s, diff_));
+                // Scalar denom = norm2(s) * norm2(diff);
 
+                Scalar nom, denom, denom2; 
+                dots(s, diff_, nom, s, s, denom, diff_, diff_, denom2); 
+
+                nom = std::abs(nom); 
+                denom = denom*denom2; 
 
                 if(nom/denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom))
                 {
@@ -222,6 +237,8 @@ namespace utopia
 
             std::vector<Vector> p_;
             std::vector<Vector> p_inv_;
+
+            Vector diff_; 
 
         };
 

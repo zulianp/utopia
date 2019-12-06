@@ -7,7 +7,9 @@
 namespace utopia {
 
     template<class Vector>
-    class MatrixFreeLinearSolver : virtual public Configurable, virtual public Clonable
+    class MatrixFreeLinearSolver :  virtual public Configurable, 
+                                    virtual public Clonable, 
+                                    virtual public Preconditioner<Vector>
     {
         public:
             virtual ~MatrixFreeLinearSolver() {}
@@ -25,9 +27,8 @@ namespace utopia {
     };
 
     template<class Matrix, class Vector>
-    class OperatorBasedLinearSolver :
-        public MatrixFreeLinearSolver<Vector>,
-        public PreconditionedSolver<Matrix, Vector> 
+    class OperatorBasedLinearSolver :   public MatrixFreeLinearSolver<Vector>,
+                                        public PreconditionedSolver<Matrix, Vector> 
     {
     public:
         using MatrixFreeLinearSolver<Vector>::update;
@@ -97,15 +98,19 @@ namespace utopia {
 
             bool solve(const Operator<Vector> &/*A*/, const Vector &rhs, Vector &sol) override
             {
+                return apply(rhs, sol); 
+            }
+
+            bool apply(const Vector &rhs, Vector &sol) override
+            {
                 if(precond_){
                     precond_->apply(rhs, sol);
                 }
                 else{
                     utopia_warning("EmptyPrecondMatrixFreeLinearSolver: preconditioner is missing \n");
                 }
-                return true;
+                return true;                
             }
-
 
             EmptyPrecondMatrixFreeLinearSolver * clone() const override
             {

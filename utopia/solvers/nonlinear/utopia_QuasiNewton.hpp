@@ -49,15 +49,15 @@ namespace utopia
             SizeType loc_size_rhs = local_size(x); 
             if(!initialized_ || !g.comm().conjunction(loc_size_ == loc_size_rhs)) 
             {
-                init_vectors(loc_size_rhs);
+                init_memory(loc_size_rhs);
             }
 
             fun.gradient(x, g);
             g0_norm = norm2(g);
             g_norm = g0_norm;
 
-            this->initialize_approximation(x, g); 
-
+            // this->initialize_approximation(x, g); 
+            QuasiNewtonBase<Vector>::init_memory(x, g); 
             
 
             if(this->verbose_) {
@@ -66,39 +66,40 @@ namespace utopia
             }
             it++;            
 
+            UTOPIA_NO_ALLOC_BEGIN("Quasi_Newton");
             while(!converged)
             {
-                UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:1");
+                // UTOPIA_NO_ALLOC_BEGIN("Quasi1");
                 g_minus = -1.0 * g; 
                 this->linear_solve(g_minus, s);
-                UTOPIA_NO_ALLOC_END();
+                // UTOPIA_NO_ALLOC_END();
 
-                UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:2");
+                // UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:2");
                 alpha = this->get_alpha(fun, g, x, s);
-                UTOPIA_NO_ALLOC_END();
+                // UTOPIA_NO_ALLOC_END();
 
-                UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:2.1");
+                // UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:2.1");
                 s *= alpha;
                 x += s;
-                UTOPIA_NO_ALLOC_END();
+                // UTOPIA_NO_ALLOC_END();
 
-                UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:3");
+                // UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:3");
                 y = g;
-                UTOPIA_NO_ALLOC_END();
+                // UTOPIA_NO_ALLOC_END();
                 fun.gradient(x, g);
 
-                UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:3.1");
+                // UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:3.1");
                 // norms needed for convergence check
                 norms2(g, s, g_norm, s_norm);
                 r_norm = g_norm/g0_norm;
 
                 // diff between fresh and old grad...
                 y = g - y;
-                UTOPIA_NO_ALLOC_END();
+                // UTOPIA_NO_ALLOC_END();
 
-                UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:4");
+                // UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:4");
                 this->update(s, y, x, g);
-                UTOPIA_NO_ALLOC_END();
+                // UTOPIA_NO_ALLOC_END();
 
                 // print iteration status on every iteration
                 if(this->verbose_)
@@ -109,15 +110,16 @@ namespace utopia
 
                 it++;
             }
+            UTOPIA_NO_ALLOC_END();
+
 
             this->print_statistics(it);
             return true;
         }
 
 
-
     private: 
-        void init_vectors(const SizeType &ls)
+        void init_memory(const SizeType &ls)
         {
             auto zero_expr = local_zeros(ls);
 
@@ -127,7 +129,7 @@ namespace utopia
             g_minus = zero_expr;
                            
             initialized_ = true;    
-            loc_size_ = ls;                                        
+            loc_size_ = ls;       
         }
 
 
