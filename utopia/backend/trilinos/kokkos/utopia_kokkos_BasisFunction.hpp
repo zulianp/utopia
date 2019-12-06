@@ -83,6 +83,44 @@ namespace utopia {
         
     }
 
+     /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION static void eval_J(const Scalar &h, Array<Scalar, 4> &J) {
+
+
+
+      //gfn 0
+        J.values[0] = h;
+        J.values[1] = 0.0;
+        J.values[2] = 0.0;
+        J.values[3] = h;
+
+        
+    }
+
+
+         /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION static void eval_inv_J(const Scalar &h, Array<Scalar, 4> &J) {
+
+
+
+      //gfn 0
+        J.values[0] = 1./h;
+        J.values[1] = 0.0;
+        J.values[2] = 0.0;
+        J.values[3] = 1./h;
+
+        
+    }
+
+
+         /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION static void eval_det_J(const Scalar &h, Scalar &J) {
+
+        J= h*h;
+
+        
+    }
+
    UTOPIA_INLINE_FUNCTION Scalar static measure ()
    {
      return 1.0;
@@ -190,6 +228,57 @@ private:
         grad_fn.values[21] = -1.0 *  vp  *  wp;
         grad_fn.values[22] =  1.0 *  u   *  wp;
         grad_fn.values[23] =  1.0 *  u   *  vp;
+        
+    }
+
+
+         /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION static void eval_J(const Scalar &h, Array<Scalar, 9> &J) {
+
+
+
+      //gfn 0
+        J.values[0] = h;
+        J.values[1] = 0.0;
+        J.values[2] = 0.0;
+        J.values[3] = 0.0;
+        J.values[4] = h;
+        J.values[5] = 0.0;
+        J.values[6] = 0.0;
+        J.values[7] = 0.0;
+        J.values[8] = h;
+
+
+        
+    }
+
+
+         /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION static void eval_inv_J(const Scalar &h, Array<Scalar, 9> &J) {
+
+
+
+        J.values[0] = 1./h;
+        J.values[1] = 0.0;
+        J.values[2] = 0.0;
+        J.values[3] = 0.0;
+        J.values[4] = 1./h;
+        J.values[5] = 0.0;
+        J.values[6] = 0.0;
+        J.values[7] = 0.0;
+        J.values[8] = 1./h;
+
+        
+    }
+
+
+         /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION static void eval_det_J(const Scalar &h, Scalar &J) {
+
+
+
+      //gfn 0
+        J= h*h*h;
         
     }
 
