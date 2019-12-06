@@ -1,3 +1,4 @@
+
 #include "utopia_SemiGeometricMultigrid.hpp"
 
 #include "utopia_libmesh.hpp"
@@ -56,7 +57,7 @@ namespace utopia {
     }
 
     SemiGeometricMultigrid::SemiGeometricMultigrid(
-        const std::shared_ptr<Smoother<USparseMatrix, UVector> > &smoother,
+        const std::shared_ptr<IterativeSolver<USparseMatrix, UVector> > &smoother,
         const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver)
     : mg(smoother, linear_solver),
       is_block_solver_(false),
