@@ -57,6 +57,8 @@ namespace utopia
 			// this->register_experiment("NewtonTest_FACTORIZATION",
 			// 	[this]() {
 		 //            auto lin_solver = std::make_shared<utopia::Factorization<Matrix, Vector> >();
+		 //            // lin_solver->set_type(const std::string &lib, const std::string &type)
+
 		 //            Newton<Matrix, Vector> solver(lin_solver);
 		 //            solver.verbose(true);
 		 //            run_newton(this->test_functions_parallel_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
@@ -121,46 +123,46 @@ namespace utopia
 			// 	}
 			// );
 
-			this->register_experiment("NewtonTest_BiCGSTAB_BACKEND_Jacobi",
+			// this->register_experiment("NewtonTest_BiCGSTAB_BACKEND_Jacobi",
+			// 	[this]() {
+		 //            auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector> >();
+		 //            lin_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+
+		 //            Newton<Matrix, Vector> solver(lin_solver);
+		 //            run_newton(this->test_functions_parallel_, solver, "NewtonTest_BiCGSTAB_BACKEND_Jacobi", this->verbose_);
+		 //            run_newton(this->test_functions_, solver, "NewtonTest_BiCGSTAB_BACKEND_Jacobi", this->verbose_);
+			// 	}
+			// );		
+
+			// working
+			this->register_experiment("NewtonTest_STCG_SimpleBacktracking",
 				[this]() {
-		            auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector> >();
-		            lin_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+		            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+		            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
 		            Newton<Matrix, Vector> solver(lin_solver);
-		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_BiCGSTAB_BACKEND_Jacobi", this->verbose_);
-		            run_newton(this->test_functions_, solver, "NewtonTest_BiCGSTAB_BACKEND_Jacobi", this->verbose_);
+			        auto ls_strat  = std::make_shared<utopia::SimpleBacktracking<Vector> >();            
+            		solver.set_line_search_strategy(ls_strat);			            
+
+		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_STCG_SimpleBacktracking", this->verbose_);
+		            run_newton(this->test_functions_, solver, "NewtonTest_STCG_SimpleBacktracking", this->verbose_);
 				}
 			);		
 
-			// TODO:: 1D poisson has problem with energy 
-			// this->register_experiment("NewtonTest_BiCGSTAB_SimpleBacktracking",
-			// 	[this]() {
-		 //            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-		 //            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+			// working
+			this->register_experiment("NewtonTest_BiCGSTAB_Backtracking",
+				[this]() {
+		            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+		            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
-		 //            Newton<Matrix, Vector> solver(lin_solver);
-			//         auto ls_strat  = std::make_shared<utopia::SimpleBacktracking<Vector> >();            
-   //          		solver.set_line_search_strategy(ls_strat);			            
+		            Newton<Matrix, Vector> solver(lin_solver);
+			        auto ls_strat  = std::make_shared<utopia::Backtracking<Vector> >();            
+            		solver.set_line_search_strategy(ls_strat);			            
 
-		 //            run_newton(this->test_functions_parallel_, solver, "NewtonTest_BiCGSTAB_SimpleBacktracking", this->verbose_);
-		 //            run_newton(this->test_functions_, solver, "NewtonTest_BiCGSTAB_SimpleBacktracking", this->verbose_);
-			// 	}
-			// );		
-
-
-			// this->register_experiment("NewtonTest_BiCGSTAB_Backtracking",
-			// 	[this]() {
-		 //            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
-		 //            lin_solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());
-
-		 //            Newton<Matrix, Vector> solver(lin_solver);
-			//         auto ls_strat  = std::make_shared<utopia::Backtracking<Vector> >();            
-   //          		solver.set_line_search_strategy(ls_strat);			            
-
-		 //            run_newton(this->test_functions_parallel_, solver, "NewtonTest_BiCGSTAB_Backtracking", this->verbose_);
-		 //            run_newton(this->test_functions_, solver, "NewtonTest_BiCGSTAB_Backtracking", this->verbose_);
-			// 	}
-			// );		
+		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_BiCGSTAB_Backtracking", this->verbose_);
+		            run_newton(this->test_functions_, solver, "NewtonTest_BiCGSTAB_Backtracking", this->verbose_);
+				}
+			);		
 
 
 			this->register_experiment("Inexact_Newton_test",
@@ -169,6 +171,7 @@ namespace utopia
 
 		            Newton<Matrix, Vector> solver(lin_solver);
 		            solver.forcing_strategy(InexactNewtonForcingStartegies::CAI); 
+		            run_newton(this->test_functions_, solver, "Inexact_Newton_test", this->verbose_);
 		            run_newton(this->test_functions_parallel_, solver, "Inexact_Newton_test", this->verbose_);
 				}
 			);				
@@ -187,7 +190,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 100); 
+			in.set("max-it", 130); 
 			in.set("verbose", false);
 			solver.read(in); 
 
@@ -229,11 +232,9 @@ namespace utopia
 				// {
 					// disp(x_init, "num_sol..."); 
 					// disp(test_functions[i]->exact_sol(), "exact solution"); 
-
-					// disp(test_functions[i]->exact_sol());
+					// disp(x_init, "sol");
 					// std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n"; 
-					// disp(x_init);
-					// disp(test_functions[i]->exact_sol());
+
 				// }
 
 			}
@@ -245,7 +246,6 @@ namespace utopia
 		std::vector<std::shared_ptr<UnconstrainedTestFunction<Matrix, Vector> > >  test_functions_;
 		SizeType n_; 
 		bool verbose_; 
-
 
 	};
 

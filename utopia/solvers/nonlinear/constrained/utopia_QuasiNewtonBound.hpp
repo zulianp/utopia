@@ -50,9 +50,11 @@ namespace utopia
             Scalar alpha = 1.0;
             bool converged = false;
 
+            SizeType loc_size_x = local_size(x); 
+
+            this->fill_empty_bounds(loc_size_x); 
             this->make_iterate_feasible(x);
 
-            SizeType loc_size_x = local_size(x); 
             if(!initialized_ || !x.comm().conjunction(loc_size_ == loc_size_x)) 
             {
                 init_memory(loc_size_x);
@@ -77,22 +79,11 @@ namespace utopia
             {
                 if(QPSolver * qp_solver = dynamic_cast<QPSolver*>(this->linear_solver().get()))
                 {
-                    UTOPIA_NO_ALLOC_BEGIN("QP1");
                     auto box = this->build_correction_constraints(x);
-                    UTOPIA_NO_ALLOC_END();
-
-                    UTOPIA_NO_ALLOC_BEGIN("QP2");
                     qp_solver->set_box_constraints(box);
                     s.set(0.0);
-                    UTOPIA_NO_ALLOC_END();
-
-                    UTOPIA_NO_ALLOC_BEGIN("QP3");
                     g_minus = -1.0 * g; 
-                    UTOPIA_NO_ALLOC_END();
-
-                    UTOPIA_NO_ALLOC_BEGIN("QP4");
                     qp_solver->solve(*multiplication_action, g_minus, s);
-                    UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {

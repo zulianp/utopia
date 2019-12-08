@@ -61,7 +61,7 @@
         bool converged = false; 
         NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-        Scalar delta, ared, pred, rho, E_old, E_new, E_print; 
+        Scalar delta, ared, pred, rho, E_old, E_new; 
 
         this->fill_empty_bounds(local_size(x_k)); 
         this->make_iterate_feasible(x_k); 
@@ -87,6 +87,12 @@
         this->initialize_approximation(x_k, g); 
         auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
 
+
+        // Vector help;
+        // multiplication_action->apply(g, help);
+        // delta = (norm2(g)*norm2(g))/dot(g, help); 
+
+
         g0_norm = this->criticality_measure_infty(x_k, g); 
         g_norm = g0_norm;
         
@@ -105,32 +111,35 @@
         // solve starts here 
         while(!converged)
         {
-    //----------------------------------------------------------------------------
-    //     new step p_k w.r. ||p_k|| <= delta
-    //----------------------------------------------------------------------------          
+          // ----------------------------------------------------------------------------
+          //     new step p_k w.r. ||p_k|| <= delta
+          // ----------------------------------------------------------------------------          
           if(MatrixFreeQPSolver * tr_subproblem = dynamic_cast<MatrixFreeQPSolver*>(this->linear_solver().get()))
           {
-            // UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:1");
             p_k.set(0.0); 
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->set_box_constraints(box); 
             g_help = -1.0*g; 
             tr_subproblem->solve(*multiplication_action, g_help, p_k);     
+            
+            std::cout<<"delta: "<< delta << " \n";
+
+            std::cout<<"\n norm2(p_k) :" << norm2(p_k) << "  \n"; 
+            std::cout<<"\n norm_infty(p_k) :" << norm_infty(p_k) << "  \n"; 
+
             this->solution_status_.num_linear_solves++;  
-            // UTOPIA_NO_ALLOC_END();
           }
           else
           {
             utopia_warning("QUasiTrustRegionVariableBound::Set suitable TR subproblem.... \n "); 
           }
 
-          UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:2");
           pred = this->get_pred(g, *multiplication_action, p_k);    
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
+          // ----------------------------------------------------------------------------
+          // ----------------------------------------------------------------------------
           // trial point 
           x_trial = x_k + p_k; 
-          UTOPIA_NO_ALLOC_END();
+          
 
           // value of the objective function with correction 
           fun.value(x_trial, E_new);
@@ -156,35 +165,25 @@
             it_successful_++;
           }
 
-          E_print = E_old; 
 
           // good reduction, accept trial point 
           if (rho >= this->rho_tol())
           {
-            UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:3");
-
             x_k = x_trial;   
             E_old = E_new; 
             
             y = g; 
-            UTOPIA_NO_ALLOC_END();
             fun.gradient(x_k, g);
-
-            UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:3.1");
             y = g - y;       
-            UTOPIA_NO_ALLOC_END();
             
           }
           // otherwise, keep old point
           else
           {
             fun.gradient(x_trial, g_help);
-            UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:4");
             y = g_help - g;   
-            UTOPIA_NO_ALLOC_END();    
           }
 
-          UTOPIA_NO_ALLOC_BEGIN("Quasi-TR-bound:5");
           this->update(p_k, y, x_k, g);
     //----------------------------------------------------------------------------
     //    convergence check 
@@ -193,7 +192,7 @@
           s_norm = norm_infty(p_k); 
 
           if(this->verbose_){
-            PrintInfo::print_iter_status(it, {g_norm, E_print, E_new, ared, pred, rho, delta, s_norm}); 
+            PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm}); 
           }
 
           converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta); 
@@ -201,7 +200,6 @@
     //      tr. radius update 
     //----------------------------------------------------------------------------
           this->delta_update_inf(rho, p_k, delta); 
-          UTOPIA_NO_ALLOC_END();
 
           it++; 
         }

@@ -31,7 +31,7 @@ namespace utopia
                                         theta_(1.0), 
                                         gamma_(1.0), 
                                         theta_min_(1.0), 
-                                        skip_update_treshold_(1e-12), 
+                                        skip_update_treshold_(1e-10), 
                                         damping_tech_(NOCEDAL), 
                                         scaling_tech_(ADAPTIVE)
             {
@@ -134,10 +134,13 @@ namespace utopia
                 bool skip_update = init_damping(y, s, y_hat_);
                 // UTOPIA_NO_ALLOC_END();
                 
-                if(skip_update)
+                if(!skip_update)
                 {
                     // UTOPIA_NO_ALLOC_BEGIN("LBFGS2");
                     this->init_scaling_factors(y_hat_, s); 
+
+                    std::cout<<"updating..... \n"; 
+
                     // UTOPIA_NO_ALLOC_END();
                     return true; 
                 }
@@ -553,9 +556,9 @@ namespace utopia
                 bool skip_update = false; 
                 if(dot(y,s) < skip_update_treshold_)
                 {
-                    // if(mpi_world_rank()==0){
-                    //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
-                    // }
+                    if(mpi_world_rank()==0){
+                        utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
+                    }
 
                     skip_update = true; 
                 }                

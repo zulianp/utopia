@@ -28,37 +28,56 @@ namespace utopia
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
-        Poisson2D(const SizeType & n, const SizeType & problem_type=0):
+        Poisson2D(const SizeType & n, const SizeType & problem_type=2):
                 n_(n), 
                 setup_(false), 
                 problem_type_(problem_type)
         {
 
-            if(problem_type_ > 0){
-                utopia_error("Poisson2D:: problem type not valid. \n"); 
-            }
+            // if(problem_type_ > 0){
+            //     utopia_error("Poisson2D:: problem type not valid. \n"); 
+            // }
 
+      
             this->create_DM();
             this->setup_SNES();
-            this->setup_application_context(); 
+            // this->setup_application_context(); 
+
+            if(problem_type_ ==1){
+                setup_problem1();
+            }
+            else if(problem_type_ ==2){
+                setup_problem2(); 
+            }
+            else
+            {
+                 utopia_error("Poisson2D:: problem type not valid. \n"); 
+            }      
+
+
             setup_ = true;
-
-            PetscInt n_local_; 
-            VecGetLocalSize(snes_->vec_sol, &n_local_);
-            this->constraints_ = make_box_constaints(std::make_shared<Vector>(local_values(n_local_, -9e9)),
-                                                     std::make_shared<Vector>(local_values(n_local_, 0.45)));             
-
         }     
 
-        Poisson2D(const DM  & dm):
-                 setup_(false)
+        Poisson2D(const DM  & dm): setup_(false)
         {
             da_ = dm; 
             // necessary to provide reasonable global dimension 
             DMDAGetInfo(da_, 0, &n_, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
             this->setup_SNES();
-            this->setup_application_context(); 
+            // this->setup_application_context(); 
+
+            if(problem_type_ ==1){
+                setup_problem1();
+            }
+            else if(problem_type_ ==2){
+                setup_problem2(); 
+            }
+            else
+            {
+                 utopia_error("Poisson2D:: problem type not valid. \n"); 
+            }      
+
             setup_ = true;
         }     
 
@@ -121,7 +140,7 @@ namespace utopia
         }
 
 
-        void output_to_VTK(const Vector & x, const std::string file_name = "Poisson3D.vtk")
+        void output_to_VTK(const Vector & x, const std::string file_name = "Poisson2D.vtk")
         {
           PetscViewer       viewer;
 
@@ -196,13 +215,13 @@ namespace utopia
             return false; 
         }
 
-        void setup_application_context()
+    private: 
+        void setup_problem1()
         {
             this->build_rhs(); 
             this->build_init_guess(); 
             this->build_hessian(); 
             
-
             PetscInt n_loc; 
             VecGetLocalSize(snes_->vec_sol, &n_loc); 
 
@@ -219,14 +238,45 @@ namespace utopia
 
             Matrix Hessian; 
             wrap(snes_->jacobian, Hessian);
-
             A_no_bc_ = Hessian; 
-
             set_zero_rows(Hessian, index, 1.);
+
+            this->constraints_ = make_box_constaints(std::make_shared<Vector>(local_values(n_loc, -9e9)),
+                                                     std::make_shared<Vector>(local_values(n_loc, 0.55)));   
         }
 
+        void setup_problem2()
+        {
+            this->build_rhs(); 
+            this->build_init_guess(); 
+            this->build_hessian(); 
+            
+            PetscInt n_loc; 
+            VecGetLocalSize(snes_->vec_sol, &n_loc); 
 
-    private: 
+            exact_sol_ = local_values(n_loc, 0.0);
+            this->build_exact_sol(); 
+
+            Vector bc_markers = local_values(n_loc, 0.0);
+            Vector bc_values  = local_values(n_loc, 0.0); 
+
+            this->form_BC_marker(bc_markers, bc_values); 
+            ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);
+
+            const std::vector<SizeType> & index = this->get_indices_related_to_BC(); 
+
+            Matrix Hessian; 
+            wrap(snes_->jacobian, Hessian);
+            A_no_bc_ = Hessian; 
+            set_zero_rows(Hessian, index, 1.);
+
+            Vector ub = local_values(n_loc, 0.0);
+            form_ub2(ub); 
+
+            this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(ub)); 
+        }        
+
+
         bool build_hessian()
         {
 
@@ -283,6 +333,45 @@ namespace utopia
             return true; 
         }
 
+        void form_ub2(Vector & lb)
+        {
+            PetscInt       i,j,k,mx,my, xm,ym, xs,ys;
+            PetscScalar    **array_marker;
+
+            DMDAGetInfo(da_, PETSC_IGNORE, &mx, &my, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE);
+            DMDAGetCorners(da_, &xs, &ys, NULL, &xm, &ym, NULL);
+            DMDAVecGetArray(da_, raw_type(lb), &array_marker);
+
+            DM             coordDA;
+            Vec            coordinates;
+            DMDACoor2d   **coords;          
+            
+            DMGetCoordinateDM(da_, &coordDA);
+            DMGetCoordinates(da_, &coordinates);
+            DMDAVecGetArray(coordDA, coordinates, &coords);            
+
+            for (j=ys; j<ys+ym; j++) 
+            {
+                for (i=xs; i<xs+xm; i++) 
+                {
+                    PetscScalar x1 = coords[j][i].x;
+                    PetscScalar x2 = coords[j][i].y;
+
+                    if(x1 <= 0.5){
+                        array_marker[j][i] = 0.1; 
+                    }
+                    else{
+                        array_marker[j][i] = 1.0; 
+                    }
+                }
+            }
+
+            DMDAVecRestoreArrayDOF(da_, raw_type(lb), &array_marker);
+            VecAssemblyBegin(raw_type(lb));
+            VecAssemblyEnd(raw_type(lb));    
+         
+        }        
+
         
         void form_BC_marker(Vector & bc_marker, Vector & bc_values)
         {
@@ -314,12 +403,19 @@ namespace utopia
                         PetscScalar x1 = coords[j][i].x;
                         PetscScalar x2 = coords[j][i].y;
 
-                        array_values[j][i] = (2.0*x2*(1.-x2))+(2.0*x1*(1.0 - x1));
+                        if(problem_type_ ==1){
+                            array_values[j][i] = (2.0*x2*(1.-x2))+(2.0*x1*(1.0 - x1));
+                        }
+                        else if(problem_type_ ==2){
+                            array_values[j][i] = 0.0; 
+                        }
                     }
                     else
                     {
-                        array_marker[j][i] = 0.0; 
-                        array_values[j][i] = 0.0; 
+                        if(problem_type_ ==1 || problem_type_ ==2){
+                            array_marker[j][i] = 0.0; 
+                            array_values[j][i] = 0.0; 
+                        }
                     }
                 }
             }
@@ -332,6 +428,7 @@ namespace utopia
             VecAssemblyBegin(raw_type(bc_values));
             VecAssemblyEnd(raw_type(bc_values));             
         }
+
 
         
         void build_init_guess()
@@ -355,12 +452,18 @@ namespace utopia
             {
                 for (i=xs; i<xs+xm; i++) 
                 {
-                    if (i==0 || j==0 || i==mx-1 || j==my-1) 
+                    if (i==0.0 || j==0.0 || i==mx-(1.0) || j==my-(1.0)) 
                     {
                         PetscScalar x1 = coords[j][i].x;
                         PetscScalar x2 = coords[j][i].y;
 
-                        array[j][i] = (2.0*x2*(1.-x2))+(2.0*x1*(1.0 - x1));
+                        if(problem_type_ ==1){
+                            array[j][i] = (2.0*x2*(1.-x2))+(2.0*x1*(1.0 - x1));
+                        }
+                        else if(problem_type_ ==2){
+                            // array[j][i] = (2.0*x2*(1.-x2))+(3.0*x1*(1.0 - x1));
+                            array[j][i] = 0.0;
+                        }                        
                     }
                     else
                     {
@@ -373,6 +476,7 @@ namespace utopia
             VecAssemblyBegin(snes_->vec_sol);
             VecAssemblyEnd(snes_->vec_sol);            
         }
+
 
 
         void build_exact_sol()
@@ -406,7 +510,12 @@ namespace utopia
                     PetscScalar x1 = coords[j][i].x;
                     PetscScalar x2 = coords[j][i].y;
 
-                    array[j][i] = (2.0*x2*(1.-x2))+(2.0*x1*(1.0 - x1));
+                    if(problem_type_ ==1){
+                        array[j][i] = (2.0*x2*(1.-x2))+(2.0*x1*(1.0 - x1));
+                    }
+                    else if(problem_type_ ==2){
+                        array[j][i] = (2.0*x2*(1.-x2))+(3.0*x1*(1.0 - x1));
+                    }
 
                     // if (i==0 || j==0 || i==mx-1 || j==my-1) 
                     // {
@@ -440,7 +549,13 @@ namespace utopia
             {
                 for (i=xs; i<xs+xm; i++) 
                 {
-                    array[j][i] = -8.0*(Hx*Hy);
+                    if(problem_type_ ==1){
+                        array[j][i] = -8.0*(Hx*Hy);
+                    }
+                    else if(problem_type_ ==2){
+                        array[j][i] = -10.0*(Hx*Hy);
+                    }                        
+
                 }
             }
 
@@ -448,6 +563,8 @@ namespace utopia
             VecAssemblyBegin(snes_->vec_rhs);
             VecAssemblyEnd(snes_->vec_rhs);            
         }
+
+
 
 
         

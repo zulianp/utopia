@@ -202,30 +202,45 @@ namespace utopia
             auto &ub_merged = *correction_constraints_.upper_bound();
             ub_merged =  *constraints_.upper_bound() - x_k;
 
+            // disp(*constraints_.upper_bound() , "ub"); 
+            // disp(x_k , "x_k"); 
+            // std::cout<<"ub_uniform: "<< ub_uniform << "  \n"; 
+
           {
             parallel_transform(ub_merged,
-                              UTOPIA_LAMBDA(const SizeType &, const Scalar &xi) -> Scalar 
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &ub) -> Scalar 
                               {
-                                return  (xi <= ub_uniform)  ? xi : ub_uniform; 
+                                // return  (xi <= ub_uniform)  ? xi : ub_uniform; 
+                                // return  device::min(ub, ub_uniform);
+                                return  std::min(ub, ub_uniform);
                               });
           }
 
+          // disp(*correction_constraints_.upper_bound(), "*correction_constraints_.upper_bound()"); 
+          // exit(0);
         }
         else{
           correction_constraints_.upper_bound()->set(ub_uniform); 
         }
 
+        // disp(*correction_constraints_.upper_bound(), "*correction_constraints_.upper_bound()"); 
+        // std::cout<<"------------------------------------------------------------------------- \n";
 
         if(constraints_.has_lower_bound())
         {
             auto &lb_merged = *correction_constraints_.lower_bound();
             lb_merged =  *constraints_.lower_bound() - x_k;
 
+            // disp(*constraints_.lower_bound() , "lb"); 
+            // std::cout<<"lb_uniform: "<< lb_uniform << "  \n";             
+
           {
             parallel_transform(lb_merged,
-                              UTOPIA_LAMBDA(const SizeType &, const Scalar &xi) -> Scalar 
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &lb) -> Scalar 
                               {
-                                return  (xi >= lb_uniform)  ? xi : lb_uniform; 
+                                // return  (xi >= lb_uniform)  ? xi : lb_uniform; 
+                                // return  device::max(lb, lb_uniform);
+                                return  std::max(lb, lb_uniform);
                               });
           }
 
@@ -233,6 +248,9 @@ namespace utopia
         else{
           correction_constraints_.lower_bound()->set(lb_uniform); 
         }
+
+        // disp(*correction_constraints_.lower_bound(), "*correction_constraints_.lower_bound()"); 
+
 
         return correction_constraints_; 
       }

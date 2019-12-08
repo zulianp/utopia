@@ -80,15 +80,27 @@ namespace  utopia
                 // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
                 // //cudaProfilerStart();
 
+                // disp(x, "x_before"); 
+                // std::cout<<"x_before, norm: "<< norm_infty(x) << "  \n";
+
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
+
+                // disp(*lb, "lb");
+                // disp(*ub, "ub");
+                // exit(0);
+
 
                 if(this->verbose()){
                     this->init_solver("MPGRP", {"it", "|| g ||"});
                 }
 
                 const Scalar gamma = 1.0;
-                const Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs));
+                Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs));
+
+                alpha_bar = 1.95/8.0;
+                std::cout<<"------------------------alpha_bar: "<< alpha_bar << "  \n"; 
+
                 Scalar pAp, beta_beta, fi_fi, gp_dot;
 
                 SizeType it =0;
@@ -171,6 +183,9 @@ namespace  utopia
 
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
+
+
+                std::cout<<"x: "<< norm_infty(x) << "  \n"; 
 
                 // //cudaProfilerStop();
                 // UTOPIA_NO_ALLOC_END();

@@ -38,12 +38,12 @@ namespace utopia
 				test_functions_[2] = std::make_shared<Biggs18<Matrix, Vector> >();
 				test_functions_[3] = std::make_shared<VariablyDim25<Matrix, Vector> >();
 
-				test_functions_constrained_.resize(5); 
-				test_functions_constrained_[0] = std::make_shared<Beale05Constrained<Matrix, Vector> >();
-				test_functions_constrained_[1] = std::make_shared<Watson20Constrained<Matrix, Vector> >();
-				test_functions_constrained_[2] = std::make_shared<VariablyDim25Constrained<Matrix, Vector> >();
-				test_functions_constrained_[3] = std::make_shared<PenaltyII24Constrained<Matrix, Vector> >();
-				test_functions_constrained_[4] = std::make_shared<Rosenbrock21Constrained<Matrix, Vector> >();
+				test_functions_constrained_.resize(1); 
+				// test_functions_constrained_[0] = std::make_shared<Beale05Constrained<Matrix, Vector> >();
+				// test_functions_constrained_[1] = std::make_shared<Watson20Constrained<Matrix, Vector> >();
+				test_functions_constrained_[0] = std::make_shared<VariablyDim25Constrained<Matrix, Vector> >();
+				// test_functions_constrained_[3] = std::make_shared<PenaltyII24Constrained<Matrix, Vector> >();
+				// test_functions_constrained_[4] = std::make_shared<Rosenbrock21Constrained<Matrix, Vector> >();
 			}
 			else
 			{
@@ -133,19 +133,41 @@ namespace utopia
 					
 
 
-			this->register_experiment("QuasiNewton_Bound_LBFGS",
+			// this->register_experiment("QuasiNewton_Bound_LBFGS",
+			// 	[this]() {
+	  //               auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
+	  //               auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+
+	  //               QuasiNewtonBound<Vector> solver(hessian_approx, qp_solver);
+
+	  //               auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
+	  //               solver.set_line_search_strategy(line_search);
+
+		 //            run_tr(this->test_functions_constrained_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
+			// 		run_tr(this->test_functions_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
+			// 		//run_tr(this->test_functions_parallel_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
+			// 	}
+			// );
+
+
+			this->register_experiment("QuasiTR_Bound_LBFGS",
 				[this]() {
 	                auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
 	                auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+	                qp_solver->max_it(10);
+	                qp_solver->verbose(true);
 
-	                QuasiNewtonBound<Vector> solver(hessian_approx, qp_solver);
+	                // QuasiNewtonBound<Vector> solver(hessian_approx, qp_solver);
+	                QuasiTrustRegionVariableBound<Vector>  solver(hessian_approx, qp_solver);
+	                solver.delta0(1e-5);
 
-	                auto line_search  = std::make_shared<utopia::Backtracking<Vector> >();
-	                solver.set_line_search_strategy(line_search);
 
-		            run_tr(this->test_functions_constrained_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
+		            run_tr(this->test_functions_constrained_, solver, "QuasiTR_Bound_LBFGS", this->verbose_);
+					// run_tr(this->test_functions_, solver, "QuasiTR_Bound_LBFGS", this->verbose_);
+					//run_tr(this->test_functions_parallel_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
 				}
 			);
+
 
 	
 		}
@@ -161,7 +183,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 500); 
+			in.set("max-it", 3); 
 			in.set("verbose", true);
 			solver.read(in); 
 
