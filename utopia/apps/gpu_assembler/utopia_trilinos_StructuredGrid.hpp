@@ -31,6 +31,65 @@ namespace utopia {
 
     class RefQuad4 {
     public:
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(p[0])
+        {
+            const auto x = p[0];
+            const auto y = p[1];
+
+            switch(i) {
+                case 0: { return (1 - x) * (1 - y); }
+                case 1: { return x * (1 - y); }
+                case 2: { return x * y; }
+                case 3: { return (1 - x) * y; }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                    return 0.0;
+                }
+            }
+        }
+
+        template<typename Point, typename Grad>
+        UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g)
+        {
+            const auto x = p[0];
+            const auto y = p[1];
+
+            switch(i)
+            {
+                case 0:
+                {
+                    g[0] = y - 1.;
+                    g[1] = x - 1.;
+                    return;
+                }
+                case 1:
+                {
+                    g[0] = 1 - y;
+                    g[1] = -x;
+                    return;
+                }
+                case 2:
+                {
+                    g[0] = y;
+                    g[1] = x;
+                    return;
+                }
+                case 3:
+                {
+                    g[0] = -y;
+                    g[1] = (1 - x);
+                    return;
+                }
+                default:
+                {
+                    g[0] = 0.0;
+                    g[1] = 0.0;
+                    return;
+                }
+            }
+        }
+
         template<typename Point, typename Values>
         UTOPIA_INLINE_FUNCTION static void fun(const Point &p, Values &values)
         {
@@ -74,23 +133,46 @@ namespace utopia {
 
         using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
 
-
-        template<typename Point, typename Values>
-        UTOPIA_INLINE_FUNCTION static void fun(const Point &p, Values &values)
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefQuad4::fun(i, p))
         {
-            RefQuad4::fun(p, values);
+          return RefQuad4::fun(i, p);
         }
 
-        template<typename Point, typename Values>
-        UTOPIA_INLINE_FUNCTION void grad(const Point &p, Values &values) const
+        template<typename Point, typename Grad>
+        UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const
         {
-            RefQuad4::grad(p, values);
-            for(int i = 0; i < 4; ++i)
-            {
-                values(i, 0) /= h_[0];
-                values(i, 1) /= h_[1];
-            }
+            RefQuad4::grad(i, p, g);
+            g[0] /= h_[0];
+            g[1] /= h_[1];
         }
+
+        UTOPIA_INLINE_FUNCTION constexpr static bool is_affine()
+        {
+            return true;
+        }
+
+        UTOPIA_INLINE_FUNCTION constexpr static Scalar reference_measure()
+        {
+            return 1.0;
+        }
+
+        // template<typename Point, typename Values>
+        // UTOPIA_INLINE_FUNCTION static void fun(const Point &p, Values &values)
+        // {
+        //     RefQuad4::fun(p, values);
+        // }
+
+        // template<typename Point, typename Values>
+        // UTOPIA_INLINE_FUNCTION void grad(const Point &p, Values &values) const
+        // {
+        //     RefQuad4::grad(p, values);
+        //     for(int i = 0; i < 4; ++i)
+        //     {
+        //         values(i, 0) /= h_[0];
+        //         values(i, 1) /= h_[1];
+        //     }
+        // }
 
         template<typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const
@@ -183,6 +265,11 @@ namespace utopia {
         {
             p[0] = points_(qp_idx, 0);
             p[1] = points_(qp_idx, 1);
+        }
+
+        UTOPIA_INLINE_FUNCTION const Scalar &weight(const int qp_idx) const
+        {
+            return weights_[qp_idx];
         }
 
         UTOPIA_INLINE_FUNCTION const WeightView &weights() const
@@ -533,13 +620,11 @@ namespace utopia {
     class Jacobian {};
 
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
-    class PhysicalPoints {
+    class PhysicalPoint {
     public:
         static const int Dim = Elem::Dim;
 
-        // using Point = utopia::StaticVector<Scalar, Dim>;
-
-        UTOPIA_INLINE_FUNCTION PhysicalPoints(const Elem &elem, const Quadrature &q)
+        UTOPIA_INLINE_FUNCTION PhysicalPoint(const Elem &elem, const Quadrature &q)
         : elem_(elem), q_(q)
         {}
 
@@ -551,10 +636,114 @@ namespace utopia {
             elem_.point(temp, p);
         }
 
+        UTOPIA_INLINE_FUNCTION std::size_t size() const
+        {
+            return q_.n_points();
+        }
+
     private:
         const Elem &elem_;
         const Quadrature &q_;
     };
+
+    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    class PhysicalGradient {
+    public:
+        static const int Dim = Elem::Dim;
+        using Scalar = typename Elem::Scalar;
+        using Point  = utopia::StaticVector<Scalar, Dim>;
+
+        UTOPIA_INLINE_FUNCTION PhysicalGradient(const Elem &elem, const Quadrature &q)
+        : elem_(elem), q_(q)
+        {}
+
+        template<class Grad>
+        UTOPIA_INLINE_FUNCTION void get(const int fun_num, const int qp_idx, Grad &g) const
+        {
+            Point temp;
+            q_.point(qp_idx, temp);
+            elem_.grad(fun_num, temp, g);
+        }
+
+        UTOPIA_INLINE_FUNCTION std::size_t size() const
+        {
+            return q_.n_points();
+        }
+
+    private:
+        const Elem &elem_;
+        const Quadrature &q_;
+    };
+
+    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    class ShapeFunction {
+    public:
+        static const int Dim = Elem::Dim;
+        using Scalar = typename Elem::Scalar;
+        using Point  = utopia::StaticVector<Scalar, Dim>;
+
+        UTOPIA_INLINE_FUNCTION ShapeFunction(const Elem &elem, const Quadrature &q)
+        : elem_(elem), q_(q)
+        {}
+
+        UTOPIA_INLINE_FUNCTION Scalar operator()(const int fun_num, const int qp_idx) const
+        {
+            return get(fun_num, qp_idx);
+        }
+
+        UTOPIA_INLINE_FUNCTION Scalar get(const int fun_num, const int qp_idx) const
+        {
+            Point temp;
+            q_.point(qp_idx, temp);
+            return elem_.fun(fun_num, temp);
+        }
+
+        UTOPIA_INLINE_FUNCTION std::size_t size() const
+        {
+            return q_.n_points();
+        }
+
+    private:
+        const Elem &elem_;
+        const Quadrature &q_;
+    };
+
+    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    class Differential {
+    public:
+        static const int Dim = Elem::Dim;
+        using Scalar = typename Elem::Scalar;
+        using Point  = utopia::StaticVector<Scalar, Dim>;
+
+        UTOPIA_INLINE_FUNCTION Differential(const Elem &elem, const Quadrature &q)
+        : elem_(elem), q_(q)
+        {}
+
+        UTOPIA_INLINE_FUNCTION Scalar operator()(const int qp_idx) const
+        {
+            return get(qp_idx);
+        }
+
+        UTOPIA_INLINE_FUNCTION Scalar get(const int qp_idx) const
+        {
+            if(elem_.is_affine()) {
+                return q_.weight(qp_idx) * elem_.reference_measure();
+            } else {
+                UTOPIA_DEVICE_ASSERT(false);
+                return -1.0;
+            }
+        }
+
+        UTOPIA_INLINE_FUNCTION std::size_t size() const
+        {
+            return q_.n_points();
+        }
+
+    private:
+        const Elem &elem_;
+        const Quadrature &q_;
+    };
+
 
     template<class Elem_, class Comm, class ExecutionSpace_, typename...Args>
     class FunctionSpace< Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>, 1> {
@@ -569,6 +758,20 @@ namespace utopia {
             mesh_.nodes(element_idx, indices);
         }
 
+        template<class Fun>
+        void each_element(Fun fun)
+        {
+            // Dev::parallel_for(local_element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
+            //     Elem e;
+            //     elem(e_index, e);
+            //     fun(e_index, e);
+            // });
+
+            mesh_.each_element(fun);
+        }
+
+        FunctionSpace(const Mesh &mesh) : mesh_(mesh) {}
+    private:
         Mesh mesh_;
     };
 

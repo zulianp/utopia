@@ -22,6 +22,10 @@ namespace utopia {
         using NodeIndexView = Grid2d::NodeIndexView;
         using Elem          = Grid2d::Elem;
         using QuadratureT   = Quadrature<Elem, 2>;
+        using FunctionSpace = utopia::FunctionSpace<Grid2d, 1>;
+        using Point         = utopia::StaticVector<double, 2>;
+        using Grad          = utopia::StaticVector<double, 2>;
+        using ElementMatrix = utopia::StaticMatrix<double, 4, 4>;
 
         TrilinosCommunicator world;
 
@@ -64,22 +68,36 @@ namespace utopia {
         Grid2d g(world, dims, local_begin, local_end, box);
 
         QuadratureT q;
-        auto r = g.local_element_range();
 
-        g.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
-            ArrayView<double, Elem::NNodes> funs;
+        FunctionSpace space(g);
+        space.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
+            PhysicalPoint<Elem, QuadratureT>    point(elem, q);
+            PhysicalGradient<Elem, QuadratureT> grad(elem, q);
+            ShapeFunction<Elem, QuadratureT>    fun(elem, q);
+            Differential<Elem, QuadratureT>     dX(elem, q);
+            ElementMatrix mat;
 
-            elem.fun(Kokkos::subview(q.points(), 0, Kokkos::ALL()), funs);
+            mat.set(0.0);
 
-            std::cout << world.rank() << ") " << i << std::endl;
+            Point p;
+            Grad g_trial, g_test;
 
-            for(auto n : elem.nodes()) {
-                std::cout << n << " ";
+            auto n = point.size();
+            for(std::size_t k = 0; k < n; ++k) {
+                for(std::size_t j = 0; j < elem.n_nodes(); ++j) {
+                    grad.get(j, k, g_test);
+
+                    mat(j, j) += dot(g_test, g_test) * dX(k);
+
+                    for(std::size_t l = j + 1; l < elem.n_nodes(); ++l) {
+                        grad.get(l, k, g_trial);
+                        auto v = dot(g_test, g_trial) * dX(k);
+                        mat(j, l) += v;
+                        mat(l, j) += v;
+                    }
+                }
             }
-
-            std::cout << "\n";
         });
-
     }
 
     UTOPIA_REGISTER_APP(sc_mesh);
