@@ -751,6 +751,7 @@ namespace utopia {
         using Mesh = utopia::Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>;
         using ExecutionSpace = ExecutionSpace_;
         using SizeType = typename Mesh::SizeType;
+        using DofIndex = utopia::ArrayView<std::size_t, Elem_::NNodes>;
 
         template<class Array>
         UTOPIA_INLINE_FUNCTION void dofs(const SizeType &element_idx, Array &indices) const

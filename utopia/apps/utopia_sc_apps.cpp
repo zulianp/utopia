@@ -26,6 +26,7 @@ namespace utopia {
         using Point         = utopia::StaticVector<double, 2>;
         using Grad          = utopia::StaticVector<double, 2>;
         using ElementMatrix = utopia::StaticMatrix<double, 4, 4>;
+        using DofIndex      = FunctionSpace::DofIndex;
 
         TrilinosCommunicator world;
 
@@ -71,18 +72,20 @@ namespace utopia {
 
         FunctionSpace space(g);
         space.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
-            PhysicalPoint<Elem, QuadratureT>    point(elem, q);
+            // PhysicalPoint<Elem, QuadratureT>    point(elem, q);
             PhysicalGradient<Elem, QuadratureT> grad(elem, q);
-            ShapeFunction<Elem, QuadratureT>    fun(elem, q);
+            // ShapeFunction<Elem, QuadratureT>    fun(elem, q);
             Differential<Elem, QuadratureT>     dX(elem, q);
             ElementMatrix mat;
 
+            DofIndex dofs;
+
             mat.set(0.0);
 
-            Point p;
+            // Point p;
             Grad g_trial, g_test;
 
-            auto n = point.size();
+            auto n = q.n_points();
             for(std::size_t k = 0; k < n; ++k) {
                 for(std::size_t j = 0; j < elem.n_nodes(); ++j) {
                     grad.get(j, k, g_test);
@@ -97,6 +100,9 @@ namespace utopia {
                     }
                 }
             }
+
+            space.dofs(i, dofs);
+            //local 2 global here
         });
     }
 
