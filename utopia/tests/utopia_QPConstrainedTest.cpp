@@ -25,27 +25,16 @@ namespace utopia
 
 		QPConstrainedBenchmark(const SizeType & n = 10, const bool verbose = false): n_(n), verbose_(verbose)
 		{
-			// if(mpi_world_size()==1)
-			// {
-				// test_functions_parallel_.resize(2);
-				// test_functions_parallel_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
-				// test_functions_parallel_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
+			test_functions_.resize(6); 
+			test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 1);
+			test_functions_[1] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 2);
+			test_functions_[2] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 3);
+			test_functions_[3] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 4);
 
-				// test_functions_.resize(3);
-				// test_functions_[0] = std::make_shared<Rosenbrock01<Matrix, Vector> >();
-				// test_functions_[1] = std::make_shared<QPTestFunction_2D<Matrix, Vector> >();
-				// test_functions_[2] = std::make_shared<Watson20<Matrix, Vector> >();
-			// }
-			// else
-			// {
-				// test_functions_parallel_.resize(2);
-				// test_functions_parallel_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size());
-				// test_functions_parallel_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_*mpi_world_size());
+			// work only with  petsc 
+			test_functions_[4] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 1);
+			test_functions_[5] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 2);
 
-				test_functions_.resize(1); 
-				// test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_, 4);
-				test_functions_[0] = std::make_shared<Poisson2D<Matrix, Vector> >(n_);
-			// }
 		}
 
 		~QPConstrainedBenchmark()
@@ -65,6 +54,47 @@ namespace utopia
 		            run_test(this->test_functions_, solver, "MPGRP_Test", this->verbose_);
 				}
 			);
+
+			this->register_experiment("ProjectedGradient_Test",
+				[this]() {
+					ProjectedGradient<Matrix, Vector> solver;
+
+		            solver.verbose(true);
+		            run_test(this->test_functions_, solver, "ProjectedGradient_Test", this->verbose_);
+				}
+			);		
+
+
+			this->register_experiment("ProjectedGaussSeidel_Test",
+				[this]() {
+					ProjectedGaussSeidel<Matrix, Vector> solver;
+
+		            solver.verbose(true);
+		            run_test(this->test_functions_, solver, "ProjectedGaussSeidel_Test", this->verbose_);
+				}
+			);		
+
+			// has problems with some tests 
+			// this->register_experiment("ProjectedConjugateGradient_Test",
+			// 	[this]() {
+			// 		ProjectedConjugateGradient<Matrix, Vector> solver;
+
+		 //            solver.verbose(true);
+		 //            run_test(this->test_functions_, solver, "ProjectedConjugateGradient_Test", this->verbose_);
+			// 	}
+			// );	
+
+			// this->register_experiment("ProjectedTao_Test",
+			// 	[this]() {
+
+			// 		auto lin_solver = std::make_shared<GMRES<Matrix, Vector> >();
+			// 		TaoQPSolver<Matrix, Vector> solver(lin_solver);
+			// 		solver.tao_type("gpcg");
+
+		 //            solver.verbose(true);
+		 //            run_test(this->test_functions_, solver, "ProjectedTao_Test", this->verbose_);
+			// 	}
+			// );								
 			
 
 		}
@@ -75,18 +105,6 @@ namespace utopia
 		static void run_test(std::vector<std::shared_ptr<Fun> > & test_functions, NonlinearSolver &solver, const std::string & solv_name,  const bool & exp_verbose = false) 
 		{
 
-			InputParameters in;
-			in.set("atol", 1e-6);
-			in.set("rtol", 1e-11);
-			in.set("stol", 1e-14);
-			in.set("stol", 1e-14);
-			in.set("delta_min", 1e-13); 
-			in.set("max-it", 10000); 
-			in.set("verbose", true);
-			solver.read(in); 
-
-
-
 			if(exp_verbose && mpi_world_rank()==0)
 			{
 				std::cout<<"--------------------------------------------------------- \n";
@@ -94,16 +112,22 @@ namespace utopia
 				std::cout<<"--------------------------------------------------------- \n";
 			}
 
-			std::cout<<"------------------ 0 \n"; 
-			std::cout<<"test_functions.size() "<< test_functions.size() << " \n"; 
+
+			InputParameters in;
+			in.set("atol", 1e-6);
+			in.set("rtol", 1e-11);
+			in.set("stol", 1e-14);
+			in.set("stol", 1e-14);
+			in.set("delta_min", 1e-13); 
+			in.set("max-it", 10000); 
+			in.set("verbose", false);
+			solver.read(in); 
 
 
 	    	for(size_t i =0; i < test_functions.size(); i++)
 	    	{
-				Vector x_init = test_functions[i]->initial_guess(); 
-				// solver.solve(*test_functions[i], x_init); 
 
-				std::cout<<"------------------ 1 \n"; 
+	    		Vector x_init = test_functions[i]->initial_guess(); 
 
 				Vector g; 
 				Matrix H; 
@@ -111,21 +135,25 @@ namespace utopia
 				g *= -1.0; 
 				test_functions[i]->hessian(x_init, H); 
 
-				// disp(g); 
-				// disp(H); 
-				// exit(0);
+				auto box = test_functions[i]->box_constraints(); 
+
+				box.fill_empty_bounds(local_size(x_init)); 
+				*box.upper_bound() =  *box.upper_bound() - x_init;
+				*box.lower_bound() =  *box.lower_bound() - x_init;
+
+				Vector s = 0.0*x_init; 
+				solver.set_box_constraints(box); 
+				solver.solve(H, g, s);
+
+				// taking correction
+				x_init += s; 
+
+				bool feas_flg = test_functions[i]->is_feasible(s); 
+				utopia_test_assert(feas_flg);			
 
 
-				solver.set_box_constraints(test_functions[i]->box_constraints()); 
-				solver.solve(H, g, x_init);
-
-				std::cout<<"size_x: "<< size(x_init).get(0) << "  \n"; 
-
-				// disp(x_init);
-
-
-				Poisson2D<Matrix, Vector> * fun_poisson2D = dynamic_cast<Poisson2D<Matrix, Vector> *>(test_functions[i].get());
-				fun_poisson2D->output_to_VTK(x_init, "Poisson2D_new.vtk");
+				// Poisson2D<Matrix, Vector> * fun_poisson2D = dynamic_cast<Poisson2D<Matrix, Vector> *>(test_functions[i].get());
+				// fun_poisson2D->output_to_VTK(x_init, "Poisson2D_new.vtk");
 
 
 				// auto sol_status = solver.solution_status(); 
@@ -174,18 +202,30 @@ namespace utopia
 	static void qp_constrained()
 	{
 		int verbosity_level = 1;
-		const int n_global = 50; 
-		bool alg_verbose = true; 
+		const int n_global = 10; 
+		bool alg_verbose = false; 
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;
 		}
 
 		#ifdef WITH_PETSC
-			QPConstrainedBenchmark<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
-			bench1.set_verbosity_level(verbosity_level);
-			bench1.run();
+			QPConstrainedBenchmark<PetscMatrix, PetscVector> bench_petsc(n_global, alg_verbose);
+			bench_petsc.set_verbosity_level(verbosity_level);
+			bench_petsc.run();
 		#endif //WITH_PETSC
+
+		// #ifdef WITH_TRILINOS
+		//     QPConstrainedBenchmark<TpetraMatrixd, TpetraVectord> bench_tril(n_global, alg_verbose);
+		// 	bench_tril.set_verbosity_level(verbosity_level);
+		// 	bench_tril.run();
+		// #endif //WITH_TRILINOS
+
+		// #ifdef WITH_BLAS
+		// 	QPConstrainedBenchmark<BlasMatrixd, BlasVectord> bench_blas(n_global, alg_verbose);
+		// 	bench_blas.set_verbosity_level(verbosity_level);
+		// 	bench_blas.run();			
+		// #endif //WITH_BLAS			
 
 	}
 

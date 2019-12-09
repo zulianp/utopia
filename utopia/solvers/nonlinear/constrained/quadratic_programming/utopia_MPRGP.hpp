@@ -98,9 +98,6 @@ namespace  utopia
                 const Scalar gamma = 1.0;
                 Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs));
 
-                alpha_bar = 1.95/8.0;
-                std::cout<<"------------------------alpha_bar: "<< alpha_bar << "  \n"; 
-
                 Scalar pAp, beta_beta, fi_fi, gp_dot;
 
                 SizeType it =0;
@@ -185,7 +182,9 @@ namespace  utopia
                 }
 
 
-                std::cout<<"x: "<< norm_infty(x) << "  \n"; 
+                // std::cout<<"||x||: "<< norm_infty(x) << "  \n"; 
+                // std::cout<<"||ub||: "<< norm_infty(*ub) << "  \n"; 
+                // std::cout<<"||lb||: "<< norm_infty(*lb) << "  \n"; 
 
                 // //cudaProfilerStop();
                 // UTOPIA_NO_ALLOC_END();
