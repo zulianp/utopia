@@ -78,6 +78,8 @@ namespace utopia {
             Differential<Elem, QuadratureT>     dX(elem, q);
             ElementMatrix mat;
 
+            //update(i, elem, grad, dX, ...)
+
             DofIndex dofs;
 
             mat.set(0.0);
