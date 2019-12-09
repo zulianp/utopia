@@ -83,18 +83,15 @@ namespace utopia {
             mat.set(0.0);
 
             // Point p;
-            Grad g_trial, g_test;
+            // Grad g_trial, g_test;
 
             auto n = q.n_points();
             for(std::size_t k = 0; k < n; ++k) {
                 for(std::size_t j = 0; j < elem.n_nodes(); ++j) {
-                    grad.get(j, k, g_test);
-
+                    auto g_test = grad(j, k);
                     mat(j, j) += dot(g_test, g_test) * dX(k);
-
                     for(std::size_t l = j + 1; l < elem.n_nodes(); ++l) {
-                        grad.get(l, k, g_trial);
-                        auto v = dot(g_test, g_trial) * dX(k);
+                        const auto v = dot(g_test, grad(l, k)) * dX(k);
                         mat(j, l) += v;
                         mat(l, j) += v;
                     }

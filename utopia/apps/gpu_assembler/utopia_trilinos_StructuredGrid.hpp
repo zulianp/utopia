@@ -4,6 +4,7 @@
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_FECrsGraph.hpp"
 #include "utopia_Views.hpp"
+#include "utopia_StaticMath.hpp"
 
 
 namespace utopia {
@@ -305,7 +306,7 @@ namespace utopia {
             host_weights(4) = 0.16067975044591917148618518733485;
             host_weights(5) = 0.16067975044591917148618518733485;
 
-            points_ = points.view_device();
+            points_  = points.view_device();
             weights_ = weights.view_device();
         }
 
@@ -367,6 +368,11 @@ namespace utopia {
         ArrayView<Scalar, Dim> max;
     };
 
+    // template<
+
+    // template<class
+    // MeshView
+
     template<class Elem_, class Comm, class ExecutionSpace, typename...Args>
     class Mesh<Elem_, Comm, ExecutionSpace, Uniform<Args...>> {
     public:
@@ -375,6 +381,9 @@ namespace utopia {
 
         static const int Dim = Elem::Dim;
         static const int NNodesXElem = utopia::StaticPow<Dim, 2>::value;
+
+        static const int LEFT  = -1;
+        static const int RIGHT = 1;
 
         using Scalar          = typename Elem::Scalar;
         using NodeIndexView   = utopia::ArrayView<SizeType, NNodesXElem>;
@@ -523,6 +532,27 @@ namespace utopia {
             });
         }
 
+        // UTOPIA_INLINE_FUNCTION SizeType n_ghost_nodes() const
+        // {
+        //     SizeType n_ghosts = 0;
+
+        //     for(int i = 0; i < Dim; ++i) {
+        //         if(is_node_ghost_layer(i, LEFT)) {
+        //             n_ghosts += n_nodes_in_slice(i);
+        //         }
+
+        //         if(is_node_ghost_layer(i, RIGHT)) {
+        //             n_ghosts += n_nodes_in_slice(i);
+        //         }
+        //     }
+
+        //     // int sign = -1;
+        //     // for(int i = Dim-2; i >= 0; ++i) {
+        //     //     n_ghosts += sign * n_nodes_in_lower_dim_slice()
+        //     //     sign = -sign;
+        //     // }
+        // }
+
     private:
         Comm comm_;
         IndexView1  dims_;
@@ -532,7 +562,6 @@ namespace utopia {
         //FIXME
         Box<Scalar, Dim> box_;
         ScalarView1 h_;
-
 
         template<class Array>
         UTOPIA_INLINE_FUNCTION void element_linear_to_tensor_index(
@@ -606,8 +635,44 @@ namespace utopia {
 
             return ret;
         }
-    };
 
+        template<class Array>
+        UTOPIA_INLINE_FUNCTION bool is_boundary_node(const Array &tensor_index) const
+        {
+            for(int i = 0; i < Dim; ++i) {
+                if(tensor_index[i] == 0 || tensor_index[i] == dims_[i]) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        //dir is element of
+        UTOPIA_INLINE_FUNCTION bool is_node_ghost_layer(const int &dim, const int &dir) const
+        {
+            if(dir < 0) {
+                SizeType idx = local_elements_begin_[dim];
+                return idx != 0;
+            } else {
+                SizeType idx = local_elements_end_[dim];
+                return idx != dims_[dim];
+            }
+
+            return false;
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType n_nodes_in_slice(const int &dim) const
+        {
+            SizeType ret = 1;
+            for(int i = 0; i < Dim; ++i) {
+                if(i == dim) continue;
+                ret *= (local_elements_end_[i] - local_elements_end_[i]);
+            }
+
+            return ret;
+        }
+    };
 
     template<class Mesh_, int NComponents>
     class FunctionSpace<Mesh_, NComponents> {
@@ -652,6 +717,7 @@ namespace utopia {
         static const int Dim = Elem::Dim;
         using Scalar = typename Elem::Scalar;
         using Point  = utopia::StaticVector<Scalar, Dim>;
+        using Grad   = utopia::StaticVector<Scalar, Dim>;
 
         UTOPIA_INLINE_FUNCTION PhysicalGradient(const Elem &elem, const Quadrature &q)
         : elem_(elem), q_(q)
@@ -663,6 +729,13 @@ namespace utopia {
             Point temp;
             q_.point(qp_idx, temp);
             elem_.grad(fun_num, temp, g);
+        }
+
+        UTOPIA_INLINE_FUNCTION Grad operator()(const int fun_num, const int qp_idx)
+        {
+            Grad g;
+            get(fun_num, qp_idx, g);
+            return g;
         }
 
         UTOPIA_INLINE_FUNCTION std::size_t size() const
@@ -744,14 +817,67 @@ namespace utopia {
         const Quadrature &q_;
     };
 
+    template<class FunctionSpace, class Vector, class Elem, class MemType = typename Elem::MemType, typename...>
+    class NodalInterpolate {
+    public:
+        using DofIndex = typename FunctionSpace::DofIndex;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+
+        //convert nodal condensed to element-wise map
+
+        NodalInterpolate(const FunctionSpace &space)
+        : space_(space), element_wise_values_(local_zeros(space.n_local_elements() * Elem::NNodes))
+        {}
+
+        NodalInterpolate(const FunctionSpace &space, const Vector &values)
+        : space_(space), element_wise_values_(local_zeros(space.n_local_elements() * Elem::NNodes))
+        {
+            update(values);
+        }
+
+        //values must have ghost values
+        void update(const Vector &values)
+        {
+            auto other_view = const_device_view(values);
+            auto this_view  = device_view(element_wise_values_);
+
+            space_.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
+                DofIndex index;
+                space_.dofs(i, index);
+
+                const auto n = index.size();
+                const auto offset = i * Elem::NNodes;
+
+                for(SizeType k = 0; k < n; ++k) {
+                    this_view.set(offset + k, other_view.get(index[k]));
+                }
+            });
+        }
+
+        // ElementNodalInterpolate get(const SizeType &idx) const
+        // {
+
+        // }
+
+    private:
+        const FunctionSpace &space_;
+        Vector element_wise_values_;
+    };
+
+
+    template<typename ...>
+    class NodeAdjacencyGraph {
+    public:
+
+    };
 
     template<class Elem_, class Comm, class ExecutionSpace_, typename...Args>
     class FunctionSpace< Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>, 1> {
     public:
-        using Mesh = utopia::Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>;
+        using Mesh           = utopia::Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>;
         using ExecutionSpace = ExecutionSpace_;
-        using SizeType = typename Mesh::SizeType;
-        using DofIndex = utopia::ArrayView<std::size_t, Elem_::NNodes>;
+        using SizeType       = typename Mesh::SizeType;
+        using DofIndex       = utopia::ArrayView<std::size_t, Elem_::NNodes>;
 
         template<class Array>
         UTOPIA_INLINE_FUNCTION void dofs(const SizeType &element_idx, Array &indices) const
@@ -762,12 +888,6 @@ namespace utopia {
         template<class Fun>
         void each_element(Fun fun)
         {
-            // Dev::parallel_for(local_element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
-            //     Elem e;
-            //     elem(e_index, e);
-            //     fun(e_index, e);
-            // });
-
             mesh_.each_element(fun);
         }
 
@@ -776,24 +896,13 @@ namespace utopia {
         Mesh mesh_;
     };
 
-    // template<class Elem, typename...Args>
-    // class FEValues<Mesh<Elem>, Uniform<Args...>> {
-    // public:
-    //     using Scalar   = typename Elem::Scalar;
-    //     using Mesh     = utopia::Mesh<Elem>;
-    //     using FunView  = Kokkos::DualView<Scalar **>;
-    //     using GradView = Kokkos::DualView<Scalar ***>;
-
-    //     template<typename...GridArgs>
-    //     void init(const FunctionSpace<Mesh> &space)
-    //     {
-
-    //     }
-
-    //     // void
-    // };
-
     using Grid2d = utopia::Mesh<UniformQuad4<double>, TrilinosCommunicator, TpetraVector::vector_type::execution_space, Uniform<>>;
+
+    template<>
+    class NodeAdjacencyGraph<Grid2d> {
+    public:
+
+    };
 }
 
 #endif
