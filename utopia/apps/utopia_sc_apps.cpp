@@ -16,17 +16,13 @@ namespace utopia {
 
     static void sc_mesh()
     {
-        using IndexView1    = Grid2d::IndexView1;
-        using ScalarView1   = Grid2d::ScalarView1;
         using SizeType      = Grid2d::SizeType;
-        using NodeIndexView = Grid2d::NodeIndexView;
         using Elem          = Grid2d::Elem;
         using QuadratureT   = Quadrature<Elem, 2>;
         using FunctionSpace = utopia::FunctionSpace<Grid2d, 1>;
-        using Point         = utopia::StaticVector<double, 2>;
-        using Grad          = utopia::StaticVector<double, 2>;
-        using ElementMatrix = utopia::StaticMatrix<double, 4, 4>;
-        using DofIndex      = FunctionSpace::DofIndex;
+        using DevFunctionSpace = FunctionSpace::DeviceView;
+        using DofIndex         = DevFunctionSpace::DofIndex;
+        using Dev = FunctionSpace::Device;
 
         TrilinosCommunicator world;
 
@@ -35,19 +31,8 @@ namespace utopia {
             return;
         }
 
-        IndexView1  dims("dims", 2);
-        IndexView1  local_begin("local_begin", 2);
-        IndexView1  local_end("local_end", 2);
-        Box<double, 2> box;
-
-        box.min[0] = 1.0;
-        box.min[1] = 1.0;
-
-        box.max[0] = 2.0;
-        box.max[1] = 2.0;
-
-        dims[0] = 1;
-        dims[1] = 2;
+        std::array<SizeType, 2>  local_begin = { 0, 0 };
+        std::array<SizeType, 2>  local_end = {1, 2};
 
         auto rank = world.rank();
         if(world.size() == 2) {
@@ -58,51 +43,62 @@ namespace utopia {
             local_end[0] = 1;
             local_end[1] = rank + 1;
 
-        } else {
-            local_begin[0] = 0;
-            local_begin[1] = 0;
-
-            local_end[0] = 1;
-            local_end[1] = 2;
         }
 
-        Grid2d g(world, dims, local_begin, local_end, box);
+        Grid2d mesh(world, { 1, 2 }, local_begin, local_end, {{1.0, 1.0}, {2.0, 2.0}});
 
-        QuadratureT q;
+        // QuadratureT q;
 
-        FunctionSpace space(g);
+        std::cout << mesh.local_element_range() << std::endl;
+
+        FunctionSpace space(mesh);
+        auto space_view = space.view_device();
         space.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
-            // PhysicalPoint<Elem, QuadratureT>    point(elem, q);
-            PhysicalGradient<Elem, QuadratureT> grad(elem, q);
-            // ShapeFunction<Elem, QuadratureT>    fun(elem, q);
-            Differential<Elem, QuadratureT>     dX(elem, q);
-            ElementMatrix mat;
-
-            //update(i, elem, grad, dX, ...)
-
             DofIndex dofs;
-
-            mat.set(0.0);
-
-            // Point p;
-            // Grad g_trial, g_test;
-
-            auto n = q.n_points();
-            for(std::size_t k = 0; k < n; ++k) {
-                for(std::size_t j = 0; j < elem.n_nodes(); ++j) {
-                    auto g_test = grad(j, k);
-                    mat(j, j) += dot(g_test, g_test) * dX(k);
-                    for(std::size_t l = j + 1; l < elem.n_nodes(); ++l) {
-                        const auto v = dot(g_test, grad(l, k)) * dX(k);
-                        mat(j, l) += v;
-                        mat(l, j) += v;
-                    }
-                }
+            space_view.dofs(i, dofs);
+            for(auto d : dofs) {
+                std::cout << d << " ";
             }
 
-            space.dofs(i, dofs);
-            //local 2 global here
+            std::cout << "\n";
         });
+
+
+        // Dev::parallel_for()
+
+
+        // space.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
+        //     // PhysicalPoint<Elem, QuadratureT>    point(elem, q);
+        //     PhysicalGradient<Elem, QuadratureT> grad(elem, q);
+        //     // ShapeFunction<Elem, QuadratureT>    fun(elem, q);
+        //     Differential<Elem, QuadratureT>     dX(elem, q);
+        //     ElementMatrix mat;
+
+        //     //update(i, elem, grad, dX, ...)
+
+        //     DofIndex dofs;
+
+        //     mat.set(0.0);
+
+        //     // Point p;
+        //     // Grad g_trial, g_test;
+
+        //     auto n = q.n_points();
+        //     for(std::size_t k = 0; k < n; ++k) {
+        //         for(std::size_t j = 0; j < elem.n_nodes(); ++j) {
+        //             auto g_test = grad(j, k);
+        //             mat(j, j) += dot(g_test, g_test) * dX(k);
+        //             for(std::size_t l = j + 1; l < elem.n_nodes(); ++l) {
+        //                 const auto v = dot(g_test, grad(l, k)) * dX(k);
+        //                 mat(j, l) += v;
+        //                 mat(l, j) += v;
+        //             }
+        //         }
+        //     }
+
+        //     space.dofs(i, dofs);
+        //     //local 2 global here
+        // });
     }
 
     UTOPIA_REGISTER_APP(sc_mesh);

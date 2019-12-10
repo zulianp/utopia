@@ -2,9 +2,14 @@
 #define UTOPIA_QUADRATURE_VIEW_HPP
 
 #include "utopia_Base.hpp"
-#include "utopia_Traits.hp"
+#include "utopia_Traits.hpp"
+#include "utopia_MemType.hpp"
+#include "utopia_UniformQuad4.hpp"
 
 namespace utopia {
+
+    template<typename T, int Order, int Dim = T::Dim, typename ...>
+    class Quadrature {};
 
     template<
         class PointView,
@@ -66,11 +71,13 @@ namespace utopia {
         //Device types TODO
         using PointView   = Kokkos::View<Scalar **, ExecutionSpace>;
         using WeightView  = Kokkos::View<Scalar *, ExecutionSpace>;
-        using DeviceView  = utopia::QuadratureView<PointView, WeightView, Dim, NPoints>;
+
 
         static const int Order   = 2;
         static const int Dim     = 2;
         static const int NPoints = 6;
+
+        using DeviceView  = utopia::QuadratureView<PointView, WeightView, Dim, NPoints>;
 
         void init()
         {
