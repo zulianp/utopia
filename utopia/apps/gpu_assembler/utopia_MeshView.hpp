@@ -232,6 +232,11 @@ namespace utopia {
            return prod_dim(dims_, 0);
         }
 
+        UTOPIA_INLINE_FUNCTION SizeType n_nodes() const
+        {
+           return prod_dim(dims_, 1);
+        }
+
         UTOPIA_INLINE_FUNCTION SizeType n_local_elements() const
         {
             SizeType ret = local_elements_end_[0] - local_elements_begin_[0];
@@ -240,11 +245,6 @@ namespace utopia {
             }
 
             return ret;
-        }
-
-        UTOPIA_INLINE_FUNCTION SizeType n_nodes() const
-        {
-            return prod_dim(dims_, 1);
         }
 
         UTOPIA_INLINE_FUNCTION SizeType local_element_index_begin() const
@@ -516,6 +516,22 @@ namespace utopia {
             );
         }
 
+        inline SizeType n_nodes() const
+        {
+            auto dims = dims_.view_host();
+            SizeType ret = dims[0] + 1;
+            for(int d = 1; d < Dim; ++d) {
+                ret *= dims[d] + 1;
+            }
+
+            return ret;
+        }
+
+        inline const Comm &comm() const
+        {
+            return comm_;
+        }
+
     private:
         Comm comm_;
         DualIndexView dims_;
@@ -523,6 +539,19 @@ namespace utopia {
         DualIndexView local_elements_end_;
         DualBoxView box_;
         DualScalarView h_;
+
+
+        template<class Array>
+        static SizeType prod_dim(Array &arr, const SizeType offset = 0)
+        {
+            SizeType ret = arr[0] + offset;
+            for(int d = 1; d < Dim; ++d) {
+                ret *= arr[d] + offset;
+            }
+
+            return ret;
+        }
+
     };
 
 }

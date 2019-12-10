@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <Tpetra_FECrsGraph.hpp>
+#include <Tpetra_Map.hpp>
 
 namespace utopia {
 
@@ -36,7 +37,7 @@ namespace utopia {
         using StencilView = utopia::StencilView<MeshView>;
         using Dev         = Traits<TpetraVector>::Device;
         using SizeType    = Traits<TpetraVector>::SizeType;
-        using MapType     = Tpetra::Map<SizeType, SizeType, ExecutionSpace>;
+        using MapType     = TpetraVector::map_type;
         using GraphType   = Tpetra::FECrsGraph<SizeType, SizeType>;
         using View        = Kokkos::View<SizeType*, ExecutionSpace>;
         using DualNNZView = Kokkos::DualView<std::size_t*, ExecutionSpace>;
@@ -48,8 +49,10 @@ namespace utopia {
 
             std::cout <<  mesh.local_node_range() << std::endl;
 
+            auto lnr = mesh.local_node_range();
+
             Dev::parallel_for(
-                mesh.local_node_range(),
+                lnr,
                 UTOPIA_LAMBDA(const SizeType &i) {
 
                 std::cout << i << ") ";
@@ -65,53 +68,26 @@ namespace utopia {
 
             });
 
-            // Teuchos::RCP<const MapType> ownedRowMap, ownedPlusSharedRowMap;
-            // // size_t maxNumEntriesPerRow = 3;
+            auto owned_row_map = Teuchos::rcp(
+                new MapType(mesh.n_nodes(), lnr.extent(), 0, mesh.comm().get())
+            );
 
-            // TpetraMatrix mat;
-
-            // const SizeType rank = mat.comm().rank();
-            // const SizeType size = mat.comm().size();
-
-            // SizeType n_local = 10;
-            // SizeType n_global = mat.comm().sum(n_local);
-
-            // SizeType n_ghosts = (size>0) * 2;
-            // View index_list("il", n_local + n_ghosts);
-            // DualView nnz_z_row("nnz_z_row", n_local + n_ghosts);
-
-            // auto nnz_z_row_dev = nnz_z_row.view_device();
-
-            // Dev::parallel_for(n_local, UTOPIA_LAMBDA(const SizeType &i) {
-            //     index_list(i) = i + n_local * rank;
-
-            //     nnz_z_row_dev(i) = 3;
-
-            //     if(i == 0 && size > 0) {
-            //         index_list(n_local)     = rank == 0? n_global -1 : n_local * rank - 1;
-            //         index_list(n_local + 1) = rank == size-1? 0 : n_local * (rank + 1);
-            //         nnz_z_row_dev(n_local) = 3;
-            //         nnz_z_row_dev(n_local + 1) = 3;
-            //     }
-            // });
-
-            // ownedRowMap = Teuchos::rcp(new MapType(n_global, n_local, 0, mat.comm().get()));
-            // ownedPlusSharedRowMap = Teuchos::rcp(
+            auto owned_plus_shared_row_map = owned_row_map;
+            // auto owned_plus_shared_row_map = Teuchos::rcp(
             //     new MapType(
             //         Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
             //         index_list,
             //         0,
-            //         mat.comm().get()
+            //         mesh.comm().get()
             // ));
 
-            // auto graph =  Teuchos::rcp(new GraphType(
-            //     ownedRowMap,
-            //     ownedPlusSharedRowMap,
-            //     // maxNumEntriesPerRow
-            //     nnz_z_row
-            // ));
+            auto graph =  Teuchos::rcp(new GraphType(
+                owned_row_map,
+                owned_plus_shared_row_map,
+                stencil_view.size()
+            ));
 
-            // Range r(ownedRowMap->getMinGlobalIndex(), ownedRowMap->getMaxGlobalIndex() + 1);
+            // Range r(owned_row_map->getMinGlobalIndex(), owned_row_map->getMaxGlobalIndex() + 1);
             // SizeType cols[3];
             // for(SizeType i = r.begin(); i != r.end(); ++i) {
             //     cols[0] = i;
