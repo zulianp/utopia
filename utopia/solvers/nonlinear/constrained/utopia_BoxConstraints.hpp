@@ -94,7 +94,6 @@ namespace utopia {
             }
             else if(!lower_bound_ && !upper_bound_)
             {
-                std::cout<<"filling \n"; 
                 lower_bound_ = std::make_shared<Vector>(local_values(loc_size, min_val_));
                 upper_bound_ = std::make_shared<Vector>(local_values(loc_size, max_val_));
             }

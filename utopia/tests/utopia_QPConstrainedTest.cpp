@@ -25,15 +25,16 @@ namespace utopia
 
 		QPConstrainedBenchmark(const SizeType & n = 10, const bool verbose = false): n_(n), verbose_(verbose)
 		{
-			test_functions_.resize(6); 
+			test_functions_.resize(7); 
 			test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 1);
 			test_functions_[1] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 2);
 			test_functions_[2] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 3);
 			test_functions_[3] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 4);
 
-			// works only with  petsc 
+			// // works only with  petsc 
 			test_functions_[4] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 1);
 			test_functions_[5] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 2);
+			test_functions_[6] = std::make_shared<Membrane2D<PetscMatrix, PetscVector> >(n_*mpi_world_size());
 
 		}
 
@@ -95,7 +96,8 @@ namespace utopia
 
 		            run_test(this->test_functions_, solver, "ProjectedTao_Test", this->verbose_);
 				}
-			);								
+			);	
+										
 			
 		}
 
@@ -112,17 +114,15 @@ namespace utopia
 				std::cout<<"--------------------------------------------------------- \n";
 			}
 
-
 			InputParameters in;
 			in.set("atol", 1e-6);
 			in.set("rtol", 1e-11);
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 1000); 
+			in.set("max-it", 10000); 
 			in.set("verbose", false);
 			solver.read(in); 
-
 
 	    	for(size_t i =0; i < test_functions.size(); i++)
 	    	{
@@ -154,7 +154,20 @@ namespace utopia
 				bool feas_flg = test_functions[i]->is_feasible(x_init); 
 				utopia_test_assert(feas_flg);			
 
-				auto sol_status = solver.solution_status(); 
+				// auto sol_status = solver.solution_status(); 
+
+
+
+				// Membrane2D<Matrix, Vector> * fun_poisson2D = dynamic_cast<Membrane2D<Matrix, Vector> *>(test_functions[i].get());
+				// fun_poisson2D->output_to_VTK(x_init, "Membrane2D.vtk");
+
+				// // disp(x_init); 
+
+				// Scalar energy; 
+				// test_functions[i]->value(x_init, energy); 
+				// std::cout<<"energy: "<< energy << "  \n"; 
+
+
 
 				// if(exp_verbose && mpi_world_rank()==0)
 				// {
@@ -182,7 +195,7 @@ namespace utopia
 	static void qp_constrained()
 	{
 		int verbosity_level = 1;
-		const int n_global = 40; 
+		const int n_global = 20; 
 		bool alg_verbose = false; 
 
 		if(Utopia::instance().verbose()) {
