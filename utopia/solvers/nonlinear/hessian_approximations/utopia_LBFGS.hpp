@@ -31,7 +31,7 @@ namespace utopia
                                         theta_(1.0), 
                                         gamma_(1.0), 
                                         theta_min_(1.0), 
-                                        skip_update_treshold_(1e-9), 
+                                        skip_update_treshold_(1e-12), 
                                         damping_tech_(NOCEDAL), 
                                         scaling_tech_(ADAPTIVE)
             {
@@ -134,7 +134,7 @@ namespace utopia
                 bool skip_update = init_damping(y, s, y_hat_);
                 // UTOPIA_NO_ALLOC_END();
                 
-                if(!skip_update)
+                if(skip_update)
                 {
                     // UTOPIA_NO_ALLOC_BEGIN("LBFGS2");
                     this->init_scaling_factors(y_hat_, s); 

@@ -38,12 +38,12 @@ namespace utopia
 				test_functions_[2] = std::make_shared<Biggs18<Matrix, Vector> >();
 				test_functions_[3] = std::make_shared<VariablyDim25<Matrix, Vector> >();
 
-				test_functions_constrained_.resize(1); 
-				// test_functions_constrained_[0] = std::make_shared<Beale05Constrained<Matrix, Vector> >();
+				test_functions_constrained_.resize(2); 
+				test_functions_constrained_[0] = std::make_shared<Beale05Constrained<Matrix, Vector> >();
 				// test_functions_constrained_[1] = std::make_shared<Watson20Constrained<Matrix, Vector> >();
-				test_functions_constrained_[0] = std::make_shared<VariablyDim25Constrained<Matrix, Vector> >();
+				// test_functions_constrained_[1] = std::make_shared<VariablyDim25Constrained<Matrix, Vector> >();
 				// test_functions_constrained_[3] = std::make_shared<PenaltyII24Constrained<Matrix, Vector> >();
-				// test_functions_constrained_[4] = std::make_shared<Rosenbrock21Constrained<Matrix, Vector> >();
+				test_functions_constrained_[1] = std::make_shared<Rosenbrock21Constrained<Matrix, Vector> >();
 			}
 			else
 			{
@@ -154,12 +154,14 @@ namespace utopia
 				[this]() {
 	                auto hessian_approx   = std::make_shared<LBFGS<Vector> >(7);
 	                auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
-	                qp_solver->max_it(10);
-	                qp_solver->verbose(true);
+	                qp_solver->max_it(1000);
+	                qp_solver->atol(1e-12);
+	                // qp_solver->max_it(10);
+	                // qp_solver->verbose(true);
 
 	                // QuasiNewtonBound<Vector> solver(hessian_approx, qp_solver);
 	                QuasiTrustRegionVariableBound<Vector>  solver(hessian_approx, qp_solver);
-	                solver.delta0(1e-5);
+	                // solver.delta0(1e-5);
 
 
 		            run_tr(this->test_functions_constrained_, solver, "QuasiTR_Bound_LBFGS", this->verbose_);
@@ -178,12 +180,12 @@ namespace utopia
 		static void run_tr(std::vector<std::shared_ptr<Fun> > & test_functions, NonlinearSolver &solver, const std::string & solv_name,  const bool & exp_verbose = false) 
 		{
 			InputParameters in;
-			in.set("atol", 1e-6);
+			in.set("atol", 1e-5);
 			in.set("rtol", 1e-11);
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 3); 
+			in.set("max-it", 100); 
 			in.set("verbose", true);
 			solver.read(in); 
 

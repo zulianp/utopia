@@ -14,10 +14,6 @@
 namespace  utopia
 {
 
-    /**
-     * @brief This function is implementation of: Box constrianed quadratic programming with proportioning and projection, Dostal, 1997, SIAM, Optimization
-     * @details 
-     */
     template<class Matrix, class Vector>
     class MPGRP final:  public OperatorBasedQPSolver<Matrix, Vector>
     {
@@ -64,7 +60,7 @@ namespace  utopia
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
-                this->fill_empty_bounds(local_size(sol));
+                this->fill_empty_bounds(local_size(rhs));
                 auto &box = this->get_box_constraints();
 
                 this->update(A); 
@@ -84,32 +80,15 @@ namespace  utopia
                 // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
                 // //cudaProfilerStart();
 
-                // disp(x, "x_before"); 
-                // std::cout<<"x_before, norm: "<< norm_infty(x) << "  \n";
-
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
-
-                // disp(*A, "A");
-                // disp(rhs, "rhs");
-
-                // disp(*lb, "lb");
-                // disp(*ub, "ub");
-                // exit(0);
-
-                std::cout<<"max_in: "<< max(*ub) << "   \n"; 
-                std::cout<<"min_in: "<< min(*lb) << "   \n"; 
-
 
                 if(this->verbose()){
                     this->init_solver("MPGRP", {"it", "|| g ||"});
                 }
 
-                // const Scalar gamma = 1.0;
-                const Scalar gamma = this->get_normA(A, local_size(rhs));
-                // Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs));
-                Scalar alpha_bar = this->get_normA(A, local_size(rhs));
-
+                const Scalar gamma = 1.0;
+                const Scalar alpha_bar = 1.95/this->get_normA(A, local_size(rhs));
                 Scalar pAp, beta_beta, fi_fi, gp_dot;
 
                 SizeType it =0;
@@ -121,43 +100,21 @@ namespace  utopia
                 this->get_projection(x, *lb, *ub, Ax);
                 x = Ax;
 
-                help_f1 = *ub - *lb; 
-                Scalar delta = min(help_f1) - 1e-5; 
-
-                // disp(x, "x_projection"); 
-
                 A.apply(x, Ax);
-
-                // disp(Ax, "Ax"); 
-                // disp(rhs, "rhs"); 
-
-
                 g = Ax - rhs;
 
                 this->get_fi(x, g, *lb, *ub, fi);
                 this->get_beta(x, g, *lb, *ub, beta);
-
-                // disp(g, "g0"); 
-                // disp(beta, "beta0"); 
-                // disp(x, "x"); 
-
-                // exit(0);
-
 
                 gp = fi + beta;
                 p = fi;
 
                 dots(beta, beta, beta_beta, fi, fi, fi_fi);
 
-                // beta_beta = norm_infty(beta);
-
                 while(!converged)
                 {
-                    beta_beta = norm_infty(beta);
-                    beta_beta=beta_beta*beta_beta; 
                     if(beta_beta <= (gamma*gamma * fi_fi))
                     {
-                        std::cout<<"-------- beta beta \n"; 
                         A.apply(p, Ap);
 
                         dots(p, Ap, pAp, g, p, gp_dot);
@@ -168,10 +125,7 @@ namespace  utopia
 
                         if(alpha_cg <= alpha_f)
                         {
-                            std::cout<<"--------alpha_cg <= alpha_f\n"; 
                             x = y;
-                            // disp(x, "x_1"); 
-
                             g = g - alpha_cg*Ap;
                             this->get_fi(x, g, *lb, *ub, fi);
                             beta_sc = dot(fi,Ap)/pAp;
@@ -179,11 +133,7 @@ namespace  utopia
                         }
                         else
                         {
-                            std::cout<<"--------loop 2 \n"; 
                             x = x-alpha_f*p;
-                            // disp(x, "x_2"); 
-
-
                             g = g - alpha_f*Ap;
                             this->get_fi(x, g, *lb, *ub, fi);
 
@@ -197,23 +147,12 @@ namespace  utopia
                     }
                     else
                     {
-                        std::cout<<"-------- NO beta beta \n"; 
                         A.apply(beta, Abeta);
                         alpha_cg = dot(g, beta)/dot(beta, Abeta);
-
-                        std::cout<<"delta: "<< delta << "  \n"; 
-                        alpha_cg = device::min(alpha_cg, Scalar(delta/norm_infty(beta)));
-
-                        // std::cout<<"alpha_cg: "<< alpha_cg << "  \n"; 
-                        // disp(beta,  "beta"); 
-
-
                         x = x - alpha_cg*beta;
-                        // disp(x, "x_3"); 
                         g = g - alpha_cg*Abeta;
 
                         this->get_fi(x, g, *lb, *ub, p);
-                        // disp(x, "x_4"); 
                     }
 
                     this->get_fi(x, g, *lb, *ub, fi);
@@ -232,17 +171,6 @@ namespace  utopia
 
                     converged = this->check_convergence(it, gnorm, 1, 1);
                 }
-
-
-                // std::cout<<"||x||: "<< norm_infty(x) << "  \n"; 
-                // std::cout<<"||ub||: "<< norm_infty(*ub) << "  \n"; 
-                // std::cout<<"||lb||: "<< norm_infty(*lb) << "  \n"; 
-
-                // disp(x);
-                // exit(0);
-
-                // TODO:: investigate whats wrong with
-                this->make_iterate_feasible(x);
 
                 // //cudaProfilerStop();
                 // UTOPIA_NO_ALLOC_END();
@@ -325,16 +253,6 @@ namespace  utopia
 
                     });
                 }
-
-                // Vector helpp1 = x-lb;
-                // Vector helpp2 = ub-x;
-                // Vector mu = e_mul(helpp1, helpp2); 
-
-                // Scalar mu0 = min(mu); 
-                // std::cout<<"mu0: "<< mu0 << " \n";
-
-
-                // return std::min(mu0, multi_min(help_f1, help_f2));                
 
                 return multi_min(help_f1, help_f2);
             }

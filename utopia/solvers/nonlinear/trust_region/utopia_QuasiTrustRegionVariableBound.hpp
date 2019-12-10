@@ -14,11 +14,11 @@
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::MatrixFreeQPSolver<Vector>  MatrixFreeQPSolver;  
-        typedef utopia::TrustRegionBase<Vector>     TrustRegionBase; 
-        typedef utopia::QuasiNewtonBase<Vector>     NonLinearSolver;
+        typedef utopia::MatrixFreeQPSolver<Vector>    MatrixFreeQPSolver;  
+        typedef utopia::TrustRegionBase<Vector>       TrustRegionBase; 
+        typedef utopia::QuasiNewtonBase<Vector>       NonLinearSolver;
 
-        typedef utopia::HessianApproximation<Vector>      HessianApproximation;
+        typedef utopia::HessianApproximation<Vector>  HessianApproximation;
 
     public:                                                                      
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx, 
@@ -76,7 +76,7 @@
         SizeType loc_size_x = local_size(x_k); 
         if(!initialized_ || !g.comm().conjunction(loc_size_ == loc_size_x)) 
         {
-            init_vectors(loc_size_x);
+          init_memory(loc_size_x);
         }
 
         fun.gradient(x_k, g);
@@ -84,13 +84,9 @@
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
 
-        this->initialize_approximation(x_k, g); 
+        // this->initialize_approximation(x_k, g); 
+        QuasiNewtonBase<Vector>::init_memory(x_k, g); 
         auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
-
-
-        // Vector help;
-        // multiplication_action->apply(g, help);
-        // delta = (norm2(g)*norm2(g))/dot(g, help); 
 
 
         g0_norm = this->criticality_measure_infty(x_k, g); 
@@ -108,9 +104,11 @@
         fun.value(x_k, E_old); 
 
 
+        UTOPIA_NO_ALLOC_BEGIN("Quasi TR Bound 1");
         // solve starts here 
         while(!converged)
         {
+          
           // ----------------------------------------------------------------------------
           //     new step p_k w.r. ||p_k|| <= delta
           // ----------------------------------------------------------------------------          
@@ -163,13 +161,12 @@
           // good reduction, accept trial point 
           if (rho >= this->rho_tol())
           {
-            x_k = x_trial;   
+            x_k   = x_trial;   
             E_old = E_new; 
             
             y = g; 
             fun.gradient(x_k, g);
             y = g - y;       
-            
           }
           // otherwise, keep old point
           else
@@ -197,6 +194,8 @@
 
           it++; 
         }
+
+          UTOPIA_NO_ALLOC_END();
           return false;
       }
 
@@ -208,7 +207,7 @@
 
 
     private:
-        void init_vectors(const SizeType &ls)
+        void init_memory(const SizeType &ls)
         {
             auto zero_expr = local_zeros(ls);
 
@@ -217,6 +216,8 @@
             g_help = zero_expr;
             y       = zero_expr;
             x_trial = zero_expr;
+
+            TrustRegionBase::init_memory(ls);
                            
             initialized_ = true;    
             loc_size_ = ls;                                        
