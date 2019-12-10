@@ -31,7 +31,7 @@ namespace utopia
 			test_functions_[2] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 3);
 			test_functions_[3] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size(), 4);
 
-			// work only with  petsc 
+			// works only with  petsc 
 			test_functions_[4] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 1);
 			test_functions_[5] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 2);
 
@@ -84,19 +84,19 @@ namespace utopia
 			// 	}
 			// );	
 
-			// this->register_experiment("ProjectedTao_Test",
-			// 	[this]() {
+			// works only for petsc
+			this->register_experiment("ProjectedTao_Test",
+				[this]() {
 
-			// 		auto lin_solver = std::make_shared<GMRES<Matrix, Vector> >();
-			// 		TaoQPSolver<Matrix, Vector> solver(lin_solver);
-			// 		solver.tao_type("gpcg");
+					auto lin_solver = std::make_shared<GMRES<Matrix, Vector> >();
+					TaoQPSolver<Matrix, Vector> solver(lin_solver);
+					solver.tao_type("gpcg");
+		            solver.verbose(true);
 
-		 //            solver.verbose(true);
-		 //            run_test(this->test_functions_, solver, "ProjectedTao_Test", this->verbose_);
-			// 	}
-			// );								
+		            run_test(this->test_functions_, solver, "ProjectedTao_Test", this->verbose_);
+				}
+			);								
 			
-
 		}
 
 	private:
@@ -119,7 +119,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 10000); 
+			in.set("max-it", 1000); 
 			in.set("verbose", false);
 			solver.read(in); 
 
@@ -128,6 +128,7 @@ namespace utopia
 	    	{
 
 	    		Vector x_init = test_functions[i]->initial_guess(); 
+	    		auto loc_size = local_size(x_init); 
 
 				Vector g; 
 				Matrix H; 
@@ -136,57 +137,36 @@ namespace utopia
 				test_functions[i]->hessian(x_init, H); 
 
 				auto box = test_functions[i]->box_constraints(); 
+				box.fill_empty_bounds(loc_size); 
 
-				box.fill_empty_bounds(local_size(x_init)); 
-				*box.upper_bound() =  *box.upper_bound() - x_init;
-				*box.lower_bound() =  *box.lower_bound() - x_init;
+				auto correction_constraints = make_box_constaints(std::make_shared<Vector>(local_zeros(loc_size)), std::make_shared<Vector>(local_zeros(loc_size))); 
+
+				*correction_constraints.upper_bound() =  *box.upper_bound() - x_init;
+				*correction_constraints.lower_bound() =  *box.lower_bound() - x_init;
 
 				Vector s = 0.0*x_init; 
-				solver.set_box_constraints(box); 
+				solver.set_box_constraints(correction_constraints); 
 				solver.solve(H, g, s);
 
 				// taking correction
 				x_init += s; 
 
-				bool feas_flg = test_functions[i]->is_feasible(s); 
+				bool feas_flg = test_functions[i]->is_feasible(x_init); 
 				utopia_test_assert(feas_flg);			
 
-
-				// Poisson2D<Matrix, Vector> * fun_poisson2D = dynamic_cast<Poisson2D<Matrix, Vector> *>(test_functions[i].get());
-				// fun_poisson2D->output_to_VTK(x_init, "Poisson2D_new.vtk");
-
-
-				// auto sol_status = solver.solution_status(); 
-
-
-				//sol_status.describe(std::cout); 
-				
-				// const auto dim = test_functions[i]->dim(); 
-				// const auto num_its = sol_status.iterates; 
-				// const auto conv_reason = sol_status.reason; 
-
-				// utopia_test_assert(conv_reason > 0);
+				auto sol_status = solver.solution_status(); 
 
 				// if(exp_verbose && mpi_world_rank()==0)
 				// {
 				// 	std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_functions[i]->name() <<"_" << dim <<  std::right <<  std::setw(60-std::to_string(dim).size() - test_functions[i]->name().size())  << std::right << "its:  " << num_its << std::setw(5-std::to_string(num_its).size())<<  "  \n"; 
-				
-					// if(conv_reason< 0)
-					// {
-					// 	sol_status.describe(std::cout); 
-					// }
+					
+				// 	const auto conv_reason = sol_status.reason; 
+				// 	if(conv_reason< 0)
+				// 	{
+				// 		sol_status.describe(std::cout); 
+				// 	}
 
 				// }
-
-				// if(test_functions[i]->exact_sol_known())
-				// {
-					// disp(x_init, "num_sol..."); 
-					// disp(test_functions[i]->exact_sol(), "exact solution"); 
-					// disp(x_init, "sol");
-					// std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n"; 
-
-				// }
-
 			}
 		}
 
@@ -202,7 +182,7 @@ namespace utopia
 	static void qp_constrained()
 	{
 		int verbosity_level = 1;
-		const int n_global = 10; 
+		const int n_global = 40; 
 		bool alg_verbose = false; 
 
 		if(Utopia::instance().verbose()) {
