@@ -38,9 +38,20 @@ namespace utopia {
         const Quadrature *q_;
     };
 
-    template<class Mesh, int NComponents>
-    class PhysicalPoint< FunctionSpace<Mesh, NComponents> > {
+    template<class Mesh, int NComponents, class Quadrature>
+    class PhysicalPoint< FunctionSpace<Mesh, NComponents>, Quadrature> {
     public:
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents>;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+
+        using ViewDevice = utopia::PhysicalPoint<Elem, typename Quadrature::ViewDevice>;
+
+        PhysicalPoint(const FunctionSpace &) {}
+
+        ViewDevice view_device() const
+        {
+            return ViewDevice();
+        }
 
     };
 

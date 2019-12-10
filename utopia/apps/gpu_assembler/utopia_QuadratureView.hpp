@@ -78,7 +78,7 @@ namespace utopia {
         static const int Dim     = 2;
         static const int NPoints = 6;
 
-        using DeviceView  = utopia::QuadratureView<PointView, WeightView, Dim, NPoints>;
+        using ViewDevice  = utopia::QuadratureView<PointView, WeightView, Dim, NPoints>;
 
         void init()
         {
@@ -113,9 +113,9 @@ namespace utopia {
             init();
         }
 
-        inline DeviceView view_device() const
+        inline ViewDevice view_device() const
         {
-            return DeviceView(points_.view_device(), weights_.view_device());
+            return ViewDevice(points_.view_device(), weights_.view_device());
         }
 
     private:

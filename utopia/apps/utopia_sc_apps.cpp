@@ -23,7 +23,7 @@ namespace utopia {
         using FunctionSpace = utopia::FunctionSpace<Mesh, 1>;
         using Dev           = FunctionSpace::Device;
 
-        using DevFunctionSpace = FunctionSpace::DeviceView;
+        using DevFunctionSpace = FunctionSpace::ViewDevice;
         using DofIndex         = DevFunctionSpace::DofIndex;
 
 

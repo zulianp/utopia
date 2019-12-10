@@ -60,11 +60,11 @@ namespace utopia {
     public:
         using Elem           = Elem_;
         using Mesh           = utopia::Mesh<Elem, Comm, ExecutionSpace_, Uniform<Args...>>;
-        using MeshView       = typename Mesh::DeviceView;
+        using MeshView       = typename Mesh::ViewDevice;
         using ExecutionSpace = ExecutionSpace_;
         using SizeType       = typename Mesh::SizeType;
         using DofIndex       = utopia::ArrayView<std::size_t, Elem::NNodes>;
-        using DeviceView     = utopia::FunctionSpaceView<MeshView, 1>;
+        using ViewDevice     = utopia::FunctionSpaceView<MeshView, 1>;
         using Device         = utopia::Device<TRILINOS>;
 
         template<class Fun>
@@ -73,9 +73,9 @@ namespace utopia {
             mesh_.each_element(fun);
         }
 
-        DeviceView view_device()
+        ViewDevice view_device()
         {
-            return DeviceView(mesh_.view_device());
+            return ViewDevice(mesh_.view_device());
         }
 
         Range local_element_range() const

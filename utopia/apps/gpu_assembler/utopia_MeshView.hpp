@@ -356,7 +356,7 @@ namespace utopia {
         using Dev            = utopia::TpetraTraits::Device;
         using DualBoxView    = utopia::Box<DualScalarView>;
 
-        using DeviceView = utopia::TensorMeshView<Elem,  ExecutionSpace>;
+        using ViewDevice = utopia::TensorMeshView<Elem,  ExecutionSpace>;
 
         Mesh(
             const Comm &comm,
@@ -439,15 +439,15 @@ namespace utopia {
         {
             auto view = view_device();
             Dev::parallel_for(local_element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
-                typename DeviceView::Elem e;
+                typename ViewDevice::Elem e;
                 view.elem(e_index, e);
                 fun(e_index, e);
             });
         }
 
-        DeviceView view_device() const
+        ViewDevice view_device() const
         {
-            return DeviceView(
+            return ViewDevice(
                 dims_.view_device(),
                 local_elements_begin_.view_device(),
                 local_elements_end_.view_device(),
