@@ -34,13 +34,15 @@ namespace utopia {
           max("box_max", dim)
         {}
 
-        template<std::size_t Dim>
-        explicit Box(const Box<std::array<Scalar, Dim>> &box)
-        : min("box_min", Dim),
-          max("box_max", Dim)
+        template<std::size_t UDim>
+        explicit Box(const Box<std::array<Scalar, UDim>> &box)
+        : min("box_min", UDim),
+          max("box_max", UDim)
         {
             auto h_min = min.view_host();
             auto h_max = max.view_host();
+
+            static const int Dim = UDim;
 
             for(int i = 0; i < Dim; ++i) {
                 h_min[i] = box.min[i];
@@ -82,7 +84,7 @@ namespace utopia {
         static const int Dim = Mesh::Dim;
 
         template<class Dims, class Array>
-        UTOPIA_INLINE_FUNCTION static SizeType local_elements_index_begin(
+        UTOPIA_INLINE_FUNCTION static SizeType local_element_index_begin(
             const Dims &dims,
             const Array &local_elements_begin)
         {
@@ -90,7 +92,7 @@ namespace utopia {
         }
 
         template<class Dims, class Array>
-        UTOPIA_INLINE_FUNCTION static SizeType local_elements_index_end(
+        UTOPIA_INLINE_FUNCTION static SizeType local_element_index_end(
             const Dims &dims,
             const Array &local_elements_end)
         {
@@ -114,6 +116,44 @@ namespace utopia {
 
             for(int i = 1; i < Dim; ++i){
                 result *= dims[i];
+                result += tensor_index[i];
+            }
+
+            return result;
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType local_node_index_begin(
+            const Dims &dims,
+            const Array &local_elements_begin)
+        {
+            return node_tensor_to_linear_index(dims, local_elements_begin);
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType local_node_index_end(
+            const Dims &dims,
+            const Array &local_elements_end)
+        {
+            SizeType result = local_elements_end[0] - 1 + (local_elements_end[0] == dims[0]);
+
+            for(int i = 1; i < Dim; ++i){
+                result *= (dims[i] + 1);
+                result += local_elements_end[i] - 1 + (local_elements_end[i] == dims[i]);
+            }
+
+            return result + 1;
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType node_tensor_to_linear_index(
+            const Dims &dims,
+            const Array &tensor_index)
+        {
+            SizeType result = tensor_index[0];
+
+            for(SizeType i = 1; i < Dim; ++i){
+                result *= dims[i] + 1;
                 result += tensor_index[i];
             }
 
@@ -207,14 +247,14 @@ namespace utopia {
             return prod_dim(dims_, 1);
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType local_elements_index_begin() const
+        UTOPIA_INLINE_FUNCTION SizeType local_element_index_begin() const
         {
-            return TensorMeshImpl<TensorMeshView>::local_elements_index_begin(dims_, local_elements_begin_);
+            return TensorMeshImpl<TensorMeshView>::local_element_index_begin(dims_, local_elements_begin_);
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType local_elements_index_end() const
+        UTOPIA_INLINE_FUNCTION SizeType local_element_index_end() const
         {
-            return TensorMeshImpl<TensorMeshView>::local_elements_index_end(dims_, local_elements_end_);
+            return TensorMeshImpl<TensorMeshView>::local_element_index_end(dims_, local_elements_end_);
         }
 
         template<class Array>
@@ -241,7 +281,15 @@ namespace utopia {
             UTOPIA_DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
         }
 
+        UTOPIA_INLINE_FUNCTION SizeType local_node_index_begin() const
+        {
+            return TensorMeshImpl<TensorMeshView>::local_node_index_begin(dims_, local_elements_begin_);
+        }
 
+        UTOPIA_INLINE_FUNCTION SizeType local_node_index_end() const
+        {
+            return TensorMeshImpl<TensorMeshView>::local_node_index_end(dims_, local_elements_end_);
+        }
 
         template<class Array>
         UTOPIA_INLINE_FUNCTION void node_linear_to_tensor_index(
@@ -264,14 +312,7 @@ namespace utopia {
         template<class Array>
         UTOPIA_INLINE_FUNCTION SizeType node_tensor_to_linear_index(const Array &tensor_index) const
         {
-            SizeType result = tensor_index[0];
-
-            for(SizeType i = 1; i < Dim; ++i){
-                result *= dims_[i] + 1;
-                result += tensor_index[i];
-            }
-
-            return result;
+            return TensorMeshImpl<TensorMeshView>::node_tensor_to_linear_index(dims_, tensor_index);
         }
 
         template<class Array>
@@ -322,6 +363,7 @@ namespace utopia {
             return ret;
         }
 
+        const IndexView  &dims() const { return dims_; }
     private:
         IndexView  dims_;
         IndexView  local_elements_begin_;
@@ -415,21 +457,36 @@ namespace utopia {
 
         Range local_element_range() const
         {
-            return Range(local_elements_index_begin(), local_elements_index_end());
+            return Range(local_element_index_begin(), local_element_index_end());
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType local_elements_index_begin() const
+        SizeType local_element_index_begin() const
         {
-            return TensorMeshImpl<Mesh>::local_elements_index_begin(dims_.view_host(), local_elements_begin_.view_host());
+            return TensorMeshImpl<Mesh>::local_element_index_begin(dims_.view_host(), local_elements_begin_.view_host());
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType local_elements_index_end() const
+        SizeType local_element_index_end() const
         {
-            return TensorMeshImpl<Mesh>::local_elements_index_end(dims_.view_host(), local_elements_end_.view_host());
+            return TensorMeshImpl<Mesh>::local_element_index_end(dims_.view_host(), local_elements_end_.view_host());
+        }
+
+        Range local_node_range() const
+        {
+            return Range(local_node_index_begin(), local_node_index_end());
+        }
+
+        SizeType local_node_index_begin() const
+        {
+            return TensorMeshImpl<Mesh>::local_node_index_begin(dims_.view_host(), local_elements_begin_.view_host());
+        }
+
+        SizeType local_node_index_end() const
+        {
+            return TensorMeshImpl<Mesh>::local_node_index_end(dims_.view_host(), local_elements_end_.view_host());
         }
 
         template<class Array>
-        UTOPIA_INLINE_FUNCTION SizeType element_tensor_to_linear_index(const Array &tensor_index) const
+        SizeType element_tensor_to_linear_index(const Array &tensor_index) const
         {
             return TensorMeshImpl<Mesh>::element_tensor_to_linear_index(dims_.view_host(), tensor_index.view_host());
         }

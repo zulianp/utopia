@@ -78,7 +78,7 @@ namespace utopia {
             elem_->grad(fun_num, temp, g);
         }
 
-        UTOPIA_INLINE_FUNCTION Grad operator()(const int fun_num, const int qp_idx)
+        UTOPIA_INLINE_FUNCTION Grad operator()(const int fun_num, const int qp_idx) const
         {
             Grad g;
             get(fun_num, qp_idx, g);

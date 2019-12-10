@@ -11,6 +11,9 @@
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_StructuredGrid.hpp"
 #include "utopia_AssemblyView.hpp"
+#include "utopia_Views.hpp"
+#include "utopia_StencilView.hpp"
+#include "utopia_GraphView.hpp"
 
 #include <cmath>
 
@@ -34,60 +37,65 @@ namespace utopia {
 
         TrilinosCommunicator world;
 
-        if(world.size() > 2)
+        if(world.size() > 1)
         {
             return;
         }
 
-        std::array<SizeType, 2>  local_begin = { 0, 0 };
-        std::array<SizeType, 2>  local_end = {1, 2};
-
-        auto rank = world.rank();
-        if(world.size() == 2) {
-
-            local_begin[0] = 0;
-            local_begin[1] = rank;
-
-            local_end[0] = 1;
-            local_end[1] = rank + 1;
-
-        }
-
-        Mesh mesh(world, { 1, 2 }, local_begin, local_end, {{1.0, 1.0}, {2.0, 2.0}});
+        SizeType nx = 1;
+        SizeType ny = 2;
+        Mesh mesh(world, { nx, ny }, { 0, 0 }, { nx, ny }, {{ 1.0, 1.0 }, { 2.0, 2.0 }});
 
         Quadrature quadrature;
         FunctionSpace space(mesh);
         auto space_view = space.view_device();
         auto q_view     = quadrature.view_device();
 
+
+        Graph<Mesh> graph;
+        graph.init(mesh);
+
         // PhysicalPoint<FunctionSpace, Quadrature> points(space, quadrature);
         // auto p_view = points.view_device();
 
+        //Host space processing
         PhysicalGradient<FunctionSpace, Quadrature> gradients(space, quadrature);
+
+        //View extraction
         auto g_view = gradients.view_device();
 
         Differential<FunctionSpace, Quadrature> differentials(space, quadrature);
         auto d_view = differentials.view_device();
 
+        Chrono c;
+        c.start();
+
+        SizeType n_assemblies = 0;
+        SizeType * n_assemblies_ptr = &n_assemblies;
+
+        double op_sum = 0;
+        double * op_sum_ptr = &op_sum;
+
         Dev::parallel_for(
             space.local_element_range(),
             UTOPIA_LAMBDA(const SizeType &i)
         {
-
             Elem e;
             DofIndex dofs;
             ElementMatrix mat;
 
             space_view.elem(i, e);
-            auto grad = g_view.make(i, e);
-            auto dx   = d_view.make(i, e);
+
+            //element-wise extraction
+            const auto grad = g_view.make(i, e);
+            const auto dx   = d_view.make(i, e);
 
             mat.set(0.0);
 
-            auto n = grad.n_points();
+            const auto n = grad.n_points();
             for(std::size_t k = 0; k < n; ++k) {
                 for(std::size_t j = 0; j < grad.n_functions(); ++j) {
-                    auto g_test = grad(j, k);
+                    const auto g_test = grad(j, k);
                     mat(j, j) += dot(g_test, g_test) * dx(k);
                     for(std::size_t l = j + 1; l < grad.n_functions(); ++l) {
                         const auto v = dot(g_test, grad(l, k)) * dx(k);
@@ -97,44 +105,15 @@ namespace utopia {
                 }
             }
 
-            disp(mat);
-
             space_view.dofs(i, dofs);
+
+            ++(*n_assemblies_ptr);
+            (*op_sum_ptr) += norm1(mat);
         });
 
-
-        // space.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
-        //     // PhysicalPoint<Elem, Quadrature>    point(elem, q);
-        //     PhysicalGradient<Elem, Quadrature> grad(elem, q);
-        //     // ShapeFunction<Elem, Quadrature>    fun(elem, q);
-        //     Differential<Elem, Quadrature>     dX(elem, q);
-        //     ElementMatrix mat;
-
-        //     //update(i, elem, grad, dX, ...)
-
-        //     DofIndex dofs;
-
-        //     mat.set(0.0);
-
-        //     // Point p;
-        //     // Grad g_trial, g_test;
-
-        //     auto n = q.n_points();
-        //     for(std::size_t k = 0; k < n; ++k) {
-        //         for(std::size_t j = 0; j < elem.n_nodes(); ++j) {
-        //             auto g_test = grad(j, k);
-        //             mat(j, j) += dot(g_test, g_test) * dX(k);
-        //             for(std::size_t l = j + 1; l < elem.n_nodes(); ++l) {
-        //                 const auto v = dot(g_test, grad(l, k)) * dX(k);
-        //                 mat(j, l) += v;
-        //                 mat(l, j) += v;
-        //             }
-        //         }
-        //     }
-
-        //     space.dofs(i, dofs);
-        //     //local 2 global here
-        // });
+        c.stop();
+        std::cout << n_assemblies << " assemblies " << c << std::endl;
+        std::cout << op_sum << std::endl;
     }
 
     UTOPIA_REGISTER_APP(sc_mesh);
