@@ -66,6 +66,7 @@ namespace utopia {
         using DofIndex       = utopia::ArrayView<std::size_t, Elem::NNodes>;
         using ViewDevice     = utopia::FunctionSpaceView<MeshView, 1>;
         using Device         = utopia::Device<TRILINOS>;
+        using MemType        = utopia::Uniform<Args...>;
 
         template<class Fun>
         void each_element(Fun fun)

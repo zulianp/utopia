@@ -10,6 +10,8 @@
 #include "utopia_trilinos_Poisson.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_StructuredGrid.hpp"
+#include "utopia_AssemblyView.hpp"
+
 #include <cmath>
 
 namespace utopia {
@@ -25,6 +27,9 @@ namespace utopia {
 
         using DevFunctionSpace = FunctionSpace::ViewDevice;
         using DofIndex         = DevFunctionSpace::DofIndex;
+        // using Point            = utopia::StaticVector<double, 2>;
+        // using Grad             = utopia::StaticVector<double, 2>;
+        using ElementMatrix    = utopia::StaticMatrix<double, 4, 4>;
 
 
         TrilinosCommunicator world;
@@ -55,11 +60,45 @@ namespace utopia {
         auto space_view = space.view_device();
         auto q_view     = quadrature.view_device();
 
-        Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-            Elem e;
-            space_view.elem(i, e);
+        // PhysicalPoint<FunctionSpace, Quadrature> points(space, quadrature);
+        // auto p_view = points.view_device();
 
+        PhysicalGradient<FunctionSpace, Quadrature> gradients(space, quadrature);
+        auto g_view = gradients.view_device();
+
+        Differential<FunctionSpace, Quadrature> differentials(space, quadrature);
+        auto d_view = differentials.view_device();
+
+        Dev::parallel_for(
+            space.local_element_range(),
+            UTOPIA_LAMBDA(const SizeType &i)
+        {
+
+            Elem e;
             DofIndex dofs;
+            ElementMatrix mat;
+
+            space_view.elem(i, e);
+            auto grad = g_view.make(i, e);
+            auto dx   = d_view.make(i, e);
+
+            mat.set(0.0);
+
+            auto n = grad.n_points();
+            for(std::size_t k = 0; k < n; ++k) {
+                for(std::size_t j = 0; j < grad.n_functions(); ++j) {
+                    auto g_test = grad(j, k);
+                    mat(j, j) += dot(g_test, g_test) * dx(k);
+                    for(std::size_t l = j + 1; l < grad.n_functions(); ++l) {
+                        const auto v = dot(g_test, grad(l, k)) * dx(k);
+                        mat(j, l) += v;
+                        mat(l, j) += v;
+                    }
+                }
+            }
+
+            disp(mat);
+
             space_view.dofs(i, dofs);
         });
 
