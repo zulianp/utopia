@@ -3,6 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_kokkos_Traits.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_UniformQuad4.hpp"
 
@@ -112,7 +113,7 @@ namespace utopia {
             init();
         }
 
-        inline DeviceView device_view() const
+        inline DeviceView view_device() const
         {
             return DeviceView(points_.view_device(), weights_.view_device());
         }

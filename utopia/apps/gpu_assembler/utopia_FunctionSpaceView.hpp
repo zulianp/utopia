@@ -31,6 +31,11 @@ namespace utopia {
             mesh_.nodes(element_idx, indices);
         }
 
+        UTOPIA_INLINE_FUNCTION void elem(const SizeType &element_idx, Elem &elem) const
+        {
+            mesh_.elem(element_idx, elem);
+        }
+
         FunctionSpaceView(const MeshView &mesh) : mesh_(mesh) {}
 
         UTOPIA_INLINE_FUNCTION const MeshView &mesh() const
@@ -53,11 +58,12 @@ namespace utopia {
     template<class Elem_, class Comm, class ExecutionSpace_, typename...Args>
     class FunctionSpace< Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>, 1> {
     public:
-        using Mesh           = utopia::Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>;
+        using Elem           = Elem_;
+        using Mesh           = utopia::Mesh<Elem, Comm, ExecutionSpace_, Uniform<Args...>>;
         using MeshView       = typename Mesh::DeviceView;
         using ExecutionSpace = ExecutionSpace_;
         using SizeType       = typename Mesh::SizeType;
-        using DofIndex       = utopia::ArrayView<std::size_t, Elem_::NNodes>;
+        using DofIndex       = utopia::ArrayView<std::size_t, Elem::NNodes>;
         using DeviceView     = utopia::FunctionSpaceView<MeshView, 1>;
         using Device         = utopia::Device<TRILINOS>;
 
@@ -70,6 +76,11 @@ namespace utopia {
         DeviceView view_device()
         {
             return DeviceView(mesh_.view_device());
+        }
+
+        Range local_element_range() const
+        {
+            return mesh_.local_element_range();
         }
 
         FunctionSpace(const Mesh &mesh) : mesh_(mesh) {}

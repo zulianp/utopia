@@ -16,13 +16,16 @@ namespace utopia {
 
     static void sc_mesh()
     {
-        using SizeType      = Grid2d::SizeType;
-        using Elem          = Grid2d::Elem;
-        using QuadratureT   = Quadrature<Elem, 2>;
-        using FunctionSpace = utopia::FunctionSpace<Grid2d, 1>;
+        using Mesh          = utopia::Grid2d;
+        using SizeType      = Mesh::SizeType;
+        using Elem          = Mesh::Elem;
+        using Quadrature    = utopia::Quadrature<Elem, 2>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, 1>;
+        using Dev           = FunctionSpace::Device;
+
         using DevFunctionSpace = FunctionSpace::DeviceView;
         using DofIndex         = DevFunctionSpace::DofIndex;
-        using Dev = FunctionSpace::Device;
+
 
         TrilinosCommunicator world;
 
@@ -45,33 +48,27 @@ namespace utopia {
 
         }
 
-        Grid2d mesh(world, { 1, 2 }, local_begin, local_end, {{1.0, 1.0}, {2.0, 2.0}});
+        Mesh mesh(world, { 1, 2 }, local_begin, local_end, {{1.0, 1.0}, {2.0, 2.0}});
 
-        // QuadratureT q;
-
-        std::cout << mesh.local_element_range() << std::endl;
-
+        Quadrature quadrature;
         FunctionSpace space(mesh);
         auto space_view = space.view_device();
-        space.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
+        auto q_view     = quadrature.view_device();
+
+        Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            Elem e;
+            space_view.elem(i, e);
+
             DofIndex dofs;
             space_view.dofs(i, dofs);
-            for(auto d : dofs) {
-                std::cout << d << " ";
-            }
-
-            std::cout << "\n";
         });
 
 
-        // Dev::parallel_for()
-
-
         // space.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem &elem) {
-        //     // PhysicalPoint<Elem, QuadratureT>    point(elem, q);
-        //     PhysicalGradient<Elem, QuadratureT> grad(elem, q);
-        //     // ShapeFunction<Elem, QuadratureT>    fun(elem, q);
-        //     Differential<Elem, QuadratureT>     dX(elem, q);
+        //     // PhysicalPoint<Elem, Quadrature>    point(elem, q);
+        //     PhysicalGradient<Elem, Quadrature> grad(elem, q);
+        //     // ShapeFunction<Elem, Quadrature>    fun(elem, q);
+        //     Differential<Elem, Quadrature>     dX(elem, q);
         //     ElementMatrix mat;
 
         //     //update(i, elem, grad, dX, ...)

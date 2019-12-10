@@ -52,7 +52,7 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION static void apply(const Scalar &alpha, const View &x, View &y)
             {
                 KokkosBlas::axpy(alpha,x,y);
-            }  
+            }
         };
 
 
@@ -140,15 +140,15 @@ namespace utopia {
         }
     };
 
-    template<class Scalar_>
-    class Traits< Kokkos::View<Scalar_ *> > {
+    template<class Scalar_, typename ...Args>
+    class Traits< Kokkos::View<Scalar_ *, Args...> > {
     public:
         using Scalar = Scalar_;
         using SizeType = std::size_t;
     };
 
-    template<class Scalar_>
-    class Traits< Kokkos::View<Scalar_ **> > {
+    template<class Scalar_, typename ...Args>
+    class Traits< Kokkos::View<Scalar_ **, Args...> > {
     public:
         using Scalar = Scalar_;
         using SizeType = std::size_t;
