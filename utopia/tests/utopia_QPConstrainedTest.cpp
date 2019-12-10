@@ -74,7 +74,7 @@ namespace utopia
 				}
 			);		
 
-			// has problems with some tests 
+			// has problems with some tests - to be debugged 
 			// this->register_experiment("ProjectedConjugateGradient_Test",
 			// 	[this]() {
 			// 		ProjectedConjugateGradient<Matrix, Vector> solver;

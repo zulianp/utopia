@@ -71,6 +71,12 @@ namespace utopia
         }
 
 
+        bool get_rhs( Vector & rhs) const override
+        {
+            convert(snes_->vec_rhs, rhs); 
+            return true;
+        }
+
         void get_A_rhs(Matrix & A, Vector & rhs) const
         {
             A = A_no_bc_; 

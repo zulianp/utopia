@@ -18,7 +18,6 @@
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
-
         typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 

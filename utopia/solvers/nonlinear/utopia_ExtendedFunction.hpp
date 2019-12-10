@@ -58,6 +58,11 @@ namespace utopia
             return true;
         }
 
+        // Copy of vec... 
+        // Vector initial_guess() const
+        // {   
+        //     return _x_eq_values; 
+        // }
 
         virtual bool gradient_no_rhs(const Vector &/*point*/, Vector &/*result*/) const = 0;
 
