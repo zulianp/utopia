@@ -31,7 +31,7 @@ namespace utopia
                                         theta_(1.0), 
                                         gamma_(1.0), 
                                         theta_min_(1.0), 
-                                        skip_update_treshold_(1e-10), 
+                                        skip_update_treshold_(1e-9), 
                                         damping_tech_(NOCEDAL), 
                                         scaling_tech_(ADAPTIVE)
             {
@@ -138,9 +138,7 @@ namespace utopia
                 {
                     // UTOPIA_NO_ALLOC_BEGIN("LBFGS2");
                     this->init_scaling_factors(y_hat_, s); 
-
-                    std::cout<<"updating..... \n"; 
-
+                    // std::cout<<"updating..... \n"; 
                     // UTOPIA_NO_ALLOC_END();
                     return true; 
                 }
@@ -556,9 +554,9 @@ namespace utopia
                 bool skip_update = false; 
                 if(dot(y,s) < skip_update_treshold_)
                 {
-                    if(mpi_world_rank()==0){
-                        utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
-                    }
+                    // if(mpi_world_rank()==0){
+                    //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
+                    // }
 
                     skip_update = true; 
                 }                
@@ -605,24 +603,24 @@ namespace utopia
 
                 if(H0_action_)
                 {
-                    UTOPIA_NO_ALLOC_BEGIN("LBGFS:A1");
+                    // UTOPIA_NO_ALLOC_BEGIN("LBGFS:A1");
                     H0_action_(v, result); 
-                    UTOPIA_NO_ALLOC_END();
+                    // UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {
                     
                     if(current_m_ ==0)
                     {
-                        UTOPIA_NO_ALLOC_BEGIN("LBGFS:A2");
+                        // UTOPIA_NO_ALLOC_BEGIN("LBGFS:A2");
                         result = theta_ * v; 
-                        UTOPIA_NO_ALLOC_END();
+                        // UTOPIA_NO_ALLOC_END();
                     }
                     else
                     {
-                        UTOPIA_NO_ALLOC_BEGIN("LBGFS:A22");
+                        // UTOPIA_NO_ALLOC_BEGIN("LBGFS:A22");
                         result = e_mul(D_, v); 
-                        UTOPIA_NO_ALLOC_END();
+                        // UTOPIA_NO_ALLOC_END();
                     }
                 }
             }

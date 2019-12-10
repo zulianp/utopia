@@ -121,12 +121,6 @@
             tr_subproblem->set_box_constraints(box); 
             g_help = -1.0*g; 
             tr_subproblem->solve(*multiplication_action, g_help, p_k);     
-            
-            std::cout<<"delta: "<< delta << " \n";
-
-            std::cout<<"\n norm2(p_k) :" << norm2(p_k) << "  \n"; 
-            std::cout<<"\n norm_infty(p_k) :" << norm_infty(p_k) << "  \n"; 
-
             this->solution_status_.num_linear_solves++;  
           }
           else

@@ -206,6 +206,9 @@ namespace utopia
             // disp(x_k , "x_k"); 
             // std::cout<<"ub_uniform: "<< ub_uniform << "  \n"; 
 
+          std::cout<<"---------------*constraints_.upper_bound() :"<< max(*constraints_.upper_bound() ) << "  \n"; 
+          std::cout<<"----------------*constraints_.lower_bound() :"<< min(*constraints_.lower_bound() ) << "  \n";             
+
           {
             parallel_transform(ub_merged,
                               UTOPIA_LAMBDA(const SizeType &, const Scalar &ub) -> Scalar 

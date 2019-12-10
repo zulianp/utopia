@@ -287,9 +287,13 @@ namespace utopia
         {
           radius = std::max( Scalar(gamma2_ * norm_infty(p_k)), radius);
         }
-        else if (rho < eta1_ )
+        else if (rho < eta1_ && rho > 0 )
         {
           radius = gamma1_ * norm_infty(p_k); 
+        }
+        else if(rho ==0)
+        {
+          radius = gamma1_ * radius; 
         }
     }
 

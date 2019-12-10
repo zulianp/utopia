@@ -80,7 +80,7 @@ namespace utopia
             Scalar f1 = dot(x_inc_, *help_);
 
             g = ((2.0 * f1) + (4.0*f1*f1*f1)) * x_inc_;
-            g  = g + (2.0 * *help_);
+            g  = g + (2.0 * (*help_));
 
             return true;
         }
