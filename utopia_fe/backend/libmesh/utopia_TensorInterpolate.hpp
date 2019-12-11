@@ -140,7 +140,7 @@ namespace utopia {
         }
     };
 
-    void build_tensor_ghosted(
+    inline void build_tensor_ghosted(
         const Traits<UVector>::SizeType &n_local_dofs,
         const Traits<UVector>::SizeType &n_dofs,
         const Traits<UVector>::SizeType &dims,
