@@ -8,7 +8,9 @@
     #include "utopia_Bratu1D.hpp"
 	#include "utopia_Bratu2D.hpp"
 	#include "utopia_Bratu3D.hpp"
+
 	#include "utopia_Membrane2D.hpp"
+	#include "utopia_MOREBV1D.hpp"
 
 	#include "utopia_MultilevelTestProblem1D.hpp"
 
