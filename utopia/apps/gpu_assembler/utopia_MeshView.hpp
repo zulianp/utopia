@@ -96,6 +96,127 @@ namespace utopia {
             const Dims &dims,
             const Array &local_elements_end)
         {
+            SizeType result = local_elements_end[Dim-1] -1;
+
+            for(int i = Dim-2; i >= 0; --i)
+            {
+                result *= dims[i];
+                result += local_elements_end[i] -1;
+            }
+
+            return result + 1;
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static void element_linear_to_tensor_index(
+            const Dims &dims,
+            const SizeType &element_idx,
+            Array &tensor_index
+            )
+        {
+            SizeType current = element_idx;
+
+            for(int i = 0; i < Dim; ++i) {
+                const int next = current / dims[i];
+                tensor_index[i] = current - next * dims[i];
+                current = next;
+            }
+
+            UTOPIA_DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType element_tensor_to_linear_index(
+            const Dims &dims,
+            const Array &tensor_index
+            )
+        {
+            SizeType result = tensor_index[Dim-1];
+
+            for(int i = Dim-2; i >= 0; --i){
+                result *= dims[i];
+                result += tensor_index[i];
+            }
+
+            return result;
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType local_node_index_begin(
+            const Dims &dims,
+            const Array &local_elements_begin)
+        {
+            return node_tensor_to_linear_index(dims, local_elements_begin);
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType local_node_index_end(
+            const Dims &dims,
+            const Array &local_elements_end)
+        {
+            SizeType result = local_elements_end[Dim-1] - 1 + (local_elements_end[Dim-1] == dims[Dim-1]);
+
+            for(int i = Dim-2; i >= 0; --i){
+                result *= (dims[i] + 1);
+                result += local_elements_end[i] - 1 + (local_elements_end[i] == dims[i]);
+            }
+
+            return result + 1;
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static void node_linear_to_tensor_index(
+            const Dims &dims,
+            const SizeType &node_idx,
+            Array &tensor_index
+            )
+        {
+            SizeType current = node_idx;
+
+
+            for(int i = 0; i < Dim; ++i) {
+                const SizeType next = current / (dims[i] + 1);
+                tensor_index[i] = current - next * (dims[i] + 1);
+                current = next;
+            }
+
+            UTOPIA_DEVICE_ASSERT(node_tensor_to_linear_index(tensor_index) == node_idx);
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType node_tensor_to_linear_index(
+            const Dims &dims,
+            const Array &tensor_index)
+        {
+            SizeType result = tensor_index[0];
+
+            for(SizeType i = 1; i < Dim; ++i){
+                result *= dims[i] + 1;
+                result += tensor_index[i];
+            }
+
+            return result;
+        }
+    };
+
+    template<class Mesh>
+    class TensorMeshImplXMajor {
+    public:
+        static const int Dim = Mesh::Dim;
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType local_element_index_begin(
+            const Dims &dims,
+            const Array &local_elements_begin)
+        {
+            return element_tensor_to_linear_index(dims, local_elements_begin);
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static SizeType local_element_index_end(
+            const Dims &dims,
+            const Array &local_elements_end)
+        {
             SizeType result = local_elements_end[0] -1;
 
             for(int i = 1; i < Dim; ++i){
@@ -104,6 +225,25 @@ namespace utopia {
             }
 
             return result + 1;
+        }
+
+        template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static void element_linear_to_tensor_index(
+            const Dims &dims,
+            const SizeType &element_idx,
+            Array &tensor_index
+            )
+        {
+            SizeType current = element_idx;
+            const int last = Dim - 1;
+
+            for(int i = last; i >= 0; --i) {
+                const int next = current / dims[i];
+                tensor_index[i] = current - next * dims[i];
+                current = next;
+            }
+
+            UTOPIA_DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
         }
 
         template<class Dims, class Array>
@@ -146,6 +286,25 @@ namespace utopia {
         }
 
         template<class Dims, class Array>
+        UTOPIA_INLINE_FUNCTION static void node_linear_to_tensor_index(
+            const Dims &dims,
+            const SizeType &node_idx,
+            Array &tensor_index
+            )
+        {
+            SizeType current = node_idx;
+            const int last = Dim - 1;
+
+            for(int i = last; i >= 0; --i) {
+                const SizeType next = current / (dims[i] + 1);
+                tensor_index[i] = current - next * (dims[i] + 1);
+                current = next;
+            }
+
+            UTOPIA_DEVICE_ASSERT(node_tensor_to_linear_index(tensor_index) == node_idx);
+        }
+
+        template<class Dims, class Array>
         UTOPIA_INLINE_FUNCTION static SizeType node_tensor_to_linear_index(
             const Dims &dims,
             const Array &tensor_index)
@@ -176,8 +335,8 @@ namespace utopia {
         using Scalar          = typename Elem::Scalar;
         using NodeIndexView   = utopia::ArrayView<SizeType, NNodesXElem>;
         using TensorIndexView = utopia::ArrayView<SizeType, Dim>;
-        using IndexView      = Kokkos::View<SizeType *, ExecutionSpace>;
-        using ScalarView     = Kokkos::View<Scalar   *, ExecutionSpace>;
+        using IndexView       = Kokkos::View<SizeType *, ExecutionSpace>;
+        using ScalarView      = Kokkos::View<Scalar   *, ExecutionSpace>;
 
         template<class Array>
         UTOPIA_INLINE_FUNCTION void nodes(
@@ -269,16 +428,7 @@ namespace utopia {
             Array &tensor_index
             ) const
         {
-            SizeType current = element_idx;
-            const int last = Dim - 1;
-
-            for(int i = last; i >= 0; --i) {
-                const int next = current / dims_[i];
-                tensor_index[i] = current - next * dims_[i];
-                current = next;
-            }
-
-            UTOPIA_DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
+            TensorMeshImpl<TensorMeshView>::element_linear_to_tensor_index(dims_, element_idx, tensor_index);
         }
 
         UTOPIA_INLINE_FUNCTION SizeType local_node_index_begin() const
@@ -297,16 +447,7 @@ namespace utopia {
             Array &tensor_index
             ) const
         {
-            SizeType current = node_idx;
-            const int last = Dim - 1;
-
-            for(int i = last; i >= 0; --i) {
-                const SizeType next = current / (dims_[i] + 1);
-                tensor_index[i] = current - next * (dims_[i] + 1);
-                current = next;
-            }
-
-            UTOPIA_DEVICE_ASSERT(node_tensor_to_linear_index(tensor_index) == node_idx);
+            return TensorMeshImpl<TensorMeshView>::node_linear_to_tensor_index(dims_, node_idx, tensor_index);
         }
 
         template<class Array>
@@ -365,9 +506,10 @@ namespace utopia {
 
         const IndexView  &dims() const { return dims_; }
     private:
-        IndexView  dims_;
-        IndexView  local_elements_begin_;
-        IndexView  local_elements_end_;
+        IndexView dims_;
+        IndexView local_elements_begin_;
+        IndexView local_elements_end_;
+        IndexView local_2_global_;
         Box<ScalarView> box_;
         ScalarView h_;
     };

@@ -180,7 +180,7 @@ namespace utopia {
         }
     }
 
-    bool read_tensor_data(
+    inline bool read_tensor_data(
         const utopia::Path &path,
         const USizeType &n_local_nodes,
         const USizeType &n,

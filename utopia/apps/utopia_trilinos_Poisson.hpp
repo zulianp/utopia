@@ -565,10 +565,13 @@ namespace utopia
 
         void assemble_laplacian()
         {
+            Chrono c;
+
             auto q_weights_device = q_weights_.view_device();
 
             UTOPIA_TRACE_REGION_BEGIN("Poisson::assemble_laplacian");
 
+            c.start();
             Dev::parallel_for(
                 n_elements_,
                 UTOPIA_LAMBDA(const SizeType &e_id)
@@ -596,6 +599,9 @@ namespace utopia
                 });
 
             UTOPIA_TRACE_REGION_END("Poisson::assemble_laplacian");
+            c.stop();
+
+            std::cout << "Poisson::assemble_laplacian " << c << std::endl;
 
             assemble_matrix(laplacian_);
         }

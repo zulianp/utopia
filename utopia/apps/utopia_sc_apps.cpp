@@ -42,9 +42,18 @@ namespace utopia {
             return;
         }
 
-        SizeType nx = 1;
-        SizeType ny = 2;
+        SizeType nx = 2;
+        SizeType ny = 3;
         Mesh mesh(world, { nx, ny }, { 0, 0 }, { nx, ny }, {{ 1.0, 1.0 }, { 2.0, 2.0 }});
+
+        auto mesh_view = mesh.view_device();
+
+        int ind[2];
+
+        for(SizeType i = 0; i < mesh_view.n_elements(); ++i) {
+            mesh_view.node_linear_to_tensor_index(i, ind);
+            std::cout << i << ") [" << ind[0] << ",  " << ind[1] << "]" << std::endl;
+        }
 
         Quadrature quadrature;
         FunctionSpace space(mesh);
@@ -120,8 +129,10 @@ namespace utopia {
 
     static void poisson_2D()
     {
-        SizeType n = 20;
+        SizeType n = 800;
         Poisson<TpetraMatrix, TpetraVector> poisson(n);
+
+        poisson.reinit();
 
         Chrono c;
         c.start();
