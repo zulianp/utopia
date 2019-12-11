@@ -116,10 +116,10 @@ namespace utopia
                         Scalar xi_m = x.get(i-1);
                         Scalar xi_p = x.get(i+1);
                         element = xi + ti + 1.0;
-                        item = 2. * xi - xi_m - xi_p + 0.5*(h_*h_*std::pow(element, 3));
+                        item = 2.*xi - xi_m - xi_p + 0.5*(h_*h_*std::pow(element, 3));
 
                         g.add(i-1,  -2.0*item);
-                        g.add(i,    2.0*item*(2.0+ h_*h_ * 1.5 * std::pow(element, 2)));
+                        g.add(i,    2.0*item*(2.0+ h_*h_*1.5*std::pow(element, 2)));
                         g.add(i+1,  -2.0*item);
                     }
                 }
@@ -138,64 +138,84 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            if(empty(H)){
-                H = H_; 
+            H = 0.0*H_; 
+
+            auto n = size(x).get(0);   
+            {
+                Read<Vector>    d_x(x); 
+                Read<Vector>    d_t(coords_); 
+                Write<Matrix>   d_w(H); 
+
+                Range r = row_range(H);
+
+                for(SizeType i = r.begin(); i != r.end(); ++i) 
+                {
+                    Scalar xi = x.get(i);
+                    Scalar ti = coords_.get(i);
+                    Scalar element, item; 
+
+                    if(i==0){
+                        Scalar xi_m = x.get(i-1);
+                        Scalar xi_p = x.get(i+1);
+                        element = xi + ti + 1.0;
+
+                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p); 
+                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0); 
+                        H.add(i, i, term1+term2); 
+
+                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0); 
+                        H.add(i, i+1, term4); 
+
+                        Scalar term3 = -2.0*((1.5 * h_*h_ *element*element) + 2.0);
+                        H.add(i+1, i, term3); 
+                        H.add(i+1, i+1, 2.0); 
+                    }
+                    else if(i==n-1){
+                        Scalar xi_m = x.get(i-1);
+                        Scalar xi_p = x.get(i+1);
+                        element = xi + ti + 1.0;
+
+                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p); 
+                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0); 
+                        H.add(i, i, term1+term2); 
+
+                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0); 
+                        H.add(i, i-1, term4); 
+
+                        Scalar term3 = -2.0*((1.5 * h_*h_ *element*element) + 2.0);
+                        H.add(i-1, i, term3); 
+                        H.add(i-1, i-1, 2.0);           
+                    }
+                    else
+                    {
+                        Scalar xi_m = x.get(i-1);
+                        Scalar xi_p = x.get(i+1);
+                        element = xi + ti + 1.0;
+
+                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p); 
+                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0); 
+                        // gi wrt i
+                        H.add(i, i, term1+term2); 
+
+                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0); 
+
+                        H.add(i, i+1, term4); 
+                        H.add(i, i-1, term4); 
+
+                        // g_i-1 wrt i
+                        Scalar term3 = -2.0*((1.5 * h_*h_ *element*element) + 2.0);
+                        H.add(i-1, i, term3); 
+                        H.add(i-1, i+1, 2.0); 
+                        H.add(i-1, i-1, 2.0);         
+
+                        H.add(i+1, i, term3); 
+                        H.add(i+1, i+1, 2.0); 
+                        H.add(i+1, i-1, 2.0);                                                 
+                    }
+                }
             }
 
-            H = local_identity(local_size(H_).get(0), local_size(H_).get(1)); 
-
-
-            // // (d)
-            // *A_help1_ = (H_) * x; 
-            // {
-            //     Write<Matrix> w(H);
-            //     Read<Vector> r1(*A_help1_);
-            //     Read<Vector> r2(coords_);
-            //     Read<Vector> r3(x);
-
-            //     Range r = row_range(H);
-            //     auto n = size(H).get(0);                
-
-            //     Scalar hh = h_*h_; 
-
-            //     for(SizeType i = r.begin(); i != r.end(); ++i) 
-            //     {
-            //         if(i > 0){
-            //             // Scalar tx1  = coords_.get(i) + x.get(i) + 1.0; 
-            //             // Scalar eb   =  (3./2. * hh * tx1*tx1 + 2.0);                        
-            //             Scalar v = -1.0; // * 1.0; 
-            //             H.set(i, i - 1, v);
-            //         }
-
-            //         if(i < n-1){
-            //             // Scalar tx1  = coords_.get(i) + x.get(i) + 1.0; 
-            //             // Scalar eb   =  (3./2. * hh * tx1*tx1 + 2.0);                        
-            //             Scalar v = -1.0; // * 1.0;                         
-            //             H.set(i, i + 1, v);
-            //         }
-
-            //         if(i == 0 || i == n - 1){
-            //             H.set(i, i, 1.0);
-            //         }
-            //         else{
-            //             Scalar tx1  = coords_.get(i) + x.get(i) + 1.0; 
-            //             Scalar eb   =  (3./2. * hh * tx1*tx1 + 2.0);                        
-            //             Scalar v = 0.5 * hh * tx1*tx1*tx1; 
-            //             v = (v + A_help1_->get(i)) * 6.0 * hh * tx1; 
-            //             v = v + (2.0*eb*eb); 
-
-            //             H.set(i, i, v);
-            //         }
-            //     }
-            // }
-
-
-            // set_zero_rows(H, bc_indices_, 1.);
-
-            // disp(H); 
-            // exit(0); 
-
-
+            set_zero_rows(H, bc_indices_, 1.);
 
             return true;
         }
