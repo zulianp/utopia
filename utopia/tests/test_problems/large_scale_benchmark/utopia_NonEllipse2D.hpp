@@ -242,6 +242,8 @@ namespace utopia
             PetscScalar Hy = 1.0/(PetscReal)(N);
             HxHy_ = Hx*Hy;
 
+            lambda_ = 10.0;
+
             this->build_rhs(); 
             this->build_init_guess(); 
             this->build_hessian(); 
@@ -276,6 +278,8 @@ namespace utopia
             PetscScalar Hy  = 1.0/(PetscReal)(N);
             HxHy_ = Hx*Hy;
 
+            lambda_ = 1.0;
+
             this->build_rhs(); 
             this->build_init_guess(); 
             this->build_hessian(); 
@@ -298,10 +302,13 @@ namespace utopia
             A_no_bc_ = Hessian; 
             set_zero_rows(Hessian, index, 1.);
 
-            // Vector ub = local_values(n_loc, 0.0);
-            // form_ub2(ub); 
+            Vector lb = local_values(n_loc, 0.0);
+            Vector ub = local_values(n_loc, 0.5);
+            form_lb2(lb); 
 
             // this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(ub)); 
+            this->constraints_ = make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub)); 
+
         }        
 
 
@@ -360,7 +367,7 @@ namespace utopia
             return true; 
         }
 
-        void form_ub2(Vector & lb)
+        void form_lb2(Vector & lb)
         {
             PetscInt       i,j,k,mx,my, xm,ym, xs,ys;
             PetscScalar    **array_marker;
@@ -381,15 +388,10 @@ namespace utopia
             {
                 for (i=xs; i<xs+xm; i++) 
                 {
-                    PetscScalar x1 = coords[j][i].x;
-                    PetscScalar x2 = coords[j][i].y;
+                    PetscScalar x = coords[j][i].x;
+                    PetscScalar y = coords[j][i].y;
 
-                    if(x1 <= 0.5){
-                        array_marker[j][i] = 0.1; 
-                    }
-                    else{
-                        array_marker[j][i] = 1.0; 
-                    }
+                    array_marker[j][i] = -8.0*(x - 7.0/16.0)*(x - 7.0/16.0) - 8.0*(y - 7./16.)*(y - 7./16.) + 0.2; 
                 }
             }
 
@@ -411,14 +413,6 @@ namespace utopia
             DMDAVecGetArray(da_, raw_type(bc_marker), &array_marker);
             DMDAVecGetArray(da_, raw_type(bc_values), &array_values);
 
-            // DM             coordDA;
-            // Vec            coordinates;
-            // DMDACoor2d   **coords;          
-            
-            // DMGetCoordinateDM(da_, &coordDA);
-            // DMGetCoordinates(da_, &coordinates);
-            // DMDAVecGetArray(coordDA, coordinates, &coords);            
-
             for (j=ys; j<ys+ym; j++) 
             {
                 for (i=xs; i<xs+xm; i++) 
@@ -426,10 +420,6 @@ namespace utopia
                     if (i==0 || j==0 || i==mx-1 || j==my-1) 
                     {
                         array_marker[j][i] = 1.0; 
-
-                        // PetscScalar x1 = coords[j][i].x;
-                        // PetscScalar x2 = coords[j][i].y;
-
                         if(problem_type_ ==1){
                             array_values[j][i] = 0.0;
                         }
@@ -533,13 +523,15 @@ namespace utopia
 
                     if(problem_type_ ==1){
                         PetscScalar exp_term    = ((x*x) - (x*x*x)) * std::sin(3.0*pi_*y); 
-                        // PetscScalar term1       = 9.0*pi_*pi_  + (lambda_*std::exp(exp_term)*(x*x - x*x*x)); 
                         PetscScalar term1       = ((9.0*pi_*pi_)  + std::exp(exp_term))*(x*x - x*x*x); 
                         PetscScalar term2       = 6.0*x -2.0; 
                         array[j][i]             = -1.0*(Hx*Hy) * ((term1 + term2)*std::sin(3.0*pi_*y)); 
                     }
                     else if(problem_type_ ==2){
-                        array[j][i] = -10.0*(Hx*Hy);
+                        PetscScalar exp_term    = ((x*x) - (x*x*x)) * std::sin(3.0*pi_*y); 
+                        PetscScalar term1       = (9.0*pi_*pi_)  + (std::exp(exp_term))*(x*x - x*x*x); 
+                        PetscScalar term2       = 6.0*x -2.0; 
+                        array[j][i]             = -1.0*(Hx*Hy) * ((term1 + term2)*std::sin(3.0*pi_*x)); 
                     }                        
 
                 }
