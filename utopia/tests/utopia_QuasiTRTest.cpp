@@ -28,9 +28,11 @@ namespace utopia
 		{
 			if(mpi_world_size()==1)
 			{
-				test_functions_parallel_.resize(2);
+				test_functions_parallel_.resize(4);
 				test_functions_parallel_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
 				test_functions_parallel_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
+				test_functions_parallel_[2] = std::make_shared<Morebv1D<Matrix, Vector> >(n_*mpi_world_size());
+				test_functions_parallel_[3] = std::make_shared<NonEllipse2D<Matrix, Vector> >(n_*mpi_world_size());				
 
 				test_functions_.resize(4);
 				test_functions_[0] = std::make_shared<Rosenbrock01<Matrix, Vector> >();
@@ -47,9 +49,13 @@ namespace utopia
 			}
 			else
 			{
-				test_functions_parallel_.resize(2);
+				test_functions_parallel_.resize(4);
 				test_functions_parallel_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_*mpi_world_size());
 				test_functions_parallel_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_*mpi_world_size());
+				test_functions_parallel_[2] = std::make_shared<Morebv1D<Matrix, Vector> >(n_*mpi_world_size());
+
+				// Only petsc
+				test_functions_parallel_[3] = std::make_shared<NonEllipse2D<Matrix, Vector> >(n_*mpi_world_size());
 			}
 		}
 
@@ -164,13 +170,11 @@ namespace utopia
 	                // solver.delta0(1e-5);
 
 
-		            run_tr(this->test_functions_constrained_, solver, "QuasiTR_Bound_LBFGS", this->verbose_);
+		            // run_tr(this->test_functions_constrained_, solver, "QuasiTR_Bound_LBFGS", this->verbose_);
 					// run_tr(this->test_functions_, solver, "QuasiTR_Bound_LBFGS", this->verbose_);
-					//run_tr(this->test_functions_parallel_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
+					run_tr(this->test_functions_parallel_, solver, "QuasiNewton_Bound_LBFGS", this->verbose_);
 				}
 			);
-
-
 	
 		}
 
@@ -264,8 +268,6 @@ namespace utopia
 
 		SizeType n_; 
 		bool verbose_; 
-
-
 	};
 
 	static void quasi_tr()

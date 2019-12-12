@@ -303,7 +303,7 @@ namespace utopia
             set_zero_rows(Hessian, index, 1.);
 
             Vector lb = local_values(n_loc, 0.0);
-            Vector ub = local_values(n_loc, 0.5);
+            Vector ub = local_values(n_loc, 0.6);
             form_lb2(lb); 
 
             // this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(ub)); 
@@ -488,8 +488,6 @@ namespace utopia
             VecAssemblyBegin(snes_->vec_sol);
             VecAssemblyEnd(snes_->vec_sol);            
         }
-
-
         
         void build_rhs()
         {
@@ -542,9 +540,6 @@ namespace utopia
             VecAssemblyEnd(snes_->vec_rhs);            
         }
 
-
-
-
         
         void remove_BC_contrib(Vector & x) const 
         {
@@ -570,8 +565,6 @@ namespace utopia
             VecAssemblyBegin(raw_type(x));
             VecAssemblyEnd(raw_type(x));          
         }
-
-
 
     private:
         SizeType n_; 
