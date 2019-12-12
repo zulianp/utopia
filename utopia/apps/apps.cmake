@@ -3,6 +3,7 @@ set(UTOPIA_APPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/apps)
 list(APPEND APPS_MODULES
     .
     gpu_assembler
+    cpu_assembler
 )
 
 set(LOCAL_HEADERS "")
