@@ -7,17 +7,26 @@
 
 namespace utopia
 {
-
+    /**
+     * @brief Morebv: a nonlinenar and nonconvex boundary value problem, discreitzed with 1D, dinite differences
+     * @details For details see, Testing unconstrained Optimization software, More, Garbow, Hillstrom, (ex28)
+     * 
+     * @tparam Matrix [description]
+     * @tparam Vector [description]
+     */
     template<typename Matrix, typename Vector>
     class Morebv1D final:   virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, 
                             virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
-        public:
-            typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
-            typedef UTOPIA_SCALAR(Vector)       Scalar;
+        public: typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+                typedef UTOPIA_SCALAR(Vector)       Scalar;
 
         Morebv1D(const SizeType & n): n_(n)
         { 
+            if(mpi_world_size() > 1 ){
+                utopia_error("Morebv1D:: does not run in parallel, ghost vectors should be added"); 
+            }
+
             assembly_problem_type(); 
         }
 
@@ -51,7 +60,6 @@ namespace utopia
                         item = 2. * xi - xi_p + 0.5*(h_*h_*std::pow(element, 3));
                         return item*item; 
                     }
-
 
                     if(i==n-1){
                         Scalar xi_m = d_x.get(i-1);
@@ -139,7 +147,6 @@ namespace utopia
         bool hessian(const Vector &x, Matrix &H) const override
         {
             H = 0.0*H_; 
-
             auto n = size(x).get(0);   
             {
                 Read<Vector>    d_x(x); 
