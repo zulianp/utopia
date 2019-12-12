@@ -35,7 +35,6 @@ namespace utopia
 			test_functions_[4] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 1);
 			test_functions_[5] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_*mpi_world_size(), 2);
 			test_functions_[6] = std::make_shared<Membrane2D<PetscMatrix, PetscVector> >(n_*mpi_world_size());
-
 		}
 
 		~QPConstrainedBenchmark()
@@ -196,7 +195,7 @@ namespace utopia
 	{
 		int verbosity_level = 1;
 		const int n_global = 20; 
-		bool alg_verbose = false; 
+		bool alg_verbose = true; 
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;
