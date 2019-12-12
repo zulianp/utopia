@@ -263,13 +263,15 @@ namespace utopia {
                 coord[d] = corners_end[d];
 
                 const SizeType end_layers   = ghost_corners_end[d] - corners_end[d];
-                const SizeType begin_layers = corners_end[d] - ghost_corners_begin[d];
+                const SizeType begin_layers = corners_start[d] - ghost_corners_start[d];
 
-                std::cout << "layers(" << d << ") " <<begin_layers + end_layers << std::endl;
+                if(begin_layers + end_layers > 0) {
+                    std::cout << "layers("  << comm.rank() << ", " << d << ") " << begin_layers << " " << end_layers << std::endl;
+                }
 
                 if(end_layers == 0) continue;
 
-                std::cout <<
+                // std::cout <<
 
                 for(SizeType d2 = 0; d2 < dim; ++d2) {
                     if(d2 == d) continue;
