@@ -52,15 +52,15 @@ namespace utopia {
 
         std::cout << "n_nwg: " << n_nwg << std::endl;
 
-        Mesh::DualIndexView local2global("local2global", n_nwg);
-        auto local2global_view = local2global.view_device();
+        Mesh::DualIndexView ghosted_local_2_global("ghosted_local_2_global", n_nwg);
+        auto gl2g_view = ghosted_local_2_global.view_device();
 
         SizeType idx = 0;
         dm.each_node_with_ghosts([&](const PetscDM::Node &node) {
-            local2global_view(idx++) = node.idx();
+            gl2g_view(idx++) = node.idx();
         });
 
-        Mesh mesh(world, dims, local_begin, local_end, box, local2global);
+        Mesh mesh(world, dims, local_begin, local_end, box, ghosted_local_2_global);
         mesh.describe();
 
         std::cout << mesh.local_element_range() << std::endl;

@@ -372,13 +372,13 @@ namespace utopia {
             const IndexView &local_elements_end,
             const Box<ScalarView> &box,
             const ScalarView &h,
-            const IndexView &local_2_global)
+            const IndexView &ghosted_local_2_global)
         : dims_(dims),
         local_elements_begin_(local_elements_begin),
         local_elements_end_(local_elements_end),
         box_(box),
         h_(h),
-        local_2_global_(local_2_global)
+        ghosted_local_2_global_(ghosted_local_2_global)
         {}
 
         UTOPIA_INLINE_FUNCTION SizeType n_elements() const
@@ -506,7 +506,7 @@ namespace utopia {
         IndexView local_elements_end_;
         Box<ScalarView> box_;
         ScalarView h_;
-        IndexView local_2_global_;
+        IndexView ghosted_local_2_global_;
     };
 
 
@@ -543,14 +543,14 @@ namespace utopia {
             const DualIndexView &local_elements_begin,
             const DualIndexView &local_elements_end,
             const DualBoxView &box,
-            const DualIndexView &local_2_global = DualIndexView()
+            const DualIndexView &ghosted_local_2_global = DualIndexView()
             ) : comm_(comm),
                 dims_(dims),
                 local_elements_begin_(local_elements_begin),
                 local_elements_end_(local_elements_end),
                 box_(box),
                 h_("h", Dim),
-                local_2_global_(local_2_global)
+                ghosted_local_2_global_(ghosted_local_2_global)
         {
             init();
         }
@@ -561,14 +561,14 @@ namespace utopia {
             const std::array<SizeType, UDim> &local_elements_begin,
             const std::array<SizeType, UDim> &local_elements_end,
             const Box<std::array<Scalar, UDim>> &box,
-            const DualIndexView &local_2_global = DualIndexView()
+            const DualIndexView &ghosted_local_2_global = DualIndexView()
             ) : comm_(comm),
                 dims_("dims", Dim),
                 local_elements_begin_("local_elements_begin", Dim),
                 local_elements_end_("local_elements_end", Dim),
                 box_(box),
                 h_("h", Dim),
-                local_2_global_(local_2_global)
+                ghosted_local_2_global_(ghosted_local_2_global)
         {
 
             auto h_dim = dims_.view_host();
@@ -654,7 +654,7 @@ namespace utopia {
                     box_.max.view_device()
                 },
                 h_.view_device(),
-                local_2_global_.view_device()
+                ghosted_local_2_global_.view_device()
             );
         }
 
@@ -705,7 +705,7 @@ namespace utopia {
         DualIndexView local_elements_end_;
         DualBoxView box_;
         DualScalarView h_;
-        DualIndexView local_2_global_;
+        DualIndexView ghosted_local_2_global_;
 
 
         template<class Array>
