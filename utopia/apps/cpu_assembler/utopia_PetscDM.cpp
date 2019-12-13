@@ -3,6 +3,7 @@
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Communicator.hpp"
+#include "utopia_Readable.hpp"
 
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -11,7 +12,79 @@
 
 namespace utopia {
 
+    class PetscIS {
+    public:
+        using SizeType = Traits<PetscVector>::SizeType;
+        using Destroy = std::function<PetscErrorCode(IS *)>;
+
+        PetscIS(Destroy destroy_impl = ISDestroy)
+        : is_(nullptr), destroy_impl_(destroy_impl), inds_(nullptr)
+        {}
+
+        PetscIS(IS is, Destroy destroy_impl = ISDestroy)
+        : is_(is), destroy_impl_(destroy_impl), inds_(nullptr)
+        {}
+
+        const IS &raw_type() const
+        {
+            return is_;
+        }
+
+        IS &raw_type()
+        {
+            return is_;
+        }
+
+        inline void destroy()
+        {
+            if(is_) {
+                destroy_impl_(&is_);
+                is_ = nullptr;
+            }
+        }
+
+        void read_lock()
+        {
+            if(inds_) return;
+            ISGetIndices(is_, &inds_);
+        }
+
+        void read_unlock()
+        {
+            if(inds_) {
+                ISRestoreIndices(is_, &inds_);
+                inds_ = nullptr;
+            }
+        }
+
+        inline SizeType size() const
+        {
+            SizeType s;
+            ISGetSize(is_, &s);
+            return s;
+        }
+
+        inline const SizeType &operator()(const SizeType &i) const {
+            assert(inds_);
+            return inds_[i];
+        }
+
+        inline const SizeType &operator[](const SizeType &i) const {
+            assert(inds_);
+            return inds_[i];
+        }
+
+    private:
+        IS is_;
+        Destroy destroy_impl_;
+        const SizeType *inds_;
+    };
+
+    template<>
+    class Traits<PetscIS> : public Traits<PetscVector> {};
+
     //https://www.mcs.anl.gov/petsc/petsc-current/src/ksp/ksp/examples/tutorials/ex42.c.html
+    //https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/FE/index.html
 
     DM raw_type(const PetscDM::Impl &dm);
 
@@ -29,18 +102,19 @@ namespace utopia {
         template<class Fun>
         void each(Fun fun) const
         {
-            // PetscDM::Elem e(*this, 0);
-
             ISLocalToGlobalMapping map;
             DMGetLocalToGlobalMapping(dm,&map);
             std::vector<SizeType> e_global(ne*nc);
             ISLocalToGlobalMappingApplyBlock(map, ne*nc, e, &e_global[0]);
 
             for(SizeType i = 0; i < ne; i++) {
-                PetscSynchronizedPrintf(PETSC_COMM_WORLD,"i %D e[4*i] %D %D %D %D\n",i,
-                    // e[4*i],e[4*i+1],e[4*i+2], e[4*i+3]
-                    e_global[4*i],e_global[4*i+1],e_global[4*i+2], e_global[4*i+3]
-                );
+                // PetscSynchronizedPrintf(PETSC_COMM_WORLD,"i %D e[4*i] %D %D %D %D\n",i,
+                //     // e[4*i],e[4*i+1],e[4*i+2], e[4*i+3]
+                //     e_global[4*i],e_global[4*i+1],e_global[4*i+2], e_global[4*i+3]
+                // );
+
+                PetscDM::Elem e(*this, i);
+                fun(e);
             }
 
             PetscSynchronizedFlush(PETSC_COMM_WORLD,stdout);
@@ -56,13 +130,143 @@ namespace utopia {
         const SizeType   *e;
     };
 
+    class PetscDM::Nodes {
+    public:
+
+        template<class Array>
+        void get_dims(Array &arr) const
+        {
+            auto ierr = DMDAGetInfo(dm, nullptr, &arr[0], &arr[1], &arr[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
+        }
+
+        template<class Fun>
+        void each_with_ghosts(Fun f)
+        {
+            SizeType dims[3], start[3], extent[3];
+            DMDAGetGhostCorners(dm,
+                &start[0],  &start[1],  &start[2],
+                &extent[0], &extent[1], &extent[2]
+            );
+
+            get_dims(dims);
+
+            each(dim(), dims, start, extent, f);
+        }
+
+        template<class Fun>
+        void each(Fun f)
+        {
+            SizeType dims[3], start[3], extent[3];
+
+            get_dims(dims);
+
+            DMDAGetCorners(dm,
+                &start[0],  &start[1],  &start[2],
+                &extent[0], &extent[1], &extent[2]
+            );
+
+            each(dim(), dims, start, extent, f);
+        }
+
+        template<class Fun>
+        void each(
+            const int dim,
+            const SizeType dims[3],
+            const SizeType start[3],
+            const SizeType extent[3], Fun f) const
+        {
+            switch(dim) {
+                case 1:
+                {
+                    for(SizeType i = 0; i < extent[0]; ++i) {
+                        SizeType idx = i + start[0];
+
+                        PetscDM::Node node(*this, idx);
+                        f(node);
+                    }
+
+                    break;
+                }
+
+                case 2:
+                {
+                    for(SizeType j = 0; j < extent[1]; ++j) {
+                        for(SizeType i = 0; i < extent[0]; ++i) {
+                            SizeType idx = (j + start[1]) * dims[0] + i + start[0];
+
+                            PetscDM::Node node(*this, idx);
+                            f(node);
+                        }
+                    }
+                    break;
+                }
+
+                case 3:
+                {
+                    for(SizeType k = 0; k < extent[2]; ++k) {
+                        const SizeType k_offset = (k + start[2]) * dims[2];
+
+                        for(SizeType j = 0; j < extent[1]; ++j) {
+                            const SizeType j_offset = (j + start[1]) * dims[0];
+
+                            for(SizeType i = 0; i < extent[0]; ++i) {
+                                SizeType idx = k_offset + j_offset + i + start[0];
+
+                                PetscDM::Node node(*this, idx);
+                                f(node);
+                            }
+                        }
+                    }
+                    break;
+                }
+                default:
+                {
+                    assert(false);
+                    break;
+                }
+            }
+        }
+
+        inline bool is_ghost(const SizeType global_idx) const
+        {
+            return !range.inside(global_idx);
+        }
+
+        inline SizeType dim() const
+        {
+            SizeType ret;
+            DMGetDimension(dm, &ret);
+            return ret;
+        }
+
+        Nodes(const PetscDM::Impl &impl)
+        : dm(raw_type(impl))
+        {
+            Vec v;
+            DMGetGlobalVector(dm, &v);
+
+            PetscInt n_b, n_e;
+            VecGetOwnershipRange(v, &n_b, &n_e);
+            range.set(n_b, n_e);
+
+            std::cout << range << std::endl;
+
+            DMRestoreGlobalVector(dm, &v);
+        }
+
+    private:
+        DM dm;
+        Range range;
+    };
+
     class PetscDM::Impl {
     public:
         using SizeType = utopia::Traits<PetscVector>::SizeType;
         using Scalar   = utopia::Traits<PetscVector>::Scalar;
 
         Impl()
-        : dm(nullptr)
+        : dm(nullptr), elem_type(DMDA_ELEMENT_Q1), stencil_type(DMDA_STENCIL_BOX)
+        // DMDA_ELEMENT_P1
         {}
 
         void create_matrix(PetscMatrix &mat)
@@ -71,14 +275,31 @@ namespace utopia {
             DMCreateMatrix(dm, &mat.raw_type());
         }
 
-
+        void create_vector(PetscVector &vec)
+        {
+            vec.destroy();
+            DMCreateGlobalVector(dm, &vec.raw_type());
+        }
 
         template<class Fun>
         void each_element(Fun fun) const
         {
-            PetscErrorCode ierr;
             Elements elements(*this);
             elements.each(fun);
+        }
+
+        template<class Fun>
+        void each_node(Fun fun) const
+        {
+            Nodes nodes(*this);
+            nodes.each(fun);
+        }
+
+        template<class Fun>
+        void each_node_with_ghosts(Fun fun) const
+        {
+            Nodes nodes(*this);
+            nodes.each_with_ghosts(fun);
         }
 
         inline SizeType elem_node_id(const SizeType &e, const SizeType &k) const
@@ -88,7 +309,7 @@ namespace utopia {
 
         inline SizeType elem_n_nodes() const
         {
-            return std::pow(dim, 2);
+            return std::pow(dim(), 2);
         }
 
         template<class Array>
@@ -99,7 +320,13 @@ namespace utopia {
             destroy();
             this->comm = comm;
 
-            dim = arr.size();
+            const SizeType dim = arr.size();
+
+            this->dims.resize(dim);
+
+            for(SizeType i = 0; i < dim; ++i) {
+                dims[i] = arr[i];
+            }
 
             switch(dim)
             {
@@ -121,7 +348,7 @@ namespace utopia {
                 {
                     DMDACreate2d(comm.get(),
                         DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,
-                        DMDA_STENCIL_BOX,
+                        stencil_type,
                         arr[0], arr[1],
                         PETSC_DECIDE, PETSC_DECIDE,
                         1, //dofs per node
@@ -132,14 +359,13 @@ namespace utopia {
                     );
 
                     break;
-
                 }
 
                 case 3:
                 {
                     DMDACreate3d(comm.get(),
                         DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,
-                        DMDA_STENCIL_BOX,
+                        stencil_type,
                         arr[0], arr[1], arr[2],
                         PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
                         1, //dofs per node
@@ -151,7 +377,6 @@ namespace utopia {
                     );
 
                     break;
-
                 }
 
                 default:
@@ -169,9 +394,7 @@ namespace utopia {
             const Coords &box_min,
             const Coords &box_max)
         {
-
             init(comm, arr);
-
 
             Scalar min_x = 0, min_y = 0, min_z = 0;
             Scalar max_x = 0, max_y = 0, max_z = 0;
@@ -179,19 +402,19 @@ namespace utopia {
             min_x = box_min[0];
             max_x = box_max[0];
 
-            if(dim > 1) {
+            const auto d = arr.size();
+            if(d > 1) {
                 min_y = box_min[1];
                 max_y = box_max[1];
             }
 
-            if(dim > 2) {
+            if(d > 2) {
                 min_z = box_min[2];
                 max_z = box_max[2];
             }
 
             DMDASetUniformCoordinates(dm, min_x, max_x, min_y, max_y, min_z, max_z);
-            // DMDASetElementType(dm, DMDA_ELEMENT_P1);
-            DMDASetElementType(dm, DMDA_ELEMENT_Q1);
+            DMDASetElementType(dm, elem_type);
             DMSetUp(dm);
 
             init_aux();
@@ -206,7 +429,6 @@ namespace utopia {
             if(dm) {
                 DMDestroy(&dm);
                 dm = nullptr;
-                dim = 0;
             }
         }
 
@@ -232,15 +454,32 @@ namespace utopia {
 
             comm.barrier();
 
+            Vec v;
+            DMGetGlobalVector(dm, &v);
+
+            PetscInt n_b, n_e;
+            VecGetOwnershipRange(v, &n_b, &n_e);
+            Range range(n_b, n_e);
+
             for(int i = 0; i < size; ++i) {
                 if(i == rank) {
                     std::cout << "--------------------------------------------\n";
                     std::cout << i << ")\ndim: " << dim << "\nM: " << M << "\nN: " << N << "\nP: " << P << "\nm: " << m << "\nn: " << n << "\np: " << p << "\ndof: " << dof << "\ns: " << s <<  std::endl;
 
-                    for(SizeType d = 0; d < dim; ++d) {
-                        std::cout << "[" << corners_start[d] << ", " << corners_end[d] << "]" << " g = ";
-                        std::cout << "[" << ghost_corners_start[d] << ", " << ghost_corners_end[d] << "]" << std::endl;
-                    }
+                    Nodes nodes(*this);
+
+                    nodes.each_with_ghosts([range](const PetscDM::Node &node) {
+
+                        std::cout << node.idx() << " ";
+                        if(range.inside(node.idx())) {
+
+                        } else {
+                            std::cout << "g";
+                        }
+
+                        std::cout << std::endl;
+                    });
+
 
                     std::cout << "--------------------------------------------\n";
                 }
@@ -248,87 +487,145 @@ namespace utopia {
                 comm.barrier();
             }
 
+            DMRestoreGlobalVector(dm, &v);
+
             print_ghost_index();
 
+
+        }
+
+        static void print_corner(
+            const std::vector<SizeType> &c,
+            std::ostream &os = std::cout)
+        {
+            const SizeType dim = c.size();
+            for(SizeType d = 0; d < dim; ++d) {
+                os << c[d] << " ";
+            }
+
+            os << std::endl;
         }
 
 
         void print_ghost_index() const
         {
+            IS is;
+            DMDAGetSubdomainCornersIS(dm, &is);
+
+            PetscIS idx(is, [this](IS *is) -> PetscErrorCode {
+               return DMDARestoreSubdomainCornersIS(dm, is);
+            });
+
+
             ISLocalToGlobalMapping map;
             DMGetLocalToGlobalMapping(dm,&map);
 
-            std::vector<SizeType> coord(dim);
-            for(SizeType d = 0; d < dim; ++d) {
-                coord[d] = corners_end[d];
+            Read<PetscIS> ri(idx);
 
-                const SizeType end_layers   = ghost_corners_end[d] - corners_end[d];
-                const SizeType begin_layers = corners_start[d] - ghost_corners_start[d];
+            int size = comm.size();
+            int rank = comm.rank();
 
-                if(begin_layers + end_layers > 0) {
-                    std::cout << "layers("  << comm.rank() << ", " << d << ") " << begin_layers << " " << end_layers << std::endl;
-                }
+            comm.barrier();
 
-                if(end_layers == 0) continue;
+            PetscInt M, N, P;
+            PetscInt p_sizes[3] = {0, 0, 0};
+            const PetscInt *ranges[3];
+            DMDAGetOwnershipRanges(dm, &ranges[0], &ranges[1], &ranges[2]);
 
-                // std::cout <<
+            DMDAGetInfo(
+                dm, 0,
+                &M, &N, &P,
+                &p_sizes[0], &p_sizes[1], &p_sizes[3],
+                0,
+                0,
+                0,0,0,
+                0
+            );
 
-                for(SizeType d2 = 0; d2 < dim; ++d2) {
-                    if(d2 == d) continue;
 
-                    if(dim == 2) {
-                        const SizeType n2 = ghost_corners_end[d2] - corners_end[d2];
-                        for(SizeType j = 0; j < n2; ++j) {
-                            coord[d2] = j;
+            Vec v;
+            DMGetGlobalVector(dm, &v);
 
-                            std::cout << "(" << coord[0] << " " << coord[1] << ")" << std::endl;
-                        }
+            PetscInt n_b, n_e;
+            VecGetOwnershipRange(v, &n_b, &n_e);
+
+            for(int i = 0; i < size; ++i) {
+                if(i == rank) {
+                    std::cout << "--------------------------------------------\n";
+
+                    auto n = idx.size();
+                    std::vector<SizeType> gidx(n);
+
+                    ISLocalToGlobalMappingApply(map, n, &idx[0], &gidx[0]);
+                    for(SizeType k = 0; k < n; ++k) {
+                        std::cout << gidx[k] << " ";
                     }
 
+                    std::cout << std::endl;
+                    std::cout << n_b << " " << n_e << std::endl;
+                    std::cout << std::endl;
+                    std::cout << "--------------------------------------------\n";
                 }
 
+                comm.barrier();
             }
 
-            // ISLocalToGlobalMappingApply(map, PetscInt N,const PetscInt in[],PetscInt out[])
+            DMRestoreGlobalVector(dm, &v);
+        }
+
+        inline SizeType dim() const
+        {
+            SizeType ret;
+            DMGetDimension(dm, &ret);
+            return ret;
         }
 
         DM dm;
-        SizeType dim;
+        DMDAElementType elem_type;
+        DMDAStencilType stencil_type;
         PetscCommunicator comm;
 
         //array version of dm's data
-        std::vector<SizeType> corners_start;
-        std::vector<SizeType> corners_end;
+        std::vector<SizeType> dims;
+        std::vector<SizeType> corner_start;
+        std::vector<SizeType> corner_end;
 
-        std::vector<SizeType> ghost_corners_start;
-        std::vector<SizeType> ghost_corners_end;
+        std::vector<SizeType> ghost_corner_start;
+        std::vector<SizeType> ghost_corner_end;
 
         std::vector<SizeType> local_to_global;
 
     private:
         void init_aux() {
-            corners_start.resize(3, 0);
-            corners_end.resize(3, 0);
-            ghost_corners_start.resize(3, 0);
-            ghost_corners_end.resize(3, 0);
+            corner_start.resize(3, 0);
+            corner_end.resize(3, 0);
+            ghost_corner_start.resize(3, 0);
+            ghost_corner_end.resize(3, 0);
 
             DMDAGetCorners(dm,
-                &corners_start[0], &corners_start[1], &corners_start[2],
-                &corners_end[0],   &corners_end[1],   &corners_end[2]
+                &corner_start[0], &corner_start[1], &corner_start[2],
+                &corner_end[0],   &corner_end[1],   &corner_end[2]
             );
 
             DMDAGetGhostCorners(dm,
-                &ghost_corners_start[0], &ghost_corners_start[1], &ghost_corners_start[2],
-                &ghost_corners_end[0],   &ghost_corners_end[1],   &ghost_corners_end[2]
+                &ghost_corner_start[0], &ghost_corner_start[1], &ghost_corner_start[2],
+                &ghost_corner_end[0],   &ghost_corner_end[1],   &ghost_corner_end[2]
             );
 
-            corners_start.resize(dim);
-            corners_end.resize(dim);
-            ghost_corners_start.resize(dim);
-            ghost_corners_end.resize(dim);
+            const SizeType d = dim();
+
+            corner_start.resize(d);
+            corner_end.resize(d);
+            ghost_corner_start.resize(d);
+            ghost_corner_end.resize(d);
+
+            for(SizeType i = 0; i < d; ++i) {
+                corner_end[d] += corner_start[d];
+                assert(corner_end[d] > corner_start[d]);
+                ghost_corner_end[d] += ghost_corner_start[d];
+            }
         }
     };
-
 
     PetscDM::PetscDM()
     : impl_(utopia::make_unique<Impl>())
@@ -376,9 +673,24 @@ namespace utopia {
         return -1;
     }
 
-    void PetscDM::each_element(const std::function<void(const SizeType &, const Elem &e)> &f)
+    void PetscDM::each_element(const std::function<void(const Elem &)> &f)
     {
         impl_->each_element(f);
+    }
+
+    void PetscDM::each_node(const std::function<void(const Node &)> &f)
+    {
+        impl_->each_node(f);
+    }
+
+    void PetscDM::each_node_with_ghosts(const std::function<void(const Node &)> &f)
+    {
+        impl_->each_node_with_ghosts(f);
+    }
+
+    bool PetscDM::Node::is_ghost() const
+    {
+        return nodes_.is_ghost(idx());
     }
 
 }
