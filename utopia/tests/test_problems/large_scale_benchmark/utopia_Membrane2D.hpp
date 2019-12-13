@@ -68,7 +68,7 @@ namespace utopia
             A = A_no_bc_; 
         }
 
-        virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        virtual bool gradient(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
             if(empty(g)){

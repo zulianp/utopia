@@ -71,7 +71,7 @@ namespace utopia
         }
 
 
-        bool get_rhs( Vector & rhs) const override
+        bool get_rhs( Vector & rhs) const
         {
             convert(snes_->vec_rhs, rhs); 
             return true;
@@ -83,7 +83,7 @@ namespace utopia
             convert(snes_->vec_rhs, rhs); 
         }
 
-        virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        virtual bool gradient(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
             if(empty(g)){

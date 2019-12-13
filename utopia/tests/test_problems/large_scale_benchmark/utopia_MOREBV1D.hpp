@@ -82,7 +82,7 @@ namespace utopia
             return true;
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        bool gradient(const Vector &x, Vector &g) const override
         {   
             if(empty(g)){
                 g = local_zeros(local_size(x));

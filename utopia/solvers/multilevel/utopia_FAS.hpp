@@ -191,17 +191,23 @@ namespace utopia
             return true;
         }
 
-        bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
+        bool smoothing(Fun &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
             smoother_->sweeps(nu);
-            smoother_->smooth(fun, x, f);
+            // This should be done way much more efficient 
+            std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            smoother_->smooth(fun_rhs, x, f);
             return true;
         }
 
         bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs)
         {
             coarse_solver_->max_it(1);
-            coarse_solver_->solve(fun, x, rhs);
+            // This should be done way much more efficient 
+            std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            coarse_solver_->solve(fun_rhs, x, rhs);
             return true;
         }
 

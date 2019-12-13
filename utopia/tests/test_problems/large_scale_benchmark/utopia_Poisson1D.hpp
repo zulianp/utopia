@@ -52,7 +52,7 @@ namespace utopia
             return true;
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        bool gradient(const Vector &x, Vector &g) const override
         {   
             g = (H_ * x) - rhs_; 
 
@@ -76,7 +76,7 @@ namespace utopia
         }    
 
 
-        bool get_rhs( Vector & rhs) const override
+        bool get_rhs( Vector & rhs) const
         {
             rhs = rhs_;
             return true;

@@ -37,7 +37,7 @@ namespace utopia {
 
         virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
 
-        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
+        virtual bool solve(Function_rhs<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
         {
             fun.set_rhs(rhs);
             bool converged = this->solve(fun, x);

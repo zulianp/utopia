@@ -11,7 +11,6 @@
 
 namespace utopia 
 {
-
 	template<class Matrix, class Vector>
 	class NewtonLSBenchmark : public Benchmark 
 	{

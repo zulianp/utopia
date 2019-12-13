@@ -58,7 +58,7 @@ namespace utopia
             setup_ = true;
         }     
 
-        Poisson2D(const DM  & dm): setup_(false)
+        Poisson2D(const DM  & dm, const SizeType & problem_type=2): setup_(false), problem_type_(problem_type)
         {
             da_ = dm; 
             // necessary to provide reasonable global dimension 
@@ -90,7 +90,7 @@ namespace utopia
             }
         }
 
-        bool get_rhs( Vector & rhs) const override
+        bool get_rhs( Vector & rhs) const
         {
             convert(snes_->vec_rhs, rhs); 
             return true;
@@ -103,7 +103,7 @@ namespace utopia
             convert(snes_->vec_rhs, rhs); 
         }
 
-        virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        virtual bool gradient(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
             if(empty(g)){
