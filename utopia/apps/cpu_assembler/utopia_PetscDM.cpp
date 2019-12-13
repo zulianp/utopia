@@ -90,6 +90,9 @@ namespace utopia {
 
     class PetscDMImpl {
     public:
+        using SizeType = Traits<PetscVector>::SizeType;
+        using Scalar   = Traits<PetscVector>::Scalar;
+
         static Range local_node_range(const DM &dm)
         {
             Vec v;
@@ -100,11 +103,63 @@ namespace utopia {
             Range range;
             range.set(n_b, n_e);
 
-            // std::cout << range << std::endl;
-
             DMRestoreGlobalVector(dm, &v);
             return range;
         }
+
+        static void local_node_ranges(const DM &dm, SizeType *begin, SizeType *end)
+        {
+            DMDAGetCorners(dm,
+                &begin[0],  &begin[1],  &begin[2],
+                &end[0],    &end[1],    &end[2]
+                );
+
+            for(int d = 0; d < 3; ++d) {
+                end[d] += begin[d];
+            }
+        }
+
+        static void local_element_ranges(const DM &dm, SizeType *begin, SizeType *end)
+        {
+            DMDAGetElementsCorners(dm, &begin[0],  &begin[1],  &begin[2]);
+            DMDAGetElementsSizes(dm,   &end[0],    &end[1],    &end[2]);
+
+            for(int d = 0; d < 3; ++d) {
+                end[d] += begin[d];
+            }
+        }
+
+        static void box(const DM &dm, Scalar *min, Scalar *max)
+        {
+            DMDAGetBoundingBox(dm, min, max);
+        }
+
+       static SizeType n_local_nodes_with_ghosts(const DM &dm)
+       {
+            SizeType start[3], extent[3];
+            DMDAGetGhostCorners(dm,
+                &start[0],  &start[1],  &start[2],
+                &extent[0], &extent[1], &extent[2]
+            );
+
+            SizeType ret = extent[0];
+            SizeType d = dim(dm);
+
+            for(SizeType i = 1; i < d; ++i) {
+                ret *= extent[i];
+            }
+
+            return ret;
+       }
+
+
+       inline static  SizeType dim(const DM &dm)
+       {
+            SizeType ret;
+            DMGetDimension(dm, &ret);
+            return ret;
+        }
+
 
     };
 
@@ -128,11 +183,6 @@ namespace utopia {
             ISLocalToGlobalMappingApplyBlock(map, ne*nc, e, &e_global[0]);
 
             for(SizeType i = 0; i < ne; i++) {
-                // PetscSynchronizedPrintf(PETSC_COMM_WORLD,"i %D e[4*i] %D %D %D %D\n",i,
-                //     // e[4*i],e[4*i+1],e[4*i+2], e[4*i+3]
-                //     e_global[4*i],e_global[4*i+1],e_global[4*i+2], e_global[4*i+3]
-                // );
-
                 PetscDM::Elem e(*this, i);
                 fun(e);
             }
@@ -274,8 +324,7 @@ namespace utopia {
         using Scalar   = utopia::Traits<PetscVector>::Scalar;
 
         Impl()
-        : dm(nullptr), elem_type(DMDA_ELEMENT_Q1), stencil_type(DMDA_STENCIL_BOX)
-        // DMDA_ELEMENT_P1
+        : dm(nullptr)
         {}
 
         inline Range local_node_range() const
@@ -329,7 +378,8 @@ namespace utopia {
         template<class Array>
         void init(
             const PetscCommunicator &comm,
-            const Array &arr)
+            const Array &arr,
+            DMDAStencilType stencil_type)
         {
             destroy();
             this->comm = comm;
@@ -400,15 +450,16 @@ namespace utopia {
             auto ierr = DMDAGetInfo(dm, nullptr, &arr[0], &arr[1], &arr[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
         }
 
-
         template<class Array, class Coords>
         void init_uniform(
             const PetscCommunicator &comm,
             const Array &arr,
             const Coords &box_min,
-            const Coords &box_max)
+            const Coords &box_max,
+            DMDAElementType elem_type    = DMDA_ELEMENT_Q1,
+            DMDAStencilType stencil_type = DMDA_STENCIL_BOX)
         {
-            init(comm, arr);
+            init(comm, arr, stencil_type);
 
             Scalar min_x = 0, min_y = 0, min_z = 0;
             Scalar max_x = 0, max_y = 0, max_z = 0;
@@ -430,8 +481,6 @@ namespace utopia {
             DMDASetUniformCoordinates(dm, min_x, max_x, min_y, max_y, min_z, max_z);
             DMDASetElementType(dm, elem_type);
             DMSetUp(dm);
-
-            // init_aux();
         }
 
         ~Impl() {
@@ -595,8 +644,6 @@ namespace utopia {
         }
 
         DM dm;
-        DMDAElementType elem_type;
-        DMDAStencilType stencil_type;
         PetscCommunicator comm;
     };
 
@@ -671,10 +718,38 @@ namespace utopia {
         return nodes_.is_ghost(idx());
     }
 
-
     Range PetscDM::local_node_range() const
     {
         return impl_->local_node_range();
     }
 
+    void PetscDM::dims(SizeType *arr) const
+    {
+       impl_->dims(arr);
+    }
+
+    PetscDM::SizeType PetscDM::dim() const
+    {
+        return impl_->dim();
+    }
+
+    void PetscDM::box(Scalar *min, Scalar *max) const
+    {
+        PetscDMImpl::box(impl_->dm, min, max);
+    }
+
+    void PetscDM::local_node_ranges(SizeType *begin, SizeType *end) const
+    {
+        PetscDMImpl::local_node_ranges(impl_->dm, begin, end);
+    }
+
+    void PetscDM::local_element_ranges(SizeType *begin, SizeType *end) const
+    {
+        PetscDMImpl::local_element_ranges(impl_->dm, begin, end);
+    }
+
+    PetscDM::SizeType PetscDM::n_local_nodes_with_ghosts() const
+    {
+        return PetscDMImpl::n_local_nodes_with_ghosts(impl_->dm);
+    }
 }

@@ -17,7 +17,64 @@
 
 #include <cmath>
 
+
+#ifdef WITH_PETSC
+
+#include "utopia_PetscDM.hpp"
+
 namespace utopia {
+
+    static void petsc_dm_to_kokkos()
+    {
+        using Mesh          = utopia::Grid2d;
+
+        PetscCommunicator petsc_world;
+        PetscDM dm(
+            petsc_world,
+            {10, 10},
+            {0.0, 0.0},
+            {1.0, 1.0}
+        );
+
+        TrilinosCommunicator world;
+
+        Box<std::array<Mesh::Scalar, 2>> box;
+        std::array<Mesh::SizeType, 2> dims, local_begin, local_end;
+
+        dm.dims(dims);
+        dims[0] -= 1;
+        dims[1] -= 1;
+
+        dm.box(box.min, box.max);
+        dm.local_element_ranges(local_begin, local_end);
+
+        SizeType n_nwg = dm.n_local_nodes_with_ghosts();
+
+        std::cout << "n_nwg: " << n_nwg << std::endl;
+
+        Mesh::DualIndexView local2global("local2global", n_nwg);
+        auto local2global_view = local2global.view_device();
+
+        SizeType idx = 0;
+        dm.each_node_with_ghosts([&](const PetscDM::Node &node) {
+            local2global_view(idx++) = node.idx();
+        });
+
+        Mesh mesh(world, dims, local_begin, local_end, box, local2global);
+        mesh.describe();
+
+        std::cout << mesh.local_element_range() << std::endl;
+    }
+
+    UTOPIA_REGISTER_APP(petsc_dm_to_kokkos);
+}
+
+#endif //WITH_PETSC
+
+
+
+namespace utopia {
+
 
     static void sc_mesh()
     {

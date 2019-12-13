@@ -5,6 +5,7 @@
 #include "utopia_StaticMath.hpp"
 #include "utopia_Views.hpp"
 #include "utopia_MemType.hpp"
+#include "utopia_Box.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_View.hpp>
@@ -15,14 +16,6 @@ namespace utopia {
 
     template<int Dim>
     class CellToNodeIndex {};
-
-    template<class View>
-    class Box {
-    public:
-        View min;
-        View max;
-    };
-
 
     template<class Scalar, typename...Args>
     class Box< Kokkos::DualView<Scalar *, Args...> > {
@@ -378,12 +371,14 @@ namespace utopia {
             const IndexView &local_elements_begin,
             const IndexView &local_elements_end,
             const Box<ScalarView> &box,
-            const ScalarView &h)
+            const ScalarView &h,
+            const IndexView &local_2_global)
         : dims_(dims),
         local_elements_begin_(local_elements_begin),
         local_elements_end_(local_elements_end),
         box_(box),
-        h_(h)
+        h_(h),
+        local_2_global_(local_2_global)
         {}
 
         UTOPIA_INLINE_FUNCTION SizeType n_elements() const
@@ -509,9 +504,9 @@ namespace utopia {
         IndexView dims_;
         IndexView local_elements_begin_;
         IndexView local_elements_end_;
-        IndexView local_2_global_;
         Box<ScalarView> box_;
         ScalarView h_;
+        IndexView local_2_global_;
     };
 
 
@@ -547,13 +542,15 @@ namespace utopia {
             const DualIndexView &dims,
             const DualIndexView &local_elements_begin,
             const DualIndexView &local_elements_end,
-            const DualBoxView &box
+            const DualBoxView &box,
+            const DualIndexView &local_2_global = DualIndexView()
             ) : comm_(comm),
                 dims_(dims),
                 local_elements_begin_(local_elements_begin),
                 local_elements_end_(local_elements_end),
                 box_(box),
-                h_("h", Dim)
+                h_("h", Dim),
+                local_2_global_(local_2_global)
         {
             init();
         }
@@ -563,13 +560,15 @@ namespace utopia {
             const std::array<SizeType, UDim> &dims,
             const std::array<SizeType, UDim> &local_elements_begin,
             const std::array<SizeType, UDim> &local_elements_end,
-            const Box<std::array<Scalar, UDim>> &box
+            const Box<std::array<Scalar, UDim>> &box,
+            const DualIndexView &local_2_global = DualIndexView()
             ) : comm_(comm),
                 dims_("dims", Dim),
                 local_elements_begin_("local_elements_begin", Dim),
                 local_elements_end_("local_elements_end", Dim),
                 box_(box),
-                h_("h", Dim)
+                h_("h", Dim),
+                local_2_global_(local_2_global)
         {
 
             auto h_dim = dims_.view_host();
@@ -654,7 +653,8 @@ namespace utopia {
                     box_.min.view_device(),
                     box_.max.view_device()
                 },
-                h_.view_device()
+                h_.view_device(),
+                local_2_global_.view_device()
             );
         }
 
@@ -674,6 +674,30 @@ namespace utopia {
             return comm_;
         }
 
+        inline void describe(std::ostream &os = std::cout) const
+        {
+            auto h_dims = dims_.view_host();
+            auto h_local_elements_begin = local_elements_begin_.view_host();
+            auto h_local_elements_end   = local_elements_end_.view_host();
+            // h_box = box_.view_host();
+
+            os << "dims:\n";
+            for(int i = 0; i < Dim; ++i) {
+                os << h_dims[i] << std::endl;
+            }
+
+            os << "elem_begin:\n";
+            for(int i = 0; i < Dim; ++i) {
+                os << h_local_elements_begin[i] << std::endl;
+            }
+
+            os << "elem_end:\n";
+            for(int i = 0; i < Dim; ++i) {
+                os << h_local_elements_end[i] << std::endl;
+            }
+
+        }
+
     private:
         Comm comm_;
         DualIndexView dims_;
@@ -681,6 +705,7 @@ namespace utopia {
         DualIndexView local_elements_end_;
         DualBoxView box_;
         DualScalarView h_;
+        DualIndexView local_2_global_;
 
 
         template<class Array>
