@@ -24,6 +24,7 @@ namespace utopia {
   class Quad4 {
 
     using Scalar = T;
+    using Point= Array<T, 2>;
   
   public:
 
@@ -36,7 +37,7 @@ namespace utopia {
         return 4;
     }
 
-   /*evaluation basis function*/
+
     UTOPIA_INLINE_FUNCTION static void eval_phi(const Scalar *p, Array<Scalar, 4> &fn) {
 
         const Scalar u = 1.0 - p[0];
@@ -53,7 +54,6 @@ namespace utopia {
     }
 
 
-    /*evaluation gradient of basis function*/
     UTOPIA_INLINE_FUNCTION static void eval_grad(const Scalar *p, Array<Scalar, 8> &grad_fn) {
 
 
@@ -83,8 +83,67 @@ namespace utopia {
         
     }
 
-     /*evaluation jacobian transformation*/
-    UTOPIA_INLINE_FUNCTION static void eval_J(const Scalar &h, Array<Scalar, 4> &J) {
+    /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION void eval_J(Array<Scalar, 4> &J) {
+
+
+          for(int i = 0; i < 2; ++i) {
+               const int i_offset = i * 2;
+                J[i_offset]     = node(1)[i] - node(0)[i];
+                J[i_offset + 1] = node(3)[i] - node(0)[i];
+           }
+
+        
+    }
+
+         /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION void eval_det_J(Scalar& detJ) {
+
+        Array<Scalar, 4> J;
+
+          for(int i = 0; i < 2; ++i) {
+               const int i_offset = i * 2;
+                J[i_offset]     = node(1)[i] - node(0)[i];
+                J[i_offset + 1] = node(3)[i] - node(0)[i];
+           }
+
+        detJ = J[0]*J[3]-J[2]*J[1];
+    }
+
+    UTOPIA_INLINE_FUNCTION void eval_inv_J(Array<Scalar, 4> invJ) {
+        
+        Array<Scalar, 4> J;
+
+          for(int i = 0; i < 2; ++i) {
+               const int i_offset = i * 2;
+                J[i_offset]     = node(1)[i] - node(0)[i];
+                J[i_offset + 1] = node(3)[i] - node(0)[i];
+           }
+
+          Scalar detJ = J[0]*J[3]-J[2]*J[1];
+
+          Scalar inv_detJ = 1.0/detJ;
+
+            invJ[0] =  J[3]*inv_detJ;
+            invJ[1] = -J[1]*inv_detJ;
+            invJ[2] = -J[2]*inv_detJ;
+            invJ[3] =  J[1]*inv_detJ;
+
+    }
+
+    Point &node(const int i) override
+    {
+        return nodes_[i];
+    }
+
+    const Point &node(const int i) const override
+    {
+        return nodes_[i];
+    }
+
+
+
+    UTOPIA_INLINE_FUNCTION static void eval_uniform_J(const Scalar &h, Array<Scalar, 4> &J) {
 
 
 
@@ -97,13 +156,9 @@ namespace utopia {
         
     }
 
-
-         /*evaluation jacobian transformation*/
-    UTOPIA_INLINE_FUNCTION static void eval_inv_J(const Scalar &h, Array<Scalar, 4> &J) {
+    UTOPIA_INLINE_FUNCTION static void eval_uniform_inv_J(const Scalar &h, Array<Scalar, 4> &J) {
 
 
-
-      //gfn 0
         J.values[0] = 1./h;
         J.values[1] = 0.0;
         J.values[2] = 0.0;
@@ -114,19 +169,21 @@ namespace utopia {
 
 
          /*evaluation jacobian transformation*/
-    UTOPIA_INLINE_FUNCTION static void eval_det_J(const Scalar &h, Scalar &J) {
+    UTOPIA_INLINE_FUNCTION static void eval_uniform_det_J(const Scalar &h, Scalar &J) {
 
         J= h*h;
 
         
     }
 
-   UTOPIA_INLINE_FUNCTION Scalar static measure ()
-   {
-     return 1.0;
-   }
+    UTOPIA_INLINE_FUNCTION Scalar static measure ()
+     {
+       return 1.0;
+     }
 
-private:
+    private:
+
+      Array<Point, 4> nodes_;
 
   };
 
@@ -289,42 +346,11 @@ private:
 
    private:
 
+
+
   };
 
 
-  // template<class Q, class FE>
-  // class AssembleMassMatrix {
-  // public:
-  //       Simplex<4, 3 /*KokkosImplementation*/> elem;
-  //       ViewVectorType<bool> active;
-  //       Kokkos::View<Real> detJ;
-  //       ViewMatrixType<Integer> element_matrix;
-
-  //       AssembleMassMatrix(
-  //           const Simplex<4, 3 /*KokkosImplementation*/> &el,
-  //           ViewVectorType<bool> ac,
-  //           Kokkos::View<Real> J,
-  //           ViewMatrixType<Integer> element_matrix) 
-  //       : elem(el), active(ac), detJ(J), element_matrix(element_matrix) {}
-
-  //       AssembleMassMatrix() {}
-
-
-
-
-  //         UTOPIA_INLINE_FUNCTION void operator()(int index) const
-  //         {
-             
-
-  //               constexpr const Q q;
-
-  //               constexpr const FE phi;
-
-  //               //element_matrix(index) = compute_ele_mat_matrix(J, el);
-              
-  //         }
- 
-  //   };
 
 
 
