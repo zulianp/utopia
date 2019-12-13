@@ -372,11 +372,11 @@ namespace utopia {
               }
           }
 
-          Scalar term0 = J[8]*J[4] - J[7]*J[5];
-          Scalar term1 = J[8]*J[1] - J[7]*J[2];
-          Scalar term2 = J[5]*J[1] - J[4]*J[2];
+        Scalar temp0 = J[8] * J[4] - J[7] * J[5];
+        Scalar temp1 = J[8] * J[1] - J[7] * J[2];
+        Scalar temp2 = J[5] * J[1] - J[4] * J[2];
 
-          detJ = J[0]*term0 - J[1]*term1 + J[2]*term2;
+        detJ = J[0] * temp0 - J[1] * temp1 + J[2]*temp2;
 
     }
 
@@ -395,25 +395,25 @@ namespace utopia {
               }
           }
 
-        Scalar term0 = J[8]*J[4] - J[7]*J[5];
-        Scalar term1 = J[8]*J[1] - J[7]*J[2];
-        Scalar term2 = J[5]*J[1] - J[4]*J[2];
+        Scalar temp0 = J[8]*J[4] - J[7]*J[5];
+        Scalar temp1 = J[8]*J[1] - J[7]*J[2];
+        Scalar temp2 = J[5]*J[1] - J[4]*J[2];
 
-        Scalar detJ = J[0] * term0 - J[1] * term1 + J[2]*term2;
-        
+        Scalar detJ = J[0] * temp0 - J[1] * temp1 + J[2]*temp2;
+
         Scalar inv_detJ = 1.0/detJ;
 
               
-        invJ[0] =  term0*inv_detJ;
-        invJ[1] = -term1*inv_detJ;
-        invJ[2] =  term2*inv_detJ;
+        invJ[0] =   1.0 * temp0 * inv_detJ;
+        invJ[1] = - 1.0 * temp1 * inv_detJ;
+        invJ[2] =   1.0 * temp2 * inv_detJ;
 
-        invJ[3] = -( J[4] * J[3] - J[6] * J[5] ) * inv_detJ;
+        invJ[3] = -1.0 * ( J[4] * J[3] - J[6] * J[5] ) * inv_detJ;
         invJ[4] =  ( J[8] * J[0] - J[6] * J[2] ) * inv_detJ;
-        invJ[5] = -( J[5] * J[0] - J[3] * J[2] ) * inv_detJ;
+        invJ[5] = -1.0 * ( J[5] * J[0] - J[3] * J[2] ) * inv_detJ;
 
         invJ[6] =  ( J[7] * J[3] -  J[6] * J[4] ) * inv_detJ;
-        invJ[7] = -( J[7] * J[0] -  J[6] * J[1] ) * inv_detJ;
+        invJ[7] = -1.0 * ( J[7] * J[0] -  J[6] * J[1] ) * inv_detJ;
         invJ[8] =  ( J[3] * J[0] -  J[3] * J[1] ) *inv_detJ;
 
     }
