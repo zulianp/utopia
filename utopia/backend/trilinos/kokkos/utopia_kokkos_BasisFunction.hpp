@@ -192,6 +192,8 @@ namespace utopia {
   class Hex8 {
 
     using Scalar = T;
+
+    using Point= Array<T, 3>;
   
   public:
 
@@ -290,7 +292,7 @@ namespace utopia {
 
 
          /*evaluation jacobian transformation*/
-    UTOPIA_INLINE_FUNCTION static void eval_J(const Scalar &h, Array<Scalar, 9> &J) {
+    UTOPIA_INLINE_FUNCTION static void eval_uniform_J(const Scalar &h, Array<Scalar, 9> &J) {
 
 
 
@@ -311,7 +313,7 @@ namespace utopia {
 
 
          /*evaluation jacobian transformation*/
-    UTOPIA_INLINE_FUNCTION static void eval_inv_J(const Scalar &h, Array<Scalar, 9> &J) {
+    UTOPIA_INLINE_FUNCTION static void eval_uniform_inv_J(const Scalar &h, Array<Scalar, 9> &J) {
 
 
 
@@ -330,7 +332,7 @@ namespace utopia {
 
 
          /*evaluation jacobian transformation*/
-    UTOPIA_INLINE_FUNCTION static void eval_det_J(const Scalar &h, Scalar &J) {
+    UTOPIA_INLINE_FUNCTION static void eval_uniform_det_J(const Scalar &h, Scalar &J) {
 
 
 
@@ -339,12 +341,103 @@ namespace utopia {
         
     }
 
+
+    UTOPIA_INLINE_FUNCTION void eval_J(Array<Scalar, 9> &J) {
+
+
+          for(int i = 0; i < 3; ++i) {
+                const int i_offset = i * 3;
+
+                for(int j = 1; j < 4; ++j) {
+                    J[i_offset + j-1] = node(j)[i] - node(0)[i];
+                }
+            }
+
+        
+    }
+
+         /*evaluation jacobian transformation*/
+    UTOPIA_INLINE_FUNCTION void eval_det_J(Scalar& detJ) {
+
+        Array<Scalar, 9> J;
+
+          for(int i = 0; i < 3; ++i) {
+
+            const int i_offset = i * 3;
+
+            for(int j = 1; j < 4; ++j) {
+                
+                J[i_offset + j-1] = node(j)[i] - node(0)[i];
+              
+              }
+          }
+
+          Scalar term0 = J[8]*J[4] - J[7]*J[5];
+          Scalar term1 = J[8]*J[1] - J[7]*J[2];
+          Scalar term2 = J[5]*J[1] - J[4]*J[2];
+
+          detJ = J[0]*term0 - J[1]*term1 + J[2]*term2;
+
+    }
+
+    UTOPIA_INLINE_FUNCTION void eval_inv_J(Array<Scalar, 9> invJ) {
+        
+        Array<Scalar, 9> J;
+
+          for(int i = 0; i < 3; ++i) {
+
+            const int i_offset = i * 3;
+
+            for(int j = 1; j < 4; ++j) {
+                
+                J[i_offset + j-1] = node(j)[i] - node(0)[i];
+              
+              }
+          }
+
+        Scalar term0 = J[8]*J[4] - J[7]*J[5];
+        Scalar term1 = J[8]*J[1] - J[7]*J[2];
+        Scalar term2 = J[5]*J[1] - J[4]*J[2];
+
+        Scalar detJ = J[0] * term0 - J[1] * term1 + J[2]*term2;
+        
+        Scalar inv_detJ = 1.0/detJ;
+
+              
+        invJ[0] =  term0*inv_detJ;
+        invJ[1] = -term1*inv_detJ;
+        invJ[2] =  term2*inv_detJ;
+
+        invJ[3] = -( J[4] * J[3] - J[6] * J[5] ) * inv_detJ;
+        invJ[4] =  ( J[8] * J[0] - J[6] * J[2] ) * inv_detJ;
+        invJ[5] = -( J[5] * J[0] - J[3] * J[2] ) * inv_detJ;
+
+        invJ[6] =  ( J[7] * J[3] -  J[6] * J[4] ) * inv_detJ;
+        invJ[7] = -( J[7] * J[0] -  J[6] * J[1] ) * inv_detJ;
+        invJ[8] =  ( J[3] * J[0] -  J[3] * J[1] ) *inv_detJ;
+
+    }
+
+    Point &node(const int i) override
+    {
+        return nodes_[i];
+    }
+
+    const Point &node(const int i) const override
+    {
+        return nodes_[i];
+    }
+
+
+
    UTOPIA_INLINE_FUNCTION Scalar static measure ()
    {
      return 1.0;
    }
 
    private:
+
+      Array<Point, 8> nodes_;
 
 
 
