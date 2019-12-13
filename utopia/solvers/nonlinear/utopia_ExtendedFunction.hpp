@@ -45,13 +45,10 @@ namespace utopia
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const override = 0;
 
         // Copy of vec... 
-        // Vector initial_guess() const
-        // {   
-        //     return _x_eq_values; 
-        // }
-
-        // virtual bool gradient_no_rhs(const Vector &/*point*/, Vector &/*result*/) const = 0;
-
+        Vector initial_guess() const
+        {   
+            return _x_eq_values; 
+        }
 
         virtual bool hessian(const Vector &x, Matrix &H) const override = 0;
         virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const  override
@@ -68,30 +65,6 @@ namespace utopia
         {
             return true;
         }
-
-        // virtual bool set_rhs(const Vector & rhs)
-        // {
-        //     _rhs = rhs;
-        //     return true;
-        // }
-
-        // virtual bool reset_rhs()
-        // {
-        //     _rhs = local_zeros(local_size(_rhs));
-        //     return true;
-        // }
-
-
-        // virtual bool get_rhs( Vector & rhs) const
-        // {
-        //     rhs = _rhs;
-        //     return true;
-        // }
-
-        // virtual bool has_rhs() const
-        // {
-        //     return !empty(_rhs);
-        // }
 
         virtual bool get_eq_constrains_values(Vector & x) const 
         {
@@ -121,8 +94,8 @@ namespace utopia
             _x_eq_values        =  x_in;
             _eq_constrains_flg  = eq_constrains_flg;
 
-            Vector ones = local_values(local_size(_eq_constrains_flg).get(0), 1.0); 
-            _eq_constraints_mask_matrix_ = diag(ones - _eq_constrains_flg); 
+            _eq_constraints_mask_matrix_   = local_identity(local_size(_eq_constrains_flg).get(0), local_size(_eq_constrains_flg).get(0)); 
+            _eq_constraints_mask_matrix_  -= diag(_eq_constrains_flg); 
 
             {
                 Read<Vector> r(_eq_constrains_flg);
@@ -130,8 +103,9 @@ namespace utopia
                 Range range_w = range(_eq_constrains_flg);
                 for (SizeType i = range_w.begin(); i != range_w.end(); i++)
                 {
-                    if(_eq_constrains_flg.get(i) == 1)
+                    if(_eq_constrains_flg.get(i) == 1){
                         indices_eq_constraints_.push_back(i);
+                    }
                 }
             }            
 
@@ -152,8 +126,6 @@ namespace utopia
         
         Matrix _eq_constraints_mask_matrix_; 
         std::vector<SizeType> indices_eq_constraints_; 
-
-
     };
 
     template<class Matrix, class Vector>
@@ -207,7 +179,6 @@ namespace utopia
             else{
                 utopia_error("error in reset rhs... \n"); 
             }
-
             return true;
         }
 

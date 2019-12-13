@@ -74,6 +74,8 @@ namespace utopia
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~UnconstrainedExtendedTestFunction() { }
+
+        virtual Vector initial_guess() const override= 0;
     };  
 
     template<class Matrix, class Vector>
@@ -252,6 +254,7 @@ namespace utopia
           return constraints_.has_upper_bound();
         }
 
+        virtual Vector initial_guess() const override= 0;
 
         virtual bool is_feasible(Vector & x) 
         {

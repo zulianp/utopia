@@ -89,7 +89,7 @@ namespace utopia
             convert(snes_->vec_rhs, rhs); 
         }
 
-        virtual bool gradient(const Vector &x, Vector &g) const override
+        bool gradient(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
             if(empty(g)){
@@ -110,7 +110,7 @@ namespace utopia
             return true;
         }
             
-        virtual bool hessian(const Vector & x, Matrix &hessian) const override
+        bool hessian(const Vector & x, Matrix &hessian) const override
         {
             // YES, wrap is more effiicient, but we do not want to own matrix .... 
             // as RMTR, needs to modify hessian ... 
@@ -138,7 +138,7 @@ namespace utopia
             return true;
         }
 
-        virtual bool value(const Vector &x, typename Vector::Scalar &result) const override
+        bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
             Vector res1 = 0.0*x;  
             Vector res2; 
@@ -171,40 +171,40 @@ namespace utopia
         }
 
 
-        virtual Vector initial_guess() const override
+        Vector initial_guess() const override
         {   
             Vector x_utopia; 
             convert(snes_->vec_sol, x_utopia); 
             return x_utopia; 
         }
         
-        virtual const Vector & exact_sol() const override
+        const Vector & exact_sol() const override
         {
             return exact_sol_; 
         }
         
 
-        virtual Scalar min_function_value() const override
+        Scalar min_function_value() const override
         {   
             return -1.013634375000014e+01; 
         }
 
-        virtual std::string name() const override
+        std::string name() const override
         {
             return "NonlEllipse2D";
         }
         
-        virtual SizeType dim() const override
+        SizeType dim() const override
         {
             return n_*n_*n_; 
         }
 
-        virtual bool exact_sol_known() const override
+        bool exact_sol_known() const override
         {
             return false;
         }
 
-        virtual bool parallel() const override
+        bool parallel() const override
         {
             return true;
         }
