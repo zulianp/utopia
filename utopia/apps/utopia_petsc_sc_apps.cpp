@@ -22,12 +22,8 @@ namespace utopia {
             {1.0, 1.0}
         );
 
-        // dm.describe();
-
         PetscMatrix mat;
         dm.create_matrix(mat);
-
-        // disp(mat);
 
         dm.each_element([](const PetscDM::Elem &e) {
             // std::cout << e.idx() << std::endl;
@@ -37,7 +33,6 @@ namespace utopia {
 
         dm.each_node([&ss](const PetscDM::Node &node) {
             assert(!node.is_ghost());
-
         });
 
         dm.each_node_with_ghosts([&ss](const PetscDM::Node &node) {

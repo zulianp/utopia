@@ -59,6 +59,8 @@ namespace utopia {
         void each_node(const std::function<void(const Node &)> &f);
         void each_node_with_ghosts(const std::function<void(const Node &)> &f);
 
+        Range local_node_range() const;
+
     private:
         std::unique_ptr<Impl> impl_;
     };
