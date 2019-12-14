@@ -22,7 +22,7 @@ namespace utopia
 			return "NLML_test benchmark.";
 		}
 
-		NLML_test(const SizeType & n = 20, const bool verbose = false): n_(n), n_levels_(5), verbose_(verbose)
+		NLML_test(const SizeType & n = 5, const bool verbose = false): n_(n), n_levels_(5), verbose_(verbose)
 		{
 			ml_problems_.resize(1); 
 			ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
@@ -92,9 +92,9 @@ namespace utopia
 
 	    	for(size_t i =0; i < ml_problems.size(); i++)
 	    	{
-				Vector x; 
-				ml_problems[i]->get_functions().back()->get_eq_constrains_values(x); 
-
+				Vector x = ml_problems[i]->get_functions().back()->initial_guess(); 
+				 
+				x.set(20);
 
 	            // Transfers and objective functions
 	            solver->set_transfer_operators(ml_problems[i]->get_transfer());

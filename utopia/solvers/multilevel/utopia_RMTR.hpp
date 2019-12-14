@@ -99,7 +99,6 @@ namespace utopia
 
             // TODO:: introduce 
             // in.get("norm_schedule", _norm_schedule); 
-
             // in.get("verbosity_level", _verbosity_level);
 
             const auto n_subproblems = _tr_subproblems.size();
@@ -148,7 +147,6 @@ namespace utopia
 
         virtual void verbosity_level(const VerbosityLevel & level )
         {
-
             _verbosity_level = this->verbose() ? level : VERBOSITY_LEVEL_QUIET;
         }
 
@@ -187,8 +185,6 @@ namespace utopia
         using NonlinearMultiLevelBase<Matrix, Vector>::solve;
 
         virtual std::string name() override { return "RMTR";  }
-
-
 
         virtual void max_coarse_it(const SizeType & max_coarse_it)
         {

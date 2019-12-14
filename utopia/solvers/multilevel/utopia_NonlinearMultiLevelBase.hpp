@@ -158,33 +158,18 @@ namespace utopia {
          */
         virtual bool make_iterate_feasible(Fun & fun, Vector & x)
         {
-            Vector bc_values;
-            fun.get_eq_constrains_values(bc_values);
-
-            Vector bc_ids;
-            fun.get_eq_constrains_flg(bc_ids);
-
-            if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
-                std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: Local sizes do not match. \n";
-            }
-
-            Vector x_old = x; 
+            const auto &bc_values   = fun.get_eq_constrains_values();
+            const auto &bc_ids      = fun.get_eq_constrains_flg(); 
 
             {
-                Read<Vector> r_ub(bc_ids), r_lb(bc_values), r_old(x_old);
-                Write<Vector> wv(x);
+                auto d_bc_ids       = const_device_view(bc_ids);
+                auto d_bc_values    = const_device_view(bc_values);
 
-                each_write(x, [&bc_ids, &bc_values, &x_old](const SizeType i) -> double 
-                {
-                    Scalar id = bc_ids.get(i); Scalar value =  bc_values.get(i); Scalar x_old_val = x_old.get(i); 
-                        if(id == 1)
-                            return value;
-                        else
-                            return x_old_val; 
-                } );
+                parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                    Scalar id =  d_bc_ids.get(i);
+                    return (id==1.0) ? d_bc_values.get(i) : xi;
+                });
             }
-
-
 
             return true;
         }
@@ -198,7 +183,6 @@ namespace utopia {
          */
         virtual bool zero_correction_related_to_equality_constrain(const Fun & fun, Vector & c) 
         {
- 
             fun.zero_contribution_to_equality_constrains(c); 
             return true;
         }

@@ -24,22 +24,9 @@ namespace utopia
 
         ExtendedFunction() {}
 
-        ExtendedFunction( const Vector & x_init, const Vector & bc_marker): _x_eq_values(x_init),  
-                                                                            _eq_constrains_flg(bc_marker)
+        ExtendedFunction(const Vector & x_init, const Vector & bc_marker)
         {
-            Vector ones = local_values(local_size(_eq_constrains_flg).get(0), 1.0); 
-            _eq_constraints_mask_matrix_ = diag(ones - _eq_constrains_flg); 
-
-            {
-                Read<Vector> r(_eq_constrains_flg);
-
-                Range range_w = range(_eq_constrains_flg);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    if(_eq_constrains_flg.get(i) == 1)
-                        indices_eq_constraints_.push_back(i);
-                }
-            }              
+            this->set_equality_constrains(bc_marker, x_init);               
         }
 
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const override = 0;
@@ -88,6 +75,11 @@ namespace utopia
         {
             return _eq_constrains_flg;
         }
+
+        const Vector &get_eq_constrains_values() const 
+        {
+            return  _x_eq_values;
+        }        
 
         virtual bool set_equality_constrains(const Vector &eq_constrains_flg, const Vector &x_in)
         {
