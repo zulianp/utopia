@@ -67,7 +67,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 50); 
+			in.set("max-it", 10); 
 			in.set("verbose", true);
 
             // RMTR specific parameters
@@ -94,7 +94,7 @@ namespace utopia
 	    	{
 				Vector x = ml_problems[i]->get_functions().back()->initial_guess(); 
 				 
-				x.set(20);
+				// x.set(20);
 
 	            // Transfers and objective functions
 	            solver->set_transfer_operators(ml_problems[i]->get_transfer());

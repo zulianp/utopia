@@ -7,11 +7,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_SolutionStatus.hpp"
 #include "utopia_MatrixTransfer.hpp"
-
-
 #include "utopia_MultiLevelEvaluations.hpp"
-
-
 
 #include <algorithm>
 #include <vector>
