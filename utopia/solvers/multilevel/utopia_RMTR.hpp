@@ -4,6 +4,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
+#include "utopia_RMTRBase.hpp"
 
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Linear.hpp"
@@ -26,22 +27,22 @@ namespace utopia
 
 
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
+    class RMTR : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
                  public TrustRegionBase<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        typedef UTOPIA_SCALAR(Vector)           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
 
-        typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem;
-        typedef std::shared_ptr<TRSubproblem>               TRSubproblemPtr;
+        typedef utopia::TRSubproblem<Matrix, Vector>    TRSubproblem;
+        typedef std::shared_ptr<TRSubproblem>           TRSubproblemPtr;
 
-        typedef utopia::Transfer<Matrix, Vector>            Transfer;
-        typedef utopia::Level<Matrix, Vector>               Level;
-
-        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
+        typedef utopia::Transfer<Matrix, Vector>                        Transfer;
+        typedef utopia::Level<Matrix, Vector>                           Level;
+        
+        typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>     RMTRBase;
+        typedef typename RMTRBase::Fun Fun;
 
     public:
-
         using TrustRegionBase<Vector>::delta_update;
         using TrustRegionBase<Vector>::get_pred;
 
@@ -52,25 +53,7 @@ namespace utopia
         * @param[in]  direct_solver  The direct solver for coarse level.
         */
         RMTR(   const SizeType & n_levels):
-                NonlinearMultiLevelBase<Matrix,Vector>(n_levels),
-                _it_global(0),
-                _skip_BC_checks(false),
-                _max_coarse_it(2),
-                _max_sucessful_smoothing_it(1),
-                _max_sucessful_coarse_it(1),
-                _max_QP_smoothing_it(5),
-                _max_QP_coarse_it(50),
-                _eps_delta_termination(0.001),
-                _grad_smoothess_termination(0.5),
-                _check_gradient_smoothness(true),
-                _hessian_update_delta(0.15),
-                _hessian_update_eta(0.5),
-                _verbosity_level(VERBOSITY_LEVEL_NORMAL),
-                _norm_schedule(ALWAYS), 
-                red_(FG_LIGHT_MAGENTA),
-                def_(FG_DEFAULT),
-                yellow_(FG_LIGHT_YELLOW),
-                green_(FG_LIGHT_GREEN)
+                RMTRBase(n_levels)
         {
 
         }
@@ -80,27 +63,8 @@ namespace utopia
 
         virtual void read(Input &in) override
         {
-            NonlinearMultiLevelBase<Matrix, Vector>::read(in);
+            RMTRBase::read(in);
             TrustRegionBase<Vector>::read(in);
-
-            in.get("skip_BC_checks", _skip_BC_checks);
-            in.get("max_coarse_it", _max_coarse_it);
-            in.get("max_sucessful_smoothing_it", _max_sucessful_smoothing_it);
-            in.get("max_sucessful_coarse_it", _max_sucessful_coarse_it);
-            in.get("max_QP_smoothing_it", _max_QP_smoothing_it);
-            in.get("max_QP_coarse_it", _max_QP_coarse_it);
-
-            in.get("eps_delta_termination", _eps_delta_termination);
-            in.get("grad_smoothess_termination", _grad_smoothess_termination);
-            in.get("check_gradient_smoothness", _check_gradient_smoothness);
-
-            in.get("hessian_update_delta", _hessian_update_delta);
-            in.get("hessian_update_eta", _hessian_update_eta);
-
-            // TODO:: introduce 
-            // in.get("norm_schedule", _norm_schedule); 
-            // in.get("verbosity_level", _verbosity_level);
-
             const auto n_subproblems = _tr_subproblems.size();
 
             if(n_subproblems > 0)
@@ -114,146 +78,15 @@ namespace utopia
 
         virtual void print_usage(std::ostream &os) const override
         {
-            NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
+            RMTRBase::print_usage(os);
             TrustRegionBase<Vector>::print_usage(os);
-
-            this->print_param_usage(os, "skip_BC_checks", "bool", "Skip treatment of BC conditions.", "false");
-            this->print_param_usage(os, "max_coarse_it", "int", "Maximum number of coarse iterations.", "2");
-            this->print_param_usage(os, "max_sucessful_smoothing_it", "int", "Maximum number of smoothing steps.", "1");
-            this->print_param_usage(os, "max_sucessful_coarse_it", "int", "Maximum number of corse iterations.", "1");
-
-            this->print_param_usage(os, "max_QP_smoothing_it", "int", "Maximum number of iterations for fine level QP solver.", "5");
-            this->print_param_usage(os, "max_QP_coarse_it", "int", "Maximum number of iterations for coarse level QP solver.", "50");
-
-            this->print_param_usage(os, "eps_delta_termination", "real", "Constant used for quiting recursion based on size of tr. radius.", "0.001");
-            this->print_param_usage(os, "grad_smoothess_termination", "real", "Constant used for quiting recursion based on smoothness of the gradient on given level.", "0.5");
-            this->print_param_usage(os, "check_gradient_smoothness", "real", "Flag turning on/off check for gradient smoothiness.", "true");
-
-            this->print_param_usage(os, "hessian_update_delta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.15");
-            this->print_param_usage(os, "hessian_update_eta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.5");
-            this->print_param_usage(os, "verbosity_level", "VerbosityLevel", "Specifies level of verbosity.", "VERBOSITY_LEVEL_NORMAL");
-
             this->print_param_usage(os, "coarse-QPSolver", "TRSubproblem", "Input parameters for fine level QP solvers.", "-");
             this->print_param_usage(os, "fine-QPSolver", "TRSubproblem", "Input parameters for coarse level QP solver.", "-");
-
-            // this->print_param_usage(os, "norm_schedule", "NormSchedules", "Specifies how often to compute norms.", "ALWAYS");
-        }
-
-
-        virtual VerbosityLevel verbosity_level() const
-        {
-            return _verbosity_level;
-        }
-
-        virtual void verbosity_level(const VerbosityLevel & level )
-        {
-            _verbosity_level = this->verbose() ? level : VERBOSITY_LEVEL_QUIET;
-        }
-
-        virtual MultilevelNormSchedule norm_schedule() const
-        {
-            return _norm_schedule;
-        }
-
-        virtual void norm_schedule(const MultilevelNormSchedule & schedule)
-        {
-            _norm_schedule = schedule; 
-        }        
-
-
-        virtual void set_grad_smoothess_termination(const Scalar & grad_smoothess_termination)
-        {
-            _grad_smoothess_termination = grad_smoothess_termination;
-        }
-
-        virtual Scalar  get_grad_smoothess_termination( ) const
-        {
-            return _grad_smoothess_termination;
-        }
-
-
-        virtual void skip_BC_checks(const bool skip_BC_checks)
-        {
-            _skip_BC_checks = skip_BC_checks;
-        }
-
-        virtual bool skip_BC_checks() const
-        {
-            return _skip_BC_checks;
         }
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve;
 
         virtual std::string name() override { return "RMTR";  }
-
-        virtual void max_coarse_it(const SizeType & max_coarse_it)
-        {
-            _max_coarse_it = max_coarse_it;
-        }
-
-
-        // this parameter define total number of smoothing its - sucessful and unsuccessful
-        // while pre_smooting and post_smoothing count just sucessful iterations
-        virtual void max_sucessful_smoothing_it(const SizeType & max_sucessful_smoothing_it)
-        {
-            _max_sucessful_smoothing_it = max_sucessful_smoothing_it;
-        }
-
-
-        virtual void max_sucessful_coarse_it(const SizeType & max_sucessful_coarse_it)
-        {
-            _max_sucessful_coarse_it = max_sucessful_coarse_it;
-        }        
-
-
-        virtual SizeType max_coarse_it() const
-        {
-            return _max_coarse_it;
-        }
-
-
-        virtual SizeType max_sucessful_smoothing_it() const
-        {
-            return _max_sucessful_smoothing_it;
-        }
-
-        virtual SizeType max_sucessful_coarse_it() const
-        {
-            return _max_sucessful_coarse_it;
-        }        
-
-
-        virtual void max_QP_smoothing_it(const SizeType & num_it)
-        {
-            _max_QP_smoothing_it = num_it;
-        }
-
-        virtual void max_QP_coarse_it(const SizeType & num_it)
-        {
-            _max_QP_coarse_it = num_it;
-        }
-
-        virtual SizeType max_QP_coarse_it() const
-        {
-            return _max_QP_coarse_it;
-        }
-
-        virtual SizeType max_QP_smoothing_it() const
-        {
-            return _max_QP_smoothing_it;
-        }
-
-
-        virtual void check_grad_smoothness(const bool flg)
-        {
-            _check_gradient_smoothness = flg;
-        }
-
-        virtual bool check_grad_smoothness() const
-        {
-            return _check_gradient_smoothness;
-        }
-
 
         virtual void handle_equality_constraints()
         {
@@ -346,7 +179,7 @@ namespace utopia
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level] = local_zeros(local_size(memory_.x[fine_level]));
 
-            if(!skip_BC_checks()){
+            if(!this->skip_BC_checks()){
                 this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]);
                 this->handle_equality_constraints();    
             }
@@ -355,18 +188,18 @@ namespace utopia
             this->function(fine_level).value(memory_.x[fine_level], memory_.energy[fine_level]);
 
             memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
-            _it_global = 0;
+            this->_it_global = 0;
 
             //----------------------------------------------
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
             {
-                std::cout << red_;
+                std::cout << this->red_;
                 std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(fine_local_size);
                 this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
 
-                PrintInfo::print_iter_status(_it_global, {memory_.gnorm[fine_level], memory_.energy[fine_level]});
-                std::cout << def_;
+                PrintInfo::print_iter_status(this->_it_global, {memory_.gnorm[fine_level], memory_.energy[fine_level]});
+                std::cout << this->def_;
             }
 
 
@@ -392,25 +225,25 @@ namespace utopia
 
                 memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
 
-                _it_global++;
+                this->_it_global++;
 
                 if(this->verbose() && mpi_world_rank() == 0)
                 {
-                    std::cout << red_;
+                    std::cout << this->red_;
                     if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL){
                         this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||",  "   E "});
                     }
 
-                    PrintInfo::print_iter_status(_it_global, {memory_.gnorm[fine_level],  memory_.energy[fine_level]});
-                    std::cout << def_;
+                    PrintInfo::print_iter_status(this->_it_global, {memory_.gnorm[fine_level],  memory_.energy[fine_level]});
+                    std::cout << this->def_;
                 }
 
                 // check convergence
-                converged = this->check_global_convergence(_it_global, memory_.gnorm[fine_level], 9e9, memory_.delta[fine_level]);
+                converged = this->check_global_convergence(this->_it_global, memory_.gnorm[fine_level], 9e9, memory_.delta[fine_level]);
             }
 
             // benchmarking
-            NonlinearMultiLevelBase<Matrix, Vector>::print_statistics(_it_global);
+            NonlinearMultiLevelBase<Matrix, Vector>::print_statistics(this->_it_global);
             x_h = memory_.x[fine_level];
             return true;
         }
@@ -471,7 +304,7 @@ namespace utopia
             this->transfer(level-1).project_down(memory_.x[level], memory_.x[level-1]);
 
 
-            if(!skip_BC_checks()){
+            if(!this->skip_BC_checks()){
                 if(CONSISTENCY_LEVEL != GALERKIN){
                     this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]);
                 }
@@ -494,7 +327,7 @@ namespace utopia
                 this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
             }
 
-            if(!skip_BC_checks())
+            if(!this->skip_BC_checks())
             {
                 if(CONSISTENCY_LEVEL != GALERKIN){
                     this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]);
@@ -524,7 +357,7 @@ namespace utopia
 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                    if(!skip_BC_checks()){
+                    if(!this->skip_BC_checks()){
                         this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]);
                     }
 
@@ -572,7 +405,7 @@ namespace utopia
 
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
 
-                if(!skip_BC_checks()){
+                if(!this->skip_BC_checks()){
                     this->zero_correction_related_to_equality_constrain(this->function(level), memory_.s[level]);
                 }
 
@@ -621,7 +454,7 @@ namespace utopia
                     // just to see what is being printed
                     std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level);
                     this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"});
-                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], Scalar(coarse_corr_taken) });
+                    PrintInfo::print_iter_status(this->_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], Scalar(coarse_corr_taken) });
                 }
 
                 // terminate, since TR rad. does not allow to take more corrections on given level
@@ -795,7 +628,7 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 delta_converged = this->delta_update(rho, level, memory_.s_working[level]);
 
-                if(_norm_schedule==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
+                if(this->_norm_schedule==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
                 {
                     make_grad_updates = false; 
                 }
@@ -833,7 +666,7 @@ namespace utopia
             }
 
             if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0){
-                std::cout<< def_;
+                std::cout<< this->def_;
             }
 
 
@@ -926,7 +759,7 @@ namespace utopia
                 Scalar corr_norm = this->level_dependent_norm(s_global, level);
                 bool converged = this->delta_termination(corr_norm, level+1);
 
-                if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0){
+                if(converged && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0){
                     std::cout<<"termination  due to small radius on level: "<< level << ". \n";
                 }
 
@@ -1024,7 +857,7 @@ namespace utopia
         virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
         {
             // coarse one
-            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= _max_coarse_it))
+            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= this->_max_coarse_it))
             {
                 return true;
             }
@@ -1057,7 +890,7 @@ namespace utopia
          */
         virtual bool delta_termination(const Scalar & corr_norm, const SizeType & level)
         {
-            return (corr_norm > (1.0 - _eps_delta_termination) * memory_.delta[level]) ? true : false;
+            return (corr_norm > (1.0 - this->_eps_delta_termination) * memory_.delta[level]) ? true : false;
         }
 
 
@@ -1093,7 +926,7 @@ namespace utopia
         {
             Scalar Rg_norm, g_norm;
             norms2(g_restricted, g_coarse, Rg_norm, g_norm);
-            return (Rg_norm >= _grad_smoothess_termination * g_norm) ? true : false;
+            return (Rg_norm >= this->_grad_smoothess_termination * g_norm) ? true : false;
         }
 
 
@@ -1112,13 +945,13 @@ namespace utopia
         virtual bool update_hessian(const Vector & g_new, const Vector & g_old, const Vector & s, const Matrix & H, const Scalar & rho, const Scalar & g_norm)
         {
             // iteration is not sucessful enough
-            if(rho > 0 && rho < _hessian_update_eta)
+            if(rho > 0 && rho < this->_hessian_update_eta)
                 return true;
 
             Vector help = g_new - g_old - H * s;
 
             // Hessian approx is relativelly poor
-            return (norm2(help) > _hessian_update_delta * g_norm) ? true : false;
+            return (norm2(help) > this->_hessian_update_delta * g_norm) ? true : false;
         }
 
 
@@ -1137,10 +970,10 @@ namespace utopia
             _tr_subproblems[level]->atol(1e-14);
             
             if(flg){
-                _tr_subproblems[level]->max_it(_max_QP_coarse_it);
+                _tr_subproblems[level]->max_it(this->_max_QP_coarse_it);
             }
             else{
-                _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
+                _tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
             }
 
             memory_.s[level] = local_zeros(local_size(memory_.g[level]). get(0)); 
@@ -1242,66 +1075,10 @@ namespace utopia
             }
         }
 
-
-//----------------------------------------- printouts helpers -------------------------------------------
-
-        /**
-         * @brief      Prints some info related to level
-         *
-         * @param[in]  level  The level
-         */
-        virtual void print_level_info(const SizeType & level)
-        {
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
-            {
-                if(level == 0)
-                {
-                    std::cout << yellow_;
-                    std::string solver_type = "COARSE SOLVE:: " + std::to_string(level);
-                    this->print_init_message(solver_type, {" it. ", "|| g ||", "   E + <g_diff, x>", "ared   ",  "  pred  ", "  rho  ", "  delta "});
-                }
-                else
-                {
-                    std::cout << green_;
-                    std::string solver_type = "SMOOTHER:  " + std::to_string(level);
-                    this->print_init_message(solver_type, {" it. ", "|| g ||", "   E + <g_diff, x>", "ared   ",  "  pred  ", "  rho  ", "  delta "});
-                }
-            }
-        }
-
     private:
         std::vector<TRSubproblemPtr>        _tr_subproblems;
 
     protected:
-        SizeType                            _it_global;                 /** * global iterate counter  */
-        // ----------------------- PARAMETERS ----------------------
-        bool                            _skip_BC_checks;
-
-        SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
-        SizeType                        _max_sucessful_smoothing_it;          /** * max smoothing iterations  */
-        SizeType                        _max_sucessful_coarse_it;          /** * max smoothing iterations  */
-
-        SizeType                        _max_QP_smoothing_it;
-        SizeType                        _max_QP_coarse_it;
-
-
-        Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
-
-        Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
-        bool                           _check_gradient_smoothness;
-
-        Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
-        Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
-
-        VerbosityLevel                  _verbosity_level;
-        MultilevelNormSchedule          _norm_schedule; 
-
-        ColorModifier red_;
-        ColorModifier def_;
-        ColorModifier yellow_;
-        ColorModifier green_;
-
-
         RMTRLevelMemory <Matrix, Vector>         memory_;
 
 
