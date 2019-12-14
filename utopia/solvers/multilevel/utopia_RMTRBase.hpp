@@ -205,6 +205,38 @@ namespace utopia
         }
 
 
+        virtual void eps_delta_termination(const Scalar &eps)
+        {
+            _eps_delta_termination = eps;
+        }
+
+        virtual Scalar eps_delta_termination() const
+        {
+            return _eps_delta_termination;
+        }
+
+        virtual void hessian_update_delta(const Scalar &delta)
+        {
+            _hessian_update_delta = delta;
+        }
+
+        virtual Scalar hessian_update_delta() const
+        {
+            return _hessian_update_delta;
+        }
+
+        virtual void hessian_update_eta(const Scalar &eps)
+        {
+            _hessian_update_eta = eps;
+        }
+
+        virtual Scalar hessian_update_eta() const
+        {
+            return _hessian_update_eta;
+        }                
+
+
+
     protected:
         /**
          * @brief      Prints some info related to level

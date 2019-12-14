@@ -628,7 +628,7 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 delta_converged = this->delta_update(rho, level, memory_.s_working[level]);
 
-                if(this->_norm_schedule==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
+                if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
                 {
                     make_grad_updates = false; 
                 }
@@ -857,7 +857,7 @@ namespace utopia
         virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
         {
             // coarse one
-            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= this->_max_coarse_it))
+            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= this->max_coarse_it()))
             {
                 return true;
             }
@@ -890,7 +890,7 @@ namespace utopia
          */
         virtual bool delta_termination(const Scalar & corr_norm, const SizeType & level)
         {
-            return (corr_norm > (1.0 - this->_eps_delta_termination) * memory_.delta[level]) ? true : false;
+            return (corr_norm > (1.0 - this->eps_delta_termination()) * memory_.delta[level]) ? true : false;
         }
 
 
@@ -926,7 +926,7 @@ namespace utopia
         {
             Scalar Rg_norm, g_norm;
             norms2(g_restricted, g_coarse, Rg_norm, g_norm);
-            return (Rg_norm >= this->_grad_smoothess_termination * g_norm) ? true : false;
+            return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;
         }
 
 
@@ -945,13 +945,13 @@ namespace utopia
         virtual bool update_hessian(const Vector & g_new, const Vector & g_old, const Vector & s, const Matrix & H, const Scalar & rho, const Scalar & g_norm)
         {
             // iteration is not sucessful enough
-            if(rho > 0 && rho < this->_hessian_update_eta)
+            if(rho > 0 && rho < this->hessian_update_eta())
                 return true;
 
             Vector help = g_new - g_old - H * s;
 
             // Hessian approx is relativelly poor
-            return (norm2(help) > this->_hessian_update_delta * g_norm) ? true : false;
+            return (norm2(help) > this->hessian_update_delta() * g_norm) ? true : false;
         }
 
 
@@ -970,10 +970,10 @@ namespace utopia
             _tr_subproblems[level]->atol(1e-14);
             
             if(flg){
-                _tr_subproblems[level]->max_it(this->_max_QP_coarse_it);
+                _tr_subproblems[level]->max_it(this->max_QP_coarse_it());
             }
             else{
-                _tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
+                _tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
             }
 
             memory_.s[level] = local_zeros(local_size(memory_.g[level]). get(0)); 
