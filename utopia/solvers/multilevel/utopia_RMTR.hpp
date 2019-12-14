@@ -47,17 +47,14 @@ namespace utopia
         using TrustRegionBase<Vector>::get_pred;
 
        /**
-        * @brief      RMTR base-class
+        * @brief      Implementation of RMTR with tr radius defined by l2 norm 
         *
-        * @param[in]  smoother       The smoother.
-        * @param[in]  direct_solver  The direct solver for coarse level.
+        * @param[in]  n_levels       Number of levels
         */
-        RMTR(   const SizeType & n_levels):
-                RMTRBase(n_levels)
+        RMTR(   const SizeType & n_levels): RMTRBase(n_levels)
         {
 
         }
-
 
         virtual ~RMTR(){}
 
@@ -80,6 +77,7 @@ namespace utopia
         {
             RMTRBase::print_usage(os);
             TrustRegionBase<Vector>::print_usage(os);
+
             this->print_param_usage(os, "coarse-QPSolver", "TRSubproblem", "Input parameters for fine level QP solvers.", "-");
             this->print_param_usage(os, "fine-QPSolver", "TRSubproblem", "Input parameters for coarse level QP solver.", "-");
         }
@@ -249,7 +247,6 @@ namespace utopia
         }
 
 
-
     private:
 
         /**
@@ -365,7 +362,6 @@ namespace utopia
 
                     // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
                     memory_.H_diff[level-1] -= memory_.H[level-1];
-
                 }
             }
 
@@ -984,7 +980,6 @@ namespace utopia
             return true;
         }
 
-
 //----------------------------------------- energy evaluation helpers -------------------------------------------
 
         /**
@@ -1079,7 +1074,7 @@ namespace utopia
         std::vector<TRSubproblemPtr>        _tr_subproblems;
 
     protected:
-        RMTRLevelMemory <Matrix, Vector>         memory_;
+        RMTRLevelMemory<Matrix, Vector>         memory_;
 
 
     };

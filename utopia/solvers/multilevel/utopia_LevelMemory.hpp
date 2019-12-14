@@ -19,7 +19,7 @@ namespace utopia
 
                 c.resize(n_levels);
             }
-
+            
         std::vector<Vector> x, x_0, g, g_diff, c;
     };
 
