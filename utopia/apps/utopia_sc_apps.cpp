@@ -29,7 +29,7 @@ namespace utopia {
         using Mesh          = utopia::Grid2d;
 
         PetscCommunicator petsc_world;
-        PetscDM dm(
+        PetscDM<2> dm(
             petsc_world,
             {10, 10},
             {0.0, 0.0},
@@ -56,7 +56,7 @@ namespace utopia {
         auto gl2g_view = ghosted_local_2_global.view_device();
 
         SizeType idx = 0;
-        dm.each_node_with_ghosts([&](const PetscDM::Node &node) {
+        dm.each_node_with_ghosts([&](const PetscDM<2>::Node &node) {
             gl2g_view(idx++) = node.idx();
         });
 

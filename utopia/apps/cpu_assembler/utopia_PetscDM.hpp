@@ -1,66 +1,126 @@
 #ifndef UTOPIA_PETSC_DM_HPP
 #define UTOPIA_PETSC_DM_HPP
 
-#include <memory>
+
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_Box.hpp"
+#include "utopia_FunctionSpace.hpp"
+#include "utopia_ArrayView.hpp"
+#include "utopia_VectorView.hpp"
+
+#include <array>
+#include <memory>
 
 namespace utopia {
 
-    class PetscDM final {
+    template<int Dim>
+    class PetscDMElements;
+
+    template<int Dim>
+    class PetscDMNodes;
+
+    template<int Dim>
+    class PetscElem {
     public:
         using SizeType = PetscInt;
         using Scalar   = PetscScalar;
+        using Point    = utopia::StaticVector<Scalar, Dim>;
+        using Grad     = utopia::StaticVector<Scalar, Dim>;
+
+        virtual ~PetscElem() {}
+        PetscElem()
+        {}
+
+        inline void set(const ArrayView<SizeType> &nodes)
+        {
+            nodes_ = nodes;
+        }
+
+        inline const ArrayView<SizeType> &nodes() const
+        {
+            return nodes_;
+        }
+
+        inline SizeType node_id(const SizeType k) const
+        {
+            return nodes_[k];
+        }
+
+        inline const SizeType &node(const SizeType &i) const
+        {
+            return nodes_[i];
+        }
+
+        inline SizeType n_nodes() const
+        {
+            return nodes_.size();
+        }
+
+        inline constexpr static SizeType dim() { return Dim; }
+        virtual Scalar fun(const SizeType &i, const Point &p) const = 0;
+
+        inline void idx(const SizeType &idx)
+        {
+            idx_ = idx;
+        }
+
+        inline SizeType idx() const
+        {
+            return idx_;
+        }
+
+    private:
+        ArrayView<SizeType> nodes_;
+        SizeType idx_;
+    };
+
+    template<int Dim>
+    class PetscNode {
+    public:
+        PetscNode(const PetscDMNodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
+        SizeType idx() const { return idx_; }
+        bool is_ghost() const;
+
+    private:
+        const PetscDMNodes<Dim> &nodes_;
+        SizeType idx_;
+    };
+
+    template<int Dim>
+    class PetscDM final {
+    public:
+        static const std::size_t UDim = Dim;
+        using SizeType  = PetscInt;
+        using Scalar    = PetscScalar;
+        using Point     = utopia::VectorView<ArrayView<Scalar>>;
+        using Elem = utopia::PetscElem<Dim>;
+        using Node = utopia::PetscNode<Dim>;
 
         class Impl;
-        class Elements;
-        class Nodes;
-
-        void create_matrix(PetscMatrix &mat);
 
         PetscDM(
             const PetscCommunicator     &comm,
-            const std::vector<SizeType> &dims,
-            const std::vector<Scalar>   &box_min,
-            const std::vector<Scalar>   &box_max
+            const std::array<SizeType, UDim> &dims,
+            const std::array<Scalar, UDim>   &box_min,
+            const std::array<Scalar, UDim>   &box_max
         );
+
 
         PetscDM();
         ~PetscDM();
 
+        void create_matrix(PetscMatrix &mat);
+        void create_vector(PetscVector &vec);
+
         void describe() const;
-
-        class Elem {
-        public:
-
-            Elem(const Elements &e, const SizeType &idx) : e_(e), idx_(idx) {}
-            SizeType n_nodes() const;
-            SizeType node_id(const SizeType k) const;
-            SizeType idx() const { return idx_; }
-
-        private:
-            const Elements &e_;
-            SizeType idx_;
-        };
-
-        class Node {
-        public:
-            Node(const Nodes &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
-            SizeType idx() const { return idx_; }
-            bool is_ghost() const;
-
-            private:
-                const Nodes &nodes_;
-                SizeType idx_;
-        };
 
         void each_element(const std::function<void(const Elem &)> &f);
         void each_node(const std::function<void(const Node &)> &f);
         void each_node_with_ghosts(const std::function<void(const Node &)> &f);
 
-        SizeType dim() const;
+        inline static constexpr SizeType dim() { return Dim; }
         Range local_node_range() const;
         SizeType n_local_nodes_with_ghosts() const;
 
@@ -99,13 +159,15 @@ namespace utopia {
         template<class Array>
         void dims(Array &arr) const
         {
-            SizeType temp[3];
+            std::array<SizeType, UDim> temp;
             dims(temp);
             SizeType d = dim();
             for(SizeType i = 0; i < d; ++i) {
                 arr[i] = temp[i];
             }
         }
+
+        void dims(std::array<SizeType, UDim> &arr) const;
 
         template<class Array>
         void box(Array &min, Array &max) const
@@ -120,8 +182,51 @@ namespace utopia {
             }
         }
 
+        inline Impl &impl()
+        {
+            return *impl_;
+        }
+
+        inline const Impl &impl() const
+        {
+            return *impl_;
+        }
+
     private:
         std::unique_ptr<Impl> impl_;
+    };
+
+    template<int Dim>
+    class FunctionSpace<PetscDM<Dim>, 1> {
+    public:
+        using Mesh = utopia::PetscDM<Dim>;
+
+        FunctionSpace(const std::shared_ptr<Mesh> &mesh)
+        : mesh_(mesh)
+        {}
+
+        template<class Fun>
+        void each_element(Fun fun)
+        {
+            mesh_->each_element(fun);
+        }
+
+        FunctionSpace &view_device()
+        {
+            return *this;
+        }
+
+        // Range local_element_range() const
+        // {
+        //     return mesh_.local_element_range();
+        // }
+
+    private:
+        std::shared_ptr<Mesh> mesh_;
+
+        FunctionSpace(const FunctionSpace &other)
+        : mesh_(other.mesh_)
+        {}
     };
 
 }

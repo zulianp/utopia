@@ -5,6 +5,7 @@
 #include "utopia_MemType.hpp"
 #include "utopia_MeshView.hpp"
 #include "utopia_Device.hpp"
+#include "utopia_FunctionSpace.hpp"
 
 namespace utopia {
 
@@ -51,9 +52,6 @@ namespace utopia {
     private:
         MeshView mesh_;
     };
-
-    template<class Mesh, int NComponents, typename ...>
-    class FunctionSpace {};
 
     template<class Elem_, class Comm, class ExecutionSpace_, typename...Args>
     class FunctionSpace< Mesh<Elem_, Comm, ExecutionSpace_, Uniform<Args...>>, 1> {

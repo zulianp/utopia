@@ -14,10 +14,14 @@ namespace utopia {
 
     static void petsc_dm_app()
     {
+        using SizeType = PetscDM<2>::SizeType;
+        SizeType nx = 10;
+        SizeType ny = 10;
+
         PetscCommunicator world;
-        PetscDM dm(
+        PetscDM<2> dm(
             world,
-            {10, 10},
+            {nx, ny},
             {0.0, 0.0},
             {1.0, 1.0}
         );
@@ -25,17 +29,17 @@ namespace utopia {
         PetscMatrix mat;
         dm.create_matrix(mat);
 
-        dm.each_element([](const PetscDM::Elem &e) {
+        dm.each_element([](const PetscDM<2>::Elem &e) {
             // std::cout << e.idx() << std::endl;
         });
 
         std::stringstream ss;
 
-        dm.each_node([&ss](const PetscDM::Node &node) {
+        dm.each_node([&ss](const PetscDM<2>::Node &node) {
             assert(!node.is_ghost());
         });
 
-        dm.each_node_with_ghosts([&ss](const PetscDM::Node &node) {
+        dm.each_node_with_ghosts([&ss](const PetscDM<2>::Node &node) {
             ss << "(" << node.idx() <<  ", " << node.is_ghost() << ") ";
         });
 

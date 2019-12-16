@@ -2,6 +2,8 @@
 #define UTOPIA_UNIFORM_QUAD4_HPP
 
 #include "utopia_Views.hpp"
+#include "utopia_DeviceNumber.hpp"
+#include "utopia_MemType.hpp"
 
 namespace utopia {
 

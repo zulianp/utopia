@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cmath>
+#include "utopia_Base.hpp"
 #include "utopia_Expression.hpp"
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Normed.hpp"
@@ -12,7 +13,7 @@ namespace utopia {
     template<typename T>
     class Zero {
     public:
-        static T value() { return static_cast<T>(0); }
+        UTOPIA_INLINE_FUNCTION static constexpr T value() { return static_cast<T>(0); }
     };
 
     template<typename T>
@@ -23,7 +24,7 @@ namespace utopia {
     };
 
     template<typename _Scalar>
-    class Number : public Expression< Number<_Scalar> >, 
+    class Number : public Expression< Number<_Scalar> >,
                    public BLAS1Tensor< Number<_Scalar> >,
                    public Normed<_Scalar> {
     public:

@@ -57,6 +57,24 @@ namespace utopia {
         UTOPIA_FUNCTION ArrayView() : data_(nullptr), size_(0) {}
         UTOPIA_FUNCTION ArrayView(T * data, const T &size) : data_(data), size_(size) {}
 
+
+        template<typename OtherT, Size_t... SizeArgs>
+        UTOPIA_INLINE_FUNCTION void copy(const ArrayView<OtherT, SizeArgs...> &other)
+        {
+            UTOPIA_DEVICE_ASSERT(data_);
+            UTOPIA_DEVICE_ASSERT(size_ >= other.size());
+
+            size_ = other.size();
+            for(Size_t i = 0; i < size_; ++i) {
+                (*this)[i] = other[i];
+            }
+        }
+
+        template<Size_t... SizeArgs>
+        UTOPIA_FUNCTION ArrayView(const ArrayView<T, SizeArgs...> &other)
+        : data_(other.data_), size_(other.size())
+        {}
+
     private:
         T *data_;
         Size_t size_;
@@ -155,7 +173,7 @@ namespace utopia {
         }
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType extent(const SizeType &i) const
-        {   
+        {
             UTOPIA_DEVICE_ASSERT(i < 2);
             UTOPIA_DEVICE_ASSERT(i >= 0);
 
@@ -267,7 +285,7 @@ namespace utopia {
         ArrayView<T> data_;
         SizeType rows_, cols_;
     };
- 
+
 }
 
 #endif //UTOPIA_ARRAY_2D_HPP
