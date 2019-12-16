@@ -76,18 +76,23 @@ namespace utopia {
         using DevFunctionSpace = FunctionSpace::ViewDevice;
         using DofIndex         = DevFunctionSpace::DofIndex;
         using ElementMatrix    = utopia::StaticMatrix<double, 4, 4>;
+        using ElementVector    = utopia::StaticVector<double, 4>;
+        using Point            = FunctionSpace::Point;
+        using Scalar           = FunctionSpace::Scalar;
 
         using Quadrature = utopia::Quadrature<Elem, 2>;
 
         using SizeType = Mesh::SizeType;
-        SizeType scale = 2;
-        SizeType nx = scale * 3000;
-        SizeType ny = scale * 5000;
-
-        Chrono c;
-        c.start();
+        SizeType scale = 1;
+        SizeType nx = scale * 30;
+        SizeType ny = scale * 50;
 
         PetscCommunicator world;
+
+        Chrono c;
+        world.barrier();
+        c.start();
+
         Mesh mesh(
             world,
             {nx, ny},
@@ -95,6 +100,7 @@ namespace utopia {
             {1.0, 1.0}
         );
 
+        world.barrier();
         c.stop();
 
         std::cout << "mesh-gen: " << c << std::endl;
@@ -105,11 +111,16 @@ namespace utopia {
         auto &&space_view = space.view_device();
         auto &&q_view     = quadrature.view_device();
 
+        world.barrier();
         c.start();
 
         PetscMatrix mat;
         space.create_matrix(mat);
 
+        PetscVector rhs;
+        space.create_vector(rhs);
+
+        world.barrier();
         c.stop();
         std::cout << "create-matrix: " << c << std::endl;
 
@@ -121,15 +132,32 @@ namespace utopia {
         Differential<FunctionSpace, Quadrature> differentials(space, quadrature);
         auto &&d_view = differentials.view_device();
 
+        BoundaryCondition<FunctionSpace> bc_left(
+            space,
+            BoundaryCondition<FunctionSpace>::LEFT,
+            [](const Point &p) -> Scalar {
+                return -1.0;
+            }
+        );
+
+        BoundaryCondition<FunctionSpace> bc_right(
+            space,
+            BoundaryCondition<FunctionSpace>::RIGHT,
+            [](const Point &p) -> Scalar {
+                return 1.0;
+            }
+        );
 
         c.start();
+        world.barrier();
 
         std::stringstream ss;
-
         SizeType n_assemblies = 0;
 
         {
             auto mat_view = device_view(mat);
+            //FIXME
+            Write<PetscVector> w(rhs, utopia::GLOBAL_ADD);
 
             Dev::parallel_for(
                 space.local_element_range(),
@@ -138,6 +166,7 @@ namespace utopia {
                 Elem e;
                 DofIndex dofs;
                 ElementMatrix el_mat;
+                ElementVector el_vec;
 
                 space_view.elem(i, e);
 
@@ -146,6 +175,7 @@ namespace utopia {
                 const auto dx   = d_view.make(i, e);
 
                 el_mat.set(0.0);
+                el_vec.set(0.0);
 
                 const auto n = grad.n_points();
                 for(std::size_t k = 0; k < n; ++k) {
@@ -161,52 +191,29 @@ namespace utopia {
                 }
 
                 space_view.dofs(i, dofs);
+
+                bc_left.apply(e,  dofs, el_mat, el_vec);
+                bc_right.apply(e, dofs, el_mat, el_vec);
+
                 const SizeType n_dofs = dofs.size();
 
                 for(SizeType i = 0; i < n_dofs; ++i) {
+                    rhs.c_add(dofs[i], el_vec(i));
                     for(SizeType j = 0; j < n_dofs; ++j) {
                         mat_view.atomic_add(dofs[i], dofs[j], el_mat(i, j));
                     }
                 }
 
-                // ss << i << ")\n";
-                // mesh.nodes_local(i, lnodes);
-                // mesh.nodes(i, gnodes);
-
-                // for(SizeType k = 0; k < lnodes.size(); ++k) {
-                //     ss <<  "[" << lnodes[k] << ", " << gnodes[k] << " " << mesh.is_ghost(gnodes[k]) << "] ";
-                // }
-
-                // ss << "\nt = ";
-                // e.describe(ss);
-
-                // ss << std::endl;
                 ++n_assemblies;
             });
         }
 
+        world.barrier();
         c.stop();
         std::cout << " assemblies " << n_assemblies << " " << c << std::endl;
 
         SizeType nnz = utopia::nnz(mat, 0.);
         std::cout << "nnz " << nnz << std::endl;
-
-        // disp(mat);
-
-        // int size = world.size();
-        // int rank = world.rank();
-
-        // world.barrier();
-
-        // for(int i = 0; i < size; ++i) {
-        //     if(i == rank) {
-        //         std::cout << "--------------------------------------------\n";
-        //         std::cout << ss.str() << std::endl;
-        //         std::cout << "--------------------------------------------\n";
-        //     }
-
-        //     world.barrier();
-        // }
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_assemble);

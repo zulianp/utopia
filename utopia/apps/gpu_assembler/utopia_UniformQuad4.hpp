@@ -117,6 +117,24 @@ namespace utopia {
           return RefQuad4::fun(i, p);
         }
 
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION void node(const std::size_t &i, Point &p) const
+        {
+            p[0] = translation_[0];
+            p[1] = translation_[1];
+
+            switch(i) {
+                case 0: { return; }
+                case 1: { p[0] += h_[0]; return; }
+                case 2: { p[0] += h_[0]; p[1] += h_[1]; return; }
+                case 3: { p[1] += h_[1]; return; }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                    return;
+                }
+            }
+        }
+
         template<typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const
         {

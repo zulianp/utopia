@@ -14,6 +14,7 @@
 
 #include <array>
 #include <memory>
+#include <functional>
 
 namespace utopia {
 
@@ -241,6 +242,11 @@ namespace utopia {
             return impl_.fun(i, p);
         }
 
+        inline void node(const SizeType &i, Point &p) const
+        {
+            return impl_.node(i, p);
+        }
+
         inline void grad(const int i, const Point &p, Grad &g) const
         {
            impl_.grad(i, p, g);
@@ -350,6 +356,8 @@ namespace utopia {
         std::array<Scalar, NPoints> weights_;
     };
 
+
+
     template<class Elem_>
     class FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> {
     public:
@@ -359,6 +367,7 @@ namespace utopia {
         using MemType = typename Elem::MemType;
         using Scalar = typename Mesh::Scalar;
         using SizeType = typename Mesh::SizeType;
+        using Point = typename Mesh::Point;
 
         using ViewDevice = FunctionSpace;
         using Device = typename Mesh::Device;
@@ -411,6 +420,58 @@ namespace utopia {
         FunctionSpace(const FunctionSpace &other)
         : mesh_(other.mesh_)
         {}
+    };
+
+    template<class Space>
+    class BoundaryCondition {};
+
+
+    template<class Elem, int Components>
+    class BoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
+    public:
+        using FunctionSpace = utopia::FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>;
+        using Point    = typename FunctionSpace::Point;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar   = typename FunctionSpace::Scalar;
+        using DofIndex = typename FunctionSpace::DofIndex;
+        static const int Dim = FunctionSpace::Dim;
+
+        enum SideSet {
+            LEFT = 0,
+            RIGHT = 1,
+            BOTTOM = 2,
+            TOP = 3,
+            FRONT = 4,
+            BACK = 5
+        };
+
+        BoundaryCondition(
+            const FunctionSpace &space,
+            SideSet side_set,
+            const std::function<Scalar(const Point &)> &fun,
+            const int component = 0)
+        : space_(space), side_set_(side_set), fun_(fun), component_(component)
+        {}
+
+        void apply(PetscMatrix &mat, PetscVector &vec) const
+        {
+
+        }
+
+        template<class ElementMatrix, class ElementVector>
+        void apply(
+            const Elem &e,
+            const DofIndex &ind,
+            ElementMatrix &mat, ElementVector &vec)
+        {
+
+        }
+
+    private:
+        const FunctionSpace &space_;
+        SideSet side_set_;
+        std::function<Scalar(const Point &)> fun_;
+        int component_;
     };
 
 }
