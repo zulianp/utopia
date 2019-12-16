@@ -9,6 +9,7 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_AssemblyView.hpp"
 #include "utopia_DeviceView.hpp"
+#include "utopia_petsc.hpp"
 
 #include <cmath>
 
@@ -79,8 +80,12 @@ namespace utopia {
         using Quadrature = utopia::Quadrature<Elem, 2>;
 
         using SizeType = Mesh::SizeType;
-        SizeType nx = 4;
-        SizeType ny = 5;
+        SizeType scale = 2;
+        SizeType nx = scale * 3000;
+        SizeType ny = scale * 5000;
+
+        Chrono c;
+        c.start();
 
         PetscCommunicator world;
         Mesh mesh(
@@ -90,14 +95,23 @@ namespace utopia {
             {1.0, 1.0}
         );
 
+        c.stop();
+
+        std::cout << "mesh-gen: " << c << std::endl;
+
         Quadrature quadrature;
         FunctionSpace space(mesh);
 
         auto &&space_view = space.view_device();
         auto &&q_view     = quadrature.view_device();
 
+        c.start();
+
         PetscMatrix mat;
         space.create_matrix(mat);
+
+        c.stop();
+        std::cout << "create-matrix: " << c << std::endl;
 
         PhysicalGradient<FunctionSpace, Quadrature> gradients(space, quadrature);
 
@@ -107,10 +121,12 @@ namespace utopia {
         Differential<FunctionSpace, Quadrature> differentials(space, quadrature);
         auto &&d_view = differentials.view_device();
 
-        Chrono c;
+
         c.start();
 
         std::stringstream ss;
+
+        SizeType n_assemblies = 0;
 
         {
             auto mat_view = device_view(mat);
@@ -165,13 +181,17 @@ namespace utopia {
                 // e.describe(ss);
 
                 // ss << std::endl;
+                ++n_assemblies;
             });
         }
 
         c.stop();
-        std::cout << " assemblies " << c << std::endl;
+        std::cout << " assemblies " << n_assemblies << " " << c << std::endl;
 
-        disp(mat);
+        SizeType nnz = utopia::nnz(mat, 0.);
+        std::cout << "nnz " << nnz << std::endl;
+
+        // disp(mat);
 
         // int size = world.size();
         // int rank = world.rank();
