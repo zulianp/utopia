@@ -86,6 +86,11 @@ namespace utopia {
             }
 
             level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
+
+            for(auto l=0; l < this->n_levels(); l++){
+                local_level_dofs_.push_back(level_functions_[l]->loc_size()); 
+            }
+
             return true;
         }
 
@@ -261,10 +266,22 @@ namespace utopia {
             }
         }
 
+        SizeType local_dofs(const SizeType & level)
+        {
+            return local_level_dofs_[level]; 
+        }
+
+
+        const std::vector<SizeType> & local_level_dofs()
+        {
+            return local_level_dofs_; 
+        }
+
 
 
     protected:
         std::vector<FunPtr>                      level_functions_;
+        std::vector<SizeType>                    local_level_dofs_;
 
     };
 

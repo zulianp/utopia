@@ -242,48 +242,31 @@ namespace utopia
 
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
         {
-            if(level < this->n_levels()-1)
-            {
-                //return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
-                return  ml_derivs_.compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
-            }
-            else{
-                return fun.hessian(memory_.x[level], memory_.H[level]);
-            }
+            return  ml_derivs_.compute_hessian(level, fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
         }
 
 
         virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
-            // std::cout<<"get_multilevel_gradient: level: "<< level << "  \n"; 
-            if(level < this->n_levels()-1)
-            {
-                //return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
-                return ml_derivs_.compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
-            }
-            else
-            {
-                return fun.gradient(memory_.x[level], memory_.g[level]);
-            }
+            return ml_derivs_.compute_gradient(level, fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
         }
 
 
         virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
-            if(level < this->n_levels()-1)
-            {
-                //return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
-                return ml_derivs_.compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
-            }
-            else
-            {
-                Scalar energy;
-                fun.value(memory_.x[level], energy);
-                return energy;
-            }
+            return ml_derivs_.compute_energy(level, fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
         }
 
 
+        virtual void init_memory(const SizeType & /*fine_local_size */)
+        {
+            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+            ml_derivs_.init_memory(dofs); 
+
+            // to be fixed 
+            this->memory_.init(this->n_levels());
+
+        }
 
 
 

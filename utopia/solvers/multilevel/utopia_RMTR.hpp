@@ -698,9 +698,10 @@ namespace utopia
             return false;
         }
 
-        virtual void init_memory(const SizeType & /*fine_local_size */) override
+        virtual void init_memory(const SizeType & fine_local_size) override
         {
-            this->memory_.init(this->n_levels());
+            RMTRBase::init_memory(fine_local_size); 
+            // this->memory_.init(this->n_levels());
 
             // init deltas to some default value...
             for(Scalar l = 0; l < this->n_levels(); l ++){

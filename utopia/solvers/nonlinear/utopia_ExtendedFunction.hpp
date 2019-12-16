@@ -37,6 +37,11 @@ namespace utopia
             return _x_eq_values; 
         }
 
+        SizeType loc_size() const 
+        {
+            return local_size(_x_eq_values).get(0); 
+        }
+
         virtual bool hessian(const Vector &x, Matrix &H) const override = 0;
         virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const  override
         {
