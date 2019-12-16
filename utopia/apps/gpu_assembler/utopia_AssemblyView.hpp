@@ -107,10 +107,10 @@ namespace utopia {
         const Elem *elem_;
     };
 
-    template<class Mesh, int NComponents, class Quadrature>
-    class PhysicalGradient< FunctionSpace<Mesh, NComponents>, Quadrature> {
+    template<class Mesh, int NComponents, class Quadrature, typename...Args>
+    class PhysicalGradient< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
     public:
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
         using ViewDevice = utopia::PhysicalGradient<Elem, typename Quadrature::ViewDevice>;
@@ -208,10 +208,10 @@ namespace utopia {
         const Elem *elem_;
     };
 
-    template<class Mesh, int NComponents, class Quadrature>
-    class Differential< FunctionSpace<Mesh, NComponents>, Quadrature> {
+    template<class Mesh, int NComponents, class Quadrature, typename...Args>
+    class Differential< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
     public:
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
         using ViewDevice = utopia::Differential<Elem, typename Quadrature::ViewDevice>;

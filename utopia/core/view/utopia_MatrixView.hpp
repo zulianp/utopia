@@ -1,14 +1,33 @@
 #ifndef UTOPIA_KOKKOS_MATRIX_VIEW_HPP
 #define UTOPIA_KOKKOS_MATRIX_VIEW_HPP
 
+#include "utopia_Base.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_Tensor.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_DeviceExpression.hpp"
+#include "utopia_Accessor.hpp"
 
 #include <utility>
 
 namespace utopia {
+
+    template<class View>
+    class Accessor<TensorView<View, 2>> {
+    public:
+        using Scalar   = typename Traits<TensorView<View, 2>>::Scalar;
+        using SizeType = typename Traits<TensorView<View, 2>>::SizeType;
+
+        UTOPIA_INLINE_FUNCTION static const Scalar &get(const TensorView<View, 2> &t, const SizeType &i, const SizeType &j)
+        {
+            return t(i, j);
+        }
+
+        UTOPIA_INLINE_FUNCTION static void set(TensorView<View, 2> &t, const SizeType &i, const SizeType &j, const Scalar &val)
+        {
+            t(i, j) = val;
+        }
+    };
 
     template<class ArrayView2D_>
     class TensorView<ArrayView2D_, 2> final : public DeviceExpression< TensorView<ArrayView2D_, 2> > {

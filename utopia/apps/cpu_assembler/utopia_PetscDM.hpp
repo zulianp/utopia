@@ -9,6 +9,8 @@
 #include "utopia_FunctionSpace.hpp"
 #include "utopia_ArrayView.hpp"
 #include "utopia_VectorView.hpp"
+#include "utopia_Quadrature.hpp"
+#include "utopia_UniformQuad4.hpp"
 
 #include <array>
 #include <memory>
@@ -21,24 +23,32 @@ namespace utopia {
     template<int Dim>
     class PetscDMNodes;
 
-    template<int Dim>
+    template<int Dim_>
     class PetscElem {
     public:
+        static const int Dim = Dim_;
         using SizeType = PetscInt;
         using Scalar   = PetscScalar;
         using Point    = utopia::StaticVector<Scalar, Dim>;
         using Grad     = utopia::StaticVector<Scalar, Dim>;
+        using NodeIndex = utopia::ArrayView<const SizeType>;
 
         virtual ~PetscElem() {}
         PetscElem()
         {}
 
-        inline void set(const ArrayView<SizeType> &nodes)
+        inline void set(const NodeIndex &nodes)
         {
             nodes_ = nodes;
         }
 
-        inline const ArrayView<SizeType> &nodes() const
+        inline const NodeIndex &nodes() const
+        {
+            return nodes_;
+        }
+
+
+        inline NodeIndex &nodes()
         {
             return nodes_;
         }
@@ -72,7 +82,7 @@ namespace utopia {
         }
 
     private:
-        ArrayView<SizeType> nodes_;
+        NodeIndex nodes_;
         SizeType idx_;
     };
 
@@ -94,11 +104,14 @@ namespace utopia {
         static const std::size_t UDim = Dim;
         using SizeType  = PetscInt;
         using Scalar    = PetscScalar;
-        using Point     = utopia::VectorView<ArrayView<Scalar>>;
-        using Elem = utopia::PetscElem<Dim>;
-        using Node = utopia::PetscNode<Dim>;
+        using Point     = utopia::StaticVector<Scalar, Dim>;
+        using Elem      = utopia::PetscElem<Dim>;
+        using Node      = utopia::PetscNode<Dim>;
+        using Device    = utopia::Device<PETSC>;
+        using NodeIndex = typename Elem::NodeIndex;
 
         class Impl;
+
 
         PetscDM(
             const PetscCommunicator     &comm,
@@ -107,12 +120,24 @@ namespace utopia {
             const std::array<Scalar, UDim>   &box_max
         );
 
-
         PetscDM();
         ~PetscDM();
 
+        void cell_point(const SizeType &idx, Point &translation);
+        void cell_size(const SizeType &idx, Point &cell_size);
+
+        void elem(const SizeType &idx, Elem &e) const;
+        void nodes(const SizeType &idx, NodeIndex &nodes) const;
+        void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
+
         void create_matrix(PetscMatrix &mat);
         void create_vector(PetscVector &vec);
+
+        // void create_local_matrix(PetscMatrix &mat);
+        void create_local_vector(PetscVector &vec);
+
+        // void local_to_global(PetscMatrix &local, PetscMatrix &global);
+        void local_to_global(PetscVector &local, PetscVector &global);
 
         void describe() const;
 
@@ -124,11 +149,13 @@ namespace utopia {
         Range local_node_range() const;
         SizeType n_local_nodes_with_ghosts() const;
 
-        void dims(SizeType *arr) const;
+        // void dims(SizeType *arr) const;
         void box(Scalar *min, Scalar *max) const;
 
         void local_node_ranges(SizeType *begin, SizeType *end) const;
         void local_element_ranges(SizeType *begin, SizeType *end) const;
+
+        Range local_element_range() const;
 
         template<class Array>
         void local_element_ranges(Array &begin, Array &end) const
@@ -192,17 +219,157 @@ namespace utopia {
             return *impl_;
         }
 
+        bool is_ghost(const SizeType &global_node_idx) const;
+
     private:
         std::unique_ptr<Impl> impl_;
     };
 
-    template<int Dim>
-    class FunctionSpace<PetscDM<Dim>, 1> {
+    class PetscUniformQuad4 final : public PetscElem<2> {
     public:
+        using Super    = utopia::PetscElem<2>;
+        using SizeType = Super::SizeType;
+        using Scalar   = Super::Scalar;
+        using Point    = Super::Point;
+        using Grad     = Super::Grad;
+        using MemType  = Uniform<>;
+        static const int Dim = 2;
+        static const int NNodes = 4;
+
+        inline Scalar fun(const SizeType &i, const Point &p) const
+        {
+            return impl_.fun(i, p);
+        }
+
+        inline void grad(const int i, const Point &p, Grad &g) const
+        {
+           impl_.grad(i, p, g);
+        }
+
+        inline constexpr static bool is_affine()
+        {
+            return UniformQuad4<Scalar>::is_affine();
+        }
+
+        inline constexpr static Scalar reference_measure()
+        {
+            return UniformQuad4<Scalar>::reference_measure();
+        }
+
+        inline constexpr static int n_nodes()
+        {
+            return UniformQuad4<Scalar>::n_nodes();
+        }
+
+        inline void set(
+            const StaticVector2<Scalar> &translation,
+            const StaticVector2<Scalar> &h)
+        {
+            impl_.set(translation, h);
+        }
+
+        void describe(std::ostream &os = std::cout) const
+        {
+            auto &t = impl_.translation();
+            os << t(0) << " " << t(1) << "\n";
+        }
+
+    private:
+        UniformQuad4<Scalar> impl_;
+    };
+
+    template<typename View, std::size_t N>
+    class Accessor<std::array<VectorView<View>, N>> {
+    public:
+        using Matrix = std::array<VectorView<View>, N>;
+        using T = typename Traits<View>::Scalar;
+
+        static const T &get(const Matrix &t, const std::size_t &i, const std::size_t &j)
+        {
+            return t[i][j];
+        }
+
+        static void set(Matrix &t, const std::size_t &i, const std::size_t &j, const T &val)
+        {
+            t[i][j] = val;
+        }
+    };
+
+    template<>
+    class Quadrature<PetscUniformQuad4, 2, 2> {
+    public:
+        using Scalar   = PetscUniformQuad4::Scalar;
+        using SizeType = PetscUniformQuad4::SizeType;
+        using Point    = PetscUniformQuad4::Point;
+        using ViewDevice = const Quadrature &;
+
+        static const int Order   = 2;
+        static const int Dim     = 2;
+        static const int NPoints = 6;
+
+
+        inline static constexpr int n_points()
+        {
+            return NPoints;
+        }
+
+        inline static constexpr int dim()
+        {
+            return Dim;
+        }
+
+        void init()
+        {
+            Quad4Quadrature<Scalar, Order, Dim, NPoints>::get(points_, weights_);
+        }
+
+        template<class Point>
+        inline void point(const int qp_idx, Point &p) const
+        {
+            p[0] = points_[qp_idx][0];
+            p[1] = points_[qp_idx][1];
+        }
+
+        inline const Scalar &weight(const int qp_idx) const
+        {
+            return weights_[qp_idx];
+        }
+
+        Quadrature()
+        {
+            init();
+        }
+
+        inline ViewDevice &view_device() const
+        {
+            return *this;
+        }
+
+    private:
+        std::array<Point, NPoints> points_;
+        std::array<Scalar, NPoints> weights_;
+    };
+
+    template<class Elem_>
+    class FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> {
+    public:
+        static const int Dim = Elem_::Dim;
         using Mesh = utopia::PetscDM<Dim>;
+        using Elem = Elem_;
+        using MemType = typename Elem::MemType;
+        using Scalar = typename Mesh::Scalar;
+        using SizeType = typename Mesh::SizeType;
+
+        using ViewDevice = FunctionSpace;
+        using Device = typename Mesh::Device;
+        using DofIndex = typename Mesh::NodeIndex;
 
         FunctionSpace(const std::shared_ptr<Mesh> &mesh)
         : mesh_(mesh)
+        {}
+
+        FunctionSpace(Mesh &mesh)
+        : mesh_(utopia::make_ref(mesh))
         {}
 
         template<class Fun>
@@ -211,15 +378,32 @@ namespace utopia {
             mesh_->each_element(fun);
         }
 
-        FunctionSpace &view_device()
+        void elem(const SizeType &idx, Elem &e) const;
+
+        void dofs(const SizeType &idx, DofIndex &dofs) const
+        {
+            mesh_->nodes(idx, dofs);
+        }
+
+        ViewDevice &view_device()
         {
             return *this;
         }
 
-        // Range local_element_range() const
-        // {
-        //     return mesh_.local_element_range();
-        // }
+        Range local_element_range() const
+        {
+            return mesh_->local_element_range();
+        }
+
+        void create_matrix(PetscMatrix &mat)
+        {
+            mesh_->create_matrix(mat);
+        }
+
+        void create_vector(PetscVector &vec)
+        {
+            mesh_->create_vector(vec);
+        }
 
     private:
         std::shared_ptr<Mesh> mesh_;

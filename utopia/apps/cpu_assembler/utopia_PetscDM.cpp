@@ -8,4 +8,6 @@ namespace utopia {
     template class PetscDM<1>;
     template class PetscDM<2>;
     template class PetscDM<3>;
+
+    template class FunctionSpace<PetscDM<2>, 1, PetscUniformQuad4>;
 }

@@ -203,6 +203,11 @@ namespace utopia {
             return NNodes;
         }
 
+        const StaticVector2<Scalar> &translation() const
+        {
+            return translation_;
+        }
+
     private:
         Scalar h_[2];
         StaticVector2<Scalar> translation_;

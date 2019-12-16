@@ -286,6 +286,17 @@ namespace utopia {
         SizeType rows_, cols_;
     };
 
+
+    template<typename T, Size_t... Args>
+    void disp(const ArrayView<T, Args...> &view, std::ostream &os = std::cout)
+    {
+        for(const auto &v : view) {
+            os << v << " ";
+        }
+
+        os << "\n";
+    }
+
 }
 
 #endif //UTOPIA_ARRAY_2D_HPP

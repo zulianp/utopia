@@ -67,7 +67,7 @@ namespace utopia {
         //FIXME is not atomic
         inline void atomic_add(const SizeType &i, const SizeType &j, const Scalar &value) const
         {
-            tensor_.add(i, j, value);
+            tensor_.c_add(i, j, value);
         }
 
         DeviceView(T &tensor) : tensor_(tensor), lock_(std::make_shared<Write<T>>(tensor)) {}

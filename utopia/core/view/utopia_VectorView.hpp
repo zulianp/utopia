@@ -6,8 +6,26 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_DeviceExpression.hpp"
 #include "utopia_ViewTraits.hpp"
+#include "utopia_Accessor.hpp"
 
 namespace utopia {
+
+    template<class View>
+    class Accessor<TensorView<View, 1>> {
+    public:
+        using Scalar   = typename Traits<TensorView<View, 1>>::Scalar;
+        using SizeType = typename Traits<TensorView<View, 1>>::SizeType;
+
+        UTOPIA_INLINE_FUNCTION static const Scalar &get(const TensorView<View, 1> &t, const SizeType &i)
+        {
+            return t(i);
+        }
+
+        UTOPIA_INLINE_FUNCTION static void set(TensorView<View, 1> &t, const SizeType &i, const Scalar &val)
+        {
+            t(i) = val;
+        }
+    };
 
     template<class ArrayView_>
     class TensorView<ArrayView_, 1> final : public DeviceExpression< TensorView<ArrayView_, 1> > {

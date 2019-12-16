@@ -10,7 +10,6 @@
 #include "utopia_Readable.hpp"
 #include "utopia_PetscIS.hpp"
 
-#include "utopia_UniformQuad4.hpp"
 
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -19,56 +18,6 @@
 
 namespace utopia {
 
-    class PetscUniformQuad4 final : public PetscElem<2> {
-    public:
-        using Super    = utopia::PetscElem<2>;
-        using SizeType = Super::SizeType;
-        using Scalar   = Super::Scalar;
-        using Point    = Super::Point;
-        using Grad     = Super::Grad;
-
-        inline Scalar fun(const SizeType &i, const Point &p) const
-        {
-            return UniformQuad4<Scalar>::fun(i, p);
-        }
-
-        inline void grad(const int i, const Point &p, Grad &g) const
-        {
-            RefQuad4::grad(i, p, g);
-            g(0) /= h_(0);
-            g(1) /= h_(1);
-        }
-
-        inline constexpr static bool is_affine()
-        {
-            return true;
-        }
-
-        inline constexpr static Scalar reference_measure()
-        {
-            return 1.0;
-        }
-
-        inline constexpr static int n_nodes()
-        {
-            return 4;
-        }
-
-        inline void set(
-            const StaticVector2<Scalar> &translation,
-            const StaticVector2<Scalar> &h)
-        {
-            translation_(0) = translation(0);
-            translation_(1) = translation(1);
-
-            h_(0) = h(0);
-            h_(1) = h(1);
-        }
-
-    private:
-        StaticVector2<Scalar> h_;
-        StaticVector2<Scalar> translation_;
-    };
 
 
     //https://www.mcs.anl.gov/petsc/petsc-current/src/ksp/ksp/examples/tutorials/ex42.c.html
@@ -82,6 +31,12 @@ namespace utopia {
     public:
         using SizeType = Traits<PetscVector>::SizeType;
         using Scalar   = Traits<PetscVector>::Scalar;
+
+        template<class Array>
+        inline static void dims(const DM &dm, Array &arr)
+        {
+            auto ierr = DMDAGetInfo(dm, nullptr, &arr[0], &arr[1], &arr[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
+        }
 
         static Range local_node_range(const DM &dm)
         {
@@ -119,10 +74,10 @@ namespace utopia {
             }
         }
 
-        static void box(const DM &dm, Scalar *min, Scalar *max)
-        {
-            DMDAGetBoundingBox(dm, min, max);
-        }
+        // static void box(const DM &dm, Scalar *min, Scalar *max)
+        // {
+        //     DMDAGetBoundingBox(dm, min, max);
+        // }
 
         static SizeType n_local_nodes_with_ghosts(const DM &dm)
         {
@@ -181,18 +136,16 @@ namespace utopia {
         : dm(raw_type(dm_impl))
         {
             DMDAGetElements(dm,&ne,&nc,&e);
+            e_global.resize(ne*nc);
+
+            ISLocalToGlobalMapping map;
+            DMGetLocalToGlobalMapping(dm,&map);
+            ISLocalToGlobalMappingApplyBlock(map, ne*nc, e, &e_global[0]);
         }
 
         template<class Fun>
         void each(Fun fun) const
         {
-            ISLocalToGlobalMapping map;
-            DMGetLocalToGlobalMapping(dm,&map);
-            std::vector<SizeType> e_global(ne*nc);
-            ISLocalToGlobalMappingApplyBlock(map, ne*nc, e, &e_global[0]);
-
-            PetscUniformQuad4 quad4;
-
             for(typename PetscDM<Dim>::SizeType i = 0; i < ne; i++) {
                 // PetscDM<Dim>::Elem e(*this, i);
                 // fun(e);
@@ -207,6 +160,7 @@ namespace utopia {
         DM dm;
         SizeType ne,nc;
         const SizeType   *e;
+        std::vector<SizeType> e_global;
     };
 
     template<int Dim>
@@ -215,6 +169,7 @@ namespace utopia {
         using SizeType = PetscInt;
         using Scalar   = PetscScalar;
         using PetscNode = utopia::PetscNode<Dim>;
+        using Point = typename utopia::PetscDM<Dim>::Point;
 
         template<class Array>
         void dims(Array &arr) const
@@ -231,9 +186,11 @@ namespace utopia {
                 &extent[0], &extent[1], &extent[2]
                 );
 
+
+
             this->dims(dims);
 
-            each(dim(), dims, start, extent, f);
+            each(dims, start, extent, f);
         }
 
         template<class Fun>
@@ -248,17 +205,16 @@ namespace utopia {
                 &extent[0], &extent[1], &extent[2]
                 );
 
-            each(dim(), dims, start, extent, f);
+            each(dims, start, extent, f);
         }
 
         template<class Fun>
         void each(
-            const int dim,
             const SizeType dims[3],
             const SizeType start[3],
             const SizeType extent[3], Fun f) const
         {
-            switch(dim) {
+            switch(Dim) {
                 case 1:
                 {
                     for(SizeType i = 0; i < extent[0]; ++i) {
@@ -334,6 +290,7 @@ namespace utopia {
     public:
         using SizeType = utopia::Traits<PetscVector>::SizeType;
         using Scalar   = utopia::Traits<PetscVector>::Scalar;
+        using Point    = typename PetscElem<Dim>::Point;
 
         Impl(const PetscCommunicator &comm)
         : comm(comm), dm(nullptr)
@@ -427,6 +384,11 @@ namespace utopia {
             min_x = box_min[0];
             max_x = box_max[0];
 
+            for(int d = 0; d < Dim; ++d) {
+                this->box_min_[d] = box_min[d];
+                this->box_max_[d] = box_max[d];
+            }
+
             const auto d = arr.size();
             if(d > 1) {
                 min_y = box_min[1];
@@ -446,13 +408,42 @@ namespace utopia {
         void destroy()
         {
             if(dm) {
+                elements = nullptr;
+                nodes = nullptr;
                 DMDestroy(&dm);
                 dm = nullptr;
             }
         }
 
+        void local_node_idx_coord(const SizeType &idx, Point &p)
+        {
+            SizeType dims[3], start[3], extent[3], tensor_index[Dim];
+            DMDAGetGhostCorners(dm,
+                &start[0],  &start[1],  &start[2],
+                &extent[0], &extent[1], &extent[2]
+            );
+
+            PetscDMImpl<Dim>::dims(dm, dims);
+
+            SizeType current = idx;
+            for(int i = 0; i < Dim; ++i) {
+                const int next = current / extent[i];
+                tensor_index[i] = current - next * extent[i];
+                current = next;
+            }
+
+            for(int i = 0; i < Dim; ++i) {
+                SizeType c = tensor_index[i] + start[i];
+                p[i] = c * (box_max_[i] - box_min_[i])/(dims[i] - 1) + box_min_[i];
+            }
+        }
+
         PetscCommunicator comm;
         DM dm;
+
+        std::unique_ptr<PetscDMElements<Dim>> elements;
+        std::unique_ptr<PetscDMNodes<Dim>> nodes;
+        Point box_min_, box_max_;
     };
 
     template<int Dim>
@@ -481,6 +472,8 @@ namespace utopia {
     : impl_(utopia::make_unique<Impl>(comm))
     {
         impl_->init_uniform(comm, dims, box_min, box_max);
+        impl_->elements = utopia::make_unique<PetscDMElements<Dim>>(*this);
+        impl_->nodes = utopia::make_unique<PetscDMNodes<Dim>>(*this);
     }
 
     template<int Dim>
@@ -488,24 +481,46 @@ namespace utopia {
     {}
 
     template<int Dim>
+    Range PetscDM<Dim>::local_element_range() const
+    {
+        return Range(0, impl_->elements->ne);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::elem(const SizeType &idx, Elem &e) const
+    {
+        this->nodes(idx, e.nodes());
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::nodes(const SizeType &idx, NodeIndex &nodes) const
+    {
+        nodes = NodeIndex(&impl_->elements->e_global[idx*impl_->elements->nc], impl_->elements->nc);
+    }
+
+
+    template<int Dim>
+    void PetscDM<Dim>::nodes_local(const SizeType &idx, NodeIndex &nodes) const
+    {
+        nodes = NodeIndex(&impl_->elements->e[idx*impl_->elements->nc], impl_->elements->nc);
+    }
+
+    template<int Dim>
     void PetscDM<Dim>::each_element(const std::function<void(const Elem &)> &f)
     {
-        PetscDMElements<Dim> elements(*this);
-        elements.each(f);
+        impl_->elements->each(f);
     }
 
     template<int Dim>
     void PetscDM<Dim>::each_node(const std::function<void(const Node &)> &f)
     {
-        PetscDMNodes<Dim> nodes(*this);
-        nodes.each(f);
+        impl_->nodes->each(f);
     }
 
     template<int Dim>
     void PetscDM<Dim>::each_node_with_ghosts(const std::function<void (const Node &)> &f)
     {
-        PetscDMNodes<Dim> nodes(*this);
-        nodes.each_with_ghosts(f);
+        impl_->nodes->each_with_ghosts(f);
     }
 
     template<int Dim>
@@ -517,7 +532,10 @@ namespace utopia {
     template<int Dim>
     void PetscDM<Dim>::box(Scalar *min, Scalar *max) const
     {
-        PetscDMImpl<Dim>::box(impl_->dm, min, max);
+        for(int i = 0; i < Dim; ++i) {
+            min[i] = impl_->box_min_[i];
+            max[i] = impl_->box_max_[i];
+        }
     }
 
     template<int Dim>
@@ -642,10 +660,68 @@ namespace utopia {
         os << std::endl;
     }
 
+    // template<int Dim>
+    // void PetscDM<Dim>::create_local_matrix(PetscMatrix &mat)
+    // {
+
+    // }
+
+    template<int Dim>
+    void PetscDM<Dim>::create_local_vector(PetscVector &vec)
+    {
+        vec.destroy();
+        auto err = DMCreateLocalVector(impl_->dm, &raw_type(vec)); assert(err == 0);
+    }
+
+    // template<int Dim>
+    // void PetscDM<Dim>::local_to_global(PetscMatrix &local, PetscMatrix &global)
+    // {
+
+    // }
+
+    template<int Dim>
+    void PetscDM<Dim>::local_to_global(PetscVector &local, PetscVector &global)
+    {
+        auto err = DMLocalToGlobal(impl_->dm, raw_type(local), ADD_VALUES, raw_type(global)); assert(err == 0);
+    }
+
     template<int Dim>
     bool PetscNode<Dim>::is_ghost() const
     {
         return nodes_.is_ghost(idx());
+    }
+
+    template<int Dim>
+    bool PetscDM<Dim>::is_ghost(const SizeType &global_node_idx) const
+    {
+        return impl_->nodes->is_ghost(global_node_idx);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::cell_point(const SizeType &idx, Point &translation)
+    {
+        SizeType v0 = impl_->elements->e[idx*impl_->elements->nc];
+        impl_->local_node_idx_coord(v0, translation);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::cell_size(const SizeType &, Point &cell_size)
+    {
+        std::array<SizeType, UDim> nn;
+        this->dims(nn);
+        for(int d = 0; d < Dim; ++d) {
+            cell_size[d] = (impl_->box_max_[d] - impl_->box_min_[d])/(nn[d] - 1);
+        }
+    }
+
+    template<class Elem>
+    void FunctionSpace<PetscDM<Elem::Dim>, 1, Elem>::elem(const SizeType &idx, Elem &e) const
+    {
+        mesh_->elem(idx, e);
+        typename Mesh::Point translation, cell_size;
+        mesh_->cell_point(idx, translation);
+        mesh_->cell_size(idx, cell_size);
+        e.set(translation, cell_size);
     }
 }
 

@@ -6,9 +6,11 @@
 #include "utopia_Views.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Box.hpp"
+#include "utopia_Tpetra_Vector.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_View.hpp>
+#include <Kokkos_DualView.hpp>
 
 #include <array>
 

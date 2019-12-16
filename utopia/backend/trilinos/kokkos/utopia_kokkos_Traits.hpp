@@ -81,6 +81,40 @@ namespace utopia {
 
     }
 
+    template<class Scalar, typename...Args>
+    class Accessor<Kokkos::View<Scalar **, Args...>> {
+    public:
+        using View = Kokkos::View<Scalar **, Args...>;
+        using SizeType = utopia::TpetraSizeType;
+
+        UTOPIA_INLINE_FUNCTION static const Scalar &get(const View &t, const SizeType &i, const SizeType &j)
+        {
+            return t(i, j);
+        }
+
+        UTOPIA_INLINE_FUNCTION static void set(View &t, const SizeType &i, const SizeType &j, const Scalar &val)
+        {
+            t(i, j) = val;
+        }
+    };
+
+    template<class Scalar, typename...Args>
+    class Accessor<Kokkos::View<Scalar *, Args...>> {
+    public:
+        using View = Kokkos::View<Scalar *, Args...>;
+        using SizeType = utopia::TpetraSizeType;
+
+        UTOPIA_INLINE_FUNCTION static const Scalar &get(const View &t, const SizeType &i)
+        {
+            return t(i);
+        }
+
+        UTOPIA_INLINE_FUNCTION static void set(View &t, const SizeType &i, const Scalar &val)
+        {
+            t(i) = val;
+        }
+    };
+
     // template<
     //     class Matrix_,
     //     class Vector_
