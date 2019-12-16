@@ -46,7 +46,8 @@ namespace utopia
                                             red_(FG_LIGHT_MAGENTA),
                                             def_(FG_DEFAULT),
                                             yellow_(FG_LIGHT_YELLOW),
-                                            green_(FG_LIGHT_GREEN)
+                                            green_(FG_LIGHT_GREEN), 
+                                            ml_derivs_(n_levels)
         {
 
         }
@@ -238,11 +239,54 @@ namespace utopia
 
 
     protected:
-        /**
-         * @brief      Prints some info related to level
-         *
-         * @param[in]  level  The level
-         */
+
+        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
+        {
+            if(level < this->n_levels()-1)
+            {
+                //return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
+                return  ml_derivs_.compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
+            }
+            else{
+                return fun.hessian(memory_.x[level], memory_.H[level]);
+            }
+        }
+
+
+        virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
+        {
+            // std::cout<<"get_multilevel_gradient: level: "<< level << "  \n"; 
+            if(level < this->n_levels()-1)
+            {
+                //return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+                return ml_derivs_.compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+            }
+            else
+            {
+                return fun.gradient(memory_.x[level], memory_.g[level]);
+            }
+        }
+
+
+        virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level)
+        {
+            if(level < this->n_levels()-1)
+            {
+                //return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+                return ml_derivs_.compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+            }
+            else
+            {
+                Scalar energy;
+                fun.value(memory_.x[level], energy);
+                return energy;
+            }
+        }
+
+
+
+
+
         virtual void print_level_info(const SizeType & level)
         {
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
@@ -292,6 +336,10 @@ namespace utopia
         ColorModifier def_;
         ColorModifier yellow_;
         ColorModifier green_;
+
+        RMTRLevelMemory<Matrix, Vector, CONSISTENCY_LEVEL>         memory_;
+
+        MultilevelDerivEval<Matrix, Vector, CONSISTENCY_LEVEL>  ml_derivs_; 
 
     };
 
