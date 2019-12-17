@@ -83,9 +83,9 @@ namespace utopia {
         using Quadrature = utopia::Quadrature<Elem, 2>;
 
         using SizeType = Mesh::SizeType;
-        SizeType scale = 1;
-        SizeType nx = scale * 30;
-        SizeType ny = scale * 50;
+        SizeType scale = 20;
+        SizeType nx = scale * 5;
+        SizeType ny = scale * 5;
 
         PetscCommunicator world;
 
@@ -119,6 +119,7 @@ namespace utopia {
 
         PetscVector rhs;
         space.create_vector(rhs);
+        rhs.set(0.0);
 
         world.barrier();
         c.stop();
@@ -134,17 +135,17 @@ namespace utopia {
 
         BoundaryCondition<FunctionSpace> bc_left(
             space,
-            BoundaryCondition<FunctionSpace>::LEFT,
+            SideSet::LEFT,
             [](const Point &p) -> Scalar {
-                return -1.0;
+                return -p[1];
             }
         );
 
         BoundaryCondition<FunctionSpace> bc_right(
             space,
-            BoundaryCondition<FunctionSpace>::RIGHT,
+            SideSet::RIGHT,
             [](const Point &p) -> Scalar {
-                return 1.0;
+                return p[1];
             }
         );
 
@@ -213,6 +214,11 @@ namespace utopia {
         std::cout << " assemblies " << n_assemblies << " " << c << std::endl;
 
         SizeType nnz = utopia::nnz(mat, 0.);
+
+        rename("a", mat);
+        write("A.m", mat);
+        rename("r", rhs);
+        write("R.m", rhs);
         std::cout << "nnz " << nnz << std::endl;
     }
 

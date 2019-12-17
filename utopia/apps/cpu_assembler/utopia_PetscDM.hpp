@@ -18,6 +18,18 @@
 
 namespace utopia {
 
+    class SideSet {
+    public:
+        using BoundaryIdType = int;
+        static const BoundaryIdType LEFT = 0;
+        static const BoundaryIdType RIGHT = 1;
+        static const BoundaryIdType BOTTOM = 2;
+        static const BoundaryIdType TOP = 3;
+        static const BoundaryIdType FRONT = 4;
+        static const BoundaryIdType BACK = 5;
+        static const BoundaryIdType INVALID = 6;
+    };
+
     template<int Dim>
     class PetscDMElements;
 
@@ -221,6 +233,8 @@ namespace utopia {
         }
 
         bool is_ghost(const SizeType &global_node_idx) const;
+        bool is_boundary(const SizeType &global_node_idx) const;
+        SideSet::BoundaryIdType boundary_id(const SizeType &global_node_idx) const;
 
     private:
         std::unique_ptr<Impl> impl_;
@@ -356,8 +370,6 @@ namespace utopia {
         std::array<Scalar, NPoints> weights_;
     };
 
-
-
     template<class Elem_>
     class FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> {
     public:
@@ -392,6 +404,21 @@ namespace utopia {
         void dofs(const SizeType &idx, DofIndex &dofs) const
         {
             mesh_->nodes(idx, dofs);
+        }
+
+        bool is_boundary_dof(const SizeType &idx) const
+        {
+            return mesh_->is_boundary(idx);
+        }
+
+        SideSet::BoundaryIdType boundary_id(const SizeType &idx) const
+        {
+            return mesh_->boundary_id(idx);
+        }
+
+        inline static constexpr SizeType component(const SizeType &)
+        {
+            return 0;
         }
 
         ViewDevice &view_device()
@@ -436,18 +463,9 @@ namespace utopia {
         using DofIndex = typename FunctionSpace::DofIndex;
         static const int Dim = FunctionSpace::Dim;
 
-        enum SideSet {
-            LEFT = 0,
-            RIGHT = 1,
-            BOTTOM = 2,
-            TOP = 3,
-            FRONT = 4,
-            BACK = 5
-        };
-
         BoundaryCondition(
             const FunctionSpace &space,
-            SideSet side_set,
+            SideSet::BoundaryIdType side_set,
             const std::function<Scalar(const Point &)> &fun,
             const int component = 0)
         : space_(space), side_set_(side_set), fun_(fun), component_(component)
@@ -464,12 +482,27 @@ namespace utopia {
             const DofIndex &ind,
             ElementMatrix &mat, ElementVector &vec)
         {
+            const SizeType n_dofs = ind.size();
+            Point p;
 
+            for(SizeType i = 0; i < n_dofs; ++i) {
+                const auto dof_i = ind[i];
+                if(space_.component(dof_i) != component_) continue;
+                const SideSet::BoundaryIdType side_set = space_.boundary_id(dof_i);
+                if(side_set != side_set_) continue;
+
+                for(SizeType j = 0; j < n_dofs; ++j) {
+                    mat(i, j) = (i == j);
+                }
+
+                e.node(i/Components, p);
+                vec[i] = fun_(p);
+            }
         }
 
     private:
         const FunctionSpace &space_;
-        SideSet side_set_;
+        SideSet::BoundaryIdType side_set_;
         std::function<Scalar(const Point &)> fun_;
         int component_;
     };

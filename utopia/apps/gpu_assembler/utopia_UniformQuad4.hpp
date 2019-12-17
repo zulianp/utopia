@@ -10,7 +10,7 @@ namespace utopia {
     class RefQuad4 {
     public:
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(p[0])
+        UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar
         {
             const auto x = p[0];
             const auto y = p[1];

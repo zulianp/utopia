@@ -415,6 +415,20 @@ namespace utopia {
             }
         }
 
+        template<class Array>
+        void global_node_grid_coord(const SizeType &idx, Array &tensor_index) const
+        {
+            SizeType dims[3];
+            PetscDMImpl<Dim>::dims(dm, dims);
+
+            SizeType current = idx;
+            for(int i = 0; i < Dim; ++i) {
+                const int next = current / dims[i];
+                tensor_index[i] = current - next * dims[i];
+                current = next;
+            }
+        }
+
         void local_node_idx_coord(const SizeType &idx, Point &p)
         {
             SizeType dims[3], start[3], extent[3], tensor_index[Dim];
@@ -695,6 +709,63 @@ namespace utopia {
     bool PetscDM<Dim>::is_ghost(const SizeType &global_node_idx) const
     {
         return impl_->nodes->is_ghost(global_node_idx);
+    }
+
+
+    template<int Dim>
+    bool PetscDM<Dim>::is_boundary(const SizeType &global_node_idx) const
+    {
+        std::array<SizeType, Dim> tensor_index;
+        SizeType dims[3];
+        impl_->global_node_grid_coord(global_node_idx, tensor_index);
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        for(int d = 0; d < Dim; ++d) {
+            if(tensor_index[d] == 0 || tensor_index[d] == dims[d] -1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    template<int Dim>
+    SideSet::BoundaryIdType PetscDM<Dim>::boundary_id(const SizeType &global_node_idx) const
+    {
+        std::array<SizeType, Dim> tensor_index;
+        SizeType dims[3];
+        impl_->global_node_grid_coord(global_node_idx, tensor_index);
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        if(tensor_index[0] == 0) {
+            return SideSet::LEFT;
+        }
+
+        if(tensor_index[0] == (dims[0] - 1)) {
+            return SideSet::RIGHT;
+        }
+
+        if(Dim > 1) {
+            if(tensor_index[1] == 0) {
+                return SideSet::BOTTOM;
+            }
+
+            if(tensor_index[1] == (dims[1] - 1)) {
+                return SideSet::TOP;
+            }
+
+            if(Dim > 2) {
+                if(tensor_index[2] == 0) {
+                    return SideSet::BACK;
+                }
+
+                if(tensor_index[2] == (dims[2] - 1)) {
+                    return SideSet::FRONT;
+                }
+            }
+        }
+
+        return SideSet::INVALID;
     }
 
     template<int Dim>
