@@ -91,9 +91,9 @@ namespace utopia {
 
         using SizeType = Mesh::SizeType;
         SizeType scale = (world.size() + 1);
-        SizeType nx = 100;
-        SizeType ny = 100;
-        SizeType nz = 100;
+        SizeType nx = scale * 10;
+        SizeType ny = scale * 10;
+        SizeType nz = 10;
 
         Chrono c;
         world.barrier();
@@ -275,7 +275,7 @@ namespace utopia {
         ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
         auto prec = std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector>>();
         cg.set_preconditioner(prec);
-        cg.verbose(true);
+        // cg.verbose(true);
         cg.max_it(nx*ny);
         cg.rtol(1e-8);
         cg.solve(mat, rhs, x);
@@ -288,27 +288,27 @@ namespace utopia {
         space.write("X.vtk", x);
 
 
-        x.set(0.0);
-        for(const auto &bc : bcs) {
-            bc->set_boundary_id(x);
-        }
+        // x.set(0.0);
+        // for(const auto &bc : bcs) {
+        //     bc->set_boundary_id(x);
+        // }
 
-        rename("b", x);
-        space.write("B.vtk", x);
-
-
-        x.set(world.rank());
-
-        rename("c", x);
-        space.write("C.vtk", x);
+        // rename("b", x);
+        // space.write("B.vtk", x);
 
 
-        each_write(x, [](const SizeType &i) {
-            return i;
-        });
+        // x.set(world.rank());
 
-        rename("n", x);
-        space.write("N.vtk", x);
+        // rename("c", x);
+        // space.write("C.vtk", x);
+
+
+        // each_write(x, [](const SizeType &i) {
+        //     return i;
+        // });
+
+        // rename("n", x);
+        // space.write("N.vtk", x);
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_assemble);
