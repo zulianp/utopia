@@ -296,7 +296,6 @@ namespace utopia {
         rename("r", rhs_raw);
         space.write("R.vtk", rhs_raw);
 
-
         x.set(0.0);
         for(const auto &bc : bcs) {
             bc->set_boundary_id(x);

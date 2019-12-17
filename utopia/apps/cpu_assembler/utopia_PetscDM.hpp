@@ -527,7 +527,6 @@ namespace utopia {
 
         void set_boundary_id(PetscVector &vec) const
         {
-            // vec.set(0.0);
             auto r = vec.range();
 
             Write<PetscVector> w(vec, utopia::AUTO);
@@ -537,8 +536,6 @@ namespace utopia {
                 }
             }
         }
-
-
 
         template<class ElementMatrix, class ElementVector>
         void apply(
