@@ -19,7 +19,7 @@
 namespace utopia {
 
 
-
+    //DMDAGetGlobalIndices for local 2 global mapping including ghost nodes
     //https://www.mcs.anl.gov/petsc/petsc-current/src/ksp/ksp/examples/tutorials/ex42.c.html
     //https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/FE/index.html
 
@@ -379,7 +379,7 @@ namespace utopia {
             init(comm, arr, stencil_type);
 
             Scalar min_x = 0, min_y = 0, min_z = 0;
-            Scalar max_x = 0, max_y = 0, max_z = 0;
+            Scalar max_x = 1, max_y = 1, max_z = 1;
 
             min_x = box_min[0];
             max_x = box_max[0];
@@ -400,9 +400,10 @@ namespace utopia {
                 max_z = box_max[2];
             }
 
-            DMDASetUniformCoordinates(dm, min_x, max_x, min_y, max_y, min_z, max_z);
+
             DMDASetElementType(dm, elem_type);
             DMSetUp(dm);
+            DMDASetUniformCoordinates(dm, min_x, max_x, min_y, max_y, min_z, max_z);
         }
 
         void destroy()
@@ -425,6 +426,44 @@ namespace utopia {
             for(int i = 0; i < Dim; ++i) {
                 const int next = current / dims[i];
                 tensor_index[i] = current - next * dims[i];
+                current = next;
+            }
+        }
+
+        template<class Array>
+        void local_node_grid_coord_no_ghost(const SizeType &idx, Array &tensor_index) const
+        {
+            SizeType dims[3], start[3], extent[3];
+            DMDAGetCorners(dm,
+                &start[0],  &start[1],  &start[2],
+                &extent[0], &extent[1], &extent[2]
+            );
+
+            PetscDMImpl<Dim>::dims(dm, dims);
+
+            SizeType current = idx;
+            for(int i = 0; i < Dim; ++i) {
+                const int next = current / extent[i];
+                tensor_index[i] = current - next * extent[i] + start[i];
+                current = next;
+            }
+        }
+
+        template<class Array>
+        void local_node_grid_coord(const SizeType &idx, Array &tensor_index) const
+        {
+            SizeType dims[3], start[3], extent[3];
+            DMDAGetGhostCorners(dm,
+                &start[0],  &start[1],  &start[2],
+                &extent[0], &extent[1], &extent[2]
+            );
+
+            PetscDMImpl<Dim>::dims(dm, dims);
+
+            SizeType current = idx;
+            for(int i = 0; i < Dim; ++i) {
+                const int next = current / extent[i];
+                tensor_index[i] = current - next * extent[i];
                 current = next;
             }
         }
@@ -730,6 +769,105 @@ namespace utopia {
     }
 
     template<int Dim>
+    bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
+    {
+        std::array<SizeType, Dim> tensor_index;
+        SizeType dims[3];
+        impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        switch(b_id) {
+            case SideSet::left():
+            {
+                return tensor_index[0] == 0;
+            }
+
+            case SideSet::right():
+            {
+                return tensor_index[0] == (dims[0] - 1);
+            }
+
+            case SideSet::bottom():
+            {
+                return tensor_index[1] == 0;
+            }
+
+            case SideSet::top():
+            {
+                return tensor_index[1] == (dims[1] - 1);
+            }
+
+            case SideSet::back():
+            {
+                return tensor_index[2] == 0;
+            }
+
+            case SideSet::front():
+            {
+                return tensor_index[2] == (dims[2] - 1);
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+        return false;
+
+    }
+
+    template<int Dim>
+    bool PetscDM<Dim>::is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
+    {
+        assert(false && "FIXME");
+
+        std::array<SizeType, Dim> tensor_index;
+        SizeType dims[3];
+        impl_->global_node_grid_coord(idx, tensor_index);
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        switch(b_id) {
+            case SideSet::left():
+            {
+                return tensor_index[0] == 0;
+            }
+
+            case SideSet::right():
+            {
+                return tensor_index[0] == (dims[0] - 1);
+            }
+
+            case SideSet::bottom():
+            {
+                return tensor_index[1] == 0;
+            }
+
+            case SideSet::top():
+            {
+                return tensor_index[1] == (dims[1] - 1);
+            }
+
+            case SideSet::back():
+            {
+                return tensor_index[2] == 0;
+            }
+
+            case SideSet::front():
+            {
+                return tensor_index[2] == (dims[2] - 1);
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+        return false;
+    }
+
+    template<int Dim>
     SideSet::BoundaryIdType PetscDM<Dim>::boundary_id(const SizeType &global_node_idx) const
     {
         std::array<SizeType, Dim> tensor_index;
@@ -738,34 +876,34 @@ namespace utopia {
         PetscDMImpl<Dim>::dims(impl_->dm, dims);
 
         if(tensor_index[0] == 0) {
-            return SideSet::LEFT;
+            return SideSet::left();
         }
 
         if(tensor_index[0] == (dims[0] - 1)) {
-            return SideSet::RIGHT;
+            return SideSet::right();
         }
 
         if(Dim > 1) {
             if(tensor_index[1] == 0) {
-                return SideSet::BOTTOM;
+                return SideSet::bottom();
             }
 
             if(tensor_index[1] == (dims[1] - 1)) {
-                return SideSet::TOP;
+                return SideSet::top();
             }
 
             if(Dim > 2) {
                 if(tensor_index[2] == 0) {
-                    return SideSet::BACK;
+                    return SideSet::back();
                 }
 
                 if(tensor_index[2] == (dims[2] - 1)) {
-                    return SideSet::FRONT;
+                    return SideSet::front();
                 }
             }
         }
 
-        return SideSet::INVALID;
+        return SideSet::invalid();
     }
 
     template<int Dim>
@@ -794,6 +932,39 @@ namespace utopia {
         mesh_->cell_size(idx, cell_size);
         e.set(translation, cell_size);
     }
+
+    template<class Elem>
+    bool FunctionSpace<PetscDM<Elem::Dim>, 1, Elem>::write(const Path &path, const PetscVector &x) const
+    {
+        PetscViewer       viewer;
+        PetscViewerASCIIOpen(PETSC_COMM_WORLD, path.c_str(), &viewer);
+        PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_VTK);
+
+        // PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(),FILE_MODE_WRITE, &viewer);
+        // PetscViewerPushFormat(viewer, PETSC_VIEWER_BINARY_VTK);
+
+
+        DMView(raw_type(*mesh_), viewer);
+        // PetscObjectSetName((PetscObject)raw_type(x), "x");
+        VecView(raw_type(x), viewer);
+        PetscViewerDestroy(&viewer);
+        return false;
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::node(const SizeType &idx, Point &p) const
+    {
+        std::array<SizeType, Dim> tensor_index, dims;
+        impl_->global_node_grid_coord(idx, tensor_index);
+
+        this->dims(dims);
+
+        for(int i = 0; i < Dim; ++i) {
+            SizeType c = tensor_index[i];
+            p[i] = c * (impl_->box_max_[i] - impl_->box_min_[i])/(dims[i] - 1) + impl_->box_min_[i];
+        }
+    }
+
 }
 
 #endif //UTOPIA_PETSC_DM_IMPL_HPP

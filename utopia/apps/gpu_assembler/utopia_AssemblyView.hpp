@@ -126,44 +126,75 @@ namespace utopia {
         const Quadrature &q_;
     };
 
-    // template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
-    // class ShapeFunction {
-    // public:
-    //     static const int Dim = Elem::Dim;
-    //     using Scalar = typename Elem::Scalar;
-    //     using Point  = utopia::StaticVector<Scalar, Dim>;
+    //////////////////////////////////////////////////////////////////////////////////
 
-    //     UTOPIA_INLINE_FUNCTION ShapeFunction(const Elem *elem = nullptr, const Quadrature *q = nullptr)
-    //     : elem_(elem), q_(q)
-    //     {}
+    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    class ShapeFunction {
+    public:
+        static const int Dim = Elem::Dim;
+        using Scalar = typename Elem::Scalar;
+        using Point  = utopia::StaticVector<Scalar, Dim>;
+        using Grad   = utopia::StaticVector<Scalar, Dim>;
 
-    //     UTOPIA_INLINE_FUNCTION Scalar operator()(const int fun_num, const int qp_idx) const
-    //     {
-    //         return get(fun_num, qp_idx);
-    //     }
+        UTOPIA_INLINE_FUNCTION ShapeFunction(const Quadrature &q)
+        : q_(q), elem_(nullptr)
+        {}
 
-    //     UTOPIA_INLINE_FUNCTION Scalar get(const int fun_num, const int qp_idx) const
-    //     {
-    //         Point temp;
-    //         q_.point(qp_idx, temp);
-    //         return elem_->fun(fun_num, temp);
-    //     }
+        UTOPIA_INLINE_FUNCTION Scalar get(const int fun_num, const int qp_idx) const
+        {
+            Point temp;
+            q_.point(qp_idx, temp);
+            return elem_->fun(fun_num, temp);
+        }
 
-    //     UTOPIA_INLINE_FUNCTION std::size_t size() const
-    //     {
-    //         return q_.n_points();
-    //     }
+        UTOPIA_INLINE_FUNCTION Scalar operator()(const int fun_num, const int qp_idx) const
+        {
+            return get(fun_num, qp_idx);
+        }
 
-    //     UTOPIA_INLINE_FUNCTION void update(const Elem *elem, const Quadrature *q)
-    //     {
-    //         elem_ = elem;
-    //         q_    = q;
-    //     }
+        UTOPIA_INLINE_FUNCTION std::size_t n_points() const
+        {
+            return q_.n_points();
+        }
 
-    // private:
-    //     const Elem *elem_;
-    //     const Quadrature *q_;
-    // };
+        UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions()
+        {
+            return Elem::NNodes;
+        }
+
+        UTOPIA_INLINE_FUNCTION ShapeFunction make(const std::size_t &, const Elem &elem) const
+        {
+            ShapeFunction pp(q_);
+            pp.elem_ = &elem;
+            return pp;
+        }
+
+    private:
+        Quadrature q_;
+        const Elem *elem_;
+    };
+
+    template<class Mesh, int NComponents, class Quadrature, typename...Args>
+    class ShapeFunction< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
+    public:
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+
+        using ViewDevice = utopia::ShapeFunction<Elem, typename Quadrature::ViewDevice>;
+
+        ShapeFunction(const FunctionSpace &, const Quadrature &q) : q_(q) {}
+
+        ViewDevice view_device() const
+        {
+            return ViewDevice(q_.view_device());
+        }
+
+    private:
+        const Quadrature &q_;
+    };
+
+    //////////////////////////////////////////////////////////////////////////////////
+
 
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
     class Differential {

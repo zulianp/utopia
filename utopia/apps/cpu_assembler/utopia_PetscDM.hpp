@@ -1,7 +1,7 @@
 #ifndef UTOPIA_PETSC_DM_HPP
 #define UTOPIA_PETSC_DM_HPP
 
-
+#include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -11,6 +11,8 @@
 #include "utopia_VectorView.hpp"
 #include "utopia_Quadrature.hpp"
 #include "utopia_UniformQuad4.hpp"
+#include "utopia_Temp.hpp"
+#include "utopia_Writable.hpp"
 
 #include <array>
 #include <memory>
@@ -21,13 +23,21 @@ namespace utopia {
     class SideSet {
     public:
         using BoundaryIdType = int;
-        static const BoundaryIdType LEFT = 0;
-        static const BoundaryIdType RIGHT = 1;
-        static const BoundaryIdType BOTTOM = 2;
-        static const BoundaryIdType TOP = 3;
-        static const BoundaryIdType FRONT = 4;
-        static const BoundaryIdType BACK = 5;
-        static const BoundaryIdType INVALID = 6;
+        // static const BoundaryIdType LEFT = 0;
+        // static const BoundaryIdType RIGHT = 1;
+        // static const BoundaryIdType BOTTOM = 2;
+        // static const BoundaryIdType TOP = 3;
+        // static const BoundaryIdType FRONT = 4;
+        // static const BoundaryIdType BACK = 5;
+        // static const BoundaryIdType INVALID = 6;
+
+        inline static constexpr BoundaryIdType left() { return 1; }
+        inline static constexpr BoundaryIdType right() { return 2; }
+        inline static constexpr BoundaryIdType bottom() { return 3; }
+        inline static constexpr BoundaryIdType top() { return 4; }
+        inline static constexpr BoundaryIdType front() { return 5; }
+        inline static constexpr BoundaryIdType back() { return 6; }
+        inline static constexpr BoundaryIdType invalid() { return 0; }
     };
 
     template<int Dim>
@@ -139,6 +149,9 @@ namespace utopia {
         void cell_point(const SizeType &idx, Point &translation);
         void cell_size(const SizeType &idx, Point &cell_size);
 
+        bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
+        bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
+        void node(const SizeType &idx, Point &node) const;
         void elem(const SizeType &idx, Elem &e) const;
         void nodes(const SizeType &idx, NodeIndex &nodes) const;
         void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
@@ -385,6 +398,20 @@ namespace utopia {
         using Device = typename Mesh::Device;
         using DofIndex = typename Mesh::NodeIndex;
 
+
+        bool write(const Path &path, const PetscVector &x) const;
+        // {
+        //     PetscViewer       viewer;
+
+        //     PetscViewerASCIIOpen(PETSC_COMM_WORLD, file_name.c_str(), &viewer);
+        //     PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_VTK);
+        //     DMView(mesh_->raw_type(), viewer);
+        //     PetscObjectSetName((PetscObject)raw_type(x), "x");
+        //     VecView(raw_type(x), viewer);
+        //     PetscViewerDestroy(&viewer);
+        //     return false;
+        // }
+
         FunctionSpace(const std::shared_ptr<Mesh> &mesh)
         : mesh_(mesh)
         {}
@@ -441,6 +468,11 @@ namespace utopia {
             mesh_->create_vector(vec);
         }
 
+        const Mesh &mesh() const
+        {
+            return *mesh_;
+        }
+
     private:
         std::shared_ptr<Mesh> mesh_;
 
@@ -473,8 +505,40 @@ namespace utopia {
 
         void apply(PetscMatrix &mat, PetscVector &vec) const
         {
+            using IndexSet = Traits<PetscVector>::IndexSet;
+            IndexSet ind;
+            ind.reserve(vec.local_size());
 
+            auto r = vec.range();
+
+            Write<PetscVector> w(vec, utopia::AUTO);
+
+            Point p;
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(is_constrained_dof(i)) {
+                    ind.push_back(i);
+                    space_.mesh().node(i/Components, p);
+                    vec.set(i, fun_(p));
+                }
+            }
+
+            mat.set_zero_rows(ind, 1.0);
         }
+
+        void set_boundary_id(PetscVector &vec) const
+        {
+            // vec.set(0.0);
+            auto r = vec.range();
+
+            Write<PetscVector> w(vec, utopia::AUTO);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(is_constrained_dof(i - r.begin())) {
+                    vec.set(i, side_set_);
+                }
+            }
+        }
+
+
 
         template<class ElementMatrix, class ElementVector>
         void apply(
@@ -482,14 +546,13 @@ namespace utopia {
             const DofIndex &ind,
             ElementMatrix &mat, ElementVector &vec)
         {
+            assert(false && "FIXME: use local node index or cartesian for identifying boundary nodes");
+
             const SizeType n_dofs = ind.size();
             Point p;
 
             for(SizeType i = 0; i < n_dofs; ++i) {
-                const auto dof_i = ind[i];
-                if(space_.component(dof_i) != component_) continue;
-                const SideSet::BoundaryIdType side_set = space_.boundary_id(dof_i);
-                if(side_set != side_set_) continue;
+                if(!is_constrained_dof(ind[i])) continue;
 
                 for(SizeType j = 0; j < n_dofs; ++j) {
                     mat(i, j) = (i == j);
@@ -505,6 +568,12 @@ namespace utopia {
         SideSet::BoundaryIdType side_set_;
         std::function<Scalar(const Point &)> fun_;
         int component_;
+
+        bool is_constrained_dof(const SizeType &idx) const
+        {
+            if(space_.component(idx) != component_) return false;
+            return space_.mesh().is_local_node_on_boundary(idx/Components, side_set_);
+        }
     };
 
 }

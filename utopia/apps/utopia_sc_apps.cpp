@@ -186,7 +186,7 @@ namespace utopia {
 
     static void poisson_2D()
     {
-        SizeType n = 800;
+        SizeType n = 5;
         Poisson<TpetraMatrix, TpetraVector> poisson(n);
 
         poisson.reinit();
@@ -217,7 +217,15 @@ namespace utopia {
         std::cout << c << std::endl;
 
         // poisson.reinit();
-        // write("x.m", x);
+        rename("L", poisson.laplacian());
+        write("Lap.m", poisson.laplacian());
+
+        rename("Lx", x);
+        write("LapX.m", x);
+
+
+        rename("Lr", poisson.rhs());
+        write("LapR.m", poisson.rhs());
     }
 
     UTOPIA_REGISTER_APP(poisson_2D);
