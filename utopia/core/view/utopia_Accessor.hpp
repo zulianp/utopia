@@ -23,6 +23,28 @@ namespace utopia {
         }
     };
 
+    template<class VectorContainer>
+    class VectorAccessor {
+    public:
+        using A = utopia::Accessor<VectorContainer>;
+
+        template<typename T>
+        static void set(VectorContainer &t, const std::size_t &i, const T &val1, const T &val2, const T &val3)
+        {
+            A::set(t, i, 0, val1);
+            A::set(t, i, 1, val2);
+            A::set(t, i, 2, val3);
+        }
+
+        template<typename T>
+        static void set(VectorContainer &t, const std::size_t &i, const T &val1, const T &val2)
+        {
+            A::set(t, i, 0, val1);
+            A::set(t, i, 1, val2);
+        }
+    };
+
+
 }
 
 #endif //UTOPIA_ACCESSOR_HPP

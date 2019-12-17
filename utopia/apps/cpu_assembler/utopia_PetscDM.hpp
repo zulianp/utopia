@@ -11,8 +11,10 @@
 #include "utopia_VectorView.hpp"
 #include "utopia_Quadrature.hpp"
 #include "utopia_UniformQuad4.hpp"
+#include "utopia_UniformHex8.hpp"
 #include "utopia_Temp.hpp"
 #include "utopia_Writable.hpp"
+#include "utopia_petsc_FE.hpp"
 
 #include <array>
 #include <memory>
@@ -23,14 +25,6 @@ namespace utopia {
     class SideSet {
     public:
         using BoundaryIdType = int;
-        // static const BoundaryIdType LEFT = 0;
-        // static const BoundaryIdType RIGHT = 1;
-        // static const BoundaryIdType BOTTOM = 2;
-        // static const BoundaryIdType TOP = 3;
-        // static const BoundaryIdType FRONT = 4;
-        // static const BoundaryIdType BACK = 5;
-        // static const BoundaryIdType INVALID = 6;
-
         inline static constexpr BoundaryIdType left() { return 1; }
         inline static constexpr BoundaryIdType right() { return 2; }
         inline static constexpr BoundaryIdType bottom() { return 3; }
@@ -46,68 +40,7 @@ namespace utopia {
     template<int Dim>
     class PetscDMNodes;
 
-    template<int Dim_>
-    class PetscElem {
-    public:
-        static const int Dim = Dim_;
-        using SizeType = PetscInt;
-        using Scalar   = PetscScalar;
-        using Point    = utopia::StaticVector<Scalar, Dim>;
-        using Grad     = utopia::StaticVector<Scalar, Dim>;
-        using NodeIndex = utopia::ArrayView<const SizeType>;
 
-        virtual ~PetscElem() {}
-        PetscElem()
-        {}
-
-        inline void set(const NodeIndex &nodes)
-        {
-            nodes_ = nodes;
-        }
-
-        inline const NodeIndex &nodes() const
-        {
-            return nodes_;
-        }
-
-
-        inline NodeIndex &nodes()
-        {
-            return nodes_;
-        }
-
-        inline SizeType node_id(const SizeType k) const
-        {
-            return nodes_[k];
-        }
-
-        inline const SizeType &node(const SizeType &i) const
-        {
-            return nodes_[i];
-        }
-
-        inline SizeType n_nodes() const
-        {
-            return nodes_.size();
-        }
-
-        inline constexpr static SizeType dim() { return Dim; }
-        virtual Scalar fun(const SizeType &i, const Point &p) const = 0;
-
-        inline void idx(const SizeType &idx)
-        {
-            idx_ = idx;
-        }
-
-        inline SizeType idx() const
-        {
-            return idx_;
-        }
-
-    private:
-        NodeIndex nodes_;
-        SizeType idx_;
-    };
 
     template<int Dim>
     class PetscNode {
@@ -135,7 +68,6 @@ namespace utopia {
 
         class Impl;
 
-
         PetscDM(
             const PetscCommunicator     &comm,
             const std::array<SizeType, UDim> &dims,
@@ -145,6 +77,9 @@ namespace utopia {
 
         PetscDM();
         ~PetscDM();
+
+        PetscCommunicator &comm();
+        const PetscCommunicator &comm() const;
 
         void cell_point(const SizeType &idx, Point &translation);
         void cell_size(const SizeType &idx, Point &cell_size);
@@ -245,6 +180,8 @@ namespace utopia {
             return *impl_;
         }
 
+        SizeType n_nodes() const;
+
         bool is_ghost(const SizeType &global_node_idx) const;
         bool is_boundary(const SizeType &global_node_idx) const;
         SideSet::BoundaryIdType boundary_id(const SizeType &global_node_idx) const;
@@ -253,135 +190,7 @@ namespace utopia {
         std::unique_ptr<Impl> impl_;
     };
 
-    class PetscUniformQuad4 final : public PetscElem<2> {
-    public:
-        using Super    = utopia::PetscElem<2>;
-        using SizeType = Super::SizeType;
-        using Scalar   = Super::Scalar;
-        using Point    = Super::Point;
-        using Grad     = Super::Grad;
-        using MemType  = Uniform<>;
-        static const int Dim = 2;
-        static const int NNodes = 4;
 
-        inline Scalar fun(const SizeType &i, const Point &p) const
-        {
-            return impl_.fun(i, p);
-        }
-
-        inline void node(const SizeType &i, Point &p) const
-        {
-            return impl_.node(i, p);
-        }
-
-        inline void grad(const int i, const Point &p, Grad &g) const
-        {
-           impl_.grad(i, p, g);
-        }
-
-        inline constexpr static bool is_affine()
-        {
-            return UniformQuad4<Scalar>::is_affine();
-        }
-
-        inline constexpr static Scalar reference_measure()
-        {
-            return UniformQuad4<Scalar>::reference_measure();
-        }
-
-        inline constexpr static int n_nodes()
-        {
-            return UniformQuad4<Scalar>::n_nodes();
-        }
-
-        inline void set(
-            const StaticVector2<Scalar> &translation,
-            const StaticVector2<Scalar> &h)
-        {
-            impl_.set(translation, h);
-        }
-
-        void describe(std::ostream &os = std::cout) const
-        {
-            auto &t = impl_.translation();
-            os << t(0) << " " << t(1) << "\n";
-        }
-
-    private:
-        UniformQuad4<Scalar> impl_;
-    };
-
-    template<typename View, std::size_t N>
-    class Accessor<std::array<VectorView<View>, N>> {
-    public:
-        using Matrix = std::array<VectorView<View>, N>;
-        using T = typename Traits<View>::Scalar;
-
-        static const T &get(const Matrix &t, const std::size_t &i, const std::size_t &j)
-        {
-            return t[i][j];
-        }
-
-        static void set(Matrix &t, const std::size_t &i, const std::size_t &j, const T &val)
-        {
-            t[i][j] = val;
-        }
-    };
-
-    template<>
-    class Quadrature<PetscUniformQuad4, 2, 2> {
-    public:
-        using Scalar   = PetscUniformQuad4::Scalar;
-        using SizeType = PetscUniformQuad4::SizeType;
-        using Point    = PetscUniformQuad4::Point;
-        using ViewDevice = const Quadrature &;
-
-        static const int Order   = 2;
-        static const int Dim     = 2;
-        static const int NPoints = 6;
-
-
-        inline static constexpr int n_points()
-        {
-            return NPoints;
-        }
-
-        inline static constexpr int dim()
-        {
-            return Dim;
-        }
-
-        void init()
-        {
-            Quad4Quadrature<Scalar, Order, Dim, NPoints>::get(points_, weights_);
-        }
-
-        template<class Point>
-        inline void point(const int qp_idx, Point &p) const
-        {
-            p[0] = points_[qp_idx][0];
-            p[1] = points_[qp_idx][1];
-        }
-
-        inline const Scalar &weight(const int qp_idx) const
-        {
-            return weights_[qp_idx];
-        }
-
-        Quadrature()
-        {
-            init();
-        }
-
-        inline ViewDevice &view_device() const
-        {
-            return *this;
-        }
-
-    private:
-        std::array<Point, NPoints> points_;
-        std::array<Scalar, NPoints> weights_;
-    };
 
     template<class Elem_>
     class FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> {
@@ -471,6 +280,21 @@ namespace utopia {
         const Mesh &mesh() const
         {
             return *mesh_;
+        }
+
+        PetscCommunicator &comm()
+        {
+            return mesh_->comm();
+        }
+
+        const PetscCommunicator &comm() const
+        {
+            return mesh_->comm();
+        }
+
+        inline SizeType n_dofs() const
+        {
+            return mesh_->n_nodes();
         }
 
     private:

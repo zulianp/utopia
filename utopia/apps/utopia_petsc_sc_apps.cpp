@@ -68,56 +68,35 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_dm_app);
 
 
-    static void petsc_dm_assemble()
+    template<class FunctionSpace>
+    static void poisson_problem(FunctionSpace &space)
     {
-        static const int Dim = 2;
-        static const int NNodes = 4;
+        using Mesh             = typename FunctionSpace::Mesh;
+        using Elem             = typename FunctionSpace::Elem;
+        using Dev              = typename FunctionSpace::Device;
 
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
-        using Dev              = FunctionSpace::Device;
+        static const int Dim    = Elem::Dim;
+        static const int NNodes = Elem::NNodes;
 
-        using DevFunctionSpace = FunctionSpace::ViewDevice;
-        using DofIndex         = DevFunctionSpace::DofIndex;
-        using ElementMatrix    = utopia::StaticMatrix<double, NNodes, NNodes>;
-        using ElementVector    = utopia::StaticVector<double, NNodes>;
-        using Point            = FunctionSpace::Point;
-        using Scalar           = FunctionSpace::Scalar;
+        using DevFunctionSpace = typename FunctionSpace::ViewDevice;
+        using DofIndex         = typename DevFunctionSpace::DofIndex;
+        using Point            = typename FunctionSpace::Point;
+        using Scalar           = typename FunctionSpace::Scalar;
+        using SizeType         = typename FunctionSpace::SizeType;
+        using Quadrature       = utopia::Quadrature<Elem, 2>;
+        using ElementMatrix    = utopia::StaticMatrix<Scalar, NNodes, NNodes>;
+        using ElementVector    = utopia::StaticVector<Scalar, NNodes>;
 
-        using Quadrature = utopia::Quadrature<Elem, Dim>;
-
-        PetscCommunicator world;
-
-        using SizeType = Mesh::SizeType;
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 10;
-        SizeType ny = scale * 10;
-        SizeType nz = 10;
+        PetscCommunicator &comm = space.comm();
 
         Chrono c;
-        world.barrier();
-        c.start();
-
-        Mesh mesh(
-            world,
-            {nx, ny},
-            {1.0, 0.0},
-            {2.0, 1.0}
-        );
-
-        world.barrier();
-        c.stop();
-
-        std::cout << "mesh-gen: " << c << std::endl;
 
         Quadrature quadrature;
-        FunctionSpace space(mesh);
 
         auto &&space_view = space.view_device();
         auto &&q_view     = quadrature.view_device();
 
-        world.barrier();
+        comm.barrier();
         c.start();
 
         PetscMatrix mat, mass_mat;
@@ -131,7 +110,7 @@ namespace utopia {
         space.create_vector(rhs);
         rhs.set(1.0);
 
-        world.barrier();
+        comm.barrier();
         c.stop();
         std::cout << "create-matrix: " << c << std::endl;
 
@@ -143,7 +122,6 @@ namespace utopia {
         Differential<FunctionSpace, Quadrature> differentials(space, quadrature);
         auto &&d_view = differentials.view_device();
 
-
         ShapeFunction<FunctionSpace, Quadrature> functions(space, quadrature);
         auto &&f_view = functions.view_device();
 
@@ -154,7 +132,7 @@ namespace utopia {
                 space,
                 SideSet::bottom(),
                 [](const Point &p) -> Scalar {
-                    return 0.0;
+                    return p[0];
                 }
         ));
 
@@ -163,7 +141,7 @@ namespace utopia {
                 space,
                 SideSet::top(),
                 [](const Point &p) -> Scalar {
-                    return 0.0;
+                    return p[0];
                 }
         ));
 
@@ -186,7 +164,7 @@ namespace utopia {
         ));
 
         c.start();
-        world.barrier();
+        comm.barrier();
 
         std::stringstream ss;
         SizeType n_assemblies = 0;
@@ -254,13 +232,12 @@ namespace utopia {
         PetscVector rhs_raw = rhs;
         rhs = mass_mat * rhs;
 
-
         for(const auto &bc : bcs) {
             bc->apply(mat, rhs);
             bc->apply(mat, rhs_raw);
         }
 
-        world.barrier();
+        comm.barrier();
         c.stop();
         std::cout << " assemblies " << n_assemblies << " " << c << std::endl;
 
@@ -275,13 +252,20 @@ namespace utopia {
         PetscVector x = rhs;
         x.set(0.0);
 
-        ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
-        auto prec = std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector>>();
-        cg.set_preconditioner(prec);
-        // cg.verbose(true);
-        cg.max_it(nx*ny);
-        cg.rtol(1e-8);
-        cg.solve(mat, rhs, x);
+        rename("a", mat);
+        write("A.m", mat);
+        write("R.m", rhs);
+
+        Factorization<PetscMatrix, PetscVector> solver;
+        solver.solve(mat, rhs, x);
+
+        // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
+        // auto prec = std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector>>();
+        // cg.set_preconditioner(prec);
+        // // cg.verbose(true);
+        // cg.max_it(space.n_dofs());
+        // cg.rtol(1e-8);
+        // cg.solve(mat, rhs, x);
 
         c.stop();
 
@@ -304,22 +288,88 @@ namespace utopia {
         rename("b", x);
         space.write("B.vtk", x);
 
-
-        // x.set(world.rank());
-
-        // rename("c", x);
-        // space.write("C.vtk", x);
-
-
-        // each_write(x, [](const SizeType &i) {
-        //     return i;
-        // });
-
-        // rename("n", x);
-        // space.write("N.vtk", x);
     }
 
-    UTOPIA_REGISTER_APP(petsc_dm_assemble);
+
+    static void petsc_dm_assemble_2()
+    {
+        static const int Dim = 2;
+        static const int NNodes = 4;
+
+        //Types
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
+        using SizeType         = Mesh::SizeType;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 10;
+        SizeType ny = scale * 10;
+        SizeType nz = 10;
+
+        Chrono c;
+        world.barrier();
+        c.start();
+
+        Mesh mesh(
+            world,
+            {nx, ny},
+            {1.0, 0.0},
+            {2.0, 1.0}
+        );
+
+        world.barrier();
+        c.stop();
+
+        std::cout << "mesh-gen: " << c << std::endl;
+
+        FunctionSpace space(mesh);
+        poisson_problem(space);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_dm_assemble_2);
+
+    static void petsc_dm_assemble_3()
+    {
+        static const int Dim = 3;
+        static const int NNodes = 8;
+
+        //Types
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
+        using SizeType         = Mesh::SizeType;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 5;
+        SizeType ny = scale * 5;
+        SizeType nz = scale * 5;
+
+        Chrono c;
+        world.barrier();
+        c.start();
+
+        Mesh mesh(
+            world,
+            {nx, ny, nz},
+            {1.0, 0.0, 0.0},
+            {2.0, 1.0, 1.0}
+        );
+
+        world.barrier();
+        c.stop();
+
+        std::cout << "mesh-gen: " << c << std::endl;
+
+        FunctionSpace space(mesh);
+        poisson_problem(space);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
 }
 
 #endif //WITH_TRILINOS

@@ -986,6 +986,33 @@ namespace utopia {
         }
     }
 
+    template<int Dim>
+    PetscCommunicator &PetscDM<Dim>::comm()
+    {
+        return impl_->comm;
+    }
+
+    template<int Dim>
+    const PetscCommunicator &PetscDM<Dim>::comm() const
+    {
+        return impl_->comm;
+    }
+
+    template<int Dim>
+    typename PetscDM<Dim>::SizeType PetscDM<Dim>::n_nodes() const
+    {
+        SizeType dims[3];
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        SizeType ret = dims[0];
+
+        for(int i = 1; i < Dim; ++i) {
+            ret *= dims[i];
+        }
+
+        return ret;
+    }
+
 }
 
 #endif //UTOPIA_PETSC_DM_IMPL_HPP
