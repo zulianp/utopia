@@ -515,7 +515,7 @@ namespace utopia {
 
             Point p;
             for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i)) {
+                if(is_constrained_dof(i - r.begin())) {
                     ind.push_back(i);
                     space_.mesh().node(i/Components, p);
                     vec.set(i, fun_(p));

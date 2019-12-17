@@ -251,10 +251,13 @@ namespace utopia {
             });
         }
 
+        PetscVector rhs_raw = rhs;
         rhs = mass_mat * rhs;
+
 
         for(const auto &bc : bcs) {
             bc->apply(mat, rhs);
+            bc->apply(mat, rhs_raw);
         }
 
         world.barrier();
@@ -287,14 +290,20 @@ namespace utopia {
         rename("x", x);
         space.write("X.vtk", x);
 
+        PetscVector mass_vector = sum(mass_mat, 1);
+        rhs /= mass_vector;
 
-        // x.set(0.0);
-        // for(const auto &bc : bcs) {
-        //     bc->set_boundary_id(x);
-        // }
+        rename("r", rhs_raw);
+        space.write("R.vtk", rhs_raw);
 
-        // rename("b", x);
-        // space.write("B.vtk", x);
+
+        x.set(0.0);
+        for(const auto &bc : bcs) {
+            bc->set_boundary_id(x);
+        }
+
+        rename("b", x);
+        space.write("B.vtk", x);
 
 
         // x.set(world.rank());
