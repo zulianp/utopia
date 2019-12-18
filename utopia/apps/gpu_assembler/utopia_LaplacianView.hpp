@@ -5,7 +5,6 @@
 
 namespace utopia {
 
-    //FIXME use uniform
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
     class Laplacian {};
 
@@ -37,7 +36,7 @@ namespace utopia {
 
         using ViewDevice = ConstantView<StaticMatrix<Scalar, NNodes, NNodes>>;
 
-        Laplacian(const FunctionSpace &space, const Quadrature &q) //: q_(q)
+        Laplacian(const FunctionSpace &space, const Quadrature &q)
         {
             init(space, q);
         }
@@ -66,7 +65,6 @@ namespace utopia {
         }
 
     private:
-        // const Quadrature &q_;
         StaticMatrix<Scalar, NNodes, NNodes> mat_;
 
         void init(const FunctionSpace &space, const Quadrature &q)
@@ -87,7 +85,6 @@ namespace utopia {
             assemble(g, dx, mat_);
         }
     };
-
 
     template<class Mesh, int NComponents, class Quadrature, typename...Args>
     class MassMatrix< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
@@ -154,7 +151,6 @@ namespace utopia {
             assemble(f, dx, mat_);
         }
     };
-
 }
 
 

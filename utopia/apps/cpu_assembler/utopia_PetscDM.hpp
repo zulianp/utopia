@@ -41,7 +41,8 @@ namespace utopia {
     template<int Dim>
     class PetscDMNodes;
 
-
+    template<class Space>
+    class DirichletBoundaryCondition {};
 
     template<int Dim>
     class PetscNode {
@@ -210,6 +211,7 @@ namespace utopia {
         using Vector = utopia::PetscVector;
         using Matrix = utopia::PetscMatrix;
         using Comm = utopia::PetscCommunicator;
+        using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
 
         bool write(const Path &path, const PetscVector &x) const;
         // {
@@ -326,17 +328,28 @@ namespace utopia {
             return mesh_->n_nodes();
         }
 
-    private:
-        std::shared_ptr<Mesh> mesh_;
+        template<class... Args>
+        void emplace_dirichlet_condition(Args && ...args)
+        {
+            dirichlet_bcs_.push_back(utopia::make_unique<DirichletBC>(*this, std::forward<Args>(args)...));
+        }
 
+        void apply_constraints(PetscMatrix &mat, PetscVector &vec) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->apply(mat, vec);
+            }
+        }
+
+        ///shallow copy
         FunctionSpace(const FunctionSpace &other)
         : mesh_(other.mesh_)
         {}
+
+    private:
+        std::shared_ptr<Mesh> mesh_;
+        std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
     };
-
-    template<class Space>
-    class DirichletBoundaryCondition {};
-
 
     template<class Elem, int Components>
     class DirichletBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {

@@ -97,7 +97,7 @@ namespace utopia {
         void describe(std::ostream &os) const
         {
             comm_.barrier();
-            if(comm_.rank() == 1) {
+            if(comm_.rank() == 0) {
                 for(auto p : times_) {
                     os << p.first << " : " << p.second << "\n";
                 }
@@ -157,31 +157,19 @@ namespace utopia {
 
         stats.stop_and_collect("create-matrix");
 
-        Laplacian<FunctionSpace, Quadrature> laplacian(space, quadrature);
-        auto &&l_view = laplacian.view_device();
+        space.emplace_dirichlet_condition(
+            SideSet::left(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return 1.0;
+            }
+        );
 
-        MassMatrix<FunctionSpace, Quadrature> mass_matrix(space, quadrature);
-        auto &&m_view = mass_matrix.view_device();
-
-        std::vector<std::unique_ptr<DirichletBC>> bcs;
-
-        bcs.push_back(
-            utopia::make_unique<DirichletBC>(
-                space,
-                SideSet::left(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return 1.0;
-                }
-        ));
-
-        bcs.push_back(
-            utopia::make_unique<DirichletBC>(
-                space,
-                SideSet::right(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return -1.0;
-                }
-        ));
+        space.emplace_dirichlet_condition(
+            SideSet::right(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return -1.0;
+            }
+        );
 
         auto diffusivity = UTOPIA_LAMBDA(const Point &p) -> Scalar {
             Scalar dist = 0.0;
@@ -199,15 +187,23 @@ namespace utopia {
 
         stats.start();
 
+
+        Laplacian<FunctionSpace, Quadrature> laplacian(space, quadrature);
+        MassMatrix<FunctionSpace, Quadrature> mass_matrix(space, quadrature);
+
         {
+            //GPU assembly mock-prototype
+
             auto mat_view      = space.assembly_view_device(mat);
             auto mass_mat_view = space.assembly_view_device(mass_mat);
             auto rhs_view      = space.assembly_view_device(rhs);
 
+            auto l_view = laplacian.view_device();
+            auto m_view = mass_matrix.view_device();
+
             Dev::parallel_for(
                 space.local_element_range(),
-                //FIXME do not use reference captures
-                [&](const SizeType &i)
+                UTOPIA_LAMBDA(const SizeType &i)
             {
                 Elem e;
 
@@ -241,9 +237,7 @@ namespace utopia {
         Scalar zero = sum(mat);
         std::cout << "zero: " << zero << std::endl;
 
-        for(const auto &bc : bcs) {
-            bc->apply(mat, rhs);
-        }
+        space.apply_constraints(mat, rhs);
 
         stats.stop_and_collect("boundary conditions ");
 
