@@ -58,8 +58,16 @@ namespace utopia
             return true;
         }
 
-        void init_memory(const std::vector<SizeType> & /*n_dofs_*/)
+        void init_memory(const std::vector<SizeType> & n_dofs_)
         {
+            g_diff.resize(n_levels_);
+            g.resize(n_levels_);
+
+            for(auto l=0; l < n_levels_; l++){
+                g_diff[l]   = local_zeros(n_dofs_[l]); 
+                g[l]        = local_zeros(n_dofs_[l]); 
+            }
+
             initialized_ = true; 
         }
 
@@ -72,8 +80,9 @@ namespace utopia
             SizeType n_levels_; 
             bool initialized_; 
 
+        public:            
+            std::vector<Vector> g, g_diff; 
     }; 
-
 
 
     template<typename Matrix, typename Vector>
@@ -123,9 +132,13 @@ namespace utopia
         void init_memory(const std::vector<SizeType> & n_dofs_)
         {   
             help_.resize(n_levels_); 
+            g_diff.resize(n_levels_);
+            g.resize(n_levels_);
 
             for(auto l=0; l < n_levels_; l++){
-                help_[l] = local_zeros(n_dofs_[l]); 
+                help_[l]    = local_zeros(n_dofs_[l]); 
+                g_diff[l]   = local_zeros(n_dofs_[l]); 
+                g[l]        = local_zeros(n_dofs_[l]); 
             }
 
             initialized_ = true; 
@@ -139,7 +152,9 @@ namespace utopia
         private:
             SizeType n_levels_; 
             bool initialized_; 
-            std::vector<Vector> help_; 
+        public:            
+            std::vector<Vector> g, g_diff,  help_; 
+            // std::vector<Matrix> H, H_diff;
 
     }; 
 
@@ -199,10 +214,15 @@ namespace utopia
         void init_memory(const std::vector<SizeType> & n_dofs_)
         {
             help_.resize(n_levels_); 
+            g_diff.resize(n_levels_);
+            g.resize(n_levels_);
 
             for(auto l=0; l < n_levels_; l++){
-                help_[l] = local_zeros(n_dofs_[l]); 
+                help_[l]    = local_zeros(n_dofs_[l]); 
+                g_diff[l]   = local_zeros(n_dofs_[l]); 
+                g[l]        = local_zeros(n_dofs_[l]); 
             }
+
             initialized_ = true; 
         }
 
@@ -214,11 +234,9 @@ namespace utopia
         private:
             SizeType n_levels_; 
             bool initialized_; 
-            std::vector<Vector> help_; 
-
+        public:
+            std::vector<Vector> g, g_diff,  help_; 
     }; 
-
-
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                                
 

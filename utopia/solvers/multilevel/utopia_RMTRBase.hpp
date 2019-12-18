@@ -248,13 +248,13 @@ namespace utopia
 
         virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
-            return ml_derivs_.compute_gradient(level, fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+            return ml_derivs_.compute_gradient(level, fun, memory_.x[level], ml_derivs_.g[level], ml_derivs_.g_diff[level], memory_.H_diff[level], s_global);
         }
 
 
         virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
-            return ml_derivs_.compute_energy(level, fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
+            return ml_derivs_.compute_energy(level, fun, memory_.x[level], ml_derivs_.g_diff[level], memory_.H_diff[level], s_global);
         }
 
 

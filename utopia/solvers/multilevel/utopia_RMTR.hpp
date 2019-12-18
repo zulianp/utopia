@@ -175,14 +175,14 @@ namespace utopia
 
 
             this->memory_.x[fine_level] = x_h;
-            this->memory_.g[fine_level] = local_zeros(local_size(this->memory_.x[fine_level]));
+            this->ml_derivs_.g[fine_level] = local_zeros(local_size(this->memory_.x[fine_level]));
 
             if(!this->skip_BC_checks()){
                 this->make_iterate_feasible(this->function(fine_level), this->memory_.x[fine_level]);
                 this->handle_equality_constraints();    
             }
 
-            this->function(fine_level).gradient(this->memory_.x[fine_level], this->memory_.g[fine_level]);
+            this->function(fine_level).gradient(this->memory_.x[fine_level], this->ml_derivs_.g[fine_level]);
             this->function(fine_level).value(this->memory_.x[fine_level], this->memory_.energy[fine_level]);
 
             this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
@@ -218,7 +218,7 @@ namespace utopia
                     }
                 #endif
 
-                this->function(fine_level).gradient(this->memory_.x[fine_level], this->memory_.g[fine_level]);
+                this->function(fine_level).gradient(this->memory_.x[fine_level], this->ml_derivs_.g[fine_level]);
                 this->function(fine_level).value(this->memory_.x[fine_level], this->memory_.energy[fine_level]);
 
                 this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
@@ -295,7 +295,7 @@ namespace utopia
             }
 
             // Restricted fine level gradient 
-            this->transfer(level-1).restrict(this->memory_.g[level], this->memory_.g_diff[level-1]);
+            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
             // Projecting current iterate to obtain initial iterate on coarser grid 
             this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
@@ -317,22 +317,22 @@ namespace utopia
             //----------------------------------------------------------------------------
             if(CONSISTENCY_LEVEL != GALERKIN)
             {
-                if(empty(this->memory_.g[level-1])){
-                    this->memory_.g[level-1] = 0.0* this->memory_.x[level-1]; 
+                if(empty(this->ml_derivs_.g[level-1])){
+                    this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
                 }
 
-                this->function(level-1).gradient(this->memory_.x[level-1], this->memory_.g[level-1]);
+                this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
             }
 
             if(!this->skip_BC_checks())
             {
                 if(CONSISTENCY_LEVEL != GALERKIN){
-                    this->zero_correction_related_to_equality_constrain(this->function(level-1), this->memory_.g_diff[level-1]);
+                    this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
                 }
             }
 
             if(this->check_grad_smoothness() && CONSISTENCY_LEVEL != GALERKIN){
-                smoothness_flg = this->grad_smoothess_termination(this->memory_.g_diff[level-1], this->memory_.g[level-1], level-1);
+                smoothness_flg = this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1);
             }
             else{
                 smoothness_flg = true;
@@ -341,7 +341,7 @@ namespace utopia
 
             if(CONSISTENCY_LEVEL != GALERKIN)
             {
-                this->memory_.g_diff[level-1] -= this->memory_.g[level-1];
+                this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
             }
 
             //----------------------------------------------------------------------------
@@ -519,15 +519,15 @@ namespace utopia
                 {
                     if(CONSISTENCY_LEVEL == FIRST_ORDER)
                     {
-                        this->memory_.g[level] += this->memory_.g_diff[level]; 
+                        this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
                     }
                     else if(CONSISTENCY_LEVEL == GALERKIN)
                     {
-                        this->memory_.g[level] = this->memory_.g_diff[level]; 
+                        this->ml_derivs_.g[level] = this->ml_derivs_.g_diff[level]; 
                     }
                     else if(CONSISTENCY_LEVEL == SECOND_ORDER)
                     {
-                        this->memory_.g[level] += this->memory_.g_diff[level]; 
+                        this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
 
                         // memory_.H[level] = memory_.H[level] + memory_.H_diff[level]; 
                         this->memory_.H[level] += this->memory_.H_diff[level]; 
@@ -713,7 +713,7 @@ namespace utopia
 
         virtual Scalar get_pred(const SizeType & level)
         {
-            return (-1.0 * dot(this->memory_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.H[level] * this->memory_.s[level], this->memory_.s[level]));
+            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.H[level] * this->memory_.s[level], this->memory_.s[level]));
         }
 
 
@@ -907,7 +907,7 @@ namespace utopia
 
         virtual Scalar criticality_measure(const SizeType & level)
         {
-            return norm2(this->memory_.g[level]);
+            return norm2(this->ml_derivs_.g[level]);
         }
 
 
@@ -973,90 +973,13 @@ namespace utopia
                 _tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
             }
 
-            this->memory_.s[level] = local_zeros(local_size(this->memory_.g[level]). get(0)); 
+            this->memory_.s[level] = local_zeros(local_size(this->ml_derivs_.g[level]). get(0)); 
             
             _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
-            _tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->memory_.g[level], this->memory_.s[level]);
+            _tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
             
             return true;
         }
-
-//----------------------------------------- energy evaluation helpers -------------------------------------------
-
-        // /**
-        //  * @brief      Computes hessian on given level
-        //  *
-        //  * @param[in]  fun       Function with evaluation routines
-        //  * @param[in]  x         The current iterate
-        //  * @param      H         The current hessian
-        //  * @param[in]  H_diff    The h_diff
-        //  * @param[in]  level     The level
-        //  *
-        //  * @return     The multilevel hessian.
-        //  */
-        // virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
-        // {
-        //     if(level < this->n_levels()-1)
-        //     {
-        //         return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
-        //     }
-        //     else{
-        //         return fun.hessian(memory_.x[level], memory_.H[level]);
-        //     }
-        // }
-
-
-        // /**
-        //  * @brief      Computes gradient on given level
-        //  *
-        //  * @param[in]  fun       Function with evaluation routines
-        //  * @param[in]  x         The current iterate
-        //  * @param      g         The current gradient
-        //  * @param[in]  g_diff    The g_diff
-        //  * @param[in]  H_diff    The h_diff
-        //  * @param[in]  s_global  The sum of all corrections on given level
-        //  * @param[in]  level     The level
-        //  *
-        //  * @return     The multilevel gradient.
-        //  */
-        // virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
-        // {
-        //     // std::cout<<"get_multilevel_gradient: level: "<< level << "  \n"; 
-        //     if(level < this->n_levels()-1)
-        //     {
-        //         return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, memory_.x[level], memory_.g[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
-        //     }
-        //     else
-        //     {
-        //         return fun.gradient(memory_.x[level], memory_.g[level]);
-        //     }
-        // }
-
-        // /**
-        //  * @brief      Computes energy for given level
-        //  *
-        //  * @param[in]  fun       Function with evaluation routines
-        //  * @param[in]  x         The current iterate
-        //  * @param[in]  g_diff    The g_diff
-        //  * @param[in]  H_diff    The h_diff
-        //  * @param[in]  s_global  The sum of all corrections on given level
-        //  * @param[in]  level     The level
-        //  *
-        //  * @return     The multilevel energy.
-        //  */
-        // virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level)
-        // {
-        //     if(level < this->n_levels()-1)
-        //     {
-        //         return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global);
-        //     }
-        //     else
-        //     {
-        //         Scalar energy;
-        //         fun.value(memory_.x[level], energy);
-        //         return energy;
-        //     }
-        // }
 
 
         virtual void compute_s_global(const SizeType & level, Vector & s_global)

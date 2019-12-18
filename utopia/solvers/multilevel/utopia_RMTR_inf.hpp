@@ -228,7 +228,7 @@ namespace utopia
         // measuring wrt to feasible set...
         virtual Scalar criticality_measure(const SizeType & level) override
         {
-            return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->memory_.g[level]); 
+            return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]); 
         }
 
 
@@ -274,7 +274,7 @@ namespace utopia
 
 
             _tr_subproblems[level]->set_box_constraints(box);
-            this->_tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->memory_.g[level], this->memory_.s[level]);
+            this->_tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
 
 
 

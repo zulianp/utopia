@@ -39,8 +39,8 @@ namespace utopia
                 x.resize(n_levels);
                 x_0.resize(n_levels);
 
-                g.resize(n_levels);
-                g_diff.resize(n_levels);
+                // g.resize(n_levels);
+                // g_diff.resize(n_levels);
 
                 s.resize(n_levels);
                 s_working.resize(n_levels);
@@ -54,7 +54,8 @@ namespace utopia
             }
 
         std::vector<Scalar> delta, energy, gnorm;
-        std::vector<Vector> x, x_0, g, g_diff, s, s_working;
+        std::vector<Vector> x, x_0, s, s_working;
+        // std::vector<Vector> x, x_0, g, g_diff, s, s_working;
         std::vector<Matrix> H, H_diff;
     };
 
@@ -89,7 +90,6 @@ namespace utopia
     // };
 
 
-
     template<class Vector>
     class ConstraintsLevelMemory
     {
@@ -113,8 +113,6 @@ namespace utopia
         std::vector<Vector> x_lower, x_upper, tr_lower, tr_upper, active_lower, active_upper;
         std::vector<Scalar> P_inf_norm;
     };
-
-
 
 }
 
