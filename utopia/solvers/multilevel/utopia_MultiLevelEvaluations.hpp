@@ -52,6 +52,22 @@ namespace utopia
             return true;
         }
 
+        inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1)
+            {
+                energy += dot(g_diff[level], s_global);
+                g[level] += g_diff[level];
+            }            
+
+            return energy;
+        }
+
+
        inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
         {
             fun.hessian(x, H[level]);
@@ -119,15 +135,35 @@ namespace utopia
         inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
         {
             fun.gradient(x, g[level]);
+
             if(level < n_levels_-1){
                 g[level] += g_diff[level] + (H_diff[level] * s_global); 
             }
             return true;
         }
 
+
+        inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                help_[level] = H_diff[level] * s_global; 
+
+                energy += (0.5 * dot(help_[level], s_global)) + dot(g_diff[level], s_global); 
+                g[level] += g_diff[level] + help_[level]; 
+            }
+
+            return energy;
+        }   
+
+
        inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
         {
             fun.hessian(x, H[level]);
+
             if(level < n_levels_-1){
                 H[level] += H_diff[level];
             }
@@ -205,6 +241,23 @@ namespace utopia
             }
 
             return true;
+        }
+
+        inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            if(level < n_levels_-1)
+            {
+                help_[level]    = H_diff[level] * s_global; 
+                g[level]        = g_diff[level] + help_[level];
+                return (dot(g_diff[level], s_global) + 0.5 * dot(help_[level], s_global));
+            }
+            else
+            {
+                Scalar energy = 0.0; 
+                fun.value(x, energy); 
+                fun.gradient(x, g[level]); 
+                return energy; 
+            }
         }
 
         inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)

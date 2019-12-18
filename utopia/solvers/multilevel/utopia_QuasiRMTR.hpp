@@ -225,6 +225,11 @@ namespace utopia
             }
         }
 
+        virtual Scalar criticality_measure(const SizeType & level) override
+        {
+            return norm2(this->ml_derivs_.g[level]);
+        }
+
 
         virtual bool check_initialization() override
         {

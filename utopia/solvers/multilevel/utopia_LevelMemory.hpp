@@ -45,6 +45,7 @@ namespace utopia
 
                 s.resize(n_levels);
                 s_working.resize(n_levels);
+                help.resize(n_levels); 
 
                 delta.resize(n_levels);
                 energy.resize(n_levels); 
@@ -55,11 +56,12 @@ namespace utopia
                     x_0[l]          = local_zeros(n_dofs_[l]); 
                     s[l]            = local_zeros(n_dofs_[l]); 
                     s_working[l]    = local_zeros(n_dofs_[l]); 
+                    help[l]         = local_zeros(n_dofs_[l]); 
                 }
             }            
 
         std::vector<Scalar> delta, energy, gnorm;
-        std::vector<Vector> x, x_0, s, s_working;
+        std::vector<Vector> x, x_0, s, s_working, help;
     };
 
 

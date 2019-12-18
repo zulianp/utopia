@@ -86,17 +86,6 @@ namespace utopia
 
         virtual std::string name() override { return "RMTR";  }
 
-        virtual void handle_equality_constraints()
-        {
-            const SizeType L = this->n_levels();
-
-            for(SizeType i = 0; i < L-1; ++i) {
-                const auto &flags = this->function(i+1).get_eq_constrains_flg();
-                assert(!empty(flags));
-                this->transfer(i).handle_equality_constraints(flags);
-            }
-        }
-
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
@@ -126,11 +115,11 @@ namespace utopia
 
         bool set_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy, const SizeType & level)
         {
-            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
                 _tr_subproblems.resize(this->n_levels());
+            }
 
-            if(level <= this->n_levels())
-            {
+            if(level <= this->n_levels()){
                 _tr_subproblems[level] = strategy;
             }
             else{
@@ -148,106 +137,11 @@ namespace utopia
             }
 
             _tr_subproblems = strategies;
-
             return true;
         }
 
 
-        /**
-         * @brief      The solve function for multigrid method.
-         *
-         * @param[in]  rhs   The right hand side.
-         * @param      x_0   The initial guess.
-         *
-         */
-        virtual bool solve(Vector &x_h) override
-        {
-            if(!this->check_initialization())
-                return false;
-
-            bool converged = false;
-            SizeType fine_level = this->n_levels()-1;
-
-
-            //-------------- INITIALIZATIONS ---------------
-            SizeType fine_local_size = local_size(x_h).get(0);
-            this->init_memory(fine_local_size);
-
-
-            this->memory_.x[fine_level] = x_h;
-            this->ml_derivs_.g[fine_level] = local_zeros(local_size(this->memory_.x[fine_level]));
-
-            if(!this->skip_BC_checks()){
-                this->make_iterate_feasible(this->function(fine_level), this->memory_.x[fine_level]);
-                this->handle_equality_constraints();    
-            }
-
-            this->function(fine_level).gradient(this->memory_.x[fine_level], this->ml_derivs_.g[fine_level]);
-            this->function(fine_level).value(this->memory_.x[fine_level], this->memory_.energy[fine_level]);
-
-            this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
-            this->_it_global = 0;
-
-            //----------------------------------------------
-
-            if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
-            {
-                std::cout << this->red_;
-                std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(fine_local_size);
-                this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
-
-                PrintInfo::print_iter_status(this->_it_global, {this->memory_.gnorm[fine_level], this->memory_.energy[fine_level]});
-                std::cout << this->def_;
-            }
-
-
-            while(!converged)
-            {
-                if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_level);
-                else{
-                    std::cout<<"ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n";
-                    this->multiplicative_cycle(fine_level);
-                }
-
-                #ifdef CHECK_NUM_PRECISION_mode
-                    if(has_nan_or_inf(this->memory_.x[fine_level]) == 1)
-                    {
-                        this->memory_.x[fine_level] = local_zeros(local_size(this->memory_.x[fine_level]));
-                        return true;
-                    }
-                #endif
-
-                this->function(fine_level).gradient(this->memory_.x[fine_level], this->ml_derivs_.g[fine_level]);
-                this->function(fine_level).value(this->memory_.x[fine_level], this->memory_.energy[fine_level]);
-
-                this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
-
-                this->_it_global++;
-
-                if(this->verbose() && mpi_world_rank() == 0)
-                {
-                    std::cout << this->red_;
-                    if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL){
-                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||",  "   E "});
-                    }
-
-                    PrintInfo::print_iter_status(this->_it_global, {this->memory_.gnorm[fine_level],  this->memory_.energy[fine_level]});
-                    std::cout << this->def_;
-                }
-
-                // check convergence
-                converged = this->check_global_convergence(this->_it_global, this->memory_.gnorm[fine_level], 9e9, this->memory_.delta[fine_level]);
-            }
-
-            // benchmarking
-            NonlinearMultiLevelBase<Matrix, Vector>::print_statistics(this->_it_global);
-            x_h = this->memory_.x[fine_level];
-            return true;
-        }
-
-
-    private:
+    protected:
 
         /**
          * @brief      Multiplicative cycle
@@ -258,7 +152,7 @@ namespace utopia
          * @param[in]  level      The level
          *
          */
-        virtual bool multiplicative_cycle(const SizeType & level)
+        virtual bool multiplicative_cycle(const SizeType & level) override
         {
             Scalar ared=0.0, coarse_reduction=0.0, rho=0.0;
             Scalar E_old=0.0, E_new=0.0;
@@ -369,7 +263,9 @@ namespace utopia
             //                   additional coarse level initialization...
             //----------------------------------------------------------------------------
             this->memory_.x_0[level-1]    = this->memory_.x[level-1];
-            this->memory_.s[level-1]      = local_zeros(local_size(this->memory_.x[level-1]));
+            // this->memory_.s[level-1]      = local_zeros(local_size(this->memory_.x[level-1]));
+            // todo:: check if necessary
+            this->memory_.s[level-1].set(0.0); 
 
             // at this point s_global on coarse level is empty
             coarse_reduction = this->get_multilevel_energy(this->function(level-1), this->memory_.s[level-1], level-1);
@@ -406,7 +302,6 @@ namespace utopia
                 }
 
                 E_old = this->memory_.energy[level]; 
-
                 this->memory_.x[level] += this->memory_.s[level];
 
                 this->compute_s_global(level, this->memory_.s_working[level]);
@@ -502,10 +397,13 @@ namespace utopia
 
 
             // should be neccessary just first time, we enter given level
-            if(empty(this->memory_.s[level]))
-            {
-                this->memory_.s[level] = local_zeros(local_size(this->memory_.x[level]));
-            }
+            // if(empty(this->memory_.s[level]))
+            // {
+            //     this->memory_.s[level] = local_zeros(local_size(this->memory_.x[level]));
+            // }
+            // TODO:: check 
+            this->memory_.s[level].set(0.0);
+
 
             // TODO:: do check if this is only post-smoothing (check if s_working is initiailized otherwise to zero)
             // important, as this can be postsmoothing
@@ -559,7 +457,6 @@ namespace utopia
 
                 this->memory_.gnorm[level] = this->criticality_measure(level);
             }
-
 
             converged  = this->check_local_convergence(it, it_success,  this->memory_.gnorm[level], level, this->memory_.delta[level], solve_type);
 
@@ -673,33 +570,15 @@ namespace utopia
 
 
     protected:
-
-        virtual bool check_initialization()
-        {
-            if(static_cast<SizeType>(this->level_functions_.size()) != this->n_levels()){
-                utopia_error("utopia::RMTR:: number of level Functions and levels not equal. \n");
-                return false;
-            }
-            if(static_cast<SizeType>(this->transfers_.size()) + 1 != this->n_levels()){
-                utopia_error("utopia::RMTR:: number of transfers and levels not equal. \n");
-                return false;
-            }
-
-            // if(this->_tr_subproblems.size() != this->n_levels()){
-            //     utopia_error("utopia::RMTR:: number of QP solvers and levels not equal. \n");
-            //     return false;
-            // }
-
-            return true;
-        }
-
         virtual bool check_feasibility(const SizeType & /*level */ )
         {
             return false;
         }
 
+
         virtual void init_memory(const SizeType & fine_local_size) override
         {
+            std::cout<<"------------------- init RMTR l2 .......... \n"; 
             RMTRBase::init_memory(fine_local_size); 
 
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
@@ -709,13 +588,13 @@ namespace utopia
                 this->memory_.delta[l] = this->delta0();
                 this->_tr_subproblems[l]->init_memory(dofs[l]); 
             }
-
         }
 
 
         virtual Scalar get_pred(const SizeType & level)
         {
-            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->ml_derivs_.H[level] * this->memory_.s[level], this->memory_.s[level]));
+            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
+            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
         }
 
 
@@ -795,23 +674,20 @@ namespace utopia
          * @param[in]  current_l  The current level
          *
          */
-        virtual Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
+        virtual Scalar level_dependent_norm(const Vector & u, const SizeType & level)
         {
-            if(current_l == this->n_levels()-1){
+            if(level == this->n_levels()-1){
                 return norm2(u);
             }
             else
             {
-                Vector s; // carries over prolongated correction
-                this->transfer(current_l).interpolate(u, s);
-                return norm2(s);
+                this->transfer(level).interpolate(u, this->memory_.help[level+1]);
+                return norm2(this->memory_.help[level+1]);
             }
         }
 
-
-
-    // ---------------------------------- convergence checks -------------------------------
-        virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta)
+        // ---------------------------------- convergence checks -------------------------------
+        virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta) override
         {
             bool converged = NonlinearMultiLevelBase<Matrix, Vector>::check_convergence(it, r_norm, rel_norm, 1);
 
@@ -907,7 +783,7 @@ namespace utopia
         }
 
 
-        virtual Scalar criticality_measure(const SizeType & level)
+        virtual Scalar criticality_measure(const SizeType & level) override
         {
             return norm2(this->ml_derivs_.g[level]);
         }
@@ -975,10 +851,13 @@ namespace utopia
                 _tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
             }
 
-            this->memory_.s[level] = local_zeros(local_size(this->ml_derivs_.g[level]). get(0)); 
-            
+            this->memory_.s[level].set(0.0); 
             _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
-            _tr_subproblems[level]->solve(this->ml_derivs_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
+            
+            // maybe create help vector for this
+            this->ml_derivs_.g[level] *= - 1.0; 
+            _tr_subproblems[level]->solve(this->ml_derivs_.H[level], this->ml_derivs_.g[level], this->memory_.s[level]);
+            this->ml_derivs_.g[level] *= - 1.0; 
             
             return true;
         }
@@ -986,9 +865,9 @@ namespace utopia
 
         virtual void compute_s_global(const SizeType & level, Vector & s_global)
         {
-            if(empty( this->memory_.x_0[level]))
+            if(empty(this->memory_.x_0[level]))
             {
-                s_global = 0.0*this->memory_.x[level]; 
+                s_global.set(0.0);
             }
             else if(level < this->n_levels()-1)
             {
@@ -996,12 +875,9 @@ namespace utopia
             }
         }
 
+
     private:
         std::vector<TRSubproblemPtr>        _tr_subproblems;
-
-    // protected:
-    //     RMTRLevelMemory<Matrix, Vector>         memory_;
-
 
     };
 
