@@ -274,7 +274,7 @@ namespace utopia
 
 
             _tr_subproblems[level]->set_box_constraints(box);
-            this->_tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
+            this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
 
 
 

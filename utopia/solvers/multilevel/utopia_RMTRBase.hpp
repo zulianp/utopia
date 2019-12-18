@@ -242,30 +242,28 @@ namespace utopia
 
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
         {
-            return  ml_derivs_.compute_hessian(level, fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
+            return  ml_derivs_.compute_hessian(level, fun, memory_.x[level]);
         }
 
 
         virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
-            return ml_derivs_.compute_gradient(level, fun, memory_.x[level], ml_derivs_.g[level], ml_derivs_.g_diff[level], memory_.H_diff[level], s_global);
+            return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global);
         }
 
 
         virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level)
         {
-            return ml_derivs_.compute_energy(level, fun, memory_.x[level], ml_derivs_.g_diff[level], memory_.H_diff[level], s_global);
+            return ml_derivs_.compute_energy(level, fun, memory_.x[level], s_global);
         }
 
 
         virtual void init_memory(const SizeType & /*fine_local_size */)
         {
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+
             ml_derivs_.init_memory(dofs); 
-
-            // to be fixed 
-            this->memory_.init(this->n_levels());
-
+            memory_.init_memory(dofs); 
         }
 
 
@@ -320,8 +318,7 @@ namespace utopia
         ColorModifier yellow_;
         ColorModifier green_;
 
-        RMTRLevelMemory<Matrix, Vector, CONSISTENCY_LEVEL>         memory_;
-
+        RMTRLevelMemory<Matrix, Vector>         memory_;
         MultilevelDerivEval<Matrix, Vector, CONSISTENCY_LEVEL>  ml_derivs_; 
 
     };

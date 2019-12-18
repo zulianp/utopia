@@ -350,18 +350,18 @@ namespace utopia
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
                 this->get_multilevel_hessian(this->function(level), level);
-                this->transfer(level-1).restrict(this->memory_.H[level], this->memory_.H_diff[level-1]);
+                this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
                     if(!this->skip_BC_checks()){
-                        this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->memory_.H_diff[level-1]);
+                        this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
                     }
 
-                    this->function(level-1).hessian(this->memory_.x[level-1], this->memory_.H[level-1]);
+                    this->function(level-1).hessian(this->memory_.x[level-1], this->ml_derivs_.H[level-1]);
 
                     // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
-                    this->memory_.H_diff[level-1] -= this->memory_.H[level-1];
+                    this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
                 }
             }
 
@@ -530,7 +530,7 @@ namespace utopia
                         this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
 
                         // memory_.H[level] = memory_.H[level] + memory_.H_diff[level]; 
-                        this->memory_.H[level] += this->memory_.H_diff[level]; 
+                        this->ml_derivs_.H[level] += this->ml_derivs_.H_diff[level]; 
                         make_hess_updates = false;                
                     }                    
                     else
@@ -701,8 +701,7 @@ namespace utopia
         virtual void init_memory(const SizeType & fine_local_size) override
         {
             RMTRBase::init_memory(fine_local_size); 
-            // this->memory_.init(this->n_levels());
-
+            
             // init deltas to some default value...
             for(Scalar l = 0; l < this->n_levels(); l ++){
                 this->memory_.delta[l] = this->delta0();
@@ -713,7 +712,7 @@ namespace utopia
 
         virtual Scalar get_pred(const SizeType & level)
         {
-            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.H[level] * this->memory_.s[level], this->memory_.s[level]));
+            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->ml_derivs_.H[level] * this->memory_.s[level], this->memory_.s[level]));
         }
 
 
@@ -976,7 +975,7 @@ namespace utopia
             this->memory_.s[level] = local_zeros(local_size(this->ml_derivs_.g[level]). get(0)); 
             
             _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
-            _tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
+            _tr_subproblems[level]->solve(this->ml_derivs_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
             
             return true;
         }

@@ -5,9 +5,10 @@
 namespace utopia
 {
 
-    enum MultiLevelCoherence{   FIRST_ORDER  = 1,
-                                SECOND_ORDER = 2,
-                                GALERKIN     = 0};
+    enum MultiLevelCoherence{   FIRST_ORDER     = 1,
+                                FIRST_ORDER_DF  = 3,
+                                SECOND_ORDER    = 2,
+                                GALERKIN        = 0};
 
 
     template<class Matrix, class Vector>
@@ -28,66 +29,38 @@ namespace utopia
         std::vector<Vector> x, x_0, g, g_diff, c;
     };
 
-    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_TYPE>
+    template<class Matrix, class Vector>
     class RMTRLevelMemory
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SCALAR(Vector)       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
 
         public:
-            void init(const int n_levels)
+            void init_memory(const std::vector<SizeType> & n_dofs_)
             {
+                const auto n_levels = n_dofs_.size(); 
+
                 x.resize(n_levels);
                 x_0.resize(n_levels);
-
-                // g.resize(n_levels);
-                // g_diff.resize(n_levels);
 
                 s.resize(n_levels);
                 s_working.resize(n_levels);
 
-                H.resize(n_levels);
-                H_diff.resize(n_levels);
-
                 delta.resize(n_levels);
                 energy.resize(n_levels); 
                 gnorm.resize(n_levels); 
-            }
+
+                for(auto l=0; l < n_levels; l++){
+                    x[l]            = local_zeros(n_dofs_[l]); 
+                    x_0[l]          = local_zeros(n_dofs_[l]); 
+                    s[l]            = local_zeros(n_dofs_[l]); 
+                    s_working[l]    = local_zeros(n_dofs_[l]); 
+                }
+            }            
 
         std::vector<Scalar> delta, energy, gnorm;
         std::vector<Vector> x, x_0, s, s_working;
-        // std::vector<Vector> x, x_0, g, g_diff, s, s_working;
-        std::vector<Matrix> H, H_diff;
     };
-
-    // template<class Matrix, class Vector>
-    // class RMTRLevelMemory<FIRST_ORDER>
-    // {
-    //     typedef UTOPIA_SCALAR(Vector)                       Scalar;
-
-    //     public:
-    //         void init(const int n_levels)
-    //         {
-    //             x.resize(n_levels);
-    //             x_0.resize(n_levels);
-
-    //             g.resize(n_levels);
-    //             g_diff.resize(n_levels);
-
-    //             s.resize(n_levels);
-    //             s_working.resize(n_levels);
-
-    //             // H.resize(n_levels);
-    //             // H_diff.resize(n_levels);
-
-    //             delta.resize(n_levels);
-    //             energy.resize(n_levels); 
-    //             gnorm.resize(n_levels); 
-    //         }
-
-    //     std::vector<Scalar> delta, energy, gnorm;
-    //     std::vector<Vector> x, x_0, g, g_diff, s, s_working;
-    //     // std::vector<Matrix> H, H_diff;
-    // };
 
 
     template<class Vector>
