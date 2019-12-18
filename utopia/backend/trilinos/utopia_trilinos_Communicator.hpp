@@ -14,6 +14,11 @@ namespace utopia {
     public:
         using CommPtr = Teuchos::RCP<const Teuchos::Comm<int> >;
 
+        inline void barrier() const override
+        {
+            comm_->barrier();
+        }
+
         inline int rank() const override
         {
           return comm_->getRank();

@@ -114,12 +114,18 @@ namespace utopia {
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
         using ViewDevice = utopia::PhysicalGradient<Elem, typename Quadrature::ViewDevice>;
+        using ViewHost   = utopia::PhysicalGradient<Elem, typename Quadrature::ViewHost>;
 
         PhysicalGradient(const FunctionSpace &, const Quadrature &q) : q_(q) {}
 
         ViewDevice view_device() const
         {
             return ViewDevice(q_.view_device());
+        }
+
+        ViewHost view_host() const
+        {
+            return ViewHost(q_.view_host());
         }
 
     private:
@@ -181,12 +187,18 @@ namespace utopia {
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
         using ViewDevice = utopia::ShapeFunction<Elem, typename Quadrature::ViewDevice>;
+        using ViewHost   =  utopia::ShapeFunction<Elem, typename Quadrature::ViewHost>;
 
         ShapeFunction(const FunctionSpace &, const Quadrature &q) : q_(q) {}
 
         ViewDevice view_device() const
         {
             return ViewDevice(q_.view_device());
+        }
+
+        ViewHost view_host() const
+        {
+            return ViewHost(q_.view_host());
         }
 
     private:
@@ -215,7 +227,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Scalar get(const int qp_idx) const
         {
             if(elem_->is_affine()) {
-                return q_.weight(qp_idx) * elem_->reference_measure();
+                return q_.weight(qp_idx) * elem_->measure();
             } else {
                 UTOPIA_DEVICE_ASSERT(false);
                 return -1.0;
@@ -246,12 +258,18 @@ namespace utopia {
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
         using ViewDevice = utopia::Differential<Elem, typename Quadrature::ViewDevice>;
+        using ViewHost = utopia::Differential<Elem, typename Quadrature::ViewHost>;
 
         Differential(const FunctionSpace &, const Quadrature &q) : q_(q) {}
 
         ViewDevice view_device() const
         {
             return ViewDevice(q_.view_device());
+        }
+
+        ViewHost view_host() const
+        {
+            return ViewHost(q_.view_host());
         }
 
     private:

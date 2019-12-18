@@ -117,7 +117,7 @@ namespace utopia {
                 current = next;
             }
 
-            UTOPIA_DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
+            // UTOPIA_DEVICE_ASSERT(element_tensor_to_linear_index(tensor_index) == element_idx);
         }
 
         template<class Dims, class Array>
@@ -175,7 +175,7 @@ namespace utopia {
                 current = next;
             }
 
-            UTOPIA_DEVICE_ASSERT(node_tensor_to_linear_index(tensor_index) == node_idx);
+            // UTOPIA_DEVICE_ASSERT(node_tensor_to_linear_index(tensor_index) == node_idx);
         }
 
         template<class Dims, class Array>

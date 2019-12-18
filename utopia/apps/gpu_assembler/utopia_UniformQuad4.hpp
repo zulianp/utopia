@@ -135,6 +135,14 @@ namespace utopia {
             }
         }
 
+        template<typename PhysicalPoint>
+        UTOPIA_INLINE_FUNCTION void centroid(PhysicalPoint &out) const
+        {
+            for(int i = 0; i < Dim; ++i) {
+                out[i] = translation_[i] + h_[i]/2.0;
+            }
+        }
+
         template<typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const
         {
@@ -151,6 +159,11 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION constexpr static Scalar reference_measure()
         {
             return 1.0;
+        }
+
+        UTOPIA_INLINE_FUNCTION Scalar measure() const
+        {
+            return h_[0]*h_[1];
         }
 
         // template<typename Point, typename Values>

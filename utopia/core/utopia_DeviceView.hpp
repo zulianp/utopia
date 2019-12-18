@@ -31,7 +31,7 @@ namespace utopia {
             tensor_.add(idx, value);
         }
 
-        DeviceView(T &tensor) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor)) {}
+        DeviceView(T &tensor, WriteMode wm = utopia::AUTO) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor, wm)) {}
 
     private:
         T &tensor_;
@@ -70,7 +70,7 @@ namespace utopia {
             tensor_.c_add(i, j, value);
         }
 
-        DeviceView(T &tensor) : tensor_(tensor), lock_(std::make_shared<Write<T>>(tensor)) {}
+        DeviceView(T &tensor, WriteMode wm = utopia::AUTO) : tensor_(tensor), lock_(std::make_shared<Write<T>>(tensor, wm)) {}
 
     private:
         T &tensor_;

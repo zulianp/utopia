@@ -15,6 +15,7 @@
 #include "utopia_Temp.hpp"
 #include "utopia_Writable.hpp"
 #include "utopia_petsc_FE.hpp"
+#include "utopia_DeviceView.hpp"
 
 #include <array>
 #include <memory>
@@ -206,7 +207,9 @@ namespace utopia {
         using ViewDevice = FunctionSpace;
         using Device = typename Mesh::Device;
         using DofIndex = typename Mesh::NodeIndex;
-
+        using Vector = utopia::PetscVector;
+        using Matrix = utopia::PetscMatrix;
+        using Comm = utopia::PetscCommunicator;
 
         bool write(const Path &path, const PetscVector &x) const;
         // {
@@ -277,6 +280,32 @@ namespace utopia {
             mesh_->create_vector(vec);
         }
 
+        static DeviceView<PetscMatrix, 2> assembly_view_device(PetscMatrix &mat)
+        {
+            return DeviceView<PetscMatrix, 2>(mat, utopia::GLOBAL_ADD);
+        }
+
+        static DeviceView<PetscVector, 1> assembly_view_device(PetscVector &vec)
+        {
+            return DeviceView<PetscVector, 1>(vec, utopia::GLOBAL_ADD);
+        }
+
+        template<class ElementMatrix, class MatView>
+        static void add_matrix(
+            const Elem &e,
+            const ElementMatrix &el_mat,
+            MatView &mat)
+        {
+            const SizeType n_dofs = e.nodes().size();
+            const auto &dofs = e.nodes();
+
+            for(SizeType i = 0; i < n_dofs; ++i) {
+                for(SizeType j = 0; j < n_dofs; ++j) {
+                    mat.atomic_add(dofs[i], dofs[j], el_mat(i, j));
+                }
+            }
+        }
+
         const Mesh &mesh() const
         {
             return *mesh_;
@@ -306,11 +335,11 @@ namespace utopia {
     };
 
     template<class Space>
-    class BoundaryCondition {};
+    class DirichletBoundaryCondition {};
 
 
     template<class Elem, int Components>
-    class BoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
+    class DirichletBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
     public:
         using FunctionSpace = utopia::FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>;
         using Point    = typename FunctionSpace::Point;
@@ -319,7 +348,7 @@ namespace utopia {
         using DofIndex = typename FunctionSpace::DofIndex;
         static const int Dim = FunctionSpace::Dim;
 
-        BoundaryCondition(
+        DirichletBoundaryCondition(
             const FunctionSpace &space,
             SideSet::BoundaryIdType side_set,
             const std::function<Scalar(const Point &)> &fun,

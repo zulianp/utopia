@@ -52,7 +52,8 @@ namespace utopia {
                     g[0] = -(1.0 - y) * (1.0 - z);
                     g[1] = -(1.0 - x) * (1.0 - z);
                     g[2] = -(1.0 - x) * (1.0 - y);
-                };
+                    return;
+                }
 
                 // f = x * (1.0 - y) * (1.0 - z);
                 case 1:
@@ -60,7 +61,8 @@ namespace utopia {
                     g[0] = (1.0 - y) * (1.0 - z);
                     g[1] = -x * (1.0 - z);
                     g[2] = -x * (1.0 - y);
-                };
+                    return;
+                }
 
                 // f = x * y * (1.0 - z);
                 case 2:
@@ -68,7 +70,8 @@ namespace utopia {
                     g[0] = y * (1.0 - z);
                     g[1] = x * (1.0 - z);
                     g[2] = -x * y;
-                };
+                    return;
+                }
 
                 // f = (1.0 - x) * y * (1.0 - z);
                 case 3:
@@ -76,7 +79,8 @@ namespace utopia {
                     g[0] = - y * (1.0 - z);
                     g[1] = (1.0 - x) * (1.0 - z);
                     g[2] = -(1.0 - x) * y;
-                };
+                    return;
+                }
 
                 // f = (1.0 - x) * (1.0 - y) * z;
                 case 4:
@@ -84,7 +88,8 @@ namespace utopia {
                     g[0] = -(1.0 - y) * z;
                     g[1] = -(1.0 - x) * z;
                     g[2] = (1.0 - x) * (1.0 - y);
-                };
+                    return;
+                }
 
                 // f = x * (1.0 - y) * z;
                 case 5:
@@ -92,7 +97,8 @@ namespace utopia {
                     g[0] = (1.0 - y) * z;
                     g[1] = -x * z;
                     g[2] = x * (1.0 - y);
-                };
+                    return;
+                }
 
                 // f = x * y * z;
                 case 6:
@@ -100,7 +106,8 @@ namespace utopia {
                     g[0] = y * z;
                     g[1] = x * z;
                     g[2] = x * y;
-                };
+                    return;
+                }
 
                 // f = (1.0 - x) * y * z;
                 case 7:
@@ -108,7 +115,8 @@ namespace utopia {
                     g[0] = -y * z;
                     g[1] = (1.0 - x) * z;
                     g[2] = (1.0 - x) * y;
-                };
+                    return;
+                }
 
                 default:
                 {
@@ -181,12 +189,26 @@ namespace utopia {
             return 1.0;
         }
 
+        UTOPIA_INLINE_FUNCTION Scalar measure() const
+        {
+            UTOPIA_DEVICE_ASSERT(h_[0]*h_[1]*h_[2] > 0.0);
+            return h_[0]*h_[1]*h_[2];
+        }
+
         template<typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const
         {
             out[0] = in[0] * h_[0] + translation_[0];
             out[1] = in[1] * h_[1] + translation_[1];
             out[2] = in[2] * h_[2] + translation_[2];
+        }
+
+        template<typename PhysicalPoint>
+        UTOPIA_INLINE_FUNCTION void centroid(PhysicalPoint &out) const
+        {
+            for(int i = 0; i < Dim; ++i) {
+                out[i] = translation_[i] + h_[i]/2.0;
+            }
         }
 
         UTOPIA_INLINE_FUNCTION UniformHex8()
@@ -198,14 +220,16 @@ namespace utopia {
 
         template<class H>
         UTOPIA_INLINE_FUNCTION void set(
-            const StaticVector2<Scalar> &translation,
+            const StaticVector3<Scalar> &translation,
             const H &h)
         {
             translation_(0) = translation(0);
             translation_(1) = translation(1);
+            translation_(2) = translation(2);
 
             h_[0] = h[0];
             h_[1] = h[1];
+            h_[2] = h[2];
         }
 
         UTOPIA_INLINE_FUNCTION NodeIndexView &nodes()

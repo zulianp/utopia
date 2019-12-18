@@ -241,17 +241,17 @@ namespace utopia {
             return false;
         }
 
-        inline void describe() const
+        inline void describe(std::ostream &os = std::cout) const
         {
             const SizeType r = rows();
             const SizeType c = cols();
 
             for(SizeType i = 0; i < r; ++i) {
                 for(SizeType j = 0; j < c; ++j) {
-                    std::cout << get(i, j) << "\t";
+                    os << get(i, j) << "\t";
                 }
 
-                std::cout << "\n";
+                os << "\n";
             }
         }
 

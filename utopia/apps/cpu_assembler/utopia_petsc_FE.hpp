@@ -96,6 +96,11 @@ namespace utopia {
             return impl_.node(i, p);
         }
 
+        inline void centroid(Point &out) const
+        {
+            impl_.centroid(out);
+        }
+
         inline void grad(const int i, const Point &p, Grad &g) const
         {
            impl_.grad(i, p, g);
@@ -109,6 +114,11 @@ namespace utopia {
         inline constexpr static Scalar reference_measure()
         {
             return UniformQuad4<Scalar>::reference_measure();
+        }
+
+        inline Scalar measure() const
+        {
+            return impl_.measure();
         }
 
         inline constexpr static int n_nodes()
@@ -154,6 +164,11 @@ namespace utopia {
             return impl_.node(i, p);
         }
 
+        inline void centroid(Point &out) const
+        {
+            impl_.centroid(out);
+        }
+
         inline void grad(const int i, const Point &p, Grad &g) const
         {
            impl_.grad(i, p, g);
@@ -167,6 +182,11 @@ namespace utopia {
         inline constexpr static Scalar reference_measure()
         {
             return UniformHex8<Scalar>::reference_measure();
+        }
+
+        inline Scalar measure() const
+        {
+            return impl_.measure();
         }
 
         inline constexpr static int n_nodes()
@@ -215,6 +235,7 @@ namespace utopia {
         using SizeType = PetscUniformQuad4::SizeType;
         using Point    = PetscUniformQuad4::Point;
         using ViewDevice = const Quadrature &;
+        using ViewHost   = const Quadrature &;
 
         static const int Order   = 2;
         static const int Dim     = 2;
@@ -242,6 +263,7 @@ namespace utopia {
             p[1] = points_[qp_idx][1];
         }
 
+
         inline const Scalar &weight(const int qp_idx) const
         {
             return weights_[qp_idx];
@@ -253,6 +275,11 @@ namespace utopia {
         }
 
         inline ViewDevice &view_device() const
+        {
+            return *this;
+        }
+
+        inline ViewHost &view_host() const
         {
             return *this;
         }
@@ -269,6 +296,7 @@ namespace utopia {
         using SizeType = PetscUniformHex8::SizeType;
         using Point    = PetscUniformHex8::Point;
         using ViewDevice = const Quadrature &;
+        using ViewHost   = const Quadrature &;
 
         static const int Order   = 2;
         static const int Dim     = 3;
@@ -308,6 +336,11 @@ namespace utopia {
         }
 
         inline ViewDevice &view_device() const
+        {
+            return *this;
+        }
+
+        inline ViewHost &view_host() const
         {
             return *this;
         }

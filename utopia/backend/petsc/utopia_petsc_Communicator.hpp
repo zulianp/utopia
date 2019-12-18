@@ -27,11 +27,6 @@ namespace utopia {
 		PetscCommunicator(const MPI_Comm comm) : comm_(comm) {}
 		PetscCommunicator();
 
-		inline void barrier() const
-		{
-			MPI_Barrier(comm_);
-		}
-
 	private:
 		MPI_Comm comm_;
 

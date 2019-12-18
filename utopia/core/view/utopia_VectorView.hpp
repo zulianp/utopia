@@ -218,11 +218,11 @@ namespace utopia {
             return device::approxeq(view_, other.raw_type(), tol);
         }
 
-        inline void describe() const
+        inline void describe(std::ostream &os = std::cout) const
         {
             const SizeType n = size();
             for(SizeType i = 0; i < n; ++i) {
-                std::cout << get(i) << std::endl;
+                os << get(i) << std::endl;
             }
         }
 

@@ -63,13 +63,19 @@ namespace utopia {
         using Scalar = Scalar_;
         using ExecutionSpace = TpetraVector::vector_type::execution_space;
 
+
         //Host-mirror types
         using DualPointView   = Kokkos::DualView<Scalar **, ExecutionSpace>;
         using DualWeightView  = Kokkos::DualView<Scalar *, ExecutionSpace>;
 
+        using HostSpace = typename DualPointView::t_host;
+
         //Device types TODO
         using PointView   = Kokkos::View<Scalar **, ExecutionSpace>;
         using WeightView  = Kokkos::View<Scalar *, ExecutionSpace>;
+
+        using PointViewHost   = Kokkos::View<Scalar **, HostSpace>;
+        using WeightViewHost  = Kokkos::View<Scalar *, HostSpace>;
 
 
         static const int Order   = 2;
@@ -77,6 +83,7 @@ namespace utopia {
         static const int NPoints = 6;
 
         using ViewDevice  = utopia::QuadratureView<PointView, WeightView, Dim, NPoints>;
+        using ViewHost    = utopia::QuadratureView<PointViewHost, WeightViewHost, Dim, NPoints>;
 
         void init()
         {
@@ -96,6 +103,12 @@ namespace utopia {
         {
             return ViewDevice(points_.view_device(), weights_.view_device());
         }
+
+        inline ViewHost view_host() const
+        {
+            return ViewHost(points_.view_host(), weights_.view_host());
+        }
+
 
     private:
         DualPointView points_;

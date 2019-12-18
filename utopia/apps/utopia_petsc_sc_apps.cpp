@@ -12,6 +12,7 @@
 #include "utopia_petsc.hpp"
 #include "utopia_ConjugateGradient.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_LaplacianView.hpp"
 
 #include <cmath>
 
@@ -67,13 +68,62 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_dm_app);
 
+    class MPITimeStatistics {
+    public:
+
+        void start()
+        {
+            comm_.barrier();
+            c_.start();
+        }
+
+        void stop()
+        {
+            comm_.barrier();
+            c_.stop();
+        }
+
+        void stop_and_collect(const std::string &name)
+        {
+            stop();
+            times_[std::to_string(counter_++) + ") " + name] = c_.get_seconds();
+        }
+
+        void add_stat(const std::string &name, const double &time)
+        {
+            times_[name] = time;
+        }
+
+        void describe(std::ostream &os) const
+        {
+            comm_.barrier();
+            if(comm_.rank() == 1) {
+                for(auto p : times_) {
+                    os << p.first << " : " << p.second << "\n";
+                }
+            }
+            comm_.barrier();
+        }
+
+        MPITimeStatistics(Communicator &comm) : comm_(comm), counter_(0) {}
+
+    private:
+        Communicator &comm_;
+        Chrono c_;
+        std::map<std::string, double> times_;
+        int counter_;
+    };
+
 
     template<class FunctionSpace>
-    static void poisson_problem(FunctionSpace &space)
+    static void poisson_problem(FunctionSpace &space, const bool use_direct_solver)
     {
         using Mesh             = typename FunctionSpace::Mesh;
         using Elem             = typename FunctionSpace::Elem;
         using Dev              = typename FunctionSpace::Device;
+        using Vector           = typename FunctionSpace::Vector;
+        using Matrix           = typename FunctionSpace::Matrix;
+        using Comm             = typename FunctionSpace::Comm;
 
         static const int Dim    = Elem::Dim;
         static const int NNodes = Elem::NNodes;
@@ -86,217 +136,156 @@ namespace utopia {
         using Quadrature       = utopia::Quadrature<Elem, 2>;
         using ElementMatrix    = utopia::StaticMatrix<Scalar, NNodes, NNodes>;
         using ElementVector    = utopia::StaticVector<Scalar, NNodes>;
+        using DirichletBC      = utopia::DirichletBoundaryCondition<FunctionSpace>;
 
-        PetscCommunicator &comm = space.comm();
+        Comm &comm = space.comm();
 
-        Chrono c;
+        MPITimeStatistics stats(comm);
 
         Quadrature quadrature;
-
         auto &&space_view = space.view_device();
-        auto &&q_view     = quadrature.view_device();
 
         comm.barrier();
-        c.start();
+        stats.start();
 
-        PetscMatrix mat, mass_mat;
+        Matrix mat, mass_mat;
         space.create_matrix(mat);
-        mat *= 0.0;
-
         space.create_matrix(mass_mat);
-        mass_mat *= 0.0;
 
-        PetscVector rhs;
+        Vector rhs;
         space.create_vector(rhs);
-        rhs.set(1.0);
 
-        comm.barrier();
-        c.stop();
-        std::cout << "create-matrix: " << c << std::endl;
+        stats.stop_and_collect("create-matrix");
 
-        PhysicalGradient<FunctionSpace, Quadrature> gradients(space, quadrature);
+        Laplacian<FunctionSpace, Quadrature> laplacian(space, quadrature);
+        auto &&l_view = laplacian.view_device();
 
-        //View extraction
-        auto &&g_view = gradients.view_device();
+        MassMatrix<FunctionSpace, Quadrature> mass_matrix(space, quadrature);
+        auto &&m_view = mass_matrix.view_device();
 
-        Differential<FunctionSpace, Quadrature> differentials(space, quadrature);
-        auto &&d_view = differentials.view_device();
-
-        ShapeFunction<FunctionSpace, Quadrature> functions(space, quadrature);
-        auto &&f_view = functions.view_device();
-
-        std::vector<std::unique_ptr<BoundaryCondition<FunctionSpace>>> bcs;
+        std::vector<std::unique_ptr<DirichletBC>> bcs;
 
         bcs.push_back(
-            utopia::make_unique<BoundaryCondition<FunctionSpace>>(
-                space,
-                SideSet::bottom(),
-                [](const Point &p) -> Scalar {
-                    return p[0];
-                }
-        ));
-
-        bcs.push_back(
-            utopia::make_unique<BoundaryCondition<FunctionSpace>>(
-                space,
-                SideSet::top(),
-                [](const Point &p) -> Scalar {
-                    return p[0];
-                }
-        ));
-
-        bcs.push_back(
-            utopia::make_unique<BoundaryCondition<FunctionSpace>>(
+            utopia::make_unique<DirichletBC>(
                 space,
                 SideSet::left(),
-                [](const Point &p) -> Scalar {
-                    return 0.0;
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 1.0;
                 }
         ));
 
         bcs.push_back(
-            utopia::make_unique<BoundaryCondition<FunctionSpace>>(
+            utopia::make_unique<DirichletBC>(
                 space,
                 SideSet::right(),
-                [](const Point &p) -> Scalar {
-                    return 0.0;
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return -1.0;
                 }
         ));
 
-        c.start();
-        comm.barrier();
+        auto diffusivity = UTOPIA_LAMBDA(const Point &p) -> Scalar {
+            Scalar dist = 0.0;
+            for(SizeType i = 0; i < p.size(); ++i) {
+                Scalar v = p[i] - 0.5;
+                dist += v*v;
+            }
 
-        std::stringstream ss;
-        SizeType n_assemblies = 0;
+            if(device::sqrt(dist) > 0.2) {
+                return 1.0;
+            } else {
+                return 1e-4;
+            }
+        };
+
+        stats.start();
 
         {
-            auto mat_view = device_view(mat);
-            auto mass_mat_view = device_view(mass_mat);
-            //FIXME
-            Write<PetscVector> w(rhs, utopia::GLOBAL_ADD);
+            auto mat_view      = space.assembly_view_device(mat);
+            auto mass_mat_view = space.assembly_view_device(mass_mat);
+            auto rhs_view      = space.assembly_view_device(rhs);
 
             Dev::parallel_for(
                 space.local_element_range(),
+                //FIXME do not use reference captures
                 [&](const SizeType &i)
             {
                 Elem e;
-                DofIndex dofs;
-                ElementMatrix el_mat;
-                ElementMatrix el_mass_mat;
-                ElementVector el_vec;
 
+                //FIXME this is too big for GPU stack memory for hexas
+                ElementMatrix el_mat;
+                Point c;
                 space_view.elem(i, e);
 
-                //element-wise extraction
-                const auto grad = g_view.make(i, e);
-                const auto dx   = d_view.make(i, e);
-                const auto f    = f_view.make(i, e);
-
+                //Assemble local laplacian
                 el_mat.set(0.0);
-                el_vec.set(0.0);
-                el_mass_mat.set(0.0);
+                l_view.add(i, e, el_mat);
+                e.centroid(c);
+                el_mat *= diffusivity(c);
+                space_view.add_matrix(e, el_mat, mat_view);
 
-                const auto n = grad.n_points();
-                for(std::size_t k = 0; k < n; ++k) {
-                    for(std::size_t j = 0; j < grad.n_functions(); ++j) {
-                        const auto g_test = grad(j, k);
-                        el_mat(j, j) += dot(g_test, g_test) * dx(k);
-                        el_mass_mat(j, j) += f(j, k) * f(j, k) * dx(k);
-                        for(std::size_t l = j + 1; l < grad.n_functions(); ++l) {
-                            const auto v = dot(g_test, grad(l, k)) * dx(k);
-                            el_mat(j, l) += v;
-                            el_mat(l, j) += v;
-
-                            const auto v_mass = f(j, k) * f(l, k) * dx(k);
-                            el_mass_mat(j, j) += v_mass;
-                        }
-                    }
-                }
-
-                space_view.dofs(i, dofs);
-
-                const SizeType n_dofs = dofs.size();
-
-                for(SizeType i = 0; i < n_dofs; ++i) {
-                    rhs.c_add(dofs[i], el_vec(i));
-                    for(SizeType j = 0; j < n_dofs; ++j) {
-                        mat_view.atomic_add(dofs[i], dofs[j], el_mat(i, j));
-                        mass_mat_view.atomic_add(dofs[i], dofs[j], el_mass_mat(i, j));
-                    }
-                }
-
-                ++n_assemblies;
+                //Assemble local mass-matrix and reuse el_mat
+                el_mat.set(0.0);
+                m_view.add(i, e, el_mat);
+                space_view.add_matrix(e, el_mat, mass_mat_view);
             });
         }
 
-        PetscVector rhs_raw = rhs;
+        stats.stop_and_collect("assemblies");
+
+        stats.start();
         rhs = mass_mat * rhs;
+
+        Scalar vol = sum(mass_mat);
+        std::cout << "vol: " << vol << std::endl;
+
+        Scalar zero = sum(mat);
+        std::cout << "zero: " << zero << std::endl;
 
         for(const auto &bc : bcs) {
             bc->apply(mat, rhs);
-            bc->apply(mat, rhs_raw);
         }
 
-        comm.barrier();
-        c.stop();
-        std::cout << " assemblies " << n_assemblies << " " << c << std::endl;
+        stats.stop_and_collect("boundary conditions ");
 
-        SizeType nnz = utopia::nnz(mat, 0.);
-
-        rename("r", rhs);
-        space.write("R.vtk", rhs);
-        std::cout << "nnz " << nnz << std::endl;
-
-
-        c.start();
-        PetscVector x = rhs;
+        stats.start();
+        Vector x = rhs;
         x.set(0.0);
 
-        rename("a", mat);
-        write("A.m", mat);
-        write("R.m", rhs);
+        if(use_direct_solver) {
+            Factorization<Matrix, Vector> solver;
+            solver.solve(mat, rhs, x);
+        }  else {
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            auto prec = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
+            cg.set_preconditioner(prec);
+            cg.verbose(true);
 
-        Factorization<PetscMatrix, PetscVector> solver;
-        solver.solve(mat, rhs, x);
+            const SizeType n_iter = space.n_dofs();
 
-        // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> cg;
-        // auto prec = std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector>>();
-        // cg.set_preconditioner(prec);
-        // // cg.verbose(true);
-        // cg.max_it(space.n_dofs());
-        // cg.rtol(1e-8);
-        // cg.solve(mat, rhs, x);
+            assert(n_iter > 0);
 
-        c.stop();
+            cg.max_it(n_iter);
+            cg.rtol(1e-8);
+            cg.solve(mat, rhs, x);
+        }
 
-        std::cout << c << std::endl;
+        stats.stop_and_collect("solve");
 
+        stats.start();
         rename("x", x);
         space.write("X.vtk", x);
+        stats.stop_and_collect("write");
 
-        PetscVector mass_vector = sum(mass_mat, 1);
-        rhs /= mass_vector;
+        if(comm.rank() == 0) std::cout << "n_dofs: " << space.n_dofs() << std::endl;
 
-        rename("r", rhs_raw);
-        space.write("R.vtk", rhs_raw);
-
-        x.set(0.0);
-        for(const auto &bc : bcs) {
-            bc->set_boundary_id(x);
-        }
-
-        rename("b", x);
-        space.write("B.vtk", x);
-
+        stats.describe(std::cout);
     }
-
 
     static void petsc_dm_assemble_2()
     {
         static const int Dim = 2;
         static const int NNodes = 4;
 
-        //Types
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
@@ -309,24 +298,15 @@ namespace utopia {
         SizeType ny = scale * 10;
         SizeType nz = 10;
 
-        Chrono c;
-        world.barrier();
-        c.start();
-
         Mesh mesh(
             world,
             {nx, ny},
-            {1.0, 0.0},
-            {2.0, 1.0}
+            {0.0, 0.0},
+            {1.0, 1.0}
         );
 
-        world.barrier();
-        c.stop();
-
-        std::cout << "mesh-gen: " << c << std::endl;
-
         FunctionSpace space(mesh);
-        poisson_problem(space);
+        poisson_problem(space, true);
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_assemble_2);
@@ -336,7 +316,6 @@ namespace utopia {
         static const int Dim = 3;
         static const int NNodes = 8;
 
-        //Types
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformHex8;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
@@ -345,28 +324,19 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 5;
-        SizeType ny = scale * 5;
-        SizeType nz = scale * 5;
-
-        Chrono c;
-        world.barrier();
-        c.start();
+        SizeType nx = scale * 15;
+        SizeType ny = scale * 15;
+        SizeType nz = scale * 15;
 
         Mesh mesh(
             world,
             {nx, ny, nz},
-            {1.0, 0.0, 0.0},
-            {2.0, 1.0, 1.0}
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
         );
 
-        world.barrier();
-        c.stop();
-
-        std::cout << "mesh-gen: " << c << std::endl;
-
         FunctionSpace space(mesh);
-        poisson_problem(space);
+        poisson_problem(space, false);
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
