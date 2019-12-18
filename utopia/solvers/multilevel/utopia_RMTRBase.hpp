@@ -239,7 +239,6 @@ namespace utopia
 
 
     protected:
-
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
         {
             return  ml_derivs_.compute_hessian(level, fun, memory_.x[level]);

@@ -701,10 +701,13 @@ namespace utopia
         virtual void init_memory(const SizeType & fine_local_size) override
         {
             RMTRBase::init_memory(fine_local_size); 
+
+            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
             
             // init deltas to some default value...
             for(Scalar l = 0; l < this->n_levels(); l ++){
                 this->memory_.delta[l] = this->delta0();
+                this->_tr_subproblems[l]->init_memory(dofs[l]); 
             }
 
         }
