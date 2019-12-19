@@ -9,6 +9,10 @@
 
 namespace utopia
 {
+    enum LocalSolveType{    PRE_SMOOTHING  = 1,
+                            POST_SMOOTHING = 2,
+                            COARSE_SOLVE   = 0};
+
 
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_TYPE>
     class MultilevelDerivEval  { }; 
@@ -68,11 +72,42 @@ namespace utopia
         }
 
 
-       inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
         {
             fun.hessian(x, H[level]);
             return true;
         }
+
+
+        inline bool init_deriv_loc_solve(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global, const LocalSolveType & solve_type)
+        {
+            bool make_hess_updates = true;
+
+            if(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)
+            {
+                return make_hess_updates; 
+            }
+            else
+            {
+                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
+                {
+                    this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
+                }
+                else
+                {
+                    this->compute_gradient(level, fun, x, s_global);
+                }
+
+                // energy computations ... 
+                if(solve_type != POST_SMOOTHING)
+                {
+                    this->memory_.energy[level] = compute_energy(level, fun,x, s_global);
+                }
+            }
+
+            return make_hess_updates;             
+        }
+
 
         void init_memory(const std::vector<SizeType> & n_dofs_)
         {

@@ -20,6 +20,7 @@
 
 namespace utopia
 {
+
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>
     {
@@ -146,8 +147,6 @@ namespace utopia
         {
             return _max_coarse_it;
         }
-
-
 
         // this parameter define total number of smoothing its - sucessful and unsuccessful
         // while pre_smooting and post_smoothing count just sucessful iterations
@@ -327,38 +326,179 @@ namespace utopia
 
 
     protected:
-        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
+        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) final
         {
             return  ml_derivs_.compute_hessian(level, fun, memory_.x[level]);
         }
 
-        virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level)
+        virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level) final
         {
             return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global);
         }
 
-        virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level)
+        virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level) final
         {
             return ml_derivs_.compute_energy(level, fun, memory_.x[level], s_global);
         }
 
-        virtual Scalar get_multilevel_gradient_energy(const Fun & fun, const Vector & s_global, const SizeType & level)
+        virtual Scalar get_multilevel_gradient_energy(const Fun & fun, const Vector & s_global, const SizeType & level) final
         {
             return ml_derivs_.compute_gradient_energy(level, fun, memory_.x[level], s_global);
         }        
 
 
-        virtual void init_memory(const SizeType & /*fine_local_size */)
+        virtual bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) final
         {
-            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+            bool make_hess_updates = true;
 
-            ml_derivs_.init_memory(dofs); 
-            memory_.init_memory(dofs); 
+
+            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
+            {
+                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
+                {
+                    if(CONSISTENCY_LEVEL == FIRST_ORDER)
+                    {
+                        this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
+                    }
+                    else if(CONSISTENCY_LEVEL == GALERKIN)
+                    {
+                        this->ml_derivs_.g[level] = this->ml_derivs_.g_diff[level]; 
+                    }
+                    else if(CONSISTENCY_LEVEL == SECOND_ORDER)
+                    {
+                        this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
+
+                        // memory_.H[level] = memory_.H[level] + memory_.H_diff[level]; 
+                        this->ml_derivs_.H[level] += this->ml_derivs_.H_diff[level]; 
+                        make_hess_updates = false;                
+                    }                    
+                    else
+                    {
+                        utopia_error("RMTR:: Consistency order not existent .... \n"); 
+                    }
+                }
+                else
+                {
+                    this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                }
+
+                // energy computations ... 
+                if(solve_type != POST_SMOOTHING)
+                {
+                    if(CONSISTENCY_LEVEL == SECOND_ORDER)
+                    {
+                        this->function(level).value(this->memory_.x[level], this->memory_.energy[level]); 
+                        this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+                    }
+                    else
+                    {
+                        this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+                    }
+                }
+
+                this->memory_.gnorm[level] = this->criticality_measure(level);
+            }
+
+            return make_hess_updates; 
         }
 
 
 
-        virtual void print_level_info(const SizeType & level)
+
+
+        virtual bool init_consistency_terms(const SizeType & level) final
+        {
+            bool smoothness_flg = true; 
+
+            // Restricted fine level gradient 
+            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
+
+            // Projecting current iterate to obtain initial iterate on coarser grid 
+            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
+
+
+            if(!this->skip_BC_checks()){
+                if(CONSISTENCY_LEVEL != GALERKIN){
+                    this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
+                }
+            }
+
+            //----------------------------------------------------------------------------
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
+            //----------------------------------------------------------------------------
+            this->init_level(level-1);
+
+            //----------------------------------------------------------------------------
+            //                  first order coarse level objective managment
+            //----------------------------------------------------------------------------
+            if(CONSISTENCY_LEVEL != GALERKIN)
+            {
+                if(empty(this->ml_derivs_.g[level-1])){
+                    this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
+                }
+
+                this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
+            }
+
+            if(!this->skip_BC_checks())
+            {
+                if(CONSISTENCY_LEVEL != GALERKIN){
+                    this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
+                }
+            }
+
+            if(this->check_grad_smoothness() && CONSISTENCY_LEVEL != GALERKIN){
+                smoothness_flg = this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1);
+            }
+            else{
+                smoothness_flg = true;
+            }
+
+
+            if(CONSISTENCY_LEVEL != GALERKIN)
+            {
+                this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
+            }
+
+            //----------------------------------------------------------------------------
+            //                   second order coarse level objective managment
+            //----------------------------------------------------------------------------
+            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+            {
+                this->get_multilevel_hessian(this->function(level), level);
+                this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
+
+                if(CONSISTENCY_LEVEL == SECOND_ORDER)
+                {
+                    if(!this->skip_BC_checks()){
+                        this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
+                    }
+
+                    this->function(level-1).hessian(this->memory_.x[level-1], this->ml_derivs_.H[level-1]);
+
+                    // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
+                    this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
+                }
+            }
+
+            return smoothness_flg; 
+        }
+
+
+        virtual void compute_s_global(const SizeType & level, Vector & s_global) final
+        {
+            if(empty(this->memory_.x_0[level]))
+            {
+                s_global.set(0.0);
+            }
+            else if(level < this->n_levels()-1)
+            {
+                s_global = this->memory_.x[level] - this->memory_.x_0[level];
+            }
+        }
+
+
+        virtual void print_level_info(const SizeType & level) final
         {
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
@@ -377,6 +517,41 @@ namespace utopia
             }
         }
 
+        void handle_equality_constraints()
+        {
+            const SizeType L = this->n_levels();
+
+            for(SizeType i = 0; i < L-1; ++i) {
+                const auto &flags = this->function(i+1).get_eq_constrains_flg();
+                assert(!empty(flags));
+                this->transfer(i).handle_equality_constraints(flags);
+            }
+        }        
+
+        // to overwrite
+        virtual void init_memory(const SizeType & /*fine_local_size */)
+        {
+            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+
+            ml_derivs_.init_memory(dofs); 
+            memory_.init_memory(dofs); 
+        }
+
+        virtual void init_level(const SizeType & level)
+        {
+            this->memory_.delta[level]  = this->memory_.delta[level+1];
+        }
+
+        virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta) = 0; 
+
+        virtual Scalar criticality_measure(const SizeType & level) = 0; 
+
+        // this probably does not work for all RMTRs 
+        virtual bool multiplicative_cycle(const SizeType & level) = 0; 
+
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) = 0; 
+
+
         virtual bool check_initialization()
         {
             if(static_cast<SizeType>(this->level_functions_.size()) != this->n_levels()){
@@ -391,24 +566,32 @@ namespace utopia
             return true;
         }
 
-        virtual void handle_equality_constraints()
+        virtual bool update_level(const SizeType & /*level*/)
         {
-            const SizeType L = this->n_levels();
+            return false;
+        }
 
-            for(SizeType i = 0; i < L-1; ++i) {
-                const auto &flags = this->function(i+1).get_eq_constrains_flg();
-                assert(!empty(flags));
-                this->transfer(i).handle_equality_constraints(flags);
-            }
+
+        virtual void initialize_local_solve(const SizeType & /*level*/, const LocalSolveType & /*solve_type*/)
+        {
+
+        }
+
+
+        /**
+         * @brief      "Heuristics", which decides if it makes sense to go to the coarse level or no
+         *
+         * @param[in]  g_restricted  Restricted gradient
+         * @param[in]  g_coarse      Coarse level gradient
+         *
+         */
+        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/)
+        {
+            Scalar Rg_norm, g_norm;
+            norms2(g_restricted, g_coarse, Rg_norm, g_norm);
+            return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;
         }        
 
-        virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta) = 0; 
-
-
-        virtual Scalar criticality_measure(const SizeType & level) = 0; 
-
-        // this probably does not work for all RMTRs 
-        virtual bool multiplicative_cycle(const SizeType & level) = 0; 
 
 
     protected:
