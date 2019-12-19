@@ -96,6 +96,11 @@ namespace utopia {
             return impl_.node(i, p);
         }
 
+        inline void point(const Point &in, Point &out) const
+        {
+            impl_.point(in, out);
+        }
+
         inline void centroid(Point &out) const
         {
             impl_.centroid(out);
@@ -162,6 +167,11 @@ namespace utopia {
         inline void node(const SizeType &i, Point &p) const
         {
             return impl_.node(i, p);
+        }
+
+        inline void point(const Point &in, Point &out) const
+        {
+            impl_.point(in, out);
         }
 
         inline void centroid(Point &out) const

@@ -389,6 +389,13 @@ namespace utopia {
             }
         }
 
+        void apply_zero_constraints(PetscVector &vec) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->apply_zero(vec);
+            }
+        }
+
         ///shallow copy
         FunctionSpace(const FunctionSpace &other)
         : mesh_(other.mesh_)
@@ -469,6 +476,18 @@ namespace utopia {
                 if(is_constrained_dof(i - r.begin())) {
                     space_.mesh().node(i/Components, p);
                     vec.set(i, fun_(p));
+                }
+            }
+        }
+
+        void apply_zero(PetscVector &vec) const
+        {
+            auto r = vec.range();
+
+            Write<PetscVector> w(vec, utopia::AUTO);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(is_constrained_dof(i - r.begin())) {
+                    vec.set(i, 0.0);
                 }
             }
         }

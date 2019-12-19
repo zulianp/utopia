@@ -15,6 +15,7 @@
 #include "utopia_LaplacianView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_BratuFE.hpp"
+#include "utopia_PoissonFE.hpp"
 #include "utopia_MassMatrixView.hpp"
 
 #include <cmath>
@@ -35,9 +36,9 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 5;
-        SizeType ny = scale * 5;
-        SizeType nz = scale * 5;
+        SizeType nx = scale * 10;
+        SizeType ny = scale * 10;
+        SizeType nz = scale * 10;
 
         Mesh mesh(
             world,
@@ -59,25 +60,29 @@ namespace utopia {
         space.emplace_dirichlet_condition(
             SideSet::right(),
             UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return 1.0;
+                return 0.0;
             }
         );
 
         ///////////////////////////////////////
 
-        BratuFE<FunctionSpace> bratu(space);
+        // BratuFE<FunctionSpace> fe_model(space);
+        PoissonFE<FunctionSpace> fe_model(space);
+        fe_model.init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
+            return device::exp(-10.0 * device::abs(p[1] - 0.5));
+        });
 
         PetscVector x;
         space.create_vector(x);
 
         Newton<PetscMatrix, PetscVector> newton;
         newton.verbose(true);
-        newton.solve(bratu, x);
+
+        space.apply_constraints(x);
+        newton.solve(fe_model, x);
 
         rename("x", x);
-        space.write("bratu.vtk", x);
-
-        disp(x);
+        space.write("fe.vtk", x);
     }
 
     UTOPIA_REGISTER_APP(petsc_bratu);
