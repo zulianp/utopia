@@ -109,7 +109,6 @@ namespace utopia {
                 auto H_view = space_->assembly_view_device(H);
                 auto l_view = laplacian_.view_device();
 
-
                 Device::parallel_for(
                     space_->local_element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)

@@ -16,9 +16,8 @@ int main(const int argc, char *argv[])
     Utopia::Init(argc, argv);
 
     {
-        AppRunner app_runner;
-        std::vector<std::string> apps;
-        for (int i = 1; i < argc; i++) {
+        //REMOVEME
+        for(int i = 1; i < argc; i++) {
             if (argv[i] == std::string("-data_path")) {
                 if (++i >= argc)
                     break;
@@ -27,17 +26,11 @@ int main(const int argc, char *argv[])
                 }
 
                 Utopia::instance().set("data_path", argv[i]);
-            } else if (argv[i] == std::string("-app")) {
-                if (++i >= argc)
-                    break;
-                apps.push_back(argv[i]);
-            } else if(argv[i] == std::string("-list")) {
-                app_runner.describe();
             }
         }
 
-        app_runner.verbose(Utopia::instance().verbose());
-        app_runner.run(apps);
+        AppRunner app_runner;
+        app_runner.run(argc, argv);
     }
 
     return Utopia::Finalize();

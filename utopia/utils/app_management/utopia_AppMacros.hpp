@@ -15,7 +15,7 @@
 namespace utopia {
 
     #define UTOPIA_DEFINE_APP_VAR(macro_in) dummy_app_variable_ ## macro_in ## __LINE__
-    #define UTOPIA_REGISTER_APP(AppCFunctionName_) static char UTOPIA_DEFINE_APP_VAR(AppCFunctionName_) = utopia::AppRegistry::add_app(#AppCFunctionName_, AppCFunctionName_)
+    #define UTOPIA_REGISTER_APP(AppCFunctionName_) static char UTOPIA_DEFINE_APP_VAR(AppCFunctionName_) = utopia::AppRunner::register_app(#AppCFunctionName_, AppCFunctionName_)
 }
 
 #endif //UTOPIA_APP_MACROS_HPP

@@ -21,7 +21,8 @@
 #include <cmath>
 
 namespace utopia {
-    static void petsc_bratu()
+
+    static void petsc_bratu(Input &in)
     {
         static const int Dim = 3;
         static const int NNodes = 8;
@@ -39,6 +40,10 @@ namespace utopia {
         SizeType nx = scale * 10;
         SizeType ny = scale * 10;
         SizeType nz = scale * 10;
+
+        in.get("nx", nx);
+        in.get("ny", ny);
+        in.get("nz", nz);
 
         Mesh mesh(
             world,
@@ -69,7 +74,8 @@ namespace utopia {
         // BratuFE<FunctionSpace> fe_model(space);
         PoissonFE<FunctionSpace> fe_model(space);
         fe_model.init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
-            return device::exp(-10.0 * device::abs(p[1] - 0.5));
+            return device::exp(-40.0 * device::abs(p[1] - 0.25)) +
+                   device::exp(-40.0 * device::abs(p[1] - 0.75));
         });
 
         PetscVector x;
