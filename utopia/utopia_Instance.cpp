@@ -155,6 +155,19 @@ namespace utopia {
                 Allocations::instance().verbose(false);
             }
 
+
+            if (str == "-data_path") {
+                if (++i >= argc)
+                    break;
+
+                if (mpi_world_rank() == 0) {
+                    std::cout << "data_path: " << argv[i] << std::endl;
+                }
+
+                instance().set("data_path", argv[i]);
+            }
+
+
 #endif //ENABLE_NO_ALLOC_REGIONS
 
 #ifdef UTOPIA_TRACE_ENABLED
