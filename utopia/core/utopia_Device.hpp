@@ -2,6 +2,7 @@
 #define UTOPIA_DEVICE_HPP
 
 #include "utopia_For.hpp"
+#include "utopia_Reduction.hpp"
 
 namespace utopia {
 
@@ -11,8 +12,15 @@ namespace utopia {
         template<typename... Args>
         inline static void parallel_for(Args&&... args)
         {
-            using ForLoop  = utopia::ParallelFor<Backend>;
-            return ForLoop::apply(std::forward<Args>(args)...);
+            using ParallelFor = utopia::ParallelFor<Backend>;
+            ParallelFor::apply(std::forward<Args>(args)...);
+        }
+
+        template<typename... Args>
+        inline static void parallel_reduce(Args &&...args)
+        {
+            using ParallelReduce = utopia::ParallelReduce<Backend>;
+            ParallelReduce::apply(std::forward<Args>(args)...);
         }
     };
 

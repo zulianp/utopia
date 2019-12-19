@@ -276,54 +276,6 @@ namespace utopia {
         const Quadrature &q_;
     };
 
-    // template<class FunctionSpace, class Vector, class Elem, class MemType = typename Elem::MemType, typename...>
-    // class NodalInterpolate {
-    // public:
-    //     using DofIndex = typename FunctionSpace::DofIndex;
-    //     using SizeType = typename utopia::Traits<Vector>::SizeType;
-
-    //     //convert nodal condensed to element-wise map
-
-    //     NodalInterpolate(const FunctionSpace &space)
-    //     : space_(space), element_wise_values_(local_zeros(space.n_local_elements() * Elem::NNodes))
-    //     {}
-
-    //     NodalInterpolate(const FunctionSpace &space, const Vector &values)
-    //     : space_(space), element_wise_values_(local_zeros(space.n_local_elements() * Elem::NNodes))
-    //     {
-    //         update(values);
-    //     }
-
-    //     //values must have ghost values
-    //     void update(const Vector &values)
-    //     {
-    //         auto other_view = const_device_view(values);
-    //         auto this_view  = device_view(element_wise_values_);
-
-    //         space_.each_element(UTOPIA_LAMBDA(const SizeType &i, const Elem *elem) {
-    //             DofIndex index;
-    //             space_.dofs(i, index);
-
-    //             const auto n = index.size();
-    //             const auto offset = i * Elem::NNodes;
-
-    //             for(SizeType k = 0; k < n; ++k) {
-    //                 this_view.set(offset + k, other_view.get(index[k]));
-    //             }
-    //         });
-    //     }
-
-    //     // ElementNodalInterpolate get(const SizeType &idx) const
-    //     // {
-
-    //     // }
-
-    // private:
-    //     const FunctionSpace &space_;
-    //     Vector element_wise_values_;
-    // };
-
-
 }
 
 #endif //UTOPIA_ASSEMBLY_VIEW_HPP

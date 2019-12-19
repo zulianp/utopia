@@ -234,8 +234,8 @@ namespace utopia {
         using Scalar   = PetscUniformQuad4::Scalar;
         using SizeType = PetscUniformQuad4::SizeType;
         using Point    = PetscUniformQuad4::Point;
-        using ViewDevice = const Quadrature &;
-        using ViewHost   = const Quadrature &;
+        using ViewDevice = Quadrature;
+        using ViewHost   = Quadrature;
 
         static const int Order   = 2;
         static const int Dim     = 2;
@@ -274,12 +274,21 @@ namespace utopia {
             init();
         }
 
-        inline ViewDevice &view_device() const
+        Quadrature(const Quadrature &other)
+        {
+            for(int i = 0; i < NPoints; ++i) {
+                points_[i][0] = other.points_[i][0];
+                points_[i][1] = other.points_[i][1];
+                weights_[i] = other.weights_[i];
+            }
+        }
+
+        inline const ViewDevice &view_device() const
         {
             return *this;
         }
 
-        inline ViewHost &view_host() const
+        inline const ViewHost &view_host() const
         {
             return *this;
         }
@@ -295,8 +304,8 @@ namespace utopia {
         using Scalar   = PetscUniformHex8::Scalar;
         using SizeType = PetscUniformHex8::SizeType;
         using Point    = PetscUniformHex8::Point;
-        using ViewDevice = const Quadrature &;
-        using ViewHost   = const Quadrature &;
+        using ViewDevice = Quadrature;
+        using ViewHost   = Quadrature;
 
         static const int Order   = 2;
         static const int Dim     = 3;
@@ -335,12 +344,22 @@ namespace utopia {
             init();
         }
 
-        inline ViewDevice &view_device() const
+        Quadrature(const Quadrature &other)
+        {
+            for(int i = 0; i < NPoints; ++i) {
+                points_[i][0] = other.points_[i][0];
+                points_[i][1] = other.points_[i][1];
+                points_[i][2] = other.points_[i][2];
+                weights_[i] = other.weights_[i];
+            }
+        }
+
+        inline const ViewDevice &view_device() const
         {
             return *this;
         }
 
-        inline ViewHost &view_host() const
+        inline const ViewHost &view_host() const
         {
             return *this;
         }

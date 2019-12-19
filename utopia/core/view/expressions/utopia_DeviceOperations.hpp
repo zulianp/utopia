@@ -361,6 +361,17 @@ namespace utopia {
         return DeviceDiag<Derived>(expr.derived());
     }
 
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION typename Traits<Derived>::Scalar sum(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceReduce<Derived, Plus, Traits<Derived>::Order>::apply(expr.derived(), 0.0);
+    }
+
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION DeviceTensorReduce<Derived, Plus, 1> row_sum(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceTensorReduce<Derived, Plus, 1>(expr.derived());
+    }
 }
 
 #endif //UTOPIA_DEVICE_OPERATIONS_HPP

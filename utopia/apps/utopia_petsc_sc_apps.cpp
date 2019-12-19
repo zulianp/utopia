@@ -13,10 +13,84 @@
 #include "utopia_ConjugateGradient.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_LaplacianView.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_BratuFE.hpp"
+#include "utopia_MassMatrixView.hpp"
 
 #include <cmath>
 
 namespace utopia {
+    static void petsc_bratu()
+    {
+        static const int Dim = 2;
+        static const int NNodes = 4;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
+        using SizeType         = Mesh::SizeType;
+        using Scalar           = Mesh::Scalar;
+        using Point            = Mesh::Point;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 10;
+        SizeType ny = scale * 10;
+
+        Mesh mesh(
+            world,
+            {nx, ny},
+            {0.0, 0.0},
+            {1.0, 1.0}
+        );
+
+
+        FunctionSpace space(mesh);
+
+        //boundary conditions
+        space.emplace_dirichlet_condition(
+            SideSet::left(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return 1.0;
+            }
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::right(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return -1.0;
+            }
+        );
+
+        ///////////////////////////////////////
+
+        BratuFE<FunctionSpace> bratu(space);
+
+        PetscVector x, g;
+        space.create_vector(x);
+        space.create_vector(g);
+
+        PetscMatrix H;
+        bratu.initialize_hessian(H, H);
+
+        bratu.update(x);
+        bratu.hessian(x, H);
+        bratu.gradient(x, g);
+
+        space.apply_constraints(H, g);
+
+        Scalar value;
+        bratu.value(x, value);
+
+        disp("------------------");
+        disp(value);
+        disp("------------------");
+        disp(g);
+        disp("------------------");
+    }
+
+    UTOPIA_REGISTER_APP(petsc_bratu);
 
     static void petsc_dm_app()
     {
@@ -67,53 +141,6 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_app);
-
-    class MPITimeStatistics {
-    public:
-
-        void start()
-        {
-            comm_.barrier();
-            c_.start();
-        }
-
-        void stop()
-        {
-            comm_.barrier();
-            c_.stop();
-        }
-
-        void stop_and_collect(const std::string &name)
-        {
-            stop();
-            times_[std::to_string(counter_++) + ") " + name] = c_.get_seconds();
-        }
-
-        void add_stat(const std::string &name, const double &time)
-        {
-            times_[name] = time;
-        }
-
-        void describe(std::ostream &os) const
-        {
-            comm_.barrier();
-            if(comm_.rank() == 0) {
-                for(auto p : times_) {
-                    os << p.first << " : " << p.second << "\n";
-                }
-            }
-            comm_.barrier();
-        }
-
-        MPITimeStatistics(Communicator &comm) : comm_(comm), counter_(0) {}
-
-    private:
-        Communicator &comm_;
-        Chrono c_;
-        std::map<std::string, double> times_;
-        int counter_;
-    };
-
 
     template<class FunctionSpace>
     static void poisson_problem(FunctionSpace &space, const bool use_direct_solver)

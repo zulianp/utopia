@@ -8,8 +8,6 @@ namespace utopia {
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
     class Laplacian {};
 
-    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
-    class MassMatrix {};
 
     template<class T>
     class ConstantView {
@@ -86,71 +84,6 @@ namespace utopia {
         }
     };
 
-    template<class Mesh, int NComponents, class Quadrature, typename...Args>
-    class MassMatrix< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
-    public:
-        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
-        using Scalar   = typename FunctionSpace::Scalar;
-        using SizeType = typename FunctionSpace::SizeType;
-        using Elem = typename FunctionSpace::ViewDevice::Elem;
-        static const int NNodes = Elem::NNodes;
-
-        using ViewDevice = ConstantView<StaticMatrix<Scalar, NNodes, NNodes>>;
-
-        MassMatrix(const FunctionSpace &space, const Quadrature &q) //: q_(q)
-        {
-            init(space, q);
-        }
-
-        ViewDevice view_device() const
-        {
-            return ViewDevice(mat_);
-        }
-
-        template<class Fun, class DX, class Matrix>
-        UTOPIA_INLINE_FUNCTION static void assemble(const Fun &fun, const DX &dx, Matrix &mat)
-        {
-            const auto n = fun.n_points();
-            for(SizeType k = 0; k < n; ++k) {
-                for(SizeType j = 0; j < fun.n_functions(); ++j) {
-                    const auto g_test = fun(j, k);
-                    mat(j, j) += (g_test * g_test) * dx(k);
-
-                    for(SizeType l = j + 1; l < fun.n_functions(); ++l) {
-                        const auto v = (g_test * fun(l, k)) * dx(k);
-                        mat(j, l) += v;
-                        mat(l, j) += v;
-                    }
-                }
-            }
-        }
-
-        void describe(std::ostream &os = std::cout) const
-        {
-            mat_.describe(os);
-        }
-
-    private:
-        StaticMatrix<Scalar, NNodes, NNodes> mat_;
-
-        void init(const FunctionSpace &space, const Quadrature &q)
-        {
-            ShapeFunction<FunctionSpace, Quadrature> fun(space, q);
-            Differential<FunctionSpace, Quadrature> differential(space, q);
-
-            auto fun_view = fun.view_host();
-            auto dx_view  = differential.view_host();
-
-            Elem e;
-            space.elem(0, e);
-
-            auto f  = fun_view.make(0, e);
-            auto dx = dx_view.make(0, e);
-
-            mat_.set(0.0);
-            assemble(f, dx, mat_);
-        }
-    };
 }
 
 

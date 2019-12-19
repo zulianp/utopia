@@ -31,6 +31,11 @@ namespace utopia {
             tensor_.add(idx, value);
         }
 
+        inline void atomic_add(const SizeType &idx, const Scalar &value) const
+        {
+            tensor_.c_add(idx, value);
+        }
+
         DeviceView(T &tensor, WriteMode wm = utopia::AUTO) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor, wm)) {}
 
     private:

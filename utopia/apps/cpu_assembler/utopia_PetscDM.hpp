@@ -262,7 +262,7 @@ namespace utopia {
             return 0;
         }
 
-        ViewDevice &view_device()
+        const ViewDevice &view_device() const
         {
             return *this;
         }
@@ -292,6 +292,11 @@ namespace utopia {
             return DeviceView<PetscVector, 1>(vec, utopia::GLOBAL_ADD);
         }
 
+        static DeviceView<const PetscVector, 1> assembly_view_device(const PetscVector &vec)
+        {
+            return DeviceView<const PetscVector, 1>(vec);
+        }
+
         template<class ElementMatrix, class MatView>
         static void add_matrix(
             const Elem &e,
@@ -305,6 +310,35 @@ namespace utopia {
                 for(SizeType j = 0; j < n_dofs; ++j) {
                     mat.atomic_add(dofs[i], dofs[j], el_mat(i, j));
                 }
+            }
+        }
+
+        template<class ElementVector, class VecView>
+        static void add_vector(
+            const Elem &e,
+            const ElementVector &el_vec,
+            VecView &vec)
+        {
+            const SizeType n_dofs = e.nodes().size();
+            const auto &dofs = e.nodes();
+
+            for(SizeType i = 0; i < n_dofs; ++i) {
+                vec.atomic_add(dofs[i], el_vec(i));
+            }
+        }
+
+        //FIXME does not work in parallel
+        template<class VectorView, class Values>
+        static void coefficients(
+            const Elem &e,
+            const VectorView &vec,
+            Values &values)
+        {
+            const SizeType n_dofs = e.nodes().size();
+            const auto &dofs = e.nodes();
+
+            for(SizeType i = 0; i < n_dofs; ++i) {
+                values[i] = vec.get(dofs[i]);
             }
         }
 

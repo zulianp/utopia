@@ -70,6 +70,12 @@ namespace utopia {
     template<class Expr, int Order, int TensorOrder>
     class DeviceNorm;
 
+    template<class Expr, class Op, int Order>
+    class DeviceReduce;
+
+    template<class Expr, class Op, int Dim>
+    class DeviceTensorReduce;
+
     template<class View>
     using VectorView = utopia::TensorView<View, 1>;
 
