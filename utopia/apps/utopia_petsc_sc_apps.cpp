@@ -22,11 +22,11 @@
 namespace utopia {
     static void petsc_bratu()
     {
-        static const int Dim = 2;
-        static const int NNodes = 4;
+        static const int Dim = 3;
+        static const int NNodes = 8;
 
         using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
+        using Elem             = utopia::PetscUniformHex8;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
         using SizeType         = Mesh::SizeType;
         using Scalar           = Mesh::Scalar;
@@ -35,16 +35,16 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 10;
-        SizeType ny = scale * 10;
+        SizeType nx = scale * 5;
+        SizeType ny = scale * 5;
+        SizeType nz = scale * 5;
 
         Mesh mesh(
             world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
+            {nx, ny, nz},
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
         );
-
 
         FunctionSpace space(mesh);
 
@@ -52,14 +52,14 @@ namespace utopia {
         space.emplace_dirichlet_condition(
             SideSet::left(),
             UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return 1.0;
+                return 0.0;
             }
         );
 
         space.emplace_dirichlet_condition(
             SideSet::right(),
             UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return -1.0;
+                return 1.0;
             }
         );
 
@@ -67,27 +67,17 @@ namespace utopia {
 
         BratuFE<FunctionSpace> bratu(space);
 
-        PetscVector x, g;
+        PetscVector x;
         space.create_vector(x);
-        space.create_vector(g);
 
-        PetscMatrix H;
-        bratu.initialize_hessian(H, H);
+        Newton<PetscMatrix, PetscVector> newton;
+        newton.verbose(true);
+        newton.solve(bratu, x);
 
-        bratu.update(x);
-        bratu.hessian(x, H);
-        bratu.gradient(x, g);
+        rename("x", x);
+        space.write("bratu.vtk", x);
 
-        space.apply_constraints(H, g);
-
-        Scalar value;
-        bratu.value(x, value);
-
-        disp("------------------");
-        disp(value);
-        disp("------------------");
-        disp(g);
-        disp("------------------");
+        disp(x);
     }
 
     UTOPIA_REGISTER_APP(petsc_bratu);

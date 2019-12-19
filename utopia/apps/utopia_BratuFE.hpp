@@ -90,80 +90,94 @@ namespace utopia {
 
         inline bool gradient(const Vector &x, Vector &g) const override
         {
-            auto space_view = space_->view_device();
+            if(empty(g)) {
+                space_->create_vector(g);
+            } else {
+                g.set(0.0);
+            }
 
-            auto x_view = space_->assembly_view_device(x);
-            auto g_view = space_->assembly_view_device(g);
-
-            auto l_view = laplacian_.view_device();
-            auto m_view = scaled_mass_matrix_.view_device();
-
-            auto f = UTOPIA_LAMBDA(const Scalar &u) -> Scalar {
-                return -lambda_ * device::exp(u);
-            };
-
-            g.set(0.0);
-
-            Device::parallel_for(
-                space_->local_element_range(),
-                UTOPIA_LAMBDA(const SizeType &i)
             {
-                Elem e;
-                space_view.elem(i, e);
+                auto space_view = space_->view_device();
 
-                ElementVector coeff;
+                auto x_view = space_->assembly_view_device(x);
+                auto g_view = space_->assembly_view_device(g);
 
-                space_view.coefficients(e, x_view, coeff);
+                auto l_view = laplacian_.view_device();
+                auto m_view = scaled_mass_matrix_.view_device();
 
-                ElementMatrix el_mat;
-                el_mat.set(0.0);
+                auto f = UTOPIA_LAMBDA(const Scalar &u) -> Scalar {
+                    return -lambda_ * device::exp(u);
+                };
 
-                l_view.add(i, e, el_mat);
+                Device::parallel_for(
+                    space_->local_element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i)
+                {
+                    Elem e;
+                    space_view.elem(i, e);
 
-                ElementVector el_vec;
-                el_vec = el_mat * coeff;
+                    ElementVector coeff;
 
-                el_mat.set(0.0);
-                m_view.add(i, e, f, el_mat);
+                    space_view.coefficients(e, x_view, coeff);
 
-                el_vec += row_sum(el_mat);
+                    ElementMatrix el_mat;
+                    el_mat.set(0.0);
 
-                space_view.add_vector(e, el_vec, g_view);
-            });
+                    l_view.add(i, e, el_mat);
 
+                    ElementVector el_vec;
+                    el_vec = el_mat * coeff;
+
+                    el_mat.set(0.0);
+                    m_view.add(i, e, f, el_mat);
+
+                    el_vec += row_sum(el_mat);
+
+                    space_view.add_vector(e, el_vec, g_view);
+                });
+            }
+
+            space_->apply_constraints(g);
             return true;
         }
 
         inline bool hessian(const Vector &, Matrix &H) const override
         {
-            auto space_view = space_->view_device();
+            if(empty(H)) {
+                space_->create_matrix(H);
+            } else {
+                H *= 0.0;
+            }
 
-            auto H_view = space_->assembly_view_device(H);
-            auto l_view = laplacian_.view_device();
-            auto m_view = scaled_mass_matrix_.view_device();
-
-            auto f = UTOPIA_LAMBDA(const Scalar &u) -> Scalar {
-                return -lambda_ * device::exp(u);
-            };
-
-            H *= 0.0;
-
-            Device::parallel_for(
-                space_->local_element_range(),
-                UTOPIA_LAMBDA(const SizeType &i)
             {
-                Elem e;
-                space_view.elem(i, e);
+                auto space_view = space_->view_device();
 
-                ElementMatrix el_mat;
-                el_mat.set(0.0);
+                auto H_view = space_->assembly_view_device(H);
+                auto l_view = laplacian_.view_device();
+                auto m_view = scaled_mass_matrix_.view_device();
 
-                l_view.add(i, e, el_mat);
-                m_view.add(i, e, f, el_mat);
+                auto f = UTOPIA_LAMBDA(const Scalar &u) -> Scalar {
+                    return -lambda_ * device::exp(u);
+                };
 
-                space_view.add_matrix(e, el_mat, H_view);
-            });
+                Device::parallel_for(
+                    space_->local_element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i)
+                {
+                    Elem e;
+                    space_view.elem(i, e);
 
+                    ElementMatrix el_mat;
+                    el_mat.set(0.0);
+
+                    l_view.add(i, e, el_mat);
+                    m_view.add(i, e, f, el_mat);
+
+                    space_view.add_matrix(e, el_mat, H_view);
+                });
+            }
+
+            space_->apply_constraints(H);
             return true;
         }
 
@@ -183,7 +197,7 @@ namespace utopia {
           quadrature_(),
           laplacian_(space, quadrature_),
           scaled_mass_matrix_(space, quadrature_),
-          lambda_(1.0)
+          lambda_(2.1)
         {}
 
         BratuFE(const std::shared_ptr<FunctionSpace> &space)
@@ -191,7 +205,7 @@ namespace utopia {
           quadrature_(),
           laplacian_(*space, quadrature_),
           scaled_mass_matrix_(*space, quadrature_),
-          lambda_(1.0)
+          lambda_(2.1)
         {}
 
     private:

@@ -375,6 +375,20 @@ namespace utopia {
             }
         }
 
+        void apply_constraints(PetscMatrix &mat) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->apply(mat);
+            }
+        }
+
+        void apply_constraints(PetscVector &vec) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->apply(vec);
+            }
+        }
+
         ///shallow copy
         FunctionSpace(const FunctionSpace &other)
         : mesh_(other.mesh_)
@@ -423,6 +437,40 @@ namespace utopia {
             }
 
             mat.set_zero_rows(ind, 1.0);
+        }
+
+        void apply(PetscMatrix &mat) const
+        {
+            using IndexSet = Traits<PetscVector>::IndexSet;
+            IndexSet ind;
+            ind.reserve(mat.local_size().get(0));
+
+            auto r = mat.row_range();
+
+            Point p;
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(is_constrained_dof(i - r.begin())) {
+                    ind.push_back(i);
+                    space_.mesh().node(i/Components, p);
+                }
+            }
+
+            mat.set_zero_rows(ind, 1.0);
+        }
+
+        void apply(PetscVector &vec) const
+        {
+            auto r = vec.range();
+
+            Write<PetscVector> w(vec, utopia::AUTO);
+
+            Point p;
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(is_constrained_dof(i - r.begin())) {
+                    space_.mesh().node(i/Components, p);
+                    vec.set(i, fun_(p));
+                }
+            }
         }
 
         void set_boundary_id(PetscVector &vec) const
