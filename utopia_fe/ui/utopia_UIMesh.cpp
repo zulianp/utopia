@@ -11,6 +11,7 @@
 #include "libmesh/mesh_tools.h"
 #include "libmesh/elem.h"
 
+#include <numeric>
 
 namespace utopia {
 

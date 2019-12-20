@@ -162,6 +162,7 @@ namespace utopia {
         space.write("fe.vtk", x);
 
         stats.stop_and_collect("write");
+        stats.describe(std::cout);
     }
 
     UTOPIA_REGISTER_APP(petsc_bratu);

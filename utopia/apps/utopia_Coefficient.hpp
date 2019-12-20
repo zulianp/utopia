@@ -34,16 +34,16 @@ namespace utopia {
         using ViewDevice    = utopia::CoefficientView<typename FunctionSpace::ViewDevice, LocalViewDevice<const PetscVector, 1>>;
 
         explicit Coefficient(const FunctionSpace &space)
-        : space_(space)
+        : space_(space), local_vector_(std::make_shared<PetscVector>())
         {
             //FIXME
-            space_.mesh().create_local_vector(local_vector_);
+            space_.mesh().create_local_vector(*local_vector_);
 
         }
 
         void update(const PetscVector &global_vector) {
             //FIXME
-            space_.mesh().global_to_local(global_vector, local_vector_);
+            space_.mesh().global_to_local(global_vector, *local_vector_);
         }
 
 
@@ -51,13 +51,13 @@ namespace utopia {
         {
             return ViewDevice(
                 space_.view_device(),
-                local_vector_
+                *local_vector_
             );
         }
 
     private:
         const FunctionSpace &space_;
-        PetscVector local_vector_;
+        std::shared_ptr<PetscVector> local_vector_;
     };
 
 

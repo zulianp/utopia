@@ -9,6 +9,7 @@
 #include "utopia_fe_base.hpp"
 
 #include <vector>
+#include <numeric>
 
 namespace utopia {
 
@@ -67,7 +68,7 @@ namespace utopia {
             const std::vector<IDX> &cols,
             ElementMatrix &mat
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
             std::size_t n_cols = cols.size();
 
@@ -87,7 +88,7 @@ namespace utopia {
             const moonolith::Storage<IDX> &cols,
             ElementMatrix &mat
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
             std::size_t n_cols = cols.size();
 
@@ -169,7 +170,7 @@ namespace utopia {
             const std::vector<IDX> &cols,
             ElementMatrix &mat
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
             std::size_t n_cols = cols.size();
 
@@ -188,7 +189,7 @@ namespace utopia {
             const std::vector<IDX> &cols,
             ElementMatrix &mat
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
             std::size_t n_cols = cols.size();
 
@@ -209,7 +210,7 @@ namespace utopia {
             const std::vector<IDX> &rows,
             ElementVector &vec
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
 
             for(std::size_t i = 0; i < n_rows; ++i) {
@@ -224,7 +225,7 @@ namespace utopia {
             const std::vector<IDX> &rows,
             ElementVector &vec
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
 
             for(std::size_t i = 0; i < n_rows; ++i) {
@@ -241,7 +242,7 @@ namespace utopia {
             const std::vector<IDX> &rows,
             std::vector<double> &vec
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
 
             for(std::size_t i = 0; i < n_rows; ++i) {
@@ -258,7 +259,7 @@ namespace utopia {
             const std::vector<IDX> &rows,
             ElementVector &vec
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
 
             for(std::size_t i = 0; i < n_rows; ++i) {
@@ -272,7 +273,7 @@ namespace utopia {
             const std::vector<IDX> &rows,
             std::vector<double> &vec
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
 
             for(std::size_t i = 0; i < n_rows; ++i) {
@@ -286,7 +287,7 @@ namespace utopia {
             const std::vector<IDX> &rows,
             ElementVector &vec
             )
-        {   
+        {
             if(use_add) {
                 add(rows, vec);
             } else {
@@ -300,14 +301,14 @@ namespace utopia {
             const int &tensor_dim,
             ElementVector &vec
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
 
             IDX idx = 0;
             for(std::size_t i = 0; i < n_rows; ++i) {
                 auto dof_I = rows[i];
                 auto dof_I_x_d = dof_I * tensor_dim;
-               
+
                 for(IDX k = 0; k < tensor_dim; ++k, ++idx) {
                     m_matrix.add(dof_I_x_d + k, 0, vec(idx));
                 }
@@ -320,14 +321,14 @@ namespace utopia {
             const int &tensor_dim,
             ElementVector &vec
             )
-        {   
+        {
             std::size_t n_rows = rows.size();
 
             IDX idx = 0;
             for(std::size_t i = 0; i < n_rows; ++i) {
                 auto dof_I = rows[i];
                 auto dof_I_x_d = dof_I * tensor_dim;
-               
+
                 for(IDX k = 0; k < tensor_dim; ++k, ++idx) {
                     if(std::abs(vec(idx)) != 0.0) {
                         m_matrix.set(dof_I_x_d + k, 0, vec(idx));
@@ -348,7 +349,7 @@ namespace utopia {
             } else {
                 set_non_zero_tensor_product_idx(rows, tensor_dim, vec);
             }
-        } 
+        }
 
 
 
@@ -375,7 +376,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &cols,
            ElementMatrix &mat
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
            std::size_t n_cols = cols.size();
 
@@ -394,7 +395,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &cols,
            ElementMatrix &mat
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
            std::size_t n_cols = cols.size();
 
@@ -415,7 +416,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &rows,
            ElementVector &vec
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
 
            for(std::size_t i = 0; i < n_rows; ++i) {
@@ -430,7 +431,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &rows,
            ElementVector &vec
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
 
            for(std::size_t i = 0; i < n_rows; ++i) {
@@ -447,7 +448,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &rows,
            moonolith::Storage<double> &vec
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
 
            for(std::size_t i = 0; i < n_rows; ++i) {
@@ -464,7 +465,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &rows,
            ElementVector &vec
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
 
            for(std::size_t i = 0; i < n_rows; ++i) {
@@ -478,7 +479,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &rows,
            moonolith::Storage<double> &vec
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
 
            for(std::size_t i = 0; i < n_rows; ++i) {
@@ -492,7 +493,7 @@ namespace utopia {
            const moonolith::Storage<IDX> &rows,
            ElementVector &vec
            )
-       {   
+       {
            if(use_add) {
                add(rows, vec);
            } else {
@@ -506,14 +507,14 @@ namespace utopia {
            const int &tensor_dim,
            ElementVector &vec
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
 
            IDX idx = 0;
            for(std::size_t i = 0; i < n_rows; ++i) {
                auto dof_I = rows[i];
                auto dof_I_x_d = dof_I * tensor_dim;
-              
+
                for(IDX k = 0; k < tensor_dim; ++k, ++idx) {
                    m_matrix.add(dof_I_x_d + k, 0, vec(idx));
                }
@@ -526,14 +527,14 @@ namespace utopia {
            const int &tensor_dim,
            ElementVector &vec
            )
-       {   
+       {
            std::size_t n_rows = rows.size();
 
            IDX idx = 0;
            for(std::size_t i = 0; i < n_rows; ++i) {
                auto dof_I = rows[i];
                auto dof_I_x_d = dof_I * tensor_dim;
-              
+
                for(IDX k = 0; k < tensor_dim; ++k, ++idx) {
                    if(std::abs(vec(idx)) != 0.0) {
                        m_matrix.set(dof_I_x_d + k, 0, vec(idx));
@@ -554,7 +555,7 @@ namespace utopia {
            } else {
                set_non_zero_tensor_product_idx(rows, tensor_dim, vec);
            }
-       } 
+       }
 
         void fill(USparseMatrix &mat)
         {
@@ -611,7 +612,7 @@ namespace utopia {
             auto n_local_rows = ownership_ranges_rows[comm.rank() + 1] - ownership_ranges_rows[comm.rank()];
 
             vec = local_zeros(n_local_rows);
-            
+
             {
                 Write<UVector> w_g(vec);
 

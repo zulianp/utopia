@@ -29,6 +29,7 @@
 #include <queue>
 #include <algorithm>
 #include <unordered_set>
+#include <numeric>
 
 using namespace libMesh;
 
