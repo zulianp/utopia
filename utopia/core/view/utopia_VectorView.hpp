@@ -226,12 +226,12 @@ namespace utopia {
             }
         }
 
+        UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {}
+
     private:
         ArrayView view_;
 
-        UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {
-            UTOPIA_DEVICE_ASSERT(false);
-        }
+
     };
 
 }

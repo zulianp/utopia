@@ -4,6 +4,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LaplacianView.hpp"
 #include "utopia_MassMatrixView.hpp"
+#include "utopia_ProjectionView.hpp"
 
 #include "utopia_Quadrature.hpp"
 #include "utopia_MPITimeStatistics.hpp"
@@ -102,7 +103,7 @@ namespace utopia {
             {
                 auto space_view = space_->view_device();
 
-                auto x_view = space_->assembly_view_device(x);
+                auto x_view = x_coeff_.view_device();
                 auto g_view = space_->assembly_view_device(g);
 
                 auto l_view = laplacian_.view_device();
@@ -121,7 +122,7 @@ namespace utopia {
 
                     ElementVector coeff;
 
-                    x_coeff_.get(e, coeff);
+                    x_view.get(e, coeff);
 
                     ElementMatrix el_mat;
                     el_mat.set(0.0);
@@ -140,7 +141,12 @@ namespace utopia {
                 });
             }
 
+            if(!empty(rhs_)) {
+               g -= rhs_;
+            }
+
             space_->apply_zero_constraints(g);
+
             return true;
         }
 
@@ -213,6 +219,36 @@ namespace utopia {
           lambda_(2.1)
         {}
 
+        template<class Fun>
+        void init_forcing_function(Fun fun)
+        {
+            space_->create_vector(rhs_);
+            Projection<FunctionSpace, Quadrature, Fun> proj(*space_, quadrature_, fun);
+
+            auto proj_view = proj.view_device();
+
+            {
+                auto space_view = space_->view_device();
+                auto rhs_view   = space_->assembly_view_device(rhs_);
+
+                Device::parallel_for(
+                    space_->local_element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i)
+                {
+                    Elem e;
+                    space_view.elem(i, e);
+
+                    ElementVector el_vec;
+                    el_vec.set(0.0);
+
+                    proj_view.assemble(i, e, el_vec);
+                    space_view.add_vector(e, el_vec, rhs_view);
+                });
+            }
+
+            space_->apply_constraints(rhs_);
+        }
+
     private:
         std::shared_ptr<FunctionSpace> space_;
         Quadrature quadrature_;
@@ -220,6 +256,7 @@ namespace utopia {
         ScaledMassMatrix scaled_mass_matrix_;
         Coefficient x_coeff_;
         Scalar lambda_;
+        Vector rhs_;
     };
 }
 

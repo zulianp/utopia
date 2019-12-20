@@ -128,6 +128,15 @@ namespace utopia {
             return data_ + Size;
         }
 
+        ArrayView() {}
+
+        ArrayView(const ArrayView &other)
+        {
+            for(Size_t i = 0; i < Size; ++i) {
+                data_[i] = other.data_[i];
+            }
+        }
+
     private:
         T data_[Size];
     };

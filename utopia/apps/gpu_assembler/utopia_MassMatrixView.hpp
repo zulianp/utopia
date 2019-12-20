@@ -98,21 +98,21 @@ namespace utopia {
             using InterpolateView  = typename Interpolate::ViewDevice;
 
             template<typename SizeType, class Elem, class Accumulator>
-            UTOPIA_INLINE_FUNCTION void add(const SizeType &i, const Elem &e, Accumulator &acc) const {
+            UTOPIA_INLINE_FUNCTION void assemble(const SizeType &i, const Elem &e, Accumulator &acc) const {
                 auto dx          = dx_.make(i, e);
                 auto interpolate = interpolate_.make(i, e);
                 auto fun         = interpolate_.fun().make(i, e);
 
-                assemble(fun, dx, interpolate, acc);
+                assemble_aux(fun, dx, interpolate, acc);
             }
 
             template<typename SizeType, class Elem, class Function, class Accumulator>
-            UTOPIA_INLINE_FUNCTION void add(const SizeType &i, const Elem &e, Function f, Accumulator &acc) const {
+            UTOPIA_INLINE_FUNCTION void assemble(const SizeType &i, const Elem &e, Function f, Accumulator &acc) const {
                 auto dx          = dx_.make(i, e);
                 auto interpolate = interpolate_.make(i, e);
                 auto fun         = interpolate_.fun().make(i, e);
 
-                assemble(fun, dx, interpolate, f, acc);
+                assemble_aux(fun, dx, interpolate, f, acc);
             }
 
             ViewDevice(const DifferentialView &dx, const InterpolateView &interpolate)
@@ -137,8 +137,21 @@ namespace utopia {
             return ViewDevice(dx_.view_device(), interpolate_.view_device());
         }
 
+
+
+
+    private:
+        Differential dx_;
+        Interpolate interpolate_;
+
         template<class Fun, class DX, class QPValue, class Function, class Matrix>
-        UTOPIA_INLINE_FUNCTION static void assemble(const Fun &fun, const DX &dx, const QPValue &qp_fun, Function f, Matrix &mat)
+        UTOPIA_INLINE_FUNCTION static void assemble_aux(
+            const Fun &fun,
+            const DX &dx,
+            const QPValue &qp_fun,
+            Function f,
+            Matrix &mat
+        )
         {
             const auto n = fun.n_points();
             for(SizeType k = 0; k < n; ++k) {
@@ -154,11 +167,6 @@ namespace utopia {
                 }
             }
         }
-
-
-    private:
-        Differential dx_;
-        Interpolate interpolate_;
     };
 }
 

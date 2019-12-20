@@ -52,12 +52,6 @@ namespace utopia {
         PetscVector vec;
         mesh.create_local_vector(vec);
         LocalViewDevice<const PetscVector, 1> view(vec);
-
-        SizeType n = vec.size();
-
-        for(SizeType i = 0; i < n; ++i) {
-            disp(view.get(i));
-        }
     }
 
     UTOPIA_REGISTER_APP(petsc_local_vec_view);
@@ -83,19 +77,53 @@ namespace utopia {
         stats.start();
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 10;
-        SizeType ny = scale * 10;
-        SizeType nz = scale * 10;
+        SizeType nx = scale * 5;
+        SizeType ny = scale * 5;
+        SizeType nz = scale * 5;
+
+        Scalar min_x = 0.0, max_x = 1.0;
+        Scalar min_y = 0.0, max_y = 1.0;
+        Scalar min_z = 0.0, max_z = 1.0;
+
+
+        Scalar decay = 50.0;
+        Scalar amplitude = 1.0;
+
+        Point c1; c1.set(0.25);
+        Point c2; c2.set(0.75);
+
+        std::string output_path = "./fe.vtk";
+        std::string model = "bratu";
 
         in.get("nx", nx);
         in.get("ny", ny);
         in.get("nz", nz);
+        in.get("decay", decay);
+        in.get("amplitude", amplitude);
+        in.get("c1-x", c1[0]);
+        in.get("c1-y", c1[1]);
+        in.get("c1-z", c1[2]);
+
+        in.get("c2-x", c2[0]);
+        in.get("c2-y", c2[1]);
+        in.get("c2-z", c2[2]);
+
+
+        in.get("min-x", min_x);
+        in.get("min-y", min_y);
+        in.get("min-z", min_z);
+
+        in.get("max-x", max_x);
+        in.get("max-y", max_y);
+        in.get("max-z", max_z);
+
+        in.get("model", model);
 
         Mesh mesh(
             world,
             {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
+            {min_x, min_y, min_z},
+            {max_x, max_y, max_z}
         );
 
         stats.stop_and_collect("mesh-gen");
@@ -126,12 +154,30 @@ namespace utopia {
         ///////////////////////////////////////
         stats.start();
 
-        // BratuFE<FunctionSpace> fe_model(space);
-        PoissonFE<FunctionSpace> fe_model(space);
-        fe_model.init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
-            return device::exp(-40.0 * device::abs(p[1] - 0.25)) +
-                   device::exp(-40.0 * device::abs(p[1] - 0.75));
-        });
+        std::shared_ptr<Function<PetscMatrix, PetscVector>> fun;
+
+        if(model == "poisson") {
+
+            auto fe_model = std::make_shared<PoissonFE<FunctionSpace>>(space);
+            fe_model->init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
+                return amplitude * device::exp(-decay * norm2(c1 - p)) +
+                       amplitude * device::exp(-decay * norm2(c2 - p));
+            });
+
+            fun = fe_model;
+
+        } else {
+
+            auto fe_model = std::make_shared<BratuFE<FunctionSpace>>(space);
+            fe_model->init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
+                return amplitude * device::exp(-decay * norm2(c1 - p)) +
+                       amplitude * device::exp(-decay * norm2(c2 - p));
+            });
+
+            fun = fe_model;
+
+        }
+
 
         stats.stop_and_collect("projection");
 
@@ -152,14 +198,14 @@ namespace utopia {
         in.get("newton", newton);
 
         space.apply_constraints(x);
-        newton.solve(fe_model, x);
+        newton.solve(*fun, x);
 
         stats.stop_and_collect("solve+assemblies");
 
         stats.start();
 
         rename("x", x);
-        space.write("fe.vtk", x);
+        space.write(output_path, x);
 
         stats.stop_and_collect("write");
         stats.describe(std::cout);
