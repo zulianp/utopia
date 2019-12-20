@@ -545,11 +545,15 @@ namespace utopia {
     void PetscDM<Dim>::elem(const SizeType &idx, Elem &e) const
     {
         this->nodes(idx, e.nodes());
+        e.idx(idx);
     }
 
     template<int Dim>
     void PetscDM<Dim>::nodes(const SizeType &idx, NodeIndex &nodes) const
     {
+        assert(idx < impl_->elements->ne);
+        assert(idx >= 0);
+        assert(!impl_->elements->e_global.empty());
         nodes = NodeIndex(&impl_->elements->e_global[idx*impl_->elements->nc], impl_->elements->nc);
     }
 
@@ -557,6 +561,9 @@ namespace utopia {
     template<int Dim>
     void PetscDM<Dim>::nodes_local(const SizeType &idx, NodeIndex &nodes) const
     {
+        assert(idx < impl_->elements->ne);
+        assert(idx >= 0);
+        assert(impl_->elements->e);
         nodes = NodeIndex(&impl_->elements->e[idx*impl_->elements->nc], impl_->elements->nc);
     }
 
@@ -612,17 +619,29 @@ namespace utopia {
     }
 
     template<int Dim>
-    void PetscDM<Dim>::create_matrix(PetscMatrix &mat)
+    void PetscDM<Dim>::create_matrix(PetscMatrix &mat) const
     {
         mat.destroy();
         DMCreateMatrix(impl_->dm, &mat.raw_type());
     }
 
     template<int Dim>
-    void PetscDM<Dim>::create_vector(PetscVector &vec)
+    void PetscDM<Dim>::create_vector(PetscVector &vec) const
     {
         vec.destroy();
         DMCreateGlobalVector(impl_->dm, &vec.raw_type());
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::local_to_global(const PetscVector &local,  PetscVector &global) const
+    {
+        DMLocalToGlobal(impl_->dm, local.raw_type(), ADD_VALUES, global.raw_type());
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::global_to_local(const PetscVector &global, PetscVector &local) const
+    {
+        DMGlobalToLocal(impl_->dm, global.raw_type(), INSERT_VALUES, local.raw_type());
     }
 
     template<int Dim>
@@ -652,9 +671,7 @@ namespace utopia {
                 break;
             }
         }
-
     }
-
 
     template<int Dim>
     void PetscDM<Dim>::describe() const
@@ -722,7 +739,7 @@ namespace utopia {
     // }
 
     template<int Dim>
-    void PetscDM<Dim>::create_local_vector(PetscVector &vec)
+    void PetscDM<Dim>::create_local_vector(PetscVector &vec) const
     {
         vec.destroy();
         auto err = DMCreateLocalVector(impl_->dm, &raw_type(vec)); assert(err == 0);
@@ -734,11 +751,11 @@ namespace utopia {
 
     // }
 
-    template<int Dim>
-    void PetscDM<Dim>::local_to_global(PetscVector &local, PetscVector &global)
-    {
-        auto err = DMLocalToGlobal(impl_->dm, raw_type(local), ADD_VALUES, raw_type(global)); assert(err == 0);
-    }
+    // template<int Dim>
+    // void PetscDM<Dim>::local_to_global(PetscVector &local, PetscVector &global)
+    // {
+    //     auto err = DMLocalToGlobal(impl_->dm, raw_type(local), ADD_VALUES, raw_type(global)); assert(err == 0);
+    // }
 
     template<int Dim>
     bool PetscNode<Dim>::is_ghost() const
@@ -1008,6 +1025,21 @@ namespace utopia {
 
         for(int i = 1; i < Dim; ++i) {
             ret *= dims[i];
+        }
+
+        return ret;
+    }
+
+    template<int Dim>
+    typename PetscDM<Dim>::SizeType PetscDM<Dim>::n_elements() const
+    {
+        SizeType dims[3];
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        SizeType ret = dims[0] - 1;
+
+        for(int i = 1; i < Dim; ++i) {
+            ret *= (dims[i] - 1);
         }
 
         return ret;

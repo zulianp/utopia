@@ -67,6 +67,7 @@ namespace utopia {
 
         inline SizeType idx() const
         {
+            assert(idx_ >= 0);
             return idx_;
         }
 

@@ -22,7 +22,7 @@ namespace utopia {
         using Elem = typename FunctionSpace::ViewDevice::Elem;
         static const int NNodes = Elem::NNodes;
 
-        using ViewDevice = ConstantView<StaticMatrix<Scalar, NNodes, NNodes>>;
+        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NNodes, NNodes>>;
 
         MassMatrix(const FunctionSpace &space, const Quadrature &q) //: q_(q)
         {

@@ -10,12 +10,12 @@ namespace utopia {
 
 
     template<class T>
-    class ConstantView {
+    class AssemblerView {
     public:
-        UTOPIA_INLINE_FUNCTION ConstantView(const T &value) : value_(value) {}
+        UTOPIA_INLINE_FUNCTION AssemblerView(const T &value) : value_(value) {}
 
         template<typename SizeType, class Elem, class Accumulator>
-        UTOPIA_INLINE_FUNCTION void add(const SizeType &, const Elem &, Accumulator &acc) const {
+        UTOPIA_INLINE_FUNCTION void assemble(const SizeType &, const Elem &, Accumulator &acc) const {
             acc += value_;
         }
 
@@ -32,7 +32,7 @@ namespace utopia {
         using Elem = typename FunctionSpace::ViewDevice::Elem;
         static const int NNodes = Elem::NNodes;
 
-        using ViewDevice = ConstantView<StaticMatrix<Scalar, NNodes, NNodes>>;
+        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NNodes, NNodes>>;
 
         Laplacian(const FunctionSpace &space, const Quadrature &q)
         {

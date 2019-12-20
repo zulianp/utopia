@@ -13,7 +13,7 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_DeviceReduce.hpp"
 #include "utopia_DeviceTensorReduce.hpp"
-
+#include "utopia_Coefficient.hpp"
 
 namespace utopia {
 
@@ -30,6 +30,7 @@ namespace utopia {
         using Quadrature = utopia::Quadrature<Elem, 2>;
         using Laplacian  = utopia::Laplacian<FunctionSpace, Quadrature>;
         using ScaledMassMatrix = utopia::ScaledMassMatrix<FunctionSpace, Quadrature>;
+        using Coefficient = utopia::Coefficient<FunctionSpace>;
 
         using Device     = typename FunctionSpace::Device;
 
@@ -44,12 +45,16 @@ namespace utopia {
            return false;
         }
 
-        inline bool update(const Vector &) override {
+        inline bool update(const Vector &x) override {
+            x_coeff_.update(x);
             return true;
         }
 
         inline bool gradient(const Vector &x, Vector &g) const override
         {
+            Chrono c;
+            c.start();
+
             if(empty(g)) {
                 space_->create_vector(g);
             } else {
@@ -63,6 +68,7 @@ namespace utopia {
                 auto g_view = space_->assembly_view_device(g);
 
                 auto l_view = laplacian_.view_device();
+                auto coeff_view = x_coeff_.view_device();
 
                 Device::parallel_for(
                     space_->local_element_range(),
@@ -73,12 +79,12 @@ namespace utopia {
 
                     ElementVector coeff;
 
-                    space_view.coefficients(e, x_view, coeff);
+                    coeff_view.get(e, coeff);
 
                     ElementMatrix el_mat;
                     el_mat.set(0.0);
 
-                    l_view.add(i, e, el_mat);
+                    l_view.assemble(i, e, el_mat);
 
                     ElementVector el_vec;
                     el_vec = el_mat * coeff;
@@ -92,11 +98,17 @@ namespace utopia {
             }
 
             space_->apply_zero_constraints(g);
+
+            c.stop();
+            if(x.comm().rank() == 0) { std::cout << "PoissonFE::gradient(...): " << c << std::endl; }
             return true;
         }
 
-        inline bool hessian(const Vector &, Matrix &H) const override
+        inline bool hessian(const Vector &x, Matrix &H) const override
         {
+            Chrono c;
+            c.start();
+
             if(empty(H)) {
                 space_->create_matrix(H);
             } else {
@@ -118,13 +130,16 @@ namespace utopia {
 
                     ElementMatrix el_mat;
                     el_mat.set(0.0);
-                    l_view.add(i, e, el_mat);
+                    l_view.assemble(i, e, el_mat);
 
                     space_view.add_matrix(e, el_mat, H_view);
                 });
             }
 
             space_->apply_constraints(H);
+
+            c.stop();
+            if(x.comm().rank() == 0) { std::cout << "PoissonFE::hessian(...): " << c << std::endl; }
             return true;
         }
 
@@ -161,7 +176,7 @@ namespace utopia {
                     ElementVector el_vec;
                     el_vec.set(0.0);
 
-                    proj_view.add(i, e, el_vec);
+                    proj_view.assemble(i, e, el_vec);
                     space_view.add_vector(e, el_vec, rhs_view);
                 });
             }
@@ -172,20 +187,24 @@ namespace utopia {
         PoissonFE(FunctionSpace &space)
         : space_(utopia::make_ref(space)),
           quadrature_(),
-          laplacian_(space, quadrature_)
+          laplacian_(space, quadrature_),
+          x_coeff_(space)
         {}
 
         PoissonFE(const std::shared_ptr<FunctionSpace> &space)
         : space_(space),
           quadrature_(),
-          laplacian_(*space, quadrature_)
+          laplacian_(*space, quadrature_),
+          x_coeff_(space)
         {}
 
     private:
         std::shared_ptr<FunctionSpace> space_;
         Quadrature quadrature_;
         Laplacian laplacian_;
+        Coefficient x_coeff_;
         Vector rhs_;
+
     };
 }
 

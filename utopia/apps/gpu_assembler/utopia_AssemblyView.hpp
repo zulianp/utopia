@@ -1,7 +1,7 @@
 #ifndef UTOPIA_ASSEMBLY_VIEW_HPP
 #define UTOPIA_ASSEMBLY_VIEW_HPP
 
-#include "utopia_FunctionSpaceView.hpp"
+#include "utopia_FunctionSpace.hpp"
 
 namespace utopia {
 

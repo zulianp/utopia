@@ -61,6 +61,28 @@ namespace utopia {
         std::shared_ptr<Read<T>> lock_;
     };
 
+
+    template<class T, int Order>
+    class LocalViewDevice {};
+
+    template<class T>
+    class LocalViewDevice<const T, 1> {
+    public:
+        using Scalar   = typename Traits<T>::Scalar;
+        using SizeType = typename Traits<T>::SizeType;
+
+        inline Scalar get(const SizeType &idx) const
+        {
+            return tensor_.l_get(idx);
+        }
+
+        LocalViewDevice(const T &tensor) : tensor_(tensor), lock_(std::make_shared<Read<T>>(tensor)) {}
+
+    private:
+        const T &tensor_;
+        std::shared_ptr<Read<T>> lock_;
+    };
+
     ///////////////////////////////////////////////////////////////////////////////////////
 
     template<class T>

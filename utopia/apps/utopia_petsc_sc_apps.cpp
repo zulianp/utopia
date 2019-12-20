@@ -1,7 +1,6 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
 //include edsl components
 #include "utopia_AppRunner.hpp"
 #include "utopia_Core.hpp"
@@ -22,6 +21,47 @@
 
 namespace utopia {
 
+    static void petsc_local_vec_view()
+    {
+        static const int Dim = 3;
+        static const int NNodes = 8;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
+        using SizeType         = Mesh::SizeType;
+        using Scalar           = Mesh::Scalar;
+        using Point            = Mesh::Point;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 2;
+        SizeType ny = scale * 2;
+        SizeType nz = scale * 2;
+
+        Mesh mesh(
+            world,
+            {nx, ny, nz},
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
+        );
+
+        FunctionSpace space(mesh);
+
+        PetscVector vec;
+        mesh.create_local_vector(vec);
+        LocalViewDevice<const PetscVector, 1> view(vec);
+
+        SizeType n = vec.size();
+
+        for(SizeType i = 0; i < n; ++i) {
+            disp(view.get(i));
+        }
+    }
+
+    UTOPIA_REGISTER_APP(petsc_local_vec_view);
+
     static void petsc_bratu(Input &in)
     {
         static const int Dim = 3;
@@ -35,6 +75,12 @@ namespace utopia {
         using Point            = Mesh::Point;
 
         PetscCommunicator world;
+
+        MPITimeStatistics stats(world);
+
+        ///////////////////////////////////////
+
+        stats.start();
 
         SizeType scale = (world.size() + 1);
         SizeType nx = scale * 10;
@@ -51,6 +97,12 @@ namespace utopia {
             {0.0, 0.0, 0.0},
             {1.0, 1.0, 1.0}
         );
+
+        stats.stop_and_collect("mesh-gen");
+
+        ///////////////////////////////////////
+
+        stats.start();
 
         FunctionSpace space(mesh);
 
@@ -69,7 +121,10 @@ namespace utopia {
             }
         );
 
+
+        stats.stop_and_collect("space+bc");
         ///////////////////////////////////////
+        stats.start();
 
         // BratuFE<FunctionSpace> fe_model(space);
         PoissonFE<FunctionSpace> fe_model(space);
@@ -78,17 +133,35 @@ namespace utopia {
                    device::exp(-40.0 * device::abs(p[1] - 0.75));
         });
 
+        stats.stop_and_collect("projection");
+
+        stats.start();
+
         PetscVector x;
         space.create_vector(x);
 
         Newton<PetscMatrix, PetscVector> newton;
-        newton.verbose(true);
+        newton.verbose(false);
+
+        auto linear_solver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>();
+        auto prec = std::make_shared<InvDiagPreconditioner<PetscMatrix, PetscVector>>();
+        linear_solver->set_preconditioner(prec);
+
+        newton.set_linear_solver(linear_solver);
+
+        in.get("newton", newton);
 
         space.apply_constraints(x);
         newton.solve(fe_model, x);
 
+        stats.stop_and_collect("solve+assemblies");
+
+        stats.start();
+
         rename("x", x);
         space.write("fe.vtk", x);
+
+        stats.stop_and_collect("write");
     }
 
     UTOPIA_REGISTER_APP(petsc_bratu);
@@ -242,14 +315,14 @@ namespace utopia {
 
                 //Assemble local laplacian
                 el_mat.set(0.0);
-                l_view.add(i, e, el_mat);
+                l_view.assemble(i, e, el_mat);
                 e.centroid(c);
                 el_mat *= diffusivity(c);
                 space_view.add_matrix(e, el_mat, mat_view);
 
                 //Assemble local mass-matrix and reuse el_mat
                 el_mat.set(0.0);
-                m_view.add(i, e, el_mat);
+                m_view.assemble(i, e, el_mat);
                 space_view.add_matrix(e, el_mat, mass_mat_view);
             });
         }
@@ -364,4 +437,3 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
 }
 
-#endif //WITH_TRILINOS

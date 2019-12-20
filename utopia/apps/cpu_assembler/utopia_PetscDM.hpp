@@ -93,14 +93,13 @@ namespace utopia {
         void nodes(const SizeType &idx, NodeIndex &nodes) const;
         void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
 
-        void create_matrix(PetscMatrix &mat);
-        void create_vector(PetscVector &vec);
+        void create_matrix(PetscMatrix &mat) const;
+        void create_vector(PetscVector &vec) const;
 
         // void create_local_matrix(PetscMatrix &mat);
-        void create_local_vector(PetscVector &vec);
-
-        // void local_to_global(PetscMatrix &local, PetscMatrix &global);
-        void local_to_global(PetscVector &local, PetscVector &global);
+        void create_local_vector(PetscVector &vec) const;
+        void local_to_global(const PetscVector &local,  PetscVector &global) const;
+        void global_to_local(const PetscVector &global, PetscVector &local) const;
 
         void describe() const;
 
@@ -183,6 +182,7 @@ namespace utopia {
         }
 
         SizeType n_nodes() const;
+        SizeType n_elements() const;
 
         bool is_ghost(const SizeType &global_node_idx) const;
         bool is_boundary(const SizeType &global_node_idx) const;
@@ -245,6 +245,12 @@ namespace utopia {
         void dofs(const SizeType &idx, DofIndex &dofs) const
         {
             mesh_->nodes(idx, dofs);
+        }
+
+        void dofs_local(const SizeType &idx, DofIndex &dofs) const
+        {
+            assert(idx < mesh_->n_elements());
+            mesh_->nodes_local(idx, dofs);
         }
 
         bool is_boundary_dof(const SizeType &idx) const
@@ -338,6 +344,22 @@ namespace utopia {
             const auto &dofs = e.nodes();
 
             for(SizeType i = 0; i < n_dofs; ++i) {
+                values[i] = vec.get(dofs[i]);
+            }
+        }
+
+        template<class VectorView, class Values>
+        void local_coefficients(
+            const Elem &e,
+            const VectorView &vec,
+            Values &values) const
+        {
+            DofIndex dofs;
+            dofs_local(e.idx(), dofs);
+            const SizeType n = dofs.size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                assert(dofs[i] < n_dofs());
                 values[i] = vec.get(dofs[i]);
             }
         }
