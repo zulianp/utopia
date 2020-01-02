@@ -12,6 +12,7 @@
 #include "utopia_FAS.hpp"
 #include "utopia_MG_OPT.hpp"
 
+#include "utopia_RMTRParams.hpp"
 #include "utopia_RMTRBase.hpp"
 #include "utopia_RMTR.hpp"
 #include "utopia_RMTR_inf.hpp"
