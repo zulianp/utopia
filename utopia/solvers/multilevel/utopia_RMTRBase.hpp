@@ -22,10 +22,6 @@
 namespace utopia
 {
 
-    template< bool B, class T = void >
-    using enable_if_t = typename std::enable_if<B,T>::type;
-
-
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>, public RMTRParams<Vector>
     {
@@ -168,7 +164,7 @@ namespace utopia
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, FIRST_ORDER>::value, int> = 0 >
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
         bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type)
         {
             bool make_hess_updates = true;
@@ -197,15 +193,6 @@ namespace utopia
 
             std::cout<< "order first .... \n"; 
         }
-
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, FIRST_ORDER_DF>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
-        {
-            std::cout<< "first order df .... \n"; 
-            utopia_error("Implement init_deriv_loc_solve for deriv free stuff stuff..... \n"); 
-            return false; 
-        }
-
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
         bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
@@ -240,7 +227,6 @@ namespace utopia
             return make_hess_updates; 
         }
 
-
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
         bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
         {
@@ -270,15 +256,51 @@ namespace utopia
             return make_hess_updates; 
         }
 
-    
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
+        bool init_consistency_terms(const SizeType & level)
+        {
+            bool smoothness_flg = true; 
 
+            // Restricted fine level gradient 
+            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
+            // Projecting current iterate to obtain initial iterate on coarser grid 
+            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
 
+            if(!this->skip_BC_checks()){
+                this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
+            }
 
+            //----------------------------------------------------------------------------
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
+            //----------------------------------------------------------------------------
+            this->init_level(level-1);
 
-        virtual bool init_consistency_terms(const SizeType & level) final
+            //----------------------------------------------------------------------------
+            //                  first order coarse level objective managment
+            //----------------------------------------------------------------------------
+            if(empty(this->ml_derivs_.g[level-1])){
+                this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
+            }
+
+            this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
+            
+            if(!this->skip_BC_checks())
+            {
+                this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
+            }
+
+            smoothness_flg = this->check_grad_smoothness() ? this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
+
+            this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
+
+            return smoothness_flg; 
+        }        
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
+        bool init_consistency_terms(const SizeType & level)
         {
             bool smoothness_flg = true; 
 
@@ -290,9 +312,7 @@ namespace utopia
 
 
             if(!this->skip_BC_checks()){
-                if(CONSISTENCY_LEVEL != GALERKIN){
-                    this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
-                }
+                this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
             }
 
             //----------------------------------------------------------------------------
@@ -303,58 +323,70 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                  first order coarse level objective managment
             //----------------------------------------------------------------------------
-            if(CONSISTENCY_LEVEL != GALERKIN)
-            {
-                if(empty(this->ml_derivs_.g[level-1])){
-                    this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
-                }
-
-                this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
+            if(empty(this->ml_derivs_.g[level-1])){
+                this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
             }
+
+            this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
 
             if(!this->skip_BC_checks())
             {
-                if(CONSISTENCY_LEVEL != GALERKIN){
-                    this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
-                }
+                this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
             }
 
-            if(this->check_grad_smoothness() && CONSISTENCY_LEVEL != GALERKIN){
+            if(this->check_grad_smoothness() ){
                 smoothness_flg = this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1);
             }
             else{
                 smoothness_flg = true;
             }
 
-
-            if(CONSISTENCY_LEVEL != GALERKIN)
-            {
-                this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
-            }
+            this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
 
             //----------------------------------------------------------------------------
             //                   second order coarse level objective managment
             //----------------------------------------------------------------------------
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
-            {
-                this->get_multilevel_hessian(this->function(level), level);
-                this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
+            this->get_multilevel_hessian(this->function(level), level);
+            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
 
-                if(CONSISTENCY_LEVEL == SECOND_ORDER)
-                {
-                    if(!this->skip_BC_checks()){
-                        this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
-                    }
 
-                    this->function(level-1).hessian(this->memory_.x[level-1], this->ml_derivs_.H[level-1]);
-
-                    // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
-                    this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
-                }
+            if(!this->skip_BC_checks()){
+                this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
             }
 
+            this->function(level-1).hessian(this->memory_.x[level-1], this->ml_derivs_.H[level-1]);
+
+            // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
+            this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
+
             return smoothness_flg; 
-        }
+
+        }   
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
+        bool init_consistency_terms(const SizeType & level)
+        {
+            bool smoothness_flg = true; 
+
+            // Restricted fine level gradient 
+            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
+
+            // Projecting current iterate to obtain initial iterate on coarser grid 
+            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
+
+            //----------------------------------------------------------------------------
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
+            //----------------------------------------------------------------------------
+            this->init_level(level-1);
+
+            this->get_multilevel_hessian(this->function(level), level);
+            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
+
+            return smoothness_flg; 
+        }                   
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////        
 
 
         virtual void compute_s_global(const SizeType & level, Vector & s_global) final

@@ -14,7 +14,21 @@ namespace utopia
     struct is_same : std::false_type {};
 
     template<MultiLevelCoherence T>
-    struct is_same<T, T> : std::true_type {};                                
+    struct is_same<T, T> : std::true_type {};         
+    
+    template<MultiLevelCoherence T, MultiLevelCoherence... Rest>
+    struct is_any : std::false_type {};
+
+    template<MultiLevelCoherence T, MultiLevelCoherence First>
+    struct is_any<T, First> : is_same<T, First> {};          
+
+    template<MultiLevelCoherence T, MultiLevelCoherence First, MultiLevelCoherence... Rest>
+    struct is_any<T, First, Rest...> : std::integral_constant<bool, is_same<T, First>::value || is_any<T, Rest...>::value>
+    {};
+
+    // helper function, should be implemented in c++ 14
+    template< bool B, class T = void >
+    using enable_if_t = typename std::enable_if<B,T>::type;
 
 
     template<class Matrix, class Vector>
