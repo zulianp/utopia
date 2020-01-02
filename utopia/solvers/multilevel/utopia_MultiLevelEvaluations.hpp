@@ -17,6 +17,8 @@ namespace utopia
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_TYPE>
     class MultilevelDerivEval  { }; 
 
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename Matrix, typename Vector>
     class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER> final
     {
@@ -78,37 +80,6 @@ namespace utopia
             return true;
         }
 
-
-        inline bool init_deriv_loc_solve(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global, const LocalSolveType & solve_type)
-        {
-            bool make_hess_updates = true;
-
-            if(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)
-            {
-                return make_hess_updates; 
-            }
-            else
-            {
-                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
-                {
-                    this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
-                }
-                else
-                {
-                    this->compute_gradient(level, fun, x, s_global);
-                }
-
-                // energy computations ... 
-                if(solve_type != POST_SMOOTHING)
-                {
-                    this->memory_.energy[level] = compute_energy(level, fun,x, s_global);
-                }
-            }
-
-            return make_hess_updates;             
-        }
-
-
         void init_memory(const std::vector<SizeType> & n_dofs_)
         {
             g_diff.resize(n_levels_);
@@ -140,6 +111,8 @@ namespace utopia
             std::vector<Matrix> H, H_diff;
     }; 
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename Matrix, typename Vector>
     class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER> final
@@ -238,7 +211,7 @@ namespace utopia
     }; 
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename Matrix, typename Vector>
     class MultilevelDerivEval<Matrix, Vector, GALERKIN> final
     {
@@ -339,6 +312,7 @@ namespace utopia
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // // Matrix free first order 
     // template<typename Matrix, typename Vector>
     // class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_DF> final

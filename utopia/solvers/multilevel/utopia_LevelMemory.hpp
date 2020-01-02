@@ -10,6 +10,12 @@ namespace utopia
                                 SECOND_ORDER    = 2,
                                 GALERKIN        = 0};
 
+    template<MultiLevelCoherence T, MultiLevelCoherence U>
+    struct is_same : std::false_type {};
+
+    template<MultiLevelCoherence T>
+    struct is_same<T, T> : std::true_type {};                                
+
 
     template<class Matrix, class Vector>
     class FASLevelMemory

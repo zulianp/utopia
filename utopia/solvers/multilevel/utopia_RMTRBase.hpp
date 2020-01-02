@@ -22,6 +22,10 @@
 namespace utopia
 {
 
+    template< bool B, class T = void >
+    using enable_if_t = typename std::enable_if<B,T>::type;
+
+
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>, public RMTRParams<Vector>
     {
@@ -61,6 +65,7 @@ namespace utopia
          */
         virtual bool solve(Vector &x_h) override
         {
+
             if(!this->check_initialization()){
                 return false;
             }
@@ -162,35 +167,17 @@ namespace utopia
         }        
 
 
-        virtual bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) final
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, FIRST_ORDER>::value, int> = 0 >
+        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type)
         {
             bool make_hess_updates = true;
-
 
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
             {
                 if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
                 {
-                    if(CONSISTENCY_LEVEL == FIRST_ORDER)
-                    {
-                        this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
-                    }
-                    else if(CONSISTENCY_LEVEL == GALERKIN)
-                    {
-                        this->ml_derivs_.g[level] = this->ml_derivs_.g_diff[level]; 
-                    }
-                    else if(CONSISTENCY_LEVEL == SECOND_ORDER)
-                    {
-                        this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
-
-                        // memory_.H[level] = memory_.H[level] + memory_.H_diff[level]; 
-                        this->ml_derivs_.H[level] += this->ml_derivs_.H_diff[level]; 
-                        make_hess_updates = false;                
-                    }                    
-                    else
-                    {
-                        utopia_error("RMTR:: Consistency order not existent .... \n"); 
-                    }
+                    this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
                 }
                 else
                 {
@@ -200,15 +187,51 @@ namespace utopia
                 // energy computations ... 
                 if(solve_type != POST_SMOOTHING)
                 {
-                    if(CONSISTENCY_LEVEL == SECOND_ORDER)
-                    {
-                        this->function(level).value(this->memory_.x[level], this->memory_.energy[level]); 
-                        this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
-                    }
-                    else
-                    {
-                        this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
-                    }
+                    this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+                }
+
+                this->memory_.gnorm[level] = this->criticality_measure(level);
+            }
+
+            return make_hess_updates; 
+
+            std::cout<< "order first .... \n"; 
+        }
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, FIRST_ORDER_DF>::value, int> = 0 >
+        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
+        {
+            std::cout<< "first order df .... \n"; 
+            utopia_error("Implement init_deriv_loc_solve for deriv free stuff stuff..... \n"); 
+            return false; 
+        }
+
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
+        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
+        {
+            std::cout<< "second order .... \n"; 
+
+            bool make_hess_updates = true;
+
+            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
+            {
+                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
+                {
+                    this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
+                    this->ml_derivs_.H[level] += this->ml_derivs_.H_diff[level]; 
+                    make_hess_updates = false;                
+                }
+                else
+                {
+                    this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                }
+
+                // energy computations ... 
+                if(solve_type != POST_SMOOTHING)
+                {                 
+                    this->function(level).value(this->memory_.x[level], this->memory_.energy[level]); 
+                    this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
                 }
 
                 this->memory_.gnorm[level] = this->criticality_measure(level);
@@ -216,6 +239,43 @@ namespace utopia
 
             return make_hess_updates; 
         }
+
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
+        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
+        {
+            std::cout<< "galerkin .... \n"; 
+            bool make_hess_updates = true;
+
+            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
+            {
+                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
+                {
+                    this->ml_derivs_.g[level] = this->ml_derivs_.g_diff[level]; 
+                }
+                else
+                {
+                    this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                }
+
+                // energy computations ... 
+                if(solve_type != POST_SMOOTHING)
+                {
+                    this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+                }
+
+                this->memory_.gnorm[level] = this->criticality_measure(level);
+            }
+
+            return make_hess_updates; 
+        }
+
+    
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 
 
         virtual bool init_consistency_terms(const SizeType & level) final
