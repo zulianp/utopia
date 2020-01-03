@@ -54,13 +54,9 @@ namespace utopia
     public: 
         virtual bool solve(Vector &x_h) override;
 
-
-
     protected:
         virtual bool multiplicative_cycle(const SizeType & level);
-
         virtual bool local_tr_solve(const SizeType & level, const LocalSolveType & solve_type);
-
 
 
     protected:
@@ -308,21 +304,7 @@ namespace utopia
         }                   
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////        
-
-
-        virtual void compute_s_global(const SizeType & level, Vector & s_global) final
-        {
-            if(empty(this->memory_.x_0[level]))
-            {
-                s_global.set(0.0);
-            }
-            else if(level < this->n_levels()-1)
-            {
-                s_global = this->memory_.x[level] - this->memory_.x_0[level];
-            }
-        }
-
+///////////////////////////////////////////////////////////// HELPERS ///////////////////////////////////////////////////////////////////////////////////////////////        
 
         virtual void print_level_info(const SizeType & level) final
         {
@@ -343,6 +325,64 @@ namespace utopia
             }
         }
 
+        /**
+         * @brief      "Heuristics", which decides if hessian needs to be updated or now
+         *
+         * @param[in]  g_new   new gradient
+         * @param[in]  g_old   Old gradient
+         * @param[in]  s       The correction
+         * @param[in]  H       The hessian
+         * @param[in]  rho     The rho
+         * @param[in]  g_norm  Norm of gradient
+         *
+         */
+        virtual bool update_hessian(const Vector & g_new, const Vector & g_old, const Vector & s, const Matrix & H, const Scalar & rho, const Scalar & g_norm)
+        {
+            // iteration is not sucessful enough
+            if(rho > 0 && rho < this->hessian_update_eta())
+                return true;
+
+            // get rid of allocations 
+            Vector help = g_new - g_old - H * s;
+
+            // Hessian approx is relativelly poor
+            return (norm2(help) > this->hessian_update_delta() * g_norm) ? true : false;
+        }
+
+
+        virtual bool update_level(const SizeType & /*level*/)
+        {
+            return false;
+        }
+
+
+        virtual void compute_s_global(const SizeType & level, Vector & s_global) final
+        {
+            if(empty(this->memory_.x_0[level]))
+            {
+                s_global.set(0.0);
+            }
+            else if(level < this->n_levels()-1)
+            {
+                s_global = this->memory_.x[level] - this->memory_.x_0[level];
+            }
+        }
+
+    ///////////////////////////////////////////// INITIALIZATIONS ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+        // to overwrite
+        virtual void init_memory() override
+        {
+            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+
+            ml_derivs_.init_memory(dofs); 
+            memory_.init_memory(dofs); 
+
+            // init deltas to some default value...
+            for(Scalar l = 0; l < this->n_levels(); l ++){
+                this->memory_.delta[l] = this->delta0();
+            }            
+        }
+
         void handle_equality_constraints()
         {
             const SizeType L = this->n_levels();
@@ -352,24 +392,60 @@ namespace utopia
                 assert(!empty(flags));
                 this->transfer(i).handle_equality_constraints(flags);
             }
-        }        
-
-        // to overwrite
-        virtual void init_memory() override
-        {
-            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
-
-            ml_derivs_.init_memory(dofs); 
-            memory_.init_memory(dofs); 
-        }
+        }   
 
         virtual void init_level(const SizeType & level)
         {
             this->memory_.delta[level]  = this->memory_.delta[level+1];
         }
 
-        virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta) = 0; 
-        virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type) = 0; 
+        virtual bool check_initialization()
+        {
+            if(static_cast<SizeType>(this->level_functions_.size()) != this->n_levels()){
+                utopia_error("utopia::RMTR:: number of level Functions and levels not equal. \n");
+                return false;
+            }
+            if(static_cast<SizeType>(this->transfers_.size()) + 1 != this->n_levels()){
+                utopia_error("utopia::RMTR:: number of transfers and levels not equal. \n");
+                return false;
+            }
+
+            return true;
+        }
+
+        virtual bool check_feasibility(const SizeType & /*level */ )
+        {
+            return false;
+        }
+
+
+    ///////////////////////////////////////////// CONVERGENCE CHECKS  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+        bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta)
+        {
+            bool converged = NonlinearMultiLevelBase<Matrix, Vector>::check_convergence(it, r_norm, rel_norm, 1);
+
+            if(delta < this->delta_min())
+            {
+                converged = true;
+                this->exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
+            }
+
+            return converged;
+        }
+
+
+        virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
+        {
+            if(this->check_iter_convergence(it, it_success, level, solve_type)){
+                return true; 
+            }
+            else if(delta < this->delta_min()){
+                return true;
+            }
+
+            return this->criticality_measure_termination(g_norm);
+        }
+
         
         virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
         {
@@ -397,50 +473,7 @@ namespace utopia
             return false;
         }
 
-        
         virtual Scalar criticality_measure(const SizeType & level) = 0; 
-
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) = 0; 
-
-
-        virtual bool check_initialization()
-        {
-            if(static_cast<SizeType>(this->level_functions_.size()) != this->n_levels()){
-                utopia_error("utopia::RMTR:: number of level Functions and levels not equal. \n");
-                return false;
-            }
-            if(static_cast<SizeType>(this->transfers_.size()) + 1 != this->n_levels()){
-                utopia_error("utopia::RMTR:: number of transfers and levels not equal. \n");
-                return false;
-            }
-
-            return true;
-        }
-
-        virtual bool update_level(const SizeType & /*level*/)
-        {
-            return false;
-        }
-
-
-        virtual void initialize_local_solve(const SizeType & /*level*/, const LocalSolveType & /*solve_type*/)
-        {
-
-        }
-
-        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) = 0; 
-
-        virtual bool check_feasibility(const SizeType & /*level */ )
-        {
-            return false;
-        }
-
-
-        virtual Scalar get_pred(const SizeType & level) 
-        {
-            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
-            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
-        }
 
 
         /**
@@ -462,6 +495,23 @@ namespace utopia
         {
             return (g_norm < this->atol()) ? true : false;
         }
+
+
+///////////////////////////////////////////// TR-based stuff   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) = 0; 
+
+
+        virtual void initialize_local_solve(const SizeType & /*level*/, const LocalSolveType & /*solve_type*/){ }
+
+        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) = 0; 
+
+        virtual Scalar get_pred(const SizeType & level) 
+        {
+            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
+            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
+        }
+
 
 
     protected:

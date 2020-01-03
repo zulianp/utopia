@@ -140,7 +140,6 @@ namespace utopia
             
             // init deltas to some default value...
             for(Scalar l = 0; l < this->n_levels(); l ++){
-                this->memory_.delta[l] = this->delta0();
                 this->_tr_subproblems[l]->init_memory(dofs[l]); 
             }
         }
@@ -194,8 +193,6 @@ namespace utopia
             }
         }
 
-
-
         /**
          * @brief      Computes norm of coarse level vector wrt to fine level
          *
@@ -203,7 +200,7 @@ namespace utopia
          * @param[in]  current_l  The current level
          *
          */
-        virtual Scalar level_dependent_norm(const Vector & u, const SizeType & level)
+        Scalar level_dependent_norm(const Vector & u, const SizeType & level)
         {
             if(level == this->n_levels()-1){
                 return norm2(u);
@@ -214,44 +211,6 @@ namespace utopia
                 return norm2(this->memory_.help[level+1]);
             }
         }
-
-        // ---------------------------------- convergence checks -------------------------------
-        virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta) override
-        {
-            bool converged = NonlinearMultiLevelBase<Matrix, Vector>::check_convergence(it, r_norm, rel_norm, 1);
-
-            if(delta < this->delta_min())
-            {
-                converged = true;
-                this->exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
-            }
-
-            return converged;
-        }
-
-        /**
-         * @brief      Checks for termination
-         *
-         * @param[in]  it_success  Number of succesfull iterations on given level
-         * @param[in]  g_norm      Norm of gradient
-         * @param[in]  level       The level
-         * @param[in]  delta       The delta
-         *
-         */
-        virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
-        {
-            if(this->check_iter_convergence(it, it_success, level, solve_type)){
-                return true; 
-            }
-            else if(delta < this->delta_min()){
-                return true;
-            }
-
-            return this->criticality_measure_termination(g_norm);
-        }
-
-
-
 
         /**
          * @brief      THis check guarantees that iterates at a lower level remain in the TR radius defined at the finer level
@@ -271,30 +230,6 @@ namespace utopia
             return norm2(this->ml_derivs_.g[level]);
         }
 
-
-// ------------------------------- efficiency  thing --------------------
-        /**
-         * @brief      "Heuristics", which decides if hessian needs to be updated or now
-         *
-         * @param[in]  g_new   new gradient
-         * @param[in]  g_old   Old gradient
-         * @param[in]  s       The correction
-         * @param[in]  H       The hessian
-         * @param[in]  rho     The rho
-         * @param[in]  g_norm  Norm of gradient
-         *
-         */
-        virtual bool update_hessian(const Vector & g_new, const Vector & g_old, const Vector & s, const Matrix & H, const Scalar & rho, const Scalar & g_norm)
-        {
-            // iteration is not sucessful enough
-            if(rho > 0 && rho < this->hessian_update_eta())
-                return true;
-
-            Vector help = g_new - g_old - H * s;
-
-            // Hessian approx is relativelly poor
-            return (norm2(help) > this->hessian_update_delta() * g_norm) ? true : false;
-        }
 
 
 //----------------------------- QP solve -----------------------------------------------------------------
