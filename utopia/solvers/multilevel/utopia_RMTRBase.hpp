@@ -115,20 +115,14 @@ namespace utopia
             return smoothness_flg; 
         }        
 
-
-
-
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
-            bool smoothness_flg = true; 
-
             // Restricted fine level gradient 
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
             // Projecting current iterate to obtain initial iterate on coarser grid 
             this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
-
 
             if(!this->skip_BC_checks()){
                 this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
@@ -142,24 +136,13 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                  first order coarse level objective managment
             //----------------------------------------------------------------------------
-            if(empty(this->ml_derivs_.g[level-1])){
-                this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
-            }
-
             this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
 
-            if(!this->skip_BC_checks())
-            {
+            if(!this->skip_BC_checks()){
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
             }
 
-            if(this->check_grad_smoothness() ){
-                smoothness_flg = this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1);
-            }
-            else{
-                smoothness_flg = true;
-            }
-
+            bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
             this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
 
             //----------------------------------------------------------------------------
@@ -185,8 +168,6 @@ namespace utopia
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
-            bool smoothness_flg = true; 
-
             // Restricted fine level gradient 
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
@@ -201,24 +182,19 @@ namespace utopia
             this->get_multilevel_hessian(this->function(level), level);
             this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
 
-            return smoothness_flg; 
+            return true; 
         }                   
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
         bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
         {
-            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
-            {
+            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)){
+
                 if(solve_type==PRE_SMOOTHING || solve_type == COARSE_SOLVE){
                     this->ml_derivs_.g[level]  += this->ml_derivs_.g_diff[level]; 
+                    this->memory_.gnorm[level] = this->criticality_measure(level);
                 }
-                // else{
-                //     this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
-                // }
-
-                // todo:: check if we need to compute that norm 
-                this->memory_.gnorm[level] = this->criticality_measure(level);
             }
 
             return true; 
@@ -231,25 +207,14 @@ namespace utopia
 
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
             {
-                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
+                if( solve_type==PRE_SMOOTHING  || solve_type == COARSE_SOLVE)
                 {
                     this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
+                    this->memory_.gnorm[level] = this->criticality_measure(level);
+
                     this->ml_derivs_.H[level] += this->ml_derivs_.H_diff[level]; 
                     make_hess_updates = false;                
                 }
-                else
-                {
-                    this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
-                }
-
-                // energy computations ... 
-                if(solve_type != POST_SMOOTHING)
-                {                 
-                    this->function(level).value(this->memory_.x[level], this->memory_.energy[level]); 
-                    this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
-                }
-
-                this->memory_.gnorm[level] = this->criticality_measure(level);
             }
 
             return make_hess_updates; 
@@ -258,25 +223,12 @@ namespace utopia
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
         bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type) 
         {
-
-            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
-            {
-                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
-                {
+            if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)){
+         
+                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE)){
                     this->ml_derivs_.g[level] = this->ml_derivs_.g_diff[level]; 
+                    this->memory_.gnorm[level] = this->criticality_measure(level);
                 }
-                else
-                {
-                    this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
-                }
-
-                // energy computations ... 
-                if(solve_type != POST_SMOOTHING)
-                {
-                    this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
-                }
-
-                this->memory_.gnorm[level] = this->criticality_measure(level);
             }
 
             return true; 
@@ -414,7 +366,7 @@ namespace utopia
         }
 
 
-        virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
+        virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
         {
             if(this->check_iter_convergence(it, it_success, level, solve_type)){
                 return true; 
@@ -423,7 +375,7 @@ namespace utopia
                 return true;
             }
 
-            return this->criticality_measure_termination(g_norm);
+            return this->criticality_measure_termination(level);
         }
 
         
@@ -458,9 +410,11 @@ namespace utopia
         virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/) = 0; 
 
 
-        virtual bool criticality_measure_termination(const Scalar & g_norm)
+        virtual bool criticality_measure_termination(const SizeType & level)
         {
-            return (g_norm < this->atol()) ? true : false;
+                                                                                                                                       // this should be ideally different norm of grad on previous iteration
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1] ); 
+            return (this->memory_.gnorm[level] < atol_level) ? true : false;
         }
 
 

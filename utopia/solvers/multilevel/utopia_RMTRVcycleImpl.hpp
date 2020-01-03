@@ -120,11 +120,12 @@ namespace utopia
         {
             this->memory_.s_working[level].set(0.0); 
             this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+            this->memory_.gnorm[level] = this->criticality_measure(level);
         }
 
         if(level == this->n_levels()-1)
         {
-            converged =  this->criticality_measure_termination(this->criticality_measure(level));
+            converged =  this->criticality_measure_termination(level);
             if(converged==true){
                 return true;
             }
@@ -200,6 +201,7 @@ namespace utopia
 
                 // todo:: make sure that correct assumption 
                 this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                this->memory_.gnorm[level] = this->criticality_measure(level);
             }
             else
             {
@@ -279,7 +281,7 @@ namespace utopia
 
         make_hess_updates = this->init_deriv_loc_solve(this->function(level), level, solve_type); 
 
-        converged  = this->check_local_convergence(it, it_success,  this->memory_.gnorm[level], level, this->memory_.delta[level], solve_type);
+        converged  = this->check_local_convergence(it, it_success, level, this->memory_.delta[level], solve_type);
         if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
         {
             this->print_level_info(level);
@@ -292,6 +294,7 @@ namespace utopia
         {
             if(make_hess_updates)
             {
+                // TODO:: first assembly can be made cheaper for galerkin and second order 
                 this->get_multilevel_hessian(this->function(level), level);
             }
 
@@ -368,7 +371,7 @@ namespace utopia
                 PrintInfo::print_iter_status(it, {this->memory_.gnorm[level], this->memory_.energy[level], ared, pred, rho, this->memory_.delta[level]});
             }
 
-            converged  = (delta_converged  == true) ? true : this->check_local_convergence(it, it_success,  this->memory_.gnorm[level], level, this->memory_.delta[level], solve_type);
+            converged  = (delta_converged  == true) ? true : this->check_local_convergence(it, it_success, level, this->memory_.delta[level], solve_type);
 
             if(level == this->n_levels()-1){
                 converged  = (converged  == true || this->memory_.gnorm[level] < this->atol()) ? true : false;
@@ -383,7 +386,7 @@ namespace utopia
         }
 
 
-        bool level_quit = ((this->criticality_measure_termination(this->memory_.gnorm[level]) == true) || delta_converged) ? true : false;
+        bool level_quit = ((this->criticality_measure_termination(level) == true) || delta_converged) ? true : false;
         return level_quit;
     }
 

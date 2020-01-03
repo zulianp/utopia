@@ -82,9 +82,6 @@ namespace utopia
         {
             g_diff.resize(n_levels_);
             g.resize(n_levels_);
-
-            // H_diff should not be necessary for deriv free version 
-            H_diff.resize(n_levels_);
             H.resize(n_levels_);
 
             for(auto l=0; l < n_levels_; l++){
@@ -106,7 +103,7 @@ namespace utopia
 
         public:            
             std::vector<Vector> g, g_diff; 
-            std::vector<Matrix> H, H_diff;
+            std::vector<Matrix> H; 
     }; 
 
 
