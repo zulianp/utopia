@@ -230,6 +230,12 @@ namespace utopia
             return norm2(this->ml_derivs_.g[level]);
         }
 
+        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/) override
+        {
+            Scalar Rg_norm, g_norm;
+            norms2(g_restricted, g_coarse, Rg_norm, g_norm);
+            return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
+        }        
 
 
 //----------------------------- QP solve -----------------------------------------------------------------

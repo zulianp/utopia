@@ -80,6 +80,129 @@ namespace utopia
             return ml_derivs_.compute_gradient_energy(level, fun, memory_.x[level], s_global);
         }        
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
+        bool init_consistency_terms(const SizeType & level)
+        {
+            // Restricted fine level gradient 
+            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
+
+            // Projecting current iterate to obtain initial iterate on coarser grid 
+            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
+
+            if(!this->skip_BC_checks()){
+                this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
+            }
+
+            //----------------------------------------------------------------------------
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
+            //----------------------------------------------------------------------------
+            this->init_level(level-1);
+
+            //----------------------------------------------------------------------------
+            //                  first order coarse level objective managment
+            //----------------------------------------------------------------------------
+            this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
+            
+            if(!this->skip_BC_checks()){
+                this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
+            }
+
+            bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
+            this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
+
+            return smoothness_flg; 
+        }        
+
+
+
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
+        bool init_consistency_terms(const SizeType & level)
+        {
+            bool smoothness_flg = true; 
+
+            // Restricted fine level gradient 
+            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
+
+            // Projecting current iterate to obtain initial iterate on coarser grid 
+            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
+
+
+            if(!this->skip_BC_checks()){
+                this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
+            }
+
+            //----------------------------------------------------------------------------
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
+            //----------------------------------------------------------------------------
+            this->init_level(level-1);
+
+            //----------------------------------------------------------------------------
+            //                  first order coarse level objective managment
+            //----------------------------------------------------------------------------
+            if(empty(this->ml_derivs_.g[level-1])){
+                this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
+            }
+
+            this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
+
+            if(!this->skip_BC_checks())
+            {
+                this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
+            }
+
+            if(this->check_grad_smoothness() ){
+                smoothness_flg = this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1);
+            }
+            else{
+                smoothness_flg = true;
+            }
+
+            this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
+
+            //----------------------------------------------------------------------------
+            //                   second order coarse level objective managment
+            //----------------------------------------------------------------------------
+            this->get_multilevel_hessian(this->function(level), level);
+            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
+
+
+            if(!this->skip_BC_checks()){
+                this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
+            }
+
+            this->function(level-1).hessian(this->memory_.x[level-1], this->ml_derivs_.H[level-1]);
+
+            // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
+            this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
+
+            return smoothness_flg; 
+
+        }   
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
+        bool init_consistency_terms(const SizeType & level)
+        {
+            bool smoothness_flg = true; 
+
+            // Restricted fine level gradient 
+            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
+
+            // Projecting current iterate to obtain initial iterate on coarser grid 
+            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
+
+            //----------------------------------------------------------------------------
+            //    initializing coarse level (deltas, constraints, hessian approx, ...)
+            //----------------------------------------------------------------------------
+            this->init_level(level-1);
+
+            this->get_multilevel_hessian(this->function(level), level);
+            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
+
+            return smoothness_flg; 
+        }                   
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
@@ -94,6 +217,7 @@ namespace utopia
                 //     this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
                 // }
 
+                // todo:: check if we need to compute that norm 
                 this->memory_.gnorm[level] = this->criticality_measure(level);
             }
 
@@ -157,136 +281,6 @@ namespace utopia
 
             return true; 
         }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
-        bool init_consistency_terms(const SizeType & level)
-        {
-            // Restricted fine level gradient 
-            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
-
-            // Projecting current iterate to obtain initial iterate on coarser grid 
-            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
-
-            if(!this->skip_BC_checks()){
-                this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
-            }
-
-            //----------------------------------------------------------------------------
-            //    initializing coarse level (deltas, constraints, hessian approx, ...)
-            //----------------------------------------------------------------------------
-            this->init_level(level-1);
-
-            //----------------------------------------------------------------------------
-            //                  first order coarse level objective managment
-            //----------------------------------------------------------------------------
-            // if(empty(this->ml_derivs_.g[level-1])){
-            //     this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
-            // }
-
-            this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
-            
-            if(!this->skip_BC_checks())
-            {
-                this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
-            }
-
-            bool smoothness_flg = this->check_grad_smoothness() ? this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
-
-            this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
-
-            return smoothness_flg; 
-        }        
-
-
-
-
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
-        bool init_consistency_terms(const SizeType & level)
-        {
-            bool smoothness_flg = true; 
-
-            // Restricted fine level gradient 
-            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
-
-            // Projecting current iterate to obtain initial iterate on coarser grid 
-            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
-
-
-            if(!this->skip_BC_checks()){
-                this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
-            }
-
-            //----------------------------------------------------------------------------
-            //    initializing coarse level (deltas, constraints, hessian approx, ...)
-            //----------------------------------------------------------------------------
-            this->init_level(level-1);
-
-            //----------------------------------------------------------------------------
-            //                  first order coarse level objective managment
-            //----------------------------------------------------------------------------
-            if(empty(this->ml_derivs_.g[level-1])){
-                this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
-            }
-
-            this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
-
-            if(!this->skip_BC_checks())
-            {
-                this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
-            }
-
-            if(this->check_grad_smoothness() ){
-                smoothness_flg = this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1);
-            }
-            else{
-                smoothness_flg = true;
-            }
-
-            this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
-
-            //----------------------------------------------------------------------------
-            //                   second order coarse level objective managment
-            //----------------------------------------------------------------------------
-            this->get_multilevel_hessian(this->function(level), level);
-            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
-
-
-            if(!this->skip_BC_checks()){
-                this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
-            }
-
-            this->function(level-1).hessian(this->memory_.x[level-1], this->ml_derivs_.H[level-1]);
-
-            // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
-            this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
-
-            return smoothness_flg; 
-
-        }   
-
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
-        bool init_consistency_terms(const SizeType & level)
-        {
-            bool smoothness_flg = true; 
-
-            // Restricted fine level gradient 
-            this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
-
-            // Projecting current iterate to obtain initial iterate on coarser grid 
-            this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
-
-            //----------------------------------------------------------------------------
-            //    initializing coarse level (deltas, constraints, hessian approx, ...)
-            //----------------------------------------------------------------------------
-            this->init_level(level-1);
-
-            this->get_multilevel_hessian(this->function(level), level);
-            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
-
-            return smoothness_flg; 
-        }                   
 
 
 ///////////////////////////////////////////////////////////// HELPERS ///////////////////////////////////////////////////////////////////////////////////////////////        
@@ -459,22 +453,9 @@ namespace utopia
             return false;
         }
 
+
         virtual Scalar criticality_measure(const SizeType & level) = 0; 
-
-
-        /**
-         * @brief      "Heuristics", which decides if it makes sense to go to the coarse level or no
-         *
-         * @param[in]  g_restricted  Restricted gradient
-         * @param[in]  g_coarse      Coarse level gradient
-         *
-         */
-        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/)
-        {
-            Scalar Rg_norm, g_norm;
-            norms2(g_restricted, g_coarse, Rg_norm, g_norm);
-            return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;
-        }        
+        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/) = 0; 
 
 
         virtual bool criticality_measure_termination(const Scalar & g_norm)

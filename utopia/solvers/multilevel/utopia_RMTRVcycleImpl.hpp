@@ -346,7 +346,7 @@ namespace utopia
                 make_grad_updates = false; 
             }
 
-            // can be more efficient, see commented line below 
+            // can be more efficient, see commented lines below 
             make_hess_updates =   make_grad_updates; 
 
             if(make_grad_updates)

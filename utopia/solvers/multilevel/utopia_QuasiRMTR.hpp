@@ -230,7 +230,6 @@ namespace utopia
             return norm2(this->ml_derivs_.g[level]);
         }
 
-
         virtual bool check_initialization() override
         {
             RMTR::check_initialization();

@@ -264,7 +264,7 @@ namespace utopia
          * @param[in]  g_coarse      Coarse level gradient
          *
          */
-        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
+        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
             //FIXME remove temporary
             Vector Pc;
@@ -280,7 +280,7 @@ namespace utopia
             Pc -= this->memory_.x[level];
             Scalar  g_norm =  norm2(Pc);
 
-            return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;
+            return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
         }
 
 
@@ -289,6 +289,15 @@ namespace utopia
         {
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->memory_.g[level]); 
         }
+
+        // TODO:: verify + if correct grad_smoothess_termination from above can be removed 
+        virtual void criticality_measures(const SizeType & level, const Vector & g_restricted, const Vector & g_coarse, Scalar & Rg_norm, Scalar & g_norm) override
+        {
+            // norms2(g_restricted, g_coarse, Rg_norm, g_norm);
+
+            Rg_norm =  MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_restricted); 
+            g_norm  =  MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_coarse); 
+        }         
 
 
         /**

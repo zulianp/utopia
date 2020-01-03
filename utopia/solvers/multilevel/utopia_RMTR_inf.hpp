@@ -209,7 +209,7 @@ namespace utopia
          * @param[in]  g_coarse      Coarse level gradient
          *
          */
-        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
+        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
             Vector Pc;
 
@@ -224,7 +224,7 @@ namespace utopia
             Pc -= this->memory_.x[level];
             Scalar  g_norm =  norm2(Pc);
 
-            return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;
+            return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
         }
 
 

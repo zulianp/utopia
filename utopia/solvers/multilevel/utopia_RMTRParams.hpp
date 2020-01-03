@@ -24,7 +24,7 @@ namespace utopia
                     _max_QP_smoothing_it(5),
                     _max_QP_coarse_it(50),
                     _eps_delta_termination(0.001),
-                    _grad_smoothess_termination(0.5),
+                    _grad_smoothess_termination(1./8.), // default could be 1./4.
                     _check_gradient_smoothness(true),
                     _hessian_update_delta(0.15),
                     _hessian_update_eta(0.5),
@@ -102,12 +102,12 @@ namespace utopia
             _norm_schedule = schedule; 
         }        
 
-        virtual void set_grad_smoothess_termination(const Scalar & grad_smoothess_termination)
+        virtual void grad_smoothess_termination(const Scalar & grad_smoothess_termination)
         {
             _grad_smoothess_termination = grad_smoothess_termination;
         }
 
-        virtual Scalar  get_grad_smoothess_termination( ) const
+        virtual Scalar  grad_smoothess_termination( ) const
         {
             return _grad_smoothess_termination;
         }
