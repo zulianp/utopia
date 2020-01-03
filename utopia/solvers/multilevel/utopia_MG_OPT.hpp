@@ -55,7 +55,7 @@ namespace utopia
         }
 
 
-        void init_memory(const SizeType & /*fine_local_size*/) override
+        void init_memory() override
         {
             std::cout<<"-------- to be done \n";
         }
@@ -101,7 +101,7 @@ namespace utopia
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
 
-            this->init_memory(local_size(x_h).get(0));
+            this->init_memory();
 
             Vector g = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);

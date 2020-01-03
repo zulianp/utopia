@@ -83,9 +83,8 @@ namespace utopia
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
 
-            SizeType loc_size = local_size(x_h).get(0);
-            this->init_memory(loc_size);
-
+            
+            this->init_memory();
 
             memory_.x[n_levels-1] = x_h;
             memory_.g[n_levels-1] = local_zeros(local_size(memory_.x[n_levels-1]));
@@ -144,10 +143,13 @@ namespace utopia
 
     protected:
 
-        void init_memory(const SizeType & fine_local_size) override
+        void init_memory() override
         {
+            // TODO:: modify allocation of constraints 
+            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+            
             memory_.init(this->n_levels());
-            memory_.g_diff[this->n_levels()-1] = local_zeros(fine_local_size);
+            memory_.g_diff[this->n_levels()-1] = local_zeros(dofs.back());
         }
 
 

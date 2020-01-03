@@ -138,10 +138,13 @@ namespace utopia
 
 
     protected:
-        virtual void init_memory(const SizeType & fine_local_size) override
+        virtual void init_memory() override
         {
-            RMTR::init_memory(fine_local_size);
-            MLConstraints::init_constr_memory(this->n_levels(), fine_local_size); 
+            RMTR::init_memory();
+
+            // TODO:: modify allocation of constraints 
+            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+            MLConstraints::init_constr_memory(this->n_levels(), dofs.back()); 
 
             const SizeType fine_level = this->n_levels()-1;
 

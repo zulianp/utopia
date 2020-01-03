@@ -441,9 +441,9 @@ namespace utopia
             return false;
         }
 
-        virtual void init_memory(const SizeType & fine_local_size) override
+        virtual void init_memory() override
         {
-            RMTRBase::init_memory(fine_local_size); 
+            RMTRBase::init_memory(); 
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
             
             // init deltas to some default value...

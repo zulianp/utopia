@@ -6,7 +6,6 @@
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_LevelMemory.hpp"
 
-
 namespace utopia
 {
     enum LocalSolveType{    PRE_SMOOTHING  = 1,
@@ -85,7 +84,7 @@ namespace utopia
             g_diff.resize(n_levels_);
             g.resize(n_levels_);
 
-            // H_diff should not be necessary 
+            // H_diff should not be necessary for deriv free version 
             H_diff.resize(n_levels_);
             H.resize(n_levels_);
 

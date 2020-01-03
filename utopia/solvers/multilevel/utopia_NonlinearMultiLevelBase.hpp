@@ -216,7 +216,7 @@ namespace utopia {
          *
          * @param[in]  fine_local_size  The local size of fine level problem
          */
-        virtual void init_memory(const SizeType & fine_local_size) = 0;
+        virtual void init_memory() = 0;
 
 
 
