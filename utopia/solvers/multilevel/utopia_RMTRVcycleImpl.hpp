@@ -88,13 +88,294 @@ namespace utopia
     }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL>
+    bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(const SizeType & level)
+    {
+        Scalar ared=0.0, coarse_reduction=0.0, rho=0.0;
+        Scalar E_old=0.0, E_new=0.0;
+        bool converged = false, smoothness_flg=true;
+
+        //----------------------------------------------------------------------------
+        //                   presmoothing
+        //----------------------------------------------------------------------------
+        if(this->pre_smoothing_steps()!=0){
+            converged = this->local_tr_solve(level, PRE_SMOOTHING);
+        }
+        else{
+            converged = false;
+        }
+
+        // making sure that correction does not exceed tr radius ...
+        if(converged){
+            return true;
+        }
+
+        if(this->pre_smoothing_steps()==0 && level < this->n_levels()-1)
+        {
+            this->compute_s_global(level, this->memory_.s_working[level]);
+            this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+        }
+
+        if(level == this->n_levels()-1)
+        {
+            converged =  this->criticality_measure_termination(this->criticality_measure(level));
+            if(converged==true){
+                return true;
+            }
+        }
+
+        smoothness_flg = this->init_consistency_terms(level); 
+
+        //----------------------------------------------------------------------------
+        //                   additional coarse level initialization...
+        //----------------------------------------------------------------------------
+        this->memory_.x_0[level-1]    = this->memory_.x[level-1];
+        this->memory_.s[level-1].set(0.0); 
+
+        // at this point s_global on coarse level is empty
+        coarse_reduction = this->get_multilevel_energy(this->function(level-1), this->memory_.s[level-1], level-1);
+
+        //----------------------------------------------------------------------------
+        //               recursion  / Taylor correction
+        //----------------------------------------------------------------------------
+        if(level == 1 && smoothness_flg)
+        {
+            this->local_tr_solve(level - 1, COARSE_SOLVE);
+        }
+        else if(smoothness_flg)
+        {
+            // recursive call into RMTR
+            for(SizeType k = 0; k < this->mg_type(); k++)
+            {
+                SizeType l_new = level - 1;
+                this->multiplicative_cycle(l_new);
+            }
+        }
+
+        if(smoothness_flg)
+        {
+            //----------------------------------------------------------------------------
+            //                       building trial point from coarse level
+            //----------------------------------------------------------------------------
+            this->memory_.s[level-1] = this->memory_.x[level-1] - this->memory_.x_0[level-1];
+            coarse_reduction -= this->memory_.energy[level-1]; 
+
+            this->transfer(level-1).interpolate(this->memory_.s[level-1], this->memory_.s[level]);
+
+            if(!this->skip_BC_checks()){
+                this->zero_correction_related_to_equality_constrain(this->function(level), this->memory_.s[level]);
+            }
+
+            E_old = this->memory_.energy[level]; 
+            this->memory_.x[level] += this->memory_.s[level];
+
+            this->compute_s_global(level, this->memory_.s_working[level]);
+            E_new = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+
+            //----------------------------------------------------------------------------
+            //                        trial point acceptance
+            //----------------------------------------------------------------------------
+            ared = E_old - E_new;
+            rho = ared / coarse_reduction;
+            if(coarse_reduction<=0){
+                rho = 0;
+            }
+
+            bool coarse_corr_taken = false;
+            if(rho > this->rho_tol())
+            {
+                coarse_corr_taken = true;
+                this->memory_.energy[level] = E_new; 
+            }
+            else
+            {
+                this->memory_.x[level] -= this->memory_.s[level];
+                this->compute_s_global(level, this->memory_.s_working[level]);
+            }
+
+            //----------------------------------------------------------------------------
+            //                                  trust region update
+            //----------------------------------------------------------------------------
+            converged = this->delta_update(rho, level, this->memory_.s_working[level]);
+
+            // because, x + Is_{l-1} does not have to be inside of the feasible set....
+            // mostly case for rmtr_inf with bounds...
+            if(rho > this->rho_tol() && converged==false){
+                converged = this->check_feasibility(level);
+            }
 
 
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+            {
+                // just to see what is being printed
+                std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level);
+                this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"});
+                PrintInfo::print_iter_status(this->_it_global, {E_old, E_new, ared, coarse_reduction, rho, this->memory_.delta[level], Scalar(coarse_corr_taken) });
+            }
+
+            // terminate, since TR rad. does not allow to take more corrections on given level
+            if(converged==true){
+                return true;
+            }
+
+        }
+        else if(mpi_world_rank() ==0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+        {
+            std::cout<< "--------- Recursion terminated due to non-smoothness of the gradient ----------------------- \n";
+        }
+
+        //----------------------------------------------------------------------------
+        //                        postsmoothing
+        //----------------------------------------------------------------------------
+
+        if(this->post_smoothing_steps()!=0)
+        {
+            // auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE : POST_SMOOTHING;
+            auto post_smoothing_solve_type = POST_SMOOTHING;
+            this->local_tr_solve(level, post_smoothing_solve_type);
+        }
+
+        return true;
+    }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL>
+    bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(const SizeType & level, const LocalSolveType & solve_type)
+    {
+        SizeType it_success = 0, it = 0;
+        Scalar ared = 0. , pred = 0., rho = 0., energy_new=9e9;
+        bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false;
+
+        const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
+        // std::cout<<"solve_type: "<< solve_type << "    exact_solve_flg: "<< exact_solve_flg << "  \n"; 
+
+        this->initialize_local_solve(level, solve_type);
+
+        // TODO:: check 
+        this->memory_.s[level].set(0.0);
+
+        // TODO:: do check if this is only post-smoothing (check if s_working is initiailized otherwise to zero)
+        // important, as this can be postsmoothing
+        // also check if fine level 
+        this->compute_s_global(level, this->memory_.s_working[level]);
+        make_hess_updates = this->init_deriv_loc_solve(this->function(level), this->memory_.s_working[level], level, solve_type); 
+
+        converged  = this->check_local_convergence(it, it_success,  this->memory_.gnorm[level], level, this->memory_.delta[level], solve_type);
+        if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+        {
+            this->print_level_info(level);
+            PrintInfo::print_iter_status(0, {this->memory_.gnorm[level],  this->memory_.energy[level], ared, pred, rho, this->memory_.delta[level] });
+        }
+
+        it++;
+
+        while(!converged)
+        {
+            if(make_hess_updates)
+            {
+                this->get_multilevel_hessian(this->function(level), level);
+            }
+
+        //----------------------------------------------------------------------------
+        //     solving constrained system to get correction and  building trial point
+        //----------------------------------------------------------------------------
+            // obtain correction
+            this->solve_qp_subproblem(level, exact_solve_flg);
+
+            // predicted reduction based on model
+            pred = this->get_pred(level);
+
+            // building trial point
+            this->memory_.x[level] += this->memory_.s[level];
+
+            this->compute_s_global(level, this->memory_.s_working[level]);
+            energy_new = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+            ared =  this->memory_.energy[level] - energy_new;
+
+            rho = (ared < 0.0) ? 0.0 : ared/pred;
+            rho = (rho != rho) ? 0.0 : rho;
+
+
+            // update in hessian approx ...
+            // TODO:: could be done in more elegant way....
+            this->update_level(level);
+
+        //----------------------------------------------------------------------------
+        //     acceptance of trial point
+        //----------------------------------------------------------------------------
+            // good reduction, accept trial point
+            if (rho >= this->rho_tol())
+            {
+                it_success++;
+                this->memory_.energy[level] = energy_new;
+                make_grad_updates = true;
+            }
+            else
+            {
+                this->memory_.x[level] -= this->memory_.s[level]; // return iterate into its initial state
+                this->compute_s_global(level, this->memory_.s_working[level]);
+                make_grad_updates = false;
+            }
+
+            //----------------------------------------------------------------------------
+            //     updating level (deltas, hessian approx - new vectors, ...)
+            //----------------------------------------------------------------------------
+            delta_converged = this->delta_update(rho, level, this->memory_.s_working[level]);
+
+            if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
+            {
+                make_grad_updates = false; 
+            }
+
+            // can be more efficient, see commented line below 
+            make_hess_updates =   make_grad_updates; 
+
+            if(make_grad_updates)
+            {
+                // std::cout<<"grad updated... \n"; 
+                // Vector g_old = memory_.g[level];
+                this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                this->memory_.gnorm[level] = this->criticality_measure(level);
+
+                // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
+            }
+            // else
+            // {
+            //     make_hess_updates = false;  
+            // }
+
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+            {
+                PrintInfo::print_iter_status(it, {this->memory_.gnorm[level], this->memory_.energy[level], ared, pred, rho, this->memory_.delta[level]});
+            }
+
+            converged  = (delta_converged  == true) ? true : this->check_local_convergence(it, it_success,  this->memory_.gnorm[level], level, this->memory_.delta[level], solve_type);
+
+            if(level == this->n_levels()-1){
+                converged  = (converged  == true || this->memory_.gnorm[level] < this->atol()) ? true : false;
+            }
+
+            it++;
+
+        }
+
+        if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0){
+            std::cout<< this->def_;
+        }
+
+
+        bool level_quit = ((this->criticality_measure_termination(this->memory_.gnorm[level]) == true) || delta_converged) ? true : false;
+        return level_quit;
+    }
 
 
 }

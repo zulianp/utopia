@@ -55,6 +55,14 @@ namespace utopia
         virtual bool solve(Vector &x_h) override;
 
 
+
+    protected:
+        virtual bool multiplicative_cycle(const SizeType & level);
+
+        virtual bool local_tr_solve(const SizeType & level, const LocalSolveType & solve_type);
+
+
+
     protected:
         virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) final
         {
@@ -361,11 +369,36 @@ namespace utopia
         }
 
         virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta) = 0; 
+        virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type) = 0; 
+        
+        virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
+        {
+            // coarse one
+            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= this->max_coarse_it()))
+            {
+                return true;
+            }
+            // every other level
+            else if (level > 0 && solve_type == PRE_SMOOTHING)
+            {
+                if(it >= this->pre_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
+                {
+                    return true;
+                }
+            }
+            else if (level > 0 && solve_type == POST_SMOOTHING)
+            {
+                if(it >= this->post_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
+                {
+                    return true;
+                }
+            }
 
+            return false;
+        }
+
+        
         virtual Scalar criticality_measure(const SizeType & level) = 0; 
-
-        // this probably does not work for all RMTRs 
-        virtual bool multiplicative_cycle(const SizeType & level) = 0; 
 
         virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) = 0; 
 
@@ -395,6 +428,21 @@ namespace utopia
 
         }
 
+        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) = 0; 
+
+        virtual bool check_feasibility(const SizeType & /*level */ )
+        {
+            return false;
+        }
+
+
+        virtual Scalar get_pred(const SizeType & level) 
+        {
+            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
+            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
+        }
+
+
         /**
          * @brief      "Heuristics", which decides if it makes sense to go to the coarse level or no
          *
@@ -409,6 +457,11 @@ namespace utopia
             return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;
         }        
 
+
+        virtual bool criticality_measure_termination(const Scalar & g_norm)
+        {
+            return (g_norm < this->atol()) ? true : false;
+        }
 
 
     protected:

@@ -3,13 +3,14 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_TRBase.hpp"
 
 
 namespace utopia
 {
 
     template<class Vector>
-    class RMTRParams : virtual public Configurable
+    class RMTRParams : public TrustRegionParams<Vector>
     {
         public:
             typedef UTOPIA_SCALAR(Vector)                       Scalar;
@@ -42,6 +43,8 @@ namespace utopia
 
         virtual void read(Input &in) override
         {
+            TrustRegionParams<Vector>::read(in); 
+
             in.get("skip_BC_checks", _skip_BC_checks);
             in.get("max_coarse_it", _max_coarse_it);
             in.get("max_sucessful_smoothing_it", _max_sucessful_smoothing_it);
@@ -59,6 +62,8 @@ namespace utopia
 
         virtual void print_usage(std::ostream &os) const override
         {
+            TrustRegionParams<Vector>::print_usage(os); 
+
             this->print_param_usage(os, "skip_BC_checks", "bool", "Skip treatment of BC conditions.", "false");
             this->print_param_usage(os, "max_coarse_it", "int", "Maximum number of coarse iterations.", "2");
             this->print_param_usage(os, "max_sucessful_smoothing_it", "int", "Maximum number of smoothing steps.", "1");
