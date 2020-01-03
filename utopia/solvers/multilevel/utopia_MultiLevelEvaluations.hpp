@@ -75,8 +75,7 @@ namespace utopia
 
         inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
         {
-            fun.hessian(x, H[level]);
-            return true;
+            return fun.hessian(x, H[level]);
         }
 
         void init_memory(const std::vector<SizeType> & n_dofs_)

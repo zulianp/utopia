@@ -60,8 +60,11 @@ namespace utopia
                 }
             #endif
 
-            this->memory_.energy[fine_level] = this->get_multilevel_gradient_energy(this->function(fine_level),  this->memory_.s[fine_level], fine_level);                     
-            this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
+            if(this->post_smoothing_steps()==0){
+                this->memory_.energy[fine_level] = this->get_multilevel_gradient_energy(this->function(fine_level),  this->memory_.s[fine_level], fine_level);                     
+                this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
+            }
+
             this->_it_global++;
 
             if(this->verbose() && mpi_world_rank() == 0)
@@ -91,8 +94,6 @@ namespace utopia
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL>
     bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(const SizeType & level)
     {
@@ -117,7 +118,7 @@ namespace utopia
 
         if(this->pre_smoothing_steps()==0 && level < this->n_levels()-1)
         {
-            this->compute_s_global(level, this->memory_.s_working[level]);
+            this->memory_.s_working[level].set(0.0); 
             this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
         }
 
@@ -135,10 +136,15 @@ namespace utopia
         //                   additional coarse level initialization...
         //----------------------------------------------------------------------------
         this->memory_.x_0[level-1]    = this->memory_.x[level-1];
+
+
+        // this should not be necessary, energy could be taken from previous evals  
         this->memory_.s[level-1].set(0.0); 
 
-        // at this point s_global on coarse level is empty
+        // at this point s_global on coarse level is 0, so we could simplify
         coarse_reduction = this->get_multilevel_energy(this->function(level-1), this->memory_.s[level-1], level-1);
+        // to avoid computation of energy in local_solve
+        this->memory_.energy[level-1] = coarse_reduction; 
 
         //----------------------------------------------------------------------------
         //               recursion  / Taylor correction
@@ -191,6 +197,9 @@ namespace utopia
             {
                 coarse_corr_taken = true;
                 this->memory_.energy[level] = E_new; 
+
+                // todo:: make sure that correct assumption 
+                this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
             }
             else
             {
@@ -256,18 +265,19 @@ namespace utopia
         bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false;
 
         const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
-        // std::cout<<"solve_type: "<< solve_type << "    exact_solve_flg: "<< exact_solve_flg << "  \n"; 
-
         this->initialize_local_solve(level, solve_type);
 
         // TODO:: check 
-        this->memory_.s[level].set(0.0);
+        // this->memory_.s[level].set(0.0);
 
-        // TODO:: do check if this is only post-smoothing (check if s_working is initiailized otherwise to zero)
-        // important, as this can be postsmoothing
-        // also check if fine level 
-        this->compute_s_global(level, this->memory_.s_working[level]);
-        make_hess_updates = this->init_deriv_loc_solve(this->function(level), this->memory_.s_working[level], level, solve_type); 
+        if(solve_type == PRE_SMOOTHING){
+            this->memory_.s_working[level].set(0.0);
+        }
+        else{
+            this->compute_s_global(level, this->memory_.s_working[level]);
+        }
+
+        make_hess_updates = this->init_deriv_loc_solve(this->function(level), level, solve_type); 
 
         converged  = this->check_local_convergence(it, it_success,  this->memory_.gnorm[level], level, this->memory_.delta[level], solve_type);
         if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)

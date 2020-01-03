@@ -83,40 +83,26 @@ namespace utopia
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type)
+        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
         {
-            bool make_hess_updates = true;
-
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
             {
-                if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE))
-                {
-                    this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
+                if(solve_type==PRE_SMOOTHING || solve_type == COARSE_SOLVE){
+                    this->ml_derivs_.g[level]  += this->ml_derivs_.g_diff[level]; 
                 }
-                else
-                {
-                    this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
-                }
-
-                // energy computations ... 
-                if(solve_type != POST_SMOOTHING)
-                {
-                    this->memory_.energy[level] = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
-                }
+                // else{
+                //     this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                // }
 
                 this->memory_.gnorm[level] = this->criticality_measure(level);
             }
 
-            return make_hess_updates; 
-
-            std::cout<< "order first .... \n"; 
+            return true; 
         }
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
+        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type) 
         {
-            std::cout<< "second order .... \n"; 
-
             bool make_hess_updates = true;
 
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
@@ -146,10 +132,8 @@ namespace utopia
         }
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const Vector & s_global, const SizeType & level, const LocalSolveType & solve_type) 
+        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type) 
         {
-            std::cout<< "galerkin .... \n"; 
-            bool make_hess_updates = true;
 
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
             {
@@ -171,7 +155,7 @@ namespace utopia
                 this->memory_.gnorm[level] = this->criticality_measure(level);
             }
 
-            return make_hess_updates; 
+            return true; 
         }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -179,8 +163,6 @@ namespace utopia
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
-            bool smoothness_flg = true; 
-
             // Restricted fine level gradient 
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
@@ -199,9 +181,9 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                  first order coarse level objective managment
             //----------------------------------------------------------------------------
-            if(empty(this->ml_derivs_.g[level-1])){
-                this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
-            }
+            // if(empty(this->ml_derivs_.g[level-1])){
+            //     this->ml_derivs_.g[level-1] = 0.0* this->memory_.x[level-1]; 
+            // }
 
             this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
             
@@ -210,12 +192,15 @@ namespace utopia
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
             }
 
-            smoothness_flg = this->check_grad_smoothness() ? this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
+            bool smoothness_flg = this->check_grad_smoothness() ? this->grad_smoothess_termination(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
 
             this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
 
             return smoothness_flg; 
         }        
+
+
+
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
@@ -360,12 +345,13 @@ namespace utopia
         {
             if(empty(this->memory_.x_0[level]))
             {
-                s_global.set(0.0);
+                utopia_error("this should not happen, remove when done testing... \n"); 
             }
             else if(level < this->n_levels()-1)
             {
                 s_global = this->memory_.x[level] - this->memory_.x_0[level];
             }
+            // we do not need to compute s_working on the fines level 
         }
 
     ///////////////////////////////////////////// INITIALIZATIONS ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
