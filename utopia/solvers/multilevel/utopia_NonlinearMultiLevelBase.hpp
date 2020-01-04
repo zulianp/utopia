@@ -278,6 +278,11 @@ namespace utopia {
         }
 
 
+        const std::vector<FunPtr> & level_functions()
+        {
+            return level_functions_; 
+        }
+
 
     protected:
         std::vector<FunPtr>                      level_functions_;

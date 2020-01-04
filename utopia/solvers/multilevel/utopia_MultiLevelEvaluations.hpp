@@ -37,25 +37,43 @@ namespace utopia
             Scalar energy = 0.0;
             fun.value(x, energy);
 
-            if(level < n_levels_-1)
-            {
+            if(level < n_levels_-1){
                 energy += dot(g_diff[level], s_global);
             }
 
             return energy;
         }
 
+        // s_global is assummed to be zero 
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            return energy;
+        }        
+
         inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /* s_global*/)
         {
             fun.gradient(x, g[level]);
 
-            if(level < n_levels_-1)
-            {
+            if(level < n_levels_-1){
                 g[level] += g_diff[level];
             }
 
             return true;
         }
+
+        // s_global is assummed to be zero 
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                g[level] += g_diff[level];
+            }
+
+            return true;
+        }        
 
         inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
         {
@@ -78,7 +96,7 @@ namespace utopia
             return fun.hessian(x, H[level]);
         }
 
-        void init_memory(const std::vector<SizeType> & n_dofs_)
+        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
         {
             g_diff.resize(n_levels_);
             g.resize(n_levels_);
@@ -87,6 +105,7 @@ namespace utopia
             for(auto l=0; l < n_levels_; l++){
                 g_diff[l]   = local_zeros(n_dofs_[l]); 
                 g[l]        = local_zeros(n_dofs_[l]); 
+                level_functions[l]->initialize_hessian(H[l], H[l]); 
             }
 
             initialized_ = true; 
@@ -135,6 +154,14 @@ namespace utopia
             return energy;
         }
 
+        // s_global is assummed to be zero 
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            return energy;
+        }  
+
         inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
         {
             fun.gradient(x, g[level]);
@@ -144,6 +171,17 @@ namespace utopia
             }
             return true;
         }
+
+        // s_global is assummed to be zero 
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                g[level] += g_diff[level];
+            }
+            return true;
+        }        
 
 
         inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
@@ -173,7 +211,7 @@ namespace utopia
             return true;
         }
 
-        void init_memory(const std::vector<SizeType> & n_dofs_)
+        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
         {   
             help_.resize(n_levels_); 
             g_diff.resize(n_levels_);
@@ -186,6 +224,9 @@ namespace utopia
                 help_[l]    = local_zeros(n_dofs_[l]); 
                 g_diff[l]   = local_zeros(n_dofs_[l]); 
                 g[l]        = local_zeros(n_dofs_[l]); 
+
+                level_functions[l]->initialize_hessian(H[l], H[l]); 
+                H_diff[l] = H[l]; 
             }
 
             initialized_ = true; 
@@ -233,6 +274,19 @@ namespace utopia
             }
         }
 
+        // s_global is assummed to be zero 
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            if(level < n_levels_-1){
+                return 0.0;
+            }
+            else{
+                Scalar energy = 0.0; 
+                fun.value(x, energy); 
+                return energy; 
+            }
+        }                
+
         inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
         {
             if(level < n_levels_-1){
@@ -245,6 +299,19 @@ namespace utopia
 
             return true;
         }
+
+        // s_global is assummed to be zero 
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            if(level < n_levels_-1){
+                g[level] = g_diff[level];
+            }
+            else{
+                fun.gradient(x, g[level]); 
+            }
+
+            return true;
+        }        
 
         inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
         {
@@ -275,7 +342,7 @@ namespace utopia
             return true;
         }
 
-        void init_memory(const std::vector<SizeType> & n_dofs_)
+        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
         {
             help_.resize(n_levels_); 
             g_diff.resize(n_levels_);
@@ -287,6 +354,9 @@ namespace utopia
                 help_[l]    = local_zeros(n_dofs_[l]); 
                 g_diff[l]   = local_zeros(n_dofs_[l]); 
                 g[l]        = local_zeros(n_dofs_[l]); 
+
+                level_functions[l]->initialize_hessian(H[l], H[l]); 
+                H_diff[l] = H[l];                 
             }
 
             initialized_ = true; 

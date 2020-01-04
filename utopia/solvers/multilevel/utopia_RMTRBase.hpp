@@ -60,28 +60,33 @@ namespace utopia
 
 
     protected:
-        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) final
-        {
+        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) final{
             return  ml_derivs_.compute_hessian(level, fun, memory_.x[level]);
         }
 
-        virtual bool get_multilevel_gradient(const Fun & fun, const Vector & s_global, const SizeType & level) final
-        {
+        virtual bool get_multilevel_gradient(const Fun & fun, const SizeType & level, const Vector & s_global) final{
             return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global);
         }
 
-        virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level) final
-        {
+        virtual bool get_multilevel_gradient(const Fun & fun, const SizeType & level) final{
+            return ml_derivs_.compute_gradient(level, fun, memory_.x[level]);
+        }        
+
+
+        virtual Scalar get_multilevel_energy(const Fun & fun, const SizeType & level, const Vector & s_global) final{
             return ml_derivs_.compute_energy(level, fun, memory_.x[level], s_global);
         }
 
-        virtual Scalar get_multilevel_gradient_energy(const Fun & fun, const Vector & s_global, const SizeType & level) final
-        {
+        virtual Scalar get_multilevel_energy(const Fun & fun, const SizeType & level) final{
+            return ml_derivs_.compute_energy(level, fun, memory_.x[level]);
+        }        
+
+
+        virtual Scalar get_multilevel_gradient_energy(const Fun & fun, const SizeType & level, const Vector & s_global) final{
             return ml_derivs_.compute_gradient_energy(level, fun, memory_.x[level], s_global);
         }        
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
@@ -305,14 +310,17 @@ namespace utopia
         virtual void init_memory() override
         {
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+            const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & funs =  this->level_functions(); 
 
-            ml_derivs_.init_memory(dofs); 
+            ml_derivs_.init_memory(dofs, funs); 
             memory_.init_memory(dofs); 
 
             // init deltas to some default value...
             for(Scalar l = 0; l < this->n_levels(); l ++){
                 this->memory_.delta[l] = this->delta0();
             }            
+
+
         }
 
         void handle_equality_constraints()

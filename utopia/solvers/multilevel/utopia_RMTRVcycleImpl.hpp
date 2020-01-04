@@ -27,13 +27,12 @@ namespace utopia
             this->handle_equality_constraints();    
         }
 
-        this->memory_.energy[fine_level] = this->get_multilevel_gradient_energy(this->function(fine_level),  this->memory_.s[fine_level], fine_level); 
+        this->memory_.energy[fine_level] = this->get_multilevel_gradient_energy(this->function(fine_level), fine_level, this->memory_.s[fine_level]); 
         this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
         this->_it_global = 0;
 
         //----------------------------------------------
-        if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
-        {
+        if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0){
             std::cout << this->red_;
             std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(this->local_level_dofs_.back());
             this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
@@ -53,22 +52,15 @@ namespace utopia
             }
 
             #ifdef CHECK_NUM_PRECISION_mode
-                if(has_nan_or_inf(this->memory_.x[fine_level]) == true)
-                {
+                if(has_nan_or_inf(this->memory_.x[fine_level]) == true){
                     this->memory_.x[fine_level].set(0.0); 
                     return false;
                 }
             #endif
 
-            if(this->post_smoothing_steps()==0){
-                this->memory_.energy[fine_level] = this->get_multilevel_gradient_energy(this->function(fine_level),  this->memory_.s[fine_level], fine_level);                     
-                this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
-            }
-
             this->_it_global++;
 
-            if(this->verbose() && mpi_world_rank() == 0)
-            {
+            if(this->verbose() && mpi_world_rank() == 0){
                 std::cout << this->red_;
                 if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL){
                     this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||",  "   E "});
@@ -116,15 +108,13 @@ namespace utopia
             return true;
         }
 
-        if(this->pre_smoothing_steps()==0 && level < this->n_levels()-1)
-        {
-            this->memory_.s_working[level].set(0.0); 
-            this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+        if(this->pre_smoothing_steps()==0 && level < this->n_levels()-1){
+            // s_global is assumed to be zero at this point 
+            this->get_multilevel_gradient(this->function(level), level);            
             this->memory_.gnorm[level] = this->criticality_measure(level);
         }
 
-        if(level == this->n_levels()-1)
-        {
+        if(level == this->n_levels()-1){
             converged =  this->criticality_measure_termination(level);
             if(converged==true){
                 return true;
@@ -138,13 +128,10 @@ namespace utopia
         //----------------------------------------------------------------------------
         this->memory_.x_0[level-1]    = this->memory_.x[level-1];
 
+        // at this point s_global on coarse level is 0, so we can simplify
+        coarse_reduction = this->get_multilevel_energy(this->function(level-1), level-1);
 
-        // this should not be necessary, energy could be taken from previous evals  
-        this->memory_.s[level-1].set(0.0); 
-
-        // at this point s_global on coarse level is 0, so we could simplify
-        coarse_reduction = this->get_multilevel_energy(this->function(level-1), this->memory_.s[level-1], level-1);
-        // to avoid computation of energy in local_solve
+        // store energy in order to avoid evaluation in the first local_solve
         this->memory_.energy[level-1] = coarse_reduction; 
 
         //----------------------------------------------------------------------------
@@ -182,7 +169,7 @@ namespace utopia
             this->memory_.x[level] += this->memory_.s[level];
 
             this->compute_s_global(level, this->memory_.s_working[level]);
-            E_new = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+            E_new = this->get_multilevel_energy(this->function(level), level, this->memory_.s_working[level]);
 
             //----------------------------------------------------------------------------
             //                        trial point acceptance
@@ -200,7 +187,7 @@ namespace utopia
                 this->memory_.energy[level] = E_new; 
 
                 // todo:: make sure that correct assumption 
-                this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
                 this->memory_.gnorm[level] = this->criticality_measure(level);
             }
             else
@@ -269,16 +256,6 @@ namespace utopia
         const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
         this->initialize_local_solve(level, solve_type);
 
-        // TODO:: check 
-        // this->memory_.s[level].set(0.0);
-
-        if(solve_type == PRE_SMOOTHING){
-            this->memory_.s_working[level].set(0.0);
-        }
-        else{
-            this->compute_s_global(level, this->memory_.s_working[level]);
-        }
-
         make_hess_updates = this->init_deriv_loc_solve(this->function(level), level, solve_type); 
 
         converged  = this->check_local_convergence(it, it_success, level, this->memory_.delta[level], solve_type);
@@ -292,9 +269,7 @@ namespace utopia
 
         while(!converged)
         {
-            if(make_hess_updates)
-            {
-                // TODO:: first assembly can be made cheaper for galerkin and second order 
+            if(make_hess_updates){
                 this->get_multilevel_hessian(this->function(level), level);
             }
 
@@ -311,7 +286,7 @@ namespace utopia
             this->memory_.x[level] += this->memory_.s[level];
 
             this->compute_s_global(level, this->memory_.s_working[level]);
-            energy_new = this->get_multilevel_energy(this->function(level), this->memory_.s_working[level], level);
+            energy_new = this->get_multilevel_energy(this->function(level), level, this->memory_.s_working[level]);
             ared =  this->memory_.energy[level] - energy_new;
 
             rho = (ared < 0.0) ? 0.0 : ared/pred;
@@ -356,7 +331,7 @@ namespace utopia
             {
                 // std::cout<<"grad updated... \n"; 
                 // Vector g_old = memory_.g[level];
-                this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
+                this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
                 this->memory_.gnorm[level] = this->criticality_measure(level);
 
                 // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
