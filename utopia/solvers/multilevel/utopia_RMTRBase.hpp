@@ -239,7 +239,6 @@ namespace utopia
             return true; 
         }
 
-
 ///////////////////////////////////////////////////////////// HELPERS ///////////////////////////////////////////////////////////////////////////////////////////////        
 
         virtual void print_level_info(const SizeType & level) final
@@ -319,8 +318,6 @@ namespace utopia
             for(Scalar l = 0; l < this->n_levels(); l ++){
                 this->memory_.delta[l] = this->delta0();
             }            
-
-
         }
 
         void handle_equality_constraints()
@@ -364,8 +361,7 @@ namespace utopia
         {
             bool converged = NonlinearMultiLevelBase<Matrix, Vector>::check_convergence(it, r_norm, rel_norm, 1);
 
-            if(delta < this->delta_min())
-            {
+            if(delta < this->delta_min()){
                 converged = true;
                 this->exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
             }
@@ -390,22 +386,17 @@ namespace utopia
         virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
         {
             // coarse one
-            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= this->max_coarse_it()))
-            {
+            if(level == 0 && (it_success >= this->max_sucessful_coarse_it() || it >= this->max_coarse_it())){
                 return true;
             }
             // every other level
-            else if (level > 0 && solve_type == PRE_SMOOTHING)
-            {
-                if(it >= this->pre_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
-                {
+            else if (level > 0 && solve_type == PRE_SMOOTHING){
+                if(it >= this->pre_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it()){
                     return true;
                 }
             }
-            else if (level > 0 && solve_type == POST_SMOOTHING)
-            {
-                if(it >= this->post_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it())
-                {
+            else if (level > 0 && solve_type == POST_SMOOTHING){
+                if(it >= this->post_smoothing_steps() || it_success >= this->max_sucessful_smoothing_it()){
                     return true;
                 }
             }
@@ -429,7 +420,6 @@ namespace utopia
 ///////////////////////////////////////////// TR-based stuff   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
 
         virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) = 0; 
-
 
         virtual void initialize_local_solve(const SizeType & /*level*/, const LocalSolveType & /*solve_type*/){ }
 

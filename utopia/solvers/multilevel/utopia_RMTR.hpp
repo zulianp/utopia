@@ -144,6 +144,18 @@ namespace utopia
             }
         }
 
+        virtual bool check_initialization() override
+        {
+            bool flg = RMTRBase::check_initialization(); 
+
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
+                utopia_error("utopia::RMTR_l2:: number of level QP solvers and levels not equal. \n");
+                flg = false;
+            }
+
+            return flg; 
+        }
+
 
         // -------------------------- tr radius managment ---------------------------------------------
         /**
@@ -248,10 +260,12 @@ namespace utopia
          *
          */
         virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
-        {
-            // this params should not be as hardcodded as they are...
-            _tr_subproblems[level]->atol(1e-14);
-            
+        {            
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
+            if(_tr_subproblems[level]->atol() > atol_level){
+                _tr_subproblems[level]->atol(atol_level);  
+            }
+
             if(flg){
                 _tr_subproblems[level]->max_it(this->max_QP_coarse_it());
             }
