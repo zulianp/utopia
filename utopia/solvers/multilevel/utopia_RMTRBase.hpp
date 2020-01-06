@@ -90,32 +90,44 @@ namespace utopia
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF, FIRST_ORDER_MGOPT>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
+            //UTOPIA_NO_ALLOC_BEGIN("RMTR::region111");
             // Restricted fine level gradient 
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
             // Projecting current iterate to obtain initial iterate on coarser grid 
             this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
+            //UTOPIA_NO_ALLOC_END();
 
+            //UTOPIA_NO_ALLOC_BEGIN("RMTR::region112");
             if(!this->skip_BC_checks()){
                 this->make_iterate_feasible(this->function(level-1), this->memory_.x[level-1]);
             }
+            //UTOPIA_NO_ALLOC_END();
 
             //----------------------------------------------------------------------------
             //    initializing coarse level (deltas, constraints, hessian approx, ...)
             //----------------------------------------------------------------------------
+            //UTOPIA_NO_ALLOC_BEGIN("RMTR::region113");
             this->init_level(level-1);
+            //UTOPIA_NO_ALLOC_END();
 
             //----------------------------------------------------------------------------
             //                  first order coarse level objective managment
             //----------------------------------------------------------------------------
+            //UTOPIA_NO_ALLOC_BEGIN("RMTR::region114");
             this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
+            //UTOPIA_NO_ALLOC_END();
             
+            //UTOPIA_NO_ALLOC_BEGIN("RMTR::region1145");
             if(!this->skip_BC_checks()){
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
             }
+            //UTOPIA_NO_ALLOC_END();
 
+            // UTOPIA_NO_ALLOC_BEGIN("RMTR::region115");
             bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
             this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
+            // UTOPIA_NO_ALLOC_END();
 
             return smoothness_flg; 
         }        
@@ -194,7 +206,7 @@ namespace utopia
             if(!this->skip_BC_checks()){
                 this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
             }
-            
+
             return true; 
         }                   
 

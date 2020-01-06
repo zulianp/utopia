@@ -91,8 +91,8 @@ namespace utopia
             _x_eq_values        =  x_in;
             _eq_constrains_flg  = eq_constrains_flg;
 
-            _eq_constraints_mask_matrix_   = local_identity(local_size(_eq_constrains_flg).get(0), local_size(_eq_constrains_flg).get(0)); 
-            _eq_constraints_mask_matrix_  -= diag(_eq_constrains_flg); 
+            // _eq_constraints_mask_matrix_   = local_identity(local_size(_eq_constrains_flg).get(0), local_size(_eq_constrains_flg).get(0)); 
+            // _eq_constraints_mask_matrix_  -= diag(_eq_constrains_flg); 
 
             {
                 Read<Vector> r(_eq_constrains_flg);
@@ -112,7 +112,28 @@ namespace utopia
 
         virtual bool zero_contribution_to_equality_constrains(Vector & x) const
         {
-            x = _eq_constraints_mask_matrix_ * x; 
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::zero_contribution_to_equality_constrains");
+            // x = _eq_constraints_mask_matrix_ * x; 
+
+            {
+                auto d_flg     = const_device_view(_eq_constrains_flg);
+
+                parallel_transform(
+                          x,
+                          UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                            Scalar flg = d_flg.get(i);
+                            
+                            // TODO:: use abs with eps tolerance
+                            if(flg==1.0){
+                              return 0.0;
+                            }
+                            else
+                              return xi; 
+                      });
+            }
+
+
+            UTOPIA_NO_ALLOC_END();
             return true;
         }
 
@@ -121,7 +142,8 @@ namespace utopia
         Vector _x_eq_values;
         Vector _eq_constrains_flg;
         
-        Matrix _eq_constraints_mask_matrix_; 
+
+        // Matrix _eq_constraints_mask_matrix_; 
         std::vector<SizeType> indices_eq_constraints_; 
     };
 

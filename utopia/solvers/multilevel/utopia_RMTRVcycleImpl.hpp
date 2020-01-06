@@ -41,7 +41,7 @@ namespace utopia
             std::cout << this->def_;
         }
 
-
+        UTOPIA_NO_ALLOC_BEGIN("RMTR::region1");
         while(!converged)
         {
             if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
@@ -74,6 +74,8 @@ namespace utopia
             converged = this->check_global_convergence(this->_it_global, this->memory_.gnorm[fine_level], 9e9, this->memory_.delta[fine_level]);
         }
 
+        UTOPIA_NO_ALLOC_END();
+
         // benchmarking
         NonlinearMultiLevelBase<Matrix, Vector>::print_statistics(this->_it_global);
 
@@ -97,7 +99,9 @@ namespace utopia
         //                   presmoothing
         //----------------------------------------------------------------------------
         if(this->pre_smoothing_steps()!=0){
+            // UTOPIA_NO_ALLOC_BEGIN("RMTR::region2");
             converged = this->local_tr_solve(level, PRE_SMOOTHING);
+            // UTOPIA_NO_ALLOC_END();
         }
         else{
             converged = false;
@@ -121,8 +125,11 @@ namespace utopia
             }
         }
 
+        // UTOPIA_NO_ALLOC_BEGIN("RMTR::region11");
         smoothness_flg = this->init_consistency_terms(level); 
+        // UTOPIA_NO_ALLOC_END();
 
+        // UTOPIA_NO_ALLOC_BEGIN("RMTR::region12");
         //----------------------------------------------------------------------------
         //                   additional coarse level initialization...
         //----------------------------------------------------------------------------
@@ -133,6 +140,7 @@ namespace utopia
 
         // store energy in order to avoid evaluation in the first local_solve
         this->memory_.energy[level-1] = coarse_reduction; 
+        // UTOPIA_NO_ALLOC_END();
 
         //----------------------------------------------------------------------------
         //               recursion  / Taylor correction
@@ -156,6 +164,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                       building trial point from coarse level
             //----------------------------------------------------------------------------
+            // UTOPIA_NO_ALLOC_BEGIN("RMTR::region13");
             this->memory_.s[level-1] = this->memory_.x[level-1] - this->memory_.x_0[level-1];
             coarse_reduction -= this->memory_.energy[level-1]; 
 
@@ -175,6 +184,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                        trial point acceptance
             //----------------------------------------------------------------------------
+            // UTOPIA_NO_ALLOC_BEGIN("RMTR::region14");
             ared = E_old - E_new;
             rho = ared / coarse_reduction;
             if(!std::isfinite(E_new) || !std::isfinite(rho)){
@@ -222,6 +232,8 @@ namespace utopia
                 PrintInfo::print_iter_status(this->_it_global, {E_old, E_new, ared, coarse_reduction, rho, this->memory_.delta[level], Scalar(coarse_corr_taken) });
             }
 
+            // UTOPIA_NO_ALLOC_END();
+
             // terminate, since TR rad. does not allow to take more corrections on given level
             if(converged==true){
                 return true;
@@ -259,6 +271,7 @@ namespace utopia
         Scalar ared = 0. , pred = 0., rho = 0., energy_new=9e9;
         bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false;
 
+        // UTOPIA_NO_ALLOC_BEGIN("RMTR::region3");
         const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
         this->initialize_local_solve(level, solve_type);
 
@@ -271,20 +284,27 @@ namespace utopia
             PrintInfo::print_iter_status(0, {this->memory_.gnorm[level],  this->memory_.energy[level], ared, pred, rho, this->memory_.delta[level] });
         }
 
+        // UTOPIA_NO_ALLOC_END();
+
         it++;
 
         while(!converged)
         {
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::region4");
             if(make_hess_updates){
                 this->get_multilevel_hessian(this->function(level), level);
             }
+            UTOPIA_NO_ALLOC_END();
 
         //----------------------------------------------------------------------------
         //     solving constrained system to get correction and  building trial point
         //----------------------------------------------------------------------------
             // obtain correction
+            // UTOPIA_NO_ALLOC_BEGIN("RMTR::region5");
             this->solve_qp_subproblem(level, exact_solve_flg);
+            // UTOPIA_NO_ALLOC_END();
 
+            // UTOPIA_NO_ALLOC_BEGIN("RMTR::region6");
             // predicted reduction based on model
             pred = this->get_pred(level);
 
@@ -339,17 +359,18 @@ namespace utopia
 
             // can be more efficient, see commented lines below 
             make_hess_updates =   make_grad_updates; 
+            // UTOPIA_NO_ALLOC_END();
+
 
             if(make_grad_updates)
             {
-                // std::cout<<"grad updated... \n"; 
+                // std::cout<<"grad updated... \n"; s
                 // Vector g_old = memory_.g[level];
                 this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
                 this->memory_.gnorm[level] = this->criticality_measure(level);
 
                 // this is just a safety check
                 if(!std::isfinite(this->memory_.gnorm[level])){
-                    // std::cout<<"yes, here.... \n"; 
                     rho = 0; 
                     this->memory_.x[level] -= this->memory_.s[level]; // return iterate into its initial state
                     this->compute_s_global(level, this->memory_.s_working[level]);     

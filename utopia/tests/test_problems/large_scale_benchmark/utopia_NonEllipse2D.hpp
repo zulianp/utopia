@@ -28,7 +28,7 @@ namespace utopia
             typedef UTOPIA_SCALAR(Vector)       Scalar;
 
 
-        NonEllipse2D(const SizeType & n, const SizeType & problem_type=1):  n_(n), 
+        NonEllipse2D(const SizeType & n, const SizeType & problem_type=2):  n_(n), 
                                                                             setup_(false), 
                                                                             problem_type_(problem_type), 
                                                                             lambda_(10.0),
@@ -51,12 +51,14 @@ namespace utopia
             setup_ = true;
         }     
 
-        NonEllipse2D(const DM  & dm): setup_(false)
+        NonEllipse2D(const DM  & dm, const SizeType & problem_type=2):  setup_(false), 
+                                                                        problem_type_(problem_type), 
+                                                                        lambda_(10.0), 
+                                                                        pi_(3.14159265358979323846)
         {
             da_ = dm; 
             // necessary to provide reasonable global dimension 
             DMDAGetInfo(da_, 0, &n_, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
             this->setup_SNES();
             // this->setup_application_context(); 
 

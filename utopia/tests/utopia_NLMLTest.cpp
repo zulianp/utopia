@@ -27,12 +27,15 @@ namespace utopia
 			ml_problems_.resize(1); 
 			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
 			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > > (3, n_levels_, n_);
-			// ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);
+			ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);
 
 
 			// ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Morebv1D<Matrix, Vector> > > (n_levels_, n_);
+			// ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > > (n_levels_, n_);			
+			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > > (2, n_levels_, n_);
 
-			ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > > (n_levels_, n_);
+
+			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > > (2, n_levels_, n_);
 
 		}
 
@@ -44,34 +47,24 @@ namespace utopia
 
 		void initialize() override
 		{
-			// this->register_experiment("RMTR_first_order_test",
-			// 	[this]() {
-		 //            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-		 //            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
-
-		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-
-		 //            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
-
-		 //            // Set TR-QP strategies
-		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-		 //            rmtr->set_fine_tr_strategy(tr_strategy_fine);
-
-		 //            run_test(this->ml_problems_, rmtr, "RMTR_first_order_test", this->verbose_);
-			// 	}
-			// );
-
-			this->register_experiment("RMTR_first_order_MGOPT_test",
+			this->register_experiment("RMTR_first_order_test",
 				[this]() {
-		            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-		            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
-		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
+		            // auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+		            // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
 
-		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-		            
+					auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+					// tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+					tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+					tr_strategy_coarse->atol(1e-12);
+
+		            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> > ());
+
+		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+
+		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+
 		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
 		            // Set TR-QP strategies
@@ -80,49 +73,74 @@ namespace utopia
 
 		            run_test(this->ml_problems_, rmtr, "RMTR_first_order_test", this->verbose_);
 				}
-			);			
+			);
 
-			this->register_experiment("RMTR_second_order_test",
-				[this]() {
-		            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-		            tr_strategy_coarse->atol(1e-12); 
-		            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
-		            tr_strategy_fine->atol(1e-12); 
-		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+			// this->register_experiment("RMTR_first_order_MGOPT_test",
+			// 	[this]() {
+		 //            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+		 //            // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
 
-		            // Set TR-QP strategies
-		            rmtr->verbose(true);
-		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-		            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+		 //            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 
-		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-		            rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
-		            run_test(this->ml_problems_, rmtr, "RMTR_second_order_test", this->verbose_);
-				}
-			);	
+		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
 
-			this->register_experiment("RMTR_galerkin_test",
-				[this]() {
-		            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-		            tr_strategy_coarse->atol(1e-12); 
-		            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
-		            tr_strategy_fine->atol(1e-12); 
-		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		            
+		 //            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
-		            // Set TR-QP strategies
-		            rmtr->verbose(true);
-		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-		            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+		 //            // Set TR-QP strategies
+		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+		 //            rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
-		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-		            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+		 //            run_test(this->ml_problems_, rmtr, "RMTR_first_order_MGOPT_test", this->verbose_);
+			// 	}
+			// );			
 
-		            run_test(this->ml_problems_, rmtr, "RMTR_galerkin_test", this->verbose_);
-				}
-			);	
+			// this->register_experiment("RMTR_second_order_test",
+			// 	[this]() {
+		 //            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+		 //            // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
+		 //            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+
+
+		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+
+		 //            // Set TR-QP strategies
+		 //            rmtr->verbose(true);
+		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		 //            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+
+		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+		 //            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+
+		 //            run_test(this->ml_problems_, rmtr, "RMTR_second_order_test", this->verbose_);
+			// 	}
+			// );	
+
+			// this->register_experiment("RMTR_galerkin_test",
+			// 	[this]() {
+		 //            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+		 //            // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
+		 //            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+
+
+		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+
+		 //            // Set TR-QP strategies
+		 //            rmtr->verbose(true);
+		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		 //            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+
+		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+		 //            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+
+		 //            run_test(this->ml_problems_, rmtr, "RMTR_galerkin_test", this->verbose_);
+			// 	}
+			// );	
 
 		}
 
@@ -136,7 +154,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 50); 
+			in.set("max-it", 10); 
 			in.set("verbose", true);
 
             // RMTR specific parameters
@@ -147,8 +165,8 @@ namespace utopia
             in.set("post_smoothing_steps", 1);
             in.set("max_sucessful_smoothing_it", 1);
             // in.set("max_QP_smoothing_it", 10);
-            in.set("max_QP_smoothing_it", 5);
-            in.set("delta0", 1.0e10);
+            in.set("max_QP_smoothing_it", 2);
+            // in.set("delta0", 1.0e10);
             in.set("grad_smoothess_termination", 1e-8);
             // in.set("skip_BC_checks", true);
 

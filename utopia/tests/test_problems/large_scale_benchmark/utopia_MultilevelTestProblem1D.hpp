@@ -180,7 +180,7 @@ namespace utopia
 
                     auto last_node_H = size(P).get(1) - 1.0;
                     auto last_node_h = size(P).get(0) - 1;
-                    std::cout<< "last_node_H: "<< last_node_H << "  \n"; 
+                    
                     if(rP.inside(last_node_h)){
                         P.set(last_node_h, last_node_H-1, 0.0);
                         P.set(last_node_h, last_node_H, 1.0);

@@ -45,6 +45,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(diag_mult);
             UTOPIA_RUN_TEST(rotate_test);
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
+            UTOPIA_RUN_TEST(mat_vec_multiply_test);
+
             
 
 
@@ -62,6 +64,24 @@ namespace utopia {
             Matrix D = diag(diag(H));
             H = H + transpose(H) - D;
         }
+
+        void mat_vec_multiply_test()
+        {
+            Matrix H = sparse(n_, n_, 3); 
+            assemble_laplacian_1D(H);
+            
+            Vector x = values(n_, 1.0); 
+            Vector y = values(n_, 1.0); 
+
+            // UTOPIA_NO_ALLOC_BEGIN("mat_vec_multiply_test1");
+            // x = H*x; 
+            // UTOPIA_NO_ALLOC_END();            
+
+            UTOPIA_NO_ALLOC_BEGIN("mat_vec_multiply_test2");
+            y = H*x; 
+            UTOPIA_NO_ALLOC_END();                        
+
+        }        
 
         void emul_test()
         {
