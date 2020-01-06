@@ -171,11 +171,17 @@ namespace utopia
             this->compute_s_global(level, this->memory_.s_working[level]);
             E_new = this->get_multilevel_energy(this->function(level), level, this->memory_.s_working[level]);
 
+
             //----------------------------------------------------------------------------
             //                        trial point acceptance
             //----------------------------------------------------------------------------
             ared = E_old - E_new;
             rho = ared / coarse_reduction;
+            if(!std::isfinite(E_new) || !std::isfinite(rho)){
+                rho = 0.0;             
+            }
+
+            // in theory, this should never happen 
             if(coarse_reduction<=0){
                 rho = 0;
             }
@@ -292,6 +298,10 @@ namespace utopia
             rho = (ared < 0.0) ? 0.0 : ared/pred;
             rho = (rho != rho) ? 0.0 : rho;
 
+            // just some safety checks 
+            if(!std::isfinite(energy_new) || !std::isfinite(rho) || has_nan_or_inf(this->memory_.x[level])){
+                rho = 0.0;             
+            }            
 
             // update in hessian approx ...
             // TODO:: could be done in more elegant way....
@@ -336,6 +346,16 @@ namespace utopia
                 // Vector g_old = memory_.g[level];
                 this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
                 this->memory_.gnorm[level] = this->criticality_measure(level);
+
+                // this is just a safety check
+                if(!std::isfinite(this->memory_.gnorm[level])){
+                    // std::cout<<"yes, here.... \n"; 
+                    rho = 0; 
+                    this->memory_.x[level] -= this->memory_.s[level]; // return iterate into its initial state
+                    this->compute_s_global(level, this->memory_.s_working[level]);     
+                    this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
+                    this->memory_.gnorm[level] = this->criticality_measure(level);
+                }
 
                 // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
             }

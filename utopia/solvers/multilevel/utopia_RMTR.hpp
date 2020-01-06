@@ -280,6 +280,10 @@ namespace utopia
             this->ml_derivs_.g[level] *= - 1.0; 
             _tr_subproblems[level]->solve(this->ml_derivs_.H[level], this->ml_derivs_.g[level], this->memory_.s[level]);
             this->ml_derivs_.g[level] *= - 1.0; 
+
+            if(has_nan_or_inf(this->memory_.s[level])){
+                this->memory_.s[level].set(0.0); 
+            }
             
             return true;
         }
