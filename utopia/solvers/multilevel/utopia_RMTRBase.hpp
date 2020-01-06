@@ -135,6 +135,7 @@ namespace utopia
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms0");
             // Restricted fine level gradient 
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
@@ -149,10 +150,12 @@ namespace utopia
             //    initializing coarse level (deltas, constraints, hessian approx, ...)
             //----------------------------------------------------------------------------
             this->init_level(level-1);
+            UTOPIA_NO_ALLOC_END();
 
             //----------------------------------------------------------------------------
             //                  first order coarse level objective managment
             //----------------------------------------------------------------------------
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms1");
             this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
 
             if(!this->skip_BC_checks()){
@@ -161,22 +164,31 @@ namespace utopia
 
             bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
             this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
+            UTOPIA_NO_ALLOC_END();
 
             //----------------------------------------------------------------------------
             //                   second order coarse level objective managment
             //----------------------------------------------------------------------------
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::hessian_comp2");
             this->get_multilevel_hessian(this->function(level), level);
+            UTOPIA_NO_ALLOC_END();
             this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
 
 
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms22");
             if(!this->skip_BC_checks()){
                 this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
             }
+            UTOPIA_NO_ALLOC_END();
 
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::hessian_comp3");
             this->function(level-1).hessian(this->memory_.x[level-1], this->ml_derivs_.H[level-1]);
+            UTOPIA_NO_ALLOC_END();
 
             // memory_.H_diff[level-1] = memory_.H_diff[level-1] -  memory_.H[level-1];
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms24");
             this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
+            UTOPIA_NO_ALLOC_END();
 
             return smoothness_flg; 
 
@@ -185,6 +197,7 @@ namespace utopia
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms0");
             // Restricted fine level gradient 
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
@@ -202,10 +215,13 @@ namespace utopia
 
             this->get_multilevel_hessian(this->function(level), level);
             this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
+            UTOPIA_NO_ALLOC_END();
 
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms1");
             if(!this->skip_BC_checks()){
                 this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
             }
+            UTOPIA_NO_ALLOC_END();
 
             return true; 
         }                   

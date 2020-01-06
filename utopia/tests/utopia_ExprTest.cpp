@@ -46,6 +46,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(rotate_test);
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
             UTOPIA_RUN_TEST(mat_vec_multiply_test);
+            UTOPIA_RUN_TEST(vec_add_add_add_test); 
 
             
 
@@ -56,6 +57,22 @@ namespace utopia {
             // Seq. fault 
             // UTOPIA_RUN_TEST(mat_transp_mult_test); 
         }
+
+        void vec_add_add_add_test()
+        {
+            Vector x = values(n_, 1.0); 
+            Vector y = values(n_, 2.0); 
+            Vector z = values(n_, 3.0); 
+
+            UTOPIA_NO_ALLOC_BEGIN("vec_add_add_add_test");
+            x += y + z; 
+            UTOPIA_NO_ALLOC_END();   
+
+            UTOPIA_NO_ALLOC_BEGIN("vec_add_add_add_test2");
+            x = x + y + z; 
+            UTOPIA_NO_ALLOC_END();               
+        }
+
 
         void mat_transp_mult_test()
         {

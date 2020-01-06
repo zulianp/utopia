@@ -277,10 +277,19 @@ namespace utopia
 
         inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
         {
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::compute_gradient1");
             fun.gradient(x, g[level]);
+            UTOPIA_NO_ALLOC_END();
 
             if(level < n_levels_-1){
-                g[level] += g_diff[level] + (H_diff[level] * s_global); 
+                UTOPIA_NO_ALLOC_BEGIN("RMTR::compute_gradient2");
+                help_[level] = H_diff[level] * s_global; 
+                UTOPIA_NO_ALLOC_END();
+
+                UTOPIA_NO_ALLOC_BEGIN("RMTR::compute_gradient3");
+                // g[level] += g_diff[level] + help_[level]; 
+                g[level] = g[level] + g_diff[level] + help_[level]; 
+                UTOPIA_NO_ALLOC_END();
             }
             return true;
         }

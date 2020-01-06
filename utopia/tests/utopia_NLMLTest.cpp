@@ -47,33 +47,33 @@ namespace utopia
 
 		void initialize() override
 		{
-			this->register_experiment("RMTR_first_order_test",
-				[this]() {
-		            // auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-		            // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
+			// this->register_experiment("RMTR_first_order_test",
+			// 	[this]() {
+		 //            // auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+		 //            // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
 
-					auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-					// tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
-					tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-					tr_strategy_coarse->atol(1e-12);
+			// 		auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+			// 		// tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+			// 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+			// 		tr_strategy_coarse->atol(1e-12);
 
-		            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> > ());
+		 //            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		 //            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> > ());
 
-		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
-		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+		 //            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
-		            // Set TR-QP strategies
-		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-		            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+		 //            // Set TR-QP strategies
+		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+		 //            rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
-		            run_test(this->ml_problems_, rmtr, "RMTR_first_order_test", this->verbose_);
-				}
-			);
+		 //            run_test(this->ml_problems_, rmtr, "RMTR_first_order_test", this->verbose_);
+			// 	}
+			// );
 
 			// this->register_experiment("RMTR_first_order_MGOPT_test",
 			// 	[this]() {
@@ -98,27 +98,35 @@ namespace utopia
 			// 	}
 			// );			
 
-			// this->register_experiment("RMTR_second_order_test",
-			// 	[this]() {
-		 //            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-		 //            // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
-		 //            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+			this->register_experiment("RMTR_second_order_test",
+				[this]() {
+		            // auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+		            // // auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
+		            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		            // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+		            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+					auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+					// tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+					tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+					tr_strategy_coarse->atol(1e-12);
 
-		 //            // Set TR-QP strategies
-		 //            rmtr->verbose(true);
-		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-		 //            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
-		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-		 //            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
 
-		 //            run_test(this->ml_problems_, rmtr, "RMTR_second_order_test", this->verbose_);
-			// 	}
-			// );	
+		            // Set TR-QP strategies
+		            rmtr->verbose(true);
+		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+
+		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+		            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+
+		            run_test(this->ml_problems_, rmtr, "RMTR_second_order_test", this->verbose_);
+				}
+			);	
 
 			// this->register_experiment("RMTR_galerkin_test",
 			// 	[this]() {
@@ -154,7 +162,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 10); 
+			in.set("max-it", 1); 
 			in.set("verbose", true);
 
             // RMTR specific parameters
