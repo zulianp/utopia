@@ -212,10 +212,14 @@ namespace utopia
             //    initializing coarse level (deltas, constraints, hessian approx, ...)
             //----------------------------------------------------------------------------
             this->init_level(level-1);
-
-            this->get_multilevel_hessian(this->function(level), level);
-            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
             UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::hessian_comp2");
+            this->get_multilevel_hessian(this->function(level), level);
+            UTOPIA_NO_ALLOC_END();
+            
+            this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
+            
 
             UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms1");
             if(!this->skip_BC_checks()){
