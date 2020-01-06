@@ -22,7 +22,7 @@ namespace utopia
 			return "NLML_test benchmark.";
 		}
 
-		NLML_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(3), verbose_(verbose)
+		NLML_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(5), verbose_(verbose)
 		{
 			ml_problems_.resize(1); 
 			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
@@ -30,7 +30,9 @@ namespace utopia
 			// ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);
 
 
-			ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Morebv1D<Matrix, Vector> > > (n_levels_, n_);
+			// ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Morebv1D<Matrix, Vector> > > (n_levels_, n_);
+
+			ml_problems_[0] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > > (n_levels_, n_);
 
 		}
 
@@ -42,34 +44,15 @@ namespace utopia
 
 		void initialize() override
 		{
-			this->register_experiment("RMTR_first_order_test",
-				[this]() {
-		            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
-		            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
-		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
-
-		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-
-		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
-
-		            // Set TR-QP strategies
-		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-		            rmtr->set_fine_tr_strategy(tr_strategy_fine);
-
-		            run_test(this->ml_problems_, rmtr, "RMTR_first_order_test", this->verbose_);
-				}
-			);
-
-			// this->register_experiment("RMTR_first_order_MGOPT_test",
+			// this->register_experiment("RMTR_first_order_test",
 			// 	[this]() {
 		 //            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
 		 //            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
-		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-		            
+		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+
 		 //            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
 		 //            // Set TR-QP strategies
@@ -78,7 +61,26 @@ namespace utopia
 
 		 //            run_test(this->ml_problems_, rmtr, "RMTR_first_order_test", this->verbose_);
 			// 	}
-			// );			
+			// );
+
+			this->register_experiment("RMTR_first_order_MGOPT_test",
+				[this]() {
+		            auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg", "lu", true);
+		            auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector> >("sor");
+		            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
+
+		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		            
+		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+
+		            // Set TR-QP strategies
+		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+		            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+
+		            run_test(this->ml_problems_, rmtr, "RMTR_first_order_test", this->verbose_);
+				}
+			);			
 
 			this->register_experiment("RMTR_second_order_test",
 				[this]() {
@@ -134,20 +136,20 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
-			in.set("max-it", 30); 
+			in.set("max-it", 50); 
 			in.set("verbose", true);
-			in.set("rho_tol", 1e-16);
 
             // RMTR specific parameters
-            in.set("max_coarse_it", 2);
+            in.set("max_coarse_it", 1);
             in.set("max_sucessful_coarse_it", 1);
             in.set("max_QP_coarse_it", 1000);
             in.set("pre_smoothing_steps", 1);
             in.set("post_smoothing_steps", 1);
             in.set("max_sucessful_smoothing_it", 1);
-            in.set("max_QP_smoothing_it", 10);
+            // in.set("max_QP_smoothing_it", 10);
+            in.set("max_QP_smoothing_it", 5);
             in.set("delta0", 1.0e10);
-            in.set("grad_smoothess_termination", 1e-7);
+            in.set("grad_smoothess_termination", 1e-8);
             // in.set("skip_BC_checks", true);
 
 			solver->read(in); 

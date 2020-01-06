@@ -26,7 +26,8 @@ namespace utopia
 			test_functions_.resize(1);
 			// test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
 
-			test_functions_[0] = std::make_shared<Poisson3D<Matrix, Vector> >(n_);
+			// test_functions_[0] = std::make_shared<Poisson3D<Matrix, Vector> >(n_);
+			test_functions_[0] = std::make_shared<Morebv1D<Matrix, Vector> >(n_);
 
 			// test_functions_[0] = std::make_shared<Poisson2D<Matrix, Vector> >(n_);
 
@@ -185,7 +186,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
 			in.set("max-it", 500); 
-			in.set("verbose", false);
+			in.set("verbose", true);
 			solver.read(in); 
 
 
@@ -221,19 +222,19 @@ namespace utopia
 				}
 
 				// disp(x_init);
-				Poisson3D<Matrix, Vector> * fun_bratu = dynamic_cast<Poisson3D<Matrix, Vector> *>(test_functions.back().get());
-				// fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson2D_exact.vtk");
-				fun_bratu->output_to_VTK(x_init, "Poisson3D.vtk");
+				// Poisson3D<Matrix, Vector> * fun_bratu = dynamic_cast<Poisson3D<Matrix, Vector> *>(test_functions.back().get());
+				// // fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson2D_exact.vtk");
+				// fun_bratu->output_to_VTK(x_init, "Poisson3D.vtk");
 				// fun_bratu->output_to_VTK(test_functions[i]->exact_sol(), "Poisson3D_exact.vtk");
 
 
-				if(test_functions[i]->exact_sol_known())
-				{
-					// disp(x_init, "num_sol..."); 
-					// disp(test_functions[i]->exact_sol(), "exact solution"); 
-					std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n"; 
-					// disp(x_init);
-				}
+				// if(test_functions[i]->exact_sol_known())
+				// {
+				// 	// disp(x_init, "num_sol..."); 
+				// 	// disp(test_functions[i]->exact_sol(), "exact solution"); 
+				// 	std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n"; 
+				// 	// disp(x_init);
+				// }
 
 				mpi_world_barrier();
 			}

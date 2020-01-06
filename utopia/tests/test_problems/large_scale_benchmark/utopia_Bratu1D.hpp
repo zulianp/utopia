@@ -17,12 +17,16 @@ namespace utopia
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
-        Bratu1D(const SizeType & n): n_(n), lambda_(2.5), lambda_critical_(3.513830719)
+        Bratu1D(const SizeType & n): n_(n), lambda_(3.5), lambda_critical_(3.513830719)
         { 
             a_ = 0.0; 
             b_ = 1.0;  
             L_ = b_ - a_; 
             h_ = L_ / (n_-1); 
+
+            // check if user param reasonable 
+            if(lambda_ > lambda_critical_)
+                lambda_ = 3.5; 
 
             H_ = sparse(n_, n_, 3); 
             assemble_laplacian_1D(H_, true);
@@ -73,14 +77,14 @@ namespace utopia
             *A_help_  = ((H_) * x); 
             energy = 0.5 * dot(x, *A_help_);
             *A_help_  = exp(x); 
-            energy -=  lambda_ * sum(*A_help_ );
+            energy -=  h_*lambda_ * sum(*A_help_ );
             
             return true;
         }
 
         bool gradient(const Vector &x, Vector &g) const override
         {   
-            g = (H_ * x) - (lambda_ * exp(x));
+            g = (H_ * x) - h_*(lambda_ * exp(x));
 
             {
                 Write<Vector>   w(g); 
@@ -102,7 +106,7 @@ namespace utopia
         bool hessian(const Vector &x, Matrix &H) const override
         {
             H = H_; 
-            *A_help_ = (-lambda_) * exp(x);
+            *A_help_ = h_*(-lambda_) * exp(x);
             H += Matrix(diag(*A_help_));
             set_zero_rows(H, bc_indices_, 1.);
 
@@ -210,14 +214,16 @@ namespace utopia
             }
 
             auto n = size(M).get(0);
-            M *= 1./(h_*h_);  
+            // M *= 1./(h_*h_);  
+            M *= 1./(h_);  
         }
 
 
 
     private: 
         Scalar n_, L_, h_;   
-        const Scalar lambda_, lambda_critical_; 
+        Scalar lambda_;
+        const Scalar lambda_critical_; 
         Scalar a_, b_;       
 
         std::vector<SizeType> bc_indices_; 
