@@ -32,7 +32,7 @@ namespace utopia
         this->_it_global = 0;
 
         //----------------------------------------------
-        if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0){
+        if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && this->verbose()==true && mpi_world_rank() == 0){
             std::cout << this->red_;
             std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(this->local_level_dofs_.back());
             this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
@@ -62,7 +62,7 @@ namespace utopia
 
             if(this->verbose() && mpi_world_rank() == 0){
                 std::cout << this->red_;
-                if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL){
+                if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL && this->verbose()==true){
                     this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||",  "   E "});
                 }
 
@@ -208,7 +208,7 @@ namespace utopia
             }
 
 
-            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0)
             {
                 // just to see what is being printed
                 std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level);
@@ -222,9 +222,9 @@ namespace utopia
             }
 
         }
-        else if(mpi_world_rank() ==0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+        else if(mpi_world_rank() ==0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true)
         {
-            std::cout<< "--------- Recursion terminated due to non-smoothness of the gradient ----------------------- \n";
+            std::cout<< "--------- Recursion terminated due to non-smoothness of the gradient, level: "<< level << " ----------------------- \n";
         }
 
         //----------------------------------------------------------------------------
@@ -259,7 +259,7 @@ namespace utopia
         make_hess_updates = this->init_deriv_loc_solve(this->function(level), level, solve_type); 
 
         converged  = this->check_local_convergence(it, it_success, level, this->memory_.delta[level], solve_type);
-        if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+        if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0)
         {
             this->print_level_info(level);
             PrintInfo::print_iter_status(0, {this->memory_.gnorm[level],  this->memory_.energy[level], ared, pred, rho, this->memory_.delta[level] });
@@ -319,10 +319,13 @@ namespace utopia
             //----------------------------------------------------------------------------
             delta_converged = this->delta_update(rho, level, this->memory_.s_working[level]);
 
-            if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
-            {
-                make_grad_updates = false; 
-            }
+
+            // TODO:: minimize norm computations 
+            // if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
+            // if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
+            // {
+            //     make_grad_updates = false; 
+            // }
 
             // can be more efficient, see commented lines below 
             make_hess_updates =   make_grad_updates; 
@@ -341,7 +344,7 @@ namespace utopia
             //     make_hess_updates = false;  
             // }
 
-            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0)
             {
                 PrintInfo::print_iter_status(it, {this->memory_.gnorm[level], this->memory_.energy[level], ared, pred, rho, this->memory_.delta[level]});
             }
@@ -356,7 +359,7 @@ namespace utopia
 
         }
 
-        if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0){
+        if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0){
             std::cout<< this->def_;
         }
 

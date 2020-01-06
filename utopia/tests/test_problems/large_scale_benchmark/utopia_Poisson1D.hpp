@@ -41,7 +41,6 @@ namespace utopia
         {
             H = H_;
             set_zero_rows(H, bc_indices_, 1.);
-
             return true;
         }
 
@@ -159,15 +158,14 @@ namespace utopia
                     }
 
                     if(i == 0 || i == n - 1) {
-                        M.set(i, i, 1.);
+                        M.set(i, i, 2.0);
                     } else {
                         M.set(i, i, 2.0);
                     }
                 }
             }
 
-            auto n = size(M).get(0);
-            M *= 1./(h_*h_);  
+            M *= 1./h_;  
         }
 
         void init_memory()
@@ -205,7 +203,7 @@ namespace utopia
                     else
                     {
                         // return (2.0* device::sin(xi)) + (xi*device::cos(xi)); 
-                        return (2.0* std::sin(xi)) + (xi* std::cos(xi)); 
+                        return h_ * (2.0* std::sin(xi)) + (xi* std::cos(xi)); 
                     }
                 });
 
@@ -276,7 +274,7 @@ namespace utopia
                     }
                     else
                     {
-                        return -10.0; 
+                        return h_ * -10.0; 
                     }
                 });
 
@@ -322,11 +320,6 @@ namespace utopia
 
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
-            
-            // THIS FUNCTION IS BUGGING 
-            // ExtendedFunction<Matrix, Vector>::set_rhs(rhs_);
-
-
             Vector upper_bound = values(n_, 0.0); 
             {
                 parallel_each_write(upper_bound, UTOPIA_LAMBDA(const SizeType i) -> Scalar
@@ -364,7 +357,7 @@ namespace utopia
                     }
                     else
                     {
-                        return (9.0*pi_*pi_*std::cos(3.0*pi_*xi)) + (16.0 *pi_*pi_*std::sin(4.0*pi_*xi));
+                        return h_*(9.0*pi_*pi_*std::cos(3.0*pi_*xi)) + (16.0 *pi_*pi_*std::sin(4.0*pi_*xi));
                     }
                 });
 
@@ -409,8 +402,6 @@ namespace utopia
             }
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
-            // ExtendedFunction<Matrix, Vector>::set_rhs(rhs_);
-
 
             Vector upper_bound = values(n_, 0.0); 
             {
@@ -451,11 +442,11 @@ namespace utopia
                     else
                     {
                         if(i<n_/2.0){
-                            return 50.0; 
+                            return h_*50.0; 
                         }
                         else
                         {
-                            return -50.0; 
+                            return h_*-50.0; 
                         }
                     }
                 });
@@ -502,7 +493,6 @@ namespace utopia
             }
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
-            // ExtendedFunction<Matrix, Vector>::set_rhs(rhs_);
 
             this->constraints_ = make_box_constaints(std::make_shared<Vector>(values(n_, -0.5)),
                                                      std::make_shared<Vector>(values(n_, 0.3)));    

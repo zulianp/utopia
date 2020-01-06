@@ -87,7 +87,7 @@ namespace utopia
         }        
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF, FIRST_ORDER_MGOPT>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
             // Restricted fine level gradient 
@@ -176,6 +176,10 @@ namespace utopia
             // Restricted fine level gradient 
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
+            if(!this->skip_BC_checks()){
+                this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
+            }            
+
             // Projecting current iterate to obtain initial iterate on coarser grid 
             this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
 
@@ -187,11 +191,15 @@ namespace utopia
             this->get_multilevel_hessian(this->function(level), level);
             this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
 
+            if(!this->skip_BC_checks()){
+                this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), this->ml_derivs_.H_diff[level-1]);
+            }
+            
             return true; 
         }                   
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF>::value, int> = 0 >
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF, FIRST_ORDER_MGOPT>::value, int> = 0 >
         bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
         {
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)){

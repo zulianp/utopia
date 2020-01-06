@@ -28,7 +28,7 @@ namespace utopia
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
-        Poisson2D(const SizeType & n, const SizeType & problem_type=2):
+        Poisson2D(const SizeType & n, const SizeType & problem_type=1):
                 n_(n), 
                 setup_(false), 
                 problem_type_(problem_type)
@@ -58,7 +58,7 @@ namespace utopia
             setup_ = true;
         }     
 
-        Poisson2D(const DM  & dm, const SizeType & problem_type=2): setup_(false), problem_type_(problem_type)
+        Poisson2D(const DM  & dm, const SizeType & problem_type=1): setup_(false), problem_type_(problem_type)
         {
             da_ = dm; 
             // necessary to provide reasonable global dimension 
@@ -583,12 +583,9 @@ namespace utopia
             DMDAGetCorners(da_, &xs, &ys, NULL, &xm, &ym, NULL);
             DMDAVecGetArray(da_, raw_type(x), &array);
 
-            for (j=ys; j<ys+ym; j++) 
-            {
-                for (i=xs; i<xs+xm; i++) 
-                {
-                    if (i==0 || j==0 || i==mx-1 || j==my-1) 
-                    {
+            for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                    if (i==0 || j==0 || i==mx-1 || j==my-1) {
                         array[j][i] = 0.0; 
                     }
                 }

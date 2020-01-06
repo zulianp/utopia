@@ -133,10 +133,12 @@ namespace utopia
                 }
 
                 if(r.begin() == 0){                
-                    g.set(0,  -x.get(0)); 
+                    // g.set(0,  -x.get(0)); 
+                    g.set(0,  0.0); 
                 }
                 if(r.end() == n_){                
-                    g.set(n_-1, -x.get(n_-1)); 
+                    // g.set(n_-1, -x.get(n_-1)); 
+                    g.set(n_-1, 0.0); 
                 }                
             }      
 
@@ -162,7 +164,7 @@ namespace utopia
                     Scalar element, item; 
 
                     if(i==0){
-                        Scalar xi_m = x.get(i-1);
+                        Scalar xi_m = 0.0;
                         Scalar xi_p = x.get(i+1);
                         element = xi + ti + 1.0;
 
@@ -179,7 +181,7 @@ namespace utopia
                     }
                     else if(i==n-1){
                         Scalar xi_m = x.get(i-1);
-                        Scalar xi_p = x.get(i+1);
+                        Scalar xi_p = 0.0;
                         element = xi + ti + 1.0;
 
                         Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p); 

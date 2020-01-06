@@ -5,8 +5,10 @@
 namespace utopia
 {
 
-    enum MultiLevelCoherence{   FIRST_ORDER     = 1,
-                                FIRST_ORDER_DF  = 3,
+    enum MultiLevelCoherence{   FIRST_ORDER         = 1,
+                                FIRST_ORDER_DF      = 3,
+                                FIRST_ORDER_MGOPT   = 4,
+                                
                                 SECOND_ORDER    = 2,
                                 GALERKIN        = 0};
 
