@@ -71,7 +71,7 @@ namespace utopia {
 
     private:
 
-        void set_variable_bounds(SNES &snes);
+        void set_variable_bounds(SNES &snes, const SizeType & ls);
 
         // this function is expensive - wrt to convert
         // however, in utopia is not ready for pure wrap implementation

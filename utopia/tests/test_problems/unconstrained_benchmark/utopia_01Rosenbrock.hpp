@@ -63,7 +63,10 @@ namespace utopia
             }
 
             assert(point.size() == this->dim());
-            result = zeros(this->dim());
+
+            if(empty(result)){
+                result = zeros(this->dim());
+            }
 
             const Read<Vector> read(point);
             const Write<Vector> write(result);
@@ -85,8 +88,9 @@ namespace utopia
 
             assert(point.size() == this->dim());
 
-            if(empty(result))
+            if(empty(result)){
                 result = zeros(this->dim(), this->dim());
+            }
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);
@@ -134,6 +138,11 @@ namespace utopia
         {
             return 2;
         }
+
+        bool exact_sol_known() const
+        {
+            return true;
+        }        
 
 
     private:

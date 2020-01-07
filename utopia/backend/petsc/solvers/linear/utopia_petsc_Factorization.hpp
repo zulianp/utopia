@@ -75,7 +75,6 @@ namespace utopia {
         {
             strategy_.describe(os);
         }
-        
 
         inline void read(Input &is) override
         {
@@ -86,7 +85,6 @@ namespace utopia {
         }
 
     private:
-
         class Strategy : public KSPSolver<Matrix, Vector> {
         public:
             using KSPSolver<Matrix, Vector>::KSPSolver;

@@ -17,7 +17,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class MoreSorensenEigen final: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::LinearSolver<Matrix, Vector> 		LinearSolver;
         typedef utopia::EigenSolver<Matrix, Vector> 		EigenSolver;
@@ -70,7 +71,7 @@ namespace utopia
         {
             SizeType loc_size_rhs = local_size(b); 
             if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
+                    init_memory(loc_size_rhs);
             }               
             return aux_solve(*this->get_operator(), b, x);
         }
@@ -186,7 +187,7 @@ namespace utopia
         }
 
 
-        void init(const SizeType &ls)
+        void init_memory(const SizeType & ls) override
         {
             auto zero_expr = local_zeros(ls);
 

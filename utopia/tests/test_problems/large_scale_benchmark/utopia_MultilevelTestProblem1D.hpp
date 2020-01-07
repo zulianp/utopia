@@ -94,6 +94,8 @@ namespace utopia
 
             this->n_dofs(0, n_coarse_elements + 1);
 
+            // std::cout<<"n_coarse_elements: "<< n_coarse_elements << "  \n"; 
+
 
             for(SizeType i = 1; i < n_levels; ++i) {
                 this->n_dofs(i, (this->n_dofs(i-1) - 1) * 2 + 1);
@@ -107,11 +109,14 @@ namespace utopia
                 const auto n_coarse = this->n_dofs(i);
                 const auto n_fine   = this->n_dofs(i + 1);
 
+                // std::cout<<"n_fine: "<< n_fine << "  n_ccoarse: "<< n_coarse << "  \n"; 
+
                 Matrix I = sparse(n_fine, n_coarse, 2);
                 // std::cout<<"n_coarse: "<< n_coarse << "  n_fine: "<< n_fine << "  \n";
 
                 {
                     Write<Matrix> w_(I, utopia::GLOBAL_INSERT);
+
                     auto r = row_range(I);
 
                     SizeType j = std::floor(r.begin()/2.);
@@ -140,8 +145,11 @@ namespace utopia
                                 I.set(kp1, j + 1, 0.5/h);
                             }
                         }
+
                     }
                 }
+
+                // disp(I, "I");
 
                 if(this->remove_bc() && i==n_levels - 2) {
                     Write<Matrix> w_(I);
@@ -158,8 +166,36 @@ namespace utopia
                     }
                 }
 
+                // approx of projection ... 
+                auto h_fine     = (1./(this->n_dofs(i+1) - 1)); 
+                auto h_coarse   = (1./(this->n_dofs(i) - 1)); 
+                Matrix P = 1./h_coarse*h_fine*transpose(I); 
+                // disp(P, "P"); 
+
+                {
+                    Write<Matrix> w_(P, utopia::GLOBAL_INSERT);
+                    auto rP = row_range(P);
+
+                    auto last_node_H = size(P).get(1) - 1.0;
+                    auto last_node_h = size(P).get(0) - 1;
+                    
+                    if(rP.inside(last_node_h)){
+                        P.set(last_node_h, last_node_H-1, 0.0);
+                        P.set(last_node_h, last_node_H, 1.0);
+                    } 
+
+                    if(rP.inside(0)) {
+                        P.set(0, 1, 0.);
+                        P.set(0, 0, 1.);
+                    }
+                }
+
+                // disp(P, "P"); 
+
+
                 // this->transfers_[i] = std::make_shared<IPTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I));
-                this->transfers_[i] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I));
+                // this->transfers_[i] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I));
+                this->transfers_[i] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I), std::make_shared<Matrix>(P));
             }
 
             for(auto l=0; l <n_levels; l++)

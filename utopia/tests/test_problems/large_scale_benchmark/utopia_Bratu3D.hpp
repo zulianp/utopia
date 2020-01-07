@@ -44,7 +44,7 @@ namespace utopia
             return true;
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &result) const override
+        bool gradient(const Vector &x, Vector &result) const override
         {
             result = (H_ * x) - (dxyzLambda_ * exp(x)); 
 

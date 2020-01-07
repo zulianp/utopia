@@ -11,7 +11,8 @@ namespace  utopia
     template<class Matrix, class Vector>
     class GeneralizedCauchyPoint final: public OperatorBasedQPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
 
         public:
@@ -55,7 +56,7 @@ namespace  utopia
             {
                 SizeType loc_size_rhs = A.local_size().get(0);
                 if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
+                    init_memory(loc_size_rhs);
                 }
             }                
 
@@ -240,10 +241,8 @@ namespace  utopia
             }
 
 
-        private:
-
-
-            void init(const SizeType & ls)
+        public:
+            void init_memory(const SizeType & ls) override
             {
                 t_help_ = local_values(1, 0.0);
 
@@ -255,12 +254,12 @@ namespace  utopia
                 Hd_                     = zero_expr; 
                 d_                      = zero_expr; 
 
-
                 initialized_ = true;    
                 loc_size_ = ls;      
             }
 
 
+        private:
             SizeType cp_memory_;    // memory size
             Vector t_help_, break_points_, sorted_break_points_, active_set_, e_, Hd_, d_, rhs_minus_; 
 

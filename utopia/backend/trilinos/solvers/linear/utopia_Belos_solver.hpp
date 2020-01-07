@@ -21,11 +21,12 @@ namespace utopia {
     class BelosSolver {};
 
     template <typename Matrix, typename Vector>
-    class BelosSolver<Matrix, Vector, TRILINOS> final
-    : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
+    class BelosSolver<Matrix, Vector, TRILINOS> final : public PreconditionedSolver<Matrix, Vector>
+    {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        
         typedef utopia::Preconditioner<Vector> Preconditioner;
         typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
@@ -89,13 +90,7 @@ namespace utopia {
          *
          */
         BelosSolver * clone() const override;
-        /**
-         * @brief      Sets the smoothing vectors.
-         *
-         * @param[x]  x The x vector
-         * @param[rhs]  rhs The rhs vector
-         */
-        bool smooth(const Vector &rhs, Vector &x) override;
+        
 
         private:
 

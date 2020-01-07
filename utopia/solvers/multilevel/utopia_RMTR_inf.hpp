@@ -138,10 +138,13 @@ namespace utopia
 
 
     protected:
-        virtual void init_memory(const SizeType & fine_local_size) override
+        virtual void init_memory() override
         {
-            RMTR::init_memory(fine_local_size);
-            MLConstraints::init_constr_memory(this->n_levels(), fine_local_size); 
+            RMTR::init_memory();
+
+            // TODO:: modify allocation of constraints 
+            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+            MLConstraints::init_constr_memory(this->n_levels(), dofs.back()); 
 
             const SizeType fine_level = this->n_levels()-1;
 
@@ -206,7 +209,7 @@ namespace utopia
          * @param[in]  g_coarse      Coarse level gradient
          *
          */
-        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
+        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
             Vector Pc;
 
@@ -221,14 +224,14 @@ namespace utopia
             Pc -= this->memory_.x[level];
             Scalar  g_norm =  norm2(Pc);
 
-            return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;
+            return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
         }
 
 
         // measuring wrt to feasible set...
         virtual Scalar criticality_measure(const SizeType & level) override
         {
-            return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->memory_.g[level]); 
+            return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]); 
         }
 
 
@@ -274,7 +277,7 @@ namespace utopia
 
 
             _tr_subproblems[level]->set_box_constraints(box);
-            this->_tr_subproblems[level]->solve(this->memory_.H[level], -1.0 * this->memory_.g[level], this->memory_.s[level]);
+            this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
 
 
 

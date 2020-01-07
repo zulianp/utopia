@@ -9,9 +9,6 @@ namespace utopia {
     template<class Matrix, class Vector>
     class LinearSolver;
 
-    template<class Matrix, class Vector>
-    class Smoother;
-
     template<typename Matrix, typename Vector>
     class DirectSolver;
 

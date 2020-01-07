@@ -155,9 +155,9 @@ namespace utopia
 
 
     protected:
-        virtual void init_memory(const SizeType & fine_local_size) override
+        virtual void init_memory() override
         {
-            RMTR::init_memory(fine_local_size);
+            RMTR::init_memory();
 
             SizeType fine_lev=this->n_levels() - 1; 
             hessian_approxs_[fine_lev]->initialize(this->memory_.x[fine_lev], this->memory_.g[fine_lev]);
@@ -225,6 +225,10 @@ namespace utopia
             }
         }
 
+        virtual Scalar criticality_measure(const SizeType & level) override
+        {
+            return norm2(this->ml_derivs_.g[level]);
+        }
 
         virtual bool check_initialization() override
         {

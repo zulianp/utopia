@@ -19,7 +19,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class CauchyPoint final: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
     public:
 
@@ -33,6 +34,11 @@ namespace utopia
         inline CauchyPoint * clone() const override
         {
             return new CauchyPoint();
+        }
+
+        void init_memory(const SizeType & ls) override
+        {
+            Bg_ = local_zeros(ls);
         }
 
     private:

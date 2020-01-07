@@ -1,9 +1,7 @@
-// #include "utopia_trilinos_Base.hpp"
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-// #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
 #include "utopia_Eval_Residual.hpp"
@@ -30,7 +28,7 @@ namespace utopia
             input_params_.set("rtol", 1e-10);
             input_params_.set("stol", 1e-10);
             input_params_.set("verbose", verbose_);
-            input_params_.set("max-it", 20);
+            input_params_.set("max-it", 50);
 
             // RMTR specific parameters
             input_params_.set("max_coarse_it", 2);
@@ -141,7 +139,7 @@ namespace utopia
             QP_solver->max_it(10);
             QP_solver->verbose(verbose_);
             // QP_solver->norm_schedule(NormSchedule::NEVER);
-            QP_solver->norm_schedule(NormSchedule::EVERY_ITER);
+            QP_solver->norm_frequency(0.0);
             QP_solver->current_radius(1e5);
 
             QP_solve(QP_solver);

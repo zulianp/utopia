@@ -20,7 +20,7 @@ namespace utopia {
         {
             const auto &i = instance();
             bool valid = i.types_.find(type) != i.types_.end();
-
+        
             if(!valid && verbose) {
                 std::cerr << "Invalid tao type " << type << ". Valid types are: " << std::endl;
                 i.describe(std::cerr);
@@ -235,7 +235,6 @@ namespace utopia {
         void init(MPI_Comm comm)
         {
             destroy();
-
             assert(TaoTypes::is_valid(type_));
 
             auto ierr = TaoCreate(comm, &tao);  assert(ierr == 0);
@@ -339,7 +338,10 @@ namespace utopia {
         {
             std::string type;
             in.get("type", type);
-            set_type(type.c_str());
+
+            if(type.size()>0 && TaoTypes::is_valid(type)){
+                set_type(type.c_str());
+            }
         }
 
         inline bool initialized(const SizeType & n_global) const
@@ -514,7 +516,7 @@ namespace utopia {
         impl_->set_tol(this->atol(), this->rtol(), this->stol(), this->max_it());
 
         if(this->has_bound()) {
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(local_size(x));
             impl_->set_bounds(this->get_lower_bound(), this->get_upper_bound());
         }
 

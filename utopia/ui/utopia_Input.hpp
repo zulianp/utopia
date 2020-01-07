@@ -21,8 +21,8 @@ namespace utopia {
                             VERBOSITY_LEVEL_VERY_VERBOSE  = 1,
                             VERBOSITY_LEVEL_DEBUG         = 2 };
 
-    enum NormSchedule{  EVERY_ITER = 1,
-                        NEVER = 2};
+    // enum NormSchedule{  EVERY_ITER = 1,
+    //                     NEVER = 2};
 
     enum MultilevelNormSchedule{    ALWAYS = 1,
                                     OUTER_CYCLE = 2};                        

@@ -18,11 +18,18 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class QPTestFunction_2D : public Function<Matrix, Vector>
+    class QPTestFunction_2D final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
 
-        QPTestFunction_2D() { };
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+
+        QPTestFunction_2D() 
+        {
+            x_init_ = zeros(2);
+            x_exact_ = zeros(2);
+        }
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
             const Read<Vector> read(point);
@@ -35,7 +42,9 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override {
 
-            result = zeros(2);
+            if(empty(result)){
+                result = zeros(2);
+            }
 
             const Read<Vector> read(point);
             const Write<Vector> write(result);
@@ -47,7 +56,13 @@ namespace utopia
 
         bool hessian(const Vector &/*point*/, Matrix &result) const override {
 
-            result = zeros(2, 2);
+            if(empty(result)){
+                result = zeros(2, 2);
+            }
+            else
+            {
+                result *= 0.0; 
+            }
 
             const Write<Matrix> write(result);
 
@@ -55,6 +70,42 @@ namespace utopia
             result.set(1, 1, 8.0);
             return true;
         }
+
+
+        Vector initial_guess() const override
+        {
+            return x_init_;
+        }
+
+        const Vector & exact_sol() const override
+        {
+            return x_exact_;
+        }
+
+        Scalar min_function_value() const override
+        {
+            return 1; // TBD
+        }
+
+        std::string name() const override
+        {
+            return "QPTestFunction_2D";
+        }
+
+        SizeType dim() const override
+        {
+            return 2;
+        }
+
+        bool exact_sol_known() const
+        {
+            return false;
+        }        
+
+
+    private:
+        Vector x_init_;
+        Vector x_exact_;        
     };
 
 }

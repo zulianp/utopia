@@ -28,7 +28,6 @@ namespace utopia
     {
       PetscReal lambda;          /* test problem parameter */
       PetscErrorCode (*mms_solution)(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
-      PetscErrorCode (*mms_forcing)(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
     };
 
     PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo*,PetscScalar**,PetscReal*,ParamsBratu2D*);
@@ -36,9 +35,7 @@ namespace utopia
     PetscErrorCode Bratu2DFormJacobianLocal(DMDALocalInfo*,PetscScalar**,Mat,Mat,ParamsBratu2D*);
     
     PetscErrorCode Bratu2DFormInitialGuess(DM,ParamsBratu2D*,Vec);
-    // PetscErrorCode Bratu2DFormExactSolution(DM,ParamsBratu2D*,Vec);
     PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
-    PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);    
 
     PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user,Vec BC_marker, Vec BC_flag);
 
@@ -52,13 +49,11 @@ namespace utopia
 
 
         Bratu2D(const SizeType & n,
-                const Scalar & lambda = 1.0):
-                n_(n), 
-                setup_(false)
+                const Scalar & lambda = 3.0):   n_(n), 
+                                                setup_(false)
         {
             application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
             application_context_.mms_solution   = Bratu2DMMSSolution; 
-            application_context_.mms_forcing    = Bratu2DMMSForcing;
 
             this->create_DM();
             this->setup_SNES();
@@ -75,12 +70,11 @@ namespace utopia
             exact_sol_  = zeros(1, 0); 
         }     
 
-        Bratu2D(const DM  & dm, const Scalar & lambda = 5.0):
-                setup_(false)
+        Bratu2D(const DM  & dm, const Scalar & lambda = 3.0): setup_(false)
         {
             application_context_.lambda  = (lambda >= 0 && lambda <= 6.8) ? lambda : 3.4; 
             application_context_.mms_solution   = Bratu2DMMSSolution; 
-            application_context_.mms_forcing    = Bratu2DMMSForcing;
+            // application_context_.mms_forcing    = Bratu2DMMSForcing;
 
             da_ = dm; 
             // necessary to provide reasonable global dimension 
@@ -103,7 +97,7 @@ namespace utopia
             }
         }
 
-        virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        bool gradient(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
             if(empty(g)){
@@ -117,18 +111,21 @@ namespace utopia
             return true;
         }
             
-        virtual bool hessian(const Vector &x, Matrix &hessian) const override
+        bool hessian(const Vector &x, Matrix &hessian) const override
         {
             
             SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian, snes_->jacobian);
 
             // yes, wrap would be nicer, but lets not use it ...
             convert(snes_->jacobian, hessian); 
+
+            // disp(hessian); 
+            // write("hessian.m", hessian); 
             
             return true;
         }
 
-        virtual bool value(const Vector &x, typename Vector::Scalar &result) const override
+        bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
             SNESComputeObjective(snes_, raw_type(x), &result);
             return true;
@@ -148,52 +145,52 @@ namespace utopia
         }
 
 
-        virtual Vector initial_guess() const override
+        Vector initial_guess() const override
         {   
             Vector x_utopia; 
             convert(snes_->vec_sol, x_utopia); 
             return x_utopia; 
         }
         
-        virtual const Vector & exact_sol() const override
+        const Vector & exact_sol() const override
         {
             return exact_sol_; 
         }
         
 
-        virtual Scalar min_function_value() const override
+        Scalar min_function_value() const override
         {   
             // depends on the solution to which we converged to 
             return -1.012; 
         }
 
-        virtual std::string name() const override
+        std::string name() const override
         {
             return "Bratu2D";
         }
         
-        virtual SizeType dim() const override
+        SizeType dim() const override
         {
             return n_*n_; 
         }
 
-        virtual bool exact_sol_known() const override
+        bool exact_sol_known() const override
         {
             return true;
         }
 
-        virtual bool parallel() const override
+        bool parallel() const override
         {
             return true;
         }
 
 
-        virtual void lambda(const Scalar & lambda)
+        void lambda(const Scalar & lambda)
         {
             application_context_.lambda = lambda;
         }
 
-        virtual Scalar lambda() const
+        Scalar lambda() const
         {
             return application_context_.lambda; 
         }

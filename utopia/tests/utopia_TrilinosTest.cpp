@@ -8,8 +8,8 @@
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/large_scale_benchmark/utopia_MultiLevelTestProblem1D.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
+#include "utopia_MultilevelTestProblem1D.hpp"
 #include <algorithm>
 
 #ifdef WITH_PETSC
@@ -18,8 +18,8 @@
 
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
-#include "test_problems/large_scale_benchmark/utopia_Bratu1D.hpp"
-#include "test_problems/large_scale_benchmark/utopia_Poisson1D.hpp"
+#include "utopia_Bratu1D.hpp"
+#include "utopia_Poisson1D.hpp"
 #include "utopia_TestProblems.hpp"
 #include "utopia_IPTransfer.hpp"
 #include <cmath>
@@ -1075,8 +1075,8 @@ namespace utopia {
         TpetraVectord grad_tpetra;
         PetscVector grad_petsc;
 
-        ok = fun_tpetra->gradient_no_rhs(x_tpetra, grad_tpetra); assert(ok);
-        ok = fun_petsc->gradient_no_rhs(x_petsc, grad_petsc);    assert(ok);
+        ok = fun_tpetra->gradient(x_tpetra, grad_tpetra); assert(ok);
+        ok = fun_petsc->gradient(x_petsc, grad_petsc);    assert(ok);
 
         utopia_test_assert(cross_backend_approxeq(grad_petsc, grad_tpetra));
 
@@ -1137,13 +1137,12 @@ namespace utopia {
         rmtr->delta0(1);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
-        rmtr->set_grad_smoothess_termination(0.000001);
+        rmtr->grad_smoothess_termination(0.000001);
 
         rmtr->verbose(false);
         // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
         rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
         rmtr->set_functions(funs);
-        rmtr->handle_equality_constraints();
         bool ok = rmtr->solve(x);
 
         utopia_test_assert(ok);

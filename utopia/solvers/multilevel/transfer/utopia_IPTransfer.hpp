@@ -140,7 +140,7 @@
 
             if(empty(is_constrained) || empty(*_I)) return;
 
-            set_zero_rows(*_I, is_constrained);
+            set_zero_rows(*_I, is_constrained, 0.0);
         }
 
         /**

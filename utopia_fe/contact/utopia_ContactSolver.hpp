@@ -402,7 +402,7 @@ namespace utopia {
 
             if(contact_->has_glue()) {  
                 auto constr = make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_));
-                constr.fill_empty_bounds();
+                constr.fill_empty_bounds(local_size(xc_));
 
                 auto &u = *constr.upper_bound();
                 auto &l = *constr.lower_bound();
