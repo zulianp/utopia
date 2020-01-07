@@ -66,6 +66,7 @@ namespace utopia {
             }
         }
 
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
         static void local_element_ranges(const DM &dm, SizeType *begin, SizeType *end)
         {
             DMDAGetElementsCorners(dm, &begin[0],  &begin[1],  &begin[2]);
@@ -75,6 +76,8 @@ namespace utopia {
                 end[d] += begin[d];
             }
         }
+#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+
 
         // static void box(const DM &dm, Scalar *min, Scalar *max)
         // {

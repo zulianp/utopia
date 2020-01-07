@@ -403,7 +403,7 @@ namespace utopia {
         rmtr->delta0(1000);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
-        rmtr->set_grad_smoothess_termination(1e-7);
+        rmtr->grad_smoothess_termination(1e-7);
 
 
         rmtr->verbose(in.verbose);
@@ -414,7 +414,7 @@ namespace utopia {
         auto &dof_map = spaces.back()->dof_map();
 
         UVector x;
-        rmtr->handle_equality_constraints();
+        // rmtr->handle_equality_constraints();
 
         bool ok = rmtr->solve(x);
 

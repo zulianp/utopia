@@ -115,9 +115,11 @@ namespace utopia {
         void box(Scalar *min, Scalar *max) const;
 
         void local_node_ranges(SizeType *begin, SizeType *end) const;
-        void local_element_ranges(SizeType *begin, SizeType *end) const;
 
         Range local_element_range() const;
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+        void local_element_ranges(SizeType *begin, SizeType *end) const;
 
         template<class Array>
         void local_element_ranges(Array &begin, Array &end) const
@@ -131,6 +133,8 @@ namespace utopia {
                 end[i] = temp_end[i];
             }
         }
+
+#endif UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
 
         template<class Array>
         void local_node_ranges(Array &begin, Array &end) const

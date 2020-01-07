@@ -27,7 +27,7 @@
 //             return true;
 //         }
 
-//         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
+//         bool gradient(const Vector &x, Vector &gradient) const override
 //         {
 //             auto u  = trial(V_);
 //             auto v  = test(V_);
