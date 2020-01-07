@@ -104,7 +104,7 @@ namespace utopia
 
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        bool gradient(const Vector &x, Vector &g) const override
         {
             return false;
         }

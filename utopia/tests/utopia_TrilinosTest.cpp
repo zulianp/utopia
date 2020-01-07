@@ -1077,8 +1077,8 @@ namespace utopia {
         TpetraVectord grad_tpetra;
         PetscVector grad_petsc;
 
-        ok = fun_tpetra->gradient_no_rhs(x_tpetra, grad_tpetra); assert(ok);
-        ok = fun_petsc->gradient_no_rhs(x_petsc, grad_petsc);    assert(ok);
+        ok = fun_tpetra->gradient(x_tpetra, grad_tpetra); assert(ok);
+        ok = fun_petsc->gradient(x_petsc, grad_petsc);    assert(ok);
 
         utopia_test_assert(cross_backend_approxeq(grad_petsc, grad_tpetra));
 
@@ -1139,13 +1139,12 @@ namespace utopia {
         rmtr->delta0(1);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
-        rmtr->set_grad_smoothess_termination(0.000001);
+        rmtr->grad_smoothess_termination(0.000001);
 
         rmtr->verbose(false);
         // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
         rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
         rmtr->set_functions(funs);
-        rmtr->handle_equality_constraints();
         bool ok = rmtr->solve(x);
 
         utopia_test_assert(ok);
