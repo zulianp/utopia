@@ -16,7 +16,7 @@ namespace utopia {
         using Result = T1;
 
         UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
-        
+
         inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -61,7 +61,7 @@ namespace utopia {
     class Eval<Assign<Tensor<Result, Order>, TernaryExpr<T1, T2, T3, Order, Op1, Op2>>, Traits, Backend> {
     public:
         using Expr = utopia::Assign<Tensor<Result, Order>, TernaryExpr<T1, T2, T3, Order, Op1, Op2>>;
-        
+
         inline static void apply(const Expr &expr) {
             EvalTernary<T1, T2, T3, Order, Op1, Op2, Traits, Backend>::apply(expr.right(), expr.left().derived());
         }
@@ -74,9 +74,9 @@ namespace utopia {
     using ScaledTernaryExpr = utopia::
                                 Binary<
                                     Binary<
-                                        Tensor<V, 1>, 
+                                        Tensor<V, 1>,
                                         Binary<
-                                            Number<T>, 
+                                            Number<T>,
                                             Tensor<V, 1>,
                                             Multiplies
                                             >,
@@ -86,7 +86,7 @@ namespace utopia {
                                         Number<T>,
                                         Tensor<V, 1>,
                                         Multiplies
-                                        >, 
+                                        >,
                                     Op2>;
 
     template<class V, typename T, class Traits, int Backend>
@@ -96,7 +96,7 @@ namespace utopia {
         using Scalar = typename Traits::Scalar;
         using Expr   = utopia::ScaledTernaryExpr<V, T, Plus, Minus>;
         using Result = V;
-        
+
         UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
         static void apply(const Expr &expr, Result &result)
@@ -106,7 +106,7 @@ namespace utopia {
             auto &a = Eval<T1, Traits>::apply(expr.left().left());
             const Scalar alpha = expr.left().right().left();
             auto &b = Eval<T1, Traits>::apply(expr.left().right().right());
-            const Scalar beta = expr.right().left(); 
+            const Scalar beta = expr.right().left();
             auto &c = Eval<T1, Traits>::apply(expr.right().right());
 
             if(result.is_alias(b)) {
@@ -157,7 +157,7 @@ namespace utopia {
             auto &a = Eval<T1, Traits>::apply(expr.left().left());
             const Scalar alpha = expr.left().right().left();
             auto &b = Eval<T1, Traits>::apply(expr.left().right().right());
-            const Scalar beta = expr.right().left(); 
+            const Scalar beta = expr.right().left();
             auto &c = Eval<T1, Traits>::apply(expr.right().right());
 
             if(result.is_alias(b)) {
@@ -268,7 +268,7 @@ namespace utopia {
         static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // result = (v1) op1 (alpha * unary(v2, op2)); 
+            // result = (v1) op1 (alpha * unary(v2, op2));
             auto &&v1 = Eval<Tensor<V, 1>, Traits>::apply(expr.left());
             auto &&v2 = Eval<Tensor<V, 1>, Traits>::apply(expr.right().right().expr());
 
@@ -294,7 +294,7 @@ namespace utopia {
                 result.scale(alpha);
                 apply_aux(v1, result, op1, result);
             }
-            
+
             UTOPIA_TRACE_END(expr);
         }
 
@@ -321,7 +321,7 @@ namespace utopia {
                             Tensor<V, 1>,
                             Binary<Number<T>, Unary<Tensor<V, 1>, Op2>, Multiplies>,
                             Minus>;
-                            
+
         using Expr = utopia::Assign<Tensor<V, 1>, RightExpr>;
         using Scalar = typename Traits::Scalar;
 
@@ -330,6 +330,62 @@ namespace utopia {
         }
 
     };
+
+
+    //FIXME find better way to avoid specifying all the cases
+
+    template<class T, class Traits, int Backend>
+    class Eval<InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Plus>, Plus>, Traits, Backend> {
+    public:
+        using Expr = utopia::InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Plus>, Plus>;
+
+        inline static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+            auto &&result = Eval<Tensor<T, 1>, Traits>::apply(expr.left());
+            result = expr.left() + expr.right().left() + expr.right().right();
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    template<class T, class Traits, int Backend>
+    class Eval<InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Minus>, Minus>, Traits, Backend> {
+    public:
+        using Expr = utopia::InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Minus>, Minus>;
+
+        inline static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+            auto &&result = Eval<Tensor<T, 1>, Traits>::apply(expr.left());
+            result = expr.left() - expr.right().left() - expr.right().right();
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    template<class T, class Traits, int Backend>
+    class Eval<InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Minus>, Plus>, Traits, Backend> {
+    public:
+        using Expr = utopia::InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Minus>, Plus>;
+
+        inline static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+            auto &&result = Eval<Tensor<T, 1>, Traits>::apply(expr.left());
+            result = expr.left() + expr.right().left() - expr.right().right();
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    template<class T, class Traits, int Backend>
+    class Eval<InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Plus>, Minus>, Traits, Backend> {
+    public:
+        using Expr = utopia::InPlace<Tensor<T, 1>, Binary<Tensor<T, 1>, Tensor<T, 1>, Plus>, Minus>;
+
+        inline static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+            auto &&result = Eval<Tensor<T, 1>, Traits>::apply(expr.left());
+            result = expr.left() - expr.right().left() + expr.right().right();
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
 
 }
 
