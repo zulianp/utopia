@@ -639,13 +639,23 @@ namespace utopia {
     template<int Dim>
     void PetscDM<Dim>::local_to_global(const PetscVector &local,  PetscVector &global) const
     {
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
         DMLocalToGlobal(impl_->dm, local.raw_type(), ADD_VALUES, global.raw_type());
+#else
+        DMLocalToGlobalBegin(impl_->dm, local.raw_type(), ADD_VALUES, global.raw_type());
+        DMLocalToGlobalEnd(impl_->dm, local.raw_type(), ADD_VALUES, global.raw_type());
+#endif
     }
 
     template<int Dim>
     void PetscDM<Dim>::global_to_local(const PetscVector &global, PetscVector &local) const
     {
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
         DMGlobalToLocal(impl_->dm, global.raw_type(), INSERT_VALUES, local.raw_type());
+#else
+        DMGlobalToLocalBegin(impl_->dm, global.raw_type(), INSERT_VALUES, local.raw_type());
+        DMGlobalToLocalEnd(impl_->dm, global.raw_type(), INSERT_VALUES, local.raw_type());
+#endif
     }
 
     template<int Dim>
