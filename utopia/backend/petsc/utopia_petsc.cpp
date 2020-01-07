@@ -12,6 +12,7 @@
 #include "utopia_SaddlePoint.hpp"
 #include "utopia_BiCGStab_impl.hpp"
 #include "utopia_ConjugateGradient_impl.hpp"
+#include "utopia_RMTRVcycleImpl.hpp"
 
 //explicit instantiations
 namespace utopia {

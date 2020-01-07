@@ -80,13 +80,13 @@ namespace utopia {
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
-        QuadraticExtendedFunction(  const Matrix &H, 
-                                    const Vector &rhs, 
-                                    const Vector & x_0, 
-                                    const Vector & bc_marker, 
-                                    const Vector & rhs_non_eq): 
-                                    ExtendedFunction<Matrix, Vector>(x_0, bc_marker, rhs_non_eq),  
-                                    rhs_(rhs), 
+        QuadraticExtendedFunction(  const Matrix &H,
+                                    const Vector &rhs,
+                                    const Vector & x_0,
+                                    const Vector & bc_marker,
+                                    const Vector & rhs_non_eq):
+                                    ExtendedFunction<Matrix, Vector>(x_0, bc_marker, rhs_non_eq),
+                                    rhs_(rhs),
                                     H_(H)
         {
             // this->data()->H = H;
@@ -105,14 +105,14 @@ namespace utopia {
             return true;
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &result) const override
+        bool gradient(const Vector &x, Vector &result) const override
         {
             result = H_ * x+ rhs_;
 
             {
-                Vector bc_flg = this->get_eq_constrains_flg(); 
+                const Vector &bc_flg = this->get_eq_constrains_flg();
 
-                Read<Vector>  r_ub(bc_flg); 
+                Read<Vector>  r_ub(bc_flg);
                 Write<Vector> wv(result);
 
                 Range r = range(result);
@@ -120,9 +120,9 @@ namespace utopia {
                 for(SizeType i = r.begin(); i != r.end(); ++i)
                 {
                     if(bc_flg.get(i) > 0.0){
-                        result.set(i, 0.0); 
+                        result.set(i, 0.0);
                     }
-                }                       
+                }
             }
 
 
@@ -132,10 +132,10 @@ namespace utopia {
         bool hessian(const Vector &x, Matrix &H) const override
         {
             UTOPIA_UNUSED(x);
-            
+
             H = H_;
-            
-            const std::vector<SizeType> & index = this->get_indices_related_to_BC(); 
+
+            const std::vector<SizeType> & index = this->get_indices_related_to_BC();
             set_zero_rows(H, index, 1.);
 
             return true;

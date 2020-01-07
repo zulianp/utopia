@@ -16,6 +16,7 @@
 #include "utopia_BratuFE.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_MassMatrixView.hpp"
+#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 #include <cmath>
 
