@@ -14,6 +14,7 @@
 #include "utopia_Views.hpp"
 #include "utopia_StencilView.hpp"
 #include "utopia_GraphView.hpp"
+#include "utopia_kokkos_QuadratureView.hpp"
 
 #include <cmath>
 
