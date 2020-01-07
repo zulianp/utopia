@@ -66,7 +66,7 @@ namespace utopia {
             }
         }
 
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
         static void local_element_ranges(const DM &dm, SizeType *begin, SizeType *end)
         {
             DMDAGetElementsCorners(dm, &begin[0],  &begin[1],  &begin[2]);
@@ -76,8 +76,7 @@ namespace utopia {
                 end[d] += begin[d];
             }
         }
-#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-
+#endif
 
         // static void box(const DM &dm, Scalar *min, Scalar *max)
         // {
@@ -609,11 +608,13 @@ namespace utopia {
         PetscDMImpl<Dim>::local_node_ranges(impl_->dm, begin, end);
     }
 
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
     template<int Dim>
     void PetscDM<Dim>::local_element_ranges(SizeType *begin, SizeType *end) const
     {
         PetscDMImpl<Dim>::local_element_ranges(impl_->dm, begin, end);
     }
+#endif
 
     template<int Dim>
     typename PetscDM<Dim>::SizeType PetscDM<Dim>::n_local_nodes_with_ghosts() const

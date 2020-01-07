@@ -118,7 +118,7 @@ namespace utopia {
 
         Range local_element_range() const;
 
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
         void local_element_ranges(SizeType *begin, SizeType *end) const;
 
         template<class Array>
@@ -134,7 +134,7 @@ namespace utopia {
             }
         }
 
-#endif UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
 
         template<class Array>
         void local_node_ranges(Array &begin, Array &end) const

@@ -19,12 +19,11 @@
 #include <cmath>
 
 #ifdef WITH_PETSC
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
 
 #include "utopia_PetscDM.hpp"
 
 namespace utopia {
-
 
     static void petsc_dm_to_kokkos()
     {
