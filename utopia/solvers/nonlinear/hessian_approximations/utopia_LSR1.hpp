@@ -22,6 +22,15 @@ namespace utopia
 
             }
 
+            ~LSR1()
+            {
+                Y_.clear();
+                S_.clear();
+
+                p_.clear();
+                p_inv_.clear();
+            }
+
             void initialize(const Vector & x_k, const Vector &  g) override
             {
                 HessianApproximation<Vector>::initialize(x_k, g); 
@@ -51,14 +60,34 @@ namespace utopia
 
             void reset() override
             {
-                Y_.clear();
-                S_.clear();
+                // Y_.clear();
+                // S_.clear();
 
-                p_.clear();
-                p_inv_.clear();
+                // p_.clear();
+                // p_inv_.clear();
 
-                Vector x, g; 
-                this->initialize(x, g);
+                // Vector x, g; 
+                // this->initialize(x, g);
+
+                theta_      = 1.0;
+                gamma_      = 1.0;
+                current_m_  = 0;
+
+                Y_.resize(m_);
+                S_.resize(m_);
+
+                p_.resize(m_);
+                p_inv_.resize(m_);
+
+                for(auto i=0; i < m_; i++)
+                {
+                    Y_[i].set(0.0);
+                    S_[i].set(0.0);
+                    p_[i].set(0.0);
+                    p_inv_[i].set(0.0);
+                }                
+
+                this->initialized(true);                
             }
 
             inline LSR1<Vector> * clone() const override
@@ -224,6 +253,24 @@ namespace utopia
                 }
             }
 
+
+            Scalar compute_uHu_dot(const Vector & u) override
+            {
+                this->apply_H(u, diff_);
+                return dot(u, diff_);
+            }            
+
+            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) override
+            {
+                this->apply_Hinv(v, diff_);
+                return dot(u, diff_);
+            }
+
+            Scalar compute_uHv_dot(const Vector & u , const Vector & v) override
+            {
+                this->apply_H(v, diff_);
+                return dot(u, diff_);
+            }
 
         private:
             SizeType m_; // memory size

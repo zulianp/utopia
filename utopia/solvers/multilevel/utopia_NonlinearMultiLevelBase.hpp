@@ -80,6 +80,7 @@ namespace utopia {
         virtual bool set_functions(const std::vector<FunPtr> &level_functions)
         {
             level_functions_.clear();
+            local_level_dofs_.clear(); 
 
             if(this->n_levels() != static_cast<SizeType>(level_functions.size())){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and level_functions do not match. \n");

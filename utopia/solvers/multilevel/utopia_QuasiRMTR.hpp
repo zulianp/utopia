@@ -277,9 +277,15 @@ namespace utopia
 
         // -------------------------- Matrix free stuff ----------------------------------------
         Scalar get_pred(const SizeType & level) override
-        {
+        {   
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::get_pred1");
             Scalar l_term = dot(this->ml_derivs_.g[level], this->memory_.s[level]);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::get_pred2");
             Scalar qp_term = hessian_approxs_[level]->compute_uHu_dot(this->memory_.s[level]);
+            UTOPIA_NO_ALLOC_END();
+            
             return  (- l_term - 0.5 * qp_term);
         }
 
@@ -297,7 +303,6 @@ namespace utopia
             return true;
         }
 
-
         void initialize_local_solve(const SizeType & level, const LocalSolveType & solve_type) override
         {
             // if(!(solve_type == PRE_SMOOTHING && level == this->n_levels()-1))
@@ -305,7 +310,7 @@ namespace utopia
                 if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
                 {
                     hessian_approxs_[level]->reset();
-                    hessian_approxs_[level]->initialize(this->memory_.x[level], this->ml_derivs_.g[level]);                    
+                    // hessian_approxs_[level]->initialize(this->memory_.x[level], this->ml_derivs_.g[level]);                    
                 }
             // }
         }
