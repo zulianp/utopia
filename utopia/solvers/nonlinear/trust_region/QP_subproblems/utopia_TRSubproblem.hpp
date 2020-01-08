@@ -84,7 +84,7 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class TRSubproblem : public IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
+    class TRSubproblem : public virtual IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -112,7 +112,7 @@ namespace  utopia
 
 
     template<class Vector>
-    class MatrixFreeTRSubproblem : public MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
+    class MatrixFreeTRSubproblem : public virtual MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -141,8 +141,8 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class OperatorBasedTRSubproblem :   public MatrixFreeTRSubproblem<Vector>,
-                                        public TRSubproblem<Matrix, Vector>
+    class OperatorBasedTRSubproblem :   public virtual MatrixFreeTRSubproblem<Vector>,
+                                        public virtual TRSubproblem<Matrix, Vector>
     {
     public:
         using MatrixFreeTRSubproblem<Vector>::update;
