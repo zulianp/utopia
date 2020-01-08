@@ -18,7 +18,7 @@ namespace  utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class LinearSolver : public Preconditioner<Vector> {
+    class LinearSolver : virtual public Preconditioner<Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector)           Scalar;
 
