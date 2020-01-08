@@ -577,10 +577,12 @@ namespace utopia
             {
                 g_diff.resize(n_levels_);
                 g.resize(n_levels_);
+                y.resize(n_levels_);
 
                 for(auto l=0; l < n_levels_; l++){
                     g_diff[l]   = local_zeros(n_dofs_[l]); 
                     g[l]        = local_zeros(n_dofs_[l]); 
+                    y[l]        = local_zeros(n_dofs_[l]); 
                 }
 
                 initialized_ = true; 
@@ -596,7 +598,7 @@ namespace utopia
             bool initialized_; 
 
         public:            
-            std::vector<Vector> g, g_diff; 
+            std::vector<Vector> g, g_diff, y; 
     }; 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                                

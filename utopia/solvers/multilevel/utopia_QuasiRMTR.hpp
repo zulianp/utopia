@@ -42,12 +42,12 @@ namespace utopia
         {
             RMTRBase::read(in);
 
-            if(_tr_subproblems.size() > 0)
+            if(tr_subproblems_.size() > 0)
             {
-                in.get("coarse-QPSolver", *_tr_subproblems[0]);
+                in.get("coarse-QPSolver", *tr_subproblems_[0]);
 
-                for(auto i=1; i < _tr_subproblems.size(); i++)
-                    in.get("fine-QPSolver", *_tr_subproblems[i]);
+                for(auto i=1; i < tr_subproblems_.size(); i++)
+                    in.get("fine-QPSolver", *tr_subproblems_[i]);
             }
 
             if(hessian_approxs_.size() > 0)
@@ -114,22 +114,22 @@ namespace utopia
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(_tr_subproblems.size() != this->n_levels())
-                _tr_subproblems.resize(this->n_levels());
+            if(tr_subproblems_.size() != this->n_levels())
+                tr_subproblems_.resize(this->n_levels());
 
-            _tr_subproblems[0] = strategy;
+            tr_subproblems_[0] = strategy;
 
             return true;
         }
 
         bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(_tr_subproblems.size() != this->n_levels())
-                _tr_subproblems.resize(this->n_levels());
+            if(tr_subproblems_.size() != this->n_levels())
+                tr_subproblems_.resize(this->n_levels());
 
             // starting from level 1 ....
-            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l)
-                _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
+            for(std::size_t l = 1; l != tr_subproblems_.size(); ++l)
+                tr_subproblems_[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
 
 
             return true;
@@ -142,7 +142,7 @@ namespace utopia
                 utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n");
             }
 
-            _tr_subproblems = strategies;
+            tr_subproblems_ = strategies;
 
             return true;
         }
@@ -155,25 +155,17 @@ namespace utopia
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
 
             for(Scalar l = 0; l < this->n_levels(); l ++){
-                this->_tr_subproblems[l]->init_memory(dofs[l]); 
+                tr_subproblems_[l]->init_memory(dofs[l]); 
+                hessian_approxs_[l]->initialize(this->memory_.x[l],this->ml_derivs_.g[l]);                
             }            
 
-            // TODO:: alloc all levels 
-            SizeType fine_lev=this->n_levels() - 1; 
-            hessian_approxs_[fine_lev]->initialize(this->memory_.x[fine_lev],this->ml_derivs_.g[fine_lev]);
         }
-
-        // TODO:: make specialization in base 
-        // virtual bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) override
-        // {
-        //     return false;
-        // }
 
         bool check_initialization() override
         {
             bool flg = RMTRBase::check_initialization(); 
 
-            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
+            if(static_cast<SizeType>(tr_subproblems_.size()) != this->n_levels()){
                 utopia_error("utopia::RMTR_l2_quasi:: number of level QP solvers and levels not equal. \n");
                 flg = false;
             }
@@ -251,24 +243,28 @@ namespace utopia
 
         bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
-            // Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
-            // if(_tr_subproblems[level]->atol() > atol_level){
-            //     _tr_subproblems[level]->atol(atol_level);  
-            // }
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
 
-            // if(flg){
-            //     _tr_subproblems[level]->max_it(this->max_QP_coarse_it());
-            // }
-            // else{
-            //     _tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
-            // }
+            if(IterativeSolver<Matrix, Vector>* tr_solver =  dynamic_cast<IterativeSolver<Matrix, Vector>* > (tr_subproblems_[level].get()))
+            {
+                if(tr_solver->atol() > atol_level){
+                    tr_solver->atol(atol_level);  
+                }
+
+                if(flg){
+                    tr_solver->max_it(this->max_QP_coarse_it());
+                }
+                else{
+                    tr_solver->max_it(this->max_QP_smoothing_it());
+                }
+            }
 
             this->memory_.s[level].set(0.0); 
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
 
-            _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
+            tr_subproblems_[level]->current_radius(this->memory_.delta[level]);
             this->ml_derivs_.g[level] *= - 1.0; 
-            _tr_subproblems[level]->solve(*multiplication_action, this->ml_derivs_.g[level], this->memory_.s[level]);
+            tr_subproblems_[level]->solve(*multiplication_action, this->ml_derivs_.g[level], this->memory_.s[level]);
             this->ml_derivs_.g[level] *= - 1.0; 
 
             if(has_nan_or_inf(this->memory_.s[level])){
@@ -290,26 +286,13 @@ namespace utopia
 
         bool update_level(const SizeType & level) override
         {
-            // Vector grad_old = this->memory_.g[level];
-            // this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
-            // Vector y = this->memory_.g[level] - grad_old;
-
-            // // swap back....
-            // this->memory_.g[level] = grad_old;
-            // hessian_approxs_[level]->update(this->memory_.s[level], y, this->memory_.x[level], this->memory_.g[level]);
-
-
-            // TODO:: verify 
-            Vector grad_old = this->ml_derivs_.g[level];
+            this->memory_.help[level] = this->ml_derivs_.g[level];
             this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
-            Vector y = this->ml_derivs_.g[level] - grad_old;
+            this->ml_derivs_.y[level] = this->ml_derivs_.g[level] - this->memory_.help[level];
 
             // swap back....
-            this->ml_derivs_.g[level] = grad_old;
-
-            hessian_approxs_[level]->update(this->memory_.s[level], y, this->memory_.x[level], this->ml_derivs_.g[level]);
-
-
+            this->ml_derivs_.g[level] = this->memory_.help[level];
+            hessian_approxs_[level]->update(this->memory_.s[level], this->ml_derivs_.y[level], this->memory_.x[level], this->ml_derivs_.g[level]);
 
             return true;
         }
@@ -317,15 +300,14 @@ namespace utopia
 
         void initialize_local_solve(const SizeType & level, const LocalSolveType & solve_type) override
         {
-            if(!(solve_type == PRE_SMOOTHING && level == this->n_levels()-1))
-            {
-                // this is interesting heuristic
+            // if(!(solve_type == PRE_SMOOTHING && level == this->n_levels()-1))
+            // {
                 if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
                 {
                     hessian_approxs_[level]->reset();
                     hessian_approxs_[level]->initialize(this->memory_.x[level], this->ml_derivs_.g[level]);                    
                 }
-            }
+            // }
         }
 
 
@@ -368,7 +350,7 @@ namespace utopia
 
     private:
         std::vector<HessianApproxPtr>       hessian_approxs_;
-        std::vector<TRSubproblemPtr>        _tr_subproblems;
+        std::vector<TRSubproblemPtr>        tr_subproblems_;
 
 
     };
