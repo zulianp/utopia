@@ -236,7 +236,7 @@ namespace utopia
 		std::vector<std::shared_ptr<MultilevelTestProblemBase<Matrix, Vector> > > ml_problems_;
 	};
 
-	static void nlml_test()
+	static void nlml()
 	{
 		int verbosity_level = 1;
 		const int n_global = 10;
@@ -255,6 +255,6 @@ namespace utopia
 	}
 
 	//FIXME
-	UTOPIA_REGISTER_TEST_FUNCTION(nlml_test);
+	UTOPIA_REGISTER_TEST_FUNCTION(nlml);
 }
 

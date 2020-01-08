@@ -53,7 +53,7 @@ namespace utopia {
         }
 
         SemiGeometricMultigrid(
-            const std::shared_ptr<IterativeSolver<USparseMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>(),
+            const std::shared_ptr<Smoother<USparseMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>(),
             const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>()
         );
 

@@ -9,10 +9,10 @@
 #include <string>
 #include <cassert>
 
-namespace utopia 
+namespace utopia
 {
 	template<class Matrix, class Vector>
-	class NewtonLSBenchmark : public Benchmark 
+	class NewtonLSBenchmark : public Benchmark
 	{
 	public:
 		DEF_UTOPIA_SCALAR(Vector);
@@ -45,7 +45,7 @@ namespace utopia
 
 		~NewtonLSBenchmark()
 		{
-			test_functions_.clear(); 
+			test_functions_.clear();
 		}
 
 
@@ -86,7 +86,7 @@ namespace utopia
 		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_CG_BACKEND_GS", this->verbose_);
 		            run_newton(this->test_functions_, solver, "NewtonTest_CG_BACKEND_GS", this->verbose_);
 				}
-			);			
+			);
 
 			this->register_experiment("NewtonTest_STCG_HOMEMADE_GS",
 				[this]() {
@@ -97,7 +97,7 @@ namespace utopia
 		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_CG_HOMEMADE_GS", this->verbose_);
 		            run_newton(this->test_functions_, solver, "NewtonTest_CG_HOMEMADE_GS", this->verbose_);
 				}
-			);					
+			);
 
 			this->register_experiment("NewtonTest_STCG_BACKEND_GS",
 				[this]() {
@@ -108,7 +108,7 @@ namespace utopia
 		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_STCG_BACKEND_GS", this->verbose_);
 		            run_newton(this->test_functions_, solver, "NewtonTest_STCG_BACKEND_GS", this->verbose_);
 				}
-			);			
+			);
 
 			// TODO:: BiCGSTAB seems to have problem
 			// this->register_experiment("NewtonTest_BiCGSTAB_HOMEMADE_Jacobi",
@@ -131,7 +131,7 @@ namespace utopia
 		 //            run_newton(this->test_functions_parallel_, solver, "NewtonTest_BiCGSTAB_BACKEND_Jacobi", this->verbose_);
 		 //            run_newton(this->test_functions_, solver, "NewtonTest_BiCGSTAB_BACKEND_Jacobi", this->verbose_);
 			// 	}
-			// );		
+			// );
 
 			// working
 			this->register_experiment("NewtonTest_STCG_SimpleBacktracking",
@@ -140,13 +140,13 @@ namespace utopia
 		            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
 		            Newton<Matrix, Vector> solver(lin_solver);
-			        auto ls_strat  = std::make_shared<utopia::SimpleBacktracking<Vector> >();            
-            		solver.set_line_search_strategy(ls_strat);			            
+			        auto ls_strat  = std::make_shared<utopia::SimpleBacktracking<Vector> >();
+            		solver.set_line_search_strategy(ls_strat);
 
 		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_STCG_SimpleBacktracking", this->verbose_);
 		            run_newton(this->test_functions_, solver, "NewtonTest_STCG_SimpleBacktracking", this->verbose_);
 				}
-			);		
+			);
 
 			// working
 			this->register_experiment("NewtonTest_BiCGSTAB_Backtracking",
@@ -155,13 +155,13 @@ namespace utopia
 		            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
 		            Newton<Matrix, Vector> solver(lin_solver);
-			        auto ls_strat  = std::make_shared<utopia::Backtracking<Vector> >();            
-            		solver.set_line_search_strategy(ls_strat);			            
+			        auto ls_strat  = std::make_shared<utopia::Backtracking<Vector> >();
+            		solver.set_line_search_strategy(ls_strat);
 
 		            run_newton(this->test_functions_parallel_, solver, "NewtonTest_BiCGSTAB_Backtracking", this->verbose_);
 		            run_newton(this->test_functions_, solver, "NewtonTest_BiCGSTAB_Backtracking", this->verbose_);
 				}
-			);		
+			);
 
 
 			this->register_experiment("Inexact_Newton_test",
@@ -169,18 +169,18 @@ namespace utopia
 		            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
 
 		            Newton<Matrix, Vector> solver(lin_solver);
-		            solver.forcing_strategy(InexactNewtonForcingStartegies::CAI); 
+		            solver.forcing_strategy(InexactNewtonForcingStartegies::CAI);
 		            run_newton(this->test_functions_, solver, "Inexact_Newton_test", this->verbose_);
 		            run_newton(this->test_functions_parallel_, solver, "Inexact_Newton_test", this->verbose_);
 				}
-			);				
+			);
 
 		}
 
 	private:
 
 		template<class Fun, class NonlinearSolver>
-		static void run_newton(std::vector<std::shared_ptr<Fun> > & test_functions, NonlinearSolver &solver, const std::string & solv_name,  const bool & exp_verbose = false) 
+		static void run_newton(std::vector<std::shared_ptr<Fun> > & test_functions, NonlinearSolver &solver, const std::string & solv_name,  const bool & exp_verbose = false)
 		{
 
 			InputParameters in;
@@ -188,10 +188,10 @@ namespace utopia
 			in.set("rtol", 1e-11);
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
-			in.set("delta_min", 1e-13); 
-			in.set("max-it", 130); 
+			in.set("delta_min", 1e-13);
+			in.set("max-it", 130);
 			in.set("verbose", false);
-			solver.read(in); 
+			solver.read(in);
 
 
 
@@ -204,35 +204,35 @@ namespace utopia
 
 	    	for(size_t i =0; i < test_functions.size(); i++)
 	    	{
-				Vector x_init = test_functions[i]->initial_guess(); 
-				solver.solve(*test_functions[i], x_init); 
+				Vector x_init = test_functions[i]->initial_guess();
+				solver.solve(*test_functions[i], x_init);
 
-				auto sol_status = solver.solution_status(); 
-				//sol_status.describe(std::cout); 
-				
-				const auto dim = test_functions[i]->dim(); 
-				const auto num_its = sol_status.iterates; 
-				const auto conv_reason = sol_status.reason; 
+				auto sol_status = solver.solution_status();
+				//sol_status.describe(std::cout);
+
+				const auto dim = test_functions[i]->dim();
+				const auto num_its = sol_status.iterates;
+				const auto conv_reason = sol_status.reason;
 
 				utopia_test_assert(conv_reason > 0);
 
 				if(exp_verbose && mpi_world_rank()==0)
 				{
-					std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_functions[i]->name() <<"_" << dim <<  std::right <<  std::setw(60-std::to_string(dim).size() - test_functions[i]->name().size())  << std::right << "its:  " << num_its << std::setw(5-std::to_string(num_its).size())<<  "  \n"; 
-				
+					std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_functions[i]->name() <<"_" << dim <<  std::right <<  std::setw(60-std::to_string(dim).size() - test_functions[i]->name().size())  << std::right << "its:  " << num_its << std::setw(5-std::to_string(num_its).size())<<  "  \n";
+
 					if(conv_reason< 0)
 					{
-						sol_status.describe(std::cout); 
+						sol_status.describe(std::cout);
 					}
 
 				}
 
 				// if(test_functions[i]->exact_sol_known())
 				// {
-					// disp(x_init, "num_sol..."); 
-					// disp(test_functions[i]->exact_sol(), "exact solution"); 
+					// disp(x_init, "num_sol...");
+					// disp(test_functions[i]->exact_sol(), "exact solution");
 					// disp(x_init, "sol");
-					// std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n"; 
+					// std::cout<<"norm(diff): "<< norm_infty(x_init - test_functions[i]->exact_sol()) << " \n";
 
 				// }
 
@@ -243,16 +243,16 @@ namespace utopia
 	private:
 		std::vector<std::shared_ptr<UnconstrainedExtendedTestFunction<Matrix, Vector> > >  test_functions_parallel_;
 		std::vector<std::shared_ptr<UnconstrainedTestFunction<Matrix, Vector> > >  test_functions_;
-		SizeType n_; 
-		bool verbose_; 
+		SizeType n_;
+		bool verbose_;
 
 	};
 
 	static void newton_ls()
 	{
 		int verbosity_level = 1;
-		const int n_global = 10; 
-		bool alg_verbose = true; 
+		const int n_global = 10;
+		bool alg_verbose = true;
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;
