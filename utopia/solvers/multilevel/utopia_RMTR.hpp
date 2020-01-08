@@ -288,6 +288,13 @@ namespace utopia
             return true;
         }
 
+        virtual Scalar get_pred(const SizeType & level) override
+        {
+            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
+            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
+        }
+
+
 
     private:
         std::vector<TRSubproblemPtr>        _tr_subproblems;
