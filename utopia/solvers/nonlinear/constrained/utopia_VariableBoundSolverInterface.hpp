@@ -59,6 +59,18 @@ namespace utopia
           return *constraints_.lower_bound();
         }
 
+
+        virtual std::shared_ptr<Vector> &upper_bound()
+        {
+            return constraints_.upper_bound();
+        }
+
+        virtual std::shared_ptr<Vector> &lower_bound()
+        {
+            return constraints_.lower_bound();
+        }
+
+
         virtual bool has_bound() const
         {
           return constraints_.has_bound();

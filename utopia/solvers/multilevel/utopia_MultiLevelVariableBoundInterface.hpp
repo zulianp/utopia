@@ -185,41 +185,83 @@ namespace utopia
 
             if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&transfer))
             {
-                constraints_memory_.tr_upper[level] =  x_finer_level + local_values(local_size(x_finer_level), delta_fine);
-                constraints_memory_.tr_lower[level] =  x_finer_level - local_values(local_size(x_finer_level), delta_fine);
+                // constraints_memory_.tr_upper[level] =  x_finer_level + local_values(local_size(x_finer_level), delta_fine);
+                // constraints_memory_.tr_lower[level] =  x_finer_level - local_values(local_size(x_finer_level), delta_fine);
+
+                {
+                    auto d_x_finer_level = const_device_view(x_finer_level);
+
+                    parallel_transform(constraints_memory_.tr_upper[level], UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                    {
+                        return d_x_finer_level.get(i) + delta_fine; 
+                    });
+
+                    parallel_transform(constraints_memory_.tr_lower[level], UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                    {
+                        return d_x_finer_level.get(i) - delta_fine; 
+                    });                    
+                }
+
             }
             else
             {
                 //----------------------------------------------------------------------------
                 //     soft projection of tr bounds
                 //----------------------------------------------------------------------------
-                Vector tr_fine_last_lower = x_finer_level - local_values(local_size(x_finer_level), delta_fine);
+                // Vector tr_fine_last_lower = x_finer_level - local_values(local_size(x_finer_level), delta_fine);
+                // {
+                //     ReadAndWrite<Vector> rv(tr_fine_last_lower);
+                //     Read<Vector> rl(constraints_memory_.tr_lower[finer_level]);
+
+                //     Range r = range(tr_fine_last_lower);
+
+                //     for(SizeType i = r.begin(); i != r.end(); ++i){
+                //         tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
+                //     }
+                // }
+
                 {
-                    ReadAndWrite<Vector> rv(tr_fine_last_lower);
-                    Read<Vector> rl(constraints_memory_.tr_lower[finer_level]);
+                    auto d_tr_lb    = const_device_view(constraints_memory_.tr_lower[finer_level]);
+                    auto d_x_finer  = const_device_view(x_finer_level);
 
-                    Range r = range(tr_fine_last_lower);
+                    parallel_each_write(constraints_memory_.active_lower[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        auto val = d_x_finer.get(i) - delta_fine;
+                        auto lbi = d_tr_lb.get(i); 
 
-                    for(SizeType i = r.begin(); i != r.end(); ++i){
-                        tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[finer_level].get(i), tr_fine_last_lower.get(i)));
-                    }
+                        return std::max(lbi, val);
+                    });
                 }
 
-                Vector tr_fine_last_upper = x_finer_level + local_values(local_size(x_finer_level), delta_fine);
+                // Vector tr_fine_last_upper = x_finer_level + local_values(local_size(x_finer_level), delta_fine);
+                // {
+                //     ReadAndWrite<Vector> rv(tr_fine_last_upper);
+                //     Read<Vector> rl(constraints_memory_.tr_upper[finer_level]);
+
+                //     Range r = range(tr_fine_last_upper);
+
+                //     for(SizeType i = r.begin(); i != r.end(); ++i){
+                //         tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
+                //     }
+                // }
+
                 {
-                    ReadAndWrite<Vector> rv(tr_fine_last_upper);
-                    Read<Vector> rl(constraints_memory_.tr_upper[finer_level]);
+                    auto d_tr_ub    = const_device_view(constraints_memory_.tr_upper[finer_level]);
+                    auto d_x_finer  = const_device_view(x_finer_level);
 
-                    Range r = range(tr_fine_last_upper);
+                    parallel_each_write(constraints_memory_.active_upper[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        auto val = d_x_finer.get(i) + delta_fine;
+                        auto ubi = d_tr_ub.get(i); 
 
-                    for(SizeType i = r.begin(); i != r.end(); ++i){
-                        tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[finer_level].get(i), tr_fine_last_upper.get(i)));
-                    }
+                        return std::min(ubi, val);
+                    });
                 }
+
 
                 //------------------------ new version, taking into account  positive and negative elements projection separatelly -----------------
-                transfer.project_down_positive_negative(tr_fine_last_lower, tr_fine_last_upper, constraints_memory_.tr_lower[level]);
-                transfer.project_down_positive_negative(tr_fine_last_upper, tr_fine_last_lower, constraints_memory_.tr_upper[level]);
+                transfer.project_down_positive_negative(constraints_memory_.active_lower[finer_level], constraints_memory_.active_upper[finer_level], constraints_memory_.tr_lower[level]);
+                transfer.project_down_positive_negative(constraints_memory_.active_upper[finer_level], constraints_memory_.active_lower[finer_level], constraints_memory_.tr_upper[level]);
 
             }
 
@@ -229,6 +271,7 @@ namespace utopia
 
                 if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&transfer))
                 {
+                    // this should be done only on first iteration as it is always same... 
                     constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
                     constraints_memory_.x_upper[level] = constraints_memory_.x_upper[finer_level]; 
                 }
@@ -237,31 +280,77 @@ namespace utopia
                     //----------------------------------------------------------------------------
                     //     projection of variable bounds to the coarse level
                     //----------------------------------------------------------------------------
-                    Vector lx =  (constraints_memory_.x_lower[finer_level] - x_finer_level);
-                    Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(lx);
-                    constraints_memory_.x_lower[level] = x_level + local_values(local_size(x_level), lower_multiplier);
+                    // Vector lx =  constraints_memory_.x_lower[finer_level] - x_finer_level;
+                    // Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(lx);
+                    // constraints_memory_.x_lower[level] = x_level + local_values(local_size(x_level), lower_multiplier);
 
-                    Vector ux =  (constraints_memory_.x_upper[finer_level] - x_finer_level);
-                    Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
-                    constraints_memory_.x_upper[level] = x_level + local_values(local_size(x_level), upper_multiplier);
+                    constraints_memory_.active_lower[finer_level] =  constraints_memory_.x_lower[finer_level] - x_finer_level;
+                    Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(constraints_memory_.active_lower[finer_level]);    
+                    {
+                        auto d_x_level    = const_device_view(x_level);
+                        parallel_each_write(constraints_memory_.x_lower[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                        {
+                            auto xi = x_level.get(i);
+                            return xi + lower_multiplier; 
+                        });
+                    }
+
+                    // Vector ux =  constraints_memory_.x_upper[finer_level] - x_finer_level;
+                    // Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(ux);
+                    // constraints_memory_.x_upper[level] = x_level + local_values(local_size(x_level), upper_multiplier);
+
+
+                    constraints_memory_.active_upper[finer_level] =  constraints_memory_.x_lower[finer_level] - x_finer_level;
+                    Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(constraints_memory_.active_upper[finer_level]);    
+                    {
+                        auto d_x_level    = const_device_view(x_level);
+                        parallel_each_write(constraints_memory_.x_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                        {
+                            auto xi = x_level.get(i);
+                            return xi + upper_multiplier; 
+                        });
+                    }
+
+
                 }
 
                 //----------------------------------------------------------------------------
                 //     intersect bounds on the coarse level
                 //----------------------------------------------------------------------------
-                constraints_memory_.active_upper[level] = local_zeros(local_size(x_level));
-                constraints_memory_.active_lower[level] = local_zeros(local_size(x_level));
+                // constraints_memory_.active_upper[level] = local_zeros(local_size(x_level));
+                // constraints_memory_.active_lower[level] = local_zeros(local_size(x_level));
                 {
-                    Write<Vector>   rv(constraints_memory_.active_upper[level]), rw(constraints_memory_.active_lower[level]);
-                    Read<Vector>    rl(x_level), rq(constraints_memory_.x_lower[level]), re(constraints_memory_.x_upper[level]), rr(constraints_memory_.tr_lower[level]), rt(constraints_memory_.tr_upper[level]);
+                    // Write<Vector>   rv(constraints_memory_.active_upper[level]), rw(constraints_memory_.active_lower[level]);
+                    // Read<Vector>    rl(x_level), rq(constraints_memory_.x_lower[level]), re(constraints_memory_.x_upper[level]), rr(constraints_memory_.tr_lower[level]), rt(constraints_memory_.tr_upper[level]);
 
-                    Range r = range(x_level);
+                    // Range r = range(x_level);
 
-                    for(SizeType i = r.begin(); i != r.end(); ++i)
+                    // for(SizeType i = r.begin(); i != r.end(); ++i)
+                    // {
+                    //     constraints_memory_.active_upper[level].set(i, std::min(constraints_memory_.tr_upper[level].get(i), constraints_memory_.x_upper[level].get(i)));
+                    //     constraints_memory_.active_lower[level].set(i, std::max(constraints_memory_.tr_lower[level].get(i), constraints_memory_.x_lower[level].get(i)));
+                    // }
+
+                    auto d_tr_ub    = const_device_view(constraints_memory_.tr_upper[level]);
+                    auto d_x_ub     = const_device_view(constraints_memory_.x_upper[level]);
+
+
+                    parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
-                        constraints_memory_.active_upper[level].set(i, std::min(constraints_memory_.tr_upper[level].get(i), constraints_memory_.x_upper[level].get(i)));
-                        constraints_memory_.active_lower[level].set(i, std::max(constraints_memory_.tr_lower[level].get(i), constraints_memory_.x_lower[level].get(i)));
-                    }
+                        auto val1 = d_tr_ub.get(i);
+                        auto val2 = d_x_ub.get(i); 
+                        return std::min(val1, val2); 
+                    });
+
+                    auto d_tr_lb    = const_device_view(constraints_memory_.tr_lower[level]);
+                    auto d_x_lb     = const_device_view(constraints_memory_.x_lower[level]);
+
+                    parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        auto val1 = d_tr_lb.get(i);
+                        auto val2 = d_x_lb.get(i); 
+                        return std::max(val1, val2); 
+                    });                    
                 }
             }
             else

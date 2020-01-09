@@ -242,19 +242,21 @@ namespace utopia
             Scalar radius = this->memory_.delta[level];
 
             // first we need to prepare box of intersection of level constraints with tr. constraints
-            Vector l = this->constraints_memory_.active_lower[level] - this->memory_.x[level];
-            each_transform(l, l, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
-                return (val >= -1*radius)  ? val : -1 * radius;  }
-            );
+            std::shared_ptr<Vector> & lb = _tr_subproblems[level]->lower_bound(); 
+            std::shared_ptr<Vector> & ub = _tr_subproblems[level]->upper_bound(); 
 
-            Vector u =  this->constraints_memory_.active_upper[level] - this->memory_.x[level];
-            each_transform(u, u, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
-              return (val <= radius)  ? val : radius; }
-            );
+            *lb = this->constraints_memory_.active_lower[level] - this->memory_.x[level];
+            *ub = this->constraints_memory_.active_upper[level] - this->memory_.x[level];
 
-            // generating constraints to go for QP solve
-            auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
+            {
+                parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                    return (xi >= -1.0*radius)  ? xi : -1.0*radius;
+                });
 
+                parallel_transform(*ub, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar{
+                    return (xi <= radius)  ? xi : radius;
+                });
+            }            
 
             Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
             if(_tr_subproblems[level]->atol() > atol_level){
@@ -268,7 +270,6 @@ namespace utopia
                 this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
             }
 
-            _tr_subproblems[level]->set_box_constraints(box);
             this->ml_derivs_.g[level] *= - 1.0; 
             this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], this->ml_derivs_.g[level], this->memory_.s[level]);
             this->ml_derivs_.g[level] *= - 1.0; 
@@ -279,7 +280,7 @@ namespace utopia
             }
             else{
                 // ----- just for debugging pourposes, to be deleted in future... ----------------
-                MLConstraints::get_projection(l, u, this->memory_.s[level]); 
+                MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]); 
             }
 
 
