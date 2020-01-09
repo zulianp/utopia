@@ -33,6 +33,7 @@ namespace utopia
     using enable_if_t = typename std::enable_if<B,T>::type;
 
 
+
     template<class Matrix, class Vector>
     class FASLevelMemory
     {

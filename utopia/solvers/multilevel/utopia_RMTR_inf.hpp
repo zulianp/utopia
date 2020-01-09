@@ -32,7 +32,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_inf :   public RMTR<Matrix, Vector, CONSISTENCY_LEVEL>, public MultilevelVariableBoundSolverInterface<Vector>
+    class RMTR_inf final:   public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MultilevelVariableBoundSolverInterface<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -46,7 +46,7 @@ namespace utopia
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
         typedef utopia::BoxConstraints<Vector>                          BoxConstraints;
-        typedef utopia::RMTR<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
+        typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
 
 
         typedef utopia::MultilevelVariableBoundSolverInterface<Vector>  MLConstraints;
@@ -67,7 +67,7 @@ namespace utopia
 
         }
 
-        virtual void read(Input &in) override
+        void read(Input &in) override
         {
             RMTR::read(in);
 
@@ -80,7 +80,7 @@ namespace utopia
             }
         }
 
-        virtual void print_usage(std::ostream &os) const override
+        void print_usage(std::ostream &os) const override
         {
             RMTR::print_usage(os);
 
@@ -94,7 +94,7 @@ namespace utopia
         }
 
 
-        virtual std::string name() override
+        std::string name() override
         {
             return "RMTR_inf";
         }
@@ -138,7 +138,7 @@ namespace utopia
 
 
     protected:
-        virtual void init_memory() override
+        void init_memory() override
         {
             RMTR::init_memory();
 
@@ -148,25 +148,51 @@ namespace utopia
 
             const SizeType fine_level = this->n_levels()-1;
 
+            for(Scalar l = 0; l < this->n_levels(); l ++){
+                _tr_subproblems[l]->init_memory(dofs[l]); 
+            }               
+
             // precompute norms of prolongation operators needed for projections of constraints...
             for(auto l = 0; l < fine_level; l++){
                 this->constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
             }
+        }
 
+        bool check_initialization() override
+        {
+            bool flg = RMTR::check_initialization(); 
+
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
+                utopia_error("utopia::RMTR_inf:: number of level QP solvers and levels is not equal. \n");
+                flg = false;
+            }
+
+            // if(static_cast<SizeType>(constraints_memory_.size()) != this->n_levels()){
+            //     utopia_error("utopia::RMTR_l2_quasi:: number of hessian approxiations and levels do not match. \n");
+            //     flg = false;
+            // }            
+
+            return flg; 
+        }        
+
+
+        Scalar get_pred(const SizeType & level) override
+        {
+            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
+            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
         }
 
 
-
         // since TR bounds are weak bounds...
-        virtual bool check_feasibility(const SizeType & level ) override
+        // TODO:: seems to be unused at the moment 
+        bool check_feasibility(const SizeType & level ) override
         {
             return MLConstraints::check_feasibility(level, this->memory_.x[level]); 
         }
 
 
-
         // this routine is correct only under assumption, that P/R/I have only positive elements ...
-        virtual void init_level(const SizeType & level) override
+        void init_level(const SizeType & level) override
         {
             RMTR::init_level(level);
 
@@ -176,15 +202,7 @@ namespace utopia
         }
 
         // -------------------------- tr radius managment ---------------------------------------------
-        /**
-         * @brief      Updates delta on given level
-         *
-         * @param[in]  rho        The rho
-         * @param[in]  level      The level
-         * @param[in]  s_global   Sum of all corrections on given level
-         * @param      converged  convergence flag
-         */
-        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & /*s_global*/) override
+        bool delta_update(const Scalar & rho, const SizeType & level, const Vector & /*s_global*/) override
         {
             Scalar intermediate_delta;
 
@@ -202,14 +220,7 @@ namespace utopia
         }
 
 
-        /**
-         * @brief      "Heuristics", which decides if it makes sense to go to the coarse level or no
-         *
-         * @param[in]  g_restricted  Restricted gradient
-         * @param[in]  g_coarse      Coarse level gradient
-         *
-         */
-        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
+        bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
             Vector Pc;
 
@@ -229,22 +240,15 @@ namespace utopia
 
 
         // measuring wrt to feasible set...
-        virtual Scalar criticality_measure(const SizeType & level) override
+        Scalar criticality_measure(const SizeType & level) override
         {
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]); 
         }
 
 
-        /**
-         * @brief      Solves TR subroblem for given level
-         *
-         * @param[in]  H      The hessian
-         * @param[in]  g      The gradient
-         * @param      s      New correction
-         * @param[in]  level  The level
-         *
-         */
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
+
+
+        bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
             Scalar radius = this->memory_.delta[level];
 

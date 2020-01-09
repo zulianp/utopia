@@ -18,7 +18,7 @@
 namespace utopia
 {
     template<class Vector>
-    class VariableBoundSolverInterface
+    class VariableBoundSolverInterface : virtual public MemoryInterface<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
@@ -259,8 +259,7 @@ namespace utopia
           return correction_constraints_; 
       }
 
-
-      void init_memory(const SizeType & ls)
+      virtual void init_memory(const SizeType & ls) override
       {
         auto zero_expr = local_zeros(ls);
         Pc_  = zero_expr;
@@ -269,7 +268,6 @@ namespace utopia
         constraints_.fill_empty_bounds(ls); 
         correction_constraints_.fill_empty_bounds(ls); 
       }
-
 
 
     protected:

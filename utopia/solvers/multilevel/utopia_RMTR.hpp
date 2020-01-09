@@ -35,6 +35,8 @@ namespace utopia
         typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>     RMTRBase;
         typedef typename RMTRBase::Fun Fun;
 
+        static_assert(!utopia::is_derivative_free<CONSISTENCY_LEVEL>::value, "utopia::RMTR_l2 does not support derivative free computations. Please use QuasiRMTR. ");
+
     public:
 
        /**

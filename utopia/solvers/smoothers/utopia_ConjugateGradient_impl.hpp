@@ -281,6 +281,8 @@ namespace utopia {
     void ConjugateGradient<Matrix, Vector, Backend>::init_memory(const SizeType & ls)
     {
         assert(ls > 0);
+
+        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(ls); 
         auto zero_expr = local_zeros(ls);
 
         //resets all buffers in case the size has changed

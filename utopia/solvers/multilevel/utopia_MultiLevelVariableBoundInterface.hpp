@@ -33,23 +33,13 @@ namespace utopia
 
         virtual ~MultilevelVariableBoundSolverInterface() = default;
 
-        /**
-         * @brief      Sets the box constraints.
-         *
-         * @param      box   The box
-         *
-         */
+
         virtual void set_box_constraints(BoxConstraints & box)
         {
           box_constraints_ = box;
           has_box_constraints_ = true;
         }
 
-        /**
-         * @brief      Gets the box constraints.
-         *
-         * @return     The box constraints.
-         */
         virtual BoxConstraints & get_box_constraints()
         {
           return box_constraints_;

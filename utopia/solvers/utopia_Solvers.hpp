@@ -8,6 +8,7 @@
 #include "utopia_Smoothers.hpp"
 #include "utopia_Preconditioners.hpp"
 #include "utopia_EigenSolver.hpp"
+#include "utopia_Memory.hpp"
 
 
 /**

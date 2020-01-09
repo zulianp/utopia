@@ -44,7 +44,7 @@ namespace utopia {
             OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
         }
 
-        void init_memory(const SizeType &ls); 
+        void init_memory(const SizeType &ls) override; 
 
     private:
         bool solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);

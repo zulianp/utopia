@@ -29,6 +29,8 @@ namespace utopia {
     template<typename Matrix, typename Vector, int Backend>
     void BiCGStab<Matrix, Vector, Backend>::init_memory(const SizeType &ls)
     {
+        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(ls); 
+        
         v_ = local_zeros(ls);
         p_ = local_zeros(ls);
         h_ = local_zeros(ls);
