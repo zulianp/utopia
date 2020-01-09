@@ -38,6 +38,20 @@ namespace utopia
 
             }
 
+            ~LBFGS()
+            {
+                Y_.clear();
+                S_.clear();
+                P_.clear(); 
+
+                rho_.clear();
+                yts_.clear(); 
+                stp_.clear(); 
+
+                SY_point_wise_.clear(); 
+                YY_point_wise_.clear();    
+            }
+
             void initialize(const Vector & x_k, const Vector &  g) override
             {
                 HessianApproximation<Vector>::initialize(x_k, g); 
@@ -95,19 +109,50 @@ namespace utopia
 
             void reset() override
             {
-                Y_.clear();
-                S_.clear();
-                P_.clear(); 
+                theta_ = 1.0;
+                gamma_ = 1.0;
 
-                rho_.clear();
-                yts_.clear(); 
-                stp_.clear(); 
+                current_m_ = 0;
 
-                SY_point_wise_.clear(); 
-                YY_point_wise_.clear();                 
+                // Y_.resize(m_);
+                // S_.resize(m_);
+                // P_.resize(m_); 
 
-                Vector x, g; 
-                this->initialize(x, g);
+                for(auto i=0; i < m_; i++)
+                {
+                    Y_[i].set(0.0);
+                    S_[i].set(0.0);
+                    P_[i].set(0.0);
+                }
+
+                if(scaling_tech_==LBFGSScalingTechnique::FORBENIUS)
+                {
+                    SY_point_wise_.resize(m_); 
+                    YY_point_wise_.resize(m_); 
+
+                    for(auto i=0; i < m_; i++)
+                    {
+                        SY_point_wise_[i].set(0.0);
+                        YY_point_wise_[i].set(0.0);
+                    }
+
+                }
+
+                D_.set(0.0);
+                D_inv_.set(0.0);
+                y_hat_.set(0.0);
+                help1_.set(0.0);
+
+                if(scaling_tech_ == LBFGSScalingTechnique::FORBENIUS){
+                    SY_sum_.set(0.0);
+                    YY_sum_.set(0.0);
+                }
+
+                // rho_.resize(m_);
+                // yts_.resize(m_); 
+                // stp_.resize(m_); 
+
+                this->initialized(true);                
             }
 
             inline LBFGS<Vector> * clone() const override
@@ -645,6 +690,23 @@ namespace utopia
                 }
             }            
 
+            Scalar compute_uHu_dot(const Vector & u) override
+            {
+                this->apply_H(u, help1_);
+                return dot(u, help1_);
+            }            
+
+            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) override
+            {
+                this->apply_Hinv(v, help1_);
+                return dot(u, help1_);
+            }
+
+            Scalar compute_uHv_dot(const Vector & u , const Vector & v) override
+            {
+                this->apply_H(v, help1_);
+                return dot(u, help1_);
+            }
 
         private:
             SizeType m_; // memory size

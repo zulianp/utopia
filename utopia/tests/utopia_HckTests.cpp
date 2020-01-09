@@ -810,7 +810,7 @@ namespace utopia
             std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_tril;
             get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine);
 
-            auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+            auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector> >(n_levels_);
 
             // auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());

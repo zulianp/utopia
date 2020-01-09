@@ -60,9 +60,17 @@ namespace utopia
 
 
     protected:
-        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level) final{
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_MGOPT, SECOND_ORDER, GALERKIN>::value, int> = 0 >
+        bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
+        {
             return  ml_derivs_.compute_hessian(level, fun, memory_.x[level]);
         }
+
+        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER_DF>::value, int> = 0 >
+        bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
+        {
+            return  false; 
+        }        
 
         virtual bool get_multilevel_gradient(const Fun & fun, const SizeType & level, const Vector & s_global) final{
             return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global);
@@ -217,7 +225,7 @@ namespace utopia
             UTOPIA_NO_ALLOC_BEGIN("RMTR::hessian_comp2");
             this->get_multilevel_hessian(this->function(level), level);
             UTOPIA_NO_ALLOC_END();
-            
+
             this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
             
 
@@ -465,11 +473,7 @@ namespace utopia
 
         virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) = 0; 
 
-        virtual Scalar get_pred(const SizeType & level) 
-        {
-            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
-            return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
-        }
+        virtual Scalar get_pred(const SizeType & level)  = 0; 
 
 
 

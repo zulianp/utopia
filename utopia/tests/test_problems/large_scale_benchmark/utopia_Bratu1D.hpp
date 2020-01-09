@@ -84,8 +84,16 @@ namespace utopia
 
         bool gradient(const Vector &x, Vector &g) const override
         {   
-            g = (H_ * x) - h_*(lambda_ * exp(x));
+            // UTOPIA_NO_ALLOC_BEGIN("Bratu1D::gradient1");
+            g = (H_ * x); 
+            // UTOPIA_NO_ALLOC_END();
 
+            // UTOPIA_NO_ALLOC_BEGIN("Bratu1D::gradient2");
+            *A_help_  = h_*lambda_ * exp(x);
+            g -= *A_help_; 
+            // UTOPIA_NO_ALLOC_END();
+
+            // UTOPIA_NO_ALLOC_BEGIN("Bratu1D::gradient3");
             {
                 Write<Vector>   w(g); 
                 Read<Vector>    read(x); 
@@ -99,6 +107,7 @@ namespace utopia
                     g.set(n_-1, -x.get(n_-1)); 
                 }
             }
+            // UTOPIA_NO_ALLOC_END();
 
             return true;
         }        

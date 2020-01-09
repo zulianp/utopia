@@ -12,6 +12,8 @@ namespace utopia {
                                     virtual public Preconditioner<Vector>
     {
         public:
+            using Preconditioner<Vector>::init_memory;
+
             virtual ~MatrixFreeLinearSolver() {}
             virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
@@ -57,6 +59,7 @@ namespace utopia {
             this->max_it(temp);
             return true;
         }
+        
 
         /**
          * @brief      Solution routine after update.
