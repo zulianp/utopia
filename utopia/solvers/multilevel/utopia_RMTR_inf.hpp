@@ -101,8 +101,9 @@ namespace utopia
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels())
+            if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
                 _tr_subproblems.resize(this->n_levels());
+            }
 
             _tr_subproblems[0] = strategy;
 
@@ -119,7 +120,6 @@ namespace utopia
             for(auto l = 1; l != static_cast<SizeType>(_tr_subproblems.size()); ++l){
                 _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
             }
-
 
             return true;
         }
@@ -142,9 +142,8 @@ namespace utopia
         {
             RMTR::init_memory();
 
-            // TODO:: modify allocation of constraints 
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
-            MLConstraints::init_constr_memory(this->n_levels(), dofs.back()); 
+            MLConstraints::init_memory(dofs); 
 
             const SizeType fine_level = this->n_levels()-1;
 
@@ -183,8 +182,6 @@ namespace utopia
         }
 
 
-        // since TR bounds are weak bounds...
-        // TODO:: seems to be unused at the moment 
         bool check_feasibility(const SizeType & level ) override
         {
             return MLConstraints::check_feasibility(level, this->memory_.x[level]); 
@@ -207,12 +204,15 @@ namespace utopia
             Scalar intermediate_delta;
 
             // we could do also more sophisticated options, but lets not care for the moment ...
-            if(rho < this->eta1())
-                 intermediate_delta = std::max(this->gamma1() * this->memory_.delta[level], 1e-15);
-            else if (rho > this->eta2() )
-                 intermediate_delta = std::min(this->gamma2() * this->memory_.delta[level], 1e15);
-            else
+            if(rho < this->eta1()){
+                intermediate_delta = std::max(this->gamma1() * this->memory_.delta[level], 1e-15);
+            }
+            else if (rho > this->eta2()){
+                intermediate_delta = std::min(this->gamma2() * this->memory_.delta[level], 1e15);
+            }
+            else{
                 intermediate_delta = this->memory_.delta[level];
+            }
 
             this->memory_.delta[level] = intermediate_delta;
 
@@ -222,21 +222,26 @@ namespace utopia
 
         bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
-            Vector Pc;
+            // Vector Pc;
 
-            Vector x_g = this->memory_.x[level] - g_restricted;
-            MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
-            Pc -= this->memory_.x[level];
-            Scalar Rg_norm =  norm2(Pc);
+            // Vector x_g = this->memory_.x[level] - g_restricted;
+            // MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
+            // Pc -= this->memory_.x[level];
+            // Scalar Rg_norm =  norm2(Pc);
+
+            Scalar Rg_norm = MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_restricted); 
 
 
-            x_g = this->memory_.x[level] - g_coarse;
-            MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
-            Pc -= this->memory_.x[level];
-            Scalar  g_norm =  norm2(Pc);
+            // x_g = this->memory_.x[level] - g_coarse;
+            // MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
+            // Pc -= this->memory_.x[level];
+            // Scalar  g_norm =  norm2(Pc);
+
+            Scalar g_norm = MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_coarse); 
 
             return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
         }
+
 
 
         // measuring wrt to feasible set...
@@ -244,7 +249,6 @@ namespace utopia
         {
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]); 
         }
-
 
 
 

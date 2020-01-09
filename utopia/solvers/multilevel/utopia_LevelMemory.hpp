@@ -92,10 +92,13 @@ namespace utopia
     class ConstraintsLevelMemory
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
 
         public:
-            void init(const int n_levels)
+            void init_memory(const std::vector<SizeType> & n_dofs_)
             {
+                const auto n_levels = n_dofs_.size(); 
+
                 x_lower.resize(n_levels);
                 x_upper.resize(n_levels);
 
@@ -106,6 +109,17 @@ namespace utopia
                 active_upper.resize(n_levels);
 
                 P_inf_norm.resize(n_levels);
+
+                for(auto l=0; l < n_levels; l++){
+                    x_lower[l]  = local_zeros(n_dofs_[l]); 
+                    x_upper[l]  = local_zeros(n_dofs_[l]); 
+
+                    tr_lower[l]     = local_zeros(n_dofs_[l]); 
+                    tr_upper[l]     = local_zeros(n_dofs_[l]); 
+
+                    active_lower[l] = local_zeros(n_dofs_[l]); 
+                    active_upper[l] = local_zeros(n_dofs_[l]); 
+                }
             }
 
         std::vector<Vector> x_lower, x_upper, tr_lower, tr_upper, active_lower, active_upper;

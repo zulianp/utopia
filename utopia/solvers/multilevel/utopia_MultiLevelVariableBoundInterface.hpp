@@ -48,38 +48,52 @@ namespace utopia
 
       protected:
 
-        virtual void init_constr_memory(const SizeType & n_levels, const SizeType & fine_local_size)
+        // virtual void init_constr_memory(const SizeType & n_levels, const SizeType & fine_local_size)
+        void init_memory(const std::vector<SizeType> & n_dofs_)
         {
-            constraints_memory_.init(n_levels);
+            constraints_memory_.init_memory(n_dofs_);
 
-            const SizeType fine_level = n_levels-1;
+            SizeType fine_local_size = n_dofs_.back(); 
+            SizeType n_levels =  n_dofs_.size(); 
+
+            const SizeType fine_level =n_levels -1;
             const Scalar inf = std::numeric_limits<Scalar>::infinity();
 
             if(has_box_constraints_)
             {
-                if(box_constraints_.has_upper_bound())
+                if(box_constraints_.has_upper_bound()){
                     constraints_memory_.x_upper[fine_level] = *box_constraints_.upper_bound();
-                else
-                    constraints_memory_.x_upper[fine_level] = local_values(fine_local_size, inf);
+                }
+                else{
+                    // constraints_memory_.x_upper[fine_level] = local_values(fine_local_size, inf);
+                    constraints_memory_.x_upper[fine_level].set(inf); 
+                }
 
-                if(box_constraints_.has_lower_bound())
+                if(box_constraints_.has_lower_bound()){
                     constraints_memory_.x_lower[fine_level] = *box_constraints_.lower_bound();
-                else
-                    constraints_memory_.x_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
-
+                }
+                else{
+                    // constraints_memory_.x_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
+                    constraints_memory_.x_lower[fine_level].set(-1.0 * inf);
+                }
 
                 constraints_memory_.active_upper[fine_level] = constraints_memory_.x_upper[fine_level];
                 constraints_memory_.active_lower[fine_level] = constraints_memory_.x_lower[fine_level];
             }
             else
             {
-                constraints_memory_.active_upper[fine_level] = local_values(fine_local_size, inf);
-                constraints_memory_.active_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
+                // constraints_memory_.active_upper[fine_level] = local_values(fine_local_size, inf);
+                // constraints_memory_.active_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
+                constraints_memory_.active_upper[fine_level].set(inf);
+                constraints_memory_.active_lower[fine_level].set(-1.0 * inf);                
             }
 
             // inherited tr bound constraints...
-            constraints_memory_.tr_upper[fine_level] = local_values(fine_local_size, inf);
-            constraints_memory_.tr_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
+            // constraints_memory_.tr_upper[fine_level] = local_values(fine_local_size, inf);
+            // constraints_memory_.tr_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
+            constraints_memory_.tr_upper[fine_level].set(inf);
+            constraints_memory_.tr_lower[fine_level].set(-1.0 * inf);            
+
 
             // // precompute norms of prolongation operators needed for projections of constraints...
             // for(auto l = 0; l < fine_level; l++)
@@ -91,29 +105,48 @@ namespace utopia
 
         virtual bool check_feasibility(const SizeType & level, const Vector & x)
         {
-
-          // // TODO:: investigate if this works correctly in parallel.... 
             bool terminate = false;
 
-            {
-                Read<Vector> ru(constraints_memory_.tr_upper[level]);
-                Read<Vector> rl(constraints_memory_.tr_lower[level]);
-                Read<Vector> rx(x);
+            // {
+            //     Read<Vector> ru(constraints_memory_.tr_upper[level]);
+            //     Read<Vector> rl(constraints_memory_.tr_lower[level]);
+            //     Read<Vector> rx(x);
 
-                Range r = range(constraints_memory_.tr_upper[level]);
+            //     Range r = range(constraints_memory_.tr_upper[level]);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i)
+            //     for(SizeType i = r.begin(); i != r.end(); ++i)
+            //     {
+            //         Scalar xi = x.get(i);
+            //         Scalar li = constraints_memory_.tr_lower[level].get(i);
+            //         Scalar ui = constraints_memory_.tr_upper[level].get(i);
+
+            //        if(xi < li || xi > ui)
+            //             terminate = true;
+            //     }
+            // }
+
+
+            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
+
+           {
+                auto d_u = const_device_view(constraints_memory_.tr_upper[level]);
+                auto d_l = const_device_view(constraints_memory_.tr_lower[level]);
+                auto d_x = const_device_view(x);
+
+                ForLoop::apply(range(x), UTOPIA_LAMBDA(const SizeType i)
                 {
-                    Scalar xi = x.get(i);
-                    Scalar li = constraints_memory_.tr_lower[level].get(i);
-                    Scalar ui = constraints_memory_.tr_upper[level].get(i);
+                    const Scalar xi = d_x.get(i);
+                    const Scalar li = d_l.get(i);
+                    const Scalar ui = d_u.get(i);
 
-                   if(xi < li || xi > ui)
+                    if(xi < li || xi > ui){
                         terminate = true;
-                }
+                    }
+
+                });
             }
 
-            return terminate;
+            return x.comm().disjunction(terminate);
           
         }
 
@@ -248,6 +281,7 @@ namespace utopia
     protected:
         BoxConstraints box_constraints_;        // constraints on the finest level....
         bool has_box_constraints_;               // as we can run rmtr with inf. norm also without constraints...      
+
         ConstraintsLevelMemory <Vector>         constraints_memory_;
 
 
