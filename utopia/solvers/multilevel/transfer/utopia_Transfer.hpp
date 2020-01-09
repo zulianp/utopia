@@ -91,8 +91,8 @@
         virtual bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) = 0;
 
 
-
         //FIXME
+        virtual void init_memory() {};
         virtual Scalar interpolation_inf_norm() const = 0;
         virtual Scalar projection_inf_norm()    const = 0;
         virtual Scalar restriction_inf_norm()   const = 0;

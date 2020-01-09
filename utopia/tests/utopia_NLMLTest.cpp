@@ -22,7 +22,7 @@ namespace utopia
 			return "RMTR_test benchmark.";
 		}
 
-		RMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(2), verbose_(verbose)
+		RMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(3), verbose_(verbose)
 		{
 			// ml_problems_.resize(4);
 			// // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
@@ -164,7 +164,7 @@ namespace utopia
 			this->register_experiment("RMTR_first_order_infty",
 				[this]() {
 		           	// auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-		           	auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+		           	auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 		            // tr_strategy_fine->atol(1e-12);
 
 					auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
@@ -196,7 +196,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
-			in.set("max-it", 150);
+			in.set("max-it", 2);
 			in.set("verbose", true);
 
             // RMTR specific parameters

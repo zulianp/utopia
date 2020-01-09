@@ -115,9 +115,9 @@ namespace utopia
             //----------------------------------------------------------------------------
             //    initializing coarse level (deltas, constraints, hessian approx, ...)
             //----------------------------------------------------------------------------
-            //UTOPIA_NO_ALLOC_BEGIN("RMTR::region113");
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::init_level");
             this->init_level(level-1);
-            //UTOPIA_NO_ALLOC_END();
+            UTOPIA_NO_ALLOC_END();
 
             //----------------------------------------------------------------------------
             //                  first order coarse level objective managment
