@@ -139,9 +139,9 @@ namespace utopia
                     const Scalar li = d_l.get(i);
                     const Scalar ui = d_u.get(i);
 
-                    if(xi < li || xi > ui){
-                        terminate = true;
-                    }
+                    // if(xi < li || xi > ui){
+                    //     terminate = true;
+                    // }
 
                 });
             }

@@ -300,7 +300,7 @@ namespace utopia {
         // auto c_I = std::make_shared<USparseMatrix>();
         // *c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
 
-        
+
         // mg.update_transfer(last_interp, std::make_shared<MatrixTransfer<USparseMatrix, UVector>>(c_I));
     }
 }
