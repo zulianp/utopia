@@ -47,8 +47,6 @@ namespace utopia
 
 
       protected:
-
-        // virtual void init_constr_memory(const SizeType & n_levels, const SizeType & fine_local_size)
         void init_memory(const std::vector<SizeType> & n_dofs_)
         {
             constraints_memory_.init_memory(n_dofs_);
@@ -65,7 +63,6 @@ namespace utopia
                     constraints_memory_.x_upper[fine_level] = *box_constraints_.upper_bound();
                 }
                 else{
-                    // constraints_memory_.x_upper[fine_level] = local_values(fine_local_size, inf);
                     constraints_memory_.x_upper[fine_level].set(inf); 
                 }
 
@@ -73,7 +70,6 @@ namespace utopia
                     constraints_memory_.x_lower[fine_level] = *box_constraints_.lower_bound();
                 }
                 else{
-                    // constraints_memory_.x_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
                     constraints_memory_.x_lower[fine_level].set(-1.0 * inf);
                 }
 
@@ -82,15 +78,11 @@ namespace utopia
             }
             else
             {
-                // constraints_memory_.active_upper[fine_level] = local_values(fine_local_size, inf);
-                // constraints_memory_.active_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
                 constraints_memory_.active_upper[fine_level].set(inf);
                 constraints_memory_.active_lower[fine_level].set(-1.0 * inf);                
             }
 
             // inherited tr bound constraints...
-            // constraints_memory_.tr_upper[fine_level] = local_values(fine_local_size, inf);
-            // constraints_memory_.tr_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
             constraints_memory_.tr_upper[fine_level].set(inf);
             constraints_memory_.tr_lower[fine_level].set(-1.0 * inf);            
 
@@ -107,77 +99,80 @@ namespace utopia
         {
             bool terminate = false;
 
-            // {
-            //     Read<Vector> ru(constraints_memory_.tr_upper[level]);
-            //     Read<Vector> rl(constraints_memory_.tr_lower[level]);
-            //     Read<Vector> rx(x);
+            {
+                Read<Vector> ru(constraints_memory_.tr_upper[level]);
+                Read<Vector> rl(constraints_memory_.tr_lower[level]);
+                Read<Vector> rx(x);
 
-            //     Range r = range(constraints_memory_.tr_upper[level]);
+                Range r = range(constraints_memory_.tr_upper[level]);
 
-            //     for(SizeType i = r.begin(); i != r.end(); ++i)
-            //     {
-            //         Scalar xi = x.get(i);
-            //         Scalar li = constraints_memory_.tr_lower[level].get(i);
-            //         Scalar ui = constraints_memory_.tr_upper[level].get(i);
-
-            //        if(xi < li || xi > ui)
-            //             terminate = true;
-            //     }
-            // }
-
-
-            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
-
-           {
-                auto d_u = const_device_view(constraints_memory_.tr_upper[level]);
-                auto d_l = const_device_view(constraints_memory_.tr_lower[level]);
-                auto d_x = const_device_view(x);
-
-                ForLoop::apply(range(x), UTOPIA_LAMBDA(const SizeType i)
+                for(SizeType i = r.begin(); i != r.end(); ++i)
                 {
-                    const Scalar xi = d_x.get(i);
-                    const Scalar li = d_l.get(i);
-                    const Scalar ui = d_u.get(i);
+                    Scalar xi = x.get(i);
+                    Scalar li = constraints_memory_.tr_lower[level].get(i);
+                    Scalar ui = constraints_memory_.tr_upper[level].get(i);
 
-                    // if(xi < li || xi > ui){
-                    //     terminate = true;
-                    // }
-
-                });
+                   if(xi < li || xi > ui)
+                        terminate = true;
+                }
             }
+
+
+           //  using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
+
+           // {
+           //      auto d_u = const_device_view(constraints_memory_.tr_upper[level]);
+           //      auto d_l = const_device_view(constraints_memory_.tr_lower[level]);
+           //      auto d_x = const_device_view(x);
+
+           //      ForLoop::apply(range(x), UTOPIA_LAMBDA(const SizeType i)
+           //      {
+           //          const Scalar xi = d_x.get(i);
+           //          const Scalar li = d_l.get(i);
+           //          const Scalar ui = d_u.get(i);
+
+           //          // if(xi < li || xi > ui){
+           //          //     terminate = true;
+           //          // }
+
+           //      });
+           //  }
 
             return x.comm().disjunction(terminate);
           
         }
 
 
-
-      void get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
+      void get_projection(const Vector &lb, const Vector &ub, Vector & x)
       {
-        Pc = local_zeros(local_size(x));
-        {
-            Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-            Write<Vector> wv(Pc);
 
-            each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double {
-                      Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);
-                      if(li >= xi)
-                        return li;
-                      else
-                        return (ui <= xi) ? ui : xi; }   );
+        {
+            auto d_lb = const_device_view(lb);
+            auto d_ub = const_device_view(ub);
+
+            parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+            {
+                Scalar li = d_lb.get(i);
+                Scalar ui = d_ub.get(i);
+                if(li >= xi){
+                  return li;
+                }
+                else{
+                  return (ui <= xi) ? ui : xi;
+                }
+            });
         }
-      }
+
+      }        
 
 
         virtual Scalar criticality_measure_inf(const SizeType & level, const Vector & x, const Vector & g)
         {
-            Vector Pc;
-            Vector x_g = x - g;
+            constraints_memory_.help[level] = x - g; 
+            get_projection(constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], constraints_memory_.help[level]);
+            constraints_memory_.help[level] -= x;
 
-            get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc);
-
-            Pc -= x;
-            return norm2(Pc);
+            return norm2(constraints_memory_.help[level]);
         }
 
 

@@ -222,26 +222,12 @@ namespace utopia
 
         bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
-            // Vector Pc;
-
-            // Vector x_g = this->memory_.x[level] - g_restricted;
-            // MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
-            // Pc -= this->memory_.x[level];
-            // Scalar Rg_norm =  norm2(Pc);
-
+            // if we merge calls, reduction can be done together
             Scalar Rg_norm = MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_restricted); 
-
-
-            // x_g = this->memory_.x[level] - g_coarse;
-            // MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
-            // Pc -= this->memory_.x[level];
-            // Scalar  g_norm =  norm2(Pc);
-
             Scalar g_norm = MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_coarse); 
 
             return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
         }
-
 
 
         // measuring wrt to feasible set...
@@ -249,7 +235,6 @@ namespace utopia
         {
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]); 
         }
-
 
 
         bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
@@ -262,19 +247,19 @@ namespace utopia
                 return (val >= -1*radius)  ? val : -1 * radius;  }
             );
 
-
             Vector u =  this->constraints_memory_.active_upper[level] - this->memory_.x[level];
             each_transform(u, u, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
               return (val <= radius)  ? val : radius; }
             );
 
-
             // generating constraints to go for QP solve
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
 
-            // setting should be really parameters from outside ...
-            this->_tr_subproblems[level]->atol(1e-14);
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
+            if(_tr_subproblems[level]->atol() > atol_level){
+                _tr_subproblems[level]->atol(atol_level);  
+            }
 
             if(flg){
                 this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
@@ -283,15 +268,19 @@ namespace utopia
                 this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
             }
 
-
             _tr_subproblems[level]->set_box_constraints(box);
-            this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
+            this->ml_derivs_.g[level] *= - 1.0; 
+            this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], this->ml_derivs_.g[level], this->memory_.s[level]);
+            this->ml_derivs_.g[level] *= - 1.0; 
 
 
-
-            // ----- just for debugging pourposes ----------------
-            Vector s_old = this->memory_.s[level]; 
-            MLConstraints::get_projection(s_old, l, u, this->memory_.s[level]); 
+            if(has_nan_or_inf(this->memory_.s[level])){
+                this->memory_.s[level].set(0.0); 
+            }
+            else{
+                // ----- just for debugging pourposes, to be deleted in future... ----------------
+                MLConstraints::get_projection(l, u, this->memory_.s[level]); 
+            }
 
 
             return true;

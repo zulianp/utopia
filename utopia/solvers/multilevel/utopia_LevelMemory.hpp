@@ -109,6 +109,7 @@ namespace utopia
                 active_upper.resize(n_levels);
 
                 P_inf_norm.resize(n_levels);
+                help.resize(n_levels); 
 
                 for(auto l=0; l < n_levels; l++){
                     x_lower[l]  = local_zeros(n_dofs_[l]); 
@@ -119,10 +120,12 @@ namespace utopia
 
                     active_lower[l] = local_zeros(n_dofs_[l]); 
                     active_upper[l] = local_zeros(n_dofs_[l]); 
+
+                    help[l] = local_zeros(n_dofs_[l]); 
                 }
             }
 
-        std::vector<Vector> x_lower, x_upper, tr_lower, tr_upper, active_lower, active_upper;
+        std::vector<Vector> x_lower, x_upper, tr_lower, tr_upper, active_lower, active_upper, help;
         std::vector<Scalar> P_inf_norm;
     };
 

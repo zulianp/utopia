@@ -83,11 +83,7 @@ namespace utopia
     protected:
       virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
       {
-        if(empty(Pc_) || size(Pc_) != size(x)){
-          Pc_ = 0.0 * x; 
-        }
-
-        xg_ = x - g;
+        help_ = x - g;
 
         if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
         {
@@ -97,10 +93,10 @@ namespace utopia
         const auto &ub = *constraints_.upper_bound();
         const auto &lb = *constraints_.lower_bound();
 
-        get_projection(xg_, lb, ub, Pc_);
-        Pc_ -= x;
+        get_projection(lb, ub, help_);
+        help_ -= x;
 
-        return norm2(Pc_);
+        return norm2(help_);
       }
 
   public:  // expose it for CUDA
@@ -131,6 +127,33 @@ namespace utopia
 
         return true;
       }
+
+
+      bool get_projection(const Vector &lb, const Vector &ub, Vector & x) const
+      {
+
+        {
+            auto d_lb = const_device_view(lb);
+            auto d_ub = const_device_view(ub);
+
+            parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+            {
+                Scalar li = d_lb.get(i);
+                Scalar ui = d_ub.get(i);
+                if(li >= xi){
+                  return li;
+                }
+                else{
+                  return (ui <= xi) ? ui : xi;
+                }
+            });
+        }
+
+        return true;
+      }
+
+
+
 
     void make_iterate_feasible(Vector & x) const
     {
@@ -262,8 +285,8 @@ namespace utopia
       virtual void init_memory(const SizeType & ls) override
       {
         auto zero_expr = local_zeros(ls);
-        Pc_  = zero_expr;
-        xg_  = zero_expr;
+        help_  = zero_expr;
+        // xg_  = zero_expr;
 
         constraints_.fill_empty_bounds(ls); 
         correction_constraints_.fill_empty_bounds(ls); 
@@ -274,8 +297,9 @@ namespace utopia
         BoxConstraints                  constraints_;             // variable bound constraints 
         BoxConstraints                  correction_constraints_;  // constraints needed for correction 
 
-        Vector Pc_;
-        Vector xg_; 
+        // Vector Pc_;
+        // Vector xg_; 
+        Vector help_; 
 
 
     };
