@@ -84,7 +84,7 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class TRSubproblem : public IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
+    class TRSubproblem : public virtual IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -112,7 +112,7 @@ namespace  utopia
 
 
     template<class Vector>
-    class MatrixFreeTRSubproblem : public MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
+    class MatrixFreeTRSubproblem : public virtual MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -141,9 +141,8 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class OperatorBasedTRSubproblem :   public MatrixFreeTRSubproblem<Vector>,
-                                        public TRSubproblem<Matrix, Vector>,
-                                        public Smoother<Matrix, Vector>
+    class OperatorBasedTRSubproblem :   public virtual MatrixFreeTRSubproblem<Vector>,
+                                        public virtual TRSubproblem<Matrix, Vector>
     {
     public:
         using MatrixFreeTRSubproblem<Vector>::update;
@@ -178,20 +177,18 @@ namespace  utopia
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedTRSubproblem * clone() const =0;
+        virtual OperatorBasedTRSubproblem * clone() const override = 0;
 
         virtual void read(Input &in) override
         {
             MatrixFreeTRSubproblem<Vector>::read(in);
             TRSubproblem<Matrix, Vector>::read(in);
-            Smoother<Matrix, Vector>::read(in);
         }
 
         virtual void print_usage(std::ostream &os) const override
         {
             MatrixFreeTRSubproblem<Vector>::print_usage(os);
             TRSubproblem<Matrix, Vector>::print_usage(os);
-            Smoother<Matrix, Vector>::print_usage(os);
         }
     };
 

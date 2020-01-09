@@ -10,7 +10,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class Dogleg final: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
 
         public:
@@ -43,6 +44,12 @@ namespace utopia
             {
                 TRSubproblem<Matrix, Vector>::print_usage(os);
                 this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-");
+            }
+
+            void init_memory(const SizeType & ls) override            
+            {
+                Bg_     =  local_zeros(ls); 
+                p_SD_   =  local_zeros(ls); 
             }
 
         protected:

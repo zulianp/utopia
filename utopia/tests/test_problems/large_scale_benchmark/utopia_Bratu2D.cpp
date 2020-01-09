@@ -1,4 +1,5 @@
 #include "utopia_Bratu2D.hpp"
+#include "utopia_TestFunctions.hpp"
 
 #ifdef  WITH_PETSC
 
@@ -11,7 +12,7 @@ namespace utopia
       PetscErrorCode ierr;
       PetscInt       i,j;
       PetscReal      lambda,hx,hy,hxdhy,hydhx;
-      PetscScalar    u,ue,uw,un,us,uxx,uyy,mms_solution,mms_forcing;
+      PetscScalar    u,ue,uw,un,us,uxx,uyy,mms_solution;
       DMDACoor2d     c;
 
       PetscFunctionBeginUser;
@@ -44,10 +45,8 @@ namespace utopia
 
             uxx     = (2.0*u - uw - ue)*hydhx;
             uyy     = (2.0*u - un - us)*hxdhy;
-            mms_forcing = 0;
             c.x = i*hx; c.y = j*hy;
-            if (user->mms_forcing) {ierr = user->mms_forcing(user,&c,&mms_forcing);CHKERRQ(ierr);}
-            f[j][i] = uxx + uyy - hx*hy*(lambda* std::exp(u) + mms_forcing);
+            f[j][i] = uxx + uyy - hx*hy*(lambda* std::exp(u));
           }
         }
       }
@@ -164,9 +163,12 @@ PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,Pet
   */
   for (j=info->ys; j<info->ys+info->ym; j++) {
     for (i=info->xs; i<info->xs+info->xm; i++) {
-      if (i == 0 || j == 0 || i == info->mx-1 || j == info->my-1) {
+      if (i == 0 || j == 0 || i == info->mx-1 || j == info->my-1) 
+      {
         lobj += PetscRealPart((hydhx + hxdhy)*x[j][i]*x[j][i]);
-      } else 
+        // lobj += PetscRealPart((hydhx + hxdhy)*x[j][i]*x[j][i]) - sc*std::exp(u);
+      } 
+      else 
       {
         u  = x[j][i];
         uw = x[j][i-1];
@@ -180,11 +182,10 @@ PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,Pet
         if (j+1 == info->my-1) us = 0.;
 
         /* F[u] = 1/2\int_{\omega}\nabla^2u(x)*u(x)*dx */
-
         uxux = u*(2.*u - ue - uw)*hydhx;
         uyuy = u*(2.*u - un - us)*hxdhy;
-
         lobj += PetscRealPart(0.5*(uxux + uyuy) - sc*std::exp(u));
+
       }
     }
   }
@@ -195,42 +196,11 @@ PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,Pet
 
 PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D * /*user*/,const DMDACoor2d *c,PetscScalar *u)
 {
-    // not sure for this one 
+    // we need to return 0 for bc 
     PetscReal x = PetscRealPart(c->x), y = PetscRealPart(c->y);
-    u[0] = x*(1. - x)*y*(1. - y);
+    u[0] = 0.0;
     return 0;
 }
-
-PetscErrorCode Bratu2DMMSForcing(ParamsBratu2D * /*user*/,const DMDACoor2d * /*c*/, PetscScalar *f)
-{
-    f[0] = 0.0; 
-    return 0;    
-}
-
-// PetscErrorCode Bratu2DFormExactSolution(DM da, ParamsBratu2D *user, Vec U)
-// {
-//   DM             coordDA;
-//   Vec            coordinates;
-//   DMDACoor2d   **coords;
-//   PetscScalar  **u;
-//   PetscInt       xs, ys, xm, ym, i, j;
-//   PetscErrorCode ierr;
-
-//   PetscFunctionBeginUser;
-//   ierr = DMDAGetCorners(da, &xs, &ys, NULL, &xm, &ym, NULL);CHKERRQ(ierr);
-//   ierr = DMGetCoordinateDM(da, &coordDA);CHKERRQ(ierr);
-//   ierr = DMGetCoordinates(da, &coordinates);CHKERRQ(ierr);
-//   ierr = DMDAVecGetArray(coordDA, coordinates, &coords);CHKERRQ(ierr);
-//   ierr = DMDAVecGetArray(da, U, &u);CHKERRQ(ierr);
-//   for (j = ys; j < ys+ym; ++j) {
-//     for (i = xs; i < xs+xm; ++i) {
-//       user->mms_solution(user,&coords[j][i],&u[j][i]);
-//     }
-//   }
-//   ierr = DMDAVecRestoreArray(da, U, &u);CHKERRQ(ierr);
-//   ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords);CHKERRQ(ierr);
-//   PetscFunctionReturn(0);
-// }
 
 
 PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user, Vec BC_flag, Vec BC_value)
@@ -268,7 +238,6 @@ PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user, Vec BC_flag, Vec BC_
       {
         /* boundary conditions are all zero Dirichlet */
         BC_flag_w[j][i] = 1.0;
-        // user->mms_solution(user, &coords[j][i], &BC_value_w[j][i]);
         BC_value_w[j][i] = 0.0; 
 
       }

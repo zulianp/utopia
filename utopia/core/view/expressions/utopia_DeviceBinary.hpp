@@ -37,6 +37,11 @@ namespace utopia {
             return std::string("DeviceBinary<") + left_.get_class() + ", " + right_.get_class() + ", " + GetClass<Op>() + ">";
         }
 
+        inline SizeType size() const
+        {
+            return left_.size();
+        }
+
     private:
         UTOPIA_STORE_CONST(Left)  left_;
         UTOPIA_STORE_CONST(Right) right_;

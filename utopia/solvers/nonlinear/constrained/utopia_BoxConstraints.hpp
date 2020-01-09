@@ -13,8 +13,8 @@ namespace utopia {
     template<class Vector>
     class BoxConstraints {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
-        typedef UTOPIA_SIZE_TYPE(Vector)  SizeType;
+        typedef  UTOPIA_SCALAR(Vector)      Scalar; 
+        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
 
         BoxConstraints(const std::shared_ptr<Vector> &lower_bound,
                        const std::shared_ptr<Vector> &upper_bound): 
@@ -24,10 +24,19 @@ namespace utopia {
         max_val_(std::numeric_limits<Scalar>::max()), 
         uniform_(false)
         {
+            
+        }
+
+        BoxConstraints():   min_val_(-std::numeric_limits<Scalar>::max()),
+                            max_val_(std::numeric_limits<Scalar>::max()) 
+        {
 
         }
 
-        BoxConstraints() {}
+        virtual ~BoxConstraints()
+        {
+
+        }
 
         inline std::shared_ptr<Vector> &upper_bound()
         {
@@ -64,10 +73,26 @@ namespace utopia {
             return has_lower_bound() || has_upper_bound();
         }
 
-        inline void fill_empty_bounds(const SizeType & loc_size = 0)
+        inline bool has_bounds() const
         {
-            
-            if(!lower_bound_ && !upper_bound_)
+            return has_lower_bound() && has_upper_bound();
+        }        
+
+        inline void fill_empty_bounds(const SizeType & loc_size)
+        {
+            if(this->has_bounds())  
+            {
+                if(!lower_bound_->comm().conjunction(loc_size == local_size(*lower_bound_))){
+                    lower_bound_ = std::make_shared<Vector>(local_values(loc_size, min_val_));
+                }
+
+                if(!upper_bound_->comm().conjunction(loc_size == local_size(*upper_bound_))){
+                    upper_bound_ = std::make_shared<Vector>(local_values(loc_size, max_val_));
+                }
+
+                return; 
+            }
+            else if(!lower_bound_ && !upper_bound_)
             {
                 lower_bound_ = std::make_shared<Vector>(local_values(loc_size, min_val_));
                 upper_bound_ = std::make_shared<Vector>(local_values(loc_size, max_val_));
@@ -75,11 +100,11 @@ namespace utopia {
             else
             {
                 if(!lower_bound_) {
-                    lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_), min_val_));
+                    lower_bound_ = std::make_shared<Vector>(local_values(loc_size, min_val_));
                 }
 
                 if(!upper_bound_) {
-                    upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_), max_val_));
+                    upper_bound_ = std::make_shared<Vector>(local_values(loc_size, max_val_));
                 }
             }
         }  
@@ -94,11 +119,12 @@ namespace utopia {
             uniform_ = flg; 
         }
 
+
     private:
         std::shared_ptr<Vector> lower_bound_;
         std::shared_ptr<Vector> upper_bound_;
-        Scalar min_val_;
-        Scalar max_val_;
+        Scalar min_val_ = -9e9;
+        Scalar max_val_ = 9e9;
         bool uniform_; 
     };
 

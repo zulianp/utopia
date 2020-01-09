@@ -55,7 +55,7 @@ namespace utopia
         }
 
 
-        void init_memory(const SizeType & /*fine_local_size*/) override
+        void init_memory() override
         {
             std::cout<<"-------- to be done \n";
         }
@@ -101,7 +101,7 @@ namespace utopia
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
 
-            this->init_memory(local_size(x_h).get(0));
+            this->init_memory();
 
             Vector g = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);
@@ -230,8 +230,10 @@ namespace utopia
         {
             _smoother->max_it(1);
             _smoother->verbose(true);
-            _smoother->solve(fun, x, rhs);
-
+            // This should be done way much more efficient 
+            std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            _smoother->solve(fun_rhs, x, rhs);
             return true;
         }
 
@@ -248,7 +250,10 @@ namespace utopia
         bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs)
         {
             _coarse_solver->verbose(true);
-            _coarse_solver->solve(fun, x, rhs);
+            // This should be done way much more efficient 
+            std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            _coarse_solver->solve(fun_rhs, x, rhs);
             return true;
         }
 

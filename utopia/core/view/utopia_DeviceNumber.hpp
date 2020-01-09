@@ -3,6 +3,7 @@
 
 #include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_Literal.hpp"
 
 namespace utopia {
 

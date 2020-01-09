@@ -112,12 +112,22 @@ namespace utopia {
             return dof_map().variable_type(this->subspace_id());
         }
 
+        inline const std::string &var_name() const
+        {
+            return dof_map().variable(this->subspace_id()).name();
+        }
+
         inline libMesh::DofMap &dof_map() {
             return equation_system().get_dof_map();
         }
 
         inline const libMesh::DofMap &dof_map() const {
             return equation_system().get_dof_map();
+        }
+
+        inline void dofs(const libMesh::Elem &elem, std::vector<libMesh::dof_id_type> &indices) const
+        {
+            dof_map().dof_indices(&elem, indices, this->subspace_id());
         }
 
         inline libMesh::System &equation_system()
@@ -157,7 +167,7 @@ namespace utopia {
     };
 
     template<>
-    class Traits<LibMeshFunctionSpace> //: public LibMeshAlgebraTraits<double> 
+    class Traits<LibMeshFunctionSpace> //: public LibMeshAlgebraTraits<double>
     {
     public:
         static const int Backend = LIBMESH_TAG;

@@ -7,6 +7,7 @@
 #include "utopia_Benchmark.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_TestProblems.hpp"
+#include "utopia_BiCGStab.hpp"
 
 #include <string>
 #include <cassert>
@@ -293,12 +294,12 @@ namespace utopia {
 
             multigrid.set_transfer_operators(transfers);
 
-            Vector x, g; 
-            funs[n_levels - 1]->get_eq_constrains_values(x); 
+            Vector x, g;
+            funs[n_levels - 1]->get_eq_constrains_values(x);
 
-            Matrix A; 
-            funs[n_levels - 1]->hessian(x, A); 
-            funs[n_levels - 1]->gradient(x, g); 
+            Matrix A;
+            funs[n_levels - 1]->hessian(x, A);
+            funs[n_levels - 1]->gradient(x, g);
             multigrid.update(std::make_shared<Matrix>(A));
 
             if(verbose) {

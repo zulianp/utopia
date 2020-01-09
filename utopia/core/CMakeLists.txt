@@ -8,6 +8,8 @@ list(APPEND CORE_MODULES
     view/expressions
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR CORE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 add_library(utopia_core STATIC utopia_core.cpp ${LOCAL_SOURCES})

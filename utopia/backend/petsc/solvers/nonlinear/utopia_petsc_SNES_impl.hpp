@@ -93,7 +93,7 @@ namespace utopia {
 
         set_snes_options(snes, this->atol(), this->rtol(), this->stol(), this->max_it());
         set_ksp(snes);
-        set_variable_bounds(snes);
+        set_variable_bounds(snes, local_size(x));
 
 
         SNESSolve(snes, NULL, raw_type(x));
@@ -131,7 +131,7 @@ namespace utopia {
 
         set_snes_options(snes, 0.0, 0.0, 0.0, this->sweeps());
         set_ksp(snes);
-        set_variable_bounds(snes);
+        set_variable_bounds(snes, local_size(x));
 
         SNESSolve(snes, raw_type(rhs), raw_type(x));
 
@@ -237,10 +237,10 @@ namespace utopia {
     }
 
     template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::set_variable_bounds(SNES &snes)
+    void SNESSolver<Matrix, Vector, PETSC>::set_variable_bounds(SNES &snes, const SizeType & ls)
     {
         if(this->has_bound()) {
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(ls);
 
             SNESVISetVariableBounds(
                                     snes,

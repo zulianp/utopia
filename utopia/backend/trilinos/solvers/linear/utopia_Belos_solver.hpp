@@ -47,20 +47,49 @@ public:
     int get_num_iter() const;
     double achieved_tol() const;
 
-    /**
-     * @brief      Reads the xml file based on different layout than read
-     *
-     * @param[path] path  location of the xml file
-     */
-    void read_xml(const std::string &path);
+    template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    class BelosSolver {};
 
-    /**
-     * @brief      Reads the UTOPIA input object.
-     *
-     * @param[in]  in  The parameters
-     */
-    void read(Input &in) override;/* {
-          Smoother<Matrix, Vector>::read(in);
+    template <typename Matrix, typename Vector>
+    class BelosSolver<Matrix, Vector, TRILINOS> final : public PreconditionedSolver<Matrix, Vector>
+    {
+    public:
+        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        
+        typedef utopia::Preconditioner<Vector> Preconditioner;
+        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
+        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
+        typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
+
+        BelosSolver();
+        BelosSolver(const BelosSolver &other);
+        ~BelosSolver();
+
+        void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
+        void update(const std::shared_ptr<const Matrix> &op) override;
+        bool apply(const Vector &rhs, Vector &lhs) override;
+
+        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
+        void set_preconditioner(const Matrix &precond);
+
+        int get_num_iter() const;
+        double achieved_tol() const;
+
+        /**
+         * @brief      Reads the xml file based on different layout than read
+         *
+         * @param[path] path  location of the xml file
+         */
+        void read_xml(const std::string &path);
+
+        /**
+         * @brief      Reads the UTOPIA input object.
+         *
+         * @param[in]  in  The parameters
+         */
+        void read(Input &in) override;/* {
+          Smoother<Matrix, Vector>::read(in); 
           PreconditionedSolver::read(in);
           //TODO
           atol_(1e-9);
@@ -104,10 +133,22 @@ private:
     class Impl;
     std::unique_ptr<Impl> impl_;
 
-    bool set_problem();
-    bool set_problem(Matrix &A);
-    void set_preconditioner();
-};
+        /**
+         * @brief      Clone the object.
+         *
+         */
+        BelosSolver * clone() const override;
+        
+
+        private:
+
+            class Impl;
+            std::unique_ptr<Impl> impl_;
+
+            bool set_problem();
+            bool set_problem(Matrix &A);
+            void set_preconditioner();
+    };
 
 }  // namespace utopia
 

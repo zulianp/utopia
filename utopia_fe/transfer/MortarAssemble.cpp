@@ -8,6 +8,7 @@
 #include <memory>
 #include <assert.h>
 #include <algorithm>
+#include <numeric>
 
 namespace utopia {
 
@@ -48,14 +49,14 @@ namespace utopia {
         int order = 0;
         if(dim == 2 || dim == 1) {
             const auto actual_slave_order = slave_order * (is_quad(slave_el.type()) ? 2 : 1 );
-            order = master_order * (is_quad(master_el.type())? 2 : 1 ) + actual_slave_order; 
+            order = master_order * (is_quad(master_el.type())? 2 : 1 ) + actual_slave_order;
             if(slave_has_affine_map) {
                 order += std::max(actual_slave_order - 1, 0) * 2;
             }
 
         } else if(dim == 3) {
            const auto actual_slave_order = slave_order * (is_hex(slave_el.type()) ? 3 : 1 );
-           order = master_order * (is_hex(master_el.type())? 3 : 1 ) + actual_slave_order; 
+           order = master_order * (is_hex(master_el.type())? 3 : 1 ) + actual_slave_order;
            if(slave_has_affine_map) {
                order += (actual_slave_order - 1) * 2;
            }
@@ -66,7 +67,7 @@ namespace utopia {
         return order;
     }
 
- 
+
     void print(const libMesh::QBase &ir, std::ostream &os)
     {
         os << "points:\n[\n";
@@ -2240,7 +2241,7 @@ namespace utopia {
     {
         mortar_assemble_weighted_aux(trial_fe, test_fe, weights, elmat);
     }
-    
+
     // void integrate_scalar_function(
     //     const libMesh::FEBase &test_fe,
     //     const std::vector<double> &fun,
@@ -2457,44 +2458,44 @@ namespace utopia {
     {
         if(elmat.m() != test_fe.get_phi().size() ||
            elmat.n() != trial_fe.get_phi().size()) {
-            
+
             elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
             elmat.zero();
         }
-        
+
         const auto &trial = trial_fe.get_phi();
         const auto &test  = test_fe.get_phi();
         const auto &JxW   = test_fe.get_JxW();
-        
+
         const uint n_test  = test.size();
         const uint n_trial = trial.size();
         const uint n_qp    = test[0].size();
 
         std::vector<double> w_trial(n_trial);
         std::vector<double> w_test(n_test);
-        
+
         for(uint qp = 0; qp < n_qp; ++qp) {
 
             //build trial test
             for(uint j = 0; j < n_trial; ++j) {
                 auto w_trial_j = 0.;
-                
+
                 for(uint k = 0; k < n_trial; ++k) {
                     w_trial_j += trial[k][qp] * trafo(j, k);
-                } 
+                }
 
-                w_trial[j] = w_trial_j; 
+                w_trial[j] = w_trial_j;
             }
 
             //build weigthed test
             for(uint j = 0; j < n_test; ++j) {
                 auto w_test_j = 0.;
-                
+
                 for(uint k = 0; k < n_test; ++k) {
                     w_test_j += test[k][qp] * weights(j, k);
-                } 
+                }
 
-                w_test[j] = w_test_j; 
+                w_test[j] = w_test_j;
             }
 
             for(uint i = 0; i < n_test; ++i) {

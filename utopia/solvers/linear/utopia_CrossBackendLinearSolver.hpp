@@ -59,8 +59,9 @@ namespace utopia {
         class WantedVector,
         class Solver
     >
-    class CrossBackendLinearSolverAndSmoother : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
-    public:
+    class CrossBackendLinearSolverAndSmoother : public IterativeSolver<Matrix, Vector>//, public Smoother<Matrix, Vector> 
+    {
+        public:
         virtual ~CrossBackendLinearSolverAndSmoother() {}
 
         virtual bool apply(const Vector &rhs, Vector &sol) override

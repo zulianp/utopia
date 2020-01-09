@@ -78,6 +78,7 @@ namespace utopia {
             return get_alpha_aux_home_made(fun, g, x, d, alpha);
         }
 
+    private:
         template<class FunctionT>
         bool get_alpha_aux_home_made(FunctionT &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha)
         {
@@ -181,6 +182,17 @@ namespace utopia {
             }
 
             return true;
+        }
+
+    public:
+        void init_memory(const SizeType & ls) override
+        {
+            if(empty(x_k)){
+                x_k = local_zeros(ls);
+            }
+            else if(!x_k.comm().conjunction(ls == local_size(x_k).get(0))){
+                x_k  = local_zeros(ls); 
+            }   
         }
 
 

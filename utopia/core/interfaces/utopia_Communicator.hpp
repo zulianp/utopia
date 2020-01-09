@@ -16,6 +16,8 @@ namespace utopia {
 		virtual int rank() const = 0;
 		virtual int size() const = 0;
 		virtual Communicator * clone() const override = 0;
+		virtual void barrier() const = 0;
+
 
 		virtual bool conjunction(const bool &val) const = 0;
 		virtual bool disjunction(const bool &val) const = 0;
@@ -33,6 +35,8 @@ namespace utopia {
 	public:
 		int rank() const noexcept override { return 0; }
 		int size() const noexcept override { return 1; }
+
+		void barrier() const override {}
 
 		SelfCommunicator * clone() const noexcept override
 		{
@@ -115,6 +119,11 @@ namespace utopia {
 
 		bool conjunction(const bool &val) const override;
 		bool disjunction(const bool &val) const override;
+
+		inline void barrier() const override
+		{
+			MPI_Barrier(get());
+		}
 
 		inline int rank() const override
 		{

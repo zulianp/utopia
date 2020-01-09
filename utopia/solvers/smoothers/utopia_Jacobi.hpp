@@ -12,11 +12,11 @@ namespace utopia {
      * costly allocations, possible temporaries are stored as member variables.
      */
     template<class Matrix, class Vector>
-    class Jacobi final: public Smoother<Matrix, Vector>, public IterativeSolver<Matrix, Vector> {
+    class Jacobi final: public IterativeSolver<Matrix, Vector> 
+    {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
-        typedef utopia::Smoother<Matrix, Vector> Smoother;
 
     public:
         /**
@@ -31,13 +31,11 @@ namespace utopia {
         void read(Input &in) override
         {
             Solver::read(in);
-            Smoother::read(in);
         }
 
         void print_usage(std::ostream &os) const override
         {
             Solver::print_usage(os);
-            Smoother::print_usage(os);
         }
 
         void compute_norm_each(const SizeType &n_iter)
@@ -128,6 +126,15 @@ namespace utopia {
             UTOPIA_NO_ALLOC_BEGIN("Jacobi:r4.2");
             e_pseudo_inv(d_inv_, d_inv_, 0);
             UTOPIA_NO_ALLOC_END();
+        }
+
+        void init_memory(const SizeType & ls) override
+        {
+            auto zero_expr = local_zeros(ls);
+
+            //resets all buffers in case the size has changed
+            d_inv_ = zero_expr;
+            r_ = zero_expr;
         }
 
     private:

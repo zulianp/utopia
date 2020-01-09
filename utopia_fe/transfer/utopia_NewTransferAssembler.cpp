@@ -45,7 +45,7 @@ namespace utopia {
     {
         if(!empty(*B)) *out.B = P * *B;
         if(!empty(*D)) *out.D = P * *D * transpose(P);
-        
+
         if(!empty(*T)) *out.T = P * *T;
 
 
@@ -152,40 +152,44 @@ namespace utopia {
                 // settings.disable_redistribution = true;
             }
 
-
-            MasterAndSlaveAlgorithmT algo(comm,
-                moonolith::make_unique<LibMeshCollectionManagerT>(master.comm(), nullptr, true),
-                settings
-            );
-
-            if(opts.tags.empty()) {
-                algo.init_simple(
-                    master,
-                    slave,
-                    0.0
-                );
-            } else {
-                algo.init(master, slave, opts.tags, 0.0);
-            }
-
-            c.stop();
-            logger() << "init: " << c << std::endl;
-
-            ////////////////////////////////////////////////////
-            /////////////////// pair-wise method ///////////////
-
-            c.start();
-
+            double vol = 0.0;
             LocalAssembler assembler(comm);
-            algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
-                if(assembler(master, slave)) {
-                    return true;
+
+            {
+                MasterAndSlaveAlgorithmT algo(comm,
+                    moonolith::make_unique<LibMeshCollectionManagerT>(master.comm(), nullptr, true),
+                    settings
+                );
+
+                if(opts.tags.empty()) {
+                    algo.init_simple(
+                        master,
+                        slave,
+                        0.0
+                    );
+                } else {
+                    algo.init(master, slave, opts.tags, 0.0);
                 }
 
-                return false;
-            });
+                c.stop();
+                logger() << "init: " << c << std::endl;
 
-            double vol = assembler.algo.intersection_measure();
+                ////////////////////////////////////////////////////
+                /////////////////// pair-wise method ///////////////
+
+                c.start();
+
+
+                algo.compute([&](const Adapter &master, const Adapter &slave) -> bool {
+                    if(assembler(master, slave)) {
+                        return true;
+                    }
+
+                    return false;
+                });
+
+                vol = assembler.algo.intersection_measure();
+            }
 
             comm.all_reduce(&vol, 1, moonolith::MPISum());
 
@@ -264,7 +268,7 @@ namespace utopia {
 
        // rename("d", D);
        // write("D.m", D);
-    
+
 
         if(!empty(cm_to)) {
             // rename("cm_to", cm_to);
@@ -281,9 +285,9 @@ namespace utopia {
             }
 
         } else {
-         
+
             if(!empty(cm_from)) {
-               
+
                 // rename("b", B);
                 // write("B.m", B);
 
@@ -299,18 +303,18 @@ namespace utopia {
     static void handle_constraints_post_process(TransferDataT &data, USparseMatrix &temp_T)
     {
         auto &post_constraint_matrix_to = *data.post_constraint_matrix_to;
-        
+
         if(empty(post_constraint_matrix_to)) return;
-        
+
         temp_T += post_constraint_matrix_to * temp_T;
-            
+
         // rename("tc", temp_T);
         // write("TC.m", temp_T);
 //
 //        rename("hn", post_constraint_matrix_to);
 //        write("HN.m", post_constraint_matrix_to);
     }
-    
+
     template<class Transfer>
     static void prepare_data(
         const TransferOptions &opts,
@@ -321,7 +325,7 @@ namespace utopia {
         auto &D = *data.D;
         auto &Q = *data.Q;
         auto &T = *data.T;
-        
+
         convert_matrix(t.buffers.B.get(), B);
         convert_matrix(t.buffers.D.get(), D);
         convert_matrix(t.buffers.Q.get(), Q);
@@ -337,7 +341,7 @@ namespace utopia {
 
             USparseMatrix D_tilde_inv = diag(d_inv);
             USparseMatrix T_x = Q * D_tilde_inv * B;
-            
+
             handle_constraints_post_process(data, T_x);
 
             if(opts.n_var == 1) {
@@ -392,7 +396,7 @@ namespace utopia {
             prepare_data(opts, assembler, data);
 
             comm.barrier();
-            
+
             if(comm.is_root()) {
                 moonolith::logger() << "ConvertTransferAlgorithm:apply(...) end" << std::endl;
             }
@@ -439,7 +443,7 @@ namespace utopia {
             prepare_data(opts, assembler, data);
 
             comm.barrier();
-            
+
             if(comm.is_root()) {
                 moonolith::logger() << "ConvertTransferAlgorithm:apply(...)/Vol2Surf end" << std::endl;
             }
@@ -476,7 +480,7 @@ namespace utopia {
 
 
 
-        
+
 
         template<int DimMaster, int DimSlave>
         static bool apply_aux(
@@ -550,7 +554,7 @@ namespace utopia {
             if(comm.is_root()) {
                 moonolith::logger() << "ConvertTransferAlgorithm:surface_apply(...) begin" << std::endl;
             }
-            
+
             static const int ManifoldDim = moonolith::StaticMax<Dim-1, 1>::value;
 
             moonolith::ParL2Transfer<
@@ -567,7 +571,7 @@ namespace utopia {
             prepare_data(opts, assembler, data);
 
             comm.barrier();
-            
+
             if(comm.is_root()) {
                 moonolith::logger() << "ConvertTransferAlgorithm:surface_apply(...) end" << std::endl;
             }
@@ -792,7 +796,7 @@ namespace utopia {
         const std::shared_ptr<DofMap>   &to_dofs,
         const TransferOptions &opts
     )
-    {   
+    {
 
         std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
 
@@ -884,7 +888,7 @@ namespace utopia {
             // write("to_post.m", *data.post_constraint_matrix_to);
 
             // write("from_mesh.m", from_mesh);
-            // write("to_mesh.m", *to_mesh);            
+            // write("to_mesh.m", *to_mesh);
 
         }
 
@@ -921,7 +925,7 @@ namespace utopia {
             Adaptivity a;
             a.constraint_matrix(mesh, dofs,
                                 *data.constraint_matrix_from, *data.post_constraint_matrix_from);
-            a.constraint_matrix(mesh, dofs, 
+            a.constraint_matrix(mesh, dofs,
                                 *data.constraint_matrix_to, *data.post_constraint_matrix_to);
 
             // disp("from");

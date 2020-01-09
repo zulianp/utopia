@@ -121,7 +121,6 @@ namespace utopia
             this->print_param_usage(os, "ksp_type", "string", "Type of ksp solver to be used.", "stcg");
         }
 
-
         void number_of_parallel_solves(const SizeType & number)
         {
             if(redundant_solve_flg_)

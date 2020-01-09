@@ -20,42 +20,42 @@
 namespace utopia {
 
     template<class Expr>
-    DeviceBinary<Expr, DeviceNumber<double>, Minus> operator-(const DeviceExpression<Expr> &left, const double &right)
+    UTOPIA_INLINE_FUNCTION DeviceBinary<Expr, DeviceNumber<double>, Minus> operator-(const DeviceExpression<Expr> &left, const double &right)
     {
         return DeviceBinary<Expr, DeviceNumber<double>, Minus>(left, right);
     }
 
     template<class Expr>
-    double operator-(const DeviceNumber<double> &left, const DeviceNumber<double> &right)
+    UTOPIA_INLINE_FUNCTION double operator-(const DeviceNumber<double> &left, const DeviceNumber<double> &right)
     {
         return static_cast<double>(left) - static_cast<double>(right);
     }
 
     template<class Derived>
-    DeviceNegate<Derived> operator-(const DeviceExpression<Derived> &expr) {
+    UTOPIA_INLINE_FUNCTION DeviceNegate<Derived> operator-(const DeviceExpression<Derived> &expr) {
         return DeviceNegate<Derived>(expr.derived());
     }
 
     template<class Left, class Right>
-    DeviceBinary<Left, Right, Minus> operator-(const DeviceExpression<Left> &left, const DeviceExpression<Right> &right) {
+    UTOPIA_INLINE_FUNCTION DeviceBinary<Left, Right, Minus> operator-(const DeviceExpression<Left> &left, const DeviceExpression<Right> &right) {
         return DeviceBinary<Left, Right, Minus>(left.derived(), right.derived());
     }
 
     template<class Left, class Right>
-    DeviceBinary<Left, Right, Plus> operator+(const DeviceExpression<Left> &left, const DeviceExpression<Right> &right) {
+    UTOPIA_INLINE_FUNCTION DeviceBinary<Left, Right, Plus> operator+(const DeviceExpression<Left> &left, const DeviceExpression<Right> &right) {
         return DeviceBinary<Left, Right, Plus>(left.derived(), right.derived());
     }
 
     //Switch left with right
     template<class Left, class L, class R>
-    DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus> operator+(
+    UTOPIA_INLINE_FUNCTION DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus> operator+(
         const TensorView<Left, 1> &left,
         const DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>> &right) {
         return DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus>(right.derived(), left.derived());
     }
 
     template<class Left, class Right>
-    DeviceMultiply<Left, Right> operator*(
+    UTOPIA_INLINE_FUNCTION DeviceMultiply<Left, Right> operator*(
         const DeviceExpression<Left> &left,
         const DeviceExpression<Right> &right
     ) {
@@ -63,7 +63,7 @@ namespace utopia {
     }
 
     template<class Left>
-    DeviceBinary<
+    UTOPIA_INLINE_FUNCTION DeviceBinary<
         DeviceNumber<typename Left::Scalar>,
         Left,
         Multiplies
@@ -76,7 +76,7 @@ namespace utopia {
     }
 
     template<class Right>
-    DeviceBinary<
+    UTOPIA_INLINE_FUNCTION DeviceBinary<
         DeviceNumber<typename Right::Scalar>,
         Right,
         Multiplies
@@ -89,7 +89,7 @@ namespace utopia {
     }
 
     template<class Derived, class Operation>
-    DeviceUnary<Derived, Operation> transform(const DeviceExpression<Derived> &expr, const Operation operation = Operation()) {
+    UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Operation> transform(const DeviceExpression<Derived> &expr, const Operation operation = Operation()) {
         return DeviceUnary<Derived, Operation>(expr, operation);
     }
 
@@ -361,6 +361,17 @@ namespace utopia {
         return DeviceDiag<Derived>(expr.derived());
     }
 
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION typename Traits<Derived>::Scalar sum(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceReduce<Derived, Plus, Traits<Derived>::Order>::apply(expr.derived(), 0.0);
+    }
+
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION DeviceTensorReduce<Derived, Plus, 1> row_sum(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceTensorReduce<Derived, Plus, 1>(expr.derived());
+    }
 }
 
 #endif //UTOPIA_DEVICE_OPERATIONS_HPP

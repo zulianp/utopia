@@ -9,6 +9,7 @@
 #include "utopia_FluxPostProcessor.hpp"
 #include "utopia_FractureFlowUtils.hpp"
 #include "utopia_UFlow.hpp"
+#include "utopia_LinePostProcessor.hpp"
 
 #include "libmesh/parallel_mesh.h"
 
@@ -81,7 +82,7 @@ namespace utopia {
             if(export_constrained_) {
                 write("constrained.e",   space, is_constrained_);
                 write("unconstrained.e", space, is_unconstrained_);
-                
+
                 rename("m", *transfer_matrix_);
                 write("M.m", *transfer_matrix_);
             }
@@ -172,7 +173,7 @@ namespace utopia {
         GradientRecovery();
 
         void read(Input &in) override;
-        
+
         inline bool empty() const
         {
             return grad_space_.empty();
@@ -194,8 +195,8 @@ namespace utopia {
         int n_refinements_;
         int max_refinements_;
 
-        void init(FunctionSpaceT &V); 
-        void append_error_estimate(FunctionSpaceT &V); 
+        void init(FunctionSpaceT &V);
+        void append_error_estimate(FunctionSpaceT &V);
     };
 
 
@@ -215,6 +216,8 @@ namespace utopia {
                     std::string type;
                     in.get("type", type);
 
+                    std::cout << "post-processor type: " << type << std::endl;
+
                     if(type == "flux") {
                         auto flux = std::make_shared<FluxPostProcessor<FunctionSpaceT, UVector>>();
                         // flux->rescale(rescale());
@@ -228,6 +231,12 @@ namespace utopia {
                         flux->read(in);
 
                         post_processors_.push_back(flux);
+                    } else if(type == "sample-line") {
+                        auto line_pp = std::make_shared<LinePostProcessor<FunctionSpaceT, UVector>>();
+                        // line_pp->rescale(rescale());
+                        line_pp->read(in);
+
+                        post_processors_.push_back(line_pp);
                     }
                 });
             });

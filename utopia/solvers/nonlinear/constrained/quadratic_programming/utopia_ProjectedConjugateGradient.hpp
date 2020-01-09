@@ -14,7 +14,8 @@ namespace utopia
     class ProjectedConjugateGradient : public QPSolver<Matrix, Vector> {
     public:
 
-        DEF_UTOPIA_SCALAR(Matrix);
+        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
         ProjectedConjugateGradient() {}
 
@@ -36,7 +37,7 @@ namespace utopia
             const Matrix &A = *this->get_operator();
 
             // ideally, we have two separate implementations, or cases
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(local_size(x));
 
             const auto &ub = this->get_upper_bound();
             const auto &lb = this->get_lower_bound();
@@ -111,9 +112,10 @@ namespace utopia
             return converged;
         }
 
-        void init(const Matrix &A)
+
+        void init_memory(const SizeType & n) override
         {
-            auto n = local_size(A).get(0);
+            // auto n = local_size(A).get(0);
             r  = local_zeros(n);
             uk = local_zeros(n);
             wk = local_zeros(n);
@@ -124,7 +126,7 @@ namespace utopia
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             QPSolver<Matrix, Vector>::update(op);
-            init(*op);
+            init_memory(local_size(*op).get(0));
         }
 
 

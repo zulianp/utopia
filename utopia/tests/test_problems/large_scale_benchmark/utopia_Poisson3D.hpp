@@ -18,17 +18,23 @@ namespace utopia
 {
 
     template<typename Matrix, typename Vector>
-    class Poisson3D<Matrix, Vector, PETSC> final: virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
+    class Poisson3D<Matrix, Vector, PETSC> final:   virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, 
+                                                    virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
         public:
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
-        Poisson3D(const SizeType & n):
+        Poisson3D(const SizeType & n, const SizeType & problem_type=1):
                 n_(n), 
-                setup_(false)
+                setup_(false), 
+                problem_type_(problem_type)
         {
+
+            if(problem_type_ > 1){
+                utopia_error("Poisson3D:: problem type not valid. \n"); 
+            }
 
             this->create_DM();
             this->setup_SNES();
@@ -40,9 +46,6 @@ namespace utopia
             this->constraints_ = make_box_constaints(std::make_shared<Vector>(local_values(n_local_, -9e9)),
                                                      std::make_shared<Vector>(local_values(n_local_, 0.45)));             
 
-
-            // TD::fix this
-            exact_sol_  = zeros(1, 0); 
         }     
 
         Poisson3D(const DM  & dm):
@@ -56,9 +59,6 @@ namespace utopia
             this->setup_SNES();
             this->setup_application_context(); 
             setup_ = true;
-
-            // TODO::find out exact solution - should be possible to compute
-            exact_sol_  = zeros(1, 0); 
         }     
 
         ~Poisson3D()
@@ -71,13 +71,19 @@ namespace utopia
         }
 
 
+        bool get_rhs( Vector & rhs) const
+        {
+            convert(snes_->vec_rhs, rhs); 
+            return true;
+        }
+
         void get_A_rhs(Matrix & A, Vector & rhs) const
         {
             A = A_no_bc_; 
             convert(snes_->vec_rhs, rhs); 
         }
 
-        virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+        bool gradient(const Vector &x, Vector &g) const override
         {
             // initialization of gradient vector...
             if(empty(g)){
@@ -92,19 +98,18 @@ namespace utopia
             return true;
         }
             
-        virtual bool hessian(const Vector & /*x*/, Matrix &hessian) const override
+        bool hessian(const Vector & /*x*/, Matrix &hessian) const override
         {
             // YES, wrap is more effiicient, but we do not want to own matrix .... 
             // as RMTR, needs to modify hessian ... 
             // wrap(snes_->jacobian, hessian);
 
-
-            convert(snes_->jacobian, hessian); 
+            convert(snes_->jacobian, hessian);             
             
             return true;
         }
 
-        virtual bool value(const Vector &x, typename Vector::Scalar &result) const override
+        bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
             Vector res1 = 0.0*x;  
             Vector res2; 
@@ -133,40 +138,40 @@ namespace utopia
         }
 
 
-        virtual Vector initial_guess() const override
+        Vector initial_guess() const override
         {   
             Vector x_utopia; 
             convert(snes_->vec_sol, x_utopia); 
             return x_utopia; 
         }
         
-        virtual const Vector & exact_sol() const override
+        const Vector & exact_sol() const override
         {
             return exact_sol_; 
         }
         
 
-        virtual Scalar min_function_value() const override
+        Scalar min_function_value() const override
         {   
             return -1.013634375000014e+01; 
         }
 
-        virtual std::string name() const override
+        std::string name() const override
         {
             return "Poisson3D";
         }
         
-        virtual SizeType dim() const override
+        SizeType dim() const override
         {
             return n_*n_*n_; 
         }
 
-        virtual bool exact_sol_known() const override
+        bool exact_sol_known() const override
         {
             return true;
         }
 
-        virtual bool parallel() const override
+        bool parallel() const override
         {
             return true;
         }
@@ -203,6 +208,10 @@ namespace utopia
 
             PetscInt n_loc; 
             VecGetLocalSize(snes_->vec_sol, &n_loc); 
+
+            exact_sol_ = local_values(n_loc, 0.0);
+            this->build_exact_sol(); 
+
             Vector bc_markers = local_values(n_loc, 0.0);
             Vector bc_values  = local_values(n_loc, 0.0); 
 
@@ -350,7 +359,12 @@ namespace utopia
                                 PetscScalar y = j*Hy; 
                                 PetscScalar z = k*Hz; 
 
-                                array_values[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
+                                if(problem_type_==0){
+                                    array_values[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
+                                }
+                                else if(problem_type_==1){
+                                    array_values[k][j][i][d] = x*(1.-x)*y*(1.-y)*z*(1.-z);
+                                }
                             }
                             else
                             {
@@ -395,7 +409,12 @@ namespace utopia
                         PetscScalar y = j*Hy; 
                         PetscScalar z = k*Hz; 
 
-                        array[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
+                        if(problem_type_==0){
+                            array[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
+                        }
+                        else if(problem_type_==1){
+                            array[k][j][i][d] = x*(1.-x)*y*(1.-y)*z*(1.-z);
+                        }
                     }
                     else
                     {
@@ -429,18 +448,17 @@ namespace utopia
               for (j=ys; j<ys+ym; j++) {
                 for (i=xs; i<xs+xm; i++) {
                   for (d=0; d<dof; d++) {
-                    // if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
 
-                    //     double x = i*Hx; 
-                    //     double y = j*Hy; 
-                    //     double z = k*Hz; 
+                        PetscScalar x1 = i*Hx; 
+                        PetscScalar x2 = j*Hy; 
+                        PetscScalar x3 = k*Hz; 
 
-                    //     array[k][j][i][d] = (2.*x*(1.-x)) + (2.*y*(1.-y)) + (2.*z*(1.-z)); 
-                    // }
-                    // else
-                    {
-                        array[k][j][i][d] = -12.0 * (Hx * Hy * Hz);
-                    }
+                        if(problem_type_==0){
+                            array[k][j][i][d] = -12.0 * (Hx * Hy * Hz);
+                        }
+                        else if(problem_type_==1){
+                            array[k][j][i][d] = (- (2.*x1*x2*(x1 - 1.)*(x2 - 1.)) - (2.*x1*x3*(x1 - 1.)*(x3 - 1.)) - (2.*x2*x3*(x2 - 1.)*(x3 - 1.))) * (Hx * Hy * Hz);
+                        }
                   }
                 }
               }
@@ -450,6 +468,46 @@ namespace utopia
             VecAssemblyBegin(snes_->vec_rhs);
             VecAssemblyEnd(snes_->vec_rhs);            
         }
+
+
+        void build_exact_sol()
+        {
+            PetscInt       d,dof,i,j,k,mx,my,mz,xm,ym,zm,xs,ys,zs;
+            PetscScalar    ****array;
+            PetscScalar    Hx,Hy,Hz;
+
+            DMDAGetInfo(da_, 0, &mx, &my, &mz, 0,0,0,&dof,0,0,0,0,0);
+
+            DMDAGetCorners(da_,&xs,&ys,&zs,&xm,&ym,&zm);
+            Hx   = 1.0 / (PetscReal)(mx);
+            Hy   = 1.0 / (PetscReal)(my);
+            Hz   = 1.0 / (PetscReal)(mz);
+
+            DMDAVecGetArrayDOF(da_, raw_type(exact_sol_), &array);
+            for (k=zs; k<zs+zm; k++) {
+              for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                  for (d=0; d<dof; d++) {
+
+                        PetscScalar x1 = i*Hx; 
+                        PetscScalar x2 = j*Hy; 
+                        PetscScalar x3 = k*Hz; 
+
+                        if(problem_type_==0){
+                            array[k][j][i][d] = (2.*x1*(1.-x1)) + (2.*x2*(1.-x2)) + (2.*x3*(1.-x3)); 
+                        }
+                        else if(problem_type_==1){
+                            array[k][j][i][d] = x1*(1.-x1)*x2*(1.-x2)*x3*(1.-x3);
+                        }
+                  }
+                }
+              }
+            }
+
+            DMDAVecRestoreArrayDOF(da_, raw_type(exact_sol_), &array);
+            VecAssemblyBegin(raw_type(exact_sol_));
+            VecAssemblyEnd(raw_type(exact_sol_));               
+        }        
 
 
 
@@ -490,6 +548,9 @@ namespace utopia
 
         Vector exact_sol_; 
         Matrix A_no_bc_; 
+
+        SizeType problem_type_; 
+
 
     };
 }

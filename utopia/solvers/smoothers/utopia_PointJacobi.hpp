@@ -11,11 +11,11 @@ namespace utopia {
      * costly allocations, possible temporaries are stored as member variables.
      */
     template<class Matrix, class Vector>
-    class PointJacobi final: public Smoother<Matrix, Vector>, public IterativeSolver<Matrix, Vector> {
+    class PointJacobi final: public IterativeSolver<Matrix, Vector> 
+    {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
-        typedef utopia::Smoother<Matrix, Vector> Smoother;
 
     public:
         /**
@@ -31,13 +31,11 @@ namespace utopia {
         void read(Input &in) override
         {
             Solver::read(in);
-            Smoother::read(in);
         }
 
         void print_usage(std::ostream &os) const override
         {
             Solver::print_usage(os);
-            Smoother::print_usage(os);
         }
 
 
@@ -117,6 +115,14 @@ namespace utopia {
             // prevents system from being indefinite
             check_indef(d_inv_);
 
+        }
+
+
+        void init_memory(const SizeType & ls) override
+        {
+            auto zero_expr = local_zeros(ls);
+            r_ = zero_expr;
+            d_inv_ = zero_expr;            
         }
 
     private:

@@ -5,8 +5,27 @@
 #include "utopia_TensorView.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_DeviceExpression.hpp"
+#include "utopia_ViewTraits.hpp"
+#include "utopia_Accessor.hpp"
 
 namespace utopia {
+
+    template<class View>
+    class Accessor<TensorView<View, 1>> {
+    public:
+        using Scalar   = typename Traits<TensorView<View, 1>>::Scalar;
+        using SizeType = typename Traits<TensorView<View, 1>>::SizeType;
+
+        UTOPIA_INLINE_FUNCTION static const Scalar &get(const TensorView<View, 1> &t, const SizeType &i)
+        {
+            return t(i);
+        }
+
+        UTOPIA_INLINE_FUNCTION static void set(TensorView<View, 1> &t, const SizeType &i, const Scalar &val)
+        {
+            t(i) = val;
+        }
+    };
 
     template<class ArrayView_>
     class TensorView<ArrayView_, 1> final : public DeviceExpression< TensorView<ArrayView_, 1> > {
@@ -129,6 +148,16 @@ namespace utopia {
             return view_[i];
         }
 
+        UTOPIA_INLINE_FUNCTION Scalar &operator[](const SizeType &i)
+        {
+            return view_[i];
+        }
+
+        UTOPIA_INLINE_FUNCTION const Scalar &operator[](const SizeType &i) const
+        {
+            return view_[i];
+        }
+
         UTOPIA_INLINE_FUNCTION const Scalar &get(const SizeType &i) const
         {
             return view_[i];
@@ -189,20 +218,20 @@ namespace utopia {
             return device::approxeq(view_, other.raw_type(), tol);
         }
 
-        inline void describe() const
+        inline void describe(std::ostream &os = std::cout) const
         {
             const SizeType n = size();
             for(SizeType i = 0; i < n; ++i) {
-                std::cout << get(i) << std::endl;
+                os << get(i) << std::endl;
             }
         }
 
+        UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {}
+
     private:
         ArrayView view_;
-        
-        UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {
-            UTOPIA_DEVICE_ASSERT(false);
-        }
+
+
     };
 
 }

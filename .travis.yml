@@ -1,0 +1,19 @@
+addons:
+  apt:
+    packages: lcov
+
+after_success:
+# Create lcov report
+- lcov --capture --directory ./utopia/bin_coverage --output-file coverage.info
+- lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter system-files
+- lcov --list coverage.info # debug info
+# Uploading report to CodeCov
+- bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+Travis Setup without lcov
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -t c754a0a2-6280-4ce4-9756-b65d1f910144
+
+notifications:
+  email:
+  - patrick.zulian@gmail.com

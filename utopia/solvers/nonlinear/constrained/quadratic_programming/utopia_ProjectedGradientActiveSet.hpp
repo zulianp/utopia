@@ -11,7 +11,8 @@ namespace  utopia
     class ProjectedGradientActiveSet final:  //public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
                                             public OperatorBasedQPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         public:
@@ -67,7 +68,7 @@ namespace  utopia
             {
                 SizeType loc_size_rhs = A.local_size().get(0);
                 if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init(loc_size_rhs);
+                    init_memory(loc_size_rhs);
                 }
             }        
 
@@ -315,7 +316,7 @@ namespace  utopia
                 return min(alpha_stars);
             }
 
-            void init(const SizeType &ls)
+            void init_memory(const SizeType & ls) override
             {
                 auto zero_expr = local_zeros(ls);
 

@@ -72,9 +72,17 @@ namespace utopia {
     template<>
     class UIMesh<libMesh::DistributedMesh> : public Configurable {
     public:
-        template<class... Args>
-        UIMesh(Args &&...args)
-        : mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
+        // template<class... Args>
+        // UIMesh(Args &&...args)
+        // : mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
+        // {}
+
+        UIMesh(libMesh::Parallel::Communicator &comm)
+        : mesh_(std::make_shared<libMesh::DistributedMesh>(comm)), empty_(true)
+        {}
+
+        UIMesh(const std::shared_ptr<libMesh::DistributedMesh> &mesh)
+        : mesh_(mesh), empty_(false)
         {}
 
         void read(Input &is) override {

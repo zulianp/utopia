@@ -1,9 +1,10 @@
 #ifndef UTOPIA_VIEW_FORWARD_DECLARATIONS_HPP
 #define UTOPIA_VIEW_FORWARD_DECLARATIONS_HPP
 
+#include <cassert>
 //FIXME check if there is a device compilation
-// #define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
-#define UTOPIA_DEVICE_ASSERT(...)
+#define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
+// #define UTOPIA_DEVICE_ASSERT(...)
 
 namespace utopia {
     using Size_t = std::size_t;
@@ -68,6 +69,12 @@ namespace utopia {
 
     template<class Expr, int Order, int TensorOrder>
     class DeviceNorm;
+
+    template<class Expr, class Op, int Order>
+    class DeviceReduce;
+
+    template<class Expr, class Op, int Dim>
+    class DeviceTensorReduce;
 
     template<class View>
     using VectorView = utopia::TensorView<View, 1>;

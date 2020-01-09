@@ -96,7 +96,7 @@ namespace utopia {
             run_qp_solver(qp_solver);
 
 
-            SizeType n = 100; 
+            SizeType n = 100;
             Matrix A = sparse(n, n, 3);
             assemble_symmetric_laplacian_1D(A, true);
 
@@ -115,7 +115,7 @@ namespace utopia {
                 }
             }
 
-            Vector  b = local_values(local_size(A).get(0), 50.0); 
+            Vector  b = local_values(local_size(A).get(0), 50.0);
 
             {
                 Range row_range = range(b);
@@ -125,34 +125,34 @@ namespace utopia {
                 {
                     if(r >= n/2.)
                     {
-                        b.set(r, -50.0); 
+                        b.set(r, -50.0);
                     }
-                    if(r == 0) 
+                    if(r == 0)
                     {
-                        b.set(r, 0); 
+                        b.set(r, 0);
                     }
 
                     if(r == (n-1))
                     {
-                        b.set(r, 0); 
-                    }                    
+                        b.set(r, 0);
+                    }
                 }
             }
 
-            b = h*b; 
+            b = h*b;
 
-            Vector lb = local_values(local_size(A).get(0), -0.5); 
-            Vector ub = local_values(local_size(A).get(0), 0.5); 
+            Vector lb = local_values(local_size(A).get(0), -0.5);
+            Vector ub = local_values(local_size(A).get(0), 0.5);
 
-            Vector x = 0*b; 
+            Vector x = 0*b;
 
             qp_solver.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
             qp_solver.verbose(false);
-            qp_solver.max_it(n*2); 
-            qp_solver.set_eig_comp_tol(1e-1); 
-            qp_solver.solve(A, b, x); 
+            qp_solver.max_it(n*2);
+            qp_solver.set_eig_comp_tol(1e-1);
+            qp_solver.solve(A, b, x);
 
-            // disp(x, "x"); 
+            // disp(x, "x");
         }
 
 
@@ -160,10 +160,10 @@ namespace utopia {
         void ProjectedGS_QR()
         {
 
-            // std::cout<<"----------- Ciao Hardik ------------  \n"; 
+            // std::cout<<"----------- Ciao Hardik ------------  \n";
 
             Vector rhs;
-            Matrix A, R, Q; 
+            Matrix A, R, Q;
 
             const std::string data_path = Utopia::instance().get("data_path");
 
@@ -186,7 +186,7 @@ namespace utopia {
 
             solver->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
 
-            solver->solve(A, rhs, x); 
+            solver->solve(A, rhs, x);
 
         }
 
@@ -202,9 +202,9 @@ namespace utopia {
             UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
-            UTOPIA_RUN_TEST(MPRGP_test); 
+            UTOPIA_RUN_TEST(MPRGP_test);
 
-            // UTOPIA_RUN_TEST(ProjectedGS_QR); 
+            // UTOPIA_RUN_TEST(ProjectedGS_QR);
 
         }
 
@@ -224,6 +224,7 @@ namespace utopia {
 
         void run()
         {
+            //FIXME
            UTOPIA_RUN_TEST(poly_qp);
         }
 
@@ -258,7 +259,7 @@ namespace utopia {
 #endif //WITH_TRILINOS
 
 #ifdef WITH_BLAS
-        QPSolverTest<BlasMatrixd, BlasVectord>().run(); // TODO:: because blas is missing min operation .... 
+        QPSolverTest<BlasMatrixd, BlasVectord>().run(); // TODO:: because blas is missing min operation ....
 #endif //WITH_BLAS
 
     }

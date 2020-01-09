@@ -418,10 +418,14 @@ namespace utopia {
             return true;
         }
 
-        void add_stat(const LibMeshFunctionSpace &space, const Matrix &mat)
+        void add_stat(const LibMeshFunctionSpace &space, const Matrix &mat, const std::string &name = "")
         {
             Stats s;
-            s.name = space.equation_system().name();
+            if(name.empty()) {
+                s.name = space.equation_system().name();
+            } else {
+                s.name = name;
+            }
 
             auto it = space.mesh().active_local_elements_begin();
             if(it != space.mesh().active_local_elements_end()) {
@@ -718,6 +722,7 @@ namespace utopia {
 
             if(report_) {
                 report_->post_process(A);
+                report_->add_stat(pourous_matrix_.space(), A, "condensed");
             }
 
             return true;

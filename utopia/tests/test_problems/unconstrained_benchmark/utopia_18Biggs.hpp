@@ -109,7 +109,10 @@ namespace utopia
             }
 
             assert(point.size() == 6);
-            result = zeros(6);
+
+            if(empty(result)){
+                result = zeros(6);
+            }
 
             {
                 const Read<Vector> read(point);
@@ -162,7 +165,10 @@ namespace utopia
             }
 
             assert(point.size() == 6);
-            result = zeros(6, 6);
+            // result = zeros(6, 6);
+            if(empty(result)){
+                result = zeros(6, 6);
+            }
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);

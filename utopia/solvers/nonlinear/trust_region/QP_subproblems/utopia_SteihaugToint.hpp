@@ -14,10 +14,11 @@ namespace utopia
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class SteihaugToint final:  public OperatorBasedTRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
     public:
-        using TRSubproblem<Matrix, Vector>::solve;
+        using OperatorBasedTRSubproblem<Matrix, Vector>::solve;
         using OperatorBasedTRSubproblem<Matrix, Vector>::update; 
 
         typedef utopia::Preconditioner<Vector> Preconditioner;
@@ -30,21 +31,12 @@ namespace utopia
 
         void read(Input &in) override
         {
-            // TRSubproblem<Matrix, Vector>::read(in);
-            // MatrixFreeTRSubproblem<Vector>::read(in);
-
-            // if(precond_) {
-            //     in.get("precond", *precond_);
-            // }
             OperatorBasedTRSubproblem<Matrix, Vector>::read(in);
         }
 
 
         void print_usage(std::ostream &os) const override
         {
-            // TRSubproblem<Matrix, Vector>::print_usage(os);
-            // MatrixFreeTRSubproblem<Vector>::print_usage(os);
-
             OperatorBasedTRSubproblem<Matrix, Vector>::print_usage(os);
         }
 
@@ -114,7 +106,7 @@ namespace utopia
             SizeType loc_size_rhs   = local_size(rhs);
             if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
                 init_memory(loc_size_rhs);
-            }
+            }   
 
             if(this->precond_)
             {
@@ -233,7 +225,7 @@ namespace utopia
 
             if(use_precond_direction_)
             {
-                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                if( this->compute_norm(it) || this->verbose()==true){
                     dots(r, v_k, p_norm, r, r, g_norm);
                     g_norm = std::sqrt(g_norm);
                 }
@@ -244,7 +236,8 @@ namespace utopia
             }
             else
             {
-                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                if( this->compute_norm(it) || this->verbose()==true)
+                {
                     dots(p_k, p_k, p_norm, r, r, g_norm);
                     g_norm = std::sqrt(g_norm);
                 }
@@ -406,7 +399,7 @@ namespace utopia
                 }
 
                 // TODO:: check if there is something else possible
-                if(this->norm_schedule() == NormSchedule::EVERY_ITER || this->verbose()==true){
+                if(this->compute_norm(it) || this->verbose()==true){
                     g_norm = norm2(r);
                 }
 
@@ -430,8 +423,8 @@ namespace utopia
 
 
 
-    private:
-        void init_memory(const SizeType &ls)
+    public:
+        void init_memory(const SizeType & ls) override
         {
             auto zero_expr = local_zeros(ls);
 

@@ -83,6 +83,8 @@ namespace utopia {
     template<class Vector>
     class Preconditioner : public virtual Configurable, public virtual Clonable {
     public:
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
 
@@ -95,6 +97,8 @@ namespace utopia {
         {
 
         }
+
+        virtual void init_memory(const SizeType & /*ls*/) { }
 
         // TODO
         virtual void update(const Operator<Vector> & A) { UTOPIA_UNUSED(A); }

@@ -35,8 +35,7 @@ namespace utopia {
 
         SizeType max_it() const override;
         bool verbose() const override;
-
-
+   
         void atol(const Scalar &atol) override;
         void rtol(const Scalar &rtol) override;
         void stol(const Scalar &stol) override;

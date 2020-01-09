@@ -43,7 +43,7 @@ namespace utopia {
             return fun_->value(x, energy);
         }
 
-        inline bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
+        inline bool gradient(const Vector &x, Vector &gradient) const override
         {
               return fun_->gradient(x, gradient);
         }

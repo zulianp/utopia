@@ -42,12 +42,12 @@ namespace utopia {
             return true;
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
+        bool gradient(const Vector &x, Vector &gradient) const override
         {
             IndexSet ghost_nodes;
             convert(V_.dof_map().get_send_list(), ghost_nodes);
             Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), ghost_nodes);
-            
+
             x_ = x;
             synchronize(x_);
 
@@ -138,7 +138,7 @@ namespace utopia {
             return true;
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
+        bool gradient(const Vector &x, Vector &gradient) const override
         {
             gradient = H_ * x - rhs_;
             apply_zero_boundary_conditions(V_.dof_map(), gradient);

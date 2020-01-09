@@ -30,6 +30,8 @@ namespace utopia {
 
         void read(Input &in) override;
 
+        void init_memory(const SizeType & ls) override;
+
         void print_usage(std::ostream &os) const override;
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override;
@@ -45,7 +47,6 @@ namespace utopia {
 
         bool check_solution(const Operator<Vector> &A, const Vector &x, const Vector &b) const;
 
-        void init(const SizeType &ls);
 
         // std::shared_ptr<Preconditioner> precond_;
         Vector r, p, q, Ap, r_new, z, z_new;

@@ -67,10 +67,9 @@ namespace utopia
             auto qp_solver =  std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(lsolver);
             qp_solver->atol(1e-11);
 
-
             TrustRegionVariableBound<PetscMatrix, PetscVector>  tr_solver(qp_solver);
             tr_solver.set_box_constraints(box);
-            tr_solver.atol(1e-6);
+            tr_solver.atol(1e-8);
             tr_solver.rtol(1e-10);
             tr_solver.stol(1e-10);
             tr_solver.verbose(verbose_);

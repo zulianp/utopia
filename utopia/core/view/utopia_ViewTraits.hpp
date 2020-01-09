@@ -1,5 +1,5 @@
-#ifndef UTOPIA_KOKKOS_TRAITS_HPP
-#define UTOPIA_KOKKOS_TRAITS_HPP
+#ifndef UTOPIA_VIEW_TRAITS_HPP
+#define UTOPIA_VIEW_TRAITS_HPP
 
 #include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_Traits.hpp"
@@ -29,7 +29,7 @@ namespace utopia {
         class LeftT, Size_t Rows, Size_t Cols,
         class RightT, Size_t RightSize
     >
-    class MultiplyResultType< 
+    class MultiplyResultType<
         StaticMatrix<LeftT, Rows, Cols>,
         StaticVector<RightT, RightSize> > {
     public:
@@ -57,4 +57,4 @@ namespace utopia {
     };
 }
 
-#endif //UTOPIA_KOKKOS_TRAITS_HPP
+#endif //UTOPIA_VIEW_TRAITS_HPP

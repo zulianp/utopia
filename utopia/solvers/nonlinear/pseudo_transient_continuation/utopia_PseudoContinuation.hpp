@@ -170,7 +170,8 @@ namespace utopia
 
         Scalar norm_l2(const Vector & s)
         {   
-            return std::sqrt(norm_l2_2(s)); 
+            // return std::sqrt(norm_l2_2(s)); 
+            return norm2(s); 
         }
 
     private:

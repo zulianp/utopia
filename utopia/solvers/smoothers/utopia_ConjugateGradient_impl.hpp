@@ -53,7 +53,7 @@ namespace utopia {
         SizeType loc_size_rhs = A.local_size().get(0);
 
         if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-            init(loc_size_rhs);
+            init_memory(loc_size_rhs);
         }
     }
 
@@ -278,10 +278,9 @@ namespace utopia {
     }
 
     template<class Matrix, class Vector, int Backend>
-    void ConjugateGradient<Matrix, Vector, Backend>::init(const SizeType &ls)
+    void ConjugateGradient<Matrix, Vector, Backend>::init_memory(const SizeType & ls)
     {
         assert(ls > 0);
-
         auto zero_expr = local_zeros(ls);
 
         //resets all buffers in case the size has changed

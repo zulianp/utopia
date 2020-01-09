@@ -21,13 +21,13 @@ namespace utopia {
         SizeType loc_size_rhs = A.local_size().get(0);
 
         if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-            init(loc_size_rhs);
+            init_memory(loc_size_rhs);
         }
     }
 
 
     template<typename Matrix, typename Vector, int Backend>
-    void BiCGStab<Matrix, Vector, Backend>::init(const SizeType &ls)
+    void BiCGStab<Matrix, Vector, Backend>::init_memory(const SizeType &ls)
     {
         v_ = local_zeros(ls);
         p_ = local_zeros(ls);
@@ -44,7 +44,7 @@ namespace utopia {
     bool BiCGStab<Matrix, Vector, Backend>::solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x)
     {
         const auto ls = local_size(b);
-        init(ls);
+        init_memory(ls);
 
         if(empty(x) || size(x) != size(b)) {
             x = local_zeros(ls);
@@ -142,7 +142,7 @@ namespace utopia {
     bool BiCGStab<Matrix, Vector, Backend>::solve_unpreconditioned(const Operator<Vector> &A, const Vector &b, Vector &x)
     {
         const auto ls = local_size(b);
-        init(ls);
+        init_memory(ls);
 
         if(empty(x) || size(x) != size(b)) {
             x = local_zeros(ls);

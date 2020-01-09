@@ -231,14 +231,28 @@ void BelosSolver<Matrix, Vector, TRILINOS>::read_xml(const std::string &path)
         }
         catch(const std::exception &ex)
         {
-            std::cerr << ex.what() << std::endl;
-            assert(false);
-            abort();
-        }
+          PreconditionedSolver::read(in);
+
+          //TODO
+          std::string exotic = "";
+          in.get("exotic", exotic);
+
+          if(!exotic.empty()) {
+
+          }
+
+          impl_->param_list->set("Relative tolerance", this->rtol(), "CG");
+          impl_->param_list->set("S tolerance", this->stol(), "CG");
+          impl_->param_list->set("A tolerance", this->atol(), "CG");
+          impl_->param_list->set("Maximum iteration", this->max_it(),"CG");
+          impl_->param_list->set("Verbose", this->verbose(), "CG");
+          //auto in = open_istream(const Path &path);
     }
     else
     {
-        //use default paramlist
+        PreconditionedSolver::print_usage(os);
+          //TODO
+          //m_utopia_warning_once("not implemented");
     }
 }
 
@@ -402,6 +416,8 @@ void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
         {std::cout << "Belos solver is currently null" << std::endl;}
     }
 
+    template <typename Matrix, typename Vector>
+    bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem()
 
 }
 

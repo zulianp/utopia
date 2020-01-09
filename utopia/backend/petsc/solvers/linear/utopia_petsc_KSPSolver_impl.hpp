@@ -1077,7 +1077,6 @@ namespace utopia {
     {
         if(this == &other) return *this;
         PreconditionedSolver::operator=(other);
-        Smoother::operator=(other);
 
         ksp_ = utopia::make_unique<Impl>(other.ksp_->communicator());
         ksp_->copy_settings_from(*other.ksp_);
@@ -1089,7 +1088,6 @@ namespace utopia {
     {
         if(this == &other) return *this;
         PreconditionedSolver::operator=(std::move(other));
-        Smoother::operator=(std::move(other));
         ksp_ = std::move(other.ksp_);
         return *this;
     }
@@ -1098,7 +1096,6 @@ namespace utopia {
     template<typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver(const KSPSolver<Matrix, Vector, PETSC> &other):
     PreconditionedSolver(other),
-    Smoother(other),
     ksp_(utopia::make_unique<Impl>(other.ksp_->communicator()))
     {
         ksp_->copy_settings_from(*other.ksp_);
@@ -1107,7 +1104,6 @@ namespace utopia {
     template<typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver(KSPSolver<Matrix, Vector, PETSC> &&other)
     : PreconditionedSolver(std::move(other)),
-    Smoother(std::move(other)),
     ksp_(std::move(other.ksp_))
     {}
 

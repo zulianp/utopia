@@ -12,7 +12,7 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class QPSolver : public IterativeSolver<Matrix, Vector>,
+    class QPSolver : public virtual PreconditionedSolver<Matrix, Vector>,
                      public virtual VariableBoundSolverInterface<Vector> {
         public:
             QPSolver() {}
@@ -22,7 +22,7 @@ namespace utopia
 
 
     template<class Vector>
-    class MatrixFreeQPSolver : public MatrixFreeLinearSolver<Vector>,
+    class MatrixFreeQPSolver : public virtual MatrixFreeLinearSolver<Vector>,
                                public virtual VariableBoundSolverInterface<Vector> {
         public:
             MatrixFreeQPSolver()
@@ -37,8 +37,8 @@ namespace utopia
 
 
     template<class Matrix, class Vector>
-    class OperatorBasedQPSolver :   public MatrixFreeQPSolver<Vector>,
-                                    public QPSolver<Matrix, Vector>
+    class OperatorBasedQPSolver :   public virtual MatrixFreeQPSolver<Vector>,
+                                    public virtual QPSolver<Matrix, Vector>
     {
     public:
         using MatrixFreeQPSolver<Vector>::update;
@@ -64,7 +64,7 @@ namespace utopia
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedQPSolver * clone() const =0;
+        virtual OperatorBasedQPSolver * clone() const override = 0;
 
         virtual void read(Input &in) override
         {

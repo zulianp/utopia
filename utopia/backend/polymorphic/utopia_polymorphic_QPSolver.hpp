@@ -23,7 +23,7 @@ namespace utopia {
             ~PolymorphicQPSolver();
             PolymorphicQPSolver * clone() const override;
             bool apply(const Vector &rhs, Vector &sol) override;
-            void read(Input &in) override;
+            void read(Input &in) override;         
 
         private:
             std::unique_ptr<QPSolver<Matrix, Vector>> impl_;

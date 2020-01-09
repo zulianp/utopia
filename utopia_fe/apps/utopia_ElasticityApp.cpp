@@ -1,9 +1,8 @@
-#include "utopia_ElasticityApp.hpp"
 
 
 #include "utopia_ContactSolver.hpp"
 
-
+#include "utopia_ElasticityApp.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_Newmark.hpp"
 #include "utopia_LibMeshBackend.hpp"
@@ -116,7 +115,7 @@ namespace utopia {
 
         UIndexSet ghost_nodes;
         convert(dof_map.get_send_list(), ghost_nodes);
-        x = ghosted(dof_map.n_dofs(), dof_map.n_local_dofs(), ghost_nodes);
+        x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
 
         material.assemble_hessian_and_gradient(x, H, g);
         g *= -1.0;
@@ -134,12 +133,12 @@ namespace utopia {
         x += c;
 
         if(!material.is_linear()) {
-            
+
             for(int i = 0; i < sim_in.max_it; ++i) {
 
                 material.assemble_hessian_and_gradient(x, H, g);
                 g *= -1.0;
-                
+
                 apply_boundary_conditions(dof_map, H, x);
                 apply_zero_boundary_conditions(dof_map, g);
 

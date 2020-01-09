@@ -31,7 +31,7 @@
 
 namespace utopia {
 
-    class PetscVector : 
+    class PetscVector :
         public DistributedVector<PetscScalar, PetscInt>,
         public Normed<PetscScalar>,
         public Transformable<PetscScalar>,
@@ -120,7 +120,7 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
         void init_empty()
         {
-          vec_ = nullptr; 
+          vec_ = nullptr;
           initialized_ = false;
           immutable_ = false;
         }
@@ -181,7 +181,7 @@ namespace utopia {
             readable_  = utopia::make_unique<ConstLocalView>(implementation());
         }
 
-        inline void read_unlock() override 
+        inline void read_unlock() override
         {
             readable_ = nullptr;
         }
@@ -226,6 +226,17 @@ namespace utopia {
             return readable_->data[index - readable_->range_begin];
         }
 
+        inline Scalar l_get(const SizeType &index) const //override
+        {
+            // Scalar value;
+            // VecGetValues(implementation(), 1, &index, &value);
+            // return value;
+            assert(local_size() > index);
+            assert(index >= 0);
+            assert((readable_) && "use Read<Vector> r(vec) before using get. Check if you are using a copy of the vector");
+            return readable_->data[index];
+        }
+
 
         //print function
         void describe() const override;
@@ -233,7 +244,7 @@ namespace utopia {
         //utility functions
         inline bool empty() const override { return is_null() || size() == 0; }
         inline void clear() override { destroy(); }
-        
+
         inline void set(const Scalar &value) override
         {
             check_error( VecSet(implementation(), value) );
@@ -265,7 +276,7 @@ namespace utopia {
        {
             check_error( VecSetValues(implementation(), 1, &i, &value, ADD_VALUES) );
        }
-       
+
        inline SizeType local_size() const override
        {
            if(is_null()) return 0;
@@ -351,7 +362,7 @@ namespace utopia {
 
        ///<Scalar>DOT - dot product
        Scalar dot(const PetscVector &other) const override;
-        
+
        ///////////////////////////////////////////////////////////////////////////
        ////////////// OVERRIDES FOR Reducible ////////////////////////////
        ///////////////////////////////////////////////////////////////////////////
@@ -433,7 +444,7 @@ namespace utopia {
 
       ///////////////////////////////////////////////////////////////////////////
 
-       
+
         inline PetscVector()
         : vec_(nullptr), initialized_(false)
         {
@@ -499,7 +510,7 @@ namespace utopia {
 
         bool same_type(const PetscVector &other) const;
 
-     
+
 
         inline Range range() const override
         {
@@ -629,7 +640,7 @@ namespace utopia {
             ghost_values_.init_index(local_size(), index);
         }
 
- 
+
         inline const Scalar &operator[](const SizeType index) const
         {
             // Scalar value;
@@ -686,7 +697,7 @@ namespace utopia {
             check_error( VecSetValues(implementation(), indices.size(), &indices[0], &values[0], INSERT_VALUES) );
         }
 
-     
+
         inline void add_vector(
             const std::vector<SizeType> &indices,
             const std::vector<Scalar> &values)
@@ -695,7 +706,7 @@ namespace utopia {
             check_error( VecSetValues(implementation(), indices.size(), &indices[0], &values[0], ADD_VALUES) );
         }
 
- 
+
 
         inline bool has_ghosts() const
         {
@@ -760,7 +771,7 @@ namespace utopia {
             check_error( VecZeroEntries(implementation()) );
         }
 
-   
+
 
         inline void e_mul(const PetscVector &other, PetscVector &result) const
         {
@@ -814,7 +825,7 @@ namespace utopia {
             scale(numerator);
         }
 
-     
+
 
         bool has_nan_or_inf() const;
         bool is_mpi() const;
@@ -842,7 +853,7 @@ namespace utopia {
         }
 
         bool read(MPI_Comm comm, const std::string &path);
- 
+
         bool write(const std::string &path) const;
         bool write_binary(const std::string &path) const;
         bool write_matlab(const std::string &path) const;
@@ -851,8 +862,8 @@ namespace utopia {
 
         void convert_from(const Vec &mat);
         void convert_to(Vec &mat) const;
-        void copy_data_to(Vec vec) const; 
-        void copy_data_from(Vec vec); 
+        void copy_data_to(Vec vec) const;
+        void copy_data_from(Vec vec);
 
         void wrap(Vec &mat);
 

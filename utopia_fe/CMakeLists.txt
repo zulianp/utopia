@@ -135,12 +135,12 @@ macro(add_utopiafe_app app_name)
         if (NOT TOP_LEVEL)
         set(UTOPIA_FE_APPS "${UTOPIA_FE_APPS};${app_name}" PARENT_SCOPE)
     endif()
-    install(TARGETS ${app_name}
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-    )
-    install(FILES ${LOCAL_HEADERS} DESTINATION include)
+    # install(TARGETS ${app_name}
+    #     RUNTIME DESTINATION bin
+    #     LIBRARY DESTINATION lib
+    #     ARCHIVE DESTINATION lib
+    # )
+    # install(FILES ${LOCAL_HEADERS} DESTINATION include)
 endmacro(add_utopiafe_app)
 
 

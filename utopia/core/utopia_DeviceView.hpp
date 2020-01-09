@@ -31,7 +31,12 @@ namespace utopia {
             tensor_.add(idx, value);
         }
 
-        DeviceView(T &tensor) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor)) {}
+        inline void atomic_add(const SizeType &idx, const Scalar &value) const
+        {
+            tensor_.c_add(idx, value);
+        }
+
+        DeviceView(T &tensor, WriteMode wm = utopia::AUTO) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor, wm)) {}
 
     private:
         T &tensor_;
@@ -55,6 +60,51 @@ namespace utopia {
         const T &tensor_;
         std::shared_ptr<Read<T>> lock_;
     };
+
+
+    template<class T, int Order>
+    class LocalViewDevice {};
+
+    template<class T>
+    class LocalViewDevice<const T, 1> {
+    public:
+        using Scalar   = typename Traits<T>::Scalar;
+        using SizeType = typename Traits<T>::SizeType;
+
+        inline Scalar get(const SizeType &idx) const
+        {
+            return tensor_.l_get(idx);
+        }
+
+        LocalViewDevice(const T &tensor) : tensor_(tensor), lock_(std::make_shared<Read<T>>(tensor)) {}
+
+    private:
+        const T &tensor_;
+        std::shared_ptr<Read<T>> lock_;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    template<class T>
+    class DeviceView<T, 2> {
+    public:
+        using Scalar   = typename Traits<T>::Scalar;
+        using SizeType = typename Traits<T>::SizeType;
+
+        //FIXME is not atomic
+        inline void atomic_add(const SizeType &i, const SizeType &j, const Scalar &value) const
+        {
+            tensor_.c_add(i, j, value);
+        }
+
+        DeviceView(T &tensor, WriteMode wm = utopia::AUTO) : tensor_(tensor), lock_(std::make_shared<Write<T>>(tensor, wm)) {}
+
+    private:
+        T &tensor_;
+        std::shared_ptr<Write<T>> lock_;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////
 
     template<class Derived, int Order>
     inline DeviceView<Derived, Order> device_view(Tensor<Derived, Order> &t)
