@@ -108,6 +108,13 @@ namespace utopia {
             return ret;
         }
 
+        inline static SizeType n_components(const DM &dm)
+        {
+            SizeType ret;
+            DMDAGetDof(dm, &ret);
+            return ret;
+        }
+
         template<class Array>
         inline static void point(const DM &dm, const SizeType &i, const SizeType &j, const SizeType &k, Array &array)
         {
@@ -307,7 +314,8 @@ namespace utopia {
         void init(
             const PetscCommunicator &comm,
             const std::array<SizeType, UDim> &arr,
-            DMDAStencilType stencil_type)
+            DMDAStencilType stencil_type,
+            const SizeType n_components)
         {
             destroy();
             this->comm = comm;
@@ -321,7 +329,7 @@ namespace utopia {
                     DMDACreate1d(comm.get(),
                         DM_BOUNDARY_NONE,
                         arr[0],
-                            1, //dofs per node
+                            n_components, //dofs per node
                             1, //stencil width
                             nullptr,
                             &dm
@@ -337,7 +345,7 @@ namespace utopia {
                         stencil_type,
                         arr[0], arr[1],
                         PETSC_DECIDE, PETSC_DECIDE,
-                            1, //dofs per node
+                            n_components, //dofs per node
                             1, //stencil width
                             nullptr,
                             nullptr,
@@ -354,7 +362,7 @@ namespace utopia {
                         stencil_type,
                         arr[0], arr[1], arr[2],
                         PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
-                            1, //dofs per node
+                            n_components, //dofs per node
                             1, //stencil width
                             nullptr,
                             nullptr,
@@ -377,10 +385,11 @@ namespace utopia {
             const std::array<SizeType, UDim> &arr,
             const std::array<Scalar, UDim> &box_min,
             const std::array<Scalar, UDim> &box_max,
+            const SizeType &n_components,
             DMDAElementType elem_type    = DMDA_ELEMENT_Q1,
             DMDAStencilType stencil_type = DMDA_STENCIL_BOX)
         {
-            init(comm, arr, stencil_type);
+            init(comm, arr, stencil_type, n_components);
 
             Scalar min_x = 0, min_y = 0, min_z = 0;
             Scalar max_x = 1, max_y = 1, max_z = 1;
@@ -525,10 +534,11 @@ namespace utopia {
         const PetscCommunicator &comm,
         const std::array<SizeType, UDim> &dims,
         const std::array<Scalar, UDim> &box_min,
-        const std::array<Scalar, UDim> &box_max)
+        const std::array<Scalar, UDim> &box_max,
+        const SizeType &n_components)
     : impl_(utopia::make_unique<Impl>(comm))
     {
-        impl_->init_uniform(comm, dims, box_min, box_max);
+        impl_->init_uniform(comm, dims, box_min, box_max, n_components);
         impl_->elements = utopia::make_unique<PetscDMElements<Dim>>(*this);
         impl_->nodes = utopia::make_unique<PetscDMNodes<Dim>>(*this);
     }
@@ -1012,6 +1022,12 @@ namespace utopia {
         }
 
         return ret;
+    }
+
+    template<int Dim>
+    typename PetscDM<Dim>::SizeType PetscDM<Dim>::n_components() const
+    {
+        return PetscDMImpl<Dim>::n_components(impl_->dm);
     }
 
 }

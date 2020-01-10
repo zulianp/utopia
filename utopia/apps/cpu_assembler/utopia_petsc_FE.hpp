@@ -36,7 +36,6 @@ namespace utopia {
             return nodes_;
         }
 
-
         inline NodeIndex &nodes()
         {
             return nodes_;
@@ -69,6 +68,16 @@ namespace utopia {
         {
             assert(idx_ >= 0);
             return idx_;
+        }
+
+        virtual void describe(std::ostream &os) const
+        {
+            os << "elem: " << idx_ << " [ ";
+            for(auto n : nodes_) {
+                os << n << " ";
+            }
+
+            os << "]\n";
         }
 
     private:
@@ -139,8 +148,9 @@ namespace utopia {
             impl_.set(translation, h);
         }
 
-        void describe(std::ostream &os = std::cout) const
+        void describe(std::ostream &os = std::cout) const override
         {
+            Super::describe(os);
             auto &t = impl_.translation();
             os << t(0) << " " << t(1) << "\n";
         }

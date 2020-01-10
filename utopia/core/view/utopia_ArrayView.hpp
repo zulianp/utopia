@@ -130,11 +130,22 @@ namespace utopia {
 
         ArrayView() {}
 
-        ArrayView(const ArrayView &other)
+        template<class ArrayViewOther>
+        ArrayView(const ArrayViewOther &other)
         {
             for(Size_t i = 0; i < Size; ++i) {
                 data_[i] = other.data_[i];
             }
+        }
+
+        template<class ArrayViewOther>
+        ArrayView &operator=(const ArrayViewOther &other)
+        {
+            for(Size_t i = 0; i < Size; ++i) {
+                data_[i] = other[i];
+            }
+
+            return *this;
         }
 
     private:

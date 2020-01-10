@@ -1,4 +1,5 @@
 #include "utopia_petsc_dma_FunctionSpace_impl.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
 
 namespace utopia {
     template class FunctionSpace<PetscDM<2>, 1, PetscUniformQuad4>;

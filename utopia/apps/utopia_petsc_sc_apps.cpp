@@ -17,10 +17,61 @@
 #include "utopia_PoissonFE.hpp"
 #include "utopia_MassMatrixView.hpp"
 #include "utopia_petsc_dma_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
 
 #include <cmath>
 
 namespace utopia {
+
+    static void petsc_dm_multivar()
+    {
+        std::cout << "excuting: petsc_dm_multivar" << std::endl;
+        static const int Dim = 2;
+        // static const int NNodes = 4;
+
+        using DMDA             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<DMDA, 1, Elem>;
+        using SizeType         = DMDA::SizeType;
+        using Scalar           = DMDA::Scalar;
+        using Point            = DMDA::Point;
+
+        static const int n_vars = 2;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 2;
+        SizeType ny = scale * 2;
+
+        DMDA mesh(
+            world,
+            {nx, ny},
+            {0.0, 0.0},
+            {1.0, 1.0},
+            n_vars
+        );
+
+        Elem e;
+
+        FunctionSpace space(mesh);
+
+        PetscVector v;
+        space.create_vector(v);
+
+        each_write(v, [](const SizeType &i) -> Scalar {
+            return i % n_vars;
+        });
+
+
+        disp(mesh.n_nodes());
+        disp(size(v));
+
+        rename("U", v);
+        space.write("prova.vtk", v);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_dm_multivar);
 
     static void petsc_local_vec_view()
     {
@@ -169,13 +220,14 @@ namespace utopia {
 
         } else {
 
-            auto fe_model = std::make_shared<BratuFE<FunctionSpace>>(space);
-            fe_model->init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
-                return amplitude * device::exp(-decay * norm2(c1 - p)) +
-                       amplitude * device::exp(-decay * norm2(c2 - p));
-            });
+            //FIXME
+            // auto fe_model = std::make_shared<BratuFE<FunctionSpace>>(space);
+            // fe_model->init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
+            //     return amplitude * device::exp(-decay * norm2(c1 - p)) +
+            //            amplitude * device::exp(-decay * norm2(c2 - p));
+            // });
 
-            fun = fe_model;
+            // fun = fe_model;
 
         }
 
@@ -278,7 +330,6 @@ namespace utopia {
         static const int NNodes = Elem::NNodes;
 
         using DevFunctionSpace = typename FunctionSpace::ViewDevice;
-        using DofIndex         = typename DevFunctionSpace::DofIndex;
         using Point            = typename FunctionSpace::Point;
         using Scalar           = typename FunctionSpace::Scalar;
         using SizeType         = typename FunctionSpace::SizeType;

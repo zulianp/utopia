@@ -5,8 +5,169 @@
 
 namespace utopia {
 
-    template<class Elem_>
-    class FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> {
+    template<class Mesh, class Elem, int NComponents>
+    class DofMap {};
+
+    template<int Dim, class Elem_, int NComponents>
+    class DofMap<PetscDM<Dim>, Elem_, NComponents> {
+    public:
+        static const int NDofs = NComponents * Elem_::NNodes;
+
+        using SizeType  = typename PetscDM<Dim>::SizeType;
+        using NodeIndex = typename PetscDM<Dim>::NodeIndex;
+        using DofIndexNonConst = utopia::ArrayView<SizeType, NDofs>;
+
+        template<class DofIndex>
+        static void dofs_local(const PetscDM<Dim> &mesh, const SizeType &var_offset, const SizeType &idx, DofIndex &dofs)
+        {
+            if(mesh.n_components() == 1) {
+                assert(var_offset == 0);
+                assert(NComponents == 1);
+
+                assert(idx < mesh.n_elements());
+
+                NodeIndex nodes;
+                mesh.nodes_local(idx, nodes);
+                dofs = nodes;
+
+            } else {
+                assert(idx < mesh.n_elements());
+                NodeIndex nodes;
+                mesh.nodes_local(idx, nodes);
+                tensorize_dofs(mesh, var_offset, nodes, dofs);
+            }
+        }
+
+        template<class DofIndex>
+        static void dofs(const PetscDM<Dim> &mesh, const SizeType &var_offset, const SizeType &idx, DofIndex &dofs)
+        {
+            if(mesh.n_components() == 1) {
+                assert(var_offset == 0);
+                assert(NComponents == 1);
+
+                NodeIndex nodes;
+                mesh.nodes(idx, nodes);
+                dofs = nodes;
+
+            } else {
+                assert(idx < mesh.n_elements());
+                NodeIndex nodes;
+                mesh.nodes(idx, nodes);
+                tensorize_dofs(mesh, var_offset, nodes, dofs);
+            }
+        }
+
+        template<class DofIndex>
+        static void tensorize_dofs(
+            const PetscDM<Dim> &mesh,
+            const SizeType &var_offset,
+            const NodeIndex &nodes,
+            DofIndex &dofs)
+        {
+            UTOPIA_UNUSED(mesh);
+
+            assert(nodes.size() * (mesh.n_components() - var_offset) == dofs.size());
+            assert(NComponents == (mesh.n_components() - var_offset));
+
+            const SizeType n_nodes = nodes.size();
+
+            SizeType j = 0;
+            for(SizeType c = var_offset; c < NComponents; ++c) {
+                for(SizeType i = 0; i < n_nodes; ++i) {
+                    dofs[j++] = nodes[i] * NComponents + c;
+                }
+            }
+        }
+
+        template<class Elem, class ElementMatrix, class MatView>
+        static void add_matrix(
+            const PetscDM<Dim> &mesh,
+            const SizeType &var_offset,
+            const Elem &e,
+            const ElementMatrix &el_mat,
+            MatView &mat)
+        {
+            if(mesh.n_components() == 1) {
+                assert(var_offset == 0);
+                assert(NComponents == 1);
+
+                const SizeType n_dofs = e.nodes().size();
+                const auto &dofs = e.nodes();
+
+                for(SizeType i = 0; i < n_dofs; ++i) {
+                    for(SizeType j = 0; j < n_dofs; ++j) {
+                        mat.atomic_add(dofs[i], dofs[j], el_mat(i, j));
+                    }
+                }
+            } else {
+                DofIndexNonConst indices;
+                dofs(mesh, var_offset, e.idx(), indices);
+
+                const SizeType n_dofs = indices.size();
+                for(SizeType i = 0; i < n_dofs; ++i) {
+                    for(SizeType j = 0; j < n_dofs; ++j) {
+                        mat.atomic_add(indices[i], indices[j], el_mat(i, j));
+                    }
+                }
+            }
+       }
+
+       template<class Elem, class ElementVector, class VecView>
+       static void add_vector(
+        const PetscDM<Dim> &mesh,
+        const SizeType &var_offset,
+        const Elem &e,
+        const ElementVector &el_vec,
+        VecView &vec)
+       {
+            if(mesh.n_components() == 1) {
+                assert(var_offset == 0);
+                assert(NComponents == 1);
+
+                const SizeType n_dofs = e.nodes().size();
+                const auto &dofs = e.nodes();
+
+                for(SizeType i = 0; i < n_dofs; ++i) {
+                    vec.atomic_add(dofs[i], el_vec(i));
+                }
+
+            } else {
+                DofIndexNonConst indices;
+                dofs(mesh, var_offset, e.idx(), indices);
+
+                const SizeType n_dofs = indices.size();
+                for(SizeType i = 0; i < n_dofs; ++i) {
+                    vec.atomic_add(indices[i], el_vec(i));
+                }
+            }
+        }
+
+       template<class Elem, class VectorView, class Values>
+       static void local_coefficients(
+           const PetscDM<Dim> &mesh,
+           const SizeType &var_offset,
+           const Elem &e,
+           const VectorView &vec,
+           Values &values)
+       {
+            assert(var_offset == 0);
+            assert(NComponents == 1);
+
+            DofIndexNonConst dofs;
+            dofs_local(mesh, var_offset, e.idx(), dofs);
+            const SizeType n = dofs.size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                assert(dofs[i] < mesh.n_nodes() * mesh.n_components());
+                values[i] = vec.get(dofs[i]);
+            }
+       }
+    };
+
+
+
+    template<class Elem_, int NComponents>
+    class FunctionSpace<PetscDM<Elem_::Dim>, NComponents, Elem_> {
     public:
         static const int Dim = Elem_::Dim;
         using Mesh = utopia::PetscDM<Dim>;
@@ -18,20 +179,21 @@ namespace utopia {
 
         using ViewDevice = FunctionSpace;
         using Device = typename Mesh::Device;
-        using DofIndex = typename Mesh::NodeIndex;
+        // using DofIndex = typename Mesh::NodeIndex;
         using Vector = utopia::PetscVector;
         using Matrix = utopia::PetscMatrix;
         using Comm = utopia::PetscCommunicator;
         using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
+        using DofMap      = utopia::DofMap<PetscDM<Dim>, Elem_, NComponents>;
 
         bool write(const Path &path, const PetscVector &x) const;
 
-        FunctionSpace(const std::shared_ptr<Mesh> &mesh)
-        : mesh_(mesh)
+        FunctionSpace(const std::shared_ptr<Mesh> &mesh, const SizeType &subspace_id = 0)
+        : mesh_(mesh), subspace_id_(subspace_id)
         {}
 
-        FunctionSpace(Mesh &mesh)
-        : mesh_(utopia::make_ref(mesh))
+        FunctionSpace(Mesh &mesh, const SizeType &subspace_id = 0)
+        : mesh_(utopia::make_ref(mesh)), subspace_id_(subspace_id)
         {}
 
         template<class Fun>
@@ -42,16 +204,6 @@ namespace utopia {
 
         void elem(const SizeType &idx, Elem &e) const;
 
-        void dofs(const SizeType &idx, DofIndex &dofs) const
-        {
-            mesh_->nodes(idx, dofs);
-        }
-
-        void dofs_local(const SizeType &idx, DofIndex &dofs) const
-        {
-            assert(idx < mesh_->n_elements());
-            mesh_->nodes_local(idx, dofs);
-        }
 
         bool is_boundary_dof(const SizeType &idx) const
         {
@@ -103,49 +255,34 @@ namespace utopia {
             return DeviceView<const PetscVector, 1>(vec);
         }
 
+        template<class DofIndex>
+        void dofs(const SizeType &idx, DofIndex &dofs) const
+        {
+            DofMap::dofs(*mesh_, subspace_id_, idx, dofs);
+        }
+
+        template<class DofIndex>
+        void dofs_local(const SizeType &idx, DofIndex &dofs) const
+        {
+           DofMap::dofs_local(*mesh_, subspace_id_, idx, dofs);
+        }
+
         template<class ElementMatrix, class MatView>
-        static void add_matrix(
+        void add_matrix(
             const Elem &e,
             const ElementMatrix &el_mat,
-            MatView &mat)
+            MatView &mat) const
         {
-            const SizeType n_dofs = e.nodes().size();
-            const auto &dofs = e.nodes();
-
-            for(SizeType i = 0; i < n_dofs; ++i) {
-                for(SizeType j = 0; j < n_dofs; ++j) {
-                    mat.atomic_add(dofs[i], dofs[j], el_mat(i, j));
-                }
-            }
+            DofMap::add_matrix(*mesh_, subspace_id_, e, el_mat, mat);
         }
 
         template<class ElementVector, class VecView>
-        static void add_vector(
+        void add_vector(
             const Elem &e,
             const ElementVector &el_vec,
-            VecView &vec)
+            VecView &vec) const
         {
-            const SizeType n_dofs = e.nodes().size();
-            const auto &dofs = e.nodes();
-
-            for(SizeType i = 0; i < n_dofs; ++i) {
-                vec.atomic_add(dofs[i], el_vec(i));
-            }
-        }
-
-        //FIXME does not work in parallel
-        template<class VectorView, class Values>
-        static void coefficients(
-            const Elem &e,
-            const VectorView &vec,
-            Values &values)
-        {
-            const SizeType n_dofs = e.nodes().size();
-            const auto &dofs = e.nodes();
-
-            for(SizeType i = 0; i < n_dofs; ++i) {
-                values[i] = vec.get(dofs[i]);
-            }
+            DofMap::add_vector(*mesh_, subspace_id_, e, el_vec, vec);
         }
 
         template<class VectorView, class Values>
@@ -154,14 +291,7 @@ namespace utopia {
             const VectorView &vec,
             Values &values) const
         {
-            DofIndex dofs;
-            dofs_local(e.idx(), dofs);
-            const SizeType n = dofs.size();
-
-            for(SizeType i = 0; i < n; ++i) {
-                assert(dofs[i] < n_dofs());
-                values[i] = vec.get(dofs[i]);
-            }
+            DofMap::local_coefficients(*mesh_, subspace_id_, e, vec, values);
         }
 
         const Mesh &mesh() const
@@ -220,148 +350,14 @@ namespace utopia {
 
         ///shallow copy
         FunctionSpace(const FunctionSpace &other)
-        : mesh_(other.mesh_)
+        : mesh_(other.mesh_), subspace_id_(other.subspace_id_)
         {}
 
     private:
         std::shared_ptr<Mesh> mesh_;
         std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
+        SizeType subspace_id_;
     };
-
-    template<class Elem, int Components>
-    class DirichletBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
-    public:
-        using FunctionSpace = utopia::FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>;
-        using Point    = typename FunctionSpace::Point;
-        using SizeType = typename FunctionSpace::SizeType;
-        using Scalar   = typename FunctionSpace::Scalar;
-        using DofIndex = typename FunctionSpace::DofIndex;
-        static const int Dim = FunctionSpace::Dim;
-
-        DirichletBoundaryCondition(
-            const FunctionSpace &space,
-            SideSet::BoundaryIdType side_set,
-            const std::function<Scalar(const Point &)> &fun,
-            const int component = 0)
-        : space_(space), side_set_(side_set), fun_(fun), component_(component)
-        {}
-
-        void apply(PetscMatrix &mat, PetscVector &vec) const
-        {
-            using IndexSet = Traits<PetscVector>::IndexSet;
-            IndexSet ind;
-            ind.reserve(vec.local_size());
-
-            auto r = vec.range();
-
-            Write<PetscVector> w(vec, utopia::AUTO);
-
-            Point p;
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i - r.begin())) {
-                    ind.push_back(i);
-                    space_.mesh().node(i/Components, p);
-                    vec.set(i, fun_(p));
-                }
-            }
-
-            mat.set_zero_rows(ind, 1.0);
-        }
-
-        void apply(PetscMatrix &mat) const
-        {
-            using IndexSet = Traits<PetscVector>::IndexSet;
-            IndexSet ind;
-            ind.reserve(mat.local_size().get(0));
-
-            auto r = mat.row_range();
-
-            Point p;
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i - r.begin())) {
-                    ind.push_back(i);
-                    space_.mesh().node(i/Components, p);
-                }
-            }
-
-            mat.set_zero_rows(ind, 1.0);
-        }
-
-        void apply(PetscVector &vec) const
-        {
-            auto r = vec.range();
-
-            Write<PetscVector> w(vec, utopia::AUTO);
-
-            Point p;
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i - r.begin())) {
-                    space_.mesh().node(i/Components, p);
-                    vec.set(i, fun_(p));
-                }
-            }
-        }
-
-        void apply_zero(PetscVector &vec) const
-        {
-            auto r = vec.range();
-
-            Write<PetscVector> w(vec, utopia::AUTO);
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i - r.begin())) {
-                    vec.set(i, 0.0);
-                }
-            }
-        }
-
-        void set_boundary_id(PetscVector &vec) const
-        {
-            auto r = vec.range();
-
-            Write<PetscVector> w(vec, utopia::AUTO);
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i - r.begin())) {
-                    vec.set(i, side_set_);
-                }
-            }
-        }
-
-        template<class ElementMatrix, class ElementVector>
-        void apply(
-            const Elem &e,
-            const DofIndex &ind,
-            ElementMatrix &mat, ElementVector &vec)
-        {
-            assert(false && "FIXME: use local node index or cartesian for identifying boundary nodes");
-
-            const SizeType n_dofs = ind.size();
-            Point p;
-
-            for(SizeType i = 0; i < n_dofs; ++i) {
-                if(!is_constrained_dof(ind[i])) continue;
-
-                for(SizeType j = 0; j < n_dofs; ++j) {
-                    mat(i, j) = (i == j);
-                }
-
-                e.node(i/Components, p);
-                vec[i] = fun_(p);
-            }
-        }
-
-    private:
-        const FunctionSpace &space_;
-        SideSet::BoundaryIdType side_set_;
-        std::function<Scalar(const Point &)> fun_;
-        int component_;
-
-        bool is_constrained_dof(const SizeType &idx) const
-        {
-            if(space_.component(idx) != component_) return false;
-            return space_.mesh().is_local_node_on_boundary(idx/Components, side_set_);
-        }
-    };
-
 
 }
 
