@@ -21,8 +21,9 @@ namespace utopia
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
-
         typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
+        
+        using Device   = typename Traits<Vector>::Device;
 
 
     public:
@@ -97,49 +98,25 @@ namespace utopia
 
         virtual bool check_feasibility(const SizeType & level, const Vector & x)
         {
-            bool terminate = false;
-
+            SizeType n_terminates = 0;
             {
-                Read<Vector> ru(constraints_memory_.tr_upper[level]);
-                Read<Vector> rl(constraints_memory_.tr_lower[level]);
-                Read<Vector> rx(x);
+                auto d_u = const_device_view(constraints_memory_.tr_upper[level]);
+                auto d_l = const_device_view(constraints_memory_.tr_lower[level]);
+                auto d_x = const_device_view(x);
 
-                Range r = range(constraints_memory_.tr_upper[level]);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i)
+                Device::parallel_reduce(range(x), UTOPIA_LAMBDA(const SizeType i) -> SizeType
                 {
-                    Scalar xi = x.get(i);
-                    Scalar li = constraints_memory_.tr_lower[level].get(i);
-                    Scalar ui = constraints_memory_.tr_upper[level].get(i);
+                    const Scalar xi = d_x.get(i);
+                    const Scalar li = d_l.get(i);
+                    const Scalar ui = d_u.get(i);
 
-                   if(xi < li || xi > ui)
-                        terminate = true;
-                }
+                    return static_cast<SizeType>(xi < li || xi > ui);
+                }, n_terminates);
             }
 
-
-           //  using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
-
-           // {
-           //      auto d_u = const_device_view(constraints_memory_.tr_upper[level]);
-           //      auto d_l = const_device_view(constraints_memory_.tr_lower[level]);
-           //      auto d_x = const_device_view(x);
-
-           //      ForLoop::apply(range(x), UTOPIA_LAMBDA(const SizeType i)
-           //      {
-           //          const Scalar xi = d_x.get(i);
-           //          const Scalar li = d_l.get(i);
-           //          const Scalar ui = d_u.get(i);
-
-           //          // if(xi < li || xi > ui){
-           //          //     terminate = true;
-           //          // }
-
-           //      });
-           //  }
-
+            bool terminate = n_terminates > 0;
             return x.comm().disjunction(terminate);
-          
         }
 
 

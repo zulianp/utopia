@@ -196,7 +196,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
-			in.set("max-it", 2);
+			in.set("max-it", 20);
 			in.set("verbose", true);
 
             // RMTR specific parameters
@@ -206,7 +206,7 @@ namespace utopia
             in.set("pre_smoothing_steps", 2);
             in.set("post_smoothing_steps", 2);
             in.set("max_sucessful_smoothing_it", 1);
-            in.set("max_QP_smoothing_it", 1);
+            in.set("max_QP_smoothing_it", 4);
             in.set("delta0", 1.0e10);
             in.set("grad_smoothess_termination", 1e-8);
 
