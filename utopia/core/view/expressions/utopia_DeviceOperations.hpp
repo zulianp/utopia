@@ -211,6 +211,33 @@ namespace utopia {
         return DeviceDot<Left, Right, Traits<Left>::Order>::apply(left.derived(), right.derived());
     }
 
+    template<class Left, class Right>
+    UTOPIA_INLINE_FUNCTION typename Traits<Right>::Scalar inner(
+        const DeviceExpression<Left> &left,
+        const DeviceExpression<Right> &right)
+    {
+        return dot(left.derived(), right.derived());
+    }
+
+    template<class Left, class Right>
+    UTOPIA_INLINE_FUNCTION typename Traits<Right>::Scalar inner(
+        const DeviceExpression<Left> &left,
+        const typename Traits<Right>::Scalar &right)
+    {
+        return sum(left * right);
+    }
+
+
+    UTOPIA_INLINE_FUNCTION constexpr double inner(const double &left, const double &right)
+    {
+        return left * right;
+    }
+
+    UTOPIA_INLINE_FUNCTION constexpr float inner(const float &left, const float &right)
+    {
+        return left * right;
+    }
+
     template<class Expr>
     UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar trace(
         const DeviceExpression<Expr> &expr)

@@ -27,16 +27,14 @@ namespace utopia {
     {
         std::cout << "excuting: petsc_dm_multivar" << std::endl;
         static const int Dim = 2;
-        // static const int NNodes = 4;
+        static const int NVars = 2;
 
         using DMDA             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<DMDA, 1, Elem>;
+        using FunctionSpace    = utopia::FunctionSpace<DMDA, NVars, Elem>;
         using SizeType         = DMDA::SizeType;
         using Scalar           = DMDA::Scalar;
         using Point            = DMDA::Point;
-
-        static const int n_vars = 2;
 
         PetscCommunicator world;
 
@@ -44,27 +42,23 @@ namespace utopia {
         SizeType nx = scale * 2;
         SizeType ny = scale * 2;
 
-        DMDA mesh(
+        FunctionSpace space;
+        space.build(
             world,
             {nx, ny},
             {0.0, 0.0},
-            {1.0, 1.0},
-            n_vars
+            {1.0, 1.0}
         );
-
-        Elem e;
-
-        FunctionSpace space(mesh);
 
         PetscVector v;
         space.create_vector(v);
 
         each_write(v, [](const SizeType &i) -> Scalar {
-            return i % n_vars;
+            return i % NVars;
         });
 
 
-        disp(mesh.n_nodes());
+        disp(space.mesh().n_nodes());
         disp(size(v));
 
         rename("U", v);
@@ -328,14 +322,15 @@ namespace utopia {
 
         static const int Dim    = Elem::Dim;
         static const int NNodes = Elem::NNodes;
+        static const int NFunctions = Elem::NFunctions;
 
         using DevFunctionSpace = typename FunctionSpace::ViewDevice;
         using Point            = typename FunctionSpace::Point;
         using Scalar           = typename FunctionSpace::Scalar;
         using SizeType         = typename FunctionSpace::SizeType;
         using Quadrature       = utopia::Quadrature<Elem, 2>;
-        using ElementMatrix    = utopia::StaticMatrix<Scalar, NNodes, NNodes>;
-        using ElementVector    = utopia::StaticVector<Scalar, NNodes>;
+        using ElementMatrix    = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
+        using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
         using DirichletBC      = utopia::DirichletBoundaryCondition<FunctionSpace>;
 
         Comm &comm = space.comm();
@@ -534,5 +529,38 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
+
+
+    static void petsc_dm_mvar_poisson()
+    {
+        static const int Dim = 3;
+        static const int NNodes = 8;
+        static const int NVars = Dim;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType         = Mesh::SizeType;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 15;
+        SizeType ny = scale * 15;
+        SizeType nz = scale * 15;
+
+        FunctionSpace space;
+
+        space.build(
+            world,
+            {nx, ny, nz},
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
+        );
+
+        poisson_problem(space, false);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson);
 }
 

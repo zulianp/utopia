@@ -58,13 +58,18 @@ namespace utopia {
         const Quadrature &q_;
     };
 
-    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    template<
+        class Elem,
+        class Quadrature,
+        class MemType = typename Elem::MemType,
+        typename...
+    >
     class PhysicalGradient {
     public:
         static const int Dim = Elem::Dim;
         using Scalar = typename Elem::Scalar;
-        using Point  = utopia::StaticVector<Scalar, Dim>;
-        using Grad   = utopia::StaticVector<Scalar, Dim>;
+        using Point  = typename Elem::Point;
+        using GradValue   = typename Elem::GradValue;
 
         UTOPIA_INLINE_FUNCTION PhysicalGradient(const Quadrature &q)
         : q_(q), elem_(nullptr)
@@ -78,9 +83,9 @@ namespace utopia {
             elem_->grad(fun_num, temp, g);
         }
 
-        UTOPIA_INLINE_FUNCTION Grad operator()(const int fun_num, const int qp_idx) const
+        UTOPIA_INLINE_FUNCTION GradValue operator()(const int fun_num, const int qp_idx) const
         {
-            Grad g;
+            GradValue g;
             get(fun_num, qp_idx, g);
             return g;
         }
@@ -138,22 +143,22 @@ namespace utopia {
     class ShapeFunction {
     public:
         static const int Dim = Elem::Dim;
-        using Scalar = typename Elem::Scalar;
-        using Point  = utopia::StaticVector<Scalar, Dim>;
-        using Grad   = utopia::StaticVector<Scalar, Dim>;
+        using Scalar   = typename Elem::Scalar;
+        using Point    = typename Elem::Point;
+        using FunValue = typename Elem::FunValue;
 
         UTOPIA_INLINE_FUNCTION ShapeFunction(const Quadrature &q)
         : q_(q), elem_(nullptr)
         {}
 
-        UTOPIA_INLINE_FUNCTION Scalar get(const int fun_num, const int qp_idx) const
+        UTOPIA_INLINE_FUNCTION FunValue get(const int fun_num, const int qp_idx) const
         {
             Point temp;
             q_.point(qp_idx, temp);
             return elem_->fun(fun_num, temp);
         }
 
-        UTOPIA_INLINE_FUNCTION Scalar operator()(const int fun_num, const int qp_idx) const
+        UTOPIA_INLINE_FUNCTION FunValue operator()(const int fun_num, const int qp_idx) const
         {
             return get(fun_num, qp_idx);
         }

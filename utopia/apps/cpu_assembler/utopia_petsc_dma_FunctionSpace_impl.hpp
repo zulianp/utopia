@@ -9,7 +9,7 @@ namespace utopia {
     template<class Elem, int NComponents>
     void FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::elem(const SizeType &idx, Elem &e) const
     {
-        mesh_->elem(idx, e);
+        mesh_->elem(idx, e.univar_elem());
         typename Mesh::Point translation, cell_size;
         mesh_->cell_point(idx, translation);
         mesh_->cell_size(idx, cell_size);

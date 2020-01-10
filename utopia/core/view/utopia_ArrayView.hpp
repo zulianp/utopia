@@ -134,7 +134,7 @@ namespace utopia {
         ArrayView(const ArrayViewOther &other)
         {
             for(Size_t i = 0; i < Size; ++i) {
-                data_[i] = other.data_[i];
+                data_[i] = other[i];
             }
         }
 

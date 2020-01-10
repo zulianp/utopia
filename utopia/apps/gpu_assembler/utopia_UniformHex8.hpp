@@ -131,13 +131,17 @@ namespace utopia {
     };
 
     template<typename Scalar_>
-    class UniformHex8 final {
+    class UniformHex8 {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
         // using DiscretizationType = FE;
         static const int Dim = 3;
         static const int NNodes = 8;
+
+        using Point = utopia::StaticVector<Scalar, Dim>;
+        using GradValue = utopia::StaticVector<Scalar, Dim>;
+        using FunValue  = Scalar;
 
         using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
 

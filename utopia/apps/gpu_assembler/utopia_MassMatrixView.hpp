@@ -4,6 +4,7 @@
 #include "utopia_AssemblyView.hpp"
 #include "utopia_LaplacianView.hpp"
 #include "utopia_NodalInterpolateView.hpp"
+#include "utopia_DeviceOperations.hpp"
 
 namespace utopia {
 
@@ -20,9 +21,9 @@ namespace utopia {
         using Scalar   = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
-        static const int NNodes = Elem::NNodes;
+        static const int NFunctions = Elem::NFunctions;
 
-        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NNodes, NNodes>>;
+        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NFunctions, NFunctions>>;
 
         MassMatrix(const FunctionSpace &space, const Quadrature &q) //: q_(q)
         {
@@ -41,10 +42,10 @@ namespace utopia {
             for(SizeType k = 0; k < n; ++k) {
                 for(SizeType j = 0; j < fun.n_functions(); ++j) {
                     const auto g_test = fun(j, k);
-                    mat(j, j) += (g_test * g_test) * dx(k);
+                    mat(j, j) += inner(g_test, g_test) * dx(k);
 
                     for(SizeType l = j + 1; l < fun.n_functions(); ++l) {
-                        const auto v = (g_test * fun(l, k)) * dx(k);
+                        const auto v = inner(g_test, fun(l, k)) * dx(k);
                         mat(j, l) += v;
                         mat(l, j) += v;
                     }
@@ -58,7 +59,7 @@ namespace utopia {
         }
 
     private:
-        StaticMatrix<Scalar, NNodes, NNodes> mat_;
+        StaticMatrix<Scalar, NFunctions, NFunctions> mat_;
 
         void init(const FunctionSpace &space, const Quadrature &q)
         {
@@ -87,7 +88,7 @@ namespace utopia {
         using Scalar   = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
-        static const int NNodes = Elem::NNodes;
+        static const int NFunctions = Elem::NFunctions;
 
         using Differential  = utopia::Differential<FunctionSpace, Quadrature>;
         using Interpolate   = utopia::NodalInterpolate<FunctionSpace, Quadrature>;
@@ -136,9 +137,6 @@ namespace utopia {
         {
             return ViewDevice(dx_.view_device(), interpolate_.view_device());
         }
-
-
-
 
     private:
         Differential dx_;

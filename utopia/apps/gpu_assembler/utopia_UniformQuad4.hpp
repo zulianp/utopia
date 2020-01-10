@@ -101,13 +101,15 @@ namespace utopia {
     };
 
     template<typename Scalar_>
-    class UniformQuad4 final {
+    class UniformQuad4 {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
-        // using DiscretizationType = FE;
         static const int Dim = 2;
         static const int NNodes = 4;
+        using Point = utopia::StaticVector<Scalar, Dim>;
+        using GradValue = utopia::StaticVector<Scalar, Dim>;
+        using FunValue  = Scalar;
 
         using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
 
@@ -165,23 +167,6 @@ namespace utopia {
         {
             return h_[0]*h_[1];
         }
-
-        // template<typename Point, typename Values>
-        // UTOPIA_INLINE_FUNCTION static void fun(const Point &p, Values &values)
-        // {
-        //     RefQuad4::fun(p, values);
-        // }
-
-        // template<typename Point, typename Values>
-        // UTOPIA_INLINE_FUNCTION void grad(const Point &p, Values &values) const
-        // {
-        //     RefQuad4::grad(p, values);
-        //     for(int i = 0; i < 4; ++i)
-        //     {
-        //         values(i, 0) /= h_[0];
-        //         values(i, 1) /= h_[1];
-        //     }
-        // }
 
         template<typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const

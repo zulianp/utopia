@@ -2,6 +2,7 @@
 #define UTOPIA_PETSC_DMA_FUNCTIONSPACE_HPP
 
 #include "utopia_PetscDM.hpp"
+#include "utopia_MultiVariateElement.hpp"
 
 namespace utopia {
 
@@ -164,14 +165,13 @@ namespace utopia {
        }
     };
 
-
-
     template<class Elem_, int NComponents>
     class FunctionSpace<PetscDM<Elem_::Dim>, NComponents, Elem_> {
     public:
         static const int Dim = Elem_::Dim;
+        static const std::size_t UDim = Dim;
         using Mesh = utopia::PetscDM<Dim>;
-        using Elem = Elem_;
+        using Elem = MultiVariateElem<Elem_, NComponents>;
         using MemType = typename Elem::MemType;
         using Scalar = typename Mesh::Scalar;
         using SizeType = typename Mesh::SizeType;
@@ -185,6 +185,7 @@ namespace utopia {
         using Comm = utopia::PetscCommunicator;
         using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
         using DofMap      = utopia::DofMap<PetscDM<Dim>, Elem_, NComponents>;
+        static const int NDofs = DofMap::NDofs;
 
         bool write(const Path &path, const PetscVector &x) const;
 
@@ -195,6 +196,36 @@ namespace utopia {
         FunctionSpace(Mesh &mesh, const SizeType &subspace_id = 0)
         : mesh_(utopia::make_ref(mesh)), subspace_id_(subspace_id)
         {}
+
+        ///shallow copy
+        FunctionSpace(const FunctionSpace &other)
+        : mesh_(other.mesh_), subspace_id_(other.subspace_id_)
+        {}
+
+        FunctionSpace()
+        : subspace_id_(0)
+        {}
+
+        template<class... Args>
+        void build(
+            const PetscCommunicator     &comm,
+            const std::array<SizeType, UDim> &dims,
+            const std::array<Scalar, UDim>   &box_min,
+            const std::array<Scalar, UDim>   &box_max,
+            const SizeType &subspace_id = 0)
+        {
+            mesh_ = std::make_shared<Mesh>(comm, dims, box_min, box_max, NComponents);
+            subspace_id_ = subspace_id;
+        }
+
+        FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> subspace(const SizeType &i) const
+        {
+            FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> space(mesh_, i);
+            // space.set_dirichlet_conditions(dirichlet_bcs_);
+            assert(i < NComponents);
+            assert(i + subspace_id_ < mesh_->n_components());
+            return space;
+        }
 
         template<class Fun>
         void each_element(Fun fun)
@@ -314,6 +345,16 @@ namespace utopia {
             return mesh_->n_nodes();
         }
 
+        void set_mesh(const std::shared_ptr<Mesh> &mesh)
+        {
+            mesh_ = mesh;
+        }
+
+        void set_dirichlet_conditions(const std::vector<std::shared_ptr<DirichletBC>> &conds)
+        {
+            dirichlet_bcs_ = conds;
+        }
+
         template<class... Args>
         void emplace_dirichlet_condition(Args && ...args)
         {
@@ -347,11 +388,6 @@ namespace utopia {
                 bc->apply_zero(vec);
             }
         }
-
-        ///shallow copy
-        FunctionSpace(const FunctionSpace &other)
-        : mesh_(other.mesh_), subspace_id_(other.subspace_id_)
-        {}
 
     private:
         std::shared_ptr<Mesh> mesh_;
