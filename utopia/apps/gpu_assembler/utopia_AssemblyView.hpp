@@ -71,6 +71,7 @@ namespace utopia {
         using Point  = typename Elem::Point;
         using GradValue   = typename Elem::GradValue;
 
+
         UTOPIA_INLINE_FUNCTION PhysicalGradient(const Quadrature &q)
         : q_(q), elem_(nullptr)
         {}
@@ -97,7 +98,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions()
         {
-            return Elem::NNodes;
+            return Elem::NFunctions;
         }
 
         UTOPIA_INLINE_FUNCTION PhysicalGradient make(const std::size_t &, const Elem &elem) const
@@ -170,7 +171,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions()
         {
-            return Elem::NNodes;
+            return Elem::NFunctions;
         }
 
         UTOPIA_INLINE_FUNCTION ShapeFunction make(const std::size_t &, const Elem &elem) const

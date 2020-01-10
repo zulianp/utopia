@@ -19,6 +19,11 @@ namespace utopia {
             acc += value_;
         }
 
+        void describe()
+        {
+            disp(value_);
+        }
+
     private:
         const T &value_;
     };

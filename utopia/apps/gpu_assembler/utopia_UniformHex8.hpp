@@ -138,6 +138,7 @@ namespace utopia {
         // using DiscretizationType = FE;
         static const int Dim = 3;
         static const int NNodes = 8;
+        static const int NFunctions = NNodes;
 
         using Point = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;

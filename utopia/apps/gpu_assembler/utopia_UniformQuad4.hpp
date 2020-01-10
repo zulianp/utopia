@@ -107,6 +107,7 @@ namespace utopia {
         using MemType = Uniform<>;
         static const int Dim = 2;
         static const int NNodes = 4;
+        static const int NFunctions = 4;
         using Point = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using FunValue  = Scalar;

@@ -206,6 +206,8 @@ namespace utopia {
         : subspace_id_(0)
         {}
 
+        inline static constexpr int n_components() { return NComponents; }
+
         template<class... Args>
         void build(
             const PetscCommunicator     &comm,

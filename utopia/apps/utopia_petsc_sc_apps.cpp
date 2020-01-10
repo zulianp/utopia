@@ -352,19 +352,23 @@ namespace utopia {
 
         stats.stop_and_collect("create-matrix");
 
-        space.emplace_dirichlet_condition(
-            SideSet::left(),
-            UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return 1.0;
-            }
-        );
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 1.0;
+                },
+                c
+            );
 
-        space.emplace_dirichlet_condition(
-            SideSet::right(),
-            UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return -1.0;
-            }
-        );
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return -1.0;
+                },
+                c
+            );
+        }
 
         auto diffusivity = UTOPIA_LAMBDA(const Point &p) -> Scalar {
             Scalar dist = 0.0;
@@ -396,6 +400,12 @@ namespace utopia {
             auto l_view = laplacian.view_device();
             auto m_view = mass_matrix.view_device();
 
+            // disp("laplacian");
+            // l_view.describe();
+
+            // disp("mass_matrix");
+            // m_view.describe();
+
             Dev::parallel_for(
                 space.local_element_range(),
                 UTOPIA_LAMBDA(const SizeType &i)
@@ -425,6 +435,12 @@ namespace utopia {
 
         stats.start();
         rhs = mass_mat * rhs;
+
+        // rename("m",  mass_mat);
+        // write("M.m", mass_mat);
+
+        // rename("a",  mat);
+        // write("A.m", mat);
 
         Scalar vol = sum(mass_mat);
         std::cout << "vol: " << vol << std::endl;
@@ -534,20 +550,20 @@ namespace utopia {
     static void petsc_dm_mvar_poisson()
     {
         static const int Dim = 3;
-        static const int NNodes = 8;
         static const int NVars = Dim;
 
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformHex8;
+        // using Elem             = utopia::PetscUniformQuad4;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
 
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 15;
-        SizeType ny = scale * 15;
-        SizeType nz = scale * 15;
+        SizeType nx = scale * 6;
+        SizeType ny = scale * 6;
+        SizeType nz = scale * 6;
 
         FunctionSpace space;
 
@@ -557,6 +573,13 @@ namespace utopia {
             {0.0, 0.0, 0.0},
             {1.0, 1.0, 1.0}
         );
+
+        // space.build(
+        //     world,
+        //     {nx, ny},
+        //     {0.0, 0.0},
+        //     {1.0, 1.0}
+        // );
 
         poisson_problem(space, false);
     }
