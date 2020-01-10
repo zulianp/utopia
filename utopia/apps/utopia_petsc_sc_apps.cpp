@@ -547,14 +547,43 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
 
 
-    static void petsc_dm_mvar_poisson()
+
+    static void petsc_dm_mvar_poisson_2()
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType         = Mesh::SizeType;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 30;
+        SizeType ny = scale * 30;
+
+        FunctionSpace space;
+        space.build(
+            world,
+            {nx, ny},
+            {0.0, 0.0},
+            {1.0, 1.0}
+        );
+
+        poisson_problem(space, true);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_2);
+
+    static void petsc_dm_mvar_poisson_3()
     {
         static const int Dim = 3;
         static const int NVars = Dim;
 
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformHex8;
-        // using Elem             = utopia::PetscUniformQuad4;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
 
@@ -574,16 +603,9 @@ namespace utopia {
             {1.0, 1.0, 1.0}
         );
 
-        // space.build(
-        //     world,
-        //     {nx, ny},
-        //     {0.0, 0.0},
-        //     {1.0, 1.0}
-        // );
-
         poisson_problem(space, false);
     }
 
-    UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson);
+    UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_3);
 }
 
