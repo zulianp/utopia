@@ -248,9 +248,9 @@ namespace utopia {
             return mesh_->boundary_id(idx);
         }
 
-        inline static constexpr SizeType component(const SizeType &)
+        inline SizeType component(const SizeType &idx) const
         {
-            return 0;
+            return mesh_->n_components() == 1? 0 : idx % mesh_->n_components();
         }
 
         const ViewDevice &view_device() const

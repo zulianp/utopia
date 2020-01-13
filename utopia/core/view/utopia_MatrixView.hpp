@@ -275,6 +275,19 @@ namespace utopia {
         }
     };
 
+
+    template<class View>
+    UTOPIA_INLINE_FUNCTION typename Traits<View>::SizeType rows(const TensorView<View, 2> &t)
+    {
+        return t.rows();
+    }
+
+    template<class View>
+    UTOPIA_INLINE_FUNCTION typename Traits<View>::SizeType cols(const TensorView<View, 2> &t)
+    {
+        return t.cols();
+    }
+
 }
 
 #endif //UTOPIA_KOKKOS_MATRIX_VIEW_HPP

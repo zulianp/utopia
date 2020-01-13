@@ -17,7 +17,7 @@ namespace utopia {
         {
             Scalar ret = 0.0;
 
-            const SizeType n = device::min(expr.rows(), expr.cols());
+            const SizeType n = device::min(rows(expr), cols(expr));
             for(SizeType i = 0; i < n; ++i) {
                 ret += expr(i, i);
             }
@@ -25,6 +25,13 @@ namespace utopia {
             return ret;
         }
     };
+
+    template<class Expr>
+    class Traits< DeviceTrace<Expr> > : public Traits<Expr> {
+    public:
+        static const int Order = 0;
+    };
+
 
 
 }

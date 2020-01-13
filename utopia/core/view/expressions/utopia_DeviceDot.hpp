@@ -6,6 +6,24 @@ namespace utopia {
     template<class Left, class Right, int Order = Traits<Left>::Order>
     class DeviceDot {};
 
+
+    template<class Left, class Right>
+    class DeviceDot<Left, Right, 0> {
+    public:
+        using Scalar   = typename Traits<Right>::Scalar;
+        static_assert(Traits<Left>::Order  == 0, "valid only for 0-order tensors");
+        static_assert(Traits<Right>::Order == 0, "valid only for 0-order tensors");
+
+        UTOPIA_INLINE_FUNCTION static Scalar apply(
+            const Scalar &left,
+            const Scalar &right)
+        {
+            return left * right;
+        }
+
+
+    };
+
     template<class Left, class Right>
     class DeviceDot<Left, Right, 1> {
     public:
@@ -18,7 +36,7 @@ namespace utopia {
         {
             Scalar ret = 0.0;
 
-            const SizeType n = left.size();
+            const SizeType n = utopia::size(left);
             for(SizeType i = 0; i < n; ++i) {
                 ret += left(i) * right(i);
             }
@@ -40,8 +58,8 @@ namespace utopia {
         {
             Scalar ret = 0.0;
 
-            const SizeType rows = left.rows();
-            const SizeType cols = left.cols();
+            const SizeType rows = utopia::rows(left);
+            const SizeType cols = utopia::cols(left);
 
             for(SizeType i = 0; i < rows; ++i) {
                 for(SizeType j = 0; j < cols; ++j) {
@@ -52,7 +70,7 @@ namespace utopia {
             return ret;
         }
     };
-  
+
 }
 
 #endif //UTOPIA_DEVICE_DOT_HPP

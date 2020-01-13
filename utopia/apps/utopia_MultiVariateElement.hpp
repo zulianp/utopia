@@ -98,12 +98,12 @@ namespace utopia {
            univar_elem_.set(translation, h);
         }
 
-        UTOPIA_INLINE_FUNCTION NodeIndexView &nodes()
+        UTOPIA_INLINE_FUNCTION NodeIndexView nodes()
         {
             return univar_elem_.nodes();
         }
 
-        UTOPIA_INLINE_FUNCTION const NodeIndexView &nodes() const
+        UTOPIA_INLINE_FUNCTION NodeIndexView nodes() const
         {
             return univar_elem_.nodes();
         }

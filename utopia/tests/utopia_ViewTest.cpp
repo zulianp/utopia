@@ -30,6 +30,10 @@ namespace utopia {
             UTOPIA_RUN_TEST(view_norm_test);
             UTOPIA_RUN_TEST(view_eig_test);
             UTOPIA_RUN_TEST(view_diag_test);
+            UTOPIA_RUN_TEST(choose_type);
+            UTOPIA_RUN_TEST(size_test);
+            UTOPIA_RUN_TEST(strain_test);
+            UTOPIA_RUN_TEST(inner_test);
         }
 
         void array_view_test()
@@ -285,6 +289,53 @@ namespace utopia {
             V2 expected; expected.set(2.0);
 
             utopia_test_assert(approxeq(d, expected));
+        }
+
+        void choose_type()
+        {
+            StaticMatrix<Scalar, 2, 2> A;
+
+            auto a_t = transpose(A);
+            using AT = decltype(a_t);
+
+
+            static_assert(Traits<AT>::Order == 2, "must be 2nd order tensor");
+
+            auto expr = transpose(A) + A;
+            using E = decltype(expr);
+
+            DeviceNumber<Scalar> num;
+            using T = ChooseType<DeviceNumber<Scalar>, E, E>::Type;
+
+            static_assert(Traits<T>::Order == 2, "must be 2nd order tensor");
+
+
+            auto axA = 0.5 * A;
+            using AXA = decltype(axA);
+            static_assert(Traits<AXA>::Order == 2, "must be 2nd order tensor");
+        }
+
+        void size_test()
+        {
+            StaticMatrix<Scalar, 2, 2> A;
+            rows( transpose(A) );
+            utopia_test_assert((rows( transpose(A) + A )) == 2);
+        }
+
+        void strain_test()
+        {
+            StaticMatrix<Scalar, 2, 2> A, E;
+            auto expr = 0.5 * (transpose(A) + A);
+            E = expr;
+
+            static_assert(Traits<decltype(expr)>::Order == 2, "must be 2nd order tensor");
+        }
+
+        void inner_test()
+        {
+            StaticMatrix<Scalar, 2, 2> A, E;
+            auto expr = 0.5 * (transpose(A) + A);
+            utopia_test_assert( rows(expr) == 2 );
         }
     };
 

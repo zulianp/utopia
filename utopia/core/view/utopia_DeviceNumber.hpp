@@ -165,6 +165,9 @@ namespace utopia {
             return 0;
         }
 
+        inline static constexpr unsigned short size() { return 1; }
+        inline static constexpr unsigned short rows() { return 1; }
+        inline static constexpr unsigned short cols() { return 1; }
 
     private:
         Scalar value_;
@@ -175,6 +178,43 @@ namespace utopia {
     public:
         static const int Order = 0;
     };
+
+    template<class Left, class Right>
+    class MostDescriptive<Left, DeviceNumber<Right> > {
+    public:
+        using Type = typename Unwrap<Left>::Type;
+    };
+
+    template<class Left, class Right>
+    class MostDescriptive<DeviceNumber<Left>, Right > {
+    public:
+        using Type = typename Unwrap<Right>::Type;
+    };
+
+    template<typename Left, typename Right>
+    class MostDescriptive<DeviceNumber<Left>, DeviceNumber<Right> > {
+    public:
+        // typedef decltype(Left(0) + Right(0)) Type;
+        using Type = utopia::DeviceNumber<decltype(Left(0) + Right(0))>;
+    };
+
+    template<typename Scalar>
+    UTOPIA_INLINE_FUNCTION constexpr int size(const DeviceNumber<Scalar> &)
+    {
+       return 1;
+    }
+
+    template<typename Scalar>
+    UTOPIA_INLINE_FUNCTION constexpr int rows(const DeviceNumber<Scalar> &)
+    {
+       return 1;
+    }
+
+    template<typename Scalar>
+    UTOPIA_INLINE_FUNCTION constexpr int cols(const DeviceNumber<Scalar> &)
+    {
+       return 1;
+    }
 
 }
 

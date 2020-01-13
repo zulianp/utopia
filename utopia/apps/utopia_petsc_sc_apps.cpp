@@ -18,6 +18,7 @@
 #include "utopia_MassMatrixView.hpp"
 #include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_LinearElasticityView.hpp"
 
 #include <cmath>
 
@@ -34,7 +35,7 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<DMDA, NVars, Elem>;
         using SizeType         = DMDA::SizeType;
         using Scalar           = DMDA::Scalar;
-        using Point            = DMDA::Point;
+        // using Point            = DMDA::Point;
 
         PetscCommunicator world;
 
@@ -76,8 +77,8 @@ namespace utopia {
         using Elem             = utopia::PetscUniformHex8;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
         using SizeType         = Mesh::SizeType;
-        using Scalar           = Mesh::Scalar;
-        using Point            = Mesh::Point;
+        // using Scalar           = Mesh::Scalar;
+        // using Point            = Mesh::Point;
 
         PetscCommunicator world;
 
@@ -311,9 +312,9 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_dm_app);
 
     template<class FunctionSpace>
-    static void poisson_problem(FunctionSpace &space, const bool use_direct_solver)
+    static void poisson_problem(FunctionSpace &space, const bool use_direct_solver, const bool debug_matrices = false)
     {
-        using Mesh             = typename FunctionSpace::Mesh;
+        // using Mesh             = typename FunctionSpace::Mesh;
         using Elem             = typename FunctionSpace::Elem;
         using Dev              = typename FunctionSpace::Device;
         using Vector           = typename FunctionSpace::Vector;
@@ -321,17 +322,16 @@ namespace utopia {
         using Comm             = typename FunctionSpace::Comm;
 
         static const int Dim    = Elem::Dim;
-        static const int NNodes = Elem::NNodes;
+        // static const int NNodes = Elem::NNodes;
         static const int NFunctions = Elem::NFunctions;
 
-        using DevFunctionSpace = typename FunctionSpace::ViewDevice;
+        // using DevFunctionSpace = typename FunctionSpace::ViewDevice;
         using Point            = typename FunctionSpace::Point;
         using Scalar           = typename FunctionSpace::Scalar;
         using SizeType         = typename FunctionSpace::SizeType;
         using Quadrature       = utopia::Quadrature<Elem, 2>;
         using ElementMatrix    = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
-        using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
-        using DirichletBC      = utopia::DirichletBoundaryCondition<FunctionSpace>;
+        // using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
 
         Comm &comm = space.comm();
 
@@ -355,7 +355,7 @@ namespace utopia {
         for(int c = 0; c < space.n_components(); ++c) {
             space.emplace_dirichlet_condition(
                 SideSet::left(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
                     return 1.0;
                 },
                 c
@@ -363,7 +363,7 @@ namespace utopia {
 
             space.emplace_dirichlet_condition(
                 SideSet::right(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
                     return -1.0;
                 },
                 c
@@ -400,11 +400,13 @@ namespace utopia {
             auto l_view = laplacian.view_device();
             auto m_view = mass_matrix.view_device();
 
-            // disp("laplacian");
-            // l_view.describe();
+            if(debug_matrices) {
+                disp("laplacian");
+                l_view.describe();
 
-            // disp("mass_matrix");
-            // m_view.describe();
+                disp("mass_matrix");
+                m_view.describe();
+            }
 
             Dev::parallel_for(
                 space.local_element_range(),
@@ -547,7 +549,6 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
 
 
-
     static void petsc_dm_mvar_poisson_2()
     {
         static const int Dim = 2;
@@ -572,7 +573,7 @@ namespace utopia {
             {1.0, 1.0}
         );
 
-        poisson_problem(space, true);
+        poisson_problem(space, true, true);
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_2);
@@ -590,9 +591,9 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 6;
-        SizeType ny = scale * 6;
-        SizeType nz = scale * 6;
+        SizeType nx = scale * 20;
+        SizeType ny = scale * 20;
+        SizeType nz = scale * 20;
 
         FunctionSpace space;
 
@@ -607,5 +608,195 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_3);
+
+
+
+
+    template<class FunctionSpace>
+    static void linear_elasticity(FunctionSpace &space, const bool use_direct_solver, const bool debug_matrices = false)
+    {
+        // using Mesh             = typename FunctionSpace::Mesh;
+        using Elem             = typename FunctionSpace::Elem;
+        using Dev              = typename FunctionSpace::Device;
+        using Vector           = typename FunctionSpace::Vector;
+        using Matrix           = typename FunctionSpace::Matrix;
+        using Comm             = typename FunctionSpace::Comm;
+
+        static const int Dim    = Elem::Dim;
+        // static const int NNodes = Elem::NNodes;
+        static const int NFunctions = Elem::NFunctions;
+
+        // using DevFunctionSpace = typename FunctionSpace::ViewDevice;
+        using Point            = typename FunctionSpace::Point;
+        using Scalar           = typename FunctionSpace::Scalar;
+        using SizeType         = typename FunctionSpace::SizeType;
+        using Quadrature       = utopia::Quadrature<Elem, 2>;
+        using ElementMatrix    = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
+        // using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
+
+        Comm &comm = space.comm();
+
+        MPITimeStatistics stats(comm);
+
+        Quadrature quadrature;
+        auto &&space_view = space.view_device();
+
+        comm.barrier();
+        stats.start();
+
+        Matrix mat, mass_mat;
+        space.create_matrix(mat);
+        space.create_matrix(mass_mat);
+
+        Vector rhs;
+        space.create_vector(rhs);
+
+        stats.stop_and_collect("create-matrix");
+
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::top(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return 0.1 * Scalar(c==1);
+                },
+                c
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return -0.1*Scalar(c==1);
+                },
+                c
+            );
+        }
+
+        stats.start();
+
+        LinearElasticity<FunctionSpace, Quadrature> elast(space, quadrature);
+        MassMatrix<FunctionSpace, Quadrature> mass_matrix(space, quadrature);
+
+        {
+            auto mat_view      = space.assembly_view_device(mat);
+            auto mass_mat_view = space.assembly_view_device(mass_mat);
+            auto rhs_view      = space.assembly_view_device(rhs);
+
+            auto elast_view = elast.view_device();
+            auto m_view     = mass_matrix.view_device();
+
+            if(debug_matrices) {
+                disp("elast");
+                elast_view.describe();
+
+                disp("mass_matrix");
+                m_view.describe();
+            }
+
+            Dev::parallel_for(
+                space.local_element_range(),
+                UTOPIA_LAMBDA(const SizeType &i)
+            {
+                Elem e;
+
+                //FIXME this is too big for GPU stack memory for hexas
+                ElementMatrix el_mat;
+                space_view.elem(i, e);
+
+                //Assemble local elast
+                el_mat.set(0.0);
+                elast_view.assemble(i, e, el_mat);
+                space_view.add_matrix(e, el_mat, mat_view);
+
+                //Assemble local mass-matrix and reuse el_mat
+                el_mat.set(0.0);
+                m_view.assemble(i, e, el_mat);
+                space_view.add_matrix(e, el_mat, mass_mat_view);
+            });
+        }
+
+        stats.stop_and_collect("assemblies");
+
+        stats.start();
+        rhs = mass_mat * rhs;
+
+        Scalar vol = sum(mass_mat);
+        std::cout << "vol: " << vol << std::endl;
+
+        Scalar zero = sum(mat);
+        std::cout << "zero: " << zero << std::endl;
+
+        space.apply_constraints(mat, rhs);
+
+        stats.stop_and_collect("boundary conditions ");
+
+        stats.start();
+        Vector x = rhs;
+        x.set(0.0);
+
+        if(use_direct_solver) {
+            Factorization<Matrix, Vector> solver;
+            solver.solve(mat, rhs, x);
+        }  else {
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            auto prec = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
+            cg.set_preconditioner(prec);
+            cg.verbose(true);
+
+            const SizeType n_iter = space.n_dofs();
+
+            assert(n_iter > 0);
+
+            cg.max_it(n_iter);
+            cg.rtol(1e-8);
+            cg.solve(mat, rhs, x);
+        }
+
+        stats.stop_and_collect("solve");
+
+        stats.start();
+        rename("x", x);
+        space.write("X.vtk", x);
+        stats.stop_and_collect("write");
+
+        rename("rhs", rhs);
+        space.write("R.vtk", rhs);
+
+        if(comm.rank() == 0) std::cout << "n_dofs: " << space.n_dofs() << std::endl;
+
+        stats.describe(std::cout);
+    }
+
+
+    static void petsc_elasticity_3()
+    {
+        static const int Dim = 3;
+        static const int NVars = Dim;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType         = Mesh::SizeType;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 4;
+        SizeType ny = scale * 4;
+        SizeType nz = scale * 4;
+
+        FunctionSpace space;
+
+        space.build(
+            world,
+            {nx, ny, nz},
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
+        );
+
+        linear_elasticity(space, false, true);
+
+    }
+
+    UTOPIA_REGISTER_APP(petsc_elasticity_3);
 }
 

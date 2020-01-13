@@ -1,6 +1,9 @@
 #ifndef UTOPIA_DEVICE_TRANSPOSE_HPP
 #define UTOPIA_DEVICE_TRANSPOSE_HPP
 
+#include "utopia_Traits.hpp"
+#include "utopia_ViewForwardDeclarations.hpp"
+
 namespace utopia {
 
     template<class Expr>
@@ -41,6 +44,18 @@ namespace utopia {
 
     template<class InnerExpr>
     class Traits<DeviceTranspose<InnerExpr>> : public Traits<InnerExpr> {};
+
+    template<class Expr>
+    UTOPIA_INLINE_FUNCTION typename Traits<Expr>::SizeType rows(const DeviceTranspose<Expr> &t)
+    {
+        return utopia::cols(t.expr());
+    }
+
+    template<class Expr>
+    UTOPIA_INLINE_FUNCTION typename Traits<Expr>::SizeType cols(const DeviceTranspose<Expr> &t)
+    {
+        return utopia::rows(t.expr());
+    }
 }
 
 #endif //UTOPIA_DEVICE_TRANSPOSE_HPP

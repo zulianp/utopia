@@ -4,6 +4,8 @@
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_StoreAs.hpp"
+#include "utopia_ViewForwardDeclarations.hpp"
+
 #include "utopia_InlineEval.hpp"
 #include "utopia_DeviceOp.hpp"
 #include "utopia_DeviceExpression.hpp"
@@ -42,6 +44,26 @@ namespace utopia {
             return left_.size();
         }
 
+        UTOPIA_INLINE_FUNCTION const Left &left() const
+        {
+            return left_;
+        }
+
+        UTOPIA_INLINE_FUNCTION const Right &right() const
+        {
+            return right_;
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType rows() const
+        {
+            return right_.rows();
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType cols() const
+        {
+            return right_.cols();
+        }
+
     private:
         UTOPIA_STORE_CONST(Left)  left_;
         UTOPIA_STORE_CONST(Right) right_;
@@ -67,6 +89,26 @@ namespace utopia {
             return DeviceOp<Scalar, Op>::apply(left_, right_(i));
         }
 
+        UTOPIA_INLINE_FUNCTION const Left &left() const
+        {
+            return left_;
+        }
+
+        UTOPIA_INLINE_FUNCTION const Right &right() const
+        {
+            return right_;
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType rows() const
+        {
+            return right_.rows();
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType cols() const
+        {
+            return right_.cols();
+        }
+
     private:
         const Left left_;
         UTOPIA_STORE_CONST(Right) right_;
@@ -74,6 +116,22 @@ namespace utopia {
 
     template<class Left, class Right, class Operation>
     class Traits< DeviceBinary<Left, Right, Operation> > : public Traits< typename MostDescriptive<Left, Right>::Type > {};
+
+    template<class Left, class Right, class Operation>
+    UTOPIA_INLINE_FUNCTION
+    typename Traits<DeviceBinary<Left, Right, Operation>>::SizeType
+    rows(const DeviceBinary<Left, Right, Operation> &expr)
+    {
+        return expr.rows();
+    }
+
+    template<class Left, class Right, class Operation>
+    UTOPIA_INLINE_FUNCTION
+    typename Traits<DeviceBinary<Left, Right, Operation> >::SizeType
+    cols(const DeviceBinary<Left, Right, Operation> &expr)
+    {
+        return expr.cols();
+    }
 }
 
 #endif
