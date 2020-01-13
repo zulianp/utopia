@@ -373,6 +373,18 @@ namespace utopia {
         DeviceEigenValues<Expr>::apply(expr.derived(), eigen_values);
     }
 
+    template<class Expr, class Values, class Vectors>
+    UTOPIA_INLINE_FUNCTION void eig(
+        const DeviceExpression<Expr> &expr,
+        Values &eigen_values,
+        Vectors &eigen_vectors
+        )
+    {
+        DeviceEigenValues<Expr>::apply(expr.derived(), eigen_values);
+        DeviceEigenVectors<Expr>::apply(expr.derived(), eigen_values, eigen_vectors);
+    }
+
+
     template<class Expr, class Result>
     UTOPIA_INLINE_FUNCTION void sv(
         const DeviceExpression<Expr> &expr,

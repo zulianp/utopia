@@ -28,7 +28,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(view_transpose_test);
             UTOPIA_RUN_TEST(view_trace_test);
             UTOPIA_RUN_TEST(view_norm_test);
-            UTOPIA_RUN_TEST(view_eig_test);
+            UTOPIA_RUN_TEST(view_eig_2_test);
             UTOPIA_RUN_TEST(view_diag_test);
             UTOPIA_RUN_TEST(choose_type);
             UTOPIA_RUN_TEST(size_test);
@@ -266,17 +266,45 @@ namespace utopia {
             utopia_test_assert(approxeq(2.0, n_infty));
         }
 
-        void view_eig_test()
+        void view_eig_2_test()
         {
             using V2 = utopia::StaticVector2<Scalar>;
             using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
             Mat2x2 A; A.set(2.0);
+            A(0, 0) = 1;
 
             V2 e;
+            Mat2x2 v;
 
-            eig(A, e);
-            // disp(e);
+            eig(A, e, v);
+
+            //Oracle from MATLAB
+            utopia_test_assert( approxeq(e[0], -0.561552812808830, 1e-10) );
+            utopia_test_assert( approxeq(e[1],  3.561552812808830, 1e-10) );
+
+            //first vector
+            utopia_test_assert( approxeq(v(0,0),  -0.788205438016109, 1e-10) );
+            utopia_test_assert( approxeq(v(1,0),   0.615412209402636 , 1e-10) );
+
+            //second vector
+            utopia_test_assert( approxeq(v(0,1),  0.615412209402636, 1e-10) );
+            utopia_test_assert( approxeq(v(1,1),  0.788205438016109, 1e-10) );
         }
+
+        // void view_eig_3_test()
+        // {
+        //     using V3 = utopia::StaticVector3<Scalar>;
+        //     using Mat3x3 = utopia::StaticMatrix<Scalar, 3, 3>;
+        //     Mat3x3 A; A.set(3.0);
+        //     A(0, 0) = 1;
+
+        //     V3 e;
+        //     Mat3x3 v;
+
+        //     eig(A, e, v);
+
+        //     disp(e);
+        // }
 
         void view_diag_test()
         {

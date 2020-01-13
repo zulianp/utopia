@@ -183,6 +183,26 @@ namespace utopia {
             Scale<Array>::apply(alpha, in_out);
         }
 
+        template<class Array>
+        class ShiftDiag {
+        public:
+            template<typename Scalar>
+            UTOPIA_INLINE_FUNCTION static void apply(const Scalar &alpha, Array &in_out)
+            {
+                const SizeType n = device::min(extent(in_out, 0), extent(in_out, 1));
+                for(SizeType i = 0; i < n; ++i) {
+                    in_out(i, i) += alpha;
+                }
+            }
+        };
+
+        template<class Array, typename Scalar>
+        UTOPIA_INLINE_FUNCTION void shift_diag(const Scalar &alpha, Array &in_out)
+        {
+            ShiftDiag<Array>::apply(alpha, in_out);
+        }
+
+
         template<class X, class Y>
         class AXPY {
         public:

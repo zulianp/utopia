@@ -220,6 +220,11 @@ namespace utopia {
             device::mm(view_, right.view_, result.view_);
         }
 
+        UTOPIA_INLINE_FUNCTION void shift_diag(const Scalar &alpha)
+        {
+            device::shift_diag(alpha, view_);
+        }
+
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)
         {
             device::fill(alpha, view_);
