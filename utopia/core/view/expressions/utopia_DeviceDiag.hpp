@@ -28,6 +28,16 @@ namespace utopia {
             return expr_(i, i);
         }
 
+        UTOPIA_INLINE_FUNCTION SizeType rows() const
+        {
+            return expr_.size();
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType cols() const
+        {
+            return expr_.size();
+        }
+
     private:
         UTOPIA_STORE_CONST(InnerExpr) expr_;
     };

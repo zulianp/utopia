@@ -225,7 +225,7 @@ namespace utopia {
 
         template<class H>
         UTOPIA_INLINE_FUNCTION void set(
-            const StaticVector3<Scalar> &translation,
+            const Point &translation,
             const H &h)
         {
             translation_(0) = translation(0);
@@ -257,14 +257,14 @@ namespace utopia {
             return NNodes;
         }
 
-        UTOPIA_INLINE_FUNCTION const StaticVector2<Scalar> &translation() const
+        UTOPIA_INLINE_FUNCTION const Point &translation() const
         {
             return translation_;
         }
 
     private:
         Scalar h_[3];
-        StaticVector3<Scalar> translation_;
+        Point translation_;
         NodeIndexView nodes_;
     };
 

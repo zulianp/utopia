@@ -65,6 +65,9 @@ namespace utopia {
     template<class Expr>
     class DeviceSingularValues;
 
+    template<class T>
+    class DeviceIdentity;
+
     template<typename T, Size_t... Args>
     class ArrayView;
 

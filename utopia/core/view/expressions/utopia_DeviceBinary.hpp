@@ -12,6 +12,44 @@
 
 namespace utopia {
 
+    template<class T>
+    class HasSize {
+    public:
+        static const int value = 1;
+    };
+
+    template<class Left, class Right, int LeftHasSize = HasSize<Left>::value, int RightHasSize = HasSize<Right>::value>
+    class GetSize {
+    public:
+        using SizeType = typename Traits<Right>::SizeType;
+
+        UTOPIA_INLINE_FUNCTION static constexpr SizeType rows(const Left &, const Right &r)
+        {
+            return r.rows();
+        }
+
+        UTOPIA_INLINE_FUNCTION static constexpr SizeType cols(const Left &, const Right &r)
+        {
+            return r.cols();
+        }
+    };
+
+    template<class Left, class Right>
+    class GetSize<Left, Right, 1, 0> {
+    public:
+        using SizeType = typename Traits<Left>::SizeType;
+
+        UTOPIA_INLINE_FUNCTION static constexpr SizeType rows(const Left &l, const Right &)
+        {
+            return l.rows();
+        }
+
+        UTOPIA_INLINE_FUNCTION static constexpr SizeType cols(const Left &l, const Right &)
+        {
+            return l.cols();
+        }
+    };
+
     template<class Left, class Right, class Op>
     class DeviceBinary : public DeviceExpression<DeviceBinary<Left, Right, Op>> {
     public:
@@ -56,12 +94,12 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION SizeType rows() const
         {
-            return right_.rows();
+            return GetSize<Left, Right>::rows(left_, right_);
         }
 
         UTOPIA_INLINE_FUNCTION SizeType cols() const
         {
-            return right_.cols();
+            return GetSize<Left, Right>::cols(left_, right_);
         }
 
     private:
@@ -112,6 +150,12 @@ namespace utopia {
     private:
         const Left left_;
         UTOPIA_STORE_CONST(Right) right_;
+    };
+
+    template<class Left, class Right, class Op>
+    class HasSize< DeviceBinary<Left, Right, Op> > {
+    public:
+        static const int value = HasSize<Left>::value || HasSize<Right>::value;
     };
 
     template<class Left, class Right, class Operation>

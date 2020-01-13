@@ -23,6 +23,7 @@
 #include "utopia_DeviceEigenValues.hpp"
 #include "utopia_DeviceEigenVectors.hpp"
 #include "utopia_DeviceDiag.hpp"
+#include "utopia_DeviceIdentity.hpp"
 
 namespace utopia {
 

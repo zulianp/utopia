@@ -6,6 +6,10 @@
 
 #ifdef WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
+#else
+#include <cmath>
+#include <algorithm>
+#include <limits>
 #endif
 
 namespace utopia {
@@ -32,6 +36,14 @@ namespace utopia {
         }
 
         template<typename T>
+        UTOPIA_INLINE_FUNCTION void swap(T &left, T &right)
+        {
+            T temp = std::move(left);
+            left = right;
+            right = std::move(temp);
+        }
+
+        template<typename T>
         UTOPIA_INLINE_FUNCTION T sqrt(const T &value) {
             return Kokkos::Details::ArithTraits<T>::sqrt(value);
         }
@@ -44,6 +56,24 @@ namespace utopia {
         template<typename T>
         UTOPIA_INLINE_FUNCTION T atomic_add(volatile T * const dest, const T val) {
             return Kokkos::atomic_fetch_add(dest, val);
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T cos(const T &v)
+        {
+            return Kokkos::Details::ArithTraits<T>::cos(v);
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T acos(const T &v)
+        {
+            return Kokkos::Details::ArithTraits<T>::acos(v);
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T epsilon()
+        {
+            return Kokkos::Details::ArithTraits<T>::epsilon();
         }
 
 #else
@@ -81,8 +111,39 @@ namespace utopia {
             return (*dest) += val;
         }
 
+
+        template<typename T>
+        inline T cos(const T &v)
+        {
+            return std::cos(v);
+        }
+
+        template<typename T>
+        inline T acos(const T &v)
+        {
+            return std::acos(v);
+        }
+
+        template<typename T>
+        inline void swap(T &left, T &right)
+        {
+            std::swap(left, right);
+        }
+
+        template<typename T>
+        inline T epsilon()
+        {
+            return std::numeric_limits<T>::epsilon();
+        }
+
+
 #endif //KOKKOS_INLINE_FUNCTION
 
+        template<typename Scalar>
+        UTOPIA_INLINE_FUNCTION constexpr Scalar pi()
+        {
+            return M_PI;
+        }
 
         //FIXME use impl and specialize based on Input type
         template<class InputIterator, class OutputIterator>

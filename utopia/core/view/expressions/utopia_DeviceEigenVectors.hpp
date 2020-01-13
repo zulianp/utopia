@@ -22,12 +22,12 @@ namespace utopia {
     template<class Expr>
     class DeviceEigenVectors :  public DeviceExpression<DeviceEigenVectors<Expr>> {
     public:
-        using Scalar = typename Traits<Expr>::Scalar;
+        using Scalar   = typename Traits<Expr>::Scalar;
+        using SizeType = typename Traits<Expr>::SizeType;
 
         template<class Vector, class ResultMat>
         UTOPIA_INLINE_FUNCTION static void apply_2(const Expr &mat, const Vector &eigen_values, ResultMat &result)
         {
-            Vector eig_temp;
             result.copy(mat);
 
             Scalar &u1 = result(0, 0), &u2 = result(1, 0);
@@ -51,11 +51,31 @@ namespace utopia {
         template<class Vector, class ResultMat>
         UTOPIA_INLINE_FUNCTION static void apply_3(const Expr &mat, const Vector &eigen_values, ResultMat &result)
         {
-            Vector eig_temp;
-            result.copy(mat);
+            UTOPIA_DEVICE_ASSERT(!mat.is_alias(result));
 
+            //expressions (not evaluated)
+            auto Am1 = mat - eigen_values[0] * device::identity<Scalar>();
+            auto Am2 = mat - eigen_values[1] * device::identity<Scalar>();
+            auto Am3 = mat - eigen_values[2] * device::identity<Scalar>();
 
+            const SizeType n = utopia::rows(mat);
 
+            //expressions (not evaluated)
+            auto E1 = Am2 * Am3;
+            auto E2 = Am3 * Am1;
+            auto E3 = Am1 * Am2;
+
+            const SizeType j1 = find_non_zero_col(n, E1);
+            const SizeType j2 = find_non_zero_col(n, E2);
+            const SizeType j3 = find_non_zero_col(n, E3);
+
+            copy_col(n, j1, E1, 0, result);
+            copy_col(n, j2, E2, 1, result);
+            copy_col(n, j3, E3, 2, result);
+
+            normalize_col(n, 0, result);
+            normalize_col(n, 1, result);
+            normalize_col(n, 2, result);
         }
 
         template<class Vector, class ResultMat>
@@ -77,6 +97,62 @@ namespace utopia {
                     UTOPIA_DEVICE_ASSERT(false);
                     return;
                 }
+            }
+        }
+
+    private:
+
+        template<class MatExpr>
+        UTOPIA_INLINE_FUNCTION static SizeType find_non_zero_col(const SizeType &n, const MatExpr &mat)
+        {
+
+            for(SizeType j = 0; j < n; ++j) {
+
+                bool is_zero = true;
+                for(SizeType i = 0; i < n; ++i) {
+
+                    if(!device::approxeq(mat(i, j), 0.0, device::epsilon<Scalar>())) {
+                        is_zero = false;
+                        break;
+                    }
+                }
+
+                if(!is_zero) {
+                    return j;
+                }
+            }
+
+            UTOPIA_DEVICE_ASSERT(false);
+            return 0;
+        }
+
+        template<class From, class To>
+        UTOPIA_INLINE_FUNCTION static void copy_col(
+            const SizeType &n,
+            const SizeType &from_col,
+            const From &from,
+            const SizeType &to_col,
+            To &to)
+        {
+            for(SizeType i = 0; i < n; ++i) {
+                to(i, to_col) = from(i, from_col);
+            }
+        }
+
+
+        template<class Mat>
+        UTOPIA_INLINE_FUNCTION static void normalize_col(const SizeType &n, const SizeType &j, Mat &mat)
+        {
+            Scalar len = 0;
+            for(SizeType i = 0; i < n; ++i) {
+                const Scalar v = mat(i, j);
+                len += v*v;
+            }
+
+            len = device::sqrt(len);
+
+            for(SizeType i = 0; i < n; ++i) {
+                mat(i, j) /= len;
             }
         }
 
