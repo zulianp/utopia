@@ -7,30 +7,45 @@
 
 namespace utopia {
 
-
-
-    template<class Space, class Quadrature>
+    template<
+        class FunctionSpaceView,
+        class GradInterpolateView,
+        class Elem = typename FunctionSpaceView::Elem,
+        class MemType = typename Elem::MemType,
+        typename...
+    >
     class PrincipalStrainsView {
     public:
+        using Scalar   = typename Elem::Scalar;
+        using SizeType = typename Elem::SizeType;
 
+        PrincipalStrainsView(const GradInterpolateView &grad)
+        : grad_(grad)
+        {}
+
+        template<class Values>
+        UTOPIA_INLINE_FUNCTION void get(const std::size_t &qp, const Elem &elem, Values &values) const
+        {
+            // grad_
+        }
+
+        GradInterpolateView grad_;
     };
 
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
-    class PrincipalStrains {
-    public:
-
-    };
+    class PrincipalStrains {};
 
     template<class Mesh, int NComponents, class Quadrature, typename...Args>
     class PrincipalStrains< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
     public:
         using FunctionSpace           = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Vector                  = typename FunctionSpace::Vector;
+        using GradInterpolate         = utopia::GradInterpolate<FunctionSpace, Quadrature>;
 
-        using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
-        using QuadratureViewDevice    = typename Quadrature::ViewDevice;
+        using FunctionSpaceViewDevice   = typename FunctionSpace::ViewDevice;
+        using GradInterpolateViewDevice = typename GradInterpolate::ViewDevice;
 
-        using ViewDevice              = utopia::PrincipalStrainsView<FunctionSpaceViewDevice, QuadratureViewDevice>;
+        using ViewDevice              = utopia::PrincipalStrainsView<FunctionSpaceViewDevice, GradInterpolateViewDevice>;
 
 
         PrincipalStrains(const FunctionSpace &space, const Quadrature &q)
@@ -50,7 +65,7 @@ namespace utopia {
         }
 
     private:
-        GradInterpolate<FunctionSpace, Quadrature> grad_;
+        GradInterpolate grad_;
         std::shared_ptr<const Vector> vec_;
     };
 

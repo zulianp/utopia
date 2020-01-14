@@ -151,9 +151,6 @@ namespace utopia {
            const VectorView &vec,
            Values &values)
        {
-            assert(var_offset == 0);
-            assert(NComponents == 1);
-
             DofIndexNonConst dofs;
             dofs_local(mesh, var_offset, e.idx(), dofs);
             const SizeType n = dofs.size();

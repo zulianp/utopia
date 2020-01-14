@@ -840,7 +840,7 @@ namespace utopia {
                 ElemView e;
                 space_view.elem(i, e);
 
-                auto el_grad_u = grad_u_view.make(i, e);
+                auto el_grad_u = grad_u_view.make(e);
 
                 disp(el_grad_u);
 

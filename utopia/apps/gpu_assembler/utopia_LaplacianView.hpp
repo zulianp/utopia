@@ -81,8 +81,8 @@ namespace utopia {
             Elem e;
             space.elem(0, e);
 
-            auto g  = grad_view.make(0, e);
-            auto dx = dx_view.make(0, e);
+            auto g  = grad_view.make(e);
+            auto dx = dx_view.make(e);
 
             mat_.set(0.0);
             assemble(g, dx, mat_);

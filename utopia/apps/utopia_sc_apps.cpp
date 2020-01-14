@@ -154,8 +154,8 @@ namespace utopia {
             space_view.elem(i, e);
 
             //element-wise extraction
-            const auto grad = g_view.make(i, e);
-            const auto dx   = d_view.make(i, e);
+            const auto grad = g_view.make(e);
+            const auto dx   = d_view.make(e);
 
             mat.set(0.0);
 

@@ -32,20 +32,20 @@ namespace utopia {
             return grad_.n_points();
         }
 
-        UTOPIA_INLINE_FUNCTION Eval make(const std::size_t &i, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION Eval make(const Elem &elem) const
         {
             Eval values;
-            get(i, elem, values);
+            get(elem, values);
             return values;
         }
 
         template<class Values>
-        UTOPIA_INLINE_FUNCTION void get(const std::size_t &i, const Elem &elem, Values &values) const
+        UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Values &values) const
         {
             Coeff elem_coeff;
             coeff_.get(elem, elem_coeff);
 
-            auto grad_i = grad_.make(i, elem);
+            auto grad_i = grad_.make(elem);
 
             const auto n = grad_i.n_points();
             for(SizeType k = 0; k < n; ++k) {

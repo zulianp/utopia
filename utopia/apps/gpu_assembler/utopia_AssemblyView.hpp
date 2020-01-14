@@ -27,7 +27,7 @@ namespace utopia {
             return q_.n_points();
         }
 
-        UTOPIA_INLINE_FUNCTION PhysicalPoint make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION PhysicalPoint make(const Elem &elem) const
         {
             PhysicalPoint pp(q_);
             pp.elem_ = &elem;
@@ -101,7 +101,7 @@ namespace utopia {
             return Elem::NFunctions;
         }
 
-        UTOPIA_INLINE_FUNCTION PhysicalGradient make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION PhysicalGradient make(const Elem &elem) const
         {
             PhysicalGradient pp(q_);
             pp.elem_ = &elem;
@@ -174,7 +174,7 @@ namespace utopia {
             return Elem::NFunctions;
         }
 
-        UTOPIA_INLINE_FUNCTION ShapeFunction make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION ShapeFunction make(const Elem &elem) const
         {
             ShapeFunction pp(q_);
             pp.elem_ = &elem;
@@ -245,7 +245,7 @@ namespace utopia {
             return q_.n_points();
         }
 
-        UTOPIA_INLINE_FUNCTION Differential make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION Differential make(const Elem &elem) const
         {
             Differential pp(q_);
             pp.elem_ = &elem;

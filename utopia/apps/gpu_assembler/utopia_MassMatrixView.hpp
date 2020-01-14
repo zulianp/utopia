@@ -72,8 +72,8 @@ namespace utopia {
             Elem e;
             space.elem(0, e);
 
-            auto f  = fun_view.make(0, e);
-            auto dx = dx_view.make(0, e);
+            auto f  = fun_view.make(e);
+            auto dx = dx_view.make(e);
 
             mat_.set(0.0);
             assemble(f, dx, mat_);
@@ -109,9 +109,9 @@ namespace utopia {
 
             template<typename SizeType, class Elem, class Function, class Accumulator>
             UTOPIA_INLINE_FUNCTION void assemble(const SizeType &i, const Elem &e, Function f, Accumulator &acc) const {
-                auto dx          = dx_.make(i, e);
-                auto interpolate = interpolate_.make(i, e);
-                auto fun         = interpolate_.fun().make(i, e);
+                auto dx          = dx_.make(e);
+                auto interpolate = interpolate_.make(e);
+                auto fun         = interpolate_.fun().make(e);
 
                 assemble_aux(fun, dx, interpolate, f, acc);
             }
