@@ -892,6 +892,8 @@ namespace utopia {
         Vector x = rhs;
         x.set(0.0);
 
+        disp("Solving...");
+
         if(use_direct_solver) {
             Factorization<Matrix, Vector> solver;
             solver.solve(mat, rhs, x);
@@ -906,7 +908,7 @@ namespace utopia {
             assert(n_iter > 0);
 
             cg.max_it(n_iter);
-            cg.rtol(1e-8);
+            cg.rtol(1e-6);
             cg.solve(mat, rhs, x);
         }
 
@@ -944,9 +946,9 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 10;
-        SizeType ny = scale * 10;
-        SizeType nz = scale * 10;
+        SizeType nx = scale * 20;
+        SizeType ny = scale * 20;
+        SizeType nz = scale * 20;
 
         FunctionSpace space;
 

@@ -97,6 +97,13 @@ namespace utopia {
             tensor_.c_add(i, j, value);
         }
 
+        //FIXME is not atomic
+        template<class Index, class Values>
+        inline void atomic_add_matrix(const Index &I, const Index &J, const Values &V) const
+        {
+            tensor_.add_matrix(I, J, V);
+        }
+
         DeviceView(T &tensor, WriteMode wm = utopia::AUTO) : tensor_(tensor), lock_(std::make_shared<Write<T>>(tensor, wm)) {}
 
     private:

@@ -104,12 +104,15 @@ namespace utopia {
                 DofIndexNonConst indices;
                 dofs(mesh, var_offset, e.idx(), indices);
 
-                const SizeType n_dofs = indices.size();
-                for(SizeType i = 0; i < n_dofs; ++i) {
-                    for(SizeType j = 0; j < n_dofs; ++j) {
-                        mat.atomic_add(indices[i], indices[j], el_mat(i, j));
-                    }
-                }
+                // const SizeType n_dofs = indices.size();
+                // for(SizeType i = 0; i < n_dofs; ++i) {
+                //     for(SizeType j = 0; j < n_dofs; ++j) {
+                //         mat.atomic_add(indices[i], indices[j], el_mat(i, j));
+                //     }
+                // }
+
+                //Potentially breaks 
+                mat.atomic_add_matrix(indices, indices, &el_mat(0, 0));
             }
        }
 
