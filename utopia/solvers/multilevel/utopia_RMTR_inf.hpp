@@ -32,8 +32,8 @@ namespace utopia
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_inf final:   public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MultilevelVariableBoundSolverInterface<Matrix, Vector>
+    template<class Matrix, class Vector, class MLConstraints,  MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
+    class RMTR_inf final:   public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MLConstraints
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -50,8 +50,8 @@ namespace utopia
         typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
 
 
-        typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector>  MLConstraints;
-        using utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector>::check_feasibility; 
+        // typedef MultilevelConstrInterface  MLConstraints;
+        using MLConstraints::check_feasibility; 
 
     public:
 
@@ -151,10 +151,10 @@ namespace utopia
                 _tr_subproblems[l]->init_memory(dofs[l]); 
             }               
 
-            // precompute norms of prolongation operators needed for projections of constraints...
+            // TODO:: precompute norms of prolongation operators needed for projections of constraints...
             for(auto l = 0; l < fine_level; l++){
                 this->transfer(l).init_memory(); 
-                this->constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
+                // this->constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
             }
         }
 
@@ -246,8 +246,17 @@ namespace utopia
             std::shared_ptr<Vector> & lb = _tr_subproblems[level]->lower_bound(); 
             std::shared_ptr<Vector> & ub = _tr_subproblems[level]->upper_bound(); 
 
-            *lb = this->constraints_memory_.active_lower[level] - this->memory_.x[level];
-            *ub = this->constraints_memory_.active_upper[level] - this->memory_.x[level];
+            const Vector & active_lower = this->active_lower(level); 
+            const Vector & active_upper = this->active_upper(level); 
+
+            // disp(active_lower, "active_lower"); 
+            // disp(active_upper, "active_upper"); 
+
+            *lb = active_lower - this->memory_.x[level];
+            *ub = active_upper - this->memory_.x[level];
+
+            // disp(*lb, "*lb"); 
+            // disp(*ub, "*ub");             
 
             {
                 parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
@@ -258,6 +267,9 @@ namespace utopia
                     return (xi <= radius)  ? xi : radius;
                 });
             }            
+
+            // disp(*lb, "*lb"); 
+            // disp(*ub, "*ub"); 
 
             Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
             if(_tr_subproblems[level]->atol() > atol_level){
@@ -281,10 +293,10 @@ namespace utopia
             if(has_nan_or_inf(this->memory_.s[level])){
                 this->memory_.s[level].set(0.0); 
             }
-            else{
+            // else{
                 // ----- just for debugging pourposes, to be deleted in future... ----------------
-                MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]); 
-            }
+                // MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]); 
+            // }
 
 
             return true;

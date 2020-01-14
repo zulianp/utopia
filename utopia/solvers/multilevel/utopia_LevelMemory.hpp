@@ -129,7 +129,38 @@ namespace utopia
         std::vector<Scalar> P_inf_norm;
     };
 
+
+    template<class Vector>
+    class ActiveConstraintsLevelMemory
+    {
+        typedef UTOPIA_SCALAR(Vector)        Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)     SizeType;
+
+        public:
+            void init_memory(const std::vector<SizeType> & n_dofs_)
+            {
+                const auto n_levels = n_dofs_.size(); 
+
+                active_lower.resize(n_levels);
+                active_upper.resize(n_levels);
+
+                P_inf_norm.resize(n_levels);
+                const Scalar inf = std::numeric_limits<Scalar>::infinity();
+
+                for(auto l=0; l < n_levels; l++){
+                    active_lower[l] = local_values(n_dofs_[l], -inf); 
+                    active_upper[l] = local_values(n_dofs_[l], inf); 
+                }
+            }
+
+        std::vector<Vector> active_lower, active_upper;
+        std::vector<Scalar> P_inf_norm;
+    };
+
+
 }
 
 #endif //UTOPIA_LEVEL_MEMORY_HPP
+
+
 

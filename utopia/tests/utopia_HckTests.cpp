@@ -539,31 +539,31 @@ namespace utopia
 
                 // ---------------------- TODO:: investigate why we get negative alpha --------------
                 // auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
-                // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+                // // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
 
-                auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                // auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                // auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 
-                auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+                // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
-                // Set TR-QP strategies
-                rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-                rmtr->set_fine_tr_strategy(tr_strategy_fine);
+                // // Set TR-QP strategies
+                // rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+                // rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
-                // Transfers and objective functions
-                rmtr->set_transfer_operators(multilevel_problem.get_transfer());
-                rmtr->set_functions( multilevel_problem.get_functions());
-
-
-                rmtr->read(input_params_);
-                rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
-                rmtr->verbose(verbose_);
-                // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-                rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+                // // Transfers and objective functions
+                // rmtr->set_transfer_operators(multilevel_problem.get_transfer());
+                // rmtr->set_functions( multilevel_problem.get_functions());
 
 
-                // Solve
-                rmtr->solve(x);
+                // rmtr->read(input_params_);
+                // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+                // rmtr->verbose(verbose_);
+                // // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+                // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+
+
+                // // Solve
+                // rmtr->solve(x);
 
                 if(output_vtk_)
                     fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");
@@ -729,32 +729,32 @@ namespace utopia
             auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 
-            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, GALERKIN> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, GALERKIN> >(n_levels_);
 
-            // Set TR-QP strategies
-            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+            // // Set TR-QP strategies
+            // rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+            // rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
-            // Transfers and objective functions
-            rmtr->set_transfer_operators(transfers_tril);
-            rmtr->set_functions(level_functions_tril);
+            // // Transfers and objective functions
+            // rmtr->set_transfer_operators(transfers_tril);
+            // rmtr->set_functions(level_functions_tril);
 
-            // add constraints
-            Vector lb = local_values(local_size(x_fine), -9e9);
-            Vector ub = local_values(local_size(x_fine), 1.1);
+            // // add constraints
+            // Vector lb = local_values(local_size(x_fine), -9e9);
+            // Vector ub = local_values(local_size(x_fine), 1.1);
 
-            auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-            rmtr->set_box_constraints(box);
+            // auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+            // rmtr->set_box_constraints(box);
 
 
-            rmtr->read(input_params_);
-            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
-            rmtr->verbose(verbose_);
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            // rmtr->read(input_params_);
+            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+            // rmtr->verbose(verbose_);
+            // // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
-            // Solve
-            rmtr->solve(x_fine);
+            // // Solve
+            // rmtr->solve(x_fine);
         }
 
 
@@ -880,48 +880,48 @@ namespace utopia
             std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_tril;
             get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine);
 
-            auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+           //  auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
-            auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            tr_strategy_fine->atol(1e-12);
-           //  tr_strategy_fine->verbose(true);
-            auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            tr_strategy_coarse->atol(1e-12);
+           //  auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+           //  tr_strategy_fine->atol(1e-12);
+           // //  tr_strategy_fine->verbose(true);
+           //  auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+           //  tr_strategy_coarse->atol(1e-12);
 
-            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
-            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+           //  rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+           //  rmtr->set_fine_tr_strategy(tr_strategy_fine);
 
-            // here, we can set also hessian approx strategy for individually
-            SizeType memory_size = 5;
-            auto hes_approx   = std::make_shared< LBFGS<Vector> >(memory_size);
-            rmtr->set_hessian_approximation_strategy(hes_approx);
+           //  // here, we can set also hessian approx strategy for individually
+           //  SizeType memory_size = 5;
+           //  auto hes_approx   = std::make_shared< LBFGS<Vector> >(memory_size);
+           //  rmtr->set_hessian_approximation_strategy(hes_approx);
 
-            // Transfers and objective functions
-            rmtr->set_transfer_operators(transfers_tril);
-            rmtr->set_functions(level_functions_tril);
+           //  // Transfers and objective functions
+           //  rmtr->set_transfer_operators(transfers_tril);
+           //  rmtr->set_functions(level_functions_tril);
 
-            // add constraints
-            // Vector lb = local_values(local_size(x_fine), -9e9);
-            // Vector ub = local_values(local_size(x_fine), 1.1);
+           //  // add constraints
+           //  // Vector lb = local_values(local_size(x_fine), -9e9);
+           //  // Vector ub = local_values(local_size(x_fine), 1.1);
 
-            // auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-            // rmtr->set_box_constraints(box);
+           //  // auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+           //  // rmtr->set_box_constraints(box);
 
-            rmtr->read(input_params_);
-            rmtr->pre_smoothing_steps(10);
-            rmtr->post_smoothing_steps(10);
-            rmtr->max_coarse_it(10);
+           //  rmtr->read(input_params_);
+           //  rmtr->pre_smoothing_steps(10);
+           //  rmtr->post_smoothing_steps(10);
+           //  rmtr->max_coarse_it(10);
 
-            rmtr->max_sucessful_smoothing_it(5);
-            rmtr->max_sucessful_coarse_it(10);
+           //  rmtr->max_sucessful_smoothing_it(5);
+           //  rmtr->max_sucessful_coarse_it(10);
 
-            rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
-            rmtr->verbose(verbose_);
-           //  rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+           //  rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+           //  rmtr->verbose(verbose_);
+           // //  rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+           //  rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
-            // Solve
-            rmtr->solve(x_fine);
+           //  // Solve
+           //  rmtr->solve(x_fine);
 
             // disp(x_fine);
         }

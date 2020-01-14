@@ -190,9 +190,6 @@ namespace utopia
                     }
                 }
 
-                // disp(P, "P"); 
-
-
                 // this->transfers_[i] = std::make_shared<IPTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I));
                 // this->transfers_[i] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I));
                 this->transfers_[i] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I), std::make_shared<Matrix>(P));

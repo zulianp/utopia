@@ -28,7 +28,9 @@ namespace utopia {
 
     template class Multigrid<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL>;
     template class RMTR<PetscMatrix, PetscVector, FIRST_ORDER>;
-    template class RMTR_inf<PetscMatrix, PetscVector>;
+
+    // TODO:: put back 
+    // template class RMTR_inf<PetscMatrix, PetscVector>;
 
     template class FAS<PetscMatrix, PetscVector>;
     template class MG_OPT<PetscMatrix, PetscVector>;
