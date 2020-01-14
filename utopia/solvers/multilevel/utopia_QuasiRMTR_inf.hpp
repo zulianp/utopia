@@ -32,7 +32,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class QuasiRMTR_inf :   public RMTR<Matrix, Vector, CONSISTENCY_LEVEL>,  public MultilevelVariableBoundSolverInterface<Vector>
+    class QuasiRMTR_inf :   public RMTR<Matrix, Vector, CONSISTENCY_LEVEL>,  public MultilevelVariableBoundSolverInterface<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -43,19 +43,15 @@ namespace utopia
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
-
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
-
 
         typedef utopia::BoxConstraints<Vector>                          BoxConstraints;
         typedef utopia::RMTR<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
 
-
         typedef utopia::HessianApproximation<Vector>    HessianApproximation;
         typedef std::shared_ptr<HessianApproximation>   HessianApproxPtr;
 
-        typedef utopia::MultilevelVariableBoundSolverInterface<Vector>  MLConstraints;
-
+        typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector>  MLConstraints;
 
         static_assert(utopia::is_first_order<CONSISTENCY_LEVEL>::value, "utopia::QuasiRMTR does not support second order, nor galerkin consistency, nor Galerkin.");
 
@@ -221,7 +217,7 @@ namespace utopia
             RMTR::init_level(level);
 
             const SizeType finer_level = level+1;
-            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level], this->transfer(level)); 
+            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level]); 
         }
 
 

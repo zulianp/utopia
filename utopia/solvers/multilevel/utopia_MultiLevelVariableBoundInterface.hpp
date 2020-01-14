@@ -16,34 +16,35 @@
 
 namespace utopia
 {
-    template<class Vector>
+    template<class Matrix, class Vector>
     class MultilevelVariableBoundSolverInterface 
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
         typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
-        
+
         using Device   = typename Traits<Vector>::Device;
 
 
     public:
-        MultilevelVariableBoundSolverInterface(): has_box_constraints_(false)
+        MultilevelVariableBoundSolverInterface(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer): 
+                                                has_box_constraints_(false), 
+                                                transfer_(transfer)
         {
 
         }
 
         virtual ~MultilevelVariableBoundSolverInterface() = default;
 
-
         virtual void set_box_constraints(BoxConstraints & box)
         {
-          box_constraints_ = box;
-          has_box_constraints_ = true;
+            box_constraints_ = box;
+            has_box_constraints_ = true;
         }
 
         virtual BoxConstraints & get_box_constraints()
         {
-          return box_constraints_;
+            return box_constraints_;
         }
 
 
@@ -99,6 +100,7 @@ namespace utopia
         virtual bool check_feasibility(const SizeType & level, const Vector & x)
         {
             SizeType n_terminates = 0;
+            // active lower/upper
             {
                 auto d_u = const_device_view(constraints_memory_.tr_upper[level]);
                 auto d_l = const_device_view(constraints_memory_.tr_lower[level]);
@@ -155,12 +157,12 @@ namespace utopia
 
 
 
-        template<typename Matrix>
-        void init_level(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine, Transfer<Matrix, Vector> & transfer)
+        // template<typename Matrix>
+        void init_level(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
         {
             const SizeType finer_level = level+1;
 
-            if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&transfer))
+            if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (transfer_[level].get()))
             {
                 // constraints_memory_.tr_upper[level] =  x_finer_level + local_values(local_size(x_finer_level), delta_fine);
                 // constraints_memory_.tr_lower[level] =  x_finer_level - local_values(local_size(x_finer_level), delta_fine);
@@ -237,8 +239,8 @@ namespace utopia
 
 
                 //------------------------ new version, taking into account  positive and negative elements projection separatelly -----------------
-                transfer.project_down_positive_negative(constraints_memory_.active_lower[finer_level], constraints_memory_.active_upper[finer_level], constraints_memory_.tr_lower[level]);
-                transfer.project_down_positive_negative(constraints_memory_.active_upper[finer_level], constraints_memory_.active_lower[finer_level], constraints_memory_.tr_upper[level]);
+                transfer_[level]->project_down_positive_negative(constraints_memory_.active_lower[finer_level], constraints_memory_.active_upper[finer_level], constraints_memory_.tr_lower[level]);
+                transfer_[level]->project_down_positive_negative(constraints_memory_.active_upper[finer_level], constraints_memory_.active_lower[finer_level], constraints_memory_.tr_upper[level]);
 
             }
 
@@ -246,7 +248,7 @@ namespace utopia
             if(has_box_constraints_)
             {
 
-                if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (&transfer))
+                if( IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (transfer_[level].get()))
                 {
                     // this should be done only on first iteration as it is always same... 
                     constraints_memory_.x_lower[level] = constraints_memory_.x_lower[finer_level]; 
@@ -344,7 +346,7 @@ namespace utopia
         bool has_box_constraints_;               // as we can run rmtr with inf. norm also without constraints...      
 
         ConstraintsLevelMemory <Vector>         constraints_memory_;
-
+        const std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > & transfer_; 
 
     };
 

@@ -25,6 +25,7 @@
 
 namespace utopia
 {
+    
     /**
      * @brief      The class for RMTR in infinity norm...
      *
@@ -32,7 +33,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_inf final:   public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MultilevelVariableBoundSolverInterface<Vector>
+    class RMTR_inf final:   public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MultilevelVariableBoundSolverInterface<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -49,8 +50,8 @@ namespace utopia
         typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
 
 
-        typedef utopia::MultilevelVariableBoundSolverInterface<Vector>  MLConstraints;
-        using utopia::MultilevelVariableBoundSolverInterface<Vector>::check_feasibility; 
+        typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector>  MLConstraints;
+        using utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector>::check_feasibility; 
 
     public:
 
@@ -61,7 +62,8 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level.
         */
-        RMTR_inf(   const SizeType & n_levels): RMTR(n_levels)//,
+        RMTR_inf(   const SizeType & n_levels): RMTR(n_levels),
+                                                MLConstraints(this->transfer())
                                                 //has_box_constraints_(false) // not optional parameter
         {
 
@@ -193,7 +195,7 @@ namespace utopia
             RMTR::init_level(level);
 
             const SizeType finer_level = level+1;
-            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level], this->transfer(level)); 
+            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level]); 
 
         }
 
