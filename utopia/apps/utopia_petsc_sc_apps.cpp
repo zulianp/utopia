@@ -20,6 +20,8 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_GradInterpolate.hpp"
+#include "utopia_PrincipalStrainsView.hpp"
+#include "utopia_PhaseField.hpp"
 
 #include <cmath>
 
@@ -600,8 +602,172 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_3);
 
+    template<class FunctionSpace>
+    void compression_only_bc(FunctionSpace &space)
+    {
+        using Point  = typename FunctionSpace::Point;
+        using Scalar = typename FunctionSpace::Scalar;
+        ////////////////////////////////////
+
+        //HORIZONTAL
+        space.emplace_dirichlet_condition(
+            SideSet::left(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            1
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::left(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            2
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::right(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            1
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::right(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            2
+        );
+
+        ////////////////////////////////////
+
+        //VERTICAL
+
+        space.emplace_dirichlet_condition(
+            SideSet::top(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            0
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::top(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            2
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::bottom(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            0
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::bottom(),
+            UTOPIA_LAMBDA(const Point &) -> Scalar {
+                return 0.0;
+            },
+            2
+        );
+
+        ////////////////////////////////////
 
 
+       //DEPTH
+       space.emplace_dirichlet_condition(
+           SideSet::front(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return 0.0;
+           },
+           0
+       );
+
+       space.emplace_dirichlet_condition(
+           SideSet::front(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return 0.0;
+           },
+           1
+       );
+
+       space.emplace_dirichlet_condition(
+           SideSet::back(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return 0.0;
+           },
+           0
+       );
+
+       space.emplace_dirichlet_condition(
+           SideSet::back(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return 0.0;
+           },
+           1
+       );
+
+       ////////////////////////////////////
+
+
+       space.emplace_dirichlet_condition(
+           SideSet::left(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return -0.1;
+           },
+           0
+       );
+
+       space.emplace_dirichlet_condition(
+           SideSet::right(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return 0.1;
+           },
+           0
+       );
+
+       space.emplace_dirichlet_condition(
+           SideSet::bottom(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return -0.1;
+           },
+           1
+       );
+
+       space.emplace_dirichlet_condition(
+           SideSet::top(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return 0.1;
+           },
+           1
+       );
+
+
+       space.emplace_dirichlet_condition(
+           SideSet::back(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return -0.1;
+           },
+           2
+       );
+
+       space.emplace_dirichlet_condition(
+           SideSet::front(),
+           UTOPIA_LAMBDA(const Point &) -> Scalar {
+               return 0.1;
+           },
+           2
+       );
+
+
+    }
 
     template<class FunctionSpace>
     static void linear_elasticity(FunctionSpace &space, const bool use_direct_solver, const bool debug_matrices = false)
@@ -643,6 +809,8 @@ namespace utopia {
         space.create_vector(rhs);
 
         stats.stop_and_collect("create-matrix");
+
+        // compression_only_bc(space);
 
         for(int c = 0; c < space.n_components(); ++c) {
             space.emplace_dirichlet_condition(
@@ -745,12 +913,17 @@ namespace utopia {
         stats.stop_and_collect("solve");
 
         stats.start();
+        compute_strain_energy_splitting(space, x);
+        stats.stop_and_collect("splitting");
+
+
+        stats.start();
         rename("x", x);
         space.write("X.vtk", x);
         stats.stop_and_collect("write");
 
-        rename("rhs", rhs);
-        space.write("R.vtk", rhs);
+        // rename("rhs", rhs);
+        // space.write("R.vtk", rhs);
 
         if(comm.rank() == 0) std::cout << "n_dofs: " << space.n_dofs() << std::endl;
 
@@ -771,9 +944,9 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 4;
-        SizeType ny = scale * 4;
-        SizeType nz = scale * 4;
+        SizeType nx = scale * 10;
+        SizeType ny = scale * 10;
+        SizeType nz = scale * 10;
 
         FunctionSpace space;
 
@@ -784,7 +957,7 @@ namespace utopia {
             {1.0, 1.0, 1.0}
         );
 
-        linear_elasticity(space, false, true);
+        linear_elasticity(space, false, false);
 
     }
 
@@ -795,13 +968,16 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformHex8;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView         = FunctionSpace::ViewDevice::Elem;
-        using SizeType         = Mesh::SizeType;
-        using Quadrature       = utopia::Quadrature<Elem, 2>;
-        using Dev              = FunctionSpace::Device;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformHex8;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView       = FunctionSpace::ViewDevice::Elem;
+        using SizeType       = Mesh::SizeType;
+        using Scalar         = Mesh::Scalar;
+        using Quadrature     = utopia::Quadrature<Elem, 2>;
+        using Dev            = FunctionSpace::Device;
+        using VectorD        = utopia::StaticVector<Scalar, Dim>;
+        // using MatrixDxD        = utopia::StaticMatrix<Scalar, Dim, Dim>;
 
         PetscCommunicator world;
 
@@ -821,31 +997,9 @@ namespace utopia {
 
         PetscVector u;
         space.create_vector(u);
-        u.set(1.0);
+        u.set(0.1);
 
-        Quadrature q;
-        GradInterpolate<FunctionSpace, Quadrature> grad_u(space, q);
-        grad_u.update(u);
-
-        //end of host code
-        {
-            //beginning of device code
-            auto grad_u_view = grad_u.view_device();
-            auto space_view  = space.view_device();
-
-            Dev::parallel_for(
-                space.local_element_range(),
-                UTOPIA_LAMBDA(const SizeType &i)
-            {
-                ElemView e;
-                space_view.elem(i, e);
-
-                auto el_grad_u = grad_u_view.make(e);
-
-                disp(el_grad_u);
-
-            });
-        }
+        compute_strain_energy_splitting(space, u);
     }
 
     UTOPIA_REGISTER_APP(petsc_strain);

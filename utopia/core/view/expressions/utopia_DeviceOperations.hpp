@@ -4,10 +4,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_Operators.hpp"
-// #include "utopia_DeviceUnary.hpp"
-// #include "utopia_DeviceBinary.hpp"
 #include "utopia_DeviceNorm.hpp"
-// #include "utopia_Factory.hpp"
 
 #ifdef WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
@@ -227,6 +224,14 @@ namespace utopia {
         return sum(left * right);
     }
 
+
+    template<class Left, class Right>
+    UTOPIA_INLINE_FUNCTION DeviceOuterProduct<Left, Right> outer(
+        const DeviceExpression<Left> &left,
+        const DeviceExpression<Right> &right)
+    {
+        return DeviceOuterProduct<Left, Right>(left.derived(), right.derived());
+    }
 
     UTOPIA_INLINE_FUNCTION constexpr double inner(const double &left, const double &right)
     {

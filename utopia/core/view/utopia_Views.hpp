@@ -24,6 +24,7 @@
 #include "utopia_DeviceEigenVectors.hpp"
 #include "utopia_DeviceDiag.hpp"
 #include "utopia_DeviceIdentity.hpp"
+#include "utopia_DeviceOuterProduct.hpp"
 
 namespace utopia {
 

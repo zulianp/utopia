@@ -22,6 +22,7 @@ namespace utopia {
         using Point    = utopia::StaticVector<Scalar, Dim>;
         using Eval     = utopia::StaticVector<typename Elem::GradValue, QuadratureView::NPoints>;
         using Coeff    = utopia::StaticVector<Scalar, Elem::NFunctions>;
+        static const std::size_t NQuadPoints = QuadratureView::NPoints;
 
         UTOPIA_INLINE_FUNCTION GradInterpolateView(const CoefficientView &coeff, const GradView &grad)
         : coeff_(coeff), grad_(grad), elem_(nullptr)

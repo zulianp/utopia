@@ -16,17 +16,46 @@ namespace utopia {
     >
     class PrincipalStrainsView {
     public:
-        using Scalar   = typename Elem::Scalar;
-        using SizeType = typename Elem::SizeType;
+        static const int Dim = Elem::Dim;
+
+        using Scalar    = typename Elem::Scalar;
+        using SizeType  = typename Elem::SizeType;
+        using GradValue = typename Elem::GradValue;
+        static const std::size_t NQuadPoints = GradInterpolateView::NQuadPoints;
 
         PrincipalStrainsView(const GradInterpolateView &grad)
         : grad_(grad)
         {}
 
-        template<class Values>
-        UTOPIA_INLINE_FUNCTION void get(const std::size_t &qp, const Elem &elem, Values &values) const
+        class Evaluation {
+        public:
+            ArrayView<StaticVector<Scalar, Dim>, NQuadPoints> values;
+            ArrayView<GradValue, NQuadPoints> vectors;
+        };
+
+        UTOPIA_INLINE_FUNCTION Evaluation make(const Elem &elem) const
         {
-            // grad_
+            Evaluation ret;
+            get(elem, ret.values, ret.vectors);
+            return ret;
+        }
+
+        template<class Values, class Vectors>
+        UTOPIA_INLINE_FUNCTION void get(
+            const Elem &elem,
+            Values &values,
+            Vectors &vectors) const
+        {
+            typename GradInterpolateView::Eval strain;
+
+            grad_.get(elem, strain);
+
+            const SizeType n = strain.size();
+
+            for(SizeType qp = 0; qp < n; ++qp) {
+                strain[qp].symmetrize();
+                eig(strain[qp], values[qp], vectors[qp]);
+            }
         }
 
         GradInterpolateView grad_;
@@ -61,12 +90,11 @@ namespace utopia {
 
         inline void update(const Vector &x)
         {
-            vec_ = utopia::make_ref(x);
+            grad_.update(x);
         }
 
     private:
         GradInterpolate grad_;
-        std::shared_ptr<const Vector> vec_;
     };
 
 }

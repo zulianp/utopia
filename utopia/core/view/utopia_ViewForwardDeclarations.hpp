@@ -31,6 +31,9 @@ namespace utopia {
     template<class Left, class Right>
     class DeviceMultiply;
 
+    template<class Left, class Right>
+    class DeviceOuterProduct;
+
     template<class Left, class Right, int Order>
     class DeviceDot;
 

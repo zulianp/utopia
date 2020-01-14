@@ -53,6 +53,15 @@ namespace utopia {
         {
             UTOPIA_DEVICE_ASSERT(!mat.is_alias(result));
 
+            bool is_zero_1 = device::approxeq(eigen_values[0], 0.0, device::epsilon<Scalar>());
+            bool is_zero_2 = device::approxeq(eigen_values[1], 0.0, device::epsilon<Scalar>());
+            bool is_zero_3 = device::approxeq(eigen_values[2], 0.0, device::epsilon<Scalar>());
+
+            if(is_zero_1 || is_zero_2 || is_zero_3) {
+                result.identity();
+                return;
+            }
+
             //expressions (not evaluated)
             auto Am1 = mat - eigen_values[0] * device::identity<Scalar>();
             auto Am2 = mat - eigen_values[1] * device::identity<Scalar>();
@@ -107,13 +116,15 @@ namespace utopia {
         template<class MatExpr>
         UTOPIA_INLINE_FUNCTION static SizeType find_non_zero_col(const SizeType &n, const MatExpr &mat)
         {
+            // const auto tol = device::epsilon<Scalar>();
+            const auto tol = 0.0; //Will this be a problem???
 
             for(SizeType j = 0; j < n; ++j) {
 
                 bool is_zero = true;
                 for(SizeType i = 0; i < n; ++i) {
 
-                    if(!device::approxeq(mat(i, j), 0.0, device::epsilon<Scalar>())) {
+                    if(!device::approxeq(mat(i, j), 0.0, tol)) {
                         is_zero = false;
                         break;
                     }

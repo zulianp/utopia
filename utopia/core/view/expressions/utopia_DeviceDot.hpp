@@ -58,8 +58,8 @@ namespace utopia {
         {
             Scalar ret = 0.0;
 
-            const SizeType rows = utopia::rows(left);
-            const SizeType cols = utopia::cols(left);
+            const SizeType rows = left.rows();
+            const SizeType cols = left.cols();
 
             for(SizeType i = 0; i < rows; ++i) {
                 for(SizeType j = 0; j < cols; ++j) {

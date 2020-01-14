@@ -428,6 +428,28 @@ namespace utopia {
             }
         };
 
+        template<class Matrix>
+        class Symmetrize {
+        public:
+
+            UTOPIA_INLINE_FUNCTION static void apply(Matrix &mat)
+            {
+                auto n = extent(mat, 0);
+                UTOPIA_DEVICE_ASSERT(n == extent(mat, 1));
+
+                for(decltype(n) i = 0; i < n; ++i) {
+                    for(decltype(n) j = i+1; j < n; ++j) {
+                        mat(i, j) = 0.5 * (mat(i, j) + mat(j, i));
+                    }
+                }
+            }
+        };
+
+        template<class Matrix>
+        UTOPIA_INLINE_FUNCTION void symmetrize(Matrix &mat)
+        {
+            Symmetrize<Matrix>::apply(mat);
+        }
     }
 
 }
