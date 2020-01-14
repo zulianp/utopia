@@ -65,10 +65,12 @@ namespace utopia {
             auto E2 = Am3 * Am1;
             auto E3 = Am1 * Am2;
 
+            //lazy evaluation (expensive but no new memory allocs)
             const SizeType j1 = find_non_zero_col(n, E1);
             const SizeType j2 = find_non_zero_col(n, E2);
             const SizeType j3 = find_non_zero_col(n, E3);
 
+            //lazy evaluation (expensive but no new memory allocs)
             copy_col(n, j1, E1, 0, result);
             copy_col(n, j2, E2, 1, result);
             copy_col(n, j3, E3, 2, result);

@@ -1,7 +1,9 @@
 #ifndef UTOPIA_TENSOR_VIEW_HPP
 #define UTOPIA_TENSOR_VIEW_HPP
 
+#include "utopia_Traits.hpp"
 #include "utopia_Tensor.hpp"
+#include <iostream>
 
 namespace utopia {
     template<class ArrayView, int Order>
@@ -15,9 +17,9 @@ namespace utopia {
 
 
     template<class ArrayView, int Order>
-    inline void disp(const TensorView<ArrayView, Order> &t)
+    inline void disp(const TensorView<ArrayView, Order> &t, std::ostream &os = std::cout)
     {
-        t.describe();
+        t.describe(os);
     }
 
     //hacks until I find a way to avoid this

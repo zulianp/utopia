@@ -222,7 +222,7 @@ namespace utopia {
         {
             const SizeType n = size();
             for(SizeType i = 0; i < n; ++i) {
-                os << get(i) << std::endl;
+                disp(get(i), os);
             }
         }
 

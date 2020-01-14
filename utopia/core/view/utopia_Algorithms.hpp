@@ -418,6 +418,16 @@ namespace utopia {
         {
             Shift<Array>::apply(alpha, in_out);
         }
+
+        template<class T>
+        class Zero {
+        public:
+            UTOPIA_INLINE_FUNCTION static constexpr T value() noexcept
+            {
+                return T(0);
+            }
+        };
+
     }
 
 }

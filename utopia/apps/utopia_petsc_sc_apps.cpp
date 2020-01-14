@@ -19,6 +19,7 @@
 #include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_LinearElasticityView.hpp"
+#include "utopia_GradInterpolate.hpp"
 
 #include <cmath>
 
@@ -196,36 +197,26 @@ namespace utopia {
             }
         );
 
-
         stats.stop_and_collect("space+bc");
         ///////////////////////////////////////
         stats.start();
 
         std::shared_ptr<Function<PetscMatrix, PetscVector>> fun;
 
-        if(model == "poisson") {
-
-            auto fe_model = std::make_shared<PoissonFE<FunctionSpace>>(space);
-            fe_model->init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
+        auto ff = UTOPIA_LAMBDA(const Point &p) {
                 return amplitude * device::exp(-decay * norm2(c1 - p)) +
                        amplitude * device::exp(-decay * norm2(c2 - p));
-            });
+            };
 
+        if(model == "poisson") {
+            auto fe_model = std::make_shared<PoissonFE<FunctionSpace>>(space);
+            fe_model->init_forcing_function(ff);
             fun = fe_model;
-
         } else {
-
-            //FIXME
-            // auto fe_model = std::make_shared<BratuFE<FunctionSpace>>(space);
-            // fe_model->init_forcing_function(UTOPIA_LAMBDA(const Point &p) {
-            //     return amplitude * device::exp(-decay * norm2(c1 - p)) +
-            //            amplitude * device::exp(-decay * norm2(c2 - p));
-            // });
-
-            // fun = fe_model;
-
+            auto fe_model = std::make_shared<BratuFE<FunctionSpace>>(space);
+            fe_model->init_forcing_function(ff);
+            fun = fe_model;
         }
-
 
         stats.stop_and_collect("projection");
 
@@ -798,5 +789,65 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_elasticity_3);
+
+    static void petsc_strain()
+    {
+        static const int Dim = 3;
+        static const int NVars = Dim;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView         = FunctionSpace::ViewDevice::Elem;
+        using SizeType         = Mesh::SizeType;
+        using Quadrature       = utopia::Quadrature<Elem, 2>;
+        using Dev              = FunctionSpace::Device;
+
+        PetscCommunicator world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 2;
+        SizeType ny = scale * 2;
+        SizeType nz = scale * 2;
+
+        FunctionSpace space;
+
+        space.build(
+            world,
+            {nx, ny, nz},
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
+        );
+
+        PetscVector u;
+        space.create_vector(u);
+        u.set(1.0);
+
+        Quadrature q;
+        GradInterpolate<FunctionSpace, Quadrature> grad_u(space, q);
+        grad_u.update(u);
+
+        //end of host code
+        {
+            //beginning of device code
+            auto grad_u_view = grad_u.view_device();
+            auto space_view  = space.view_device();
+
+            Dev::parallel_for(
+                space.local_element_range(),
+                UTOPIA_LAMBDA(const SizeType &i)
+            {
+                ElemView e;
+                space_view.elem(i, e);
+
+                auto el_grad_u = grad_u_view.make(i, e);
+
+                disp(el_grad_u);
+
+            });
+        }
+    }
+
+    UTOPIA_REGISTER_APP(petsc_strain);
 }
 
