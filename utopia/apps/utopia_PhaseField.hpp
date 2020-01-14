@@ -109,7 +109,11 @@ namespace utopia {
             }, energy);
         }
 
-        disp(energy);
+        space.comm().sum(2, &energy[0]);
+
+        if(space.comm().rank() == 0) {
+            disp(energy);
+        }
     }
 }
 #endif

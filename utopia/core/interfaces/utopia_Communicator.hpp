@@ -147,6 +147,11 @@ namespace utopia {
 		}
 
 		template<typename T>
+		inline void sum(const int n_values, T *inout) const {
+			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_SUM, get() );
+		}
+
+		template<typename T>
 		inline T min(const T &val) const {
 			T ret = val;
 			MPI_Allreduce( MPI_IN_PLACE, &ret, 1, MPIType<T>::value(), MPI_MIN, get() );
