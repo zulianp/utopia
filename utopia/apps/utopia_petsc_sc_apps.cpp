@@ -909,6 +909,7 @@ namespace utopia {
 
             cg.max_it(n_iter);
             cg.rtol(1e-6);
+            cg.atol(1e-6);
             cg.solve(mat, rhs, x);
         }
 
