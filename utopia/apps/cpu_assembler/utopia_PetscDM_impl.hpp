@@ -814,7 +814,7 @@ namespace utopia {
     template<int Dim>
     bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
     {
-        std::array<SizeType, Dim> tensor_index;
+        std::array<SizeType, 3> tensor_index = {0, 0, 0};
         SizeType dims[3];
         impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
         PetscDMImpl<Dim>::dims(impl_->dm, dims);
@@ -865,8 +865,8 @@ namespace utopia {
     {
         assert(false && "FIXME");
 
-        std::array<SizeType, Dim> tensor_index;
-        SizeType dims[3];
+        std::array<SizeType, 3> tensor_index = {0, 0, 0};
+        SizeType dims[3] = { 0, 0, 0};
         impl_->global_node_grid_coord(idx, tensor_index);
         PetscDMImpl<Dim>::dims(impl_->dm, dims);
 
