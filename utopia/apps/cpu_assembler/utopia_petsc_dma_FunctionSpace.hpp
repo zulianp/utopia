@@ -3,6 +3,7 @@
 
 #include "utopia_PetscDM.hpp"
 #include "utopia_MultiVariateElement.hpp"
+#include "utopia_AssemblyView.hpp"
 
 namespace utopia {
 
@@ -111,7 +112,7 @@ namespace utopia {
                 //     }
                 // }
 
-                //Potentially breaks 
+                //Potentially breaks
                 mat.atomic_add_matrix(indices, indices, &el_mat(0, 0));
             }
        }
@@ -207,6 +208,18 @@ namespace utopia {
         {}
 
         inline static constexpr int n_components() { return NComponents; }
+
+        template<class Quadrature>
+        ShapeFunction<FunctionSpace, Quadrature> shape(const Quadrature &q)
+        {
+            return ShapeFunction<FunctionSpace, Quadrature>(*this, q);
+        }
+
+        template<class Quadrature>
+        PhysicalGradient<FunctionSpace, Quadrature> shape_grad(const Quadrature &q)
+        {
+            return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
+        }
 
         template<class... Args>
         void build(

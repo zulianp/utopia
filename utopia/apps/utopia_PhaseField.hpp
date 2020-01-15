@@ -8,6 +8,14 @@
 namespace utopia {
 
     template<class FunctionSpace>
+    class PhaseFieldForBrittleFractures {
+    public:
+
+
+
+    };
+
+    template<class FunctionSpace>
     static void compute_strain_energy_splitting(
         const FunctionSpace &space,
         const typename FunctionSpace::Vector &displacement)

@@ -22,6 +22,7 @@
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_PhaseField.hpp"
+#include "utopia_FEFunction.hpp"
 
 #include <cmath>
 
@@ -1010,5 +1011,67 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_strain);
+
+
+    static void petsc_fe_function()
+    {
+        static const int Dim = 3;
+        static const int NVars = Dim;
+
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformHex8;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView       = FunctionSpace::ViewDevice::Elem;
+        using SizeType       = FunctionSpace::SizeType;
+        using Scalar         = FunctionSpace::Scalar;
+        using Quadrature     = utopia::Quadrature<Elem, 2>;
+        using Dev            = FunctionSpace::Device;
+        using FEFunction     = utopia::FEFunction<FunctionSpace>;
+
+        //Host context
+
+        Comm world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 2;
+        SizeType ny = scale * 2;
+        SizeType nz = scale * 2;
+
+        FunctionSpace space;
+
+        space.build(
+            world,
+            {nx, ny, nz},
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
+        );
+
+        FEFunction fun(space);
+
+        Quadrature q;
+
+        auto coeff = fun.coefficient();
+
+        auto f = fun.value(q);
+        auto g = fun.gradient(q);
+
+        auto shape      = space.shape(q);
+        auto shape_grad = space.shape_grad(q);
+
+        {
+            //Device context
+            auto coeff_view = coeff.view_device();
+            auto f_view     = f.view_device();
+            auto g_view     = g.view_device();
+
+            auto shape_view      = shape.view_device();
+            auto shape_grad_view = shape_grad.view_device();
+
+        }
+
+    }
+
+    UTOPIA_REGISTER_APP(petsc_fe_function);
 }
 
