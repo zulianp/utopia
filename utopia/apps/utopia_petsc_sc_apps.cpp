@@ -338,7 +338,9 @@ namespace utopia {
 
         Matrix mat, mass_mat;
         space.create_matrix(mat);
-        space.create_matrix(mass_mat);
+        // space.create_matrix(mass_mat);
+        //copying is faster than create_matrix
+        mass_mat = mat;
 
         Vector rhs;
         space.create_vector(rhs);
@@ -803,7 +805,9 @@ namespace utopia {
 
         Matrix mat, mass_mat;
         space.create_matrix(mat);
-        space.create_matrix(mass_mat);
+        // space.create_matrix(mass_mat);
+        //copying is cheaper than create_matrix
+        mass_mat = mat;
 
         Vector rhs;
         space.create_vector(rhs);

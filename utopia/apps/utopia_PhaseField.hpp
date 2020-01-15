@@ -23,6 +23,7 @@ namespace utopia {
         using Quadrature     = utopia::Quadrature<Elem, 2>;
         using Dev            = typename FunctionSpace::Device;
         using VectorD        = utopia::StaticVector<Scalar, Dim>;
+        using MatrixDxD      = utopia::StaticMatrix<Scalar, Dim, Dim>;
 
         Quadrature q;
         PrincipalStrains<FunctionSpace, Quadrature> strain(space, q);
@@ -56,6 +57,8 @@ namespace utopia {
             {
                 VectorD v;
                 StaticVector<Scalar, 2> e_energy;
+                MatrixDxD strain_n;
+                MatrixDxD strain_p;
 
                 ElemView e;
                 space_view.elem(i, e);
@@ -65,46 +68,37 @@ namespace utopia {
 
                 const SizeType n_qp = el_strain.values.size();
 
-                Scalar energy_p = 0;
-                Scalar energy_m = 0;
+                e_energy.set(0.0);
 
                 for(SizeType qp = 0; qp < n_qp; ++qp) {
+                    //reset strain tensor
+                    strain_n.set(0.0);
+                    strain_p.set(0.0);
 
-                    Scalar trace_e_p = 0.0;
-                    Scalar trace_e_n = 0.0;
-
-                    Scalar inner_p = 0.0;
-                    Scalar inner_n = 0.0;
-
-                    //compute splitted quantities (inverting the sums)
+                    //compute splitted strain
                     for(int d = 0; d < Dim; ++d) {
                         auto e_val = el_strain.values[qp][d];
-
                         el_strain.vectors[qp].col(d, v);
+
                         auto outer_v = outer(v, v);
-                        auto trace_v = trace(outer_v);
-                        auto inner_v = inner(outer_v, outer_v);
 
                         auto eig_p = split_p(e_val);
                         auto eig_n = split_m(e_val);
 
-                        trace_e_p += eig_p * trace_v;
-                        trace_e_n += eig_n * trace_v;
-
-                        inner_p += inner_v * eig_p * eig_p;
-                        inner_n += inner_v * eig_n * eig_n;
+                        strain_n += eig_n * outer_v;
+                        strain_p += eig_p * outer_v;
                     }
 
-                    energy_p += ((0.5 * lambda * trace_e_p * trace_e_p) +
-                               (mu * inner_p)) * dx(qp);
+                    const Scalar trace_e_n = trace(strain_n);
+                    const Scalar trace_e_p = trace(strain_p);
 
+                    e_energy[0] += ((0.5 * lambda * trace_e_n * trace_e_n) +
+                               (mu * inner(strain_n, strain_n))) * dx(qp);
 
-                    energy_m += ((0.5 * lambda * trace_e_n * trace_e_n) +
-                               (mu * inner_n)) * dx(qp);
+                    e_energy[1] += ((0.5 * lambda * trace_e_p * trace_e_p) +
+                               (mu * inner(strain_p, strain_p))) * dx(qp);
                 }
 
-                e_energy[0] = energy_m;
-                e_energy[1] = energy_p;
                 return e_energy;
             }, energy);
         }
