@@ -22,7 +22,7 @@ namespace utopia
 			return "RMTR_test benchmark.";
 		}
 
-		RMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(2), verbose_(verbose)
+		RMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(4), verbose_(verbose)
 		{
 			// ml_problems_.resize(4);
 			// // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
@@ -166,18 +166,17 @@ namespace utopia
 
 			this->register_experiment("RMTR_first_order_infty",
 				[this]() {
-		           	// auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-		           	auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
-		           	tr_strategy_fine->use_symmetric_sweep(false); 
+		           	auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+		           	// auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+		           	// tr_strategy_fine->use_symmetric_sweep(false); 
 		            // tr_strategy_fine->atol(1e-12);
 		            // tr_strategy_fine->verbose(true);
 
-					// auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-					auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+					auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+					// auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
 					tr_strategy_coarse->atol(1e-12);
 
-		            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
-		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, PureTRBounds<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
+		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, FIRST_ORDER_MGOPT> >(n_levels_);
 
 		            // Set TR-QP strategies
 		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -202,7 +201,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
-			in.set("max-it", 1);
+			in.set("max-it", 15);
 			in.set("verbose", true);
 
 
@@ -214,7 +213,7 @@ namespace utopia
             in.set("post_smoothing_steps", 2);
             in.set("max_sucessful_smoothing_it", 1);
             in.set("max_QP_smoothing_it", 10);
-            in.set("delta0", 1.0e10);
+            in.set("delta0", 0.001);
             // in.set("delta0", 10);
             in.set("grad_smoothess_termination", 1e-8);
 

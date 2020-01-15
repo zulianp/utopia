@@ -143,6 +143,7 @@ namespace utopia
 
                 active_lower.resize(n_levels);
                 active_upper.resize(n_levels);
+                help.resize(n_levels); 
 
                 P_inf_norm.resize(n_levels);
                 const Scalar inf = std::numeric_limits<Scalar>::infinity();
@@ -150,10 +151,12 @@ namespace utopia
                 for(auto l=0; l < n_levels; l++){
                     active_lower[l] = local_values(n_dofs_[l], -inf); 
                     active_upper[l] = local_values(n_dofs_[l], inf); 
+                    help[l]         = local_zeros(n_dofs_[l]); 
                 }
             }
 
-        std::vector<Vector> active_lower, active_upper;
+        // TODO:: move help to classes where only necessary 
+        std::vector<Vector> active_lower, active_upper, help;
         std::vector<Scalar> P_inf_norm;
     };
 
