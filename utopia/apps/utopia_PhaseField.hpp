@@ -4,15 +4,74 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
+#include "utopia_FEFunction.hpp"
 
 namespace utopia {
 
-    template<class FunctionSpace>
+    template<class FunctionSpace, int Dim = FunctionSpace::Dim>
     class PhaseFieldForBrittleFractures {
     public:
+        using Scalar   = typename FunctionSpace::Scalar;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Vector   = typename FunctionSpace::Vector;
+        using Matrix   = typename FunctionSpace::Matrix;
+        using Device   = typename FunctionSpace::Device;
 
+        using USpace   = typename FunctionSpace::template Subspace<Dim>;
+        using CSpace   = typename FunctionSpace::template Subspace<1>;
 
+        PhaseFieldForBrittleFractures(FunctionSpace &space)
+        : space_(space)
+        {}
 
+        void assemble(
+            Vector &x,
+            Matrix &H,
+            Vector &g,
+            Scalar &val
+        )
+        {
+            USpace U;
+            space_.subspace(0, U);
+            CSpace C = space_.subspace(Dim);
+
+            if(empty(H)) {
+                space_.create_matrix(H);
+            } else {
+                H *= 0.0;
+            }
+
+            if(empty(g)) {
+                space_.create_vector(g);
+            } else {
+                g.set(0.0);
+            }
+
+            FEFunction<FunctionSpace> x_fun(space_, x);
+            auto x_coeff = x_fun.coefficient();
+
+            val = 0.0;
+
+            {
+                auto U_view = U.view_device();
+                auto C_view = C.view_device();
+                auto x_view = x_coeff.view_device();
+
+                Device::parallel_reduce(
+                    space_.local_element_range(),
+                    UTOPIA_LAMBDA(const SizeType &)
+                    {
+                        return 0.0;
+                    },
+                    val
+                );
+            }
+
+            val = x.comm().sum(val);
+        }
+
+    private:
+        FunctionSpace space_;
     };
 
     template<class FunctionSpace>

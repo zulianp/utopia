@@ -383,24 +383,23 @@ namespace utopia {
         stats.start();
 
 
-        Laplacian<FunctionSpace, Quadrature> laplacian(space, quadrature);
-        MassMatrix<FunctionSpace, Quadrature> mass_matrix(space, quadrature);
+        auto lapl   = laplacian(space, quadrature);
+        auto mass_m = mass_matrix(space, quadrature);
 
         {
             //GPU assembly mock-prototype
-
             auto mat_view      = space.assembly_view_device(mat);
             auto mass_mat_view = space.assembly_view_device(mass_mat);
             auto rhs_view      = space.assembly_view_device(rhs);
 
-            auto l_view = laplacian.view_device();
-            auto m_view = mass_matrix.view_device();
+            auto l_view = lapl.view_device();
+            auto m_view = mass_m.view_device();
 
             if(debug_matrices) {
-                disp("laplacian");
+                disp("lapl");
                 l_view.describe();
 
-                disp("mass_matrix");
+                disp("mass_m");
                 m_view.describe();
             }
 
@@ -1029,8 +1028,7 @@ namespace utopia {
         using Dev            = FunctionSpace::Device;
         using FEFunction     = utopia::FEFunction<FunctionSpace>;
 
-        //Host context
-
+        //BEGIN: Host context
         Comm world;
 
         SizeType scale = (world.size() + 1);
@@ -1059,8 +1057,14 @@ namespace utopia {
         auto shape      = space.shape(q);
         auto shape_grad = space.shape_grad(q);
 
+        //custom operator can be create with factory functions
+        auto lapl       = laplacian(space, q);
+
+        //END: Host context
+
         {
-            //Device context
+            //BEGIN: Device context
+            auto space_view = space.view_device();
             auto coeff_view = coeff.view_device();
             auto f_view     = f.view_device();
             auto g_view     = g.view_device();
@@ -1068,10 +1072,64 @@ namespace utopia {
             auto shape_view      = shape.view_device();
             auto shape_grad_view = shape_grad.view_device();
 
+
+            // Device Kernel (GPU or CPU) (this should be hidden better)
+            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
+                ElemView e;
+                space_view.elem(idx, e);
+
+                auto s_grad = shape_grad_view.make(e);
+
+            });
+
+            //END: Device context
         }
 
     }
 
     UTOPIA_REGISTER_APP(petsc_fe_function);
+
+
+    static void petsc_phase_field()
+    {
+        static const int Dim = 3;
+        static const int NVars = Dim + 1;
+
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformHex8;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView       = FunctionSpace::ViewDevice::Elem;
+        using SizeType       = FunctionSpace::SizeType;
+        using Scalar         = FunctionSpace::Scalar;
+        using Quadrature     = utopia::Quadrature<Elem, 2>;
+        using Dev            = FunctionSpace::Device;
+        using FEFunction     = utopia::FEFunction<FunctionSpace>;
+
+        Comm world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 2;
+        SizeType ny = scale * 2;
+        SizeType nz = scale * 2;
+
+        FunctionSpace space;
+
+        space.build(
+            world,
+            {nx, ny, nz},
+            {0.0, 0.0, 0.0},
+            {1.0, 1.0, 1.0}
+        );
+
+        PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+
+        PetscMatrix H;
+        PetscVector x, g;
+        Scalar f;
+        pp.assemble(x, H, g, f);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_phase_field);
 }
 

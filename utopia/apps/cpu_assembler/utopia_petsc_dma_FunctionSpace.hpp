@@ -188,6 +188,9 @@ namespace utopia {
         using DofMap      = utopia::DofMap<PetscDM<Dim>, Elem_, NComponents>;
         static const int NDofs = DofMap::NDofs;
 
+        template<int NSubVars>
+        using Subspace = FunctionSpace<PetscDM<Elem_::Dim>, NSubVars, Elem_>;
+
         bool write(const Path &path, const PetscVector &x) const;
 
         FunctionSpace(const std::shared_ptr<Mesh> &mesh, const SizeType &subspace_id = 0)
@@ -235,10 +238,28 @@ namespace utopia {
 
         FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> subspace(const SizeType &i) const
         {
-            FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> space(mesh_, i);
+            FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> space(mesh_, subspace_id_ + i);
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i < NComponents);
             assert(i + subspace_id_ < mesh_->n_components());
+            return space;
+        }
+
+
+        template<int NVars>
+        void subspace(const SizeType &i, FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> &space) const
+        {
+            space.set_mesh(mesh_);
+            space.set_subspace_id(subspace_id_ + i);
+        }
+
+        template<int NVars>
+        FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> vector_subspace(const SizeType &i) const
+        {
+            FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> space(mesh_, subspace_id_ + i);
+            // space.set_dirichlet_conditions(dirichlet_bcs_);
+            assert(i + NVars < NComponents);
+            assert(subspace_id_ + i < mesh_->n_components());
             return space;
         }
 
@@ -363,6 +384,11 @@ namespace utopia {
         void set_mesh(const std::shared_ptr<Mesh> &mesh)
         {
             mesh_ = mesh;
+        }
+
+        void set_subspace_id(const SizeType &i)
+        {
+            subspace_id_ = i;
         }
 
         void set_dirichlet_conditions(const std::vector<std::shared_ptr<DirichletBC>> &conds)

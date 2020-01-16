@@ -22,7 +22,7 @@ namespace utopia {
         using FunValue      = utopia::StaticVector<Scalar, Dim>;
         using Point         = typename Elem::Point;
 
-        static_assert(NVariables == Dim, "Number of variables must be equal to dim for vector elements");
+        // static_assert(NVariables == Dim, "Number of variables must be equal to dim for vector elements");
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION auto fun(const int i, const Point &p) const -> FunValue

@@ -43,6 +43,12 @@ namespace utopia {
         {}
 
         FEFunction(
+            FunctionSpace &space,
+            Vector &data)
+        : space_(make_ref(space)), data_(make_ref(data))
+        {}
+
+        FEFunction(
             const std::shared_ptr<FunctionSpace> &space)
         : space_(space), data_(std::make_shared<Vector>())
         {

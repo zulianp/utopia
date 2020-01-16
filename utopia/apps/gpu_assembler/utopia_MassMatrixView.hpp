@@ -80,6 +80,12 @@ namespace utopia {
         }
     };
 
+    template<class FunctionSpace, class Quadrature>
+    MassMatrix<FunctionSpace, Quadrature> mass_matrix(const FunctionSpace &space, const Quadrature &q)
+    {
+        return MassMatrix<FunctionSpace, Quadrature>(space, q);
+    }
+
     template<class Mesh, int NComponents, class Quadrature, typename...Args>
     class ScaledMassMatrix< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
     public:

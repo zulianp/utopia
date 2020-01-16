@@ -89,6 +89,12 @@ namespace utopia {
         }
     };
 
+    template<class FunctionSpace, class Quadrature>
+    inline Laplacian<FunctionSpace, Quadrature> laplacian(const FunctionSpace &space, const Quadrature &q)
+    {
+        return Laplacian<FunctionSpace, Quadrature>(space, q);
+    }
+
 }
 
 
