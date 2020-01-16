@@ -53,7 +53,7 @@ namespace utopia
                 else
                 {
                     // TODO:: check for other transfers 
-                    // todo:: 
+                    // todo:: this version probably does not work on GPU 
                     if(MatrixTransfer<Matrix, Vector>* mat_transfer =  dynamic_cast<MatrixTransfer<Matrix, Vector>* > (this->transfer_[level].get()))
                     {
                         {
@@ -100,7 +100,7 @@ namespace utopia
                             for(auto i = rr.begin(); i != rr.end(); ++i) {
                                 RowView<const Matrix> row_view(mat_transfer->R(), i);
                                 decltype(i) n_values = row_view.n_values();                            
-                                
+
                                 Scalar max_value = -9e20; 
                                 Scalar min_value = 9e20; 
                                 for(auto index = 0; index < n_values; ++index) {
@@ -121,6 +121,9 @@ namespace utopia
                                 constraints_memory_.active_upper[level].set(i, min_value); 
                             }
                         } // R/W lock 
+
+                        constraints_memory_.active_lower[level] += x_level; 
+                        constraints_memory_.active_upper[level] += x_level;                         
 
                     } // dynamic cast test 
                     else{
