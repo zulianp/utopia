@@ -24,8 +24,6 @@
 
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
-
-#include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
 #include "utopia_trilinos_Traits.hpp"

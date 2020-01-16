@@ -73,7 +73,7 @@ namespace utopia {
     //FIXME make faster version by storing view?
     TpetraMatrix::Scalar TpetraMatrix::get(const GO &row, const GO &col) const
     {
-        Teuchos::ArrayView<const GO> cols;
+        Teuchos::ArrayView<const LO> cols;
         Teuchos::ArrayView<const Scalar> values;
 
         assert(implementation().isLocallyIndexed());
@@ -183,7 +183,7 @@ namespace utopia {
                 new crs_mat_type(
                     implementation().getDomainMap(),
                     // col_map,
-                    0, Tpetra::DynamicProfile));
+                    0, Tpetra::StaticProfile));
                     // 0, Tpetra::StaticProfile));
 
         } else {
@@ -193,7 +193,7 @@ namespace utopia {
                 new crs_mat_type(
                     implementation().getRowMap(),
                     // col_map,
-                    0, Tpetra::DynamicProfile));
+                    0, Tpetra::StaticProfile));
                     // 0, Tpetra::StaticProfile));
         }
 
@@ -370,10 +370,10 @@ namespace utopia {
         }
 
         // auto col_map = Teuchos::rcp(new map_type(cols_global, index_base, comm, Tpetra::LocallyReplicated));
-        // mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+        // mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::StaticProfile));
 
         UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
-        mat_.reset(new crs_mat_type(row_map, nnz_x_row, Tpetra::DynamicProfile));
+        mat_.reset(new crs_mat_type(row_map, nnz_x_row, Tpetra::StaticProfile));
         owner_ = true;
 
         init_ = std::make_shared<InitStructs>();

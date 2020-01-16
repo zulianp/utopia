@@ -24,7 +24,6 @@
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 
 #include <Kokkos_Macros.hpp>
-#include <Kokkos_DefaultNode.hpp>
 
 #include <Tpetra_CrsGraph.hpp>
 #include <Tpetra_CrsMatrix.hpp>
