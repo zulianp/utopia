@@ -21,7 +21,10 @@
 #include "utopia_DeviceTrace.hpp"
 #include "utopia_DeviceNorm.hpp"
 #include "utopia_DeviceEigenValues.hpp"
+#include "utopia_DeviceEigenVectors.hpp"
 #include "utopia_DeviceDiag.hpp"
+#include "utopia_DeviceIdentity.hpp"
+#include "utopia_DeviceOuterProduct.hpp"
 
 namespace utopia {
 

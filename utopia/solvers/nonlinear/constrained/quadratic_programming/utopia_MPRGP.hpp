@@ -338,6 +338,8 @@ namespace  utopia
         public:
             void init_memory(const SizeType & ls) override
             {
+                OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls); 
+
                 auto zero_expr = local_zeros(ls);
 
                 fi = zero_expr;

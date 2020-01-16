@@ -6,18 +6,18 @@
 
 namespace utopia {
 
-    template<class Elem>
-    void FunctionSpace<PetscDM<Elem::Dim>, 1, Elem>::elem(const SizeType &idx, Elem &e) const
+    template<class Elem, int NComponents>
+    void FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::elem(const SizeType &idx, Elem &e) const
     {
-        mesh_->elem(idx, e);
+        mesh_->elem(idx, e.univar_elem());
         typename Mesh::Point translation, cell_size;
         mesh_->cell_point(idx, translation);
         mesh_->cell_size(idx, cell_size);
         e.set(translation, cell_size);
     }
 
-    template<class Elem>
-    bool FunctionSpace<PetscDM<Elem::Dim>, 1, Elem>::write(const Path &path, const PetscVector &x) const
+    template<class Elem, int NComponents>
+    bool FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::write(const Path &path, const PetscVector &x) const
     {
         PetscErrorCode ierr = 0;
 
@@ -34,12 +34,12 @@ namespace utopia {
         VecView(raw_type(x), viewer);
 
         //Extra output
-        PetscVector temp = x;
-        temp.set(0.0);
-        temp.set(x.comm().rank());
+        // PetscVector temp = x;
+        // temp.set(0.0);
+        // temp.set(x.comm().rank());
 
-        utopia::rename("comm_rank", temp);
-        VecView(raw_type(temp), viewer);
+        // utopia::rename("comm_rank", temp);
+        // VecView(raw_type(temp), viewer);
 
 
         // each_write(temp, [](const SizeType &i) {

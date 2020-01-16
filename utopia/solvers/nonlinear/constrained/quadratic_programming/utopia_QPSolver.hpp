@@ -12,12 +12,21 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class QPSolver : public virtual PreconditionedSolver<Matrix, Vector>,
-                     public virtual VariableBoundSolverInterface<Vector> {
+    class QPSolver :    public virtual PreconditionedSolver<Matrix, Vector>,
+                        public virtual VariableBoundSolverInterface<Vector> {
         public:
+            typedef UTOPIA_SCALAR(Vector)                           Scalar;
+            typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+
             QPSolver() {}
             virtual ~QPSolver() {}
             virtual QPSolver * clone() const override = 0;
+
+            virtual void init_memory(const SizeType & ls)  override 
+            {
+                VariableBoundSolverInterface<Vector>::init_memory(ls); 
+                PreconditionedSolver<Matrix, Vector>::init_memory(ls); 
+            }      
     };
 
 
@@ -25,6 +34,9 @@ namespace utopia
     class MatrixFreeQPSolver : public virtual MatrixFreeLinearSolver<Vector>,
                                public virtual VariableBoundSolverInterface<Vector> {
         public:
+            typedef UTOPIA_SCALAR(Vector)                           Scalar;
+            typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+
             MatrixFreeQPSolver()
             {}
 
@@ -32,6 +44,12 @@ namespace utopia
             {}
 
             virtual MatrixFreeQPSolver * clone() const override = 0;
+
+            virtual void init_memory(const SizeType & ls)  override 
+            {
+                VariableBoundSolverInterface<Vector>::init_memory(ls); 
+                MatrixFreeLinearSolver<Vector>::init_memory(ls); 
+            }             
     };
 
 
@@ -44,6 +62,9 @@ namespace utopia
         using MatrixFreeQPSolver<Vector>::update;
         using QPSolver<Matrix, Vector>::update;
         using MatrixFreeQPSolver<Vector>::solve;
+
+        typedef UTOPIA_SCALAR(Vector)                           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;        
 
         virtual ~OperatorBasedQPSolver() {}
 
@@ -77,6 +98,13 @@ namespace utopia
             MatrixFreeQPSolver<Vector>::print_usage(os);
             QPSolver<Matrix, Vector>::print_usage(os);
         }
+
+        virtual void init_memory(const SizeType & ls)  override 
+        {
+            MatrixFreeQPSolver<Vector>::init_memory(ls); 
+            QPSolver<Matrix, Vector>::init_memory(ls); 
+        }   
+
     };
 
 

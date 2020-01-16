@@ -6,6 +6,10 @@
 
 #ifdef WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
+#else
+#include <cmath>
+#include <algorithm>
+#include <limits>
 #endif
 
 namespace utopia {
@@ -32,6 +36,14 @@ namespace utopia {
         }
 
         template<typename T>
+        UTOPIA_INLINE_FUNCTION void swap(T &left, T &right)
+        {
+            T temp = std::move(left);
+            left = right;
+            right = std::move(temp);
+        }
+
+        template<typename T>
         UTOPIA_INLINE_FUNCTION T sqrt(const T &value) {
             return Kokkos::Details::ArithTraits<T>::sqrt(value);
         }
@@ -44,6 +56,24 @@ namespace utopia {
         template<typename T>
         UTOPIA_INLINE_FUNCTION T atomic_add(volatile T * const dest, const T val) {
             return Kokkos::atomic_fetch_add(dest, val);
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T cos(const T &v)
+        {
+            return Kokkos::Details::ArithTraits<T>::cos(v);
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T acos(const T &v)
+        {
+            return Kokkos::Details::ArithTraits<T>::acos(v);
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T epsilon()
+        {
+            return Kokkos::Details::ArithTraits<T>::epsilon();
         }
 
 #else
@@ -81,8 +111,39 @@ namespace utopia {
             return (*dest) += val;
         }
 
+
+        template<typename T>
+        inline T cos(const T &v)
+        {
+            return std::cos(v);
+        }
+
+        template<typename T>
+        inline T acos(const T &v)
+        {
+            return std::acos(v);
+        }
+
+        template<typename T>
+        inline void swap(T &left, T &right)
+        {
+            std::swap(left, right);
+        }
+
+        template<typename T>
+        inline T epsilon()
+        {
+            return std::numeric_limits<T>::epsilon();
+        }
+
+
 #endif //KOKKOS_INLINE_FUNCTION
 
+        template<typename Scalar>
+        UTOPIA_INLINE_FUNCTION constexpr Scalar pi()
+        {
+            return M_PI;
+        }
 
         //FIXME use impl and specialize based on Input type
         template<class InputIterator, class OutputIterator>
@@ -182,6 +243,26 @@ namespace utopia {
         {
             Scale<Array>::apply(alpha, in_out);
         }
+
+        template<class Array>
+        class ShiftDiag {
+        public:
+            template<typename Scalar>
+            UTOPIA_INLINE_FUNCTION static void apply(const Scalar &alpha, Array &in_out)
+            {
+                const SizeType n = device::min(extent(in_out, 0), extent(in_out, 1));
+                for(SizeType i = 0; i < n; ++i) {
+                    in_out(i, i) += alpha;
+                }
+            }
+        };
+
+        template<class Array, typename Scalar>
+        UTOPIA_INLINE_FUNCTION void shift_diag(const Scalar &alpha, Array &in_out)
+        {
+            ShiftDiag<Array>::apply(alpha, in_out);
+        }
+
 
         template<class X, class Y>
         class AXPY {
@@ -336,6 +417,38 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void shift(const Scalar &alpha, Array &in_out)
         {
             Shift<Array>::apply(alpha, in_out);
+        }
+
+        template<class T>
+        class Zero {
+        public:
+            UTOPIA_INLINE_FUNCTION static constexpr T value() noexcept
+            {
+                return T(0);
+            }
+        };
+
+        template<class Matrix>
+        class Symmetrize {
+        public:
+
+            UTOPIA_INLINE_FUNCTION static void apply(Matrix &mat)
+            {
+                auto n = extent(mat, 0);
+                UTOPIA_DEVICE_ASSERT(n == extent(mat, 1));
+
+                for(decltype(n) i = 0; i < n; ++i) {
+                    for(decltype(n) j = i+1; j < n; ++j) {
+                        mat(i, j) = 0.5 * (mat(i, j) + mat(j, i));
+                    }
+                }
+            }
+        };
+
+        template<class Matrix>
+        UTOPIA_INLINE_FUNCTION void symmetrize(Matrix &mat)
+        {
+            Symmetrize<Matrix>::apply(mat);
         }
     }
 

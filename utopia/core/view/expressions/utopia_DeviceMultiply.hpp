@@ -17,7 +17,7 @@ namespace utopia {
         using SizeType = typename Traits<Left>::SizeType;
         using Scalar   = typename Traits<Left>::Scalar;
 
-        UTOPIA_INLINE_FUNCTION DeviceMultiply(const Left &left, const Right &right) 
+        UTOPIA_INLINE_FUNCTION DeviceMultiply(const Left &left, const Right &right)
         : left_(left), right_(right)
         {
             // UTOPIA_DEVICE_ASSERT(left.cols() == right.size());
@@ -50,6 +50,16 @@ namespace utopia {
         inline std::string get_class() const override
         {
             return "DeviceMultiply<" + left_.get_class() + ", " + right_.get_class() + ">";
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType rows() const
+        {
+            return left_.rows();
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType cols() const
+        {
+            return right_.cols();
         }
 
     private:

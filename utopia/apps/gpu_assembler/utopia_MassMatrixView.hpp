@@ -4,6 +4,7 @@
 #include "utopia_AssemblyView.hpp"
 #include "utopia_LaplacianView.hpp"
 #include "utopia_NodalInterpolateView.hpp"
+#include "utopia_DeviceOperations.hpp"
 
 namespace utopia {
 
@@ -20,9 +21,9 @@ namespace utopia {
         using Scalar   = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
-        static const int NNodes = Elem::NNodes;
+        static const int NFunctions = Elem::NFunctions;
 
-        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NNodes, NNodes>>;
+        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NFunctions, NFunctions>>;
 
         MassMatrix(const FunctionSpace &space, const Quadrature &q) //: q_(q)
         {
@@ -41,10 +42,10 @@ namespace utopia {
             for(SizeType k = 0; k < n; ++k) {
                 for(SizeType j = 0; j < fun.n_functions(); ++j) {
                     const auto g_test = fun(j, k);
-                    mat(j, j) += (g_test * g_test) * dx(k);
+                    mat(j, j) += inner(g_test, g_test) * dx(k);
 
                     for(SizeType l = j + 1; l < fun.n_functions(); ++l) {
-                        const auto v = (g_test * fun(l, k)) * dx(k);
+                        const auto v = inner(g_test, fun(l, k)) * dx(k);
                         mat(j, l) += v;
                         mat(l, j) += v;
                     }
@@ -58,7 +59,7 @@ namespace utopia {
         }
 
     private:
-        StaticMatrix<Scalar, NNodes, NNodes> mat_;
+        StaticMatrix<Scalar, NFunctions, NFunctions> mat_;
 
         void init(const FunctionSpace &space, const Quadrature &q)
         {
@@ -71,13 +72,19 @@ namespace utopia {
             Elem e;
             space.elem(0, e);
 
-            auto f  = fun_view.make(0, e);
-            auto dx = dx_view.make(0, e);
+            auto f  = fun_view.make(e);
+            auto dx = dx_view.make(e);
 
             mat_.set(0.0);
             assemble(f, dx, mat_);
         }
     };
+
+    template<class FunctionSpace, class Quadrature>
+    MassMatrix<FunctionSpace, Quadrature> mass_matrix(const FunctionSpace &space, const Quadrature &q)
+    {
+        return MassMatrix<FunctionSpace, Quadrature>(space, q);
+    }
 
     template<class Mesh, int NComponents, class Quadrature, typename...Args>
     class ScaledMassMatrix< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
@@ -87,7 +94,7 @@ namespace utopia {
         using Scalar   = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
-        static const int NNodes = Elem::NNodes;
+        static const int NFunctions = Elem::NFunctions;
 
         using Differential  = utopia::Differential<FunctionSpace, Quadrature>;
         using Interpolate   = utopia::NodalInterpolate<FunctionSpace, Quadrature>;
@@ -108,9 +115,9 @@ namespace utopia {
 
             template<typename SizeType, class Elem, class Function, class Accumulator>
             UTOPIA_INLINE_FUNCTION void assemble(const SizeType &i, const Elem &e, Function f, Accumulator &acc) const {
-                auto dx          = dx_.make(i, e);
-                auto interpolate = interpolate_.make(i, e);
-                auto fun         = interpolate_.fun().make(i, e);
+                auto dx          = dx_.make(e);
+                auto interpolate = interpolate_.make(e);
+                auto fun         = interpolate_.fun().make(e);
 
                 assemble_aux(fun, dx, interpolate, f, acc);
             }
@@ -136,9 +143,6 @@ namespace utopia {
         {
             return ViewDevice(dx_.view_device(), interpolate_.view_device());
         }
-
-
-
 
     private:
         Differential dx_;

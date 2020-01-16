@@ -74,7 +74,8 @@ namespace utopia {
             const PetscCommunicator     &comm,
             const std::array<SizeType, UDim> &dims,
             const std::array<Scalar, UDim>   &box_min,
-            const std::array<Scalar, UDim>   &box_max
+            const std::array<Scalar, UDim>   &box_max,
+            const SizeType &n_components = 1
         );
 
         PetscDM();
@@ -187,6 +188,7 @@ namespace utopia {
 
         SizeType n_nodes() const;
         SizeType n_elements() const;
+        SizeType n_components() const;
 
         bool is_ghost(const SizeType &global_node_idx) const;
         bool is_boundary(const SizeType &global_node_idx) const;

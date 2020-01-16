@@ -9,6 +9,7 @@
 #include "utopia_Input.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_Communicator.hpp"
+#include "utopia_Memory.hpp"
 
 #include <memory>
 #include <cassert>
@@ -81,7 +82,7 @@ namespace utopia {
 
 
     template<class Vector>
-    class Preconditioner : public virtual Configurable, public virtual Clonable {
+    class Preconditioner : public virtual Configurable, public virtual Clonable, public virtual MemoryInterface<Vector>{
     public:
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
@@ -98,6 +99,7 @@ namespace utopia {
 
         }
 
+        // this should be left as virtual once all solvers allocations improve
         virtual void init_memory(const SizeType & /*ls*/) { }
 
         // TODO

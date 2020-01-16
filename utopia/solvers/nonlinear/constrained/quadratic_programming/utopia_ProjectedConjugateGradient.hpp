@@ -115,6 +115,8 @@ namespace utopia
 
         void init_memory(const SizeType & n) override
         {
+            QPSolver<Matrix, Vector>::init_memory(n);
+            
             // auto n = local_size(A).get(0);
             r  = local_zeros(n);
             uk = local_zeros(n);

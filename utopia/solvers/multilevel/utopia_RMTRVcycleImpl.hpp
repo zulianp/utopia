@@ -312,7 +312,13 @@ namespace utopia
             this->memory_.x[level] += this->memory_.s[level];
 
             this->compute_s_global(level, this->memory_.s_working[level]);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::deriv_comp");
             energy_new = this->get_multilevel_energy(this->function(level), level, this->memory_.s_working[level]);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::region701");
             ared =  this->memory_.energy[level] - energy_new;
 
             rho = (ared < 0.0) ? 0.0 : ared/pred;
@@ -366,7 +372,7 @@ namespace utopia
             {
                 // std::cout<<"grad updated... \n"; s
                 // Vector g_old = memory_.g[level];
-                UTOPIA_NO_ALLOC_BEGIN("RMTR::region7");
+                UTOPIA_NO_ALLOC_BEGIN("RMTR::grad_computation");
                 this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
                 this->memory_.gnorm[level] = this->criticality_measure(level);
                 UTOPIA_NO_ALLOC_END();

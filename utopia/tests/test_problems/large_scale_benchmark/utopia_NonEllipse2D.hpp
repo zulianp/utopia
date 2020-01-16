@@ -98,14 +98,28 @@ namespace utopia
                 g  = local_zeros(local_size(x));;
             }
 
-            // MatMultAdd(snes_->jacobian, raw_type(x), snes_->vec_rhs, raw_type(g)); 
-            Vector rhs; 
-            convert(snes_->vec_rhs, rhs); 
-            g = A_no_bc_*x + rhs; 
+            // Vector rhs; 
+            UTOPIA_NO_ALLOC_BEGIN("Ellipse::grad1");
+            convert(snes_->vec_rhs, *A_help_); 
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("Ellipse::grad2");
+            g = A_no_bc_*x + *A_help_; 
+            UTOPIA_NO_ALLOC_END();
             
-            Vector exp_term = exp(x);
-            exp_term = lambda_*e_mul(x, exp_term); 
-            g += HxHy_*exp_term; 
+            UTOPIA_NO_ALLOC_BEGIN("Ellipse::grad3");
+            *A_help_ = exp(x);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("Ellipse::grad4");
+            // *A_help_ = lambda_*e_mul(x, *A_help_); 
+            *A_help_ = e_mul(x, *A_help_); 
+            *A_help_ *= lambda_;
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("Ellipse::grad5");
+            g += HxHy_**A_help_; 
+            UTOPIA_NO_ALLOC_END();
 
             remove_BC_contrib(g); 
 
@@ -268,6 +282,8 @@ namespace utopia
             A_no_bc_ = Hessian; 
             set_zero_rows(Hessian, index, 1.);
 
+            A_help_ = make_unique<Vector>(local_values(n_loc, 0.0));
+
             // this->constraints_ = make_box_constaints(std::make_shared<Vector>(local_values(n_loc, -9e9)),
             //                                          std::make_shared<Vector>(local_values(n_loc, 0.55)));   
         }
@@ -307,6 +323,8 @@ namespace utopia
             Vector lb = local_values(n_loc, 0.0);
             Vector ub = local_values(n_loc, 0.6);
             form_lb2(lb); 
+
+            A_help_ = make_unique<Vector>(local_values(n_loc, 0.0));
 
             // this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(ub)); 
             this->constraints_ = make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub)); 
@@ -583,6 +601,8 @@ namespace utopia
         Scalar pi_; 
 
         Scalar HxHy_; 
+
+        std::unique_ptr<Vector>  A_help_; 
 
     };
 }
