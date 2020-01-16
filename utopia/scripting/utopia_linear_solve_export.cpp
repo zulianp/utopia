@@ -1,6 +1,5 @@
 
 #include <iostream>
-// #include "utopia_linear_solve_export.h"
 #include "utopia_petsc.hpp"
 #include "utopia_Instance.hpp"
 
@@ -11,7 +10,6 @@ extern "C" {
         using namespace utopia;
         std::cout << "utopia_initialize" << std::endl;
         Utopia::Init(argc, argv);
-
     }
 
     void utopia_finalize()
