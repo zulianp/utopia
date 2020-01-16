@@ -44,7 +44,7 @@ namespace utopia {
         }
 
         KOKKOS_INLINE_FUNCTION
-        volatile Tuple operator +=(const volatile Tuple &other) volatile
+        volatile Tuple & operator +=(const volatile Tuple &other) volatile
         {
             for(int i = 0; i < N; ++i) {
                 // auto v = data_[i];
