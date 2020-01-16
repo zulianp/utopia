@@ -22,7 +22,7 @@ namespace utopia
 			return "RMTR_test benchmark.";
 		}
 
-		RMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(4), verbose_(verbose)
+		RMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(3), verbose_(verbose)
 		{
 			// ml_problems_.resize(4);
 			// // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
@@ -202,13 +202,13 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
-			in.set("max-it", 15);
+			in.set("max-it", 20);
 			in.set("verbose", true);
 
 
             // RMTR specific parameters
             in.set("max_coarse_it", 2);
-            in.set("max_sucessful_coarse_it", 2);
+            in.set("max_sucessful_coarse_it", 1);
             in.set("max_QP_coarse_it", 1000);
             in.set("pre_smoothing_steps", 2);
             in.set("post_smoothing_steps", 2);

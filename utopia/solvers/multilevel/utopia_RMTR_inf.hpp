@@ -151,10 +151,8 @@ namespace utopia
                 _tr_subproblems[l]->init_memory(dofs[l]); 
             }               
 
-            // TODO:: precompute norms of prolongation operators needed for projections of constraints...
             for(auto l = 0; l < fine_level; l++){
                 this->transfer(l).init_memory(); 
-                // this->constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
             }
         }
 
@@ -268,8 +266,8 @@ namespace utopia
                 });
             }            
 
-            // disp(*lb, "*lb"); 
-            // disp(*ub, "*ub"); 
+            // disp(*lb, "*lb-QPsolver"); 
+            // disp(*ub, "*ub-QPsolver"); 
 
             Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
             if(_tr_subproblems[level]->atol() > atol_level){
@@ -293,10 +291,10 @@ namespace utopia
             if(has_nan_or_inf(this->memory_.s[level])){
                 this->memory_.s[level].set(0.0); 
             }
-            // else{
+            else{
                 // ----- just for debugging pourposes, to be deleted in future... ----------------
-                // MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]); 
-            // }
+                MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]); 
+            }
 
 
             return true;

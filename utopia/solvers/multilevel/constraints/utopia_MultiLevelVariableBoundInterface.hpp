@@ -98,7 +98,7 @@ namespace utopia
                     const Scalar li = d_l.get(i);
                     const Scalar ui = d_u.get(i);
 
-                    return static_cast<SizeType>(xi <= li || xi >= ui);
+                    return static_cast<SizeType>(xi < li || xi > ui);
                 }, n_terminates);
             }
 

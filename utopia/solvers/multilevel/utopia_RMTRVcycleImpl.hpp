@@ -109,6 +109,11 @@ namespace utopia
 
         // making sure that correction does not exceed tr radius ...
         if(converged){
+
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
+                std::cout<<"level converged after pre-smoothing \n"; 
+            }
+
             return true;
         }
 
@@ -121,6 +126,9 @@ namespace utopia
         if(level == this->n_levels()-1){
             converged =  this->criticality_measure_termination(level);
             if(converged==true){
+                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
+                    std::cout<<"level converged after pre-smoothing, criticality_measure_termination \n"; 
+                }                
                 return true;
             }
         }
@@ -216,6 +224,9 @@ namespace utopia
             //                                  trust region update
             //----------------------------------------------------------------------------
             converged = this->delta_update(rho, level, this->memory_.s_working[level]);
+            if(converged && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
+                    std::cout<<"cconverged after delta update  \n"; 
+            }         
 
             // because, x + Is_{l-1} does not have to be inside of the feasible set....
             // mostly case for rmtr_inf with bounds...
@@ -224,6 +235,9 @@ namespace utopia
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && converged==true)
                 {
                     std::cout<<"- feasibility problems, terminating \n"; 
+
+                    disp(this->memory_.x[level], "x");
+                    exit(0); 
                 }
             }
 
@@ -240,6 +254,9 @@ namespace utopia
 
             // terminate, since TR rad. does not allow to take more corrections on given level
             if(converged==true){
+                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
+                    std::cout<<" converged last  \n"; 
+                }                
                 return true;
             }
 

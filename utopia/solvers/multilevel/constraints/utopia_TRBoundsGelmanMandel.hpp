@@ -39,6 +39,7 @@ namespace utopia
             {
                 auto finer_level = level + 1; 
 
+                Scalar I_inf_norm = this->transfer_[level]->interpolation_inf_norm(); 
 
                 {
                     auto d_x_finer      = const_device_view(x_finer_level);
@@ -53,7 +54,7 @@ namespace utopia
                 }
 
                 this->help_[finer_level] = this->help_[finer_level] - x_finer_level; 
-                Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * max(this->help_[finer_level]);  
+                Scalar lower_multiplier = 1.0/I_inf_norm * max(this->help_[finer_level]);  
                 {
                     auto d_x      = const_device_view(x_level);
                     parallel_each_write(constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
@@ -62,6 +63,9 @@ namespace utopia
                     });   
                 }
 
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 {
                     auto d_x_finer      = const_device_view(x_finer_level);
@@ -71,12 +75,12 @@ namespace utopia
                     {
                         auto val = d_x_finer.get(i) + delta_fine;
                         auto lbi = d_tr_ub.get(i); 
-                        return std::max(lbi, val);
+                        return std::min(lbi, val);
                     });   
                 }
 
                 this->help_[finer_level] = this->help_[finer_level] - x_finer_level; 
-                Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level] * min(this->help_[finer_level]);  
+                Scalar upper_multiplier = 1.0/I_inf_norm * min(this->help_[finer_level]);  
                 {
                     auto d_x      = const_device_view(x_level);
                     parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
@@ -84,6 +88,9 @@ namespace utopia
                         return d_x.get(i) + upper_multiplier; 
                     });   
                 }
+
+                    const Vector & active_lower = this->active_lower(level); 
+                    const Vector & active_upper = this->active_upper(level);                  
             }
 
             const Vector & active_upper(const SizeType & level)
