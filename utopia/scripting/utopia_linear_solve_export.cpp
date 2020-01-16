@@ -2,8 +2,14 @@
 #include <iostream>
 #include "utopia_petsc.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_Version.hpp"
 
 extern "C" {
+
+    void utopia_print_version()
+    {
+        std::cout << UTOPIA_VERSION << std::endl;
+    }
 
     void utopia_initialize(int argc, char *argv[])
     {
