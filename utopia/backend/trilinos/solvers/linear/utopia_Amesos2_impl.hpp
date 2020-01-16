@@ -9,7 +9,6 @@
 #include "Amesos2_Meta.hpp"
 
 //TODO remove from here
-#include <Kokkos_DefaultNode.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
@@ -18,11 +17,6 @@
 #include <Amesos2_Factory.hpp>
 #include <Amesos2_Solver.hpp>
 #include <Amesos2_MultiVecAdapter.hpp>
-
-#include <BelosSolverFactory.hpp>
-#include <BelosTpetraAdapter.hpp>
-#include <BelosLinearProblem.hpp>
-#include <BelosSolverManager.hpp>
 
 #include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
@@ -57,7 +51,7 @@ namespace utopia {
 
         //FIXME change all these typedefs by accessing inner definitions of matrix and vector
         //example
-        using vec_impl          = typename Vector::Implementation;
+        using vec_impl          = Vector;
         using multi_vector_type = typename vec_impl::multi_vector_type;
 
         //....
@@ -133,8 +127,8 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
-        using MatImplT = typename Matrix::Implementation::crs_mat_type;
-        using VecImplT = typename Vector::Implementation::multi_vector_type;
+        using MatImplT = typename Matrix::crs_mat_type;
+        using VecImplT = typename Vector::multi_vector_type;
 
         DirectSolver<Matrix, Vector>::update(op);
 
@@ -318,14 +312,18 @@ namespace utopia {
     void Amesos2Solver<Matrix, Vector, TRILINOS>::read(Input &in)
     {
         DirectSolver<Matrix, Vector>::read(in);
-
         in.get("keep-symbolic-factorization", impl_->keep_symbolic_factorization);
+      //  in.get("exotic", exotic); //exotic = "";
+      //  if(!exotic.empty()) {
+      //  }
     }
 
+    // available parameters
+    // TODO print setted parameters??
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os) const
     {
-
+        DirectSolver<Matrix, Vector>::print_usage(os);
     }
 
     template <typename Matrix, typename Vector>

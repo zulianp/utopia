@@ -19,10 +19,9 @@ namespace utopia {
         libMesh::MeshBase &mesh,
         const libMesh::DofMap &dof_map,
         const UVector &disp,
-        const std::vector<int> &vars_in = std::vector<int>(),
-        int sys_num = 0)
+        const std::vector<int> &vars_in = std::vector<int>())
     {
-
+        int sys_num = dof_map.sys_number();
         const auto dim = mesh.mesh_dimension();
 
         std::vector<int> vars;
@@ -60,7 +59,9 @@ namespace utopia {
             }
 
             idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
-            UVector out = disp.select(idx);
+            UVector out; 
+            disp.select(idx, out);
+
             {
                 Read<UVector> r_out(out);
                 auto range_out = range(out);

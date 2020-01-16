@@ -1,4 +1,5 @@
 #include "utopia_ApproxL2LocalAssembler.hpp"
+#include "libmesh/fe_interface.h"
 
 namespace utopia {
 
@@ -182,8 +183,16 @@ namespace utopia {
             test_trafo->apply(q.get_points()[i], q_spatial.get_points()[i]);
         }
 
+        const bool trial_is_affine = trial.has_affine_map();
+
         std::vector<int> index;
-        contained_points(trial, q_spatial, index);
+        std::vector<libMesh::Point> trial_ref_points;
+
+        if(trial_is_affine) {
+            contained_points(trial, q_spatial, index);
+        } else {
+            contained_points_non_affine(trial, q_spatial, index, trial_ref_points);
+        }
 
         if(index.empty()) return false;
 
@@ -198,13 +207,56 @@ namespace utopia {
         for(std::size_t qp = 0; qp < n_isect_qp; ++qp) {
             auto ind = index[qp];
             auto p = q_spatial.get_points()[ind];
+           
+            if(trial_is_affine) {
+                trial_trafo->transform_to_reference(p, q_trial->get_points()[qp]);
+            } else {
+                assert(!trial_ref_points.empty());
+                q_trial->get_points()[qp] = trial_ref_points[ind];
+            }
 
-            trial_trafo->transform_to_reference(p, q_trial->get_points()[qp]);
             q_test->get_points()[qp]  = q.get_points()[ind];
             q_test->get_weights()[qp] = q.get_weights()[ind];
         }
 
         return true;
+    }
+
+    static bool point_test(const libMesh::Elem &e, const libMesh::Point &p, libMesh::Point &p_ref, libMesh::Real map_tol)
+    {
+        using namespace libMesh;
+
+        FEType fe_type(e.default_order());
+
+          // To be on the safe side, we converge the inverse_map() iteration
+          // to a slightly tighter tolerance than that requested by the
+          // user...
+          p_ref = FEInterface::inverse_map(e.dim(),
+                                          fe_type,
+                                          &e,
+                                          p,
+                                          0.1*map_tol, // <- this is |dx| tolerance, the Newton residual should be ~ |dx|^2
+                                          /*secure=*/ false);
+
+          if (e.dim() < 3)
+            {
+              Point xyz = FEInterface::map(e.dim(),
+                                           fe_type,
+                                           &e,
+                                           p_ref);
+
+              Real dist = (xyz - p).norm();
+
+
+              // If dist is larger than some fraction of the tolerance, then return false.
+              // This can happen when e.g. a 2D element is living in 3D, and
+              // FEInterface::inverse_map() maps p onto the projection of the element,
+              // effectively "tricking" FEInterface::on_reference_element().
+              if (dist > e.hmax() * map_tol)
+                return false;
+            }
+
+          return FEInterface::on_reference_element(p_ref, e.type(), map_tol);
     }
 
     void ApproxL2LocalAssembler::contained_points(const Elem &trial, const libMesh::QBase &q, std::vector<int> &index)
@@ -240,6 +292,29 @@ namespace utopia {
             if(trial.contains_point(q_node, tol)) {
                 index.push_back(i);
             }
+        }
+    }
+
+    void ApproxL2LocalAssembler::contained_points_non_affine(
+        const Elem &trial,
+        const libMesh::QBase &q,
+        std::vector<int> &index,
+        std::vector<libMesh::Point> &trial_ref_points
+        ) const
+    {
+        int n_potential_nodes = q.get_points().size();
+        index.reserve(n_potential_nodes);
+        trial_ref_points.resize(n_potential_nodes);
+
+        libMesh::Point q_ref;
+
+        for(int i = 0; i < n_potential_nodes; ++i) {
+            auto const & q_node = q.get_points()[i];
+            if(point_test(trial, q_node, q_ref, tol)) {
+                index.push_back(i);
+            }
+
+            trial_ref_points[i] = q_ref;
         }
     }
 

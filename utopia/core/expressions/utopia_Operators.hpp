@@ -1,18 +1,38 @@
-//
-// Created by Patrick Zulian on 15/05/15.
-//
-
 #ifndef SIMMOD_utopia_OPERATORS_HPP
 #define SIMMOD_utopia_OPERATORS_HPP
 
 #include <string>
 #include <functional>
 #include <cmath>
+#include <complex>
 
 namespace utopia {
+
+    template<class Op>
+    class is_commutative {
+    public:
+        static const int value = 0;
+    };
+
+    template<class Op>
+    class is_associative {
+    public:
+        static const int value = 0;
+    };
+
+    /**
+     * @brief compile time information about the combination of operators
+     *  true if (A Op1 B Op2 C) == (A Op1 B) Op2 == A Op1 (B Op2 C)
+     */
+    template<class Op1, class Op2>
+    class eval_order_changable {
+    public:
+        static const int value = 0;
+    };
+
     class Minus {
     public:
-        std::string getClass() const { return "Minus"; }
+        std::string get_class() const { return "Minus"; }
 
         template<typename T>
         inline static T apply(const T &l, const T &r)
@@ -29,7 +49,7 @@ namespace utopia {
 
     class Plus {
     public:
-        std::string getClass() const { return "Plus"; }
+        std::string get_class() const { return "Plus"; }
 
         template<typename T>
         inline static T apply(const T &l, const T &r)
@@ -38,9 +58,21 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<Plus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class is_associative<Plus> {
+    public:
+        static const int value = 1;
+    };
+
     class PlusEqual {
     public:
-        std::string getClass() const { return "PlusEqual"; }
+        std::string get_class() const { return "PlusEqual"; }
 
         template<typename T>
         inline static T & apply(T &l, const T &r)
@@ -51,7 +83,7 @@ namespace utopia {
 
     class AbsPlus {
     public:
-        std::string getClass() const { return "AbsPlus"; }
+        std::string get_class() const { return "AbsPlus"; }
 
         template<typename T>
         inline static T apply(const T &left, const T &right) {
@@ -60,9 +92,22 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<AbsPlus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class is_associative<AbsPlus> {
+    public:
+        static const int value = 1;
+    };
+
+
     class And {
     public:
-        std::string getClass() const { return "And"; }
+        std::string get_class() const { return "And"; }
 
         template<typename T>
         inline static T apply(const T &left, const T &right) {
@@ -70,9 +115,22 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<And> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class is_associative<And> {
+    public:
+        static const int value = 1;
+    };
+
+
     class Multiplies {
     public:
-        std::string getClass() const { return "Multiplies"; }
+        std::string get_class() const { return "Multiplies"; }
 
         template<typename Left, typename Right>
         inline static auto apply(const Left &left, const Right &right) -> decltype(left * right) {
@@ -80,9 +138,22 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<Multiplies> {
+    public:
+        static const int value = 0;
+    };
+
+    template<>
+    class is_associative<Multiplies> {
+    public:
+        static const int value = 1;
+    };
+
+
     class Divides {
     public:
-        std::string getClass() const { return "Divides"; }
+        std::string get_class() const { return "Divides"; }
 
         template<typename T>
         inline static T apply(const T &left, const T &right) {
@@ -92,7 +163,7 @@ namespace utopia {
 
     class EMultiplies {
     public:
-        std::string getClass() const { return "EMultiplies"; }
+        std::string get_class() const { return "EMultiplies"; }
 
         template<typename T>
         inline static T apply(const T &left, const T &right) {
@@ -100,19 +171,32 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<EMultiplies> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class is_associative<EMultiplies> {
+    public:
+        static const int value = 1;
+    };
+
+
     class KroneckerProduct {
     public:
-        std::string getClass() const { return "KroneckerProduct"; }
+        std::string get_class() const { return "KroneckerProduct"; }
     };
 
     class TraceOp {
     public:
-        std::string getClass() const { return "TraceOp"; }
+        std::string get_class() const { return "TraceOp"; }
     };
 
     class ApproxEqual {
     public:
-        std::string getClass() const { return "ApproxEqual"; }
+        std::string get_class() const { return "ApproxEqual"; }
 
         template<typename T>
         inline bool operator()(const T &left, const T &right) const {
@@ -137,10 +221,23 @@ namespace utopia {
         double _tol;
     };
 
+    template<>
+    class is_commutative<ApproxEqual> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class is_associative<ApproxEqual> {
+    public:
+        static const int value = 0;
+    };
+
+
     //UNARY
     class Sqrt {
     public:
-        std::string getClass() const { return "Sqrt"; }
+        std::string get_class() const { return "Sqrt"; }
 
         template<typename T>
         inline static T apply(const T &x) {
@@ -151,7 +248,7 @@ namespace utopia {
 
     class Pow2 {
     public:
-        std::string getClass() const { return "Pow2"; }
+        std::string get_class() const { return "Pow2"; }
 
         template<typename T>
         inline static T apply(const T &x) {
@@ -162,7 +259,7 @@ namespace utopia {
 
     class Pow {
     public:
-        std::string getClass() const { return "Pow"; }
+        std::string get_class() const { return "Pow"; }
 
         template<typename T>
         inline T apply(const T &x) const {
@@ -176,7 +273,7 @@ namespace utopia {
 
     class Log {
     public:
-        std::string getClass() const { return "Log"; }
+        std::string get_class() const { return "Log"; }
 
         template<typename T>
         inline static T apply(const T &x) {
@@ -187,7 +284,7 @@ namespace utopia {
 
     class Exp {
     public:
-        std::string getClass() const { return "Exp"; }
+        std::string get_class() const { return "Exp"; }
 
         template<typename T>
         inline static T apply(const T &x) {
@@ -198,7 +295,7 @@ namespace utopia {
 
     class Cos {
     public:
-        std::string getClass() const { return "Cos"; }
+        std::string get_class() const { return "Cos"; }
 
         template<typename T>
         inline static T apply(const T &x) {
@@ -210,7 +307,7 @@ namespace utopia {
 
     class Sin {
     public:
-        std::string getClass() const { return "Sin"; }
+        std::string get_class() const { return "Sin"; }
 
         template<typename T>
         inline static T apply(const T &x) {
@@ -219,14 +316,24 @@ namespace utopia {
         }
     };
 
+    class Conjugate {
+    public:
+        std::string get_class() const { return "Conjugate"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            return std::conj(x);
+        }
+    };
+
     class Transpose {
     public:
-        std::string getClass() const { return "Transpose"; }
+        std::string get_class() const { return "Transpose"; }
     };
 
     class Abs {
     public:
-        std::string getClass() const { return "Abs"; }
+        std::string get_class() const { return "Abs"; }
 
         template<typename T>
         inline static T apply(const T &x) {
@@ -238,7 +345,7 @@ namespace utopia {
 
     template<class Expr>
     std::string GetClass() {
-        return Expr().getClass();
+        return Expr().get_class();
     }
 
     //Special (FIND A NAME)
@@ -247,7 +354,7 @@ namespace utopia {
     public:
         typedef T Scalar;
 
-        std::string getClass() const { return "Reciprocal"; }
+        std::string get_class() const { return "Reciprocal"; }
 
         template<typename T2>
         inline T2 apply(const T2 &x) const {
@@ -266,19 +373,25 @@ namespace utopia {
 
     class Min {
     public:
-        std::string getClass() const { return "Min"; }
+        std::string get_class() const { return "Min"; }
 
         template<typename T>
         inline static T apply(const T &left, const T &right) {
             using std::min;
-
             return min(left, right);
         }
     };
 
+    template<>
+    class is_commutative<Min> {
+    public:
+        static const int value = 1;
+    };
+
+
     class Max {
     public:
-        std::string getClass() const { return "Max"; }
+        std::string get_class() const { return "Max"; }
 
         template<typename T>
         inline static T apply(const T &left, const T &right) {
@@ -287,9 +400,16 @@ namespace utopia {
         }
     };
 
+    template<>
+    class is_commutative<Max> {
+    public:
+        static const int value = 1;
+    };
+
+
     class IsNaNOrInf {
     public:
-        std::string getClass() const { return "IsNaNOrInf"; }
+        std::string get_class() const { return "IsNaNOrInf"; }
         template<typename T>
         inline static T apply(const T &value) {
             return std::isnan(value) || std::isinf(value);
@@ -299,7 +419,7 @@ namespace utopia {
     template<typename T>
     class IsNonZero {
     public:
-        std::string getClass() const { return "IsNonZero"; }
+        std::string get_class() const { return "IsNonZero"; }
 
         IsNonZero(const T tol = 0.)
         : tol_(tol)
@@ -332,14 +452,44 @@ namespace utopia {
             return is_non_zero_;
         }
 
-        std::string getClass() const { return "PlusIsNonZero"; }
+        std::string get_class() const { return "PlusIsNonZero"; }
 
     private:
         IsNonZero<T> is_non_zero_;
 
     };
 
+    template<class T>
+    class eval_order_changable<T, T> {
+    public:
+        static const int value = is_associative<T>::value;
+    };
 
+
+    template<>
+    class eval_order_changable<Plus, Plus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class eval_order_changable<Minus, Minus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class eval_order_changable<Plus, Minus> {
+    public:
+        static const int value = 1;
+    };
+
+    template<>
+    class eval_order_changable<Minus, Plus> {
+    public:
+        static const int value = 1;
+    };
+    
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP

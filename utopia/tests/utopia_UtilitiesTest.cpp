@@ -1,6 +1,6 @@
 #include "utopia.hpp"
 #include "utopia_AutoDiff.hpp" //simplify_test
-#include "utopia_UtilitiesTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_Blocks.hpp"
 #include "utopia_Eval_Blocks.hpp"
 
@@ -36,14 +36,17 @@ namespace utopia {
            utopia_test_assert(s.get(1) == (n2 + n4));
 
            Matrix mat = b_mat;
-           Vector ones_1 = values(n2, 2.);
-           Vector ones_2 = values(n4, 1.);
+           Vector twos = values(n2, 2.);            assert(twos.size() == n2);
+           Vector ones = values(n4, 1.);            assert(ones.size() == n4);
 
-           Vector vec = blocks(ones_1, ones_2);
-           Vector r = mat * vec;
-           Vector r1 = zeros(n1), r2 = zeros(n3);
+           Vector vec = blocks(twos, ones);         assert(vec.size() == (n2 + n4));
+           Vector r = mat * vec;                    assert(r.size() == (n1 + n3));
+           Vector r1 = zeros(n1), r2 = zeros(n3);   assert(r1.size() == n1); assert(r2.size() == n3);
 
            undo_blocks(r, r1, r2);
+
+           assert(r1.size() == n1);
+           assert(r2.size() == n3);
 
            utopia_test_assert(
             approxeq(
@@ -134,35 +137,48 @@ namespace utopia {
             }
         }
 
+
+        //FIXME
         void range_test() {
             Matrix m1 = identity(3, 3);
-            View<Matrix> view = m1.range(0, 1, 0, 3);
-            Matrix m2 = view;
-            each_read(m2, [](SizeType x, SizeType y, double entry) {
+
+            ////////////////////////////////////////////////////////////
+
+            auto m1_view = view(m1, Range(0, 1), Range(0, 3));
+            Matrix m2 = m1_view;
+
+
+            each_read(m2, [](SizeType /*x*/, SizeType y, double entry) {
                 utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
             });
 
             #ifdef WITH_PETSC
                 //NOTE(eric): range assignment is NYI in Petsc backend
-            if (std::is_same<Matrix, DMatrixd>::value) return;
+            if (std::is_same<Matrix, PetscMatrix>::value) return;
             #endif
 
+            ////////////////////////////////////////////////////////////
+
             Matrix m3 = m1;
-            m3.range(0, 1, 0, 3) = m2;
+            view(m3, Range(0, 1), Range(0, 3)) = m2;
+
             each_read(m3, [](SizeType x, SizeType y, double entry) {
                 utopia_test_assert(approxeq(x == y ? 1.0 : 0.0, entry));
             });
 
             Matrix diff = m1 - m3;
-            each_read(diff, [](SizeType x, SizeType y, double entry) {
+            each_read(diff, [](SizeType /*x*/, SizeType /*y*/, double entry) {
                 utopia_test_assert(approxeq(0.0, entry));
             });
 
-            Matrix m4 = values(4, 4, 0.0);
-            m4.range(0, 2, 0, 2) = identity(2, 2);
-            each_read(m4, [](SizeType x, SizeType y, double entry) {
-                utopia_test_assert(approxeq(x == y && x < 2 ? 1.0 : 0.0, entry));
-            });
+            ////////////////////////////////////////////////////////////
+
+            // Matrix m4 = values(4, 4, 0.0);
+            // view(m4, Range(0, 2), Range(0, 2)) = identity(2, 2);
+
+            // each_read(m4, [](SizeType x, SizeType y, double entry) {
+            //     utopia_test_assert(approxeq(x == y && x < 2 ? 1.0 : 0.0, entry));
+            // });
         }
 
         void factory_and_operations_test()
@@ -184,7 +200,7 @@ namespace utopia {
             }
 
             Vector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
-            utopia_test_assert(c.size().get(0) == 3);
+            utopia_test_assert(c.size() == 3);
         }
 
         //TODO(eric): move this to AutoDiffTest?
@@ -195,8 +211,8 @@ namespace utopia {
             Vector v = values(n, 1.0);
 
             // const double ab = 1.0;
-            // std::cout << ((ab * m * m + ab * m).getClass()) << std::endl;
-            // std::cout << tree_format((ab * m * m + ab * m).getClass()) << std::endl;
+            // std::cout << ((ab * m * m + ab * m).get_class()) << std::endl;
+            // std::cout << tree_format((ab * m * m + ab * m).get_class()) << std::endl;
 
             //Useful when applying automatic diff to remove unwanted expressions such as Id and 0
             //For now only works for trees with with certain sub-trees:  Id * (m + 0) * v + 0 *v -> m * v
@@ -204,7 +220,7 @@ namespace utopia {
             auto expr   = identity(n, n) * (m + zeros(n, n)) * v + zeros(n, n) * v;
             auto s_expr = simplify(expr);
 
-            // disp(tree_format(s_expr.getClass()));
+            // disp(tree_format(s_expr.get_class()));
 
             Vector expected = m * v;
             Vector actual   = s_expr;
@@ -246,6 +262,30 @@ namespace utopia {
         }
 
     public:
+        static void print_backend_info()
+        {
+            mpi_world_barrier();
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+            mpi_world_barrier();
+        }
+
+        void run() {
+            print_backend_info();
+            UTOPIA_RUN_TEST(csv_read_write);
+            UTOPIA_RUN_TEST(factory_test);
+            UTOPIA_RUN_TEST(wrapper_test);
+            UTOPIA_RUN_TEST(range_test);
+            UTOPIA_RUN_TEST(factory_and_operations_test);
+            UTOPIA_RUN_TEST(simplify_test);
+            UTOPIA_RUN_TEST(variable_test);
+        }
+    };
+
+    template<class Matrix, class Vector>
+    class InlinerTest {
+    private:
         void inline_eval_test()
         {
             int n = 10;
@@ -307,6 +347,7 @@ namespace utopia {
             utopia_test_assert(approxeq(28.001, num));
         }
 
+    public:
         static void print_backend_info()
         {
             mpi_world_barrier();
@@ -318,35 +359,29 @@ namespace utopia {
 
         void run() {
             print_backend_info();
-            UTOPIA_RUN_TEST(csv_read_write);
-            UTOPIA_RUN_TEST(factory_test);
-            UTOPIA_RUN_TEST(wrapper_test);
-            UTOPIA_RUN_TEST(range_test);
-            UTOPIA_RUN_TEST(factory_and_operations_test);
-            UTOPIA_RUN_TEST(simplify_test);
-            UTOPIA_RUN_TEST(variable_test);
             UTOPIA_RUN_TEST(inline_eval_test);
         }
+
     };
 
-    void runUtilitiesTest() {
-        UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
+    static void utilities() {
 
 #ifdef WITH_BLAS
-        UtilitiesTest<Matrixd, Vectord>().run();
+        UtilitiesTest<BlasMatrixd, BlasVectord>().run();
+        InlinerTest<BlasMatrixd, BlasVectord>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        BlockTest<DSMatrixd, DVectord>().run();
+        BlockTest<PetscMatrix, PetscVector>().run();
 
 
         if(mpi_world_size() == 1) {
-            UtilitiesTest<DMatrixd, DVectord>().run();
-            BlockTest<DMatrixd, DVectord>().run();
+            UtilitiesTest<PetscMatrix, PetscVector>().run(); //FIXME
+            BlockTest<PetscMatrix, PetscVector>().run();
 #ifdef WITH_BLAS
             // interoperability
-            UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();
-            UtilitiesTest<Matrixd, DVectord>().inline_eval_test();
+            // UtilitiesTest<PetscMatrix, BlasVectord>().inline_eval_test();
+            // UtilitiesTest<BlasMatrixd, PetscVector>().inline_eval_test();
 #endif //WITH_BLAS
 
         }
@@ -355,10 +390,10 @@ namespace utopia {
 
         if(mpi_world_size() == 1) {
 #ifdef WITH_TRILINOS
-            BlockTest<TSMatrixd, TVectord>().run();
+            BlockTest<TpetraMatrixd, TpetraVectord>().run();
 #endif //WITH_TRILINOS
         }
-
-        UTOPIA_UNIT_TEST_END("UtilitiesTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(utilities);
 }

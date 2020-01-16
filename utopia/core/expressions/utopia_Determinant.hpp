@@ -2,6 +2,7 @@
 #define UTOPIA_DETERMINANT_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_ScalarCast.hpp"
 
 namespace utopia {
 
@@ -21,11 +22,15 @@ namespace utopia {
 
         operator Scalar() const
         {
-            Evaluator<typename Traits<Determinant>::Vector, Traits<Determinant>::Backend> eval;
-            return eval.eval(*this);
+           return scalar_cast<Scalar>(*this);
         }
 
         Determinant(const Expr &expr) : expr_(expr) {}
+
+        inline std::string get_class() const override
+        {
+            return "Determinant<" + expr().get_class() + ">";
+        }
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;

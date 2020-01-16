@@ -1,0 +1,50 @@
+{
+    "*mesh": {
+        "type": "square",
+        "elem-type" : "tri",
+        "n-x" : 5,
+        "n-y" : 5,
+        "refinements" : 0,
+        "random-refine" : true,
+        "random-refinements": 5
+
+    },
+    "disable-adaptivity" : false,
+    "adaptivity" :true,
+    "mesh" : {
+        "type" : "file",
+        "path" : "square.e",
+        "refinements" : 0,
+        "random-refine" : true,
+        "random-refinements": 3
+    },
+    "space": {
+        "system-name" : "mass",
+        "variables" : [
+            {
+                "name" : "u",
+                "order" : 1,
+                "*fe-family": "MONOMIAL"
+            }
+        ],
+        "boundary-conditions" :[
+                {
+                "side"  : 1,
+                "type"  : "expr",
+                "value" : "sin(10*y)^2"
+            },
+            {
+                "side"  : 2,
+                "type"  : "0"
+            }
+
+        ]
+    },
+    "forcing-function" : [
+        {
+            "block":  1,
+            "type"  : "expr",
+            "value" : "x*x+y"
+        }
+    ]
+}

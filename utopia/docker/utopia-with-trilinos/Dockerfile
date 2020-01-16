@@ -23,7 +23,7 @@ RUN cd /utopia_cloned/utopia/bin && \
 RUN cd /utopia_cloned/utopia/bin && make -j
 RUN cd /utopia_cloned/utopia/bin && make install
 
-RUN cd /utopia_cloned/utopia/bin && ./utopia_exec -verbose && ./utopia_exec -test none -bench
+RUN cd /utopia_cloned/utopia/bin && ./utopia_test -verbose -bench
 
 RUN echo 'export LD_LIBRARY_PATH='$LD_LIBRARY_PATH > setup.sh
 RUN cat setup.sh

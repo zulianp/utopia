@@ -84,7 +84,7 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class TRSubproblem : public IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
+    class TRSubproblem : public virtual IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -112,7 +112,7 @@ namespace  utopia
 
 
     template<class Vector>
-    class MatrixFreeTRSubproblem : public MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
+    class MatrixFreeTRSubproblem : public virtual MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -137,6 +137,61 @@ namespace  utopia
                 TRSubproblemBase<Vector>::print_usage(os);
             }
     };
+
+
+
+    template<class Matrix, class Vector>
+    class OperatorBasedTRSubproblem :   public virtual MatrixFreeTRSubproblem<Vector>,
+                                        public virtual TRSubproblem<Matrix, Vector>
+    {
+    public:
+        using MatrixFreeTRSubproblem<Vector>::update;
+        using TRSubproblem<Matrix, Vector>::update;
+        using MatrixFreeTRSubproblem<Vector>::solve;
+
+        virtual ~OperatorBasedTRSubproblem() {}
+
+        virtual bool solve(const Matrix &A, const Vector &b, Vector &x) override
+        {
+            update(make_ref(A));
+            return solve(operator_cast<Vector>(A), b, x);
+        }
+
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        {
+            TRSubproblem<Matrix, Vector>::update(op);
+            update(operator_cast<Vector>(*op));
+        }
+
+        virtual bool smooth(const Vector &rhs, Vector &x) override
+        {
+            SizeType temp = this->max_it();
+            this->max_it(this->sweeps());
+            solve(operator_cast<Vector>(*this->get_operator()), rhs, x);
+            this->max_it(temp);
+            return true;
+        }
+
+        bool apply(const Vector &b, Vector &x) override
+        {
+            return solve(operator_cast<Vector>(*this->get_operator()), b, x);
+        }
+
+        virtual OperatorBasedTRSubproblem * clone() const override = 0;
+
+        virtual void read(Input &in) override
+        {
+            MatrixFreeTRSubproblem<Vector>::read(in);
+            TRSubproblem<Matrix, Vector>::read(in);
+        }
+
+        virtual void print_usage(std::ostream &os) const override
+        {
+            MatrixFreeTRSubproblem<Vector>::print_usage(os);
+            TRSubproblem<Matrix, Vector>::print_usage(os);
+        }
+    };
+
 
 }
 

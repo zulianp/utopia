@@ -3,7 +3,7 @@
 #include "utopia_FormEvaluator.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia.hpp"
-#include "utopia_fe_homemade.hpp"
+//#include "utopia_fe_homemade.hpp"
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_MixedFunctionSpace.hpp"
 
@@ -40,7 +40,7 @@ namespace utopia {
         template<class Eq>
         void operator()(const int index, const Eq &eq) const {
             std::cout << "equation: " << index << std::endl;
-            std::cout << tree_format(eq.getClass()) << std::endl;
+            std::cout << tree_format(eq.get_class()) << std::endl;
         }
     };
 
@@ -96,7 +96,7 @@ namespace utopia {
             FormEvaluator<Backend> eval;
             eval.eval(form, mat, ctx, true);
 
-            std::cout << tree_format(form.getClass()) << std::endl;
+            std::cout << tree_format(form.get_class()) << std::endl;
             disp(mat);
         }
 
@@ -117,7 +117,7 @@ namespace utopia {
             FormEvaluator<Backend> eval;
             eval.eval(form, vec, ctx, true);
 
-            std::cout << tree_format(form.getClass()) << std::endl;
+            std::cout << tree_format(form.get_class()) << std::endl;
             disp(vec);
         }
 

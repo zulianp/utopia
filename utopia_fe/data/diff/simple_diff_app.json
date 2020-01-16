@@ -1,0 +1,40 @@
+{
+    "from" :
+    {
+        "mesh" :
+        {
+            "type" : "file",
+            "path" : "my_solution.e"
+        },
+        "space" :
+        {
+            "system-name" : "from",
+            "variables" : [
+                {
+                    "name" : "u",
+                    "order" : 1
+                }
+            ]
+        }
+    },
+
+    "to" :
+    {
+        "mesh" :
+        {
+            "type" : "file",
+            "path" : "reference_solution.e"
+        },
+        "space" :
+        {
+            "system-name" : "to",
+            "variables" : [
+                {
+                    "name" : "u",
+                    "order" : 1
+                }
+            ]
+        }
+    }
+
+}

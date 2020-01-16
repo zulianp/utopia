@@ -61,15 +61,18 @@
 namespace utopia {
 
     void apply_boundary_conditions(libMesh::DofMap &dof_map, USparseMatrix &mat, UVector &vec);
+    void apply_boundary_conditions(LibMeshFunctionSpace &V,
+                                  USparseMatrix &mat, UVector &vec);
     void apply_boundary_conditions(libMesh::DofMap &dof_map, UVector &vec);
 
     template<class Vector>
-    void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
-    {
+    void mark_constrained_dofs(libMesh::DofMap &dof_map, Tensor<Vector, 1> &t_vec)
+    {   
+        auto &vec = t_vec.derived();
         vec = local_zeros(dof_map.n_local_dofs());
         const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
-        Write<Wrapper<Vector, 1>> w_v(vec);
+        Write<Vector> w_v(vec);
 
         if(has_constaints) {
             Range r = range(vec);
@@ -157,7 +160,7 @@ namespace utopia {
         }
     }
 
-    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, DVectord &utopia_vec)
+    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, PetscVector &utopia_vec)
     {
         using namespace libMesh;
         Vec p_vec = cast_ptr< libMesh::PetscVector<libMesh::Number> *>(&lm_vec)->vec();
@@ -166,7 +169,7 @@ namespace utopia {
 
 
 
-    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, DSMatrixd &utopia_mat) {
+    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, PetscMatrix &utopia_mat) {
         using namespace libMesh;
 
         Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
@@ -174,22 +177,22 @@ namespace utopia {
     }
 
 #ifdef WITH_TRILINOS
-    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TVectord &utopia_vec)
+    inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TpetraVectord &utopia_vec)
     {
         //FIXME inefficient
-        DVectord temp;
+        PetscVector temp;
         utopia::convert(lm_vec, temp);
         utopia::backend_convert(temp, utopia_vec);
     }
 
 
-    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TSMatrixd &utopia_mat) {
+    inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TpetraMatrixd &utopia_mat) {
         using namespace libMesh;
 
         Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
 
         //FIXME inefficient
-        DSMatrixd temp;
+        PetscMatrix temp;
         utopia::convert(p_mat, temp);
         backend_convert_sparse(temp, utopia_mat);
     }

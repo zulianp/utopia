@@ -68,6 +68,95 @@ namespace utopia {
         typedef utopia::Traits<LibMeshFunctionSpace> Traits;
         FormEval() { }
 
+
+        template<class FS, class Tensor>
+        static void apply(
+                    LinearIntegrator<FS> &expr,
+                    Tensor &t,
+                    AssemblyContext<LIBMESH_TAG> &ctx)
+        {
+            if(expr.is_surface()) {
+
+                if(ctx.n_sides() != 0) {
+                    ctx.surface_integral_begin();
+
+                    for(std::size_t i = 0; i < ctx.n_sides(); ++i) {
+                        ctx.set_side(i);
+
+                        if(expr.assemble(ctx, t)) {
+                            ctx.set_has_assembled(true);
+                        }
+                    }
+
+                    ctx.surface_integral_end();
+                }
+
+            } else {
+               if(expr.assemble(ctx, t)) {
+                   ctx.set_has_assembled(true);
+               }
+            }
+        }
+
+        template<class FS, class Tensor>
+        static void apply(
+                    BilinearIntegrator<FS> &expr,
+                    Tensor &t,
+                    AssemblyContext<LIBMESH_TAG> &ctx)
+        {
+            if(expr.is_surface()) {
+
+                if(ctx.n_sides() != 0) {
+                    ctx.surface_integral_begin();
+
+                    for(std::size_t i = 0; i < ctx.n_sides(); ++i) {
+                        ctx.set_side(i);
+
+                        if(expr.assemble(ctx, t)) {
+                            ctx.set_has_assembled(true);
+                        }
+                    }
+
+                    ctx.surface_integral_end();
+                }
+
+            } else {
+               if(expr.assemble(ctx, t)) {
+                   ctx.set_has_assembled(true);
+               }
+            }
+        }
+
+        template<class FS, class Matrix, class Vector>
+        static void apply(
+                    EquationIntegrator<FS> &expr,
+                    Matrix &mat,
+                    Vector &vec,
+                    AssemblyContext<LIBMESH_TAG> &ctx)
+        {
+            if(expr.is_surface()) {
+
+                if(ctx.n_sides() != 0) {
+                    ctx.surface_integral_begin();
+
+                    for(std::size_t i = 0; i < ctx.n_sides(); ++i) {
+                        ctx.set_side(i);
+
+                        if(expr.assemble(ctx, mat, vec)) {
+                            ctx.set_has_assembled(true);
+                        }
+                    }
+
+                    ctx.surface_integral_end();
+                }
+
+            } else {
+               if(expr.assemble(ctx, mat, vec)) {
+                   ctx.set_has_assembled(true);
+               }
+            }
+        }
+
         template<class Expr, class Tensor>
         static void apply(
                     const Integral<Expr> &expr,
@@ -161,15 +250,15 @@ namespace utopia {
             accumulator = val;
         }
 
-        template<class Left, class Right, class Matrix, class Vector>
+        template<class Left, class Right, class MatT, class VecT>
         static void apply(
                     const Equality<Left, Right> &expr,
-                    Wrapper<Matrix, 2> &mat,
-                    Wrapper<Vector, 1> &vec,
+                    Tensor<MatT, 2> &mat,
+                    Tensor<VecT, 1> &vec,
                     AssemblyContext<LIBMESH_TAG> &ctx)
         {
-            apply(expr.left(),  mat, ctx);
-            apply(expr.right(), vec, ctx);
+            apply(expr.left(),  mat.derived(), ctx);
+            apply(expr.right(), vec.derived(), ctx);
         }
 
         template<class Matrix, class Vector>
@@ -181,7 +270,7 @@ namespace utopia {
             template<class Eq>
             void operator()(const int index, const Eq &eq) {
                 FormEval<Form, LIBMESH_TAG>::apply(eq, mat_buff, vec_buff, ctx);
-                if(empty(mat)) {
+                if(empty(mat) || size(mat) != size(mat_buff)) {
                     mat = mat_buff;
                     vec = vec_buff;
                 } else {
@@ -198,15 +287,15 @@ namespace utopia {
             AssemblyContext<LIBMESH_TAG> &ctx;
         };
 
-        template<class... Eq, class Matrix, class Vector>
+        template<class... Eq, class MatT, class VecT>
         static void apply(
             const Equations<Eq...> &eqs,
-            Wrapper<Matrix, 2> &mat,
-            Wrapper<Vector, 1> &vec,
+            Tensor<MatT, 2> &mat,
+            Tensor<VecT, 1> &vec,
             AssemblyContext<LIBMESH_TAG> &ctx)
         {
             // FEBackend<LIBMESH_TAG>::init_context(eqs, ctx);
-            EquationAssembler<Wrapper<Matrix, 2>, Wrapper<Vector, 1>> eq_ass(mat, vec, ctx);
+            EquationAssembler<MatT, VecT> eq_ass(mat.derived(), vec.derived(), ctx);
             eqs.each(eq_ass);
         }
 
@@ -317,6 +406,13 @@ namespace utopia {
 
     template<class Derived>
     static auto eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx)
+    -> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
+    {
+        return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx);
+    }
+
+    template<class Derived>
+    static auto eval(Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx)
     -> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
     {
         return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx);

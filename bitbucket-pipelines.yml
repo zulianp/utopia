@@ -20,7 +20,7 @@ pipelines:
           - ./utopia_exec -verbose -bench
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build_debug -DCMAKE_BUILD_TYPE=Debug
           - make && make install
-          - ./utopia_exec -verbose -bench
+          - ./utopia_test -verbose -bench
     # - step: 
     #     name: Utopia/Trilinos
     #     image: zulianp/utopia-trilinos-env:latest

@@ -128,6 +128,10 @@ namespace utopia {
         auto eq_m = inner(matrix->diffusion_tensor * grad(u_m), ctx_fun(matrix->sampler) * grad(v_m)) * dX;
         auto eq_f = inner(fracture_network->diffusion_tensor  * grad(u_s), ctx_fun(fracture_network->sampler)  * grad(v_f)) * dX;
 
+        // auto eq_m = inner(grad(u_m), ctx_fun(matrix->sampler) * grad(v_m)) * dX;
+        // auto eq_f = inner(grad(u_s), ctx_fun(fracture_network->sampler)  * grad(v_f)) * dX;
+
+
         utopia::assemble(eq_m, A_m);
         utopia::assemble(eq_f, A_f);
 
@@ -262,6 +266,9 @@ namespace utopia {
         } else {
             ok = solve_monolithic();
         }
+
+        matrix->post_process(x_m);
+        fracture_network->post_process(x_f);
 
         c.stop();
         std::cout << "Solver time: " << c << std::endl;
@@ -399,7 +406,7 @@ namespace utopia {
 
             sp.update(make_ref(A_m), make_ref(A_f), make_ref(T));
 
-            apply_boundary_conditions(V_m.dof_map(), sp.get_operator(), x_m);
+            // apply_boundary_conditions(V_m.dof_map(), sp.get_operator(), x_m);
             
             if(!sp.apply(rhs_m, rhs_f, x_m, x_f)) {
                 return false;

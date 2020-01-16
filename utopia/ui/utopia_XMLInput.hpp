@@ -37,7 +37,7 @@ namespace utopia {
         void get(const std::string &key, std::function<void(Input &)> lambda) override;
 
         void get_all(std::function<void(Input &)> lambda) override;
-        void get(std::vector<std::shared_ptr<IConvertible>> &values) override {
+        void get(std::vector<std::shared_ptr<IConvertible>> &/*values*/) override {
             assert(false && "implement me");
         }
 

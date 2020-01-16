@@ -1,0 +1,60 @@
+{
+    "transfer": {
+        "type": "pseudo-l2-projection",
+        "function": "x*x + y",
+        "*function": "1.0",
+        "function-type" : "expr",
+        "discretization" : "new",
+        "use-convert-transfer" : true,
+        "handle-adaptivity" : true,
+        "master": {
+            "mesh": {
+                "type": "square",
+                "elem-type" : "quad",
+                "n-x" : 20,
+                "n-y" : 10,
+                "refinements" : 0,
+                "order" : 1,
+                "random-refine" : true,
+                "random-refinements": 5,
+                "refine-0" : false
+            },
+            "space": {
+                "system-name" : "master",
+                "variables" : [
+                    {
+                        "name" : "u",
+                        "order" : 1,
+                        "*fe-family": "MONOMIAL"
+                    }
+                ]
+            }
+            
+        },
+        "slave": {
+            "mesh": {
+                "type": "square",
+                "elem-type" : "quad",
+                "min-x":0.4,
+                "max-x":0.8,
+                "min-y":0.2,
+                "max-y":0.8,
+                "n-x" : 4,
+                "n-y" : 4,
+                "refinements" : 0,
+                "order" : 1,
+                "random-refine" : true,
+                "random-refinements": 5
+            },
+            "space": {
+                "system-name" : "slave",
+                "variables" : [
+                    {
+                        "name" : "u",
+                        "order" : 1
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -66,7 +66,7 @@ namespace utopia {
         }
 
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
             return "Equations";
         }

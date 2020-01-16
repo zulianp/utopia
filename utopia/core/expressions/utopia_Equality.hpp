@@ -39,9 +39,9 @@ namespace utopia {
         // 	return right_;
         // }
 
-        std::string getClass() const
+        std::string get_class() const
         {
-            return "Equality<" + left().getClass() + ", " + right().getClass() + ">";
+            return "Equality<" + left().get_class() + ", " + right().get_class() + ">";
         }
 
     private:

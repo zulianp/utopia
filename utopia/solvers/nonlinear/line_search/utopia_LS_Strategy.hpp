@@ -16,7 +16,9 @@ namespace  utopia
     class LSStrategy : virtual public Configurable
 
     {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        
     public:
         virtual ~LSStrategy() {}
 
@@ -116,6 +118,8 @@ namespace  utopia
             this->print_param_usage(os, "rho", "double", "Contraction factor.", "0.75");
             this->print_param_usage(os, "alpha_min", "double", "Minimum allowed step-size.", "1e-9");
         }
+
+        virtual void init_memory(const SizeType & ls) = 0;
 
     private:
         bool verbose_;      /*!< Verbose inside of LS strategy.  */

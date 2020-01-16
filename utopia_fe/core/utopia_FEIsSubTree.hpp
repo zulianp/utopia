@@ -229,6 +229,25 @@ namespace utopia {
     };
 
     ///rest of specializations
+
+    //filter
+    template<class Inner, class Out, int Order, class Fun>
+    class IsSubTree< Filter<Inner, Out, Order, Fun>, Filter<Inner, Out, Order, Fun> > {
+    public:
+        static const int value = 1;
+    };
+
+    template<class Inner, class Out, int Order, class Fun>
+    class IsSubTree< Filter<utopia::Any, Out, Order, Fun>, Filter<Inner, Out, Order, Fun> > {
+    public:
+        static const int value = 1;
+    };
+
+    template<class Inner, class Out, int Order, class Fun>
+    class IsSubTree< Inner, Filter<Inner, Out, Order, Fun> > {
+    public:
+        static const int value = IsSubTree<Inner, Inner>::value;
+    };
 }
 
 #endif //UTOPIA_FE_IS_SUBTREE_HPP

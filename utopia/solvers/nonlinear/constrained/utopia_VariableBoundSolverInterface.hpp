@@ -6,6 +6,9 @@
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_BoxConstraints.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_For.hpp"
+#include "utopia_Allocations.hpp"
 
 
 #include <iomanip>
@@ -15,7 +18,7 @@
 namespace utopia
 {
     template<class Vector>
-    class VariableBoundSolverInterface
+    class VariableBoundSolverInterface : virtual public MemoryInterface<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
@@ -24,15 +27,8 @@ namespace utopia
 
 
     public:
-        VariableBoundSolverInterface()
-        {
-
-        }
-
-        virtual ~VariableBoundSolverInterface()
-        {
-
-        }
+        VariableBoundSolverInterface() = default;
+        virtual ~VariableBoundSolverInterface() = default;
 
         virtual bool set_box_constraints(const BoxConstraints & box)
         {
@@ -78,56 +74,62 @@ namespace utopia
           return constraints_.has_upper_bound();
         }
 
-        virtual void fill_empty_bounds()
+        virtual void fill_empty_bounds(const SizeType & loc_size)
         {
-          return constraints_.fill_empty_bounds();
+          return constraints_.fill_empty_bounds(loc_size);
         }
 
 
-
     protected:
-      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g) const
+      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
       {
+        if(empty(Pc_) || size(Pc_) != size(x)){
+          Pc_ = 0.0 * x; 
+        }
 
-        Vector Pc;
-        Vector x_g = x - g;
-        Vector ub, lb;
+        xg_ = x - g;
 
-        Scalar n = local_size(x).get(0);
+        if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
+        {
+          this->fill_empty_bounds(local_size(x)); 
+        }
 
-        if(constraints_.has_upper_bound())
-          ub = *constraints_.upper_bound();
-        else
-          ub =  local_values(n, 9e15);
+        const auto &ub = *constraints_.upper_bound();
+        const auto &lb = *constraints_.lower_bound();
 
-        if(constraints_.has_lower_bound())
-          lb = *constraints_.lower_bound();
-        else
-          lb =  local_values(n, -9e15);
+        get_projection(xg_, lb, ub, Pc_);
+        Pc_ -= x;
 
-        get_projection(x_g, lb, ub, Pc);
-
-        Pc -= x;
-        return norm2(Pc);
+        return norm2(Pc_);
       }
 
-
+  public:  // expose it for CUDA
       bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc) const
       {
-          Pc = local_values(local_size(x).get(0), 1.0);
-          {
-              Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-              Write<Vector> wv(Pc);
+        if(empty(Pc) || size(Pc) != size(x)){
+            Pc = 0.0*x;
+        }
 
-              each_write(Pc, [&ub, &lb, &x](const SizeType i) -> double {
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);
-                          if(li >= xi)
-                            return li;
-                          else
-                            return (ui <= xi) ? ui : xi; }   );
-          }
+        {
+            auto d_lb = const_device_view(lb);
+            auto d_ub = const_device_view(ub);
+            auto d_x  = const_device_view(x);
 
-          return true;
+            parallel_each_write(Pc, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+            {
+                Scalar li = d_lb.get(i);
+                Scalar ui = d_ub.get(i);
+                Scalar xi = d_x.get(i);
+
+                if(li >= xi)
+                  return li;
+                else
+                  return (ui <= xi) ? ui : xi;
+
+            });
+        }
+
+        return true;
       }
 
     void make_iterate_feasible(Vector & x) const
@@ -135,36 +137,42 @@ namespace utopia
         if(!constraints_.has_upper_bound() && !constraints_.has_lower_bound())
             return;
 
-        const Vector x_old = x;
-
         if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
         {
             const auto &ub = *constraints_.upper_bound();
             const auto &lb = *constraints_.lower_bound();
+            
+          {
+            auto d_lb     = const_device_view(lb);
+            auto d_ub     = const_device_view(ub);
 
-            {
-              Read<Vector> r_ub(ub), r_lb(lb), r_x(x_old);
-              Write<Vector> wv(x);
+          parallel_transform(
+                          x,
+                          UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                            Scalar li = d_lb.get(i);
+                            Scalar ui = d_ub.get(i);
+                            if(li >= xi)
+                              return li;
+                            else
+                              return (ui <= xi) ? ui : xi;
+                      });
 
-              each_write(x, [&ub, &lb, &x_old](const SizeType i) -> double {
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);
-                          if(li >= xi)
-                            return li;
-                          else
-                            return (ui <= xi) ? ui : xi; }   );
-            }
+          }
+
         }
         else if(constraints_.has_upper_bound() && !constraints_.has_lower_bound())
         {
             const auto &ub = *constraints_.upper_bound();
 
             {
-              Read<Vector> r_ub(ub), r_x(x_old);
-              Write<Vector> wv(x);
+              auto d_ub     = const_device_view(ub);
 
-              each_write(x, [&ub, &x_old](const SizeType i) -> double {
-                          Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);
-                            return (ui <= xi) ? ui : xi; }   );
+              parallel_transform(
+                              x,
+                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                                Scalar ui = d_ub.get(i);
+                                return (ui <= xi) ? ui : xi;
+                          });
             }
         }
         else
@@ -172,83 +180,102 @@ namespace utopia
             const auto &lb = *constraints_.lower_bound();
 
             {
-              Read<Vector> r_lb(lb), r_x(x_old);
-              Write<Vector> wv(x);
+              auto d_lb     = const_device_view(lb);
 
-              each_write(x, [&lb, &x_old](const SizeType i) -> double {
-                          Scalar li =  lb.get(i); Scalar xi =  x_old.get(i);
-                          return (li >= xi) ? li : xi; }   );
+              parallel_transform(
+                              x,
+                              UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                                Scalar li =  d_lb.get(i);
+                                return (li >= xi) ? li : xi;
+                          });
+
             }
         }
-
     }
 
-
-      virtual BoxConstraints  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform) const
+      virtual const BoxConstraints &  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform) 
       {
-          Vector l_f, u_f;
+        correction_constraints_.fill_empty_bounds(local_size(x_k)); 
 
-          if(constraints_.has_upper_bound())
+        if(constraints_.has_upper_bound())
+        {
+            auto &ub_merged = *correction_constraints_.upper_bound();
+            ub_merged =  *constraints_.upper_bound() - x_k;
+
           {
-              Vector u =  *constraints_.upper_bound() - x_k;
-              u_f = local_zeros(local_size(x_k).get(0));
-              {
-                  Read<Vector> rv(u);
-                  Write<Vector> wv(u_f);
-
-                  each_write(u_f, [ub_uniform, &u](const SizeType i) -> double
-                  {
-                    auto val = u.get(i);
-                    return  (val <= ub_uniform)  ? val : ub_uniform; }   );
-                  }
+            parallel_transform(ub_merged,
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &ub) -> Scalar 
+                              {         
+                                        // device::min(ub, ub_uniform);
+                                return  std::min(ub, ub_uniform);
+                              });
           }
-          else
-              u_f = local_values(local_size(x_k).get(0), ub_uniform); ;
+        }
+        else{
+          correction_constraints_.upper_bound()->set(ub_uniform); 
+        }
 
-          if(constraints_.has_lower_bound())
+        if(constraints_.has_lower_bound())
+        {
+            auto &lb_merged = *correction_constraints_.lower_bound();
+            lb_merged =  *constraints_.lower_bound() - x_k;
+
           {
-              Vector l = *(constraints_.lower_bound()) - x_k;
-              l_f = local_zeros(local_size(x_k).get(0));
-
-              {
-                  Read<Vector> rv(l);
-                  Write<Vector> wv(l_f);
-
-                  each_write(l_f, [lb_uniform, &l](const SizeType i) -> double
-                  {
-                    auto val = l.get(i);
-                    return  (val >= lb_uniform)  ? val : lb_uniform;
-                  }   );
-              }
+            parallel_transform(lb_merged,
+                              UTOPIA_LAMBDA(const SizeType &, const Scalar &lb) -> Scalar 
+                              {
+                                return  std::max(lb, lb_uniform);
+                              });
           }
-          else
-              l_f = local_values(local_size(x_k).get(0), lb_uniform);
 
-          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
+        }
+        else{
+          correction_constraints_.lower_bound()->set(lb_uniform); 
+        }
+
+        return correction_constraints_; 
       }
 
 
-
-      virtual BoxConstraints  build_correction_constraints(const Vector & x_k) const
+      virtual const BoxConstraints & build_correction_constraints(const Vector & x_k) 
       {
-          Vector l_f, u_f;
+          correction_constraints_.fill_empty_bounds(local_size(x_k)); 
 
-          if(constraints_.has_upper_bound())
-              u_f =  *constraints_.upper_bound() - x_k;
-          else
-              u_f = local_values(local_size(x_k).get(0), 9e12);
+          if(constraints_.has_upper_bound()){
+            *correction_constraints_.upper_bound() =  *constraints_.upper_bound() - x_k;
+          }
+          else{
+            correction_constraints_.upper_bound()->set(9e12); 
+          }
 
-          if(constraints_.has_lower_bound())
-              l_f = *(constraints_.lower_bound()) - x_k;
-          else
-              l_f = local_values(local_size(x_k).get(0), -9e12);
 
-          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
+          if(constraints_.has_lower_bound()){
+            *correction_constraints_.lower_bound() = *(constraints_.lower_bound()) - x_k;
+          }
+          else{
+            correction_constraints_.lower_bound()->set(-9e12); 
+          }
+
+          return correction_constraints_; 
+      }
+
+      virtual void init_memory(const SizeType & ls) override
+      {
+        auto zero_expr = local_zeros(ls);
+        Pc_  = zero_expr;
+        xg_  = zero_expr;
+
+        constraints_.fill_empty_bounds(ls); 
+        correction_constraints_.fill_empty_bounds(ls); 
       }
 
 
     protected:
-        BoxConstraints                  constraints_;
+        BoxConstraints                  constraints_;             // variable bound constraints 
+        BoxConstraints                  correction_constraints_;  // constraints needed for correction 
+
+        Vector Pc_;
+        Vector xg_; 
 
 
     };

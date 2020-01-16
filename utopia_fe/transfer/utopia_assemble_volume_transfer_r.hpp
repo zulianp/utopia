@@ -35,8 +35,8 @@ namespace utopia {
             bool use_biorth,
             int n_var,
             int n_var_r,
-            DSMatrixd &B,
-            DSMatrixd &B_reverse);
+            PetscMatrix &B,
+            PetscMatrix &B_reverse);
 
 }
 

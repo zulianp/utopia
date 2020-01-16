@@ -24,8 +24,8 @@ namespace utopia {
             return expr_;
         }
 
-        std::string getClass() const {
-            return "Inverse<" + expr_.getClass() + ">";
+        std::string get_class() const {
+            return "Inverse<" + expr_.get_class() + ">";
         }
 
     private:

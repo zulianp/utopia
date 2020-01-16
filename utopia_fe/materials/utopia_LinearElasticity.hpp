@@ -1,23 +1,39 @@
 #ifndef UTOPIA_LINEAR_ELASTICITY_HPP
 #define UTOPIA_LINEAR_ELASTICITY_HPP
 
+#include "utopia_ElasticMaterial.hpp"
+#include "utopia_fe_core.hpp"
+
+#include "utopia_LameeParameters.hpp"
+#include "utopia_libmesh_FormEval.hpp"
+#include "utopia_Integrators.hpp"
+
 namespace utopia {
 
     template<class FunctionSpaceT, class Matrix, class Vector>
-    class LinearElasticity final : public ElasticMaterial<Matrix, Vector> {
+    class LinearElasticity final : public ElasticMaterial<Matrix, Vector> //, public ModularEquationIntegrator<FunctionSpaceT> 
+    {
     public:
-        LinearElasticity(FunctionSpaceT &V, const LameeParameters &params)
-        : V_(V), params_(params), initialized_(false)
-        {}
+        using Scalar = UTOPIA_SCALAR(Vector);
+
+        LinearElasticity(FunctionSpaceT &V, const LameeParameters &params);
+        ~LinearElasticity();
 
         bool init(Matrix &hessian)
         {
             if(initialized_) return true;
+            
             initialized_ = assemble_hessian(hessian);
             return initialized_;
         }
 
-        // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+        void clear() override
+        {
+            initialized_ = false;
+        }
+
+        bool is_linear() const override { return true; }
+
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         {
             if(!init(hessian)) {
@@ -36,36 +52,41 @@ namespace utopia {
             }
 
             result = hessian * x;
+            result *= 1./rescaling_;
             return true;
         }
 
-        void clear() override
+        bool normal_stress(const UVector &x, UVector &out, const int subspace = 0) override;
+
+        bool von_mises_stress(const UVector &x, UVector &out, const int subspace = 0) override;
+
+        inline Scalar rescaling() const override
         {
-            initialized_ = false;
+            return rescaling_;
         }
 
-        bool is_linear() const override { return true; }
+        inline void rescaling(const Scalar &value) override {
+            rescaling_ = value;
+        }
 
     private:
         FunctionSpaceT &V_;
         LameeParameters params_;
         bool initialized_;
+        Scalar rescaling_;
 
-        bool assemble_hessian(Matrix &hessian)
-        {
-            auto u = trial(V_);
-            auto v = test(V_);
+        // inline void init_integrators(const UVector &x)
+        // {
+        //     init_bilinear_integrator();
+        //     init_linear_integrator(x);
+        // }
 
-            auto mu     = params_.var_mu();
-            auto lambda = params_.var_lambda();
+        // void init_bilinear_integrator();
 
-            auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
-            auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+        // void init_linear_integrator(const UVector &x);
 
-            auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+        bool assemble_hessian(Matrix &hessian);
 
-            return assemble(b_form, hessian);
-        }
     };
 }
 

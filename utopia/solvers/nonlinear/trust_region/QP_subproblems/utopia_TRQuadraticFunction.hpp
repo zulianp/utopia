@@ -11,7 +11,7 @@ namespace utopia {
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class TRQuadraticFunction final : public Function<Matrix, Vector, Backend> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         TRQuadraticFunction(const std::shared_ptr<const Matrix> &H, const std::shared_ptr<const Vector> &rhs)
         : rhs_(rhs), H_(H)
@@ -23,8 +23,8 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            value = 0.5 * dot(x, *H_ * x);
-            value -= dot(x,  *rhs_);
+            Hx_ = *H_ * x; 
+            value = 0.5 * dot(x, Hx_) - dot(x,  *rhs_);
             return true;
         }
 
@@ -34,7 +34,7 @@ namespace utopia {
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override
+        bool hessian(const Vector &/*x*/, Matrix &H) const override
         {
             H = *H_;
             return true;
@@ -65,6 +65,7 @@ namespace utopia {
     private:
         std::shared_ptr<const Vector> rhs_;
         std::shared_ptr<const Matrix> H_;
+        Vector Hx_; 
     };
 }
 

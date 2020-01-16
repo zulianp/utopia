@@ -42,7 +42,8 @@ namespace utopia {
             }
 
             idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
-            UVector out = disp.select(idx);
+            UVector out;
+            disp.select(idx, out);
             {
                 Read<UVector> r_out(out);
                 auto range_out = range(out);
@@ -239,16 +240,20 @@ namespace utopia {
         auto &dof_map_s = V_sx.dof_map();
 
         dof_map_f.prepare_send_list();
-        sol_f    = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
-        sol_fold = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
+        UIndexSet ghost_nodes_f, ghost_nodes_s;
+        convert(dof_map_f.get_send_list(), ghost_nodes_f);
 
-        assert(sol_f.implementation().has_ghosts() || mpi_world_size() == 1);
+        sol_f    = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), ghost_nodes_f);
+        sol_fold = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), ghost_nodes_f);
+
+        assert(sol_f.has_ghosts() || mpi_world_size() == 1);
 
         std::cout << "n_dofs_fluid: " << dof_map_f.n_dofs() << std::endl;
         std::cout << "n_dofs_solid: " << dof_map_s.n_dofs() << std::endl;
 
-        fsi_forcing_term_f = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
-        displacement_s     = ghosted(dof_map_s.n_local_dofs(), dof_map_s.n_dofs(), dof_map_s.get_send_list());
+        convert(dof_map_s.get_send_list(), ghost_nodes_s);
+        fsi_forcing_term_f = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), ghost_nodes_f);
+        displacement_s     = ghosted(dof_map_s.n_local_dofs(), dof_map_s.n_dofs(), ghost_nodes_s);
 
         USparseMatrix mat_s, mass_mat_s, mass_mat_f;
         UVector rhs_s,  mass_vec_s, mass_vec_f;
@@ -300,10 +305,10 @@ namespace utopia {
              fsi_velocity_s = local_zeros(local_size(displacement_s));
             old_displacement_s = displacement_s;
 
-            assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
+            assert(sol_fold.has_ghosts() || mpi_world_size() == 1);
             sol_fold = sol_f;
-            assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
-            synchronize(sol_fold);//.implementation().update_ghosts();
+            assert(sol_fold.has_ghosts() || mpi_world_size() == 1);
+            synchronize(sol_fold);//.update_ghosts();
 
             std::vector<libMesh::dof_id_type> pressure_index;
             Q_f.dof_map().local_variable_indices(pressure_index, Q_f.mesh(), Q_f.subspace_id());
@@ -346,14 +351,14 @@ namespace utopia {
                 //preserves ghost information and copies the entries
                 fsi_forcing_term_f = sol_temp;
                 //FIXME
-                fsi_forcing_term_f.implementation().update_ghosts();
+                fsi_forcing_term_f.update_ghosts();
 
                 const double mag_fsi = norm2(fsi_forcing_term_f);
                 std::cout << "mag_fsi: " << mag_fsi << std::endl;
 
                 UVector temp = sol_f;
 
-                assert(sol_f.implementation().has_ghosts() || mpi_world_size() == 1);
+                assert(sol_f.has_ghosts() || mpi_world_size() == 1);
 
                 // std::cout << raw_type(sol_f) << std::endl;
 
@@ -363,7 +368,7 @@ namespace utopia {
                      break;
                  }
 
-                 assert(sol_f.implementation().has_ghosts() || mpi_world_size() == 1);
+                 assert(sol_f.has_ghosts() || mpi_world_size() == 1);
 
                  double mean_pressure = 0.;
 

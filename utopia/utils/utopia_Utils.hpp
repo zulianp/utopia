@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cmath>
 
 #include "utopia_MPI.hpp"
 #include "utopia_Chrono.hpp"
@@ -16,6 +17,9 @@
 
 namespace utopia
 {
+    bool is_matlab_file(const std::string &path);
+
+
     inline std::string str(const char *char_array)
     {
         return std::string(char_array);
@@ -26,11 +30,31 @@ namespace utopia
     {
         return std::to_string(val);
     }
+    template<typename T>
+    inline bool is_nan_or_inf(const T &v)
+    {
+        return std::isinf(v) || std::isnan(v);
+    }
 
     bool read(const std::string &path, std::string &str);
     bool write(const std::string &path, const std::string &str);
     void disp(const std::string &str);
     void disp(const char * str);
+
+    inline void disp(const double value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
+
+    inline void disp(const int value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
+
+    inline void disp(const long value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
 
     template<typename T>
     void disp(const T & val, const std::string & name)

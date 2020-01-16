@@ -7,11 +7,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_SolutionStatus.hpp"
 #include "utopia_MatrixTransfer.hpp"
-
-
 #include "utopia_MultiLevelEvaluations.hpp"
-
-
 
 #include <algorithm>
 #include <vector>
@@ -84,12 +80,18 @@ namespace utopia {
         virtual bool set_functions(const std::vector<FunPtr> &level_functions)
         {
             level_functions_.clear();
+            local_level_dofs_.clear(); 
 
-            if(this->n_levels() != level_functions.size()){
+            if(this->n_levels() != static_cast<SizeType>(level_functions.size())){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and level_functions do not match. \n");
             }
 
             level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
+
+            for(auto l=0; l < this->n_levels(); l++){
+                local_level_dofs_.push_back(level_functions_[l]->loc_size()); 
+            }
+
             return true;
         }
 
@@ -108,7 +110,7 @@ namespace utopia {
                 utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
@@ -136,7 +138,7 @@ namespace utopia {
                 utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
@@ -158,30 +160,17 @@ namespace utopia {
          */
         virtual bool make_iterate_feasible(Fun & fun, Vector & x)
         {
-            Vector bc_values;
-            fun.get_eq_constrains_values(bc_values);
-
-            Vector bc_ids;
-            fun.get_eq_constrains_flg(bc_ids);
-
-            if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
-                std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: Local sizes do not match. \n";
-            }
+            const auto &bc_values   = fun.get_eq_constrains_values();
+            const auto &bc_ids      = fun.get_eq_constrains_flg(); 
 
             {
-                Write<Vector> w(x);
-                Read<Vector>  r_id(bc_ids);
-                Read<Vector>  r_val(bc_values);
+                auto d_bc_ids       = const_device_view(bc_ids);
+                auto d_bc_values    = const_device_view(bc_values);
 
-                Range range_w = range(x);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    Scalar id = bc_ids.get(i);
-                    Scalar value = bc_values.get(i);
-
-                    if(id == 1)
-                        x.set(i, value);
-                }
+                parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                    Scalar id =  d_bc_ids.get(i);
+                    return (id==1.0) ? d_bc_values.get(i) : xi;
+                });
             }
 
             return true;
@@ -194,22 +183,9 @@ namespace utopia {
          * @param      fun   The fun
          * @param      c     The correction
          */
-        virtual bool zero_correction_related_to_equality_constrain(Fun & fun, Vector & c)
+        virtual bool zero_correction_related_to_equality_constrain(const Fun & fun, Vector & c) 
         {
-            Vector bc;
-            fun.get_eq_constrains_flg(bc);
-
-            {
-                Write<Vector> w(c);
-                Read<Vector> r(bc);
-
-                Range range_w = range(c);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    if(bc.get(i) == 1)
-                        c.set(i, 0);
-                }
-            }
+            fun.zero_contribution_to_equality_constrains(c); 
             return true;
         }
 
@@ -221,38 +197,10 @@ namespace utopia {
          * @param      M     matrix
          *
          */
-        virtual bool zero_correction_related_to_equality_constrain_mat(Fun & fun, Matrix & M)
+        virtual bool zero_correction_related_to_equality_constrain_mat(const Fun & fun, Matrix & M)
         {
-            Vector bc;
-            fun.get_eq_constrains_flg(bc);
-            std::vector<SizeType> index;
-
-            {
-                Read<Vector> r(bc);
-
-                Range range_w = range(bc);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    if(bc.get(i) == 1)
-                        index.push_back(i);
-                }
-            }
-
+            const std::vector<SizeType> & index = fun.get_indices_related_to_BC(); 
             set_zero_rows(M, index, 1.);
-
-            // horible solution....
-            {
-                ReadAndWrite<Matrix> w(M);
-                Range r = row_range(M);
-
-                //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                {
-                    if(std::abs(M.get(i,i)) < 1e-15)
-                        M.set(i, i, 1.0);
-                }
-            }
-
 
             return true;
         }
@@ -269,13 +217,13 @@ namespace utopia {
          *
          * @param[in]  fine_local_size  The local size of fine level problem
          */
-        virtual void init_memory(const SizeType & fine_local_size) = 0;
+        virtual void init_memory() = 0;
 
 
 
         inline Fun &function(const SizeType level)
         {
-            assert(level < level_functions_.size());
+            assert(level < static_cast<SizeType>(level_functions_.size()));
             assert(level_functions_[level]);
 
             return *level_functions_[level];
@@ -319,10 +267,27 @@ namespace utopia {
             }
         }
 
+        SizeType local_dofs(const SizeType & level)
+        {
+            return local_level_dofs_[level]; 
+        }
+
+
+        const std::vector<SizeType> & local_level_dofs()
+        {
+            return local_level_dofs_; 
+        }
+
+
+        const std::vector<FunPtr> & level_functions()
+        {
+            return level_functions_; 
+        }
 
 
     protected:
         std::vector<FunPtr>                      level_functions_;
+        std::vector<SizeType>                    local_level_dofs_;
 
     };
 

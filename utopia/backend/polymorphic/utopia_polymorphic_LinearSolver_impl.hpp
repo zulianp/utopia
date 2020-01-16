@@ -8,7 +8,7 @@ namespace utopia {
     {
         Super::read(in);
 
-        std::string backend = UTOPIA_BACKEND(Vector).info().get_name();
+        std::string backend = Traits<Vector>::backend_info().get_name();
         std::string type  = "gmres";
 
         in.get("backend", backend);

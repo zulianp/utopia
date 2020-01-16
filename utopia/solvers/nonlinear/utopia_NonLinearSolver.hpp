@@ -89,12 +89,21 @@ protected:
          */
         virtual void init_solver(const std::string &method, const std::vector<std::string> status_variables) override
         {
-            if(mpi_world_rank() == 0 && verbose_)
-                PrintInfo::print_init(method, status_variables);
+            if(mpi_world_rank() == 0 && verbose_){
+                this->print_init_message(method, status_variables);
+            }
 
             this->solution_status_.clear();
             _time.start();
         }
+
+        virtual void print_init_message(const std::string &method, const std::vector<std::string> status_variables) //override
+        {
+            if(mpi_world_rank() == 0 && verbose_){
+                PrintInfo::print_init(method, status_variables);
+            }
+        }
+
 
 
         /**
@@ -111,9 +120,11 @@ protected:
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
                 std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
-
-                this->solution_status_.execution_time = _time.get_seconds();
             }
+
+            this->solution_status_.execution_time = _time.get_seconds();
+            this->solution_status_.iterates = num_it; 
+            this->solution_status_.reason = convergence_reason; 
 
          }
 

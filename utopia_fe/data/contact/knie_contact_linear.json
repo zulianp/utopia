@@ -1,0 +1,204 @@
+{
+    "contact-problem": {
+        "contact-stress" : true,
+        "is-steady" : true,
+        "outer-loop-tol" : 1e-4,
+        "max-outer-loops" : 2,
+        "plot-gap": false,
+        "discretization" : "new",
+        "mesh": {
+            "type": "file",
+            "path_1" : "/Users/zulianp/Desktop/in_the_cloud/owncloud/Knie/simulation geometries/scripted/COMPLETE-knie.e",
+            "path_2" : "/Users/zulianp/Desktop/in_the_cloud/owncloud/Knie/simulation geometries/scripted/COMPLETE-knie-super-coarse.e",
+            "path" : "/Users/zulianp/Desktop/in_the_cloud/owncloud/Knie/simulation geometries/scripted/COMPLETE-knie-coarse.e",
+            "order" : 2
+        },
+        "model": {
+            "material": "LinearElasticity",
+            "*material": "NeoHookean",
+            "*material": "SaintVenantKirchoff",
+            "stabilization": "L2_LUMPED",
+            "stabilization-mag": 1e-6,
+            "rescaling" : 1e-8,
+            "parameters": {
+                "mu": 241e9,
+                "poisson-ratio": 0.3,
+                "comment" : "CoCrMo. Unit: Pa",
+                "sub-domains" : [
+                    {
+                        "block"  : 2,
+                        "mu"     : 0.85e9,
+                        "poisson-ratio" : 0.46,
+                        "comment" : "Polyethylen. Unit: Pa"
+                    },
+                    {
+                        "block"  : 5,
+                        "mu"     : 0.85e9,
+                        "poisson-ratio" : 0.46,
+                        "comment" : "Polyethylen. Unit: Pa"
+                    },
+                    {
+                        "block"  : 9,
+                        "mu"     : 0.85e9,
+                        "poisson-ratio" : 0.46,
+                        "comment" : "Polyethylen. Unit: Pa"
+                    }
+                ]
+            },
+            "*parameters": {
+                "mu": 10.0,
+                "lambda" : 10.0,
+                "sub-domains" : [
+                    {
+                        "block"  : 2,
+                        "mu"     : 1.0,
+                        "lambda" : 1.0
+                    },
+                    {
+                        "block"  : 5,
+                        "mu"     : 1.0,
+                        "lambda" : 1.0
+                    },
+                    {
+                        "block"  : 9,
+                        "mu"     : 1.0,
+                        "lambda" : 1.0
+                    }
+                ]
+            }
+        },
+        "qp-solver" : {
+            "*backend" : "petsc",
+            "*type" : "tron",
+            "backend" : "any",
+            "type" : "ssnewton",
+            "max-it" : 40,
+            "verbose" : true,
+            "use-adaptive-tol" : true,
+            "linear-solver" : {
+                "type" : "direct",
+                "solver_package" : "mumps"
+            }
+        },
+        "space": {
+            "system-name": "contact_sol",
+            "variables": [
+                {
+                    "name": "disp_x",
+                    "order" : 2
+                },
+                {
+                    "name": "disp_y",
+                    "order" : 2
+                },
+                {
+                    "name": "disp_z",
+                    "order" : 2
+                }
+            ],
+            "boundary-conditions": 
+            [
+                {
+                    "var": 0,
+                    "side": 16,
+                    "value": 0.0
+                },
+                {
+                    "var": 1,
+                    "side": 16,
+                    "value": -0.0001
+                },
+                {
+                    "var": 2,
+                    "side": 16,
+                    "value": -0.0001
+                },
+                {
+                    "var": 0,
+                    "side": 11,
+                    "value": 0.0
+                },
+                {
+                    "var": 1,
+                    "side": 11,
+                    "value": 0.001
+                },
+                {
+                    "var": 2,
+                    "side": 11,
+                    "value": 0.0
+                },
+                {
+                    "var": 0,
+                    "side": 17,
+                    "value": 0.0
+                },
+                {
+                    "var": 0,
+                    "side": 27,
+                    "value": 0.0
+                },
+                {
+                    "var": 0,
+                    "side": 29,
+                    "value": 0.0
+                },
+                {
+                    "var": 0,
+                    "side": 39,
+                    "value": 0.0
+                },
+                {
+                    "var": 0,
+                    "side": 18,
+                    "value": 0.0
+                }
+            ]
+        }, 
+        "contact": {
+            "type": "steady",
+            "max-nl-iter": 40,
+            "radius": 0.0001,
+            "step-tol" : 1e-4,
+            "outer-loop-tol" : 1.0,
+            "pairs": [
+                { "master" : 1, "slave" : 14 },
+                { "master" : 19, "slave" : 4 },
+                { "master" : 26, "slave" : 2 },
+                { "master" : 1, "slave" : 12 },
+                { "master" : 24, "slave" : 25 },
+                { "master" : 26, "slave" : 15 },
+                { "master" : 7, "slave" : 9,   "glue" : true },
+                { "master" : 4, "slave" : 8,   "glue" : true },
+                { "master" : 4, "slave" : 28,  "glue" : true },
+                { "master" : 49, "slave" : 28, "glue" : true },
+                { "master" : 7, "slave" : 8,   "glue" : true },
+                { "master" : 59, "slave" : 8,  "glue" : true },
+                { "master" : 19, "slave" : 6 },
+                { "master" : 19, "slave" : 5 },
+                { "master" : 24, "slave" : 45 },
+                { "master" : 26, "slave" : 35 },
+                { "master" : 34, "slave" : 28, "glue" : true },
+                { "master" : 44, "slave" : 8,  "glue" : true },
+                { "master" : 21, "slave" : 14, "glue" : false }
+            ],
+            "search-radius" : {
+                "default" : 1e-4,
+                "sides" : [
+                    {
+                        "id" : 1,
+                        "value" : 1e-3
+                    },
+                    {
+                        "id" : 8,
+                        "value" : 1e-5
+                    },
+                    {
+                        "id" : 28,
+                        "value" : 1e-5
+                    }
+                ]
+            }
+        }
+    }
+}

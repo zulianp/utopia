@@ -4,13 +4,18 @@
 #include "utopia_Range.hpp"
 #include "utopia_Factory.hpp"
 #include "utopia_Base.hpp"
-#include "utopia_Wrapper.hpp"
+#include "utopia_Tensor.hpp"
 
 namespace utopia {
 
-    template<class TensorFrom, class TensorTo>
-    void backend_convert_sparse(const Wrapper<TensorFrom, 2> &from, Wrapper<TensorTo, 2> &to)
+    template<class TFrom, class TTo>
+    void backend_convert_sparse(const Tensor<TFrom, 2> &t_from, Tensor<TTo, 2> &t_to)
     {
+        using SizeType = typename Traits<TFrom>::SizeType;
+
+        const auto &from = t_from.derived();
+        auto &to = t_to.derived();
+
         auto ls = local_size(from);
         auto n_row_local = ls.get(0);
         std::vector<int> nnzxrow(n_row_local, 0);
@@ -27,7 +32,7 @@ namespace utopia {
         to = local_sparse(ls.get(0), ls.get(1), nnz);
 
         {
-            Write<Wrapper<TensorTo, 2>> w_t(to);
+            Write<TTo> w_t(to);
             each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
                 to.set(i, j, val);
             });
@@ -38,13 +43,18 @@ namespace utopia {
         assert(local_size(from) == local_size(to));
     }
 
-    template<class TensorFrom, class TensorTo>
-    void backend_convert(const Wrapper<TensorFrom, 1> &from, Wrapper<TensorTo, 1> &to)
+    template<class TFrom, class TTo>
+    void backend_convert(const Tensor<TFrom, 1> &t_from, Tensor<TTo, 1> &t_to)
     {
+        using SizeType = typename Traits<TFrom>::SizeType;
+        
+        const auto &from = t_from.derived();
+        auto &to = t_to.derived();
+
         auto ls = local_size(from).get(0);
         to = local_zeros(ls);
 
-        Write< Wrapper<TensorTo, 1> > w_t(to);
+        Write<TTo> w_t(to);
         each_read(from, [&to](const SizeType i, const double val) {
             to.set(i, val);
         });
@@ -79,17 +89,17 @@ namespace utopia {
 //    }
 
     template<class T1, class T2>
-    bool cross_backend_approxeq(const Wrapper<T1, 1> &l, const Wrapper<T2, 1> &r)
+    bool cross_backend_approxeq(const Tensor<T1, 1> &l, const Tensor<T2, 1> &r)
     {
-        Wrapper<T1, 1> r_copy;
+        T1 r_copy;
         backend_convert(r, r_copy);
         return approxeq(l, r_copy, 1e-10);
     }
 
     template<class T1, class T2>
-    bool cross_backend_approxeq(const Wrapper<T1, 2> &l, const Wrapper<T2, 2> &r)
+    bool cross_backend_approxeq(const Tensor<T1, 2> &l, const Tensor<T2, 2> &r)
     {
-        Wrapper<T1, 2> r_copy;
+        T1 r_copy;
         backend_convert_sparse(r, r_copy);
         return approxeq(l, r_copy, 1e-10);
     }

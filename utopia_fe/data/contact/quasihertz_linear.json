@@ -1,0 +1,102 @@
+{
+    "contact-problem": {
+        "use-amg": false,
+        "use-ssnewton": true,
+        "dt": 0.2,
+        "is-steady" : true,
+        "use-gmres" : true,
+        "discretization" : "new",
+        "outer-loop-tol" : 1.0,
+        "mesh": {
+            "type": "file",
+            "path_0" : "../data/contact/contact_cubes.e",
+            "path_1" : "../data/contact/signorini_79207.e",
+            "path_2" : "../data/contact/quasi_hertz_91.e",
+            "path_3" : "../data/contact/quasi_hertz_750.e",
+            "path"   : "../data/contact/quasi_hertz_8732.e",
+            "order" : 1
+        },
+        "qp-solver" : {
+            "backend" : "petsc",
+            "type" : "tron",
+            "max-it" : 5,
+            "verbose" : true,
+            "linear-solver" : {
+                "type" : "direct"
+            }
+        },
+        "space": {
+            "system-name": "contact_sol",
+            "variables": [
+                {
+                    "name": "disp_x",
+                    "order" : 1
+                },
+                {
+                    "name": "disp_y",
+                    "order" : 1
+                },
+                {
+                    "name": "disp_z",
+                    "order" : 1
+                }
+            ],
+            "boundary-conditions": [
+                {
+                    "var": 0,
+                    "side": 4,
+                    "value": 0.0
+                },
+                {
+                    "var": 1,
+                    "side": 4,
+                    "value": 0.0
+                },
+                {
+                    "var": 2,
+                    "side": 4,
+                    "value": 0.05
+                },
+
+                {
+                    "var": 0,
+                    "side": 2,
+                    "value": 0.0
+                },
+                {
+                    "var": 1,
+                    "side": 2,
+                    "value": 0.0
+                },
+                {
+                    "var": 2,
+                    "side": 2,
+                    "value": 0.0
+                }
+            ]
+        },
+        "model": {
+            "*material": "LinearElasticity",
+            "*material": "NeoHookean",
+            "material": "NewNeoHookean",
+            "stabilization": "none",
+            "stabilization-mag": 0.00001,
+            "parameters": {
+                "mu": 0.3,
+                "lambda": 0.3
+            }
+        },
+
+        "contact": {
+            "n-transient-steps": 30,
+            "max-nl-iter": 100,
+            "radius": 0.5,
+            "pairs": [
+                {
+                    "master": 1,
+                    "slave": 3
+                }
+            ]
+        }
+    }
+}

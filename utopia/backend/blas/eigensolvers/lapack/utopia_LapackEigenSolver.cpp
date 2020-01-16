@@ -1,6 +1,5 @@
 
 #include "utopia_LapackEigenSolver.hpp"
-#include "utopia_blas_Backend.hpp"
 
 extern "C" {
     int dsygvx_(int *itype,
@@ -42,26 +41,26 @@ extern "C" {
 
 namespace utopia {
 
-    bool LapackEigenSolver::spd_geig(const Matrixd &A, const Matrixd &B, Vectord &evalues, Matrixd &evectors) const
+    bool LapackEigenSolver::spd_geig(const BlasMatrixd &A, const BlasMatrixd &B, BlasVectord &evalues, BlasMatrixd &evectors) const
     {
 
         const Size sA = size(A);
         const Size sB = size(B);
 
-        Matrixd Acopy = A;
-        Matrixd Bcopy = B;
+        BlasMatrixd Acopy = A;
+        BlasMatrixd Bcopy = B;
 
-        raw_type(evalues).resize(sA.get(0));
-        raw_type(evectors).resize(sA.get(0), sB.get(0));
+        evalues.resize(sA.get(0));
+        evectors.resize(sA.get(0), sB.get(0));
 
         int itype	= 1;
         char jobz 	= 'V';
         char range = 'A';
         char uplo 	= 'U';
         int n 		= sA.get(0);
-        double * a = raw_type(Acopy).ptr();
+        double * a = Acopy.ptr();
         int lda	= n;
-        double *b  = raw_type(Bcopy).ptr();
+        double *b  = Bcopy.ptr();
         int ldb   	= sB.get(0);
         double vl  = -1.0;
         double vu  = -1.0;
@@ -70,8 +69,8 @@ namespace utopia {
         char cmach = 'S';
         double abstol =  2. * dlamch_(&cmach);
         int m 		= -1;
-        double *w 	= &raw_type(evalues)[0];
-        double *z 	= raw_type(evectors).ptr();
+        double *w 	= evalues.ptr();
+        double *z 	= evectors.ptr();
         int ldz 	= n;
         std::vector<double> work(8 * n, 0.0);
         int lwork = work.size();
@@ -122,26 +121,26 @@ namespace utopia {
         return false;
     }
 
-    bool LapackEigenSolver::spd_geig_small(const Matrixd &A, const Matrixd &B, const double upper_bound, Vectord &evalues, Matrixd &evectors) const
+    bool LapackEigenSolver::spd_geig_small(const BlasMatrixd &A, const BlasMatrixd &B, const double upper_bound, BlasVectord &evalues, BlasMatrixd &evectors) const
     {
 
         const Size sA = size(A);
         const Size sB = size(B);
 
-        Matrixd Acopy = A;
-        Matrixd Bcopy = B;
+        BlasMatrixd Acopy = A;
+        BlasMatrixd Bcopy = B;
 
-        raw_type(evalues).resize(sA.get(0));
-        raw_type(evectors).resize(sA.get(0), sB.get(0));
+        evalues.resize(sA.get(0));
+        evectors.resize(sA.get(0), sB.get(0));
 
         int itype	= 1;
         char jobz 	= 'V';
         char range	= 'V';
         char uplo 	= 'U';
         int n 		= sA.get(0);
-        double * a 	= raw_type(Acopy).ptr();
+        double * a 	= Acopy.ptr();
         int lda		= n;
-        double *b  	= raw_type(Bcopy).ptr();
+        double *b  	= Bcopy.ptr();
         int ldb   	= sB.get(0);
         double vl  	= -1.0;
         double vu  	= upper_bound;
@@ -150,8 +149,8 @@ namespace utopia {
         char cmach 	= 'S';
         double abstol =  2. * dlamch_(&cmach);
         int m 		= -1;
-        double *w 	= &raw_type(evalues)[0];
-        double *z 	=  raw_type(evectors).ptr();
+        double *w 	= evalues.ptr();
+        double *z 	=  evectors.ptr();
         int ldz 	= n;
         std::vector<double> work(8 * n, 0.0);
         int lwork = work.size();
@@ -202,16 +201,26 @@ namespace utopia {
         return false;
     }
 
-    bool LapackEigenSolver::fix_sizes(const SizeType m, Vectord &evalues, Matrixd &evectors) const
+    bool LapackEigenSolver::fix_sizes(const SizeType m, BlasVectord &evalues, BlasMatrixd &evectors) const
     {
-        const SizeType n = size(evalues).get(0);
+        const SizeType n = size(evalues);
 
         if(m == 0) {
             std::cerr << "wrong size: " <<  m << std::endl;
             return false;
         } else if(m != n) {
-            evalues  = evalues.range(0, m);
-            evectors = evectors.range(0, n, 0, m);
+            evalues.resize(m);
+
+            BlasMatrixd out;
+            out.resize(n, m);
+
+            for(SizeType i = 0; i < n; ++i) {
+                for(SizeType j = 0; j < m; ++j) {
+                    out.set(i, j,  evectors.get(i, j));
+                }
+            }
+
+            evectors = std::move(out);
             return true;
         }
 
@@ -501,13 +510,18 @@ namespace utopia {
     // 	return true;
     // }
 
-    bool LapackEigenSolver::spd_eig(const Matrixd &A, Vectord &evalues, Matrixd &evector) const
+    bool LapackEigenSolver::spd_eig(const BlasMatrixd &A, BlasVectord &evalues, BlasMatrixd &evector) const
     {
-        auto n = size(A).get(0);
+        auto s = size(A);
+        auto n = s.get(0);
+        auto m = s.get(1);
 
-        evector = zeros(size(A));
-        evalues = zeros(n);
+        evector.resize(n, m);
+        evector.set(0.0);
 
-        return aux_eig(n, A.implementation().entries(), evalues.implementation(), evector.implementation().entries());
+        evalues.resize(n);
+        evalues.set(0.0);
+
+        return aux_eig(n, A.entries(), evalues.entries(), evector.entries());
     }
 }

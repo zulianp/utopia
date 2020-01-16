@@ -22,12 +22,22 @@ namespace utopia
 
             }
 
-            void initialize() override
+            ~LSR1()
             {
-                theta_ = 1.0;
-                gamma_ = 1.0;
+                Y_.clear();
+                S_.clear();
 
-                current_m_ = 0;
+                p_.clear();
+                p_inv_.clear();
+            }
+
+            void initialize(const Vector & x_k, const Vector &  g) override
+            {
+                HessianApproximation<Vector>::initialize(x_k, g); 
+
+                theta_      = 1.0;
+                gamma_      = 1.0;
+                current_m_  = 0;
 
                 Y_.resize(m_);
                 S_.resize(m_);
@@ -35,18 +45,49 @@ namespace utopia
                 p_.resize(m_);
                 p_inv_.resize(m_);
 
+                auto zero_expr = local_zeros(local_size(x_k));
+
+                for(auto i=0; i < m_; i++)
+                {
+                    Y_[i]       = zero_expr; 
+                    S_[i]       = zero_expr; 
+                    p_[i]       = zero_expr; 
+                    p_inv_[i]   = zero_expr; 
+                }                
+
                 this->initialized(true);
             }
 
             void reset() override
             {
-                Y_.clear();
-                S_.clear();
+                // Y_.clear();
+                // S_.clear();
 
-                p_.clear();
-                p_inv_.clear();
+                // p_.clear();
+                // p_inv_.clear();
 
-                this->initialize();
+                // Vector x, g; 
+                // this->initialize(x, g);
+
+                theta_      = 1.0;
+                gamma_      = 1.0;
+                current_m_  = 0;
+
+                Y_.resize(m_);
+                S_.resize(m_);
+
+                p_.resize(m_);
+                p_inv_.resize(m_);
+
+                for(auto i=0; i < m_; i++)
+                {
+                    Y_[i].set(0.0);
+                    S_[i].set(0.0);
+                    p_[i].set(0.0);
+                    p_inv_[i].set(0.0);
+                }                
+
+                this->initialized(true);                
             }
 
             inline LSR1<Vector> * clone() const override
@@ -54,7 +95,7 @@ namespace utopia
                 return new LSR1<Vector>(*this);
             }
 
-            bool update(const Vector &  s, const Vector &  y ) override
+            bool update(const Vector &  s, const Vector &  y, const Vector & /*x*/, const Vector &  /* g */ ) override
             {
 
                 if(!this->initialized())
@@ -62,12 +103,19 @@ namespace utopia
                     utopia_error("BFGS::update: Initialization needs to be done before updating. \n");
                     return false;
                 }
-                else if(m_ == 0)
+                else if(m_ == 0){
                     return true;
+                }
 
-                Vector diff = y - s;
-                Scalar nom = std::abs(dot(s, diff));
-                Scalar denom = norm2(s) * norm2(diff);
+                diff_ = y - s;
+                // Scalar nom = std::abs(dot(s, diff_));
+                // Scalar denom = norm2(s) * norm2(diff);
+
+                Scalar nom, denom, denom2; 
+                dots(s, diff_, nom, s, s, denom, diff_, diff_, denom2); 
+
+                nom = std::abs(nom); 
+                denom = denom*denom2; 
 
                 if(nom/denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom))
                 {
@@ -76,7 +124,7 @@ namespace utopia
                     }
 
                     return false;
-                }
+                } 
 
 
                 if(current_m_ < m_)
@@ -101,7 +149,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_Hinv(const Vector & v, Vector & result) const override
+            bool apply_Hinv(const Vector & v, Vector & result) override
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n");
@@ -122,7 +170,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_H(const Vector & v, Vector & result) const  override
+            bool apply_H(const Vector & v, Vector & result)  override
             {
                 if(!this->initialized()){
                     utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n");
@@ -206,6 +254,24 @@ namespace utopia
             }
 
 
+            Scalar compute_uHu_dot(const Vector & u) override
+            {
+                this->apply_H(u, diff_);
+                return dot(u, diff_);
+            }            
+
+            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) override
+            {
+                this->apply_Hinv(v, diff_);
+                return dot(u, diff_);
+            }
+
+            Scalar compute_uHv_dot(const Vector & u , const Vector & v) override
+            {
+                this->apply_H(v, diff_);
+                return dot(u, diff_);
+            }
+
         private:
             SizeType m_; // memory size
             SizeType current_m_; // current amount of vectors in the memory
@@ -218,6 +284,8 @@ namespace utopia
 
             std::vector<Vector> p_;
             std::vector<Vector> p_inv_;
+
+            Vector diff_; 
 
         };
 

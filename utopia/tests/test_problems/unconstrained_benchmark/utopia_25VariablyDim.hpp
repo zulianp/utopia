@@ -12,14 +12,17 @@ namespace utopia
     class VariablyDim25 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        VariablyDim25(const SizeType & n_loc): n_loc_(n_loc)
+        VariablyDim25(const SizeType & n_loc=10): n_loc_(n_loc)
         {
-            x_init_ = local_zeros(n_loc_);
-            x_exact_ = local_values(n_loc_, 1.0);
-            x_inc_ = local_values(n_loc_, 1.0);
+            x_init_     = local_zeros(n_loc_);
+            x_exact_    = local_values(n_loc_, 1.0);
+            x_inc_      = local_values(n_loc_, 1.0);
+
+            help_ = make_unique<Vector>(local_zeros(n_loc_));
+            ones_ = local_values(n_loc_, 1.0); 
 
             SizeType n_global = size(x_exact_).get(0);
 
@@ -58,11 +61,11 @@ namespace utopia
         {
             assert(local_size(x).get(0) == this->dim());
 
-            Vector help = x - local_values(local_size(x).get(0), 1.0);
+            *help_ = x - ones_;
 
-            Scalar f1 = dot(x_inc_, help);
+            Scalar f1 = dot(x_inc_, *help_);
             Scalar f11 = f1*f1;
-            Scalar f2 = dot(help, help);
+            Scalar f2 = dot(*help_, *help_);
 
             result = f11 * (1.0 + f11) + f2;
 
@@ -73,11 +76,11 @@ namespace utopia
         {
             assert(local_size(x).get(0) == this->dim());
 
-            Vector help = x - local_values(local_size(x).get(0), 1.0);
-            Scalar f1 = dot(x_inc_, help);
+            *help_ = x - ones_;
+            Scalar f1 = dot(x_inc_, *help_);
 
             g = ((2.0 * f1) + (4.0*f1*f1*f1)) * x_inc_;
-            g  = g + (2.0 * help);
+            g  = g + (2.0 * (*help_));
 
             return true;
         }
@@ -86,21 +89,21 @@ namespace utopia
         {
             assert(local_size(x).get(0) == this->dim());
 
-            Vector help = x - local_values(local_size(x).get(0), 1.0);
-            Scalar f1 = dot(x_inc_, help);
+            *help_ = x - ones_;
+            Scalar f1 = dot(x_inc_, *help_);
 
             H = outer(x_inc_, x_inc_);
             H *= 2.0 + (12.0 * f1 * f1);
 
-            Vector d = diag(H);
+            *help_ = diag(H);
             {
-                const Read<Vector> read(d);
+                const Read<Vector> read(*help_);
                 const Write<Matrix> write(H);
 
                 auto r = row_range(H);
                 for(auto i = r.begin(); i != r.end(); ++i)
                 {
-                    H.set(i,i, d.get(i) + 2.0);
+                    H.set(i, i, help_->get(i) + 2.0);
                 }
             }
 
@@ -127,6 +130,8 @@ namespace utopia
         Vector x_init_;
         Vector x_exact_;
         Vector x_inc_;
+        Vector ones_; 
+        std::unique_ptr<Vector> help_; 
 
     };
 

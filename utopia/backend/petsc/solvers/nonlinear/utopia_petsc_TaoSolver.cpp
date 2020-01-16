@@ -5,7 +5,9 @@
 #include "utopia_Describable.hpp"
 
 #include "petsctao.h"
-#include <mpi.h>
+#include <petsc/private/taoimpl.h>
+#include  <mpi.h>
+
 
 #define U_CHECKERR(ierr) { if(ierr != 0) return false; }
 
@@ -18,7 +20,7 @@ namespace utopia {
         {
             const auto &i = instance();
             bool valid = i.types_.find(type) != i.types_.end();
-
+        
             if(!valid && verbose) {
                 std::cerr << "Invalid tao type " << type << ". Valid types are: " << std::endl;
                 i.describe(std::cerr);
@@ -141,8 +143,8 @@ namespace utopia {
         Matrix utopia_Hpre;
 
         convert(x, utopia_x);
-        utopia_H.implementation().wrap(H);
-        utopia_Hpre.implementation().wrap(Hpre);
+        utopia_H.wrap(H);
+        utopia_Hpre.wrap(Hpre);
 
         if(!fun->hessian(utopia_x, utopia_H, utopia_Hpre)) {
             if(!fun->hessian(utopia_x, utopia_H)) {
@@ -226,12 +228,13 @@ namespace utopia {
         }
 
         ~Impl()
-        {}
+        {
+            destroy();
+        }
 
         void init(MPI_Comm comm)
         {
             destroy();
-
             assert(TaoTypes::is_valid(type_));
 
             auto ierr = TaoCreate(comm, &tao);  assert(ierr == 0);
@@ -256,7 +259,7 @@ namespace utopia {
         {
             if(initialized()) {
                 //TODO check if this is the right version
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 10, 3)
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 10, 2)
                 TaoType type;
 #else
                 const TaoType type;
@@ -335,13 +338,28 @@ namespace utopia {
         {
             std::string type;
             in.get("type", type);
-            set_type(type.c_str());
+
+            if(type.size()>0 && TaoTypes::is_valid(type)){
+                set_type(type.c_str());
+            }
+        }
+
+        inline bool initialized(const SizeType & n_global) const
+        {
+            if(tao != nullptr)
+            {
+                PetscInt size; 
+                VecGetSize((*tao).solution, &size); 
+                return (size==n_global); 
+            }
+            else
+                return false; 
         }
 
         inline bool initialized() const
         {
-            return tao != nullptr;
-        }
+            return (tao != nullptr); 
+        }        
 
         void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver)
         {
@@ -372,6 +390,7 @@ namespace utopia {
             TaoConvergedReason reason;
             TaoGetSolutionStatus(tao, &iterate, &f, &gnorm, &cnorm, &xdiff, &reason);
 
+
             // if(this->verbose()) {
             // std::cout << "iterate: " << iterate << std::endl;
             // std::cout << "f: " << f << std::endl;
@@ -386,6 +405,15 @@ namespace utopia {
             }
 
             return reason >= 0;
+        }
+
+        inline void get_sol_status(PetscInt & iterates, TaoConvergedReason & reason)
+        {
+            PetscReal f;
+            PetscReal gnorm;
+            PetscReal cnorm;
+            PetscReal xdiff;
+            TaoGetSolutionStatus(tao, &iterates, &f, &gnorm, &cnorm, &xdiff, &reason);
         }
 
         inline bool smooth(Vector &x)
@@ -453,7 +481,17 @@ namespace utopia {
     bool TaoSolver<Matrix, Vector>::solve(Function<Matrix, Vector> &fun, Vector &x)
     {
         init(fun, x);
-        return impl_->solve(x);
+        this->init_solver("Tao Solver", {""}); 
+        auto flg = impl_->solve(x);
+
+        PetscInt iterates; 
+        TaoConvergedReason reason; 
+
+        impl_->get_sol_status(iterates, reason); 
+        this->exit_solver(iterates, reason); 
+        this->print_statistics(iterates);
+
+        return flg; 
     }
 
     template<class Matrix, class Vector>
@@ -466,9 +504,10 @@ namespace utopia {
     template<class Matrix, class Vector>
     void TaoSolver<Matrix, Vector>::init(Function<Matrix, Vector> &fun, Vector & x)
     {
-        if(!impl_->initialized()) {
-            impl_->init(x.implementation().communicator());
-
+        if(!impl_->initialized(size(x)))
+        {
+            impl_->init(x.comm().get());
+            
              if(this->linear_solver()) {
                 impl_->set_linear_solver(this->linear_solver());
             }
@@ -477,7 +516,7 @@ namespace utopia {
         impl_->set_tol(this->atol(), this->rtol(), this->stol(), this->max_it());
 
         if(this->has_bound()) {
-            this->fill_empty_bounds();
+            this->fill_empty_bounds(local_size(x));
             impl_->set_bounds(this->get_lower_bound(), this->get_upper_bound());
         }
 
@@ -511,8 +550,9 @@ namespace utopia {
         return cloned.release();
     }
 
-    template class TaoSolver<DSMatrixd, DVectord>;
-    template class TaoSolver<DMatrixd, DVectord>;
+    template class TaoSolver<PetscMatrix, PetscVector>;
+    //FIXME
+    // template class TaoSolver<PetscMatrix, PetscVector>;
 }
 
 #undef U_CHECKERR

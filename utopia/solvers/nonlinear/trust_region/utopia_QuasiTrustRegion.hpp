@@ -10,35 +10,37 @@
 
  namespace utopia
  {
-        template<class Vector>
-         class QuasiTrustRegion final: public TrustRegionBase<Vector>, public QuasiNewtonBase<Vector>
+      template<class Vector>
+      class QuasiTrustRegion final: public TrustRegionBase<Vector>, public QuasiNewtonBase<Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::MatrixFreeTRSubproblem<Vector> TRSubproblem;
-        typedef utopia::HessianApproximation<Vector> HessianApproximation;
-        typedef utopia::QuasiNewtonBase<Vector>     NonLinearSolver;
+        typedef utopia::MatrixFreeTRSubproblem<Vector>  TRSubproblem;
+        typedef utopia::HessianApproximation<Vector>    HessianApproximation;
+        typedef utopia::QuasiNewtonBase<Vector>         NonLinearSolver;
 
-         public:
-      QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx,
-                        const std::shared_ptr<TRSubproblem> &tr_subproblem):
-                        NonLinearSolver(hessian_approx, tr_subproblem)
-      {
+        public:
+          QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx, 
+                            const std::shared_ptr<TRSubproblem> &tr_subproblem):
+                            NonLinearSolver(hessian_approx, tr_subproblem), 
+                            initialized_(false), 
+                            loc_size_(0)
+          {
 
-      }
+          }
 
-      void read(Input &in) override
-      {
-        TrustRegionBase<Vector>::read(in);
-        QuasiNewtonBase<Vector>::read(in);
-      }
+          void read(Input &in) override
+          {
+            TrustRegionBase<Vector>::read(in);
+            QuasiNewtonBase<Vector>::read(in);
+          }
 
-      void print_usage(std::ostream &os) const override
-      {
-        TrustRegionBase<Vector>::print_usage(os);
-        QuasiNewtonBase<Vector>::print_usage(os);
-      }
+          void print_usage(std::ostream &os) const override
+          {
+            TrustRegionBase<Vector>::print_usage(os);
+            QuasiNewtonBase<Vector>::print_usage(os);
+          }
 
 
 
@@ -67,17 +69,22 @@
 
          bool rad_flg = false;
 
-         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)), x_trial;
-
         // #define DEBUG_mode
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
-        this->initialize_approximation();
+
+        SizeType loc_size_x = local_size(x_k); 
+        if(!initialized_ || !x_k.comm().conjunction(loc_size_ == loc_size_x)) 
+        {
+          init_memory(loc_size_x);
+        }
 
         fun.gradient(x_k, g);
         g0_norm = norm2(g);
         g_norm = g0_norm;
+
+        QuasiNewtonBase<Vector>::init_memory(x_k, g); 
 
 
         // print out - just to have idea how we are starting
@@ -99,20 +106,24 @@
         #endif
 
         it++;
+
         auto multiplication_action = this->hessian_approx_strategy_->build_apply_H();
+
+        UTOPIA_NO_ALLOC_BEGIN("Quasi TR 1");
 
         // solve starts here
         while(!converged)
         {
           fun.value(x_k, E_old);
-    //----------------------------------------------------------------------------
-    //     new step p_k w.r. ||p_k|| <= delta
-    //----------------------------------------------------------------------------
+          //----------------------------------------------------------------------------
+          //     new step p_k w.r. ||p_k|| <= delta
+          //----------------------------------------------------------------------------
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
-            p_k *= 0;
+            p_k.set(0);
             tr_subproblem->current_radius(delta);
-            tr_subproblem->solve(*multiplication_action, -1.0 * g, p_k);
+            g_help = -1.0*g; 
+            tr_subproblem->solve(*multiplication_action, g_help, p_k);
             this->solution_status_.num_linear_solves++;
           }
           else
@@ -120,10 +131,8 @@
             utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
           }
 
-
           x_trial = x_k + p_k;
           pred = this->get_pred(g, *multiplication_action, p_k);
-
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           if(it == 1 && rad_flg)
@@ -171,14 +180,14 @@
           // otherwise, keep old point
           else
           {
-            Vector grad_trial;
-            fun.gradient(x_trial, grad_trial);
-            y = grad_trial - g;
+            // Vector grad_trial;
+            fun.gradient(x_trial, g_help);
+            y = g_help - g;
 
             E_taken = E_old;
           }
 
-          this->update(p_k, y);
+          this->update(p_k, y, x_k, g);
 
     //----------------------------------------------------------------------------
     //    convergence check
@@ -203,6 +212,8 @@
 
         }
 
+        UTOPIA_NO_ALLOC_END();
+
           return true;
       }
 
@@ -211,6 +222,29 @@
     {
       NonLinearSolver::set_linear_solver(tr_linear_solver);
     }
+
+
+  private: 
+    void init_memory(const SizeType & ls)
+    {
+      auto zero_expr = local_zeros(ls);
+
+      y         = zero_expr; 
+      p_k       = zero_expr; 
+      x_trial   = zero_expr; 
+      g_help    = zero_expr; 
+      g         = zero_expr; 
+
+      TrustRegionBase<Vector>::init_memory(ls);
+
+      initialized_ = true;    
+      loc_size_ = ls;    
+    }
+
+    private:
+      Vector g, g_help,  y, p_k, x_trial;
+      bool initialized_; 
+      SizeType loc_size_;        
 
 
   };

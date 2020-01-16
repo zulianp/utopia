@@ -3,20 +3,23 @@
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_Blocks.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_Vector.hpp"
 
 namespace utopia {
 
+    void build_blocks(PetscMatrix &left, const Blocks<PetscMatrix> &blocks);
+    void build_blocks(PetscVector &left, const Blocks<PetscVector> &blocks);
+
     template<class Left, class Right, class Traits>
-    class Eval< Construct<Wrapper<Left, 1>, Blocks<Right> >, Traits, PETSC> {
+    class Eval< Construct<Tensor<Left, 1>, Blocks<Right> >, Traits, PETSC> {
     public:
-        inline static bool apply(const Construct<Wrapper<Left, 1>, Blocks<Right> > &expr)
+        inline static bool apply(const Construct<Tensor<Left, 1>, Blocks<Right> > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build_blocks(
-                Eval<Wrapper<Left, 1>,  Traits>::apply(expr.left()),
-                expr.right()
-            );
+            build_blocks(Eval<Tensor<Left, 1>,  Traits>::apply(expr.left()), expr.right());
 
             UTOPIA_TRACE_END(expr);
             return true;
@@ -24,20 +27,13 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Traits>
-    class Eval< Construct<Wrapper<Left, 2>, Blocks<Right> >, Traits, PETSC> {
+    class Eval< Construct<Tensor<Left, 2>, Blocks<Right> >, Traits, PETSC> {
     public:
-        inline static bool apply(const Construct<Wrapper<Left, 2>, Blocks<Right> > &expr)
+        inline static bool apply(const Construct<Tensor<Left, 2>, Blocks<Right> > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            if(is_sparse<Right>::value) {
-                UTOPIA_BACKEND(Traits).build_blocks(
-                    Eval<Wrapper<Left, 2>,  Traits>::apply(expr.left()),
-                    expr.right()
-                );
-            } else {
-                Eval<Construct<Wrapper<Left, 2>, Blocks<Right> >, Traits, HOMEMADE>::apply(expr);
-            }
+            build_blocks(Eval<Tensor<Left, 2>,  Traits>::apply(expr.left()),   expr.right());
 
             UTOPIA_TRACE_END(expr);
             return true;

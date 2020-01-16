@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_UnconstrainedTestFunction.hpp"
+#include "utopia_TestFunctions.hpp"
 
 
 namespace utopia
@@ -13,9 +13,9 @@ namespace utopia
     {
     public:
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
-        ExtendedRosenbrock21(const SizeType & n_loc): n_loc_(n_loc)
+        ExtendedRosenbrock21(const SizeType & n_loc=2): n_loc_(n_loc)
         {
             x_init_ = local_values(n_loc_, 1.0);
 
@@ -85,7 +85,7 @@ namespace utopia
                 Scalar xnext = point.get(i+1);
                 sum += 100.0 * pow(xnext - xi * xi, 2.0) + pow(xi - 1, 2.0);
             }
-            if (r.end() != point.size().get(0))
+            if (r.end() != point.size())
                 sum += 100.0 * pow(xp1 - point.get(endm1) * point.get(endm1), 2.0)
                     + pow(point.get(endm1) - 1, 2.0);
             result = sum;
@@ -96,8 +96,13 @@ namespace utopia
         {
             Read<Vector> read(point);
 
-            SizeType d = point.size().get(0);
-            result = zeros(d);
+            SizeType d = point.size();
+            if(empty(result)){
+                result = zeros(d);
+            }
+            else{
+                result.set(0.0);
+            }
 
             // for parallel access to result
             Range r_result = range(result);
@@ -148,7 +153,7 @@ namespace utopia
         {
             Read<Vector> read(point);
 
-            SizeType d = point.size().get(0);
+            SizeType d = point.size();
             result = zeros(d, d);
 
             // for parallel access to Matrix

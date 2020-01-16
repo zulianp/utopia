@@ -5,6 +5,8 @@
 #ifndef UTOPIA_UTOPIA_BOOLEAN_HPP
 #define UTOPIA_UTOPIA_BOOLEAN_HPP
 
+#include "utopia_ForwardDeclarations.hpp"
+
 namespace utopia {
     template<class Expr>
     class Boolean : public Expression<Boolean<Expr> > {
@@ -14,8 +16,9 @@ namespace utopia {
         }
 
         inline operator bool() const {
-            Evaluator<typename Traits<Expr>::Vector, Traits<Expr>::Backend> eval;
-            return eval.eval(expr());
+            // Evaluator<typename Traits<Expr>::Vector, Traits<Expr>::Backend> eval;
+            // return eval.eval(expr());
+            return Eval<Expr, Traits<Expr>, Traits<Expr>::Backend>::apply(expr());
         }
 
         Boolean(const Expr &expr)

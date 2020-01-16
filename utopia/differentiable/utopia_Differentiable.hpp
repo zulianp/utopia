@@ -22,8 +22,8 @@ namespace utopia {
             return expr_;
         }
 
-        inline std::string getClass() const {
-            return "independent_(" + expr_.getClass() + ")";
+        inline std::string get_class() const {
+            return "independent_(" + expr_.get_class() + ")";
         }
 
     private:
@@ -49,7 +49,7 @@ namespace utopia {
     class Traits< Differentiable<Expr> > : public Traits<Expr> {};
 
     template<class Expr>
-    constexpr int is_differentiable(const Expr &expr)
+    constexpr int is_differentiable(const Expr &/*expr*/)
     {
         return TreeProperties<Expr>::has_differentiable_sub_tree;
     }

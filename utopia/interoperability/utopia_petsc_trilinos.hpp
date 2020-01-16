@@ -20,8 +20,8 @@ namespace utopia {
     class KSPSolver<Matrix, Vector, TRILINOS> :
         public CrossBackendLinearSolverAndSmoother<
             Matrix, Vector,
-            DSMatrixd, DVectord,
-            KSPSolver<DSMatrixd, DVectord, PETSC>
+            PetscMatrix, PetscVector,
+            KSPSolver<PetscMatrix, PetscVector, PETSC>
             > {};
 
       //FIXME remove me once the belos solver works
@@ -29,8 +29,8 @@ namespace utopia {
     class Factorization<Matrix, Vector, TRILINOS> :
         public CrossBackendLinearSolver<
             Matrix, Vector,
-            DSMatrixd, DVectord,
-            Factorization<DSMatrixd, DVectord, PETSC>
+            PetscMatrix, PetscVector,
+            Factorization<PetscMatrix, PetscVector, PETSC>
             > {};
 
       //FIXME remove me once the belos solver works
@@ -38,8 +38,8 @@ namespace utopia {
       class BiCGStab<Matrix, Vector, TRILINOS> :
             public CrossBackendLinearSolverAndSmoother<
             Matrix, Vector,
-            DSMatrixd, DVectord,
-            BiCGStab<DSMatrixd, DVectord, PETSC>
+            PetscMatrix, PetscVector,
+            BiCGStab<PetscMatrix, PetscVector, PETSC>
             > {};
 
 
@@ -48,8 +48,17 @@ namespace utopia {
       class GaussSeidel<Matrix, Vector, TRILINOS> :
             public CrossBackendLinearSolverAndSmoother<
             Matrix, Vector,
-            DSMatrixd, DVectord,
-            GaussSeidel<DSMatrixd, DVectord, PETSC>
+            PetscMatrix, PetscVector,
+            GaussSeidel<PetscMatrix, PetscVector, PETSC>
+            > {};
+
+         //FIXME remove me once the belos solver works
+      template<typename Matrix, typename Vector>
+      class GMRES<Matrix, Vector, TRILINOS> :
+            public CrossBackendLinearSolverAndSmoother<
+            Matrix, Vector,
+            PetscMatrix, PetscVector,
+            GMRES<PetscMatrix, PetscVector, PETSC>
             > {};
 
 }

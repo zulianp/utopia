@@ -1,0 +1,45 @@
+{
+    "mesh": {
+        "type": "square",
+        "elem-type" : "tri",
+        "n-x" : 5,
+        "n-y" : 5,
+        "refinements" : 0,
+        "random-refine" : true,
+        "random-refinements": 5
+
+    },
+    "*mesh" : {
+        "type" : "file",
+        "path" : "regular_equidim_embedded_matrix.e",
+        "refinements" : 0,
+        "random-refine" : true,
+        "random-refinements": 2
+    },
+    "space": {
+        "system-name" : "poisson",
+        "variables" : [
+            {
+                "name" : "u",
+                "order" : 1,
+                "*fe-family": "MONOMIAL"
+            }
+        ],
+        "boundary-conditions" :[
+                {
+                "side"  : 3,
+                "*type" : "expr",
+                "value" : "2"
+            }
+        ]
+    },
+
+    "forcing-function" : [
+    {
+        "block":  1,
+        "value" : 1,
+        "type" : "surface",
+        "class" : "AdaptiveFunction"
+    }
+    ]
+}

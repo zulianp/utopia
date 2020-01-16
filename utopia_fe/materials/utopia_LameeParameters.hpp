@@ -82,17 +82,79 @@ namespace utopia {
             }
         }
 
+        class ShearModulus;
+        class PoissonRatio;
+
+        class FirstLameParameter {
+        public:
+            double value;
+
+            FirstLameParameter() : value(-1) {}
+
+            void init(const ShearModulus &mu, const PoissonRatio &ni)
+            {
+                value = 2.0 * (mu.value * ni.value)/(1 - 2 * ni.value);
+            }
+
+            inline bool valid() const
+            {
+                return value > 0.;
+            }
+        };
+
+        class ShearModulus {
+        public:
+            double value;
+
+            ShearModulus() : value(-1) {}
+
+            inline bool valid() const
+            {
+                return value > 0.;
+            }
+        };
+
+        class PoissonRatio {
+        public:
+            double value;
+
+            PoissonRatio() : value(-1) {}
+
+            inline bool valid() const
+            {
+                return value > 0.;
+            }
+        };
+
+        static bool read_parameters(Input &in, ShearModulus &mu, FirstLameParameter &lambda)
+        {
+            in.get("mu", mu.value);
+            in.get("lambda", lambda.value);
+
+            if(!lambda.valid()) {
+                PoissonRatio ni;
+                in.get("poisson-ratio", ni.value);
+
+                assert(ni.valid());
+                lambda.init(mu, ni);
+            }
+
+            return mu.valid() && lambda.valid();
+        }
+
         inline void read(Input &in) override
         {
-            in.get("mu", default_mu);
-            in.get("lambda", default_lambda);
+            ShearModulus mu;
+            FirstLameParameter lambda;
 
-            in.get("sub-domains", [this](Input &in) {
-                in.get_all([this](Input &array_in) {
+            if(read_parameters(in, mu, lambda)) {
+                default_mu = mu.value;
+                default_lambda = lambda.value;
+            }
+
+            in.get("sub-domains", [this, &mu, &lambda](Input &in) {
+                in.get_all([this, &mu, &lambda](Input &array_in) {
                     int block = -1;
-                    double mu     = default_mu;
-                    double lambda = default_lambda;
-
 
                     array_in.get("block", block);
 
@@ -101,12 +163,13 @@ namespace utopia {
                         return;
                     }
 
-                    array_in.get("mu", 	   mu);
-                    array_in.get("lambda", lambda);
-
-                    mu_[block] 	   = mu;
-                    lambda_[block] = lambda;
-
+                    if(read_parameters(array_in, mu, lambda)) {
+                        mu_[block]     = mu.value;
+                        lambda_[block] = lambda.value;
+                    } else {
+                        mu_[block]     = default_mu;
+                        lambda_[block] = default_lambda;
+                    }
                 });
             });
         }

@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 26/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_FACTORY_HPP
 #define UTOPIA_UTOPIA_FACTORY_HPP
 
@@ -16,7 +12,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "TODO";
         }
@@ -27,13 +23,14 @@ namespace utopia {
     };
 
     class Identity {};
+    class DenseIdentity {};
 
     template<>
     class FactoryTraits<Identity> {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Identity";
         }
@@ -43,7 +40,23 @@ namespace utopia {
         };
     };
 
+    template<>
+    class FactoryTraits<DenseIdentity> {
+    public:
+        typedef double Scalar;
+
+        static constexpr const char * get_class()
+        {
+            return "DenseIdentity";
+        }
+
+        enum {
+            FILL_TYPE = FillType::DENSE
+        };
+    };
+
     class LocalIdentity {};
+    class LocalDenseIdentity {};
     class Zeros {};
     class LocalZeros {};
 
@@ -53,7 +66,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalIdentity";
         }
@@ -69,7 +82,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalZeros";
         }
@@ -85,7 +98,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Zeros";
         }
@@ -122,7 +135,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Values";
         }
@@ -160,7 +173,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalValues";
         }
@@ -198,7 +211,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "NNZ";
         }
@@ -223,11 +236,34 @@ namespace utopia {
         _Scalar _values;
     };
 
+    template<typename SizeType>
+    class NNZXRow {
+    public:
+        NNZXRow(const std::vector<SizeType> &d_nnz, const std::vector<SizeType> &o_nnz)
+        : d_nnz(d_nnz), o_nnz(o_nnz)
+        {}
+
+        const std::vector<SizeType> &d_nnz, &o_nnz;
+    };
+
+    template<typename SizeType>
+    class FactoryTraits< NNZXRow<SizeType> > {
+    public:
+        typedef double Scalar;
+
+        static constexpr const char * get_class()
+        {
+            return "NNZXRow";
+        }
+
+        enum {
+            FILL_TYPE = FillType::SPARSE
+        };
+    };
 
     template<typename T>
     class LocalNNZ {
     public:
-
 
         LocalNNZ()  {};
         LocalNNZ(T nnz) : _nnz(nnz) {};
@@ -252,7 +288,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "LocalNNZ";
         }
@@ -269,7 +305,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        static constexpr const char * getClass()
+        static constexpr const char * get_class()
         {
             return "Resize";
         }
@@ -304,9 +340,9 @@ namespace utopia {
                 : _size(size), _type(type)
         {}
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
-            return "Factory(" + std::string(FactoryTraits<Type>::getClass()) + ")";
+            return "Factory(" + std::string(FactoryTraits<Type>::get_class()) + ")";
         }
 
         virtual ~Factory() {}
@@ -357,9 +393,9 @@ namespace utopia {
         : factory_(factory), opts_(opts)
         {}
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
-            return factory_.getClass();
+            return factory_.get_class();
         }
 
         virtual ~Build() {}
@@ -397,9 +433,9 @@ namespace utopia {
             return Type();
         }
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
-            return "SymbolicTensor(" + std::string(FactoryTraits<Type>::getClass()) + ")";
+            return "SymbolicTensor(" + std::string(FactoryTraits<Type>::get_class()) + ")";
         }
     };
 
@@ -568,6 +604,18 @@ namespace utopia {
         return Factory<Identity, 2>(size);
     }
 
+
+    /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
+    inline Factory<DenseIdentity, 2> dense_identity(const Size::SizeType rows, const Size::SizeType cols)
+    {
+        return Factory<DenseIdentity, 2>(Size({rows, cols}));
+    }
+    /// Returns denDensese_identity matrix  \f$ I^{size_0 \times size_1}  \f$.
+    inline Factory<DenseIdentity, 2> dense_identity(const Size &size)
+    {
+        return Factory<DenseIdentity, 2>(size);
+    }
+
     /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
     inline constexpr SymbolicTensor<Identity, 2> identity()
     {
@@ -597,6 +645,15 @@ namespace utopia {
     inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
         return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
+    }
+
+    template<typename SizeType>
+    inline Factory<NNZXRow<SizeType>, 2> sparse(
+        const Size &gs,
+        const std::vector<SizeType> &d_nnz,
+        const std::vector<SizeType> &o_nnz)
+    {
+        return Factory<NNZXRow<SizeType>, 2>(gs, NNZXRow<SizeType>(d_nnz, o_nnz));
     }
 
     template<typename _SizeType, typename _IntType, typename _Scalar>
@@ -639,6 +696,13 @@ namespace utopia {
     {
         return Factory<LocalIdentity, 2>(size);
     }
+
+    /// Returns local identity matrix  \f$ I^{size \times size}  \f$ i.e. each processors owns local identity matrix.
+    inline Factory<LocalDenseIdentity, 2> local_dense_identity(const Size &size)
+    {
+        return Factory<LocalDenseIdentity, 2>(size);
+    }
+
 
 
     ///  Returns local zero vector \f$ 0^{n \times 1}  \f$.
@@ -687,6 +751,12 @@ namespace utopia {
     inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
         return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnz_x_row_or_col));
+    }
+
+    template<typename T>
+    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size &s, T nnz_x_row_or_col)
+    {
+        return Factory<LocalNNZ<T>, 2>(s, LocalNNZ<T>(nnz_x_row_or_col));
     }
 
     template<typename T, class... Args>

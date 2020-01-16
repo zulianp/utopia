@@ -4,9 +4,11 @@
 #include "utopia_Belos_solver.hpp"
 
 #include "utopia_make_unique.hpp"
+#include "utopia_Wrapper.hpp"
 
 #include <BelosLinearProblem.hpp>
 #include <BelosTpetraAdapter.hpp>
+#include <BelosSolverFactory.hpp>
 
 //TODO remove from here
 #include <Kokkos_DefaultNode.hpp>
@@ -15,7 +17,6 @@
 #include <Teuchos_StandardCatchMacros.hpp>
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Tpetra_CrsMatrix.hpp>
-
 
 #ifdef WITH_TRILINOS_MUELU
 #include <MueLu.hpp>
@@ -159,7 +160,7 @@ namespace utopia {
         std::string dir_prec_type = impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
         if ( direct_solver ) {
 #ifdef WITH_TRILINOS_IFPACK2
-            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, precond.implementation().implementation_ptr());
+            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, raw_type(precond));
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
@@ -178,7 +179,7 @@ namespace utopia {
 #ifdef WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
             impl_->M_muelu = MueLu::CreateTpetraPreconditioner((
-                                                                Teuchos::RCP<typename Impl::OP>) precond.implementation().implementation_ptr(),
+                                                                Teuchos::RCP<typename Impl::OP>) raw_type(precond),
                                                                impl_->param_list->sublist("MueLu", false)
                                                                );
 
@@ -212,17 +213,45 @@ namespace utopia {
         }
     }
 
+    //read an utopia file and convert in a trilinos list
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::read(Input &in)
+        {
+          PreconditionedSolver::read(in);
+
+          //TODO
+          std::string exotic = "";
+          in.get("exotic", exotic);
+
+          if(!exotic.empty()) {
+
+          }
+
+          impl_->param_list->set("Relative tolerance", this->rtol(), "CG");
+          impl_->param_list->set("S tolerance", this->stol(), "CG");
+          impl_->param_list->set("A tolerance", this->atol(), "CG");
+          impl_->param_list->set("Maximum iteration", this->max_it(),"CG");
+          impl_->param_list->set("Verbose", this->verbose(), "CG");
+          //auto in = open_istream(const Path &path);
+    }
+
+    // available parameters
+    // TODO print setted parameters??
+    template <typename Matrix, typename Vector>
+    void BelosSolver<Matrix, Vector, TRILINOS>::print_usage(std::ostream &os ) const
+    {
+        PreconditionedSolver::print_usage(os);
+          //TODO
+          //m_utopia_warning_once("not implemented");
+
+    }
+
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS> * BelosSolver<Matrix, Vector, TRILINOS>::clone() const
     {
         return new BelosSolver(*this);
     }
 
-    template <typename Matrix, typename Vector>
-    bool BelosSolver<Matrix, Vector, TRILINOS>::smooth(const Vector &rhs, Vector &x)
-    {
-        return false;
-    }
 
     template <typename Matrix, typename Vector>
     bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem()
@@ -259,7 +288,7 @@ namespace utopia {
         if ( direct_solver )
         {
 #ifdef WITH_TRILINOS_IFPACK2
-            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, this->get_operator()->implementation().implementation_ptr());
+            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, raw_type(*this->get_operator()));
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
@@ -277,7 +306,7 @@ namespace utopia {
         } else {
 #ifdef WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
-            impl_->M_muelu = MueLu::CreateTpetraPreconditioner(this->get_operator()->implementation().implementation_ptr(), impl_->param_list->sublist("MueLu", false));
+            impl_->M_muelu = MueLu::CreateTpetraPreconditioner(raw_type(*this->get_operator()), impl_->param_list->sublist("MueLu", false));
             assert(!impl_->M_muelu.is_null());
             std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
             std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });

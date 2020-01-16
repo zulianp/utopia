@@ -20,7 +20,7 @@ namespace utopia
 
         EigenSolver( ): number_of_eigenvalues_(1),
                         portion_of_spectrum_("smallest_real"),
-                        max_it_(1000),
+                        max_it_(40000),
                         tol_(1e-12),
                         verbose_(false)
 

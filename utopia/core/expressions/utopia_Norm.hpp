@@ -26,14 +26,15 @@ namespace utopia {
             return _expr;
         }
 
-        std::string getClass() const {
-            return "Norm<" + _expr.getClass() + ">";
+        std::string get_class() const {
+            return "Norm<" + _expr.get_class() + ">";
         }
 
         operator typename Traits<Norm>::Scalar() const
         {
-            Evaluator<typename Traits<Norm>::Vector, Traits<Norm>::Backend> e;
-            return e.eval(*this);
+            // Evaluator<typename Traits<Norm>::Vector, Traits<Norm>::Backend> e;
+            // return e.eval(*this);
+            return Eval<Norm, Traits<Norm>, Traits<Norm>::Backend>::apply(*this);
         }
 
     private:

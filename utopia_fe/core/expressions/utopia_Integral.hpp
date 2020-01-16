@@ -6,6 +6,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_FEExpression.hpp"
 #include "utopia_FEIsSubTree.hpp"
+#include "utopia_FunctionalTraits.hpp"
 
 namespace utopia {
 
@@ -25,7 +26,7 @@ namespace utopia {
 
         typedef typename Expr::Scalar Scalar;
 
-        std::string getClass() const override { return "Integral<" + expr_.getClass() + ">"; }
+        std::string get_class() const override { return "Integral<" + expr_.get_class() + ">"; }
 
         Integral(const Expr &expr, const int block_id = -1, const Type type = VOLUME)
         : expr_(expr), block_id_(block_id), integral_id_(-1), type_(type)

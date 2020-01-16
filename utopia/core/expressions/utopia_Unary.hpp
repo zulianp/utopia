@@ -24,8 +24,8 @@ namespace utopia {
 
         virtual ~Unary() { }
 
-        virtual std::string getClass() const {
-            return _operation.getClass() + "<" + _expr.getClass() + ">";
+        virtual std::string get_class() const {
+            return _operation.get_class() + "<" + _expr.get_class() + ">";
         }
 
         inline const Operation &operation() const

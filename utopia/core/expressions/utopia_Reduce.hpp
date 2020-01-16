@@ -22,33 +22,31 @@ namespace utopia {
         static const int Order = 0;
 
         inline Reduce(const Expr &expr, const Operation &operation = Operation())
-                : _expr(expr), _operation(operation) { }
+                : expr_(expr), operation_(operation) { }
 
-        inline std::string getClass() const {
-            return "Reduce<" + _expr.getClass() + ", " + _operation.getClass() + ">";
+        inline std::string get_class() const {
+            return "Reduce<" + expr_.get_class() + ", " + operation_.get_class() + ">";
         }
 
         inline const Expr &expr() const
         {
-            return _expr;
+            return expr_;
         }
 
         inline const Operation &operation() const
         {
-            return _operation;
+            return operation_;
         }
-
 
        operator typename Traits<Reduce>::Scalar() const
        {
-           Evaluator<typename Traits<Reduce>::Vector, Traits<Reduce>::Backend> eval;
-           return eval.eval(*this);
+           return Eval<Reduce, Traits<Reduce>, Traits<Reduce>::Backend>::apply(*this);
        }
 
 
     private:
-        UTOPIA_STORE_CONST(Expr) _expr;
-        Operation _operation;
+        UTOPIA_STORE_CONST(Expr) expr_;
+        Operation operation_;
     };
 
     template<class Expr, class Operation>

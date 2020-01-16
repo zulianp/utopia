@@ -8,12 +8,18 @@ namespace utopia {
     template<typename T, class Derived>
     T scalar_cast(const Expression<Derived> &expr)
     {
-        typedef utopia::Traits<Derived> Traits;
-        Evaluator<typename Traits::Vector, Traits::Backend> eval;
+        // typedef utopia::Traits<Derived> Traits;
+        // Evaluator<typename Traits::Vector, Traits::Backend> eval;
 
+        // Number<T> ret = 0;
+        // eval.eval( Construct< Number<T>, Derived >( ret, expr.derived() ) );
+        // return ret;
+
+        using C = utopia::Construct< Number<T>, Derived >;
         Number<T> ret = 0;
-        eval.eval( Construct< Number<T>, Derived >( ret, expr.derived() ) );
+        Eval<C, Traits<Derived>, Traits<Derived>::Backend>::apply(C(ret, expr.derived()));
         return ret;
+
     }
 
     template<typename T>

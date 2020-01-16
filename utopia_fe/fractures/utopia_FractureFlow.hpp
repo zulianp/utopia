@@ -8,6 +8,7 @@
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_Describable.hpp"
 #include "utopia_WeakDirichletBoundaryConditions.hpp"
+#include "utopia_FluxPostProcessor.hpp"
 
 #include "libmesh/parallel_mesh.h"
 
@@ -30,6 +31,13 @@ namespace utopia {
         std::shared_ptr< UIForcingFunction<FunctionSpaceT, UVector> > forcing_function;
         std::shared_ptr<UIFunction<double>> sampler;
         ElementMatrix diffusion_tensor;
+
+        std::vector< std::shared_ptr<PostProcessor<FunctionSpaceT, UVector>> > post_processors_; 
+
+        void post_process(const UVector &sol);
+        void export_post_process();
+
+        void post_process(LibMeshFunctionSpace &space, const UVector &pressure, const UVector &concentration);
 
         void apply_weak_BC(USparseMatrix &A, UVector &b) const;
 

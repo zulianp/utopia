@@ -27,11 +27,12 @@ namespace utopia
 
             }
 
-            virtual bool gradient_no_rhs(const Vector &x, Vector &g) const override
+            virtual bool gradient(const Vector &x, Vector &g) const override
             {
                 // initialization of gradient vector...
-                if(empty(g))
+                if(empty(g)){
                     g  = local_zeros(local_size(x));;
+                }
 
                 SNESComputeFunction(snes_, raw_type(x), raw_type(g));
 

@@ -18,7 +18,7 @@ namespace utopia
     class FunctionBase
     {
     public:
-        DEF_UTOPIA_SCALAR(Vector)
+        DEF_UTOPIA_SCALAR(Vector);
 
         virtual ~FunctionBase() { }
 
@@ -33,7 +33,7 @@ namespace utopia
     class Function : public FunctionBase<Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Vector);
 
         virtual ~Function() { }
 
@@ -47,7 +47,7 @@ namespace utopia
             return false;
         }
 
-        virtual bool initialize_hessian(Matrix &/*H*/, Matrix &H_pre) const
+        virtual bool initialize_hessian(Matrix &/*H*/, Matrix & /*H_pre*/) const
         {
             return false;
         }

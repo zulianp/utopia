@@ -4,11 +4,13 @@
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_RowView.hpp"
 #include "utopia_BiCGStab_impl.hpp"
+#include "utopia_ConjugateGradient_impl.hpp"
 
 namespace utopia{
-    template class Wrapper<utopia::TpetraMatrix, 2>;
-    template class Wrapper<utopia::TpetraVector, 1>;
-    template class RowView<utopia::TSMatrixd>;
 
-    template class BiCGStab<TSMatrixd, TVectord, HOMEMADE>;
+    template class RowView<TpetraMatrixd>;
+    template class BiCGStab<TpetraMatrixd, TpetraVectord, HOMEMADE>;
+    template class ConjugateGradient<TpetraMatrixd, TpetraVectord>;
+    template class ConjugateGradient<TpetraMatrixd, TpetraVectord, HOMEMADE>;
+
 }

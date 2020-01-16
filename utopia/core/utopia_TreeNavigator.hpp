@@ -97,8 +97,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class Tensor, int Order>
-        void visit(const Wrapper<Tensor, Order> &expr)
+        template<class Derived, int Order>
+        void visit(const Tensor<Derived, Order> &expr)
         {
             pre_intercept(expr);
 
@@ -150,23 +150,23 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class Left, class Right>
-        void visit(const Construct<Left, Right> &expr)
-        {
-            pre_intercept(expr);
+        // template<class Left, class Right>
+        // void visit(const Construct<Left, Right> &expr)
+        // {
+        //     pre_intercept(expr);
 
-            action_.pre_order_visit(expr);
+        //     action_.pre_order_visit(expr);
 
-            visit(expr.left());
+        //     visit(expr.left());
 
-            action_.in_order_visit(expr);
+        //     action_.in_order_visit(expr);
 
-            visit(expr.right());
+        //     visit(expr.right());
 
-            action_.post_order_visit(expr);
+        //     action_.post_order_visit(expr);
 
-            post_intercept(expr);
-        }
+        //     post_intercept(expr);
+        // }
 
         template<class Type, int Order>
         void visit(const Factory<Type, Order> &expr)
@@ -222,7 +222,7 @@ namespace utopia {
         template<class Expr>
         void post_intercept(const Expr &expr)
         {
-            if(verbose_) std::cout << "visited " << expr.getClass() << std::endl;
+            if(verbose_) std::cout << "visited " << expr.get_class() << std::endl;
         }
 
     private:

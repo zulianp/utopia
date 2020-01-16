@@ -36,15 +36,6 @@ namespace utopia {
         }
     };
 
-    template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class GaussSeidel {
-    public:
-        GaussSeidel() {
-            static_assert(Backend < HOMEMADE, "GaussSeidel not implemented for this backend");
-        }
-    };
-
-
     template<typename Matrix, typename Vector, int Backend = Traits<Vector>::Backend>
     class Factorization {
     public:
@@ -68,6 +59,16 @@ namespace utopia {
             static_assert(Backend < HOMEMADE, "CholeskyDecomposition not implemented for this backend");
         }
     };
+
+    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    class RedundantLinearSolver {
+    public:
+        RedundantLinearSolver() {
+            static_assert(Backend < HOMEMADE, "RedundantLinearSolver not implemented for this backend");
+        }
+
+    };
+
 }
 
 #endif //UTOPIA_LINEAR_SOLVERS_INTERFACES_HPP

@@ -14,7 +14,6 @@ namespace utopia {
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
 
     public:
         Factorization()
@@ -77,8 +76,15 @@ namespace utopia {
             strategy_.describe(os);
         }
 
-    private:
+        inline void read(Input &is) override
+        {
+            DirectSolver<Matrix, Vector>::read(is);
 
+            //FIXME check before if it is a factorization
+            strategy_.read(is);
+        }
+
+    private:
         class Strategy : public KSPSolver<Matrix, Vector> {
         public:
             using KSPSolver<Matrix, Vector>::KSPSolver;

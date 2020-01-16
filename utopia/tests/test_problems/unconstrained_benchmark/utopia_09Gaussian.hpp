@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_UnconstrainedTestFunction.hpp"
+#include "utopia_TestFunctions.hpp"
 
 
 namespace utopia
@@ -12,7 +12,7 @@ namespace utopia
     class Gaussian09 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Gaussian09()
@@ -39,7 +39,7 @@ namespace utopia
 
         std::string name() const override
         {
-            return "Gaussaian";
+            return "Gaussian";
         }
 
         SizeType dim() const override
@@ -55,7 +55,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 3);
+            assert(point.size() == 3);
 
             const Read<Vector> read(point);
 
@@ -81,7 +81,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 3);
+            assert(point.size() == 3);
             g = zeros(3);
 
             const Read<Vector> read(point);
@@ -121,7 +121,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 3);
+            assert(point.size() == 3);
             result = zeros(3,3);
 
             const Read<Vector> read(point);

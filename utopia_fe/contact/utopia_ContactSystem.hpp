@@ -3,8 +3,10 @@
 
 #include "utopia_libmesh_Types.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_ContactAssembler.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia.hpp"
+#include "utopia_ContactSolver.hpp"
 
 #include <memory>
 
@@ -17,12 +19,15 @@ namespace utopia {
 
     class ContactSystem {
     public:
+        using ContactSolverT = utopia::ContactSolver<USparseMatrix, UVector>;
+        using ContactT = ContactSolverT::ContactT;
+
         ContactSystem(const std::shared_ptr<libMesh::EquationSystems> &equation_systems, const int main_system_num);
         ~ContactSystem();
 
         void update(
             const MechanicsState &state,
-            const Contact &contact,
+            const ContactT &contact,
             const double dt = 1.
             );
 
@@ -44,14 +49,13 @@ namespace utopia {
         double wear_coefficient_;
         std::vector<double> total_wear_;
 
-
         static void update_wear(
             const double dt,
             const double wear_coefficient,
             const UVector &sliding_distance,
             const UVector &normal_stress,
             UVector &wear
-            );
+        );
     };
 }
 

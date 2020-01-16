@@ -1,0 +1,103 @@
+#ifndef UTOPIA_PRINCIPAL_STRAINS_VIEW_HPP
+#define UTOPIA_PRINCIPAL_STRAINS_VIEW_HPP
+
+#include "utopia_LaplacianView.hpp"
+#include "utopia_Utils.hpp"
+#include "utopia_GradInterpolate.hpp"
+
+namespace utopia {
+
+    template<
+        class FunctionSpaceView,
+        class GradInterpolateView,
+        class Elem = typename FunctionSpaceView::Elem,
+        class MemType = typename Elem::MemType,
+        typename...
+    >
+    class PrincipalStrainsView {
+    public:
+        static const int Dim = Elem::Dim;
+
+        using Scalar    = typename Elem::Scalar;
+        using SizeType  = typename Elem::SizeType;
+        using GradValue = typename Elem::GradValue;
+        static const std::size_t NQuadPoints = GradInterpolateView::NQuadPoints;
+
+        PrincipalStrainsView(const GradInterpolateView &grad)
+        : grad_(grad)
+        {}
+
+        class Evaluation {
+        public:
+            ArrayView<StaticVector<Scalar, Dim>, NQuadPoints> values;
+            ArrayView<GradValue, NQuadPoints> vectors;
+        };
+
+        UTOPIA_INLINE_FUNCTION Evaluation make(const Elem &elem) const
+        {
+            Evaluation ret;
+            get(elem, ret.values, ret.vectors);
+            return ret;
+        }
+
+        template<class Values, class Vectors>
+        UTOPIA_INLINE_FUNCTION void get(
+            const Elem &elem,
+            Values &values,
+            Vectors &vectors) const
+        {
+            typename GradInterpolateView::Eval strain;
+
+            grad_.get(elem, strain);
+
+            const SizeType n = strain.size();
+
+            for(SizeType qp = 0; qp < n; ++qp) {
+                strain[qp].symmetrize();
+                eig(strain[qp], values[qp], vectors[qp]);
+            }
+        }
+
+        GradInterpolateView grad_;
+    };
+
+    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    class PrincipalStrains {};
+
+    template<class Mesh, int NComponents, class Quadrature, typename...Args>
+    class PrincipalStrains< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
+    public:
+        using FunctionSpace           = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Vector                  = typename FunctionSpace::Vector;
+        using GradInterpolate         = utopia::GradInterpolate<FunctionSpace, Quadrature>;
+
+        using FunctionSpaceViewDevice   = typename FunctionSpace::ViewDevice;
+        using GradInterpolateViewDevice = typename GradInterpolate::ViewDevice;
+
+        using ViewDevice              = utopia::PrincipalStrainsView<FunctionSpaceViewDevice, GradInterpolateViewDevice>;
+
+
+        PrincipalStrains(const FunctionSpace &space, const Quadrature &q)
+        : grad_(space, q)
+        {}
+
+        inline ViewDevice view_device() const
+        {
+            return ViewDevice(
+                grad_.view_device()
+            );
+        }
+
+        inline void update(const Vector &x)
+        {
+            grad_.update(x);
+        }
+
+    private:
+        GradInterpolate grad_;
+    };
+
+}
+
+
+#endif //UTOPIA_PRINCIPAL_STRAINS_VIEW_HPP

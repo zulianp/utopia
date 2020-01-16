@@ -11,7 +11,7 @@
 namespace utopia {
 //    class Scalar : public Expression<Scalar> {
 //    public:
-//        std::string getClass() const { return "Scalar"; }
+//        std::string get_class() const { return "Scalar"; }
 //    };
 
     template<typename T>

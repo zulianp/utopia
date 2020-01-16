@@ -1,53 +1,37 @@
-//
-// Created by Patrick Zulian on 26/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_RANGED_HPP
 #define UTOPIA_UTOPIA_RANGED_HPP
 
+#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Range.hpp"
 #include "utopia_View.hpp"
 
 namespace utopia {
-    template<class Derived, int Order>
-    class Ranged {};
+    // template<class Derived, int Order>
+    // class Ranged {};
+
+    // template<class Derived>
+    // class Ranged<Derived, 2> {
+    // public:
+      
+    // };
+
+    // template<class Derived>
+    // class Ranged<Derived, 1> {
+    // public:
+      
+    // };
 
     template<class Derived>
-    class Ranged<Derived, 2> {
-    public:
-        View<Derived> range(const int rbegin, const int rend, const int cbegin, const int cend)
-        {
-            assert(rend - rbegin > 0);
-            assert(rbegin >= 0);
-            assert(rend > 0);
-
-            assert(cend - cbegin > 0);
-            assert(cbegin >= 0);
-            assert(cend > 0);
-
-            return View<Derived>(derived(), Range(rbegin, rend), Range(cbegin, cend));
-        }
-
-    private:
-        DERIVED_CRT(Derived);
-        CONST_DERIVED_CRT(Derived);
-    };
+    inline View<Tensor<Derived, 2>> view(Tensor<Derived, 2> &t, const Range &row_range, const Range &col_range)
+    {
+        return View<Tensor<Derived, 2>>(t.derived(), row_range, col_range);
+    }
 
     template<class Derived>
-    class Ranged<Derived, 1> {
-    public:
-        View<Derived> range(const int begin, const int end)
-        {
-            assert(end - begin > 0);
-            assert(begin >= 0);
-            assert(end > 0);
-            return View<Derived>(derived(), Range(begin, end), Range(0));
-        }
-
-    private:
-        DERIVED_CRT(Derived);
-        CONST_DERIVED_CRT(Derived);
-    };
+    inline View<Tensor<Derived, 1>> view(Tensor<Derived, 1> &t, const Range &range)
+    {
+        return View<Tensor<Derived, 1>>(t.derived(), range, Range(0));
+    }
 }
 
 #endif //UTOPIA_UTOPIA_RANGED_HPP

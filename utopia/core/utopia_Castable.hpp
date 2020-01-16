@@ -18,11 +18,9 @@ namespace utopia {
 
         inline operator Scalar() const
         {
-            typedef utopia::Traits<Derived> Traits;
-            Evaluator<typename Traits::Vector, Traits::Backend> eval;
-
+            using C = utopia::Construct< Number<Scalar>, Derived >;
             Number<Scalar> ret = 0;
-            eval.eval( Construct< Number<Scalar>, Derived >( ret, derived() ) );
+            Eval<C, Traits<Derived>, Traits<Derived>::Backend>::apply(C(ret, derived()));
             return ret;
         }
 

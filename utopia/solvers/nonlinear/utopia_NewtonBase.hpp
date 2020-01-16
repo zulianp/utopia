@@ -12,6 +12,15 @@
 
 namespace utopia {
 
+
+    enum InexactNewtonForcingStartegies  {  ZERO            = 0,  
+                                            CAI             = 1,
+                                            DEMBO           = 2,
+                                            SUPERLINEAR     = 3,
+                                            QUADRATIC       = 4,
+                                            QUADRATIC_2     = 5 };   
+
+
     template<class Matrix, class Vector>
     class NewtonBase : public NonLinearSolver<Vector> {
     public:
@@ -20,7 +29,7 @@ namespace utopia {
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         NewtonBase(const std::shared_ptr<Solver> &linear_solver)
-        : NonLinearSolver<Vector>(), linear_solver_(linear_solver), check_diff_(false)
+        : NonLinearSolver<Vector>(), linear_solver_(linear_solver), check_diff_(false), forcing_strategy_(InexactNewtonForcingStartegies::ZERO)
         { }
 
         virtual ~NewtonBase() {}
@@ -28,7 +37,7 @@ namespace utopia {
 
         virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
 
-        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
+        virtual bool solve(Function_rhs<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
         {
             fun.set_rhs(rhs);
             bool converged = this->solve(fun, x);
@@ -36,6 +45,20 @@ namespace utopia {
             return converged;
         }
 
+        virtual void forcing_strategy(const InexactNewtonForcingStartegies & strategy)
+        {
+            forcing_strategy_ = strategy; 
+        }
+
+        virtual InexactNewtonForcingStartegies forcing_strategy()
+        {
+            return forcing_strategy_; 
+        }    
+
+        virtual bool has_forcing_strategy()
+        {
+            return (forcing_strategy_>0) ? true : false; 
+        }    
 
         /**
          * @brief      Enables the differentiation control.
@@ -127,9 +150,49 @@ namespace utopia {
         }
 
 
+        virtual Scalar estimate_ls_atol(const Scalar & gnorm, const Scalar & it)
+        {
+            if(forcing_strategy_==InexactNewtonForcingStartegies::CAI)
+            {
+                return 10e-4*gnorm; 
+            }   
+            else if(forcing_strategy_ == InexactNewtonForcingStartegies::DEMBO)
+            {
+                return (gnorm * std::min(std::sqrt(gnorm), 1./(it+1))); 
+            }
+            else if(forcing_strategy_ == InexactNewtonForcingStartegies::SUPERLINEAR)
+            {
+                return (gnorm *  std::min(std::sqrt(gnorm), 0.5)); 
+            }
+            else if(forcing_strategy_ == InexactNewtonForcingStartegies::QUADRATIC)
+            {
+                return (gnorm * std::min(gnorm, 1./(it+1))); 
+            }                        
+            else if(forcing_strategy_ == InexactNewtonForcingStartegies::QUADRATIC_2)
+            {
+                return (gnorm * std::min(gnorm, 0.5)); 
+            }               
+            else
+            {
+                utopia_error("utopia::Newton:: invalid choice of forcing strategy.... \n"); 
+                return 0.0; 
+            }
+
+            return 0.0; 
+
+        }   
+
+        void init_memory(const SizeType & ls)
+        {
+            linear_solver_->init_memory(ls); 
+        }
+
+
         std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */
         DiffController          controller_;
         bool                    check_diff_;        /*!< Enable differentiation control. */
+
+        InexactNewtonForcingStartegies forcing_strategy_; 
 
     };
 }

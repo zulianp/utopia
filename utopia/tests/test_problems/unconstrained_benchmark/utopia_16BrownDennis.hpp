@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_UnconstrainedTestFunction.hpp"
+#include "utopia_TestFunctions.hpp"
 
 
 namespace utopia
@@ -12,7 +12,7 @@ namespace utopia
     class BrownDennis16 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         BrownDennis16()
@@ -68,7 +68,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
 
             const Read<Vector> read(point);
 
@@ -97,7 +97,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
             g = zeros(4);
 
             const Read<Vector> read(point);
@@ -142,7 +142,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
             result = zeros(4,4);
 
             const Read<Vector> read(point);

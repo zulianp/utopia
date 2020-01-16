@@ -15,7 +15,7 @@ namespace utopia {
 
         typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
-        typedef utopia::Smoother<Matrix, Vector>            Smoother;
+        typedef utopia::IterativeSolver<Matrix, Vector>     Smoother;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::MatrixTransfer<Matrix, Vector>      MatrixTransfer;
@@ -23,7 +23,7 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override
         {
             if(!ksp_) {
-                init_ksp(op->implementation().communicator());
+                init_ksp(op->comm().get());
             }
 
             this->galerkin_assembly(op);
@@ -38,13 +38,13 @@ namespace utopia {
                 KSP smoother;
                 PCMGGetSmoother(pc, i, &smoother);
                 if(block_size_ > 1) {
-                    const_cast<Matrix &>(this->level(i).A()).implementation().convert_to_mat_baij(block_size_);
+                    const_cast<Matrix &>(this->level(i).A()).convert_to_mat_baij(block_size_);
                 }
 
                 KSPSetOperators(smoother, raw_type(this->level(i).A()), raw_type(this->level(i).A()));
             }
         }
-
+        
         virtual bool apply(const Vector &rhs, Vector &x) override
         {
             if(this->verbose())
@@ -148,7 +148,7 @@ namespace utopia {
             }
 
             if(!ksp_) {
-                init_ksp(mat_transfer->I().implementation().communicator());
+                init_ksp(mat_transfer->I().comm().get());
             } else {
                 PC pc;
                 KSPGetPC(*ksp_, &pc);

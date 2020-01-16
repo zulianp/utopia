@@ -23,6 +23,8 @@ if(OPENCL_FOUND)
         .
         )
 
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
     find_project_files(CMAKE_CURRENT_SOURCE_DIR OPENCL_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
     add_library(utopia_opencl STATIC utopia_opencl.cpp ${LOCAL_SOURCES})

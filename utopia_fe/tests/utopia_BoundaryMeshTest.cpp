@@ -3,6 +3,7 @@
 #include "libmesh/boundary_mesh.h"
 #include "moonolith_synched_describable.hpp"
 
+
 namespace utopia {
     class BoundaryMeshTestImpl {
     public:
@@ -16,10 +17,10 @@ namespace utopia {
 
         void run()
         {
-            UTOPIA_UNIT_TEST_BEGIN("BounaryMeshTest");
+            //UTOPIA_UNIT_TEST_BEGIN("BounaryMeshTest");
             UTOPIA_RUN_TEST(dof_relation);
             UTOPIA_RUN_TEST(mass_matrix);
-            UTOPIA_UNIT_TEST_END("BounaryMeshTest");
+            //UTOPIA_UNIT_TEST_END("BounaryMeshTest");
         }
 
         void dof_relation()

@@ -1,23 +1,65 @@
 #include "utopia.hpp"
-#include "utopia_AlgebraTest.hpp"
 #include "utopia_IsSubTree.hpp"
+#include "utopia_Testing.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
+
+#ifdef WITH_TRILINOS
+#include "utopia_trilinos.hpp"
+#endif
 
 namespace utopia {
 
     template<class Matrix, class Vector>
-    class AlgebraTest {
-    private:
-        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+    class SerialAlgebraTest {
+    public:
+        using Traits = utopia::Traits<Vector>;
 
-        void nnz_test()
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Expr   = utopia::Multiply<Number<Scalar>, Tensor<Matrix, 2>>;
+        using ChosenType = typename ChooseType<Number<Scalar>, Tensor<Matrix, 2>, Number<Scalar>>::Type;
+        static const int FT = utopia::Traits<Tensor<Matrix, 2>>::FILL_TYPE;
+        static const int Order = Expr::Order;
+        using Result = typename TypeAndFill<Traits, Expr>::Type;
+
+        static_assert(Order == 2, "must be a 2nd order tensor");
+        static_assert(FT == FillType::DENSE, "must be dense");
+        static_assert(std::is_same<ChosenType, Matrix>::value,  "expression must result in matrix");
+        static_assert(std::is_same<Result, Matrix>::value, "expression must result in matrix");
+
+        void complicated_test()
         {
-            long n = 100;
-            Matrix I = identity(n, n);
-            long nnz_I = utopia::nnz(I, 0.);
-            utopia_test_assert(nnz_I == n);
+            const Scalar lambda = 1.0, mu = 1.0;
+            Matrix F = identity(3, 3);
+            Matrix H = identity(3, 3);
+
+            Matrix F_inv_t = transpose(inv(F));
+            const Scalar J = det(F);
+            const Scalar alpha = (1.0 * lambda * std::log(J) - 1.0 * mu);
+
+            const Scalar temp = lambda * inner(F_inv_t, H);
+            const Scalar temp2 = inner(F_inv_t, H);
+            Matrix mat = mu * H - alpha * F_inv_t * transpose(H) * F_inv_t + lambda * inner(F_inv_t, H) * F_inv_t;
+            // Matrix mat = inner(F_inv_t, H) * F_inv_t;
+
+            // std::cout << tree_format((inner(F_inv_t, H) * F_inv_t).get_class()) << std::endl;
         }
 
+        void run()
+        {
+            UTOPIA_RUN_TEST(complicated_test);
+        }
 
+    };
+
+    template<class Vector>
+    class VectorAlgebraTest {
+    public:
+        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+        static_assert(Traits<Vector>::Order == 1, "Tensor order of vector must be one");
+        
         void norm_test()
         {
             Vector v = zeros(2);
@@ -40,20 +82,6 @@ namespace utopia {
 
             n = norm_infty(v);
             utopia_test_assert(approxeq(10.0, n));
-        }
-
-        void quadratic_form()
-        {
-            const int n = mpi_world_size() * 2;
-            Vector x = values(n, 1.);
-            Vector b = values(n, 2.);
-            Matrix A = values(n, n, 1.);
-
-            double value = 0.5 * dot(x, A * x) + dot(x, b);
-            double expected = sum(A) * 0.5 + sum(b);
-
-            utopia_test_assert(approxeq(value, expected));
-            utopia_test_assert(approxeq(value, n*n*0.5 + n*2.));
         }
 
         void dot_test()
@@ -93,69 +121,27 @@ namespace utopia {
             utopia_test_assert(approxeq(1.0, one));
         }
 
-        void multiply_test()
+        void reduce_test()
         {
-            if(!is_sparse<Matrix>::value && Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
-                std::cerr << "[Warning] petsc does not support parallel dense matrix-matrix multiplication" << std::endl;
-                return;
-            }
+            Vector x = values(5, 1.0); 
 
-            Matrix m1 = identity(3, 3);
-            {
-                Write<Matrix> w(m1, GLOBAL_INSERT);
-                m1.set(0, 1, 1);
-            }
+            Scalar min_val = min(x); 
+            Scalar max_val = max(x); 
+            Scalar sum_val = sum(x); 
 
-            Matrix m2 = values(3, 3, 2);
-            Matrix m3 = m2 * transpose(m2);
-            m3 = transpose(m1) * m3;
-            m3 = m2 * m3;
-            m3 = m1 * m3;
+            utopia_test_assert(approxeq(1.0, min_val));
+            utopia_test_assert(approxeq(1.0, max_val));
+            utopia_test_assert(approxeq(5.0, sum_val));
 
-            each_read(m3, [](SizeType x, SizeType y, double entry) {
-                if (x == 0) {
-                    utopia_test_assert(entry == 192);
-                } else {
-                    utopia_test_assert(entry == 96);
-                }
-            });
-        }
+            x = values(5, -1.0); 
 
-        void determinant_test()
-        {
-            if(mpi_world_size() > 1) {
-                std::cerr << "[Warning] determinant only implemented for serial and small matrices" << std::endl;
-                return;
-            }
+            min_val = min(x); 
+            max_val = max(x); 
+            sum_val = sum(x); 
 
-            int n = 3;
-            Matrix m = 0.5 * identity(n, n);
-            auto expr = det(m);
-
-            double val = expr;
-            utopia_test_assert(approxeq(0.125, val));
-
-
-            Matrix m4 = 0.5 * identity(4, 4);
-            double det4 = det(m4);
-
-            utopia_test_assert(approxeq(0.0625, det4));
-        }
-
-        void size_test()
-        {
-            Matrix m = zeros(2, 3);
-            Size size = m.size();
-            utopia_test_assert(size.get(0) == 2);
-            utopia_test_assert(size.get(1) == 3);
-
-            Vector v = zeros(3);
-            size = v.size();
-            utopia_test_assert(size.get(0) == 3);
-
-            v = m * v;
-            size = v.size();
-            utopia_test_assert(size.get(0) == 2);
+            utopia_test_assert(approxeq(-1.0, min_val));
+            utopia_test_assert(approxeq(-1.0, max_val));
+            utopia_test_assert(approxeq(-5.0, sum_val));     
         }
 
         void binary_min_max()
@@ -177,6 +163,232 @@ namespace utopia {
             utopia_test_assert(approxeq(two, actual_max));
         }
 
+        void axpy_test()
+        {
+            int n = 10;
+            const Scalar beta = 1.0, omega = 2.0, alpha = 7.0;
+            Vector r = values(n, 1.0), 
+                   p = values(n, 2.0),
+                   v = values(n, 3.0),
+                   x = values(n, 500.1),
+                   y = values(n, 19.3);
+
+            p = r + beta * (p - omega * v);
+
+            Vector expected = values(n, -3.0);
+
+            utopia_test_assert(approxeq(expected, p));
+
+            Vector s, h;
+            s = r - alpha * v;
+
+            expected.set(-20.);
+            utopia_test_assert(approxeq(expected, s));
+
+            h = x + alpha * y;
+            expected.set(635.2);
+            utopia_test_assert(approxeq(expected, h));
+        }
+
+        void divide_dots_test()
+        {
+            int n = 9;
+            Vector t = values(n, 1.0), 
+                   s = values(n, 2.0);
+
+            const Scalar res = dot(t, s)/dot(t, t);
+            utopia_test_assert(approxeq(2.0, res));
+        }
+
+        static void print_backend_info()
+        {
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
+
+    public:
+        void run()
+        {
+            print_backend_info();
+            UTOPIA_RUN_TEST(norm_test);
+            UTOPIA_RUN_TEST(dot_test);
+            UTOPIA_RUN_TEST(dot_product_composition_test);
+            UTOPIA_RUN_TEST(reduce_test);
+            UTOPIA_RUN_TEST(binary_min_max);
+            UTOPIA_RUN_TEST(axpy_test);
+            UTOPIA_RUN_TEST(divide_dots_test);
+        }
+
+    };
+
+    template<class Matrix, class Vector>
+    class SparseAlgebraTest {
+    public:
+
+        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+        static_assert(Traits<Matrix>::Order == 2, "Tensor order of matrix must be 2");
+
+        static const int n = is_dense<Matrix>::value? 600 : 8000; 
+
+        void sparse_chop_test()
+        {
+            Matrix M = sparse(n, n, 3);
+            assemble_laplacian_1D(M);
+
+            // mpi_world_barrier();
+            
+            // Chrono c;
+            // c.start();
+            chop_smaller_than(M, 1e-13); 
+            chop_greater_than(M, 1e-13);       
+            
+            // mpi_world_barrier();
+            // c.stop();
+
+            // if(mpi_world_rank() == 0) std::cout << c << std::endl;
+
+            utopia_test_assert(approxeq(0.0, norm2(M), 1e-13));
+        }
+
+        void transform_test()
+        {   
+            Matrix M = sparse(n, n, 3);
+            assemble_laplacian_1D(M);
+            Matrix M_abs = abs(M);
+            const Scalar sum_M_abs = sum(M_abs);
+            
+            Scalar expected = 2*2 + (n - 2) * 4;
+            utopia_test_assert(approxeq(expected, sum_M_abs, 1e-13));
+
+            Matrix sqrt_M_abs = sqrt(M_abs);
+            const Scalar sum_sqrt_M_abs = sum(sqrt_M_abs);
+
+            expected = 2*2 + (n - 2) * (2 + std::sqrt(2.0));
+            utopia_test_assert(approxeq(expected, sum_sqrt_M_abs, 1e-8));
+
+            Matrix M_abs_2 = pow2(sqrt_M_abs);
+            utopia_test_assert(approxeq(M_abs, M_abs_2, 1e-8));
+        }
+
+        void run()
+        {
+            UTOPIA_RUN_TEST(sparse_chop_test);
+            UTOPIA_RUN_TEST(transform_test);
+        }
+    };
+
+    template<class Matrix, class Vector>
+    class DenseAlgebraTest {
+    private:
+        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+        static_assert(Traits<Matrix>::Order == 2, "Tensor order of matrix must be 2");
+
+        void nnz_test()
+        {
+            long n = 100;
+            Matrix I = identity(n, n);
+            long nnz_I = utopia::nnz(I, 0.);
+            utopia_test_assert(nnz_I == n);
+        }
+
+        void quadratic_form()
+        {
+            const int n = mpi_world_size() * 2;
+            Vector x = values(n, 1.);
+            Vector b = values(n, 2.);
+            Matrix A = values(n, n, 1.);
+
+            double value = 0.5 * dot(x, A * x) + dot(x, b);
+            double expected = sum(A) * 0.5 + sum(b);
+
+            utopia_test_assert(approxeq(value, expected));
+            utopia_test_assert(approxeq(value, n*n*0.5 + n*2.));
+        }
+
+        void multiply_test()
+        {
+            // if(!is_sparse<Matrix>::value && Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
+            if(Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
+                std::cerr << "[Warning] petsc does not support parallel dense matrix-matrix multiplication" << std::endl;
+                return;
+            }
+
+            if(mpi_world_size() > 3) {
+                std::cerr << "[Warning] multiply_test not run for comm size > 3" << std::endl;
+                return;
+            }
+
+            Matrix m1 = dense_identity(3, 3);
+            {
+                Write<Matrix> w(m1, GLOBAL_INSERT);
+                m1.c_set(0, 1, 1);
+            }
+
+            Matrix m2 = values(3, 3, 2);
+            
+            Matrix m3 = m2 * transpose(m2);
+            //direct variant (1): Matrix m3; m2.transpose_multiply(m2, m3);
+            //direct variant (2): Matrix m3; m3.multiply_transpose(m2, m3);
+
+            m3 = transpose(m1) * m3;
+            //direct variant: m1.transpose_multiply(m3, m3);
+
+            m3 = m2 * m3;
+            //direct variant: m2.multiply(m3, m3);
+
+            m3 = m1 * m3;
+            //direct variant:  m1.multiply(m3, m3);
+
+            each_read(m3, [](SizeType i, SizeType /*y*/, double entry) {
+                if (i == 0) {
+                    utopia_test_assert(entry == 192);
+                } else {
+                    utopia_test_assert(entry == 96);
+                }
+            });
+        }
+
+        void determinant_test()
+        {
+            if(mpi_world_size() > 1) {
+                std::cerr << "[Warning] determinant only implemented for serial and small matrices" << std::endl;
+                return;
+            }
+
+            int n = 3;
+            Matrix m = 0.5 * dense_identity(n, n);
+            auto expr = det(m);
+
+            double val = expr;
+            utopia_test_assert(approxeq(0.125, val));
+
+
+            Matrix m4 = 0.5 * dense_identity(4, 4);
+            double det4 = det(m4);
+
+            utopia_test_assert(approxeq(0.0625, det4));
+        }
+
+        void size_test()
+        {
+            Matrix m = zeros(2, 3);
+            Size size = m.size();
+            utopia_test_assert(size.get(0) == 2);
+            utopia_test_assert(size.get(1) == 3);
+
+            Vector v = zeros(3);
+            size = {v.size()};
+            utopia_test_assert(size.get(0) == 3);
+
+            v = m * v;
+            size = {v.size()};
+            utopia_test_assert(size.get(0) == 2);
+        }
 
         void local_values_test()
         {
@@ -196,55 +408,101 @@ namespace utopia {
             Vector v;
             Matrix mat;
 
+            auto mv = mat * v;
+            static_assert( (IsSubTree<decltype(mv), decltype(mv)>::value), "should be true" );
+
             auto expr = -diag(0.1 * v +  mat * v);
             static_assert( !(IsSubTree<Binary<Vector, Vector, Plus>, decltype(expr)>::value), "should be false" );
-            static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value), "should be true" );
-            static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value),  "should be true"  );
+            static_assert( (IsSubTree<decltype(mv), decltype(expr)>::value), "should be true" );
+            static_assert( (IsSubTree<decltype(mv), decltype(expr)>::value),  "should be true"  );
             static_assert( (IsSubTree<Matrix, decltype(expr)>::value),  "should be true"  );
             static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  );
         }
 
-        static void print_backend_info()
+        void trace_test()
         {
-            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
-            }
+            int n = 3;
+            Matrix m = 0.5 * dense_identity(n, n);
+            Scalar t = trace(m);
+            utopia_test_assert(approxeq(t, 1.5, 1e-16));
+        }
+
+        void in_place_test()
+        {
+            int n = 3;
+            Matrix oracle = dense_identity(n, n);
+            Matrix m = 0.5 * dense_identity(n, n);
+            m *= 2.0;
+
+            utopia_test_assert(approxeq(m, oracle, 1e-16));
+
+            oracle *= 1./4.0;
+            m /= 4.0;
+
+            utopia_test_assert(approxeq(m, oracle, 1e-16));
+        }
+
+        void chop_test()
+        {
+            SizeType n = 10; 
+            Vector x = values(n, 1.0); 
+            Vector y = values(n, -1.0); 
+
+            each_write(y, [n](const SizeType &i) -> Scalar
+            {
+                if(i == 0){
+                    return 1e-14; 
+                }
+                else{
+                    return  (i < n/2.0) ? -i : i ; 
+                }
+            });                
+
+
+            Matrix M = outer(x, y); 
+            chop_smaller_than(M, 1e-13); 
+            chop_greater_than(M, 1e-13);       
+
+            utopia_test_assert(approxeq(0.0, norm2(M), 1e-13));
         }
 
     public:
         void run()
         {
-            print_backend_info();
+            VectorAlgebraTest<Vector>().run();
             UTOPIA_RUN_TEST(is_subtree);
-            UTOPIA_RUN_TEST(norm_test);
-            UTOPIA_RUN_TEST(dot_test);
-            UTOPIA_RUN_TEST(dot_product_composition_test);
             UTOPIA_RUN_TEST(multiply_test);
             UTOPIA_RUN_TEST(determinant_test);
             UTOPIA_RUN_TEST(size_test);
-            UTOPIA_RUN_TEST(binary_min_max);
             UTOPIA_RUN_TEST(quadratic_form);
             UTOPIA_RUN_TEST(local_values_test);
             UTOPIA_RUN_TEST(nnz_test);
+            UTOPIA_RUN_TEST(trace_test);
+            UTOPIA_RUN_TEST(in_place_test);
+            UTOPIA_RUN_TEST(chop_test);
         }
     };
 
-    void runAlgebraTest()
+    static void algebra()
     {
-        UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
-
-// #ifdef WITH_BLAS
-//         AlgebraTest<Matrixd, Vectord>().run();
-// #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
+#endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        AlgebraTest<DMatrixd, DVectord>().run();
+        DenseAlgebraTest<PetscMatrix, PetscVector>().run();
+        SparseAlgebraTest<PetscMatrix, PetscVector>().run();
 #endif //WITH_PETSC
 
-// #ifdef WITH_TRILINOS
-//         AlgebraTest<TMatrixd, TVectord>().run();
-// #endif //WITH_TRILINOS
+#ifdef WITH_TRILINOS
+        VectorAlgebraTest<TpetraVector>().run();
+        SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
+#endif //WITH_TRILINOS
+        
+    }    
 
-        UTOPIA_UNIT_TEST_END("AlgebraTest");
-    }
+    UTOPIA_REGISTER_TEST_FUNCTION(algebra);
+
 }

@@ -3,6 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include <string>
 
 namespace utopia {
 
@@ -26,7 +27,7 @@ namespace utopia {
         DERIVED_CRT(Derived);
         CONST_DERIVED_CRT(Derived);
 
-        virtual std::string getClass() const
+        virtual std::string get_class() const
         {
             return "FunctionSpace";
         }

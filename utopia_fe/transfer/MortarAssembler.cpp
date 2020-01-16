@@ -4,7 +4,7 @@
 
 // #include <cmath>
 // #include <queue>
-// #include <numeric>
+#include <numeric>
 
 namespace utopia {
 

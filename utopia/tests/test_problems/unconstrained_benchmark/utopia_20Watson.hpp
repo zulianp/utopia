@@ -12,7 +12,7 @@ namespace utopia
     class Watson20 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Watson20()
@@ -50,7 +50,7 @@ namespace utopia
 
         bool exact_sol_known() const override
         {
-            return false;  // just because we can not fit into precision
+            return true;  // just because we can not fit into precision
         }
 
 
@@ -61,7 +61,7 @@ namespace utopia
                 return false;
             }
 
-            assert(x.size().get(0) == this->dim());
+            assert(x.size() == this->dim());
             {
                 const Read<Vector> read(x);
 
@@ -102,8 +102,11 @@ namespace utopia
                 return false;
             }
 
-            assert(x.size().get(0) == this->dim());
-            g = zeros(this->dim());
+            assert(x.size() == this->dim());
+            
+            if(empty(g)){
+                g = zeros(this->dim());
+            }
 
             {
                 const Read<Vector> read(x);
@@ -162,9 +165,15 @@ namespace utopia
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
+            assert(x.size() == this->dim());
 
-            assert(x.size().get(0) == this->dim());
-            H = zeros(this->dim(), this->dim());
+            if(empty(H)){
+                H = zeros(this->dim(), this->dim());
+            }
+            else
+            {
+                H *= 0.0; 
+            }
 
             std::vector<std::vector<Scalar> > hess(this->dim(), std::vector<Scalar>(this->dim()));
 

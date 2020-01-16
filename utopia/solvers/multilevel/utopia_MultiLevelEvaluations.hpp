@@ -4,15 +4,606 @@
 #include "utopia_Core.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_ExtendedFunction.hpp"
-
+#include "utopia_LevelMemory.hpp"
 
 namespace utopia
 {
+    enum LocalSolveType{    PRE_SMOOTHING  = 1,
+                            POST_SMOOTHING = 2,
+                            COARSE_SOLVE   = 0};
 
-    enum MultiLevelCoherence{   FIRST_ORDER  = 1,
-                                SECOND_ORDER = 2,
-                                GALERKIN     = 0};
 
+    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_TYPE>
+    class MultilevelDerivEval  { }; 
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template<typename Matrix, typename Vector>
+    class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER> final
+    {
+
+        typedef UTOPIA_SCALAR(Vector)           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
+
+    public:
+
+        MultilevelDerivEval(const SizeType & nl_levels): n_levels_(nl_levels), initialized_(false)
+        {
+
+        }
+
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+
+            if(level < n_levels_-1){
+                energy += dot(g_diff[level], s_global);
+            }
+
+            return energy;
+        }
+
+        // s_global is assummed to be zero 
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            return energy;
+        }        
+
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /* s_global*/)
+        {
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                g[level] += g_diff[level];
+            }
+
+            return true;
+        }
+
+        // s_global is assummed to be zero 
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                g[level] += g_diff[level];
+            }
+
+            return true;
+        }        
+
+        inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1)
+            {
+                energy      += dot(g_diff[level], s_global);
+                g[level]    += g_diff[level];
+            }            
+
+            return energy;
+        }
+
+
+        inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            return fun.hessian(x, H[level]);
+        }
+
+        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+        {
+            g_diff.resize(n_levels_);
+            g.resize(n_levels_);
+            H.resize(n_levels_);
+
+            for(auto l=0; l < n_levels_; l++){
+                g_diff[l]   = local_zeros(n_dofs_[l]); 
+                g[l]        = local_zeros(n_dofs_[l]); 
+                level_functions[l]->initialize_hessian(H[l], H[l]); 
+            }
+
+            initialized_ = true; 
+        }
+
+        bool initialized() const 
+        {
+            return initialized_; 
+        }
+
+        private:
+            SizeType n_levels_; 
+            bool initialized_; 
+
+        public:            
+            std::vector<Vector> g, g_diff; 
+            std::vector<Matrix> H; 
+    }; 
+
+
+
+    template<typename Matrix, typename Vector>
+    class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_MGOPT> final
+    {
+
+        typedef UTOPIA_SCALAR(Vector)           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
+
+    public:
+
+        MultilevelDerivEval(const SizeType & nl_levels): n_levels_(nl_levels), initialized_(false)
+        {
+
+        }
+
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /*s_global*/)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+
+            if(level < n_levels_-1){
+                energy += dot(g_diff[level], x);
+            }
+
+            return energy;
+        }
+
+        // s_global is assummed to be zero 
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+
+            if(level < n_levels_-1){
+                energy += dot(g_diff[level], x);
+            }
+
+            return energy;
+        }        
+
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /* s_global*/)
+        {
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                g[level] += g_diff[level];
+            }
+
+            return true;
+        }
+
+        // s_global is assummed to be zero 
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                g[level] += g_diff[level];
+            }
+
+            return true;
+        }        
+
+        inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /*s_global*/)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1)
+            {
+                energy      += dot(g_diff[level], x);
+                g[level]    += g_diff[level];
+            }            
+
+            return energy;
+        }
+
+
+        inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            return fun.hessian(x, H[level]);
+        }
+
+        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+        {
+            g_diff.resize(n_levels_);
+            g.resize(n_levels_);
+            H.resize(n_levels_);
+
+            for(auto l=0; l < n_levels_; l++){
+                g_diff[l]   = local_zeros(n_dofs_[l]); 
+                g[l]        = local_zeros(n_dofs_[l]); 
+                level_functions[l]->initialize_hessian(H[l], H[l]); 
+            }
+
+            initialized_ = true; 
+        }
+
+        bool initialized() const 
+        {
+            return initialized_; 
+        }
+
+        private:
+            SizeType n_levels_; 
+            bool initialized_; 
+
+        public:            
+            std::vector<Vector> g, g_diff; 
+            std::vector<Matrix> H; 
+    }; 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<typename Matrix, typename Vector>
+    class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER> final
+    {
+
+        typedef UTOPIA_SCALAR(Vector)           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
+
+    public:
+
+        MultilevelDerivEval(const SizeType & nl_levels): n_levels_(nl_levels), initialized_(false)
+        {
+
+        }
+
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+
+            if(level < n_levels_-1){
+                help_[level] = H_diff[level] * s_global; 
+                energy += (0.5 * dot(help_[level], s_global)) + dot(g_diff[level], s_global); 
+            }
+            return energy;
+        }
+
+        // s_global is assummed to be zero 
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            return energy;
+        }  
+
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::compute_gradient1");
+            fun.gradient(x, g[level]);
+            UTOPIA_NO_ALLOC_END();
+
+            if(level < n_levels_-1){
+                UTOPIA_NO_ALLOC_BEGIN("RMTR::compute_gradient2");
+                help_[level] = H_diff[level] * s_global; 
+                UTOPIA_NO_ALLOC_END();
+
+                UTOPIA_NO_ALLOC_BEGIN("RMTR::compute_gradient3");
+                // g[level] += g_diff[level] + help_[level]; 
+                g[level] = g[level] + g_diff[level] + help_[level]; 
+                UTOPIA_NO_ALLOC_END();
+            }
+            return true;
+        }
+
+        // s_global is assummed to be zero 
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                g[level] += g_diff[level];
+            }
+            return true;
+        }        
+
+
+        inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            Scalar energy = 0.0;
+            fun.value(x, energy);
+            fun.gradient(x, g[level]);
+
+            if(level < n_levels_-1){
+                help_[level] = H_diff[level] * s_global; 
+
+                energy += (0.5 * dot(help_[level], s_global)) + dot(g_diff[level], s_global); 
+                g[level] += g_diff[level] + help_[level]; 
+            }
+
+            return energy;
+        }   
+
+
+       inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            fun.hessian(x, H[level]);
+
+            if(level < n_levels_-1){
+                H[level] += H_diff[level];
+            }
+            return true;
+        }
+
+        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+        {   
+            help_.resize(n_levels_); 
+            g_diff.resize(n_levels_);
+            g.resize(n_levels_);
+            H_diff.resize(n_levels_);
+            H.resize(n_levels_);
+
+
+            for(auto l=0; l < n_levels_; l++){
+                help_[l]    = local_zeros(n_dofs_[l]); 
+                g_diff[l]   = local_zeros(n_dofs_[l]); 
+                g[l]        = local_zeros(n_dofs_[l]); 
+
+                level_functions[l]->initialize_hessian(H[l], H[l]); 
+                H_diff[l] = H[l]; 
+            }
+
+            initialized_ = true; 
+        }
+
+        bool initialized() const 
+        {
+            return initialized_; 
+        }
+
+        private:
+            SizeType n_levels_; 
+            bool initialized_; 
+        public:            
+            std::vector<Vector> g, g_diff,  help_; 
+            std::vector<Matrix> H, H_diff;
+
+    }; 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template<typename Matrix, typename Vector>
+    class MultilevelDerivEval<Matrix, Vector, GALERKIN> final
+    {
+        typedef UTOPIA_SCALAR(Vector)           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
+
+    public:
+        MultilevelDerivEval(const SizeType & nl_levels): n_levels_(nl_levels), initialized_(false)
+        {
+
+        }
+
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            if(level < n_levels_-1){
+                help_[level] = H_diff[level] * s_global; 
+                return (dot(g_diff[level], s_global) + 0.5 * dot(help_[level], s_global));
+            }
+            else
+            {
+                Scalar energy = 0.0; 
+                fun.value(x, energy); 
+                return energy; 
+            }
+        }
+
+        // s_global is assummed to be zero 
+        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            if(level < n_levels_-1){
+                return 0.0;
+            }
+            else{
+                Scalar energy = 0.0; 
+                fun.value(x, energy); 
+                return energy; 
+            }
+        }                
+
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            if(level < n_levels_-1){
+                g[level] = g_diff[level] + (H_diff[level] * s_global);
+            }
+            else
+            {
+                fun.gradient(x, g[level]); 
+            }
+
+            return true;
+        }
+
+        // s_global is assummed to be zero 
+        inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            if(level < n_levels_-1){
+                g[level] = g_diff[level];
+            }
+            else{
+                fun.gradient(x, g[level]); 
+            }
+
+            return true;
+        }        
+
+        inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+        {
+            if(level < n_levels_-1)
+            {
+                help_[level]    = H_diff[level] * s_global; 
+                g[level]        = g_diff[level] + help_[level];
+                return (dot(g_diff[level], s_global) + 0.5 * dot(help_[level], s_global));
+            }
+            else
+            {
+                Scalar energy = 0.0; 
+                fun.value(x, energy); 
+                fun.gradient(x, g[level]); 
+                return energy; 
+            }
+        }
+
+        inline bool compute_hessian(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+        {
+            if(level < n_levels_-1){
+                H[level] = H_diff[level];
+            }
+            else
+            {
+                fun.hessian(x, H[level]); 
+            }
+            return true;
+        }
+
+        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+        {
+            help_.resize(n_levels_); 
+            g_diff.resize(n_levels_);
+            g.resize(n_levels_);
+            H_diff.resize(n_levels_);
+            H.resize(n_levels_);
+
+            for(auto l=0; l < n_levels_; l++){
+                help_[l]    = local_zeros(n_dofs_[l]); 
+                g_diff[l]   = local_zeros(n_dofs_[l]); 
+                g[l]        = local_zeros(n_dofs_[l]); 
+
+                level_functions[l]->initialize_hessian(H[l], H[l]); 
+                H_diff[l] = H[l];                 
+            }
+
+            initialized_ = true; 
+        }
+
+        bool initialized() const 
+        {
+            return initialized_; 
+        }
+
+        private:
+            SizeType n_levels_; 
+            bool initialized_; 
+        public:
+            std::vector<Vector> g, g_diff,  help_; 
+            std::vector<Matrix> H, H_diff;            
+    }; 
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Matrix free first order 
+    template<typename Matrix, typename Vector>
+    class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_DF> final
+    {
+
+        typedef UTOPIA_SCALAR(Vector)           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
+
+        public:
+
+            MultilevelDerivEval(const SizeType & nl_levels): n_levels_(nl_levels), initialized_(false)
+            {
+
+            }
+
+            inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+            {
+                Scalar energy = 0.0;
+                fun.value(x, energy);
+
+                if(level < n_levels_-1){
+                    energy += dot(g_diff[level], s_global);
+                }
+
+                return energy;
+            }
+
+            // s_global is assummed to be zero 
+            inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+            {
+                Scalar energy = 0.0;
+                fun.value(x, energy);
+                return energy;
+            }        
+
+            inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /* s_global*/)
+            {
+                fun.gradient(x, g[level]);
+
+                if(level < n_levels_-1){
+                    g[level] += g_diff[level];
+                }
+
+                return true;
+            }
+
+            // s_global is assummed to be zero 
+            inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
+            {
+                fun.gradient(x, g[level]);
+
+                if(level < n_levels_-1){
+                    g[level] += g_diff[level];
+                }
+
+                return true;
+            }        
+
+            inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
+            {
+                Scalar energy = 0.0;
+                fun.value(x, energy);
+                fun.gradient(x, g[level]);
+
+                if(level < n_levels_-1)
+                {
+                    energy      += dot(g_diff[level], s_global);
+                    g[level]    += g_diff[level];
+                }            
+
+                return energy;
+            }
+
+            void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+            {
+                g_diff.resize(n_levels_);
+                g.resize(n_levels_);
+                y.resize(n_levels_);
+
+                for(auto l=0; l < n_levels_; l++){
+                    g_diff[l]   = local_zeros(n_dofs_[l]); 
+                    g[l]        = local_zeros(n_dofs_[l]); 
+                    y[l]        = local_zeros(n_dofs_[l]); 
+                }
+
+                initialized_ = true; 
+            }
+
+            bool initialized() const 
+            {
+                return initialized_; 
+            }
+
+        private:
+            SizeType n_levels_; 
+            bool initialized_; 
+
+        public:            
+            std::vector<Vector> g, g_diff, y; 
+    }; 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                                
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                                
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                                
     template <MultiLevelCoherence T>
     struct is_first_order
     {
@@ -24,133 +615,30 @@ namespace utopia
       static const bool value = true;
     };
 
-//  --------------------------------------------- Hessians ---------------------------------------------------------------------------
-
-    template<typename Matrix, typename Vector, MultiLevelCoherence MC>
-    class MultilevelHessianEval;
-
-    template<typename Matrix, typename Vector>
-    class MultilevelHessianEval<Matrix, Vector, GALERKIN>
-    {
-        public:
-           inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/, Matrix & H, const Matrix & H_diff)
-            {
-                H = H_diff;
-                return true;
-            }
+    template <>
+    struct is_first_order<FIRST_ORDER_MGOPT> {
+      static const bool value = true;
     };
 
+    template <>
+    struct is_first_order<FIRST_ORDER_DF> {
+      static const bool value = true;
+    };    
 
-    template<typename Matrix, typename Vector>
-    class MultilevelHessianEval<Matrix, Vector, SECOND_ORDER>
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                                
+    template <MultiLevelCoherence T>
+    struct is_derivative_free
     {
-        public:
-           inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Matrix & H, const Matrix & H_diff)
-            {
-                fun.hessian(x, H);
-                H += H_diff;
-                return true;
-            }
+      static const bool value = false;
     };
 
-    template<typename Matrix, typename Vector>
-    class MultilevelHessianEval<Matrix, Vector, FIRST_ORDER>
-    {
-        public:
-           inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Matrix & H, const Matrix & /*H_diff*/)
-            {
-                fun.hessian(x, H);
-                return true;
-            }
-    };
+    template <>
+    struct is_derivative_free<FIRST_ORDER_DF> {
+      static const bool value = true;
+    };    
 
-
-//  --------------------------------------------- Gradients ---------------------------------------------------------------------------
-
-    template<typename Matrix, typename Vector, MultiLevelCoherence MC>
-    class MultilevelGradientEval;
-
-    template<typename Matrix, typename Vector>
-    class MultilevelGradientEval<Matrix, Vector, GALERKIN>
-    {
-        public:
-            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
-                g = g_diff + H_diff * s_global;
-                return true;
-            }
-    };
-
-
-    template<typename Matrix, typename Vector>
-    class MultilevelGradientEval<Matrix, Vector, SECOND_ORDER>
-    {
-        public:
-            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
-                fun.gradient(x, g);
-                g += g_diff + H_diff * s_global;
-                return true;
-            }
-    };
-
-    template<typename Matrix, typename Vector>
-    class MultilevelGradientEval<Matrix, Vector, FIRST_ORDER>
-    {
-        public:
-            inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & /*s_global*/)
-            {
-                fun.gradient(x, g);
-                g += g_diff;
-                return true;
-            }
-    };
-
-
-
-//  --------------------------------------------- Energies ---------------------------------------------------------------------------
-
-    template<typename Matrix, typename Vector, MultiLevelCoherence MC>
-    class MultilevelEnergyEval;
-
-    template<typename Matrix, typename Vector>
-    class MultilevelEnergyEval<Matrix, Vector, GALERKIN>
-    {
-        public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
-                return (dot(g_diff, s_global) + 0.5 * dot(H_diff * s_global, s_global));
-            }
-    };
-
-
-    template<typename Matrix, typename Vector>
-    class MultilevelEnergyEval<Matrix, Vector, SECOND_ORDER>
-    {
-        public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
-                typename Traits<Vector>::Scalar energy = 0.0;
-                fun.value(x, energy);
-                energy += dot(g_diff, s_global) + 0.5 * dot(H_diff * s_global, s_global);
-                return energy;
-            }
-    };
-
-    template<typename Matrix, typename Vector>
-    class MultilevelEnergyEval<Matrix, Vector, FIRST_ORDER>
-    {
-        public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & s_global)
-            {
-                typename Traits<Vector>::Scalar energy = 0.0;
-                fun.value(x, energy);
-                energy += dot(g_diff, s_global);
-                return energy;
-            }
-    };
-
-
+    
 
 }
 

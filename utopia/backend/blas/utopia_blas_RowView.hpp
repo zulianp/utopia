@@ -20,7 +20,7 @@ namespace utopia {
 
         inline SizeType n_values() const
         {
-            return t_.implementation().cols();
+            return t_.cols();
         }
 
         inline SizeType col(const SizeType index) const
@@ -36,81 +36,6 @@ namespace utopia {
     private:
         Tensor &t_;
         SizeType row_;
-    };
-
-    template<>
-    class RowView<CRSMatrixd, 2, FillType::SPARSE, utopia::BLAS> {
-    public:
-        typedef typename utopia::Traits<CRSMatrixd>::SizeType SizeType;
-        typedef typename utopia::Traits<CRSMatrixd>::Scalar Scalar;
-
-        inline RowView(CRSMatrixd &t, const SizeType row)
-        : t_(t),
-          row_(row),
-          n_cols_(t.implementation().rowptr()[row+1] - t.implementation().rowptr()[row])
-        {}
-
-        inline ~RowView() {}
-
-        inline SizeType n_values() const
-        {
-            return n_cols_;
-        }
-
-        inline SizeType col(const SizeType index) const
-        {
-            assert(index < n_values());
-            return t_.implementation().colindex()[t_.implementation().rowptr()[row_] + index];
-        }
-
-        inline Scalar get(const SizeType index) const
-        {
-            assert(index < n_values());
-            return t_.implementation().entries()[t_.implementation().rowptr()[row_] + index];
-        }
-
-    private:
-        CRSMatrixd &t_;
-        SizeType row_;
-        SizeType n_cols_;
-    };
-
-
-    template<>
-    class RowView<const CRSMatrixd, 2, FillType::SPARSE, utopia::BLAS> {
-    public:
-        typedef typename utopia::Traits<CRSMatrixd>::SizeType SizeType;
-        typedef typename utopia::Traits<CRSMatrixd>::Scalar Scalar;
-
-        inline RowView(const CRSMatrixd &t, const SizeType row)
-        : t_(t),
-          row_(row),
-          n_cols_(t.implementation().rowptr()[row + 1] - t.implementation().rowptr()[row])
-        {}
-
-        inline ~RowView() {}
-
-        inline SizeType n_values() const
-        {
-            return n_cols_;
-        }
-
-        inline SizeType col(const SizeType index) const
-        {
-            assert(index < n_values());
-            return t_.implementation().colindex()[t_.implementation().rowptr()[row_] + index];
-        }
-
-        inline Scalar get(const SizeType index) const
-        {
-            assert(index < n_values());
-            return t_.implementation().entries()[t_.implementation().rowptr()[row_] + index];
-        }
-
-    private:
-        const CRSMatrixd &t_;
-        SizeType row_;
-        SizeType n_cols_;
     };
 
 }

@@ -83,15 +83,15 @@ namespace utopia
             return mf_linear_solver_;
         }
 
-        virtual void update(const Vector & s, const Vector & y)
+        virtual void update(const Vector & s, const Vector & y, const Vector & x, const Vector & g)
         {
-            hessian_approx_strategy_->update(s, y);
+            hessian_approx_strategy_->update(s, y, x, g);
         }
 
 
-        virtual void initialize_approximation()
+        virtual void initialize_approximation(const Vector &x, const Vector & g)
         {
-            return hessian_approx_strategy_->initialize();
+            return hessian_approx_strategy_->initialize(x, g); 
         }
 
 
@@ -109,6 +109,20 @@ namespace utopia
         virtual Scalar dumping_parameter()
         {
             return alpha_;
+        }
+
+        virtual void init_memory(const Vector &x, const Vector & g)
+        {
+            this->initialize_approximation(x, g); 
+            SizeType ls = local_size(x).get(0);
+
+            if(ls_strategy_){
+               ls_strategy_->init_memory(ls); 
+            }
+
+            if(mf_linear_solver_){
+               mf_linear_solver_->init_memory(ls); 
+            }            
         }
 
 

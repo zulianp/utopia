@@ -22,8 +22,8 @@ namespace utopia {
 
         inline const Expr &expr() const { return expr_; }
 
-        std::string getClass() const {
-            return  "Diag<" + expr_.getClass() + ">";
+        std::string get_class() const {
+            return  "Diag<" + expr_.get_class() + ">";
         }
 
     private:
@@ -51,8 +51,8 @@ namespace utopia {
 
     //     virtual ~Unary() { }
 
-    //   std::string getClass() const {
-    //       return  "Diag<" + expr_.getClass() + ">";
+    //   std::string get_class() const {
+    //       return  "Diag<" + expr_.get_class() + ">";
     //   }
 
     //     inline const Operation &operation() const

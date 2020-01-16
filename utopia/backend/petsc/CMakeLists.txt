@@ -67,7 +67,6 @@ if(PETSC_FOUND)
         .
         eval
         solvers
-        solvers/eigensolvers
         solvers/linear
         solvers/multilevel
         solvers/nonlinear
@@ -78,14 +77,24 @@ if(PETSC_FOUND)
         solvers/nonlinear/line_search
         )
 
+    if(WITH_SLEPC)
+        list(APPEND PETSC_MODULES
+            solvers/eigensolvers
+        )
+
+    endif()
+
     if(ENABLE_PASSO_EXTENSIONS)
         list(APPEND PETSC_MODULES
                 external
             )
     endif()
 
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
     find_project_files(CMAKE_CURRENT_SOURCE_DIR PETSC_MODULES LOCAL_HEADERS LOCAL_SOURCES)
     add_library(utopia_petsc STATIC utopia_petsc.cpp ${LOCAL_SOURCES})
+    utopia_link_default_targets(utopia_petsc)
 
     foreach(MODULE ${PETSC_MODULES})
         target_include_directories(utopia_petsc PUBLIC ${MODULE})

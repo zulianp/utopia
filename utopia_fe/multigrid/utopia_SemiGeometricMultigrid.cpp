@@ -1,3 +1,4 @@
+
 #include "utopia_SemiGeometricMultigrid.hpp"
 
 #include "utopia_libmesh.hpp"
@@ -23,7 +24,10 @@ namespace utopia {
     {
         auto &dof_map = V.dof_map();
         auto u = trial(V);
-        UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+
+        Traits<UVector>::IndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         x.set(1.);
 
         double volume = -1.;
@@ -53,7 +57,7 @@ namespace utopia {
     }
 
     SemiGeometricMultigrid::SemiGeometricMultigrid(
-        const std::shared_ptr<Smoother<USparseMatrix, UVector> > &smoother,
+        const std::shared_ptr<IterativeSolver<USparseMatrix, UVector> > &smoother,
         const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver)
     : mg(smoother, linear_solver),
       is_block_solver_(false),
@@ -278,7 +282,7 @@ namespace utopia {
         //hacky
         if(is_block_solver_) {
             for(SizeType i = 0; i < mg.n_levels(); ++i) {
-                const_cast<USparseMatrix &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());
+                const_cast<USparseMatrix &>(mg.level(i).A()).convert_to_mat_baij(meshes[0]->mesh_dimension());
             }
         }
 
@@ -292,10 +296,12 @@ namespace utopia {
 
     void SemiGeometricMultigrid::update_contact(Contact &contact)
     {
-        const auto last_interp = mg.n_levels() - 2;
-        auto c_I = std::make_shared<USparseMatrix>();
-        *c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
-        mg.update_transfer(last_interp, std::make_shared<MatrixTransfer<USparseMatrix, UVector>>(c_I));
+        // const auto last_interp = mg.n_levels() - 2;
+        // auto c_I = std::make_shared<USparseMatrix>();
+        // *c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
+
+
+        // mg.update_transfer(last_interp, std::make_shared<MatrixTransfer<USparseMatrix, UVector>>(c_I));
     }
 }
 
