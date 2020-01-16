@@ -10,7 +10,6 @@ add_library(utopia_c SHARED ${LOCAL_SOURCES})
 target_link_libraries(utopia_c utopia)
 target_include_directories(utopia_c PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-
 install(TARGETS utopia_c
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
@@ -23,17 +22,24 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 
+################ SWIG ##################
+
 find_package(SWIG REQUIRED)
 
-INCLUDE(${SWIG_USE_FILE})
+if(SWIG_FOUND)
 
-find_package(PythonLibs)
-include_directories(${PYTHON_INCLUDE_PATH})
+    include(${SWIG_USE_FILE})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+    find_package(PythonLibs)
 
-set(CMAKE_SWIG_FLAGS "")
-set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
-swig_add_library(utopia TYPE SHARED LANGUAGE python SOURCES utopia.i)
-swig_link_libraries(utopia ${PYTHON_LIBRARIES} utopia_c)
+    if(PythonLibs_FOUND)
+        include_directories(${PYTHON_INCLUDE_PATH})
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+        set(CMAKE_SWIG_FLAGS "")
+        set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
+        swig_add_library(utopia TYPE SHARED LANGUAGE python SOURCES utopia.i)
+        swig_link_libraries(utopia ${PYTHON_LIBRARIES} utopia_c)
+    endif()
+
+endif()
