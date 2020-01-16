@@ -169,14 +169,15 @@ namespace utopia
 		           	auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 		           	// auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
 		           	// tr_strategy_fine->use_symmetric_sweep(false); 
-		            // tr_strategy_fine->atol(1e-12);
+		            tr_strategy_fine->atol(1e-12);
 		            // tr_strategy_fine->verbose(true);
 
 					auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 					// auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
 					tr_strategy_coarse->atol(1e-12);
 
-		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, FIRST_ORDER_MGOPT> >(n_levels_);
+		            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, FIRST_ORDER_MGOPT> >(n_levels_);
+		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
 
 		            // Set TR-QP strategies
 		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -214,7 +215,7 @@ namespace utopia
             in.set("max_sucessful_smoothing_it", 1);
             in.set("max_QP_smoothing_it", 10);
             in.set("delta0", 0.001);
-            // in.set("delta0", 10);
+            // in.set("delta0", 1e10);
             in.set("grad_smoothess_termination", 1e-8);
 
 			solver->read(in);

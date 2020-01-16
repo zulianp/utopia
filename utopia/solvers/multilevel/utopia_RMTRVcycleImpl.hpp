@@ -221,7 +221,7 @@ namespace utopia
             // mostly case for rmtr_inf with bounds...
             if(rho > this->rho_tol() && converged==false){
                 converged = this->check_feasibility(level);
-                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && converged==true)
                 {
                     std::cout<<"- feasibility problems, terminating \n"; 
                 }
