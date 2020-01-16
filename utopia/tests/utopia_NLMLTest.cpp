@@ -177,7 +177,7 @@ namespace utopia
 					tr_strategy_coarse->atol(1e-12);
 
 		            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, FIRST_ORDER_MGOPT> >(n_levels_);
-		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
+		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsKornhuber<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
 
 		            // Set TR-QP strategies
 		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);

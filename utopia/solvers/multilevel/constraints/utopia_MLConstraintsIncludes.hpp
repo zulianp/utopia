@@ -7,6 +7,7 @@
 	#include "utopia_IdentityConstraints.hpp"
 	#include "utopia_TRBoundsGelmanMandel.hpp"
 	#include "utopia_TRBoundsGratton.hpp"
+	#include "utopia_TRBoundsKornhuber.hpp"
 
 
 #endif //UTOPIA_MULTILEVEL_CONSTRAINTS_INCLUDES_HPP

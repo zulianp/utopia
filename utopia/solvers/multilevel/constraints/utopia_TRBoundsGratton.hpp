@@ -2,12 +2,8 @@
 #define UTOPIA_TR_BOUNDS_GRATTON_HPP
 
 #include "utopia_Core.hpp"
-#include "utopia_LinearSolver.hpp"
-#include "utopia_Function.hpp"
-#include "utopia_NonLinearSolver.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_LevelMemory.hpp"
-
 #include "utopia_IdentityTransfer.hpp"
 
 #include <iomanip>
@@ -33,11 +29,14 @@ namespace utopia
 
             void init_memory_impl(const std::vector<SizeType> & n_dofs_)
             {
-                if(this->has_box_constraints_){
-                    utopia_error("TRBoundsGratton does not support constraints."); 
-                }
-                
                 constraints_memory_.init_memory(n_dofs_); 
+
+                const auto n_levels = n_dofs_.size(); 
+                help_loc_.resize(n_levels); 
+                for(auto l=0; l < n_levels; l++){
+                    help_loc_[l] = local_zeros(n_dofs_[l]); 
+                }                
+
             }
 
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
@@ -55,7 +54,7 @@ namespace utopia
                         return std::max(lbi, val);
                     });   
 
-                    parallel_each_write(constraints_memory_.help[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    parallel_each_write(help_loc_[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         auto val = d_x_finer.get(i) + delta_fine;
                         auto ubi = d_tr_ub.get(i); 
@@ -64,8 +63,8 @@ namespace utopia
                 }
 
                 //------------------------ we should take into account  positive and negative elements projection separatelly -----------------
-                this->transfer_[level]->project_down_positive_negative(this->help_[finer_level], constraints_memory_.help[finer_level], constraints_memory_.active_lower[level]);
-                this->transfer_[level]->project_down_positive_negative(constraints_memory_.help[finer_level], this->help_[finer_level], constraints_memory_.active_upper[level]);
+                this->transfer_[level]->project_down_positive_negative(this->help_[finer_level], help_loc_[finer_level], constraints_memory_.active_lower[level]);
+                this->transfer_[level]->project_down_positive_negative(help_loc_[finer_level], this->help_[finer_level], constraints_memory_.active_upper[level]);
             }
 
             const Vector & active_upper(const SizeType & level)
@@ -80,6 +79,7 @@ namespace utopia
 
         private:
             ActiveConstraintsLevelMemory<Vector> constraints_memory_; 
+            std::vector<Vector> help_loc_; 
     };
 
 }

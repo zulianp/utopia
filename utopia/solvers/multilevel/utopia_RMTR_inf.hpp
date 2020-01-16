@@ -195,6 +195,15 @@ namespace utopia
             const SizeType finer_level = level+1;
             MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level]); 
 
+            // let's see ... 
+            this->memory_.delta[level]  = this->delta0(); 
+
+            // Vector lb = this->active_lower(level) - this->memory_.x[level];
+            // Vector ub = this->active_upper(level) - this->memory_.x[level];
+            // Scalar delta_new = std::max(max(abs(lb)), max(abs(ub))); 
+            // std::cout<<"delta_new: "<< delta_new << " \n"; 
+            // this->memory_.delta[level]  = delta_new; 
+
         }
 
         // -------------------------- tr radius managment ---------------------------------------------

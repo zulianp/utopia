@@ -38,7 +38,6 @@ namespace utopia
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
             {
                 auto finer_level = level + 1; 
-
                 Scalar I_inf_norm = this->transfer_[level]->interpolation_inf_norm(); 
 
                 {
@@ -88,9 +87,6 @@ namespace utopia
                         return d_x.get(i) + upper_multiplier; 
                     });   
                 }
-
-                    const Vector & active_lower = this->active_lower(level); 
-                    const Vector & active_upper = this->active_upper(level);                  
             }
 
             const Vector & active_upper(const SizeType & level)

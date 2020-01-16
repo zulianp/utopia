@@ -98,7 +98,7 @@ namespace utopia
             void init_memory(const std::vector<SizeType> & n_dofs_)
             {
                 const auto n_levels = n_dofs_.size(); 
-                
+
                 x_lower.resize(n_levels);
                 x_upper.resize(n_levels);
 
@@ -137,23 +137,18 @@ namespace utopia
         public:
             void init_memory(const std::vector<SizeType> & n_dofs_)
             {
+                const Scalar inf = std::numeric_limits<Scalar>::infinity();
                 const auto n_levels = n_dofs_.size(); 
-
                 active_lower.resize(n_levels);
                 active_upper.resize(n_levels);
-                help.resize(n_levels); 
-
-                const Scalar inf = std::numeric_limits<Scalar>::infinity();
 
                 for(auto l=0; l < n_levels; l++){
                     active_lower[l] = local_values(n_dofs_[l], -inf); 
                     active_upper[l] = local_values(n_dofs_[l], inf); 
-                    help[l]         = local_zeros(n_dofs_[l]); 
                 }
             }
-
-        // TODO:: move help to classes where only necessary 
-        std::vector<Vector> active_lower, active_upper, help;
+            
+        std::vector<Vector> active_lower, active_upper; 
     };
 
 
