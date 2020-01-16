@@ -213,9 +213,9 @@ namespace utopia
             in.set("pre_smoothing_steps", 2);
             in.set("post_smoothing_steps", 2);
             in.set("max_sucessful_smoothing_it", 1);
-            in.set("max_QP_smoothing_it", 10);
-            in.set("delta0", 0.001);
-            // in.set("delta0", 1e10);
+            in.set("max_QP_smoothing_it", 8);
+            // in.set("delta0", 0.001);
+            in.set("delta0", 1e10);
             in.set("grad_smoothess_termination", 1e-8);
 
 			solver->read(in);

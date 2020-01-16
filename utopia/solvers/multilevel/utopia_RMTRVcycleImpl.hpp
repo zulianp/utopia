@@ -236,8 +236,8 @@ namespace utopia
                 {
                     std::cout<<"- feasibility problems, terminating \n"; 
 
-                    disp(this->memory_.x[level], "x");
-                    exit(0); 
+                    // disp(this->memory_.x[level], "x");
+                    // exit(0); 
                 }
             }
 
