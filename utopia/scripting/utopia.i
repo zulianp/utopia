@@ -1,6 +1,14 @@
  /* utopia.i */
  %module utopia
  %{
- #include "utopia_linear_solve_export.h"
+#include "utopia_script.hpp"
  %}
+
+ namespace algebra {
+    class SparseMatrix {
+    public:
+        SparseMatrix();
+        ~SparseMatrix();
+    };
+}
 

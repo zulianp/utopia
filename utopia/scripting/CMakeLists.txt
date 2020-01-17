@@ -18,8 +18,8 @@ install(TARGETS utopia_c
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 
 ################ SWIG ##################
@@ -27,7 +27,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 find_package(SWIG REQUIRED)
 
 if(SWIG_FOUND)
-
     include(${SWIG_USE_FILE})
 
     find_package(PythonLibs)
@@ -35,16 +34,15 @@ if(SWIG_FOUND)
     if(PythonLibs_FOUND)
         include_directories(${PYTHON_INCLUDE_PATH})
         include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-        message("PYTHON: ${PYTHON_INCLUDE_PATH} ${PYTHON_LIBRARY}")
-
         set(CMAKE_SWIG_FLAGS "")
+
         set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
-        swig_add_library(utopia TYPE SHARED LANGUAGE python SOURCES utopia.i)
+        set_source_files_properties(utopia.i PROPERTIES SWIG_FLAGS "-includeall")
+
+        swig_add_library(utopia TYPE SHARED LANGUAGE python SOURCES utopia.i utopia_script.cpp)
+
         swig_link_libraries(utopia ${PYTHON_LIBRARIES} utopia_c)
         set_target_properties(_utopia PROPERTIES SUFFIX ".so")
-        set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/swig_files)
-
-        message(STATUS "CMAKE_SWIG_OUTDIR=${CMAKE_SWIG_OUTDIR}")
     endif()
 
 endif()
