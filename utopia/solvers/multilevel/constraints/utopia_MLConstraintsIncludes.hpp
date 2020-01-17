@@ -8,6 +8,7 @@
 	#include "utopia_TRBoundsGratton.hpp"
 	#include "utopia_TRBoundsKornhuber.hpp"
 	#include "utopia_BoxKornhuber.hpp"
+	#include "utopia_TRBoxMixConstraints.hpp"
 
 
 #endif //UTOPIA_MULTILEVEL_CONSTRAINTS_INCLUDES_HPP

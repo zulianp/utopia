@@ -57,7 +57,7 @@ namespace utopia
             return static_cast<Child*>(this)->active_lower(level); 
         }        
 
-      protected:
+      public:
         void init_memory(const std::vector<SizeType> & n_dofs_)
         {
      
