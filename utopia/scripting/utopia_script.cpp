@@ -9,6 +9,7 @@ namespace algebra {
     void init(int argc, char *argv[])
     {
         utopia::Utopia::Init(argc, argv);
+        print_info();
     }
 
     void init()
