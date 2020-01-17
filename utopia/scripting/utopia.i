@@ -4,10 +4,4 @@
 #include "utopia_script.hpp"
  %}
 
- namespace algebra {
-    class SparseMatrix {
-    public:
-        SparseMatrix();
-        ~SparseMatrix();
-    };
-}
+#include "utopia_script.hpp"

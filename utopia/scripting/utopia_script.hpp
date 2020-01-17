@@ -1,28 +1,18 @@
 #ifndef UTOPIA_SCRIPT_HPP
 #define UTOPIA_SCRIPT_HPP
 
-#include <iostream>
-
-// #ifdef EXPORT_PETSC
-
-// #else
-
-// #endif
-
 namespace algebra {
+    // void init(int argc, char *argv[]);
+
+    void init();
+    void finalize();
+    void print_info();
+
     class SparseMatrix {
     public:
-        inline SparseMatrix()
-        {
-            std::cout << "HI" << std::endl;
-        }
-
-        inline ~SparseMatrix()
-        {
-            std::cout << "BYE" << std::endl;
-        }
+        SparseMatrix();
+        ~SparseMatrix();
     };
-
 }
 
 #endif //UTOPIA_SCRIPT_HPP
