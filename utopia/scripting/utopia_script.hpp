@@ -12,6 +12,7 @@ namespace algebra {
     public:
         SparseMatrix();
         ~SparseMatrix();
+        void print_info();
     };
 }
 

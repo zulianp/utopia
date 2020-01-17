@@ -20,6 +20,26 @@ namespace utopia {
         using USpace   = typename FunctionSpace::template Subspace<Dim>;
         using CSpace   = typename FunctionSpace::template Subspace<1>;
 
+        using UElem    = typename USpace::ViewDevice::Elem;
+        using CElem    = typename CSpace::ViewDevice::Elem;
+
+        //FIXME
+        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
+
+        static const int C_NDofs = CSpace::NDofs;
+        static const int NQuadPoints = Quadrature::NPoints;
+
+        class Parameters {
+        public:
+
+            Parameters()
+            : a(1.0), b(1.0), d(1.0), f(1.0)
+            {}
+
+            Scalar a, b, d, f;
+
+        };
+
         PhaseFieldForBrittleFractures(FunctionSpace &space)
         : space_(space)
         {}
@@ -47,20 +67,50 @@ namespace utopia {
                 g.set(0.0);
             }
 
-            FEFunction<FunctionSpace> x_fun(space_, x);
-            auto x_coeff = x_fun.coefficient();
+            // FEFunction<FunctionSpace> x_fun(space_, x);
+            // auto x_coeff = x_fun.coefficient();
+
+            FEFunction<CSpace> c_fun(C, x);
+            auto c_coeff = c_fun.coefficient();
+
+            FEFunction<USpace> u_fun(U, x);
+            auto u_coeff = u_fun.coefficient();
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto u_val = u_fun.value(q);
 
             val = 0.0;
 
             {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
-                auto x_view = x_coeff.view_device();
+
+                auto c_view = c_val.view_device();
+                auto u_view = u_val.view_device();
 
                 Device::parallel_reduce(
                     space_.local_element_range(),
-                    UTOPIA_LAMBDA(const SizeType &)
+                    UTOPIA_LAMBDA(const SizeType &i)
                     {
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
+
+
+                        disp("-------------");
+
+                        for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            auto g_val = degradation(params_.a, params_.b, c[qp], params_.d, params_.f);
+                            std::cout << g_val << " ";
+                        }
+
+                        disp("\n");
+
+
                         return 0.0;
                     },
                     val
@@ -70,8 +120,27 @@ namespace utopia {
             val = x.comm().sum(val);
         }
 
+        UTOPIA_INLINE_FUNCTION static Scalar degradation(
+            const Scalar &a,
+            const Scalar &b,
+            const Scalar &c,
+            const Scalar &d,
+            const Scalar &f
+            )
+        {
+            Scalar imc = 1.0 - c;
+            Scalar res = f + imc * d;
+            imc *= imc;
+            res += b * imc;
+            imc *= imc; //FIXME
+
+            res += a * imc;
+            return res;
+        }
+
     private:
         FunctionSpace space_;
+        Parameters params_;
     };
 
     template<class FunctionSpace>

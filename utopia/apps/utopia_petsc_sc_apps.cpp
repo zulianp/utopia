@@ -23,6 +23,7 @@
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
+#include "utopia_SampleView.hpp"
 
 #include <cmath>
 
@@ -1105,13 +1106,14 @@ namespace utopia {
         using Quadrature     = utopia::Quadrature<Elem, 2>;
         using Dev            = FunctionSpace::Device;
         using FEFunction     = utopia::FEFunction<FunctionSpace>;
+        using Point          = typename FunctionSpace::Point;
 
         Comm world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
-        SizeType nz = scale * 2;
+        SizeType nx = scale * 5;
+        SizeType ny = scale * 5;
+        SizeType nz = scale * 5;
 
         FunctionSpace space;
 
@@ -1127,6 +1129,37 @@ namespace utopia {
         PetscMatrix H;
         PetscVector x, g;
         Scalar f;
+
+        space.create_vector(x);
+
+        x.set(0.0);
+
+
+        auto C = space.subspace(0);
+        auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) {
+            auto dist_x = 0.5 - x[0];
+            return device::exp(-5.0 * dist_x * dist_x);
+        });
+
+        {
+            auto C_view       = C.view_device();
+            auto sampler_view = sampler.view_device();
+            auto x_view       = space.assembly_view_device(x);
+
+            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem e;
+                C_view.elem(i, e);
+
+                StaticVector<Scalar, 8> s;
+                sampler_view.assemble(e, s);
+                C_view.set_vector(e, s, x_view);
+            });
+
+        }
+
+        rename("C", x);
+        C.write("phase_field.vtk", x);
+
         pp.assemble(x, H, g, f);
     }
 

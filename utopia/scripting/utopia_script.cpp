@@ -40,4 +40,9 @@ namespace algebra {
     {
         std::cout << "BYE" << std::endl;
     }
+
+    void SparseMatrix::print_info()
+    {
+        std::cout << "SparseMatrix::print()" << std::endl;
+    }
 }
