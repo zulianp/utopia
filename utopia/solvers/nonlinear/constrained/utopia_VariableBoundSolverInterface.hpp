@@ -9,7 +9,7 @@
 #include "utopia_DeviceView.hpp"
 #include "utopia_For.hpp"
 #include "utopia_Allocations.hpp"
-
+#include "utopia_Algorithms.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -242,7 +242,7 @@ namespace utopia
                               UTOPIA_LAMBDA(const SizeType &, const Scalar &ub) -> Scalar 
                               {         
                                         // device::min(ub, ub_uniform);
-                                return  std::min(ub, ub_uniform);
+                                return  device::min(ub, ub_uniform);
                               });
           }
         }
@@ -259,7 +259,7 @@ namespace utopia
             parallel_transform(lb_merged,
                               UTOPIA_LAMBDA(const SizeType &, const Scalar &lb) -> Scalar 
                               {
-                                return  std::max(lb, lb_uniform);
+                                return  device::max(lb, lb_uniform);
                               });
           }
 
