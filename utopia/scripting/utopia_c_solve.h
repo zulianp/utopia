@@ -21,9 +21,9 @@ typedef const char * USolverType;
 typedef const char * UPreconditionerType;
 typedef const char * UPackage;
 
-static USolverType U_KSP = "ksp";
-static UPackage    U_BJACOBI = "bjacobi";
-static USolverType U_PETSC = "petsc";
+static USolverType          U_KSP     = "ksp";
+static UPreconditionerType  U_BJACOBI = "bjacobi";
+static UPackage             U_PETSC   = "petsc";
 
 void UtopiaInitialize(int argc, char *argv[]);
 int UtopiaFinalize();
