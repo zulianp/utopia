@@ -91,46 +91,6 @@ namespace utopia
     template<class Vector>
     class ConstraintsLevelMemory
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
-
-        public:
-            void init_memory(const std::vector<SizeType> & n_dofs_)
-            {
-                const auto n_levels = n_dofs_.size(); 
-
-                x_lower.resize(n_levels);
-                x_upper.resize(n_levels);
-
-                tr_lower.resize(n_levels);
-                tr_upper.resize(n_levels);
-
-                active_lower.resize(n_levels);
-                active_upper.resize(n_levels);
-
-                help.resize(n_levels); 
-
-                for(auto l=0; l < n_levels; l++){
-                    x_lower[l]  = local_zeros(n_dofs_[l]); 
-                    x_upper[l]  = local_zeros(n_dofs_[l]); 
-
-                    tr_lower[l]     = local_zeros(n_dofs_[l]); 
-                    tr_upper[l]     = local_zeros(n_dofs_[l]); 
-
-                    active_lower[l] = local_zeros(n_dofs_[l]); 
-                    active_upper[l] = local_zeros(n_dofs_[l]); 
-
-                    help[l] = local_zeros(n_dofs_[l]); 
-                }
-            }
-
-        std::vector<Vector> x_lower, x_upper, tr_lower, tr_upper, active_lower, active_upper, help;
-    };
-
-
-    template<class Vector>
-    class ActiveConstraintsLevelMemory
-    {
         typedef UTOPIA_SCALAR(Vector)        Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)     SizeType;
 
@@ -147,7 +107,7 @@ namespace utopia
                     active_upper[l] = local_values(n_dofs_[l], inf); 
                 }
             }
-            
+
         std::vector<Vector> active_lower, active_upper; 
     };
 

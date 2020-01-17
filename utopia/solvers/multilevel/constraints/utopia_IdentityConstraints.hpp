@@ -94,7 +94,7 @@ namespace utopia
             }                      
 
         private:
-            ActiveConstraintsLevelMemory<Vector> constraints_memory_; 
+            ConstraintsLevelMemory<Vector> constraints_memory_; 
     };
 
 

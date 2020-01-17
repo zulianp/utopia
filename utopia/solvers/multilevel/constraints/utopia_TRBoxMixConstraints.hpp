@@ -17,18 +17,18 @@
 namespace utopia
 {
 
-    template<class Matrix, class Vector>
-    class TRGrattonBoxGelmanMandel : public MultilevelVariableBoundSolverInterface<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector> >
+    template<class Matrix, class Vector, class TRConstraints, class BoxConstraints>
+    class TRBoxMixConstraints : public MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoxMixConstraints<Matrix, Vector, TRConstraints, BoxConstraints> >
     {
         public:
             typedef UTOPIA_SCALAR(Vector)                           Scalar;
             typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
 
-            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector> > Base; 
+            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoxMixConstraints<Matrix, Vector, TRConstraints, BoxConstraints> > Base; 
 
-            TRGrattonBoxGelmanMandel(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer) : Base(transfer), 
-                                                                                                                tr_bounds_(transfer), 
-                                                                                                                box_bounds_(transfer)
+            TRBoxMixConstraints(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer) : Base(transfer), 
+                                                                                                            tr_bounds_(transfer), 
+                                                                                                            box_bounds_(transfer)
             {
 
             }
@@ -89,10 +89,33 @@ namespace utopia
             }                      
 
         private:
-            ActiveConstraintsLevelMemory<Vector> constraints_memory_; 
-            TRBoundsGratton<Matrix, Vector> tr_bounds_; 
-            BoxGelmanMandel<Matrix, Vector> box_bounds_; 
+            ConstraintsLevelMemory<Vector> constraints_memory_; 
+            TRConstraints tr_bounds_; 
+            BoxConstraints box_bounds_; 
     };
+
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+    template<class Matrix, class Vector>
+    using TRGrattonBoxGelmanMandel = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, BoxGelmanMandel<Matrix, Vector> >;
+
+    template<class Matrix, class Vector>
+    using TRGrattonBoxKornhuber = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, BoxKornhuber<Matrix, Vector> >;
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    template<class Matrix, class Vector>
+    using TRKornhuberBoxGelmanMandel = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsKornhuber<Matrix, Vector>, BoxGelmanMandel<Matrix, Vector> >;
+
+    template<class Matrix, class Vector>
+    using TRKornhuberBoxKornhuber = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsKornhuber<Matrix, Vector>, BoxKornhuber<Matrix, Vector> >;
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    template<class Matrix, class Vector>
+    using TRGelmanMandelBoxGelmanMandel = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, BoxGelmanMandel<Matrix, Vector> >;
+
+    template<class Matrix, class Vector>
+    using TRGelmanMandelBoxKornhuber = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, BoxKornhuber<Matrix, Vector> >;    
+
 
 
 }

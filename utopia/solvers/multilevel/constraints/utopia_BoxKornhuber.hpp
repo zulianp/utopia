@@ -36,6 +36,12 @@ namespace utopia
                 constraints_memory_.init_memory(n_dofs_); 
                 const SizeType finest_level = n_dofs_.size(); 
 
+                const auto n_levels = n_dofs_.size(); 
+                help_loc_.resize(n_levels); 
+                for(auto l=0; l < n_levels; l++){
+                    help_loc_[l] = local_zeros(n_dofs_[l]); 
+                }                    
+
                 if(this->box_constraints_.has_lower_bound()){
                     constraints_memory_.active_lower[finest_level] = *(this->box_constraints_.lower_bound());
                 }
@@ -111,7 +117,8 @@ namespace utopia
             }                      
 
         private:
-            ActiveConstraintsLevelMemory<Vector> constraints_memory_; 
+            ConstraintsLevelMemory<Vector> constraints_memory_; 
+            std::vector<Vector> help_loc_; 
     };
 
 
