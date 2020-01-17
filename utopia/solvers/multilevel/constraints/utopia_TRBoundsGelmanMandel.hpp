@@ -38,7 +38,7 @@ namespace utopia
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
             {
                 auto finer_level = level + 1; 
-                Scalar I_inf_norm = this->transfer_[level]->interpolation_inf_norm(); 
+                Scalar I_inf_norm = this->transfer_[level]->projection_inf_norm(); 
 
                 {
                     auto d_x_finer      = const_device_view(x_finer_level);

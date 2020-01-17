@@ -43,32 +43,38 @@ namespace utopia
 
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
             {
-                // auto finer_level = level + 1; 
-                // {
-                //     auto d_x_finer      = const_device_view(x_finer_level);
-                //     auto d_tr_lb        = const_device_view(constraints_memory_.active_lower[finer_level]);
-                //     auto d_tr_ub        = const_device_view(constraints_memory_.active_upper[finer_level]);
+                auto finer_level = level + 1; 
+                Scalar I_inf_norm = this->transfer_[level]->projection_inf_norm(); 
 
-                //     parallel_each_write(this->help_[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
-                //     {
-                //         auto val = d_x_finer.get(i) - delta_fine;
-                //         auto lbi = d_tr_lb.get(i); 
-                //         return std::max(lbi, val);
-                //     });   
+                //////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////// lower bound /////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////
+                this->help_[finer_level] = constraints_memory_.active_lower[finer_level] - x_finer_level; 
+                Scalar max_val = max(this->help_[finer_level]); 
+                Scalar lower_multiplier = 1.0/I_inf_norm * max_val;
 
-                //     parallel_each_write(constraints_memory_.help[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
-                //     {
-                //         auto val = d_x_finer.get(i) + delta_fine;
-                //         auto ubi = d_tr_ub.get(i); 
-                //         return std::min(ubi, val);
-                //     });   
-                // }
+                {
+                    auto d_x      = const_device_view(x_level);
+                    parallel_each_write(constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        return d_x.get(i) + lower_multiplier; 
+                    });   
+                }
 
-                // //------------------------ we should take into account  positive and negative elements projection separatelly -----------------
-                // this->transfer_[level]->project_down_positive_negative(this->help_[finer_level], constraints_memory_.help[finer_level], constraints_memory_.active_lower[level]);
-                // this->transfer_[level]->project_down_positive_negative(constraints_memory_.help[finer_level], this->help_[finer_level], constraints_memory_.active_upper[level]);
+                //////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////// upper bound /////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////
+                this->help_[finer_level] = constraints_memory_.active_upper[finer_level] - x_finer_level; 
+                Scalar min_val = min(this->help_[finer_level]); 
+                Scalar upper_multiplier = 1.0/I_inf_norm * min_val;
+                {
+                    auto d_x      = const_device_view(x_level);
+                    parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
+                    {
+                        return d_x.get(i) + upper_multiplier; 
+                    });   
+                }                
 
-                std::cout<<"TO BE IMPLEMENTED \n"; 
             }
 
             const Vector & active_upper(const SizeType & level)

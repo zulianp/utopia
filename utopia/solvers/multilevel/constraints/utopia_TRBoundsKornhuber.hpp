@@ -41,8 +41,6 @@ namespace utopia
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
             {
                 auto finer_level = level + 1; 
-
-
                 if(finer_level == constraints_memory_.active_lower.size()-1){
                     constraints_memory_.active_lower[level].set(-delta_fine);  
                     constraints_memory_.active_lower[level] += x_level; 
@@ -91,11 +89,8 @@ namespace utopia
                             Write<Vector> rw_c_u(constraints_memory_.active_upper[level]);
                             Read<Vector> rw_f_u(this->help_loc_[finer_level]);                            
 
-
                             Range rr = range(constraints_memory_.active_lower[level]);  
                             Range rr_fine_level = range(this->help_[finer_level]);  
-
-
 
                             for(auto i = rr.begin(); i != rr.end(); ++i) {
                                 RowView<const Matrix> row_view(mat_transfer->R(), i);
@@ -124,7 +119,7 @@ namespace utopia
 
                         constraints_memory_.active_lower[level] += x_level; 
                         constraints_memory_.active_upper[level] += x_level;                         
-
+                        
                     } // dynamic cast test 
                     else{
                         utopia_error("TRBoundsKornhuber:: transfer operators not supported. \n "); 
