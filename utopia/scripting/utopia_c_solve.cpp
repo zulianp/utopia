@@ -4,8 +4,9 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Version.hpp"
 
-
 extern "C" {
+
+    #include "utopia_c_solve.h"
 
     void utopia_print_version()
     {
@@ -27,7 +28,7 @@ extern "C" {
         Utopia::Finalize();
     }
 
-    void utopia_create_solver(const char name[], void **ptr)
+    void utopia_create_solver(const char name[], USolver*ptr)
     {
         using namespace utopia;
         std::cout << "utopia_create_solver: " << name << std::endl;
@@ -44,7 +45,7 @@ extern "C" {
         }
     }
 
-    void utopia_print_solver_info(void *ptr)
+    void utopia_print_solver_info(USolver ptr)
     {
         using namespace utopia;
 
@@ -61,7 +62,7 @@ extern "C" {
 
     }
 
-    void utopia_destroy_solver(void **ptr)
+    void utopia_destroy_solver(USolver * ptr)
     {
         using namespace utopia;
         std::cout << "utopia_destroy_solver" << std::endl;
@@ -72,7 +73,7 @@ extern "C" {
         *solver_ptr = nullptr;
     }
 
-    void utopia_solve(void *solver, void*A, void*b, void *x)
+    void utopia_solve(USolver solver, UMat A, UVec b, UVec x)
     {
         std::cout << "(void" << std::endl;
     }
