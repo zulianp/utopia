@@ -21,7 +21,7 @@
 namespace utopia
 {
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> 
+    class RMTR_l2 final: public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> 
     {
         typedef UTOPIA_SCALAR(Vector)           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
@@ -29,8 +29,8 @@ namespace utopia
         typedef utopia::TRSubproblem<Matrix, Vector>    TRSubproblem;
         typedef std::shared_ptr<TRSubproblem>           TRSubproblemPtr;
 
-        typedef utopia::Transfer<Matrix, Vector>                        Transfer;
-        typedef utopia::Level<Matrix, Vector>                           Level;
+        typedef utopia::Transfer<Matrix, Vector>        Transfer;
+        typedef utopia::Level<Matrix, Vector>           Level;
         
         typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>     RMTRBase;
         typedef typename RMTRBase::Fun Fun;
@@ -44,14 +44,14 @@ namespace utopia
         *
         * @param[in]  n_levels       Number of levels
         */
-        RMTR(   const SizeType & n_levels): RMTRBase(n_levels)
+        RMTR_l2(const SizeType & n_levels): RMTRBase(n_levels)
         {
 
         }
 
-        virtual ~RMTR(){}
+         ~RMTR_l2(){}
 
-        virtual void read(Input &in) override
+        void read(Input &in) override
         {
             RMTRBase::read(in);
 
@@ -66,7 +66,7 @@ namespace utopia
             }
         }
 
-        virtual void print_usage(std::ostream &os) const override
+        void print_usage(std::ostream &os) const override
         {
             RMTRBase::print_usage(os);
 
@@ -76,7 +76,7 @@ namespace utopia
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve;
 
-        virtual std::string name() override { return "RMTR"; }
+        std::string name() override { return "RMTR"; }
 
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
@@ -133,8 +133,8 @@ namespace utopia
         }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    protected:
-        virtual void init_memory() override
+    private:
+        void init_memory() override
         {
             RMTRBase::init_memory(); 
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
@@ -145,7 +145,7 @@ namespace utopia
             }
         }
 
-        virtual bool check_initialization() override
+        bool check_initialization() override
         {
             bool flg = RMTRBase::check_initialization(); 
 
@@ -167,7 +167,7 @@ namespace utopia
          * @param[in]  s_global   Sum of all corrections on given level
          * @param      converged  convergence flag
          */
-        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global)
+        bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global)
         {
             Scalar intermediate_delta;
 
@@ -232,18 +232,18 @@ namespace utopia
          * @param[in]  level      The level
          *
          */
-        virtual bool delta_termination(const Scalar & corr_norm, const SizeType & level)
+        bool delta_termination(const Scalar & corr_norm, const SizeType & level)
         {
             return (corr_norm > (1.0 - this->eps_delta_termination()) * this->memory_.delta[level]) ? true : false;
         }
 
 
-        virtual Scalar criticality_measure(const SizeType & level) override
+        Scalar criticality_measure(const SizeType & level) override
         {
             return norm2(this->ml_derivs_.g[level]);
         }
 
-        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/) override
+        bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/) override
         {
             Scalar Rg_norm, g_norm;
             norms2(g_restricted, g_coarse, Rg_norm, g_norm);
@@ -260,7 +260,7 @@ namespace utopia
          * @param[in]  flg  The exact solve flag
          *
          */
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
+        bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {            
             Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
             if(_tr_subproblems[level]->atol() > atol_level){
@@ -289,13 +289,11 @@ namespace utopia
             return true;
         }
 
-        virtual Scalar get_pred(const SizeType & level) override
+        Scalar get_pred(const SizeType & level) override
         {
             this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
             return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
         }
-
-
 
     private:
         std::vector<TRSubproblemPtr>        _tr_subproblems;

@@ -48,7 +48,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
             UTOPIA_RUN_TEST(mat_vec_multiply_test);
             UTOPIA_RUN_TEST(vec_add_add_add_test);
-            UTOPIA_RUN_TEST(convert_test); 
+            // UTOPIA_RUN_TEST(convert_test); 
             UTOPIA_RUN_TEST(emul_test);
 
             // FIXME (mem allocs)
@@ -60,23 +60,23 @@ namespace utopia {
 
 
 
-        void convert_test()
-        {
-            #ifdef WITH_PETSC
-                if(Traits<Vector>::Backend == PETSC) {
-                    Vector ut_vec = local_zeros(10); 
+        // void convert_test()
+        // {
+        //     #ifdef WITH_PETSC
+        //         if(Traits<Vector>::Backend == PETSC) {
+        //             Vector ut_vec = local_zeros(10); 
                     
-                    Vec x; 
-                    VecDuplicate(raw_type(ut_vec), &x); 
-                    convert(ut_vec, x); 
-                    ut_vec *= 500; 
+        //             Vec x; 
+        //             VecDuplicate(raw_type(ut_vec), &x); 
+        //             convert(ut_vec, x); 
+        //             ut_vec *= 500; 
 
-                    UTOPIA_NO_ALLOC_BEGIN("Ellipse::convert_test");
-                    convert(x, ut_vec); 
-                    UTOPIA_NO_ALLOC_END();
-                }
-            #endif
-        }
+        //             UTOPIA_NO_ALLOC_BEGIN("Ellipse::convert_test");
+        //             convert(x, ut_vec); 
+        //             UTOPIA_NO_ALLOC_END();
+        //         }
+        //     #endif
+        // }
 
 
         void vec_add_add_add_test()

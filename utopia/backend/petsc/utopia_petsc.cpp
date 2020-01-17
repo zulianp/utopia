@@ -13,6 +13,7 @@
 #include "utopia_BiCGStab_impl.hpp"
 #include "utopia_ConjugateGradient_impl.hpp"
 #include "utopia_RMTRVcycleImpl.hpp"
+#include "utopia_TRBoundsGratton.hpp"
 
 //explicit instantiations
 namespace utopia {
@@ -25,12 +26,10 @@ namespace utopia {
 
     //petsc non-linear solvers
     template class NonLinearGaussSeidel<PetscMatrix, PetscVector>;
-
     template class Multigrid<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL>;
-    template class RMTR<PetscMatrix, PetscVector, FIRST_ORDER>;
-
-    // TODO:: put back 
-    // template class RMTR_inf<PetscMatrix, PetscVector>;
+    
+    template class RMTR_l2<PetscMatrix, PetscVector, FIRST_ORDER>;
+    template class RMTR_inf<PetscMatrix, PetscVector, TRBoundsGratton<PetscMatrix, PetscVector> >;
 
     template class FAS<PetscMatrix, PetscVector>;
     template class MG_OPT<PetscMatrix, PetscVector>;

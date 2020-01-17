@@ -61,10 +61,6 @@ namespace utopia
       public:
         void init_memory(const std::vector<SizeType> & n_dofs_)
         {
-     
-            // TODO:: add lower and upper bound on finest level 
-            // precompute norms of prolongation operators needed for projections of constraints...
-    
             const auto n_levels = n_dofs_.size();             
             help_.resize(n_levels); 
 
@@ -73,12 +69,6 @@ namespace utopia
             }
 
             return static_cast<Child*>(this)->init_memory_impl(n_dofs_);
-
-
-            // // precompute norms of prolongation operators needed for projections of constraints...
-            // for(auto l = 0; l < fine_level; l++)
-            //     constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
-
         }
 
 
@@ -110,7 +100,6 @@ namespace utopia
 
       void get_projection(const Vector &lb, const Vector &ub, Vector & x)
       {
-
         {
             auto d_lb = const_device_view(lb);
             auto d_ub = const_device_view(ub);
@@ -127,7 +116,6 @@ namespace utopia
                 }
             });
         }
-
       }        
 
 

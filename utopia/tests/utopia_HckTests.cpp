@@ -453,7 +453,7 @@ namespace utopia
 
 
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, SECOND_ORDER> >(n_levels_);
 
             // Set TR-QP strategies
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -498,7 +498,7 @@ namespace utopia
 
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
             // Set TR-QP strategies
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -782,7 +782,7 @@ namespace utopia
             tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
 
 
-            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, GALERKIN> >(n_levels_);
 
             // Set TR-QP strategies
             rmtr->set_coarse_tr_strategy(tr_strategy_coarse);

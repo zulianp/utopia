@@ -1125,7 +1125,7 @@ namespace utopia {
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
 
-        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(problem.n_levels());
+        auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, GALERKIN> >(problem.n_levels());
         rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
         rmtr->set_fine_tr_strategy(tr_strategy_fine);
 

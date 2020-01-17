@@ -137,7 +137,7 @@ namespace utopia
             return true;
         }
 
-    protected:
+    private:
         void init_memory() override
         {
             RMTR::init_memory();

@@ -63,7 +63,7 @@ namespace utopia
 		 //            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> > ());
 		 //            tr_strategy_fine->atol(1e-12);
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -86,7 +86,7 @@ namespace utopia
 		 //            tr_strategy_fine->atol(1e-12);
 
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
 
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -116,7 +116,7 @@ namespace utopia
 			// 		tr_strategy_coarse->atol(1e-12);
 
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, SECOND_ORDER> >(n_levels_);
 
 		 //            // Set TR-QP strategies
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -147,7 +147,7 @@ namespace utopia
 			// 		tr_strategy_coarse->atol(1e-12);
 
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, GALERKIN> >(n_levels_);
 
 		 //            // Set TR-QP strategies
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -239,7 +239,12 @@ namespace utopia
 	            solver->solve(x);
 
 
-				// auto sol_status = solver.solution_status();
+				auto sol_status = solver->solution_status();
+
+				// std::cout<<"it: "<< sol_status.iterates << "  \n"; 
+				// std::cout<<"gradient_norm: "<< sol_status.gradient_norm << "  \n"; 
+				// std::cout<<"reason: "<< sol_status.reason << "  \n"; 
+
 
 				if(exp_verbose && mpi_world_rank()==0)
 				{
