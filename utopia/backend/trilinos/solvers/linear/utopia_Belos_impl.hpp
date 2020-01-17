@@ -11,7 +11,6 @@
 #include <BelosSolverFactory.hpp>
 
 //TODO remove from here
-#include <Kokkos_DefaultNode.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
