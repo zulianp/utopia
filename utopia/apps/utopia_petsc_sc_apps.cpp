@@ -1091,7 +1091,74 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_fe_function);
 
 
-    static void petsc_phase_field()
+
+    static void petsc_sample()
+    {
+        static const int Dim = 2;
+        static const int NVars = 1;
+
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformQuad4;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView       = FunctionSpace::ViewDevice::Elem;
+        using SizeType       = FunctionSpace::SizeType;
+        using Scalar         = FunctionSpace::Scalar;
+        using Quadrature     = utopia::Quadrature<Elem, 2>;
+        using Dev            = FunctionSpace::Device;
+        using FEFunction     = utopia::FEFunction<FunctionSpace>;
+        using Point          = typename FunctionSpace::Point;
+
+        Comm world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 10;
+        SizeType ny = scale * 10;
+
+        FunctionSpace space;
+
+        space.build(
+            world,
+            {nx, ny},
+            {0.0, 0.0},
+            {1.0, 1.0}
+        );
+
+        PetscVector x;
+        space.create_vector(x);
+
+        x.set(0.0);
+
+        auto sampler = utopia::sampler(space, UTOPIA_LAMBDA(const Point &x) {
+            auto dist_x = 0.5 - x[0];
+            return device::exp(-10.0 * dist_x * dist_x);
+        });
+
+        {
+            auto space_view   = space.view_device();
+            auto x_view       = space.assembly_view_device(x);
+            auto sampler_view = sampler.view_device();
+
+            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                ElemView e;
+                space_view.elem(i, e);
+
+                StaticVector<Scalar, 4> s;
+                sampler_view.assemble(e, s);
+                space_view.set_vector(e, s, x_view);
+            });
+
+        }
+
+        rename("C", x);
+        space.write("sample.vtk", x);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_sample);
+
+
+
+    static void petsc_phase_field(Input &in)
     {
         static const int Dim = 3;
         static const int NVars = Dim + 1;
@@ -1123,6 +1190,11 @@ namespace utopia {
             {0.0, 0.0, 0.0},
             {1.0, 1.0, 1.0}
         );
+
+        space.mesh().set_field_name(0, "c");
+        space.mesh().set_field_name(1, "disp_x");
+        space.mesh().set_field_name(2, "disp_y");
+        space.mesh().set_field_name(3, "disp_z");
 
         PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
 
@@ -1157,8 +1229,14 @@ namespace utopia {
 
         }
 
-        rename("C", x);
-        C.write("phase_field.vtk", x);
+        std::string output_path = "phase_field.vtu";
+
+        in.get("output-path", output_path);
+
+        rename("X", x);
+
+
+        C.write(output_path, x);
 
         pp.assemble(x, H, g, f);
     }

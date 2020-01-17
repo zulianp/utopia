@@ -486,6 +486,11 @@ namespace utopia {
             return *mesh_;
         }
 
+        Mesh &mesh()
+        {
+            return *mesh_;
+        }
+
         PetscCommunicator &comm()
         {
             return mesh_->comm();

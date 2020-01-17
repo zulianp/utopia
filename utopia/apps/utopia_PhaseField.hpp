@@ -101,14 +101,14 @@ namespace utopia {
                         c_view.get(c_e, c);
 
 
-                        disp("-------------");
+                        // disp("-------------");
 
-                        for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            auto g_val = degradation(params_.a, params_.b, c[qp], params_.d, params_.f);
-                            std::cout << g_val << " ";
-                        }
+                        // for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                        //     auto g_val = degradation(params_.a, params_.b, c[qp], params_.d, params_.f);
+                        //     std::cout << g_val << " ";
+                        // }
 
-                        disp("\n");
+                        // disp("\n");
 
 
                         return 0.0;
