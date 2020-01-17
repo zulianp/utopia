@@ -198,12 +198,6 @@ namespace utopia
             // let's see ... 
             // this->memory_.delta[level]  = this->delta0(); 
 
-            // Vector lb = this->active_lower(level) - this->memory_.x[level];fexit
-            // Vector ub = this->active_upper(level) - this->memory_.x[level];
-            // Scalar delta_new = std::max(max(abs(lb)), max(abs(ub))); 
-            // std::cout<<"delta_new: "<< delta_new << " \n"; 
-            // this->memory_.delta[level]  = delta_new; 
-
         }
 
         // -------------------------- tr radius managment ---------------------------------------------
@@ -261,10 +255,7 @@ namespace utopia
 
             *lb = active_lower - this->memory_.x[level];
             *ub = active_upper - this->memory_.x[level];
-
-            // disp(*lb, "*lb"); 
-            // disp(*ub, "*ub");             
-
+    
             {
                 parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
                     return (xi >= -1.0*radius)  ? xi : -1.0*radius;
@@ -274,9 +265,6 @@ namespace utopia
                     return (xi <= radius)  ? xi : radius;
                 });
             }            
-
-            // disp(*lb, "*lb-QPsolver"); 
-            // disp(*ub, "*ub-QPsolver"); 
 
             Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
             if(_tr_subproblems[level]->atol() > atol_level){
@@ -301,10 +289,9 @@ namespace utopia
                 this->memory_.s[level].set(0.0); 
             }
             else{
-                // ----- just for debugging pourposes, to be deleted in future... ----------------
+                // ----- just for debugging pourposes, to be commented out in the future... 
                 MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]); 
             }
-
 
             return true;
         }

@@ -5,6 +5,7 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_LevelMemory.hpp"
 #include "utopia_IdentityTransfer.hpp"
+#include "utopia_Algorithms.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -65,7 +66,7 @@ namespace utopia
                                 auto val = xi - delta_fine;
                                 auto lbi = d_tr_lb.get(i); 
 
-                                return std::max(lbi, val) - xi;
+                                return device::max(lbi, val) - xi;
                             });   
 
                             parallel_each_write(this->help_loc_[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
@@ -74,7 +75,7 @@ namespace utopia
                                 auto val = xi + delta_fine;
                                 auto ubi = d_tr_ub.get(i); 
 
-                                return std::min(ubi, val) - xi;
+                                return device::min(ubi, val) - xi;
                             });                               
                         }
 

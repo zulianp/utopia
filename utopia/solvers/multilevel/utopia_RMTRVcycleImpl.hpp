@@ -241,7 +241,6 @@ namespace utopia
                 }
             }
 
-
             if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0)
             {
                 // just to see what is being printed

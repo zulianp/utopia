@@ -7,7 +7,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_LevelMemory.hpp"
-
+#include "utopia_Algorithms.hpp"
 #include "utopia_IdentityTransfer.hpp"
 
 #include <iomanip>

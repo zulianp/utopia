@@ -7,6 +7,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_LevelMemory.hpp"
+#include "utopia_Algorithms.hpp"
 
 #include "utopia_IdentityTransfer.hpp"
 
@@ -48,7 +49,7 @@ namespace utopia
                     {
                         auto val = d_x_finer.get(i) - delta_fine;
                         auto lbi = d_tr_lb.get(i); 
-                        return std::max(lbi, val);
+                        return device::max(lbi, val);
                     });   
                 }
 
@@ -74,7 +75,7 @@ namespace utopia
                     {
                         auto val = d_x_finer.get(i) + delta_fine;
                         auto lbi = d_tr_ub.get(i); 
-                        return std::min(lbi, val);
+                        return device::min(lbi, val);
                     });   
                 }
 

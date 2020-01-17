@@ -7,8 +7,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_LevelMemory.hpp"
-
-#include "utopia_IdentityTransfer.hpp"
+#include "utopia_Algorithms.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -69,7 +68,7 @@ namespace utopia
                         auto val1 = d_x_finer.get(i) + delta_fine;
                         auto val2 = d_tr_ub.get(i); 
 
-                        return std::min(val1, val2); 
+                        return device::min(val1, val2); 
                     });
 
                     parallel_each_write(constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
@@ -77,7 +76,7 @@ namespace utopia
                         auto val1 = d_x_finer.get(i) - delta_fine;
                         auto val2 = d_tr_lb.get(i); 
 
-                        return std::max(val1, val2); 
+                        return device::max(val1, val2); 
                     });   
                 }
 
