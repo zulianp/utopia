@@ -34,11 +34,16 @@ namespace utopia
 
             void init_memory_impl(const std::vector<SizeType> & n_dofs_)
             {
-                if(this->has_box_constraints_){
-                    utopia_error("BoxGelmanMandel does not support constraints."); 
-                }
-                
                 constraints_memory_.init_memory(n_dofs_); 
+                const SizeType finest_level = n_dofs_.size(); 
+
+                if(this->box_constraints_.has_lower_bound()){
+                    constraints_memory_.active_lower[finest_level] = *(this->box_constraints_.lower_bound());
+                }
+
+                if(this->box_constraints_.has_upper_bound()){
+                    constraints_memory_.active_upper[finest_level] = *(this->box_constraints_.upper_bound());
+                }                
             }
 
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
@@ -74,7 +79,7 @@ namespace utopia
                         return d_x.get(i) + upper_multiplier; 
                     });   
                 }                
-
+                
             }
 
             const Vector & active_upper(const SizeType & level)
