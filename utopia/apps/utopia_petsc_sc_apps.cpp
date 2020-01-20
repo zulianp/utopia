@@ -920,9 +920,9 @@ namespace utopia {
 
         stats.stop_and_collect("solve");
 
-        stats.start();
-        compute_strain_energy_splitting(space, x);
-        stats.stop_and_collect("splitting");
+        // stats.start();
+        // compute_strain_energy_splitting(space, x);
+        // stats.stop_and_collect("splitting");
 
 
         stats.start();
@@ -1007,7 +1007,7 @@ namespace utopia {
         space.create_vector(u);
         u.set(0.1);
 
-        compute_strain_energy_splitting(space, u);
+        // compute_strain_energy_splitting(space, u);
     }
 
     UTOPIA_REGISTER_APP(petsc_strain);
@@ -1238,7 +1238,8 @@ namespace utopia {
 
         C.write(output_path, x);
 
-        pp.assemble(x, H, g, f);
+        pp.value(x, f);
+        pp.gradient(x, g);
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field);

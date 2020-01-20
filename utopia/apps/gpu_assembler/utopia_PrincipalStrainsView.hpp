@@ -41,6 +41,24 @@ namespace utopia {
         }
 
         template<class Matrix>
+        UTOPIA_INLINE_FUNCTION static void split_positive(const Evaluation &el_strain, const SizeType &qp, Matrix &positive)
+        {
+            positive.set(0.0);
+
+            StaticVector<Scalar, Dim> v;
+            for(int d = 0; d < Dim; ++d) {
+                auto e_val = el_strain.values[qp][d];
+                el_strain.vectors[qp].col(d, v);
+
+                auto outer_v = outer(v, v);
+
+                auto eig_p = split_positive(e_val);
+
+                positive += eig_p * outer_v;
+            }
+        }
+
+        template<class Matrix>
         UTOPIA_INLINE_FUNCTION static void split(const Evaluation &el_strain, const SizeType &qp, Matrix &negative, Matrix &positive)
         {
             negative.set(0.0);

@@ -325,6 +325,13 @@ namespace utopia {
             return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
         }
 
+
+        template<class Quadrature>
+        Differential<FunctionSpace, Quadrature> differential(const Quadrature &q)
+        {
+            return Differential<FunctionSpace, Quadrature>(*this, q);
+        }
+
         template<class... Args>
         void build(
             const PetscCommunicator     &comm,
@@ -398,12 +405,12 @@ namespace utopia {
             return mesh_->local_element_range();
         }
 
-        void create_matrix(PetscMatrix &mat)
+        void create_matrix(PetscMatrix &mat) const
         {
             mesh_->create_matrix(mat);
         }
 
-        void create_vector(PetscVector &vec)
+        void create_vector(PetscVector &vec) const
         {
             mesh_->create_vector(vec);
         }
