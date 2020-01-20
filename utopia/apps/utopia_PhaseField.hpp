@@ -5,6 +5,7 @@
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_FEFunction.hpp"
+#include "utopia_Views.hpp"
 
 namespace utopia {
 
@@ -55,6 +56,8 @@ namespace utopia {
             space_.subspace(0, U);
             CSpace C = space_.subspace(Dim);
 
+
+
             if(empty(H)) {
                 space_.create_matrix(H);
             } else {
@@ -66,9 +69,6 @@ namespace utopia {
             } else {
                 g.set(0.0);
             }
-
-            // FEFunction<FunctionSpace> x_fun(space_, x);
-            // auto x_coeff = x_fun.coefficient();
 
             FEFunction<CSpace> c_fun(C, x);
             auto c_coeff = c_fun.coefficient();
@@ -83,6 +83,9 @@ namespace utopia {
 
             val = 0.0;
 
+            PrincipalStrains<USpace, Quadrature> strain(U, q);
+            strain.update(x);
+
             {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
@@ -90,26 +93,31 @@ namespace utopia {
                 auto c_view = c_val.view_device();
                 auto u_view = u_val.view_device();
 
+                auto strain_view = strain.view_device();
+
                 Device::parallel_reduce(
                     space_.local_element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
+                        StaticMatrix<Scalar, Dim, Dim> strain_n;
+                        StaticMatrix<Scalar, Dim, Dim> strain_p;
+
                         CElem c_e;
                         C_view.elem(i, c_e);
 
                         StaticVector<Scalar, NQuadPoints> c;
                         c_view.get(c_e, c);
 
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto el_strain = strain_view.make(u_e);
 
-                        // disp("-------------");
+                        for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            strain_view.split(el_strain, qp, strain_n, strain_p);
 
-                        // for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                        //     auto g_val = degradation(params_.a, params_.b, c[qp], params_.d, params_.f);
-                        //     std::cout << g_val << " ";
-                        // }
+                            auto g_val = degradation(params_.a, params_.b, c[qp], params_.d, params_.f);
 
-                        // disp("\n");
-
+                        }
 
                         return 0.0;
                     },
