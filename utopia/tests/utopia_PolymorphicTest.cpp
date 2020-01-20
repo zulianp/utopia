@@ -3,7 +3,7 @@
 #include <string>
 #include <cassert>
 
-#include "utopia_DynamicTypeDistributedMatrix.hpp"
+#include "utopia_petsc.hpp"
 
 namespace utopia {
 
@@ -19,10 +19,13 @@ namespace utopia {
 
         void convenience_wrapper()
         {
-            std::shared_ptr<DistributedMatrix> mat = std::make_shared<Matrix>();
-            std::shared_ptr<DistributedVector> vec = std::make_shared<Vector>();
+            // const SizeType n = 10;
 
-            DynamicTypeDistributedMatrix<Scalar, SizeType, Matrix, Vector> * mat_dyn;
+            // std::shared_ptr<DistributedMatrix> mat    = std::make_shared<Matrix>(local_identity(n, n));
+            // std::shared_ptr<DistributedVector> vec    = std::make_shared<Vector>(local_values(n, 2.0));
+            // std::shared_ptr<DistributedVector> result = std::make_shared<Vector>(local_zeros(n));
+            // mat->multiply(*vec, *result);
+
         }
 
         void run()
