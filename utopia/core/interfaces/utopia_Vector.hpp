@@ -5,8 +5,17 @@
 #include "utopia_Range.hpp"
 #include "utopia_Layout.hpp"
 #include "utopia_DistributedObject.hpp"
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
+
+	template<typename Scalar_, typename SizeType_>
+	class Traits< DistributedVector<Scalar_, SizeType_> > {
+	public:
+		using Scalar   = Scalar_;
+		using SizeType = SizeType_;
+		static const int Order = 1;
+	};
 
 	template<typename Scalar_, typename SizeType_>
 	class VectorBase {
@@ -86,6 +95,7 @@ namespace utopia {
 
 		virtual ~DistributedVector() {}
 	};
+
 }
 
 #endif //UTOPIA_VECTOR_HPP

@@ -25,6 +25,7 @@
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_petsc_IndexSet.hpp"
 #include "utopia_petsc_Traits.hpp"
+#include "utopia_DynamicTypeDistributedMatrix.hpp"
 
 #include <memory>
 
@@ -128,6 +129,7 @@ namespace utopia {
         public ReducibleMatrix<PetscScalar, PetscInt>,
         public Transformable<PetscScalar>,
         // Static polymorphic types
+        // public DynamicTypeDistributedMatrix<PetscScalar, PetscInt, PetscMatrix, PetscVector>,
         public BLAS1Tensor<PetscMatrix>,
         public BLAS2Matrix<PetscMatrix, PetscVector>,
         public BLAS3Matrix<PetscMatrix>,
