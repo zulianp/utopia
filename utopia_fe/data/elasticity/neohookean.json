@@ -1,23 +1,53 @@
 {
+    "export-operators" : true,
     "mesh": {
-        "type": "square",
-        "n-x" : 20,
-        "n-y" : 20,
-        "order" : 1
+        "type": "file",
+        "path": "../data/transfer/aorta_new_fine.e",
+        "order": 1
     },
     "space": {
-        "system-name": "simple-square",
-        "variables": [
-            {
+        "system-name": "contact_sol",
+        "variables": [{
                 "name": "disp_x",
-                "order" : 1
+                "order": 1
             },
             {
                 "name": "disp_y",
-                "order" : 1
+                "order": 1
+            },
+            {
+                "name": "disp_z",
+                "order": 1
             }
         ],
 
-        "*boundary-conditions": []
-    }
+        "boundary-conditions": [{
+                "var": 0,
+                "side": 202,
+                "value": 0.0
+            },
+            {
+                "var": 1,
+                "side": 202,
+                "value": 0.0
+            },
+            {
+                "var": 2,
+                "side": 202,
+                "value": 0.0
+            }
+
+        ]
+    },
+    "model": {
+        "material": "NewLinearElasticity",
+        "parameters": {
+            "mu": 0.3,
+            "lambda": 0.3
+        }
+    },
+    "forcing-functions": [{
+        "coord": 0,
+        "value": -1.5
+    }]
 }

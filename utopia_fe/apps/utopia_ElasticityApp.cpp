@@ -30,6 +30,7 @@ namespace utopia {
 
         ElasticityAppInput(libMesh::Parallel::Communicator &comm) :
         max_it(20),
+        export_operators_(false),
         mesh_(comm),
         space_(make_ref(mesh_))
         {}
@@ -55,6 +56,7 @@ namespace utopia {
                 );
 
                 is.get("max-it", max_it);
+                is.get("export-operators", export_operators_);
 
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
@@ -88,6 +90,7 @@ namespace utopia {
         }
 
         int max_it;
+        bool export_operators_;
     private:
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<LibMeshFunctionSpace> space_;
@@ -97,7 +100,8 @@ namespace utopia {
     void ElasticityApp::run(Input &in)
     {
         ElasticityAppInput sim_in(comm());
-        in.get("elasticity", sim_in);
+        // in.get("elasticity", sim_in);
+        sim_in.read(in);
         sim_in.describe(std::cout);
 
         if(sim_in.empty()) {
@@ -120,6 +124,16 @@ namespace utopia {
         material.assemble_hessian_and_gradient(x, H, g);
         g *= -1.0;
         apply_boundary_conditions(dof_map, H, g);
+
+        if(sim_in.export_operators_) {
+            write("H.m", H);
+            write("g.m", g);
+
+            USparseMatrix M;
+            utopia::assemble(inner(trial(V), test(V)) * dX, M);
+
+            write("M.n", M);
+        }
 
         Factorization<USparseMatrix, UVector> solver;
 
