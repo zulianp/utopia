@@ -1182,6 +1182,10 @@ namespace utopia {
         SizeType ny = scale * 5;
         SizeType nz = scale * 5;
 
+        in.get("nx", nx);
+        in.get("ny", ny);
+        in.get("nz", nz);
+
         FunctionSpace space;
 
         space.build(
@@ -1240,6 +1244,7 @@ namespace utopia {
 
         pp.value(x, f);
         pp.gradient(x, g);
+        pp.hessian(x, H);
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field);

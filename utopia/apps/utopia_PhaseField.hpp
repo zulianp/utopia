@@ -27,6 +27,7 @@ namespace utopia {
 
         using UElem    = typename USpace::ViewDevice::Elem;
         using CElem    = typename CSpace::ViewDevice::Elem;
+        using MixedElem = typename FunctionSpace::ViewDevice::Elem;
 
         //FIXME
         using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
@@ -276,6 +277,7 @@ namespace utopia {
                         }
 
                         U_view.add_vector(u_e, u_el_vec, g_view);
+                        C_view.add_vector(c_e, c_el_vec, g_view);
                     }
                 );
             }
@@ -283,7 +285,7 @@ namespace utopia {
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override
+        bool hessian(const Vector &x_const, Matrix &H) const override
         {
             if(empty(H)) {
                 space_.create_matrix(H);
@@ -291,10 +293,220 @@ namespace utopia {
                 H *= 0.0;
             }
 
+
+            USpace U;
+            space_.subspace(0, U);
+            CSpace C = space_.subspace(Dim);
+
+            auto &x = const_cast<Vector &>(x_const);
+
+            FEFunction<CSpace> c_fun(C, x);
+            FEFunction<USpace> u_fun(U, x);
+
+            Quadrature q;
+
+            auto c_val  = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto u_val  = u_fun.value(q);
+            auto differential = C.differential(q);
+
+            auto v_grad_shape = U.shape_grad(q);
+            auto c_shape      = C.shape(q);
+            auto c_grad_shape = C.shape_grad(q);
+
+            PrincipalStrains<USpace, Quadrature> strain(U, q);
+            strain.update(x);
+
+            {
+                auto U_view      = U.view_device();
+                auto C_view      = C.view_device();
+                auto space_view  = space_.view_device();
+
+                auto c_view      = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto u_view      = u_val.view_device();
+
+                auto strain_view = strain.view_device();
+                auto differential_view = differential.view_device();
+
+                auto v_grad_shape_view = v_grad_shape.view_device();
+                auto c_shape_view = c_shape.view_device();
+                auto c_grad_shape_view = c_grad_shape.view_device();
+
+                auto H_view = space_.assembly_view_device(H);
+
+                Device::parallel_for(
+                    space_.local_element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i)
+                    {
+                        StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
+                        StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
+
+                        MixedElem e;
+                        space_view.elem(i, e);
+
+
+                        el_mat.set(0.0);
+
+                        ////////////////////////////////////////////
+
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto el_strain = strain_view.make(u_e);
+                        auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+
+                        ////////////////////////////////////////////
+
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
+
+                        auto dx        = differential_view.make(c_e);
+                        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+                        auto c_shape_fun_el  = c_shape_view.make(c_e);
+
+                        ////////////////////////////////////////////
+
+                        for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            Scalar sum_eigs = sum(el_strain.values[qp]);
+                            strain_view.split(el_strain, qp, strain_n, strain_p);
+
+                            const Scalar eep = elastic_energy_positve(params_, sum_eigs, strain_p);
+
+                            for(SizeType l = 0; l < c_grad_shape_el.n_functions(); ++l) {
+                                for(SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
+                                    el_mat(l, j) += (
+                                        diffusion_c(params_, c_grad_shape_el(j, qp), c_grad_shape_el(l, qp)) +
+                                        reaction_c(params_,  c_shape_fun_el(j, qp),  c_shape_fun_el(l, qp))  +
+                                        elastic_deriv_cc(params_, c[qp], eep, c_shape_fun_el(l, qp))
+                                    ) * dx(qp);
+                                }
+                            }
+
+                            for(SizeType l = 0; l < u_grad_shape_el.n_functions(); ++l) {
+                                for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
+                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
+                                        params_,
+                                        c[qp],
+                                        sum_eigs,
+                                        strain_n,
+                                        strain_p,
+                                        u_grad_shape_el(j, qp),
+                                        u_grad_shape_el(l, qp)
+                                        ) * dx(qp);
+                                }
+                            }
+
+                            for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
+                                for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
+
+                                    const Scalar val = bilinear_cu(
+                                                params_,
+                                                c[qp],
+                                                sum_eigs,
+                                                strain_p,
+                                                strain_p - strain_n,
+                                                c_shape_fun_el(c_i, qp),
+                                                u_grad_shape_el(u_i, qp)
+                                            ) * dx(qp);
+
+
+                                    el_mat(c_i, C_NDofs + u_i) += val;
+                                    el_mat(C_NDofs + u_i, c_i) += val;
+                                }
+                            }
+                        }
+
+                        space_view.add_matrix(e, el_mat, H_view);
+                    }
+                );
+            }
+
+
             return true;
         }
 
         //////////////////////////////////////////
+
+        template<class Strain, class FullStrain, class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_cu(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const Scalar &trace,
+            const Strain &strain_positive,
+            const FullStrain &full_strain,
+            const Scalar &c_trial_fun,
+            const Grad &u_grad_test
+            )
+        {
+            auto C_test  = 0.5 * (u_grad_test  + transpose(u_grad_test));
+
+            const Scalar trace_positive = split_p(trace);
+            const Scalar trial =
+                strain_energy(params, trace_positive, strain_positive) *
+                quadratic_degradation_deriv(
+                           params,
+                            phase_field_value) * c_trial_fun;
+
+            return trial * inner(full_strain, C_test);
+
+        }
+
+        template<class Strain, class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const Scalar &trace,
+            const Strain &strain_negative,
+            const Strain &strain_positive,
+            const Grad &g_trial,
+            const Grad &g_test
+            )
+        {
+            auto C_trial = 0.5 * (g_trial + transpose(g_trial));
+            auto C_test  = 0.5 * (g_test  + transpose(g_test));
+
+            const Scalar contr_C = inner(C_trial, C_test);
+
+            const Scalar trace_negative = split_n(trace);
+            const Scalar trace_positive = split_p(trace);
+
+            const Scalar positive_part = strain_energy(params, trace_positive, strain_positive) * contr_C;
+            const Scalar negative_part = strain_energy(params, trace_negative, strain_negative) * contr_C;
+            return quadratic_degradation(params, phase_field_value) * positive_part + negative_part;
+        }
+
+        template<class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar diffusion_c(
+            const Parameters &params,
+            const Grad &g_trial,
+            const Grad &g_test
+            )
+        {
+            return params.fracture_toughness * params.length_scale * inner(g_trial, g_test);
+        }
+
+        UTOPIA_INLINE_FUNCTION static Scalar reaction_c(
+            const Parameters &params,
+            const Scalar &trial,
+            const Scalar &test
+            )
+        {
+            return (params.fracture_toughness / params.length_scale) * trial * test;
+        }
+
+        UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const Scalar &elastic_energy_positive,
+            const Scalar &test
+            )
+        {
+            const Scalar dcc = quadratic_degradation_deriv2(params, phase_field_value);
+            return dcc * elastic_energy_positive * test;
+        }
+
 
         template<class Grad, class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar grad_elastic_energy_wrt_c(
@@ -419,6 +631,16 @@ namespace utopia {
                 strain_energy(params, trace_negative, strain_negative);
         }
 
+        template<class Strain>
+        UTOPIA_INLINE_FUNCTION static Scalar elastic_energy_positve(
+            const Parameters &params,
+            const Scalar &trace,
+            const Strain &strain_positive
+            )
+        {
+            const Scalar trace_positive = split_p(trace);
+            return strain_energy(params, trace_positive, strain_positive);
+        }
 
         UTOPIA_INLINE_FUNCTION static Scalar degradation(
             const Parameters &params,
@@ -451,6 +673,14 @@ namespace utopia {
         {
             Scalar imc = 1.0 - c;
             return -2.0 * imc;
+        }
+
+        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation_deriv2(
+           const Parameters &,
+            const Scalar &
+            )
+        {
+            return 2.0;
         }
 
     private:
