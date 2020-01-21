@@ -1186,6 +1186,20 @@ namespace utopia {
         in.get("ny", ny);
         in.get("nz", nz);
 
+        PhaseFieldForBrittleFractures<FunctionSpace>::Parameters params;
+
+        params.length_scale = 2.0 * std::min(std::min(1./nx, 1./ny), 1./nz);
+        in.get("length-scale", params.length_scale);
+
+        params.fracture_toughness = 0.001;
+        in.get("fracture-toughness", params.fracture_toughness);
+
+        params.mu = 80.0;
+        params.lambda = 120.0;
+
+        in.get("mu", params.mu);
+        in.get("lambda", params.lambda);
+
         FunctionSpace space;
 
         space.build(
@@ -1200,7 +1214,33 @@ namespace utopia {
         space.mesh().set_field_name(2, "disp_y");
         space.mesh().set_field_name(3, "disp_z");
 
-        PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+        space.emplace_dirichlet_condition(
+            SideSet::left(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return -0.1;
+            },
+            0
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::right(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return 0.1;
+            },
+            0
+        );
+
+        for(int d = 1; d < Dim; ++d) {
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 0.0;
+                },
+                d
+            );
+        }
+
+        PhaseFieldForBrittleFractures<FunctionSpace> pp(space, params);
 
         PetscMatrix H;
         PetscVector x, g;
@@ -1214,7 +1254,7 @@ namespace utopia {
         auto C = space.subspace(0);
         auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) {
             auto dist_x = 0.5 - x[0];
-            return device::exp(-5.0 * dist_x * dist_x);
+            return device::exp(-500.0 * dist_x * dist_x);
         });
 
         {
@@ -1233,18 +1273,17 @@ namespace utopia {
 
         }
 
+        space.apply_constraints(x);
+        // TrustRegion<PetscMatrix, PetscVector> solver;
+        // solver.verbose(true);
+        // solver.solve(pp, x);
+
         std::string output_path = "phase_field.vtu";
 
         in.get("output-path", output_path);
 
         rename("X", x);
-
-
         C.write(output_path, x);
-
-        pp.value(x, f);
-        pp.gradient(x, g);
-        pp.hessian(x, H);
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field);

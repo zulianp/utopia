@@ -48,8 +48,8 @@ namespace utopia {
 
         };
 
-        PhaseFieldForBrittleFractures(FunctionSpace &space)
-        : space_(space)
+        PhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params = Parameters())
+        : space_(space), params_(params)
         {}
 
         // void assemble(
@@ -282,6 +282,7 @@ namespace utopia {
                 );
             }
 
+            space_.apply_zero_constraints(g);
             return true;
         }
 
@@ -423,7 +424,7 @@ namespace utopia {
                 );
             }
 
-
+            space_.apply_constraints(H);
             return true;
         }
 
