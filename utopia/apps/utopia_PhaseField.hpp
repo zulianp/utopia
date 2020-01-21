@@ -283,6 +283,9 @@ namespace utopia {
             }
 
             space_.apply_zero_constraints(g);
+
+            static int iter = 0;
+            write("g" + std::to_string(iter++) + ".m", g);
             return true;
         }
 
@@ -425,6 +428,9 @@ namespace utopia {
             }
 
             space_.apply_constraints(H);
+
+            static int iter = 0;
+            write("H" + std::to_string(iter++) + ".m", H);
             return true;
         }
 

@@ -1200,6 +1200,12 @@ namespace utopia {
         in.get("mu", params.mu);
         in.get("lambda", params.lambda);
 
+        Scalar disp = 1e-5;
+        in.get("disp", disp);
+
+        bool with_damage = true;
+        in.get("with-damage", with_damage);
+
         FunctionSpace space;
 
         space.build(
@@ -1217,20 +1223,20 @@ namespace utopia {
         space.emplace_dirichlet_condition(
             SideSet::left(),
             UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return -0.1;
+                return -disp;
             },
-            0
+            1
         );
 
         space.emplace_dirichlet_condition(
             SideSet::right(),
             UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return 0.1;
+                return disp;
             },
-            0
+            1
         );
 
-        for(int d = 1; d < Dim; ++d) {
+        for(int d = 2; d < Dim + 1; ++d) {
             space.emplace_dirichlet_condition(
                 SideSet::right(),
                 UTOPIA_LAMBDA(const Point &p) -> Scalar {
@@ -1250,33 +1256,41 @@ namespace utopia {
 
         x.set(0.0);
 
-
         auto C = space.subspace(0);
-        auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) {
-            auto dist_x = 0.5 - x[0];
-            return device::exp(-500.0 * dist_x * dist_x);
-        });
 
-        {
-            auto C_view       = C.view_device();
-            auto sampler_view = sampler.view_device();
-            auto x_view       = space.assembly_view_device(x);
+        if(with_damage) {
 
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem e;
-                C_view.elem(i, e);
-
-                StaticVector<Scalar, 8> s;
-                sampler_view.assemble(e, s);
-                C_view.set_vector(e, s, x_view);
+            auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) {
+                auto dist_x = 0.5 - x[0];
+                auto dist_y = x[1];
+                auto dist_z = x[2];
+                return device::exp(-500.0 * dist_x * dist_x) *
+                       device::exp(-500.0 * dist_y * dist_y) *
+                       device::exp(-500.0 * dist_z * dist_z);
             });
 
+            {
+                auto C_view       = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view       = space.assembly_view_device(x);
+
+                Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem e;
+                    C_view.elem(i, e);
+
+                    StaticVector<Scalar, 8> s;
+                    sampler_view.assemble(e, s);
+                    C_view.set_vector(e, s, x_view);
+                });
+            }
         }
 
         space.apply_constraints(x);
         // TrustRegion<PetscMatrix, PetscVector> solver;
-        // solver.verbose(true);
-        // solver.solve(pp, x);
+        Newton<PetscMatrix, PetscVector> solver(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
+        in.get("solver", solver);
+
+        solver.solve(pp, x);
 
         std::string output_path = "phase_field.vtu";
 

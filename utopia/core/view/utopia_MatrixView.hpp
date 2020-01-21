@@ -241,6 +241,11 @@ namespace utopia {
             device::symmetrize(view_);
         }
 
+        UTOPIA_INLINE_FUNCTION bool is_diagonal(const Scalar &tol) const
+        {
+            return device::is_diagonal(view_, tol);
+        }
+
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)
         {
             device::fill(alpha, view_);

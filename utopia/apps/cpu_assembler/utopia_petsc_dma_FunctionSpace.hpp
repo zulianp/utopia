@@ -304,7 +304,7 @@ namespace utopia {
 
         ///shallow copy
         FunctionSpace(const FunctionSpace &other)
-        : mesh_(other.mesh_), subspace_id_(other.subspace_id_)
+        : mesh_(other.mesh_), dirichlet_bcs_(other.dirichlet_bcs_), subspace_id_(other.subspace_id_)
         {}
 
         FunctionSpace()
