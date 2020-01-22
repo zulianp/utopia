@@ -1178,9 +1178,9 @@ namespace utopia {
         Comm world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 1;
-        SizeType ny = scale * 1;
-        SizeType nz = scale * 1;
+        SizeType nx = scale * 4;
+        SizeType ny = scale * 4;
+        SizeType nz = scale * 4;
 
         in.get("nx", nx);
         in.get("ny", ny);
@@ -1291,7 +1291,7 @@ namespace utopia {
         in.get("solver", solver);
 
         pp.hessian(x, H);
-        // solver.solve(pp, x);
+        solver.solve(pp, x);
 
         std::string output_path = "phase_field.vtr";
 
@@ -1302,5 +1302,22 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field);
+
+
+    static void test_splitting()
+    {
+        using Scalar = double;
+        StaticMatrix<Scalar, 3, 3> strain, stress;
+        strain.set(0.0);
+
+        strain(0, 0) = 1.0;
+        strain(1, 0) = strain(0, 1) = 0.5;
+        strain(2, 0) = strain(0, 2) = 0.5;
+
+        stress = 2 * 80.0 * strain + 120.0 * trace(strain) * (device::identity<Scalar>());
+        disp(stress);
+    }
+
+    UTOPIA_REGISTER_APP(test_splitting);
 }
 

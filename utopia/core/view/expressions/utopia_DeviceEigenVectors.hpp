@@ -53,40 +53,80 @@ namespace utopia {
         {
             UTOPIA_DEVICE_ASSERT(!mat.is_alias(result));
 
-            bool is_zero_1 = device::approxeq(eigen_values[0], 0.0, device::epsilon<Scalar>());
-            bool is_zero_2 = device::approxeq(eigen_values[1], 0.0, device::epsilon<Scalar>());
-            bool is_zero_3 = device::approxeq(eigen_values[2], 0.0, device::epsilon<Scalar>());
+            bool is_zero_0 = device::approxeq(eigen_values[0], 0.0, device::epsilon<Scalar>()*100);
+            bool is_zero_1 = device::approxeq(eigen_values[1], 0.0, device::epsilon<Scalar>()*100);
+            bool is_zero_2 = device::approxeq(eigen_values[2], 0.0, device::epsilon<Scalar>()*100);
 
-            if(is_zero_1 || is_zero_2 || is_zero_3 || mat.is_diagonal(device::epsilon<Scalar>()*100)) {
+            if(is_zero_0 && is_zero_1 && is_zero_2 && mat.is_diagonal(device::epsilon<Scalar>()*100)) {
                 result.identity();
                 return;
             }
 
             //expressions (not evaluated)
-            auto Am1 = mat - eigen_values[0] * device::identity<Scalar>();
-            auto Am2 = mat - eigen_values[1] * device::identity<Scalar>();
-            auto Am3 = mat - eigen_values[2] * device::identity<Scalar>();
+            auto Am0 = mat - eigen_values[0] * device::identity<Scalar>();
+            auto Am1 = mat - eigen_values[1] * device::identity<Scalar>();
+            auto Am2 = mat - eigen_values[2] * device::identity<Scalar>();
 
             const SizeType n = utopia::rows(mat);
 
             //expressions (not evaluated)
-            auto E1 = Am2 * Am3;
-            auto E2 = Am3 * Am1;
-            auto E3 = Am1 * Am2;
+            auto E0 = Am1 * Am2;
+            auto E1 = Am2 * Am0;
+            auto E2 = Am0 * Am1;
 
             //lazy evaluation (expensive but no new memory allocs)
-            const SizeType j1 = find_non_zero_col(n, E1);
-            const SizeType j2 = find_non_zero_col(n, E2);
-            const SizeType j3 = find_non_zero_col(n, E3);
+            if(!is_zero_0) {
+                const SizeType j0 = find_non_zero_col(n, E0);
+                copy_col(n, j0, E0, 0, result);
+                normalize_col(n, 0, result);
+            }
 
-            //lazy evaluation (expensive but no new memory allocs)
-            copy_col(n, j1, E1, 0, result);
-            copy_col(n, j2, E2, 1, result);
-            copy_col(n, j3, E3, 2, result);
+            if(!is_zero_1) {
+                const SizeType j1 = find_non_zero_col(n, E1);
+                copy_col(n, j1, E1, 1, result);
+                normalize_col(n, 1, result);
+            }
 
-            normalize_col(n, 0, result);
-            normalize_col(n, 1, result);
-            normalize_col(n, 2, result);
+            if(!is_zero_2) {
+                const SizeType j2 = find_non_zero_col(n, E2);
+                copy_col(n, j2, E2, 2, result);
+                normalize_col(n, 2, result);
+            }
+
+            StaticVector<Scalar, 3> u, v;
+
+            if(is_zero_0) {
+                UTOPIA_DEVICE_ASSERT(!is_zero_1);
+                UTOPIA_DEVICE_ASSERT(!is_zero_2);
+
+                result.col(1, u);
+                result.col(2, v);
+
+                result.set_col(0, cross(u, v));
+                normalize_col(n, 0, result);
+            }
+
+            if(is_zero_1) {
+                UTOPIA_DEVICE_ASSERT(!is_zero_0);
+                UTOPIA_DEVICE_ASSERT(!is_zero_2);
+
+                result.col(0, u);
+                result.col(2, v);
+
+                result.set_col(1, cross(u, v));
+                normalize_col(n, 1, result);
+            }
+
+            if(is_zero_2) {
+                UTOPIA_DEVICE_ASSERT(!is_zero_0);
+                UTOPIA_DEVICE_ASSERT(!is_zero_1);
+
+                result.col(0, u);
+                result.col(1, v);
+
+                result.set_col(2, cross(u, v));
+                normalize_col(n, 2, result);
+            }
         }
 
         template<class Vector, class ResultMat>
@@ -149,6 +189,8 @@ namespace utopia {
         {
             for(SizeType i = 0; i < n; ++i) {
                 to(i, to_col) = from(i, from_col);
+
+                UTOPIA_DEVICE_ASSERT( to(i, to_col) == to(i, to_col) );
             }
         }
 
@@ -161,6 +203,8 @@ namespace utopia {
                 const Scalar v = mat(i, j);
                 len += v*v;
             }
+
+            UTOPIA_DEVICE_ASSERT(len > 0.0);
 
             len = device::sqrt(len);
 

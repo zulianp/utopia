@@ -233,6 +233,14 @@ namespace utopia {
         return DeviceOuterProduct<Left, Right>(left.derived(), right.derived());
     }
 
+    template<class Left, class Right>
+    UTOPIA_INLINE_FUNCTION DeviceCrossProduct<Left, Right> cross(
+        const DeviceExpression<Left> &left,
+        const DeviceExpression<Right> &right)
+    {
+        return DeviceCrossProduct<Left, Right>(left.derived(), right.derived());
+    }
+
     UTOPIA_INLINE_FUNCTION constexpr double inner(const double &left, const double &right)
     {
         return left * right;

@@ -439,7 +439,9 @@ namespace utopia {
 
                 for(decltype(n) i = 0; i < n; ++i) {
                     for(decltype(n) j = i+1; j < n; ++j) {
-                        mat(i, j) = 0.5 * (mat(i, j) + mat(j, i));
+                        auto v = 0.5 * (mat(i, j) + mat(j, i));
+                        mat(i, j) = v;
+                        mat(j, i) = v;
                     }
                 }
             }

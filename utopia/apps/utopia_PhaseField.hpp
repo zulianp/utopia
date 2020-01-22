@@ -6,6 +6,7 @@
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_Views.hpp"
+#include "utopia_PrincipalShapeStressView.hpp"
 
 namespace utopia {
 
@@ -321,6 +322,9 @@ namespace utopia {
             PrincipalStrains<USpace, Quadrature> strain(U, q);
             strain.update(x);
 
+
+            PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, params_.mu, params_.lambda);
+
             {
                 auto U_view      = U.view_device();
                 auto C_view      = C.view_device();
@@ -336,6 +340,9 @@ namespace utopia {
                 auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
+
+                //FIXME
+                auto p_stress_view     = p_stress.view_device();
 
                 auto H_view = space_.assembly_view_device(H);
 
@@ -393,10 +400,8 @@ namespace utopia {
                                     el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
                                         params_,
                                         c[qp],
-                                        sum_eigs,
-                                        strain_n,
-                                        strain_p,
-                                        u_grad_shape_el(j, qp),
+                                        p_stress_view.negative(j, qp),
+                                        p_stress_view.positive(j, qp),
                                         u_grad_shape_el(l, qp)
                                         ) * dx(qp);
                                 }
@@ -422,7 +427,7 @@ namespace utopia {
                             }
                         }
 
-                        disp(el_mat);
+                        // disp(el_mat);
 
                         space_view.add_matrix(e, el_mat, H_view);
                     }
@@ -466,24 +471,17 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
             const Parameters &params,
             const Scalar &phase_field_value,
-            const Scalar &trace,
-            const Strain &strain_negative,
-            const Strain &strain_positive,
-            const Grad &g_trial,
+            const Strain &stress_negative,
+            const Strain &stress_positive,
             const Grad &g_test
             )
         {
-            auto C_trial = 0.5 * (g_trial + transpose(g_trial));
             auto C_test  = 0.5 * (g_test  + transpose(g_test));
 
-            const Scalar contr_C = inner(C_trial, C_test);
-
-            const Scalar trace_negative = split_n(trace);
-            const Scalar trace_positive = split_p(trace);
-
-            const Scalar positive_part = strain_energy(params, trace_positive, strain_positive) * contr_C;
-            const Scalar negative_part = strain_energy(params, trace_negative, strain_negative) * contr_C;
-            return quadratic_degradation(params, phase_field_value) * positive_part + negative_part;
+            const Scalar positive_part =  inner(stress_positive, C_test);
+            const Scalar negative_part =  inner(stress_negative, C_test);
+            const Scalar alpha = quadratic_degradation(params, phase_field_value);
+            return alpha * positive_part - negative_part;
         }
 
         template<class Grad>

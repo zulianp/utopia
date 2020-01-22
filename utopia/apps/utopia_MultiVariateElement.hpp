@@ -24,6 +24,11 @@ namespace utopia {
 
         // static_assert(NVariables == Dim, "Number of variables must be equal to dim for vector elements");
 
+        static UTOPIA_INLINE_FUNCTION constexpr SizeType n_functions()
+        {
+            return NFunctions;
+        }
+
         template<typename Point>
         UTOPIA_INLINE_FUNCTION auto fun(const int i, const Point &p) const -> FunValue
         {
