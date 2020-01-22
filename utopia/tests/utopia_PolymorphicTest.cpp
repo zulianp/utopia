@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "utopia_petsc.hpp"
+#include "utopia_AbstractVector.hpp"
 
 namespace utopia {
 
@@ -14,17 +15,19 @@ namespace utopia {
         using SizeType = typename Traits<Matrix>::SizeType;
 
         //base classes
-        using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
-        using DistributedVector = utopia::DistributedVector<Scalar, SizeType>;
+        // using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
+        using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
 
         void convenience_wrapper()
         {
-            // const SizeType n = 10;
+            const SizeType n = 10;
 
             // std::shared_ptr<DistributedMatrix> mat    = std::make_shared<Matrix>(local_identity(n, n));
             // std::shared_ptr<DistributedVector> vec    = std::make_shared<Vector>(local_values(n, 2.0));
             // std::shared_ptr<DistributedVector> result = std::make_shared<Vector>(local_zeros(n));
             // mat->multiply(*vec, *result);
+
+            std::shared_ptr<AbstractVector> v = std::make_shared<Wrapper<PetscVector>>( local_values(n, 2.0) );
 
         }
 

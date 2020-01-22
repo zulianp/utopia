@@ -1,0 +1,10 @@
+#ifndef UTOPIA_ABSTRACT_MATRIX_HPP
+#define UTOPIA_ABSTRACT_MATRIX_HPP
+
+namespace utopia {
+
+}
+
+#endif //UTOPIA_ABSTRACT_MATRIX_HPP
+
+
