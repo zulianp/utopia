@@ -422,6 +422,8 @@ namespace utopia {
                             }
                         }
 
+                        disp(el_mat);
+
                         space_view.add_matrix(e, el_mat, H_view);
                     }
                 );

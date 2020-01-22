@@ -274,7 +274,10 @@ namespace utopia {
 
             for(SizeType i = 0; i < r; ++i) {
                 for(SizeType j = 0; j < c; ++j) {
-                    os << get(i, j) << "\t";
+                    os << get(i, j);
+                    if(j < c-1) {
+                        os << ", ";
+                    }
                 }
 
                 os << "\n";
