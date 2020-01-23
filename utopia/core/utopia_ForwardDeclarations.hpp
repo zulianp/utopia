@@ -171,6 +171,12 @@ namespace utopia {
 
     template<class M>
     class BLAS3Matrix;
+
+    template<typename Scalar, typename SizeType>
+    class AbstractVector;
+
+    template<typename Scalar, typename SizeType>
+    class AbstractMatrix;
 }
 
 #endif //UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

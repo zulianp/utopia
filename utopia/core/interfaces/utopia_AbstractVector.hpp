@@ -19,6 +19,12 @@
 #include "utopia_make_unique.hpp"
 
 namespace utopia {
+    template<typename Scalar_, typename SizeType_>
+    class Traits< AbstractVector<Scalar_, SizeType_> > {
+    public:
+        using Scalar = Scalar_;
+        using SizeType = SizeType_;
+    };
 
     //parallel types, collective operations
     template<typename Scalar_, typename SizeType_>
@@ -26,13 +32,13 @@ namespace utopia {
     :
         public DistributedVector<Scalar_, SizeType_>,
         public Normed<Scalar_>,
-    //     public Transformable<Scalar_>,
-        public Reducible<Scalar_>
-    //     public Constructible<Scalar_, SizeType_, 1>,
-    //     public ElementWiseOperand<Scalar_>,
-    //     public ElementWiseOperand<AbstractVector<Scalar_, SizeType_>>,
-    //     public Comparable<AbstractVector<Scalar_, SizeType_>>,
-    //     public BLAS1Tensor<AbstractVector<Scalar_, SizeType_>>
+        public Transformable<Scalar_>,
+        public Reducible<Scalar_>,
+        public Constructible<Scalar_, SizeType_, 1>,
+        public ElementWiseOperand<Scalar_>,
+        public ElementWiseOperand<AbstractVector<Scalar_, SizeType_>>,
+        public Comparable<AbstractVector<Scalar_, SizeType_>>,
+        public BLAS1Tensor<AbstractVector<Scalar_, SizeType_>>
         {
     public:
         using Scalar   = Scalar_;
@@ -52,8 +58,12 @@ namespace utopia {
                                         typename Traits<Vector>::SizeType
                                         > {
     public:
-        using Scalar =  typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;
+        using Scalar         = typename Traits<Vector>::Scalar;
+        using SizeType       = typename Traits<Vector>::SizeType;
+        using AbstractVector = AbstractVector<
+                                        typename Traits<Vector>::Scalar,
+                                        typename Traits<Vector>::SizeType
+                                        >;
 
         template<class... Args>
         Wrapper(Args &&...args)
@@ -136,6 +146,7 @@ namespace utopia {
         //print function
         inline void describe() const override
         {
+            std::cout << Traits<Vector>::backend_info().get_name() << " (vector)" << std::endl;
             impl_->describe();
         }
 
@@ -199,6 +210,163 @@ namespace utopia {
         {
             return impl_->reduce(op);
         }
+
+        inline void e_mul(const Scalar &other) override
+        {
+            impl_->e_mul(other);
+        }
+
+        inline void e_div(const Scalar &other) override
+        {
+            impl_->e_div(other);
+        }
+
+        inline void e_min(const Scalar &other) override
+        {
+            impl_->e_min(other);
+        }
+
+        inline void e_max(const Scalar &other) override
+        {
+            impl_->e_max(other);
+        }
+
+        ////////////
+
+        inline void e_mul(const AbstractVector &other) override
+        {
+            auto &other_w = static_cast<const Wrapper &>(other);
+            assert(other_w.impl_);
+            impl_->e_mul(*other_w.impl_);
+        }
+
+        inline void e_div(const AbstractVector &other) override
+        {
+            auto &other_w = static_cast<const Wrapper &>(other);
+            assert(other_w.impl_);
+            impl_->e_div(*other_w.impl_);
+        }
+
+        inline void e_min(const AbstractVector &other) override
+        {
+            auto &other_w = static_cast<const Wrapper &>(other);
+            assert(other_w.impl_);
+            impl_->e_min(*other_w.impl_);
+        }
+
+        inline void e_max(const AbstractVector &other) override
+        {
+            auto &other_w = static_cast<const Wrapper &>(other);
+            assert(other_w.impl_);
+            impl_->e_max(*other_w.impl_);
+        }
+
+        ///////////////////
+
+        inline void swap(AbstractVector &x) override
+        {
+            auto &x_w = static_cast<const Wrapper &>(x);
+            impl_->swap(*x_w.impl_);
+        }
+
+        ///<Scalar>SCAL - x = a*x
+        inline void scale(const Scalar &a) override
+        {
+            impl_->scale(a);
+        }
+
+        ///<Scalar>COPY - copy x into y (this)
+        inline void copy(const AbstractVector &x) override
+        {
+            auto &x_w = static_cast<const Wrapper &>(x);
+            impl_->copy(*x_w.impl_);
+        }
+
+        ///<Scalar>AXPY - y = a*x + y
+        inline void axpy(const Scalar &a, const AbstractVector &x) override
+        {
+            auto &x_w = static_cast<const Wrapper &>(x);
+            impl_->axpy(a, *x_w.impl_);
+        }
+
+        ///<Scalar>DOT - dot product
+        inline Scalar dot(const AbstractVector &x) const override
+        {
+            auto &x_w = static_cast<const Wrapper &>(x);
+            return impl_->dot(*x_w.impl_);
+        }
+
+        inline bool equals(const AbstractVector &other, const Scalar &tol = 0.0) const override
+        {
+            auto &other_w = static_cast<const Wrapper &>(other);
+            return impl_->equals(*other_w.impl_, tol);
+        }
+
+        //////////////////////
+
+        inline void transform(const Sqrt &op) override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Pow2 &op) override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Log &op)  override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Exp &op)  override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Cos &op)  override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Sin &op)  override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Abs &op)  override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Minus &op) override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Pow &op)  override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void transform(const Reciprocal<Scalar> &op) override
+        {
+            return impl_->transform(op);
+        }
+
+        inline void zeros(const SizeType &s) override { impl_->zeros(s); }
+        inline void values(const SizeType &s, const Scalar &val) override { impl_->values(s, val); }
+
+        inline void local_zeros(const SizeType &s) override { impl_->local_zeros(s); }
+        inline void local_values(const SizeType &s, const Scalar &val) override { impl_->local_values(s, val); }
+
+        //comodity
+        inline void zeros(const Size &s) override { impl_->zeros(s); }
+        inline void values(const Size &s, const Scalar &val) override { impl_->values(s, val); }
+
+        inline void local_zeros(const Size &s) override { impl_->local_values(s, 0.0); }
+        inline void local_values(const Size &s, const Scalar &val) override { impl_->local_values(s, val); }
+
 
     private:
         std::unique_ptr<Vector> impl_;

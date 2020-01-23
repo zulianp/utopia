@@ -5,15 +5,25 @@
 
 #include "utopia_petsc.hpp"
 #include "utopia_AbstractVector.hpp"
+#include "utopia_ObjectFactory.hpp"
 
 namespace utopia {
 
+//Register types
 #ifdef WITH_PETSC
+
+    UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
+
+#ifdef WITH_TRILINOS
+    UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
+#endif
 
     class PolymorphicTest final {
     public:
         using Scalar   = typename Traits<PetscVector>::Scalar;
         using SizeType = typename Traits<PetscVector>::SizeType;
+
+        using DefaultFactory = utopia::AlgebraFactory<Scalar, SizeType>;
 
         //base classes
         // using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
@@ -23,18 +33,20 @@ namespace utopia {
         {
             const SizeType n = 10;
 
-            // std::shared_ptr<DistributedMatrix> mat    = std::make_shared<Matrix>(local_identity(n, n));
-            // std::shared_ptr<DistributedVector> vec    = std::make_shared<Vector>(local_values(n, 2.0));
-            // std::shared_ptr<DistributedVector> result = std::make_shared<Vector>(local_zeros(n));
-            // mat->multiply(*vec, *result);
-
-            std::shared_ptr<AbstractVector> v = std::make_shared<Wrapper<PetscVector>>( local_values(n, 2.0) );
 #ifdef WITH_TRILINOS
 #ifdef UTOPIA_TPETRA_SIZE_TYPE
-            v = std::make_shared<Wrapper<TpetraVector>>( local_values(n, 2.0) );
+            //if types are the same TirlinosFactory == DefaultFactory
+            InputParameters params;
+            params.set("default-backend", "trilinos");
+            DefaultFactory::init(params);
+
 #endif //UTOPIA_TPETRA_SIZE_TYPE
 #endif //WITH_TRILINOS
 
+
+            auto v = DefaultFactory::new_vector();
+            v->values(n, 2.0);
+            v->describe();
         }
 
         void run()
