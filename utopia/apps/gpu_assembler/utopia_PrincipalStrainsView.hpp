@@ -40,6 +40,46 @@ namespace utopia {
             return ret;
         }
 
+        template<class Matrix>
+        UTOPIA_INLINE_FUNCTION static void split_positive(const Evaluation &el_strain, const SizeType &qp, Matrix &positive)
+        {
+            positive.set(0.0);
+
+            StaticVector<Scalar, Dim> v;
+            for(int d = 0; d < Dim; ++d) {
+                auto e_val = el_strain.values[qp][d];
+                el_strain.vectors[qp].col(d, v);
+
+                auto outer_v = outer(v, v);
+
+                auto eig_p = split_positive(e_val);
+
+                positive += eig_p * outer_v;
+            }
+        }
+
+        template<class Matrix>
+        UTOPIA_INLINE_FUNCTION static void split(const Evaluation &el_strain, const SizeType &qp, Matrix &negative, Matrix &positive)
+        {
+            negative.set(0.0);
+            positive.set(0.0);
+
+            StaticVector<Scalar, Dim> v;
+
+            for(int d = 0; d < Dim; ++d) {
+                auto e_val = el_strain.values[qp][d];
+                el_strain.vectors[qp].col(d, v);
+
+                auto outer_v = outer(v, v);
+
+                auto eig_p = split_positive(e_val);
+                auto eig_n = split_negative(e_val);
+
+                negative += eig_n * outer_v;
+                positive += eig_p * outer_v;
+            }
+        }
+
         template<class Values, class Vectors>
         UTOPIA_INLINE_FUNCTION void get(
             const Elem &elem,
@@ -58,7 +98,17 @@ namespace utopia {
             }
         }
 
+    private:
+
         GradInterpolateView grad_;
+
+        UTOPIA_INLINE_FUNCTION static constexpr Scalar split_positive(const Scalar &x) {
+            return (device::abs(x) + x)/2;
+        }
+
+        UTOPIA_INLINE_FUNCTION static constexpr Scalar split_negative(const Scalar &x) {
+            return (device::abs(x) - x)/2;
+        }
     };
 
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>

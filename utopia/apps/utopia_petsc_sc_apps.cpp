@@ -23,6 +23,7 @@
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
+#include "utopia_SampleView.hpp"
 
 #include <cmath>
 
@@ -836,7 +837,7 @@ namespace utopia {
 
         stats.start();
 
-        LinearElasticity<FunctionSpace, Quadrature> elast(space, quadrature);
+        LinearElasticity<FunctionSpace, Quadrature> elast(space, quadrature, 80.0, 120.0);
         MassMatrix<FunctionSpace, Quadrature> mass_matrix(space, quadrature);
 
         {
@@ -919,9 +920,9 @@ namespace utopia {
 
         stats.stop_and_collect("solve");
 
-        stats.start();
-        compute_strain_energy_splitting(space, x);
-        stats.stop_and_collect("splitting");
+        // stats.start();
+        // compute_strain_energy_splitting(space, x);
+        // stats.stop_and_collect("splitting");
 
 
         stats.start();
@@ -951,9 +952,9 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 20;
-        SizeType ny = scale * 20;
-        SizeType nz = scale * 20;
+        SizeType nx = scale * 1;
+        SizeType ny = scale * 1;
+        SizeType nz = scale * 1;
 
         FunctionSpace space;
 
@@ -964,7 +965,7 @@ namespace utopia {
             {1.0, 1.0, 1.0}
         );
 
-        linear_elasticity(space, false, false);
+        linear_elasticity(space, false, true);
 
     }
 
@@ -1006,7 +1007,7 @@ namespace utopia {
         space.create_vector(u);
         u.set(0.1);
 
-        compute_strain_energy_splitting(space, u);
+        // compute_strain_energy_splitting(space, u);
     }
 
     UTOPIA_REGISTER_APP(petsc_strain);
@@ -1090,7 +1091,74 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_fe_function);
 
 
-    static void petsc_phase_field()
+
+    static void petsc_sample()
+    {
+        static const int Dim = 2;
+        static const int NVars = 1;
+
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformQuad4;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView       = FunctionSpace::ViewDevice::Elem;
+        using SizeType       = FunctionSpace::SizeType;
+        using Scalar         = FunctionSpace::Scalar;
+        using Quadrature     = utopia::Quadrature<Elem, 2>;
+        using Dev            = FunctionSpace::Device;
+        using FEFunction     = utopia::FEFunction<FunctionSpace>;
+        using Point          = typename FunctionSpace::Point;
+
+        Comm world;
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 10;
+        SizeType ny = scale * 10;
+
+        FunctionSpace space;
+
+        space.build(
+            world,
+            {nx, ny},
+            {0.0, 0.0},
+            {1.0, 1.0}
+        );
+
+        PetscVector x;
+        space.create_vector(x);
+
+        x.set(0.0);
+
+        auto sampler = utopia::sampler(space, UTOPIA_LAMBDA(const Point &x) {
+            auto dist_x = 0.5 - x[0];
+            return device::exp(-10.0 * dist_x * dist_x);
+        });
+
+        {
+            auto space_view   = space.view_device();
+            auto x_view       = space.assembly_view_device(x);
+            auto sampler_view = sampler.view_device();
+
+            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                ElemView e;
+                space_view.elem(i, e);
+
+                StaticVector<Scalar, 4> s;
+                sampler_view.assemble(e, s);
+                space_view.set_vector(e, s, x_view);
+            });
+
+        }
+
+        rename("C", x);
+        space.write("sample.vtk", x);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_sample);
+
+
+
+    static void petsc_phase_field(Input &in)
     {
         static const int Dim = 3;
         static const int NVars = Dim + 1;
@@ -1105,13 +1173,38 @@ namespace utopia {
         using Quadrature     = utopia::Quadrature<Elem, 2>;
         using Dev            = FunctionSpace::Device;
         using FEFunction     = utopia::FEFunction<FunctionSpace>;
+        using Point          = typename FunctionSpace::Point;
 
         Comm world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
-        SizeType nz = scale * 2;
+        SizeType nx = scale * 4;
+        SizeType ny = scale * 4;
+        SizeType nz = scale * 4;
+
+        in.get("nx", nx);
+        in.get("ny", ny);
+        in.get("nz", nz);
+
+        PhaseFieldForBrittleFractures<FunctionSpace>::Parameters params;
+
+        params.length_scale = 2.0 * std::min(std::min(1./nx, 1./ny), 1./nz);
+        in.get("length-scale", params.length_scale);
+
+        params.fracture_toughness = 0.001;
+        in.get("fracture-toughness", params.fracture_toughness);
+
+        params.mu = 80.0;
+        params.lambda = 120.0;
+
+        in.get("mu", params.mu);
+        in.get("lambda", params.lambda);
+
+        Scalar disp = 1e-5;
+        in.get("disp", disp);
+
+        bool with_damage = true;
+        in.get("with-damage", with_damage);
 
         FunctionSpace space;
 
@@ -1122,14 +1215,109 @@ namespace utopia {
             {1.0, 1.0, 1.0}
         );
 
-        PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+        space.mesh().set_field_name(0, "c");
+        space.mesh().set_field_name(1, "disp_x");
+        space.mesh().set_field_name(2, "disp_y");
+        space.mesh().set_field_name(3, "disp_z");
+
+        space.emplace_dirichlet_condition(
+            SideSet::left(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return -disp;
+            },
+            1
+        );
+
+        space.emplace_dirichlet_condition(
+            SideSet::right(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return disp;
+            },
+            1
+        );
+
+        for(int d = 2; d < Dim + 1; ++d) {
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 0.0;
+                },
+                d
+            );
+        }
+
+        PhaseFieldForBrittleFractures<FunctionSpace> pp(space, params);
 
         PetscMatrix H;
         PetscVector x, g;
         Scalar f;
-        pp.assemble(x, H, g, f);
+
+        space.create_vector(x);
+
+        x.set(0.0);
+
+        auto C = space.subspace(0);
+
+        if(with_damage) {
+
+            auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) {
+                auto dist_x = 0.5 - x[0];
+                auto dist_y = x[1];
+                auto dist_z = x[2];
+                return device::exp(-500.0 * dist_x * dist_x) *
+                       device::exp(-500.0 * dist_y * dist_y) *
+                       device::exp(-500.0 * dist_z * dist_z);
+            });
+
+            {
+                auto C_view       = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view       = space.assembly_view_device(x);
+
+                Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem e;
+                    C_view.elem(i, e);
+
+                    StaticVector<Scalar, 8> s;
+                    sampler_view.assemble(e, s);
+                    C_view.set_vector(e, s, x_view);
+                });
+            }
+        }
+
+        space.apply_constraints(x);
+        // TrustRegion<PetscMatrix, PetscVector> solver;
+        Newton<PetscMatrix, PetscVector> solver(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
+        in.get("solver", solver);
+
+        pp.hessian(x, H);
+        solver.solve(pp, x);
+
+        std::string output_path = "phase_field.vtr";
+
+        in.get("output-path", output_path);
+
+        rename("X", x);
+        C.write(output_path, x);
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field);
+
+
+    static void test_splitting()
+    {
+        using Scalar = double;
+        StaticMatrix<Scalar, 3, 3> strain, stress;
+        strain.set(0.0);
+
+        strain(0, 0) = 1.0;
+        strain(1, 0) = strain(0, 1) = 0.5;
+        strain(2, 0) = strain(0, 2) = 0.5;
+
+        stress = 2 * 80.0 * strain + 120.0 * trace(strain) * (device::identity<Scalar>());
+        disp(stress);
+    }
+
+    UTOPIA_REGISTER_APP(test_splitting);
 }
 

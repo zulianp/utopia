@@ -14,19 +14,20 @@ namespace utopia {
 
     class TpetraTraits {
     public:
-        using Scalar   = utopia::TpetraScalar;
-        using SizeType = utopia::TpetraSizeType;
-        using Matrix   = utopia::TpetraMatrix;
-        using SparseMatrix = utopia::TpetraMatrix;
-        using Vector   = utopia::TpetraVector;
+        using Scalar        = utopia::TpetraScalar;
+        using SizeType      = utopia::TpetraSizeType;
+        using LocalSizeType = utopia::TpetraLocalSizeType;
+        using Matrix        = utopia::TpetraMatrix;
+        using SparseMatrix  = utopia::TpetraMatrix;
+        using Vector        = utopia::TpetraVector;
 
-        //FIXME use Kokkos compatible wrapper
-        using IndexSet    = utopia::TpetraIndexSet;
-        using IndexArray  = utopia::TpetraIndexArray;
-        using ScalarArray = utopia::TpetraScalarArray;
+        using IndexSet      = utopia::TpetraIndexSet;
+        using IndexArray    = utopia::TpetraIndexArray;
+        using ScalarArray   = utopia::TpetraScalarArray;
 
-        using Communicator = utopia::TrilinosCommunicator;
-        using Device = utopia::Device<TRILINOS>;
+        using Communicator  = utopia::TrilinosCommunicator;
+        using Node          = utopia::DefaultKokkosNode;
+        using Device        = utopia::Device<TRILINOS>;
 
         enum {
             Backend = TRILINOS

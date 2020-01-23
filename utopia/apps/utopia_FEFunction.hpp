@@ -69,19 +69,35 @@ namespace utopia {
 
         Coefficient<FunctionSpace> coefficient()
         {
-            return Coefficient<FunctionSpace>(*space_);
+            if(data_) {
+                return Coefficient<FunctionSpace>(*space_, *data_);
+            } else {
+                return Coefficient<FunctionSpace>(*space_);
+            }
         }
 
         template<class Quadrature>
         NodalInterpolate<FunctionSpace, Quadrature> value(const Quadrature &q)
         {
-            return NodalInterpolate<FunctionSpace, Quadrature>(*space_, q);
+            if(data_) {
+                NodalInterpolate<FunctionSpace, Quadrature> ret(*space_, q);
+                ret.update(*data_);
+                return ret;
+            } else {
+                return NodalInterpolate<FunctionSpace, Quadrature>(*space_, q);
+            }
         }
 
         template<class Quadrature>
         GradInterpolate<FunctionSpace, Quadrature> gradient(const Quadrature &q)
         {
-            return GradInterpolate<FunctionSpace, Quadrature>(*space_, q);
+            if(data_) {
+                GradInterpolate<FunctionSpace, Quadrature> ret(*space_, q);
+                ret.update(*data_);
+                return ret;
+            } else {
+                return GradInterpolate<FunctionSpace, Quadrature>(*space_, q);
+            }
         }
 
         // template<class Quadrature>

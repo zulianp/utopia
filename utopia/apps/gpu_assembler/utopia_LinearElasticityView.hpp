@@ -19,8 +19,8 @@ namespace utopia {
 
         using ViewDevice = AssemblerView<StaticMatrix<Scalar, NDofs, NDofs>>;
 
-        LinearElasticity(const FunctionSpace &space, const Quadrature &q)
-        : mu_(1.0), lambda_(1.0), rescaling_(1.0)
+        LinearElasticity(const FunctionSpace &space, const Quadrature &q, const Scalar &mu = 1.0, const Scalar &lambda = 1.0)
+        : mu_(mu), lambda_(lambda), rescaling_(1.0)
         {
             init(space, q);
         }

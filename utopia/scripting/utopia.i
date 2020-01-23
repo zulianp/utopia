@@ -1,6 +1,7 @@
  /* utopia.i */
  %module utopia
  %{
- #include "utopia_linear_solve_export.h"
+#include "utopia_script.hpp"
  %}
 
+#include "utopia_script.hpp"
