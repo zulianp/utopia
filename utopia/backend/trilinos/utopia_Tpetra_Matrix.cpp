@@ -19,7 +19,7 @@
 
 namespace utopia {
 
-    void TpetraMatrix::set(const GO &row, const GO &col, const Scalar &value)
+    void TpetraMatrix::set(const SizeType &row, const SizeType &col, const Scalar &value)
     {
         m_utopia_status_once(
             "> TpetraMatrix::set does what is supposed to do with respect to the edsl. "
@@ -31,7 +31,7 @@ namespace utopia {
         }
     }
 
-    void TpetraMatrix::add(const GO &row, const GO &col, const Scalar &value)
+    void TpetraMatrix::add(const SizeType &row, const SizeType &col, const Scalar &value)
     {
         m_utopia_status_once(
             "> TpetraMatrix::add does what is supposed to do with respect to the edsl. "
@@ -71,7 +71,7 @@ namespace utopia {
 
 
     //FIXME make faster version by storing view?
-    TpetraMatrix::Scalar TpetraMatrix::get(const GO &row, const GO &col) const
+    TpetraMatrix::Scalar TpetraMatrix::get(const SizeType &row, const SizeType &col) const
     {
         Teuchos::ArrayView<const LO> cols;
         Teuchos::ArrayView<const Scalar> values;
@@ -172,7 +172,7 @@ namespace utopia {
 
         // if(result.is_null()) {
 
-        // auto col_map = Teuchos::rcp(new map_type(right.size().get(1), 0, communicator(), Tpetra::LocallyReplicated));
+        // auto col_map = Teuchos::rcp(new MapType(right.size().get(1), 0, communicator(), Tpetra::LocallyReplicated));
 
         if(transpose_this) {
 
@@ -180,7 +180,7 @@ namespace utopia {
 
             UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(
-                new crs_mat_type(
+                new CrsMatrixType(
                     implementation().getDomainMap(),
                     // col_map,
                     0, Tpetra::StaticProfile));
@@ -190,7 +190,7 @@ namespace utopia {
 
             UTOPIA_REPORT_ALLOC("TpetraMatrix::multiply");
             result.mat_ = Teuchos::rcp(
-                new crs_mat_type(
+                new CrsMatrixType(
                     implementation().getRowMap(),
                     // col_map,
                     0, Tpetra::StaticProfile));
@@ -268,7 +268,7 @@ namespace utopia {
     {
         //FIXME this does not work as it should
         try {
-            Tpetra::RowMatrixTransposer<Scalar, LO, GO, NT> transposer(mat_);
+            Tpetra::RowMatrixTransposer<Scalar, LocalSizeType, SizeType, Node> transposer(mat_);
 
             auto temp = transposer.createTranspose();
 
@@ -277,7 +277,7 @@ namespace utopia {
 
             //None of this creat a valid matrix for getGlobalRowView
             //1)
-            // auto col_map = Teuchos::rcp(new map_type(size().get(0), 0, communicator(), Tpetra::LocallyReplicated));
+            // auto col_map = Teuchos::rcp(new MapType(size().get(0), 0, communicator(), Tpetra::LocallyReplicated));
             // mat.mat_->replaceColMap(col_map);
 
             //2)
@@ -342,7 +342,7 @@ namespace utopia {
     }
 
     void TpetraMatrix::crs_init(
-                  const rcp_comm_type &comm,
+                  const RCPCommType &comm,
                   std::size_t rows_local,
                   std::size_t cols_local,
                   Tpetra::global_size_t rows_global,
@@ -352,15 +352,15 @@ namespace utopia {
         //Trilinos has more distribution options than petsc and it does not require to have
         //a column operator structure as petsc
 
-        rcp_map_type row_map;
+        RCPMapType row_map;
         const int index_base = 0;
 
         if(rows_local == INVALID_INDEX) {
             //NEW SIZE
             const SizeType rows_local = utopia::decompose(comm_, rows_global);
-            row_map.reset(new map_type(rows_global, rows_local, index_base, comm));
+            row_map.reset(new MapType(rows_global, rows_local, index_base, comm));
         } else {
-            row_map.reset(new map_type(rows_global, rows_local, index_base, comm));
+            row_map.reset(new MapType(rows_global, rows_local, index_base, comm));
         }
 
         if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
@@ -369,62 +369,63 @@ namespace utopia {
             Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
         }
 
-        // auto col_map = Teuchos::rcp(new map_type(cols_global, index_base, comm, Tpetra::LocallyReplicated));
-        // mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::StaticProfile));
+        // auto col_map = Teuchos::rcp(new MapType(cols_global, index_base, comm, Tpetra::LocallyReplicated));
+        // mat_.reset(new CrsMatrixType(row_map, col_map, nnz_x_row, Tpetra::StaticProfile));
 
         UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
-        mat_.reset(new crs_mat_type(row_map, nnz_x_row, Tpetra::StaticProfile));
+        mat_.reset(new CrsMatrixType(row_map, nnz_x_row, Tpetra::StaticProfile));
         owner_ = true;
 
         init_ = std::make_shared<InitStructs>();
         if(cols_local == INVALID_INDEX) {
             //NEW SIZE
             const SizeType cols_local = utopia::decompose(comm_, cols_global);
-            init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
+            init_->domain_map.reset(new MapType(cols_global, cols_local, index_base, comm));
         } else {
-            init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
+            init_->domain_map.reset(new MapType(cols_global, cols_local, index_base, comm));
         }
 
         init_->range_map = row_map;
     }
 
-  void TpetraMatrix::crs_init(const rcp_comm_type &comm,
+  void TpetraMatrix::crs_init(
+            const RCPCommType &comm,
             std::size_t rows_local,
             std::size_t cols_local,
             Tpetra::global_size_t rows_global,
             Tpetra::global_size_t cols_global,
             const Teuchos::ArrayRCP<size_t> &rowPtr,
-            const Teuchos::ArrayRCP<LO> &cols,
+            const Teuchos::ArrayRCP<LocalSizeType> &cols,
             const Teuchos::ArrayRCP<Scalar> &values)
   {
-      rcp_map_type row_map;
-      rcp_map_type col_map;
+      RCPMapType row_map;
+      RCPMapType col_map;
       const int index_base = 0;
       if (rows_local == INVALID_INDEX) {
          assert(cols_local == INVALID_INDEX);
 
           const SizeType rows_local_auto = utopia::decompose(comm_, rows_global);
-          
-          row_map.reset(new map_type(rows_global, rows_local_auto, index_base, comm));
-          col_map.reset(new map_type(cols_global, index_base, comm));
+
+          row_map.reset(new MapType(rows_global, rows_local_auto, index_base, comm));
+          col_map.reset(new MapType(cols_global, index_base, comm));
           //~ Kokkos::View<LO*> colInds("Column Map", cols_global);
           //~ Kokkos::parallel_for(cols_global, KOKKOS_LAMBDA(size_t i) { colInds(i) = i; });
-          //~ col_map.reset(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), Kokkos::Compat::getConstArrayView(colInds), index_base, comm));
+          //~ col_map.reset(new MapType(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), Kokkos::Compat::getConstArrayView(colInds), index_base, comm));
       } else {
           // see for a distributed example https://github.com/trilinos/Trilinos/blob/master/packages/tpetra/core/example/Lesson07-Kokkos-Fill/04_tpetra.cpp
           assert(false && "Sparse distributed matrix assembly with CRS structures is not implemented yet.");
       }
 
       UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
-      mat_.reset(new crs_mat_type(row_map, col_map, rowPtr, cols, values));
+      mat_.reset(new CrsMatrixType(row_map, col_map, rowPtr, cols, values));
       owner_ = true;
 
       init_ = std::make_shared<InitStructs>();
       if(cols_local == INVALID_INDEX) {
         const SizeType cols_local_auto = utopia::decompose(comm_, cols_global);
-        init_->domain_map.reset(new map_type(cols_global, cols_local_auto, index_base, comm));
+        init_->domain_map.reset(new MapType(cols_global, cols_local_auto, index_base, comm));
       } else {
-        init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
+        init_->domain_map.reset(new MapType(cols_global, cols_local, index_base, comm));
       }
       init_->range_map = row_map;
 
@@ -432,7 +433,7 @@ namespace utopia {
   }
 
 
-    void TpetraMatrix::crs_identity(const rcp_comm_type &comm,
+    void TpetraMatrix::crs_identity(const RCPCommType &comm,
                   std::size_t rows_local,
                   std::size_t cols_local,
                   Tpetra::global_size_t rows_global,
@@ -461,7 +462,7 @@ namespace utopia {
     void TpetraMatrix::build_diag(TpetraVector &d) const
     {
         const bool is_row_min = this->size().get(0) <= this->size().get(1);
-        GO n = (is_row_min)? this->size().get(0) : this->size().get(1);
+        SizeType n = (is_row_min)? this->size().get(0) : this->size().get(1);
 
         if(d.is_null() || d.size() != n) {
             m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
@@ -503,7 +504,7 @@ namespace utopia {
 
         write_lock();
 
-        LO index = 0;
+        LocalSizeType index = 0;
 
         for(auto i = r.begin(); i < r.end(); ++i) {
             set(i, i, data[index++]);
@@ -523,7 +524,7 @@ namespace utopia {
 
         try {
             //https://people.sc.fsu.edu/~jburkardt/data/mm/mm.html
-            mat_ = Tpetra::MatrixMarket::Reader<crs_mat_type>::readSparse(is, comm);
+            mat_ = Tpetra::MatrixMarket::Reader<CrsMatrixType>::readSparse(is, comm);
         } catch(std::exception &ex) {
             is.close();
             std::cout << ex.what() << std::endl;
@@ -539,7 +540,7 @@ namespace utopia {
         if(mat_.is_null()) return false;
 
         try {
-            Tpetra::MatrixMarket::Writer<crs_mat_type>::writeSparseFile(path, mat_, "mat", "", false);
+            Tpetra::MatrixMarket::Writer<CrsMatrixType>::writeSparseFile(path, mat_, "mat", "", false);
         } catch(const std::exception &ex) {
             std::cout << ex.what() << std::endl;
             return false;
@@ -630,7 +631,7 @@ namespace utopia {
             return implementation().getRowMap()->getGlobalNumElements();
         }
     }
-    
+
     TpetraMatrix::SizeType TpetraMatrix::cols() const
     {
         if(is_null()) {
@@ -659,7 +660,7 @@ namespace utopia {
 
        return implementation().getRowMap()->getNodeNumElements();
     }
-    
+
     TpetraMatrix::SizeType TpetraMatrix::local_cols() const
     {
         if(is_null()) {
@@ -717,8 +718,8 @@ namespace utopia {
     }
 
     void TpetraMatrix::select(
-        const IndexSet &row_index, 
-        const IndexSet &col_index, 
+        const IndexSet &row_index,
+        const IndexSet &col_index,
         TpetraMatrix &result) const
     {
         assert(false && "IMPLEMENT ME");
@@ -867,7 +868,7 @@ namespace utopia {
         const TpetraVector &x,
         const Scalar &beta,
         TpetraVector &y) const
-    {   
+    {
         if(alpha == 0.0) {
             y.scale(beta);
             return;
@@ -917,7 +918,7 @@ namespace utopia {
         auto rhs_ptr = rhs.raw_type();
         owner_ = true;
            mat_.reset(
-            new crs_mat_type(rhs_ptr->getCrsGraph())
+            new CrsMatrixType(rhs_ptr->getCrsGraph())
         );
     }
 

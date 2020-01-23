@@ -86,6 +86,9 @@ namespace utopia {
     template<class Expr, class Op, int Dim>
     class DeviceTensorReduce;
 
+    template<class Left, class Right>
+    class DeviceCrossProduct;
+
     template<class View>
     using VectorView = utopia::TensorView<View, 1>;
 

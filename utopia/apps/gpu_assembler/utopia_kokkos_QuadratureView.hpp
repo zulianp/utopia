@@ -10,7 +10,7 @@ namespace utopia {
     class Quadrature<UniformQuad4<Scalar_>, 2, 2> {
     public:
         using Scalar = Scalar_;
-        using ExecutionSpace = TpetraVector::vector_type::execution_space;
+        using ExecutionSpace = TpetraVector::ExecutionSpace;
 
 
         //Host-mirror types

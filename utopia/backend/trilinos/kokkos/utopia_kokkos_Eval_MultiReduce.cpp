@@ -117,7 +117,7 @@ namespace utopia {
     class KokkosEvalMultiReduce {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
-        using ExecutionSpaceT = typename Vector::vector_type::execution_space;
+        using ExecutionSpaceT = typename Vector::ExecutionSpace;
 
         inline static void eval(
                                 const Vector &t1,
@@ -175,7 +175,7 @@ namespace utopia {
                                          Scalar &result2)
     {
 
-        using ExecutionSpaceT = typename TpetraVector::vector_type::execution_space;
+        using ExecutionSpaceT = TpetraVector::ExecutionSpace;
         using Data = decltype(v11.raw_type()->template getLocalView<ExecutionSpaceT>());
 
         const auto &comm = v11.comm();
@@ -230,7 +230,7 @@ namespace utopia {
                                                  const TpetraVector &v32,
                                                  Scalar &result3)
     {
-        using ExecutionSpaceT = typename TpetraVector::vector_type::execution_space;
+        using ExecutionSpaceT = TpetraVector::ExecutionSpace;
         using Data = decltype(v11.raw_type()->template getLocalView<ExecutionSpaceT>());
 
         const auto &comm = v11.comm();

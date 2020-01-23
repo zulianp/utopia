@@ -966,6 +966,15 @@ namespace utopia {
         bool is_cuda() const;
         bool is_root() const;
 
+        inline static PetscVector &down_cast(DistributedVector<Scalar, SizeType> &super)
+        {
+          return static_cast<PetscVector &>(super);
+        }
+
+        inline static const PetscVector &down_cast(const DistributedVector<Scalar, SizeType> &super)
+        {
+          return static_cast<const PetscVector &>(super);
+        }
     };
 
 }

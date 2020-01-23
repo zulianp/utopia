@@ -13,10 +13,10 @@ namespace utopia {
     public:
         using Scalar          = typename Traits<TpetraVector>::Scalar;
         using SizeType        = typename Traits<TpetraVector>::SizeType;
-        using ExecutionSpaceT = typename TpetraVector::vector_type::execution_space;
-        using DualViewType    = typename TpetraVector::vector_type::dual_view_type;
+        using ExecutionSpaceT = typename TpetraVector::ExecutionSpace;
+        using DualViewType    = typename TpetraVector::VectorType::dual_view_type;
         using DeviceViewType  = typename DualViewType::t_dev;
-        using LocalMapType    = typename TpetraVector::vector_type::map_type::local_map_type;
+        using LocalMapType    = typename TpetraVector::MapType::local_map_type;
 
         UTOPIA_INLINE_FUNCTION Scalar get(const SizeType &idx) const
         {
@@ -41,10 +41,10 @@ namespace utopia {
     public:
         using Scalar          = typename Traits<TpetraVector>::Scalar;
         using SizeType        = typename Traits<TpetraVector>::SizeType;
-        using ExecutionSpaceT = typename TpetraVector::vector_type::execution_space;
-        using DualViewType    = typename TpetraVector::vector_type::dual_view_type;
+        using ExecutionSpaceT = typename TpetraVector::ExecutionSpace;
+        using DualViewType    = typename TpetraVector::VectorType::dual_view_type;
         using DeviceViewType  = typename DualViewType::t_dev;
-        using LocalMapType    = typename TpetraVector::vector_type::map_type::local_map_type;
+        using LocalMapType    = typename TpetraVector::MapType::local_map_type;
 
         UTOPIA_INLINE_FUNCTION Scalar get(const SizeType &idx) const
         {
@@ -90,7 +90,7 @@ namespace utopia {
     public:
         using Scalar          = typename Traits<TpetraMatrix>::Scalar;
         using SizeType        = typename Traits<TpetraMatrix>::SizeType;
-        using CrsMatType      = typename TpetraMatrix::crs_mat_type;
+        using CrsMatType      = typename TpetraMatrix::CrsMatrixType;
         using LocalMatrixType = typename CrsMatType::local_matrix_type;
         using LocalMapType    = typename CrsMatType::map_type::local_map_type;
 

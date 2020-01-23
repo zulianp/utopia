@@ -194,6 +194,8 @@ namespace utopia {
         bool is_boundary(const SizeType &global_node_idx) const;
         SideSet::BoundaryIdType boundary_id(const SizeType &global_node_idx) const;
 
+        void set_field_name(const SizeType &nf, const std::string &name);
+
     private:
         std::unique_ptr<Impl> impl_;
     };

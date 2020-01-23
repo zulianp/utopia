@@ -47,50 +47,19 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     class Amesos2Solver<Matrix, Vector, TRILINOS>::Impl {
     public:
+        using Scalar        = typename Traits<Vector>::Scalar;
+        using SizeType      = typename Traits<Vector>::SizeType;
+        using LocalSizeType = typename Traits<Vector>::LocalSizeType;
+        using Node          = typename Traits<Vector>::Node;
 
-        //FIXME change all these typedefs by accessing inner definitions of matrix and vector
-        //example
-        using vec_impl          = Vector;
-        using multi_vector_type = typename vec_impl::multi_vector_type;
-
-        //....
-
-        typedef double ST;
-
-        typedef Tpetra::Operator<>::scalar_type SC;
-        typedef Tpetra::Operator<>::local_ordinal_type LO;
-        typedef Tpetra::Operator<>::global_ordinal_type GO;
-
-        typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-
-#ifdef  KOKKOS_ENABLE_CUDA
-        typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
-        typedef cuda_node NT;
-#elif defined  KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
-        typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
-        typedef rocm_node NT;
-#elif defined   KOKKOS_ENABLE_OPENMP
-        typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-        typedef openmp_node NT;
-#elif defined   KOKKOS_ENABLE_THREAD
-        typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
-#else
-        typedef serial_node NT;
-#endif
-
-        typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
-        typedef Tpetra::Operator<SC, LO, GO, NT> OP;
-
-        typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
-
-        typedef Amesos2::Solver<matrix_type, multi_vector_type> solver_type;
+        using MultiVectorType = typename Vector::MultiVectorType;
+        using CrsMatrixType   = typename Matrix::CrsMatrixType;
+        using SolverType      = Amesos2::Solver<CrsMatrixType, MultiVectorType>;
 
         // Members
         Teuchos::RCP<Teuchos::ParameterList> amesos_list_;
         Teuchos::RCP<Teuchos::ParameterList> utopia_list_;
-
-        Teuchos::RCP<solver_type> solver_;
-        // Teuchos::RCP<matrix_type> matrix_;
+        Teuchos::RCP<SolverType> solver_;
 
         bool keep_symbolic_factorization;
 
@@ -126,8 +95,8 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
-        using MatImplT = typename Matrix::crs_mat_type;
-        using VecImplT = typename Vector::multi_vector_type;
+        using CrsMatrixType   = typename Matrix::CrsMatrixType;
+        using MultiVectorType = typename Vector::MultiVectorType;
 
         DirectSolver<Matrix, Vector>::update(op);
 
@@ -139,7 +108,7 @@ namespace utopia {
         bool first = false;
         if(impl_->solver_.is_null()) {
             // impl_->matrix_ = raw_type(*op);
-            impl_->solver_ = Amesos2::create<MatImplT, VecImplT>(solver_type,
+            impl_->solver_ = Amesos2::create<CrsMatrixType, MultiVectorType>(solver_type,
                                                                  raw_type(*op)
                                                                  );
             first = true;
@@ -272,7 +241,7 @@ namespace utopia {
      * \return int
      */
     template <typename Matrix, typename Vector>
-    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
+    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumPreOrder(); }
 
@@ -282,7 +251,7 @@ namespace utopia {
      * \return int
      */
     template <typename Matrix, typename Vector>
-    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
+    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumSymbolicFact(); }
 
@@ -292,7 +261,7 @@ namespace utopia {
      * \return int
      */
     template <typename Matrix, typename Vector>
-    int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_numeric_fact () const {
+    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_numeric_fact () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumNumericFact(); }
 
