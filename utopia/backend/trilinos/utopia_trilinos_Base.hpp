@@ -8,9 +8,23 @@
 
 namespace utopia {
 
-    using TpetraScalar        = Tpetra::Operator<>::scalar_type;
+#ifdef UTOPIA_TPETRA_SCALAR
+    using TpetraScalar = UTOPIA_TPETRA_SCALAR;
+#else
+    using TpetraScalar = Tpetra::Operator<>::scalar_type;
+#endif
+
+#ifdef UTOPIA_TPETRA_LOCAL_SIZE_TYPE
+    using TpetraLocalSizeType = UTOPIA_TPETRA_LOCAL_SIZE_TYPE;
+#else
     using TpetraLocalSizeType = Tpetra::Operator<TpetraScalar>::local_ordinal_type;
-    using TpetraSizeType      = Tpetra::Operator<TpetraScalar, TpetraLocalSizeType>::global_ordinal_type;
+#endif
+
+#ifdef UTOPIA_TPETRA_SIZE_TYPE
+    using TpetraSizeType = UTOPIA_TPETRA_SIZE_TYPE;
+#else
+    using TpetraSizeType = Tpetra::Operator<TpetraScalar, TpetraLocalSizeType>::global_ordinal_type;
+#endif
 
     //FIXME use Kokkos compatible wrapper
     using TpetraIndexSet      = std::vector<TpetraSizeType>;

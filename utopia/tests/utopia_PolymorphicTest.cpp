@@ -8,11 +8,12 @@
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
+#ifdef WITH_PETSC
+
     class PolymorphicTest final {
     public:
-        using Scalar   = typename Traits<Matrix>::Scalar;
-        using SizeType = typename Traits<Matrix>::SizeType;
+        using Scalar   = typename Traits<PetscVector>::Scalar;
+        using SizeType = typename Traits<PetscVector>::SizeType;
 
         //base classes
         // using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
@@ -28,6 +29,11 @@ namespace utopia {
             // mat->multiply(*vec, *result);
 
             std::shared_ptr<AbstractVector> v = std::make_shared<Wrapper<PetscVector>>( local_values(n, 2.0) );
+#ifdef WITH_TRILINOS
+#ifdef UTOPIA_TPETRA_SIZE_TYPE
+            v = std::make_shared<Wrapper<TpetraVector>>( local_values(n, 2.0) );
+#endif //UTOPIA_TPETRA_SIZE_TYPE
+#endif //WITH_TRILINOS
 
         }
 
@@ -39,10 +45,11 @@ namespace utopia {
 
     static void polymorphic()
     {
-#ifdef WITH_PETSC
-    PolymorphicTest<PetscMatrix, PetscVector>().run();
-#endif //WITH_PETSC
+        PolymorphicTest().run();
+
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(polymorphic);
+
+#endif //WITH_PETSC
 }
