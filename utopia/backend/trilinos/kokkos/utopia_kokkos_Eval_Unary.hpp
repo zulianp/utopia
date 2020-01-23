@@ -12,8 +12,8 @@ namespace utopia {
     public:
         inline static void eval(const Op op, Vector &vec)
         {
-            using ExecutionSpaceT = typename Vector::vector_type::execution_space;
-            using Scalar = typename Vector::Scalar;
+            using ExecutionSpaceT = typename Vector::ExecutionSpace;
+            using Scalar          = typename Vector::Scalar;
 
             auto k_res = vec.implementation().template getLocalView<ExecutionSpaceT>();
 

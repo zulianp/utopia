@@ -37,7 +37,7 @@ namespace utopia {
 
         inline static Scalar eval(const Vector &vec, const Op op, const Scalar &initial_value)
         {
-            using ExecutionSpaceT = typename Vector::vector_type::execution_space;
+            using ExecutionSpaceT = typename Vector::ExecutionSpace;
             using Scalar = typename Vector::Scalar;
             using Data = decltype(vec.raw_type()->template getLocalView<ExecutionSpaceT>());
 

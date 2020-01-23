@@ -37,7 +37,7 @@ namespace utopia {
         using StencilView = utopia::StencilView<MeshView>;
         using Dev         = Traits<TpetraVector>::Device;
         using SizeType    = Traits<TpetraVector>::SizeType;
-        using MapType     = TpetraVector::map_type;
+        using MapType     = TpetraVector::MapType;
         using GraphType   = Tpetra::FECrsGraph<SizeType, SizeType>;
         using View        = Kokkos::View<SizeType*, ExecutionSpace>;
         using DualNNZView = Kokkos::DualView<std::size_t*, ExecutionSpace>;

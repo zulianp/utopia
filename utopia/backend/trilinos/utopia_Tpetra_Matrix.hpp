@@ -10,6 +10,7 @@
 #include "utopia_Normed.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_Select.hpp"
+#include "utopia_Traits.hpp"
 
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_Communicator.hpp"
@@ -46,38 +47,20 @@ namespace utopia {
         // typedef definitions
         /////////////////////////////////////////////////////////////
 
-        using Scalar   = utopia::TpetraScalar;
-        using SizeType = utopia::TpetraSizeType;
+        using Scalar        = Traits<TpetraMatrix>::Scalar;
+        using SizeType      = Traits<TpetraMatrix>::SizeType;
+        using LocalSizeType = Traits<TpetraMatrix>::LocalSizeType;
+        using Node          = Traits<TpetraMatrix>::Node;
+        using IndexSet      = Traits<TpetraMatrix>::IndexSet;
+        using IndexArray    = Traits<TpetraMatrix>::IndexArray;
+        using ScalarArray   = Traits<TpetraMatrix>::ScalarArray;
 
-        //types of Operators
-        typedef Tpetra::Operator<>::scalar_type SC;
-        typedef Tpetra::Operator<SC>::local_ordinal_type LO;
-        typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
-
-        //types of Kokkos Parallel Nodes
-        typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-#ifdef KOKKOS_ENABLE_CUDA
-        typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
-        typedef cuda_node NT;
-#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
-        typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
-        typedef rocm_node NT;
-#elif defined KOKKOS_ENABLE_OPENMP
-        typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-        typedef openmp_node NT;
-#else
-        typedef serial_node NT;
-#endif
         //types of Trilinos Objects
-        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>             crs_mat_type;
-        typedef Teuchos::RCP<crs_mat_type>                    rcp_crs_mat_type;
-        typedef Teuchos::RCP<const Teuchos::Comm<int> >       rcp_comm_type;
-        typedef Tpetra::Map<LO, GO, NT>                       map_type;
-        typedef Teuchos::RCP<const map_type>                  rcp_map_type;
-
-        using IndexSet    = Traits<TpetraMatrix>::IndexSet;
-        using IndexArray  = Traits<TpetraMatrix>::IndexArray;
-        using ScalarArray = Traits<TpetraMatrix>::ScalarArray;
+        using CrsMatrixType    = Tpetra::CrsMatrix<Scalar, LocalSizeType, SizeType, Node>;
+        using RCPCrsMatrixType = Teuchos::RCP<CrsMatrixType>;
+        using RCPCommType      = Teuchos::RCP<const Teuchos::Comm<int> >;
+        using MapType          = Tpetra::Map<LocalSizeType, SizeType, Node>;
+        using RCPMapType       = Teuchos::RCP<const MapType>;
 
         /////////////////////////////////////////////////////////////
         //Constructors
@@ -88,7 +71,7 @@ namespace utopia {
 
         //deep copy
         //     template <class Node2>
-        // rcp_crs_mat_type  clone (
+        // RCPCrsMatrixType  clone (
         //   const Teuchos::RCP<Node2> & node2,
         //   const Teuchos::RCP<Teuchos::ParameterList> & params = Teuchos::null)
         // {
@@ -107,7 +90,7 @@ namespace utopia {
         : mat_(std::move(other.mat_)), owner_(std::move(other.owner_))
         {}
 
-        TpetraMatrix(const rcp_crs_mat_type &mat, const bool owner = false)
+        TpetraMatrix(const RCPCrsMatrixType &mat, const bool owner = false)
         : mat_(mat), owner_(owner)
         {}
 
@@ -325,17 +308,17 @@ namespace utopia {
         //     mat_->fillComplete();
         // }
 
-        // void replaceGlobalValues (const GO globalRow, const LO numEnt, const SC vals[], const GO cols[])
+        // void replaceGlobalValues (const SizeType globalRow, const LocalSizeType numEnt, const SC vals[], const SizeType cols[])
         // {
         //     mat_->replaceGlobalValues(globalRow, numEnt, vals, cols);
         // }
 
-        // void replaceLocalValues (const LO localRow, const LO numEnt,  const SC vals[], const LO cols[] )
+        // void replaceLocalValues (const LocalSizeType localRow, const LocalSizeType numEnt,  const SC vals[], const LocalSizeType cols[] )
         // {
         //     mat_->replaceLocalValues(localRow, numEnt, vals, cols);
         // }
 
-        rcp_comm_type communicator() const
+        RCPCommType communicator() const
         {
             return implementation().getMap()->getComm();
         }
@@ -346,23 +329,23 @@ namespace utopia {
         }
 
         //API functions
-        void crs_init(const rcp_comm_type &comm,
+        void crs_init(const RCPCommType &comm,
                       std::size_t rows_local,
                       std::size_t cols_local,
                       Tpetra::global_size_t rows_global,
                       Tpetra::global_size_t cols_global,
                       std::size_t nnz_x_row);
 
-        void crs_init(const rcp_comm_type &comm,
+        void crs_init(const RCPCommType &comm,
                       std::size_t rows_local,
                       std::size_t cols_local,
                       Tpetra::global_size_t rows_global,
                       Tpetra::global_size_t cols_global,
                       const Teuchos::ArrayRCP<size_t> &rowPtr,
-                      const Teuchos::ArrayRCP<LO> &cols,
+                      const Teuchos::ArrayRCP<LocalSizeType> &cols,
                       const Teuchos::ArrayRCP<Scalar> &values);
 
-        void crs_identity(const rcp_comm_type &comm,
+        void crs_identity(const RCPCommType &comm,
                       std::size_t rows_local,
                       std::size_t cols_local,
                       Tpetra::global_size_t rows_global,
@@ -486,35 +469,35 @@ namespace utopia {
 
 
 
-        inline rcp_crs_mat_type &raw_type()
+        inline RCPCrsMatrixType &raw_type()
         {
            return implementation_ptr();
         }
 
-        inline const rcp_crs_mat_type &raw_type() const
+        inline const RCPCrsMatrixType &raw_type() const
         {
            return implementation_ptr();
         }
 
 
-        inline crs_mat_type &implementation()
+        inline CrsMatrixType &implementation()
         {
             assert(!mat_.is_null());
             return *mat_;
         }
 
-        inline const crs_mat_type &implementation() const
+        inline const CrsMatrixType &implementation() const
         {
             assert(!mat_.is_null());
             return *mat_;
         }
 
-        inline rcp_crs_mat_type &implementation_ptr()
+        inline RCPCrsMatrixType &implementation_ptr()
         {
             return mat_;
         }
 
-        inline const rcp_crs_mat_type &implementation_ptr() const
+        inline const RCPCrsMatrixType &implementation_ptr() const
         {
             assert(!mat_.is_null());
             return mat_;
@@ -544,8 +527,8 @@ namespace utopia {
 
 
         void set_domain_and_range(
-            const rcp_map_type &domain_map,
-            const rcp_map_type &range_map
+            const RCPMapType &domain_map,
+            const RCPMapType &range_map
             )
         {
             init_ = std::make_shared<InitStructs>();
@@ -613,12 +596,12 @@ namespace utopia {
 
     private:
         TrilinosCommunicator comm_;
-        rcp_crs_mat_type  mat_;
+        RCPCrsMatrixType  mat_;
         bool              owner_;
 
         typedef struct {
-            rcp_map_type domain_map;
-            rcp_map_type range_map;
+            RCPMapType domain_map;
+            RCPMapType range_map;
         } InitStructs;
 
         std::shared_ptr<InitStructs> init_;
