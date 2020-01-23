@@ -70,7 +70,6 @@ namespace utopia {
             return instance().new_vector_impl(backend);
         }
 
-
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         template<class Matrix>
@@ -126,7 +125,7 @@ namespace utopia {
         std::unique_ptr<AbstractVector> new_vector_impl(const BackendType &backend)
         {
             if(vector_factory_.empty()) {
-                std::cerr << "AlgebraFactory::new_vector(): no backend have registered to factory" << std::endl;
+                std::cerr << "AlgebraFactory::new_vector(): no backend has registered to factory" << std::endl;
                 return nullptr;
             }
 
@@ -157,7 +156,7 @@ namespace utopia {
         std::unique_ptr<AbstractMatrix> new_matrix_impl(const BackendType &backend)
         {
             if(matrix_factory_.empty()) {
-                std::cerr << "AlgebraFactory::new_matrix(): no backend have registered to factory" << std::endl;
+                std::cerr << "AlgebraFactory::new_matrix(): no backend has registered to factory" << std::endl;
                 return nullptr;
             }
 
@@ -175,7 +174,6 @@ namespace utopia {
         }
     };
 }
-
 
 #define UTOPIA_DEFINE_FACTORY_VAR(macro_in) dummy_factory_variable_ ## macro_in ## name
 #define UTOPIA_FACTORY_REGISTER_VECTOR(macro_Vector_) \
