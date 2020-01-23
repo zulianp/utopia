@@ -15,15 +15,16 @@ namespace scripting {
         scripting::print_info();
 
 #ifdef WITH_PETSC
-        std::cout << "registering petsc types" << std::endl;
         UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
 
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS
-        std::cout << "registering trilinos types" << std::endl;
         UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
 #endif //WITH_PETSC
+
+
+        scripting::Factory::print_info();
     }
 
     void init()

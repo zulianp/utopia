@@ -39,6 +39,16 @@ namespace utopia {
             instance().default_backend_ = backend;
         }
 
+        static void print_info()
+        {
+            const auto &self = instance();
+
+            std::cout << "Available implementations:\n";
+            for(const auto &v : self.vector_factory_) {
+                std::cout << "  - " << v.first << std::endl;
+            }
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         template<class Vector>

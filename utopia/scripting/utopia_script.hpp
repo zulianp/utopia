@@ -16,8 +16,10 @@ namespace utopia {
 }
 
 namespace scripting {
+
     using Scalar   = double;
     using SizeType = int;
+    using Factory  = utopia::AlgebraFactory<Scalar, SizeType>;
 
     void init();
     void finalize();
@@ -25,9 +27,7 @@ namespace scripting {
 
     class SparseMatrix {
     public:
-
         using MatrixImpl = utopia::AbstractMatrix<Scalar, SizeType>;
-        using Factory    = utopia::AlgebraFactory<Scalar, SizeType>;
 
         SparseMatrix();
         ~SparseMatrix();
@@ -39,7 +39,6 @@ namespace scripting {
     class Vector {
     public:
         using VectorImpl = utopia::AbstractVector<Scalar, SizeType>;
-        using Factory    = utopia::AlgebraFactory<Scalar, SizeType>;
 
         Vector();
         ~Vector();
