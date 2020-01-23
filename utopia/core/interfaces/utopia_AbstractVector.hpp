@@ -60,14 +60,14 @@ namespace utopia {
     public:
         using Scalar         = typename Traits<Vector>::Scalar;
         using SizeType       = typename Traits<Vector>::SizeType;
-        using AbstractVector = AbstractVector<
+        using AbstractVector = utopia::AbstractVector<
                                         typename Traits<Vector>::Scalar,
                                         typename Traits<Vector>::SizeType
                                         >;
 
         template<class... Args>
         Wrapper(Args &&...args)
-        : impl_( utopia::make_unique<Vector>(std::forward<Args>(args)...))
+        : impl_(utopia::make_unique<Vector>(std::forward<Args>(args)...))
         {}
 
         template<class... Args>
