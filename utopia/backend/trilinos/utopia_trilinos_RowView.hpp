@@ -15,7 +15,7 @@ namespace utopia {
         using SizeType = typename Traits<Tensor>::SizeType;
         using Scalar   = typename Traits<Tensor>::Scalar;
 
-        using MapPtrT = typename Tensor::rcp_map_type;
+        using RCPMapType = typename Tensor::RCPMapType;
 
         inline RowView(const Tensor &t, const SizeType row, const bool force_local_view = true)
         : t_(t), offset_(0)
@@ -56,7 +56,7 @@ namespace utopia {
         SizeType offset_;
         Teuchos::ArrayView<const SizeType> cols_;
         Teuchos::ArrayView<const Scalar> values_;
-        MapPtrT col_map_;
+        RCPMapType col_map_;
     };
 }
 

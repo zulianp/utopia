@@ -1030,6 +1030,12 @@ namespace utopia {
         return PetscDMImpl<Dim>::n_components(impl_->dm);
     }
 
+    template<int Dim>
+    void PetscDM<Dim>::set_field_name(const SizeType &nf, const std::string &name)
+    {
+        DMDASetFieldName(impl_->dm, nf, name.c_str());
+    }
+
 }
 
 #endif //UTOPIA_PETSC_DM_IMPL_HPP

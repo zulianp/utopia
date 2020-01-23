@@ -439,7 +439,9 @@ namespace utopia {
 
                 for(decltype(n) i = 0; i < n; ++i) {
                     for(decltype(n) j = i+1; j < n; ++j) {
-                        mat(i, j) = 0.5 * (mat(i, j) + mat(j, i));
+                        auto v = 0.5 * (mat(i, j) + mat(j, i));
+                        mat(i, j) = v;
+                        mat(j, i) = v;
                     }
                 }
             }
@@ -449,6 +451,33 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void symmetrize(Matrix &mat)
         {
             Symmetrize<Matrix>::apply(mat);
+        }
+
+        template<class Matrix>
+        class IsDiagonal {
+        public:
+            template<class Scalar>
+            UTOPIA_INLINE_FUNCTION static bool apply(const Matrix &mat, const Scalar &tol)
+            {
+                auto n = extent(mat, 0);
+                UTOPIA_DEVICE_ASSERT(n == extent(mat, 1));
+
+                for(decltype(n) i = 0; i < n; ++i) {
+                    for(decltype(n) j = 0; j < n; ++j) {
+                        if(device::abs(mat(i, j)) > tol && i != j) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        };
+
+        template<class Matrix, class Scalar>
+        UTOPIA_INLINE_FUNCTION bool is_diagonal(const Matrix &mat, const Scalar &tol)
+        {
+            return IsDiagonal<Matrix>::apply(mat, tol);
         }
     }
 

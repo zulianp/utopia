@@ -1,15 +1,30 @@
 #include "utopia_script.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_Version.hpp"
+#include "utopia.hpp"
+#include "utopia_ObjectFactory.hpp"
 
 #include <iostream>
 
-namespace algebra {
+namespace scripting {
 
     void init(int argc, char *argv[])
     {
-        utopia::Utopia::Init(argc, argv);
-        print_info();
+        using namespace utopia;
+        Utopia::Init(argc, argv);
+        scripting::print_info();
+
+#ifdef WITH_PETSC
+        UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
+
+#endif //WITH_PETSC
+
+#ifdef WITH_TRILINOS
+        UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
+#endif //WITH_PETSC
+
+
+        scripting::Factory::print_info();
     }
 
     void init()
@@ -32,12 +47,51 @@ namespace algebra {
     }
 
     SparseMatrix::SparseMatrix()
+    : impl_(nullptr)
     {
-        std::cout << "HI" << std::endl;
+        auto mat = Factory::new_matrix();
+
+        if(!mat) {
+            std::cout << "[Error] Matrix could not be constructed" << std::endl;
+            return;
+        }
+
+        impl_ = mat.get();
+        mat.release();
     }
 
     SparseMatrix::~SparseMatrix()
     {
-        std::cout << "BYE" << std::endl;
+        delete impl_;
     }
+
+    void SparseMatrix::print_info()
+    {
+        std::cout << "SparseMatrix::print()" << std::endl;
+    }
+
+    Vector::Vector()
+    : impl_(nullptr)
+    {
+        auto vec = Factory::new_vector();
+
+        if(!vec) {
+            std::cout << "[Error] Vector could not be constructed" << std::endl;
+            return;
+        }
+
+        impl_ = vec.get();
+        vec.release();
+    }
+
+    Vector::~Vector()
+    {
+        delete impl_;
+    }
+
+    void Vector::print_info()
+    {
+        std::cout << "Vector::print()" << std::endl;
+    }
+
 }

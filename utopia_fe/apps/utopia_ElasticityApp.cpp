@@ -17,6 +17,7 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 #include "utopia_ContactStress.hpp"
+// #include "utopia_FractureFlowUtils.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
@@ -30,6 +31,7 @@ namespace utopia {
 
         ElasticityAppInput(libMesh::Parallel::Communicator &comm) :
         max_it(20),
+        export_operators_(false),
         mesh_(comm),
         space_(make_ref(mesh_))
         {}
@@ -55,6 +57,7 @@ namespace utopia {
                 );
 
                 is.get("max-it", max_it);
+                is.get("export-operators", export_operators_);
 
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
@@ -88,6 +91,7 @@ namespace utopia {
         }
 
         int max_it;
+        bool export_operators_;
     private:
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<LibMeshFunctionSpace> space_;
@@ -97,7 +101,8 @@ namespace utopia {
     void ElasticityApp::run(Input &in)
     {
         ElasticityAppInput sim_in(comm());
-        in.get("elasticity", sim_in);
+        // in.get("elasticity", sim_in);
+        sim_in.read(in);
         sim_in.describe(std::cout);
 
         if(sim_in.empty()) {
@@ -116,12 +121,40 @@ namespace utopia {
         UIndexSet ghost_nodes;
         convert(dof_map.get_send_list(), ghost_nodes);
         x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
+        c = x;
 
         material.assemble_hessian_and_gradient(x, H, g);
         g *= -1.0;
         apply_boundary_conditions(dof_map, H, g);
 
-        Factorization<USparseMatrix, UVector> solver;
+        if(sim_in.export_operators_) {
+            write("H.m", H);
+            write("g.m", g);
+
+            USparseMatrix M;
+            utopia::assemble(inner(trial(V), test(V)) * dX, M);
+
+            write("M.n", M);
+        }
+
+        // Factorization<USparseMatrix, UVector> solver;
+
+        auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        auto smoother      = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
+        // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
+        // auto smoother = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+        // linear_solver->verbose(true);
+        SemiGeometricMultigrid mg(smoother, linear_solver);
+        // mg.algebraic().rtol(1e-16);
+        // mg.algebraic().atol(1e-16);
+        // mg.algebraic().max_it(400);
+        // mg.verbose(true);
+        mg.init(Vx.equation_system(), 4);
+        mg.max_it(1);
+
+        ConjugateGradient<USparseMatrix, UVector, HOMEMADE> solver;
+        solver.set_preconditioner(make_ref(mg));
+        solver.verbose(true);
 
         if(!solver.solve(H, g, c)) {
             write("H.m", H);

@@ -157,6 +157,26 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class EvalAssignToView;
 
+    template<typename Scalar, typename SizeType>
+    class DistributedMatrix;
+
+    template<typename Scalar, typename SizeType>
+    class DistributedVector;
+
+    template<class T>
+    class BLAS1Tensor;
+
+    template<class M, class V>
+    class BLAS2Matrix;
+
+    template<class M>
+    class BLAS3Matrix;
+
+    template<typename Scalar, typename SizeType>
+    class AbstractVector;
+
+    template<typename Scalar, typename SizeType>
+    class AbstractMatrix;
 }
 
 #endif //UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

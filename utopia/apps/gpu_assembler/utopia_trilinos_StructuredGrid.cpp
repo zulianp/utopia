@@ -4,7 +4,7 @@
 #include "utopia_trilinos_StructuredGrid.hpp"
 
 namespace utopia {
-    template class Mesh<UniformQuad4<double>, TrilinosCommunicator, TpetraVector::vector_type::execution_space, Uniform<>>;
+    template class Mesh<UniformQuad4<double>, TrilinosCommunicator, TpetraVector::ExecutionSpace, Uniform<>>;
 }
 
 #endif //WITH_TRILINOS

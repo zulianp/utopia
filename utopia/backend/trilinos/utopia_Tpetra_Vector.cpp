@@ -27,7 +27,7 @@ namespace utopia {
         const SizeType offset = implementation().getMap()->getMinGlobalIndex();
 
         auto map = Teuchos::rcp(
-            new map_type(
+            new MapType(
                 Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
                 index.size(),
                 0,
@@ -54,22 +54,22 @@ namespace utopia {
             assert(false && "IMPLEMENT ME");
         //     /////////////////////////////////////////////////
 
-        //     std::vector<GO> tpetra_index;
+        //     std::vector<SizeType> tpetra_index;
         //     tpetra_index.reserve(index.size());
 
         //     for(auto i : index) {
         //         tpetra_index.push_back(i);
         //     }
 
-        //     const Teuchos::ArrayView<const GO>
+        //     const Teuchos::ArrayView<const SizeType>
         //        index_view(tpetra_index);
 
-        //      auto import_map = Teuchos::rcp(new map_type(global_size, index_view, 0, comm));
+        //      auto import_map = Teuchos::rcp(new MapType(global_size, index_view, 0, comm));
 
         //     Tpetra::Import<
-        //         LO,
-        //         GO,
-        //         vector_type::node_type> importer(map, import_map);
+        //         LocalSizeType,
+        //         SizeType,
+        //         Node> importer(map, import_map);
 
         //     implementation().doImport(out.implementation(), importer, Tpetra::INSERT);
         }
@@ -168,17 +168,12 @@ namespace utopia {
 
     bool TpetraVector::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
     {
-        typedef Tpetra::Operator<>::scalar_type SC;
-        typedef Tpetra::Operator<SC>::local_ordinal_type LO;
-        typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
-
-        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>         crs_matrix_type;
+        using CrsMatrixType = Tpetra::CrsMatrix<Scalar, LocalSizeType, SizeType, Node>;
 
         try {
-            rcp_map_type map;
-            vec_ = Tpetra::MatrixMarket::Reader<crs_matrix_type>::readVectorFile(path, comm, map);
+            RCPMapType map;
+            vec_ = Tpetra::MatrixMarket::Reader<CrsMatrixType>::readVectorFile(path, comm, map);
         } catch(const std::exception &ex) {
-            // is.close();
             std::cout << ex.what() << std::endl;
             return false;
         }
@@ -187,11 +182,12 @@ namespace utopia {
     }
 
     bool TpetraVector::write(const std::string &path) const {
-        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>            crs_matrix_type;
+        using CrsMatrixType = Tpetra::CrsMatrix<Scalar, LocalSizeType, SizeType, Node>;
+
         if(vec_.is_null()) return false;
 
         try {
-            Tpetra::MatrixMarket::Writer<crs_matrix_type>::writeDenseFile(path, vec_, "vec", "");
+            Tpetra::MatrixMarket::Writer<CrsMatrixType>::writeDenseFile(path, vec_, "vec", "");
         } catch(const std::exception &ex) {
             std::cout << ex.what() << std::endl;
             return false;
@@ -238,14 +234,14 @@ namespace utopia {
     }
 
     void TpetraVector::ghosted(
-        const rcp_comm_type &comm,
-        const TpetraVector::GO &local_size,
-        const TpetraVector::GO &global_size,
+        const RCPCommType &comm,
+        const SizeType &local_size,
+        const SizeType &global_size,
         const IndexArray &ghost_index
     )
     {
-        rcp_map_type map(new map_type(global_size, local_size, 0, comm));
-        rcp_map_type ghost_map;
+        RCPMapType map(new MapType(global_size, local_size, 0, comm));
+        RCPMapType ghost_map;
 
         if(comm->getSize() != 0) {
             auto r_begin = local_size == 0 ? 0 : map->getMinGlobalIndex();
@@ -266,22 +262,22 @@ namespace utopia {
                 }
             }
 
-            const Teuchos::ArrayView<const GO>
+            const Teuchos::ArrayView<const SizeType>
                local_indices(filled_with_local);
 
-             GO local_entries = local_indices.size();
-             GO total_entries = 0;
+             SizeType local_entries = local_indices.size();
+             SizeType total_entries = 0;
 
              Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &local_entries, &total_entries);
 
-             ghost_map = Teuchos::rcp(new map_type(total_entries, local_indices, 0, comm));
+             ghost_map = Teuchos::rcp(new MapType(total_entries, local_indices, 0, comm));
 
         } else {
             ghost_map = map;
         }
 
         UTOPIA_REPORT_ALLOC("TpetraVector::ghosted");
-        ghosted_vec_ = Teuchos::rcp(new vector_type(ghost_map, 1));
+        ghosted_vec_ = Teuchos::rcp(new VectorType(ghost_map, 1));
         vec_ = ghosted_vec_->offsetViewNonConst(map, 0);
 
         assert(!vec_.is_null());
@@ -295,9 +291,9 @@ namespace utopia {
         auto ghost_map = ghosted_vec_->getMap();
 
         Tpetra::Import<
-            LO,
-            GO,
-            vector_type::node_type> importer(map, ghost_map);
+            LocalSizeType,
+            SizeType,
+            Node> importer(map, ghost_map);
 
         ghosted_vec_->doImport(*vec_, importer, Tpetra::INSERT);
     }
@@ -310,19 +306,19 @@ namespace utopia {
         auto ghost_map = ghosted_vec_->getMap();
 
         Tpetra::Export<
-            LO,
-            GO,
-            vector_type::node_type> exporter(ghost_map, map);
+            LocalSizeType,
+            SizeType,
+            Node> exporter(ghost_map, map);
 
-        //FIXME can we avoid this? 
+        //FIXME can we avoid this?
         //UTOPIA_REPORT_ALLOC(TpetraVector::export_ghosts_add)
-        Teuchos::RCP<vector_type> y(new vector_type(map, 1));
+        RCPVectorType y(new VectorType(map, 1));
 
         y->doExport(*ghosted_vec_, exporter, Tpetra::ADD);
 
-        Tpetra::Import<vector_type::local_ordinal_type,
-                        vector_type::global_ordinal_type,
-                        vector_type::node_type> importer(map, ghost_map);
+        Tpetra::Import<VectorType::local_ordinal_type,
+                        VectorType::global_ordinal_type,
+                        Node> importer(map, ghost_map);
 
          ghosted_vec_->doImport(*y, importer, Tpetra::INSERT);
     }
@@ -342,13 +338,13 @@ namespace utopia {
 
         if(other.has_ghosts()) {
             UTOPIA_REPORT_ALLOC("TpetraVector::copy");
-            ghosted_vec_ = Teuchos::rcp(new vector_type(other.ghosted_vec_->getMap(), 1));
+            ghosted_vec_ = Teuchos::rcp(new VectorType(other.ghosted_vec_->getMap(), 1));
             ghosted_vec_->assign(*other.ghosted_vec_);
             vec_ = ghosted_vec_->offsetViewNonConst(other.vec_->getMap(), 0);
         } else {
             if(vec_.is_null() || other.size() != size()) {
                 UTOPIA_REPORT_ALLOC("TpetraVector::copy");
-                vec_ = (Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)));
+                vec_ = (Teuchos::rcp(new VectorType(*other.vec_, Teuchos::Copy)));
             } else {
                 vec_->assign(other.implementation());
             }
@@ -456,7 +452,7 @@ namespace utopia {
     }
 
     void TpetraVector::values(
-        const rcp_comm_type &comm,
+        const RCPCommType &comm,
         const SizeType &n_local,
         const SizeType &n_global,
         const Scalar &val
@@ -465,11 +461,11 @@ namespace utopia {
         assert(n_local <= n_global);
         assert(n_local >= 0);
 
-        rcp_map_type map;
+        RCPMapType map;
 
         UTOPIA_REPORT_ALLOC("TpetraVector::values");
-        map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
-        vec_.reset(new vector_type(map));
+        map = Teuchos::rcp(new MapType(n_global, n_local, 0, comm));
+        vec_.reset(new VectorType(map));
         implementation().putScalar(val);
 
         assert(size() > 0);
@@ -482,11 +478,11 @@ namespace utopia {
         //NEW SIZE
         const SizeType local_s = utopia::decompose(comm_, s);
 
-        rcp_map_type map;
+        RCPMapType map;
 
         UTOPIA_REPORT_ALLOC("TpetraVector::values");
-        map = Teuchos::rcp(new map_type(s, local_s, 0, comm().get()));
-        vec_.reset(new vector_type(map));
+        map = Teuchos::rcp(new MapType(s, local_s, 0, comm().get()));
+        vec_.reset(new VectorType(map));
         implementation().putScalar(val);
 
         assert(size() > 0);
@@ -496,11 +492,11 @@ namespace utopia {
     {
         assert(s > 0);
 
-        rcp_map_type map;
+        RCPMapType map;
 
         UTOPIA_REPORT_ALLOC("TpetraVector::values");
-        map = Teuchos::rcp(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), s, 0, comm().get()));
-        vec_.reset(new vector_type(map));
+        map = Teuchos::rcp(new MapType(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), s, 0, comm().get()));
+        vec_.reset(new VectorType(map));
         implementation().putScalar(val);
 
         assert(size() > 0);

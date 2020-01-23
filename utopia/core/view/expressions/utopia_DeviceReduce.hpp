@@ -23,7 +23,7 @@ namespace utopia {
             const SizeType n = expr.size();
 
             for(SizeType i = 0; i < n; ++i) {
-                ret += DeviceOp<Scalar, Op>::apply(ret, expr(i));
+                ret = DeviceOp<Scalar, Op>::apply(ret, expr(i));
             }
 
             return ret;
@@ -45,7 +45,7 @@ namespace utopia {
 
             for(SizeType i = 0; i < rows; ++i) {
                 for(SizeType j = 0; j < cols; ++j) {
-                    ret += DeviceOp<Scalar, Op>::apply(ret, expr(i, j));
+                    ret = DeviceOp<Scalar, Op>::apply(ret, expr(i, j));
                 }
             }
 

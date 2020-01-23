@@ -41,6 +41,32 @@ namespace utopia {
         }
 
         template<class DofIndex>
+        static void dofs_local_for_var(
+            const PetscDM<Dim> &mesh,
+            const SizeType &idx,
+            const SizeType &var,
+            DofIndex &dofs
+        )
+        {
+            if(mesh.n_components() == 1) {
+                assert(var == 0);
+                assert(NComponents == 1);
+
+                assert(idx < mesh.n_elements());
+
+                NodeIndex nodes;
+                mesh.nodes_local(idx, nodes);
+                dofs = nodes;
+
+            } else {
+                assert(idx < mesh.n_elements());
+                NodeIndex nodes;
+                mesh.nodes_local(idx, nodes);
+                get_var_dofs(mesh, var, nodes, dofs);
+            }
+        }
+
+        template<class DofIndex>
         static void dofs(const PetscDM<Dim> &mesh, const SizeType &var_offset, const SizeType &idx, DofIndex &dofs)
         {
             if(mesh.n_components() == 1) {
@@ -68,17 +94,42 @@ namespace utopia {
         {
             UTOPIA_UNUSED(mesh);
 
-            assert(nodes.size() * (mesh.n_components() - var_offset) == dofs.size());
-            assert(NComponents == (mesh.n_components() - var_offset));
+            // assert(nodes.size() * (mesh.n_components() - var_offset) == dofs.size());
+            // assert(NComponents == (mesh.n_components() - var_offset));
+
+            const SizeType n_nodes = nodes.size();
+            const SizeType n_components = mesh.n_components();
+
+            SizeType j = 0;
+            for(SizeType c = 0; c < NComponents; ++c) {
+                const SizeType offset_c = c + var_offset;
+
+                for(SizeType i = 0; i < n_nodes; ++i) {
+                    dofs[j++] = nodes[i] * n_components + offset_c;
+                }
+            }
+        }
+
+        template<class DofIndex>
+        static void get_var_dofs(
+            const PetscDM<Dim> &mesh,
+            const SizeType &var,
+            const NodeIndex &nodes,
+            DofIndex &dofs)
+        {
+            UTOPIA_UNUSED(mesh);
+
+            assert(NComponents == (mesh.n_components() - var));
 
             const SizeType n_nodes = nodes.size();
 
+            const SizeType n_components = mesh.n_components();
+
             SizeType j = 0;
-            for(SizeType c = var_offset; c < NComponents; ++c) {
-                for(SizeType i = 0; i < n_nodes; ++i) {
-                    dofs[j++] = nodes[i] * NComponents + c;
-                }
+            for(SizeType i = 0; i < n_nodes; ++i) {
+                dofs[j++] = nodes[i] * n_components + var;
             }
+
         }
 
         template<class Elem, class ElementMatrix, class MatView>
@@ -147,6 +198,37 @@ namespace utopia {
             }
         }
 
+
+        template<class Elem, class ElementVector, class VecView>
+        static void set_vector(
+         const PetscDM<Dim> &mesh,
+         const SizeType &var_offset,
+         const Elem &e,
+         const ElementVector &el_vec,
+         VecView &vec)
+        {
+             if(mesh.n_components() == 1) {
+                 assert(var_offset == 0);
+                 assert(NComponents == 1);
+
+                 const SizeType n_dofs = e.nodes().size();
+                 const auto &dofs = e.nodes();
+
+                 for(SizeType i = 0; i < n_dofs; ++i) {
+                     vec.atomic_set(dofs[i], el_vec(i));
+                 }
+
+             } else {
+                 DofIndexNonConst indices;
+                 dofs(mesh, var_offset, e.idx(), indices);
+
+                 const SizeType n_dofs = indices.size();
+                 for(SizeType i = 0; i < n_dofs; ++i) {
+                     vec.atomic_set(indices[i], el_vec(i));
+                 }
+             }
+         }
+
        template<class Elem, class VectorView, class Values>
        static void local_coefficients(
            const PetscDM<Dim> &mesh,
@@ -164,6 +246,24 @@ namespace utopia {
                 values[i] = vec.get(dofs[i]);
             }
        }
+
+       template<class Elem, class VectorView, class Values>
+       static void local_coefficients_for_var(
+           const PetscDM<Dim> &mesh,
+           const Elem &e,
+           const VectorView &vec,
+           const SizeType &var,
+           Values &values)
+       {
+            DofIndexNonConst dofs;
+            dofs_local_for_var(mesh, e.idx(), var, dofs);
+            const SizeType n = dofs.size();
+
+            for(SizeType i = 0; i < n; ++i) {
+                assert(dofs[i] < mesh.n_nodes() * mesh.n_components());
+                values[i] = vec.get(dofs[i]);
+            }
+       }
     };
 
     template<class Elem_, int NComponents>
@@ -173,6 +273,7 @@ namespace utopia {
         static const std::size_t UDim = Dim;
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = MultiVariateElem<Elem_, NComponents>;
+        using Shape = Elem_;
         using MemType = typename Elem::MemType;
         using Scalar = typename Mesh::Scalar;
         using SizeType = typename Mesh::SizeType;
@@ -203,7 +304,7 @@ namespace utopia {
 
         ///shallow copy
         FunctionSpace(const FunctionSpace &other)
-        : mesh_(other.mesh_), subspace_id_(other.subspace_id_)
+        : mesh_(other.mesh_), dirichlet_bcs_(other.dirichlet_bcs_), subspace_id_(other.subspace_id_)
         {}
 
         FunctionSpace()
@@ -222,6 +323,13 @@ namespace utopia {
         PhysicalGradient<FunctionSpace, Quadrature> shape_grad(const Quadrature &q)
         {
             return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
+        }
+
+
+        template<class Quadrature>
+        Differential<FunctionSpace, Quadrature> differential(const Quadrature &q)
+        {
+            return Differential<FunctionSpace, Quadrature>(*this, q);
         }
 
         template<class... Args>
@@ -297,12 +405,12 @@ namespace utopia {
             return mesh_->local_element_range();
         }
 
-        void create_matrix(PetscMatrix &mat)
+        void create_matrix(PetscMatrix &mat) const
         {
             mesh_->create_matrix(mat);
         }
 
-        void create_vector(PetscVector &vec)
+        void create_vector(PetscVector &vec) const
         {
             mesh_->create_vector(vec);
         }
@@ -352,6 +460,15 @@ namespace utopia {
             DofMap::add_vector(*mesh_, subspace_id_, e, el_vec, vec);
         }
 
+        template<class ElementVector, class VecView>
+        void set_vector(
+            const Elem &e,
+            const ElementVector &el_vec,
+            VecView &vec) const
+        {
+            DofMap::set_vector(*mesh_, subspace_id_, e, el_vec, vec);
+        }
+
         template<class VectorView, class Values>
         void local_coefficients(
             const Elem &e,
@@ -361,7 +478,22 @@ namespace utopia {
             DofMap::local_coefficients(*mesh_, subspace_id_, e, vec, values);
         }
 
+        template<class VectorView, class Values>
+        void local_coefficients(
+            const Elem &e,
+            const VectorView &vec,
+            const SizeType &var,
+            Values &values) const
+        {
+            DofMap::local_coefficients_for_var(*mesh_, e, vec, subspace_id_ +var, values);
+        }
+
         const Mesh &mesh() const
+        {
+            return *mesh_;
+        }
+
+        Mesh &mesh()
         {
             return *mesh_;
         }

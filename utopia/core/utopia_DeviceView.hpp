@@ -33,7 +33,14 @@ namespace utopia {
 
         inline void atomic_add(const SizeType &idx, const Scalar &value) const
         {
+            //FIXME
             tensor_.c_add(idx, value);
+        }
+
+        inline void atomic_set(const SizeType &idx, const Scalar &value) const
+        {
+            //FIXME
+            tensor_.c_set(idx, value);
         }
 
         DeviceView(T &tensor, WriteMode wm = utopia::AUTO) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor, wm)) {}

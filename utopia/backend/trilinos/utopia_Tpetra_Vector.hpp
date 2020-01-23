@@ -35,7 +35,7 @@
 
 namespace utopia {
 
-    class TpetraVector : 
+    class TpetraVector :
     public DistributedVector<TpetraScalar, TpetraSizeType>,
     public Normed<TpetraScalar>,
     public Transformable<TpetraScalar>,
@@ -50,53 +50,28 @@ namespace utopia {
     {
     public:
 
-        using SizeType = utopia::TpetraSizeType;
-        using Scalar   = utopia::TpetraScalar;
+        using SizeType      = Traits<TpetraVector>::SizeType;
+        using LocalSizeType = Traits<TpetraVector>::LocalSizeType;
+        using Scalar        = Traits<TpetraVector>::Scalar;
+        using IndexSet      = Traits<TpetraVector>::IndexSet;
+        using IndexArray    = Traits<TpetraVector>::IndexArray;
+        using ScalarArray   = Traits<TpetraVector>::ScalarArray;
+        using Node          = Traits<TpetraVector>::Node;
 
-
-    typedef Tpetra::Operator<>::scalar_type SC;
-    typedef Tpetra::Operator<SC>::local_ordinal_type LO;
-    typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
-
-    //types of Kokkos Parallel Nodes
-    typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-
-#ifdef KOKKOS_ENABLE_CUDA
-    typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
-    typedef cuda_node NT;
-#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
-    typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm> rocm_node;
-    typedef rocm_node NT;
-#elif defined KOKKOS_ENABLE_OPENMP
-    typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-    typedef openmp_node NT;
-#else
-    typedef serial_node NT;
-#endif
-
-    typedef Tpetra::Operator<SC, LO, GO, NT> OP;
-
-    typedef Tpetra::Map<LO, GO, NT>                   map_type;
-    typedef Tpetra::Vector<SC, LO, GO, NT>            vector_type;
-    typedef Tpetra::MultiVector<SC, LO, GO, NT>       multi_vector_type;
-    typedef Teuchos::RCP<vector_type>                 rcpvector_type;
-    typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
-    typedef Teuchos::RCP<const map_type>              rcp_map_type;
-
-//      typedef Tpetra::Vector<>::mag_type                magnitude_type;
-    // typedef vector_type::scalar_type                  Scalar;
-
-        using IndexSet    = Traits<TpetraVector>::IndexSet;
-        using IndexArray  = Traits<TpetraVector>::IndexArray;
-        using ScalarArray = Traits<TpetraVector>::ScalarArray;
-
+        using MapType         = Tpetra::Map<LocalSizeType, SizeType, Node>;
+        using VectorType      = Tpetra::Vector<Scalar, LocalSizeType, SizeType, Node>;
+        using MultiVectorType = Tpetra::MultiVector<Scalar, LocalSizeType, SizeType, Node>;
+        using RCPVectorType   = Teuchos::RCP<VectorType>;
+        using RCPCommType     = Teuchos::RCP<const Teuchos::Comm<int> > ;
+        using RCPMapType      = Teuchos::RCP<const MapType>;
+        using ExecutionSpace  = VectorType::execution_space;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
         ////////////////////////////////////////////////////////////////////
 
         using Super         = utopia::Tensor<TpetraVector, 1>;
-        using Constructible = utopia::Constructible<Scalar, GO, 1>;
+        using Constructible = utopia::Constructible<Scalar, SizeType, 1>;
 
         using Super::Super;
 
@@ -134,12 +109,12 @@ namespace utopia {
         : vec_(std::move(other.vec_))
         { }
 
-        rcp_comm_type communicator()
+        RCPCommType communicator()
         {
             return implementation().getMap()->getComm();
         }
 
-        const rcp_comm_type communicator() const
+        const RCPCommType communicator() const
         {
             return implementation().getMap()->getComm();
         }
@@ -242,29 +217,29 @@ namespace utopia {
         //API functions
         //////////////////////////////////////////
         void values(
-            const rcp_comm_type &comm,
+            const RCPCommType &comm,
             const SizeType &n_local,
             const SizeType &n_global,
             const Scalar &value);
 
-        inline void init(const rcp_map_type &map)
+        inline void init(const RCPMapType &map)
         {
             UTOPIA_REPORT_ALLOC("TpetraVector::init");
-            vec_.reset(new vector_type(map));
+            vec_.reset(new VectorType(map));
         }
 
-        void ghosted(const TpetraVector::GO &local_size,
-                     const TpetraVector::GO &global_size,
-                     const std::vector<GO> &ghost_index
+        void ghosted(const TpetraVector::SizeType &local_size,
+                     const TpetraVector::SizeType &global_size,
+                     const std::vector<SizeType> &ghost_index
         )
         {
             ghosted(comm().get(), local_size, global_size, ghost_index);
         }
 
-        void ghosted(const rcp_comm_type &comm,
-                     const TpetraVector::GO &local_size,
-                     const TpetraVector::GO &global_size,
-                     const std::vector<GO> &ghost_index
+        void ghosted(const RCPCommType &comm,
+                     const TpetraVector::SizeType &local_size,
+                     const TpetraVector::SizeType &global_size,
+                     const std::vector<SizeType> &ghost_index
         );
 
         inline void axpy(const Scalar &alpha, const TpetraVector &x) override
@@ -307,7 +282,7 @@ namespace utopia {
             return get(i);
         }
 
-        inline LO local_index(const SizeType &i) const
+        inline LocalSizeType local_index(const SizeType &i) const
         {
             if(has_ghosts()) {
                return ghosted_vec_->getMap()->getLocalElement(i);
@@ -490,35 +465,35 @@ namespace utopia {
             KokkosEvalBinary<TpetraVector, Op>::eval(*this, op, rhs, result);
         }
 
-        inline vector_type &implementation()
+        inline VectorType &implementation()
         {
             assert(!vec_.is_null());
             return *vec_;
         }
 
-        inline const vector_type &implementation() const
+        inline const VectorType &implementation() const
         {
             assert(!vec_.is_null());
             return *vec_;
         }
 
-        inline rcpvector_type &raw_type()
+        inline RCPVectorType &raw_type()
         {
             return implementation_ptr();
         }
 
-        inline const rcpvector_type &raw_type() const
+        inline const RCPVectorType &raw_type() const
         {
             return implementation_ptr();
         }
 
-        inline rcpvector_type &implementation_ptr()
+        inline RCPVectorType &implementation_ptr()
         {
             assert(!vec_.is_null());
             return vec_;
         }
 
-        inline const rcpvector_type &implementation_ptr() const
+        inline const RCPVectorType &implementation_ptr() const
         {
             assert(!vec_.is_null());
             return vec_;
@@ -567,17 +542,17 @@ namespace utopia {
         {
             return vec_ == other.vec_;
         }
-        
+
     private:
         TrilinosCommunicator comm_;
-        rcpvector_type vec_;
-        rcpvector_type ghosted_vec_;
+        RCPVectorType vec_;
+        RCPVectorType ghosted_vec_;
 
         class View {
         public:
-            using DualViewType = vector_type::dual_view_type;
+            using DualViewType = VectorType::dual_view_type;
             using HostViewType = DualViewType::t_host;
-            using LocalMapType = vector_type::map_type::local_map_type;
+            using LocalMapType = VectorType::map_type::local_map_type;
 
             HostViewType view;
             LocalMapType map;

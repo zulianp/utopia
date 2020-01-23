@@ -899,7 +899,7 @@ namespace utopia {
     //     Mesh mesh_;
     // };
 
-    using Grid2d = utopia::Mesh<UniformQuad4<double>, TrilinosCommunicator, TpetraVector::vector_type::execution_space, Uniform<>>;
+    using Grid2d = utopia::Mesh<UniformQuad4<double>, TrilinosCommunicator, TpetraVector::ExecutionSpace, Uniform<>>;
 
     // template<>
     // class NodeAdjacencyGraph<Grid2d> {
