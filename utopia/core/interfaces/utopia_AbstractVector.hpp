@@ -24,10 +24,10 @@ namespace utopia {
     template<typename Scalar_, typename SizeType_>
     class AbstractVector
     :
-        public DistributedVector<Scalar_, SizeType_>
-    //     public Normed<Scalar_>,
+        public DistributedVector<Scalar_, SizeType_>,
+        public Normed<Scalar_>,
     //     public Transformable<Scalar_>,
-    //     public Reducible<Scalar_>,
+        public Reducible<Scalar_>
     //     public Constructible<Scalar_, SizeType_, 1>,
     //     public ElementWiseOperand<Scalar_>,
     //     public ElementWiseOperand<AbstractVector<Scalar_, SizeType_>>,
@@ -87,7 +87,7 @@ namespace utopia {
         }
 
         //locks
-        inline void read_lock()                override
+        inline void read_lock() override
         {
             impl_->read_lock();
         }
@@ -168,6 +168,36 @@ namespace utopia {
         inline const Communicator &comm() const override
         {
             return impl_->comm();
+        }
+
+        inline Scalar norm_infty() const override
+        {
+            return impl_->norm_infty();
+        }
+
+        inline Scalar norm1() const override
+        {
+            return impl_->norm1();
+        }
+
+        inline Scalar norm2() const override
+        {
+            return impl_->norm2();
+        }
+
+        inline Scalar reduce(const Plus &op) const override
+        {
+            return impl_->reduce(op);
+        }
+
+        inline Scalar reduce(const Min &op)  const override
+        {
+            return impl_->reduce(op);
+        }
+
+        inline Scalar reduce(const Max &op)  const override
+        {
+            return impl_->reduce(op);
         }
 
     private:
