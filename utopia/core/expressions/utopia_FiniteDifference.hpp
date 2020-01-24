@@ -11,8 +11,23 @@
 namespace utopia {
 
     namespace internals {
-        template<class Matrix, int FILL_TYPE = Matrix::SPARSE>
-        class HessianFD { };
+        template<class Matrix, int FILL_TYPE = Traits<Matrix>::FILL_TYPE>
+        class HessianFD {
+        public:
+            DEF_UTOPIA_SCALAR(Matrix);
+
+            template<class Fun, class Vector>
+            static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
+
+                if(H.is_sparse()) {
+                    std::cerr << ("[Warning] HessianFD not implemented for sparse matrices") << std::endl;
+                    return false;
+                } else {
+                    return HessianFD<Matrix, FillType::DENSE>::apply(fun, x, h, H);
+                }
+            }
+
+        };
 
 
         template<class Matrix>
@@ -21,8 +36,8 @@ namespace utopia {
             DEF_UTOPIA_SCALAR(Matrix);
 
             template<class Fun, class Vector>
-            void apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
-                auto n = x.size().get(0);
+            static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
+                auto n = x.size();
                 H = zeros(n, n);
                 Vector ei = zeros(n);
                 Vector ej = zeros(n);
@@ -31,8 +46,8 @@ namespace utopia {
 
                 Scalar h2 = h * h;
 
-                const Range rr = rowRange(H);
-                const Range cr = colRange(H);
+                const Range rr = row_range(H);
+                const Range cr = col_range(H);
                 const Range vr = range(x);
 
                 for (auto i = 0; i < n; ++i) {
@@ -65,6 +80,8 @@ namespace utopia {
                         }
                     }
                 }
+
+                return true;
             }
         };
 
@@ -75,14 +92,10 @@ namespace utopia {
             DEF_UTOPIA_SCALAR(Matrix);
 
             template<class Fun, class Vector>
-            void apply(Fun & /*fun*/, const Vector & /*x*/, const Scalar  /*h*/, Matrix & /*H */) {
-                assert(false); //TODO implement me
-//
-//                if(is_empty(H)) {
-//                    //....
-//                } else {
-//
-//                }
+            static bool apply(Fun & /*fun*/, const Vector & /*x*/, const Scalar  /*h*/, Matrix & /*H */) {
+                std::cerr << ("[Warning] HessianFD not implemented for sparse matrices") << std::endl;
+                return false;
+
             }
         };
     }
@@ -95,15 +108,14 @@ namespace utopia {
                 : _h(h) { }
 
         template<class Fun, class Vector, class Matrix>
-        void hessian(Fun &fun, const Vector &x, Matrix &H) {
-            internals::HessianFD<Matrix> diff;
-            diff.apply(fun, x, _h, H);
+        bool hessian(Fun &fun, const Vector &x, Matrix &H) {
+            return internals::HessianFD<Matrix>::apply(fun, x, _h, H);
         }
 
 
         template<class Fun, class Vector>
         void grad(Fun &fun, const Vector &x, Vector &g) {
-            auto n = x.size().get(0);
+            auto n = x.size();
             g = values(n, 1, 0.0);
             Vector d = zeros(n);
 

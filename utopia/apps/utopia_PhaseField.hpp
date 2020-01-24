@@ -50,7 +50,7 @@ namespace utopia {
         };
 
         PhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params = Parameters())
-        : space_(space), params_(params)
+        : space_(space), params_(params), use_dense_hessian_(false)
         {}
 
         // void assemble(
@@ -70,9 +70,18 @@ namespace utopia {
 
         // }
 
+        void use_dense_hessian(const bool val)
+        {
+            use_dense_hessian_ = val;
+        }
+
         inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
         {
-            space_.create_matrix(H);
+            if(use_dense_hessian_) {
+                H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+            } else {
+                space_.create_matrix(H);
+            }
             return true;
         }
 
@@ -156,7 +165,7 @@ namespace utopia {
 
             val = x.comm().sum(val);
 
-            disp(val);
+            // disp(val);
             return true;
         }
 
@@ -292,7 +301,11 @@ namespace utopia {
         bool hessian(const Vector &x_const, Matrix &H) const override
         {
             if(empty(H)) {
-                space_.create_matrix(H);
+                if(use_dense_hessian_) {
+                    H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+                } else {
+                    space_.create_matrix(H);
+                }
             } else {
                 H *= 0.0;
             }
@@ -700,6 +713,7 @@ namespace utopia {
     private:
         FunctionSpace space_;
         Parameters params_;
+        bool use_dense_hessian_;
     };
 
     // template<class FunctionSpace>

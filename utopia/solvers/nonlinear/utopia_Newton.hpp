@@ -49,9 +49,9 @@ namespace utopia
            using namespace utopia;
 
             if(empty(x))
-              utopia_error("utopia::Newton, initial guess is empty vector"); 
+              utopia_error("utopia::Newton, initial guess is empty vector");
 
-            init_memory(local_size(x)); 
+            init_memory(local_size(x));
 
             Matrix hessian, preconditioner;
 
@@ -84,33 +84,39 @@ namespace utopia
                 {
                   if(IterativeSolver<Matrix, Vector>* iterative_solver =  dynamic_cast<IterativeSolver<Matrix, Vector>* > (this->linear_solver_.get()))
                   {
-                    iterative_solver->atol(this->estimate_ls_atol(g_norm, it)); 
+                    iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
                   }
                   else
                   {
-                    utopia_error("utopia::Newton::you can not use inexact Newton with exact linear solver. "); 
+                    utopia_error("utopia::Newton::you can not use inexact Newton with exact linear solver. ");
                   }
                 }
 
                 if(this->has_preconditioned_solver() && fun.has_preconditioner())
                 {
                   fun.hessian(x, hessian, preconditioner);
-                  grad_neg_ = -1.0*grad_; 
+                  grad_neg_ = -1.0*grad_;
+
+                  if(!this->check_values(it, fun, x, grad_, hessian)) return false;
+
                   this->linear_solve(hessian, preconditioner, grad_neg_, step_);
-                } 
-                else 
+                }
+                else
                 {
                   fun.hessian(x, hessian);
-                  grad_neg_ = -1.0*grad_; 
+                  grad_neg_ = -1.0*grad_;
+
+                  if(!this->check_values(it, fun, x, grad_, hessian)) return false;
+
                   this->linear_solve(hessian, grad_neg_, step_);
                 }
 
-                if(ls_strategy_) 
+                if(ls_strategy_)
                 {
                   ls_strategy_->get_alpha(fun, grad_, x, step_, alpha_);
                   x += alpha_ * step_;
-                } 
-                else 
+                }
+                else
                 {
                   //update x
                   if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
@@ -131,8 +137,8 @@ namespace utopia
                 norms2(grad_, step_, g_norm, s_norm);
                 r_norm = g_norm/g0_norm;
 
-                Scalar J; 
-                fun.value(x, J); 
+                Scalar J;
+                fun.value(x, J);
 
 
                 // // print iteration status on every iteration
@@ -170,7 +176,7 @@ namespace utopia
     void init_memory(const SizeType & ls)
     {
       // init of linear solver
-      NewtonBase<Matrix, Vector>::init_memory(ls); 
+      NewtonBase<Matrix, Vector>::init_memory(ls);
 
       // init of vectors
       grad_neg_ = local_zeros(ls);
@@ -179,7 +185,7 @@ namespace utopia
 
       // init of vectors
       if(ls_strategy_)
-        ls_strategy_->init_memory(ls); 
+        ls_strategy_->init_memory(ls);
     }
 
     /**
@@ -198,7 +204,7 @@ namespace utopia
     private:
         Scalar alpha_;   /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
-        Vector grad_neg_, step_, grad_; 
+        Vector grad_neg_, step_, grad_;
     };
 
 }

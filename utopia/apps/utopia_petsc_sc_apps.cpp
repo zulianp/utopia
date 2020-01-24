@@ -1212,6 +1212,14 @@ namespace utopia {
         bool with_damage = true;
         in.get("with-damage", with_damage);
 
+        bool use_dense_hessian = false;
+        in.get("use-dense-hessian", use_dense_hessian);
+
+
+        bool with_BC = true;
+        in.get("with-BC", with_BC);
+
+
         FunctionSpace space;
 
         space.build(
@@ -1226,40 +1234,41 @@ namespace utopia {
         space.mesh().set_field_name(2, "disp_y");
         space.mesh().set_field_name(3, "disp_z");
 
-        space.emplace_dirichlet_condition(
-            SideSet::left(),
-            UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return -disp;
-            },
-            1
-        );
-
-        space.emplace_dirichlet_condition(
-            SideSet::right(),
-            UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return disp;
-            },
-            1
-        );
-
-        for(int d = 2; d < Dim + 1; ++d) {
-
+        if(with_BC) {
             space.emplace_dirichlet_condition(
                 SideSet::left(),
                 UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return 0.0;
+                    return -disp;
                 },
-                d
+                1
             );
 
             space.emplace_dirichlet_condition(
                 SideSet::right(),
                 UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return 0.0;
+                    return disp;
                 },
-                d
+                1
             );
 
+            for(int d = 2; d < Dim + 1; ++d) {
+
+                space.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                        return 0.0;
+                    },
+                    d
+                );
+
+                space.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                        return 0.0;
+                    },
+                    d
+                );
+            }
         }
 
         stats.stop_and_collect("set-up");
@@ -1267,6 +1276,7 @@ namespace utopia {
         stats.start();
 
         PhaseFieldForBrittleFractures<FunctionSpace> pp(space, params);
+        pp.use_dense_hessian(use_dense_hessian);
 
         PetscMatrix H;
         PetscVector x, g;

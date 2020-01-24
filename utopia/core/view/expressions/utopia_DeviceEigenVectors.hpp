@@ -74,7 +74,7 @@ namespace utopia {
             bool is_zero_1 = device::approxeq(e1/scale, 0.0, device::epsilon<Scalar>()*100);
             bool is_zero_2 = device::approxeq(e2/scale, 0.0, device::epsilon<Scalar>()*100);
 
-            if(is_zero_0 && is_zero_1 && is_zero_2 && mat.is_diagonal(device::epsilon<Scalar>()*100)) {
+            if((is_zero_0 && is_zero_1 && is_zero_2) || mat.is_diagonal(device::epsilon<Scalar>())) {
                 result.identity();
                 return;
             }

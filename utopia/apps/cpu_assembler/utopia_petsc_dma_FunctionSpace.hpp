@@ -510,7 +510,7 @@ namespace utopia {
 
         inline SizeType n_dofs() const
         {
-            return mesh_->n_nodes();
+            return mesh_->n_nodes() * NComponents;
         }
 
         void set_mesh(const std::shared_ptr<Mesh> &mesh)
