@@ -63,7 +63,7 @@ namespace utopia {
         {
             r = b - A * x;
 
-
+            inactive_set_ = local_values(local_size(b).get(0), 1);
             //localize gap function for correction
             g = this->get_upper_bound() - x;
             l = this->get_lower_bound() - x;
@@ -72,11 +72,11 @@ namespace utopia {
             Scalar g_i, l_i;
             Range rr = row_range(A);
             {
-
+                Write<Vector> w_a(inactive_set_);
                 ReadAndWrite<Vector> rw_c(c);
                 Read<Vector> r_r(r), r_d_inv(d_inv), r_g(g), r_l(l);
                 Read<Matrix> r_A(A);
-                Read<Matrix> r_R(R_);                
+                Read<Matrix> r_R(R_);           
 
                 SizeType n_rows = local_size(R_).get(0); 
                 //SizeType n_cols = local_size(R_).get(1); 
@@ -134,18 +134,34 @@ namespace utopia {
                             }
     
                             //std::cout <<"i:" << i << "\trow_ii:" << r_ii << std::endl;
-
-                            g_i = (g.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
-                            l_i = (l.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
-
+                            if (r_ii > 0)
+                            {
+                                g_i = (g.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+                                l_i = (l.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+                            }
+                            else if (r_ii < 0)
+                            {
+                                l_i = (g.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+                                g_i = (l.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+                            }
                             //update correction
-                            c.set(i, std::max(std::min( d_inv.get(i) * s, g_i), l_i ));
-                        }   
-
-
+                            if (d_inv.get(i) * s > g_i)
+                            {
+                                c.set(i, std::min( d_inv.get(i) * s, g_i));
+                                inactive_set_.set(i, 0.0);
+                            }
+                            else if (d_inv.get(i) * s < l_i)
+                            {
+                                c.set(i, std::max( d_inv.get(i) * s, l_i ));
+                                inactive_set_.set(i, 0.0);
+                            }
+                        }
                         //std::cout << "row_sum:" << r_sum << std::endl;
                     }
+                        
                 }
+               //disp(inactive_set_);
+
             }
 
 
@@ -159,10 +175,7 @@ namespace utopia {
             d = diag(A);
             d_inv = 1./d;
             c = local_zeros(local_size(A).get(0));
-
-            if(use_line_search_) {
-                inactive_set_ = local_zeros(local_size(c));
-            }
+            inactive_set_ = local_zeros(local_size(c));
         }
 
 
@@ -171,7 +184,6 @@ namespace utopia {
             IterativeSolver<Matrix, Vector>::update(op);
             init(*op);
         }
-
 
 
         void use_line_search(const bool val)
@@ -194,7 +206,14 @@ namespace utopia {
             use_symmetric_sweep_ = use_symmetric_sweep;
         }
 
+        const Vector& get_inactive_set()
+        {
+            return inactive_set_;
+        }
 
+
+
+        
     private:
         bool use_line_search_;
         bool use_symmetric_sweep_;

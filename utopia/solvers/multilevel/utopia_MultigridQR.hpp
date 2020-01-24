@@ -292,7 +292,17 @@ namespace utopia
             // recursive call into mg
             for(SizeType k = 0; k < this->mg_type(); k++) {
                 // presmoothing
-                smoothing(l, r, c, this->pre_smoothing_steps());
+
+                if(l == this->n_levels()-1)
+                {
+                    // do fine level smoothing
+                    smoothing_fine(l,r,c,this->pre_smoothing_steps());
+                }
+                else
+                {
+                    smoothing(l, r, c, this->pre_smoothing_steps());
+                }
+
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
 
 
@@ -312,9 +322,6 @@ namespace utopia
                 }
 
                 assert(!empty(memory.r[l-1]));
-
-
-
 
                 standard_cycle(l-1);
 
@@ -343,8 +350,14 @@ namespace utopia
                 // UTOPIA_RECORD_VALUE("c", c);
 
                 // postsmoothing
-                smoothing(l, r, c, this->post_smoothing_steps());
-
+                if( l == this-> n_levels()-1)
+                {
+                  smoothing_fine(l,r,c,this->post_smoothing_steps());
+                }
+                else
+                {
+                  smoothing(l, r, c, this->post_smoothing_steps());
+                }
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
 
 #ifndef NDEBUG
@@ -421,20 +434,33 @@ namespace utopia
          */
         inline bool smoothing(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1)
         {
-            smoothers_[l]->sweeps(5);
+            // GaussSeidel<Matrix, Vector>* GS_smoother =  dynamic_cast<GaussSeidel<Matrix, Vector>* > (smoothers_[l].get()); 
 
+            smoothers_[l]->sweeps(nu);
+            smoothers_[l]->smooth(rhs, x);
+
+            return true;
+        }
+        inline bool smoothing_fine(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1)
+        {
+            smoothers_[l]->sweeps(5);
 
             ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get()); 
             GS_smoother->set_R(R_);            
+            GS_smoother->sweeps(5);
             GS_smoother->set_box_constraints(make_box_constaints(make_ref(lb_),  make_ref(ub_)));          
             GS_smoother->smooth(rhs, x);
-
+            auto inactive_set = GS_smoother->get_inactive_set();
             // exit(0); 
+            // use active set to modify the transfer operator
+
+            // galerkin assembly for all levels
+
+            // make it semidefinite
 
             // smoothers_[l]->smooth(rhs, x);
             return true;
         }
-
         /**
          * @brief      The functions invokes coarse solve.
          *
@@ -525,7 +551,22 @@ namespace utopia
         {
           ub_ = ub; 
         }                
+        
+        virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators)
+        {
+            if(this->n_levels() <= 0){
+                this->n_levels(interpolation_operators.size() + 1);
+            }
+            else if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
+                utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
+            }
 
+            this->transfers_.clear();
+            for(auto I = interpolation_operators.begin(); I != interpolation_operators.end() ; ++I )
+                this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I));
+
+            return true;
+        }
 
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;
