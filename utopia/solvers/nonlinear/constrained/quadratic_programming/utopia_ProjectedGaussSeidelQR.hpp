@@ -49,6 +49,44 @@ namespace utopia {
             R_ = R;
         }
 
+        bool apply(const Vector &b, Vector &x) override
+        {
+            if(this->verbose())
+                this->init_solver("utopia ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
+
+            const Matrix &A = *this->get_operator();
+
+            x_old = x;
+            bool converged = false;
+            const SizeType check_s_norm_each = 1;
+
+            int iteration = 0;
+            while(!converged) {
+                if(this->has_bound()) {
+                    step(A, b, x);
+                } else {
+                    this->unconstrained_step(A, b, x);
+                }
+
+                if(iteration % check_s_norm_each == 0) {
+                    const Scalar diff = norm2(x_old - x);
+
+                    // if(this->verbose()) {
+                        PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                    // }
+
+                    converged = this->check_convergence(iteration, 1, 1, diff);
+                }
+
+                ++iteration;
+
+                if(converged) break;
+
+                x_old = x;
+            }
+            return converged;
+        }        
+
 
         void print_usage(std::ostream &os) const override
         {
@@ -63,7 +101,7 @@ namespace utopia {
         {
             r = b - A * x;
 
-            inactive_set_ = local_values(local_size(b).get(0), 1);
+            inactive_set_ = local_values(local_size(b).get(0), 1.0);
             //localize gap function for correction
             g = this->get_upper_bound() - x;
             l = this->get_lower_bound() - x;

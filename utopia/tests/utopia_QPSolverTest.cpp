@@ -206,18 +206,23 @@ namespace utopia {
             Vector upper_bound = local_values(local_size(rhs).get(0), 0);
             Vector lower_bound  = local_values(local_size(rhs).get(0), 0);
 
-            //smoother->max_it(20);
+            // smoother->max_it(20);
             //smoother->stol(1e-14);
-            //smoother->verbose(true);
+            // smoother->verbose(true);
 
             smoother->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
             smoother->set_R(R);
-            //smoother->solve(QtAQ, Qtrhs, Qtx);
-            //exit(0);
+            // smoother->verbose(true);
+            // smoother->solve(QtAQ, Qtrhs, Qtx);
+            // exit(0);
 
             // MG test starts here...
-            std::vector<std::shared_ptr <Matrix> > interpolation_operators;
-            interpolation_operators.push_back(make_ref(QtIh));
+            // std::vector<std::shared_ptr <Matrix> > interpolation_operators;
+            // interpolation_operators.push_back(make_ref(QtIh));
+
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            interpolation_operators.resize(1);
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
 
 
 
@@ -230,7 +235,6 @@ namespace utopia {
             multigrid.verbose(true);
 
 
-
             // This should be somewhere else... 
             multigrid.set_R(R); 
             multigrid.set_upper_bound(upper_bound); 
@@ -241,6 +245,7 @@ namespace utopia {
             multigrid.apply(Qtrhs, Qtx);
             x = Q * Qtx; 
 
+            write("x.m", x); 
             // disp(x);
 
         }

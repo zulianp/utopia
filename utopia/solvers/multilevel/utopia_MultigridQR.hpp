@@ -10,8 +10,8 @@
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
 #include "utopia_ProjectedGaussSeidelQR.hpp"
-
 #include "utopia_Recorder.hpp"
+#include "utopia_MatrixTruncatedTransfer.hpp"
 
 #include <ctime>
 #include <cassert>
@@ -180,7 +180,7 @@ namespace utopia
             Vector x_old = x; 
 
             std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
-            this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "r_norm" });
+            this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "||x_old - x_new||" });
 
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {r_norm, 1});
@@ -277,15 +277,18 @@ namespace utopia
             if(l == 0) {
               // UTOPIA_RECORD_VALUE("c", c);
               // UTOPIA_RECORD_VALUE("r", r);
-                if(coarse_solve(r, c)) {
-                  assert(approxeq(level(0).A() * c, r, 1e-6));
-                  // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);
-                  // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
+              coarse_solve(r, c);
+                // if(coarse_solve(r, c)) 
+                // {
+                //   assert(approxeq(level(0).A() * c, r, 1e-6));
+                //   // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);
+                //   // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
                   return true;
-                } else {
-                  assert(false);
-                  return false;
-                }
+                // } 
+                // else {
+                //   assert(false);
+                //   return false;
+                // }
             }
             ////////////////////////////////////
 
@@ -296,9 +299,9 @@ namespace utopia
                 if(l == this->n_levels()-1)
                 {
                     // do fine level smoothing
-                    smoothing_fine(l,r,c,this->pre_smoothing_steps());
+                    smoothing_fine(l,r,c,this->pre_smoothing_steps(), true);
                 }
-                else
+                else if(l > 0)
                 {
                     smoothing(l, r, c, this->pre_smoothing_steps());
                 }
@@ -352,9 +355,9 @@ namespace utopia
                 // postsmoothing
                 if( l == this-> n_levels()-1)
                 {
-                  smoothing_fine(l,r,c,this->post_smoothing_steps());
+                  smoothing_fine(l,r,c,this->post_smoothing_steps(), false);
                 }
-                else
+                else if(l > 0)
                 {
                   smoothing(l, r, c, this->post_smoothing_steps());
                 }
@@ -441,16 +444,36 @@ namespace utopia
 
             return true;
         }
-        inline bool smoothing_fine(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1)
-        {
-            smoothers_[l]->sweeps(5);
 
+        // TODO:: run only for pre-smoothing
+        inline bool smoothing_fine(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1, const bool & pre_sm = false)
+        {
+            // utopia_assert(l != this->n_levels()-1); 
+
+            smoothers_[l]->sweeps(5);
             ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get()); 
+            GS_smoother->verbose(true);
             GS_smoother->set_R(R_);            
             GS_smoother->sweeps(5);
             GS_smoother->set_box_constraints(make_box_constaints(make_ref(lb_),  make_ref(ub_)));          
             GS_smoother->smooth(rhs, x);
-            auto inactive_set = GS_smoother->get_inactive_set();
+            const Vector & inactive_set = GS_smoother->get_inactive_set();
+
+            // disp(inactive_set, "inactive_set");
+
+            if(pre_sm){
+              MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get()); 
+              trunc_transfer->truncate_interpolation(inactive_set); 
+              this->galerkin_assembly(this->get_operator());
+              // update();
+
+              for(std::size_t l = 1; l != smoothers_.size(); ++l) {
+                  smoothers_[l]->update(level(l).A_ptr());
+              }
+              coarse_solver_->update(level(0).A_ptr());              
+
+            }
+
             // exit(0); 
             // use active set to modify the transfer operator
 
@@ -552,21 +575,21 @@ namespace utopia
           ub_ = ub; 
         }                
         
-        virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators)
-        {
-            if(this->n_levels() <= 0){
-                this->n_levels(interpolation_operators.size() + 1);
-            }
-            else if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
-                utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
-            }
+        // virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators)
+        // {
+        //     if(this->n_levels() <= 0){
+        //         this->n_levels(interpolation_operators.size() + 1);
+        //     }
+        //     else if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
+        //         utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
+        //     }
 
-            this->transfers_.clear();
-            for(auto I = interpolation_operators.begin(); I != interpolation_operators.end() ; ++I )
-                this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I));
+        //     this->transfers_.clear();
+        //     for(auto I = interpolation_operators.begin(); I != interpolation_operators.end() ; ++I )
+        //         this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I));
 
-            return true;
-        }
+        //     return true;
+        // }
 
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;

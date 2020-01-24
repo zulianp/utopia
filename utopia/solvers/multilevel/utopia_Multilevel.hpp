@@ -23,4 +23,6 @@
 #include "utopia_IPTransfer.hpp"
 #include "utopia_MatrixTransfer.hpp"
 
+#include "utopia_MatrixTruncatedTransfer.hpp"
+
 #endif //UTOPIA_MULTILEVEL_HPP
