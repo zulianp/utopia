@@ -13,12 +13,12 @@
 namespace utopia {
 
 
-    enum InexactNewtonForcingStartegies  {  ZERO            = 0,  
+    enum InexactNewtonForcingStartegies  {  ZERO            = 0,
                                             CAI             = 1,
                                             DEMBO           = 2,
                                             SUPERLINEAR     = 3,
                                             QUADRATIC       = 4,
-                                            QUADRATIC_2     = 5 };   
+                                            QUADRATIC_2     = 5 };
 
 
     template<class Matrix, class Vector>
@@ -47,18 +47,18 @@ namespace utopia {
 
         virtual void forcing_strategy(const InexactNewtonForcingStartegies & strategy)
         {
-            forcing_strategy_ = strategy; 
+            forcing_strategy_ = strategy;
         }
 
         virtual InexactNewtonForcingStartegies forcing_strategy()
         {
-            return forcing_strategy_; 
-        }    
+            return forcing_strategy_;
+        }
 
         virtual bool has_forcing_strategy()
         {
-            return (forcing_strategy_>0) ? true : false; 
-        }    
+            return (forcing_strategy_>0) ? true : false;
+        }
 
         /**
          * @brief      Enables the differentiation control.
@@ -79,7 +79,7 @@ namespace utopia {
         {
             if (check_diff_ && !controller_.check(fun, x, gradient, hessian))
             {
-                exit_solver(iterations, norm2(gradient), ConvergenceReason::DIVERGED_INNER);
+                this->exit_solver(iterations, ConvergenceReason::DIVERGED_INNER);
                 return false;
             }
 
@@ -89,7 +89,7 @@ namespace utopia {
         virtual void read(Input &in) override
         {
             NonLinearSolver<Vector>::read(in);
-            in.get("check_diff", check_diff_);
+            in.get("check-diff", check_diff_);
 
             if(linear_solver_) {
                 in.get("linear-solver", *linear_solver_);
@@ -154,37 +154,37 @@ namespace utopia {
         {
             if(forcing_strategy_==InexactNewtonForcingStartegies::CAI)
             {
-                return 10e-4*gnorm; 
-            }   
+                return 10e-4*gnorm;
+            }
             else if(forcing_strategy_ == InexactNewtonForcingStartegies::DEMBO)
             {
-                return (gnorm * std::min(std::sqrt(gnorm), 1./(it+1))); 
+                return (gnorm * std::min(std::sqrt(gnorm), 1./(it+1)));
             }
             else if(forcing_strategy_ == InexactNewtonForcingStartegies::SUPERLINEAR)
             {
-                return (gnorm *  std::min(std::sqrt(gnorm), 0.5)); 
+                return (gnorm *  std::min(std::sqrt(gnorm), 0.5));
             }
             else if(forcing_strategy_ == InexactNewtonForcingStartegies::QUADRATIC)
             {
-                return (gnorm * std::min(gnorm, 1./(it+1))); 
-            }                        
+                return (gnorm * std::min(gnorm, 1./(it+1)));
+            }
             else if(forcing_strategy_ == InexactNewtonForcingStartegies::QUADRATIC_2)
             {
-                return (gnorm * std::min(gnorm, 0.5)); 
-            }               
+                return (gnorm * std::min(gnorm, 0.5));
+            }
             else
             {
-                utopia_error("utopia::Newton:: invalid choice of forcing strategy.... \n"); 
-                return 0.0; 
+                utopia_error("utopia::Newton:: invalid choice of forcing strategy.... \n");
+                return 0.0;
             }
 
-            return 0.0; 
+            return 0.0;
 
-        }   
+        }
 
         void init_memory(const SizeType & ls)
         {
-            linear_solver_->init_memory(ls); 
+            linear_solver_->init_memory(ls);
         }
 
 
@@ -192,7 +192,7 @@ namespace utopia {
         DiffController          controller_;
         bool                    check_diff_;        /*!< Enable differentiation control. */
 
-        InexactNewtonForcingStartegies forcing_strategy_; 
+        InexactNewtonForcingStartegies forcing_strategy_;
 
     };
 }

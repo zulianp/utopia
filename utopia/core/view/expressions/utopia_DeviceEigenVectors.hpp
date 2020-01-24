@@ -53,19 +53,36 @@ namespace utopia {
         {
             UTOPIA_DEVICE_ASSERT(!mat.is_alias(result));
 
-            bool is_zero_0 = device::approxeq(eigen_values[0], 0.0, device::epsilon<Scalar>()*100);
-            bool is_zero_1 = device::approxeq(eigen_values[1], 0.0, device::epsilon<Scalar>()*100);
-            bool is_zero_2 = device::approxeq(eigen_values[2], 0.0, device::epsilon<Scalar>()*100);
+            Scalar e0 = eigen_values[0];
+            Scalar e1 = eigen_values[1];
+            Scalar e2 = eigen_values[2];
 
-            if(is_zero_0 && is_zero_1 && is_zero_2 && mat.is_diagonal(device::epsilon<Scalar>()*100)) {
+            Scalar scale = device::max(device::max(device::abs(e0), device::abs(e1)), device::abs(e2));
+
+            if(scale < device::epsilon<Scalar>()*100) {
+                result.identity();
+                return;
+            }
+
+            // scale = 1.0;
+
+            // e0 /= scale;
+            // e1 /= scale;
+            // e2 /= scale;
+
+            bool is_zero_0 = device::approxeq(e0/scale, 0.0, device::epsilon<Scalar>()*100);
+            bool is_zero_1 = device::approxeq(e1/scale, 0.0, device::epsilon<Scalar>()*100);
+            bool is_zero_2 = device::approxeq(e2/scale, 0.0, device::epsilon<Scalar>()*100);
+
+            if((is_zero_0 && is_zero_1 && is_zero_2) || mat.is_diagonal(device::epsilon<Scalar>())) {
                 result.identity();
                 return;
             }
 
             //expressions (not evaluated)
-            auto Am0 = mat - eigen_values[0] * device::identity<Scalar>();
-            auto Am1 = mat - eigen_values[1] * device::identity<Scalar>();
-            auto Am2 = mat - eigen_values[2] * device::identity<Scalar>();
+            auto Am0 = /*(1.0/scale) */ mat - e0 * device::identity<Scalar>();
+            auto Am1 = /*(1.0/scale) */ mat - e1 * device::identity<Scalar>();
+            auto Am2 = /*(1.0/scale) */ mat - e2 * device::identity<Scalar>();
 
             const SizeType n = utopia::rows(mat);
 
@@ -96,8 +113,8 @@ namespace utopia {
             StaticVector<Scalar, 3> u, v;
 
             if(is_zero_0) {
-                UTOPIA_DEVICE_ASSERT(!is_zero_1);
-                UTOPIA_DEVICE_ASSERT(!is_zero_2);
+                UTOPIA_DEVICE_ASSERT(e1 != 0.0);
+                UTOPIA_DEVICE_ASSERT(e2 != 0.0);
 
                 result.col(1, u);
                 result.col(2, v);
@@ -107,8 +124,8 @@ namespace utopia {
             }
 
             if(is_zero_1) {
-                UTOPIA_DEVICE_ASSERT(!is_zero_0);
-                UTOPIA_DEVICE_ASSERT(!is_zero_2);
+                UTOPIA_DEVICE_ASSERT(e0 != 0.0);
+                UTOPIA_DEVICE_ASSERT(e2 != 0.0);
 
                 result.col(0, u);
                 result.col(2, v);
@@ -118,8 +135,8 @@ namespace utopia {
             }
 
             if(is_zero_2) {
-                UTOPIA_DEVICE_ASSERT(!is_zero_0);
-                UTOPIA_DEVICE_ASSERT(!is_zero_1);
+                UTOPIA_DEVICE_ASSERT(e0 != 0.0);
+                UTOPIA_DEVICE_ASSERT(e1 != 0.0);
 
                 result.col(0, u);
                 result.col(1, v);
