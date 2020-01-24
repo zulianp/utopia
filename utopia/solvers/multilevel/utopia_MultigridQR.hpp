@@ -73,7 +73,8 @@ namespace utopia
          * @param[in]  coarse_solver  The direct solver for coarse level.
          */
         MultigridQR(const std::shared_ptr<Smoother> &smoother,
-                  const std::shared_ptr<Solver>   &coarse_solver)
+                  const std::shared_ptr<Solver>   &coarse_solver, 
+                  const SizeType & num_levels)
         : smoother_cloneable_(smoother),
           coarse_solver_(coarse_solver),
           perform_galerkin_assembly_(true),
@@ -81,6 +82,9 @@ namespace utopia
           block_size_(1)
         {
             this->must_generate_masks(true);
+            this->num_levels_ = num_levels; 
+
+            smoothers_.resize(this->n_levels());   
         }
 
         ~MultigridQR(){}
@@ -139,12 +143,28 @@ namespace utopia
             smoothers_[0] = nullptr;
 
             for(std::size_t l = 1; l != smoothers_.size(); ++l) {
-                smoothers_[l] = std::shared_ptr<Smoother>(smoother_cloneable_->clone());
-                assert(smoothers_[l]);
+              if(smoothers_[l]==nullptr){
+                  smoothers_[l] = std::shared_ptr<Smoother>(smoother_cloneable_->clone());
+                  assert(smoothers_[l]);
+                  std::cout<<"UTOPIA_QR::smoothers got reseted.... \n"; 
+                }
                 smoothers_[l]->update(level(l).A_ptr());
             }
 
             coarse_solver_->update(level(0).A_ptr());
+        }
+
+        // rememebr to put level -1, as c++ indexing goes from 0
+        void set_smoother(const std::shared_ptr<Smoother> &smoother, const SizeType & level)
+        {
+          if(level > this->n_levels() || level < 1){
+            utopia_error("MultigridQR:: set_smoother, invalid level.");
+          }
+
+          if(smoothers_.size()-1 < level){
+            utopia_error("MultigridQR:: set_smoother, smoothers array was not allocated.");
+          }
+          smoothers_[level] = smoother; 
         }
 
         /**
@@ -503,7 +523,8 @@ namespace utopia
         {
            return new MultigridQR(
             std::shared_ptr<Smoother>(smoother_cloneable_->clone()),
-            std::shared_ptr<Solver>(coarse_solver_->clone())
+            std::shared_ptr<Solver>(coarse_solver_->clone()), 
+            this->n_levels()
             );
         }
 

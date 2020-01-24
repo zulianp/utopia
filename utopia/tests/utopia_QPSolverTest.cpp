@@ -163,7 +163,7 @@ namespace utopia {
             std::cout<<"----------- Ciao Hardik ------------  \n"; 
 
             Vector rhs, x;
-            Matrix A, R, Q, Ih; 
+            Matrix A, R, Q, Ih_fine, Ih0; 
 
             const std::string data_path = Utopia::instance().get("data_path");
 
@@ -172,7 +172,11 @@ namespace utopia {
             read(data_path + "/forQR/A", A);            
             read(data_path + "/forQR/Q", Q);
             read(data_path + "/forQR/R", R);
-            read(data_path + "/forQR/Ih", Ih);
+            read(data_path + "/forQR/Ih", Ih_fine);
+            read(data_path + "/forQR/I2h", Ih0);
+
+
+            auto num_levels = 3;
 
 
             // chop_abs(Q, 1e-4); 
@@ -181,7 +185,7 @@ namespace utopia {
             std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
             std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
             std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
-            std::cout<<"I: "<< local_size(Ih).get(0) << "  \n"; 
+            std::cout<<"I: "<< local_size(Ih_fine).get(0) << "  \n"; 
             std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
 
 
@@ -189,7 +193,7 @@ namespace utopia {
 
 
             Matrix QtAQ = transpose(Q)*A*Q;
-            Matrix QtIh = transpose(Q)*Ih;
+            Matrix QtIh = transpose(Q)*Ih_fine;
             Vector Qtrhs = transpose(Q)*rhs;
             Vector Qtx = transpose(Q)*x; 
 
@@ -200,7 +204,7 @@ namespace utopia {
             // Vector x = local_values(local_size(rhs).get(0), 0.0);
 
 
-            auto smoother = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
 
             Vector upper_bound = local_values(local_size(rhs).get(0), 0);
@@ -210,8 +214,8 @@ namespace utopia {
             //smoother->stol(1e-14);
             // smoother->verbose(true);
 
-            smoother->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
-            smoother->set_R(R);
+            smoother_fine->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
+            smoother_fine->set_R(R);
             // smoother->verbose(true);
             // smoother->solve(QtAQ, Qtrhs, Qtx);
             // exit(0);
@@ -221,12 +225,15 @@ namespace utopia {
             // interpolation_operators.push_back(make_ref(QtIh));
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
-            interpolation_operators.resize(1);
-            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            interpolation_operators.resize(2);
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih0));
 
 
+            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            MultigridQR<Matrix, Vector> multigrid(coarse_smoother, direct_solver, num_levels);
 
-            MultigridQR<Matrix, Vector> multigrid(smoother, direct_solver);
+            multigrid.set_smoother(smoother_fine, num_levels-1); 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.fix_semidefinite_operators(true); 
             multigrid.max_it(20);
