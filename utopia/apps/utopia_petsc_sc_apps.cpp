@@ -1237,6 +1237,15 @@ namespace utopia {
         );
 
         for(int d = 2; d < Dim + 1; ++d) {
+
+            space.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 0.0;
+                },
+                d
+            );
+
             space.emplace_dirichlet_condition(
                 SideSet::right(),
                 UTOPIA_LAMBDA(const Point &p) -> Scalar {
@@ -1244,6 +1253,7 @@ namespace utopia {
                 },
                 d
             );
+
         }
 
         PhaseFieldForBrittleFractures<FunctionSpace> pp(space, params);
@@ -1287,11 +1297,18 @@ namespace utopia {
 
         space.apply_constraints(x);
         // TrustRegion<PetscMatrix, PetscVector> solver;
-        Newton<PetscMatrix, PetscVector> solver(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
+
+        auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+        Newton<PetscMatrix, PetscVector> solver(linear_solver);
         in.get("solver", solver);
 
         pp.hessian(x, H);
-        solver.solve(pp, x);
+        pp.gradient(x, g);
+        // solver.solve(pp, x);
+
+        PetscVector r = x; r.set(0.0);
+        space.apply_constraints(r);
+        linear_solver->solve(H, r, x);
 
         std::string output_path = "phase_field.vtr";
 
@@ -1299,6 +1316,9 @@ namespace utopia {
 
         rename("X", x);
         C.write(output_path, x);
+
+        // rename("X", r);
+        // C.write(output_path, r);
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field);

@@ -67,43 +67,42 @@ namespace utopia {
 
             const Scalar p1 = a12 * a12 + a13 * a13 + a23 * a23;
 
-            if(device::approxeq(p1, 0., device::epsilon<Scalar>())) {
+            // if(device::approxeq(p1, 0., device::epsilon<Scalar>())) {
+            if(p1 == 0.) {
                 //diagonal matrix
                 result(0) = d1;
                 result(1) = d2;
                 result(2) = d3;
-                return;
-            }
-
-
-            const Scalar q = (d1 + d2 + d3)/3;
-            const Scalar d1mq = d1 - q;
-            const Scalar d2mq = d2 - q;
-            const Scalar d3mq = d3 - q;
-
-            const Scalar p2 = d1mq * d1mq + d2mq * d2mq + d3mq * d3mq + 2.0 * p1;
-            const Scalar p = device::sqrt(p2 / 6);
-
-            const Scalar r = det((1.0/p) * (m - q * device::identity<Scalar>()))/2;
-
-            Scalar cos_phi = 0.0;
-            Scalar cos_phi_shifted = 0.0;
-
-            if(r <= -1.0) {
-                cos_phi = 0.5; //cos(pi/3)
-                cos_phi_shifted = -1.; //cos(pi/3 + (2*pi/3));
-            } else if(r >= 1.0) {
-                cos_phi = 1; //cos(0)
-                cos_phi_shifted = -0.5; //cos(0 + (2*pi/3));
             } else {
-                const Scalar acos_r = device::acos(r)/3.0;
-                cos_phi = device::cos(acos_r);
-                cos_phi_shifted = device::cos(acos_r + 2.0/3.0 * device::pi<Scalar>());
-            }
+                const Scalar q = (d1 + d2 + d3)/3;
+                const Scalar d1mq = d1 - q;
+                const Scalar d2mq = d2 - q;
+                const Scalar d3mq = d3 - q;
 
-            result(0) = q + 2 * p * cos_phi;
-            result(1) = q + 2 * p * cos_phi_shifted;
-            result(2) = 3 * q - result(0) - result(1);
+                const Scalar p2 = d1mq * d1mq + d2mq * d2mq + d3mq * d3mq + 2.0 * p1;
+                const Scalar p = device::sqrt(p2 / 6);
+
+                const Scalar r = det((1.0/p) * (m - q * device::identity<Scalar>()))/2;
+
+                Scalar cos_phi = 0.0;
+                Scalar cos_phi_shifted = 0.0;
+
+                if(r <= -1.0) {
+                    cos_phi = 0.5; //cos(pi/3)
+                    cos_phi_shifted = -1.; //cos(pi/3 + (2*pi/3));
+                } else if(r >= 1.0) {
+                    cos_phi = 1; //cos(0)
+                    cos_phi_shifted = -0.5; //cos(0 + (2*pi/3));
+                } else {
+                    const Scalar acos_r = device::acos(r)/3.0;
+                    cos_phi = device::cos(acos_r);
+                    cos_phi_shifted = device::cos(acos_r + 2.0/3.0 * device::pi<Scalar>());
+                }
+
+                result(0) = q + 2 * p * cos_phi;
+                result(1) = q + 2 * p * cos_phi_shifted;
+                result(2) = 3 * q - result(0) - result(1);
+            }
 
             //sorting eigen-values
 
