@@ -54,6 +54,11 @@ namespace utopia {
             aux_get(key, val);
         }
 
+        inline void get(const std::string &key, long long &val) override
+        {
+            aux_get(key, val);
+        }
+
         inline void get(const std::string &key, unsigned long &val) override
         {
             aux_get(key, val);

@@ -14,6 +14,7 @@ namespace utopia {
         virtual void get(float &) const = 0;
         virtual void get(int &) const = 0;
         virtual void get(long &) const = 0;
+        virtual void get(long long &) const = 0;
         virtual void get(unsigned long &) const = 0;
         virtual void get(bool &) const = 0;
         virtual void get(std::string &) const = 0;
@@ -22,6 +23,7 @@ namespace utopia {
         virtual bool is_float() const { return false; }
         virtual bool is_int() const { return false; }
         virtual bool is_long() const { return false; }
+        virtual bool is_longlong() const { return false; }
         virtual bool is_ulong() const { return false; }
         virtual bool is_bool() const { return false; }
         virtual bool is_string() const { return false; }
@@ -35,6 +37,7 @@ namespace utopia {
         void get(float &) const override {}
         void get(int &) const override {}
         void get(long &) const override {}
+        void get(long long &) const override {}
         void get(unsigned long &) const override {}
         void get(bool &) const override {}
         void get(std::string &) const override {}
@@ -127,6 +130,15 @@ namespace utopia {
     };
 
     template<>
+    class Convert<std::string, long long> {
+    public:
+        static void apply(const std::string &in, long long &out)
+        {
+            out = atol(in.c_str());
+        }
+    };
+
+    template<>
     class Convert<std::string, unsigned long> {
     public:
         static void apply(const std::string &in, unsigned long &out)
@@ -159,6 +171,11 @@ namespace utopia {
         inline void get(long &in_out) const override
         {
             Convert<T, long>::apply(value_, in_out);
+        }
+
+        inline void get(long long &in_out) const override
+        {
+            Convert<T, long long>::apply(value_, in_out);
         }
 
         inline void get(unsigned long &in_out) const override
@@ -196,6 +213,11 @@ namespace utopia {
         inline void set(const long &in)
         {
             Convert<long, T>::apply(in, value_);
+        }
+
+        inline void set(const long long &in)
+        {
+            Convert<long long, T>::apply(in, value_);
         }
 
         inline void set(const unsigned long &in)
@@ -244,7 +266,8 @@ namespace utopia {
     using Float  = Convertible<float>;
     using Int    = Convertible<int>;
     using Long   = Convertible<long>;
-    using ULong   = Convertible<unsigned long>;
+    using LLong  = Convertible<long long>;
+    using ULong  = Convertible<unsigned long>;
     using Bool   = Convertible<bool>;
     using String = Convertible<std::string>;
 }

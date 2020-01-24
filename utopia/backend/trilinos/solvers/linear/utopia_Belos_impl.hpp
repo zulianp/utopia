@@ -159,10 +159,8 @@ namespace utopia {
         } else {
 #ifdef WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
-            impl_->muelu_prec_ = MueLu::CreateTpetraPreconditioner((
-                                                                Teuchos::RCP<typename Impl::OperatorType>) raw_type(precond),
-                                                               impl_->param_list->sublist("MueLu", false)
-                                                               );
+            impl_->muelu_prec_ = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<typename Impl::OperatorType>) raw_type(precond),
+                                                                    impl_->param_list->sublist("MueLu", false));
 
             assert(!impl_->muelu_prec_.is_null());
             std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
@@ -275,6 +273,7 @@ namespace utopia {
             impl_->ifpack2_prec_->initialize();
             impl_->ifpack2_prec_->compute();
             std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+            //TODO to move to input validation phase
             std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });
             if (preconditioner_type == "left") {
                 impl_->linear_problem->setLeftPrec(impl_->ifpack2_prec_);
@@ -287,9 +286,11 @@ namespace utopia {
         } else {
 #ifdef WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
-            impl_->muelu_prec_ = MueLu::CreateTpetraPreconditioner(raw_type(*this->get_operator()), impl_->param_list->sublist("MueLu", false));
+            impl_->muelu_prec_ = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<typename Impl::OperatorType>) raw_type(*this->get_operator()),
+                                                                   impl_->param_list->sublist("MueLu", false));
             assert(!impl_->muelu_prec_.is_null());
             std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+            //TODO to move to input validation phase
             std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });
             if (preconditioner_type == "left") {
                 impl_->linear_problem->setLeftPrec(impl_->muelu_prec_);

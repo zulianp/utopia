@@ -81,7 +81,7 @@ namespace utopia {
         : owner_(true)
         {
             if(!other.is_null()) {
-                mat_.reset(new crs_mat_type (other.implementation(), Teuchos::Copy));
+                mat_.reset(new CrsMatrixType (other.implementation(), Teuchos::Copy));
             }
         }
 
@@ -147,7 +147,7 @@ namespace utopia {
                 return;
             }
 
-            mat_.reset(new crs_mat_type (other.implementation(), Teuchos::Copy));
+            mat_.reset(new CrsMatrixType (other.implementation(), Teuchos::Copy));
             owner_ = true;
         }
 
