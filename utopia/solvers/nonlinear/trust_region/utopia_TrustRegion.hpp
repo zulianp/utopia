@@ -22,7 +22,7 @@
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 
          public:
-      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem):
+      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>()):
                   NonLinearSolver(tr_subproblem)
       {
 
@@ -106,15 +106,15 @@
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
           {
               if(empty(p_k)){
-                p_k = 0.0*x_k; 
+                p_k = 0.0*x_k;
               }
               else{
-                p_k.set(0.0); 
+                p_k.set(0.0);
               }
-              
+
               // UTOPIA_NO_ALLOC_BEGIN("TR:1");
               tr_subproblem->current_radius(delta);
-              g_minus_ = -1.0*g; 
+              g_minus_ = -1.0*g;
               tr_subproblem->solve(H, g_minus_, p_k);
               this->solution_status_.num_linear_solves++;
               // UTOPIA_NO_ALLOC_END();
@@ -135,10 +135,10 @@
             delta = norm2(p_k);
             delta *= 0.2;
           }
-          
+
 
           // value of the objective function with correction
-          x_k = x_k + p_k; 
+          x_k = x_k + p_k;
           fun.value(x_k, E_k1);
 
           UTOPIA_NO_ALLOC_BEGIN("TR:3");
@@ -170,16 +170,16 @@
           if(accepted)
           {
             fun.gradient(x_k, g);
-            UTOPIA_NO_ALLOC_BEGIN("TR:4"); 
+            UTOPIA_NO_ALLOC_BEGIN("TR:4");
             norms2(g, p_k, g_norm, s_norm);
             r_norm = g_norm/g0_norm;
-            E_k = E_k1; 
+            E_k = E_k1;
             UTOPIA_NO_ALLOC_END();
           }
           else
           {
-            UTOPIA_NO_ALLOC_BEGIN("TR:5"); 
-            x_k -= p_k; 
+            UTOPIA_NO_ALLOC_BEGIN("TR:5");
+            x_k -= p_k;
             s_norm = norm2(p_k);
             UTOPIA_NO_ALLOC_END();
           }
@@ -230,7 +230,7 @@
       }
 
 
-      Vector g_minus_; 
+      Vector g_minus_;
 
   };
 

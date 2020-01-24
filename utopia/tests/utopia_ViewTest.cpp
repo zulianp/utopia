@@ -28,8 +28,13 @@ namespace utopia {
             UTOPIA_RUN_TEST(view_transpose_test);
             UTOPIA_RUN_TEST(view_trace_test);
             UTOPIA_RUN_TEST(view_norm_test);
-            UTOPIA_RUN_TEST(view_eig_test);
+            UTOPIA_RUN_TEST(view_eig_2_test);
+            UTOPIA_RUN_TEST(view_eig_3_test);
             UTOPIA_RUN_TEST(view_diag_test);
+            UTOPIA_RUN_TEST(choose_type);
+            UTOPIA_RUN_TEST(size_test);
+            UTOPIA_RUN_TEST(strain_test);
+            UTOPIA_RUN_TEST(inner_test);
         }
 
         void array_view_test()
@@ -262,16 +267,47 @@ namespace utopia {
             utopia_test_assert(approxeq(2.0, n_infty));
         }
 
-        void view_eig_test()
+        void view_eig_2_test()
         {
             using V2 = utopia::StaticVector2<Scalar>;
             using Mat2x2 = utopia::StaticMatrix<Scalar, 2, 2>;
             Mat2x2 A; A.set(2.0);
+            A(0, 0) = 1;
 
             V2 e;
+            Mat2x2 v;
 
-            eig(A, e);
-            // disp(e);
+            eig(A, e, v);
+
+            //Oracle from MATLAB
+            utopia_test_assert( approxeq(e[0], -0.561552812808830, 1e-10) );
+            utopia_test_assert( approxeq(e[1],  3.561552812808830, 1e-10) );
+
+            //first vector
+            utopia_test_assert( approxeq(v(0,0),  -0.788205438016109, 1e-10) );
+            utopia_test_assert( approxeq(v(1,0),   0.615412209402636 , 1e-10) );
+
+            //second vector
+            utopia_test_assert( approxeq(v(0,1),  0.615412209402636, 1e-10) );
+            utopia_test_assert( approxeq(v(1,1),  0.788205438016109, 1e-10) );
+        }
+
+        void view_eig_3_test()
+        {
+            using V3 = utopia::StaticVector3<Scalar>;
+            using Mat3x3 = utopia::StaticMatrix<Scalar, 3, 3>;
+            Mat3x3 A; A.set(2.0);
+            A(0, 0) = 1;
+            A(2, 2) = 3;
+
+            V3 e;
+            Mat3x3 v;
+
+            eig(A, e, v);
+
+            Mat3x3 A_actual = v * diag(e) * transpose(v);
+
+            utopia_test_assert(approxeq(A, A_actual, 1e-8));
         }
 
         void view_diag_test()
@@ -285,6 +321,53 @@ namespace utopia {
             V2 expected; expected.set(2.0);
 
             utopia_test_assert(approxeq(d, expected));
+        }
+
+        void choose_type()
+        {
+            StaticMatrix<Scalar, 2, 2> A;
+
+            auto a_t = transpose(A);
+            using AT = decltype(a_t);
+
+
+            static_assert(Traits<AT>::Order == 2, "must be 2nd order tensor");
+
+            auto expr = transpose(A) + A;
+            using E = decltype(expr);
+
+            DeviceNumber<Scalar> num;
+            using T = ChooseType<DeviceNumber<Scalar>, E, E>::Type;
+
+            static_assert(Traits<T>::Order == 2, "must be 2nd order tensor");
+
+
+            auto axA = 0.5 * A;
+            using AXA = decltype(axA);
+            static_assert(Traits<AXA>::Order == 2, "must be 2nd order tensor");
+        }
+
+        void size_test()
+        {
+            StaticMatrix<Scalar, 2, 2> A;
+            rows( transpose(A) );
+            utopia_test_assert((rows( transpose(A) + A )) == 2);
+        }
+
+        void strain_test()
+        {
+            StaticMatrix<Scalar, 2, 2> A, E;
+            auto expr = 0.5 * (transpose(A) + A);
+            E = expr;
+
+            static_assert(Traits<decltype(expr)>::Order == 2, "must be 2nd order tensor");
+        }
+
+        void inner_test()
+        {
+            StaticMatrix<Scalar, 2, 2> A, E;
+            auto expr = 0.5 * (transpose(A) + A);
+            utopia_test_assert( rows(expr) == 2 );
         }
     };
 

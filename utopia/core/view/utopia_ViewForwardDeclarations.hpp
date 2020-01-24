@@ -31,6 +31,9 @@ namespace utopia {
     template<class Left, class Right>
     class DeviceMultiply;
 
+    template<class Left, class Right>
+    class DeviceOuterProduct;
+
     template<class Left, class Right, int Order>
     class DeviceDot;
 
@@ -58,8 +61,15 @@ namespace utopia {
     template<class Expr>
     class DeviceEigenValues;
 
+
+    template<class Expr>
+    class DeviceEigenVectors;
+
     template<class Expr>
     class DeviceSingularValues;
+
+    template<class T>
+    class DeviceIdentity;
 
     template<typename T, Size_t... Args>
     class ArrayView;

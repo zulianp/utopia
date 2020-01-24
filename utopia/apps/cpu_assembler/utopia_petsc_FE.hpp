@@ -36,7 +36,6 @@ namespace utopia {
             return nodes_;
         }
 
-
         inline NodeIndex &nodes()
         {
             return nodes_;
@@ -71,21 +70,34 @@ namespace utopia {
             return idx_;
         }
 
+        virtual void describe(std::ostream &os) const
+        {
+            os << "elem: " << idx_ << " [ ";
+            for(auto n : nodes_) {
+                os << n << " ";
+            }
+
+            os << "]\n";
+        }
+
     private:
         NodeIndex nodes_;
         SizeType idx_;
     };
 
-    class PetscUniformQuad4 final : public PetscElem<2> {
+    class PetscUniformQuad4 : public PetscElem<2> {
     public:
-        using Super    = utopia::PetscElem<2>;
-        using SizeType = Super::SizeType;
-        using Scalar   = Super::Scalar;
-        using Point    = Super::Point;
-        using Grad     = Super::Grad;
-        using MemType  = Uniform<>;
+        using Super     = utopia::PetscElem<2>;
+        using SizeType  = Super::SizeType;
+        using Scalar    = Super::Scalar;
+        using Point     = Super::Point;
+        using GradValue = UniformQuad4<Scalar>::GradValue;
+        using FunValue  = UniformQuad4<Scalar>::FunValue;
+        using MemType   = Uniform<>;
         static const int Dim = 2;
         static const int NNodes = 4;
+
+        virtual ~PetscUniformQuad4() {}
 
         inline Scalar fun(const SizeType &i, const Point &p) const
         {
@@ -139,8 +151,9 @@ namespace utopia {
             impl_.set(translation, h);
         }
 
-        void describe(std::ostream &os = std::cout) const
+        void describe(std::ostream &os = std::cout) const override
         {
+            Super::describe(os);
             auto &t = impl_.translation();
             os << t(0) << " " << t(1) << "\n";
         }
@@ -149,16 +162,21 @@ namespace utopia {
         UniformQuad4<Scalar> impl_;
     };
 
-    class PetscUniformHex8 final : public PetscElem<3> {
+    class PetscUniformHex8 : public PetscElem<3> {
     public:
-        using Super    = utopia::PetscElem<3>;
-        using SizeType = Super::SizeType;
-        using Scalar   = Super::Scalar;
-        using Point    = Super::Point;
-        using Grad     = Super::Grad;
-        using MemType  = Uniform<>;
+        using Super     = utopia::PetscElem<3>;
+        using SizeType  = Super::SizeType;
+        using Scalar    = Super::Scalar;
+        using Point     = Super::Point;
+        using GradValue = UniformHex8<Scalar>::GradValue;
+        using FunValue  = UniformHex8<Scalar>::FunValue;
+        using MemType   = Uniform<>;
+
+
         static const int Dim = 3;
         static const int NNodes = 8;
+
+        virtual ~PetscUniformHex8() {}
 
         inline Scalar fun(const SizeType &i, const Point &p) const
         {

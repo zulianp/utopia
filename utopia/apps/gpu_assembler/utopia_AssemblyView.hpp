@@ -27,7 +27,7 @@ namespace utopia {
             return q_.n_points();
         }
 
-        UTOPIA_INLINE_FUNCTION PhysicalPoint make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION PhysicalPoint make(const Elem &elem) const
         {
             PhysicalPoint pp(q_);
             pp.elem_ = &elem;
@@ -58,13 +58,19 @@ namespace utopia {
         const Quadrature &q_;
     };
 
-    template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
+    template<
+        class Elem,
+        class Quadrature,
+        class MemType = typename Elem::MemType,
+        typename...
+    >
     class PhysicalGradient {
     public:
         static const int Dim = Elem::Dim;
         using Scalar = typename Elem::Scalar;
-        using Point  = utopia::StaticVector<Scalar, Dim>;
-        using Grad   = utopia::StaticVector<Scalar, Dim>;
+        using Point  = typename Elem::Point;
+        using GradValue   = typename Elem::GradValue;
+
 
         UTOPIA_INLINE_FUNCTION PhysicalGradient(const Quadrature &q)
         : q_(q), elem_(nullptr)
@@ -78,9 +84,9 @@ namespace utopia {
             elem_->grad(fun_num, temp, g);
         }
 
-        UTOPIA_INLINE_FUNCTION Grad operator()(const int fun_num, const int qp_idx) const
+        UTOPIA_INLINE_FUNCTION GradValue operator()(const int fun_num, const int qp_idx) const
         {
-            Grad g;
+            GradValue g;
             get(fun_num, qp_idx, g);
             return g;
         }
@@ -92,10 +98,10 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions()
         {
-            return Elem::NNodes;
+            return Elem::NFunctions;
         }
 
-        UTOPIA_INLINE_FUNCTION PhysicalGradient make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION PhysicalGradient make(const Elem &elem) const
         {
             PhysicalGradient pp(q_);
             pp.elem_ = &elem;
@@ -138,22 +144,22 @@ namespace utopia {
     class ShapeFunction {
     public:
         static const int Dim = Elem::Dim;
-        using Scalar = typename Elem::Scalar;
-        using Point  = utopia::StaticVector<Scalar, Dim>;
-        using Grad   = utopia::StaticVector<Scalar, Dim>;
+        using Scalar   = typename Elem::Scalar;
+        using Point    = typename Elem::Point;
+        using FunValue = typename Elem::FunValue;
 
         UTOPIA_INLINE_FUNCTION ShapeFunction(const Quadrature &q)
         : q_(q), elem_(nullptr)
         {}
 
-        UTOPIA_INLINE_FUNCTION Scalar get(const int fun_num, const int qp_idx) const
+        UTOPIA_INLINE_FUNCTION FunValue get(const int fun_num, const int qp_idx) const
         {
             Point temp;
             q_.point(qp_idx, temp);
             return elem_->fun(fun_num, temp);
         }
 
-        UTOPIA_INLINE_FUNCTION Scalar operator()(const int fun_num, const int qp_idx) const
+        UTOPIA_INLINE_FUNCTION FunValue operator()(const int fun_num, const int qp_idx) const
         {
             return get(fun_num, qp_idx);
         }
@@ -165,10 +171,10 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions()
         {
-            return Elem::NNodes;
+            return Elem::NFunctions;
         }
 
-        UTOPIA_INLINE_FUNCTION ShapeFunction make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION ShapeFunction make(const Elem &elem) const
         {
             ShapeFunction pp(q_);
             pp.elem_ = &elem;
@@ -239,7 +245,7 @@ namespace utopia {
             return q_.n_points();
         }
 
-        UTOPIA_INLINE_FUNCTION Differential make(const std::size_t &, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION Differential make(const Elem &elem) const
         {
             Differential pp(q_);
             pp.elem_ = &elem;

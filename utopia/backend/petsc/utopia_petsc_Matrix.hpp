@@ -25,6 +25,7 @@
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_petsc_IndexSet.hpp"
 #include "utopia_petsc_Traits.hpp"
+#include "utopia_DynamicTypeDistributedMatrix.hpp"
 
 #include <memory>
 
@@ -128,6 +129,7 @@ namespace utopia {
         public ReducibleMatrix<PetscScalar, PetscInt>,
         public Transformable<PetscScalar>,
         // Static polymorphic types
+        // public DynamicTypeDistributedMatrix<PetscScalar, PetscInt, PetscMatrix, PetscVector>,
         public BLAS1Tensor<PetscMatrix>,
         public BLAS2Matrix<PetscMatrix, PetscVector>,
         public BLAS3Matrix<PetscMatrix>,
@@ -695,6 +697,24 @@ namespace utopia {
             check_error( MatGetValues(implementation(), 1, &row, 1, &col, &value) );
             return value;
         }
+
+        template<class Index, class Values>
+        void add_matrix(
+               const Index &rows,
+               const Index &cols,
+               const Values &values)
+            {
+                // assert(rows.size() * cols.size() == values.size());
+
+                check_error(
+                    MatSetValues(
+                       raw_type(),
+                       static_cast<PetscInt>(rows.size()), &rows[0],
+                       static_cast<PetscInt>(cols.size()), &cols[0],
+                       &values[0],
+                       ADD_VALUES)
+                    );
+            }
 
         void add_matrix(const std::vector<SizeType> &rows,
                         const std::vector<SizeType> &cols,

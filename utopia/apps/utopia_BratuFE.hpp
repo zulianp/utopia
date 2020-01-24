@@ -43,7 +43,7 @@ namespace utopia {
         {
             auto space_view = space_->view_device();
 
-            auto x_view = space_->assembly_view_device(x);
+            auto x_view = x_coeff_.view_device();
 
             auto l_view = laplacian_.view_device();
             auto m_view = scaled_mass_matrix_.view_device();
@@ -63,7 +63,7 @@ namespace utopia {
 
                 ElementVector coeff;
 
-                space_view.coefficients(e, x_view, coeff);
+                x_view.get(e, coeff);
 
                 ElementMatrix el_mat;
                 el_mat.set(0.0);

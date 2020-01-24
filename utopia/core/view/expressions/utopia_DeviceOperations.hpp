@@ -4,10 +4,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 #include "utopia_Operators.hpp"
-// #include "utopia_DeviceUnary.hpp"
-// #include "utopia_DeviceBinary.hpp"
 #include "utopia_DeviceNorm.hpp"
-// #include "utopia_Factory.hpp"
 
 #ifdef WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
@@ -211,6 +208,41 @@ namespace utopia {
         return DeviceDot<Left, Right, Traits<Left>::Order>::apply(left.derived(), right.derived());
     }
 
+    template<class Left, class Right>
+    UTOPIA_INLINE_FUNCTION typename Traits<Right>::Scalar inner(
+        const DeviceExpression<Left> &left,
+        const DeviceExpression<Right> &right)
+    {
+        return dot(left.derived(), right.derived());
+    }
+
+    template<class Left, class Right>
+    UTOPIA_INLINE_FUNCTION typename Traits<Right>::Scalar inner(
+        const DeviceExpression<Left> &left,
+        const typename Traits<Right>::Scalar &right)
+    {
+        return sum(left * right);
+    }
+
+
+    template<class Left, class Right>
+    UTOPIA_INLINE_FUNCTION DeviceOuterProduct<Left, Right> outer(
+        const DeviceExpression<Left> &left,
+        const DeviceExpression<Right> &right)
+    {
+        return DeviceOuterProduct<Left, Right>(left.derived(), right.derived());
+    }
+
+    UTOPIA_INLINE_FUNCTION constexpr double inner(const double &left, const double &right)
+    {
+        return left * right;
+    }
+
+    UTOPIA_INLINE_FUNCTION constexpr float inner(const float &left, const float &right)
+    {
+        return left * right;
+    }
+
     template<class Expr>
     UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar trace(
         const DeviceExpression<Expr> &expr)
@@ -345,6 +377,18 @@ namespace utopia {
     {
         DeviceEigenValues<Expr>::apply(expr.derived(), eigen_values);
     }
+
+    template<class Expr, class Values, class Vectors>
+    UTOPIA_INLINE_FUNCTION void eig(
+        const DeviceExpression<Expr> &expr,
+        Values &eigen_values,
+        Vectors &eigen_vectors
+        )
+    {
+        DeviceEigenValues<Expr>::apply(expr.derived(), eigen_values);
+        DeviceEigenVectors<Expr>::apply(expr.derived(), eigen_values, eigen_vectors);
+    }
+
 
     template<class Expr, class Result>
     UTOPIA_INLINE_FUNCTION void sv(

@@ -47,17 +47,16 @@ namespace utopia {
             UTOPIA_RUN_TEST(rotate_test);
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
             UTOPIA_RUN_TEST(mat_vec_multiply_test);
-            UTOPIA_RUN_TEST(vec_add_add_add_test);
+            //UTOPIA_RUN_TEST(vec_add_add_add_test);
             // UTOPIA_RUN_TEST(convert_test); 
-            UTOPIA_RUN_TEST(emul_test);
+        //    UTOPIA_RUN_TEST(convert_test);
+         //   UTOPIA_RUN_TEST(emul_test);
 
             // FIXME (mem allocs)
-
 
             // Seq. fault
             // UTOPIA_RUN_TEST(mat_transp_mult_test);
         }
-
 
 
         // void convert_test()
@@ -77,6 +76,19 @@ namespace utopia {
         //         }
         //     #endif
         // }
+        void convert_test()
+        {
+            //FIXME create converts for Trilinos then enable this
+            // Vector old_vec = local_zeros(10);
+            // Vector ut_vec  = local_zeros(10);
+
+            // convert(ut_vec, raw_type(old_vec));
+            // ut_vec *= 500;
+
+            // UTOPIA_NO_ALLOC_BEGIN("convert_test");
+            // convert(raw_type(old_vec), ut_vec);
+            // UTOPIA_NO_ALLOC_END();
+        }
 
 
         void vec_add_add_add_test()
@@ -127,7 +139,7 @@ namespace utopia {
             Vector y = values(n_, 10.0);
             Vector z = values(n_, 10.0);
 
-            double scaling_param = 10.0; 
+            double scaling_param = 10.0;
 
             UTOPIA_NO_ALLOC_BEGIN("emul_test");
             z = e_mul(x, y);
@@ -516,7 +528,7 @@ namespace utopia {
 
             UTOPIA_NO_ALLOC_BEGIN("bratu_grad2");
             result = x - (0.5 * 0.2* exp(x));
-            UTOPIA_NO_ALLOC_END();            
+            UTOPIA_NO_ALLOC_END();
         }
 
         void diag_mult()

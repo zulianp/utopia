@@ -7,8 +7,18 @@
 #include "utopia_Communicator.hpp"
 #include "utopia_DistributedObject.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
+
+	template<typename Scalar_, typename SizeType_>
+	class Traits< DistributedMatrix<Scalar_, SizeType_> > {
+	public:
+		using Scalar   = Scalar_;
+		using SizeType = SizeType_;
+		static const int Order = 2;
+	};
+
 
 	template<typename Scalar_, typename SizeType_>
 	class MatrixBase {
@@ -126,7 +136,13 @@ namespace utopia {
 
 	//parallel types, collective operations
 	template<typename Scalar_, typename SizeType_>
-	class DistributedMatrix : public MatrixBase<Scalar_, SizeType_>, public virtual DistributedObject {
+	class DistributedMatrix :
+		public MatrixBase<Scalar_, SizeType_>,
+		// public BLAS1Tensor<DistributedMatrix<Scalar_, SizeType_>>,
+		// public BLAS2Matrix<DistributedMatrix<Scalar_, SizeType_>,
+		//                    DistributedVector<Scalar_, SizeType_>>,
+		// public BLAS3Matrix<DistributedMatrix<Scalar_, SizeType_>>,
+		public virtual DistributedObject {
 	public:
 		using Scalar = Scalar_;
 		using SizeType = SizeType_;
@@ -183,6 +199,8 @@ namespace utopia {
 	public:
 		virtual ~DistributedSparseMatrix() {}
 	};
+
+
 
 }
 

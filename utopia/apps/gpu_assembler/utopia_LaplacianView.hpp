@@ -19,6 +19,11 @@ namespace utopia {
             acc += value_;
         }
 
+        void describe()
+        {
+            disp(value_);
+        }
+
     private:
         const T &value_;
     };
@@ -30,9 +35,9 @@ namespace utopia {
         using Scalar   = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
-        static const int NNodes = Elem::NNodes;
+        static const int NDofs = FunctionSpace::NDofs;
 
-        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NNodes, NNodes>>;
+        using ViewDevice = AssemblerView<StaticMatrix<Scalar, NDofs, NDofs>>;
 
         Laplacian(const FunctionSpace &space, const Quadrature &q)
         {
@@ -63,7 +68,7 @@ namespace utopia {
         }
 
     private:
-        StaticMatrix<Scalar, NNodes, NNodes> mat_;
+        StaticMatrix<Scalar, NDofs, NDofs> mat_;
 
         void init(const FunctionSpace &space, const Quadrature &q)
         {
@@ -76,13 +81,19 @@ namespace utopia {
             Elem e;
             space.elem(0, e);
 
-            auto g  = grad_view.make(0, e);
-            auto dx = dx_view.make(0, e);
+            auto g  = grad_view.make(e);
+            auto dx = dx_view.make(e);
 
             mat_.set(0.0);
             assemble(g, dx, mat_);
         }
     };
+
+    template<class FunctionSpace, class Quadrature>
+    inline Laplacian<FunctionSpace, Quadrature> laplacian(const FunctionSpace &space, const Quadrature &q)
+    {
+        return Laplacian<FunctionSpace, Quadrature>(space, q);
+    }
 
 }
 

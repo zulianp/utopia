@@ -222,7 +222,7 @@ namespace utopia {
         {
             const SizeType n = size();
             for(SizeType i = 0; i < n; ++i) {
-                os << get(i) << std::endl;
+                disp(get(i), os);
             }
         }
 
@@ -234,6 +234,11 @@ namespace utopia {
 
     };
 
+    template<class View>
+    UTOPIA_INLINE_FUNCTION typename Traits<View>::SizeType size(const TensorView<View, 1> &t)
+    {
+        return t.size();
+    }
 }
 
 #endif //UTOPIA_KOKKOS_VECTOR_VIEW_HPP

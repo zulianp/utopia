@@ -224,6 +224,11 @@ namespace utopia {
                 ierr = KSPView(ksp_, PETSC_VIEWER_STDOUT_(communicator())); assert(ierr == 0);
             }
 
+            inline void set_from_options()
+            {
+                KSPSetFromOptions(ksp_);
+            }
+
             inline void init(const MPI_Comm comm)
             {
                 destroy();
@@ -263,32 +268,32 @@ namespace utopia {
                 ierr =  PCFactorSetMatSolverType(other_pc, stype); assert(ierr == 0);
 #endif
 
-                PetscBool flg_is_redundant; 
+                PetscBool flg_is_redundant;
                 PetscObjectTypeCompare((PetscObject)other_pc, PCREDUNDANT, &flg_is_redundant);
 
                 if(flg_is_redundant)
                 {
                     // there is no function to get number, so it can not be coppied....
-                    // PCRedundantSetNumber(other_pc, number); 
+                    // PCRedundantSetNumber(other_pc, number);
 
                     // let us copy at least ksp and pc types
 
-                    // setting up inner solver 
+                    // setting up inner solver
                     KSP inner_ksp_other, inner_ksp_this;
-                    PCRedundantGetKSP(other_pc, &inner_ksp_other); 
-                    PCRedundantGetKSP(this_pc, &inner_ksp_this); 
+                    PCRedundantGetKSP(other_pc, &inner_ksp_other);
+                    PCRedundantGetKSP(this_pc, &inner_ksp_this);
 
                     KSPType inner_ksp_type;
-                    KSPGetType(inner_ksp_this, &inner_ksp_type); 
-                    KSPSetType(inner_ksp_other, inner_ksp_type); 
+                    KSPGetType(inner_ksp_this, &inner_ksp_type);
+                    KSPSetType(inner_ksp_other, inner_ksp_type);
 
-                    PC innner_PC_this, innner_PC_other; 
-                    KSPGetPC(inner_ksp_this, &innner_PC_this); 
-                    KSPGetPC(inner_ksp_other, &innner_PC_other); 
+                    PC innner_PC_this, innner_PC_other;
+                    KSPGetPC(inner_ksp_this, &innner_PC_this);
+                    KSPGetPC(inner_ksp_other, &innner_PC_other);
 
-                    PCType inner_pc_type; 
-                    PCGetType(innner_PC_this, &inner_pc_type); 
-                    PCSetType(innner_PC_other, inner_pc_type); 
+                    PCType inner_pc_type;
+                    PCGetType(innner_PC_this, &inner_pc_type);
+                    PCSetType(innner_PC_other, inner_pc_type);
                 }
 
 
@@ -381,7 +386,7 @@ namespace utopia {
 
                 ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(prec)); assert(ierr == 0);
 
-                // should not be necessary                
+                // should not be necessary
                 // ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
             }
 
@@ -465,13 +470,13 @@ namespace utopia {
                     KSPSetNormType(ksp_, KSP_NORM_UNPRECONDITIONED);
                 }
                 else if(norm_type=="none") {
-                    KSPSetNormType(ksp_, KSP_NORM_NONE);              
+                    KSPSetNormType(ksp_, KSP_NORM_NONE);
                 }
-                else if(norm_type=="natural"){ 
-                    KSPSetNormType(ksp_, KSP_NORM_NATURAL);  
+                else if(norm_type=="natural"){
+                    KSPSetNormType(ksp_, KSP_NORM_NATURAL);
                 }
                 else{
-                    utopia_warning("KSP::norm_type:: norm not supported... \n"); 
+                    utopia_warning("KSP::norm_type:: norm not supported... \n");
                 }
             }
 
@@ -502,9 +507,9 @@ namespace utopia {
             void sub_ksp_pc_type(const std::string sub_ksp_type, const std::string sub_pc_type)
             {
                 if(!ksp_->setupstage)
-                {   
+                {
                     // ksp setup has to be called before setting up preconditioner
-                    KSPSetUp(ksp_);  
+                    KSPSetUp(ksp_);
                 }
 
                 PetscErrorCode ierr;
@@ -818,6 +823,7 @@ namespace utopia {
     {
         ksp_type("bcgs");
         pc_type("jacobi");
+        ksp_->set_from_options();
         ksp_->set_initial_guess_non_zero(true);
     }
 
@@ -871,7 +877,7 @@ namespace utopia {
     void KSPSolver<Matrix, Vector, PETSC>::norm_type(const std::string & norm_type)
     {
         return this->ksp_->norm_type(norm_type);
-    } 
+    }
 
     template<typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::overlap(const SizeType & n)
@@ -917,9 +923,9 @@ namespace utopia {
     {
         ksp_->set_tolerances(this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
 
-        bool flg = ksp_->apply(b, x); 
+        bool flg = ksp_->apply(b, x);
 
-        ksp_->solution_status(this->solution_status_); 
+        ksp_->solution_status(this->solution_status_);
 
         // is this proper place to do so???
         // this->set_ksp_options(ksp_->implementation());

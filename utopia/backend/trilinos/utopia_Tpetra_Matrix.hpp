@@ -18,6 +18,7 @@
 #include <Tpetra_Map_decl.hpp>
 #include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
+#include "utopia_DynamicTypeDistributedMatrix.hpp"
 
 #include <iostream>
 #include <memory>
@@ -30,6 +31,7 @@ namespace utopia {
     public Normed<TpetraScalar>,
     public Transformable<TpetraScalar>,
     // Static polymorphic types
+    // public DynamicTypeDistributedMatrix<TpetraScalar, TpetraSizeType, TpetraMatrix, TpetraVector>,
     public BLAS1Tensor<TpetraMatrix>,
     public BLAS2Matrix<TpetraMatrix, TpetraVector>,
     public BLAS3Matrix<TpetraMatrix>,
@@ -472,7 +474,7 @@ namespace utopia {
             const bool transpose_B,
             const TpetraMatrix &B,
             TpetraMatrix &C) const override;
-        
+
         void axpy(const Scalar &alpha, const TpetraMatrix &x) override;
         void transpose(TpetraMatrix &mat) const override;
 
@@ -600,7 +602,7 @@ namespace utopia {
         {
             return "TpetraMatrix";
         }
-        
+
         inline bool is_alias(const TpetraMatrix &other) const
         {
             return mat_ == other.mat_;

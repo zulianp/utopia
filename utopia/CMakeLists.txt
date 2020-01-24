@@ -58,6 +58,7 @@ option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 
 option(CODE_COVERAGE "Enable coverage reporting" OFF)
+option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)" OFF)
 
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
@@ -304,6 +305,10 @@ endif()
 
 if(TRY_WITH_M3ELINSOL)
     add_subdirectory(backend/m3elinsol)
+endif()
+
+if(UTOPIA_SCRIPTING)
+    add_subdirectory(scripting)
 endif()
 
 # weird stuff goes here

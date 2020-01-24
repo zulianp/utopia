@@ -3,12 +3,13 @@
 
 #include "utopia_AssemblyView.hpp"
 #include "utopia_DeviceView.hpp"
+#include "utopia_Coefficient.hpp"
 
 namespace utopia {
 
     template<
         class FunctionSpaceView,
-        class VectorView,
+        class CoefficientView,
         class ShapeFunView,
         class QuadratureView,
         class Elem = typename FunctionSpaceView::Elem,
@@ -16,14 +17,14 @@ namespace utopia {
     class NodalInterpolateView {
     public:
         static const int Dim = Elem::Dim;
-        using Scalar = typename Elem::Scalar;
-        using Point  = utopia::StaticVector<Scalar, Dim>;
-        using Eval   = utopia::StaticVector<Scalar, QuadratureView::NPoints>;
-        using Coeff  = utopia::StaticVector<Scalar, Elem::NNodes>;
-        using DofIndex = typename FunctionSpaceView::DofIndex;
+        using Scalar   = typename Elem::Scalar;
+        using SizeType = typename Elem::SizeType;
+        using Point    = utopia::StaticVector<Scalar, Dim>;
+        using Eval     = utopia::StaticVector<typename Elem::FunValue, QuadratureView::NPoints>;
+        using Coeff    = utopia::StaticVector<Scalar, Elem::NFunctions>;
 
-        UTOPIA_INLINE_FUNCTION NodalInterpolateView(const FunctionSpaceView &space, const VectorView &vec, const ShapeFunView &fun)
-        : space_(space), vec_(vec), fun_(fun), elem_(nullptr)
+        UTOPIA_INLINE_FUNCTION NodalInterpolateView(const CoefficientView &coeff, const ShapeFunView &fun)
+        : coeff_(coeff), fun_(fun), elem_(nullptr)
         {}
 
         UTOPIA_INLINE_FUNCTION std::size_t size() const
@@ -31,28 +32,27 @@ namespace utopia {
             return fun_.n_points();
         }
 
-        UTOPIA_INLINE_FUNCTION Eval make(const std::size_t &i, const Elem &elem) const
+        UTOPIA_INLINE_FUNCTION Eval make(const Elem &elem) const
         {
             Eval values;
-            get(i, elem, values);
+            get(elem, values);
             return values;
         }
 
         template<class Values>
-        UTOPIA_INLINE_FUNCTION void get(const std::size_t &i, const Elem &elem, Values &values) const
+        UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Values &values) const
         {
-            Coeff coeff;
-            space_.coefficients(elem, vec_, coeff);
+            Coeff elem_coeff;
+            coeff_.get(elem, elem_coeff);
 
-            auto shape_i = fun_.make(i, elem);
+            auto shape_i = fun_.make(elem);
 
             const auto n = shape_i.n_points();
             for(SizeType k = 0; k < n; ++k) {
-                values[k] = 0.0;
-                for(SizeType j = 0; j < shape_i.n_functions(); ++j) {
-                    auto f_interp = shape_i(j, k) * coeff(j);
-                    values[k] += f_interp * coeff(j);
+                values[k] = shape_i(0, k) * elem_coeff(0);
 
+                for(SizeType j = 1; j < shape_i.n_functions(); ++j) {
+                    values[k] += shape_i(j, k) * elem_coeff(j);
                 }
             }
         }
@@ -63,8 +63,7 @@ namespace utopia {
         }
 
     private:
-        FunctionSpaceView space_;
-        VectorView vec_;
+        CoefficientView coeff_;
         ShapeFunView fun_;
         const Elem *elem_;
     };
@@ -80,36 +79,31 @@ namespace utopia {
         using ShapeFunction = utopia::ShapeFunction<FunctionSpace, Quadrature>;
 
         using Vector     = typename FunctionSpace::Vector;
+        using CoefficientViewDevice = typename utopia::Coefficient<FunctionSpace>::ViewDevice;
+        using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
 
         using ViewDevice = utopia::NodalInterpolateView<
-                                        typename FunctionSpace::ViewDevice,
-                                        DeviceView<const Vector, 1>,
+                                        FunctionSpaceViewDevice,
+                                        CoefficientViewDevice,
                                         typename ShapeFunction::ViewDevice,
                                         typename Quadrature::ViewDevice
                                         >;
-
         NodalInterpolate(
             const FunctionSpace &space,
-            const Vector &vec,
-            const Quadrature &q) : space_(space), vec_(make_ref(vec)), shape_fun_(space_, q) {}
-
-        NodalInterpolate(
-            const FunctionSpace &space,
-            const Quadrature &q) : space_(space), vec_(nullptr), shape_fun_(space_, q) {}
+            const Quadrature &q) : coeff_(space), shape_fun_(space, q) {}
 
         ViewDevice view_device() const
         {
-            return ViewDevice(space_.view_device(), space_.assembly_view_device(*vec_), shape_fun_.view_device());
+            return ViewDevice(coeff_.view_device(), shape_fun_.view_device());
         }
 
         void update(const Vector &vec)
         {
-            vec_ = make_ref(vec);
+            coeff_.update(vec);
         }
 
     private:
-        const FunctionSpace &space_;
-        std::shared_ptr<const Vector> vec_;
+        Coefficient<FunctionSpace> coeff_;
         ShapeFunction shape_fun_;
     };
 
