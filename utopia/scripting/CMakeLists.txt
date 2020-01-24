@@ -37,9 +37,12 @@ if(SWIG_FOUND)
         set(CMAKE_SWIG_FLAGS "")
 
         set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
+        # set_property(SOURCE utopia.i PROPERTY USE_LIBRARY_INCLUDE_DIRECTORIES TRUE)
         set_source_files_properties(utopia.i PROPERTIES SWIG_FLAGS "-includeall")
 
         swig_add_library(utopia TYPE SHARED LANGUAGE python SOURCES utopia.i utopia_script.cpp)
+
+        # set_property(TARGET _utopia PROPERTY SWIG_USE_LIBRARY_INCLUDE_DIRECTORIES TRUE)
 
         swig_link_libraries(utopia ${PYTHON_LIBRARIES} utopia)
         set_target_properties(_utopia PROPERTIES SUFFIX ".so")

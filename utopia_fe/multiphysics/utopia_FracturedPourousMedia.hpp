@@ -706,7 +706,8 @@ namespace utopia {
                 }
 
                 // apply_boundary_conditions(dof_map_m, *A_m_, *rhs_m_);
-                apply_boundary_conditions(pourous_matrix_.space(), *A_m_, *rhs_m_);
+                // apply_boundary_conditions(pourous_matrix_.space(), *A_m_, *rhs_m_);
+                apply_boundary_conditions(pourous_matrix_.space(), A, rhs);
 
             } else //if(assembly_strategy_ == "monolithic")
             {

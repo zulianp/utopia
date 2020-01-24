@@ -4,28 +4,49 @@
 #include <cassert>
 
 #include "utopia_petsc.hpp"
+#include "utopia_AbstractVector.hpp"
+#include "utopia_ObjectFactory.hpp"
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
+//Register types
+#ifdef WITH_PETSC
+
+    UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
+
+#ifdef WITH_TRILINOS
+    UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
+#endif
+
     class PolymorphicTest final {
     public:
-        using Scalar   = typename Traits<Matrix>::Scalar;
-        using SizeType = typename Traits<Matrix>::SizeType;
+        using Scalar   = typename Traits<PetscVector>::Scalar;
+        using SizeType = typename Traits<PetscVector>::SizeType;
+
+        using DefaultFactory = utopia::AlgebraFactory<Scalar, SizeType>;
 
         //base classes
-        using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
-        using DistributedVector = utopia::DistributedVector<Scalar, SizeType>;
+        // using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
+        using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
 
         void convenience_wrapper()
         {
-            // const SizeType n = 10;
+            const SizeType n = 10;
 
-            // std::shared_ptr<DistributedMatrix> mat    = std::make_shared<Matrix>(local_identity(n, n));
-            // std::shared_ptr<DistributedVector> vec    = std::make_shared<Vector>(local_values(n, 2.0));
-            // std::shared_ptr<DistributedVector> result = std::make_shared<Vector>(local_zeros(n));
-            // mat->multiply(*vec, *result);
+#ifdef WITH_TRILINOS
+#ifdef UTOPIA_TPETRA_SIZE_TYPE
+            //if types are the same TirlinosFactory == DefaultFactory
+            InputParameters params;
+            params.set("default-backend", "trilinos");
+            DefaultFactory::init(params);
 
+#endif //UTOPIA_TPETRA_SIZE_TYPE
+#endif //WITH_TRILINOS
+
+
+            auto v = DefaultFactory::new_vector();
+            v->values(n, 2.0);
+            v->describe();
         }
 
         void run()
@@ -36,10 +57,11 @@ namespace utopia {
 
     static void polymorphic()
     {
-#ifdef WITH_PETSC
-    PolymorphicTest<PetscMatrix, PetscVector>().run();
-#endif //WITH_PETSC
+        PolymorphicTest().run();
+
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(polymorphic);
+
+#endif //WITH_PETSC
 }

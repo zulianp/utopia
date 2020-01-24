@@ -192,6 +192,17 @@ namespace utopia {
             }
         }
 
+        template<class Col>
+        UTOPIA_INLINE_FUNCTION void set_col(const SizeType &j, const Col &c)
+        {
+            const SizeType r = rows();
+            UTOPIA_DEVICE_ASSERT(j < cols());
+
+            for(SizeType i = 0; i < r; ++i) {
+                set(i, j, c(i));
+            }
+        }
+
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)
         {
             device::scale(alpha, view_);
@@ -274,7 +285,10 @@ namespace utopia {
 
             for(SizeType i = 0; i < r; ++i) {
                 for(SizeType j = 0; j < c; ++j) {
-                    os << get(i, j) << "\t";
+                    os << get(i, j);
+                    if(j < c-1) {
+                        os << ", ";
+                    }
                 }
 
                 os << "\n";

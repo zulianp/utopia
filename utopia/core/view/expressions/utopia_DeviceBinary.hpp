@@ -54,7 +54,7 @@ namespace utopia {
     class DeviceBinary : public DeviceExpression<DeviceBinary<Left, Right, Op>> {
     public:
         using SizeType = typename Traits<Left>::SizeType;
-        using Scalar   = typename Traits<Left>::Scalar;
+        using Scalar   = decltype(typename Traits<Left>::Scalar(0) + typename Traits<Right>::Scalar(0));
 
         UTOPIA_INLINE_FUNCTION DeviceBinary(const Left &left, const Right &right)
         : left_(left), right_(right)
@@ -113,7 +113,7 @@ namespace utopia {
         public DeviceExpression<DeviceBinary<DeviceNumber<Left>, Right, Op> >{
     public:
         using SizeType = typename Traits<Right>::SizeType;
-        using Scalar   = typename Traits<Right>::Scalar;
+        using Scalar   = decltype(typename Traits<Right>::Scalar(0) + Left(0));
 
         UTOPIA_INLINE_FUNCTION DeviceBinary(const DeviceNumber<Left> &left, const Right &right) : left_(left), right_(right) {}
 

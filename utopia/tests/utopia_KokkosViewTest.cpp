@@ -198,7 +198,7 @@ namespace utopia {
         graph->fillComplete();
 
         mat.raw_type().reset(
-            new TpetraMatrix::crs_mat_type(graph)
+            new TpetraMatrix::CrsMatrixType(graph)
         );
 
         assemble_periodic_laplacian_1D(mat);

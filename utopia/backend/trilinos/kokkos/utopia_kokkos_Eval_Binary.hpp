@@ -14,7 +14,7 @@ namespace utopia {
 
         inline static void eval(const Vector &lhs, const Op op, const Vector &rhs, Vector &result)
         {
-            using ExecutionSpaceT = typename Vector::vector_type::execution_space;
+            using ExecutionSpaceT = typename Vector::ExecutionSpace;
 
             assert(!lhs.empty());
             assert(!rhs.empty());
@@ -38,8 +38,8 @@ namespace utopia {
 
         inline static void eval(const Vector &lhs, const Op op, const Scalar &rhs, Vector &result)
         {
-            using ExecutionSpaceT = typename Vector::vector_type::execution_space;
-            
+            using ExecutionSpaceT = typename Vector::ExecutionSpace;
+
             assert(!lhs.empty());
 
             if(result.empty())

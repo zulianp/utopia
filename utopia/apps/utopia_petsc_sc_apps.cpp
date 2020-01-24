@@ -837,7 +837,7 @@ namespace utopia {
 
         stats.start();
 
-        LinearElasticity<FunctionSpace, Quadrature> elast(space, quadrature);
+        LinearElasticity<FunctionSpace, Quadrature> elast(space, quadrature, 80.0, 120.0);
         MassMatrix<FunctionSpace, Quadrature> mass_matrix(space, quadrature);
 
         {
@@ -952,9 +952,9 @@ namespace utopia {
         PetscCommunicator world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 20;
-        SizeType ny = scale * 20;
-        SizeType nz = scale * 20;
+        SizeType nx = scale * 1;
+        SizeType ny = scale * 1;
+        SizeType nz = scale * 1;
 
         FunctionSpace space;
 
@@ -965,7 +965,7 @@ namespace utopia {
             {1.0, 1.0, 1.0}
         );
 
-        linear_elasticity(space, false, false);
+        linear_elasticity(space, false, true);
 
     }
 
@@ -1178,9 +1178,9 @@ namespace utopia {
         Comm world;
 
         SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 5;
-        SizeType ny = scale * 5;
-        SizeType nz = scale * 5;
+        SizeType nx = scale * 4;
+        SizeType ny = scale * 4;
+        SizeType nz = scale * 4;
 
         in.get("nx", nx);
         in.get("ny", ny);
@@ -1290,9 +1290,10 @@ namespace utopia {
         Newton<PetscMatrix, PetscVector> solver(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
         in.get("solver", solver);
 
+        pp.hessian(x, H);
         solver.solve(pp, x);
 
-        std::string output_path = "phase_field.vtu";
+        std::string output_path = "phase_field.vtr";
 
         in.get("output-path", output_path);
 
@@ -1301,5 +1302,22 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field);
+
+
+    static void test_splitting()
+    {
+        using Scalar = double;
+        StaticMatrix<Scalar, 3, 3> strain, stress;
+        strain.set(0.0);
+
+        strain(0, 0) = 1.0;
+        strain(1, 0) = strain(0, 1) = 0.5;
+        strain(2, 0) = strain(0, 2) = 0.5;
+
+        stress = 2 * 80.0 * strain + 120.0 * trace(strain) * (device::identity<Scalar>());
+        disp(stress);
+    }
+
+    UTOPIA_REGISTER_APP(test_splitting);
 }
 
