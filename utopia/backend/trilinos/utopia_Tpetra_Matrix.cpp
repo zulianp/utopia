@@ -73,7 +73,7 @@ namespace utopia {
     //FIXME make faster version by storing view?
     TpetraMatrix::Scalar TpetraMatrix::get(const SizeType &row, const SizeType &col) const
     {
-        Teuchos::ArrayView<const LO> cols;
+        Teuchos::ArrayView<const LocalSizeType> cols;
         Teuchos::ArrayView<const Scalar> values;
 
         assert(implementation().isLocallyIndexed());

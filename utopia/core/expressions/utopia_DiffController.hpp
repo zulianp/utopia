@@ -6,17 +6,18 @@
 #define UTOPIA_UTOPIA_DIFFCONTROLLER_HPP
 
 #include "utopia_FiniteDifference.hpp"
+#include "utopia_Wrapper.hpp"
 
 namespace utopia {
     class DiffController {
     public:
         template<class Fun, class Vector, class Matrix>
         bool check(Fun &fun, const Vector &x, const Vector &g, const Matrix &H) {
-            return checkGrad(fun, x, g) && checkHessian(fun, x, H);
+            return check_grad(fun, x, g) && check_hessian(fun, x, H);
         }
 
         template<class Fun, class Vector>
-        bool checkGrad(Fun &fun, const Vector &x, const Vector &g) {
+        bool check_grad(Fun &fun, const Vector &x, const Vector &g) {
             FiniteDifference<typename Vector::Scalar> fd;
             Vector gfd;
             fd.grad(fun, x, gfd);
@@ -32,6 +33,7 @@ namespace utopia {
                 disp(g);
 
                 std::cout << "----------------------\n";
+                assert(false);
             }
 
 
@@ -39,24 +41,44 @@ namespace utopia {
         }
 
         template<class Fun, class Vector, class Matrix>
-        bool checkHessian(Fun &fun, const Vector &x, const Matrix &H) {
+        bool check_hessian(Fun &fun, const Vector &x, const Matrix &H) {
 
-            FiniteDifference<typename Vector::Scalar> fd;
-            Matrix Hfd;
-            fd.hessian(fun, x, Hfd);
+            using Scalar = typename Traits<Vector>::Scalar;
 
-            bool ok = approxeq(Hfd, H, 1e-2);
+            FiniteDifference<Scalar> fd;
+            Matrix Hfd = H;
+            Hfd *= 0.0;
+
+            if(!fd.hessian(fun, x, Hfd)) {
+                return true;
+            }
+
+            Matrix diff_mat = H - Hfd;
+            Scalar diff = norm1(diff_mat);
+
+            bool ok = diff < 1e-2;
 
             if (!ok) {
-                std::cout << "------- Failure -------\n";
-                std::cout << "------- Hessian -------\n";
-                std::cout << "Expected:\n";
-                disp(Hfd);
+                std::cerr << "------- Failure -------\n";
+                std::cerr << "------- Hessian -------\n";
 
-                std::cout << "Actual:\n";
-                disp(H);
+                std::cerr << "error: " << diff << std::endl;
 
-                std::cout << "----------------------\n";
+                std::cerr << "Diff:\n";
+                disp(diff_mat);
+
+                write("diff_mat.m", diff_mat);
+                write("Hfd.m", Hfd);
+                write("H.m",   H);
+
+                // std::cerr << "Expected:\n";
+                // disp(Hfd);
+
+                // std::cerr << "Actual:\n";
+                // disp(H);
+
+                std::cerr << "----------------------\n";
+                assert(false);
             }
 
             return ok;
