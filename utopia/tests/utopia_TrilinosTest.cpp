@@ -1437,8 +1437,9 @@ namespace utopia {
     template<typename T> using ArrayT = Teuchos::ArrayRCP<T>;
     static void trilinos_crs_construct()
     {
-        using SizeType = Traits<TpetraVectord>::SizeType;
-        using Scalar   = Traits<TpetraVectord>::Scalar;
+        using SizeType      = Traits<TpetraVectord>::SizeType;
+        using LocalSizeType = Traits<TpetraVectord>::LocalSizeType;
+        using Scalar        = Traits<TpetraVectord>::Scalar;
 
         const SizeType n_rows = 2;
         const SizeType n_cols = 3;
@@ -1448,7 +1449,7 @@ namespace utopia {
         row_ptr[1] = 2;
         row_ptr[2] = 4;
 
-        ArrayT<SizeType> columns(row_ptr[n_rows]);
+        ArrayT<LocalSizeType> columns(row_ptr[n_rows]);
         columns[0] = 0;
         columns[1] = 1;
         columns[2] = 1;
