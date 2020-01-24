@@ -387,10 +387,29 @@ namespace utopia {
 
                             for(SizeType l = 0; l < c_grad_shape_el.n_functions(); ++l) {
                                 for(SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
-                                    el_mat(l, j) += (
-                                        diffusion_c(params_, c_grad_shape_el(j, qp), c_grad_shape_el(l, qp)) +
-                                        reaction_c(params_,  c_shape_fun_el(j, qp),  c_shape_fun_el(l, qp))  +
-                                        elastic_deriv_cc(params_, c[qp], eep, c_shape_fun_el(l, qp))
+                                    // el_mat(l, j) += (
+                                    //     diffusion_c(params_, c_grad_shape_el(j, qp), c_grad_shape_el(l, qp)) +
+                                    //     reaction_c(params_,  c_shape_fun_el(j, qp),  c_shape_fun_el(l, qp))  +
+                                    //     elastic_deriv_cc(params_, c[qp], eep, c_shape_fun_el(l, qp))
+                                    // ) * dx(qp);
+
+                                    // const Parameters &params,
+                                    // const Scalar &phase_field_value,
+                                    // const Scalar &elastic_energy_p,
+                                    // const Scalar &shape_trial,
+                                    // const Scalar &shape_test,
+                                    // const GradShape &grad_trial,
+                                    // const GradShape &grad_test
+
+                                   el_mat(l, j) +=
+                                        bilinear_cc(
+                                            params_,
+                                            c[qp],
+                                            eep,
+                                            c_shape_fun_el(j, qp),
+                                            c_shape_fun_el(l, qp),
+                                            c_grad_shape_el(j, qp),
+                                            c_grad_shape_el(l, qp)
                                     ) * dx(qp);
                                 }
                             }
@@ -442,6 +461,21 @@ namespace utopia {
         }
 
         //////////////////////////////////////////
+
+        template<class GradShape>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const Scalar &elastic_energy_p,
+            const Scalar &shape_trial,
+            const Scalar &shape_test,
+            const GradShape &grad_trial,
+            const GradShape &grad_test
+            )
+        {
+            return diffusion_c(params, grad_trial, grad_test) + reaction_c(params,  shape_trial,  shape_test) +
+                   elastic_deriv_cc(params, phase_field_value, elastic_energy_p, shape_test);
+        }
 
         template<class Strain, class FullStrain, class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cu(

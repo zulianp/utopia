@@ -1177,6 +1177,12 @@ namespace utopia {
 
         Comm world;
 
+
+        MPITimeStatistics stats(world);
+
+
+        stats.start();
+
         SizeType scale = (world.size() + 1);
         SizeType nx = scale * 4;
         SizeType ny = scale * 4;
@@ -1256,6 +1262,10 @@ namespace utopia {
 
         }
 
+        stats.stop_and_collect("set-up");
+
+        stats.start();
+
         PhaseFieldForBrittleFractures<FunctionSpace> pp(space, params);
 
         PetscMatrix H;
@@ -1296,19 +1306,31 @@ namespace utopia {
         }
 
         space.apply_constraints(x);
+
+        stats.stop_and_collect("phase-field-init");
+
+        stats.start();
         // TrustRegion<PetscMatrix, PetscVector> solver;
 
         auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
         Newton<PetscMatrix, PetscVector> solver(linear_solver);
         in.get("solver", solver);
 
-        pp.hessian(x, H);
-        pp.gradient(x, g);
-        // solver.solve(pp, x);
+        solver.solve(pp, x);
 
-        PetscVector r = x; r.set(0.0);
-        space.apply_constraints(r);
-        linear_solver->solve(H, r, x);
+
+
+        // pp.hessian(x, H);
+        // pp.gradient(x, g);
+
+        // space.apply_constraints(g);
+        // linear_solver->solve(H, g, x);
+
+
+        stats.stop_and_collect("solve+assemble");
+
+
+        stats.start();
 
         std::string output_path = "phase_field.vtr";
 
@@ -1316,6 +1338,10 @@ namespace utopia {
 
         rename("X", x);
         C.write(output_path, x);
+
+        stats.stop_and_collect("output");
+
+        stats.describe(std::cout);
 
         // rename("X", r);
         // C.write(output_path, r);
