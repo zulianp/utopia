@@ -182,7 +182,20 @@ namespace utopia {
             read(data_path + "/forQR/I3h", Ih0);
 
 
-            auto num_levels = 4;
+            // read(data_path + "/forQR/contact/b", rhs);
+            // read(data_path + "/forQR/contact/x", x);
+            // read(data_path + "/forQR/contact/A", A);            
+            // read(data_path + "/forQR/contact/Q", Q);
+            // read(data_path + "/forQR/contact/R", R);
+            // read(data_path + "/forQR/contact/ub", upper_bound);
+            // read(data_path + "/forQR/contact/lb", lower_bound);
+
+            // read(data_path + "/forQR/contact/Ih", Ih_fine);
+            // read(data_path + "/forQR/contact/I2h", Ih1);
+            // read(data_path + "/forQR/contact/I3h", Ih0);            
+
+
+            auto num_levels = 3;
 
 
             // chop_abs(Q, 1e-4); 
@@ -236,19 +249,19 @@ namespace utopia {
             // interpolation_operators.push_back(make_ref(QtIh));
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
-            interpolation_operators.resize(3);
-            interpolation_operators[2] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
-            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih1));
-            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih0));
+            interpolation_operators.resize(2);
+            // interpolation_operators[2] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih1));
     
-            //interpolation_operators.resize(1);
-            //interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            // interpolation_operators.resize(1);
+            // interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
             
 
-            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
-            MultigridQR<Matrix, Vector> multigrid(smoother_fine, direct_solver, num_levels);
+            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector, HOMEMADE>>();
+            MultigridQR<Matrix, Vector> multigrid(coarse_smoother, direct_solver, num_levels);
 
-            //multigrid.set_smoother(smoother_fine, num_levels-1); 
+            multigrid.set_smoother(smoother_fine, num_levels-1); 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.fix_semidefinite_operators(true); 
             multigrid.max_it(10);

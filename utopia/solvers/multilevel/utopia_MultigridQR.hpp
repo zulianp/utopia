@@ -286,7 +286,7 @@ namespace utopia
             ////////////////////////////////////
             if(l == 0) 
             {
-                coarse_solve(memory.r[l], memory.c[l]);
+                coarse_solve(memory.rhs[l], memory.x[l]);
 
                 // coarse_solve(r, c);
             //     // if(coarse_solve(r, c)) 
@@ -298,7 +298,7 @@ namespace utopia
             //     // } 
             //     // else {
             //     //   assert(false);
-                   return false;
+                   return true;
             //     // }
             }
             ////////////////////////////////////
@@ -311,19 +311,19 @@ namespace utopia
                 {
                     // do fine level smoothing
                     smoothing_fine(l, memory.rhs[l], memory.x[l], this->pre_smoothing_steps(), true);
-                    memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
+                    // memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
                 }
                 else if(l > 0)
                 {
-                    smoothing(l, memory.r[l], memory.c[l], this->pre_smoothing_steps());
+                    smoothing(l, memory.rhs[l], memory.x[l], this->pre_smoothing_steps());
                 }
 
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
 
 
-                // memory.rhs[l] = r - level(l).A() * x;
+                memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
                 // residual transfer
-                this->transfer(l-1).restrict(memory.r[l], memory.r[l-1]);
+                this->transfer(l-1).restrict(memory.r[l], memory.rhs[l-1]);
                 // memory.rhs[l-1] = memory.r[l-1];
 
                 // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
@@ -336,11 +336,13 @@ namespace utopia
 
                 // assert(!empty(memory.rhs[l-1]));
 
-                memory.c[l-1] = 0*memory.r[l-1]; 
-                standard_cycle(l-1);
+                // memory.c[l-1] = 0*memory.r[l-1]; 
+                memory.x[l-1] = 0.0*memory.rhs[l-1]; 
+                // coarse_solve(memory.rhs[l-1], memory.x[l-1]);
+                standard_cycle(l-1); 
                 
                 // correction transfer
-                this->transfer(l-1).interpolate(memory.c[l-1], memory.c[l]);
+                this->transfer(l-1).interpolate(memory.x[l-1], memory.c[l]);
 
                 memory.x[l] += memory.c[l];
 
@@ -348,12 +350,12 @@ namespace utopia
                 if( l == this-> n_levels()-1)
                 {
                   smoothing_fine(l, memory.rhs[l], memory.x[l], this->post_smoothing_steps(), false);
-                  memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
+                  // memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
 
                 }
                 else if(l > 0)
                 {
-                  smoothing(l, memory.r[l-1], memory.c[l-1], this->post_smoothing_steps());
+                  smoothing(l, memory.rhs[l], memory.x[l], this->post_smoothing_steps());
                   //std::cerr<< "--------- not fixed yet.... \n"; 
                 }
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
