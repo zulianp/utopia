@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 29/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_FINITEDIFFERENCE_HPP
 #define UTOPIA_UTOPIA_FINITEDIFFERENCE_HPP
 
@@ -20,8 +16,7 @@ namespace utopia {
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
 
                 if(H.is_sparse()) {
-                    std::cerr << ("[Warning] HessianFD not implemented for sparse matrices") << std::endl;
-                    return false;
+                    return HessianFD<Matrix, FillType::SPARSE>::apply(fun, x, h, H);
                 } else {
                     return HessianFD<Matrix, FillType::DENSE>::apply(fun, x, h, H);
                 }
@@ -92,12 +87,69 @@ namespace utopia {
             DEF_UTOPIA_SCALAR(Matrix);
 
             template<class Fun, class Vector>
-            static bool apply(Fun & /*fun*/, const Vector & /*x*/, const Scalar  /*h*/, Matrix & /*H */) {
-                std::cerr << ("[Warning] HessianFD not implemented for sparse matrices") << std::endl;
-                return false;
+            static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
+                auto n = x.size();
+                assert(!empty(H) && "H has to be allocated with the sparsity pattern before calling this method");
+                Vector ei = zeros(n);
+                Vector ej = zeros(n);
 
+                const Write <Matrix> wlock(H);
+
+                Scalar h2 = h * h;
+
+                const Range rr = row_range(H);
+                const Range cr = col_range(H);
+                const Range vr = range(x);
+
+                H *= 0.0;
+                Matrix H_copy = H;
+
+                SizeType last_i = -1;
+                each_read(H_copy, [&](const SizeType &i, const SizeType &j, const Scalar &) {
+                    if(last_i != i) {
+                        const Write <Vector> ewlock(ei);
+                        if (i > 0 && vr.inside(i-1)) ei.set(i - 1, 0);
+                        if(vr.inside(i))             ei.set(i, h);
+                        last_i = i;
+                    }
+
+                    { //Scoped lock
+                        const Write <Vector> ewlock(ej);
+
+                        if(vr.inside((j - 1 + n) % n)) ej.set((j - 1 + n) % n, 0);
+                        if(vr.inside(j))               ej.set(j, h);
+                    }
+
+                    Scalar fpipj, fpimj, fmipj, fmimj;
+                    fun.value(x + ei + ej, fpipj);
+                    fun.value(x + ei - ej, fpimj);
+                    fun.value(x - ei + ej, fmipj);
+                    fun.value(x - ei - ej, fmimj);
+
+                    H.set(i, j, (fpipj
+                        - fpimj
+                        - fmipj
+                        + fmimj
+                        ) / (4 * h2));
+                });
+
+                return true;
             }
         };
+
+
+        // template<class Matrix>
+        // class HessianFD<Matrix, FillType::SPARSE> {
+        // public:
+        //     DEF_UTOPIA_SCALAR(Matrix);
+
+        //     template<class Fun, class Vector>
+        //     static bool apply(Fun & /*fun*/, const Vector & /*x*/, const Scalar  /*h*/, Matrix & /*H */) {
+        //         std::cerr << ("[Warning] HessianFD not implemented for sparse matrices") << std::endl;
+        //         return false;
+
+        //     }
+        // };
     }
 
     template<typename Scalar>

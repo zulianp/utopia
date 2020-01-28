@@ -24,9 +24,10 @@ namespace utopia {
     template<class Matrix, class Vector>
     class NewtonBase : public NonLinearSolver<Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector>    Solver;
+        using Scalar         = UTOPIA_SCALAR(Vector);
+        using SizeType       = UTOPIA_SIZE_TYPE(Vector);
+        using Solver         = utopia::LinearSolver<Matrix, Vector>;
+        using DiffController = utopia::DiffController<Matrix, Vector>;
 
         NewtonBase(const std::shared_ptr<Solver> &linear_solver)
         : NonLinearSolver<Vector>(), linear_solver_(linear_solver), check_diff_(false), forcing_strategy_(InexactNewtonForcingStartegies::ZERO)
@@ -90,6 +91,10 @@ namespace utopia {
         {
             NonLinearSolver<Vector>::read(in);
             in.get("check-diff", check_diff_);
+
+            if(check_diff_) {
+                in.get("diff-controller", controller_);
+            }
 
             if(linear_solver_) {
                 in.get("linear-solver", *linear_solver_);
