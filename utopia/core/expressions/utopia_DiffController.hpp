@@ -27,6 +27,7 @@ namespace utopia {
                 std::cout << "------ Failure -------\n";
                 std::cout << "------ Gradient ------\n";
                 std::cout << "Expected:\n";
+                rename("g_fd", gfd);
                 disp(gfd);
 
                 std::cout << "Actual:\n";
@@ -68,6 +69,8 @@ namespace utopia {
                 disp(diff_mat);
 
                 write("diff_mat.m", diff_mat);
+
+                rename("H_fd", Hfd);
                 write("Hfd.m", Hfd);
                 write("H.m",   H);
 
