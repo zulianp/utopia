@@ -96,8 +96,8 @@ namespace utopia {
         ) const override
         {
             USpace U;
-            space_.subspace(0, U);
-            CSpace C = space_.subspace(Dim);
+            space_.subspace(1, U);
+            CSpace C = space_.subspace(0);
 
             auto &x = const_cast<Vector &>(x_const);
 
@@ -178,8 +178,8 @@ namespace utopia {
             }
 
             USpace U;
-            space_.subspace(0, U);
-            CSpace C = space_.subspace(Dim);
+            space_.subspace(1, U);
+            CSpace C = space_.subspace(0);
 
             auto &x = const_cast<Vector &>(x_const);
 
@@ -312,8 +312,8 @@ namespace utopia {
 
 
             USpace U;
-            space_.subspace(0, U);
-            CSpace C = space_.subspace(Dim);
+            space_.subspace(1, U);
+            CSpace C = space_.subspace(0);
 
             auto &x = const_cast<Vector &>(x_const);
 
