@@ -196,7 +196,7 @@ namespace utopia {
                                 }
                             }
     
-                            std::cout <<" r_sum_c" << r_sum_c << std::endl;
+                            // std::cout <<" r_sum_c" << r_sum_c << std::endl;
                             if (r_ii > 0)
                             {
                                 g_i = (g.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
@@ -209,12 +209,12 @@ namespace utopia {
                             }
 
                             //update correction
-                            std::cout << "l_i:" << l_i << "  g_i:" << g_i << "  c_i:" << c.get(i) << std::endl;
+                            // std::cout << "l_i:" << l_i << "  g_i:" << g_i << "  c_i:" << c.get(i) << std::endl;
                             if (( g_i <= c.get(i) ) || (c.get(i) <= l_i))
                             {
                                 c.set(i, std::max(std::min( c.get(i), g_i), l_i));
                                 inactive_set_.set(i, 0.0);
-                                std::cout << "GS: activeset id:" << i << std::endl;
+                                //std::cout << "GS: activeset id:" << i << std::endl;
                             }
                             else
                             {

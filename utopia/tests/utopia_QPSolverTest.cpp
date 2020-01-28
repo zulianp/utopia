@@ -223,12 +223,12 @@ namespace utopia {
             smoother_fine->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
             smoother_fine->set_R(R);
             smoother_fine->verbose(true);
-            smoother_fine->solve(QtAQ, Qtrhs, Qtx);
-            x = Q * Qtx; 
+            // smoother_fine->solve(QtAQ, Qtrhs, Qtx);
+            // x = Q * Qtx; 
 
             //write("x.m", x); 
             //write("IX.m", Qtx);
-            exit(0);
+            // exit(0);
 
             // MG test starts here...
             // std::vector<std::shared_ptr <Matrix> > interpolation_operators;
@@ -250,7 +250,7 @@ namespace utopia {
             //multigrid.set_smoother(smoother_fine, num_levels-1); 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.fix_semidefinite_operators(true); 
-            multigrid.max_it(3);
+            multigrid.max_it(10);
             multigrid.use_line_search(true); 
             multigrid.update(make_ref(QtAQ));
             multigrid.verbose(true);

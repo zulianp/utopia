@@ -40,14 +40,14 @@ namespace utopia
 
         typedef struct
         {
-            std::vector<Vector> r, c, c_I, r_R;
+            std::vector<Vector> r, c, x, rhs;
 
             void init(const int n_levels)
             {
                 r.resize(n_levels);
                 c.resize(n_levels);
-                c_I.resize(n_levels);
-                r_R.resize(n_levels);
+                x.resize(n_levels);
+                rhs.resize(n_levels);
             }
 
             inline bool valid(const std::size_t n_levels) const {
@@ -174,7 +174,7 @@ namespace utopia
          * @param      x   The initial guess.
          *
          */
-        bool apply(const Vector &rhs, Vector &x) override
+        bool apply(const Vector &rhs, Vector &x_fine) override
         {
 
             // UTOPIA_RECORD_SCOPE_BEGIN("apply");
@@ -189,15 +189,16 @@ namespace utopia
 
             // UTOPIA_RECORD_VALUE("rhs", rhs);
             // UTOPIA_RECORD_VALUE("x", x);
-
-            memory.r[l] = rhs - level(l).A() * x;
+            memory.x[l] = x_fine;
+            // memory.r[l] = rhs - level(l).A() * memory.x[l];
+            memory.rhs[l] = rhs; 
 
             // UTOPIA_RECORD_VALUE("rhs - level(l).A() * x", memory.r[l]);
 
-            r_norm = norm2(memory.r[l]);
+            r_norm = norm2(rhs - level(l).A() * memory.x[l]);
             r0_norm = r_norm;
 
-            Vector x_old = x; 
+            Vector x_old = memory.x[l]; 
 
             std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
             this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "||x_old - x_new||" });
@@ -214,9 +215,8 @@ namespace utopia
             {
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE) {
                     ok = standard_cycle(l); assert(ok);
-                } else if(this->cycle_type() == FULL_CYCLE) {
-                    ok = full_cycle(l); assert(ok);
-                } else {
+                } 
+                else {
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n";
                 }
 
@@ -232,15 +232,15 @@ namespace utopia
 
                 // UTOPIA_RECORD_VALUE("memory.c[l]", memory.c[l]);
 
-                x += memory.c[l];
+                //x += memory.c[l];
 
-                rel_norm = norm2(x_old - x); 
-                x_old = x; 
+                rel_norm = norm2(x_old - memory.x[l]); 
+                x_old = memory.x[l]; 
 
                 // UTOPIA_RECORD_VALUE("x += memory.c[l]", x);
 
-                memory.r[l] = rhs - level(l).A() * x;
-                r_norm = norm2(memory.r[l]);
+                // memory.r[l] = rhs - level(l).A() * memory.x[l];
+                r_norm = norm2(rhs - level(l).A() * memory.x[l]);
                 // rel_norm = r_norm/r0_norm;
 
                 // print iteration status on every iteration
@@ -267,49 +267,41 @@ namespace utopia
         /*=======================================================================================================================================        =
          =========================================================================================================================================*/
     private:
-
-
-        /**
-         * @brief      Function implements multigrid standard cycle.
-         *
-         * @param[in] l The level.
-         *
-         */
         bool standard_cycle(const SizeType &l)
         {
             // UTOPIA_RECORD_SCOPE_BEGIN("standard_cycle(" + std::to_string(l) + ")");
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
 
-            Vector &r   = memory.r[l];
-            Vector &c   = memory.c[l];
-            Vector &c_I = memory.c_I[l];
-            Vector &r_R = memory.r_R[l];
+            // Vector &r   = memory.r[l];
+            // Vector &c   = memory.c[l];
+            // Vector &x   = memory.x[l];
+            // Vector &rhs = memory.rhs[l];
 
-            if(empty(c) || size(c) != size(r)) {
-                c = local_zeros(local_size(r).get(0));
-            } else {
-                c.set(0.);
-            }
+            // if(empty(c) || size(c) != size(r)) {
+            //     c = local_zeros(local_size(r).get(0));
+            // } else {
+            //     c.set(0.);
+            // }
 
-            assert(approxeq(double(norm2(c)), 0.));
+            // assert(approxeq(double(norm2(c)), 0.));
 
             ////////////////////////////////////
-            if(l == 0) {
-              // UTOPIA_RECORD_VALUE("c", c);
-              // UTOPIA_RECORD_VALUE("r", r);
-              coarse_solve(r, c);
-                // if(coarse_solve(r, c)) 
-                // {
-                //   assert(approxeq(level(0).A() * c, r, 1e-6));
-                //   // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);
-                //   // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
-                  return true;
-                // } 
-                // else {
-                //   assert(false);
-                //   return false;
-                // }
-            }
+            // if(l == 0) {
+            //   // UTOPIA_RECORD_VALUE("c", c);
+            //   // UTOPIA_RECORD_VALUE("r", r);
+            //   coarse_solve(r, c);
+            //     // if(coarse_solve(r, c)) 
+            //     // {
+            //     //   assert(approxeq(level(0).A() * c, r, 1e-6));
+            //     //   // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);
+            //     //   // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
+            //       return true;
+            //     // } 
+            //     // else {
+            //     //   assert(false);
+            //     //   return false;
+            //     // }
+            // }
             ////////////////////////////////////
 
             // recursive call into mg
@@ -319,131 +311,67 @@ namespace utopia
                 if(l == this->n_levels()-1)
                 {
                     // do fine level smoothing
-                    smoothing_fine(l,r,c,this->pre_smoothing_steps(), true);
+                    smoothing_fine(l, memory.rhs[l], memory.x[l], this->pre_smoothing_steps(), true);
                 }
                 else if(l > 0)
                 {
-                    smoothing(l, r, c, this->pre_smoothing_steps());
+                    // smoothing(l, r, c, this->pre_smoothing_steps());
+                  std::cerr<< "--------- not fixed yet.... \n"; 
                 }
 
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
 
 
-                r_R = r - level(l).A() * c;
+                 // memory.rhs[l] = r - level(l).A() * x;
+                 memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
 
                 // UTOPIA_RECORD_VALUE("r_R", r_R);
 
                 // residual transfer
-                this->transfer(l-1).restrict(r_R, memory.r[l-1]);
+                this->transfer(l-1).restrict(memory.r[l], memory.r[l-1]);
+                // memory.rhs[l-1] = memory.r[l-1];
 
                 // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
 
                 //NEW
-                if(this->must_generate_masks()) {
-                  this->apply_mask(l-1, memory.r[l-1]);
-                  // UTOPIA_RECORD_VALUE("this->apply_mask(l-1, memory.r[l-1]);", memory.r[l-1]);
-                }
+                // if(this->must_generate_masks()) {
+                //   this->apply_mask(l-1, memory.rhs[l-1]);
+                //   // UTOPIA_RECORD_VALUE("this->apply_mask(l-1, memory.r[l-1]);", memory.r[l-1]);
+                // }
 
-                assert(!empty(memory.r[l-1]));
+                // assert(!empty(memory.rhs[l-1]));
 
-                standard_cycle(l-1);
+                // standard_cycle(l-1);
+                memory.c[l-1] = 0*memory.r[l-1]; 
+                coarse_solve(memory.r[l-1], memory.c[l-1]);
+
+
 
                 // correction transfer
-                this->transfer(l-1).interpolate(memory.c[l-1], c_I);
-                // UTOPIA_RECORD_VALUE("this->transfer(l-1).interpolate(memory.c[l-1], c_I);", c_I);
+                this->transfer(l-1).interpolate(memory.c[l-1], memory.c[l]);
 
-#ifndef NDEBUG
-                const Scalar err = norm2(r_R);
-#endif
-                if(use_line_search_) {
-                    const Scalar alpha = dot(c_I, r_R)/dot(level(l).A() * c_I, c_I);
 
-                    if(alpha <= 0.) {
-                        std::cerr << l << " alpha: " << alpha << std::endl;
-                        c += c_I;
-                    } else {
-                        // std::cout << l << " : " << alpha << std::endl;
-                        c += alpha * c_I;
-                    }
+                memory.x[l] += memory.c[l];
 
-                } else {
-                    c += c_I;
-                }
-
-                // UTOPIA_RECORD_VALUE("c", c);
 
                 // postsmoothing
                 if( l == this-> n_levels()-1)
                 {
-                  smoothing_fine(l,r,c,this->post_smoothing_steps(), false);
+                  smoothing_fine(l, memory.rhs[l], memory.x[l], this->post_smoothing_steps(), false);
                 }
                 else if(l > 0)
                 {
-                  smoothing(l, r, c, this->post_smoothing_steps());
+                  //smoothing(l, r, c, this->post_smoothing_steps());
+                  std::cerr<< "--------- not fixed yet.... \n"; 
                 }
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
 
-#ifndef NDEBUG
-                const Scalar new_err = norm2(r - level(l).A() * c);
-                // assert(new_err < err)
-                if(new_err > err) {
-                  m_utopia_error_once("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
-                }
-#endif
             }
 
             // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
             return true;
         }
 
-        /**
-         * @brief      Function implements full multigrid cycle.
-         *              TODO:: fix
-         *              - can be used jsut with homegenous BC - due to restriction of RHS
-         *
-         *
-         * @param[in]  rhs   The rhs.
-         * @param[in]  l     The level.
-         * @param      x   The current iterate.
-         *
-         */
-        bool full_cycle(const SizeType &l)
-        {
-            Vector &r   = memory.r[l];
-            // Vector &c   = memory.c[l];
-            // Vector &c_I = memory.c_I[l];
-            // Vector &r_R = memory.r_R[l];
-
-            std::vector<Vector> rhss(this->n_levels());
-            rhss[l] = r;
-
-            for(SizeType i = l - 1; i >= 0; i--)
-            {
-                this->transfer(i).restrict(rhss[i + 1], rhss[i]);
-                //NEW
-                this->apply_mask(i, rhss[i]);
-            }
-
-            coarse_solve(rhss[0], memory.c[0]);
-            this->transfer(0).interpolate(memory.c[0], memory.c[1]);
-
-            for(SizeType i = 1; i < l; i++)
-            {
-                for(SizeType j = 0; j < this->v_cycle_repetition(); j++) {
-                    memory.r[i] = rhss[i];
-                    standard_cycle(i);
-                }
-
-                this->transfer(i).interpolate(memory.c[i], memory.c[i+1]);
-            }
-
-            for(SizeType i = 0; i < this->v_cycle_repetition(); i++) {
-                // memory.r[l] = rhss[l];
-                standard_cycle(l);
-            }
-
-            return true;
-        }
 
         /**
          * @brief      The function invokes smoothing.
@@ -483,10 +411,14 @@ namespace utopia
 
             Vector inactive_set_ = 0*x;
 
-            std::cout<<"Presmoothing: "<< pre_sm << std::endl;
 
+            if(pre_sm==true){
+              std::cout<<"Presmoothing: " <<std::endl;
+            }
+            else{
+              std::cout<<"Postsmoothing......\n";
+            }
 
-            // disp(inactive_set, "inactive_set_"+pre_sm);
             {
                 Write<Vector> w_a(inactive_set_);
                 Range rr = range(inactive_set_);
