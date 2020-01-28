@@ -69,11 +69,23 @@ namespace utopia {
                 return;
             }
 
+            if(mat.has_one_nz_per_col(device::epsilon<Scalar>())) {
+                result.copy(mat);
+                normalize_col(3, 0, result);
+                normalize_col(3, 1, result);
+                normalize_col(3, 2, result);
+                return;
+            }
+
             // static const Scalar tol = device::epsilon<Scalar>()*100;
 
-            bool is_zero_0 = e0 == 0.0;
-            bool is_zero_1 = e1 == 0.0;
-            bool is_zero_2 = e2 == 0.0;
+            bool is_zero_0 = (e0 == 0.0);
+            bool is_zero_1 = (e1 == 0.0);
+            bool is_zero_2 = (e2 == 0.0);
+
+            bool is_degenerate[3] = { is_zero_0, is_zero_1, is_zero_2 };
+
+
 
             //expressions (not evaluated)
             auto Am0 = mat - e0 * device::identity<Scalar>();
@@ -90,24 +102,44 @@ namespace utopia {
             //lazy evaluation (expensive but no new memory allocs)
             if(!is_zero_0) {
                 const SizeType j0 = find_non_zero_col(n, E0);
-                copy_col(n, j0, E0, 0, result);
-                normalize_col(n, 0, result);
+                if(j0 < n) {
+                    copy_col(n, j0, E0, 0, result);
+                    normalize_col(n, 0, result);
+                } else {
+                    is_degenerate[0] = true;
+                }
             }
 
             if(!is_zero_1) {
                 const SizeType j1 = find_non_zero_col(n, E1);
-                copy_col(n, j1, E1, 1, result);
-                normalize_col(n, 1, result);
+                if(j1 < n) {
+                    copy_col(n, j1, E1, 1, result);
+                    normalize_col(n, 1, result);
+                } else {
+                    is_degenerate[1] = true;
+                }
             }
 
             if(!is_zero_2) {
                 const SizeType j2 = find_non_zero_col(n, E2);
-                copy_col(n, j2, E2, 2, result);
-                normalize_col(n, 2, result);
+                if(j2 < n) {
+                    copy_col(n, j2, E2, 2, result);
+                    normalize_col(n, 2, result);
+                } else {
+                    is_degenerate[2] = true;
+                }
             }
 
-            StaticVector<Scalar, 3> u, v;
+            int n_degenerates = int(is_degenerate[0]) + int(is_degenerate[1]) + int(is_degenerate[2]);
 
+            if(n_degenerates == 2) {
+                gram_schmidt(is_degenerate, result);
+                return;
+            }
+
+            // UTOPIA_DEVICE_ASSERT(!is_degenerate[0] && !is_degenerate[1] && !is_degenerate[2]);
+
+            StaticVector<Scalar, 3> u, v;
             if(is_zero_0) {
                 UTOPIA_DEVICE_ASSERT(e1 != 0.0);
                 UTOPIA_DEVICE_ASSERT(e2 != 0.0);
@@ -185,8 +217,12 @@ namespace utopia {
                 }
             }
 
-            UTOPIA_DEVICE_ASSERT(max_val > 0.0);
-            return arg_max;
+            if(max_val == 0.0) {
+                //out of bound index
+                return n+1;
+            } else {
+                return arg_max;
+            }
         }
 
         template<class From, class To>
@@ -220,6 +256,41 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 mat(i, j) /= len;
+            }
+        }
+
+        template<class Mat>
+        UTOPIA_INLINE_FUNCTION static void gram_schmidt(bool is_degenerate[3], Mat &result)
+        {
+            StaticVector<Scalar, 3> u[3];
+
+            int vec_idx = -1;
+            for(int i = 0; i < 3; ++i) {
+                if(!is_degenerate[i]) {
+                    vec_idx = i;
+                    break;
+                }
+            }
+
+            UTOPIA_DEVICE_ASSERT(vec_idx >= 0);
+
+            result.col(vec_idx, u[0]);
+            u[1].copy(u[0]);
+
+            u[1](0) += 1.0;
+            u[1] -= u[0] * (dot(u[0], u[1])/dot(u[0], u[0]));
+            u[1] /= norm2(u[1]);
+
+            u[2] = cross(u[1], u[1]);
+            u[2] /= norm2(u[2]);
+
+            int idx = 0;
+            for(int i = 0; i < 2; ++i, ++idx) {
+                if(i == vec_idx) {
+                    ++idx;
+                }
+
+                result.set_col(idx, u[i + 1]);
             }
         }
 
