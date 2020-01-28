@@ -1,24 +1,35 @@
-//
-// Created by Patrick Zulian on 29/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_DIFFCONTROLLER_HPP
 #define UTOPIA_UTOPIA_DIFFCONTROLLER_HPP
 
 #include "utopia_FiniteDifference.hpp"
 #include "utopia_Wrapper.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_Input.hpp"
 
 namespace utopia {
-    class DiffController {
+
+    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    class DiffController : public Configurable {
     public:
-        template<class Fun, class Vector, class Matrix>
+        using Scalar = typename Traits<Vector>::Scalar;
+
+        DiffController(const Scalar spacing = 1e-5)
+        : spacing_(spacing)
+        {}
+
+        void read(Input &in) override
+        {
+            in.get("spacing", spacing_);
+        }
+
+        template<class Fun>
         bool check(Fun &fun, const Vector &x, const Vector &g, const Matrix &H) {
             return check_grad(fun, x, g) && check_hessian(fun, x, H);
         }
 
-        template<class Fun, class Vector>
+        template<class Fun>
         bool check_grad(Fun &fun, const Vector &x, const Vector &g) {
-            FiniteDifference<typename Vector::Scalar> fd;
+            FiniteDifference<typename Vector::Scalar> fd(spacing_);
             Vector gfd;
             fd.grad(fun, x, gfd);
             bool ok = approxeq(gfd, g, 1e-2);
@@ -41,12 +52,10 @@ namespace utopia {
             return ok;
         }
 
-        template<class Fun, class Vector, class Matrix>
+        template<class Fun>
         bool check_hessian(Fun &fun, const Vector &x, const Matrix &H) {
 
-            using Scalar = typename Traits<Vector>::Scalar;
-
-            FiniteDifference<Scalar> fd;
+            FiniteDifference<Scalar> fd(spacing_);
             Matrix Hfd = H;
             Hfd *= 0.0;
 
@@ -86,6 +95,14 @@ namespace utopia {
 
             return ok;
         }
+
+        void spacing(const Scalar &s)
+        {
+            spacing_ = s;
+        }
+
+    private:
+        Scalar spacing_;
     };
 }
 

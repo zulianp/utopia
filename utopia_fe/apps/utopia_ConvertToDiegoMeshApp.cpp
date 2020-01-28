@@ -72,9 +72,9 @@ namespace utopia {
             to = std::min(n_t, to);
 
             for(uint i = from; i < to; i += every) {
-                space.space().each([&](const int i, LibMeshFunctionSpace &s) {
+                space.space().each([&](const int subspace_id, LibMeshFunctionSpace &s) {
                     const auto &name = s.var_name();
-                    std::cout << "reading var \"" << name << "\"" << std::endl;
+                    // std::cout << "reading var \"" << name << "\"" << std::endl;
                     io.copy_nodal_solution(
                         s.equation_system(),
                         name,
@@ -86,6 +86,8 @@ namespace utopia {
                 utopia::convert(*space.space()[0].equation_system().solution, data);
 
                 if(apply_disp) {
+                    UScalar norm_disp = norm2(data);
+                    std::cout << "norm2(disp) = " << norm_disp << std::endl;
                     deform_mesh(
                             mesh.mesh(),
                             space.space()[0].dof_map(),
