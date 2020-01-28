@@ -49,6 +49,23 @@ namespace utopia {
             R_ = R;
         }
 
+        virtual bool smooth(const Vector &b, Vector &x) override
+        {
+            const Matrix &A = *this->get_operator();
+
+            // init(A);
+            SizeType it = 0;
+            SizeType n_sweeps = this->sweeps();
+            if(this->has_bound()) {
+                std::cout<<"-- constrained step.... "<<std::endl;
+               step(A, b, x);
+            } else {
+                std::cout<<"-- unconstrained step.... "<<std::endl;
+                //while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
+            }
+            return it == SizeType(this->sweeps() - 1);
+        } 
+
         bool apply(const Vector &b, Vector &x) override
         {
             if(this->verbose())
@@ -101,69 +118,77 @@ namespace utopia {
         {
             r = b - A * x;
 
-            inactive_set_ = local_values(local_size(b).get(0), 1.0);
-            //localize gap function for correction
-            g = this->get_upper_bound() - x;
-            l = this->get_lower_bound() - x;
+            std::cout<<"doing step ... "<< std::endl;
 
+            d = diag(A);
+            d_inv = 1./d;            
+
+            inactive_set_ = local_values(local_size(b).get(0), 0.0);
+            //localize gap function for correction
+            g = this->get_upper_bound() - R_*x;
+            l = this->get_lower_bound() - R_*x;
+            
             c *= 0.;
+            
             Scalar g_i, l_i;
+            
             Range rr = row_range(A);
             {
                 Write<Vector> w_a(inactive_set_);
                 ReadAndWrite<Vector> rw_c(c);
-                Read<Vector> r_r(r), r_d_inv(d_inv), r_g(g), r_l(l);
+                Read<Vector> r_d_inv(d_inv), r_g(g), r_l(l);
                 Read<Matrix> r_A(A);
+                Read<Vector> r_x(x);
+                Read<Vector> r_r(r);
                 Read<Matrix> r_R(R_);           
-
                 SizeType n_rows = local_size(R_).get(0); 
                 //SizeType n_cols = local_size(R_).get(1); 
 
                 //std::cout<<"n_cols: "<< this->n_local_sweeps() << "   n_rows: "<< n_rows << "  \n";
 
-                for(SizeType il = 0; il < this->n_local_sweeps(); ++il) 
-                {
+                // for(SizeType il = 0; il < 1; il++) 
+                // {
+
                     for(auto i = rr.begin(); i != rr.end(); ++i) 
                     {
                         RowView<const Matrix> row_view(A, i);
                         decltype(i) n_values = row_view.n_values();
 
-                        auto s = r.get(i);
+                        Scalar s = r.get(i);
                         
                         for(auto index = 0; index < n_values; ++index) 
                         {
                             const decltype(i) j = row_view.col(index);
                             const auto a_ij = row_view.get(index);
 
-                            if(rr.inside(j) && i != j) 
+                            if(rr.inside(j) && j != i) 
                             {
                                 s -= a_ij * c.get(j);
                             }
                         }
 
                         //update correction
-                        c.set(i, d_inv.get(i)*s);
+//                        x.set(i, d_inv.get(i)*(b.get(i) - s) + x.get(i)) ;
+                        c.set(i, d_inv.get(i)*s) ;
 
                         if  (i < n_rows)
                         {
                             RowView<const Matrix> row_viewR(R_, i);     
                             decltype(i) nnz_R = row_viewR.n_values();
+                            //std::cout << "nnz_R: " << nnz_R << std::endl;
 
-                            Scalar r_sum = 0.0;
-                            Scalar r_ii = 0.0; 
+                            Scalar r_sum_c = 0.0;
+
+                            Scalar r_ii = 0.0;
                             for(auto index = 0; index < nnz_R; ++index) 
                             {
                                 r_ii = 0.0; 
                                 const decltype(i) j = row_viewR.col(index);
                                 const auto r_ij = row_viewR.get(index);
 
-                                //if(rr.inside(j) && i != j) 
-                                //{
-                                //std::cout << "i:" << i <<"\tj:" << j << std::endl;
                                 if(j < i)
                                 {
-                                    //        std::cout << "i:" << i <<"\tj:" << j << std::endl;
-                                    r_sum -= r_ij * c.get(j);
+                                    r_sum_c += r_ij * c.get(j);
                                 }
                                 else if(i == j)
                                 {
@@ -171,36 +196,56 @@ namespace utopia {
                                 }
                             }
     
-                            //std::cout <<"i:" << i << "\trow_ii:" << r_ii << std::endl;
+                            std::cout <<" r_sum_c" << r_sum_c << std::endl;
                             if (r_ii > 0)
                             {
-                                g_i = (g.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
-                                l_i = (l.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+                                g_i = (g.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
+                                l_i = (l.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
                             }
                             else if (r_ii < 0)
                             {
-                                l_i = (g.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
-                                g_i = (l.get(i)-r_sum)/r_ii; // g.get(i)*invR_ii
+                                l_i = (g.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
+                                g_i = (l.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
                             }
-                            //update correction
-                            if (d_inv.get(i) * s > g_i)
-                            {
-                                c.set(i, std::min( d_inv.get(i) * s, g_i));
-                                inactive_set_.set(i, 0.0);
-                            }
-                            else if (d_inv.get(i) * s < l_i)
-                            {
-                                c.set(i, std::max( d_inv.get(i) * s, l_i ));
-                                inactive_set_.set(i, 0.0);
-                            }
-                        }
-                        //std::cout << "row_sum:" << r_sum << std::endl;
-                    }
-                        
-                }
-               //disp(inactive_set_);
 
-            }
+                            //update correction
+                            std::cout << "l_i:" << l_i << "  g_i:" << g_i << "  c_i:" << c.get(i) << std::endl;
+                            if (( g_i <= c.get(i) ) || (c.get(i) <= l_i))
+                            {
+                                c.set(i, std::max(std::min( c.get(i), g_i), l_i));
+                                inactive_set_.set(i, 0.0);
+                                std::cout << "GS: activeset id:" << i << std::endl;
+                            }
+                            else
+                            {
+                                inactive_set_.set(i, 1.0);
+                            }
+                        }//std::cout << "row_sum:" << r_sum << std::endl;
+                    }
+
+                    // inactive_set_ *= 0.;
+                    // for (auto i = rr.begin(); i != rr.end(); ++i)
+                    // {
+                    //     // std::cout<<"l.get(i): "<< l.get(i) <<std::endl;
+                    //     // std::cout<<"g.get(i): "<< g.get(i) <<std::endl;
+                    //     // std::cout<<"x.get(i): "<< x.get(i) <<std::endl;
+
+                    //     if(( l.get(i) < x.get(i) ) && (x.get(i) < g.get(i)))
+                    //     {
+                    //         inactive_set_.set(i, 1.);
+                    //     }
+                    //     else
+                    //     {
+                    //         std::cout << "GS: activeset id:" << i << std::endl;
+                    //     }
+                    // }
+
+                    std::cout<<"------------------------------------------------------- "<<std::endl;
+
+                    //disp(inactive_set_);
+                }
+
+            // }
 
 
 

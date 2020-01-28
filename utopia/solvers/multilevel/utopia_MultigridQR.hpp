@@ -459,6 +459,8 @@ namespace utopia
         {
             // GaussSeidel<Matrix, Vector>* GS_smoother =  dynamic_cast<GaussSeidel<Matrix, Vector>* > (smoothers_[l].get()); 
 
+            std::cout<<"----- regular smoothing --- "<< std::endl;
+
             smoothers_[l]->sweeps(nu);
             smoothers_[l]->smooth(rhs, x);
 
@@ -470,20 +472,48 @@ namespace utopia
         {
             // utopia_assert(l != this->n_levels()-1); 
 
-            smoothers_[l]->sweeps(5);
+            
             ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get()); 
             GS_smoother->verbose(true);
             GS_smoother->set_R(R_);            
-            GS_smoother->sweeps(5);
+            GS_smoother->sweeps(1);
             GS_smoother->set_box_constraints(make_box_constaints(make_ref(lb_),  make_ref(ub_)));          
             GS_smoother->smooth(rhs, x);
-            const Vector & inactive_set = GS_smoother->get_inactive_set();
+            // const Vector & inactive_set = GS_smoother->get_inactive_set();
 
-            // disp(inactive_set, "inactive_set");
+            Vector inactive_set_ = 0*x;
+
+            std::cout<<"Presmoothing: "<< pre_sm << std::endl;
+
+
+            // disp(inactive_set, "inactive_set_"+pre_sm);
+            {
+                Write<Vector> w_a(inactive_set_);
+                Range rr = range(inactive_set_);
+                Read<Vector> r_d_inv(lb_), r_g(ub_), rx(x);
+
+                    for (auto i = rr.begin(); i != rr.end(); ++i)
+                    {
+                        // std::cout<<"l.get(i): "<< l.get(i) <<std::endl;
+                        // std::cout<<"g.get(i): "<< g.get(i) <<std::endl;
+                        // std::cout<<"x.get(i): "<< x.get(i) <<std::endl;
+
+                        if(( lb_.get(i) < x.get(i) ) && (x.get(i) < ub_.get(i)))
+                        {
+                            inactive_set_.set(i, 1.);
+                        }
+                        else
+                        {
+                            std::cout << "MG: activeset id:" << i << std::endl;
+                        }
+                    }
+              }
+
+
 
             if(pre_sm){
               MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get()); 
-              trunc_transfer->truncate_interpolation(inactive_set); 
+              trunc_transfer->truncate_interpolation(inactive_set_); 
               this->galerkin_assembly(this->get_operator());
               // update();
 
