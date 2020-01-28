@@ -33,6 +33,7 @@ namespace utopia
             UTOPIA_RUN_TEST(dogleg_test);
             UTOPIA_RUN_TEST(st_cg_test);
             UTOPIA_RUN_TEST(precond_st_cg_test);
+            UTOPIA_RUN_TEST(diff_ctrl_test);
         }
 
         class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -288,7 +289,7 @@ namespace utopia
                 // nlsolver1.solve(fun2, x1);
                 // nlsolver2.solve(fun2, x2);
 
-                
+
 
                 // Woods function test
                 Vector x_w1  = values(4, 10);
@@ -362,6 +363,18 @@ namespace utopia
             }
         }
 
+        void diff_ctrl_test()
+        {
+            Newton<Matrix, Vector> newton_solver;
+            newton_solver.enable_differentiation_control(true);
+
+            Vector x = values(10, 2);
+            TestFunctionND_1<Matrix, Vector> fun1(x.size());
+            newton_solver.solve(fun1, x);
+
+            SimpleQuadraticFunction<Matrix, Vector> fun2(x.size());
+            newton_solver.solve(fun2, x);
+        }
 
         SolverTest()
         : _n(10) { }

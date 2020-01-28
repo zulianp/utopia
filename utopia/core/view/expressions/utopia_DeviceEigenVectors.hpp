@@ -64,25 +64,21 @@ namespace utopia {
                 return;
             }
 
-            // scale = 1.0;
-
-            // e0 /= scale;
-            // e1 /= scale;
-            // e2 /= scale;
-
-            bool is_zero_0 = device::approxeq(e0/scale, 0.0, device::epsilon<Scalar>()*100);
-            bool is_zero_1 = device::approxeq(e1/scale, 0.0, device::epsilon<Scalar>()*100);
-            bool is_zero_2 = device::approxeq(e2/scale, 0.0, device::epsilon<Scalar>()*100);
-
-            if((is_zero_0 && is_zero_1 && is_zero_2) || mat.is_diagonal(device::epsilon<Scalar>())) {
+            if(mat.is_diagonal(device::epsilon<Scalar>())) {
                 result.identity();
                 return;
             }
 
+            // static const Scalar tol = device::epsilon<Scalar>()*100;
+
+            bool is_zero_0 = e0 == 0.0;
+            bool is_zero_1 = e1 == 0.0;
+            bool is_zero_2 = e2 == 0.0;
+
             //expressions (not evaluated)
-            auto Am0 = /*(1.0/scale) */ mat - e0 * device::identity<Scalar>();
-            auto Am1 = /*(1.0/scale) */ mat - e1 * device::identity<Scalar>();
-            auto Am2 = /*(1.0/scale) */ mat - e2 * device::identity<Scalar>();
+            auto Am0 = mat - e0 * device::identity<Scalar>();
+            auto Am1 = mat - e1 * device::identity<Scalar>();
+            auto Am2 = mat - e2 * device::identity<Scalar>();
 
             const SizeType n = utopia::rows(mat);
 
@@ -173,27 +169,24 @@ namespace utopia {
         template<class MatExpr>
         UTOPIA_INLINE_FUNCTION static SizeType find_non_zero_col(const SizeType &n, const MatExpr &mat)
         {
-            // const auto tol = device::epsilon<Scalar>();
-            const auto tol = 0.0; //Will this be a problem???
+            SizeType arg_max = 0;
+            Scalar   max_val = 0;
 
             for(SizeType j = 0; j < n; ++j) {
-
-                bool is_zero = true;
+                Scalar val = 0.0;
                 for(SizeType i = 0; i < n; ++i) {
-
-                    if(!device::approxeq(mat(i, j), 0.0, tol)) {
-                        is_zero = false;
-                        break;
-                    }
+                    const Scalar v = mat(i, j);
+                    val += v * v;
                 }
 
-                if(!is_zero) {
-                    return j;
+                if(max_val < val) {
+                    max_val = val;
+                    arg_max = j;
                 }
             }
 
-            UTOPIA_DEVICE_ASSERT(false);
-            return 0;
+            UTOPIA_DEVICE_ASSERT(max_val > 0.0);
+            return arg_max;
         }
 
         template<class From, class To>
