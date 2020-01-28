@@ -164,7 +164,8 @@ namespace utopia {
 
             Vector rhs, x;
             Vector upper_bound,lower_bound;
-            Matrix A, R, Q, Ih_fine;//, Ih1, Ih0; 
+            Matrix A, R, Q, Ih_fine;
+            Matrix Ih1, Ih0; 
 
             const std::string data_path = Utopia::instance().get("data_path");
 
@@ -177,11 +178,11 @@ namespace utopia {
             read(data_path + "/forQR/lb", lower_bound);
 
             read(data_path + "/forQR/Ih", Ih_fine);
-            //read(data_path + "/forQR/I2h", Ih1);
-            //read(data_path + "/forQR/I3h", Ih0);
+            read(data_path + "/forQR/I2h", Ih1);
+            read(data_path + "/forQR/I3h", Ih0);
 
 
-            auto num_levels = 2;
+            auto num_levels = 4;
 
 
             // chop_abs(Q, 1e-4); 
@@ -235,13 +236,13 @@ namespace utopia {
             // interpolation_operators.push_back(make_ref(QtIh));
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
-            // interpolation_operators.resize(3);
-            // interpolation_operators[2] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
-            // interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih1));
-            // interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih0));
+            interpolation_operators.resize(3);
+            interpolation_operators[2] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih1));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih0));
     
-            interpolation_operators.resize(1);
-            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            //interpolation_operators.resize(1);
+            //interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
             
 
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();

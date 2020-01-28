@@ -125,8 +125,11 @@ namespace utopia {
 
             inactive_set_ = local_values(local_size(b).get(0), 0.0);
             //localize gap function for correction
-            g = this->get_upper_bound() - R_*x;
-            l = this->get_lower_bound() - R_*x;
+            Vector Rx;
+            Rx = R_*x;
+
+            g = this->get_upper_bound() - Rx;
+            l = this->get_lower_bound() - Rx;
             
             c *= 0.;
             
@@ -241,13 +244,7 @@ namespace utopia {
                     // }
 
                     std::cout<<"------------------------------------------------------- "<<std::endl;
-
-                    //disp(inactive_set_);
                 }
-
-            // }
-
-
 
             x += c;
             return true;

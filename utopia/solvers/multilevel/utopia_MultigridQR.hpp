@@ -119,8 +119,6 @@ namespace utopia
           this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-");
         }
 
-
-
         /*! @brief if overriden the subclass has to also call this one first
          */
         void update(const std::shared_ptr<const Matrix> &op) override
@@ -286,10 +284,11 @@ namespace utopia
             // assert(approxeq(double(norm2(c)), 0.));
 
             ////////////////////////////////////
-            // if(l == 0) {
-            //   // UTOPIA_RECORD_VALUE("c", c);
-            //   // UTOPIA_RECORD_VALUE("r", r);
-            //   coarse_solve(r, c);
+            if(l == 0) 
+            {
+                coarse_solve(memory.r[l], memory.c[l]);
+
+                // coarse_solve(r, c);
             //     // if(coarse_solve(r, c)) 
             //     // {
             //     //   assert(approxeq(level(0).A() * c, r, 1e-6));
@@ -299,9 +298,9 @@ namespace utopia
             //     // } 
             //     // else {
             //     //   assert(false);
-            //     //   return false;
+                   return false;
             //     // }
-            // }
+            }
             ////////////////////////////////////
 
             // recursive call into mg
@@ -312,21 +311,17 @@ namespace utopia
                 {
                     // do fine level smoothing
                     smoothing_fine(l, memory.rhs[l], memory.x[l], this->pre_smoothing_steps(), true);
+                    memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
                 }
                 else if(l > 0)
                 {
-                    // smoothing(l, r, c, this->pre_smoothing_steps());
-                  std::cerr<< "--------- not fixed yet.... \n"; 
+                    smoothing(l, memory.r[l], memory.c[l], this->pre_smoothing_steps());
                 }
 
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
 
 
-                 // memory.rhs[l] = r - level(l).A() * x;
-                 memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
-
-                // UTOPIA_RECORD_VALUE("r_R", r_R);
-
+                // memory.rhs[l] = r - level(l).A() * x;
                 // residual transfer
                 this->transfer(l-1).restrict(memory.r[l], memory.r[l-1]);
                 // memory.rhs[l-1] = memory.r[l-1];
@@ -341,28 +336,25 @@ namespace utopia
 
                 // assert(!empty(memory.rhs[l-1]));
 
-                // standard_cycle(l-1);
                 memory.c[l-1] = 0*memory.r[l-1]; 
-                coarse_solve(memory.r[l-1], memory.c[l-1]);
-
-
-
+                standard_cycle(l-1);
+                
                 // correction transfer
                 this->transfer(l-1).interpolate(memory.c[l-1], memory.c[l]);
 
-
                 memory.x[l] += memory.c[l];
-
 
                 // postsmoothing
                 if( l == this-> n_levels()-1)
                 {
                   smoothing_fine(l, memory.rhs[l], memory.x[l], this->post_smoothing_steps(), false);
+                  memory.r[l] = memory.rhs[l] - level(l).A() * memory.x[l];
+
                 }
                 else if(l > 0)
                 {
-                  //smoothing(l, r, c, this->post_smoothing_steps());
-                  std::cerr<< "--------- not fixed yet.... \n"; 
+                  smoothing(l, memory.r[l-1], memory.c[l-1], this->post_smoothing_steps());
+                  //std::cerr<< "--------- not fixed yet.... \n"; 
                 }
                 // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
 
@@ -395,75 +387,38 @@ namespace utopia
             return true;
         }
 
-        // TODO:: run only for pre-smoothing
+        
         inline bool smoothing_fine(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1, const bool & pre_sm = false)
         {
-            // utopia_assert(l != this->n_levels()-1); 
-
+            assert(l != this->n_levels()-2); 
             
-            ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get()); 
-            GS_smoother->verbose(true);
-            GS_smoother->set_R(R_);            
-            GS_smoother->sweeps(1);
-            GS_smoother->set_box_constraints(make_box_constaints(make_ref(lb_),  make_ref(ub_)));          
-            GS_smoother->smooth(rhs, x);
-            // const Vector & inactive_set = GS_smoother->get_inactive_set();
-
-            Vector inactive_set_ = 0*x;
-
-
-            if(pre_sm==true){
-              std::cout<<"Presmoothing: " <<std::endl;
+            if(ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get())){
+              GS_smoother->verbose(true);
+              GS_smoother->set_R(R_);            
+              GS_smoother->sweeps(nu);
+              GS_smoother->set_box_constraints(make_box_constaints(make_ref(lb_),  make_ref(ub_)));          
+              GS_smoother->smooth(rhs, x);
             }
             else{
-              std::cout<<"Postsmoothing......\n";
+              utopia_error("MG_QR: requires ProjectedGaussSeidelQR to be the fine level smoother "); 
             }
-
-            {
-                Write<Vector> w_a(inactive_set_);
-                Range rr = range(inactive_set_);
-                Read<Vector> r_d_inv(lb_), r_g(ub_), rx(x);
-
-                    for (auto i = rr.begin(); i != rr.end(); ++i)
-                    {
-                        // std::cout<<"l.get(i): "<< l.get(i) <<std::endl;
-                        // std::cout<<"g.get(i): "<< g.get(i) <<std::endl;
-                        // std::cout<<"x.get(i): "<< x.get(i) <<std::endl;
-
-                        if(( lb_.get(i) < x.get(i) ) && (x.get(i) < ub_.get(i)))
-                        {
-                            inactive_set_.set(i, 1.);
-                        }
-                        else
-                        {
-                            std::cout << "MG: activeset id:" << i << std::endl;
-                        }
-                    }
-              }
-
-
-
             if(pre_sm){
-              MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get()); 
-              trunc_transfer->truncate_interpolation(inactive_set_); 
-              this->galerkin_assembly(this->get_operator());
-              // update();
-
-              for(std::size_t l = 1; l != smoothers_.size(); ++l) {
-                  smoothers_[l]->update(level(l).A_ptr());
+             
+             if(MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get())){ 
+                ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get());
+                const Vector & inactive_set = GS_smoother->get_inactive_set();
+                trunc_transfer->truncate_interpolation(inactive_set); 
+                this->galerkin_assembly(this->get_operator());
+                // update();
+                for(std::size_t l = 1; l != smoothers_.size()-1; ++l) {
+                    smoothers_[l]->update(level(l).A_ptr());
+                }
+                coarse_solver_->update(level(0).A_ptr());              
               }
-              coarse_solver_->update(level(0).A_ptr());              
-
+            else{
+              utopia_error("MG_QR: requires MatrixTruncatedTransfer for the finest level.");
             }
-
-            // exit(0); 
-            // use active set to modify the transfer operator
-
-            // galerkin assembly for all levels
-
-            // make it semidefinite
-
-            // smoothers_[l]->smooth(rhs, x);
+          }
             return true;
         }
         /**
