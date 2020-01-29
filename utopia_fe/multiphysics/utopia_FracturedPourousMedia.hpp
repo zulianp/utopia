@@ -6,6 +6,7 @@
 #include "utopia_NewTransferAssembler.hpp"
 #include "utopia_TransferUtils.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_FractureFlowUtils.hpp"
 
 #include "utopia_fe_base.hpp"
 
@@ -66,45 +67,45 @@ namespace utopia {
         }
     }
 
-    void remove_constrained_dofs(libMesh::DofMap &dof_map, USparseMatrix &mat)
-    {
-        if(utopia::Utopia::instance().verbose()) {
-            std::cout << "apply_boundary_conditions begin: "  << std::endl;
-        }
+    // void remove_constrained_dofs(libMesh::DofMap &dof_map, USparseMatrix &mat)
+    // {
+    //     if(utopia::Utopia::instance().verbose()) {
+    //         std::cout << "apply_boundary_conditions begin: "  << std::endl;
+    //     }
 
-        Chrono c;
-        c.start();
+    //     Chrono c;
+    //     c.start();
 
-        assert(!empty(mat));
+    //     assert(!empty(mat));
 
-        using SizeType = Traits<UVector>::SizeType;
+    //     using SizeType = Traits<UVector>::SizeType;
 
-        const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+    //     const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
 
-        Size ls = local_size(mat);
-        Size s = size(mat);
+    //     Size ls = local_size(mat);
+    //     Size s = size(mat);
 
-        std::vector<SizeType> index;
+    //     std::vector<SizeType> index;
 
-        Range rr = row_range(mat);
+    //     Range rr = row_range(mat);
 
-        if(has_constaints) {
-            for(SizeType i = rr.begin(); i < rr.end(); ++i) {
-                if( dof_map.is_constrained_dof(i) ) {
-                    index.push_back(i);
-                }
-            }
-        }
+    //     if(has_constaints) {
+    //         for(SizeType i = rr.begin(); i < rr.end(); ++i) {
+    //             if( dof_map.is_constrained_dof(i) ) {
+    //                 index.push_back(i);
+    //             }
+    //         }
+    //     }
 
-        set_zero_rows(mat, index, 0.);
+    //     set_zero_rows(mat, index, 0.);
 
-        c.stop();
+    //     c.stop();
 
-        if(utopia::Utopia::instance().verbose()) {
-            std::cout << "apply_boundary_conditions end: " << c << std::endl;
-        }
-    }
+    //     if(utopia::Utopia::instance().verbose()) {
+    //         std::cout << "apply_boundary_conditions end: " << c << std::endl;
+    //     }
+    // }
 
     template<class Matrix, class Vector>
     class LagrangeMultiplier : public Configurable {
