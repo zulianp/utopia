@@ -17,9 +17,38 @@ namespace utopia {
 
     }
 
-    bool DiegoMeshWriter::write_field(const Path &folder, const libMesh::MeshBase &mesh, const UVector &field)
+    bool DiegoMeshWriter::write_field(
+        const Path &folder,
+        const std::string &field_name,
+        const libMesh::MeshBase &mesh,
+        const UVector &field,
+        const int component,
+        const int sys_num)
     {
-        return false;
+
+        std::string path = folder / (field_name + ".raw");
+
+        std::ofstream os;
+
+        os.open(path);
+        if(!os.good()) {
+            std::cout << "no file at " << path << std::endl;
+            return false;
+        }
+
+        Read<UVector> r_d(field);
+
+        auto m_it  = mesh.local_nodes_begin();
+        auto m_end = mesh.local_nodes_end();
+
+        for(; m_it != m_end; ++m_it) {
+            const int dof_id = (*m_it)->dof_number(sys_num, component, 0);
+            float v = field.get(dof_id);
+            os.write((char *)&v, sizeof(v));
+        }
+
+        os.close();
+        return true;
     }
 
     bool DiegoMeshWriter::write_headers(const Path &folder, const libMesh::MeshBase &mesh)
