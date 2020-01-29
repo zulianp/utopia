@@ -53,8 +53,12 @@ namespace utopia {
 
             in.get("space", space);
 
+            bool export_field_only = false;
+            in.get("export-field-only", export_field_only);
 
-            DiegoMeshWriter().write(folder, mesh.mesh());
+            if(!export_field_only) {
+                DiegoMeshWriter().write(folder, mesh.mesh());
+            }
 
             UVector data = local_zeros(space.space()[0].dof_map().n_local_dofs());
             UVector aux;
@@ -103,6 +107,19 @@ namespace utopia {
                         space.space()[0].dof_map(),
                         aux
                     );
+                } else {
+
+                    space.space().each([&](const int subspace_id, LibMeshFunctionSpace &s) {
+                        const auto &name = s.var_name();
+
+                        DiegoMeshWriter().write_field(
+                            folder,
+                            name + "_t" + std::to_string(i + 1),
+                            mesh.mesh(),
+                            data,
+                            subspace_id
+                        );
+                    });
                 }
 
             }
