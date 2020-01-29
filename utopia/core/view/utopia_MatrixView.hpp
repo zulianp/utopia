@@ -257,6 +257,11 @@ namespace utopia {
             return device::is_diagonal(view_, tol);
         }
 
+        UTOPIA_INLINE_FUNCTION bool has_one_nz_per_col(const Scalar &tol) const
+        {
+            return device::has_one_nz_per_col(view_, tol);
+        }
+
         UTOPIA_INLINE_FUNCTION void set(const Scalar &alpha)
         {
             device::fill(alpha, view_);

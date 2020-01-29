@@ -50,7 +50,7 @@ namespace utopia {
         };
 
         PhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params = Parameters())
-        : space_(space), params_(params)
+        : space_(space), params_(params), use_dense_hessian_(false)
         {}
 
         // void assemble(
@@ -70,9 +70,18 @@ namespace utopia {
 
         // }
 
+        void use_dense_hessian(const bool val)
+        {
+            use_dense_hessian_ = val;
+        }
+
         inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
         {
-            space_.create_matrix(H);
+            if(use_dense_hessian_) {
+                H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+            } else {
+                space_.create_matrix(H);
+            }
             return true;
         }
 
@@ -87,8 +96,8 @@ namespace utopia {
         ) const override
         {
             USpace U;
-            space_.subspace(0, U);
-            CSpace C = space_.subspace(Dim);
+            space_.subspace(1, U);
+            CSpace C = space_.subspace(0);
 
             auto &x = const_cast<Vector &>(x_const);
 
@@ -156,7 +165,7 @@ namespace utopia {
 
             val = x.comm().sum(val);
 
-            disp(val);
+            // disp(val);
             return true;
         }
 
@@ -169,8 +178,8 @@ namespace utopia {
             }
 
             USpace U;
-            space_.subspace(0, U);
-            CSpace C = space_.subspace(Dim);
+            space_.subspace(1, U);
+            CSpace C = space_.subspace(0);
 
             auto &x = const_cast<Vector &>(x_const);
 
@@ -248,31 +257,31 @@ namespace utopia {
                             split_stress(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress);
 
                             for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
-                                u_el_vec(j) += inner(stress, u_grad_shape_el(j, qp)) * dx(qp);
+                                auto grad_test = u_grad_shape_el(j, qp);
+                                u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
                             }
 
                             const Scalar elast =
                                 grad_elastic_energy_wrt_c(
                                             params_,
                                             c[qp],
-                                            c_grad_el[qp],
                                             sum_eigs,
                                             strain_p
                                 );
 
 
                             for(SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
-                                const Scalar tf   = c_shape_fun_el(j, qp);
+                                const Scalar shape_test   = c_shape_fun_el(j, qp);
                                 const Scalar frac =
                                     grad_fracture_energy_wrt_c(
                                             params_,
                                             c[qp],
                                             c_grad_el[qp],
-                                            tf,
+                                            shape_test,
                                             c_grad_shape_el(j, qp)
                                     );
 
-                                c_el_vec(j) += (elast * tf + frac) * dx(qp);
+                                c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
                             }
 
                         }
@@ -284,7 +293,6 @@ namespace utopia {
             }
 
             space_.apply_zero_constraints(g);
-
             static int iter = 0;
             write("g" + std::to_string(iter++) + ".m", g);
             return true;
@@ -293,15 +301,19 @@ namespace utopia {
         bool hessian(const Vector &x_const, Matrix &H) const override
         {
             if(empty(H)) {
-                space_.create_matrix(H);
+                if(use_dense_hessian_) {
+                    H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+                } else {
+                    space_.create_matrix(H);
+                }
             } else {
                 H *= 0.0;
             }
 
 
             USpace U;
-            space_.subspace(0, U);
-            CSpace C = space_.subspace(Dim);
+            space_.subspace(1, U);
+            CSpace C = space_.subspace(0);
 
             auto &x = const_cast<Vector &>(x_const);
 
@@ -387,10 +399,16 @@ namespace utopia {
 
                             for(SizeType l = 0; l < c_grad_shape_el.n_functions(); ++l) {
                                 for(SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
-                                    el_mat(l, j) += (
-                                        diffusion_c(params_, c_grad_shape_el(j, qp), c_grad_shape_el(l, qp)) +
-                                        reaction_c(params_,  c_shape_fun_el(j, qp),  c_shape_fun_el(l, qp))  +
-                                        elastic_deriv_cc(params_, c[qp], eep, c_shape_fun_el(l, qp))
+
+                                   el_mat(l, j) +=
+                                        bilinear_cc(
+                                            params_,
+                                            c[qp],
+                                            eep,
+                                            c_shape_fun_el(j, qp),
+                                            c_shape_fun_el(l, qp),
+                                            c_grad_shape_el(j, qp),
+                                            c_grad_shape_el(l, qp)
                                     ) * dx(qp);
                                 }
                             }
@@ -410,15 +428,14 @@ namespace utopia {
                             for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
                                 for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
 
-                                    const Scalar val = bilinear_cu(
-                                                params_,
-                                                c[qp],
-                                                sum_eigs,
-                                                strain_p,
-                                                strain_p - strain_n,
-                                                c_shape_fun_el(c_i, qp),
-                                                u_grad_shape_el(u_i, qp)
-                                            ) * dx(qp);
+                                   const Scalar val =
+                                        bilinear_cu(
+                                            params_,
+                                             c[qp],
+                                             p_stress_view.positive(u_i, qp),
+                                            strain_p - strain_n,
+                                            c_shape_fun_el(c_i, qp)
+                                        ) * dx(qp);
 
 
                                     el_mat(c_i, C_NDofs + u_i) += val;
@@ -443,28 +460,31 @@ namespace utopia {
 
         //////////////////////////////////////////
 
-        template<class Strain, class FullStrain, class Grad>
+        template<class GradShape>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const Scalar &elastic_energy_p,
+            const Scalar &shape_trial,
+            const Scalar &shape_test,
+            const GradShape &grad_trial,
+            const GradShape &grad_test
+            )
+        {
+            return diffusion_c(params, grad_trial, grad_test) + reaction_c(params,  shape_trial,  shape_test) +
+                   elastic_deriv_cc(params, phase_field_value, elastic_energy_p, shape_trial, shape_test);
+        }
+
+        template<class Stress, class FullStrain>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cu(
             const Parameters &params,
             const Scalar &phase_field_value,
-            const Scalar &trace,
-            const Strain &strain_positive,
+            const Stress &stress_p,
             const FullStrain &full_strain,
-            const Scalar &c_trial_fun,
-            const Grad &u_grad_test
+            const Scalar &c_trial_fun
             )
         {
-            auto C_test  = 0.5 * (u_grad_test  + transpose(u_grad_test));
-
-            const Scalar trace_positive = split_p(trace);
-            const Scalar trial =
-                strain_energy(params, trace_positive, strain_positive) *
-                quadratic_degradation_deriv(
-                           params,
-                            phase_field_value) * c_trial_fun;
-
-            return trial * inner(full_strain, C_test);
-
+            return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress_p, full_strain);
         }
 
         template<class Strain, class Grad>
@@ -507,19 +527,19 @@ namespace utopia {
             const Parameters &params,
             const Scalar &phase_field_value,
             const Scalar &elastic_energy_positive,
+            const Scalar &trial,
             const Scalar &test
             )
         {
             const Scalar dcc = quadratic_degradation_deriv2(params, phase_field_value);
-            return dcc * elastic_energy_positive * test;
+            return dcc * trial * elastic_energy_positive * test;
         }
 
-
-        template<class Grad, class Strain>
+        template<class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar grad_elastic_energy_wrt_c(
             const Parameters &params,
             const Scalar &phase_field_value,
-            const Grad   &phase_field_grad,
+            // const Grad   &phase_field_grad,
             const Scalar &trace,
             const Strain &strain_positive
             )
@@ -693,6 +713,7 @@ namespace utopia {
     private:
         FunctionSpace space_;
         Parameters params_;
+        bool use_dense_hessian_;
     };
 
     // template<class FunctionSpace>

@@ -479,6 +479,42 @@ namespace utopia {
         {
             return IsDiagonal<Matrix>::apply(mat, tol);
         }
+
+
+
+        template<class Matrix>
+        class HasOneNZPerCol {
+        public:
+            template<class Scalar>
+            UTOPIA_INLINE_FUNCTION static bool apply(const Matrix &mat, const Scalar &tol)
+            {
+                auto n = extent(mat, 0);
+                UTOPIA_DEVICE_ASSERT(n == extent(mat, 1));
+
+                for(decltype(n) j = 0; j < n; ++j) {
+                    decltype(n) nnz = 0;
+                    for(decltype(n) i = 0; i < n; ++i) {
+                        nnz += device::abs(mat(i, j)) > tol;
+                    }
+
+                    if(nnz != 1) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        };
+
+        template<class Matrix, class Scalar>
+        UTOPIA_INLINE_FUNCTION bool has_one_nz_per_col(const Matrix &mat, const Scalar &tol)
+        {
+            return HasOneNZPerCol<Matrix>::apply(mat, tol);
+        }
+
+
+
+
     }
 
 }

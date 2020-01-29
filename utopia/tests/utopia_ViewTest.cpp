@@ -35,6 +35,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(size_test);
             UTOPIA_RUN_TEST(strain_test);
             UTOPIA_RUN_TEST(inner_test);
+            UTOPIA_RUN_TEST(eigen_test);
         }
 
         void array_view_test()
@@ -361,6 +362,23 @@ namespace utopia {
             E = expr;
 
             static_assert(Traits<decltype(expr)>::Order == 2, "must be 2nd order tensor");
+        }
+
+        void eigen_test()
+        {
+            //[ 0, 0, 0;
+            // 0, -0.0000088729833462074205, -0.0000044364916731037103;
+            // 0, -0.0000044364916731037103, 0 ]
+
+            StaticMatrix<Scalar, 3, 3> A, V;
+            A.set(0.0);
+
+            A(1, 1) = -0.0000088729833462074205;
+            A(1, 2) = -0.0000044364916731037103;
+            A(2, 1) = -0.0000044364916731037103;
+
+            StaticVector<Scalar, 3> e;
+            eig(A, e, V);
         }
 
         void inner_test()

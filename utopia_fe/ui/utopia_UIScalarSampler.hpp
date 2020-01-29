@@ -113,7 +113,9 @@ namespace utopia {
                 std::string expr = "0.";
                 int block_id = -1;
 
-                sub_is.get("value",  expr);
+                Scalar val = 0.0;
+                sub_is.get("value", val);
+                // sub_is.get("value",  expr);
                 sub_is.get("type",  type);
                 sub_is.get("block", block_id);
 
@@ -136,16 +138,18 @@ namespace utopia {
                 assert(fun_is_constant);
 #endif //WITH_TINY_EXPR
 
+                // const Scalar val = std::atof(expr.c_str());
+
                 if(fun_is_constant) {
                     if(block_id == -1) {
-                        default_fun_ = std::make_shared<UIConstantFunction<Scalar>>(atof(expr.c_str()));
+                        default_fun_ = std::make_shared<UIConstantFunction<Scalar>>(val);
                     } else {
-                        fun_[block_id] = std::make_shared<UIConstantFunction<Scalar>>(atof(expr.c_str()));
+                        fun_[block_id] = std::make_shared<UIConstantFunction<Scalar>>(val);
                     }
                 }
 
 
-                std::cout << "value: " << expr << " type " << type << " block " << block_id << std::endl;
+                std::cout << "value: " << val << " type " << type << " block " << block_id << std::endl;
 
             });
         }

@@ -94,6 +94,7 @@ namespace utopia {
 
         void constrain_system(Matrix &A, Vector &b)
         {
+            assert(mortar_matrix());
             const auto &T = *mortar_matrix();
 
             A = transpose(T) * A * T;
@@ -104,6 +105,7 @@ namespace utopia {
         }
 
         void unconstrain_solution(Vector &x) {
+            assert(mortar_matrix());
             const auto &T = *mortar_matrix();
             x = T * x;
         }

@@ -2,6 +2,7 @@
 #define UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
 #include "utopia_TRSubproblem.hpp"
 #include <string>
+#include <cstring>
 
 namespace utopia
 {
@@ -61,7 +62,7 @@ namespace utopia
 
             in.get("pc_type", pc_type_aux);
             in.get("ksp_type", ksp_type_aux);
-            in.get("redundant_solve_flg", redundant_solve_flg_); 
+            in.get("redundant_solve_flg", redundant_solve_flg_);
 
             ksp_.pc_type(pc_type_aux);
             ksp_.ksp_type(ksp_type_aux);
@@ -76,16 +77,16 @@ namespace utopia
             }
             else
             {
-                ksp_.ksp_type("preonly"); 
-                ksp_.pc_type("redundant"); 
+                ksp_.ksp_type("preonly");
+                ksp_.pc_type("redundant");
 
-                // setting up inner solver 
-                PC pc_redundant; 
-                KSPGetPC(ksp_.implementation(), &pc_redundant);      
+                // setting up inner solver
+                PC pc_redundant;
+                KSPGetPC(ksp_.implementation(), &pc_redundant);
 
                 KSP innerksp;
-                PCRedundantGetKSP(pc_redundant, &innerksp); 
-                KSPSetType(innerksp, ksp_type_name.c_str()); 
+                PCRedundantGetKSP(pc_redundant, &innerksp);
+                KSPSetType(innerksp, ksp_type_name.c_str());
 
             }
         }
@@ -98,17 +99,17 @@ namespace utopia
             }
             else
             {
-                ksp_.ksp_type("preonly"); 
-                ksp_.pc_type("redundant"); 
+                ksp_.ksp_type("preonly");
+                ksp_.pc_type("redundant");
 
-                // setting up inner solver 
-                PC pc_redundant; 
-                KSPGetPC(ksp_.implementation(), &pc_redundant);      
+                // setting up inner solver
+                PC pc_redundant;
+                KSPGetPC(ksp_.implementation(), &pc_redundant);
 
-                KSP innerksp; PC inner_pc; 
-                PCRedundantGetKSP(pc_redundant, &innerksp); 
-                KSPGetPC(innerksp, &inner_pc);                
-                PCSetType(inner_pc, pc_type_name.c_str()); 
+                KSP innerksp; PC inner_pc;
+                PCRedundantGetKSP(pc_redundant, &innerksp);
+                KSPGetPC(innerksp, &inner_pc);
+                PCSetType(inner_pc, pc_type_name.c_str());
             }
         }
 
@@ -125,35 +126,35 @@ namespace utopia
         {
             if(redundant_solve_flg_)
             {
-                PC pc_redundant; 
-                KSPGetPC(ksp_.implementation(), &pc_redundant);      
+                PC pc_redundant;
+                KSPGetPC(ksp_.implementation(), &pc_redundant);
 
-                PetscBool flg; 
+                PetscBool flg;
                 PetscObjectTypeCompare((PetscObject)pc_redundant,PCREDUNDANT,&flg);
 
                 if(!flg)
                 {
-                    PCSetType(pc_redundant, PCREDUNDANT); 
-                    PCRedundantSetNumber(pc_redundant, number); 
+                    PCSetType(pc_redundant, PCREDUNDANT);
+                    PCRedundantSetNumber(pc_redundant, number);
 
                     this->ksp_type("stcg");
-                    this->pc_type("jacobi");                    
+                    this->pc_type("jacobi");
                 }
                 else
                 {
-                    PCRedundantSetNumber(pc_redundant, number); 
+                    PCRedundantSetNumber(pc_redundant, number);
                 }
             }
             else
             {
-                utopia_error("KSP_TR::number_of_parallel_solves:: If you want to specify number of solves, use redundant solver first."); 
+                utopia_error("KSP_TR::number_of_parallel_solves:: If you want to specify number of solves, use redundant solver first.");
             }
         }
 
-        bool redundant() const 
+        bool redundant() const
         {
             return redundant_solve_flg_;
-        }        
+        }
 
 
     public:
@@ -163,7 +164,7 @@ namespace utopia
 
         virtual bool apply(const Vector &b, Vector &x) override
         {
-            ksp_.apply(b, x);   
+            ksp_.apply(b, x);
             return true;
         }
 
@@ -185,39 +186,39 @@ namespace utopia
             }
             else
             {
-                utopia_error("KSP_TR::set_preconditioner not supported for redundant solver."); 
+                utopia_error("KSP_TR::set_preconditioner not supported for redundant solver.");
             }
         }
 
-        // necessary, as ksp_ is resetting options with every apply... 
+        // necessary, as ksp_ is resetting options with every apply...
         virtual void atol(const Scalar & atol_in) override
         {
-            TRSubproblem::atol(atol_in); 
-            ksp_.atol(atol_in); 
+            TRSubproblem::atol(atol_in);
+            ksp_.atol(atol_in);
         }
 
         virtual void stol(const Scalar & stol_in)  override
         {
-            TRSubproblem::stol(stol_in); 
-            ksp_.stol(stol_in); 
+            TRSubproblem::stol(stol_in);
+            ksp_.stol(stol_in);
         }
 
         virtual void rtol(const Scalar & rtol_in) override
         {
-            TRSubproblem::rtol(rtol_in); 
-            ksp_.rtol(rtol_in); 
+            TRSubproblem::rtol(rtol_in);
+            ksp_.rtol(rtol_in);
         }
 
         virtual void max_it(const SizeType & max_it_in) override
         {
-            TRSubproblem::max_it(max_it_in); 
-            ksp_.max_it(max_it_in); 
-        }   
+            TRSubproblem::max_it(max_it_in);
+            ksp_.max_it(max_it_in);
+        }
 
         virtual void verbose(const bool & verbose_in) override
         {
-            TRSubproblem::verbose(verbose_in); 
-            ksp_.verbose(verbose_in); 
+            TRSubproblem::verbose(verbose_in);
+            ksp_.verbose(verbose_in);
         }
 
 
@@ -260,43 +261,43 @@ namespace utopia
     #endif
                 ierr = KSPSetTolerances(ksp_.implementation(), TRSubproblem::rtol(), TRSubproblem::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());
 
-                ksp_.rtol(TRSubproblem::rtol()); 
-                ksp_.atol(TRSubproblem::atol()); 
-                ksp_.stol(TRSubproblem::stol()); 
+                ksp_.rtol(TRSubproblem::rtol());
+                ksp_.atol(TRSubproblem::atol());
+                ksp_.stol(TRSubproblem::stol());
                 ksp_.max_it(TRSubproblem::max_it());
-                ksp_.verbose(TRSubproblem::verbose()); 
+                ksp_.verbose(TRSubproblem::verbose());
             }
             else
             {
-                // std::cout<<"heeere---- \n"; 
+                // std::cout<<"heeere---- \n";
                 PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 
                 ierr = KSPSetTolerances(ksp_.implementation(), TRSubproblem::rtol(), TRSubproblem::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());
 
-                ksp_.rtol(TRSubproblem::rtol()); 
-                ksp_.atol(TRSubproblem::atol()); 
-                ksp_.stol(TRSubproblem::stol()); 
+                ksp_.rtol(TRSubproblem::rtol());
+                ksp_.atol(TRSubproblem::atol());
+                ksp_.stol(TRSubproblem::stol());
                 ksp_.max_it(TRSubproblem::max_it());
-                ksp_.verbose(TRSubproblem::verbose()); 
+                ksp_.verbose(TRSubproblem::verbose());
                 ksp_.set_initial_guess_non_zero(false);
 
-                PC pc_redundant; 
-                KSPGetPC(ksp_.implementation(), &pc_redundant);     
+                PC pc_redundant;
+                KSPGetPC(ksp_.implementation(), &pc_redundant);
 
-                KSP innerksp; 
-                PCRedundantGetKSP(pc_redundant, &innerksp); 
+                KSP innerksp;
+                PCRedundantGetKSP(pc_redundant, &innerksp);
 
-                KSPType inner_ksp_type; 
-                KSPGetType(innerksp, &inner_ksp_type); 
+                KSPType inner_ksp_type;
+                KSPGetType(innerksp, &inner_ksp_type);
 
-                // std::cout<<"inner_ksp_type: "<< inner_ksp_type << "  \n"; 
+                // std::cout<<"inner_ksp_type: "<< inner_ksp_type << "  \n";
 
                 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)
-                    if(inner_ksp_type == "qcg")
+                    if(std::strcmp(inner_ksp_type,"qcg") == 0)
                         ierr = KSPQCGSetTrustRegionRadius(innerksp, this->current_radius());
-                    else if(inner_ksp_type == "gltr")
+                    else if(std::strcmp(inner_ksp_type, "gltr") == 0)
                         ierr = KSPGLTRSetRadius(innerksp, this->current_radius());
-                    else if(inner_ksp_type == "nash")
+                    else if(std::strcmp(inner_ksp_type, "nash") == 0)
                         ierr = KSPNASHSetRadius(innerksp, this->current_radius());
                     else
                         ierr = KSPSTCGSetRadius(innerksp, this->current_radius());
@@ -311,7 +312,7 @@ namespace utopia
 
     protected:
         KSPSolver ksp_;
-        bool redundant_solve_flg_; 
+        bool redundant_solve_flg_;
     };
 
 
