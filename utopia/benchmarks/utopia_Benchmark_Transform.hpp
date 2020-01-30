@@ -5,6 +5,7 @@
 #include "utopia_MPI.hpp"
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
+#include "utopia_MatChop.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include <string>
 #include <cmath>
@@ -32,8 +33,6 @@ namespace utopia {
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
               
-                //Matrices
-                //measure allocation time of one matrix
                 this->register_experiment(
                     "mat_transform_" + std::to_string(i),
                     [n]() {
@@ -45,6 +44,18 @@ namespace utopia {
                         A = pow2(A);
                         A = -A;
                         A = exp(A);
+                    }
+                );
+
+                this->register_experiment(
+                    "mat_chop_" + std::to_string(i),
+                    [n]() {
+                        Matrix A = local_sparse(n, n, 3);
+                        assemble_laplacian_1D(A);
+
+                        chop(A, 0.001);
+                        chop_smaller_than(A, 0.001);
+                        chop_greater_than(A, 2.0);
                     }
                 );
             }
