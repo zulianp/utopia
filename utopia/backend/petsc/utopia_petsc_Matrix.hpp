@@ -499,6 +499,7 @@ namespace utopia {
          ////////////// OVERRIDES FOR Transformable //////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
 
+
          void transform(const Sqrt &) override;
          void transform(const Pow2 &) override;
          void transform(const Log &) override;
@@ -511,8 +512,8 @@ namespace utopia {
          void transform(const Pow &p) override;
          void transform(const Reciprocal<Scalar> &f) override;
 
-         template<class Op>
-         void aux_transform(const Op &op);
+         
+         void transform(std::function<Scalar(const Scalar &)> f);
 
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////
@@ -943,7 +944,7 @@ namespace utopia {
         bool is_initialized_as( MPI_Comm comm, MatType dense_type, SizeType local_rows, SizeType local_cols, SizeType global_rows, SizeType global_cols);
 
 
-        bool has_type(VecType type) const;
+        bool has_type(MatType type) const;
         bool same_type(const PetscMatrix &other) const;
         bool is_cuda() const;
 
@@ -1003,6 +1004,17 @@ namespace utopia {
           bool create_vecs(Vec *x, Vec *y) const;
 
           bool valid() const;
+
+
+          //helpers
+          template<class Op>
+          void op_transform(const Op &op);
+
+          template<class F>
+          void f_transform(F f);
+
+          template<class F>
+          void f_transform_seqaij(F f);
     };
 }
 

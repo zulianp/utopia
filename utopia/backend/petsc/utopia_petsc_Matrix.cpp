@@ -36,66 +36,108 @@ namespace utopia {
 
     void PetscMatrix::transform(const Sqrt &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Pow2 &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Log &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Exp &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Cos &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Sin &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Abs &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Minus &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Pow &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscMatrix::transform(const Reciprocal<Scalar> &op)
     {
-        aux_transform(op);
+        op_transform(op);
+    }
+
+    void PetscMatrix::transform(std::function<Scalar(const Scalar &)> op)
+    {
+        f_transform(op);
+    }
+
+    template<class F>
+    void PetscMatrix::f_transform_seqaij(F op)
+    {
+        PetscInt n;
+        const PetscInt *ia;
+        // const PetscInt *ja;
+        PetscBool done;
+        PetscErrorCode err = 0;
+
+        err = MatGetRowIJ(raw_type(), 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done); assert(err == 0);
+        assert(done == PETSC_TRUE);
+
+        if(!done) {
+            std::cerr << "PetscMatrix::f_transform_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
+            abort();
+        } 
+
+        PetscScalar *array;
+        MatSeqAIJGetArray(raw_type(), &array);
+
+        //FIXME is there a better way to get the total number of values???
+        const PetscInt n_values = ia[n] - ia[0];
+
+        for(PetscInt i = 0; i < n_values; ++i) {
+            array[i] = op(array[i]);
+        }
+
+        MatSeqAIJRestoreArray(raw_type(), &array);
+        err = MatRestoreRowIJ(raw_type(), 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done); assert(err == 0);
+    }
+
+    template<class F>
+    void PetscMatrix::f_transform(F op)
+    {
+        if(has_type(MATSEQAIJ)) {
+            f_transform_seqaij(op);
+        } else {
+            each_transform(*this, [op](const SizeType &, const SizeType &, const Scalar value) -> Scalar {
+                return op(value);
+            });
+        }
     }
 
     template<class Op>
-    void PetscMatrix::aux_transform(const Op &op)
+    void PetscMatrix::op_transform(const Op &op)
     {
-        each_transform(*this, [op](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
+        f_transform([op](const Scalar &value) -> Scalar {
             return op.template apply(value);
         });
-
-        // PetscScalar *values;
-        // MatGetArray(raw_type(), &values);
-
-
-        // MatRestoreArray(raw_type(), &values);
     }
 
     MatType PetscMatrix::type_override() const
@@ -1514,7 +1556,7 @@ namespace utopia {
         return true;
     }
 
-    bool PetscMatrix::has_type(VecType type) const
+    bool PetscMatrix::has_type(MatType type) const
     {
         PetscBool match = PETSC_FALSE;
         PetscObjectTypeCompare((PetscObject) raw_type(), type, &match);
