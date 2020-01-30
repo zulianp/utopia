@@ -49,6 +49,56 @@ namespace utopia {
 	    }
 	}
 
+	template<class F>
+	void PetscMatrix::transform_ijv_seqaij(F op)
+	{
+		PetscInt n;
+		const PetscInt *ia;
+		const PetscInt *ja;
+		PetscBool done;
+		PetscErrorCode err = 0;
+
+		err = MatGetRowIJ(raw_type(), 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done); assert(err == 0);
+		assert(done == PETSC_TRUE);
+
+		if(!done) {
+		    std::cerr << "PetscMatrix::transform_values_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
+		    abort();
+		} 
+
+		PetscScalar *array;
+		MatSeqAIJGetArray(raw_type(), &array);
+
+		auto ra = this->row_range();
+		PetscInt n_local_rows = ra.extent();
+		for(PetscInt r = 0; r < n_local_rows; ++r) {
+			const PetscInt row_begin = ia[r];
+			const PetscInt row_end   = ia[r+1];
+
+			const PetscInt n_values = row_end - row_begin;
+			const PetscInt row_global = ra.begin() + r;
+
+			for(PetscInt i = row_begin; i < row_end; ++i) {
+			    array[i] = op(row_global, ja[i], array[i]);
+			}
+		}
+
+		MatSeqAIJRestoreArray(raw_type(), &array);
+		err = MatRestoreRowIJ(raw_type(), 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done); assert(err == 0);
+	}
+
+	template<class F>
+	void PetscMatrix::transform_ijv(F op)
+	{
+	    if(has_type(MATSEQAIJ)) {
+	        transform_ijv_seqaij(op);
+	    } else {
+	        each_transform(*this, [op](const SizeType &i, const SizeType &j, const Scalar value) -> Scalar {
+	            return op(i, j, value);
+	        });
+	    }
+	}
+
 	template<class Op>
 	void PetscMatrix::op_transform(const Op &op)
 	{

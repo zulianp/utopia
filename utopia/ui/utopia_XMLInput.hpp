@@ -21,6 +21,7 @@ namespace utopia {
         void get(int &val);// override;
         void get(long &val);// override;
         void get(unsigned long &val);// override;
+        void get(long long int &val);
         // void get(SizeType &val);// override;
         void get(std::string &val);// override;
         void get(Configurable &val);// override;
@@ -31,6 +32,7 @@ namespace utopia {
         void get(const std::string &key, int &val) override;
         void get(const std::string &key, long &val) override;
         void get(const std::string &key, unsigned long &val) override;
+        void get(const std::string &key, long long int &val) override;
         // void get(const std::string &key, SizeType &val) override;
         void get(const std::string &key, std::string &val) override;
         void get(const std::string &key, Configurable &val) override;

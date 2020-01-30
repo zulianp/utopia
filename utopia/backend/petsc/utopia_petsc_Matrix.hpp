@@ -520,6 +520,9 @@ namespace utopia {
          template<class F>
          void transform_values(F f);
 
+         template<class F>
+         void transform_ijv(F f);
+
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
@@ -1017,6 +1020,9 @@ namespace utopia {
         
           template<class F>
           void transform_values_seqaij(F f);
+
+          template<class F>
+          void transform_ijv_seqaij(F f);
     };
 }
 

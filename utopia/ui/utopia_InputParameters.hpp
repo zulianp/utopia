@@ -59,6 +59,11 @@ namespace utopia {
             aux_get(key, val);
         }
 
+        inline void get(const std::string &key, long long int &val) override
+        {
+            aux_get(key, val);
+        }
+
         inline void get(const std::string &key, Configurable &val) override
         {
             auto node_ptr = node(key);
