@@ -515,6 +515,11 @@ namespace utopia {
          
          void transform(std::function<Scalar(const Scalar &)> f);
 
+
+         //helper
+         template<class F>
+         void transform_values(F f);
+
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
@@ -1005,16 +1010,13 @@ namespace utopia {
 
           bool valid() const;
 
-
           //helpers
           template<class Op>
           void op_transform(const Op &op);
 
+        
           template<class F>
-          void f_transform(F f);
-
-          template<class F>
-          void f_transform_seqaij(F f);
+          void transform_values_seqaij(F f);
     };
 }
 
