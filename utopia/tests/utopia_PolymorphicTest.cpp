@@ -48,13 +48,16 @@ namespace utopia {
             x->values(n, 2.0);
 
             auto m = DefaultFactory::new_matrix();
-            m->identity({n, n}, 2.0);
 
-            auto y = DefaultFactory::new_vector();
-            m->apply(*x, *y);
+            if(m) {
+                m->identity({n, n}, 2.0);
 
-            Scalar y_n = y->norm2();
-            utopia_test_assert(approxeq(std::sqrt(n*16.0), y_n, 1e-8));
+                auto y = DefaultFactory::new_vector();
+                m->apply(*x, *y);
+
+                Scalar y_n = y->norm2();
+                utopia_test_assert(approxeq(std::sqrt(n*16.0), y_n, 1e-8));
+            }
         }
 
         void run()
