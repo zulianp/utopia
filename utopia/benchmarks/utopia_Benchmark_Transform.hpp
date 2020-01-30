@@ -12,7 +12,7 @@
 #include <cassert>
 
 namespace utopia {
-    //http://www.netlib.org/blas/#_level_1
+    
     template<class Matrix, class Vector>
     class BenchmarkTransform : public Benchmark {
     public:
@@ -32,6 +32,23 @@ namespace utopia {
 
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
+
+                this->register_experiment(
+                    "vec_transform_" + std::to_string(i),
+                    [n]() {
+                        Vector v = local_values(n*5, -3.0);
+
+                        UTOPIA_NO_ALLOC_BEGIN("vec_transform");
+
+                        v = abs(v);
+                        v = sqrt(v);
+                        v = pow2(v);
+                        v = -v;
+                        v = exp(v);
+
+                        UTOPIA_NO_ALLOC_END();
+                    }
+                );
               
                 this->register_experiment(
                     "mat_transform_" + std::to_string(i),
@@ -39,11 +56,15 @@ namespace utopia {
                         Matrix A = local_sparse(n, n, 3);
                         assemble_laplacian_1D(A);
 
+                        // UTOPIA_NO_ALLOC_BEGIN("mat_transform");
+
                         A = abs(A);
                         A = sqrt(A);
                         A = pow2(A);
                         A = -A;
                         A = exp(A);
+
+                        // UTOPIA_NO_ALLOC_END();
                     }
                 );
 
