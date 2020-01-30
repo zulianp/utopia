@@ -13,6 +13,7 @@ namespace utopia {
 #ifdef WITH_PETSC
 
     UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
+    UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
 
 #ifdef WITH_TRILINOS
     UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
@@ -26,8 +27,8 @@ namespace utopia {
         using DefaultFactory = utopia::AlgebraFactory<Scalar, SizeType>;
 
         //base classes
-        // using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
         using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
+        using AbstractMatrix = utopia::AbstractMatrix<Scalar, SizeType>;
 
         void convenience_wrapper()
         {
@@ -43,10 +44,17 @@ namespace utopia {
 #endif //UTOPIA_TPETRA_SIZE_TYPE
 #endif //WITH_TRILINOS
 
+            auto x = DefaultFactory::new_vector();
+            x->values(n, 2.0);
 
-            auto v = DefaultFactory::new_vector();
-            v->values(n, 2.0);
-            v->describe();
+            auto m = DefaultFactory::new_matrix();
+            m->identity({n, n}, 2.0);
+
+            auto y = DefaultFactory::new_vector();
+            m->apply(*x, *y);
+
+            Scalar y_n = y->norm2();
+            utopia_test_assert(approxeq(std::sqrt(n*16.0), y_n, 1e-8));
         }
 
         void run()

@@ -90,6 +90,12 @@ namespace utopia {
         each_transform(*this, [op](const SizeType i, const SizeType j, const Scalar value) -> Scalar {
             return op.template apply(value);
         });
+
+        // PetscScalar *values;
+        // MatGetArray(raw_type(), &values);
+
+
+        // MatRestoreArray(raw_type(), &values);
     }
 
     MatType PetscMatrix::type_override() const

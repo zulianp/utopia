@@ -180,4 +180,9 @@ namespace utopia {
  static int UTOPIA_DEFINE_FACTORY_VAR(macro_Vector_) = \
 utopia::AlgebraFactory<typename utopia::Traits<macro_Vector_>::Scalar, typename utopia::Traits<macro_Vector_>::SizeType>::register_vector<macro_Vector_>();
 
+
+#define UTOPIA_FACTORY_REGISTER_MATRIX(macro_Matrix_) \
+ static int UTOPIA_DEFINE_FACTORY_VAR(macro_Matrix_) = \
+utopia::AlgebraFactory<typename utopia::Traits<macro_Matrix_>::Scalar, typename utopia::Traits<macro_Matrix_>::SizeType>::register_matrix<macro_Matrix_>();
+
 #endif //UTOPIA_OBJECT_FACTORY_HPP
