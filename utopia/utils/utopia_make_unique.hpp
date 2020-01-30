@@ -20,6 +20,17 @@ namespace utopia {
 
 #endif //WITH_CPP14
 
+    template<typename T>
+    inline std::shared_ptr<T> unique_to_shared(std::unique_ptr<T> &ptr)
+    {
+        return std::move(ptr);
+    }
+
+    template<typename T>
+    inline std::shared_ptr<T> unique_to_shared(std::unique_ptr<T> &&ptr)
+    {
+        return std::move(ptr);
+    }
 }
 
 #endif //UTOPIA_MAKE_UNIQUE_HPP

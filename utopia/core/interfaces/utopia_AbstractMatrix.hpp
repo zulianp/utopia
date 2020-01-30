@@ -58,13 +58,13 @@ namespace utopia {
 
         template<class... Args>
         Wrapper(Args &&...args)
-        : impl_(utopia::make_unique<Matrix>(std::forward<Args>(args)...))
+        : impl_(std::make_shared<Matrix>(std::forward<Args>(args)...))
         {}
 
         template<class... Args>
         void construct(Args &&...args)
         {
-            impl_ = utopia::make_unique<Matrix>(std::forward<Args>(args)...);
+            impl_ = std::make_shared<Matrix>(std::forward<Args>(args)...);
         }
 
         //locks
@@ -483,8 +483,18 @@ namespace utopia {
             return *impl_;
         }
 
+        std::shared_ptr<Matrix> ptr()
+        {
+            return impl_;
+        }
+
+        std::shared_ptr<const Matrix> ptr() const
+        {
+            return impl_;
+        }
+
     private:
-        std::unique_ptr<Matrix> impl_;
+        std::shared_ptr<Matrix> impl_;
 
     };
 }

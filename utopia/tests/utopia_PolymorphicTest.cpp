@@ -5,15 +5,21 @@
 
 #include "utopia_petsc.hpp"
 #include "utopia_AbstractVector.hpp"
+#include "utopia_AbstractLinearSolver.hpp"
 #include "utopia_ObjectFactory.hpp"
+#include "utopia_make_unique.hpp"
 
 namespace utopia {
 
 //Register types
 #ifdef WITH_PETSC
 
+    //FIXME make it so that also includes utopia front-end solvers
+    using PetscLinearSolver = utopia::KSPSolver<PetscMatrix, PetscVector>;
+
     UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
     UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
+    UTOPIA_FACTORY_REGISTER_LINEAR_SOLVER(PetscLinearSolver);
 
 #ifdef WITH_TRILINOS
     UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
@@ -21,14 +27,15 @@ namespace utopia {
 
     class PolymorphicTest final {
     public:
-        using Scalar   = typename Traits<PetscVector>::Scalar;
-        using SizeType = typename Traits<PetscVector>::SizeType;
+        using Scalar               = typename Traits<PetscVector>::Scalar;
+        using SizeType             = typename Traits<PetscVector>::SizeType;
 
-        using DefaultFactory = utopia::AlgebraFactory<Scalar, SizeType>;
+        using DefaultFactory       = utopia::AlgebraFactory<Scalar, SizeType>;
 
         //base classes
-        using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
-        using AbstractMatrix = utopia::AbstractMatrix<Scalar, SizeType>;
+        using AbstractVector       = utopia::AbstractVector<Scalar, SizeType>;
+        using AbstractMatrix       = utopia::AbstractMatrix<Scalar, SizeType>;
+        using AbstractLinearSolver = utopia::AbstractLinearSolver<Scalar, SizeType>;
 
         void convenience_wrapper()
         {
@@ -47,7 +54,9 @@ namespace utopia {
             auto x = DefaultFactory::new_vector();
             x->values(n, 2.0);
 
-            auto m = DefaultFactory::new_matrix();
+            auto m = unique_to_shared(
+                DefaultFactory::new_matrix()
+            );
 
             if(m) {
                 m->identity({n, n}, 2.0);
@@ -57,6 +66,18 @@ namespace utopia {
 
                 Scalar y_n = y->norm2();
                 utopia_test_assert(approxeq(std::sqrt(n*16.0), y_n, 1e-8));
+
+                auto s = DefaultFactory::new_linear_solver();
+                
+                InputParameters sol_params;
+                sol_params.set("verbose", true);
+
+                s->read(sol_params);
+
+                //or call s->solve(*m, *x, *y);
+                //moves ownership of matrix to linear solver
+                s->update(m);
+                s->apply(*x, *y);
             }
         }
 

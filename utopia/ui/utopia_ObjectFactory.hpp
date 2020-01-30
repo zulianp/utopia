@@ -7,6 +7,7 @@
 #include "utopia_FactoryMethod.hpp"
 #include "utopia_AbstractVector.hpp"
 #include "utopia_AbstractMatrix.hpp"
+#include "utopia_AbstractLinearSolver.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Input.hpp"
 
@@ -14,9 +15,11 @@ namespace utopia {
     template<typename Scalar, typename SizeType>
     class AlgebraFactory : public Configurable {
     public:
-        using BackendType    = std::string;
-        using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
-        using AbstractMatrix = utopia::AbstractMatrix<Scalar, SizeType>;
+        using BackendType          = std::string;
+        using AbstractVector       = utopia::AbstractVector<Scalar, SizeType>;
+        using AbstractMatrix       = utopia::AbstractMatrix<Scalar, SizeType>;
+        using AbstractLinearSolver = utopia::AbstractLinearSolver<Scalar, SizeType>;
+
 
         inline void read(Input &in) override
         {
@@ -91,6 +94,24 @@ namespace utopia {
             return instance().new_matrix_impl(backend);
         }
 
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+
+        template<class LinearSolver>
+        static int register_linear_solver()
+        {
+            return instance().template register_linear_solver_impl<LinearSolver>();
+        }
+
+        inline static std::unique_ptr<AbstractLinearSolver> new_linear_solver()
+        {
+            return instance().new_linear_solver_impl(instance().default_backend_);
+        }
+
+        inline static std::unique_ptr<AbstractLinearSolver> new_linear_solver(const BackendType &backend)
+        {
+            return instance().new_linear_solver_impl(backend);
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
     private:
@@ -105,6 +126,11 @@ namespace utopia {
             BackendType,
             std::unique_ptr< IFactoryMethod<AbstractMatrix> >
         > matrix_factory_;
+
+        std::map<
+            BackendType,
+            std::unique_ptr< IFactoryMethod<AbstractLinearSolver> >
+        > linear_solver_factory_;
 
 
           AlgebraFactory()
@@ -172,6 +198,38 @@ namespace utopia {
                 return it->second->make();
             }
         }
+
+
+        ////////////////////////////////////////////////////////////////////////////////
+
+        template<class LinearSolver>
+        int register_linear_solver_impl()
+        {
+            linear_solver_factory_[Traits<LinearSolver>::backend_info().get_name()] =
+                utopia::make_unique< FactoryMethod<AbstractLinearSolver, LinearSolverWrapper<LinearSolver>> >();
+
+            return Traits<LinearSolver>::Backend;
+        }
+
+        std::unique_ptr<AbstractLinearSolver> new_linear_solver_impl(const BackendType &backend)
+        {
+            if(linear_solver_factory_.empty()) {
+                std::cerr << "AlgebraFactory::new_linear_solver(): no backend has registered to factory" << std::endl;
+                return nullptr;
+            }
+
+            if(backend.empty()) {
+                return linear_solver_factory_.begin()->second->make();
+            }
+
+            auto it = linear_solver_factory_.find(backend);
+            if(it == linear_solver_factory_.end()) {
+                std::cerr << "AlgebraFactory::new_linear_solver(): no backend with id " << backend << " has registered to factory" << std::endl;
+                return nullptr;
+            } else {
+                return it->second->make();
+            }
+        }
     };
 }
 
@@ -184,5 +242,9 @@ utopia::AlgebraFactory<typename utopia::Traits<macro_Vector_>::Scalar, typename 
 #define UTOPIA_FACTORY_REGISTER_MATRIX(macro_Matrix_) \
  static int UTOPIA_DEFINE_FACTORY_VAR(macro_Matrix_) = \
 utopia::AlgebraFactory<typename utopia::Traits<macro_Matrix_>::Scalar, typename utopia::Traits<macro_Matrix_>::SizeType>::register_matrix<macro_Matrix_>();
+
+#define UTOPIA_FACTORY_REGISTER_LINEAR_SOLVER(macro_LinearSolver_) \
+ static int UTOPIA_DEFINE_FACTORY_VAR(macro_LinearSolver_) = \
+utopia::AlgebraFactory<typename utopia::Traits<macro_LinearSolver_>::Scalar, typename utopia::Traits<macro_LinearSolver_>::SizeType>::register_linear_solver<macro_LinearSolver_>();
 
 #endif //UTOPIA_OBJECT_FACTORY_HPP

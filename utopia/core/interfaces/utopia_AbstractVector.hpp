@@ -64,13 +64,13 @@ namespace utopia {
 
         template<class... Args>
         Wrapper(Args &&...args)
-        : impl_(utopia::make_unique<Vector>(std::forward<Args>(args)...))
+        : impl_(std::make_shared<Vector>(std::forward<Args>(args)...))
         {}
 
         template<class... Args>
         void construct(Args &&...args)
         {
-            impl_ = utopia::make_unique<Vector>(std::forward<Args>(args)...);
+            impl_ = std::make_shared<Vector>(std::forward<Args>(args)...);
         }
 
         inline SizeType local_size() const override
@@ -374,8 +374,18 @@ namespace utopia {
             return *impl_;
         }
 
+        std::shared_ptr<Vector> ptr()
+        {
+            return impl_;
+        }
+
+        std::shared_ptr<const Vector> ptr() const
+        {
+            return impl_;
+        }
+
     private:
-        std::unique_ptr<Vector> impl_;
+        std::shared_ptr<Vector> impl_;
     };
 }
 
