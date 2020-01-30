@@ -69,9 +69,9 @@ namespace utopia {
 
                 auto s = DefaultFactory::new_linear_solver();
                 
-                InputParameters sol_params;
-                sol_params.set("verbose", true);
-                s->read(sol_params);
+                // InputParameters sol_params;
+                // sol_params.set("verbose", true);
+                // s->read(sol_params);
 
                 //set initial guess to 0
                 x->set(0.0);
