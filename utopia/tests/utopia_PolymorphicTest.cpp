@@ -71,13 +71,24 @@ namespace utopia {
                 
                 InputParameters sol_params;
                 sol_params.set("verbose", true);
-
                 s->read(sol_params);
 
-                //or call s->solve(*m, *x, *y);
-                //moves ownership of matrix to linear solver
+                //set initial guess to 0
+                x->set(0.0);
+
+                //or call s->solve(*m, *x, *y); if applied only once for m
                 s->update(m);
-                s->apply(*x, *y);
+                s->apply(*y, *x);
+
+                auto r = DefaultFactory::new_vector();
+
+                m->apply(*x, *r);
+                r->axpy(-1.0, *y);
+
+                Scalar norm_r = r->norm2();
+
+                disp(norm_r);
+                utopia_test_assert(norm_r < 1e-6);
             }
         }
 
