@@ -364,14 +364,19 @@ namespace utopia {
 
         inline void post_process(const Matrix &mat) override
         {
-            std::cout << "condition-number: ";
+            if(skip_cond_) {
+                std::cout << "condition-number: [skipped]" << std::endl;
+            } else {
+
+                std::cout << "condition-number: ";
 #ifdef WITH_SLEPC
-            condition_number_= cond(mat);
-            std::cout << condition_number_ << std::endl;
+                condition_number_= cond(mat);
+                std::cout << condition_number_ << std::endl;
 #else
-            std::cout << "[not computed, missing library]" << std::endl;
+                std::cout << "[not computed, missing library]" << std::endl;
 #endif //WITH_SLEPC
 
+            }
             n_dofs_ = size(mat).get(0);
         }
 
@@ -379,10 +384,11 @@ namespace utopia {
         {
             in.get("path", path_);
             in.get("print-header", print_header_);
+            in.get("skip-cond", skip_cond_);
         }
 
         DFMReport()
-        : path_("report.csv"), print_header_(true), condition_number_(-1), n_dofs_(-1)
+        : path_("report.csv"), print_header_(true), condition_number_(-1), n_dofs_(-1), skip_cond_(false)
         {}
 
         bool save() const
@@ -447,6 +453,7 @@ namespace utopia {
         Scalar condition_number_;
         SizeType n_dofs_;
         SizeType nnz_;
+        bool skip_cond_;
 
         class Stats {
         public:
