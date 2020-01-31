@@ -25,7 +25,7 @@ namespace utopia {
         return 0;
     }
 
-    AppRegistry &AppRegistry::instance()
+    AppRegistry &AppRegisztry::instance()
     {
         static AppRegistry instance_;
         return instance_;
@@ -50,7 +50,7 @@ namespace utopia {
     {
         int ret = apps_.apply(app_name);
         if(ret == -1) {
-            std::cerr << "[Error] no unit app with name " << app_name << std::endl;
+            std::cerr << "[Error] no app with name " << app_name << std::endl;
         }
 
         return ret;
