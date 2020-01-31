@@ -33,7 +33,11 @@ namespace utopia
             UTOPIA_RUN_TEST(dogleg_test);
             UTOPIA_RUN_TEST(st_cg_test);
             UTOPIA_RUN_TEST(precond_st_cg_test);
-            UTOPIA_RUN_TEST(diff_ctrl_test);
+
+            //tests for serial runs
+            if(mpi_world_size() == 1) {
+                UTOPIA_RUN_TEST(diff_ctrl_test);
+            }
         }
 
         class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
