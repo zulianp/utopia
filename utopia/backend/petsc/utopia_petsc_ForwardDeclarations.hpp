@@ -21,6 +21,9 @@ namespace utopia {
     template<class Matrix, class Vector>
     class TaoSolver;
 
+    template<typename Matrix, typename Vector, int Backend>
+    class KSPSolver;
+
     class PetscCommunicator;
 }
 

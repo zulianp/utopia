@@ -17,7 +17,6 @@
 
 #include <Tpetra_CrsMatrix_decl.hpp>
 #include <Tpetra_Map_decl.hpp>
-#include <Kokkos_DefaultNode.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 #include "utopia_DynamicTypeDistributedMatrix.hpp"
 
@@ -82,7 +81,7 @@ namespace utopia {
         : owner_(true)
         {
             if(!other.is_null()) {
-                mat_ = other.mat_->clone(other.mat_->getNode());
+                mat_.reset(new CrsMatrixType (other.implementation(), Teuchos::Copy));
             }
         }
 
@@ -148,7 +147,7 @@ namespace utopia {
                 return;
             }
 
-            mat_ = other.mat_->clone(other.mat_->getNode());
+            mat_.reset(new CrsMatrixType (other.implementation(), Teuchos::Copy));
             owner_ = true;
         }
 

@@ -1,4 +1,4 @@
-#include "utopia_petsc_Vector.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
 #include "utopia_petsc_quirks.hpp"
 
 
@@ -8,71 +8,57 @@
 
 namespace utopia {
 
-    template<class Operation>
-    void PetscVector::aux_transform(const Operation &op)
-    {
-        Range r = range();
-
-        write_lock(LOCAL);
-        read_lock();
-
-        for(PetscInt i = r.begin(); i < r.end(); ++i) {
-            set(i, op.template apply<Scalar>(get(i)));
-        }
-
-        write_unlock(LOCAL);
-        read_unlock();
-    }
+ 
 
     void PetscVector::transform(const Sqrt &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Pow2 &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Log &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Exp &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Cos &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Sin &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Abs &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Minus &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
 
     void PetscVector::transform(const Pow &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     void PetscVector::transform(const Reciprocal<Scalar> &op)
     {
-        aux_transform(op);
+        op_transform(op);
     }
 
     bool PetscVector::has_type(VecType type) const
@@ -582,36 +568,7 @@ namespace utopia {
         assert(other.is_consistent());
         check_error( VecPointwiseDivide(raw_type(), raw_type(), other.raw_type() ) );
     }
-
-
-    // template<class Operation>
-    // static void element_wise_generic(
-    //     const PetscVector &x,
-    //     const Operation &op,
-    //     PetscVector &op_and_result)
-    // {
-    //     //TODO
-    // }
-
-    template<typename Scalar, class Operation>
-    static void element_wise_generic(
-        const Scalar &x,
-        const Operation &op,
-        PetscVector &result)
-    {
-        Range r = result.range();
-
-        result.write_lock(LOCAL);
-        result.read_lock();
-
-        for(PetscInt i = r.begin(); i < r.end(); ++i) {
-            result.set(i, op.template apply<Scalar>(x, result.get(i)));
-        }
-
-        result.write_unlock(LOCAL);
-        result.read_unlock();
-    }
-
+   
     void PetscVector::e_min(const PetscVector &other)
     {
         check_error( VecPointwiseMin( raw_type(), raw_type(), other.raw_type() ) );

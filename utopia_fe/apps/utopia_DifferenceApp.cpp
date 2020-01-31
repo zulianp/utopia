@@ -8,6 +8,7 @@
 // #include "libmesh/namebased_io.h"
 #include "libmesh/distributed_mesh.h"
 #include "utopia_MeshTransferOperator.hpp"
+#include "utopia_Deformation.hpp"
 
 namespace utopia {
 

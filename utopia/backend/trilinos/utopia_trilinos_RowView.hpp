@@ -14,6 +14,7 @@ namespace utopia {
     public:
         using SizeType = typename Traits<Tensor>::SizeType;
         using Scalar   = typename Traits<Tensor>::Scalar;
+        using LocalSizeType = typename Traits<Tensor>::LocalSizeType;
 
         using RCPMapType = typename Tensor::RCPMapType;
 
@@ -54,7 +55,7 @@ namespace utopia {
     private:
         const Tensor &t_;
         SizeType offset_;
-        Teuchos::ArrayView<const SizeType> cols_;
+        Teuchos::ArrayView<const LocalSizeType> cols_;
         Teuchos::ArrayView<const Scalar> values_;
         RCPMapType col_map_;
     };

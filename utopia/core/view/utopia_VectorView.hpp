@@ -88,6 +88,13 @@ namespace utopia {
         }
 
         template<class Expr>
+        UTOPIA_INLINE_FUNCTION TensorView &operator-=(const DeviceExpression<Expr> &expr)
+        {
+            DeviceInPlace<TensorView, Expr, Minus, 1>::apply(*this, expr.derived());
+            return *this;
+        }
+
+        template<class Expr>
         UTOPIA_INLINE_FUNCTION TensorView &operator*=(const DeviceExpression<Expr> &expr)
         {
             DeviceInPlace<TensorView, Expr, Multiplies, 1>::apply(*this, expr.derived());

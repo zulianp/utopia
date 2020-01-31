@@ -55,7 +55,7 @@ namespace utopia {
 
 	    	eval(element, permeability, perm);
 	    }
-	   
+
 	    void assemble(FE &element, USerialMatrix &mat)
 	    {
 	    	const SizeType n_funs = g.size();
@@ -69,7 +69,7 @@ namespace utopia {
 
 	    			for(SizeType j = i + 1; j < n_funs; ++j) {
 	    				const Scalar v = dot( Ag, g[j][q] );
-	    				
+
 	    				mat.add(i, j, v);
 	    				mat.add(j, i, v);
 	    			}
@@ -107,7 +107,10 @@ namespace utopia {
         Chrono c;
         c.start();
 
-        LocalFlow<FE> assembler(permeability_, diffusion_tensor_);
+        ElementMatrix diffusion_tensor_copy = diffusion_tensor_;
+        diffusion_tensor_copy *= rescale_;
+
+        LocalFlow<FE> assembler(permeability_, diffusion_tensor_copy);
 
         assemble(
             space_,
@@ -128,7 +131,7 @@ namespace utopia {
         // gradient -= hessian * x;
 
         if(rescale_ != 1.0) {
-            hessian *= rescale_;
+        //     hessian *= rescale_;
             gradient *= rescale_;
         }
 
@@ -163,10 +166,10 @@ namespace utopia {
         for(std::size_t i = 0; i < n; ++i) {
             auto side = lower_dimensional_tags_[i];
 
-            auto bilinear_form = surface_integral( 
+            auto bilinear_form = surface_integral(
                 inner(
-                /* diffusion_tensor_ * */ 
-                grad(u), 
+                /* diffusion_tensor_ * */
+                grad(u),
                 ctx_fun(lower_dimensional_permeability_[i]) * grad(v)),
                 side
             );
@@ -187,7 +190,7 @@ namespace utopia {
     }
 
     template<class FunctionSpace, class Matrix, class Vector>
-    void NewFlow<FunctionSpace, Matrix, Vector>::read(Input &in) 
+    void NewFlow<FunctionSpace, Matrix, Vector>::read(Input &in)
     {
         read_permeability_tensor(in);
         in.get("permeability-function", permeability_);
@@ -207,7 +210,7 @@ namespace utopia {
                 in.get("side", tag);
 
                 std::cout << "side(" << tag << "): " << value << std::endl;
-                
+
                 if(tag != -1) {
                     auto fun = std::make_shared<UIConstantFunction<Scalar>>(value);
 
@@ -232,7 +235,7 @@ namespace utopia {
             constant_permeability,
             constant_permeability
         };
-       
+
         in.get("permeability-x", permeabilities[0]);
         in.get("permeability-y", permeabilities[1]);
         in.get("permeability-z", permeabilities[2]);
