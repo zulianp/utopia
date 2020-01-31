@@ -25,7 +25,7 @@ namespace utopia {
         return 0;
     }
 
-    AppRegistry &AppRegisztry::instance()
+    AppRegistry &AppRegistry::instance()
     {
         static AppRegistry instance_;
         return instance_;
