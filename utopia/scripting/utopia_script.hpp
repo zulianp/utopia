@@ -16,7 +16,7 @@ namespace utopia {
 }
 
 namespace scripting {
-
+    
     using Scalar   = double;
     using SizeType = int;
     using Factory  = utopia::AlgebraFactory<Scalar, SizeType>;

@@ -206,6 +206,10 @@ namespace utopia {
 
           }
 
+          if(impl_->param_list.is_null()) {
+            impl_->param_list = Teuchos::parameterList();
+          }
+
           impl_->param_list->set("Relative tolerance", this->rtol(), "CG");
           impl_->param_list->set("S tolerance", this->stol(), "CG");
           impl_->param_list->set("A tolerance", this->atol(), "CG");

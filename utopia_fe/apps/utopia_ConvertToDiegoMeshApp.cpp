@@ -30,9 +30,28 @@ namespace utopia {
         std::string folder = "./";
         in.get("folder", folder);
 
+        std::set<int> blocks;
+        std::cout << "Blocks?  "  << std::endl;
+
+        in.get("blocks", [&](Input &in) {
+            in.get_all([&](Input &in) {
+                int block_id = -1;
+                in.get("id", block_id);
+                blocks.insert(block_id);
+            });
+        });
+
+        std::cout << " ... " << blocks.size() << std::endl;
+
         if(!is_time_series) {
             in.get("mesh", mesh);
             in.get("space", space);
+
+            if(!blocks.empty()) {
+                std::cout << "Exporting blocks" << std::endl;
+                DiegoMeshWriter().write(folder, mesh.mesh(), blocks);
+                return;
+            }
 
             DiegoMeshWriter().write(folder, mesh.mesh());
 
@@ -53,8 +72,20 @@ namespace utopia {
 
             in.get("space", space);
 
+            bool export_field_only = false;
+            in.get("export-field-only", export_field_only);
 
-            DiegoMeshWriter().write(folder, mesh.mesh());
+
+            DiegoMeshWriter::Selector select;
+            if(!export_field_only) {
+                if(!blocks.empty()) {
+                    std::cout << "Exporting blocks" << std::endl;
+                    DiegoMeshWriter().write(folder, mesh.mesh(), blocks);
+                    DiegoMeshWriter().build_index(mesh.mesh(), blocks, select);
+                } else {
+                    DiegoMeshWriter().write(folder, mesh.mesh());
+                }
+            }
 
             UVector data = local_zeros(space.space()[0].dof_map().n_local_dofs());
             UVector aux;
@@ -94,7 +125,13 @@ namespace utopia {
                             data
                     );
 
-                    DiegoMeshWriter().write_coords(folder, mesh.mesh(), "t" + std::to_string(i + 1) + "_");
+                    std::string step_name = "t" + std::to_string(i + 1) + "_";
+
+                    if(!blocks.empty()) {
+                        DiegoMeshWriter().write_coords(folder, mesh.mesh(), select, step_name);
+                    } else {
+                        DiegoMeshWriter().write_coords(folder, mesh.mesh(), step_name);
+                    }
 
                     aux = -data;
 
@@ -103,6 +140,19 @@ namespace utopia {
                         space.space()[0].dof_map(),
                         aux
                     );
+                } else {
+
+                    space.space().each([&](const int subspace_id, LibMeshFunctionSpace &s) {
+                        const auto &name = s.var_name();
+
+                        DiegoMeshWriter().write_field(
+                            folder,
+                            name + "_t" + std::to_string(i + 1),
+                            mesh.mesh(),
+                            data,
+                            subspace_id
+                        );
+                    });
                 }
 
             }

@@ -60,6 +60,8 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)" OFF)
 
+
+option(INSTALL_TRILINOS "Install trilinos directly" OFF)
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 
@@ -274,6 +276,10 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 #################################################################################
 #################################################################################
 #################################################################################
+
+if(INSTALL_TRILINOS)
+    include(InstallTrilinos)
+endif()
 
 # using this to defining UTOPIA_LAMBDA correctly
 if(TRY_WITH_TRILINOS)

@@ -34,7 +34,7 @@ if(SWIG_FOUND)
     if(PythonLibs_FOUND)
         include_directories(${PYTHON_INCLUDE_PATH})
         include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-        set(CMAKE_SWIG_FLAGS "")
+        # set(CMAKE_SWIG_FLAGS "")
 
         set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
         # set_property(SOURCE utopia.i PROPERTY USE_LIBRARY_INCLUDE_DIRECTORIES TRUE)
@@ -52,6 +52,7 @@ if(SWIG_FOUND)
         install(
           TARGETS ${SWIG_MODULE_utopia_REAL_NAME}
           # ... add other arguments to install() as necessary
+          LIBRARY DESTINATION lib
         )
 
     endif()

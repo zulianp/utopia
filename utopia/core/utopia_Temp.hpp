@@ -5,6 +5,7 @@
 #include "utopia_Traits.hpp"
 
 #include "utopia_Expression.hpp"
+#include "utopia_MatChop.hpp"
 
 #include <iostream>
 #include <type_traits>
@@ -90,51 +91,7 @@ namespace utopia {
         EvalVecUniqueSortSerial<Vector>::apply(x, sorted, used_values);
     }
 
-    template<class Matrix>
-    void chop_abs(Tensor<Matrix, 2> &A, const double eps)
-    {
-        Backend<typename Traits<Matrix>::Scalar, Traits<Matrix>::Backend>::Instance().chop(A.implementation(), eps);
-    }
-
-    template<class Matrix, int Backend = Traits<Matrix>::Backend>
-    class ChopSmallerThan {
-    public:
-        using Scalar   = typename utopia::Traits<Matrix>::Scalar;
-        using SizeType = typename utopia::Traits<Matrix>::SizeType;
-
-        static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
-        {
-            each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
-                return v < eps ? 0.0 : v;
-            });
-        }
-    };
-
-    template<class Matrix, int Backend = Traits<Matrix>::Backend>
-    class ChopGreaterThan {
-    public:
-        using Scalar   = typename utopia::Traits<Matrix>::Scalar;
-        using SizeType = typename utopia::Traits<Matrix>::SizeType;
-
-        static void apply(Tensor<Matrix, 2> &mat, const Scalar &eps)
-        {
-            each_transform(mat.derived(), [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
-                return v > eps ? 0.0 : v;
-            });
-        }
-    };
-
-    template<class Matrix>
-    void chop_smaller_than(Tensor<Matrix, 2> &A, const double eps)
-    {
-        ChopSmallerThan<Matrix>::apply(A, eps);
-    }    
-
-    template<class Matrix>
-    void chop_greater_than(Tensor<Matrix, 2> &A, const double eps)
-    {
-        ChopGreaterThan<Matrix>::apply(A, eps);
-    }    
+    
 
 }
 

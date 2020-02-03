@@ -15,6 +15,7 @@
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Allocations.hpp"
 #include "utopia_Select.hpp"
+#include "utopia_Wrapper.hpp"
 
 #include "utopia_make_unique.hpp"
 
@@ -24,6 +25,7 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using SizeType = SizeType_;
+        using Communicator = utopia::Communicator;
     };
 
     //parallel types, collective operations
@@ -46,11 +48,6 @@ namespace utopia {
         virtual ~AbstractVector() {}
     };
 
-    template<class ConcreteType, int Order = Traits<ConcreteType>::Order>
-    class Wrapper {};
-
-    template<class ConcreteType, int Order>
-    class Traits<Wrapper<ConcreteType, Order> > : public Traits<ConcreteType> {};
 
     template<class Vector>
     class Wrapper<Vector, 1> : public AbstractVector<
@@ -67,13 +64,13 @@ namespace utopia {
 
         template<class... Args>
         Wrapper(Args &&...args)
-        : impl_(utopia::make_unique<Vector>(std::forward<Args>(args)...))
+        : impl_(std::make_shared<Vector>(std::forward<Args>(args)...))
         {}
 
         template<class... Args>
         void construct(Args &&...args)
         {
-            impl_ = utopia::make_unique<Vector>(std::forward<Args>(args)...);
+            impl_ = std::make_shared<Vector>(std::forward<Args>(args)...);
         }
 
         inline SizeType local_size() const override
@@ -367,9 +364,28 @@ namespace utopia {
         inline void local_zeros(const Size &s) override { impl_->local_values(s, 0.0); }
         inline void local_values(const Size &s, const Scalar &val) override { impl_->local_values(s, val); }
 
+        Vector &get()
+        {
+            return *impl_;
+        }
+
+        const Vector &get() const
+        {
+            return *impl_;
+        }
+
+        std::shared_ptr<Vector> ptr()
+        {
+            return impl_;
+        }
+
+        std::shared_ptr<const Vector> ptr() const
+        {
+            return impl_;
+        }
 
     private:
-        std::unique_ptr<Vector> impl_;
+        std::shared_ptr<Vector> impl_;
     };
 }
 

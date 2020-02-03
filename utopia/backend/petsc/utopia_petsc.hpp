@@ -3,6 +3,7 @@
 
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Traits.hpp"
+#include "utopia_petsc_Solver_Traits.hpp"
 
 #include "utopia_petsc_Error.hpp"
 #include "utopia_petsc_Vector.hpp"

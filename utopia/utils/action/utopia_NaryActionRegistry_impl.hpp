@@ -50,9 +50,9 @@ namespace utopia {
         auto it = actions_.find(action_name);
         if(it == actions_.end()) {
 
-            if(rank_ == 0) {
-                std::cerr << "[Error] no " << type() << " with name " << action_name << std::endl;
-            }
+            // if(rank_ == 0) {
+            //     std::cerr << "[Error] no " << type() << " with name " << action_name << std::endl;
+            // }
 
             return -1;
         }

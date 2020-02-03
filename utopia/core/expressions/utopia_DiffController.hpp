@@ -77,6 +77,7 @@ namespace utopia {
                 std::cerr << "Diff:\n";
                 disp(diff_mat);
 
+                rename("D", diff_mat);
                 write("diff_mat.m", diff_mat);
 
                 rename("H_fd", Hfd);
