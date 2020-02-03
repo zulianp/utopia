@@ -44,11 +44,11 @@ namespace utopia {
                 KSPSetOperators(smoother, raw_type(this->level(i).A()), raw_type(this->level(i).A()));
             }
         }
-        
+
         virtual bool apply(const Vector &rhs, Vector &x) override
         {
             if(this->verbose())
-                this->init_solver("utopia/petsc Multigrid",  {" it.", "|| Au - b||"});
+                this->init_solver("utopia/petsc Multigrid",  {"it.", "|| Au - b||"});
 
             KSPSolve(*ksp_, raw_type(rhs), raw_type(x));
 
@@ -304,7 +304,7 @@ namespace utopia {
                 KSPMonitorSet(
                 *ksp_,
                 [](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
-                    PrintInfo::print_iter_status({static_cast<Scalar>(iter), res});
+                    PrintInfo::print_iter_status(iter, {res});
                     return 0;
                 },
                 nullptr,
