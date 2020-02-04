@@ -1,17 +1,27 @@
-Fixes:
--mixed operations to be implemented
--GPU prototype
--Add sparse(n,n) with automatic n entries x row 
-
-New features:
--Deeper petsc SNES integration and control (SNESMonitor and SNESConvergenceTest)
--Block iterations for petsc
-
 
 Using external dependencies for par_moonolith
 git submodule add
 
-each(a, b, c, d, [](const Scalar in[3], Scalar out[1])) {
-	//d =  a + b + c;
-	out[0] = in[0] + in[1] + in[2];
-}
+
+GPU
+
+device range for parallel for related to data-structure, e.g.:
+
+utopia::parallel_for(
+    vec.range_device(),
+    UTOPIA_LAMBDA(const SizeType &i) {
+        //Do stuff
+    }
+);
+
+utopia::parallel_reduce(
+    vec.range_device(),
+    UTOPIA_LAMBDA(const SizeType &i) -> Scalar{
+        //Do stuff
+        return stuff;
+    },
+    result
+);
+
+
+with traits in the range for automatic parallel_for dispatch
