@@ -25,7 +25,7 @@ namespace utopia {
     //                     NEVER = 2};
 
     enum MultilevelNormSchedule{    ALWAYS = 1,
-                                    OUTER_CYCLE = 2};                        
+                                    OUTER_CYCLE = 2};
 
     class Configurable {
     public:
@@ -53,6 +53,10 @@ namespace utopia {
         virtual void get(const std::string &key, int &val) = 0;
         virtual void get(const std::string &key, long &val) = 0;
         virtual void get(const std::string &key, unsigned long &val) = 0;
+
+        virtual void get(const std::string &key, long long int &val) = 0;
+        // virtual void get(const std::string &key, long long &val) = 0;
+
         // virtual void get(const std::string &key, SizeType &val) = 0;
         virtual void get(const std::string &key, std::string &val) = 0;
         virtual void get(const std::string &key, Configurable &val) = 0;

@@ -11,6 +11,14 @@
 #define TPL_REMOVE_CONST(T) typename std::remove_const<T>::type
 
 namespace utopia {
+
+    template<class ConcreteType, int Order = Traits<ConcreteType>::Order>
+    class Wrapper {};
+
+    template<class ConcreteType, int Order>
+    class Traits<Wrapper<ConcreteType, Order> > : public Traits<ConcreteType> {};
+
+
     template<int Order>
     struct Order2String {
         static std::string Value() {

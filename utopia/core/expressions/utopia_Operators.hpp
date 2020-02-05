@@ -35,15 +35,21 @@ namespace utopia {
         std::string get_class() const { return "Minus"; }
 
         template<typename T>
-        inline static T apply(const T &l, const T &r)
+        inline static constexpr T apply(const T &l, const T &r)
         {
             return l - r;
         }
 
         template<typename T>
-        inline static T apply(const T &expr)
+        inline static constexpr T apply(const T &expr)
         {
             return -expr;
+        }
+
+        template<typename T>
+        inline constexpr T operator()(const T &expr) const
+        {
+            return apply(expr);
         }
     };
 

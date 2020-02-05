@@ -1,36 +1,40 @@
-// #ifndef UTOPIA_EVAL_CHOP_HPP
-// #define UTOPIA_EVAL_CHOP_HPP
+#ifndef UTOPIA_PETSC_MAT_CHOP_HPP
+#define UTOPIA_PETSC_MAT_CHOP_HPP
 
-// #include "utopia_Eval_Empty.hpp"
-// #include "utopia_petsc_Traits.hpp"
-// #include "utopia_petsc_Backend.hpp"
-// #include "utopia_Temp.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_MatChop.hpp"
+#include "utopia_petsc_Matrix.hpp"
 
-// #include <cassert>
+namespace utopia {
 
-// /*! @file
-// * Petsc language extensions
-// */
+	template<>
+	class Chop<PetscMatrix, PETSC> {
+	public:
+	    using Scalar   = typename utopia::Traits<PetscMatrix>::Scalar;
+	    using SizeType = typename utopia::Traits<PetscMatrix>::SizeType;
 
-// namespace utopia {
-//     template<class Matrix>
-//     class ChopSmallerThan<Matrix, PETSC> {
-//     public:
-//         using Scalar   = typename Traits<Matrix>::Scalar;
-//         using SizeType = typename Traits<Matrix>::SizeType;
+	    static void apply(PetscMatrix &mat, const Scalar &eps);
+	};
 
-//         static void apply(Tensor<Matrix, 2> &A, const Scalar &eps);
-//     };
+	template<>
+	class ChopSmallerThan<PetscMatrix, PETSC> {
+	public:
+	    using Scalar   = typename utopia::Traits<PetscMatrix>::Scalar;
+	    using SizeType = typename utopia::Traits<PetscMatrix>::SizeType;
 
-//     template<class Matrix>
-//     class ChopGreaterThan<Matrix, PETSC> {
-//     public:
-//         using Scalar   = typename Traits<Matrix>::Scalar;
-//         using SizeType = typename Traits<Matrix>::SizeType;
+	    static void apply(PetscMatrix &mat, const Scalar &eps);
+	};
 
-//         static void apply(Tensor<Matrix, 2> &A, const Scalar &eps);
-//     };
+	template<>
+	class ChopGreaterThan<PetscMatrix, PETSC> {
+	public:
+	    using Scalar   = typename utopia::Traits<PetscMatrix>::Scalar;
+	    using SizeType = typename utopia::Traits<PetscMatrix>::SizeType;
 
-// }
+	    static void apply(PetscMatrix &mat, const Scalar &eps);
+	};
 
-// #endif //UTOPIA_EVAL_CHOP_HPP
+}
+
+
+#endif //UTOPIA_PETSC_MAT_CHOP_HPP

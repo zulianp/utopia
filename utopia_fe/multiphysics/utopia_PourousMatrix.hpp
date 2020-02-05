@@ -87,6 +87,8 @@ namespace utopia {
                 write("M.m", *transfer_matrix_);
             }
 
+            set_zero_at_constraint_rows(space.dof_map(), *transfer_matrix_);
+
             mortar_matrix_  = std::make_shared<USparseMatrix>();
             *mortar_matrix_ = *transfer_matrix_ + local_identity(local_size(*transfer_matrix_));
             return true;

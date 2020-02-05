@@ -4,6 +4,7 @@
 #include "utopia_Benchmark_BLAS3.hpp"
 #include "utopia_Benchmark_Algorithms.hpp"
 #include "utopia_Benchmark_Access.hpp"
+#include "utopia_Benchmark_Transform.hpp"
 
 namespace utopia {
 
@@ -31,13 +32,17 @@ namespace utopia {
         blas3.set_verbosity_level(verbosity_level);
         blas3.run();
 
-        BenchmarkAlgorithms<Matrix, Vector> algorithms;
-        algorithms.set_verbosity_level(verbosity_level);
-        algorithms.run();
-
         BenchmarkAccess<Matrix, Vector> access;
         access.set_verbosity_level(verbosity_level);
         access.run();
+
+        BenchmarkTransform<Matrix, Vector> transform;
+        transform.set_verbosity_level(verbosity_level);
+        transform.run();
+
+        BenchmarkAlgorithms<Matrix, Vector> algorithms;
+        algorithms.set_verbosity_level(verbosity_level);
+        algorithms.run();
     }
 
     void run_benchmarks()
@@ -50,9 +55,6 @@ namespace utopia {
         //Parallel benchmarks
 #ifdef WITH_PETSC
         run_all_benchmarks<PetscMatrix, PetscVector>("petsc");
-#ifdef PETSC_HAVE_CUDA
-        run_all_benchmarks<CuSMatrixd, CuVectord>("petsc+cuda");
-#endif //PETSC_HAVE_CUDA
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS

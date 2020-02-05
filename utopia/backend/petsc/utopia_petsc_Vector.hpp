@@ -342,7 +342,10 @@ namespace utopia {
 
 
        template<class Operation>
-       void aux_transform(const Operation &op);
+       void op_transform(const Operation &op);
+
+       template<class F>
+       void transform_values(F f);
 
 
        ///////////////////////////////////////////////////////////////////////////

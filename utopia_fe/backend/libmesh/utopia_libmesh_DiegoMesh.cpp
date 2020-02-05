@@ -12,6 +12,173 @@
 
 namespace utopia {
 
+    bool DiegoMeshWriter::write_coords(
+        const Path &folder,
+        const libMesh::MeshBase &mesh,
+        const Selector &selector,
+        const std::string &postfix)
+    {
+        return write_coords(
+                folder,
+                mesh,
+                selector.node_index,
+                postfix
+            );
+    }
+
+    void DiegoMeshWriter::build_index(
+        const libMesh::MeshBase &mesh,
+        const std::set<int> &blocks,
+        int &n_elements,
+        std::vector<int> &node_index,
+        int &n_nodes)
+    {
+
+        node_index.resize(mesh.n_local_nodes());
+        std::fill(node_index.begin(), node_index.end(), 0);
+
+        n_elements = 0;
+
+        for(auto it = mesh.active_local_elements_begin(); it != mesh.active_local_elements_end(); ++it) {
+            auto &e = **it;
+
+            if(blocks.count(e.subdomain_id()) > 0) {
+                ++n_elements;
+
+                for(int i = 0; i < e.n_nodes(); ++i) {
+                    int32_t idx = e.node_id(i);
+                    node_index[idx] = 1;
+                }
+            }
+        }
+
+        n_nodes = std::accumulate(node_index.begin(), node_index.end(), 0);
+
+
+
+        auto nodes_end   = mesh.active_nodes_end();
+        auto nodes_begin = mesh.active_nodes_begin();
+
+        int current_offset = 0;
+        // for(int i = 0; i < n_nodes; ++i) {
+
+        for(auto it = nodes_begin; it != nodes_end; ++it) {
+            auto &n = **it;
+
+            if(node_index[n.id()] > 0) {
+                node_index[n.id()] = 1 + current_offset++;
+            }
+        }
+    }
+
+    bool DiegoMeshWriter::write_coords(
+        const Path &folder,
+        const libMesh::MeshBase &mesh,
+        const std::vector<int> &node_index,
+        const std::string &postfix)
+    {
+        std::string coord_file = folder / ("coord_" + postfix);
+
+        std::ofstream os;
+
+        auto nodes_end   = mesh.active_nodes_end();
+        auto nodes_begin = mesh.active_nodes_begin();
+
+        int spatial_dim = mesh.spatial_dimension();
+
+        for(int d = 0; d < spatial_dim; ++d) {
+
+            os.open(coord_file + std::to_string(d) + ".raw");
+            if(!os.good()) { assert(false); return false; }
+
+            for(auto it = nodes_begin; it != nodes_end; ++it) {
+                auto &n = **it;
+
+                if(node_index[n.id()] > 0) {
+                    float x = n(d);
+                    os.write((const char *)(&x), sizeof(x));
+                }
+            }
+
+            os.close();
+        }
+
+        return true;
+    }
+
+    bool DiegoMeshWriter::write(const Path &folder, const libMesh::MeshBase &mesh, const std::set<int> &blocks)
+    {
+        if(blocks.empty()) {
+            return write(folder, mesh);
+        }
+
+        std::string node_count_path     = folder / "node_count.txt";
+        std::string element_count_path  = folder / "element_count.txt";
+        std::string format_file         = folder / "format.txt";
+        std::string elem_file           = folder / "elem.raw";
+
+        std::vector<int> node_index;
+        int n_elements = 0, n_nodes = 0;
+
+        build_index(
+            mesh,
+            blocks,
+            n_elements,
+            node_index,
+            n_nodes
+        );
+
+        std::ofstream os;
+        os.open(node_count_path.c_str());
+
+        if(!os.good()) {
+            std::cout << "no file at " << node_count_path << std::endl;
+            return false;
+        }
+
+        os << n_nodes << "\n";
+        os.close();
+
+        os.open(element_count_path.c_str());
+        if(!os.good()) {
+            std::cout << "no file at " << element_count_path << std::endl;
+            return false;
+        }
+
+        os << n_elements << "\n";
+        os.close();
+
+        write_coords(
+                folder,
+                mesh,
+                node_index
+        );
+
+        os.open(elem_file.c_str());
+
+        if(!os.good()) {
+            return false;
+        }
+
+        for(auto it = mesh.active_local_elements_begin(); it != mesh.active_local_elements_end(); ++it) {
+            auto &e = **it;
+
+            if(blocks.count(e.subdomain_id()) > 0) {
+                for(int i = 0; i < e.n_nodes(); ++i) {
+                    assert( node_index[e.node_id(i)] > 0 );
+
+                    int32_t idx = node_index[e.node_id(i)] - 1;
+                    os.write((const char *)&idx, sizeof(idx));
+                }
+            }
+        }
+
+        os.close();
+
+        return true;
+    }
+
+
     void DiegoMeshWriter::read(Input &in)
     {
 

@@ -35,6 +35,9 @@ namespace utopia {
         const LibMeshFunctionSpace &to,
         UVector &to_vector);
 
+
+    void remove_constrained_dofs(libMesh::DofMap &dof_map, USparseMatrix &mat);
+
 }
 
 #endif //UTOPIA_FRACTURE_FLOW_UTILS_HPP
