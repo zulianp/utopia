@@ -266,11 +266,12 @@ namespace utopia {
        }
     };
 
-    template<class Elem_, int NComponents>
-    class FunctionSpace<PetscDM<Elem_::Dim>, NComponents, Elem_> {
+    template<class Elem_, int NComponents_>
+    class FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_> {
     public:
         static const int Dim = Elem_::Dim;
         static const std::size_t UDim = Dim;
+        static const int NComponents = NComponents_;
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = MultiVariateElem<Elem_, NComponents>;
         using Shape = Elem_;
@@ -568,6 +569,8 @@ namespace utopia {
         SizeType subspace_id_;
     };
 
+    template<class Elem_, int NComponents_>
+    const int FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_>::NComponents;
 }
 
 #endif //UTOPIA_PETSC_DMA_FUNCTIONSPACE_HPP
