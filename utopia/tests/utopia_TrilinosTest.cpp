@@ -1498,7 +1498,7 @@ namespace utopia {
 
             //test local reduce
             reduce_v = v.comm().sum(reduce_v);
-            utopia_test_assert(reduce_v == (n - 1) * (n/2));
+            utopia_test_assert(static_cast<SizeType>(reduce_v) == (n - 1) * (n/2));
         }
 
         //host context
