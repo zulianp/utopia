@@ -1,5 +1,6 @@
 
 #include "utopia_Base.hpp"
+#include "utopia_RangeDevice.hpp"
 
 //include edsl components
 #include "utopia_AppRunner.hpp"
@@ -37,7 +38,6 @@ namespace utopia {
     {
         static const int Dim   = FunctionSpace::Dim;
         static const int NVars = FunctionSpace::Dim + 1;
-        //static_assert(Dim + 1 == NVars);
 
         //expose inner types
         using Comm           = typename FunctionSpace::Comm;
@@ -250,7 +250,8 @@ namespace utopia {
         phase_field_fracture_sim(
             space,
             stats,
-            in);
+            in
+        );
     }
 
     UTOPIA_REGISTER_APP(petsc_phase_field_2);
@@ -304,6 +305,4 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_phase_field_3);
 }
-
-
 

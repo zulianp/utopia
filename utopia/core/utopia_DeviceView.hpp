@@ -138,6 +138,25 @@ namespace utopia {
         return t.derived();
     }
 
+
+    template<class Derived, int Order>
+    inline DeviceView<Derived, Order> view_device(Tensor<Derived, Order> &t)
+    {
+        return t.derived();
+    }
+
+    template<class Derived, int Order>
+    inline DeviceView<const Derived, Order> view_device(const Tensor<Derived, Order> &t)
+    {
+        return t.derived();
+    }
+
+    template<class Derived, int Order>
+    inline DeviceView<const Derived, Order> view_const_device(const Tensor<Derived, Order> &t)
+    {
+        return t.derived();
+    }
+
 }
 
 #endif //UTOPIA_DEVICEVIEW_HPP
