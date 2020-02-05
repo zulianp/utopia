@@ -5,6 +5,7 @@
 #include "utopia_Recorder.hpp"
 #include "utopia_MatrixTransfer.hpp"
 #include "utopia_MultiLevelMask.hpp"
+#include "utopia_Path.hpp"
 
 #include <iostream>
 
@@ -109,8 +110,10 @@ namespace utopia
             {
                 Write<Vector> w_d(d);
 
-                each_read(A,[&d](const SizeType i, const SizeType, const double) {
-                    d.set(i, 0.);
+                each_read(A,[&d](const SizeType i, const SizeType, const Scalar &val) {
+                    if(val != 0.0) {
+                        d.set(i, 0.);
+                    }
                 });
             }
 
@@ -161,6 +164,20 @@ namespace utopia
         virtual void update_transfer(const SizeType level, const std::shared_ptr<Transfer> &t)
         {
             this->transfers_[level] = t;
+        }
+
+
+        virtual bool write(const Path &path) const
+        {
+            int l = 0;
+            for(auto &level : levels_) {
+                Path file_name = path / ("mat_l" + std::to_string(l++) + ".m");
+                if(!level.write(file_name)) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
 

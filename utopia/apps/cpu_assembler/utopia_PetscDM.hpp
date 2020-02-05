@@ -115,6 +115,8 @@ namespace utopia {
         // void dims(SizeType *arr) const;
         void box(Scalar *min, Scalar *max) const;
 
+        Scalar min_spacing() const;
+
         void local_node_ranges(SizeType *begin, SizeType *end) const;
 
         Range local_element_range() const;

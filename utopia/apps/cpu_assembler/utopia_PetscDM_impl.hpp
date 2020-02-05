@@ -995,6 +995,22 @@ namespace utopia {
     }
 
     template<int Dim>
+    typename PetscDM<Dim>::Scalar PetscDM<Dim>::min_spacing() const
+    {
+        SizeType dims[3];
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        Scalar min_h = (impl_->box_max_[0] - impl_->box_min_[0])/dims[0];
+
+        for(int i = 1; i < Dim; ++i) {
+            Scalar h = (impl_->box_max_[i] - impl_->box_min_[i])/dims[i];
+            min_h = std::min(min_h, h);
+        }
+
+        return min_h;
+    }
+
+    template<int Dim>
     typename PetscDM<Dim>::SizeType PetscDM<Dim>::n_nodes() const
     {
         SizeType dims[3];

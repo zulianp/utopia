@@ -40,14 +40,16 @@ namespace utopia {
                 std::cout << "Expected:\n";
                 rename("g_fd", gfd);
                 disp(gfd);
+                write("G_fd.m", gfd);
 
                 std::cout << "Actual:\n";
                 disp(g);
 
+                write("G.m", g);
+
                 std::cout << "----------------------\n";
                 assert(false);
             }
-
 
             return ok;
         }

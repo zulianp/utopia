@@ -1470,9 +1470,46 @@ namespace utopia {
         TpetraMatrixd A = utopia::crs(n_rows, n_cols, row_ptr, columns, values);
     }
 
+    void test_range_device()
+    {
+        using SizeType = Traits<TpetraVectord>::SizeType;
+        using Scalar   = Traits<TpetraVectord>::Scalar;
+
+        //host context
+        SizeType n = 10;
+        TpetraVectord v = values(n, 1.);
+
+        {
+            //device context
+            auto r        = v.range_device();
+            auto v_device = view_device(v);
+
+            //using kokkos parallel for (r contains the traits of the backend
+            //and it should be used to provide specific range policies associated to utopia types
+            parallel_for(r, UTOPIA_LAMBDA(const SizeType &i) {
+                v_device.set(i, i);
+            });
+
+            Scalar reduce_v = 0.0;
+            parallel_reduce(r, UTOPIA_LAMBDA(const SizeType &i) {
+                return v_device.get(i);
+            }, reduce_v);
+
+
+            //test local reduce
+            reduce_v = v.comm().sum(reduce_v);
+            utopia_test_assert(static_cast<SizeType>(reduce_v) == (n - 1) * (n/2));
+        }
+
+        //host context
+        SizeType sum_v = sum(v);
+        utopia_test_assert(sum_v == (n - 1) * (n/2));
+    }
+
     static void trilinos_specific()
     {
 
+        UTOPIA_RUN_TEST(test_range_device);
         UTOPIA_RUN_TEST(stcg_pt_test);
         UTOPIA_RUN_TEST(trilinos_structure);
         UTOPIA_RUN_TEST(trilinos_build);
