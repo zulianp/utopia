@@ -18,6 +18,7 @@
 #include "utopia_Normed.hpp"
 #include "utopia_Allocations.hpp"
 #include "utopia_Select.hpp"
+#include "utopia_RangeDevice.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -397,6 +398,14 @@ namespace utopia {
         inline Range range() const override
         {
             return { implementation().getMap()->getMinGlobalIndex(), implementation().getMap()->getMaxGlobalIndex() + 1 };
+        }
+
+        inline RangeDevice<TpetraVector> range_device() const
+        {
+            return RangeDevice<TpetraVector>(
+                implementation().getMap()->getMinGlobalIndex(),
+                implementation().getMap()->getMaxGlobalIndex() + 1
+            );
         }
 
         inline SizeType size() const override

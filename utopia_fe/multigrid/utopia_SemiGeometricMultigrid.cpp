@@ -9,7 +9,7 @@
 #include "utopia_make_unique.hpp"
 
 #include "moonolith_communicator.hpp"
-
+#include "utopia_petsc_Vector_impl.hpp"
 
 
 #include "libmesh/mesh_tools.h"
@@ -63,7 +63,8 @@ namespace utopia {
       is_block_solver_(false),
       separate_subdomains_(false),
       use_interpolation_(false),
-      use_coarse_interpolators_(true)
+      use_coarse_interpolators_(true),
+      clamp_tol_(1e-8)
     { }
 
     void SemiGeometricMultigrid::generate_coarse_meshes(
@@ -103,7 +104,7 @@ namespace utopia {
             }
 
             meshes[i] = std::move(m_i);
-            use_interpolation_at_level_[i] = true;
+            use_interpolation_at_level_[i] = use_coarse_interpolators_;
         }
 
         if(is_second_order) {
@@ -189,7 +190,7 @@ namespace utopia {
 
         bool is_second_order = dof_map.variable_type(0).order == 2;
 
-        mg.fix_semidefinite_operators(true);
+
 
         generate_coarse_meshes(mesh, n_levels, dof_map.variable_type(0).order);
 
@@ -218,9 +219,13 @@ namespace utopia {
         interpolators_.resize(n_coarse_spaces);
         moonolith::Communicator comm(mesh.comm().get());
 
+        // InputParameters transfer_params;
+        // transfer_params
+
         UVector d_diag;
         for(std::size_t i = 1; i < n_coarse_spaces; ++i) {
             interpolators_[i-1] = std::make_shared<USparseMatrix>();
+
 
             bool success = assemble_volume_transfer(
                 comm,
@@ -241,6 +246,8 @@ namespace utopia {
 
             make_d(*interpolators_[i-1], d_diag);
             *interpolators_[i-1] = diag(1./d_diag) * *interpolators_[i-1];
+
+            // clamp_operator(*interpolators_[i-1]);
         }
 
         interpolators_[n_coarse_spaces-1] = std::make_shared<USparseMatrix>();
@@ -259,8 +266,12 @@ namespace utopia {
             use_interpolation_at_level_[n_coarse_spaces - 1]
         ); assert(success);
 
+        // clamp_operator(*interpolators_[n_coarse_spaces-1]);
+
         make_d(*interpolators_[n_coarse_spaces-1], d_diag);
         *interpolators_[n_coarse_spaces-1] = diag(1./d_diag) * *interpolators_[n_coarse_spaces-1];
+
+        set_zero_at_constraint_rows(dof_map, *interpolators_[n_coarse_spaces-1]);
 
         if(mg.verbose()) {
             for(const auto &e : equation_systems) {
@@ -302,6 +313,47 @@ namespace utopia {
 
 
         // mg.update_transfer(last_interp, std::make_shared<MatrixTransfer<USparseMatrix, UVector>>(c_I));
+    }
+
+
+    void SemiGeometricMultigrid::read(Input &in)
+    {
+        Super::read(in);
+        mg.read(in);
+
+        in.get("use_coarse_interpolators", use_coarse_interpolators_);
+        in.get("use_interpolation", use_interpolation_);
+        in.get("clamp_tol", clamp_tol_);
+
+        bool fix_semi_def = true;
+        in.get("fix_semi_def", fix_semi_def);
+        mg.fix_semidefinite_operators(fix_semi_def);
+    }
+
+    void SemiGeometricMultigrid::clamp_operator(USparseMatrix &T) const
+    {
+        UVector ones = local_values(local_size(T).get(0), 1.0);
+
+        USparseMatrix T_t = transpose(T);
+        UVector sum_T_cols = T_t * ones;
+
+        sum_T_cols.transform_values([this](const Scalar &val) -> Scalar {
+            return (std::abs(val) < clamp_tol_) ? 1.0 : 0.0;
+        });
+
+        Scalar original_sum = sum(T_t);
+
+        set_zero_rows(T_t, sum_T_cols, 0.0);
+        T = transpose(T_t);
+
+        Scalar removed_coarse_sum = sum(T);
+        Scalar n_removed_dofs = sum(sum_T_cols);
+
+        if(sum_T_cols.comm().rank() == 0) {
+            std::cout << original_sum << " - " << removed_coarse_sum << " (>) " << (original_sum > removed_coarse_sum) << std::endl;
+            std::cout << std::abs(original_sum - removed_coarse_sum) <<  std::endl;
+            std::cout << "n_removed: " << n_removed_dofs << "/" << sum_T_cols.size()  << std::endl;
+        }
     }
 }
 
