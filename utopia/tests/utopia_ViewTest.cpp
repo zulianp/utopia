@@ -1,6 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_Views.hpp"
+#include "utopia_DeviceReduce.hpp"
 
 #include <utility>
 
@@ -379,6 +380,31 @@ namespace utopia {
 
             StaticVector<Scalar, 3> e;
             eig(A, e, V);
+
+            A.set(0.0);
+            A(0,0) = 0.020000000127017;
+            A(0,1) = A(1,0) = 0.000000000063508;
+            A(0,2) = A(2,0) = 0.000000000063508;
+
+            eig(A, e, V);
+
+            Scalar sum_v = sum(V);
+
+            utopia_test_assert(sum_v == sum_v);
+
+            A.set(0.0);
+            A(0,0) = 0.02;
+            A(0,1) = A(1,0) = 6.35083e-11;
+            A(0,2) = A(2,0) = 6.35083e-11;
+
+            V.set(0.0);
+            eig(A, e, V);
+
+            disp(e);
+            disp(V);
+
+            sum_v = sum(V);
+            utopia_test_assert(sum_v == sum_v);
         }
 
         void inner_test()
