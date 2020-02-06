@@ -171,6 +171,7 @@ namespace utopia {
 
                         }
 
+                        assert(el_energy == el_energy);
                         return el_energy;
                     },
                     val
@@ -179,7 +180,7 @@ namespace utopia {
 
             val = x.comm().sum(val);
 
-            // disp(val);
+            assert(val == val);
             return true;
         }
 
@@ -613,7 +614,8 @@ namespace utopia {
                 const Scalar val_p = quadratic_degradation(params, phase_field_value) * (params.lambda * tr_p + 2.0 * params.mu * eig_p);
                 const Scalar val_n = params.lambda * tr_n + 2.0 * params.mu * eig_n;
 
-                const Scalar val = val_p + val_n;
+                // const Scalar val = val_p + val_n;
+                const Scalar val = val_p - val_n; //NEW CHANGE
 
                 mat.col(d, v);
                 stress += val * outer(v, v);

@@ -95,12 +95,26 @@ namespace utopia {
             for(SizeType qp = 0; qp < n; ++qp) {
                 strain[qp].symmetrize();
                 eig(strain[qp], values[qp], vectors[qp]);
+                UTOPIA_DEVICE_ASSERT(check(values[qp], vectors[qp]));
             }
         }
 
     private:
 
         GradInterpolateView grad_;
+
+        template<class Values, class Vectors>
+        UTOPIA_INLINE_FUNCTION static bool check(
+            const Values &values,
+            const Vectors &vectors)
+        {
+            auto sum_v = sum(vectors);
+            auto sum_e = sum(values);
+            UTOPIA_DEVICE_ASSERT( !device::isnan(sum_v) );
+            UTOPIA_DEVICE_ASSERT( !device::isnan(sum_e) );
+
+            return !device::isnan(sum_v) && !device::isnan(sum_e);
+        }
 
         UTOPIA_INLINE_FUNCTION static constexpr Scalar split_positive(const Scalar &x) {
             return (device::abs(x) + x)/2;

@@ -52,7 +52,7 @@ namespace utopia {
 
             if(in) {
                 if((err = run(argv[2], *in)) == 0) {
-                    std::cerr << "[Warning] sytanx deprected use: "
+                    std::cerr << "[Warning] syntax deprected use: "
                               << argv[0] <<  " "
                               << argv[1] <<  " "
                               << argv[2] <<  " @file "
