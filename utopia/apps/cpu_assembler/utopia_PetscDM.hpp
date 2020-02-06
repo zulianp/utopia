@@ -78,6 +78,14 @@ namespace utopia {
             const SizeType &n_components = 1
         );
 
+        void build(
+            const PetscCommunicator     &comm,
+            const std::array<SizeType, UDim> &dims,
+            const std::array<Scalar, UDim>   &box_min,
+            const std::array<Scalar, UDim>   &box_max,
+            const SizeType &n_components = 1
+        );
+
         PetscDM();
         ~PetscDM();
 

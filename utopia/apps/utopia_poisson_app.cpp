@@ -26,12 +26,10 @@
 
 #include <cmath>
 
-
-
 namespace utopia {
 
     template<class FunctionSpace>
-    static void poisson_problem(FunctionSpace &space, const bool use_direct_solver, const bool debug_matrices = false)
+    static void poisson_problem(FunctionSpace &space, Input &in)
     {
         // using Mesh             = typename FunctionSpace::Mesh;
         using Elem             = typename FunctionSpace::Elem;
@@ -41,16 +39,21 @@ namespace utopia {
         using Comm             = typename FunctionSpace::Comm;
 
         static const int Dim    = Elem::Dim;
-        // static const int NNodes = Elem::NNodes;
         static const int NFunctions = Elem::NFunctions;
 
-        // using DevFunctionSpace = typename FunctionSpace::ViewDevice;
         using Point            = typename FunctionSpace::Point;
         using Scalar           = typename FunctionSpace::Scalar;
         using SizeType         = typename FunctionSpace::SizeType;
         using Quadrature       = utopia::Quadrature<Elem, 2>;
         using ElementMatrix    = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
-        // using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
+
+
+        bool use_direct_solver = true;
+        bool debug_matrices = false;
+
+        in.get("use_direct_solver", use_direct_solver);
+        in.get("debug_matrices",    debug_matrices);
+
 
         Comm &comm = space.comm();
 
@@ -208,7 +211,7 @@ namespace utopia {
         stats.describe(std::cout);
     }
 
-    static void petsc_dm_assemble_2()
+    static void petsc_poisson_2(Input &in)
     {
         static const int Dim = 2;
         static const int NNodes = 4;
@@ -219,26 +222,21 @@ namespace utopia {
         using SizeType         = Mesh::SizeType;
 
         PetscCommunicator world;
+        FunctionSpace space;
+        in.get("space", space);
 
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 10;
-        SizeType ny = scale * 10;
-        SizeType nz = 10;
+        if(space.empty()) {
+            //using defaults
+            InputParameters params;
+            space.read(params);
+        }
 
-        Mesh mesh(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-        );
-
-        FunctionSpace space(mesh);
-        poisson_problem(space, true);
+        poisson_problem(space, in);
     }
 
-    UTOPIA_REGISTER_APP(petsc_dm_assemble_2);
+    UTOPIA_REGISTER_APP(petsc_poisson_2);
 
-    static void petsc_dm_assemble_3()
+    static void petsc_dm_assemble_3(Input &in)
     {
         static const int Dim = 3;
         static const int NNodes = 8;
@@ -246,30 +244,23 @@ namespace utopia {
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformHex8;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
-        using SizeType         = Mesh::SizeType;
 
         PetscCommunicator world;
+        FunctionSpace space;
+        in.get("space", space);
 
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 15;
-        SizeType ny = scale * 15;
-        SizeType nz = scale * 15;
+        if(space.empty()) {
+            //using defaults
+            InputParameters params;
+            space.read(params);
+        }
 
-        Mesh mesh(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
-
-        FunctionSpace space(mesh);
-        poisson_problem(space, false);
+        poisson_problem(space, in);
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
 
-
-    static void petsc_dm_mvar_poisson_2()
+    static void petsc_dm_mvar_poisson_2(Input &in)
     {
         static const int Dim = 2;
         static const int NVars = Dim;
@@ -277,28 +268,22 @@ namespace utopia {
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType         = Mesh::SizeType;
-
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 30;
-        SizeType ny = scale * 30;
 
         FunctionSpace space;
-        space.build(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-        );
+        in.get("space", space);
 
-        poisson_problem(space, true, true);
+        if(space.empty()) {
+            //using defaults
+            InputParameters params;
+            space.read(params);
+        }
+
+        poisson_problem(space, in);
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_2);
 
-    static void petsc_dm_mvar_poisson_3()
+    static void petsc_dm_mvar_poisson_3(Input &in)
     {
         static const int Dim = 3;
         static const int NVars = Dim;
@@ -306,25 +291,17 @@ namespace utopia {
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformHex8;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType         = Mesh::SizeType;
-
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 20;
-        SizeType ny = scale * 20;
-        SizeType nz = scale * 20;
 
         FunctionSpace space;
+        in.get("space", space);
 
-        space.build(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
+        if(space.empty()) {
+            //using defaults
+            InputParameters params;
+            space.read(params);
+        }
 
-        poisson_problem(space, false);
+        poisson_problem(space, in);
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_3);

@@ -85,9 +85,9 @@ namespace utopia {
 
         int ret = apply_aux(actions_, action_name);
 
-        if(ret == -1 && rank_ == 0) {
-            std::cerr << "[Error] no " << type() << " with name " << action_name << std::endl;
-        }
+        // if(ret == -1 && rank_ == 0) {
+        //     std::cerr << "[Error] no " << type() << " with name " << action_name << std::endl;
+        // }
 
         return ret;
     }
