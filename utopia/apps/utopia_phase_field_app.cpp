@@ -56,33 +56,17 @@ namespace utopia {
         using Quadrature     = utopia::Quadrature<Elem, 2>;
         using Parameters     = typename PhaseFieldForBrittleFractures<FunctionSpace>::Parameters;
 
-        Parameters params;
-
         auto &mesh = space.mesh();
 
-        params.length_scale = 2.0 * mesh.min_spacing();
-        in.get("length-scale", params.length_scale);
+        Scalar disp = 0.001;
 
-        params.fracture_toughness = 0.001;
-        in.get("fracture-toughness", params.fracture_toughness);
-
-        params.mu = 80.0;
-        params.lambda = 120.0;
-
-        in.get("mu", params.mu);
-        in.get("lambda", params.lambda);
-
-        Scalar disp = 1e-5;
         in.get("disp", disp);
 
         bool with_damage = true;
-        in.get("with-damage", with_damage);
-
-        bool use_dense_hessian = false;
-        in.get("use-dense-hessian", use_dense_hessian);
+        in.get("with_damage", with_damage);
 
         bool with_BC = true;
-        in.get("with-BC", with_BC);
+        in.get("with_BC", with_BC);
 
         stats.start();
 
@@ -127,8 +111,8 @@ namespace utopia {
 
         stats.start();
 
-        PhaseFieldForBrittleFractures<FunctionSpace> pp(space, params);
-        pp.use_dense_hessian(use_dense_hessian);
+        PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+        pp.read(in);
 
         PetscMatrix H;
         PetscVector x, g;

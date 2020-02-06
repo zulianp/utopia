@@ -22,13 +22,66 @@ namespace utopia {
                 }
             }
 
+            template<class Fun, class Vector>
+            static bool apply_from_grad(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
+
+                if(H.is_sparse()) {
+                    return HessianFD<Matrix, FillType::SPARSE>::apply_from_grad(fun, x, h, H);
+                } else {
+                    return HessianFD<Matrix, FillType::DENSE>::apply_from_grad(fun, x, h, H);
+                }
+            }
+
         };
 
 
         template<class Matrix>
         class HessianFD<Matrix, FillType::DENSE> {
         public:
-            DEF_UTOPIA_SCALAR(Matrix);
+            using SizeType = typename Traits<Matrix>::SizeType;
+            using Scalar   = typename Traits<Matrix>::Scalar;
+
+            template<class Fun, class Vector>
+            static bool apply_from_grad(Fun &fun, const Vector &x, const Scalar h, Matrix &H)
+            {
+                assert(x.comm().size() == 1 && "only for serial runs");
+
+                auto n = x.size();
+                H = zeros(n, n);
+                Vector ei = zeros(n);
+                Vector g_m = ei;
+                Vector g_p = ei;
+                Vector x_m = ei;
+                Vector x_p = ei;
+
+                Vector h_i = ei;
+
+                Write<Matrix> w_H(H);
+
+                for(SizeType i = 0; i < n; ++i) {
+
+                    { //Scoped lock
+                        const Write <Vector> ewlock(ei);
+                        if (i > 0) ei.set(i - 1, 0);
+                        ei.set(i, h);
+                    }
+
+                    x_m = x - ei;
+                    x_p = x + ei;
+
+                    fun.gradient(x_m, g_m);
+                    fun.gradient(x_p, g_p);
+                    h_i = 1./(2 * h) * (g_p - g_m);
+
+
+                    Read<Vector> r_h(h_i);
+                    for(SizeType j = 0; j < n; ++j) {
+                        H.set(i, j, h_i.get(j));
+                    }
+                }
+
+                return true;
+            }
 
             template<class Fun, class Vector>
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
@@ -87,6 +140,57 @@ namespace utopia {
             DEF_UTOPIA_SCALAR(Matrix);
 
             template<class Fun, class Vector>
+            static bool apply_from_grad(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
+               assert(x.comm().size() == 1 && "only for serial runs");
+
+               auto n = x.size();
+               Vector ei = zeros(n);
+               Vector g_m = ei;
+               Vector g_p = ei;
+               Vector x_m = ei;
+               Vector x_p = ei;
+
+               Vector h_i = ei;
+               h_i.read_lock();
+
+               H *= 0.0;
+               Matrix H_copy = H;
+
+               Write<Matrix> w_H(H);
+
+               SizeType last_i = -1;
+               each_read(H_copy, [&](const SizeType &i, const SizeType &j, const Scalar &)
+               {
+                    if(last_i != i)
+                    {
+                        {
+                           //Scoped lock
+                           Write<Vector> w(ei);
+                           if (i > 0) ei.set(i - 1, 0);
+                           ei.set(i, h);
+                        }
+
+                        x_m = x - ei;
+                        x_p = x + ei;
+
+                        fun.gradient(x_m, g_m);
+                        fun.gradient(x_p, g_p);
+
+                        h_i.read_unlock();
+                        h_i = 1./(2 * h) * (g_p - g_m);
+                        h_i.read_lock();
+
+                        last_i = i;
+                    }
+
+                    H.set(i, j, h_i.get(j));
+               });
+
+               h_i.read_unlock();
+               return true;
+            }
+
+            template<class Fun, class Vector>
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
                 auto n = x.size();
                 assert(!empty(H) && "H has to be allocated with the sparsity pattern before calling this method");
@@ -138,18 +242,6 @@ namespace utopia {
         };
 
 
-        // template<class Matrix>
-        // class HessianFD<Matrix, FillType::SPARSE> {
-        // public:
-        //     DEF_UTOPIA_SCALAR(Matrix);
-
-        //     template<class Fun, class Vector>
-        //     static bool apply(Fun & /*fun*/, const Vector & /*x*/, const Scalar  /*h*/, Matrix & /*H */) {
-        //         std::cerr << ("[Warning] HessianFD not implemented for sparse matrices") << std::endl;
-        //         return false;
-
-        //     }
-        // };
     }
 
     template<typename Scalar>
@@ -160,8 +252,13 @@ namespace utopia {
                 : _h(h) { }
 
         template<class Fun, class Vector, class Matrix>
-        bool hessian(Fun &fun, const Vector &x, Matrix &H) {
-            return internals::HessianFD<Matrix>::apply(fun, x, _h, H);
+        bool hessian(Fun &fun, const Vector &x, Matrix &H, const bool from_grad = true) {
+
+            if(from_grad) {
+                return internals::HessianFD<Matrix>::apply_from_grad(fun, x, _h, H);
+            } else {
+                return internals::HessianFD<Matrix>::apply(fun, x, _h, H);
+            }
         }
 
 

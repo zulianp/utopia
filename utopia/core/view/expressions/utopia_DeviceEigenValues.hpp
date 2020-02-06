@@ -106,17 +106,17 @@ namespace utopia {
 
             //sorting eigen-values
 
-            if(result(0) > result(2)) {
-                device::swap( result(0), result(2) );
-            }
+            // if(result(0) > result(2)) {
+            //     device::swap( result(0), result(2) );
+            // }
 
-            if(result(0) > result(1)) {
-                device::swap( result(0), result(1) );
-            }
+            // if(result(0) > result(1)) {
+            //     device::swap( result(0), result(1) );
+            // }
 
-            if(result(1) > result(2)) {
-                device::swap( result(1), result(2) );
-            }
+            // if(result(1) > result(2)) {
+            //     device::swap( result(1), result(2) );
+            // }
 
             // result.sort();
         }
@@ -170,10 +170,9 @@ namespace utopia {
             result(0) = device::sqrt(0.5 * (s1 + s2));
             result(1) = device::sqrt(0.5 * (s1 - s2));
 
-            if(result(0) > result(1)) {
-                device::swap( result(0), result(1) );
-            }
-
+            // if(result(0) > result(1)) {
+            //     device::swap( result(0), result(1) );
+            // }
         }
 
     };
