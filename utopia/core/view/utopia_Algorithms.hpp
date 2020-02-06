@@ -18,6 +18,12 @@ namespace utopia {
 #ifdef KOKKOS_INLINE_FUNCTION
 
         template<typename T>
+        UTOPIA_INLINE_FUNCTION T isnan(const T &v)
+        {
+            return !(v == v);
+        }
+
+        template<typename T>
         UTOPIA_INLINE_FUNCTION T abs(const T &v)
         {
             return Kokkos::Details::ArithTraits<T>::abs(v);
@@ -77,6 +83,12 @@ namespace utopia {
         }
 
 #else
+
+        template<typename T>
+        T isnan(const T &v)
+        {
+            return !(v == v);
+        }
 
         template<typename T>
         inline T abs(const T &v)

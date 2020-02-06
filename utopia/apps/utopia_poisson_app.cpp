@@ -230,7 +230,7 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_poisson_2);
 
-    static void petsc_dm_assemble_3(Input &in)
+    static void petsc_poisson_3(Input &in)
     {
         static const int Dim = 3;
         static const int NNodes = 8;
@@ -246,7 +246,7 @@ namespace utopia {
         poisson_problem(space, in);
     }
 
-    UTOPIA_REGISTER_APP(petsc_dm_assemble_3);
+    UTOPIA_REGISTER_APP(petsc_poisson_3);
 
     static void petsc_dm_mvar_poisson_2(Input &in)
     {
