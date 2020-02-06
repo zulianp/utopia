@@ -42,7 +42,7 @@ namespace utopia {
                 auto raw_result = Teuchos::rcp(new typename Result::CrsMatrixType(
                     raw_type(R)->getDomainMap(),
                     0,
-                    Tpetra::DynamicProfile
+                    Tpetra::StaticProfile
                 ));
 
                 assert(!empty(R));

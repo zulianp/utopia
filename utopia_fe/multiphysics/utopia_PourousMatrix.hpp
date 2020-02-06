@@ -87,6 +87,8 @@ namespace utopia {
                 write("M.m", *transfer_matrix_);
             }
 
+            set_zero_at_constraint_rows(space.dof_map(), *transfer_matrix_);
+
             mortar_matrix_  = std::make_shared<USparseMatrix>();
             *mortar_matrix_ = *transfer_matrix_ + local_identity(local_size(*transfer_matrix_));
             return true;
@@ -94,6 +96,7 @@ namespace utopia {
 
         void constrain_system(Matrix &A, Vector &b)
         {
+            assert(mortar_matrix());
             const auto &T = *mortar_matrix();
 
             A = transpose(T) * A * T;
@@ -104,6 +107,7 @@ namespace utopia {
         }
 
         void unconstrain_solution(Vector &x) {
+            assert(mortar_matrix());
             const auto &T = *mortar_matrix();
             x = T * x;
         }

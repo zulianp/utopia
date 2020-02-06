@@ -14,7 +14,9 @@ namespace utopia {
         virtual void get(float &) const = 0;
         virtual void get(int &) const = 0;
         virtual void get(long &) const = 0;
+        // virtual void get(long long &) const = 0;
         virtual void get(unsigned long &) const = 0;
+        virtual void get(long long int &) const = 0;
         virtual void get(bool &) const = 0;
         virtual void get(std::string &) const = 0;
 
@@ -22,9 +24,11 @@ namespace utopia {
         virtual bool is_float() const { return false; }
         virtual bool is_int() const { return false; }
         virtual bool is_long() const { return false; }
+        virtual bool is_longlong() const { return false; }
         virtual bool is_ulong() const { return false; }
         virtual bool is_bool() const { return false; }
         virtual bool is_string() const { return false; }
+        virtual bool is_long_long_int() const { return false; }
         virtual IConvertible * clone() const = 0;
     };
 
@@ -35,7 +39,9 @@ namespace utopia {
         void get(float &) const override {}
         void get(int &) const override {}
         void get(long &) const override {}
+        // void get(long long &) const override {}
         void get(unsigned long &) const override {}
+        void get(long long int &) const override {}
         void get(bool &) const override {}
         void get(std::string &) const override {}
 
@@ -126,6 +132,15 @@ namespace utopia {
         }
     };
 
+    // template<>
+    // class Convert<std::string, long long> {
+    // public:
+    //     static void apply(const std::string &in, long long &out)
+    //     {
+    //         out = atol(in.c_str());
+    //     }
+    // };
+
     template<>
     class Convert<std::string, unsigned long> {
     public:
@@ -133,6 +148,16 @@ namespace utopia {
         {
             //FIXME
             out = atol(in.c_str());
+        }
+    };
+
+    template<>
+    class Convert<std::string, long long int> {
+    public:
+        static void apply(const std::string &in, long long int &out)
+        {
+            //FIXME
+            out = atoll(in.c_str());
         }
     };
 
@@ -161,9 +186,19 @@ namespace utopia {
             Convert<T, long>::apply(value_, in_out);
         }
 
+        // inline void get(long long &in_out) const override
+        // {
+        //     Convert<T, long long>::apply(value_, in_out);
+        // }
+
         inline void get(unsigned long &in_out) const override
         {
             Convert<T, unsigned long>::apply(value_, in_out);
+        }
+
+        inline void get(long long int &in_out) const override
+        {
+            Convert<T, long long int>::apply(value_, in_out);
         }
 
         inline void get(bool &in_out) const override
@@ -198,9 +233,19 @@ namespace utopia {
             Convert<long, T>::apply(in, value_);
         }
 
+        // inline void set(const long long &in)
+        // {
+        //     Convert<long long, T>::apply(in, value_);
+        // }
+
         inline void set(const unsigned long &in)
         {
             Convert<long, T>::apply(in, value_);
+        }
+
+        inline void set(const long long int &in)
+        {
+            Convert<long long int, T>::apply(in, value_);
         }
 
         inline void set(const bool &in)
@@ -230,6 +275,7 @@ namespace utopia {
         inline bool is_ulong() const override 	{ return std::is_same<T, long>::value; }
         inline bool is_bool() const override 	{ return std::is_same<T, bool>::value; }
         inline bool is_string() const override  { return std::is_same<T, std::string>::value; }
+        inline bool is_long_long_int() const override { return std::is_same<T, long long int>::value; }
 
         inline Convertible * clone() const override
         {
@@ -244,7 +290,8 @@ namespace utopia {
     using Float  = Convertible<float>;
     using Int    = Convertible<int>;
     using Long   = Convertible<long>;
-    using ULong   = Convertible<unsigned long>;
+    using LLong  = Convertible<long long int>;
+    using ULong  = Convertible<unsigned long>;
     using Bool   = Convertible<bool>;
     using String = Convertible<std::string>;
 }

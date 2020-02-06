@@ -16,7 +16,7 @@ namespace scripting {
 
 #ifdef WITH_PETSC
         UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
-
+        UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS

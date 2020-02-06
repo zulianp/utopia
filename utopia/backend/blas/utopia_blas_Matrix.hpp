@@ -339,10 +339,25 @@ namespace utopia {
             {
                 for(SizeType j=0; j<cols(); ++j)
                 {
-                    os << get(i, j) << ' ';
+                    os << get(i, j) << ", ";
                 }
                 os << '\n';
             }
+        }
+
+        inline bool write(const Path &path) const
+        {
+            std::ofstream os(path.c_str());
+
+            bool ok = os.good();
+            if(ok) {
+                os << "mat = [";
+                describe(os);
+                os << "];";
+            }
+
+            os.close();
+            return ok;
         }
 
         //utility functions

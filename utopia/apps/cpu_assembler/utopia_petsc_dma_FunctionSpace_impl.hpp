@@ -8,6 +8,41 @@
 namespace utopia {
 
     template<class Elem, int NComponents>
+    void FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::read(Input &in)
+    {
+        SizeType n[3] = {10, 10, 10};
+        Scalar box_min[3] = {0.0, 0.0, 0.0}, box_max[3] = {1.0, 1.0, 1.0};
+
+        in.get("nx", n[0]);
+        in.get("ny", n[1]);
+        in.get("nz", n[2]);
+
+        in.get("x_min", box_min[0]);
+        in.get("y_min", box_min[1]);
+        in.get("z_min", box_min[2]);
+
+        in.get("x_max", box_max[0]);
+        in.get("y_max", box_max[1]);
+        in.get("z_max", box_max[2]);
+
+        std::array<SizeType, UDim> a_n;
+        std::array<Scalar, UDim> a_box_min, a_box_max;
+
+        for(int d = 0; d < Dim; ++d) {
+            a_n[d]       = n[d];
+            a_box_min[d] = box_min[d];
+            a_box_max[d] = box_max[d];
+        }
+
+        PetscCommunicator comm;
+        if(!mesh_) {
+            mesh_ = std::make_shared<Mesh>(comm, a_n, a_box_min, a_box_max, NComponents);
+        } else {
+            mesh_->build(comm, a_n, a_box_min, a_box_max, NComponents);
+        }
+    }
+
+    template<class Elem, int NComponents>
     void FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::elem(const SizeType &idx, Elem &e) const
     {
         mesh_->elem(idx, e.univar_elem());

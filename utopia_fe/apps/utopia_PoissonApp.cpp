@@ -15,6 +15,7 @@
 #include "utopia_MeshTransferOperator.hpp"
 #include "utopia_Flow.hpp"
 #include "utopia_TensorInterpolate.hpp"
+#include "utopia_SemiGeometricMultigrid.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/boundary_mesh.h"
@@ -82,10 +83,56 @@ namespace utopia {
 
         apply_boundary_conditions(V, A, rhs);
 
-        Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
-        fact.describe(std::cout);
-        fact.solve(A, rhs, x);
+        bool use_mg = false;
+        in.get("use-mg", use_mg);
 
+        if(!use_mg) {
+            Factorization<USparseMatrix, UVector> fact(MATSOLVERMUMPS,PCLU);
+            fact.describe(std::cout);
+            fact.solve(A, rhs, x);
+        } else {
+            auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+            auto smoother      = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
+
+
+            in.get("gs", *smoother);
+            // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
+            // auto smoother = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+            // linear_solver->verbose(true);
+            SemiGeometricMultigrid mg(smoother, linear_solver);
+            // mg.algebraic().rtol(1e-16);
+            // mg.algebraic().atol(1e-16);
+            // mg.algebraic().max_it(400);
+
+            int n_levels = 3;
+            int max_it   = 80;
+            bool verbose = true;
+            bool solve_problem = true;
+            bool write_op = false;
+
+            in.get("vebose", verbose);
+            in.get("n-levels", n_levels);
+            in.get("max-it", max_it);
+            in.get("solve-problem", solve_problem);
+            in.get("write-op", write_op);
+
+            in.get("multigrid", mg);
+            mg.max_it(max_it);
+            mg.verbose(verbose);
+
+
+            mg.init(V.equation_system(), n_levels);
+            mg.update(make_ref(A));
+
+            if(solve_problem) {
+                mg.apply(rhs, x);
+            }
+
+            if(write_op) {
+                mg.algebraic().write("./");
+            }
+
+        }
 
         write("rhs.e", V, rhs);
         write("sol.e", V, x);

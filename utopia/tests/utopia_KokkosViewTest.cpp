@@ -123,8 +123,9 @@ namespace utopia {
     {
         using Dev       = Traits<TpetraVector>::Device;
         using SizeType  = Traits<TpetraVector>::SizeType;
-        using MapType   = Tpetra::Map<SizeType, SizeType>;
-        using GraphType = Tpetra::FECrsGraph<SizeType, SizeType>;
+        using LocalSizeType = Traits<TpetraVector>::LocalSizeType;
+        using MapType   = Tpetra::Map<LocalSizeType, SizeType>;
+        using GraphType = Tpetra::FECrsGraph<LocalSizeType, SizeType>;
         using View      = Kokkos::View<SizeType*>;
         using DualView  = Kokkos::DualView<std::size_t*>;
 

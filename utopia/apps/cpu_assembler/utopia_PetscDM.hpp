@@ -78,6 +78,14 @@ namespace utopia {
             const SizeType &n_components = 1
         );
 
+        void build(
+            const PetscCommunicator     &comm,
+            const std::array<SizeType, UDim> &dims,
+            const std::array<Scalar, UDim>   &box_min,
+            const std::array<Scalar, UDim>   &box_max,
+            const SizeType &n_components = 1
+        );
+
         PetscDM();
         ~PetscDM();
 
@@ -114,6 +122,8 @@ namespace utopia {
 
         // void dims(SizeType *arr) const;
         void box(Scalar *min, Scalar *max) const;
+
+        Scalar min_spacing() const;
 
         void local_node_ranges(SizeType *begin, SizeType *end) const;
 

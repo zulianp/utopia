@@ -2,107 +2,85 @@
 #define UTOPIA_LIBMESH_DIEGOMESH_HPP
 
 #include "utopia_Path.hpp"
-#include "libmesh/mesh.h"
-#include "libmesh/node.h"
-#include "libmesh/elem.h"
-#include "libmesh/utility.h"
-
-#include <fstream>
-
+#include "utopia_Input.hpp"
 #include "utopia_fe_base.hpp"
+
+#include <string>
+
+namespace libMesh {
+    class MeshBase;
+}
 
 namespace utopia {
 
-    class DiegoMeshWriter {
+    class DiegoMeshWriter : public Configurable {
     public:
 
-        bool write_field(const Path &folder, const libMesh::MeshBase &mesh, const UVector &field)
+        class Selector {
+        public:
+            std::set<int> blocks;
+            std::vector<int> node_index;
+            int n_elements;
+            int n_nodes;
+
+            void clear()
+            {
+                blocks.clear();
+                node_index.clear();
+                n_elements = 0;
+                n_nodes = 0;
+            }
+
+        };
+
+
+        void read(Input &in) override;
+        bool write_field(
+            const Path &folder,
+            const std::string &field_name,
+            const libMesh::MeshBase &mesh,
+            const UVector &field,
+            const int component,
+            const int sys_num = 0);
+
+
+        bool write_headers(const Path &folder, const libMesh::MeshBase &mesh);
+        bool write_elements(const Path &folder, const libMesh::MeshBase &mesh);
+        bool write_coords(const Path &folder, const libMesh::MeshBase &mesh, const std::string &postfix = "");
+        bool write(const Path &folder, const libMesh::MeshBase &mesh);
+
+        void build_index(
+            const libMesh::MeshBase &mesh,
+            const std::set<int> &blocks,
+            Selector &select)
         {
-            return false;
+            select.blocks = blocks;
+            build_index(mesh, blocks, select.n_elements, select.node_index, select.n_nodes);
         }
 
-        bool write(const Path &folder, const libMesh::MeshBase &mesh)
-        {
-            //paths
-            std::string node_count_path = folder / "node_count.txt";
-            std::string element_count_path = folder / "element_count.txt";
-            std::string coord_file = folder / "coord_";
-            std::string elem_file  = folder / "elem.raw";
-            std::string format_file = folder / "format.txt";
-
-            std::ofstream os;
-
-            os.open(format_file);
-            if(!os.good()) {
-                std::cout << "no file at " << format_file << std::endl;
-                return false;
-            }
-
-            os << libMesh::Utility::enum_to_string((*mesh.active_local_elements_begin())->type()) << "\n";
-
-            os.close();
-
-            os.open(node_count_path.c_str());
-
-            if(!os.good()) {
-                std::cout << "no file at " << node_count_path << std::endl;
-                return false;
-            }
-
-            os << mesh.n_nodes() << "\n";
-            os.close();
-
-            os.open(element_count_path.c_str());
-            if(!os.good()) {
-                std::cout << "no file at " << element_count_path << std::endl;
-                return false;
-            }
-
-            os << mesh.n_active_elem() << "\n";
-            os.close();
+        bool write_coords(
+            const Path &folder,
+            const libMesh::MeshBase &mesh,
+            const Selector &selector,
+            const std::string &postfix = "");
 
 
-            auto nodes_end   = mesh.active_nodes_end();
-            auto nodes_begin = mesh.active_nodes_begin();
+        void build_index(
+                const libMesh::MeshBase &mesh,
+                const std::set<int> &blocks,
+                int &n_elements,
+                std::vector<int> &node_index,
+                int &n_nodes);
 
-            int spatial_dim = mesh.spatial_dimension();
+        bool write_coords(
+                const Path &folder,
+                const libMesh::MeshBase &mesh,
+                const std::vector<int> &node_index,
+                const std::string &postfix = "");
 
-            for(int d = 0; d < spatial_dim; ++d) {
-
-                os.open(coord_file + std::to_string(d) + ".raw");
-                if(!os.good()) { assert(false); return false; }
-
-                for(auto it = nodes_begin; it != nodes_end; ++it) {
-                    auto &n = **it;
-
-                    float x = n(d);
-                    os.write((const char *)(&x), sizeof(x));
-                }
-
-                os.close();
-            }
-
-
-            os.open(elem_file);
-            if(!os.good()) {
-                std::cout << "no file at " << elem_file << std::endl;
-                return false;
-            }
-
-            for(auto it = mesh.active_local_elements_begin(); it != mesh.active_local_elements_end(); ++it) {
-                const libMesh::Elem &e = **it;
-
-                for(int i = 0; i < e.n_nodes(); ++i) {
-                    int32_t idx = e.node_id(i);
-                    os.write((const char *)&idx, sizeof(idx));
-                }
-            }
-
-            os.close();
-            return true;
-        }
-
+        bool write(const Path &folder, const libMesh::MeshBase &mesh, const std::set<int> &blocks);
     };
+
 }
 
 #endif //UTOPIA_LIBMESH_DIEGOMESH_HPP

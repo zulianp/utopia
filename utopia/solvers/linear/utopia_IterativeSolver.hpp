@@ -261,7 +261,7 @@ namespace  utopia
         Scalar stol_;                   /*!< Step tolerance. */
 
         SizeType max_it_;               /*!< Maximum number of iterations. */
-        bool verbose_;                  /*!< Verobse enable? . */
+        bool verbose_;                  /*!< Verbose enable? . */
 
         Chrono _time;                 /*!<Timing of solver. */
         SizeType norm_freq_; 
