@@ -223,13 +223,7 @@ namespace utopia {
 
         PetscCommunicator world;
         FunctionSpace space;
-        in.get("space", space);
-
-        if(space.empty()) {
-            //using defaults
-            InputParameters params;
-            space.read(params);
-        }
+        space.read(in);
 
         poisson_problem(space, in);
     }
@@ -247,13 +241,7 @@ namespace utopia {
 
         PetscCommunicator world;
         FunctionSpace space;
-        in.get("space", space);
-
-        if(space.empty()) {
-            //using defaults
-            InputParameters params;
-            space.read(params);
-        }
+        space.read(in);
 
         poisson_problem(space, in);
     }
@@ -270,13 +258,7 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
         FunctionSpace space;
-        in.get("space", space);
-
-        if(space.empty()) {
-            //using defaults
-            InputParameters params;
-            space.read(params);
-        }
+        space.read(in);
 
         poisson_problem(space, in);
     }
@@ -293,13 +275,7 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
         FunctionSpace space;
-        in.get("space", space);
-
-        if(space.empty()) {
-            //using defaults
-            InputParameters params;
-            space.read(params);
-        }
+        space.read(in);
 
         poisson_problem(space, in);
     }
