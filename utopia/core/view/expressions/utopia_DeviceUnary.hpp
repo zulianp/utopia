@@ -14,7 +14,7 @@ namespace utopia {
     class DeviceUnary : public DeviceExpression<DeviceUnary<InnerExpr, Op>>{
     public:
         using SizeType = typename Traits<InnerExpr>::SizeType;
-        using Scalar = typename Traits<InnerExpr>::Scalar;
+        using Scalar   = typename Traits<InnerExpr>::Scalar;
 
         UTOPIA_INLINE_FUNCTION DeviceUnary(const InnerExpr &expr) : expr_(expr) {}
 
@@ -26,6 +26,21 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i) const
         {
             return DeviceOp<Scalar, Op>::apply(expr_(i));
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType rows() const
+        {
+            return expr_.rows();
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType cols() const
+        {
+            return expr_.cols();
+        }
+
+        UTOPIA_INLINE_FUNCTION SizeType size() const
+        {
+            return expr_.size();
         }
 
     private:

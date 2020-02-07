@@ -61,9 +61,11 @@ namespace utopia {
     template<class Expr>
     class DeviceEigenValues;
 
-
     template<class Expr>
     class DeviceEigenVectors;
+
+    template<class Expr>
+    class DeviceEigenDecomposition;
 
     template<class Expr>
     class DeviceSingularValues;
