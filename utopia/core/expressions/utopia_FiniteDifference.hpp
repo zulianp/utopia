@@ -46,7 +46,7 @@ namespace utopia {
             {
                 assert(x.comm().size() == 1 && "only for serial runs");
 
-                auto n = x.size();
+                const SizeType n = x.size();
                 H = zeros(n, n);
                 Vector ei = zeros(n);
                 Vector g_m = ei;
@@ -76,7 +76,8 @@ namespace utopia {
 
                     Read<Vector> r_h(h_i);
                     for(SizeType j = 0; j < n; ++j) {
-                        H.set(i, j, h_i.get(j));
+                        const Scalar val = h_i.get(j);
+                        H.set(i, j, val);
                     }
                 }
 
