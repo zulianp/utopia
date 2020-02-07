@@ -5,7 +5,7 @@
 #include "utopia_DeviceEigenVectors.hpp"
 
 namespace utopia {
-
+    //https://www.geometrictools.com/Documentation/RobustEigenSymmetric3x3.pdf
     template<class Expr>
     class DeviceEigenDecomposition :  public DeviceExpression<DeviceEigenDecomposition<Expr>> {
     public:

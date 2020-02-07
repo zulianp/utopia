@@ -67,6 +67,10 @@ namespace utopia {
 
             if(node_ptr) {
                 val.read(*node_ptr);
+            } else {
+                if(aux_root_) {
+                    aux_root_->get(key, val);
+                }
             }
         }
 
@@ -77,7 +81,9 @@ namespace utopia {
             if(node_ptr) {
                 lambda(*node_ptr);
             } else {
-                std::cerr << "[Warning] key: " << key << " not found" << std::endl;
+                if(aux_root_) {
+                    aux_root_->get(key, lambda);
+                }
             }
         }
 
@@ -85,6 +91,10 @@ namespace utopia {
         {
             for(auto n : nodes_) {
                 lambda(*n.second);
+            }
+
+            if(aux_root_) {
+                aux_root_->get_all(lambda);
             }
         }
 

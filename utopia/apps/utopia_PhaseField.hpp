@@ -314,8 +314,8 @@ namespace utopia {
 
 
             space_.apply_zero_constraints(g);
-            static int iter = 0;
-            write("g" + std::to_string(iter++) + ".m", g);
+            // static int iter = 0;
+            // write("g" + std::to_string(iter++) + ".m", g);
             return true;
         }
 
@@ -449,12 +449,16 @@ namespace utopia {
                             for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
                                 for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
 
+
+                                  // (sigma+(phi_u), epsilon(u)) * g'_c * phi_c
                                    const Scalar val =
                                         bilinear_cu(
                                             params_,
                                              c[qp],
                                              p_stress_view.positive(u_i, qp),
-                                            strain_p - strain_n,
+                                            // strain_p - strain_n,
+                                             el_strain.strain[qp],
+                                             // 0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))),
                                             c_shape_fun_el(c_i, qp)
                                         ) * dx(qp);
 
@@ -501,6 +505,7 @@ namespace utopia {
                    elastic_deriv_cc(params, phase_field_value, elastic_energy_p, shape_trial, shape_test);
         }
 
+        // (sigma+(phi_u), epsilon(u)) * g'_c * phi_c
         template<class Stress, class FullStrain>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cu(
             const Parameters &params,
