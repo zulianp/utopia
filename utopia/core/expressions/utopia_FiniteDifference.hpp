@@ -86,7 +86,7 @@ namespace utopia {
 
             template<class Fun, class Vector>
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
-                auto n = x.size();
+                const SizeType n = x.size();
                 H = zeros(n, n);
                 Vector ei = zeros(n);
                 Vector ej = zeros(n);
@@ -99,14 +99,14 @@ namespace utopia {
                 const Range cr = col_range(H);
                 const Range vr = range(x);
 
-                for (auto i = 0; i < n; ++i) {
+                for (SizeType i = 0; i < n; ++i) {
                     { //Scoped lock
                         const Write <Vector> ewlock(ei);
                         if (i > 0 && vr.inside(i-1)) ei.set(i - 1, 0);
                         if(vr.inside(i))             ei.set(i, h);
                     }
 
-                    for (auto j = 0; j < n; ++j) {
+                    for (SizeType j = 0; j < n; ++j) {
                         { //Scoped lock
                             const Write <Vector> ewlock(ej);
 
@@ -144,7 +144,7 @@ namespace utopia {
             static bool apply_from_grad(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
                assert(x.comm().size() == 1 && "only for serial runs");
 
-               auto n = x.size();
+               const SizeType n = x.size();
                Vector ei = zeros(n);
                Vector g_m = ei;
                Vector g_p = ei;
@@ -178,7 +178,7 @@ namespace utopia {
                         fun.gradient(x_p, g_p);
 
                         h_i.read_unlock();
-                        h_i = 1./(2 * h) * (g_p - g_m);
+                        h_i = 1.0/(2.0 * h) * (g_p - g_m);
                         h_i.read_lock();
 
                         last_i = i;
@@ -193,14 +193,14 @@ namespace utopia {
 
             template<class Fun, class Vector>
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
-                auto n = x.size();
+                const SizeType n = x.size();
                 assert(!empty(H) && "H has to be allocated with the sparsity pattern before calling this method");
                 Vector ei = zeros(n);
                 Vector ej = zeros(n);
 
                 const Write <Matrix> wlock(H);
 
-                Scalar h2 = h * h;
+                const Scalar h2 = h * h;
 
                 const Range rr = row_range(H);
                 const Range cr = col_range(H);
@@ -265,14 +265,14 @@ namespace utopia {
 
         template<class Fun, class Vector>
         void grad(Fun &fun, const Vector &x, Vector &g) {
-            auto n = x.size();
+            const SizeType n = x.size();
             g = values(n, 1, 0.0);
             Vector d = zeros(n);
 
             const Write <Vector> wlock(g);
             const Range r = range(x);
 
-            for (auto i = 0; i < n; ++i) {
+            for (SizeType i = 0; i < n; ++i) {
                 { //Scoped lock
                     Write <Vector> ewlock(d);
                     if (i > 0 && r.inside(i-1)) d.set(i - 1, 0);
