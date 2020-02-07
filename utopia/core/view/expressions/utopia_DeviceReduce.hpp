@@ -28,6 +28,18 @@ namespace utopia {
 
             return ret;
         }
+
+        UTOPIA_INLINE_FUNCTION static Scalar apply(const Expr &expr)
+        {
+            const SizeType n = expr.size();
+            Scalar ret = expr(0);
+
+            for(SizeType i = 1; i < n; ++i) {
+                ret = DeviceOp<Scalar, Op>::apply(ret, expr(i));
+            }
+
+            return ret;
+        }
     };
 
     template<class Expr, class Op>
@@ -35,6 +47,26 @@ namespace utopia {
     public:
         using Scalar   = typename Traits<Expr>::Scalar;
         using SizeType = typename Traits<Expr>::SizeType;
+
+        UTOPIA_INLINE_FUNCTION static Scalar apply(const Expr &expr)
+        {
+            const SizeType rows = expr.rows();
+            const SizeType cols = expr.cols();
+
+            Scalar ret = expr(0, 0);
+
+            for(SizeType j = 1; j < cols; ++j) {
+                ret = DeviceOp<Scalar, Op>::apply(ret, expr(0, j));
+            }
+
+            for(SizeType i = 1; i < rows; ++i) {
+                for(SizeType j = 0; j < cols; ++j) {
+                    ret = DeviceOp<Scalar, Op>::apply(ret, expr(i, j));
+                }
+            }
+
+            return ret;
+        }
 
         UTOPIA_INLINE_FUNCTION static Scalar apply(const Expr &expr, const Scalar &initial_value)
         {

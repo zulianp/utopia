@@ -397,6 +397,8 @@ namespace utopia {
             A(0,1) = A(1,0) = 6.35083e-11;
             A(0,2) = A(2,0) = 6.35083e-11;
 
+            disp(A);
+
             V.set(0.0);
             eig(A, e, V);
 
@@ -405,6 +407,9 @@ namespace utopia {
 
             sum_v = sum(V);
             utopia_test_assert(sum_v == sum_v);
+
+
+            utopia_test_assert( approxeq(transpose(V) * diag(e) * V, A) );
         }
 
         void inner_test()
