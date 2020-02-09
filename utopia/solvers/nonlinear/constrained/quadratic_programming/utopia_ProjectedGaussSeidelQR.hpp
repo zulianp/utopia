@@ -120,8 +120,6 @@ namespace utopia {
 
         bool step(const Matrix &A, const Vector &b, Vector &x) override
         {
-            r = b - A * x;
-
             std::cout<<"doing step ... "<< std::endl;
 
             d = diag(A);
@@ -129,24 +127,21 @@ namespace utopia {
 
             active_set_.set(0.0);
             //localize gap function for correction
-            Vector Rx;
-            Rx = R_*x;
 
-            g = this->get_upper_bound() - Rx;
-            l = this->get_lower_bound() - Rx;
+            g = this->get_upper_bound();
+            l = this->get_lower_bound();
             
-            c *= 0.;
+            //c *= 0.;
             
             Scalar g_i, l_i;
             
             Range rr = row_range(A);
             {
                 Write<Vector> w_a(active_set_);
-                ReadAndWrite<Vector> rw_c(c);
+                ReadAndWrite<Vector> rw_x(x);
                 Read<Vector> r_d_inv(d_inv), r_g(g), r_l(l);
                 Read<Matrix> r_A(A);
-                Read<Vector> r_x(x);
-                Read<Vector> r_r(r);
+                Read<Vector> r_b(b);
                 Read<Matrix> r_R(R_);           
                 SizeType n_rows = local_size(R_).get(0); 
                 //SizeType n_cols = local_size(R_).get(1); 
@@ -155,28 +150,27 @@ namespace utopia {
 
                 // for(SizeType il = 0; il < 1; il++) 
                 // {
-
                     for(auto i = rr.begin(); i != rr.end(); ++i) 
                     {
                         RowView<const Matrix> row_view(A, i);
                         decltype(i) n_values = row_view.n_values();
 
-                        Scalar s = r.get(i);
+                        Scalar s = 0;//x.get(i);
                         
                         for(auto index = 0; index < n_values; ++index) 
                         {
                             const decltype(i) j = row_view.col(index);
                             const auto a_ij = row_view.get(index);
 
-                            if(rr.inside(j) && j != i) 
+                            if(rr.inside(j))// && j != i) 
                             {
-                                s -= a_ij * c.get(j);
+                                s += a_ij * x.get(j);
                             }
                         }
 
                         //update correction
-//                        x.set(i, d_inv.get(i)*(b.get(i) - s) + x.get(i)) ;
-                        c.set(i, d_inv.get(i)*s) ;
+                        x.set(i, d_inv.get(i)*(b.get(i) - s) + x.get(i)) ;
+                        //c.set(i, d_inv.get(i)*s) ;
 
                         if  (i < n_rows)
                         {
@@ -185,8 +179,8 @@ namespace utopia {
                             //std::cout << "nnz_R: " << nnz_R << std::endl;
 
                             Scalar r_sum_c = 0.0;
-
                             Scalar r_ii = 0.0;
+
                             for(auto index = 0; index < nnz_R; ++index) 
                             {
                                 // r_ii = 0.0; 
@@ -195,7 +189,7 @@ namespace utopia {
 
                                 if(j < i)
                                 {
-                                    r_sum_c += r_ij * c.get(j);
+                                    r_sum_c += r_ij * x.get(j);
                                 }
                                 else if(i == j)
                                 {
@@ -221,9 +215,9 @@ namespace utopia {
 
                             //update correction
                             // std::cout << "l_i:" << l_i << "  g_i:" << g_i << "  c_i:" << c.get(i) << std::endl;
-                            if (( g_i <= c.get(i) ) || (c.get(i) <= l_i))
+                            if (( g_i <= x.get(i) ) || (x.get(i) <= l_i))
                             {
-                                c.set(i, std::max(std::min( c.get(i), g_i), l_i));
+                                x.set(i, std::max(std::min( x.get(i), g_i), l_i));
                                 active_set_.set(i, 1.0);
                             }
                             else
@@ -232,28 +226,9 @@ namespace utopia {
                             }
                         }
                     }
-
-                    // inactive_set_ *= 0.;
-                    // for (auto i = rr.begin(); i != rr.end(); ++i)
-                    // {
-                    //     // std::cout<<"l.get(i): "<< l.get(i) <<std::endl;
-                    //     // std::cout<<"g.get(i): "<< g.get(i) <<std::endl;
-                    //     // std::cout<<"x.get(i): "<< x.get(i) <<std::endl;
-
-                    //     if(( l.get(i) < x.get(i) ) && (x.get(i) < g.get(i)))
-                    //     {
-                    //         inactive_set_.set(i, 1.);
-                    //     }
-                    //     else
-                    //     {
-                    //         std::cout << "GS: activeset id:" << i << std::endl;
-                    //     }
-                    // }
-
-                    std::cout<<"------------------------------------------------------- "<<std::endl;
                 }
 
-            x += c;
+            //x += c;
             return true;
         }
 

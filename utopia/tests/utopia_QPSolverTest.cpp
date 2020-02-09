@@ -164,7 +164,7 @@ namespace utopia {
 
             Vector rhs, x;
             Vector upper_bound,lower_bound;
-            Matrix A, R, Q, Ih_fine;
+            Matrix A, R, Q, Ih_fine, Rot;
             Matrix Ih1, Ih0; 
 
             const std::string data_path = Utopia::instance().get("data_path");
@@ -174,6 +174,7 @@ namespace utopia {
             read(data_path + "/forQR/A", A);            
             read(data_path + "/forQR/Q", Q);
             read(data_path + "/forQR/R", R);
+            read(data_path + "/forQR/Rot", Rot);
             read(data_path + "/forQR/ub", upper_bound);
             read(data_path + "/forQR/lb", lower_bound);
 
@@ -181,6 +182,9 @@ namespace utopia {
             read(data_path + "/forQR/I2h", Ih1);
             read(data_path + "/forQR/I3h", Ih0);
 
+            // householder rotation
+            //Matrix RotARot;
+            //Vector Rotx,Rotb;
             // rhs = -1.0*rhs; 
 
 
@@ -188,7 +192,6 @@ namespace utopia {
             // disp(lower_bound, "lower_bound"); 
 
             // disp(rhs, "rhs"); 
-
 
             // read(data_path + "/forQR/contact/b", rhs);
             // read(data_path + "/forQR/contact/x", x);
@@ -218,12 +221,15 @@ namespace utopia {
 
             R = transpose(R);   
 
+            // Matrix QtAQ  = transpose(Q)*A*Q;
+            // Matrix QtIh  = transpose(Q)*Ih_fine;
+            // Vector Qtrhs = transpose(Q)*rhs;
+            // Vector Qtx   = transpose(Q)*x; 
 
-            Matrix QtAQ  = transpose(Q)*A*Q;
-            Matrix QtIh  = transpose(Q)*Ih_fine;
-            Vector Qtrhs = transpose(Q)*rhs;
-            Vector Qtx   = transpose(Q)*x; 
-
+            Matrix QtAQ  = transpose(Q)* Rot*A*Rot *Q;
+            Matrix QtIh  = transpose(Q)* Rot* Ih_fine;
+            Vector Qtrhs = transpose(Q)* Rot *rhs;
+            Vector Qtx   = transpose(Q)* Rot *x; 
 
             // disp(rhs);
             // disp(A);
@@ -245,12 +251,12 @@ namespace utopia {
             smoother_fine->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
             smoother_fine->set_R(R);
             smoother_fine->verbose(true);
-            smoother_fine->solve(QtAQ, Qtrhs, Qtx);
-            x = Q * Qtx; 
+            //smoother_fine->solve(QtAQ, Qtrhs, Qtx);
+            //x = Rot*Q * Qtx; 
 
-            write("x.m", x); 
+            // write("x.m", x); 
             // write("IX.m", Qtx);
-            exit(0);
+           // exit(0);
 
             // MG test starts here...
             // std::vector<std::shared_ptr <Matrix> > interpolation_operators;
@@ -287,8 +293,7 @@ namespace utopia {
 
 
             multigrid.apply(Qtrhs, Qtx);
-            x = Q * Qtx; 
-
+            x = Rot*Q * Qtx; 
             write("x.m", x); 
             write("IX.m", Qtx);
             // disp(x);
