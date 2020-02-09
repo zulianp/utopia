@@ -11,19 +11,20 @@
 #include <cmath>
 
 namespace utopia {
-    //slow and innefficient implementation just for testing
     template<class Matrix, class Vector>
-    class ProjectedGaussSeidelQR : public ProjectedGaussSeidel<Matrix, Vector>
+    class ProjectedGaussSeidelQR final: public ProjectedGaussSeidel<Matrix, Vector>
     {
     public:
 
         DEF_UTOPIA_SCALAR(Matrix)
 
-        ProjectedGaussSeidelQR()
-        : use_line_search_(false), n_local_sweeps_(3)
+        ProjectedGaussSeidelQR() 
         {
             ProjectedGaussSeidel<Matrix, Vector>::use_line_search(false);
 
+            if(mpi_world_size() > 1 ){
+                utopia_error("ProjectedGaussSeidelQR does not support parallel computations. \n"); 
+            }
         }
 
         ProjectedGaussSeidelQR(const ProjectedGaussSeidelQR &) = default;
@@ -32,39 +33,38 @@ namespace utopia {
         {
             auto ptr = new ProjectedGaussSeidelQR(*this);
             ptr->set_box_constraints(this->get_box_constraints());
+            // ptr->set_R(this->get_R()); 
             return ptr;
         }
 
-
         void read(Input &in) override
         {
-            QPSolver<Matrix, Vector>::read(in);
-            Smoother<Matrix, Vector>::read(in);
-
-            in.get("use_line_search", use_line_search_);
-            in.get("n_local_sweeps", n_local_sweeps_);
+            ProjectedGaussSeidel<Matrix, Vector>::read(in); 
         }
 
-        void set_R(const Matrix &R){
+        void set_R(const Matrix &R)
+        {
             R_ = R;
         }
 
-        virtual bool smooth(const Vector &b, Vector &x) override
+        const Matrix & get_R()
+        {
+            return R_;
+        }        
+
+        bool smooth(const Vector &b, Vector &x) override
         {
             const Matrix &A = *this->get_operator();
 
-            // init(A);
             SizeType it = 0;
             SizeType n_sweeps = this->sweeps();
             if(this->has_bound()) {
                 while(it++ < n_sweeps){
-                    std::cout<<"-- constrained step.... "<<std::endl;
                     this->step(A, b, x);
                 }
             } else {
                 while(it++ < n_sweeps) {
-                    std::cout<<"-- unconstrained step.... "<<std::endl;
-                    this->unconstrained_step(A, b, x); 
+                    ProjectedGaussSeidel<Matrix, Vector>::unconstrained_step(A, b, x); 
                 }
             }
             return it == SizeType(this->sweeps() - 1);
@@ -92,16 +92,17 @@ namespace utopia {
                 if(iteration % check_s_norm_each == 0) {
                     const Scalar diff = norm2(x_old - x);
 
-                    // if(this->verbose()) {
+                    if(this->verbose()) {
                         PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
-                    // }
+                    }
 
                     converged = this->check_convergence(iteration, 1, 1, diff);
                 }
 
                 ++iteration;
 
-                if(converged) break;
+                if(converged) 
+                    break;
 
                 x_old = x;
             }
@@ -120,18 +121,10 @@ namespace utopia {
 
         bool step(const Matrix &A, const Vector &b, Vector &x) override
         {
-            std::cout<<"doing step ... "<< std::endl;
-
-            d = diag(A);
-            d_inv = 1./d;            
-
             active_set_.set(0.0);
-            //localize gap function for correction
 
-            g = this->get_upper_bound();
-            l = this->get_lower_bound();
-            
-            //c *= 0.;
+            const Vector & g = this->get_upper_bound();
+            const Vector & l = this->get_lower_bound();
             
             Scalar g_i, l_i;
             
@@ -144,128 +137,97 @@ namespace utopia {
                 Read<Vector> r_b(b);
                 Read<Matrix> r_R(R_);           
                 SizeType n_rows = local_size(R_).get(0); 
-                //SizeType n_cols = local_size(R_).get(1); 
 
-                //std::cout<<"n_cols: "<< this->n_local_sweeps() << "   n_rows: "<< n_rows << "  \n";
 
-                // for(SizeType il = 0; il < 1; il++) 
-                // {
-                    for(auto i = rr.begin(); i != rr.end(); ++i) 
+                for(auto i = rr.begin(); i != rr.end(); ++i) 
+                {
+                    RowView<const Matrix> row_view(A, i);
+                    decltype(i) n_values = row_view.n_values();
+
+                    Scalar s = 0;//x.get(i);
+                    
+                    for(auto index = 0; index < n_values; ++index) 
                     {
-                        RowView<const Matrix> row_view(A, i);
-                        decltype(i) n_values = row_view.n_values();
+                        const decltype(i) j = row_view.col(index);
+                        const auto a_ij = row_view.get(index);
 
-                        Scalar s = 0;//x.get(i);
-                        
-                        for(auto index = 0; index < n_values; ++index) 
+                        if(rr.inside(j))// && j != i) 
                         {
-                            const decltype(i) j = row_view.col(index);
-                            const auto a_ij = row_view.get(index);
+                            s += a_ij * x.get(j);
+                        }
+                    }
 
-                            if(rr.inside(j))// && j != i) 
+                    //update correction
+                    x.set(i, d_inv.get(i)*(b.get(i) - s) + x.get(i)) ;
+
+                    if  (i < n_rows)
+                    {
+                        RowView<const Matrix> row_viewR(R_, i);     
+                        decltype(i) nnz_R = row_viewR.n_values();
+
+                        Scalar r_sum_c = 0.0;
+                        Scalar r_ii = 0.0;
+
+                        for(auto index = 0; index < nnz_R; ++index) 
+                        {
+                            // r_ii = 0.0; 
+                            const decltype(i) j = row_viewR.col(index);
+                            const auto r_ij = row_viewR.get(index);
+
+                            if(j < i)
                             {
-                                s += a_ij * x.get(j);
+                                r_sum_c += r_ij * x.get(j);
                             }
+                            else if(i == j)
+                            {
+                                r_ii = r_ij;
+                            }
+                        }
+
+                        if (r_ii > 0)
+                        {
+                            g_i = (g.get(i) - r_sum_c)/r_ii; 
+                            l_i = (l.get(i) - r_sum_c)/r_ii; 
+                        }
+                        else if (r_ii < 0)
+                        {
+                            l_i = (g.get(i) - r_sum_c)/r_ii; 
+                            g_i = (l.get(i) - r_sum_c)/r_ii; 
+                        }
+                        else
+                        {
+                            std::cerr<<"--------- ProjectedGaussSeidelQR::PGSQR......... \n"; 
                         }
 
                         //update correction
-                        x.set(i, d_inv.get(i)*(b.get(i) - s) + x.get(i)) ;
-                        //c.set(i, d_inv.get(i)*s) ;
-
-                        if  (i < n_rows)
+                        if (( g_i <= x.get(i) ) || (x.get(i) <= l_i))
                         {
-                            RowView<const Matrix> row_viewR(R_, i);     
-                            decltype(i) nnz_R = row_viewR.n_values();
-                            //std::cout << "nnz_R: " << nnz_R << std::endl;
-
-                            Scalar r_sum_c = 0.0;
-                            Scalar r_ii = 0.0;
-
-                            for(auto index = 0; index < nnz_R; ++index) 
-                            {
-                                // r_ii = 0.0; 
-                                const decltype(i) j = row_viewR.col(index);
-                                const auto r_ij = row_viewR.get(index);
-
-                                if(j < i)
-                                {
-                                    r_sum_c += r_ij * x.get(j);
-                                }
-                                else if(i == j)
-                                {
-                                    r_ii = r_ij;
-                                }
-                            }
-    
-                            // std::cout <<" r_sum_c" << r_sum_c << std::endl;
-                            if (r_ii > 0)
-                            {
-                                g_i = (g.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
-                                l_i = (l.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
-                            }
-                            else if (r_ii < 0)
-                            {
-                                l_i = (g.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
-                                g_i = (l.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
-                            }
-                            else
-                            {
-                                std::cerr<<"--------- erroror PGSQR......... \n"; 
-                            }
-
-                            //update correction
-                            // std::cout << "l_i:" << l_i << "  g_i:" << g_i << "  c_i:" << c.get(i) << std::endl;
-                            if (( g_i <= x.get(i) ) || (x.get(i) <= l_i))
-                            {
-                                x.set(i, std::max(std::min( x.get(i), g_i), l_i));
-                                active_set_.set(i, 1.0);
-                            }
-                            else
-                            {
-                                active_set_.set(i, 0.0);
-                            }
+                            x.set(i, std::max(std::min( x.get(i), g_i), l_i));
+                            active_set_.set(i, 1.0);
+                        }
+                        else
+                        {
+                            active_set_.set(i, 0.0);
                         }
                     }
                 }
+            }
 
-            //x += c;
             return true;
         }
 
         void init(const Matrix &A)
         {
-            d = diag(A);
-            d_inv = 1./d;
-            c = local_zeros(local_size(A).get(0));
-            active_set_ = local_zeros(local_size(c));
+            d_inv = diag(A);
+            d_inv = 1./d_inv;
+            active_set_ = local_zeros(local_size(d_inv));
         }
 
 
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
-            IterativeSolver<Matrix, Vector>::update(op);
+            ProjectedGaussSeidel<Matrix, Vector>::update(op);
             init(*op);
-        }
-
-
-        void use_line_search(const bool val)
-        {
-            use_line_search_ = val;
-        }
-
-        inline SizeType n_local_sweeps() const
-        {
-            return n_local_sweeps_;
-        }
-
-        inline void n_local_sweeps(const SizeType n_local_sweeps)
-        {
-            n_local_sweeps_ = n_local_sweeps;
-        }
-
-        inline void use_symmetric_sweep(const bool use_symmetric_sweep)
-        {
-            use_symmetric_sweep_ = use_symmetric_sweep;
         }
 
         const Vector& get_active_set()
@@ -274,16 +236,9 @@ namespace utopia {
         }
 
 
-
-        
     private:
-        bool use_line_search_;
-        bool use_symmetric_sweep_;
-        SizeType n_local_sweeps_;
-
-        Vector r, d, g,l ,c, d_inv, x_old, descent_dir;
+        Vector d_inv, x_old;
         Vector active_set_;
-        Vector is_c_;
         Matrix R_;
     };
 }

@@ -23,15 +23,13 @@
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
             typedef UTOPIA_SCALAR(Vector)    Scalar;
 
-            MatrixTruncatedTransfer(const std::shared_ptr<Matrix> & I)//:
-                                        // _I(I),
-                                        // _R(transpose(I))
+            MatrixTruncatedTransfer(const std::shared_ptr<Matrix> & I)
             {
                 assert(I);
 
                 _I = I;
                 _R = std::make_shared<Matrix>(transpose(*I));
-                _Pr = _R;
+                // _Pr = _R;
 
                 _R_truncated = std::make_shared<Matrix>(*_R); 
                 _I_truncated = std::make_shared<Matrix>(*_I); 
@@ -114,6 +112,18 @@
                 return true;
             }
 
+
+            bool scale_transfer(const Matrix &scaling_mat)
+            {
+                assert(_I);
+                assert(_R);
+
+                *_I = scaling_mat* (*_I);
+                *_R = transpose(*_I);
+
+                return true;
+            }            
+
             /*=====================================================
                                     actions
             =====================================================*/
@@ -157,10 +167,7 @@
              */
              bool boolean_restrict_or(const Vector &x, Vector &x_new) override
             {
-                // std::cerr<< "Implement me ... \n"; 
-
                 static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
-
                 if(!_R_truncated){
                     *_R_truncated = *_R; 
                 }
@@ -276,8 +283,8 @@
 
             void truncate_interpolation(const Vector & _eq_active_flg) 
             {
+                // to speed up, we should check if constraint was changed between iterations 
                 std::vector<SizeType> indices_eq_constraints_; 
-
                 {
                     Read<Vector> r(_eq_active_flg);
 
@@ -297,9 +304,10 @@
 
         private:
             std::shared_ptr<Matrix> _I, _R; 
-            std::shared_ptr<Matrix> _Pr;
-            Matrix P_pos_; 
-            Matrix P_neg_; 
+
+            std::shared_ptr<Matrix> _Pr; // used only for nonlinear mutlilevel solvers
+            Matrix P_pos_; // used only for nonlinear mutlilevel solvers
+            Matrix P_neg_; // used only for nonlinear mutlilevel solvers
 
             std::shared_ptr<Matrix> _I_truncated; 
             std::shared_ptr<Matrix> _R_truncated; 

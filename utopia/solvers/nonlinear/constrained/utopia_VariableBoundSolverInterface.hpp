@@ -129,7 +129,7 @@ namespace utopia
                         return li;
                       else
                         return (ui <= xi) ? ui : xi; }   );
-          }
+        }
 
           return true;
       }

@@ -101,17 +101,13 @@ namespace utopia
 
         static void fix_semidefinite_operator(Matrix &A)
         {
-
             Vector d;
-
             Size s = local_size(A);
             d = local_values(s.get(0), 0.);
 
             {
                 Write<Vector> w_d(d);
-
                 each_read(A,[&d](const SizeType i, const SizeType j, const double & val) {
-                    // d.set(i, 0.);
                     if(i==j && std::abs(val) < 1e-12){
                         d.set(i, 1.0); 
                     }
