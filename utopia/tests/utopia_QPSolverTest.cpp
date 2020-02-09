@@ -181,6 +181,14 @@ namespace utopia {
             read(data_path + "/forQR/I2h", Ih1);
             read(data_path + "/forQR/I3h", Ih0);
 
+            // rhs = -1.0*rhs; 
+
+
+            // disp(upper_bound, "upper_bound"); 
+            // disp(lower_bound, "lower_bound"); 
+
+            // disp(rhs, "rhs"); 
+
 
             // read(data_path + "/forQR/contact/b", rhs);
             // read(data_path + "/forQR/contact/x", x);
@@ -232,17 +240,17 @@ namespace utopia {
             // smoother->max_it(20);
             // smoother->stol(1e-14);
             // smoother->verbose(true);
-            smoother_fine->max_it(100);
-            smoother_fine->n_local_sweeps(1);            
+            // smoother_fine->max_it(5);
+            // smoother_fine->n_local_sweeps(1);            
             smoother_fine->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
             smoother_fine->set_R(R);
             smoother_fine->verbose(true);
-            // smoother_fine->solve(QtAQ, Qtrhs, Qtx);
-            // x = Q * Qtx; 
+            smoother_fine->solve(QtAQ, Qtrhs, Qtx);
+            x = Q * Qtx; 
 
-            //write("x.m", x); 
-            //write("IX.m", Qtx);
-            // exit(0);
+            write("x.m", x); 
+            // write("IX.m", Qtx);
+            exit(0);
 
             // MG test starts here...
             // std::vector<std::shared_ptr <Matrix> > interpolation_operators;
@@ -258,24 +266,24 @@ namespace utopia {
             // interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
             
 
-            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector, HOMEMADE>>();
+            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             MultigridQR<Matrix, Vector> multigrid(coarse_smoother, direct_solver, num_levels);
 
             multigrid.set_smoother(smoother_fine, num_levels-1); 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.fix_semidefinite_operators(true); 
-            multigrid.max_it(20);
+            multigrid.max_it(40);
+            multigrid.pre_smoothing_steps(3); 
+            multigrid.post_smoothing_steps(3); 
             multigrid.use_line_search(true); 
             multigrid.update(make_ref(QtAQ));
             multigrid.verbose(true);
-            multigrid.pre_smoothing_steps(1);
 
 
             // This should be somewhere else... 
             multigrid.set_R(R); 
             multigrid.set_upper_bound(upper_bound); 
             multigrid.set_lower_bound(lower_bound); 
-
 
 
             multigrid.apply(Qtrhs, Qtx);

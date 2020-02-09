@@ -230,7 +230,6 @@ namespace utopia
 
                 // UTOPIA_RECORD_VALUE("memory.c[l]", memory.c[l]);
 
-                //x += memory.c[l];
 
                 rel_norm = norm2(x_old - memory.x[l]); 
                 x_old = memory.x[l]; 
@@ -250,6 +249,8 @@ namespace utopia
                 it++;
 
             }
+
+            x_fine = memory.x[l]; 
 
             this->print_statistics(it);
 
@@ -286,6 +287,7 @@ namespace utopia
             ////////////////////////////////////
             if(l == 0) 
             {
+                std::cout<<"ccoarsest level ------------- \n"; 
                 coarse_solve(memory.rhs[l], memory.x[l]);
 
                 // coarse_solve(r, c);
@@ -380,9 +382,7 @@ namespace utopia
         inline bool smoothing(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1)
         {
             // GaussSeidel<Matrix, Vector>* GS_smoother =  dynamic_cast<GaussSeidel<Matrix, Vector>* > (smoothers_[l].get()); 
-
-            std::cout<<"----- regular smoothing --- "<< std::endl;
-
+            // std::cout<<"----- regular smoothing --- "<< std::endl;
             smoothers_[l]->sweeps(nu);
             smoothers_[l]->smooth(rhs, x);
 
@@ -408,11 +408,11 @@ namespace utopia
              
               if(MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get())){ 
                 ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get());
-                const Vector & inactive_set = GS_smoother->get_inactive_set();
+                const Vector & active_set = GS_smoother->get_active_set();
 
                 // std::cout<<"inactive_set: "<< sum(inactive_set) << "   size(inactive_set): "<< size(inactive_set).get(0) << "  \n"; 
 
-                trunc_transfer->truncate_interpolation(inactive_set); 
+                trunc_transfer->truncate_interpolation(active_set); 
                 this->galerkin_assembly(this->get_operator());
                 // update();
                 for(std::size_t l = 1; l != smoothers_.size()-1; ++l) {

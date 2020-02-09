@@ -274,17 +274,17 @@
                 return norm_infty(*_Pr);
             }
 
-            void truncate_interpolation(const Vector & _eq_inactive_flg) 
+            void truncate_interpolation(const Vector & _eq_active_flg) 
             {
                 std::vector<SizeType> indices_eq_constraints_; 
 
                 {
-                    Read<Vector> r(_eq_inactive_flg);
+                    Read<Vector> r(_eq_active_flg);
 
-                    Range range_w = range(_eq_inactive_flg);
+                    Range range_w = range(_eq_active_flg);
                     for (SizeType i = range_w.begin(); i != range_w.end(); i++)
                     {
-                        if(_eq_inactive_flg.get(i) == 0.0){
+                        if(_eq_active_flg.get(i) == 1.0){
                             indices_eq_constraints_.push_back(i);
                         }
                     }

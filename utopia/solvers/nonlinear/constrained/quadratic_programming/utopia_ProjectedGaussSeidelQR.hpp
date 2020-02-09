@@ -57,11 +57,15 @@ namespace utopia {
             SizeType it = 0;
             SizeType n_sweeps = this->sweeps();
             if(this->has_bound()) {
-                std::cout<<"-- constrained step.... "<<std::endl;
-               step(A, b, x);
+                while(it++ < n_sweeps){
+                    std::cout<<"-- constrained step.... "<<std::endl;
+                    this->step(A, b, x);
+                }
             } else {
-                std::cout<<"-- unconstrained step.... "<<std::endl;
-                //while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
+                while(it++ < n_sweeps) {
+                    std::cout<<"-- unconstrained step.... "<<std::endl;
+                    this->unconstrained_step(A, b, x); 
+                }
             }
             return it == SizeType(this->sweeps() - 1);
         } 
@@ -123,7 +127,7 @@ namespace utopia {
             d = diag(A);
             d_inv = 1./d;            
 
-            inactive_set_ = local_values(local_size(b).get(0), 0.0);
+            active_set_.set(0.0);
             //localize gap function for correction
             Vector Rx;
             Rx = R_*x;
@@ -137,7 +141,7 @@ namespace utopia {
             
             Range rr = row_range(A);
             {
-                Write<Vector> w_a(inactive_set_);
+                Write<Vector> w_a(active_set_);
                 ReadAndWrite<Vector> rw_c(c);
                 Read<Vector> r_d_inv(d_inv), r_g(g), r_l(l);
                 Read<Matrix> r_A(A);
@@ -185,7 +189,7 @@ namespace utopia {
                             Scalar r_ii = 0.0;
                             for(auto index = 0; index < nnz_R; ++index) 
                             {
-                                r_ii = 0.0; 
+                                // r_ii = 0.0; 
                                 const decltype(i) j = row_viewR.col(index);
                                 const auto r_ij = row_viewR.get(index);
 
@@ -210,20 +214,23 @@ namespace utopia {
                                 l_i = (g.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
                                 g_i = (l.get(i) - r_sum_c)/r_ii; // g.get(i)*invR_ii
                             }
+                            else
+                            {
+                                std::cerr<<"--------- erroror PGSQR......... \n"; 
+                            }
 
                             //update correction
                             // std::cout << "l_i:" << l_i << "  g_i:" << g_i << "  c_i:" << c.get(i) << std::endl;
                             if (( g_i <= c.get(i) ) || (c.get(i) <= l_i))
                             {
                                 c.set(i, std::max(std::min( c.get(i), g_i), l_i));
-                                inactive_set_.set(i, 0.0);
-                                //std::cout << "GS: activeset id:" << i << std::endl;
+                                active_set_.set(i, 1.0);
                             }
                             else
                             {
-                                inactive_set_.set(i, 1.0);
+                                active_set_.set(i, 0.0);
                             }
-                        }//std::cout << "row_sum:" << r_sum << std::endl;
+                        }
                     }
 
                     // inactive_set_ *= 0.;
@@ -255,7 +262,7 @@ namespace utopia {
             d = diag(A);
             d_inv = 1./d;
             c = local_zeros(local_size(A).get(0));
-            inactive_set_ = local_zeros(local_size(c));
+            active_set_ = local_zeros(local_size(c));
         }
 
 
@@ -286,9 +293,9 @@ namespace utopia {
             use_symmetric_sweep_ = use_symmetric_sweep;
         }
 
-        const Vector& get_inactive_set()
+        const Vector& get_active_set()
         {
-            return inactive_set_;
+            return active_set_;
         }
 
 
@@ -300,7 +307,7 @@ namespace utopia {
         SizeType n_local_sweeps_;
 
         Vector r, d, g,l ,c, d_inv, x_old, descent_dir;
-        Vector inactive_set_;
+        Vector active_set_;
         Vector is_c_;
         Matrix R_;
     };

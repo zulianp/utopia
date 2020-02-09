@@ -112,7 +112,7 @@ namespace utopia
 
                 each_read(A,[&d](const SizeType i, const SizeType j, const double & val) {
                     // d.set(i, 0.);
-                    if(i==j && std::abs(val) < 1e-10){
+                    if(i==j && std::abs(val) < 1e-12){
                         d.set(i, 1.0); 
                     }
                 });
