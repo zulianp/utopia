@@ -105,13 +105,16 @@ namespace utopia
             Vector d;
 
             Size s = local_size(A);
-            d = local_values(s.get(0), 1.);
+            d = local_values(s.get(0), 0.);
 
             {
                 Write<Vector> w_d(d);
 
-                each_read(A,[&d](const SizeType i, const SizeType, const double) {
-                    d.set(i, 0.);
+                each_read(A,[&d](const SizeType i, const SizeType j, const double & val) {
+                    // d.set(i, 0.);
+                    if(i==j && std::abs(val) < 1e-10){
+                        d.set(i, 1.0); 
+                    }
                 });
             }
 

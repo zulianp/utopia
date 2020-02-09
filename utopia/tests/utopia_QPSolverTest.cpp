@@ -264,7 +264,7 @@ namespace utopia {
             multigrid.set_smoother(smoother_fine, num_levels-1); 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.fix_semidefinite_operators(true); 
-            multigrid.max_it(10);
+            multigrid.max_it(20);
             multigrid.use_line_search(true); 
             multigrid.update(make_ref(QtAQ));
             multigrid.verbose(true);

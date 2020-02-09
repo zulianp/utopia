@@ -406,9 +406,12 @@ namespace utopia
             }
             if(pre_sm){
              
-             if(MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get())){ 
+              if(MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get())){ 
                 ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get());
                 const Vector & inactive_set = GS_smoother->get_inactive_set();
+
+                // std::cout<<"inactive_set: "<< sum(inactive_set) << "   size(inactive_set): "<< size(inactive_set).get(0) << "  \n"; 
+
                 trunc_transfer->truncate_interpolation(inactive_set); 
                 this->galerkin_assembly(this->get_operator());
                 // update();
