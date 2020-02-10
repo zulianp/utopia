@@ -49,7 +49,7 @@ namespace utopia {
 
                 std::cout << "Actual:\n";
                 disp(g);
-
+                rename("g", const_cast<Vector &>(g));
                 write("G.m", g);
 
                 std::cout << "----------------------\n";
@@ -89,6 +89,9 @@ namespace utopia {
 
                 rename("H_fd", Hfd);
                 write("Hfd.m", Hfd);
+
+
+                rename("h", const_cast<Matrix &>(H));
                 write("H.m",   H);
 
                 // std::cerr << "Expected:\n";
