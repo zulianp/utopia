@@ -17,6 +17,7 @@
 #include "utopia_Bratu.hpp"
 #include "utopia_Poisson.hpp"
 #include "utopia_IPTransfer.hpp"
+#include "utopia_RMTR.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
