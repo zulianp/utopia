@@ -76,7 +76,8 @@ namespace utopia {
 
                     Read<Vector> r_h(h_i);
                     for(SizeType j = 0; j < n; ++j) {
-                        H.set(i, j, h_i.get(j));
+                        const Scalar val = h_i.get(j);
+                        H.set(i, j, val);
                     }
                 }
 
@@ -98,14 +99,14 @@ namespace utopia {
                 const Range cr = col_range(H);
                 const Range vr = range(x);
 
-                for (auto i = 0; i < n; ++i) {
+                for (SizeType i = 0; i < n; ++i) {
                     { //Scoped lock
                         const Write <Vector> ewlock(ei);
                         if (i > 0 && vr.inside(i-1)) ei.set(i - 1, 0);
                         if(vr.inside(i))             ei.set(i, h);
                     }
 
-                    for (auto j = 0; j < n; ++j) {
+                    for (SizeType j = 0; j < n; ++j) {
                         { //Scoped lock
                             const Write <Vector> ewlock(ej);
 
