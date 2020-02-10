@@ -203,7 +203,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
 			in.set("max-it", 20);
-			in.set("verbose", true);
+			in.set("verbose", false);
 
 
             // RMTR specific parameters
@@ -318,7 +318,7 @@ namespace utopia
 
 		            // Set TR-QP strategies
 		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
             		const SizeType memory_size = 5;
@@ -376,7 +376,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
 			in.set("max-it", 50);
-			in.set("verbose", true);
+			in.set("verbose", false);
 
             // RMTR specific parameters
             in.set("max_coarse_it", 10);
@@ -445,7 +445,7 @@ namespace utopia
 	{
 		int verbosity_level = 1;
 		const int n_global = 10;
-		bool alg_verbose = true;
+		bool alg_verbose = false;
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;
@@ -463,7 +463,7 @@ namespace utopia
 	{
 		int verbosity_level = 1;
 		const int n_global = 10;
-		bool alg_verbose = true;
+		bool alg_verbose = false;
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;
