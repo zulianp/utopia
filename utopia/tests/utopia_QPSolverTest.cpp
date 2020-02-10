@@ -185,7 +185,7 @@ namespace utopia {
             auto num_levels = 3;
 
 
-            // chop_abs(Q, 1e-4); 
+            // chop_abs(Q, 1e-7); 
 
             std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
             std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
@@ -196,7 +196,7 @@ namespace utopia {
 
             R = transpose(R);   
 
-
+            // version 1 
             Matrix QtAQ  = transpose(Q)* Rot*A*Rot *Q;
             Matrix QtIh  = transpose(Q)* Rot* Ih_fine;
             Vector Qtrhs = transpose(Q)* Rot *rhs;
@@ -206,7 +206,6 @@ namespace utopia {
             // Matrix QtIh  = Rot* Ih_fine;
             // Vector Qtrhs = Rot *rhs;
             // Vector Qtx   = Rot *x;             
-
 
             auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
