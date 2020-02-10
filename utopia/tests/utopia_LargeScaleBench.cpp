@@ -54,7 +54,7 @@ namespace utopia
 				[this]() {
 		            auto lin_solver = std::make_shared<utopia::Factorization<Matrix, Vector> >();
 		            Newton<Matrix, Vector> solver(lin_solver);
-		            solver.verbose(true);
+		            solver.verbose(false);
 		            run_tr(this->test_functions_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
 				}
 			);
@@ -190,7 +190,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13); 
 			in.set("max-it", 500); 
-			in.set("verbose", true);
+			in.set("verbose", false);
 			solver.read(in); 
 
 
@@ -257,7 +257,7 @@ namespace utopia
 	{
 		int verbosity_level = 1;
 		const int n_global = 10; 
-		bool alg_verbose = true; 
+		bool alg_verbose = false; 
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;

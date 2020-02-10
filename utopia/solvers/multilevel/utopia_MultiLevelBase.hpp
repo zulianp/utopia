@@ -183,6 +183,11 @@ namespace utopia
             return *transfers_[level];
         }
 
+        inline const std::vector<TransferPtr> & transfer() const
+        {
+            return transfers_;
+        }        
+
         virtual void describe(std::ostream &os = std::cout) const
         {
             (void) os;

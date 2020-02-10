@@ -446,19 +446,17 @@ namespace utopia {
                                 }
                             }
 
-                            for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
-                                for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
+                            StaticMatrix<Scalar, Dim, Dim> stress_positive_mat; 
+                            stress_positive(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
 
-
-                                  // (sigma+(phi_u), epsilon(u)) * g'_c * phi_c
+                            for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
+                                for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
                                    const Scalar val =
-                                        bilinear_cu(
+                                        bilinear_uc(
                                             params_,
                                              c[qp],
-                                             p_stress_view.positive(u_i, qp),
-                                            // strain_p - strain_n,
-                                             el_strain.strain[qp],
-                                             // 0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))),
+                                             stress_positive_mat,
+                                             0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))),
                                             c_shape_fun_el(c_i, qp)
                                         ) * dx(qp);
 
@@ -468,8 +466,6 @@ namespace utopia {
                                 }
                             }
                         }
-
-                        // disp(el_mat);
 
                         space_view.add_matrix(e, el_mat, H_view);
                     }
@@ -517,6 +513,22 @@ namespace utopia {
         {
             return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress_p, full_strain);
         }
+
+
+
+        template<class Stress, class FullStrain>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uc(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const Stress &stress_p,
+            const FullStrain &full_strain,
+            const Scalar &c_trial_fun
+            )
+        {
+            return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress_p, full_strain);
+        }
+
+
 
         template<class Strain, class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
@@ -627,6 +639,29 @@ namespace utopia {
             }
         }
 
+        template<class EigenValues, class EigenMatrix, class Stress>
+        UTOPIA_INLINE_FUNCTION static void stress_positive(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const EigenValues &values,
+            const EigenMatrix &mat,
+            Stress &stress_positive
+            )
+        {
+            Scalar tr = sum(values);
+            const Scalar tr_p = split_p(tr);
+            StaticVector<Scalar, Dim> v;
+            stress_positive.set(0.0);
+
+            for(int d = 0; d < Dim; ++d) {
+                const Scalar eig_p = split_p(values[d]);
+                const Scalar val_p = (params.lambda * tr_p + 2.0 * params.mu * eig_p);
+
+                mat.col(d, v);
+                stress_positive += val_p * outer(v, v);
+            }
+        }        
+
         template<class Grad, class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar energy(
             const Parameters &params,
@@ -655,8 +690,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(
             const Parameters &params,
             const Scalar &phase_field_value,
-            const Grad   &phase_field_grad
-            )
+            const Grad   &phase_field_grad)
         {
             return params.fracture_toughness * (
                 1./(2.0 * params.length_scale) * phase_field_value * phase_field_value +

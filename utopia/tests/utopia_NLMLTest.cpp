@@ -37,7 +37,8 @@ namespace utopia
 			// ml_problems_[3] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > > (2, n_levels_, n_);
 
 			ml_problems_.resize(1);
-			ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);			
+			ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);	
+			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);		
 		}
 
 		~RMTR_test()
@@ -62,7 +63,7 @@ namespace utopia
 		 //            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> > ());
 		 //            tr_strategy_fine->atol(1e-12);
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, FIRST_ORDER> >(n_levels_);
 
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -85,7 +86,7 @@ namespace utopia
 		 //            tr_strategy_fine->atol(1e-12);
 
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, FIRST_ORDER_MGOPT> >(n_levels_);
 
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -115,7 +116,7 @@ namespace utopia
 			// 		tr_strategy_coarse->atol(1e-12);
 
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, SECOND_ORDER> >(n_levels_);
 
 		 //            // Set TR-QP strategies
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -146,7 +147,7 @@ namespace utopia
 			// 		tr_strategy_coarse->atol(1e-12);
 
 
-		 //            auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
+		 //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, GALERKIN> >(n_levels_);
 
 		 //            // Set TR-QP strategies
 		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -161,15 +162,22 @@ namespace utopia
 			// );
 
 
+
+
 			this->register_experiment("RMTR_first_order_infty",
 				[this]() {
 		           	auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+		           	// auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+		           	// tr_strategy_fine->use_symmetric_sweep(false); 
 		            tr_strategy_fine->atol(1e-12);
+		            // tr_strategy_fine->verbose(true);
 
 					auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+					// auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
 					tr_strategy_coarse->atol(1e-12);
 
-		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+		            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, FIRST_ORDER_MGOPT> >(n_levels_);
+		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
 
 		            // Set TR-QP strategies
 		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -194,18 +202,20 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
-			in.set("max-it", 150);
-			in.set("verbose", true);
+			in.set("max-it", 20);
+			in.set("verbose", false);
+
 
             // RMTR specific parameters
             in.set("max_coarse_it", 2);
-            in.set("max_sucessful_coarse_it", 2);
+            in.set("max_sucessful_coarse_it", 1);
             in.set("max_QP_coarse_it", 1000);
             in.set("pre_smoothing_steps", 2);
             in.set("post_smoothing_steps", 2);
             in.set("max_sucessful_smoothing_it", 1);
-            in.set("max_QP_smoothing_it", 7);
-            in.set("delta0", 1.0e10);
+            in.set("max_QP_smoothing_it", 8);
+            // in.set("delta0", 0.001);
+            in.set("delta0", 1e10);
             in.set("grad_smoothess_termination", 1e-8);
 
 			solver->read(in);
@@ -229,7 +239,12 @@ namespace utopia
 	            solver->solve(x);
 
 
-				// auto sol_status = solver.solution_status();
+				auto sol_status = solver->solution_status();
+
+				// std::cout<<"it: "<< sol_status.iterates << "  \n"; 
+				// std::cout<<"gradient_norm: "<< sol_status.gradient_norm << "  \n"; 
+				// std::cout<<"reason: "<< sol_status.reason << "  \n"; 
+
 
 				if(exp_verbose && mpi_world_rank()==0)
 				{
@@ -303,7 +318,7 @@ namespace utopia
 
 		            // Set TR-QP strategies
 		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
             		const SizeType memory_size = 5;
@@ -361,7 +376,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
 			in.set("max-it", 50);
-			in.set("verbose", true);
+			in.set("verbose", false);
 
             // RMTR specific parameters
             in.set("max_coarse_it", 10);
@@ -430,7 +445,7 @@ namespace utopia
 	{
 		int verbosity_level = 1;
 		const int n_global = 10;
-		bool alg_verbose = true;
+		bool alg_verbose = false;
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;
@@ -448,7 +463,7 @@ namespace utopia
 	{
 		int verbosity_level = 1;
 		const int n_global = 10;
-		bool alg_verbose = true;
+		bool alg_verbose = false;
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;
