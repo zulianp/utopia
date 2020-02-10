@@ -6,6 +6,7 @@
 	#include "utopia_Level.hpp"
 	#include "utopia_MultiLevelBase.hpp"
 	#include "utopia_Multigrid.hpp"
+	#include "utopia_MultigridQR.hpp"
 
 	#include "utopia_MLConstraintsIncludes.hpp"
 
@@ -28,5 +29,7 @@
 	#include "utopia_IdentityTransfer.hpp"
 	#include "utopia_IPTransfer.hpp"
 	#include "utopia_MatrixTransfer.hpp"
+
+	#include "utopia_MatrixTruncatedTransfer.hpp"
 
 #endif //UTOPIA_MULTILEVEL_HPP

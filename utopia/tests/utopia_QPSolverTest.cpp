@@ -159,37 +159,84 @@ namespace utopia {
 
         void ProjectedGS_QR()
         {
-
-            // std::cout<<"----------- Ciao Hardik ------------  \n";
-
-            Vector rhs;
-            Matrix A, R, Q;
+            Vector rhs, x;
+            Vector upper_bound,lower_bound;
+            Matrix A, R, Q, Ih_fine, Rot;
+            Matrix Ih1, Ih0; 
 
             const std::string data_path = Utopia::instance().get("data_path");
 
-            read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
-            read(data_path + "/laplace/matrices_for_petsc/f_A", A);
-            read(data_path + "/laplace/matrices_for_petsc/I_2", R);
-            read(data_path + "/laplace/matrices_for_petsc/I_3", Q);
+            read(data_path + "/forQR/b", rhs);
+            read(data_path + "/forQR/x", x);
+            read(data_path + "/forQR/A", A);            
+            read(data_path + "/forQR/Q", Q);
+            read(data_path + "/forQR/R", R);
+            read(data_path + "/forQR/Rot", Rot);
+            read(data_path + "/forQR/ub", upper_bound);
+            read(data_path + "/forQR/lb", lower_bound);
+
+            read(data_path + "/forQR/Ih", Ih_fine);
+            read(data_path + "/forQR/I2h", Ih1);
+            read(data_path + "/forQR/I3h", Ih0);
+
+            auto num_levels = 3;
 
 
-            Vector x = local_values(local_size(rhs).get(0), 0.0);
+            // chop_abs(Q, 1e-7); 
+
+            // std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
+            // std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
+            // std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
+            // std::cout<<"I: "<< local_size(Ih_fine).get(0) << "  \n"; 
+            // std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
 
 
-            auto solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            R = transpose(R);   
 
-            Vector upper_bound = local_values(local_size(rhs).get(0), 9e9);
-            Vector lower_bound  = local_values(local_size(rhs).get(0), -9e9);
+            // version 1 
+            Matrix QtAQ  = transpose(Q)* Rot*A*Rot *Q;
+            Matrix QtIh  = transpose(Q)* Rot* Ih_fine;
+            Vector Qtrhs = transpose(Q)* Rot *rhs;
+            Vector Qtx   = transpose(Q)* Rot *x; 
 
-            solver->max_it(10);
-            solver->verbose(true);
+            // Matrix QtAQ  = Rot*A*Rot;
+            // Matrix QtIh  = Rot* Ih_fine;
+            // Vector Qtrhs = Rot *rhs;
+            // Vector Qtx   = Rot *x;             
 
-            solver->set_box_constraints(make_box_constaints(make_ref(lower_bound),  make_ref(upper_bound)));
+            auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
+            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);            
+        
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            interpolation_operators.resize(num_levels - 1);
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih1));
+               
+            
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.max_it(40);
+            multigrid.pre_smoothing_steps(3); 
+            multigrid.post_smoothing_steps(3); 
+            multigrid.verbose(false);
+            // multigrid.mg_type(2); 
 
-            solver->solve(A, rhs, x);
+            // This should be somewhere else... 
+            multigrid.set_QR(Q, R); 
+            multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
+
+
+            multigrid.solve(QtAQ, Qtrhs, Qtx);
+            x = Rot*Q * Qtx; 
+            // x = Rot*Qtx; 
+
+
+            // write("x.m", x); 
+            // write("IX.m", Qtx);
+            // disp(x);
 
         }
-
 
 
 
@@ -203,9 +250,12 @@ namespace utopia {
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
             UTOPIA_RUN_TEST(MPRGP_test);
+        }
 
-            // UTOPIA_RUN_TEST(ProjectedGS_QR);
-
+        void run_GS_QR()
+        {
+            print_backend_info();
+            UTOPIA_RUN_TEST(ProjectedGS_QR);
         }
 
         QPSolverTest() : n(20) {}
@@ -250,6 +300,8 @@ namespace utopia {
     static void qp_solver() {
 #ifdef WITH_PETSC
         QPSolverTest<PetscMatrix, PetscVector>().run();
+        QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR(); 
+
         PQPSolverTest<PetscMatrix, PetscVector>().run();
 
 #endif //WITH_PETSC
