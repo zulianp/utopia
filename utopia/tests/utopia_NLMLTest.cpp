@@ -348,8 +348,8 @@ namespace utopia
 		            auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector> > >(n_levels_);
 
 		            // Set TR-QP strategies
-		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
             		const SizeType memory_size = 5;

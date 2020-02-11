@@ -654,7 +654,7 @@ namespace utopia
                 }
                 else
                 {
-                    
+                    // why is this different ??? 
                     if(current_m_ ==0)
                     {
                         // UTOPIA_NO_ALLOC_BEGIN("LBGFS:A2");
