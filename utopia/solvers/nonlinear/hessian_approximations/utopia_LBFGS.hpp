@@ -672,7 +672,7 @@ namespace utopia
             void apply_H0_inv(const Vector & v, Vector & result) 
             {
 
-                if(H0_inv_action_)
+                if(H0_inv_action_ && current_m_ ==0)
                 {
                     H0_inv_action_(v, result); 
                 }
