@@ -33,7 +33,7 @@ namespace utopia {
         std::vector<std::string> apps;
         this->verbose(Utopia::instance().verbose());
 
-        std::cout << argc << " " << argv[0] << " " << argv[1] << std::endl;
+        // std::cout << argc << " " << argv[0] << " " << argv[1] << std::endl;
 
         int err = 0;
 
