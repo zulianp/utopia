@@ -4,6 +4,7 @@
 #include "moonolith_transform.hpp"
 #include "libmesh/elem.h"
 #include "libmesh/dense_matrix.h"
+#include "libmesh/dense_vector.h"
 
 namespace utopia {
 

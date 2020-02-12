@@ -31,19 +31,19 @@ namespace utopia {
 
             if(block == -1) {
 
-                auto boundary_node_ids = libMesh::MeshTools::find_boundary_nodes(mesh);
-
+                //auto boundary_node_ids = libMesh::MeshTools::find_boundary_nodes(mesh);
+                #include "libmesh/dense_matrix.h"
                 const libMesh::Point p;
-                for (unsigned int n = 0; n < mesh.max_node_id(); n++) {
-                    if(boundary_node_ids.count(n)) {
-                        auto &node = mesh.node_ref(n);
-                        // node *= radius/node.norm();
+                // for (unsigned int n = 0; n < mesh.max_node_id(); n++) {
+                //     if(boundary_node_ids.count(n)) {
+                //         auto &node = mesh.node_ref(n);
+                //         // node *= radius/node.norm();
 
-                        morph_point(node);
+                //         morph_point(node);
 
-                        // std::cout << node(0) << ", " << node(1) << std::endl;
-                    }
-                }
+                //         // std::cout << node(0) << ", " << node(1) << std::endl;
+                //     }
+                // }
 
             } else {
                 std::set<libMesh::dof_id_type> morphed;

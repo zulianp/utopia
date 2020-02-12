@@ -6,7 +6,7 @@
 #include "libmesh/parallel_algebra.h"
 #include "libmesh/parallel_elem.h"
 #include "libmesh/parallel_node.h"
-#include "libmesh/parallel_sync.h"
+// #include "libmesh/parallel_sync.h"
 #include "libmesh/mesh_tools.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/coupling_matrix.h"
@@ -332,9 +332,10 @@ namespace utopia {
                     const auto * parent = elem->parent();
                     libmesh_assert(parent);
                     
-                    elem->build_side_ptr(my_side, s); 
+                    // elem->build_side_ptr(my_side, s); 
                     
-                    parent->build_side_ptr(parent_side, s);
+                    // parent->build_side_ptr(parent_side, s);
+                    assert("THIS was commented out..... \n"); 
                     
                     my_dof_indices.reserve (my_side->n_nodes()); 
                     
@@ -514,7 +515,8 @@ namespace utopia {
        
        std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
        
-       auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
+       // auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
+       assert("this was commented out..........\n"); 
 
        std::vector<int> dirichlet_id, index_local;
 
@@ -554,16 +556,18 @@ namespace utopia {
 
                            const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0);                
 
-                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
-                            {
+                            // if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) 
+                            // {
                                    
-                                index_local.push_back(node_dof);
+                            //     index_local.push_back(node_dof);
 
-                                index.push_back(node_dof);
+                            //     index.push_back(node_dof);
 
-                                //std::cout<<node_dof<<std::endl;
+                            //     //std::cout<<node_dof<<std::endl;
            
-                            }
+                            // }
+
+                           assert("this was commented out..........\n"); 
 
                        // }
 
@@ -665,11 +669,14 @@ namespace utopia {
                         for (int ll=0; ll<side->n_nodes(); ll++)
                         {
                           
-                            const libMesh::Node * node = side->node_ptr(ll);
+                            // const libMesh::Node * node = side->node_ptr(ll);
+                            assert("this was commented out..........\n"); 
 
-                            const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
+                            // const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
+                            assert("this was commented out..........\n"); 
 
-                            if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) index.push_back(node_dof);
+                            // if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) index.push_back(node_dof);
+                            assert("this was commented out..........\n"); 
                         }
                     }
                 }
@@ -736,9 +743,10 @@ namespace utopia {
                         const auto * parent = elem->parent();
                         libmesh_assert(parent);
                         
-                        elem->build_side_ptr(my_side, s); 
+                        // elem->build_side_ptr(my_side, s); 
                         
-                        parent->build_side_ptr(parent_side, s);
+                        // parent->build_side_ptr(parent_side, s);
+                        assert("this was commented out..........\n"); 
                         
                         my_dof_indices.reserve (my_side->n_nodes()); 
                         
@@ -794,7 +802,8 @@ namespace utopia {
         }
             // std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl; 
        
-        auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
+        // auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);     
+        assert("this was commented out..........\n"); 
 
         std::vector<int> dirichlet_id, index_local, tmp;
 
@@ -890,13 +899,14 @@ namespace utopia {
 
                                 const libMesh::dof_id_type node_dof = node->dof_number(sys_number, var_number, 0); 
 
-                                if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) {
+                                // if(on_boundary.count(node->id()) && dof_map.is_constrained_dof(node_dof)) {
 
-                                  auto check_2 = (std::find(tmp.begin(), tmp.end(), node_dof) != tmp.end());
+                                //   auto check_2 = (std::find(tmp.begin(), tmp.end(), node_dof) != tmp.end());
 
-                                   if(!check_2) {tmp.push_back(node_dof);}
-                                    //std::cout<<"tmp"<<node_dof<<std::endl;
-                                }
+                                //    if(!check_2) {tmp.push_back(node_dof);}
+                                //     //std::cout<<"tmp"<<node_dof<<std::endl;
+                                // }
+                                assert("this was commented out..........\n"); 
                             }
                         }
                     }
