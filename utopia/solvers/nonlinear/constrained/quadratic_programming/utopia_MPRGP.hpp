@@ -87,6 +87,8 @@ namespace  utopia
                 // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
                 // //cudaProfilerStart();
 
+                Scalar r_norm0 = norm2(rhs); 
+
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
 
@@ -177,6 +179,7 @@ namespace  utopia
                     }
 
                     converged = this->check_convergence(it, gnorm, 1, 1);
+                    //converged = (it > this->max_it() || gnorm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 ) ? true : false;
                 }
 
                 // //cudaProfilerStop();

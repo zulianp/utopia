@@ -37,7 +37,7 @@ namespace utopia
             return _x_eq_values; 
         }
 
-        SizeType loc_size() const 
+        virtual SizeType loc_size() const 
         {
             return local_size(_x_eq_values).get(0); 
         }

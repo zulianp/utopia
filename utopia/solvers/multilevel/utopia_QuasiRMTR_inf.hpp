@@ -176,13 +176,13 @@ namespace utopia
         {
             RMTRBase::init_memory();
             const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+
             MLConstraints::init_memory(dofs); 
 
             for(Scalar l = 0; l < this->n_levels(); l ++){
                 tr_subproblems_[l]->init_memory(dofs[l]); 
                 hessian_approxs_[l]->initialize(this->memory_.x[l],this->ml_derivs_.g[l]);                
             }    
-
             const SizeType fine_level = this->n_levels()-1;
 
             for(auto l = 0; l < fine_level; l++){
