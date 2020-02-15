@@ -4,6 +4,11 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Each.hpp"
 
+//Transform calue mpiaij
+//1)  MatMPIAIJGetSeqAIJ (not MatMPIAIJGetLocalMat)
+// PETSC_EXTERN PetscErrorCode MatMPIAIJGetSeqAIJ(Mat,Mat*,Mat*,const PetscInt*[]);
+
+
 namespace utopia {
 
 	template<class F>
@@ -21,7 +26,7 @@ namespace utopia {
 	    if(!done) {
 	        std::cerr << "PetscMatrix::transform_values_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
 	        abort();
-	    } 
+	    }
 
 	    PetscScalar *array;
 	    MatSeqAIJGetArray(raw_type(), &array);
@@ -64,7 +69,7 @@ namespace utopia {
 		if(!done) {
 		    std::cerr << "PetscMatrix::transform_values_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
 		    abort();
-		} 
+		}
 
 		PetscScalar *array;
 		MatSeqAIJGetArray(raw_type(), &array);
@@ -103,7 +108,7 @@ namespace utopia {
 	// 	if(!done) {
 	// 	    std::cerr << "PetscMatrix::transform_values_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
 	// 	    abort();
-	// 	} 
+	// 	}
 
 	// 	const PetscScalar *array;
 	// 	MatSeqAIJGetArrayRead(raw_type(), &array);

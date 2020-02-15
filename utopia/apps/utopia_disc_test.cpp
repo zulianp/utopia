@@ -158,7 +158,7 @@ namespace utopia {
             );
         }
 
-        err = space.comm().sum(err);
+        err = std::sqrt(space.comm().sum(err));
 
         stats.stop_and_collect("error-computation");
         std::cout << "n_dofs="   << x.size() << std::endl;
