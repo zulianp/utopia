@@ -10,6 +10,35 @@ namespace utopia {
 
 #ifdef WITH_PETSC
 
+    // template<>
+    // class Each<PetscMatrix, 2, FillType::POLYMORPHIC>{
+    // public:
+    //     template<class Fun>
+    //     inline static void apply_write(PetscMatrix &mat, Fun fun)
+    //     {
+    //         assert(false);
+    //     }
+
+    //     template<class Fun>
+    //     inline static void apply_read(const PetscMatrix &mat, Fun fun)
+    //     {
+    //         assert(false);
+    //     }
+
+    //     template<class Fun>
+    //     inline static void apply_transform(PetscMatrix &mat, Fun fun)
+    //     {
+    //         assert(false);
+    //     }
+
+    //     template<class Fun>
+    //     inline static void apply(PetscMatrix &mat, Fun fun)
+    //     {
+
+    //     }
+    // };
+
+
     //FIXME
     void petc_optional()
     {

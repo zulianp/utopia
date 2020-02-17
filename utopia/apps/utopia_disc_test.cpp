@@ -29,30 +29,22 @@
 
 namespace utopia {
 
-    void disc_test(Input &in)
+    template<class FunctionSpace>
+    void poisson_l2_error(FunctionSpace &space, Input &in)
     {
-        static const int Dim = 2;
-        static const int NVars = 1;
+        using Elem             = typename FunctionSpace::Elem;
+        using Mesh             = typename FunctionSpace::Mesh;
+        using ElemView         = typename FunctionSpace::ViewDevice::Elem;
+        using Device           = typename FunctionSpace::Device;
+        using Point            = typename Mesh::Point;
+        using Scalar           = typename Mesh::Scalar;
+        using Comm             = typename FunctionSpace::Comm;
 
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
         using Quadrature       = utopia::Quadrature<Elem, 2>;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView         = FunctionSpace::ViewDevice::Elem;
-        using Device           = FunctionSpace::Device;
-        using Point            = Mesh::Point;
-        using Scalar           = Mesh::Scalar;
-        using Comm             = FunctionSpace::Comm;
 
-        Comm comm;
-
-        MPITimeStatistics stats(comm);
+        MPITimeStatistics stats(space.comm());
 
         stats.start();
-
-        FunctionSpace space;
-        space.read(in);
-
 
 
         //f(w) = 4*x^3 + y^2 + 3
@@ -167,6 +159,67 @@ namespace utopia {
         stats.describe(std::cout);
     }
 
-    UTOPIA_REGISTER_APP(disc_test);
+    void disc_test_2(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using Quadrature       = utopia::Quadrature<Elem, 2>;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView         = FunctionSpace::ViewDevice::Elem;
+        using Device           = FunctionSpace::Device;
+        using Point            = Mesh::Point;
+        using Scalar           = Mesh::Scalar;
+        using Comm             = FunctionSpace::Comm;
+
+
+        Comm comm;
+
+        MPITimeStatistics stats(comm);
+
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        poisson_l2_error(space, in);
+
+    }
+
+    UTOPIA_REGISTER_APP(disc_test_2);
+
+
+    void disc_test_3(Input &in)
+    {
+        static const int Dim = 3;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using Quadrature       = utopia::Quadrature<Elem, 2>;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView         = FunctionSpace::ViewDevice::Elem;
+        using Device           = FunctionSpace::Device;
+        using Point            = Mesh::Point;
+        using Scalar           = Mesh::Scalar;
+        using Comm             = FunctionSpace::Comm;
+
+
+        Comm comm;
+
+        MPITimeStatistics stats(comm);
+
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        poisson_l2_error(space, in);
+
+    }
+
+    UTOPIA_REGISTER_APP(disc_test_3);
 
 }
