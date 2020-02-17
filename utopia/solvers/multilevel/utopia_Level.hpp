@@ -1,6 +1,8 @@
 #ifndef UTOPIA_ONE_LEVEL_HPP
 #define UTOPIA_ONE_LEVEL_HPP
+
 #include "utopia_Core.hpp"
+#include "utopia_Path.hpp"
 
 #include <memory>
 #include <assert.h>
@@ -80,6 +82,16 @@
         {
             assert(_A);
             return apply_BC_to_system(_A, x, b, active_set);
+        }
+
+        virtual bool write(const Path &path) const
+        {
+            if(_A) {
+                utopia::write(path.c_str(), *_A);
+                return true;
+            }
+
+            return false;
         }
 
     protected:

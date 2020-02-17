@@ -536,8 +536,19 @@ namespace utopia {
         const std::array<Scalar, UDim> &box_min,
         const std::array<Scalar, UDim> &box_max,
         const SizeType &n_components)
-    : impl_(utopia::make_unique<Impl>(comm))
     {
+        build(comm, dims, box_min, box_max, n_components);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::build(
+        const PetscCommunicator &comm,
+        const std::array<SizeType, UDim> &dims,
+        const std::array<Scalar, UDim> &box_min,
+        const std::array<Scalar, UDim> &box_max,
+        const SizeType &n_components)
+    {
+        impl_ = utopia::make_unique<Impl>(comm);
         impl_->init_uniform(comm, dims, box_min, box_max, n_components);
         impl_->elements = utopia::make_unique<PetscDMElements<Dim>>(*this);
         impl_->nodes = utopia::make_unique<PetscDMNodes<Dim>>(*this);
@@ -992,6 +1003,22 @@ namespace utopia {
     const PetscCommunicator &PetscDM<Dim>::comm() const
     {
         return impl_->comm;
+    }
+
+    template<int Dim>
+    typename PetscDM<Dim>::Scalar PetscDM<Dim>::min_spacing() const
+    {
+        SizeType dims[3];
+        PetscDMImpl<Dim>::dims(impl_->dm, dims);
+
+        Scalar min_h = (impl_->box_max_[0] - impl_->box_min_[0])/dims[0];
+
+        for(int i = 1; i < Dim; ++i) {
+            Scalar h = (impl_->box_max_[i] - impl_->box_min_[i])/dims[i];
+            min_h = std::min(min_h, h);
+        }
+
+        return min_h;
     }
 
     template<int Dim>

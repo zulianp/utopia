@@ -393,8 +393,7 @@ namespace utopia {
         Vectors &eigen_vectors
         )
     {
-        DeviceEigenValues<Expr>::apply(expr.derived(), eigen_values);
-        DeviceEigenVectors<Expr>::apply(expr.derived(), eigen_values, eigen_vectors);
+        DeviceEigenDecomposition<Expr>::apply(expr.derived(), eigen_values, eigen_vectors);
     }
 
 
@@ -418,6 +417,20 @@ namespace utopia {
     {
         return DeviceReduce<Derived, Plus, Traits<Derived>::Order>::apply(expr.derived(), 0.0);
     }
+
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION typename Traits<Derived>::Scalar min(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceReduce<Derived, Min, Traits<Derived>::Order>::apply(expr.derived());
+    }
+
+
+    template<class Derived>
+    UTOPIA_INLINE_FUNCTION typename Traits<Derived>::Scalar max(const DeviceExpression<Derived> &expr)
+    {
+        return DeviceReduce<Derived, Max, Traits<Derived>::Order>::apply(expr.derived());
+    }
+
 
     template<class Derived>
     UTOPIA_INLINE_FUNCTION DeviceTensorReduce<Derived, Plus, 1> row_sum(const DeviceExpression<Derived> &expr)

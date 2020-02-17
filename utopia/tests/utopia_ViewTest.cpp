@@ -1,6 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_Views.hpp"
+#include "utopia_DeviceReduce.hpp"
 
 #include <utility>
 
@@ -36,6 +37,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(strain_test);
             UTOPIA_RUN_TEST(inner_test);
             UTOPIA_RUN_TEST(eigen_test);
+            UTOPIA_RUN_TEST(composite_expr_test);
         }
 
         void array_view_test()
@@ -379,6 +381,36 @@ namespace utopia {
 
             StaticVector<Scalar, 3> e;
             eig(A, e, V);
+
+            A.set(0.0);
+            A(0,0) = 0.020000000127017;
+            A(0,1) = A(1,0) = 0.000000000063508;
+            A(0,2) = A(2,0) = 0.000000000063508;
+
+            eig(A, e, V);
+
+            Scalar sum_v = sum(V);
+
+            utopia_test_assert(sum_v == sum_v);
+
+            A.set(0.0);
+            A(0,0) = 0.02;
+            A(0,1) = A(1,0) = 6.35083e-11;
+            A(0,2) = A(2,0) = 6.35083e-11;
+
+            // disp(A);
+
+            V.set(0.0);
+            eig(A, e, V);
+
+            // disp(e);
+            // disp(V);
+
+            sum_v = sum(V);
+            utopia_test_assert(sum_v == sum_v);
+
+
+            utopia_test_assert( approxeq(transpose(V) * diag(e) * V, A) );
         }
 
         void inner_test()
@@ -386,6 +418,22 @@ namespace utopia {
             StaticMatrix<Scalar, 2, 2> A, E;
             auto expr = 0.5 * (transpose(A) + A);
             utopia_test_assert( rows(expr) == 2 );
+        }
+
+        void composite_expr_test()
+        {
+            StaticMatrix<Scalar, 2, 2> F, S;
+            F.set(0.0);
+            S.set(0.0);
+
+            F(0,0) = -0.5;
+            F(0,1) = -0.5;
+
+            S(0,0) = 5.5999999999999996;
+            S(1,1) = 2.3999999999999999;
+
+            const Scalar SdotE = inner(S, 0.5 * (F + transpose(F)));
+            utopia_test_assert(approxeq(-2.8000, SdotE, 1e-8));
         }
     };
 

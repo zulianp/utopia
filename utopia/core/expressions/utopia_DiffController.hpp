@@ -14,21 +14,26 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
 
         DiffController(const Scalar spacing = 1e-5)
-        : spacing_(spacing)
+        : spacing_(spacing), hessian_from_grad_(true)
         {}
+
+        inline void hessian_from_grad(const bool val) {
+            hessian_from_grad_ = val;
+        }
 
         void read(Input &in) override
         {
             in.get("spacing", spacing_);
+            in.get("hessian_from_grad", hessian_from_grad_);
         }
 
         template<class Fun>
-        bool check(Fun &fun, const Vector &x, const Vector &g, const Matrix &H) {
+        bool check(const Fun &fun, const Vector &x, const Vector &g, const Matrix &H) const {
             return check_grad(fun, x, g) && check_hessian(fun, x, H);
         }
 
         template<class Fun>
-        bool check_grad(Fun &fun, const Vector &x, const Vector &g) {
+        bool check_grad(const Fun &fun, const Vector &x, const Vector &g) const {
             FiniteDifference<typename Vector::Scalar> fd(spacing_);
             Vector gfd;
             fd.grad(fun, x, gfd);
@@ -40,26 +45,28 @@ namespace utopia {
                 std::cout << "Expected:\n";
                 rename("g_fd", gfd);
                 disp(gfd);
+                write("G_fd.m", gfd);
 
                 std::cout << "Actual:\n";
                 disp(g);
+                rename("g", const_cast<Vector &>(g));
+                write("G.m", g);
 
                 std::cout << "----------------------\n";
                 assert(false);
             }
 
-
             return ok;
         }
 
         template<class Fun>
-        bool check_hessian(Fun &fun, const Vector &x, const Matrix &H) {
+        bool check_hessian(const Fun &fun, const Vector &x, const Matrix &H) const {
 
             FiniteDifference<Scalar> fd(spacing_);
             Matrix Hfd = H;
             Hfd *= 0.0;
 
-            if(!fd.hessian(fun, x, Hfd)) {
+            if(!fd.hessian(fun, x, Hfd, hessian_from_grad_)) {
                 return true;
             }
 
@@ -82,6 +89,9 @@ namespace utopia {
 
                 rename("H_fd", Hfd);
                 write("Hfd.m", Hfd);
+
+
+                rename("h", const_cast<Matrix &>(H));
                 write("H.m",   H);
 
                 // std::cerr << "Expected:\n";
@@ -104,6 +114,7 @@ namespace utopia {
 
     private:
         Scalar spacing_;
+        bool hessian_from_grad_;
     };
 }
 
