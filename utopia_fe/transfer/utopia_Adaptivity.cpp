@@ -320,7 +320,7 @@ namespace utopia {
 
 
         std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
-        std::unique_ptr<const libMesh::Elem> my_side, parent_side;
+        libMesh::UniquePtr<const libMesh::Elem> my_side, parent_side;
 
         for (auto s : elem->side_index_range())
         {
@@ -587,7 +587,7 @@ namespace utopia {
 
                 std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
 
-                std::unique_ptr<const libMesh::Elem> my_side, parent_side_0;
+                libMesh::UniquePtr<const libMesh::Elem> my_side, parent_side_0;
 
                 libMesh::FEType fe_type = dof_map.variable_type(0);
 
@@ -724,7 +724,7 @@ namespace utopia {
 
 
             std::vector<libMesh::dof_id_type> my_dof_indices, parent_dof_indices;
-            std::unique_ptr<const libMesh::Elem> my_side, parent_side;
+            libMesh::UniquePtr<const libMesh::Elem> my_side, parent_side;
 
             for (auto s : elem->side_index_range())
             {
@@ -811,7 +811,7 @@ namespace utopia {
 
         const libMesh::MeshBase::const_element_iterator end_it_1 = mesh.active_elements_end();
 
-        std::unique_ptr<const libMesh::Elem> parent_side_0_new;
+        libMesh::UniquePtr<const libMesh::Elem> parent_side_0_new;
 
         for ( ; it_1 != end_it_1; ++it_1)
         {
