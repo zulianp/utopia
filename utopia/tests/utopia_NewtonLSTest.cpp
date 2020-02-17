@@ -252,7 +252,7 @@ namespace utopia
 	{
 		int verbosity_level = 1;
 		const int n_global = 10;
-		bool alg_verbose = true;
+		bool alg_verbose = false;
 
 		if(Utopia::instance().verbose()) {
 			verbosity_level = 2;

@@ -31,12 +31,20 @@ namespace utopia {
         public:
             ArrayView<StaticVector<Scalar, Dim>, NQuadPoints> values;
             ArrayView<GradValue, NQuadPoints> vectors;
+            ArrayView<GradValue, NQuadPoints> strain;
         };
 
         UTOPIA_INLINE_FUNCTION Evaluation make(const Elem &elem) const
         {
             Evaluation ret;
-            get(elem, ret.values, ret.vectors);
+
+            grad_.get(elem, ret.strain);
+
+            for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                ret.strain[qp].symmetrize();
+                eig(ret.strain[qp], ret.values[qp], ret.vectors[qp]);
+            }
+
             return ret;
         }
 
@@ -80,27 +88,11 @@ namespace utopia {
             }
         }
 
-        template<class Values, class Vectors>
-        UTOPIA_INLINE_FUNCTION void get(
-            const Elem &elem,
-            Values &values,
-            Vectors &vectors) const
-        {
-            typename GradInterpolateView::Eval strain;
-
-            grad_.get(elem, strain);
-
-            const SizeType n = strain.size();
-
-            for(SizeType qp = 0; qp < n; ++qp) {
-                strain[qp].symmetrize();
-                eig(strain[qp], values[qp], vectors[qp]);
-            }
-        }
 
     private:
 
         GradInterpolateView grad_;
+
 
         UTOPIA_INLINE_FUNCTION static constexpr Scalar split_positive(const Scalar &x) {
             return (device::abs(x) + x)/2;

@@ -69,7 +69,17 @@ namespace utopia {
             auto bilinear_form = inner(D * grad(u), grad(v)) * dX;
             assemble(bilinear_form, A);
         } else {
-            auto bilinear_form = inner(grad(u), grad(v)) * dX;
+
+             auto f = ctx_fun(lambda_fun([](const std::vector<double> &p) -> double {
+                    if(p[1] < 0.5) {
+                        return 10.0;
+                    } else {
+                        return 0.001;
+                    }
+             }));
+
+
+            auto bilinear_form = inner(f * grad(u), grad(v)) * dX;
             assemble(bilinear_form, A);
         }
 

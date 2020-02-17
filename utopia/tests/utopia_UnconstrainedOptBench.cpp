@@ -29,7 +29,7 @@ namespace utopia
 			return "TR: unconstrained optimization benchmark";
 		}
 
-		UnconstrainedOptimizationBenchmark(const SizeType & n = 10) : n_(n), verbose_(true)
+		UnconstrainedOptimizationBenchmark(const SizeType & n = 10) : n_(n), verbose_(false)
 		{
 			test_functions_.resize(18); 
 			test_functions_[0] = std::make_shared<Hellical07<Matrix, Vector> >();

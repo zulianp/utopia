@@ -33,44 +33,53 @@ namespace utopia {
         std::vector<std::string> apps;
         this->verbose(Utopia::instance().verbose());
 
-        bool app_ran = false;
-        for(int i = 1; i < argc; i++) {
-          if(argv[i] == std::string("-app")) {
-                if(++i >= argc)
-                    break;
+        // std::cout << argc << " " << argv[0] << " " << argv[1] << std::endl;
 
-                int err = 1;
-                if(i + 1 < argc) {
-                    auto istr = open_istream(argv[i+1]);
-                    if(istr) {
-                       err = run(argv[i], *istr);
-                       if(err == 0) { app_ran = true; }
-                    } else {
-                        err = 1;
-                    }
-                }
+        int err = 0;
 
-                //Try without input
-                if(err != 0) {
-                    apps.push_back(argv[i]);
-                }
-
-            } else if(argv[i] == std::string("-list")) {
-                this->describe();
-                return 0;
-            }
-        }
-
-
-        if(!app_ran) {
-            if(apps.empty()) {
-                return AppRegistry::instance().run_all();
-            } else {
-                return this->run(apps);
-            }
-        } else {
+        if(argc == 2 &&  (
+            argv[1] == std::string("-list") ||
+            argv[1] == std::string("-help")
+        )) {
+            this->describe();
             return 0;
         }
+
+        if(argc == 4 && (
+            argv[1] == std::string("-app")
+        )) {
+            auto in = open_istream(argv[3]);
+
+            if(in) {
+                if((err = run(argv[2], *in)) == 0) {
+                    std::cerr << "[Warning] syntax deprected use: "
+                              << argv[0] <<  " "
+                              << argv[1] <<  " "
+                              << argv[2] <<  " @file "
+                              << argv[3] << std::endl;
+                    return 0;
+                }
+            }
+        }
+
+        InputParameters params;
+        params.init(argc, argv);
+
+        std::string app_name = "";
+        params.get("app", app_name);
+
+
+        //try to run with parameters
+        if((err = run(app_name, params)) != 0) {
+
+            //try to run without. parameters
+            if((err = run({app_name})) != 0) {
+                std::cerr << "[Error] no app with name " << app_name << std::endl;
+                return err;
+            }
+        }
+
+        return err;
     }
 
     int AppRunner::run(const std::vector<std::string> &apps) const

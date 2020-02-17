@@ -3,6 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Range.hpp"
+#include "utopia_RangeDevice.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_Vector.hpp"
 #include "utopia_Tensor.hpp"
@@ -520,6 +521,16 @@ namespace utopia {
             SizeType r_begin, r_end;
             VecGetOwnershipRange(implementation(), &r_begin, &r_end);
             return Range(r_begin, r_end);
+        }
+
+        inline RangeDevice<PetscVector> range_device() const
+        {
+            SizeType r_begin, r_end;
+            VecGetOwnershipRange(implementation(), &r_begin, &r_end);
+            return RangeDevice<PetscVector>(
+                        r_begin,
+                        r_end
+                    );
         }
 
         inline MPI_Comm communicator() const {

@@ -25,14 +25,15 @@
 
 namespace utopia
 {
+    
     /**
      * @brief      The class for RMTR in infinity norm...
      *
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_inf final:   public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MultilevelVariableBoundSolverInterface<Vector>
+    template<class Matrix, class Vector, class MLConstraints,  MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
+    class RMTR_inf final:   public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MLConstraints
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -49,8 +50,8 @@ namespace utopia
         typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
 
 
-        typedef utopia::MultilevelVariableBoundSolverInterface<Vector>  MLConstraints;
-        using utopia::MultilevelVariableBoundSolverInterface<Vector>::check_feasibility; 
+        // typedef MultilevelConstrInterface  MLConstraints;
+        using MLConstraints::check_feasibility; 
 
     public:
 
@@ -61,7 +62,8 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level.
         */
-        RMTR_inf(   const SizeType & n_levels): RMTR(n_levels)//,
+        RMTR_inf(   const SizeType & n_levels): RMTR(n_levels),
+                                                MLConstraints(this->transfer())
                                                 //has_box_constraints_(false) // not optional parameter
         {
 
@@ -135,9 +137,7 @@ namespace utopia
             return true;
         }
 
-
-
-    protected:
+    private:
         void init_memory() override
         {
             RMTR::init_memory();
@@ -151,9 +151,8 @@ namespace utopia
                 _tr_subproblems[l]->init_memory(dofs[l]); 
             }               
 
-            // precompute norms of prolongation operators needed for projections of constraints...
             for(auto l = 0; l < fine_level; l++){
-                this->constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm();
+                this->transfer(l).init_memory(); 
             }
         }
 
@@ -194,7 +193,10 @@ namespace utopia
             RMTR::init_level(level);
 
             const SizeType finer_level = level+1;
-            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level], this->transfer(level)); 
+            MLConstraints::init_level(level, this->memory_.x[finer_level], this->memory_.x[level], this->memory_.delta[finer_level]); 
+
+            // let's see ... 
+            // this->memory_.delta[level]  = this->delta0(); 
 
         }
 
@@ -222,26 +224,12 @@ namespace utopia
 
         bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
-            // Vector Pc;
-
-            // Vector x_g = this->memory_.x[level] - g_restricted;
-            // MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
-            // Pc -= this->memory_.x[level];
-            // Scalar Rg_norm =  norm2(Pc);
-
+            // if we merge calls, reduction can be done together
             Scalar Rg_norm = MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_restricted); 
-
-
-            // x_g = this->memory_.x[level] - g_coarse;
-            // MLConstraints::get_projection(x_g, this->constraints_memory_.active_lower[level], this->constraints_memory_.active_upper[level], Pc);
-            // Pc -= this->memory_.x[level];
-            // Scalar  g_norm =  norm2(Pc);
-
             Scalar g_norm = MLConstraints::criticality_measure_inf(level, this->memory_.x[level], g_coarse); 
 
             return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
         }
-
 
 
         // measuring wrt to feasible set...
@@ -251,30 +239,37 @@ namespace utopia
         }
 
 
-
         bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
             Scalar radius = this->memory_.delta[level];
 
             // first we need to prepare box of intersection of level constraints with tr. constraints
-            Vector l = this->constraints_memory_.active_lower[level] - this->memory_.x[level];
-            each_transform(l, l, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
-                return (val >= -1*radius)  ? val : -1 * radius;  }
-            );
+            std::shared_ptr<Vector> & lb = _tr_subproblems[level]->lower_bound(); 
+            std::shared_ptr<Vector> & ub = _tr_subproblems[level]->upper_bound(); 
 
+            const Vector & active_lower = this->active_lower(level); 
+            const Vector & active_upper = this->active_upper(level); 
 
-            Vector u =  this->constraints_memory_.active_upper[level] - this->memory_.x[level];
-            each_transform(u, u, [radius](const SizeType /*i*/, const Scalar val) -> Scalar {
-              return (val <= radius)  ? val : radius; }
-            );
+            // disp(active_lower, "active_lower"); 
+            // disp(active_upper, "active_upper"); 
 
+            *lb = active_lower - this->memory_.x[level];
+            *ub = active_upper - this->memory_.x[level];
+    
+            {
+                parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                    return (xi >= -1.0*radius)  ? xi : -1.0*radius;
+                });
 
-            // generating constraints to go for QP solve
-            auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
+                parallel_transform(*ub, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar{
+                    return (xi <= radius)  ? xi : radius;
+                });
+            }            
 
-
-            // setting should be really parameters from outside ...
-            this->_tr_subproblems[level]->atol(1e-14);
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
+            if(_tr_subproblems[level]->atol() > atol_level){
+                _tr_subproblems[level]->atol(atol_level);  
+            }
 
             if(flg){
                 this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it());
@@ -283,16 +278,20 @@ namespace utopia
                 this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
             }
 
+            this->ml_derivs_.g[level] *= - 1.0; 
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::qp_solve1");
+            this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], this->ml_derivs_.g[level], this->memory_.s[level]);
+            UTOPIA_NO_ALLOC_END();
+            this->ml_derivs_.g[level] *= - 1.0; 
 
-            _tr_subproblems[level]->set_box_constraints(box);
-            this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], -1.0 * this->ml_derivs_.g[level], this->memory_.s[level]);
 
-
-
-            // ----- just for debugging pourposes ----------------
-            Vector s_old = this->memory_.s[level]; 
-            MLConstraints::get_projection(s_old, l, u, this->memory_.s[level]); 
-
+            if(has_nan_or_inf(this->memory_.s[level])){
+                this->memory_.s[level].set(0.0); 
+            }
+            else{
+                // ----- just for debugging pourposes, to be commented out in the future... 
+                MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]); 
+            }
 
             return true;
         }

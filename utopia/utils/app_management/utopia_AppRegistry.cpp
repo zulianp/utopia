@@ -49,9 +49,9 @@ namespace utopia {
     int AppRegistry::run(const std::string &app_name)
     {
         int ret = apps_.apply(app_name);
-        if(ret == -1) {
-            std::cerr << "[Error] no app with name " << app_name << std::endl;
-        }
+        // if(ret == -1) {
+        //     std::cerr << "[Error] no app with name " << app_name << std::endl;
+        // }
 
         return ret;
     }

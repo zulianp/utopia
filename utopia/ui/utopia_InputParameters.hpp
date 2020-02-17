@@ -14,6 +14,8 @@ namespace utopia {
 
     class InputParameters final : public Input {
     public:
+        void init(const int argc, char *argv[]);
+
         inline bool empty() const
         {
             return nodes_.empty() && values_.empty();
@@ -39,11 +41,6 @@ namespace utopia {
             aux_get(key, val);
         }
 
-        // inline void get(const std::string &key, SizeType &val) override
-        // {
-        // 	aux_get(key, val);
-        // }
-
         inline void get(const std::string &key, std::string &val) override
         {
             aux_get(key, val);
@@ -53,11 +50,6 @@ namespace utopia {
         {
             aux_get(key, val);
         }
-
-        // inline void get(const std::string &key, long long &val) override
-        // {
-        //     aux_get(key, val);
-        // }
 
         inline void get(const std::string &key, unsigned long &val) override
         {
@@ -75,6 +67,10 @@ namespace utopia {
 
             if(node_ptr) {
                 val.read(*node_ptr);
+            } else {
+                if(aux_root_) {
+                    aux_root_->get(key, val);
+                }
             }
         }
 
@@ -85,7 +81,9 @@ namespace utopia {
             if(node_ptr) {
                 lambda(*node_ptr);
             } else {
-                std::cerr << "[Warning] key: " << key << " not found" << std::endl;
+                if(aux_root_) {
+                    aux_root_->get(key, lambda);
+                }
             }
         }
 
@@ -93,6 +91,10 @@ namespace utopia {
         {
             for(auto n : nodes_) {
                 lambda(*n.second);
+            }
+
+            if(aux_root_) {
+                aux_root_->get_all(lambda);
             }
         }
 
@@ -107,11 +109,6 @@ namespace utopia {
         }
 
         inline bool good() const override { return true; }
-
-        // void get(Configurable &val) override
-        // {
-        // 	val.get(*this);
-        // }
 
         std::shared_ptr<Input> node(const std::string &key) const
         {
@@ -140,11 +137,6 @@ namespace utopia {
             aux_set(key, val);
         }
 
-        // inline void set(const std::string &key, const SizeType &val)
-        // {
-        // 	aux_set(key, val);
-        // }
-
         inline void set(const std::string &key, const char* val)
         {
             aux_set(key, std::string(val));
@@ -165,10 +157,10 @@ namespace utopia {
             aux_describe(os, 0);
         }
 
-
     private:
         std::map<std::string, std::unique_ptr<IConvertible>> values_;
         std::map<std::string, std::shared_ptr<Input>> nodes_;
+        std::unique_ptr<Input> aux_root_;
 
         template<typename Out>
         void aux_get(const std::string &key, Out &out) const {
@@ -176,7 +168,9 @@ namespace utopia {
 
             if(it != values_.end()) {
                 it->second->get(out);
-            } //else do nothing
+            } else if(aux_root_) {
+                aux_root_->get(key, out);
+            }
         }
 
         template<typename In>
@@ -194,9 +188,9 @@ namespace utopia {
                 os << indent << kv.first << " : " << str << "\n";
             }
 
-            // for(const auto &n : nodes_) {
-            // 	n.second->aux_describe(os, level + 1);
-            // }
+            for(const auto &n : nodes_) {
+            	os << indent << n.first << " : {node}\n";
+            }
 
         }
 

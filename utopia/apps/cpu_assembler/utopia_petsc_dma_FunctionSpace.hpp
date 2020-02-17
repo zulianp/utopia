@@ -4,6 +4,7 @@
 #include "utopia_PetscDM.hpp"
 #include "utopia_MultiVariateElement.hpp"
 #include "utopia_AssemblyView.hpp"
+#include "utopia_Input.hpp"
 
 namespace utopia {
 
@@ -267,7 +268,7 @@ namespace utopia {
     };
 
     template<class Elem_, int NComponents_>
-    class FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_> {
+    class FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_> : public Configurable {
     public:
         static const int Dim = Elem_::Dim;
         static const std::size_t UDim = Dim;
@@ -293,6 +294,7 @@ namespace utopia {
         template<int NSubVars>
         using Subspace = FunctionSpace<PetscDM<Elem_::Dim>, NSubVars, Elem_>;
 
+        void read(Input &in) override;
         bool write(const Path &path, const PetscVector &x) const;
 
         FunctionSpace(const std::shared_ptr<Mesh> &mesh, const SizeType &subspace_id = 0)
@@ -561,6 +563,11 @@ namespace utopia {
             for(const auto &bc : dirichlet_bcs_) {
                 bc->apply_zero(vec);
             }
+        }
+
+        inline bool empty() const
+        {
+            return !static_cast<bool>(mesh_);
         }
 
     private:

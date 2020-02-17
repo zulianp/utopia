@@ -20,6 +20,7 @@ option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" OFF)
 option(ENABLE_MARS "Tries to use mars backend" OFF)
+option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -156,7 +157,6 @@ list(APPEND UTOPIA_FE_MODULES
     visualization
     backend/libmesh
     # backend/homemade
-    backend/intrepid2
     backend/mars
     intersection
     contact
@@ -166,6 +166,10 @@ list(APPEND UTOPIA_FE_MODULES
     rapidxml
     base
  )
+
+if(ENABLE_INTREPID2)
+    list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
+endif()
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 include_directories(BEFORE ${CMAKE_BINARY_DIR})

@@ -512,7 +512,7 @@ namespace utopia {
          void transform(const Pow &p) override;
          void transform(const Reciprocal<Scalar> &f) override;
 
-         
+
          void transform(std::function<Scalar(const Scalar &)> f);
 
 
@@ -1017,12 +1017,15 @@ namespace utopia {
           template<class Op>
           void op_transform(const Op &op);
 
-        
+
           template<class F>
           void transform_values_seqaij(F f);
 
           template<class F>
           void transform_ijv_seqaij(F f);
+
+          template<class F>
+          void transform_values_mpiaij(F op);
 
           //wait for petsc version
           // template<class F>

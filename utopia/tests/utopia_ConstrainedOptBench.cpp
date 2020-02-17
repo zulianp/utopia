@@ -22,7 +22,7 @@ namespace utopia
 			return "TR: Bound constrained optimization benchmark";
 		}
 
-		ConstrainedOptimizationBenchmark(): verbose_(true)
+		ConstrainedOptimizationBenchmark(): verbose_(false)
 		{
 			test_functions_.resize(18); 
 			test_functions_[0] = std::make_shared<Powell03Constrained<Matrix, Vector> >();
