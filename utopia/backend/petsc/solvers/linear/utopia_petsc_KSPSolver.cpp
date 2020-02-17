@@ -13,11 +13,11 @@ namespace utopia {
      */
     PetscErrorCode UtopiaPCApplyShell(PC pc, Vec x, Vec y)
     {
-        Preconditioner<DVectord> *shell;
+        Preconditioner<PetscVector> *shell;
         PCShellGetContext(pc, (void**)&shell);
 
         // TODO: ref would be nicer here
-        DVectord x_u, y_u;
+        PetscVector x_u, y_u;
         convert(x, x_u);
         convert(y, y_u);
 
@@ -131,6 +131,7 @@ namespace utopia {
     }
 
     //explicit
-    template class KSPSolver<DSMatrixd, DVectord, PETSC>;
-    template class KSPSolver<DMatrixd, DVectord, PETSC>;
+    template class KSPSolver<PetscMatrix, PetscVector, PETSC>;
+    //FIXME
+    // template class KSPSolver<PetscMatrix, PetscVector, PETSC>;
 }

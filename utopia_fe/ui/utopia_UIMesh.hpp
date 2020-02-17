@@ -6,19 +6,83 @@
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_modification.h"
+#include "utopia_UIMorph.hpp"
+#include "utopia_MeshParamSmoother.hpp"
+#include "utopia_SideSetAssignment.hpp"
 
 #include <memory>
 
 namespace utopia {
+
+    void refine_at_intersection(
+        const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
+        const libMesh::Order &elem_order,
+        const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
+        const int refinement_loops = 1,
+        const bool use_interpolation = false);
+
+
+    inline void refine_0(libMesh::UnstructuredMesh &mesh)
+    {
+        libMesh::MeshRefinement mesh_refinement(mesh);
+        auto e_it = elements_begin(mesh);
+
+        if(e_it != elements_end(mesh)) {
+            (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+        }
+
+        mesh_refinement.make_flags_parallel_consistent();
+        mesh_refinement.refine_elements();
+        mesh_refinement.test_level_one(true);
+
+        mesh.prepare_for_use();
+    }
+
+    inline void random_refine(
+        libMesh::UnstructuredMesh &mesh,
+        const int refinement_loops
+        )
+    {
+
+        libMesh::MeshRefinement mesh_refinement(mesh);
+
+        for(int i = 0; i < refinement_loops; ++i) {
+            mesh_refinement.clean_refinement_flags();
+
+            int idx = 0;
+            for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it, ++idx) {
+                auto val = idx % 2 == 1;
+                if(val) {
+                    (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+                }
+            }
+
+            mesh_refinement.make_flags_parallel_consistent();
+            mesh_refinement.refine_elements();
+            mesh_refinement.test_level_one(true);
+        }
+
+        // mesh_refinement.clean_refinement_flags()
+
+    }
+
     template<class Mesh>
     class UIMesh {};// final : public Configurable { };
 
     template<>
     class UIMesh<libMesh::DistributedMesh> : public Configurable {
     public:
-        template<class... Args>
-        UIMesh(Args &&...args)
-        : mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
+        // template<class... Args>
+        // UIMesh(Args &&...args)
+        // : mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
+        // {}
+
+        UIMesh(libMesh::Parallel::Communicator &comm)
+        : mesh_(std::make_shared<libMesh::DistributedMesh>(comm)), empty_(true)
+        {}
+
+        UIMesh(const std::shared_ptr<libMesh::DistributedMesh> &mesh)
+        : mesh_(mesh), empty_(false)
         {}
 
         void read(Input &is) override {
@@ -39,11 +103,14 @@ namespace utopia {
             double scale = 1.;
             double shift[3] = {0. , 0., 0.};
 
+            bool full_order = true;
+
             std::string elem_type = "quad";
 
             is.get("type", mesh_type);
             is.get("elem-type", elem_type);
             is.get("order", order);
+            is.get("full-order", full_order);
             is.get("path", path);
 
             is.get("refinements", refinements);
@@ -103,8 +170,8 @@ namespace utopia {
                     radius,
                     sphere_refine,//const unsigned int nr = 2,
                     get_type(elem_type, order, 3)
-                    //const unsigned int 	n_smooth = 2,
-                    // const bool 	flat = true
+                    //const unsigned int    n_smooth = 2,
+                    // const bool   flat = true
                 );
 
             } else if(mesh_type == "aabb") {
@@ -120,7 +187,7 @@ namespace utopia {
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
                         bb.min()(2) - span[2], bb.max()(2) + span[2],
-                        get_type(elem_type, order, 3)
+                        get_type(elem_type, order, 3, full_order)
                         );
 
                 } else {
@@ -129,15 +196,25 @@ namespace utopia {
                         n[0], n[1],
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
-                        get_type(elem_type, order, 2)
+                        get_type(elem_type, order, 2, full_order)
                         );
                 }
             }
+
+            int block_override = -1;
+            is.get("block-override", block_override);
+
+            override_block(block_override, *mesh_);
 
             //build_extrusion (UnstructuredMesh &mesh, const MeshBase &cross_section, const unsigned int nz, RealVectorValue extrusion_vector, QueryElemSubdomainIDBase *elem_subdomain=libmesh_nullptr)
 
             scale_mesh(scale, *mesh_);
             shift_mesh(shift, *mesh_);
+
+
+            SideSetAssignment<libMesh::UnstructuredMesh> ssa;
+            is.get("side-set-assignement", ssa);
+            ssa.apply(*mesh_);
 
             refine(refinements, *mesh_);
 
@@ -149,8 +226,82 @@ namespace utopia {
             }
 
             if(mesh_type == "file" && order == 2) {
-                mesh_->all_second_order();
+                mesh_->all_second_order(full_order);
             }
+
+            {
+                //single morph
+                UIMorph<libMesh::DistributedMesh> morph;
+                is.get("morph", morph);
+
+                if(morph.is_valid()) {
+                    morph.apply(*mesh_);
+                }
+            }
+
+            // is.get("improve-smoothness", [this](Input &is) {
+            //     MeshParamSmoother smoother;
+            //     smoother.read(is);
+            //     smoother.apply(*mesh_);
+            // });
+
+            //multi morph
+            is.get("morphs", [this](Input &is) {
+                is.get_all([this](Input &is) {
+
+                    UIMorph<libMesh::DistributedMesh> morph;
+                    morph.read(is);
+
+                    if(morph.is_valid()) {
+                        morph.apply(*mesh_);
+                    }
+
+                });
+            });
+
+
+            bool must_refine_0 = false;
+            is.get("refine-0", must_refine_0);
+
+            bool must_random_refine = false;
+            is.get("random-refine", must_random_refine);
+
+            int n_random_refinements = 1;
+            is.get("random-refinements", n_random_refinements);
+
+            if(must_refine_0) {
+                refine_0(*mesh_);
+            }
+
+            if(must_random_refine) {
+                random_refine(*mesh_, n_random_refinements);
+            }
+
+            bool must_refine_at_intersection = false;
+            is.get("refine-at-intersection", must_refine_at_intersection);
+
+            if(must_refine_at_intersection) {
+                std::string intersecting_mesh_path;
+                is.get("intersecting-mesh-path", intersecting_mesh_path);
+
+                int n_refinements_at_intersection = 1;
+                is.get("n-refinements-at-intersection", n_refinements_at_intersection);
+
+                auto i_mesh = std::make_shared<libMesh::DistributedMesh>(mesh_->comm());
+
+                i_mesh->read(intersecting_mesh_path);
+
+
+                refine_at_intersection(
+                        i_mesh,
+                        libMesh::Order(1),
+                        mesh_,
+                        n_refinements_at_intersection,
+                        false
+                );
+
+            }
+
         }
 
         inline libMesh::DistributedMesh &mesh()
@@ -178,7 +329,8 @@ namespace utopia {
         libMesh::ElemType get_type(
             const std::string &elem_type,
             const int order,
-            const int dim) const
+            const int dim,
+            const bool full_order = true) const
         {
             if(dim == 3) {
                 libMesh::ElemType type = libMesh::HEX8;
@@ -192,7 +344,13 @@ namespace utopia {
 
                     if(elem_type == "tet") {
                         type = libMesh::TET10;
+                    } else if(full_order) {
+                        type = libMesh::HEX27;
                     }
+                }
+
+                if(order == 3) {
+                    type = libMesh::HEX27;
                 }
 
                 if(elem_type == "prism") {
@@ -228,12 +386,21 @@ namespace utopia {
                     }
                 }
 
+                if(order == 3) {
+                    type = libMesh::QUAD9;
+
+                     if(elem_type == "tri") {
+                        assert(false);
+                        // type = libMesh::TRI6;
+                    }
+                }
+
                 return type;
             } else if(dim == 1) {
                 libMesh::ElemType type = libMesh::EDGE2;
 
                 if(order == 2) {
-                    type = libMesh::EDGE4;
+                    type = libMesh::EDGE3;
                 }
 
                 return type;
@@ -263,6 +430,17 @@ namespace utopia {
                 }
             }
         }
+
+
+        static void override_block(const int block, libMesh::MeshBase &mesh)
+        {
+            if(block <= 0) return;
+
+            for(auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
+                (*it)->subdomain_id() = block;
+            }
+        }
+
 
         static void shift_mesh(const double t[3], libMesh::MeshBase &mesh)
         {

@@ -77,6 +77,12 @@ namespace utopia {
             return _data.size();
         }
 
+        inline SizeType dims() const
+        {
+            return _data.size();
+        }
+
+
         bool empty() const
         {
             return _data.empty();
@@ -116,6 +122,13 @@ namespace utopia {
             }
 
             return os;
+        }
+
+        inline operator SizeType() const
+        {
+            assert(!_data.empty());
+            assert(_data.size() == 1 || _data[1] == 1);
+            return _data[0];
         }
 
     private:

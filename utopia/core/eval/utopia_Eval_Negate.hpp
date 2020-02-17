@@ -4,26 +4,20 @@
 #include "utopia_Eval_Unary.hpp"
 
 namespace utopia {
-    template<class Expr, class Traits, int Backend>
-    class Eval<Negate<Expr>, Traits, Backend> {
+    template<class InnerExpr, class Traits, int Backend>
+    class Eval<Negate<InnerExpr>, Traits, Backend> {
     public:
-          typedef utopia::Unary<Expr, Minus> DelegateT;
-        typedef typename TypeAndFill<Traits, DelegateT>::Type Result;
+        using Expr = utopia::Negate<InnerExpr>;
+        using Result = EXPR_TYPE(Traits, Expr);
 
-        inline static Result apply(const Negate<Expr> &expr)
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Negate<InnerExpr> &expr, Result &result)
         {
-            Result result;
-
             UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).apply_unary(
-                result,
-                expr.operation(),
-                Eval<DelegateT, Traits>::apply(expr.expr())
-                );
-
+            result = Eval<InnerExpr, Traits>::apply(expr.expr());
+            result.transform(Minus());
             UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 }

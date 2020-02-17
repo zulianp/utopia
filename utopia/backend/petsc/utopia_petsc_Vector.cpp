@@ -1,10 +1,65 @@
-#include "utopia_petsc_Vector.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
 #include "utopia_petsc_quirks.hpp"
+
 
 #include <set>
 #include <cstring>
+#include <map>
 
 namespace utopia {
+
+ 
+
+    void PetscVector::transform(const Sqrt &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Pow2 &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Log &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Exp &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Cos &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Sin &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Abs &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Minus &op)
+    {
+        op_transform(op);
+    }
+
+
+    void PetscVector::transform(const Pow &op)
+    {
+        op_transform(op);
+    }
+
+    void PetscVector::transform(const Reciprocal<Scalar> &op)
+    {
+        op_transform(op);
+    }
 
     bool PetscVector::has_type(VecType type) const
     {
@@ -45,11 +100,13 @@ namespace utopia {
         const std::string type_copy = type;
 
         if(is_null()) {
+            UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
             VecCreate(comm, &vec_);
         } else {
             if(comm != PetscObjectComm((PetscObject)vec_) || has_type(type)) {
                 destroy();
 
+                UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
                 check_error( VecCreate(comm, &vec_) );
             } else {
                 PetscInt old_n_global;
@@ -91,6 +148,7 @@ namespace utopia {
     {
         assert(vec_ == nullptr);
 
+        UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
         check_error( VecCreate(comm, &vec_) );
         check_error( VecSetFromOptions(vec_) );
         check_error( VecSetType(vec_, type) );
@@ -112,6 +170,7 @@ namespace utopia {
     {
         if(use_vec_nest_type) {
             destroy();
+            UTOPIA_REPORT_ALLOC("PetscVector::nest");
             VecCreateNest(comm, nb, is, x, &vec_);
         } else {
 
@@ -153,6 +212,36 @@ namespace utopia {
         }
     }
 
+
+    void PetscVector::copy_data_from(Vec vec)
+    {
+        MPI_Comm comm = PetscObjectComm((PetscObject) vec);
+
+        PetscInt n_global;
+        check_error( VecGetSize(vec, &n_global) );
+
+        PetscInt n_local;
+        check_error( VecGetLocalSize(vec, &n_local) );
+
+        this->repurpose(
+            comm,
+            type_override(),
+            n_local,
+            n_global
+        );
+
+        VecCopy(vec, raw_type());
+
+        // assert(vec_ != nullptr);
+        set_initialized(true);
+        // assert(is_consistent());
+    }
+
+    void PetscVector::copy_data_to(Vec vec) const
+    {
+        VecCopy(raw_type(), vec);
+    }    
+
     void PetscVector::ghosted(MPI_Comm comm,
         PetscInt local_size,
         PetscInt global_size,
@@ -163,6 +252,7 @@ namespace utopia {
 
         destroy();
 
+        UTOPIA_REPORT_ALLOC("PetscVector::ghosted");
         check_error(
             VecCreateGhost(
                 comm,
@@ -191,7 +281,7 @@ namespace utopia {
         return std::search(begin(str), end(str), begin(seq), end(seq)) == str.end();
     }
 
-    bool PetscVector::is_nan_or_inf() const
+    bool PetscVector::has_nan_or_inf() const
     {
         PetscInt m;
         const PetscScalar *x;
@@ -233,7 +323,7 @@ namespace utopia {
     }
 
     void PetscVector::select(
-        const std::vector<PetscInt> &index,
+        const PetscIndexSet &index,
         PetscVector &result) const
     {
         MPI_Comm comm = communicator();
@@ -257,12 +347,23 @@ namespace utopia {
     {
         destroy();
 
+        UTOPIA_REPORT_ALLOC("PetscVector::copy_from");
         VecDuplicate(vec, &implementation());
         VecCopy(vec, implementation());
 
         assert(vec_ != nullptr);
         set_initialized(true);
         assert(is_consistent());
+    }
+
+    void PetscVector::convert_from(const Vec &vec)
+    {
+        copy_from(vec);
+    }
+
+    void PetscVector::convert_to(Vec &vec) const
+    {
+        check_error( VecCopy(raw_type(), vec) );
     }
 
     bool PetscVector::read(MPI_Comm comm, const std::string &path)
@@ -273,6 +374,7 @@ namespace utopia {
 
         bool err = check_error( PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd) );
 
+        UTOPIA_REPORT_ALLOC("PetscVector::read");
         err = err && check_error( VecCreate(comm, &implementation()) );
         err = err && check_error( VecSetType(implementation(), type_override()) );
         err = err && check_error( VecLoad(implementation(), fd));
@@ -283,7 +385,17 @@ namespace utopia {
         PetscViewerDestroy(&fd);
         return err;
     }
+
     bool PetscVector::write(const std::string &path) const
+    {
+        if(is_matlab_file(path)) {
+            return write_matlab(path);
+        } else {
+            return write_binary(path);
+        }
+    }
+    
+    bool PetscVector::write_binary(const std::string &path) const
     {
         PetscViewer fd;
         bool err = check_error( PetscViewerBinaryOpen(communicator(), path.c_str(), FILE_MODE_WRITE, &fd) );
@@ -429,5 +541,131 @@ namespace utopia {
                 break;
             }
         }
+    }
+
+    void PetscVector::read_and_write_lock(WriteMode mode) { write_lock(mode); }
+    void PetscVector::read_and_write_unlock(WriteMode mode) { write_unlock(mode); }
+
+    bool PetscVector::equals(const PetscVector &other, const Scalar &tol) const
+    {
+        if(this->is_alias(other)) return true;
+        
+        PetscVector diff = other;
+        diff.axpy(-1.0, *this);
+        return diff.norm_infty() < tol;
+    }
+
+    void PetscVector::e_mul(const PetscVector &other)
+    {
+         assert(is_consistent());
+         assert(other.is_consistent());
+         check_error( VecPointwiseMult( implementation(), implementation(), other.implementation()) );
+    }
+
+    void PetscVector::e_div(const PetscVector &other)
+    {
+        assert(is_consistent());
+        assert(other.is_consistent());
+        check_error( VecPointwiseDivide(raw_type(), raw_type(), other.raw_type() ) );
+    }
+   
+    void PetscVector::e_min(const PetscVector &other)
+    {
+        check_error( VecPointwiseMin( raw_type(), raw_type(), other.raw_type() ) );
+    }
+
+    void PetscVector::e_max(const PetscVector &other)
+    {
+        check_error( VecPointwiseMax( raw_type(), raw_type(), other.raw_type() ) );
+    }
+
+    void PetscVector::e_mul(const Scalar &other)
+    {
+        element_wise_generic(other, Multiplies(), *this);
+    }
+
+    void PetscVector::e_div(const Scalar &other)
+    {
+        element_wise_generic(other, Divides(), *this);
+    }
+
+    void PetscVector::e_min(const Scalar &other)
+    {
+        element_wise_generic(other, Min(), *this);
+    }
+
+    void PetscVector::e_max(const Scalar &other)
+    {
+        element_wise_generic(other, Max(), *this);
+    }
+
+    ///<Scalar>SWAP - swap x and y
+    void PetscVector::swap(PetscVector &x) {
+         using std::swap;
+         swap(comm_, x.comm_);
+         swap(vec_, x.vec_);
+         swap(initialized_, x.initialized_);
+         swap(ghost_values_, x.ghost_values_);
+         swap(immutable_, x.immutable_);
+    }
+
+    ///<Scalar>SCAL - x = a*x
+    void PetscVector::scale(const Scalar &a)
+    {
+         check_error( VecScale(implementation(), a) );
+    }
+
+    ///<Scalar>COPY - copy other into this
+     void PetscVector::copy(const PetscVector &other)
+    {
+         if(this == &other) return;
+
+         assert(!immutable_);
+
+         if(is_compatible(other) && !other.has_ghosts()) {
+
+            // assert(same_type(other) && "TYPE " );
+            // assert(this->has_ghosts() && "GHOST" );                
+
+             assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
+             assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
+             PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
+             initialized_ = other.initialized_;
+             immutable_ = other.immutable_;
+             return;
+         }
+
+         destroy();
+
+         if(other.vec_) {
+             UTOPIA_REPORT_ALLOC("PetscVector::copy");
+             PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
+             PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
+             ghost_values_ = other.ghost_values_;
+
+             initialized_ = other.initialized_;
+             immutable_ = other.immutable_;
+         } else {
+             initialized_ = false;
+         }
+
+         return;
+    }
+
+    ///<Scalar>AXPY - y = a*x + y
+    void PetscVector::axpy(const Scalar &alpha, const PetscVector &x)
+    {
+         assert(is_consistent());
+         assert(x.is_consistent());
+
+         check_error( VecAXPY(implementation(), alpha, x.implementation()) );
+    }
+
+    PetscVector::SizeType PetscVector::amax() const
+    {
+        SizeType idx = 0;
+        Scalar val = 0.0;
+        VecMax(raw_type(), &idx, &val);
+        return idx;
     }
 }

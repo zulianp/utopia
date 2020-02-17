@@ -1,5 +1,6 @@
 #include "utopia_petsc_ConvergedReason.hpp"
 #include "utopia_Config.hpp"
+#include "utopia_petsc_Base.hpp"
 #include <petscksp.h>
 
 namespace utopia {

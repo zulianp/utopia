@@ -5,6 +5,7 @@
 #include "utopia_Recorder.hpp"
 #include "utopia_MatrixTransfer.hpp"
 #include "utopia_MultiLevelMask.hpp"
+#include "utopia_Path.hpp"
 
 #include <iostream>
 
@@ -67,7 +68,7 @@ namespace utopia
             if(this->n_levels() <= 0){
                 this->n_levels(interpolation_operators.size() + 1);
             }
-            else if(this->n_levels() != interpolation_operators.size() + 1){
+            else if(this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1){
                 utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
             }
 
@@ -101,7 +102,6 @@ namespace utopia
 
         static void fix_semidefinite_operator(Matrix &A)
         {
-
             Vector d;
 
             Size s = local_size(A);
@@ -110,8 +110,10 @@ namespace utopia
             {
                 Write<Vector> w_d(d);
 
-                each_read(A,[&d](const SizeType i, const SizeType, const double) {
-                    d.set(i, 0.);
+                each_read(A,[&d](const SizeType i, const SizeType, const Scalar &val) {
+                    if(val != 0.0) {
+                        d.set(i, 0.);
+                    }
                 });
             }
 
@@ -162,6 +164,20 @@ namespace utopia
         virtual void update_transfer(const SizeType level, const std::shared_ptr<Transfer> &t)
         {
             this->transfers_[level] = t;
+        }
+
+
+        virtual bool write(const Path &path) const
+        {
+            int l = 0;
+            for(auto &level : levels_) {
+                Path file_name = path / ("mat_l" + std::to_string(l++) + ".m");
+                if(!level.write(file_name)) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
 

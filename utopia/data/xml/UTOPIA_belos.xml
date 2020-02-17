@@ -1,0 +1,145 @@
+<ParameterList name="test_params">
+
+    <Parameter name="Direct Solver" type="bool" value="false" />
+    <Parameter name="Ifpack2 Preconditioner" type="string" value="CHEBYSHEV"/> <!-- https://trilinos.org/wordpress/wp-content/uploads/2014/08/ifpack2guide.pdf -->
+    <Parameter name="Direct Preconditioner" type="bool" value="true" />
+    <Parameter name="Solver Type" type="string" value="GMRES" />
+
+  <ParameterList name="Amesos2">
+      <ParameterList name="KLU2">
+          <Parameter name="Trans"         type="int" value="0" />
+          <Parameter name="IsContiguous"  type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="Umfpack" />
+
+      <ParameterList name="LAPACK">
+          <Parameter name="Transpose"     type="bool" value="false" />
+          <Parameter name="Equilibrate"   type="bool" value="true" />
+          <Parameter name="IsContiguous"  type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="Cholmod">
+          <Parameter name="Trans"        type="int" value="0" />
+          <Parameter name="IterRefine"   type="int" value="0" />
+          <Parameter name="ColPerm"      type="int" value="0" />
+          <Parameter name="IsContiguous" type="bool" value="false" />
+          <Parameter name="dbound"       type="double" value="0." />
+          <Parameter name="PreferUpper"  type="bool" value="true" />
+          <Parameter name="print"        type="int" value="3" />
+          <Parameter name="nmethods"     type="int" value="0" />
+      </ParameterList>
+
+      <ParameterList name="MUMPS">
+            <Parameter name="ICNTL(1)"     type="int" value="-1" />
+            <Parameter name="ICNTL(2)"     type="int" value="-1" />
+            <Parameter name="ICNTL(3)"     type="int" value="1" />
+            <Parameter name="ICNTL(4)"     type="int" value="0" />
+            <Parameter name="ICNTL(6)"     type="int" value="7" />
+            <Parameter name="ICNTL(9)"     type="int" value="0" />
+            <Parameter name="ICNTL(11)"    type="int" value="0" />
+            <Parameter name="IsContiguous" type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="SuperLU">
+          <Parameter name="ILU_Flag"        type="bool" value="false" />
+          <Parameter name="Trans"           type="string" value="TRANS" />
+          <Parameter name="IterRefine"      type="string" value="NOREFINE" />
+          <Parameter name="ColPerm"         type="string" value="NATURAL" />
+          <Parameter name="DiagPivotThresh" type="double" value="1." />
+          <Parameter name="Equil"           type="bool" value="true" />
+          <Parameter name="SymmetricMode"   type="bool" value="false" />
+          <Parameter name="RowPerm"         type="string" value="LargeDiag" />
+          <Parameter name="ILU_Norm"        type="string" value="INF_NORM" />
+          <Parameter name="ILU_MILU "       type="string" value="SILU" />
+          <Parameter name="IsContiguous"    type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="SuperLU_MT">
+          <Parameter name="nprocs"            type="int" value="1" />
+          <Parameter name="trans"             type="string" value="TRANS" />
+          <Parameter name="panel_size"        type="int" value="1" />
+          <Parameter name="relax"             type="int" value="2" />
+          <Parameter name="Equil"             type="bool" value="true" />
+          <Parameter name="SymmetricMode"     type="bool" value="false" />
+          <Parameter name="PrintStat"         type="bool" value="false" />
+          <Parameter name="diag_pivot_thresh" type="double" value="1." />
+          <Parameter name="ColPerm"           type="string" value="NATURAL" />
+          <Parameter name="IsContiguous"      type="bool" value="false" />
+      </ParameterList>
+
+      <ParameterList name="SuperLU_DIST">
+          <Parameter name="npcol"             type="int" value="1" />
+          <Parameter name="nprow"             type="int" value="1" />
+          <Parameter name="ColPerm"           type="string" value="PARMETIS" />
+          <Parameter name="ReplaceTinyPivot"  type="bool" value="true" />
+          <Parameter name="IsContiguous"      type="bool" value="false" />
+      </ParameterList>
+
+  </ParameterList>
+
+
+  <ParameterList name="CG">
+    <!-- See e.g. https://trilinos.org/docs/dev/packages/belos/doc/html/classBelos_1_1BlockCGSolMgr_3_01ScalarType_00_01MV_00_01OP_00_01true_01_4.html#a1611b785191230bd2456050a5459ea53
+         for a list of possible Belos parameters. Note that every solver type has different parameters -->
+    <Parameter name="Block Size" type="int" value="1"/>
+<!--
+    <Parameter name="Orthogonalization" type="string" value="ICGS"/>
+-->
+    <Parameter name="Verbosity" type="int" value="1"/>
+    <Parameter name="Maximum Iterations" type="int" value="800"/>
+    <Parameter name="Output Style" type="int" value="1"/>
+    <Parameter name="Convergence Tolerance" type="double" value="1e-12" />
+  </ParameterList>
+
+<!-- Ifpack2 Preconditioner parameters -->
+  <ParameterList name="ILUT">
+    <Parameter name="fact: ilut level-of-fill" type="double" value="2.0"/>
+    <Parameter name="fact: drop tolerance" type="double" value="0.0"/>
+  </ParameterList>
+  <ParameterList name="CHEBYSHEV">
+    <Parameter name="chebyshev: degree" type="int" value="3" />
+  </ParameterList>
+
+<!-- MueLu is used when "Direct Preconditioner" is set to false -->
+  <ParameterList name="MueLu">
+<!-- https://trilinos.org/wordpress/wp-content/uploads/2014/10/mueluguide-2018-Mar-27.pdf -->
+    <!-- verbosity possible values: none, low, medium, high, extreme -->
+    <!-- Problem type possible values: unknown, Poisson-2D, Poisson-3D, Elasticity-2D, Elasticity-3D, ConvectionDiffusion, MHD -->
+    <Parameter        name="verbosity"                            type="string"   value="none"/>
+    <Parameter        name="problem: type"                        type="string"   value="unknown" />
+    <Parameter        name="smoother: type"                       type="string"   value="CHEBYSHEV"/>
+<!--
+    <Parameter        name="number of equations"                  type="int"      value="1"/>
+    <Parameter        name="max levels"                           type="int"      value="5" />
+    <Parameter        name="cycle type"                           type="string"   value="V" />
+    <Parameter        name="problem: symmetric"                   type="bool"     value="true" />
+    <Parameter        name="coarse: type"                         type="string"   value="KLU2" />
+    <Parameter        name="smoother: pre or post"                type="string"   value="both" />
+    <Parameter        name="coarse: max size"                     type="int"      value="2000"/>
+    <Parameter        name="multigrid algorithm"                  type="string"   value="sa"/>
+-->
+    <Parameter        name="reuse: type"                          type="string"   value="full" />
+    <!-- ===========  AGGREGATION  =========== -->
+    <Parameter        name="aggregation: type"                    type="string"   value="uncoupled"/>
+    <Parameter        name="aggregation: drop scheme"             type="string"   value="classical"/>
+    <!-- <Parameter        name="aggregation: drop tol"                type="double"   value="0.1"/> -->
+    <!-- ===========  SMOOTHING  =========== -->
+    <ParameterList    name="smoother: params">
+      <Parameter      name="chebyshev: degree"                    type="int"      value="2"/>
+      <Parameter      name="chebyshev: sweeps"                    type="int"      value="3" />
+      <Parameter      name="chebyshev: ratio eigenvalue"          type="double"   value="7"/>
+      <Parameter      name="chebyshev: min eigenvalue"            type="double"   value="1.0"/>
+      <Parameter      name="chebyshev: zero starting solution"    type="bool"     value="true"/>
+    </ParameterList>
+    <ParameterList    name="coarse: params">
+    </ParameterList>
+    <!-- ===========  REPARTITIONING  =========== -->
+    <Parameter        name="repartition: enable"                  type="bool"     value="false"/>
+    <Parameter        name="repartition: partitioner"             type="string"   value="zoltan2"/>
+    <Parameter        name="repartition: start level"             type="int"      value="2"/>
+    <Parameter        name="repartition: min rows per proc"       type="int"      value="800"/>
+    <Parameter        name="repartition: max imbalance"           type="double"   value="1.1"/>
+    <Parameter        name="repartition: remap parts"             type="bool"     value="false"/>
+  </ParameterList>
+</ParameterList>

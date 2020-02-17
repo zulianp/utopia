@@ -13,7 +13,7 @@ namespace utopia
     class Biggs18 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Biggs18()
@@ -75,7 +75,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 6);
+            assert(point.size() == 6);
 
             {
                 const Read<Vector> read(point);
@@ -108,8 +108,11 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 6);
-            result = zeros(6);
+            assert(point.size() == 6);
+
+            if(empty(result)){
+                result = zeros(6);
+            }
 
             {
                 const Read<Vector> read(point);
@@ -161,8 +164,11 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 6);
-            result = zeros(6, 6);
+            assert(point.size() == 6);
+            // result = zeros(6, 6);
+            if(empty(result)){
+                result = zeros(6, 6);
+            }
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);

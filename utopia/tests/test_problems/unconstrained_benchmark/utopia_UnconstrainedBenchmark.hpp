@@ -1,7 +1,7 @@
 #ifndef UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES
 #define UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES
 
-    #include "utopia_UnconstrainedTestFunction.hpp"
+    #include "utopia_TestFunctions.hpp"
 
     // Ordering of function follows paper:
     // More, Garbow, Hillstrom - Testing unconstrained optimization software - Unconstrained minimization section
@@ -24,5 +24,11 @@
     #include "utopia_25VariablyDim.hpp"
     #include "utopia_26Trigonometric.hpp"
     #include "utopia_35Chebyquad.hpp"
+    
+    // Some other test functions
+    // TODO::make them follow interface 
+    #include "utopia_QPTestFunction2D.hpp"
+    #include "utopia_RastriginTestFunction.hpp"
+    #include "utopia_TestFunctionsND.hpp"
 
 #endif //UTOPIA_UNCONSTRAINED_TEST_SET_INCLUDES

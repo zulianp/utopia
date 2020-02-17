@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 15/05/15.
-//
-
 #ifndef utopia_utopia_OPERATIONS_HPP
 #define utopia_utopia_OPERATIONS_HPP
 
@@ -13,8 +9,11 @@
 #include "utopia_Binary.hpp"
 #include "utopia_Literal.hpp"
 #include "utopia_Boolean.hpp"
+#include "utopia_Factory.hpp"
+
 
 #include <limits>
+#include <algorithm>
 #include <cmath>
 
 namespace utopia {
@@ -44,6 +43,12 @@ namespace utopia {
     template<class Left, class Right>
     Binary<Left, Right, Plus> operator+(const Expression<Left> &left, const Expression<Right> &right) {
         return Binary<Left, Right, Plus>(left.derived(), right.derived());
+    }
+
+    //Switch left with right 
+    template<class Left, class L, class R>
+    Binary<Multiply<Tensor<L, 2>, Tensor<R, 1>>, Tensor<Left, 1>, Plus> operator+(const Tensor<Left, 1> &left, const Multiply<Tensor<L, 2>, Tensor<R, 1>> &right) {
+        return Binary<Multiply<Tensor<L, 2>, Tensor<R, 1>>, Tensor<Left, 1>, Plus>(right.derived(), left.derived());
     }
 
     template<class Left, class Right>
@@ -193,11 +198,18 @@ namespace utopia {
     }
 
     template<class Left, class Right>
-    Boolean<Reduce<Binary<Left, Right, ApproxEqual>, And> > approxeq(const Expression<Left> &left,
-                                                                     const Expression<Right> &right,
-                                                           const typename Right::Scalar tol = 1e-6) {
-        typedef utopia::Binary<Left, Right, ApproxEqual> BinOp;
-        return Reduce<BinOp, And>(BinOp(left.derived(), right.derived(), ApproxEqual(tol)));
+    using EWApproxEqual = utopia::Binary<Left, Right, ApproxEqual>;
+
+    template<class Left, class Right>
+    using ReduceApproxEqual = utopia::Reduce<EWApproxEqual<Left, Right>, And>;
+
+    template<class Left, class Right>
+    Boolean<ReduceApproxEqual<Left, Right>> approxeq(const Expression<Left> &left,
+                                                     const Expression<Right> &right,
+                                                     const typename Right::Scalar tol = 1e-6) {
+        
+        typedef utopia::EWApproxEqual<Left, Right> BinOp;
+        return ReduceApproxEqual<Left, Right>(BinOp(left.derived(), right.derived(), ApproxEqual(tol)));
     }
 
     /**     @defgroup   queries Structural and numerical queries
@@ -223,9 +235,14 @@ namespace utopia {
     }
 
 
+    /**     @defgroup   elementwise Element-wise
+     *       @ingroup    algebra
+    */
+
+
 
     /**
-     * @ingroup tensor_products
+     * @ingroup elementwise
      * @brief   Pointwise multiplication.
      */
     template<class Left, class Right>
@@ -235,7 +252,7 @@ namespace utopia {
     }
 
     /**
-     * @ingroup tensor_products
+     * @ingroup elementwise
      * @brief   Pointwise min.
      */
     template<class Left, class Right>
@@ -243,9 +260,26 @@ namespace utopia {
         return Binary<Left, Right, Min>(left.derived(), right.derived());
     }
 
+    /**
+     * @ingroup elementwise
+     * @brief   Pointwise min.
+     */
+    template<class Left, class Right, int Order>
+    inline Binary<Left, Number<Right>, Min> min(const Expression<Left> &left, const Factory<Values<Right>, Order> &right) {
+        return Binary<Left, Number<Right>, Min>(left.derived(), right.type().value());
+    }
 
     /**
-     * @ingroup tensor_products
+     * @ingroup elementwise
+     * @brief   Pointwise min.
+     */
+    template<class Left, class Right, int Order>
+    inline Binary<Left, Number<Right>, Min> min(const Factory<Values<Right>, Order> &right, const Expression<Left> &left) {
+        return Binary<Left, Number<Right>, Min>(left.derived(), right.type().value());
+    }
+
+    /**
+     * @ingroup elementwise
      * @brief   Pointwise max.
      */
     template<class Left, class Right>
@@ -253,6 +287,23 @@ namespace utopia {
         return Binary<Left, Right, Max>(left.derived(), right.derived());
     }
 
+    /**
+     * @ingroup elementwise
+     * @brief   Pointwise max.
+     */
+    template<class Left, class Right, int Order>
+    inline Binary<Left, Number<Right>, Max> max(const Expression<Left> &left, const Factory<Values<Right>, Order> &right) {
+        return Binary<Left, Number<Right>, Max>(left.derived(), right.type().value());
+    }
+
+    /**
+     * @ingroup elementwise
+     * @brief   Pointwise max.
+     */
+    template<class Left, class Right, int Order>
+    inline Binary<Left, Number<Right>, Max> max(const Factory<Values<Right>, Order> &right, const Expression<Left> &left) {
+        return Binary<Left, Number<Right>, Max>(left.derived(), right.type().value());
+    }
 
 }
 

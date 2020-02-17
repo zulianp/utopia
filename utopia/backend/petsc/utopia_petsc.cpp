@@ -11,36 +11,35 @@
 #include "utopia_AffineSimilarity.hpp"
 #include "utopia_SaddlePoint.hpp"
 #include "utopia_BiCGStab_impl.hpp"
+#include "utopia_ConjugateGradient_impl.hpp"
+#include "utopia_RMTRVcycleImpl.hpp"
+#include "utopia_TRBoundsGratton.hpp"
 
 //explicit instantiations
 namespace utopia {
-     template class Wrapper<PetscSparseMatrix, 2>;
-    template class Wrapper<PetscMatrix, 2>;
-    template class Wrapper<PetscVector, 1>;
 
-    //petsc linear solvers and smoothers
-    //template class KSPSolver<DSMatrixd, DVectord>;
-    template class ConjugateGradient<DSMatrixd, DVectord>;
-    template class GaussSeidel<DSMatrixd, DVectord>;
-    template class SPBlockConjugateGradient<DSMatrixd, DVectord>;
-    template class BiCGStab<DSMatrixd, DVectord, HOMEMADE>;
+    template class ConjugateGradient<PetscMatrix, PetscVector>;
+    template class ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>;
+    template class GaussSeidel<PetscMatrix, PetscVector>;
+    template class SPBlockConjugateGradient<PetscMatrix, PetscVector>;
+    template class BiCGStab<PetscMatrix, PetscVector, HOMEMADE>;
 
     //petsc non-linear solvers
-    template class NonLinearGaussSeidel<DSMatrixd, DVectord>;
+    template class NonLinearGaussSeidel<PetscMatrix, PetscVector>;
+    template class Multigrid<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL>;
+    
+    template class RMTR_l2<PetscMatrix, PetscVector, FIRST_ORDER>;
+    template class RMTR_inf<PetscMatrix, PetscVector, TRBoundsGratton<PetscMatrix, PetscVector> >;
 
-    template class Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL>;
-    template class RMTR<DSMatrixd, DVectord, FIRST_ORDER>;
-    template class RMTR_inf<DSMatrixd, DVectord>;
+    template class FAS<PetscMatrix, PetscVector>;
+    template class MG_OPT<PetscMatrix, PetscVector>;
 
-    template class FAS<DSMatrixd, DVectord>;
-    template class MG_OPT<DSMatrixd, DVectord>;
+    template class AffineSimilarity<PetscMatrix, PetscVector>;
 
-    template class AffineSimilarity<DSMatrixd, DVectord>;
-
-    void optimize_nnz(DSMatrixd &A)
+    void optimize_nnz(PetscMatrix &A)
     {
         auto rr = row_range(A);
-        auto cr = A.implementation().col_range();
+        auto cr = col_range(A);
         auto ls = local_size(A);
         auto gs = size(A);
 
@@ -55,11 +54,11 @@ namespace utopia {
             }
         });
 
-        DSMatrixd A_opt;
+        PetscMatrix A_opt;
 
-        A_opt.implementation().matij_init(
-            A.implementation().communicator(),
-            A.implementation().type_override(),
+        A_opt.matij_init(
+            A.communicator(),
+            A.type_override(),
             ls.get(0),
             ls.get(1),
             gs.get(0),
@@ -69,7 +68,7 @@ namespace utopia {
             );
 
         {
-            Write<DSMatrixd> w_A(A_opt);
+            Write<PetscMatrix> w_A(A_opt);
             each_read(A, [&](const SizeType i, const SizeType j, const PetscScalar val) {
                 if(std::abs(val) > 1e-18) {
                     A_opt.set(i, j, val);
@@ -81,13 +80,13 @@ namespace utopia {
         A = std::move(A_opt);
     }
 
-    bool is_diagonally_dominant(const DSMatrixd &A)
+    bool is_diagonally_dominant(const PetscMatrix &A)
     {
-        DVectord d = diag(A);
-        DVectord o = local_zeros(local_size(d));
+        PetscVector d = diag(A);
+        PetscVector o = local_zeros(local_size(d));
 
         {
-            Write<DVectord> w_o(o);
+            Write<PetscVector> w_o(o);
             each_read(A,[&o](const SizeType i, const SizeType j, const PetscScalar val) {
                 if(i != j) {
                     o.add(i, std::abs(val));
@@ -95,7 +94,7 @@ namespace utopia {
             });
         }
 
-        DVectord diff = d - o;
+        PetscVector diff = d - o;
         PetscScalar m = min(diff);
         return m > 0.;
     }

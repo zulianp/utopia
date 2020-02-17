@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_UnconstrainedTestFunction.hpp"
+#include "utopia_TestFunctions.hpp"
 
 
 namespace utopia
@@ -12,7 +12,7 @@ namespace utopia
     class Beale05 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Beale05()
@@ -49,7 +49,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
 
             const Read<Vector> read(point);
 
@@ -70,8 +70,11 @@ namespace utopia
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
-            assert(point.size().get(0) == 2);
-            result = zeros(2);
+            assert(point.size() == 2);
+
+            if(empty(result)){
+                result = zeros(2);
+            }
 
             const Read<Vector> read(point);
             const Write<Vector> write(result);
@@ -99,9 +102,11 @@ namespace utopia
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
 
-            result = zeros(2, 2);
+            if(empty(result)){
+                result = zeros(2, 2);
+            }
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);

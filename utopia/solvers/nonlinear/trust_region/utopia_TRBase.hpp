@@ -8,25 +8,22 @@
 
 namespace utopia
 {
-  /**
-   * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
-   *             Design of class allows to provide different TR strategies in order to solve TR subproblem.
-   */
+
   template<class Vector>
-  class TrustRegionBase : public virtual Configurable
+  class TrustRegionParams : public virtual Configurable
   {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
   public:
-    TrustRegionBase():
-    delta_max_(1e14), delta_min_(1e-14), delta0_(1.0), gamma1_(0.2), gamma2_(2.0),
-    eta1_(0.1), eta2_(0.85), rho_tol_(0.005), eps_(1e-14)
+    TrustRegionParams():
+    delta_max_(1e14), delta_min_(1e-14), delta0_(1.0), gamma1_(0.25), gamma2_(2.5),
+    eta1_(0.05), eta2_(0.9), rho_tol_(0.005), eps_(1e-14)
     {
 
     }
 
-    virtual ~TrustRegionBase(){}
+    virtual ~TrustRegionParams(){}
 
     Scalar delta_max()  const  { return delta_max_; }
     Scalar delta_min()  const  { return delta_min_; }
@@ -48,6 +45,69 @@ namespace utopia
     void eta2(const Scalar & eta2_in ) { eta2_ = eta2_in; };
     void rho_tol(const Scalar & rho_tol_in ) { rho_tol_ = rho_tol_in; };
     void eps(const Scalar & eps_in ) { eps_ = eps_in; };
+
+    void read(Input &in) override
+    {
+      in.get("delta_max", delta_max_);
+      in.get("delta_min", delta_min_);
+      in.get("delta0", delta0_);
+      in.get("gamma1", gamma1_);
+      in.get("gamma2", gamma2_);
+      in.get("eta1", eta1_);
+      in.get("eta2", eta2_);
+      in.get("rho_tol", rho_tol_);
+      in.get("eps", eps_);
+    }
+
+    void print_usage(std::ostream &os) const override
+    {
+      this->print_param_usage(os, "delta_max", "real", "Maximum value of tr. radius.", "1e14");
+      this->print_param_usage(os, "delta_min", "real", "Minimum value of tr. radius.", "1e-14");
+      this->print_param_usage(os, "delta0", "real", "Initial value of tr. radius.", "1.0");
+
+      this->print_param_usage(os, "gamma1", "real", "Factor use to shrink tr. radius.", "0.5");
+      this->print_param_usage(os, "gamma2", "real", "Factor use to enlarge tr. radius.", "2.0");
+
+      this->print_param_usage(os, "eta1", "real", "Threshold for rho to shrink tr. radius.", "0.25");
+      this->print_param_usage(os, "eta2", "real", "Threshold for rho to enlarge tr. radius.", "0.75");
+
+      this->print_param_usage(os, "rho_tol", "real", "Threshold for rho to take trial point.", "0.005");
+      this->print_param_usage(os, "eps", "real", "Numerical tolerance.", "1e-14");
+    }
+
+
+  private:
+    Scalar delta_max_;
+    Scalar delta_min_;
+    Scalar delta0_;
+    Scalar gamma1_;
+    Scalar gamma2_;
+    Scalar eta1_;
+    Scalar eta2_;
+    Scalar rho_tol_;
+    Scalar eps_;
+  };
+
+
+
+
+  /**
+   * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
+   *             
+   */
+  template<class Vector>
+  class TrustRegionBase : public TrustRegionParams<Vector>
+  {
+    typedef UTOPIA_SCALAR(Vector)    Scalar;
+    typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
+  public:
+    TrustRegionBase(): TrustRegionParams<Vector>()
+    {
+
+    }
+
+    virtual ~TrustRegionBase(){}
 
   protected:
     virtual void print_statistics(const SizeType & it, const SizeType & it_successful)
@@ -76,9 +136,17 @@ namespace utopia
 
     virtual Scalar get_pred(const Vector &g, const Operator<Vector> &B, const Vector & p_k)
     {
-      Vector Bp;
-      B.apply(p_k, Bp);
-      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp, p_k);
+      if(empty(Bp_) || size(Bp_) != size(g)){
+        Bp_ = 0.0*g; 
+      }
+
+      B.apply(p_k, Bp_);
+      return -1.0 * dot(g, p_k) - 0.5 * dot(Bp_, p_k);
+    }
+
+    virtual void init_memory(const SizeType & ls)
+    {
+      Bp_ = local_zeros(ls); 
     }
 
 
@@ -129,7 +197,7 @@ namespace utopia
       }
 
         // do not hard code this
-      else if(delta <= delta_min_)
+      else if(delta <= this->delta_min())
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
         sol_status.reason = ConvergenceReason::CONVERGED_TR_DELTA;
@@ -167,7 +235,7 @@ namespace utopia
     virtual bool trial_point_acceptance(const Scalar &rho, Scalar &E, const Scalar &E_k, const Scalar &E_k1,  const Vector & p_k, const Vector & x_k, Vector & x_k1)
     {
       // good reduction, accept trial point
-      if (rho >= rho_tol_)
+      if (rho >= this->rho_tol())
       {
         x_k1 = x_k + p_k;
         E = E_k1;
@@ -196,16 +264,40 @@ namespace utopia
     virtual bool trial_point_acceptance(const Scalar &rho, const Vector & x_trial, Vector & x_k)
     {
       // good reduction, accept trial point
-      if (rho >= rho_tol_)
+      if (rho >= this->rho_tol())
       {
         x_k  = x_trial;
         return true;
       }
       // otherwise, keep old point
-      else
+      else{
         return false;
+      }
 
     }
+
+
+    /**
+     * @brief      Trial ponit acceptance
+     *
+     * @param[in]  rho   The rho
+     *
+     * @return     accepted or no
+     */
+    virtual bool trial_point_acceptance(const Scalar &rho)
+    {
+      // good reduction, accept trial point
+      if (rho >= this->rho_tol())
+      {
+        return true;
+      }
+      // otherwise, keep old point
+      else{
+        return false;
+      }
+
+    }
+
 
 
 
@@ -221,21 +313,21 @@ namespace utopia
     {
       if(inf_flg==false)
       {
-        if(rho < eta1_)
+        if(rho < this->eta1())
         {
-          radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_);
+          radius = std::max( Scalar(this->gamma1() * norm2(p_k)), this->delta_min());
         }
-        else if (rho > eta2_ )
+        else if (rho > this->eta2() )
         {
-          Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius);
-          radius = std::min(intermediate, delta_max_);
+          Scalar intermediate = std::max(Scalar(this->gamma2() * norm2(p_k)), radius);
+          radius = std::min(intermediate, this->delta_max() );
         }
       }
       else // computing update for L_inf norm
       {
         if(rho < this->eta1())
         {
-          radius = radius * gamma1_;
+          radius = radius * this->gamma1();
         }
         else if (rho > this->eta2() )
         {
@@ -246,6 +338,38 @@ namespace utopia
         }
       }
     }
+
+
+
+    virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar &radius)
+    {
+        if(rho >= this->eta2())
+        {
+          radius = std::max( Scalar(this->gamma2() * norm_infty(p_k)), radius);
+        }
+        else if (rho < this->eta1() && rho > 0 )
+        {
+          radius = this->gamma1() * norm_infty(p_k); 
+        }
+        else if(rho ==0)
+        {
+          radius = this->gamma1() * radius; 
+        }
+    }
+
+    // virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar &radius)
+    // {
+    //     if(rho >= eta2_)
+    //     {
+    //       radius = std::max( Scalar(gamma2_ * norm_infty(p_k)), radius);
+    //     }
+    //     else if (rho < eta1_ )
+    //     {
+    //       radius = gamma1_ * radius; 
+    //     }
+    // }    
+
+
 
 
     /*!
@@ -274,45 +398,18 @@ namespace utopia
 
     void read(Input &in) override
     {
-      in.get("delta_max", delta_max_);
-      in.get("delta_min", delta_min_);
-      in.get("delta0", delta0_);
-      in.get("gamma1", gamma1_);
-      in.get("gamma2", gamma2_);
-      in.get("eta1", eta1_);
-      in.get("eta2", eta2_);
-      in.get("rho_tol", rho_tol_);
-      in.get("eps", eps_);
+      TrustRegionParams<Vector>::read(in); 
     }
 
     void print_usage(std::ostream &os) const override
     {
-      this->print_param_usage(os, "delta_max", "real", "Maximum value of tr. radius.", "1e14");
-      this->print_param_usage(os, "delta_min", "real", "Minimum value of tr. radius.", "1e-14");
-      this->print_param_usage(os, "delta0", "real", "Initial value of tr. radius.", "1.0");
-
-      this->print_param_usage(os, "gamma1", "real", "Factor use to shrink tr. radius.", "0.5");
-      this->print_param_usage(os, "gamma2", "real", "Factor use to enlarge tr. radius.", "2.0");
-
-      this->print_param_usage(os, "eta1", "real", "Threshold for rho to shrink tr. radius.", "0.25");
-      this->print_param_usage(os, "eta2", "real", "Threshold for rho to enlarge tr. radius.", "0.75");
-
-      this->print_param_usage(os, "rho_tol", "real", "Threshold for rho to take trial point.", "0.005");
-      this->print_param_usage(os, "eps", "real", "Numerical tolerance.", "1e-14");
+      TrustRegionParams<Vector>::print_usage(os); 
     }
 
 
-
   private:
-    Scalar delta_max_;
-    Scalar delta_min_;
-    Scalar delta0_;
-    Scalar gamma1_;
-    Scalar gamma2_;
-    Scalar eta1_;
-    Scalar eta2_;
-    Scalar rho_tol_;
-    Scalar eps_;
+    Vector Bp_;
+
   };
 
 }

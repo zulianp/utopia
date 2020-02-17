@@ -151,6 +151,20 @@ namespace utopia {
             return *space_;
         }
 
+        inline const ProductFunctionSpace<LibMeshFunctionSpace> &space() const
+        {
+            assert(space_);
+            return *space_;
+        }
+
+
+
+        inline const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> &space_ptr() const
+        {
+            assert(space_);
+            return space_;
+        }
+
         inline void set_space(const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace> > &space)
         {
             space_ = space;

@@ -108,6 +108,10 @@ namespace utopia {
                 return false;
             }
 
+            if(material_->rescaling() != 1.0) {
+                force_vec_ *= material_->rescaling();
+            }
+
             gradient -= force_vec_;
             return true;
         }

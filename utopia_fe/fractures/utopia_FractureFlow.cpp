@@ -1,5 +1,6 @@
 #include "utopia_FractureFlow.hpp"
 
+
 namespace utopia {
 
     FractureFlow::FractureFlow(libMesh::Parallel::Communicator &comm)
@@ -64,11 +65,59 @@ namespace utopia {
                 }
             }
 
+            is.get("post-processors", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    std::string type;
+                    in.get("type", type);
+
+                    if(type == "flux") {
+                        auto flux = std::make_shared<FluxPostProcessor<FunctionSpaceT, UVector>>();
+                       
+                        flux->sampler(sampler);
+                        flux->diffusion_tensor(diffusion_tensor);
+                        
+                        flux->read(in);
+
+                        post_processors_.push_back(flux);
+                    } else if(type == "avg") {
+                        auto flux = std::make_shared<AverageHeadPostProcessor<FunctionSpaceT, UVector>>();
+                                            
+                        flux->read(in);
+
+                        post_processors_.push_back(flux);
+                    }
+
+                });
+            });
+
         } catch(const std::exception &ex) {
             std::cerr << ex.what() << std::endl;
             assert(false);
         }
     }
+
+    void FractureFlow::post_process(const UVector &sol)
+    {
+        for(auto pp : post_processors_) {
+            pp->apply(space.space()[0], sol);
+            pp->describe();
+        }
+    }
+
+    void FractureFlow::post_process(LibMeshFunctionSpace &space, const UVector &pressure, const UVector &concentration)
+    {
+        for(auto pp : post_processors_) {
+            pp->apply(space, pressure, concentration);
+            pp->describe();
+        }
+    }
+
+   void FractureFlow::export_post_process()
+   {
+        for(auto pp : post_processors_) {
+            pp->export_values();
+        }
+   }
 
     void FractureFlow::apply_weak_BC(USparseMatrix &A, UVector &b) const
     {
@@ -116,7 +165,9 @@ namespace utopia {
 
         auto &dof_map = V_aperture.dof_map();
 
-        sampled = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+        UIndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        sampled = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         // sampled = local_zeros(dof_map.n_local_dofs());
 
         auto constant_sampler = std::dynamic_pointer_cast<UIConstantFunction<double>>(sampler);
@@ -129,7 +180,9 @@ namespace utopia {
 
             auto lform = inner(ctx_fun(sampler), v) * dX;
 
-            UVector aperture_h = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            UIndexArray ghost_nodes;
+            convert(dof_map.get_send_list(), ghost_nodes);
+            UVector aperture_h = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
             utopia::assemble(lform, aperture_h);
 
             USparseMatrix mass_mat;

@@ -4,8 +4,10 @@
 #include <array>
 #include <algorithm>
 #include <cmath>
+#include <list>
 
 namespace utopia {
+
     class AffineTransform {
     public:
         AffineTransform() {}
@@ -226,6 +228,51 @@ namespace utopia {
             return mat[i * 3 + j];
         }
 
+    };
+
+    class CompositeAffineTransform {
+    public:
+        template<std::size_t N>
+        std::array<double, N> apply(const std::array<double, N> &p) const
+        {
+            std::array<double, N> ret, temp = p;
+
+            for(const auto &t : transforms)
+            {
+                ret = t.apply(temp);
+                temp = ret;
+            }
+
+            return ret;
+        }
+
+        template<class Point>
+        Point apply(const Point &p) const
+        {
+            Point ret, temp = p;
+
+            for(const auto &t : transforms)
+            {
+                ret = t.apply(temp);
+                temp = ret;
+            }
+
+            return ret;
+        }
+
+        void compose_right(const AffineTransform &t)
+        {
+            transforms.push_front(t);
+        }
+
+
+        void compose_left(const AffineTransform &t)
+        {
+            transforms.push_back(t);
+        }
+
+    private:
+        std::list<AffineTransform> transforms;
     };
 }
 

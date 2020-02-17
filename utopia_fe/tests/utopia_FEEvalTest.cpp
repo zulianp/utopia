@@ -4,7 +4,7 @@
 #include "utopia_FormEvaluator.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia.hpp"
-#include "utopia_fe_homemade.hpp"
+//#include "utopia_fe_homemade.hpp"
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_MixedFunctionSpace.hpp"
 
@@ -25,40 +25,10 @@
 
 namespace utopia {
 
-    libMesh::TensorValue<double> make_tensor_value(const LMDenseMatrix &in)
+    LMDenseMatrix neohookean_first_piola(const double mu, const double lambda, const LMDenseMatrix &F)
     {
-        libMesh::TensorValue<double> ret;
-        each_read(in, [&ret](const SizeType i, const SizeType j, const double val) {
-            ret(i, j) = val;
-        });
-
-        return ret;
-    }
-
-    LMDenseMatrix make_wrapper(const int n, const libMesh::TensorValue<double> &in)
-    {
-        LMDenseMatrix ret = zeros(n, n);
-        each_write(ret, [&in](const SizeType i, const SizeType j) ->  double {
-            return in(i, j);
-        });
-
-        return ret;
-    }
-
-    libMesh::TensorValue<double> neohookean_first_piola(const double mu, const double lambda, const libMesh::TensorValue<double> &F)
-    {
-        libMesh::TensorValue<double> F_inv_t = F.inverse().transpose();
-        return mu * (F - F_inv_t) + (lambda * std::log(F.det())) * F_inv_t;
-    }
-
-    LMDenseMatrix neohookean_first_piola(const double mu, const double lambda, const LMDenseMatrix &F_in)
-    {
-        libMesh::TensorValue<double> F = make_tensor_value(F_in);
-        if(size(F_in).get(0) < 3) {
-            F(2, 2) = 1;
-        }
-
-        return make_wrapper(size(F_in).get(0), neohookean_first_piola(mu, lambda, F));
+        LMDenseMatrix F_inv_t = transpose(inv(F));
+        return mu * (F - F_inv_t) + (lambda * std::log(det(F))) * F_inv_t;
     }
 
     std::vector<LMDenseMatrix> neohookean_first_piola(const double mu, const double lambda, const std::vector<LMDenseMatrix> &F)
@@ -75,14 +45,16 @@ namespace utopia {
     template<class Tensor>
     Tensor neohookean_linearized(const double mu, const double lambda, const Tensor &H, const Tensor &F)
     {
-        Tensor F_inv_t = F.inverse().transpose();
-        const double J = F.det();
-        return mu * H - (1.0 * lambda * std::log(J) - 1.0 * mu) * F_inv_t * H.transpose() * F_inv_t + lambda * F_inv_t.contract(H) * F_inv_t;
+        Tensor F_inv_t = transpose(inv(F));
+        const double J = det(F);
+        const double alpha = (1.0 * lambda * std::log(J) - 1.0 * mu);
+
+        return mu * H - alpha * F_inv_t * transpose(H) * F_inv_t + lambda * inner(F_inv_t, H) * F_inv_t;
     }
 
-    std::vector<std::vector<libMesh::TensorValue<double>>> neohookean_linearized(const double mu, const double lambda, const std::vector<std::vector<libMesh::TensorValue<double>>> &H, const std::vector<LMDenseMatrix> &F)
+    std::vector<std::vector<LMDenseMatrix>> neohookean_linearized(const double mu, const double lambda, const std::vector<std::vector<LMDenseMatrix>> &H, const std::vector<LMDenseMatrix> &F)
     {
-        std::vector<std::vector<libMesh::TensorValue<double>>> ret;
+        std::vector<std::vector<LMDenseMatrix>> ret;
 
         ret.resize(H.size());
 
@@ -94,23 +66,7 @@ namespace utopia {
             assert(H[i].size() == F.size());
 
             for(std::size_t qp = 0; qp < F.size(); ++qp) {
-                auto F_qp = make_tensor_value(F[qp]);
-
-                if(dim < 3) {
-                    F_qp(2, 2) = 1;
-                }
-
-                auto ret_iqp = neohookean_linearized(mu, lambda, H[i][qp], F_qp);
-
-                if(dim < 3) {
-                    ret_iqp(2, 2) = 0;
-                    ret_iqp(2, 0) = 0;
-                    ret_iqp(2, 1) = 0;
-                    ret_iqp(0, 2) = 0;
-                    ret_iqp(1, 2) = 0;
-                }
-
-                ret[i][qp] = ret_iqp;
+                ret[i][qp] = neohookean_linearized(mu, lambda, H[i][qp], F[qp]);
             }
         }
 
@@ -121,15 +77,13 @@ namespace utopia {
     void check_equal(const std::vector<T> &left, const std::vector<T> &right)
     {
         for(std::size_t i = 0; i < left.size(); ++i) {
-            libMesh::DenseMatrix<double> mat = left[i].implementation();
-            mat.add(-1., right[i].implementation());
-            assert(approxeq(mat.linfty_norm(), 0.));
+            assert(approxeq(left[i], right[i], 0.));
         }
     }
 
     void check_equal(
-        const std::vector<std::vector<libMesh::TensorValue<double>>> &left,
-        const std::vector<std::vector<libMesh::TensorValue<double>>> &right)
+        const std::vector<std::vector<LMDenseMatrix>> &left,
+        const std::vector<std::vector<LMDenseMatrix>> &right)
     {
         assert(left.size() == right.size());
 
@@ -140,9 +94,7 @@ namespace utopia {
                 auto l = left[i][qp];
                 auto r = right[i][qp];
 
-                auto diff = l - r;
-
-                const bool ok = approxeq(diff.norm_sq(), 0.);
+                const bool ok = approxeq(l, r, 0.);
 
                 if(!ok) {
                     disp("----------------");
@@ -190,7 +142,10 @@ namespace utopia {
         auto v = test(V);
 
         Vx.initialize();
-        UVector sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), Vx.dof_map().get_send_list());
+
+        UIndexSet ghost_nodes;
+        convert(Vx.dof_map().get_send_list(), ghost_nodes);
+        UVector sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), ghost_nodes);
         sol = local_values(local_size(sol).get(0), 0.);
 
         {
@@ -224,6 +179,10 @@ namespace utopia {
 
             auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
+            // auto mixedUp = mu * grad(u) - (lambda * logn(J) - mu) * F_inv_t;// * transpose(grad(u)) * F_inv_t;
+            auto mixedUp = -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
+            + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
+
             auto stress_lin = mu * grad(u)
             -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
             + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
@@ -241,19 +200,17 @@ namespace utopia {
             auto eval_F_inv_t = eval(F_inv_t, ctx);
             auto eval_J       = eval(J, ctx);
             auto eval_log_J   = eval(logn(J), ctx);
+            auto eval_gu      = eval((grad(u)) , ctx);
+            auto eval_gu_t    = eval(transpose(grad(u)) , ctx); 
 
-            disp("-----------------------------------");
-            disp("-----------------------------------");
-            // disp(eval_uk);
-            // disp("-----------------------------------");
-            // disp(eval_grad);
-            // disp("-----------------------------------");
-            // disp(eval_g_uk);
-            // disp("-----------------------------------");
-            // disp(eval_F);
-            // disp("-----------------------------------");
+            auto eval_mixedUp = quad_eval(mixedUp, ctx);
 
-            // disp(eval_F_inv);
+            // disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
+            // disp(eval_gu);
+            // disp("-----------------------------------");
+            // disp(eval_gu_t);
+            // disp("hhhhhhhhhhhhhhhhhhhhhhhhhh");
+
             // disp("-----------------------------------");
 
             auto eval_P = quad_eval(P, ctx);
@@ -268,7 +225,7 @@ namespace utopia {
 
             auto g = eval(inner(P, grad(v)) * dX, ctx);
             // disp(g);
-            disp("-----------------------------------");
+            // disp("-----------------------------------");
             auto H = eval(inner(stress_lin, grad(v)) * dX, ctx);
             // disp(H);
 
@@ -318,12 +275,17 @@ namespace utopia {
             auto denom      = inner(grad(uk), grad(uk));
             auto div_inner  = inner(grad(uk)/denom, grad(v));
 
-            // auto e_div_inner = quad_eval(div_inner, ctx);
+            auto eval_denom = quad_eval(denom, ctx);
+
+            // disp(eval_denom);
+            // auto eval_division = quad_eval(grad(uk)/denom, ctx);
+
+            auto e_div_inner = quad_eval(div_inner, ctx);
             // disp(e_div_inner[0]);
 
-            // auto div_inner_dx = div_inner * dX;
+            auto div_inner_dx = div_inner * dX;
 
-            // auto e_div_inner_dx = eval(div_inner_dx, ctx);
+            auto e_div_inner_dx = eval(div_inner_dx, ctx);
             // disp(e_div_inner_dx);
         }
     }

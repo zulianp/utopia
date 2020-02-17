@@ -1,9 +1,13 @@
 list(APPEND CORE_MODULES
     .
     eval
+    eval/mech
     expressions
+    local
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR CORE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 add_utopiafe_module(utopia_fe_core)
 foreach(MODULE ${CORE_MODULES})

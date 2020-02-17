@@ -11,17 +11,25 @@
 namespace utopia {
     class Range {
     private:
-        const SizeType _begin, _end, _extent;
+        SizeType begin_, end_, extent_;
 
     public:
+        Range() {}
         Range(const SizeType begin, const SizeType to)
-                : _begin(begin), _end(to), _extent(to - begin) { }
+                : begin_(begin), end_(to), extent_(to - begin) { }
 
 
         explicit Range(const SizeType beginAndTo)
-                : _begin(beginAndTo), _end(beginAndTo + 1), _extent(1)
+                : begin_(beginAndTo), end_(beginAndTo + 1), extent_(1)
         {
             assert(beginAndTo >= 0);
+        }
+
+        inline void set(const SizeType &begin, const SizeType &end)
+        {
+            begin_ = begin;
+            end_ = end;
+            extent_ = end - begin;
         }
 
         /** \addtogroup ranges
@@ -31,47 +39,47 @@ namespace utopia {
         /*!
          * @return beginning of the range
          */
-        inline SizeType begin() const
+        UTOPIA_INLINE_FUNCTION SizeType begin() const
         {
-            return _begin;
+            return begin_;
         }
 
         /*!
          * @return ending of the range. Hence, larger index contained in the range + 1
          */
-        inline SizeType end() const
+        UTOPIA_INLINE_FUNCTION SizeType end() const
         {
-            return _end;
+            return end_;
         }
 
         /**
          * @return extent of the range => number of elements between 1st and the last element in the range.
          */
-        inline SizeType extent() const
+        UTOPIA_INLINE_FUNCTION SizeType extent() const
         {
-            return _extent;
+            return extent_;
         }
 
         /**
          * @brief      Checks if range is empty.
          */
-        inline bool empty() const {
-            return _extent == 0;
+        UTOPIA_INLINE_FUNCTION bool empty() const {
+            return extent_ == 0;
         }
 
         /**
          * @brief      Checks if range is valid.
          */
-        inline bool valid() const {
-            return _extent >= 0;
+        UTOPIA_INLINE_FUNCTION bool valid() const {
+            return extent_ >= 0;
         }
 
         /**
          * @brief      Checks if given index is inside of the range.
          */
-        inline bool inside(const SizeType index) const
+        UTOPIA_INLINE_FUNCTION bool inside(const SizeType index) const
         {
-            return index >= _begin && index < _end;
+            return index >= begin_ && index < end_;
         }
 
         /**
@@ -105,11 +113,16 @@ namespace utopia {
         }
 
         inline const Range operator + (const long shift) const {
-            return Range(_begin + shift, _end + shift);
+            return Range(begin_ + shift, end_ + shift);
         }
 
         inline const Range operator - (const long shift) const {
-            return Range(_begin - shift, _end - shift);
+            return Range(begin_ - shift, end_ - shift);
+        }
+
+        inline bool operator==(const Range &other) const
+        {
+            return begin_ == other.begin_ && end_ == other.end_;
         }
 
         friend std::ostream & operator <<(std::ostream &os, const Range &range)

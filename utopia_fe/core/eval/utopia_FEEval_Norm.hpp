@@ -1,7 +1,9 @@
 #ifndef UTOPIA_FE_EVAL_NORM2_HPP
 #define UTOPIA_FE_EVAL_NORM2_HPP
 
+#include "utopia_Norm.hpp"
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_FEEval_Empty.hpp"
 #include "utopia_AssemblyContext.hpp"
 #include "utopia_FEBackend.hpp"
 
@@ -14,7 +16,7 @@ namespace utopia {
 
         inline static auto apply(
             const Expr &expr,
-            AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::trace(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx) )
+            AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::norm2(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx) )
         {
             static_assert(Type == 2, "TODO other norms");
 

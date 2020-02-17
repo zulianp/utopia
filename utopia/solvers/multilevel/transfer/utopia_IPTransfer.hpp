@@ -91,7 +91,7 @@
          * @param      x_new
          *
          */
-         bool boolean_restrict_or(const Vector &x, Vector &x_new) override
+         bool boolean_restrict_or(const Vector &/*x*/, Vector & /*x_new*/) override
         {
             assert(false && "implement me");
             // static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
@@ -140,7 +140,7 @@
 
             if(empty(is_constrained) || empty(*_I)) return;
 
-            set_zero_rows(*_I, is_constrained);
+            set_zero_rows(*_I, is_constrained, 0.0);
         }
 
         /**
@@ -179,6 +179,23 @@
         }
 
 
+        bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override
+        {
+            if(empty(P_pos_)){
+                P_pos_ = *_Pr;
+                chop_smaller_than(P_pos_, 1e-13); 
+            }
+
+            if(empty(P_neg_)){
+                P_neg_ = (*_Pr); 
+                chop_greater_than(P_neg_, -1e-13); 
+            }
+                
+            x_new = (P_pos_*x_pos) + (P_neg_*x_neg); 
+            return true; 
+        }
+
+
         Scalar interpolation_inf_norm() const override
         {
             return norm_infty(*_I);
@@ -199,6 +216,9 @@
             std::shared_ptr<Matrix> _I;
             std::shared_ptr<Matrix> _Pr;
             Scalar restrict_factor_;
+
+            Matrix P_pos_; 
+            Matrix P_neg_; 
     };
 
 }

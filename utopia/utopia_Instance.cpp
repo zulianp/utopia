@@ -2,6 +2,8 @@
 #include "utopia_Base.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_Config.hpp"
+#include "utopia_MPI.hpp"
+#include "utopia_Allocations.hpp"
 
 #ifdef WITH_TRILINOS
 #include <Tpetra_Core.hpp>
@@ -19,6 +21,7 @@
 
 
 #include <cassert>
+#include <iostream>
 
 namespace utopia {
 
@@ -29,11 +32,14 @@ namespace utopia {
 #ifdef WITH_PETSC
         static char help[] = "initializing utopia environment through petsc";
 
+        PetscOptionsSetValue(nullptr, "-on_error_abort", nullptr);
+
     #ifdef WITH_SLEPC
         SlepcInitialize(&argc,&argv,(char*)0, help); // calls PetscInitialize inside
     #else
         PetscInitialize(&argc, &argv, (char *) 0, help);
     #endif    //WITH_SLEPC
+
 
         // is this proper place for doing this ???
         KSPRegister("utopia", KSPCreate_UTOPIA);
@@ -48,6 +54,9 @@ namespace utopia {
 #ifdef WITH_TRILINOS
         Tpetra::initialize(&argc, &argv);
 #endif //WITH_TRILINOS
+
+
+        instance().read_input(argc, argv);
     }
 
 
@@ -62,6 +71,10 @@ namespace utopia {
             instance().maintenance_logger().flush();
         }
 
+#ifdef WITH_TRILINOS
+        Tpetra::finalize();
+#endif //WITH_TRILINOS
+
 #ifdef WITH_PETSC
         #ifdef WITH_SLEPC
             SlepcFinalize(); // calls PetscFinalize inside
@@ -75,11 +88,12 @@ namespace utopia {
 #endif //WITH_MPI
 #endif //WITH_PETSC
 
-#ifdef WITH_TRILINOS
-        Tpetra::finalize();
-#endif //WITH_TRILINOS
 
-        return  instance().exit_code_;
+        if(instance().exit_code_ != EXIT_SUCCESS) {
+            std::cerr << "[Warning] exiting with code: " << instance().exit_code_ << std::endl;
+        }
+
+        return instance().exit_code_;
     }
 
     Utopia &Utopia::instance()
@@ -121,4 +135,68 @@ namespace utopia {
         exit(error_code);
 #endif
     }
+
+    void Utopia::read_input(int argc, char *argv[])
+    {
+        for(int i = 1; i < argc; i++) {
+            std::string str(argv[i]);
+
+            if(str == "-verbose") {
+                instance().set("verbose", "true");
+            }
+
+#ifdef ENABLE_NO_ALLOC_REGIONS
+
+            if(str == "-on_alloc_violation_abort") {
+                Allocations::instance().abort_on_violation(true);
+            }
+
+            if(str == "-mute-allocation-ctrl") {
+                Allocations::instance().verbose(false);
+            }
+
+
+            if (str == "-data_path") {
+                if (++i >= argc)
+                    break;
+
+                if (mpi_world_rank() == 0) {
+                    std::cout << "data_path: " << argv[i] << std::endl;
+                }
+
+                instance().set("data_path", argv[i]);
+            }
+
+
+#endif //ENABLE_NO_ALLOC_REGIONS
+
+#ifdef UTOPIA_TRACE_ENABLED
+            if(str == "-intercept") {
+                if(i + 1 < argc) {
+                    Tracer::instance().interceptor().expr(argv[i+1]);
+                    Tracer::instance().interceptor().interrupt_on_intercept(true);
+                    std::cout << "Added intercept: " << argv[i+1] << std::endl;
+                }
+
+                i++;
+            }
+#endif //UTOPIA_TRACE_ENABLED
+
+        }
+    }
+
+    void Utopia::read(Input &is)
+    {
+        for(auto &s : settings_) {
+            is.get(s.first, s.second);
+        }
+    }
+
+    void Utopia::print_usage(std::ostream &os) const
+    {
+        for(const auto &s : settings_) {
+            os << s.first << " : "  << s.second << "\n";
+        }
+    }
+
 }

@@ -7,15 +7,14 @@
 namespace utopia {
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval< Construct<Left, Structure<Right> >, Traits, Backend> {
+    class Eval< Assign<Left, Structure<Right> >, Traits, Backend> {
     public:
         inline static bool apply(const Construct<Left, Structure<Right> > &expr)
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build_from_structure(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr())
+            Eval<Left,  Traits>::apply(expr.left()).build_from_structure(
+                Eval<Right, Traits>::apply(expr.right().expr())
             );
 
             UTOPIA_TRACE_END(expr);

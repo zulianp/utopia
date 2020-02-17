@@ -14,6 +14,7 @@
 #include "utopia_SymbolicFunction.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_TreeNavigator.hpp"
+#include "utopia_DualBasis.hpp"
 
 #include "utopia_fe_core.hpp"
 
@@ -36,6 +37,46 @@ namespace utopia {
         typedef TraitsT::Vector Vector;
         typedef TraitsT::DXType DXType;
         typedef TraitsT::JacobianType JacobianType;
+        typedef TraitsT::GradientType GradientType;
+
+        class GradValue {
+        public:
+            bool active;
+            GradientType g;
+
+            void init(
+                const int spatial_dim,
+                const std::vector<std::vector<libMesh::VectorValue<double>>> &v)
+            {
+                const std::size_t n = v.size();
+                const std::size_t n_qp = v[0].size();
+
+                if(n != g.size()) {
+                    g.resize(n);
+                }
+
+                for(std::size_t i = 0; i < n; ++i) {
+                    if(g[i].size() != n_qp) {
+                        g[i].resize(n_qp);
+                    }
+
+                    for(std::size_t k = 0; k < n_qp; ++k) {
+
+                        if(g[i][k].size() != spatial_dim) {
+                            g[i][k].resize(spatial_dim);
+                        }
+                        
+                        for(int d = 0; d < spatial_dim; ++d) {
+                            g[i][k].set(d, v[i][k](d));
+                        }
+                    }
+                }
+
+            }
+
+            GradValue() : active(false) {}
+        };
+
 
         inline std::vector< std::unique_ptr<FE> > &fe()
         {
@@ -72,6 +113,15 @@ namespace utopia {
             return fe_;
         }
 
+        // inline const libMesh::DenseMatrix<double> &biorth_weights(const int subspace_id) const
+        // {
+        //     if(biorth_weights_.size() == 1) {
+        //         return biorth_weights_[0];
+        //     }
+
+        //     return biorth_weights_[subspace_id];
+        // }
+
         inline const std::vector< std::unique_ptr<FE> > &trial() const
         {
             return fe_;
@@ -89,7 +139,7 @@ namespace utopia {
         }
 
         template<class Expr>
-        void init_fe_from(const Expr &expr)
+        void init_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad)
         {
             auto space_ptr = find_any_space(expr); assert(bool(space_ptr));
             space_ptr->initialize();
@@ -105,24 +155,38 @@ namespace utopia {
                 quadrature_order_ = (temp + 2) * 2;
             }
 
-            set_up_quadrature(dim, quadrature_order_);
+            if(quad) {
+                set_up_quadrature(quad);
+            } else {
+                set_up_quadrature(dim, quadrature_order_);
+            }
             block_id_ = elem->subdomain_id();
 
             const auto &eq_sys = space_ptr->equation_system();
             const std::size_t n_vars = eq_sys.n_vars();
             fe_.resize(n_vars);
+            grads_.resize(n_vars);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 auto fe = libMesh::FEBase::build(dim, eq_sys.get_dof_map().variable_type(i));
                 fe->attach_quadrature_rule(quad_test().get());
                 fe_[i] = std::move(fe);
 
+                if(!grads_[i]) {
+                    grads_[i] = std::make_shared<GradValue>();
+                }
+
+                grad(i).active = false;
             }
+
+            //FIXME find-out if this is needed
+            dual_fe_.resize(n_vars);
 
             init_fe_flags(expr);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem);
+                
             }
 
             //vfe
@@ -131,14 +195,20 @@ namespace utopia {
                     v_fe_ptr->init(fe_);
                 }
             }
+
+            init_grads(space_ptr->mesh().spatial_dimension());
         }
 
         template<class Expr>
-        void reinit_fe_from(const Expr &expr)
+        void reinit_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad)
         {
             auto space_ptr = find_any_space(expr);
             const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
             block_id_ = elem->subdomain_id();
+
+            if(quad) {
+                set_up_quadrature(quad);
+            }
 
             on_boundary_ = elem->on_boundary();
 
@@ -147,6 +217,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem);
+                // grad(i).active = false;
             }
 
             //vfe
@@ -155,11 +226,55 @@ namespace utopia {
                     v_fe_ptr->reinit(fe_);
                 }
             }
+
+            init_grads(space_ptr->mesh().spatial_dimension());
         }
 
         inline bool on_boundary() const
         {
             return on_boundary_;
+        }
+
+        inline static bool subspaces_are_equal(const libMesh::DofMap &dof_map)
+        {
+            //FIXME check all info
+            const std::size_t n_vars = dof_map.n_variables();
+            int order = dof_map.variable_type(0).order;
+            for(std::size_t i = 0; i < n_vars; ++i) {
+                if(order != dof_map.variable_type(i).order) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        void init_dual(const libMesh::ElemType type)
+        {
+            if(!has_dual_) {
+                return;
+            }
+
+            const auto n_fun = dual_fe_.size();
+            assert(n_fun == fe_.size());
+
+            for(uint i = 0; i < n_fun; ++i) {
+                if(dual_fe_[i].empty()) {
+                    dual_fe_[i].init(type);
+                }
+
+                dual_fe_[i].compute_values(*fe_[i]);
+            }
+
+            if(!vector_fe_.empty()) {
+                for(auto &vf : vector_fe_) {
+                    //FIXME
+                    vf->make_dual(dual_fe_[0].weights_);
+                }
+            }
+
+            //IMPLEMENT ME
+            assert(false);
         }
 
         template<class Expr>
@@ -188,17 +303,25 @@ namespace utopia {
             const auto &eq_sys = space_ptr->equation_system();
             const std::size_t n_vars = eq_sys.n_vars();
             fe_.resize(n_vars);
+            grads_.resize(n_vars);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 auto fe = libMesh::FEBase::build(dim, eq_sys.get_dof_map().variable_type(i));
                 fe->attach_quadrature_rule(quad_test().get());
                 fe_[i] = std::move(fe);
+                
+                if(!grads_[i]) {
+                    grads_[i] = std::make_shared<GradValue>();
+                }
+
+                grad(i).active = false;
             }
 
             init_fe_flags(expr);
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem, side);
+                
             }
 
             //vfe
@@ -207,6 +330,9 @@ namespace utopia {
                     v_fe_ptr->init(fe_);
                 }
             }
+
+            init_grads(space_ptr->mesh().spatial_dimension());
+            init_dual(s_type);
         }
 
         template<class Expr>
@@ -223,6 +349,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_vars; ++i) {
                 fe_[i]->reinit(elem, side);
+                grad(i).active = false;
             }
 
             //vfe
@@ -231,6 +358,10 @@ namespace utopia {
                     v_fe_ptr->reinit(fe_);
                 }
             }
+
+
+            init_grads(space_ptr->mesh().spatial_dimension());
+            //init_dual(s_type);
         }
 
         const DXType &dx() const
@@ -264,6 +395,13 @@ namespace utopia {
             return ret;
         }
 
+        void set_up_quadrature(const std::shared_ptr<libMesh::QBase> &quad)
+        {
+            quad_test_ = quad;
+            quad_trial_ = quad;
+            reset_quadrature_ = false;
+        }
+
         void set_up_quadrature(const int dim, const int quadrature_order)
         {
             if(reset_quadrature_) {
@@ -281,9 +419,47 @@ namespace utopia {
             }
         }
 
+        void set_has_dual(const bool val) {
+            has_dual_ = val; 
+        }
+
         LibMeshAssemblyValues()
-        : current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), on_boundary_(false)
+        : current_element_(0),
+          quadrature_order_(2),
+           block_id_(0),
+           reset_quadrature_(true),
+           on_boundary_(false),
+           has_dual_(false)
         {}
+
+
+        std::vector<DualBasis> &dual_fe() { return dual_fe_; }
+        const std::vector<DualBasis> &dual_fe()  const { return dual_fe_; }
+
+        inline GradValue &grad(const std::size_t i) {
+            assert(i < grads_.size());
+            assert(bool(grads_[i]));
+
+            return *grads_[i];
+        }
+
+        inline const GradValue &grad(const std::size_t i) const {
+            assert(i < grads_.size());
+            assert(bool(grads_[i]));
+
+            return *grads_[i];
+        }
+
+        void init_grads(const int spatial_dim)
+        {
+            for(std::size_t i = 0; i < fe_.size(); ++i) {
+                if(fe_[i]) {
+                    if(grad(i).active) {
+                        grad(i).init(spatial_dim, fe_[i]->get_dphi());
+                    }
+                }
+            }
+        }
 
 
     private:
@@ -292,14 +468,20 @@ namespace utopia {
         int block_id_;
         bool reset_quadrature_;
         bool on_boundary_;
+        bool has_dual_;
 
 
         std::shared_ptr<libMesh::QBase> quad_trial_;
         std::shared_ptr<libMesh::QBase> quad_test_;
         std::vector< std::unique_ptr<FE> > fe_;
+        std::vector<DualBasis> dual_fe_;
 
         //additional precomputed values
         std::vector<std::shared_ptr<VectorElement>> vector_fe_;
+        
+
+     
+        std::vector< std::shared_ptr<GradValue> > grads_;
 
 
         class FEInitializer {
@@ -355,6 +537,42 @@ namespace utopia {
             }
 
             template<class T>
+            inline int visit(const TrialFunction<FiniteElement<T, LIBMESH_TAG>> &expr)
+            {
+                init_phi(expr.space_ptr()->space());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const TestFunction<FiniteElement<T, LIBMESH_TAG>> &expr)
+            {
+                init_phi(expr.space_ptr()->space());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const LinearIntegrator<T> &expr)
+            {
+                expr.init_values(ctx);
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const BilinearIntegrator<T> &expr)
+            {
+                expr.init_values(ctx);
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const EquationIntegrator<T> &expr)
+            {
+                expr.init_values(ctx);
+                return TRAVERSE_CONTINUE;
+            }
+
+
+            template<class T>
             inline int visit(const TestFunction<T> &expr)
             {
                 init_JxW(*expr.space_ptr());
@@ -362,10 +580,33 @@ namespace utopia {
                 return TRAVERSE_CONTINUE;
             }
 
+            template<class T>
+            inline int visit(const Dual<TestFunction<T>> &expr)
+            {
+                init_phi_dual(*expr.expr().space_ptr());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const Gradient<Dual<TestFunction<T>>> &expr)
+            {
+                init_dphi_dual(*expr.expr().space_ptr());
+                return TRAVERSE_CONTINUE;
+            }
+
+            template<class T>
+            inline int visit(const Divergence<Dual<TestFunction<T>>> &expr)
+            {
+                init_div_dual(*expr.expr().space_ptr());
+                return TRAVERSE_CONTINUE;
+            }
+
             void init_dphi(const LibMeshFunctionSpace &s)
             {
                 ctx.fe()[s.subspace_id()]->get_dphi();
+                ctx.grad(s.subspace_id()).active = true;
             }
+
 
             void init_normals()
             {
@@ -377,7 +618,6 @@ namespace utopia {
                 s.each([&](const int, const LibMeshFunctionSpace &space) {
                     ctx.fe()[space.subspace_id()]->get_dphi();
                 });
-
 
                 //vfe
                 const std::size_t s_id = s.subspace(0).subspace_id();
@@ -393,6 +633,54 @@ namespace utopia {
                 }
 
                 ctx.vector_fe()[s_id]->grad_flag = true;
+            }
+
+            void init_phi_dual(const LibMeshFunctionSpace &s)
+            {
+                ctx.set_has_dual(true);
+                ctx.dual_fe()[s.subspace_id()].compute_phi = true;
+                ctx.dual_fe()[s.subspace_id()].order = s.order();
+            }
+
+            void init_dphi_dual(const LibMeshFunctionSpace &s)
+            {
+                ctx.set_has_dual(true);
+                ctx.dual_fe()[s.subspace_id()].compute_dphi = true;
+                ctx.dual_fe()[s.subspace_id()].order = s.order();
+            }
+
+            void init_div_dual(const LibMeshFunctionSpace &s)
+            {
+                ctx.set_has_dual(true);
+                ctx.dual_fe()[s.subspace_id()].compute_divphi = true;
+                ctx.dual_fe()[s.subspace_id()].order = s.order();
+            }
+
+            void init_phi_dual(const ProductFunctionSpace<LibMeshFunctionSpace> &space)
+            {
+                ctx.set_has_dual(true);
+                space.each([&](const int, const LibMeshFunctionSpace &s) {
+                    ctx.dual_fe()[s.subspace_id()].compute_phi = true;
+                    ctx.dual_fe()[s.subspace_id()].order = s.order();
+                });
+            }
+
+            void init_dphi_dual(const ProductFunctionSpace<LibMeshFunctionSpace> &space)
+            {
+                ctx.set_has_dual(true);
+                space.each([&](const int, const LibMeshFunctionSpace &s) {
+                    ctx.dual_fe()[s.subspace_id()].compute_dphi = true;
+                    ctx.dual_fe()[s.subspace_id()].order = s.order();
+                });
+            }
+
+            void init_div_dual(const ProductFunctionSpace<LibMeshFunctionSpace> &space)
+            {
+               ctx.set_has_dual(true);
+               space.each([&](const int, const LibMeshFunctionSpace &s) {
+                   ctx.dual_fe()[s.subspace_id()].compute_divphi = true;
+                   ctx.dual_fe()[s.subspace_id()].order = s.order();
+               });
             }
 
             template<class Expr>
@@ -417,6 +705,15 @@ namespace utopia {
                 return TRAVERSE_CONTINUE;
             }
 
+
+            template<template<class> class Function, class Space, int Backend>
+            inline int visit(const Gradient<Function<FiniteElement<Space, Backend>>> &expr)
+            {
+                init_dphi(expr.expr().space_ptr()->space());
+                return TRAVERSE_CONTINUE;
+            }
+
+
             template<class C, template<class> class Function>
             inline int visit(const Gradient<Interpolate<C, Function<LibMeshFunctionSpace>> > &expr)
             {
@@ -426,6 +723,13 @@ namespace utopia {
 
             template<class C, template<class> class Function>
             inline int visit(const Gradient<Interpolate<C, Function<ProductFunctionSpace<LibMeshFunctionSpace>>> > &expr)
+            {
+                init_dphi(*expr.expr().fun().space_ptr());
+                return TRAVERSE_SKIP_SUBTREE;
+            }
+
+            template<class C, template<class> class Function>
+            inline int visit(const Divergence<Interpolate<C, Function<ProductFunctionSpace<LibMeshFunctionSpace>>> > &expr)
             {
                 init_dphi(*expr.expr().fun().space_ptr());
                 return TRAVERSE_SKIP_SUBTREE;
@@ -506,6 +810,7 @@ namespace utopia {
             LibMeshAssemblyValues &ctx;
         };
 
+    public:
         template<class Expr>
         void init_fe_flags(const Expr &expr)
         {

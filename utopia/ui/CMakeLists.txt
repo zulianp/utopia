@@ -2,6 +2,8 @@ list(APPEND UI_MODULES
     .
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR UI_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
@@ -31,6 +33,8 @@ endif()
 
 
 add_library(utopia_ui STATIC ${LOCAL_SOURCES})
+utopia_link_default_targets(utopia_ui)
+
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

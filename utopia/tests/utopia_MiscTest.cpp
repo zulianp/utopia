@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_MiscTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_FactoryMethod.hpp"
 
 namespace utopia {
@@ -57,12 +57,14 @@ namespace utopia {
     void test_lapack_eigen_solver()
     {
         using namespace utopia;
+        using SizeType = Traits<BlasMatrixd>::SizeType;
+        
         const int n = 9;
-        Matrixd A = zeros(n, n);
+        BlasMatrixd A = zeros(n, n);
         std::vector<SizeType> is{0, 1, 2, 3, 4, 5, 6, 7, 8};
 
         {
-            Write<Matrixd> w_A(A);
+            Write<BlasMatrixd> w_A(A);
             A.set_matrix(is, is, {
                 +6.944444e+05, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, +1.388889e+06, -5.555556e+04, 0, -3.194444e+05, -3.472222e+05, 0, 0, 0,
@@ -76,9 +78,9 @@ namespace utopia {
             });
         }
 
-        Matrixd B = zeros(n, n);
+        BlasMatrixd B = zeros(n, n);
         {
-            Write<Matrixd> w_B(B);
+            Write<BlasMatrixd> w_B(B);
             B.set_matrix(is, is, {
                 +6.944444e+05, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, +2.387253e+06, 0, 0, 0, 0, 0, 0, 0,
@@ -93,15 +95,15 @@ namespace utopia {
 
          }
 
-        Matrixd V;
+        BlasMatrixd V;
 
         {
-            Write<Matrixd> w(A);
+            Write<BlasMatrixd> w(A);
             A.set(0, 1, 2);
             A.set(1, 0, 2);
         }
 
-        Vectord e;
+        BlasVectord e;
 
         bool ok;
         ok = spd_geig_small(A, B, 0.3, e, V); utopia_test_assert(ok);
@@ -111,10 +113,10 @@ namespace utopia {
 
     void factory_method()
     {
-        FactoryMethod<Matrixd> factory;
+        FactoryMethod<BlasMatrixd> factory;
         auto ptr = factory.make();
 
-        auto fact_1 = make_factory<Matrixd, Matrixd>();
+        auto fact_1 = make_factory<BlasMatrixd, BlasMatrixd>();
         auto ptr_2  = fact_1->make();
     }
 
@@ -122,9 +124,7 @@ namespace utopia {
 #endif //WITH_LAPACK
 
 
-    void runMiscTest() {
-        // std::cout << "Begin: MiscTest" << std::endl;
-        UTOPIA_UNIT_TEST_BEGIN("MiscTest");
+    static void misc() {
 
 #ifdef WITH_CUDA
            UTOPIA_RUN_TEST(cuda_hello_world);
@@ -139,7 +139,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(test_lapack_eigen_solver);
 #endif
 #endif
-        UTOPIA_UNIT_TEST_END("MiscTest");
-
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(misc);
 }

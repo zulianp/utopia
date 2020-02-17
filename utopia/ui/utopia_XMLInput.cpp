@@ -119,14 +119,14 @@ namespace utopia {
         }
     }
 
-    // void XMLInput::get(SizeType &val)
-    // {
-    // 	if(impl_->is_invalid_subtree()) return;
+    void XMLInput::get(long long int &val)
+    {
+    	if(impl_->is_invalid_subtree()) return;
 
-    // 	if(impl_->current_node) {
-    // 		val = atoi(impl_->current_node->value());
-    // 	}
-    // }
+    	if(impl_->current_node) {
+    		val = atoll(impl_->current_node->value());
+    	}
+    }
 
     void XMLInput::get(std::string &val)
     {
@@ -200,6 +200,15 @@ namespace utopia {
         }
     }
 
+    // void XMLInput::get(long long &val)
+    // {
+    //     if(impl_->is_invalid_subtree()) return;
+
+    //     if(impl_->current_node) {
+    //         val = atol(impl_->current_node->value());
+    //     }
+    // }
+
     void XMLInput::get(unsigned long &val)
     {
         if(impl_->is_invalid_subtree()) return;
@@ -217,7 +226,21 @@ namespace utopia {
         impl_->object_end();
     }
 
+    // void XMLInput::get(const std::string &key, long long &val)
+    // {
+    //     impl_->object_begin(key);
+    //     get(val);
+    //     impl_->object_end();
+    // }
+
     void XMLInput::get(const std::string &key, unsigned long &val)
+    {
+        impl_->object_begin(key);
+        get(val);
+        impl_->object_end();
+    }
+
+    void XMLInput::get(const std::string &key, long long int &val)
     {
         impl_->object_begin(key);
         get(val);

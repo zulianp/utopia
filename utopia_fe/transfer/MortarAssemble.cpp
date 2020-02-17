@@ -8,6 +8,7 @@
 #include <memory>
 #include <assert.h>
 #include <algorithm>
+#include <numeric>
 
 namespace utopia {
 
@@ -47,11 +48,18 @@ namespace utopia {
 
         int order = 0;
         if(dim == 2 || dim == 1) {
-            order = master_order * (is_quad(master_el.type())? 2 : 1 ) +
-            slave_order  * (is_quad(slave_el.type()) ? 2 : 1 ) * (slave_has_affine_map? 1 : 2);
+            const auto actual_slave_order = slave_order * (is_quad(slave_el.type()) ? 2 : 1 );
+            order = master_order * (is_quad(master_el.type())? 2 : 1 ) + actual_slave_order;
+            if(slave_has_affine_map) {
+                order += std::max(actual_slave_order - 1, 0) * 2;
+            }
+
         } else if(dim == 3) {
-            order = master_order * ( is_hex(master_el.type())? 3 : 1 ) +
-            slave_order  * ( is_hex(slave_el.type())? 3  : 1 ) * (slave_has_affine_map? 1 : 2);
+           const auto actual_slave_order = slave_order * (is_hex(slave_el.type()) ? 3 : 1 );
+           order = master_order * (is_hex(master_el.type())? 3 : 1 ) + actual_slave_order;
+           if(slave_has_affine_map) {
+               order += (actual_slave_order - 1) * 2;
+           }
         } else {
             assert(false && "not supported yet for dim != 2 or dim != 3");
         }
@@ -59,243 +67,6 @@ namespace utopia {
         return order;
     }
 
-    void Transform1::apply(const libMesh::Point &ref, libMesh::Point &world) const
-    {
-        assert( (libMesh::FE<1, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
-        world = libMesh::FE<1, libMesh::LAGRANGE>::map(&elem_, ref);
-    }
-
-    void Transform1::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
-    {
-        ref = libMesh::FE<1, libMesh::LAGRANGE>::inverse_map(&elem_, world, 1e-10);
-        assert( (libMesh::FE<1, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
-        assert( (libMesh::FE<1, libMesh::LAGRANGE>::map(&elem_, ref).absolute_fuzzy_equals(world, 1e-8)) );
-    }
-
-    void Transform2::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
-    {
-        ref = libMesh::FE<2, libMesh::LAGRANGE>::inverse_map(&elem_, world, 1e-10);
-        assert( (libMesh::FE<2, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
-        assert( (libMesh::FE<2, libMesh::LAGRANGE>::map(&elem_, ref).absolute_fuzzy_equals(world, 1e-8)) );
-    }
-
-    void Transform2::apply(const libMesh::Point &ref, libMesh::Point &world) const
-    {
-        world = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem_, ref);
-    }
-
-    void AffineTransform2::compute_affine_transformation(const libMesh::Elem &elem, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b)
-    {
-        libMesh::Point p0, p1, p2;
-
-        A_inv.resize(2,2);
-        A_inv_m_b.resize(2);
-
-        libMesh::DenseMatrix<libMesh::Real> A;
-
-        A.resize(2,2);
-
-        std::vector<const libMesh::Node *> elem_nodes;
-
-        std::vector<libMesh::Point> reference_points;
-
-
-        libMesh::Point ref_p0(0.0, 0.0, 0.0);
-
-        libMesh::Point ref_p1(1.0, 0.0, 0.0);
-
-        libMesh::Point ref_p2(0.0, 1.0, 0.0);
-
-
-        p0 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p0);
-
-        p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p1);
-
-        p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p2);
-
-
-
-        A(0,0) =  (p1(0)-p0(0));
-        A(0,1) =  (p2(0)-p0(0));
-        A(1,0) =  (p1(1)-p0(1));
-        A(1,1) =  (p2(1)-p0(1));
-
-
-        libMesh::Real det =   A(0,0) * A(1,1) - A(0,1) * A(1,0);
-
-        A_inv(0,0) = 1./det * A(1,1);
-        A_inv(1,1) = 1./det * A(0,0);
-        A_inv(0,1) = -1./det * A(0,1);
-        A_inv(1,0) = -1./det * A(1,0);
-
-        A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1);
-        A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1);
-    }
-
-
-
-    void AffineTransform2::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
-    {
-
-        ref(0)= A_inv_m_b_(0) + A_inv_(0,0) * world(0) + A_inv_(0,1) * world(1);
-        ref(1)= A_inv_m_b_(1) + A_inv_(1,0) * world(0) + A_inv_(1,1) * world(1);
-        ref(2)= 0.0;
-
-    }
-
-
-    void Transform3::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
-    {
-        ref = libMesh::FE<3, libMesh::LAGRANGE>::inverse_map(&elem_, world);
-        // assert( (libMesh::FE<3, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-6)) );
-        assert( (libMesh::FE<3, libMesh::LAGRANGE>::map(&elem_, ref).absolute_fuzzy_equals(world, 1e-8)) );
-    }
-
-    void Transform3::apply(const libMesh::Point &ref, libMesh::Point &world) const
-    {
-        world = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem_, ref);
-    }
-
-    void AffineTransform3::compute_affine_transformation(const libMesh::Elem &elem, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b){
-
-        libMesh::Point p0, p1, p2, p3;
-
-        libMesh::Point ref_p0(0.0, 0.0, 0.0);
-        libMesh::Point ref_p1(1.0, 0.0, 0.0);
-        libMesh::Point ref_p2(0.0, 1.0, 0.0);
-        libMesh::Point ref_p3(0.0, 0.0, 1.0);
-
-        A_inv.resize(3,3);
-        A_inv_m_b.resize(3);
-
-        libMesh::DenseMatrix<libMesh::Real> A;
-
-        A.resize(3,3);
-
-        std::vector<const libMesh::Node *> elem_nodes;
-
-        std::vector<libMesh::Point> reference_points;
-
-        p0 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, ref_p0);
-        p1 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, ref_p1);
-        p2 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, ref_p2);
-        p3 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, ref_p3);
-
-        A(0,0) =  p1(0) - p0(0);
-        A(0,1) =  p2(0) - p0(0);
-        A(0,2) =  p3(0) - p0(0);
-        A(1,0) =  p1(1) - p0(1);
-        A(1,1) =  p2(1) - p0(1);
-        A(1,2) =  p3(1) - p0(1);
-        A(2,0) =  p1(2) - p0(2);
-        A(2,1) =  p2(2) - p0(2);
-        A(2,2) =  p3(2) - p0(2);
-
-
-        libMesh::Real det =  Intersector::det_3(&A.get_values()[0]);
-        Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
-
-        A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1) - 1.0 * A_inv(0,2) * p0(2);
-        A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1) - 1.0 * A_inv(1,2) * p0(2);
-        A_inv_m_b(2) = -1.0 * A_inv(2,0) * p0(0) - A_inv(2,1) * p0(1) - 1.0 * A_inv(2,2) * p0(2);
-    }
-
-    void SideAffineTransform2::compute_affine_transformation(const libMesh::Elem &elem,
-                                                             const int side, libMesh::DenseMatrix<libMesh::Real> &A_inv,
-                                                             libMesh::DenseVector<libMesh::Real> &A_inv_m_b)
-    {
-        //ref element -1, 1
-        libMesh::Point u, n;
-        auto side_ptr = elem.build_side_ptr(side);
-
-        libMesh::Point ref_p0(-1.);
-        libMesh::Point ref_p1(1.0);
-
-        libMesh::Point p0 = libMesh::FE<1, libMesh::LAGRANGE>::map(side_ptr.get(), ref_p0);
-        libMesh::Point p1 = libMesh::FE<1, libMesh::LAGRANGE>::map(side_ptr.get(), ref_p1);
-
-        u = p1 - p0;
-
-        n(0) = -u(1);
-        n(1) = u(0);
-
-        n /= n.norm();
-
-        A_inv.resize(2,2);
-        A_inv_m_b.resize(2);
-
-        libMesh::DenseMatrix<libMesh::Real> A;
-        A.resize(2, 2);
-
-        A(0,0) = u(0);
-        A(0,1) = n(0);
-        A(1,0) = u(1);
-        A(1,1) = n(1);
-
-        const libMesh::Real det = A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
-
-        A_inv(0,0) =  1./det * A(1, 1);
-        A_inv(1,1) =  1./det * A(0, 0);
-        A_inv(0,1) = -1./det * A(0, 1);
-        A_inv(1,0) = -1./det * A(1, 0);
-
-        A_inv_m_b(0) = -1.0 * A_inv(0, 0) * p0(0) - A_inv(0, 1) * p0(1);
-        A_inv_m_b(1) = -1.0 * A_inv(1, 0) * p0(0) - A_inv(1, 1) * p0(1);
-    }
-
-    void SideAffineTransform3::compute_affine_transformation(const libMesh::Elem &elem,  const int side, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b)
-    {
-        auto side_ptr = elem.build_side_ptr(side);
-
-        libMesh::Point ref_p0(0.0, 0.0);
-        libMesh::Point ref_p1(1.0, 0.0);
-        libMesh::Point ref_p2(0.0, 1.0);
-
-        libMesh::Point p0 = libMesh::FE<2, libMesh::LAGRANGE>::map(side_ptr.get(), ref_p0);
-        libMesh::Point p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(side_ptr.get(), ref_p1);
-        libMesh::Point p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(side_ptr.get(), ref_p2);
-
-        libMesh::Point u, v, n;
-
-        u = p1 - p0;
-        v = p2 - p0;
-
-        n = u.cross(v);
-        n /= n.norm();
-
-        A_inv.resize(3,3);
-        A_inv_m_b.resize(3);
-
-        libMesh::DenseMatrix<libMesh::Real> A;
-
-        A.resize(3,3);
-
-        A(0,0) = u(0);
-        A(0,1) = v(0);
-        A(0,2) = n(0);
-        A(1,0) = u(1);
-        A(1,1) = v(1);
-        A(1,2) = n(1);
-        A(2,0) = u(2);
-        A(2,1) = v(2);
-        A(2,2) = n(2);
-
-
-        libMesh::Real det =  Intersector::det_3(&A.get_values()[0]);
-        Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
-
-
-        A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1) - 1.0 * A_inv(0,2) * p0(2);
-        A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1) - 1.0 * A_inv(1,2) * p0(2);
-        A_inv_m_b(2) = -1.0 * A_inv(2,0) * p0(0) - A_inv(2,1) * p0(1) - 1.0 * A_inv(2,2) * p0(2);
-    }
-
-    void AffineTransform3::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
-    {
-        ref(0) = A_inv_m_b_(0) + A_inv_(0,0) * world(0) + A_inv_(0,1) * world(1) + A_inv_(0,2) * world(2);
-        ref(1) = A_inv_m_b_(1) + A_inv_(1,0) * world(0) + A_inv_(1,1) * world(1) + A_inv_(1,2) * world(2);
-        ref(2) = A_inv_m_b_(2) + A_inv_(2,0) * world(0) + A_inv_(2,1) * world(1) + A_inv_(2,2) * world(2);
-    }
 
     void print(const libMesh::QBase &ir, std::ostream &os)
     {
@@ -662,7 +433,7 @@ namespace utopia {
         assert(quad_index == n_quad_points);
     }
 
-    static double ref_volume(int type)
+    double ref_volume(int type)
     {
         if(is_hex(type)) {
             return 8.;
@@ -684,7 +455,7 @@ namespace utopia {
         }
     }
 
-    static double ref_area_of_surf(int type)
+    double ref_area_of_surf(int type)
     {
         if(is_tri(type)) {
             return 2.;
@@ -2461,6 +2232,7 @@ namespace utopia {
 
 
 
+
     void mortar_assemble_weighted_biorth(
                                          const libMesh::FEVectorBase &trial_fe,
                                          const libMesh::FEVectorBase &test_fe,
@@ -2470,29 +2242,29 @@ namespace utopia {
         mortar_assemble_weighted_aux(trial_fe, test_fe, weights, elmat);
     }
 
-    void integrate_scalar_function(
-        const libMesh::FEBase &test_fe,
-        const std::vector<double> &fun,
-        libMesh::DenseVector<libMesh::Real> &result
-    )
-    {
-        const auto &phi = test_fe.get_phi();
-        const auto &dx = test_fe.get_JxW();
-        const auto n_qp = fun.size();
-        const auto n_shape_functions = phi.size();
+    // void integrate_scalar_function(
+    //     const libMesh::FEBase &test_fe,
+    //     const std::vector<double> &fun,
+    //     libMesh::DenseVector<libMesh::Real> &result
+    // )
+    // {
+    //     const auto &phi = test_fe.get_phi();
+    //     const auto &dx = test_fe.get_JxW();
+    //     const auto n_qp = fun.size();
+    //     const auto n_shape_functions = phi.size();
 
-        assert(n_qp == phi[0].size());
-        assert(n_qp == dx.size());
+    //     assert(n_qp == phi[0].size());
+    //     assert(n_qp == dx.size());
 
-        result.resize(n_shape_functions);
-        result.zero();
+    //     result.resize(n_shape_functions);
+    //     result.zero();
 
-        for(std::size_t i = 0; i < n_shape_functions; ++i) {
-            for(std::size_t qp = 0; qp < n_qp; ++qp) {
-                result(i) += phi[i][qp] * fun[qp] * dx[qp];
-            }
-        }
-    }
+    //     for(std::size_t i = 0; i < n_shape_functions; ++i) {
+    //         for(std::size_t qp = 0; qp < n_qp; ++qp) {
+    //             result(i) += phi[i][qp] * fun[qp] * dx[qp];
+    //         }
+    //     }
+    // }
 
 
     void integrate_point_function(
@@ -2673,6 +2445,62 @@ namespace utopia {
 
                 for(uint d = 0; d < dim; ++d) {
                     normals(i, d) += biorth_test * surf_normal(d) * JxW[qp];
+                }
+            }
+        }
+    }
+
+    void mortar_assemble_weighted_biorth(const libMesh::FEBase &trial_fe,
+                                         const libMesh::DenseMatrix<libMesh::Real> &trafo,
+                                         const libMesh::FEBase &test_fe,
+                                         const libMesh::DenseMatrix<libMesh::Real> &weights,
+                                         libMesh::DenseMatrix<libMesh::Real> &elmat)
+    {
+        if(elmat.m() != test_fe.get_phi().size() ||
+           elmat.n() != trial_fe.get_phi().size()) {
+
+            elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
+            elmat.zero();
+        }
+
+        const auto &trial = trial_fe.get_phi();
+        const auto &test  = test_fe.get_phi();
+        const auto &JxW   = test_fe.get_JxW();
+
+        const uint n_test  = test.size();
+        const uint n_trial = trial.size();
+        const uint n_qp    = test[0].size();
+
+        std::vector<double> w_trial(n_trial);
+        std::vector<double> w_test(n_test);
+
+        for(uint qp = 0; qp < n_qp; ++qp) {
+
+            //build trial test
+            for(uint j = 0; j < n_trial; ++j) {
+                auto w_trial_j = 0.;
+
+                for(uint k = 0; k < n_trial; ++k) {
+                    w_trial_j += trial[k][qp] * trafo(j, k);
+                }
+
+                w_trial[j] = w_trial_j;
+            }
+
+            //build weigthed test
+            for(uint j = 0; j < n_test; ++j) {
+                auto w_test_j = 0.;
+
+                for(uint k = 0; k < n_test; ++k) {
+                    w_test_j += test[k][qp] * weights(j, k);
+                }
+
+                w_test[j] = w_test_j;
+            }
+
+            for(uint i = 0; i < n_test; ++i) {
+                for(uint j = 0; j < n_trial; ++j) {
+                    elmat(i, j) += w_test[i] * w_trial[j] * JxW[qp];
                 }
             }
         }

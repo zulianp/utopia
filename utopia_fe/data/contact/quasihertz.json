@@ -1,30 +1,53 @@
 {
 	"contact-problem": {
+		"contact-stress" : true,
 		"use-amg": false,
 		"use-ssnewton": true,
 		"dt": 0.2,
 		"is-steady" : true,
 		"use-gmres" : true,
+		"outer-loop-tol" : 0.00001,
+		"max-outer-loops" : 8,
+		"discretization" : "new",
+		"*discretization" : "bug",
+		"plot-gap" : false,
 		"mesh": {
 			"type": "file",
 			"path_0" : "../data/contact/contact_cubes.e",
 			"path_1" : "../data/contact/signorini_79207.e",
 			"path_2" : "../data/contact/quasi_hertz_91.e",
 			"path_3" : "../data/contact/quasi_hertz_750.e",
-			"path"   : "../data/contact/quasi_hertz_8732.e"
-
+			"path_4"   : "../data/contact/quasi_hertz_750_smooth.e",
+			"path" : "../data/contact/quasi_hertz_8732.e",
+			"path_6" : "../data/contact/quasi_hertz_8732_smooth.e",
+			"order" : 2
+		},
+		"qp-solver" : {
+			"backend" : "petsc",
+			"type" : "tron",
+			"*backend" : "any",
+			"*type" : "ssnewton",
+			"max-it" : 30,
+			"verbose" : true,
+			"linear-solver" : {
+				"type" : "direct",
+				"*solver_package" : "mumps"
+			}
 		},
 		"space": {
 			"system-name": "contact_sol",
 			"variables": [
 				{
-					"name": "disp_x"
+					"name": "disp_x",
+					"order" : 2
 				},
 				{
-					"name": "disp_y"
+					"name": "disp_y",
+					"order" : 2
 				},
 				{
-					"name": "disp_z"
+					"name": "disp_z",
+					"order" : 2
 				}
 			],
 			"boundary-conditions": [
@@ -41,7 +64,7 @@
 				{
 					"var": 2,
 					"side": 4,
-					"value": 0.05
+					"value": 0.2
 				},
 
 				{
@@ -62,27 +85,33 @@
 			]
 		},
 		"model": {
-			"material": "LinearElasticity",
-			"stabilization": "none",
-			"stabilization-mag": 0.00001,
+			"material" : "LinearElasticity",
+			"*material"  : "NeoHookean",
+			"*stabilization": "L2_LUMPED",
+			"stabilization-mag": 0.000001,
+			"rescaling" : 1e2,
 			"parameters": {
 				"mu": 0.3,
-				"lambda": 0.3,
-				"E" : 100,
-				"comment" : "lambda = mu * (E - 2 * mu)/(3 * mu - E) = -0.3"
+				"poisson-ratio" : 0.1
 			}
 		},
 
 		"contact": {
-			"n-transient-steps": 30,
-			"max-nl-iter": 100,
-			"radius": 0.1,
 			"pairs": [
 				{
 					"master": 1,
 					"slave": 3
 				}
-			]
+			],
+			"search-radius" : {
+			    "default" : 0.7,
+			    "sides" : [
+			        {
+			            "id" : 1,
+			            "value" : 0.3
+			        }
+			    ]
+			}
 		}
 	}
 }

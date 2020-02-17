@@ -240,9 +240,9 @@ namespace utopia {
             return boundary_tags_;
         }
 
-        inline std::string getClass() const
+        inline std::string get_class() const
         {
-            return "DirichletBoundaryCondition<" + expr().getClass() + ">";
+            return "DirichletBoundaryCondition<" + expr().get_class() + ">";
         }
 
 

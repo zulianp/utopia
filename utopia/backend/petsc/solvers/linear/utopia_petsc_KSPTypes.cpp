@@ -1,5 +1,6 @@
 #include "utopia_petsc_KSPTypes.hpp"
 #include "utopia_petsc_Types.hpp"
+#include "utopia_petsc_Base.hpp"
 
 #include <petscpc.h>
 #include <petscksp.h>

@@ -46,6 +46,40 @@ namespace utopia {
         }
 
         template<class Expr>
+        inline int visit(const LinearIntegrator<Expr> &expr)
+        {
+            if(expr.is_surface()) {
+                has_surface_integral = true;
+                return TRAVERSE_STOP;
+            } else {
+                return TRAVERSE_CONTINUE;
+            }
+        }
+
+
+        template<class Expr>
+        inline int visit(const BilinearIntegrator<Expr> &expr)
+        {
+            if(expr.is_surface()) {
+                has_surface_integral = true;
+                return TRAVERSE_STOP;
+            } else {
+                return TRAVERSE_CONTINUE;
+            }
+        }
+
+        template<class Expr>
+        inline int visit(const EquationIntegrator<Expr> &expr)
+        {
+            if(expr.is_surface()) {
+                has_surface_integral = true;
+                return TRAVERSE_STOP;
+            } else {
+                return TRAVERSE_CONTINUE;
+            }
+        }
+
+        template<class Expr>
         void apply(const Expr &expr)
         {
             traverse(expr, *this);
@@ -69,6 +103,7 @@ namespace utopia {
         typedef TraitsT::Matrix Matrix;
         typedef TraitsT::Vector Vector;
         typedef TraitsT::DXType DXType;
+        typedef TraitsT::GradientType GradientType;
 
         inline std::vector< std::unique_ptr<FE> > &fe()
         {
@@ -90,6 +125,15 @@ namespace utopia {
             return active_values().vector_fe();
         }
 
+        inline GradientType &grad(const int subspace_id)
+        {
+            return active_values().grad(subspace_id).g;
+        }
+
+        inline const GradientType &grad(const int subspace_id) const
+        {
+            return active_values().grad(subspace_id).g;
+        }
 
 
         inline std::vector< std::unique_ptr<FE> > &test()
@@ -128,34 +172,34 @@ namespace utopia {
         }
 
         template<class Expr>
-        void init(const Expr &expr)
+        void init(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
-            init_fe_from(expr);
+            init_fe_from(expr, quad);
         }
 
         template<class Expr>
-        void reinit(const Expr &expr)
+        void reinit(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
             if(active_values_)
-                active_values().reinit_fe_from(expr);
+                active_values().reinit_fe_from(expr, quad);
 
             init_all_side_fe_from(expr);
         }
 
 
         template<class Expr>
-        void init_bilinear(const Expr &expr)
+        void init_bilinear(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
             static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
-            init_fe_from(expr);
+            init_fe_from(expr, quad);
         }
 
         template<class Expr>
-        void init_linear(const Expr &expr)
+        void init_linear(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad = nullptr)
         {
             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
-            init_fe_from(expr);
+            init_fe_from(expr, quad);
         }
 
         template<class Expr>
@@ -165,7 +209,8 @@ namespace utopia {
 
             assert((static_cast<bool>(space_ptr)));
 
-            mesh_dimension_ = space_ptr->mesh().mesh_dimension();
+            mesh_dimension_    = space_ptr->mesh().mesh_dimension();
+            spatial_dimension_ = space_ptr->mesh().spatial_dimension();
 
             const std::size_t n_vars = space_ptr->equation_system().n_vars();
             offset.resize(n_vars + 1);
@@ -226,10 +271,10 @@ namespace utopia {
         }
 
         template<class Expr>
-        void init_fe_from(const Expr &expr)
+        void init_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad)
         {
             if(active_values_)
-                active_values().init_fe_from(expr);
+                active_values().init_fe_from(expr, quad);
             init_offsets(expr);
 
             init_all_side_fe_from(expr);
@@ -277,7 +322,7 @@ namespace utopia {
         }
 
         LibMeshAssemblyContext()
-        : has_assembled_(false), mesh_dimension_(-1)
+        : has_assembled_(false), mesh_dimension_(-1), spatial_dimension_(-1)
         {
             volume_values_ = std::make_shared<LibMeshAssemblyValues>();
             active_values_ = volume_values_;
@@ -302,6 +347,12 @@ namespace utopia {
             return mesh_dimension_;
         }
 
+
+        inline unsigned int spatial_dimension() const
+        {
+            return spatial_dimension_;
+        }
+
     private:
         std::shared_ptr<libMesh::QBase> quad_trial_;
         std::shared_ptr<libMesh::QBase> quad_test_;
@@ -311,6 +362,7 @@ namespace utopia {
         std::vector< std::shared_ptr<LibMeshAssemblyValues> > surface_values_;
         bool has_assembled_;
         unsigned int mesh_dimension_;
+        unsigned int spatial_dimension_;
 
         inline LibMeshAssemblyValues &active_values()
         {

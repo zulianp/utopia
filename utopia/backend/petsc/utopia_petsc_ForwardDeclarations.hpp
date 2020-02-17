@@ -1,18 +1,30 @@
-
 #ifndef UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 #define UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 
-namespace utopia
-{
-    class PetscMatrix;
-    class PetscSparseMatrix;
-    class PetscSerialSparseMatrix;
+#include "utopia_ForwardDeclarations.hpp"
+#include <vector>
 
+namespace utopia {
+
+    class PetscMatrix;
     class PetscVector;
-    class PetscSerialVector;
+    // class PetscIndexSet;
+    //FIXME
+    using PetscIndexSet = std::vector<int>;
+    class PetscTraits;
+
+    //class PetscArray
+    //FIXME
+    template<typename T>
+    using PetscArray = std::vector<T>;
 
     template<class Matrix, class Vector>
     class TaoSolver;
+
+    template<typename Matrix, typename Vector, int Backend>
+    class KSPSolver;
+
+    class PetscCommunicator;
 }
 
 #endif //UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP

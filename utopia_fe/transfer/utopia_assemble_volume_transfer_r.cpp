@@ -29,6 +29,7 @@
 #include <queue>
 #include <algorithm>
 #include <unordered_set>
+#include <numeric>
 
 using namespace libMesh;
 
@@ -265,8 +266,8 @@ namespace utopia {
                   const unsigned int &to_var_num,
                   const unsigned int &from_var_num_r,
                   const unsigned int &to_var_num_r,
-                  DSMatrixd &B,
-                  DSMatrixd &B_reverse, //bbecsek
+                  PetscMatrix &B,
+                  PetscMatrix &B_reverse, //bbecsek
                   const moonolith::SearchSettings &settings,
                   std::unordered_set<utopia::SizeType> &particip_slave_dofs,
                   bool use_biorth_,
@@ -630,12 +631,12 @@ namespace utopia {
 
         //moonolith::root_describe("petsc assembly begin 2", comm, std::cout);
 
-        DSMatrixd B_x = utopia::local_sparse(local_range_slave, local_range_master, mMaxRowEntries);
+        PetscMatrix B_x = utopia::local_sparse(local_range_slave, local_range_master, mMaxRowEntries);
         // bbecsek
-        DSMatrixd B_x_reverse = utopia::local_sparse(local_range_master_r, local_range_slave_r, mMaxRowEntries_reverse);
+        PetscMatrix B_x_reverse = utopia::local_sparse(local_range_master_r, local_range_slave_r, mMaxRowEntries_reverse);
 //
         {
-            utopia::Write<utopia::DSMatrixd> write(B_x);
+            utopia::Write<utopia::PetscMatrix> write(B_x);
             for (auto it = mat_buffer.iter(); it; ++it) {
                 B_x.set(it.row(), it.col(), *it);
 
@@ -649,7 +650,7 @@ namespace utopia {
         //moonolith::root_describe("petsc assembly begin 3", comm, std::cout);
 
         {
-            utopia::Write<utopia::DSMatrixd> write_reverse(B_x_reverse);
+            utopia::Write<utopia::PetscMatrix> write_reverse(B_x_reverse);
             for (auto it = mat_buffer_reverse.iter(); it; ++it) {
                 B_x_reverse.set(it.row(), it.col(), *it);
 
@@ -669,7 +670,7 @@ namespace utopia {
 
         // std::cout<< "modify the matrix  B"<<std::endl;
         particip_slave_dofs.clear();
-        utopia::Write<DSMatrixd> w_B(B);
+        utopia::Write<PetscMatrix> w_B(B);
         utopia::each_read(B_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
             for(utopia::SizeType d = 0; d < n_var; ++d) {
                 B.set(i+d, j+d, value);
@@ -681,7 +682,7 @@ namespace utopia {
         //bbecsek: can we move this to the first iteration?
         // std::cout<<"n_var_r"<<n_var_r<<std::endl;
         // std::cout<< "modify the matrix  B_reverse"<<std::endl;
-        utopia::Write<DSMatrixd> w_B_reverse(B_reverse);
+        utopia::Write<PetscMatrix> w_B_reverse(B_reverse);
         utopia::each_read(B_x_reverse, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
             for(utopia::SizeType d = 0; d < n_var_r ; ++d) {
                 B_reverse.set(i+d, j+d, value);
@@ -715,8 +716,8 @@ namespace utopia {
                                     bool  use_biorth_,
                                     int n_var,
                                     int n_var_r,
-                                    DSMatrixd &B,
-                                    DSMatrixd &B_reverse)
+                                    PetscMatrix &B,
+                                    PetscMatrix &B_reverse)
     {
         moonolith::SearchSettings settings;
 

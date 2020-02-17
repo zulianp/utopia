@@ -13,8 +13,6 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        static_assert(!utopia::is_sparse<Matrix>::value, "utopia::BFGS does not support sparse matrices.");
-
         public:
 
             BFGS(): HessianApproximation<Vector>(), update_hessian_(false), current_it_(0)
@@ -27,7 +25,7 @@ namespace utopia
                 return new BFGS<Matrix, Vector>(*this);
             }
 
-            void initialize() override
+            void initialize(const Vector &  /* x */ , const Vector &  /* g */ ) override
             {
                 current_it_ = 0;
                 this->initialized(true);
@@ -45,7 +43,7 @@ namespace utopia
                     H_prev_inv_ = local_identity(local_size(H_prev_inv_));
             }
 
-            bool update(const Vector & s_in, const Vector & y_in ) override
+            bool update(const Vector & s_in, const Vector & y_in, const Vector &  /* x */ , const Vector &  /* g */  ) override
             {
                 if(!this->initialized())
                 {
@@ -70,10 +68,14 @@ namespace utopia
                 s_ = s_in;
                 y_ = y_in;
 
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:1");
                 this->update_Hessian_inverse();
+                UTOPIA_NO_ALLOC_END();
 
                 if(update_hessian_){
+                    UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:2");
                     this->update_Hessian();
+                    UTOPIA_NO_ALLOC_END();
                 }
 
                 current_it_++;
@@ -86,7 +88,7 @@ namespace utopia
                 return H_prev_;
             }
 
-            bool apply_Hinv(const Vector & g , Vector & s) const override
+            bool apply_Hinv(const Vector & g , Vector & s) override
             {
                 if(this->initialized())
                 {
@@ -102,7 +104,7 @@ namespace utopia
                 return true;
             }
 
-            bool apply_H(const Vector & v, Vector & result) const override
+            bool apply_H(const Vector & v, Vector & result) override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -118,7 +120,7 @@ namespace utopia
                 return true;
             }
 
-            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const override
+            Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) override
             {
                 if(this->initialized())
                 {
@@ -133,7 +135,7 @@ namespace utopia
                 }
             }
 
-            Scalar compute_uHv_dot(const Vector & u, const Vector & v) const override
+            Scalar compute_uHv_dot(const Vector & u, const Vector & v) override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -149,7 +151,7 @@ namespace utopia
                 }
             }
 
-            Scalar compute_uHu_dot(const Vector & u) const override
+            Scalar compute_uHu_dot(const Vector & u) override
             {
                 if(update_hessian_ && this->initialized())
                 {
@@ -201,15 +203,33 @@ namespace utopia
                     return;
                 }
 
-                Matrix ss  = outer(s_, s_);
-                Vector Hy  = H_prev_inv_ * y_;
-                Matrix Hys = outer(Hy, s_);
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:3");
+                ss_  = outer(s_, s_);
+                UTOPIA_NO_ALLOC_END();
 
-                Matrix sy_outerH  = outer(s_, y_);
-                sy_outerH = sy_outerH *  H_prev_inv_;
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:4");
+                Hy_  = H_prev_inv_ * y_;
+                UTOPIA_NO_ALLOC_END();
+                
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:5");
+                Hys_ = outer(Hy_, s_);
+                UTOPIA_NO_ALLOC_END();
 
-                H_prev_inv_ += (s_y + yHy)/(s_y*s_y) * ss;
-                H_prev_inv_ -= (1./s_y) * (Hys + sy_outerH);
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:6");
+                sy_outerH_  = outer(s_, y_);
+                UTOPIA_NO_ALLOC_END();
+
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:7");
+                sy_outerH_ = sy_outerH_ *  H_prev_inv_;
+                UTOPIA_NO_ALLOC_END();
+
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:8");
+                H_prev_inv_ += (s_y + yHy)/(s_y*s_y) * ss_;
+                UTOPIA_NO_ALLOC_END();
+
+                UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:9");
+                H_prev_inv_ -= (1./s_y) * (Hys_ + sy_outerH_);
+                UTOPIA_NO_ALLOC_END();
             }
 
 
@@ -242,6 +262,10 @@ namespace utopia
 
             bool update_hessian_;
             SizeType current_it_;
+
+            // help mats/vecs 
+            Matrix ss_, Hys_, sy_outerH_;
+            Vector Hy_; 
 
         };
 

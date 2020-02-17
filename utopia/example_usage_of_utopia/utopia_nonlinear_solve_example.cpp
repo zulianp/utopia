@@ -14,7 +14,7 @@ class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector>
         bool value(const Vector &point, Scalar &result) const override 
         {
             using namespace utopia; 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
 
             const Read<Vector> read(point);
 
@@ -28,7 +28,7 @@ class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector>
         bool gradient(const Vector &point, Vector &result) const override 
         {
             using namespace utopia; 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
             result = zeros(2);
 
             const Read<Vector> read(point);
@@ -45,7 +45,7 @@ class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector>
         bool hessian(const Vector &point, Matrix &result) const override 
         {
             using namespace utopia; 
-            assert(point.size().get(0) == 2);
+            assert(point.size() == 2);
             result = zeros(2, 2);
 
             const Read<Vector> read(point);
@@ -71,13 +71,13 @@ int main(int argc, char** argv)
     { //Only in the main file: put this scope so that the petsc objects will be destroyed before the call to finalize
     
         // instatiating Rosenbrock 2D banana function
-        Rosenbrock2DFunction<utopia::DMatrixd, utopia::DVectord> rosenbrock_fun;
+        Rosenbrock2DFunction<utopia::PetscMatrix, utopia::PetscVector> rosenbrock_fun;
 
         // exact solution to our problem
-        DVectord rosenbrock_exact = values(2, 1);
+        PetscVector rosenbrock_exact = values(2, 1);
 
         // constructing initial guess
-        DVectord x = values(2, 2); 
+        PetscVector x = values(2, 2); 
 
         // setting up parameters of solver 
         // Parameters params; 

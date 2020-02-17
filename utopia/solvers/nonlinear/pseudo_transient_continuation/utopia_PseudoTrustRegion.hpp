@@ -63,7 +63,7 @@ namespace utopia
             fun.value(x, energy_old);
             fun.hessian(x, H);
 
-            Matrix I = local_identity(local_size(H));
+            // Matrix I = local_identity(local_size(H));
 
             //tau = 1.0/g_norm;
             tau = std::min(g_norm, 10.0);
@@ -74,7 +74,8 @@ namespace utopia
 
             while(!converged)
             {
-                H_damped = H + 1./tau * I;
+                // H_damped = H + 1./tau * I;
+                H_damped = H + (1./tau) * local_identity(local_size(H));
 
                 eigen_solver_->portion_of_spectrum("smallest_real");
                 eigen_solver_->number_of_eigenvalues(1);

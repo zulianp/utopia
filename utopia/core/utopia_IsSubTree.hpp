@@ -2,6 +2,7 @@
 #define UTOPIA_TREE_HAS_EXPRESSION_HPP
 
 #include "utopia_Traits.hpp"
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
 
@@ -192,17 +193,19 @@ namespace utopia {
 
 
     //wrapper
-    template<class Tensor, int Order>
-    class IsSubTree<Wrapper<Tensor, Order>, Wrapper<Tensor, Order>> {
+    template<class T, int Order>
+    class IsSubTree<Tensor<T, Order>, Tensor<T, Order>> {
     public:
         static const int value = 1;
     };
 
-    template<class Expr, class Tensor, int Order>
-    class IsSubTree<Expr, Wrapper<Tensor, Order>> {
+    template<class Expr, class T, int Order>
+    class IsSubTree<Expr, Tensor<T, Order>> {
     public:
-        static const int value = 0;
+        static const int value = IsSubTree<Expr, T>::value;
     };
+
+
 
 
     // queries

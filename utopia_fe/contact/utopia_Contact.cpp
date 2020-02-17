@@ -11,19 +11,6 @@
 
 namespace utopia {
 
-    void ContactParams::describe(std::ostream &os) const
-    {
-        os << "search_radius: " << search_radius << "\n";
-        os << "variable_number: " << variable_number << "\n";
-        os << "use_biorthogonal_basis: " << use_biorthogonal_basis << "\n";
-        os << "master, slave:\n";
-        for(const auto &p : contact_pair_tags) {
-            os << p.first << ", " << p.second << "\n";
-        }
-
-        os << std::endl;
-    }
-
     bool Contact::init(
         const std::shared_ptr<libMesh::MeshBase> &mesh,
         const std::shared_ptr<libMesh::DofMap> &dof_map,
@@ -40,11 +27,11 @@ namespace utopia {
             mesh,
             dof_map,
             variable_number,
-            coupling,
-            orthogonal_trafo,
-            weighted_gap,
-            normals,
-            is_contact_node,
+            coupling_,
+            orthogonal_trafo_,
+            weighted_gap_,
+            normals_,
+            is_contact_node_,
             search_radius,
             contact_pair_tags,
             use_biorthogonal_basis,
@@ -57,12 +44,12 @@ namespace utopia {
 
         if(use_biorthogonal_basis) {
 
-            UVector d = sum(coupling, 1);
+            UVector d = sum(coupling_, 1);
 
-            inv_mass_vector = local_zeros(local_size(d));
+            inv_mass_vector_ = local_zeros(local_size(d));
 
             {
-                Write<UVector> w_(inv_mass_vector);
+                Write<UVector> w_(inv_mass_vector_);
 
                 each_read(d, [this](const SizeType i, const double value) {
                     if(value < -1e-8) {
@@ -70,15 +57,15 @@ namespace utopia {
                     }
 
                     if(std::abs(value) > 1e-15) {
-                        this->inv_mass_vector.set(i, 1./value);
+                        this->inv_mass_vector_.set(i, 1./value);
                     } else {
-                        this->inv_mass_vector.set(i, 1.);
+                        this->inv_mass_vector_.set(i, 1.);
                     }
                 });
             }
 
 
-            inv_mass_matrix = diag(inv_mass_vector);
+            inv_mass_matrix_ = diag(inv_mass_vector_);
         } else {
             assert(false && "implement me");
 
@@ -90,15 +77,15 @@ namespace utopia {
         // exit(0);
 
 
-        transfer_operator = inv_mass_matrix * coupling;
+        transfer_operator_ = inv_mass_matrix_ * coupling_;
 
-        transfer_operator += local_identity(local_size(transfer_operator));
-        gap = inv_mass_matrix * weighted_gap;
-        complete_transformation = transfer_operator * orthogonal_trafo;
+        transfer_operator_ += local_identity(local_size(transfer_operator_));
+        gap_ = inv_mass_matrix_ * weighted_gap_;
+        complete_transformation_ = transfer_operator_ * orthogonal_trafo_;
 
-        has_contact_ = utopia::max(is_contact_node);
+        has_contact_ = utopia::max(is_contact_node_);
 
-        initialized = true;
+        initialized_ = true;
         return true;
     }
 
@@ -108,30 +95,30 @@ namespace utopia {
     {
         auto n_local_dofs = dof_map->n_local_dofs();
 
-        gap = local_values(n_local_dofs, 100000000);
-        weighted_gap = gap;
-        normals = local_zeros(n_local_dofs);
+        gap_ = local_values(n_local_dofs, 100000000);
+        weighted_gap_ = gap_;
+        normals_ = local_zeros(n_local_dofs);
 
-        inv_mass_vector = local_values(n_local_dofs, 1.);
-        is_contact_node = local_zeros(n_local_dofs);
+        inv_mass_vector_ = local_values(n_local_dofs, 1.);
+        is_contact_node_ = local_zeros(n_local_dofs);
 
-        coupling = local_identity(n_local_dofs, n_local_dofs);
-        inv_mass_matrix = local_identity(n_local_dofs, n_local_dofs);
-        transfer_operator = local_identity(n_local_dofs, n_local_dofs);
-        orthogonal_trafo  = local_identity(n_local_dofs, n_local_dofs);
-        complete_transformation = local_identity(n_local_dofs, n_local_dofs);
-        initialized = true;
+        coupling_ = local_identity(n_local_dofs, n_local_dofs);
+        inv_mass_matrix_ = local_identity(n_local_dofs, n_local_dofs);
+        transfer_operator_ = local_identity(n_local_dofs, n_local_dofs);
+        orthogonal_trafo_  = local_identity(n_local_dofs, n_local_dofs);
+        complete_transformation_ = local_identity(n_local_dofs, n_local_dofs);
+        initialized_ = true;
         has_contact_ = false;
         return true;
     }
 
     void Contact::print_debug_info()
     {
-        const double sum_T  = sum(transfer_operator);
-        const double norm_g  = norm2(gap);
-        const double norm_B  = norm2(coupling);
-        const double norm_O  = norm2(orthogonal_trafo);
-        const double norm_im = norm2(inv_mass_vector);
+        const double sum_T  = sum(transfer_operator_);
+        const double norm_g  = norm2(gap_);
+        const double norm_B  = norm2(coupling_);
+        const double norm_O  = norm2(orthogonal_trafo_);
+        const double norm_im = norm2(inv_mass_vector_);
 
         std::stringstream ss;
         ss << "sum_T:   " << sum_T   << "\n";
@@ -150,5 +137,20 @@ namespace utopia {
 
         moonolith::Communicator comm;
         moonolith::root_describe(ss.str(), comm, std::cout);
+    }
+
+    void Contact::couple(const UVector &in, UVector &out) const
+    {
+        out = transpose(complete_transformation_) * in;
+    }
+    
+    void Contact::uncouple(const UVector &in, UVector &out) const
+    {
+        out = complete_transformation_ * in;
+    }
+    
+    void Contact::couple(const USparseMatrix &in, USparseMatrix &out) const
+    {
+        out = transpose(complete_transformation_) * in * complete_transformation_;
     }
 }

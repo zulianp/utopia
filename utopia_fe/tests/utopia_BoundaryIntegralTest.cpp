@@ -81,7 +81,7 @@ namespace utopia {
 
         {
             Write<USparseMatrix> w_b(boundary_mass_matrix);
-            libMesh::DenseMatrix<libMesh::Real> elemat;
+            LMDenseMatrix elemat;
 
             // for(const auto & elem : mesh->active_local_element_ptr_range()) {
             for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
@@ -89,8 +89,7 @@ namespace utopia {
 
                 dof_map.dof_indices(elem, dof_indices);
                 elemat.resize(dof_indices.size(), dof_indices.size());
-
-                elemat.zero();
+                elemat.set(0.0);
 
                 bool has_assembled = false;
 
@@ -107,7 +106,7 @@ namespace utopia {
                     for(std::size_t i = 0; i < dof_indices.size(); ++i) {
                         for(std::size_t j = 0; j < dof_indices.size(); ++j) {
                             for(std::size_t qp = 0; qp < JxW.size(); ++qp) {
-                                elemat(i, j) += phi[i][qp] * phi[j][qp] * JxW[qp];
+                                elemat.add(i, j, phi[i][qp] * phi[j][qp] * JxW[qp]);
                             }
                         }
                     }
@@ -117,7 +116,7 @@ namespace utopia {
 
                 if(has_assembled) {
                     add_matrix(elemat, dof_indices, dof_indices, boundary_mass_matrix);
-                    mat_sum += std::accumulate(begin(elemat.get_values()), end(elemat.get_values()), 0.);
+                    mat_sum += elemat.sum();
                 }
             }
         }

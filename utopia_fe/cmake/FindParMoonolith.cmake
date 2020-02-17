@@ -81,7 +81,7 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
         )
 
     LIST(APPEND MOONOLITH_LIBRARIES
-    -L/Users/zulianp/Desktop/code/installations/par_moonolith/lib
+    -L${MOONOLITH_INSTALL_DIR}/lib
     "-lpar_moonolith_mesh" 
     "-lpar_moonolith_spatial_hashing" 
     "-lmoonolith_opencl" 
@@ -90,10 +90,7 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     "-lpar_moonolith_mpi" 
     "-lpar_moonolith_utils" 
     "-lpar_moonolith_core" 
-    "-lpar_moonolith_visual"  
-    "/opt/local/lib/mpich-mp/libmpicxx.dylib" 
-    "/opt/local/lib/mpich-mp/libmpi.dylib" 
-    "/opt/local/lib/mpich-mp/libpmpi.dylib"  
+    "-lpar_moonolith_visual"
     )
 
     set(MOONOLITH_FOUND TRUE)

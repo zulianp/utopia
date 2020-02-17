@@ -5,13 +5,15 @@
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_libmesh.hpp"
 
+#include <iostream>
 
 namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
     class Bratu : public ExtendedFunction<Matrix, Vector> {
     public:
-        typedef typename utopia::Traits<Vector>::Scalar Scalar;
-        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+        using Scalar   = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using IndexSet = typename utopia::Traits<Vector>::IndexSet;
 
         Bratu(FunctionSpace &V, const Scalar lambda = 1.5) : V_(V), lambda_(lambda)
 
@@ -28,7 +30,9 @@ namespace utopia {
 
         bool value(const Vector &x, Scalar &energy) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
+            IndexSet ghost_nodes;
+            convert(V_.dof_map().get_send_list(), ghost_nodes);
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), ghost_nodes);
             x_ = x;
             synchronize(x_);
 
@@ -40,9 +44,11 @@ namespace utopia {
             return true;
         }
 
-        bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
+        bool gradient(const Vector &x, Vector &gradient) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
+            IndexSet ghost_nodes;
+            convert(V_.dof_map().get_send_list(), ghost_nodes);
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), ghost_nodes);
             x_ = x;
             synchronize(x_);
 
@@ -60,7 +66,9 @@ namespace utopia {
 
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
-            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list());
+            IndexSet ghost_nodes;
+            convert(V_.dof_map().get_send_list(), ghost_nodes);
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), ghost_nodes);
             x_ = x;
             synchronize(x_);
 

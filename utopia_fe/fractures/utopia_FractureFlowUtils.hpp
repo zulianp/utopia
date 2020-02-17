@@ -14,13 +14,6 @@ namespace utopia {
     std::shared_ptr<SemiGeometricMultigrid> make_mg_solver(
         const LibMeshFunctionSpace &space, const int n_levels);
 
-    void refine_around_fractures(
-        const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
-        const libMesh::Order &elem_order,
-        const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
-        const int refinement_loops = 1,
-        const bool use_interpolation = false);
-
     void write_solution(
         const std::string &name,
         UVector &sol,
@@ -43,7 +36,7 @@ namespace utopia {
         UVector &to_vector);
 
 
-    std::size_t max_nnz_x_row(const LibMeshFunctionSpace &space);
+    void remove_constrained_dofs(libMesh::DofMap &dof_map, USparseMatrix &mat);
 
 }
 

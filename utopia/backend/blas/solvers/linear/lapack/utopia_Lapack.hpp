@@ -1,7 +1,3 @@
-//
-// Created by Alessandro Rigazzi on 22/05/15.
-//
-
 #ifndef UTOPIA_SOLVER_LAPACK_H
 #define UTOPIA_SOLVER_LAPACK_H
 
@@ -13,21 +9,22 @@
 namespace utopia {
 
     namespace internals {
-        bool lapack_dgesv_solve(const Matrixd::Implementation &A, const Vectord::Implementation &b, Vectord::Implementation &x);
+        bool lapack_dgesv_solve(const BlasMatrixd &A, const BlasVectord&b, BlasVectord&x);
     }
 
     template<>
-    class LUDecomposition<Matrixd, Vectord, BLAS> : public DirectSolver<Matrixd, Vectord> {
+    class LUDecomposition<BlasMatrixd, BlasVectord, BLAS> : public DirectSolver<BlasMatrixd, BlasVectord> {
     public:
-        inline bool apply(const Vectord &b, Vectord &x) override
+        inline bool apply(const BlasVectord &b, BlasVectord &x) override
         {
-            return internals::lapack_dgesv_solve(this->get_operator()->implementation(), b.implementation(), x.implementation());
+            return internals::lapack_dgesv_solve(*this->get_operator(), b, x);
         }
 
         LUDecomposition * clone() const override
         {
             return new LUDecomposition();
         }
+
     };
 }
 

@@ -12,32 +12,32 @@ namespace utopia {
 
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build_ghosts(expr.local_size(), expr.global_size(), expr.index(), ret);
+            ret.ghosted(
+                expr.local_size(), expr.global_size(), expr.index()
+            );
 
             UTOPIA_TRACE_END(expr);
             return ret;
         }
     };
 
+    // template<class Left, class Index, class Traits>
+    // class Eval< Construct<Left, Ghosts<Index> >, Traits, PETSC> {
+    // public:
+    //     typedef utopia::Construct<Left, Ghosts<Index> > Expr;
 
-    template<class Left, class Index, class Traits>
-    class Eval< Construct<Left, Ghosts<Index> >, Traits, PETSC> {
-    public:
-        typedef utopia::Construct<Left, Ghosts<Index> > Expr;
+    //     inline static void apply(const Expr &expr) {
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-        inline static void apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN(expr);
+    //         const auto &r = expr.right();
 
-            UTOPIA_BACKEND(Traits).build_ghosts(
-                expr.right().local_size(),
-                expr.right().global_size(),
-                expr.right().index(),
-                Eval<Left, Traits, PETSC>::apply(expr.left())
-            );
+    //         Eval<Left, Traits, PETSC>::apply(expr.left()).ghosted(
+    //             r.local_size(), r.global_size(), r.index()
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //     }
+    // };
 
 
     template<class Left, class Index, class Traits>
@@ -48,11 +48,10 @@ namespace utopia {
         inline static void apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build_ghosts(
-                expr.right().local_size(),
-                expr.right().global_size(),
-                expr.right().index(),
-                Eval<Left, Traits, PETSC>::apply(expr.left())
+            const auto &r = expr.right();
+
+            Eval<Left, Traits, PETSC>::apply(expr.left()).ghosted(
+                r.local_size(), r.global_size(), r.index()
             );
 
             UTOPIA_TRACE_END(expr);

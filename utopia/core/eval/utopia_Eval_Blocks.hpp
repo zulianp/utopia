@@ -6,18 +6,20 @@
 
 namespace utopia {
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval< Construct<Wrapper<Left, 1>, Blocks<Right> >, Traits, Backend> {
+    template<class Left, class Right, int Order, int Backend = Traits<Left>::Backend>
+    class EvalBlocks {};
+
+    template<class Left, class Right, int Backend>
+    class EvalBlocks<Left, Right, 1, Backend> {
     public:
-        using Tensor = utopia::Wrapper<Left, 1>;
+        using SizeType = typename Traits<Left>::SizeType;
+        using Scalar   = typename Traits<Left>::Scalar;
 
-        inline static bool apply(const Construct<Tensor, Blocks<Right> > &expr)
+        static void apply(Left &l, const Blocks<Right> &blocks)
         {
-            UTOPIA_TRACE_BEGIN(expr);
-            auto &l = expr.left();
-            const auto &b = expr.right().blocks();
-
             SizeType n = 0;
+
+            const auto &b = blocks.blocks();
 
             for(auto b_ptr : b) {
                 assert((b_ptr));
@@ -31,11 +33,11 @@ namespace utopia {
             SizeType index = 0;
 
             {
-                Write<Tensor> w_(l);
+                Write<Left> w_(l);
 
                 for(auto b_ptr : b) {
                     auto rr = range(*b_ptr);
-                    Read<Tensor> r_(*b_ptr);
+                    Read<Left> r_(*b_ptr);
 
                     for(auto i = rr.begin(); i < rr.end(); ++i) {
                         assert(index < n);
@@ -43,26 +45,18 @@ namespace utopia {
                     }
                 }
             }
-
-            UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval< Construct<Wrapper<Left, 2>, Blocks<Right> >, Traits, Backend> {
+    template<class Left, class Right, int Backend>
+    class EvalBlocks<Left, Right, 2, Backend> {
     public:
-        using Tensor = utopia::Wrapper<Left, 2>;
-        using Scalar = UTOPIA_SCALAR(Tensor);
+        using SizeType = typename Traits<Left>::SizeType;
+        using Scalar   = typename Traits<Left>::Scalar;
 
-        inline static bool apply(const Construct<Tensor, Blocks<Right> > &expr)
+        static void apply(Left &l, const Blocks<Right> &r)
         {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            utopia_test_assert(mpi_world_size() == 1 && "can only be used in serial");
-
-            auto &l = expr.left();
-            const auto &r = expr.right();
+            utopia_test_assert(l.comm().size() == 1 && "can only be used in serial");
 
             SizeType rows = 0;
             SizeType cols = 0;
@@ -121,7 +115,7 @@ namespace utopia {
             l = local_sparse(rows, local_cols, max_nnz);
 
             {
-                Write<Tensor> w_(l);
+                Write<Left> w_(l);
                 auto l_rr = row_range(l);
 
                 for(SizeType i = 0; i < r.rows(); ++i) {
@@ -143,7 +137,32 @@ namespace utopia {
                     }
                 }
             }
+        }
+    };
 
+    // template<class Left, int Order, class Right, class Traits, int Backend>
+    // class Eval< Construct<Tensor<Left, Order>, Blocks<Right> >, Traits, Backend> {
+    // public:
+    //     inline static bool apply(const Construct<Tensor<Left, Order>, Blocks<Right> > &expr)
+    //     {
+    //         UTOPIA_TRACE_BEGIN(expr);
+    //         auto &l = Eval<Tensor<Left, Order>, Traits>::apply(expr.left());
+    //         const auto &b = expr.right();
+    //         EvalBlocks<Left, Right, Order>::apply(l, b);
+    //         UTOPIA_TRACE_END(expr);
+    //         return true;
+    //     }
+    // };
+
+    template<class Left, int Order, class Right, class Traits, int Backend>
+    class Eval< Assign<Tensor<Left, Order>, Blocks<Right> >, Traits, Backend> {
+    public:
+        inline static bool apply(const Assign<Tensor<Left, Order>, Blocks<Right> > &expr)
+        {
+            UTOPIA_TRACE_BEGIN(expr);
+            auto &l = Eval<Tensor<Left, Order>, Traits>::apply(expr.left());
+            const auto &b = expr.right();
+            EvalBlocks<Left, Right, Order>::apply(l, b);
             UTOPIA_TRACE_END(expr);
             return true;
         }

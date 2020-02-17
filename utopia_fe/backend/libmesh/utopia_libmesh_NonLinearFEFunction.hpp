@@ -58,19 +58,21 @@ namespace utopia {
         dof_map.dof_indices(*it, dof_indices);
 
         if(ctx.has_assembled()) {
-            if(apply_constraints) {
-                dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
-            }
+            // if(apply_constraints) {
+            //     dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+            // }
 
-            add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-            add_vector(el_vec.implementation(), dof_indices, vec);
+            add_matrix(el_mat, dof_indices, dof_indices, mat);
+            add_vector(el_vec, dof_indices, vec);
         }
     }
 
 
     //libmesh
     template<class FunctionSpaceT, class Expr, class GlobalMatrix>
-    void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, Wrapper<GlobalMatrix, 2> &mat)
+    void element_assemble_expression_v(
+        const libMesh::MeshBase::const_element_iterator &it,
+        const Expr &expr, Tensor<GlobalMatrix, 2> &t_mat)
     {
         typedef utopia::Traits<FunctionSpaceT> TraitsT;
         typedef typename TraitsT::Matrix ElementMatrix;
@@ -78,6 +80,7 @@ namespace utopia {
 
         static const int Backend = TraitsT::Backend;
 
+        auto &mat = t_mat.derived();
         const auto &space = find_space<FunctionSpaceT>(expr);
         const auto &dof_map = space.dof_map();
 
@@ -132,7 +135,10 @@ namespace utopia {
 
 
     template<class FunctionSpaceT, class Expr, class GlobalVector>
-    void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, Wrapper<GlobalVector, 1> &vec)
+    void element_assemble_expression_v(
+        const libMesh::MeshBase::const_element_iterator &it,
+        const Expr &expr,
+        Tensor<GlobalVector, 1> &t_vec)
     {
         typedef utopia::Traits<FunctionSpaceT> TraitsT;
         typedef typename TraitsT::Matrix ElementMatrix;
@@ -142,6 +148,7 @@ namespace utopia {
 
         const auto &space = find_space<FunctionSpaceT>(expr);
         const auto &dof_map = space.dof_map();
+        auto &vec = t_vec.derived();
 
         AssemblyContext<Backend> ctx;
         ctx.set_current_element((*it)->id());
@@ -199,12 +206,31 @@ namespace utopia {
 
     template<class Expr>
     bool assemble(
+        Expr &expr,
+        double &val)
+    {
+        return LibMeshAssembler().assemble(expr, val);
+    }
+
+    template<class Expr>
+    bool assemble(
         const Expr &expr,
         USparseMatrix &mat,
         const bool first = true)
     {
         return LibMeshAssembler().assemble(expr, mat);
     }
+
+
+    template<class Expr>
+    bool assemble(
+        Expr &expr,
+        USparseMatrix &mat,
+        const bool first = true)
+    {
+        return LibMeshAssembler().assemble(expr, mat);
+    }
+
 
 
     template<class Expr, typename T>
@@ -240,6 +266,15 @@ namespace utopia {
         return LibMeshAssembler().assemble(expr, vec);
     }
 
+    template<class Expr>
+    bool assemble(
+        Expr &expr,
+        UVector &vec,
+        const bool first = true)
+    {
+        return LibMeshAssembler().assemble(expr, vec);
+    }
+
     template<class... Eqs>
     bool assemble(const Equations<Eqs...> &eqs, USparseMatrix &mat, UVector &vec)
     {
@@ -253,6 +288,17 @@ namespace utopia {
         return assemble(equations(equation), mat, vec);
     }
 
+    template<class FunctionSpaceT>
+    bool assemble(EquationIntegrator<FunctionSpaceT> &equation, USparseMatrix &mat, UVector &vec)
+    {
+        return LibMeshAssembler().assemble(equation, mat, vec);
+    }
+
+    template<class FunctionSpaceT>
+    bool assemble(const EquationIntegrator<FunctionSpaceT> &equation, USparseMatrix &mat, UVector &vec)
+    {
+        return LibMeshAssembler().assemble(equation, mat, vec);
+    }
 
     template<class Expr>
     void init_constraints(const Expr &expr)
@@ -275,7 +321,7 @@ namespace utopia {
     template<class Matrix, class Vector, class Eqs>
     class NonLinearFEFunction : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
 
         NonLinearFEFunction(const Eqs &eqs, const bool compute_linear_residual = false)
         : eqs_(eqs), first_(true), compute_linear_residual_(compute_linear_residual)
@@ -385,7 +431,9 @@ namespace utopia {
         auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
         space.initialize();
 
-        sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), space.dof_map().get_send_list());
+        UIndexSet ghost_nodes;
+        convert(space.dof_map().get_send_list(), ghost_nodes);
+        sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), ghost_nodes);
 
         NonLinearFEFunction<USparseMatrix, UVector, Equations<Eqs...>> nl_fun(eqs);
         Newton<USparseMatrix, UVector> solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
@@ -411,10 +459,14 @@ namespace utopia {
 
         auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
         space.initialize();
-
         auto &dof_map = space.dof_map();
-        sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-        old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+
+        UIndexSet ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+
+        
+        sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
+        old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
 
         NonLinearFEFunction<USparseMatrix, UVector, Equations<Eqs...>> nl_fun(eqs, true);
         Newton<USparseMatrix, UVector> solver(std::make_shared<Factorization<USparseMatrix, UVector>>());

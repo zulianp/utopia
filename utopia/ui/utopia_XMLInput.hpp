@@ -20,7 +20,9 @@ namespace utopia {
         void get(double &val);// override;
         void get(int &val);// override;
         void get(long &val);// override;
+        // void get(long long &val);// override;
         void get(unsigned long &val);// override;
+        void get(long long int &val);
         // void get(SizeType &val);// override;
         void get(std::string &val);// override;
         void get(Configurable &val);// override;
@@ -30,14 +32,16 @@ namespace utopia {
         void get(const std::string &key, double &val) override;
         void get(const std::string &key, int &val) override;
         void get(const std::string &key, long &val) override;
+        // void get(const std::string &key, long long &val) override;
         void get(const std::string &key, unsigned long &val) override;
+        void get(const std::string &key, long long int &val) override;
         // void get(const std::string &key, SizeType &val) override;
         void get(const std::string &key, std::string &val) override;
         void get(const std::string &key, Configurable &val) override;
         void get(const std::string &key, std::function<void(Input &)> lambda) override;
 
         void get_all(std::function<void(Input &)> lambda) override;
-        void get(std::vector<std::shared_ptr<IConvertible>> &values) override {
+        void get(std::vector<std::shared_ptr<IConvertible>> &/*values*/) override {
             assert(false && "implement me");
         }
 

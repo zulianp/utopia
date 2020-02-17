@@ -43,7 +43,7 @@ namespace utopia {
         }
 
         ///@return a string with the name of the class
-        virtual std::string getClass() const {
+        virtual std::string get_class() const {
             return "Expression";
         }
     };

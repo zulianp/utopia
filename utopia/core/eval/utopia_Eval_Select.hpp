@@ -4,124 +4,73 @@
 #include "utopia_Eval_Empty.hpp"
 
 namespace utopia {
-    template<class Left, class Right, typename SizeType, class Traits, int Backend>
-    class Eval< Assign<Left, Select<Right, SizeType, 1> >, Traits, Backend> {
+    
+    template<class InnerExpr, class Traits, int Backend>
+    class Eval< Select<InnerExpr, 1>, Traits, Backend> {
     public:
-        inline static bool apply(const Assign<Left, Select<Right, SizeType, 1> > &expr)
+        using Expr = utopia::Select<InnerExpr, 1>;
+        using Result = EXPR_TYPE(Traits, Expr);
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
+            auto &&left = Eval<InnerExpr, Traits>::apply(expr.expr());
 
-            UTOPIA_BACKEND(Traits).select(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr()),
-                    expr.right().index()
-            );
+            if(result.is_alias(left)) {
+                Result temp;
+
+                left.select(
+                    expr.index(),
+                    temp
+                );
+
+                result.construct(std::move(temp));
+
+            } else {
+                left.select(
+                    expr.index(),
+                    result
+                );
+            }
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
-
-    template<class Left, class Right, typename SizeType, class Traits, int Backend>
-    class Eval< Construct<Left, Select<Right, SizeType, 1> >, Traits, Backend> {
+    template<class InnerExpr, class Traits, int Backend>
+    class Eval< Select<InnerExpr, 2>, Traits, Backend> {
     public:
-        inline static bool apply(const Construct<Left, Select<Right, SizeType, 1> > &expr)
+        using Expr = utopia::Select<InnerExpr, 1>;
+        using Result = EXPR_TYPE(Traits, InnerExpr);
+        
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result)
         {
             UTOPIA_TRACE_BEGIN(expr);
+            auto &&mat = Eval<InnerExpr, Traits>::apply(expr.expr());
 
-            UTOPIA_BACKEND(Traits).select(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr()),
-                    expr.right().index()
-            );
+            if(result.is_alias(mat)) {
+                Result temp;
 
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
+                mat.select(
+                    expr.row_index(),
+                    expr.col_index(),
+                    temp
+                );
 
-    template<class Expr, typename SizeType, class Traits, int Backend>
-    class Eval< Select<Expr, SizeType, 1>, Traits, Backend> {
-    public:
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
+                mat.construct(std::move(temp));
 
-        inline static Result apply(const Select<Expr, SizeType, 1> &expr)
-        {
-           UTOPIA_TRACE_BEGIN(expr);
-           Result result;
-
-           UTOPIA_BACKEND(Traits).select(
-                   result,
-                   Eval<Expr, Traits>::apply(expr.expr()),
-                   expr.index()
-           );
+            } else {
+                mat.select(
+                    expr.row_index(),
+                    expr.col_index(),
+                    result
+                );
+            }
 
             UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-
-    template<class Left, class Right, typename SizeType, class Traits, int Backend>
-    class Eval< Assign<Left, Select<Right, SizeType, 2> >, Traits, Backend> {
-    public:
-        inline static bool apply(const Assign<Left, Select<Right, SizeType, 2> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).select(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr()),
-                    expr.right().row_index(),
-                    expr.right().col_index()
-            );
-
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
-
-
-    template<class Left, class Right, typename SizeType, class Traits, int Backend>
-    class Eval< Construct<Left, Select<Right, SizeType, 2> >, Traits, Backend> {
-    public:
-        inline static bool apply(const Construct<Left, Select<Right, SizeType, 2> > &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-           UTOPIA_BACKEND(Traits).select(
-                   Eval<Left,  Traits>::apply(expr.left()),
-                   Eval<Right, Traits>::apply(expr.right().expr()),
-                   expr.right().row_index(),
-                   expr.right().col_index()
-           );
-
-            UTOPIA_TRACE_END(expr);
-            return true;
-        }
-    };
-
-
-    template<class Expr, typename SizeType, class Traits, int Backend>
-    class Eval< Select<Expr, SizeType, 2>, Traits, Backend> {
-    public:
-        typedef typename TypeAndFill<Traits, Expr>::Type Result;
-
-        inline static Result apply(const Select<Expr, SizeType, 2> &expr)
-        {
-           UTOPIA_TRACE_BEGIN(expr);
-           Result result;
-
-           UTOPIA_BACKEND(Traits).select(
-                   result,
-                   Eval<Expr, Traits>::apply(expr.expr()),
-                   expr.row_index(),
-                   expr.col_index()
-           );
-
-            UTOPIA_TRACE_END(expr);
-            return result;
         }
     };
 }

@@ -101,9 +101,20 @@ namespace utopia {
             return dof_map().variable_order(this->subspace_id());
         }
 
+        inline libMesh::Order order() const
+        {
+            return dof_map().variable_order(this->subspace_id());
+        }
+
+
         inline libMesh::FEType type()
         {
             return dof_map().variable_type(this->subspace_id());
+        }
+
+        inline const std::string &var_name() const
+        {
+            return dof_map().variable(this->subspace_id()).name();
         }
 
         inline libMesh::DofMap &dof_map() {
@@ -112,6 +123,11 @@ namespace utopia {
 
         inline const libMesh::DofMap &dof_map() const {
             return equation_system().get_dof_map();
+        }
+
+        inline void dofs(const libMesh::Elem &elem, std::vector<libMesh::dof_id_type> &indices) const
+        {
+            dof_map().dof_indices(&elem, indices, this->subspace_id());
         }
 
         inline libMesh::System &equation_system()
@@ -141,7 +157,7 @@ namespace utopia {
         inline libMesh::MeshBase &mesh() { return equation_systems_->get_mesh(); }
         inline const libMesh::MeshBase &mesh() const { return equation_systems_->get_mesh(); }
 
-        inline std::string getClass() const override {
+        inline std::string get_class() const override {
             return "LibMeshFunctionSpace";
         }
 
@@ -151,7 +167,8 @@ namespace utopia {
     };
 
     template<>
-    class Traits<LibMeshFunctionSpace> : public LibMeshAlgebraTraits<double> {
+    class Traits<LibMeshFunctionSpace> //: public LibMeshAlgebraTraits<double>
+    {
     public:
         static const int Backend = LIBMESH_TAG;
         static const int Order = 1;
@@ -160,21 +177,22 @@ namespace utopia {
         typedef double Scalar;
         typedef utopia::LMDenseVector Vector;
         typedef utopia::LMDenseMatrix Matrix;
-        typedef libMesh::TensorValue<Scalar> TensorValueT;
-        typedef libMesh::VectorValue<Scalar> VectorValueT;
+        // typedef libMesh::TensorValue<Scalar> TensorValueT;
+        // typedef libMesh::VectorValue<Scalar> VectorValueT;
 
         typedef utopia::LibMeshFunctionSpace Implementation;
 
         typedef libMesh::FEBase FE;
 
-        typedef std::vector<std::vector<libMesh::FEBase::OutputShape>> FunctionType;
-        typedef std::vector<std::vector<libMesh::FEBase::OutputGradient>> GradientType;
-        typedef std::vector<std::vector<libMesh::FEBase::OutputDivergence>> DivergenceType;
-        typedef std::vector<std::vector<TensorValueT>> JacobianType;
-        typedef std::vector<std::vector<VectorValueT>> CurlType;
+        typedef std::vector<std::vector<double>> FunctionType;
+        typedef std::vector<std::vector<utopia::LMDenseVector>> GradientType;
+        typedef std::vector<std::vector<double>> DivergenceType;
+        typedef std::vector<std::vector<utopia::LMDenseMatrix>> JacobianType;
+        typedef std::vector<std::vector<utopia::LMDenseVector>> CurlType;
 
-        typedef std::vector<libMesh::Real> DXType;
+        typedef std::vector<double> DXType;
         typedef libMesh::MeshBase MeshType;
+        typedef utopia::LibMeshAssemblyValues AssemblyValues;
     };
 
     typedef utopia::Traits<LibMeshFunctionSpace> LibMeshTraits;
@@ -191,6 +209,9 @@ namespace utopia {
 
 
     void write(const Path &path, LibMeshFunctionSpace &space, UVector &x);
+
+    std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map);
+    std::size_t max_nnz_x_row(const LibMeshFunctionSpace &space);
 }
 
 #endif //UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP

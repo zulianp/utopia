@@ -3,89 +3,70 @@
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_DotVecVecs.hpp"
+#include <vector>
 
-namespace utopia
-{
-
+namespace utopia {
     template<class Vector>
-    class EvalDots <Vector, PETSC>
-    {
-        public:
-            static void apply(const Wrapper<Vector, 1> &v1, const std::vector<std::shared_ptr<Wrapper<Vector, 1> > > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
-            {
-                typename utopia::Traits<Vector>::SizeType n =  vectors.size();
+    class EvalDots<Vector, PETSC> {
+    public:
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-                if(n!=results.size())
-                    results.resize(n);
+        static void apply(
+            const Vector &v1,
+            const std::vector<std::shared_ptr<Vector> > &vectors,
+            std::vector<Scalar> & results
+        );
 
-                std::vector<Vec> vecs(n);
+        static void apply(
+            const Vector &v1,
+            const std::vector<Vector> &vectors,
+            std::vector<Scalar> & results
+        );
 
-                for(auto i=0; i < vectors.size(); i++)
-                    vecs[i]=(raw_type(*vectors[i]));
+        static void apply(
+            const Vector &v11,
+            const Vector &v12,
+            Scalar & result1,
+            const Vector &v21,
+            const Vector &v22,
+            Scalar & result2
+        );
 
-                 VecMDot(v1.implementation().implementation(), n, vecs.data(), results.data());
-            }
-
-            static void apply(const Wrapper<Vector, 1> &v1, const std::vector<Wrapper<Vector, 1> > &vectors, std::vector<typename utopia::Traits<Vector>::Scalar> & results)
-            {
-                std::vector<Vec> vecs;
-                for(auto i=0; i < vectors.size(); i++)
-                {
-                    if(!empty(vectors[i]))
-                        vecs.push_back(raw_type(vectors[i]));
-                }
-
-                typename utopia::Traits<Vector>::SizeType n =  vecs.size();
-
-                if(n != vectors.size() || n != results.size())
-                {
-                    std::vector<typename utopia::Traits<Vector>::Scalar> result_new(n);
-                    VecMDot(v1.implementation().implementation(), n, vecs.data(), result_new.data());
-
-                    for(auto i=0; i < n; i++)
-                        results[i] = result_new[i];
-                }
-                else
-                {
-                    if(n!=results.size())
-                        results.resize(n);
-
-                    VecMDot(v1.implementation().implementation(), n, vecs.data(), results.data());
-                }
-            }
+        static void apply(
+            const Vector &v11,
+            const Vector &v12,
+            Scalar & result1,
+            const Vector &v21,
+            const Vector &v22,
+            Scalar & result2,
+            const Vector &v31,
+            const Vector &v32,
+            Scalar & result3
+        );
     };
 
-
-
-
     template<class Vector>
-    class EvalNorm2s<Vector, PETSC>
-    {
-        public:
-            static void apply(const Wrapper<Vector, 1> &v1, const Wrapper<Vector, 1> &v2, typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2)
-            {
-                  VecNormBegin(v1.implementation().implementation(), NORM_2, &result1);
-                  VecNormBegin(v2.implementation().implementation(), NORM_2, &result2);
-                  PetscCommSplitReductionBegin(PetscObjectComm((PetscObject)v1.implementation().implementation()));
-                VecNormEnd(v1.implementation().implementation(), NORM_2, &result1);
-                VecNormEnd(v2.implementation().implementation(), NORM_2, &result2);
-            }
+    class EvalNorm2s<Vector, PETSC> {
+    public:
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-            static void apply(const Wrapper<Vector, 1> &v1, const Wrapper<Vector, 1> &v2, const Wrapper<Vector, 1> &v3,  typename utopia::Traits<Vector>::Scalar & result1, typename utopia::Traits<Vector>::Scalar & result2, typename utopia::Traits<Vector>::Scalar & result3)
-            {
-                  VecNormBegin(v1.implementation().implementation(), NORM_2, &result1);
-                  VecNormBegin(v2.implementation().implementation(), NORM_2, &result2);
-                  VecNormBegin(v3.implementation().implementation(), NORM_2, &result3);
-                  PetscCommSplitReductionBegin(PetscObjectComm((PetscObject)v1.implementation().implementation()));
-                VecNormEnd(v1.implementation().implementation(), NORM_2, &result1);
-                VecNormEnd(v2.implementation().implementation(), NORM_2, &result2);
-                VecNormEnd(v3.implementation().implementation(), NORM_2, &result3);
-            }
+        static void apply(
+            const Vector &v1,
+            const Vector &v2,
+            Scalar & result1,
+            Scalar & result2
+        );
+
+        static void apply(
+            const Vector &v1,
+            const Vector &v2,
+            const Vector &v3,
+            Scalar &result1,
+            Scalar &result2,
+            Scalar &result3
+        );
     };
-
-
-
-
 
 }
 

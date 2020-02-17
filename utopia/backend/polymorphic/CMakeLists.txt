@@ -2,8 +2,11 @@ list(APPEND POLYMORPHIC_MODULES
     .
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR POLYMORPHIC_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 add_library(utopia_polymorphic STATIC ${LOCAL_SOURCES})
+utopia_link_default_targets(utopia_polymorphic)
 
 target_link_libraries(utopia_polymorphic utopia_core utopia_utils utopia_solvers utopia_differentiable utopia_ui utopia_interoperability)
 target_include_directories(utopia_polymorphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

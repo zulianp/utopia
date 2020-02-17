@@ -23,6 +23,17 @@ namespace utopia {
         virtual bool set_current_block(const int subdomain_id) { UTOPIA_UNUSED(subdomain_id); return true; }
     };
 
+    template<>
+    class UIFunction<USerialMatrix> {
+    public:
+        using Scalar = Traits<USerialMatrix>::Scalar;
+
+        virtual ~UIFunction() {}
+        virtual USerialMatrix eval(const std::vector<Scalar> &x) const = 0;
+        virtual bool set_current_block(const int subdomain_id) { UTOPIA_UNUSED(subdomain_id); return true; }
+    };
+
+
     template<typename Scalar>
     class UIConstantFunction final : public UIFunction<Scalar> {
     public:
@@ -102,7 +113,9 @@ namespace utopia {
                 std::string expr = "0.";
                 int block_id = -1;
 
-                sub_is.get("value",  expr);
+                Scalar val = 0.0;
+                sub_is.get("value", val);
+                // sub_is.get("value",  expr);
                 sub_is.get("type",  type);
                 sub_is.get("block", block_id);
 
@@ -125,16 +138,18 @@ namespace utopia {
                 assert(fun_is_constant);
 #endif //WITH_TINY_EXPR
 
+                // const Scalar val = std::atof(expr.c_str());
+
                 if(fun_is_constant) {
                     if(block_id == -1) {
-                        default_fun_ = std::make_shared<UIConstantFunction<Scalar>>(atof(expr.c_str()));
+                        default_fun_ = std::make_shared<UIConstantFunction<Scalar>>(val);
                     } else {
-                        fun_[block_id] = std::make_shared<UIConstantFunction<Scalar>>(atof(expr.c_str()));
+                        fun_[block_id] = std::make_shared<UIConstantFunction<Scalar>>(val);
                     }
                 }
 
 
-                std::cout << "value: " << expr << " type " << type << " block " << block_id << std::endl;
+                std::cout << "value: " << val << " type " << type << " block " << block_id << std::endl;
 
             });
         }
@@ -241,10 +256,10 @@ namespace utopia {
         std::shared_ptr<UIFunction<Scalar>> fun_;
     };
 
-    template<typename Scalar>
-    inline ContextFunction<std::vector<Scalar>, UIFunction<Scalar> > ctx_fun(const std::shared_ptr<UIFunction<Scalar>> &fun)
+    template<typename T>
+    inline ContextFunction<std::vector<T>, UIFunction<T> > ctx_fun(const std::shared_ptr<UIFunction<T>> &fun)
     {
-        return ContextFunction<std::vector<Scalar>, UIFunction<Scalar> >(fun);
+        return ContextFunction<std::vector<T>, UIFunction<T> >(fun);
     }
 
     template<typename Scalar>
@@ -378,11 +393,11 @@ namespace utopia {
 
     template<typename Scalar_>
     class ContextFunction<
-        std::vector<libMesh::VectorValue<Scalar_>>,
+        std::vector<LMDenseVector>,
         Normal<Scalar_>
         > final :
         public Expression<
-                ContextFunction<std::vector<libMesh::VectorValue<Scalar_>>, Normal<Scalar_>>
+                ContextFunction<std::vector<LMDenseVector>, Normal<Scalar_>>
                 >{
     public:
         static const int Order = 1;
@@ -392,15 +407,17 @@ namespace utopia {
         {}
 
         template<int Backend>
-        auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<libMesh::VectorValue<Scalar_>>
+        auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<LMDenseVector>
         {
             const auto &n = ctx.fe()[0]->get_normals();
             auto nn = n.size();
+            auto dim = ctx.spatial_dimension();
 
-            std::vector<libMesh::VectorValue<Scalar_>> normals(nn);
+            std::vector<LMDenseVector> normals(nn);
             for(std::size_t i = 0; i < nn; ++i) {
-                for(int d = 0; d < LIBMESH_DIM; ++d) {
-                    normals[i](d) = n[i](d);
+                normals[i].resize(dim);
+                for(int d = 0; d < dim; ++d) {
+                    normals[i].set(d, n[i](d));
                 }
             }
 
@@ -409,11 +426,45 @@ namespace utopia {
 
     };
 
-    inline ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>> normal()
+    inline ContextFunction<std::vector<LMDenseVector>, Normal<double>> normal()
     {
-        return ContextFunction<std::vector<libMesh::VectorValue<double>>, Normal<double>>();
+        return ContextFunction<std::vector<LMDenseVector>, Normal<double>>();
     }
 
+    template<>
+    class ContextFunction<
+        std::vector<USerialMatrix>,
+        UIFunction<USerialMatrix>
+        > : public Expression< ContextFunction<std::vector<USerialMatrix>, UIFunction<USerialMatrix>> >{
+    public:
+        static const int Order = 2;
+        using Scalar = Traits<USerialMatrix>::Scalar;
+
+        ContextFunction(const std::shared_ptr<UIFunction<USerialMatrix>> &fun)
+        : fun_(fun)
+        {}
+
+        template<int Backend>
+        auto eval(const AssemblyContext<Backend> &ctx) const -> std::vector<USerialMatrix>
+        {
+            fun_->set_current_block(ctx.block_id());
+
+            const auto &pts = ctx.fe()[0]->get_xyz();
+
+            const auto n = pts.size();
+            std::vector<USerialMatrix> ret(n);
+
+            for(std::size_t i = 0; i < n; ++i) {
+                std::vector<Scalar> p = { pts[i](0), pts[i](1), pts[i](2) };
+                ret[i] = fun_->eval(p);
+            }
+
+            return ret;
+        }
+
+    private:
+        std::shared_ptr<UIFunction<USerialMatrix>> fun_;
+    };
 
 }
 

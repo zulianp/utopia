@@ -11,24 +11,24 @@
 
 namespace utopia {
 
-        template<typename Scalar, int Dim>
-        using Vector = moonolith::Vector<Scalar, Dim>;
+        // template<typename Scalar, int Dim>
+        // using Vector = moonolith::Vector<Scalar, Dim>;
 
-        template<typename Scalar, int Dim>
-        class Ray {
-        public:
-            Vector<Scalar, Dim> o, dir;
-        };
+        // template<typename Scalar, int Dim>
+        // class Ray {
+        // public:
+        //     Vector<Scalar, Dim> o, dir;
+        // };
 
-        template<typename Scalar, int Dim>
-        class Shape {
-        public:
-            virtual ~Shape() {}
+        // template<typename Scalar, int Dim>
+        // class Shape {
+        // public:
+        //     virtual ~Shape() {}
 
-            virtual bool intersect(
-                const Ray<Scalar, Dim> &ray,
-                Scalar &t) = 0;
-        };
+        //     virtual bool intersect(
+        //         const Ray<Scalar, Dim> &ray,
+        //         Scalar &t) = 0;
+        // };
 
     /**
      * @brief poly1 and poly2 can be non-planar and non-convex polygons

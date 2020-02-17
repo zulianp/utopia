@@ -38,15 +38,13 @@ namespace utopia {
 
     template<typename Matrix, typename Vector>
     class KSPSolver<Matrix, Vector, PETSC> :
-        public PreconditionedSolver<Matrix, Vector>,
-        public Smoother<Matrix, Vector> {
+        public PreconditionedSolver<Matrix, Vector>{
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Preconditioner<Vector> Preconditioner;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
-        typedef utopia::Smoother<Matrix, Vector> Smoother;
 
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "only works with petsc types");
 
@@ -66,12 +64,12 @@ namespace utopia {
          *
          * @param[in]  pc_type  The type of direct solver.
          */
-        void pc_type(const std::string &pc_type);
+        virtual void pc_type(const std::string &pc_type);
 
         /**
          * @brief      Sets KSP type
          */
-        void ksp_type(const std::string & ksp_type);
+        virtual void ksp_type(const std::string & ksp_type);
 
         /**
          * @brief      Sets solver package for choice of direct solver.
@@ -94,6 +92,11 @@ namespace utopia {
          * @brief      Setter for number of global subdomains
          */
         void number_of_subdomains(const SizeType & n);
+
+        /**
+         * @brief      Set norm type
+         */
+        void norm_type(const std::string & norm_type);        
 
         /**
          * @brief      Setter for overlap used inside of Additive Schwarz method
@@ -180,6 +183,7 @@ namespace utopia {
 
         virtual void read(Input &is) override;
         virtual void print_usage(std::ostream &os = std::cout) const override;
+
 
     protected:
         std::unique_ptr<Impl> ksp_;

@@ -185,7 +185,11 @@ namespace utopia {
             const Binary<Left, Right, Multiplies> &expr,
             AssemblyContext<Backend> &ctx) -> decltype( DelegateT::apply(expr.left(), expr.right(), ctx) )
         {
-            return DelegateT::apply(expr.left(), expr.right(), ctx);
+            return DelegateT::apply(
+                expr.left(),
+                expr.right(),
+                ctx
+            );
         }
     };
 

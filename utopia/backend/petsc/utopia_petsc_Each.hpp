@@ -2,16 +2,22 @@
 #define UTOPIA_PETSC_EACH_HPP
 
 #include "utopia_petsc_Types.hpp"
+#include "utopia_Each.hpp"
 #include "utopia_petsc_RowView.hpp"
+#include "utopia_Wrapper.hpp"
+#include "utopia_Factory.hpp"
+#include "utopia_Writable.hpp"
+
+#include <functional>
 
 namespace utopia {
 
     template<int FILL_TYPE>
-    class Each<DVectord, 1, FILL_TYPE> {
+    class Each<PetscVector, 1, FILL_TYPE> {
     public:
 
         template<class Fun>
-        inline static void apply_read(const DVectord &v, Fun fun)
+        inline static void apply_read(const PetscVector &v, Fun fun)
         {
             PetscErrorCode ierr;
 
@@ -37,7 +43,7 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_write(DVectord &v, Fun fun)
+        inline static void apply_write(PetscVector &v, Fun fun)
         {
             PetscErrorCode ierr;
 
@@ -63,14 +69,22 @@ namespace utopia {
         }
 
         template<class Fun>
-        inline static void apply_transform(const DVectord &in, DVectord &out, Fun fun)
+        inline static void apply_transform(PetscVector &in_out, Fun fun)
+        {
+            apply_transform(in_out, in_out, fun);
+        }
+
+        template<class Fun>
+        inline static void apply_transform(const PetscVector &in, PetscVector &out, Fun fun)
         {
             PetscErrorCode ierr;
 
             const auto s = size(in);
-            if(s != size(out)) {
-                out = local_zeros(s);
+            if(out.empty() || s != size(out)) {
+                out = local_zeros(local_size(in));
             }
+
+            assert(range(in) == range(out));
 
             const auto &impl_in = raw_type(in);
             auto &impl_out = raw_type(out);
@@ -78,7 +92,7 @@ namespace utopia {
             const auto r = range(out);
             const std::size_t r_begin = r.begin();
 
-            if(impl_in == impl_out) {
+            if(in.is_alias(out)) {
                 PetscScalar *arr;
 
                 ierr = VecGetArray(impl_out, &arr); assert(ierr == 0);

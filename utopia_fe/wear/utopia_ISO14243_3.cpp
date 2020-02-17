@@ -9,6 +9,37 @@
 
 namespace utopia {
 
+    static int char_to_dim(const char dim)
+    {
+        switch(dim) {
+            case '1':
+            case 'x':
+            case 'X':
+            {
+                return 0;
+            }
+            case '2':
+            case 'y':
+            case 'Y':
+            {
+                return 1;
+            }
+            case '3':
+            case 'z':
+            case 'Z':
+            {
+                return 2;
+            }
+            default:
+            {
+                break;
+            }
+        }
+
+        assert(false);
+        return -1;
+    }
+
     void ISO14243_3::read(Input &is)
     {
         flexion_extension_angle_axis_ = 'z';
@@ -22,34 +53,9 @@ namespace utopia {
         is.get("axial-force-axis", temp); 		       axial_force_axis_char = temp[0];
         is.get("ap-motion-axis", temp); 			   ap_motion_axis_ = temp[0];
         is.get("tibial-rotation-axis", temp); 	       tibial_rotation_axis_ = temp[0];
-
         is.get("normalize-axial-force-by-area", normalize_axial_force_by_area_);
 
-        switch(axial_force_axis_char) {
-            case 'x':
-            case 'X':
-            {
-                axial_force_axis_ = 0; break;
-            }
-
-            case 'y':
-            case 'Y':
-            {
-                axial_force_axis_ = 1; break;
-            }
-
-            case 'z':
-            case 'Z':
-            {
-                axial_force_axis_ = 2; break;
-            }
-
-            default:
-            {
-                assert(false);
-                break;
-            }
-        }
+        axial_force_axis_ = char_to_dim(axial_force_axis_char);
 
 
         femural_block_ = -1;
@@ -59,6 +65,11 @@ namespace utopia {
         is.get("femural-block", femural_block_); assert(femural_block_ != -1);
         is.get("tibial-block", tibial_block_); assert(tibial_block_ != -1);
         is.get("axial-force-side", axial_force_side_); assert(axial_force_side_ != -1);
+        is.get("tibial-rotation-offset", tibial_rotation_offset_);
+
+        is.get("tibial-rotation-offset-axis", temp);
+        tibial_rotation_offset_axis_ = char_to_dim(temp[0]);
+
 
         dt_ = 0.1;
         is.get("dt", dt_);
@@ -102,6 +113,23 @@ namespace utopia {
             tibial_component = tr * rot;
         }
 
+
+        CompositeAffineTransform composite_tibial_component;
+        composite_tibial_component.compose_left(tibial_component);
+
+        if(tibial_rotation_offset_ != 0.)
+        {
+            AffineTransform tibial_offset;
+            tibial_offset.make_translation(dim, tibial_rotation_offset_, tibial_rotation_offset_axis_);
+            composite_tibial_component.compose_right(tibial_offset);
+
+            tibial_offset.make_translation(dim, -tibial_rotation_offset_, tibial_rotation_offset_axis_);
+            composite_tibial_component.compose_left(tibial_offset);
+        }
+
+
+
+
         const int main_system_number = 0;
 
         if(empty(displacement)) {
@@ -123,7 +151,7 @@ namespace utopia {
                 if(e.subdomain_id() == femural_block_) {
                     p3 = femoral_component.apply(p3);
                 } else if(e.subdomain_id() == tibial_block_) {
-                    p3 = tibial_component.apply(p3);
+                    p3 = composite_tibial_component.apply(p3);
                 }
 
                 for(unsigned int d = 0; d < dim; ++d) {
@@ -175,6 +203,10 @@ namespace utopia {
         os << "tibial_int_ext_rotation: " << tibial_int_ext_rotation_ << "\n";
 
         os << "normalize_axial_force_by_area: " << normalize_axial_force_by_area_ << "\n";
+
+
+        os << "tibial-rotation-offset: " << tibial_rotation_offset_ << "\n";
+        os << "tibial-rotation-offset-axis: " << tibial_rotation_offset_axis_ << "\n";
 
     }
 

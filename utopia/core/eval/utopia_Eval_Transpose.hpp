@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 29/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_EVAL_TRANSPOSE_HPP
 #define UTOPIA_UTOPIA_EVAL_TRANSPOSE_HPP
 
@@ -12,21 +8,15 @@ namespace utopia {
     template<class Tensor, class Traits, int Backend>
     class Eval<Transposed<Tensor>, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Tensor>::Type Result;
+        using Expr = utopia::Transposed<Tensor>;
+        using Result = EXPR_TYPE(Traits, Expr);
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        inline static Result apply(const Transposed<Tensor> &t)
+        inline static void apply(const Expr &t, Result &result)
         {
-            Result result;
-
             UTOPIA_TRACE_BEGIN(t);
-
-            UTOPIA_BACKEND(Traits).assign_transposed(
-                result,
-                Eval<Tensor, Traits>::apply(t.expr())
-                );
-
+            Eval<Tensor, Traits>::apply(t.expr()).transpose(result);
             UTOPIA_TRACE_END(t);
-            return result;
         }
     };
 }

@@ -24,9 +24,9 @@ namespace utopia {
         : expr_(expr), backend_tensor_(std::make_shared<TensorT>())
         {}
 
-        std::string getClass() const
+        std::string get_class() const
         {
-            return "Evaluate<" + expr_.getClass() + ">";
+            return "Evaluate<" + expr_.get_class() + ">";
         }
 
         inline const Expr &expr() const
@@ -72,9 +72,9 @@ namespace utopia {
         : expr_(expr), value_(std::make_shared<Scalar>(0))
         {}
 
-        std::string getClass() const
+        std::string get_class() const
         {
-            return "Evaluate<" + expr_.getClass() + ">";
+            return "Evaluate<" + expr_.get_class() + ">";
         }
 
         inline const Expr &expr() const

@@ -13,6 +13,8 @@ namespace utopia {
     public:
         typedef utopia::Multigrid<USparseMatrix, UVector> MultigridT;
         // typedef utopia::Multigrid<USparseMatrix, UVector, PETSC_EXPERIMENTAL> MultigridT;
+        using Super = utopia::IterativeSolver<USparseMatrix, UVector>;
+
 
         void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
         {
@@ -53,7 +55,7 @@ namespace utopia {
         }
 
         SemiGeometricMultigrid(
-            const std::shared_ptr<Smoother<USparseMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>(),
+            const std::shared_ptr<IterativeSolver<USparseMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>(),
             const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>()
         );
 
@@ -78,6 +80,8 @@ namespace utopia {
             mg.describe(os);
         }
 
+        void read(Input &in) override;
+
     private:
         MultigridT mg;
 
@@ -90,9 +94,12 @@ namespace utopia {
         bool separate_subdomains_;
         bool use_interpolation_;
         bool use_coarse_interpolators_;
+        Scalar clamp_tol_;
 
         void generate_coarse_meshes(const libMesh::MeshBase &fine_mesh, const std::size_t n_levels, const int order_fine_level);
         std::unique_ptr<libMesh::MeshBase> generate_box_mesh(const libMesh::MeshBase &fine_mesh, const std::size_t n_levels);
+
+        void clamp_operator(USparseMatrix &T) const;
     };
 }
 

@@ -13,6 +13,7 @@
 
 namespace utopia
 {
+    //FIXME separate declaration from implementation (i.e. move the body of the method in the cpp file)
     // This function is not efficient at all
     // it copies values of distributed vector to one processor
     // runs unique search on proc 0
@@ -22,7 +23,7 @@ namespace utopia
     class EvalVecUniqueSortSerial<Vector, PETSC>
     {
         public:
-            static void apply(const Wrapper<Vector, 1> &x, Wrapper<Vector, 1> &sorted, const int used_values = -1)
+            static void apply(const Tensor<Vector, 1> &x, Tensor<Vector, 1> &sorted, const int used_values = -1)
             {
                 PetscErrorCode ierr = 0;
 

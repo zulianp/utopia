@@ -19,13 +19,12 @@ namespace utopia {
 
         operator typename Traits<Trace>::Scalar() const
         {
-            Evaluator<typename Traits<Trace>::Vector, Traits<Trace>::Backend> eval;
-            return eval.eval(*this);
+            return Eval<Trace<Expr>, Traits<Expr>, Traits<Expr>::Backend>::apply(*this);
         }
 
-        inline std::string getClass() const override
+        inline std::string get_class() const override
         {
-            return "Trace<" + expr().getClass() + ">";
+            return "Trace<" + expr().get_class() + ">";
         }
 
         Trace(const Expr &expr) : expr_(expr) {}

@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 //if it has compiled with blas or petsc WITH_BLAS or WITH_PETSC macros are available (if you want to make it compile no matter the utopia installation)
 #ifdef WITH_PETSC    
     //run with petsc types 
-    run<DSMatrixd, DVectord>();
+    run<PetscMatrix, PetscVector>();
 #endif //WITH_PETSC 
 
 #ifdef WITH_BLAS    

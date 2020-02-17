@@ -1,5 +1,5 @@
 
-#include "utopia_WrapperTest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia.hpp"
 
 namespace utopia {
@@ -8,7 +8,15 @@ namespace utopia {
     class WrapperTest {
     public:
 
+        static void print_backend_info()
+        {
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
+
         void run() {
+            print_backend_info();
             UTOPIA_RUN_TEST(vector_factory_test);
             UTOPIA_RUN_TEST(matrix_factory_test);
             UTOPIA_RUN_TEST(matrix_assembly_test);
@@ -53,8 +61,8 @@ namespace utopia {
                     expected.set(0, 10);
                 }
 
-                if (r.end() == expected.size().get(0)) {
-                    expected.set(expected.size().get(0) - 1, 10);
+                if (SizeType(r.end()) == SizeType(expected.size())) {
+                    expected.set(expected.size() - 1, 10);
                 }
             }
 
@@ -111,17 +119,16 @@ namespace utopia {
 
     };
 
-
-    void runWrapperTest() {
-        UTOPIA_UNIT_TEST_BEGIN("WrapperTest");
+    static void wrapper() {
 #ifdef WITH_PETSC
-        WrapperTest<DMatrixd, DVectord, PetscScalar>().run();
+        WrapperTest<PetscMatrix, PetscVector, PetscScalar>().run();
 #endif
 
 #ifdef WITH_BLAS
-        WrapperTest<Matrixd, Vectord, double>().run();
+        WrapperTest<BlasMatrixd, BlasVectord, double>().run();
 #endif //WITH_BLAS
-        UTOPIA_UNIT_TEST_END("WrapperTest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(wrapper);
 }
 

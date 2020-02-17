@@ -1,10 +1,37 @@
-cmake_minimum_required(VERSION 3.8.1)
+cmake_minimum_required(VERSION 3.5)
 
 project(utopia)
+# cmake_policy(SET "CMP0079" NEW)
+
+set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
+
+#################################################################################
+######################### UTOPIA VERSION INFORMATION ############################
+#################################################################################
+
+include(UtopiaGitVersion)
+set(UTOPIA_VERSION_MAJOR 0)
+set(UTOPIA_VERSION_MINOR 1)
+set(UTOPIA_VERSION_PATCH 0)
+set(UTOPIA_VERSION "${UTOPIA_VERSION_MAJOR}.${UTOPIA_VERSION_MINOR}.${UTOPIA_VERSION_PATCH}")
+#################################################################################
+
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "Choose the type of build, options are: Debug Release
+RelWithDebInfo MinSizeRel."
+      FORCE)
+
+    message(STATUS "[Status] CMAKE_BUILD_TYPE=Release")
+endif(NOT CMAKE_BUILD_TYPE)
 
 #To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 
+
+set(CMAKE_CXX_EXTENSIONS OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -13,8 +40,7 @@ option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable fo
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
 
 option(TRY_WITH_MPI "Enable the cuda backend" ON)
-option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
-option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
+# option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
 option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
@@ -22,8 +48,8 @@ option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
 
 option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
+option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
@@ -31,18 +57,34 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)" OFF)
+
+
+option(INSTALL_TRILINOS "Install trilinos directly" OFF)
+# set(UTOPIA_DEFAULT_TARGETS)
+include(CodeCoverage)
+
 #################################################################################
 #################################################################################
 #################################################################################
 set(UTOPIA_DEV_FLAGS
-    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder "
+    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type"
+
 )
+
+# set(CMAKE_CXX_FLAGS "-Wall -Wno-clobbered -Wno-vla -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-local-typedefs -Wno-literal-suffix -Wno-deprecated-declarations -Wno-misleading-indentation -Wno-int-in-bool-context -Wno-maybe-uninitialized -Wno-nonnull-compare -Wno-address -Wno-inline -DTRILINOS_HIDE_DEPRECATED_HEADER_WARNINGS -Werror" CACHE STRING "Warnings as errors settings")
+
+# set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=inconsistent-missing-override")
 
 # More annoying
 set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 
 # More restrictive
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
+
+include_directories(${CMAKE_SOURCE_DIR}/external/GSL/include)
+
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
@@ -93,8 +135,7 @@ if(ENABLE_CXX14_FEATURES)
     SET(WITH_CPP14 TRUE)
 endif()
 
-set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
+
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
@@ -133,9 +174,9 @@ macro(print_dependency_table)
     SET(DEP_TABLE "${DEP_TABLE}trilinos\t| ${UTOPIA_TRILINOS}\t\t| basic algebra usable\n")
     # SET(DEP_TABLE "${DEP_TABLE}openblas\t| ${OPEN_BLAS_FOUND}\t\t| usable\n")
     SET(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_LAPACK}\t\t| usable\n")
-    SET(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| usable\n")
-    SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable but can be easily developed further\n")
-    SET(DEP_TABLE "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
+    SET(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| disabled\n")
+    # SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable but can be easily developed further\n")
+    # SET(DEP_TABLE "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
     SET(DEP_TABLE "${DEP_TABLE}m3elinsol\t| ${UTOPIA_M3ELINSOL}\t\t| work in progress\n")
     SET(DEP_TABLE "${DEP_TABLE}____________________________________________________\n")
     message(STATUS ${DEP_TABLE})
@@ -236,6 +277,19 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 #################################################################################
 #################################################################################
 
+if(INSTALL_TRILINOS)
+    include(InstallTrilinos)
+endif()
+
+# using this to defining UTOPIA_LAMBDA correctly
+if(TRY_WITH_TRILINOS)
+    find_package(Trilinos)
+    if(Trilinos_FOUND)
+        include_directories(${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
+        set(WITH_TRILINOS ON)
+    endif()
+endif()
+
 add_subdirectory(backend/polymorphic)
 
 # backend modules
@@ -251,11 +305,6 @@ if(TRY_WITH_PETSC)
     add_subdirectory(backend/petsc)
 endif()
 
-
-if(TRY_WITH_CUDA)
-    add_subdirectory(backend/cuda)
-endif()
-
 if(TRY_WITH_OPENCL)
     add_subdirectory(backend/opencl)
 endif()
@@ -264,15 +313,14 @@ if(TRY_WITH_M3ELINSOL)
     add_subdirectory(backend/m3elinsol)
 endif()
 
+if(UTOPIA_SCRIPTING)
+    add_subdirectory(scripting)
+endif()
+
 # weird stuff goes here
 if(USE_SPIKE_SOLVERS)
     list(APPEND UTOPIA_MODULES spike/solvers)
 endif()
-
-# test suite
-add_subdirectory(tests)
-
-
 
 # core modules
 set(UTOPIA_MODULES interoperability backend solvers differentiable core ui utils)
@@ -280,8 +328,6 @@ set(UTOPIA_MODULES interoperability backend solvers differentiable core ui utils
 foreach(MODULE ${UTOPIA_MODULES})
     add_subdirectory(${MODULE})
 endforeach(MODULE)
-
-
 
 add_definitions(${UTOPIA_DEFS})
 include_directories(${UTOPIA_INCLUDES})
@@ -307,6 +353,7 @@ list(APPEND UTOPIA_SOURCES
 
 # config is created based on the successful backend compilations
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
+configure_file(${UTOPIA_ROOT_PATH}/utopia_Version.hpp.in ${CMAKE_BINARY_DIR}/utopia_Version.hpp)
 
 
 #########################################################
@@ -330,33 +377,40 @@ install(FILES
 
 ##########################################################
 
-
+# archive
 add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
+utopia_link_default_targets(utopia)
 target_link_libraries(utopia ${UTOPIA_COMPONENTS})
 target_link_libraries(utopia ${UTOPIA_LIBRARIES})
 
-if(NOT UTOPIA_ARCHIVE_ONLY)
-    # add_library(utopia_dynamic SHARED utopia.cpp ${UTOPIA_SOURCES})
-    # target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
-    # target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
+# test suite
+add_executable(utopia_test EXCLUDE_FROM_ALL test.cpp)
+utopia_link_default_targets(utopia_test)
+target_link_libraries(utopia_test utopia)
+include(tests/tests.cmake)
 
-    add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
-    target_link_libraries(utopia_exec utopia)
-    target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
-    target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
+# bench suite
+add_executable(utopia_bench EXCLUDE_FROM_ALL bench.cpp)
+utopia_link_default_targets(utopia_bench)
+target_link_libraries(utopia_bench utopia)
+include(benchmarks/benchmarks.cmake)
 
-    install(TARGETS utopia utopia_exec #utopia_dynamic
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-    )
-else()
-    install(TARGETS utopia
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-    )
-endif()
+# apps suite
+add_executable(utopia_exec EXCLUDE_FROM_ALL main.cpp)
+utopia_link_default_targets(utopia_exec)
+target_link_libraries(utopia_exec utopia)
+include(apps/apps.cmake)
+
+# add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
+# target_link_libraries(utopia_exec utopia)
+# target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
+# target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
+
+install(TARGETS utopia
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
 
 install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
 install(FILES ${UTOPIA_HEADERS} DESTINATION include)
@@ -374,7 +428,6 @@ append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_DEFS=" "\n" "" "${UTOP
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_CXX_FLAGS=${CMAKE_CXX_FLAGS}\n")
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_CXX_COMPILER=${CMAKE_CXX_COMPILER}\n")
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_C_COMPILER=${CMAKE_C_COMPILER}\n")
-
 
 file(WRITE ${CMAKE_BINARY_DIR}/utopia-config.makefile ${CONFIG_CONTENT})
 
@@ -394,7 +447,6 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake 	 DESTINATION config)
 
 print_dependency_table()
 
-
 # find_package(OpenMP)
 # if(OPENMP_FOUND)
 # 	SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
@@ -403,10 +455,28 @@ print_dependency_table()
 # 	set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
 # endif()
 
-
-
-
-#############################
-### petsc-cuda stuff
-
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+##########################################################################################
+
+# enable_testing()
+add_custom_target(utest COMMAND time ${CMAKE_BINARY_DIR}/utopia_test -verbose)
+# add_test(all_tests ${CMAKE_BINARY_DIR}/utopia_test -verbose)
+add_dependencies(utest utopia_test)
+
+##########################################################################################
+
+add_custom_target(bench COMMAND time ${CMAKE_BINARY_DIR}/utopia_bench -verbose)
+add_dependencies(bench utopia_bench)
+
+##########################################################################################
+
+add_custom_target(bench_and_test)
+add_dependencies(bench_and_test bench utest)
+
+##########################################################################################
+
+add_custom_target(complete)
+add_dependencies(complete utopia utopia_test utopia_bench utopia_exec)
+
+##########################################################################################

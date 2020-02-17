@@ -44,7 +44,7 @@ namespace utopia {
             return coeff_;
         }
 
-        inline std::string getClass() const override {
+        inline std::string get_class() const override {
             return "Interpolate";
         }
 
@@ -82,7 +82,7 @@ namespace utopia {
             return coeff_;
         }
 
-        inline std::string getClass() const override {
+        inline std::string get_class() const override {
             return "Interpolate";
         }
 

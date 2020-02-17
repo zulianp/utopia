@@ -12,11 +12,13 @@ namespace utopia {
     template<class Tensor, int FILL_TYPE>
     class RowView<Tensor, 2, FILL_TYPE, utopia::TRILINOS> {
     public:
-        typedef typename Tensor::Implementation::GO GO;
-        typedef typename Tensor::Implementation::Scalar Scalar;
-        using MapPtrT = typename Tensor::Implementation::rcp_map_type;
+        using SizeType = typename Traits<Tensor>::SizeType;
+        using Scalar   = typename Traits<Tensor>::Scalar;
+        using LocalSizeType = typename Traits<Tensor>::LocalSizeType;
 
-        inline RowView(const Tensor &t, const GO row, const bool force_local_view = true)
+        using RCPMapType = typename Tensor::RCPMapType;
+
+        inline RowView(const Tensor &t, const SizeType row, const bool force_local_view = true)
         : t_(t), offset_(0)
         {
             auto impl = raw_type(t_);
@@ -35,7 +37,7 @@ namespace utopia {
             return cols_.size();
         }
 
-        inline GO col(const int index) const
+        inline SizeType col(const int index) const
         {
             assert(index < n_values());
 
@@ -52,10 +54,10 @@ namespace utopia {
 
     private:
         const Tensor &t_;
-        GO offset_;
-        Teuchos::ArrayView<const GO> cols_;
+        SizeType offset_;
+        Teuchos::ArrayView<const LocalSizeType> cols_;
         Teuchos::ArrayView<const Scalar> values_;
-        MapPtrT col_map_;
+        RCPMapType col_map_;
     };
 }
 

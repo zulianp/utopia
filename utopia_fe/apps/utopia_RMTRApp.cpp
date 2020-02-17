@@ -17,6 +17,7 @@
 #include "utopia_Bratu.hpp"
 #include "utopia_Poisson.hpp"
 #include "utopia_IPTransfer.hpp"
+#include "utopia_RMTR.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
@@ -282,8 +283,8 @@ namespace utopia {
         std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> f;
         if(in.fun == "bratu") {
             f = std::make_shared<Bratu<decltype(V), USparseMatrix, UVector>>(V);
-        } else if(in.fun == "min-surf") {
-            f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
+        // } else if(in.fun == "min-surf") {
+            // f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "matrixpoisson") {
             f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "poisson") {
@@ -353,7 +354,7 @@ namespace utopia {
 
         // coarse_solver->verbose(true);
         // smoother->verbose(true);
-        // auto coarse_solver = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+        // auto coarse_solver = std::make_shared<utopia::KSP_TR<PetscMatrix, PetscVector> >("gltr");
         // coarse_solver->atol(1e-12);
         // coarse_solver->rtol(1e-12);
         // coarse_solver->pc_type("lu");
@@ -390,7 +391,7 @@ namespace utopia {
             functions[i] = get_function(in, *spaces[i]);
         }
 
-        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, FIRST_ORDER> >(n_levels);
+        auto rmtr = std::make_shared<RMTR_l2<USparseMatrix, UVector, FIRST_ORDER> >(n_levels);
         rmtr->set_transfer_operators(transfers);
 
 
@@ -399,12 +400,12 @@ namespace utopia {
 
         rmtr->max_it(30);
         rmtr->max_coarse_it(3);
-        rmtr->max_smoothing_it(3);
+        rmtr->max_QP_smoothing_it(3);
         rmtr->delta0(1000);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
-        rmtr->set_grad_smoothess_termination(0.000001);
-        rmtr->set_eps_grad_termination(1e-7);
+        rmtr->grad_smoothess_termination(1e-7);
+
 
         rmtr->verbose(in.verbose);
         // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -414,7 +415,7 @@ namespace utopia {
         auto &dof_map = spaces.back()->dof_map();
 
         UVector x;
-        rmtr->handle_equality_constraints();
+        // rmtr->handle_equality_constraints();
 
         bool ok = rmtr->solve(x);
 

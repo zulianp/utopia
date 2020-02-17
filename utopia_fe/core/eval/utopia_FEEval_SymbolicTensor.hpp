@@ -7,6 +7,7 @@
 
 namespace utopia {
 
+    //FIXME
     template<class Left, class Type, int Order, class Traits, int Backend, int IsQuadData>
     class FEEval<Multiply<Trace<Left>, SymbolicTensor<Type, Order> >, Traits, Backend, IsQuadData> {
     public:
@@ -27,6 +28,17 @@ namespace utopia {
                     ctx
                 );
         }
+    };
+
+    //FIXME
+    template<class Type, int Order, class Traits, int Backend, int IsQuadData>
+    class FEEval<SymbolicTensor<Type, Order>, Traits, Backend, IsQuadData> {
+    public:
+        inline static SymbolicTensor<Type, Order> & apply(const SymbolicTensor<Type, Order> &expr, AssemblyContext<Backend> &ctx)
+        {
+            return expr;
+        }
+
     };
 
 

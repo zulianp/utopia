@@ -319,7 +319,7 @@
 
 // 	void run_performance_test()
 // 	{
-// 		UTOPIA_UNIT_TEST_BEGIN("PerformanceTest");
+// 		//UTOPIA_UNIT_TEST_BEGIN("PerformanceTest");
 
 // 		const bool verbose = performance_test_verbose();
 
@@ -357,7 +357,7 @@
 // 			std::cout << "------------------------------------\n";
 // 			std::cout << "PETSC: " << std::endl;
 // 		}
-// 		test_program<DMatrixd, DVectord>("petsc");
+// 		test_program<PetscMatrix, PetscVector>("petsc");
 // #endif //WITH_PETSC
 
 // #ifdef WITH_EIGEN_3
@@ -369,7 +369,7 @@
 // #endif //WITH_EIGEN_3
 
 
-// 		UTOPIA_UNIT_TEST_END("PerformanceTest");
+// 		//UTOPIA_UNIT_TEST_END("PerformanceTest");
 // 	}
 
 // }

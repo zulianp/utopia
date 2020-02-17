@@ -72,6 +72,7 @@ namespace utopia
         }
 
 
+        
         /**
          * @brief Returns number of levels in hierarchy.
          */
@@ -168,7 +169,7 @@ namespace utopia
 
         inline Transfer &transfer(const SizeType level)
         {
-            assert(level < transfers_.size());
+            assert(level < static_cast<SizeType>(transfers_.size()));
             assert(transfers_[level]);
 
             return *transfers_[level];
@@ -181,6 +182,11 @@ namespace utopia
 
             return *transfers_[level];
         }
+
+        inline const std::vector<TransferPtr> & transfer() const
+        {
+            return transfers_;
+        }        
 
         virtual void describe(std::ostream &os = std::cout) const
         {
@@ -203,7 +209,7 @@ namespace utopia
                 num_levels_ = transfers.size() + 1;
             }
 
-            if(num_levels_ != transfers.size() + 1) {
+            if(num_levels_ != static_cast<SizeType>(transfers.size()) + 1) {
                 utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
                 std::cout << num_levels_ << " != " << (transfers.size() + 1);
             }

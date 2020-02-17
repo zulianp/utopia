@@ -12,7 +12,7 @@ namespace utopia
     class Woods14 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         Woods14()
@@ -57,7 +57,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
 
             {
                 const Read<Vector> read(point);
@@ -79,7 +79,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
             result = zeros(4);
 
             {
@@ -106,7 +106,7 @@ namespace utopia
                 return false;
             }
 
-            assert(point.size().get(0) == 4);
+            assert(point.size() == 4);
             result = zeros(4, 4);
 
             const Read<Vector> read(point);

@@ -513,8 +513,8 @@ namespace utopia {
         libMesh::DenseMatrix<libMesh::Real> elemmat;//, massmat;
         libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
 
-        DenseMatrix<Real> side_polygon_master, side_polygon_slave;
-        DenseMatrix<Real> isect_polygon_master, isect_polygon_slave;
+        libMesh::DenseMatrix<Real> side_polygon_master, side_polygon_slave;
+        libMesh::DenseMatrix<Real> isect_polygon_master, isect_polygon_slave;
 
         std::shared_ptr<Transform> trafo_master;
         std::shared_ptr<Transform> trafo_slave;
@@ -533,7 +533,7 @@ namespace utopia {
         moonolith::SparseMatrix<double> gap_buffer(comm);
         moonolith::SparseMatrix<double> normal_buffer(comm);
 
-        DenseMatrix<Real> biorth_weights;
+        libMesh::DenseMatrix<Real> biorth_weights;
 
         auto fun = [&](const SElementAdapter<Dimensions> &master,
                        const SElementAdapter<Dimensions> &slave) -> bool {

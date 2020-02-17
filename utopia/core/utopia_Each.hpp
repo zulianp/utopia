@@ -8,13 +8,14 @@
 #include "utopia_For.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Readable.hpp"
+#include "utopia_Traits.hpp"
 
 #include <functional>
 // #define UTOPIA_DISABLE_UNROLLING
 
 namespace utopia {
 
-    template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Tensor::FILL_TYPE>
+    template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Traits<Tensor>::FILL_TYPE>
     class Each {};
 
     template<class Tensor, int FILL_TYPE>
@@ -30,6 +31,7 @@ namespace utopia {
         // 		fun(v.get(i));
         // 	}
         // }
+
 
         template<class Fun>
         inline static void apply_read(const Tensor &v, Fun fun)
@@ -89,6 +91,12 @@ namespace utopia {
         }
 
         template<class Fun>
+        inline static void apply_transform(Tensor &in_out, Fun fun)
+        {
+            apply_transform(in_out, in_out, fun);
+        }
+
+        template<class Fun>
         inline static void apply_transform(const Tensor &in, Tensor &out, Fun fun)
         {
             Range r = range(in);
@@ -108,7 +116,7 @@ namespace utopia {
             }
 
             if(size(in) != size(out)) {
-                out = zeros(size(in));
+                out = local_zeros(local_size(in));
             }
 
             Read<Tensor>  read_lock(in);
@@ -179,6 +187,38 @@ namespace utopia {
                 }
             }
         }
+
+        template<class Fun>
+        inline static void apply_transform(Tensor &mat, Fun fun)
+        {
+            const SizeType cols = mat.cols();
+            auto r = row_range(mat);
+
+            ReadAndWrite<Tensor> rw(mat, utopia::LOCAL);
+            for(SizeType i = r.begin(); i < r.end(); ++i) {
+                for(SizeType j = 0; j < cols; ++j) {
+                    mat.set(i, j, fun(i, j, mat.get(i, j)));
+                }
+            }
+        }
+
+        template<class Fun>
+        inline static void apply_transform(Tensor &in, Tensor &out, Fun fun)
+        {
+            assert(raw_type(in) != raw_type(out));
+
+            Write<Tensor> w(out, utopia::LOCAL);
+
+            auto r = row_range(in);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                RowView<Tensor> row(in, i);
+
+                for(SizeType c = 0; c < row.n_values(); ++c) {
+                    const SizeType j = row.col(c);
+                    out.set(i, j, fun(i, j, row.get(c)));
+                }
+            }
+        }
     };
 
     template<class Tensor>
@@ -186,19 +226,6 @@ namespace utopia {
     public:
         using SizeType = typename Traits<Tensor>::SizeType;
         using Scalar   = typename Traits<Tensor>::Scalar;
-
-        // inline static void apply_read(const Tensor &m, std::function<void(const Scalar &)> &fun)
-        // {
-        // 	Range r = row_range(m);
-
-        // 	for(auto i = r.begin(); i != r.end(); ++i) {
-        // 		RowView<const Tensor> row_view(m, i);
-        // 		auto n_values = row_view.n_values();
-        // 		for(decltype(n_values) index = 0; index < n_values; ++index) {
-        // 			fun(row_view.get(index));
-        // 		}
-        // 	}
-        // }
 
         template<class Fun>
         inline static void apply_read(const Tensor &m, Fun fun)
@@ -226,38 +253,50 @@ namespace utopia {
             });
         }
 
-        // template<class Fun>
-        // inline static void apply_write(Tensor &m, Fun fun)
-        // {
-        // 	Range r = row_range(m);
+        template<class Fun>
+        inline static void apply_transform(Tensor &mat, Fun fun)
+        {
+            Tensor mat_copy = mat;
+            apply_transform(mat_copy, mat, fun);
+        }
 
-        // 	//It will not be rewritten anyhow so this is safe
-        // 	for(auto i = r.begin(); i != r.end(); ++i) {
-        // 		RowView<Tensor> row_view(m, i);
+        template<class Fun>
+        inline static void apply_transform(Tensor &in, Tensor &out, Fun fun)
+        {
+            assert(raw_type(in) != raw_type(out));
 
-        // 		for(auto index = 0; index < row_view.n_values(); ++index) {
-        // 			row_view.set_value_at(index, fun(i, row_view.get_col_at(index)));
-        // 		}
-        // 	}
-        // }
+            out.scale(0.0);
 
-        // template<class Fun>
-        // inline static void apply_transform(Tensor &m, Fun fun)
-        // {
-        // 	Range r = row_range(m);
+            Write<Tensor> w(out, utopia::LOCAL);
 
-        // 	//It will not be rewritten anyhow so this is safe
-        // 	for(auto i = r.begin(); i != r.end(); ++i) {
-        // 		RowView<Tensor> row_view(m, i);
+            auto r = row_range(in);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                RowView<Tensor> row(in, i);
 
-        // 		for(auto index = 0; index < row_view.n_values(); ++index) {
-        // 			auto val = fun(i, row_view.get_col_at(index), row_view.get_value_at(index));
-        // 			row_view.set_value_at(index, val);
-        // 		}
-        // 	}
-        // }
+                for(SizeType c = 0; c < row.n_values(); ++c) {
+                    const SizeType j = row.col(c);
+                    out.set(i, j, fun(i, j, row.get(c)));
+                }
+            }
+        }
     };
 
+    template<class Tensor>
+    class Each<Tensor, 2, FillType::POLYMORPHIC> : public Each<Tensor, 2, FillType::SPARSE> {
+    public:
+        template<class Fun>
+        inline static void apply_write(Tensor &m, Fun fun)
+        {
+            if(m.is_dense()) {
+                Each<Tensor, 2, FillType::DENSE>::apply_write(m, fun);
+            } else {
+                // Each<Tensor, 2, FillType::SPARSE>::apply_write(m, fun);
+                assert(false && "IMPLEMENT ME");
+                // m_utopia_error("NOT IMPLEMENTED FOR SPARSE MATRICES");
+            }
+        }
+
+    };
 
      /** 	@defgroup element_acess Element Acess
      * 		@ingroup read_write
@@ -280,10 +319,10 @@ namespace utopia {
      * @param[in]  v       The tensor.
      * @param[in]  fun     The  function with desirable action.
      */
-    template<class Tensor, class Fun>
-    inline void each_read(const Tensor &v, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_read(const Tensor<T, Order> &v, Fun fun)
     {
-        Each<Tensor>::apply_read(v, fun);
+        Each<T>::apply_read(v.derived(), fun);
     }
 
 
@@ -306,10 +345,10 @@ namespace utopia {
      * @param[in]  v       The tensor.
      * @param[in]  fun     The  function with desirable action.
      */
-    template<class Tensor, class Fun>
-    inline void each_write(Tensor &v, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_write(Tensor<T, Order> &v, Fun fun)
     {
-        Each<Tensor>::apply_write(v, fun);
+        Each<T>::apply_write(v.derived(), fun);
     }
 
 
@@ -344,22 +383,22 @@ namespace utopia {
      * @param[in]  b       The tensor to be write into/ output.
      * @param[in]  fun     The  function with desirable action.
      */
-    template<class Tensor, class Fun>
-    inline void each_transform(const Tensor &a, Tensor &b, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_transform(const Tensor<T, Order> &a, Tensor<T, Order> &b, Fun fun)
     {
-        Each<Tensor>::apply_transform(a, b, fun);
+        Each<T>::apply_transform(a.derived(), b.derived(), fun);
     }
 
-    template<class Tensor, class Fun>
-    inline void each_transform(Tensor &t, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_transform(Tensor<T, Order> &t, Fun fun)
     {
-        Each<Tensor>::apply_transform(t, fun);
+        Each<T>::apply_transform(t.derived(), fun);
     }
 
-    template<class Tensor, class Fun>
-    inline void each_apply(Tensor &t, Fun fun)
+    template<class T, int Order, class Fun>
+    inline void each_apply(Tensor<T, Order> &t, Fun fun)
     {
-        Each<Tensor>::apply(t, fun);
+        Each<T>::apply(t.derived(), fun);
     }
 }
 

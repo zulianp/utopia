@@ -11,7 +11,7 @@
 namespace utopia {
 
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    class BiCGStab final: public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
+    class BiCGStab final : public OperatorBasedLinearSolver<Matrix, Vector>{
     public:
         typedef UTOPIA_SCALAR(Vector) 	 Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -31,34 +31,22 @@ namespace utopia {
             }
         }
 
-        inline bool apply(const Vector &b, Vector &x) override
-        {
-            auto A_ptr = utopia::op(this->get_operator());
-            return solve(*A_ptr, b, x);
-        }
-
-        bool smooth(const Vector &rhs, Vector &x) override;
-
-        //for chosing the preconditioned solver one
-        void update(const std::shared_ptr<const Matrix> &op) override;
+        void update(const Operator<Vector> &A) override;
 
 
         void read(Input &in) override
         {
-            MatrixFreeLinearSolver<Vector>::read(in);
-            Smoother<Matrix, Vector>::read(in);
-            PreconditionedSolver<Matrix, Vector>::read(in);
+            OperatorBasedLinearSolver<Matrix, Vector>::read(in);
         }
 
         void print_usage(std::ostream &os) const override
         {
-            MatrixFreeLinearSolver<Vector>::print_usage(os);
-            Smoother<Matrix, Vector>::print_usage(os);
-            PreconditionedSolver<Matrix, Vector>::print_usage(os);
+            OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
         }
 
+        void init_memory(const SizeType &ls) override; 
+
     private:
-        void init(const Size &ls);
         bool solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
         bool solve_unpreconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
 
@@ -72,6 +60,10 @@ namespace utopia {
         Vector s_;
         Vector z_;
         Vector K_inv_t_;
+
+        bool initialized_;
+        SizeType loc_size_;
+
     };
 }
 

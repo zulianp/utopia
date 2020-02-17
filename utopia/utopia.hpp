@@ -77,7 +77,7 @@ with compile time decisions.
 * In this section we illustrate the basic usage of the utopia EDSL. The examples are not back-end specific hence we use generic type names for matrices
 * (i.e, @em SparseMatrix and @em DenseMatrix) and vectors (i.e, @em Vector)
 * which can be directly replaced by specific types
-* (e.g., utopia::DSMatrixd, utopia::DMatrixd and utopia::DVectord for using the Petsc back-end) or used in a generic way for algorithms that are not back-end specific.
+* (e.g., utopia::PetscMatrix, utopia::PetscMatrix and utopia::PetscVector for using the Petsc back-end) or used in a generic way for algorithms that are not back-end specific.
 *
 *
 * @code
@@ -114,13 +114,11 @@ with compile time decisions.
 * 	- utopia::Wrapper is the main abstraction for tensors. All concrete operations are made on objects of this type.
 *	  See the follwing subclasses of utopia::Wrapper for backend specific types:
 * 	- petsc wrapper types
-*		- utopia::DMatrixd
-*		- utopia::DSMatrixd
-*		- utopia::DVectord
-*		- utopia::SSMatrixd
+*		- utopia::PetscMatrix
+*		- utopia::PetscVector
 * 	- blas wrapper types
-* 		- utopia::Matrixd
-*		- utopia::Vectord
+* 		- utopia::BlasMatrix
+*		- utopia::BlasVector
 *
 *
 * @section mainfunctions Main functions

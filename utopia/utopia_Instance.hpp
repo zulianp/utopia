@@ -2,17 +2,21 @@
 #define UTOPIA_UTOPIA_INSTANCE_HPP
 
 #include "utopia_Logger.hpp"
+#include "utopia_Input.hpp"
 
 #include <map>
 #include <string>
 #include <cassert>
 
 namespace utopia {
-    class Utopia final {
+    class Utopia final : public Configurable {
     public:
         static void Init(int argc, char *argv[]);
         static int Finalize();
         static void Abort();
+
+        void read(Input &is) override;
+        void print_usage(std::ostream &os) const override;
 
         inline std::string get(const std::string &key) const
         {
@@ -44,6 +48,8 @@ namespace utopia {
         {
             exit_code_ = code;
         }
+
+        void read_input(int argc, char *argv[]);
 
     private:
         Utopia();

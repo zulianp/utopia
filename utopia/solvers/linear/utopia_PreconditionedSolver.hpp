@@ -37,6 +37,11 @@ namespace utopia {
             return precond_;
         }
 
+        inline bool has_preconditioner() const
+        {
+            return static_cast<bool>(precond_);
+        }
+
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             update(op, op);

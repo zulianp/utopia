@@ -7,6 +7,7 @@
 #include "utopia_BidirectionalL2LocalAssembler.hpp"
 #include "utopia_MixedBidirectionalLocalAssembler.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_NewTransferAssembler.hpp"
 
 #include "libmesh/boundary_mesh.h"
 
@@ -33,7 +34,13 @@ namespace utopia {
         use_composite_bidirectional(false),
         use_interpolation(false),
         nnz_x_row(0),
-        output_path("./")
+        output_path("./"),
+        discretization("legacy"),
+        use_new_algo(false),
+        use_convert_transfer(true),
+        remove_incomplete_intersections(false),
+        surface_transfer(false),
+        handle_adaptivity(false)
         {}
 
         void describe(std::ostream &os = std::cout) const
@@ -54,6 +61,8 @@ namespace utopia {
             os << "use_interpolation " << use_interpolation << std::endl;
             os << "nnz_x_row " << nnz_x_row << std::endl;
             os << "output_path " << output_path << std::endl;
+            os << "discretization " << discretization << std::endl;
+            os << "remove_incomplete_intersections: " << remove_incomplete_intersections << std::endl;
         }
 
         inline void read(Input &is) override
@@ -73,6 +82,15 @@ namespace utopia {
             is.get("use-interpolation", use_interpolation);
             is.get("nnz-x-row", nnz_x_row);
             is.get("output-path", output_path);
+
+
+            is.get("discretization", discretization);
+            use_new_algo = discretization == "new";
+
+            is.get("use-convert-transfer", use_convert_transfer);
+            is.get("remove-incomplete-intersections", remove_incomplete_intersections);
+            is.get("surface-transfer", surface_transfer);
+            is.get("handle-adaptivity", handle_adaptivity);
         }
 
         bool normalize_rows;
@@ -91,6 +109,12 @@ namespace utopia {
         bool use_interpolation;
         long nnz_x_row;
         std::string output_path;
+        std::string discretization;
+        bool use_new_algo;
+        bool use_convert_transfer;
+        bool remove_incomplete_intersections;
+        bool surface_transfer;
+        bool handle_adaptivity;
     };
 
     static const std::map<std::string, TransferOperatorType> &get_str_to_type()
@@ -155,6 +179,7 @@ namespace utopia {
     void MeshTransferOperator::read(Input &is)
     {
         params_->read(is);
+        is.get("opts", opts);
     }
 
     void MeshTransferOperator::assemble_mass_matrix(
@@ -194,7 +219,7 @@ namespace utopia {
 
         {
             Write<USparseMatrix> w_m(mat, utopia::GLOBAL_ADD);
-            libMesh::DenseMatrix<libMesh::Real> el_mat;
+            LMDenseMatrix el_mat;
 
             auto fe = libMesh::FEBase::build(dim, fe_type);
             libMesh::QGauss qrule(dim, fe_type.default_quadrature_order());
@@ -223,7 +248,7 @@ namespace utopia {
                     n_indices
                 );
 
-                el_mat.zero();
+                el_mat.set(0.0);
 
 
                 for(unsigned int i = 0; i < n_shape_functions; i++) {
@@ -233,7 +258,7 @@ namespace utopia {
                             assert(!std::isnan(value) && !std::isinf(value));
 
                             for(unsigned int k = 0; k < n_tensor; k++) {
-                                el_mat(i + k * phi.size(), j + k * phi.size()) += value;
+                                el_mat.add(i + k * phi.size(), j + k * phi.size(), value);
                             }
                         }
                     }
@@ -527,6 +552,35 @@ namespace utopia {
 
     bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
     {
+        if(params_->use_new_algo) {
+            NewTransferAssembler new_assembler;
+            new_assembler.use_convert_transfer(params_->use_convert_transfer);
+            new_assembler.remove_incomplete_intersections(params_->remove_incomplete_intersections);
+            new_assembler.handle_adaptive_refinement(params_->handle_adaptivity);
+            
+            if(params_->surface_transfer) {
+                if(!new_assembler.surface_assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts)) {
+                    return false;
+                }
+            } else {
+                if(!new_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts)) {
+                    return false;
+                }
+            }
+
+            operator_ = new_assembler.build_operator();
+
+            // if(params_->normalize_rows) {
+            //     auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
+            //     pseudo_l2_operator->init_from_coupling_operator(*new_assembler.data.B);
+            //     operator_ = pseudo_l2_operator;
+            // } else {
+            //     operator_ = std::make_shared<PseudoL2TransferOperator>(new_assembler.data.B);
+            // }
+
+            return true;
+        }
+
         //apply boundary filter
         if(params_->from_boundary) {
             auto b_from_mesh = std::make_shared<libMesh::BoundaryMesh>(from_mesh->comm(), from_mesh->mesh_dimension()-1);
@@ -606,7 +660,8 @@ namespace utopia {
     }
 
     std::unique_ptr<LinearSolver<USparseMatrix, UVector> > MeshTransferOperator::new_solver() {
-        return utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
-        // return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu");
+        // return utopia::make_unique<GMRES<USparseMatrix, UVector>>("bjacobi");
+        return utopia::make_unique<Factorization<USparseMatrix, UVector>>("superlu_dist", "lu");
+        // return utopia::make_unique<ConjugateGradient<USparseMatrix, UVector>>();
     }
 }

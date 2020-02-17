@@ -87,14 +87,14 @@ namespace utopia {
         enum { has_differentiable_sub_tree = TreeProperties<Left>::has_differentiable_sub_tree || TreeProperties<Right>::has_differentiable_sub_tree  };
     };
 
-    template<class Left, class Right>
-    class TreeProperties< Construct<Left, Right> > {
-    public:
-        enum { greatest_tensor_order = static_max(TreeProperties<Left>::greatest_tensor_order, TreeProperties<Right>::greatest_tensor_order)  };
-        enum { smallest_tensor_order = static_min(TreeProperties<Left>::smallest_tensor_order, TreeProperties<Right>::smallest_tensor_order) };
-        enum { has_mat_mat_mul = TreeProperties<Right>::has_mat_mat_mul };
-        enum { has_differentiable_sub_tree = TreeProperties<Right>::has_differentiable_sub_tree  };
-    };
+    // template<class Left, class Right>
+    // class TreeProperties< Construct<Left, Right> > {
+    // public:
+    //     enum { greatest_tensor_order = static_max(TreeProperties<Left>::greatest_tensor_order, TreeProperties<Right>::greatest_tensor_order)  };
+    //     enum { smallest_tensor_order = static_min(TreeProperties<Left>::smallest_tensor_order, TreeProperties<Right>::smallest_tensor_order) };
+    //     enum { has_mat_mat_mul = TreeProperties<Right>::has_mat_mat_mul };
+    //     enum { has_differentiable_sub_tree = TreeProperties<Right>::has_differentiable_sub_tree  };
+    // };
 
     template<class Left, class Right>
     class TreeProperties< Assign<Left, Right> > {
@@ -117,8 +117,8 @@ namespace utopia {
 
 
 
-    template<class Tensor, int Order>
-    class TreeProperties< Wrapper<Tensor, Order> > {
+    template<class T, int Order>
+    class TreeProperties< Tensor<T, Order> > {
     public:
         enum { greatest_tensor_order = Order   };
         enum { smallest_tensor_order = Order   };

@@ -58,7 +58,10 @@ namespace utopia {
     {
         auto &dof_map = V.dof_map();
         auto u = trial(V);
-        UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+
+        UIndexSet ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
         x.set(1.);
 
         double area = -1.;

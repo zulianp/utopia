@@ -1,32 +1,37 @@
-//
-// Created by Patrick Zulian on 26/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_VIEW_HPP
 #define UTOPIA_UTOPIA_VIEW_HPP
 
+#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Mutable.hpp"
 #include "utopia_Range.hpp"
+#include "utopia_Traits.hpp"
+
 
 namespace utopia {
     template<class Expr>
-    class View : public Expression<View<Expr> >,
-                 public Mutable<typename Expr::Implementation, View<Expr> > {
+    class View : public Expression<View<Expr> > {
     public:
         static const int Order = Expr::Order;
+        using Scalar = typename utopia::Traits<Expr>::Scalar;
 
         template<class Derived>
         View &operator=(const Expression<Derived> &expr) {
-            _expr.evaluator().eval(Assign<View, Derived>(*this, expr.derived()));
+            using A = utopia::Assign<View, Derived>;
+            
+            EvalAssignToView<
+                Expr,
+                Derived,
+                Traits<Expr>,
+                Traits<Expr>::Backend
+            >::apply(A(*this, expr.derived()));
+
             return *this;
         }
 
         View(Expr &expr, const Range &row_range, const Range &col_range)
                 : _expr(expr), row_range_(row_range), col_range_(col_range) { }
 
-        Expr &expr() const {
-            return _expr;
-        }
+        inline Expr &expr() const { return _expr; }
 
         friend const Range &row_range(const View &v)
         {

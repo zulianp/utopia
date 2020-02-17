@@ -25,7 +25,7 @@ namespace utopia {
         : expr_(expr)
         {}
 
-        std::string getClass() const override { return "TimeDerivative<" + expr_.getClass() + ">"; }
+        std::string get_class() const override { return "TimeDerivative<" + expr_.get_class() + ">"; }
 
 
         inline const Expr &expr() const

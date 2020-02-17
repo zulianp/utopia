@@ -57,20 +57,20 @@ namespace utopia {
             return -eval_at(expr.expr(), i, j);
         }
 
-        template<class Left, class Right>
-        inline static void eval(const Construct<Left, Right> &expr){
-            eval(expr.right(), expr.left());
-        }
+        // template<class Left, class Right>
+        // inline static void eval(const Construct<Left, Right> &expr){
+        //     eval(expr.right(), expr.left());
+        // }
 
-        template<class Left, class Right>
-        inline static void eval(const Construct<Number<Left>, Right> &expr){
-            expr.left() = eval_at(expr.right(), 0, 0);
-        }
+        // template<class Left, class Right>
+        // inline static void eval(const Construct<Number<Left>, Right> &expr){
+        //     expr.left() = eval_at(expr.right(), 0, 0);
+        // }
 
-        template<class Left, class Right>
-        inline static void eval(const Construct<Number<Left>, Determinant<Right>> &expr){
-            expr.left() = Eval<Determinant<Right>, Traits, Traits::Backend>::apply(expr);
-        }
+        // template<class Left, class Right>
+        // inline static void eval(const Construct<Number<Left>, Determinant<Right>> &expr){
+        //     expr.left() = Eval<Determinant<Right>, Traits, Traits::Backend>::apply(expr);
+        // }
 
         template<class InnerExpr>
         inline static Scalar eval(const Determinant<InnerExpr> &expr) {
@@ -102,23 +102,23 @@ namespace utopia {
         }
 
         ////////////////////////////////////////////////
-        //Tensor order 2
+        //DerivedTensor order 2
         ////////////////////////////////////////////////
 
-        template<class Derived, class Tensor>
-        inline static void eval(const Expression<Derived> &expr_w, Wrapper<Tensor, 2> &result)
+        template<class Derived, class DerivedTensor>
+        inline static void eval(const Expression<Derived> &expr_w, Tensor<DerivedTensor, 2> &result)
         {
             const Derived &expr = expr_w.derived();
             Size s = size(expr);
-            result.resize(s);
+            result.derived().resize(s);
 
-            Write< Wrapper<Tensor, 2> > w(result);
+            Write<DerivedTensor> w(result.derived());
 
             Range rr = row_range(result);
             const SizeType cols = s.get(1);
             for(auto i = rr.begin(); i < rr.end(); ++i) {
                 for(SizeType j = 0; j < cols; ++j) {
-                    result.set(i, j, eval_at(expr, i, j));
+                    result.derived().set(i, j, eval_at(expr, i, j));
                 }
             }
         }
@@ -130,10 +130,10 @@ namespace utopia {
                 eval_at(expr.right(), i, j) );
         }
 
-        template<class Tensor>
-        inline static Scalar eval_at(const Wrapper<Tensor, 2> &expr, const SizeType i, const SizeType j)
+        template<class DerivedTensor>
+        inline static Scalar eval_at(const Tensor<DerivedTensor, 2> &expr, const SizeType i, const SizeType j)
         {
-            return expr.get(i, j);
+            return expr.derived().get(i, j);
         }
 
         template<class Left, class Right, class Operation>
@@ -169,21 +169,23 @@ namespace utopia {
         }
 
         ////////////////////////////////////////////////
-        //Tensors order 1
+        //DerivedTensors order 1
         ////////////////////////////////////////////////
 
-        template<class Derived, class Tensor>
-        inline static void eval(const Expression<Derived> &expr_w, Wrapper<Tensor, 1> &result)
+        template<class Derived, class DerivedTensor>
+        inline static void eval(const Expression<Derived> &expr_w, Tensor<DerivedTensor, 1> &result)
         {
             const Derived &expr = expr_w.derived();
-            Size s = size(expr);
-            result.resize(s);
+            auto &d = result.derived();
 
-            Write< Wrapper<Tensor, 1> > w(result);
+            auto s = size(expr);
+            d.resize(s);
+
+            Write<DerivedTensor> w(d);
 
             Range r = range(result);
             for(auto i = r.begin(); i < r.end(); ++i) {
-                result.set(i, eval_at(expr, i));
+                d.set(i, eval_at(expr, i));
             }
         }
 
@@ -214,17 +216,18 @@ namespace utopia {
             return Operation::template apply<Scalar>(eval_at(expr.expr(),  i));
         }
 
-        template<class Tensor>
-        inline static Scalar eval_at(const Wrapper<Tensor, 1> &expr, const SizeType i, const SizeType j)
+        template<class DerivedTensor>
+        inline static Scalar eval_at(const Tensor<DerivedTensor, 1> &expr, const SizeType i, const SizeType j)
         {
+            UTOPIA_UNUSED(j);
             assert(j == 0 && "Trying to access tensor of order 1 like an order 2 one.");
-            return expr.get(i);
+            return expr.derived().get(i);
         }
 
-        template<class Tensor>
-        inline static Scalar eval_at(const Wrapper<Tensor, 1> &expr, const SizeType i)
+        template<class DerivedTensor>
+        inline static Scalar eval_at(const Tensor<DerivedTensor, 1> &expr, const SizeType i)
         {
-            return expr.get(i);
+            return expr.derived().get(i);
         }
 
         template<class Left, class Right>
@@ -265,7 +268,7 @@ namespace utopia {
         }
 
         ////////////////////////////////////////////////
-        //Tensors order 0
+        //DerivedTensors order 0
         ////////////////////////////////////////////////
 
         template<typename T>

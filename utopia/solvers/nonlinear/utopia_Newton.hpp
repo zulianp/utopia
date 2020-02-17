@@ -48,7 +48,11 @@ namespace utopia
         {
            using namespace utopia;
 
-            Vector grad, step;
+            if(empty(x))
+              utopia_error("utopia::Newton, initial guess is empty vector");
+
+            init_memory(local_size(x));
+
             Matrix hessian, preconditioner;
 
             Scalar g_norm, g0_norm, r_norm, s_norm;
@@ -59,11 +63,11 @@ namespace utopia
             //notify listener
             fun.update(x);
 
-            fun.gradient(x, grad);
-            g0_norm = norm2(grad);
+            fun.gradient(x, grad_);
+            g0_norm = norm2(grad_);
             g_norm = g0_norm;
 
-            this->init_solver("NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha_k"});
+            this->init_solver("NEWTON", {" it. ", "|| g ||", "J",  "r_norm", "|| p_k || ", "alpha_k"});
 
             if(this->verbose_)
                 PrintInfo::print_iter_status(it, {g_norm, 1, 0});
@@ -73,45 +77,73 @@ namespace utopia
             while(!converged)
             {
                 //find direction step
-                step = local_zeros(local_size(x));
+                step_.set(0.0);
+
+                // setting up adaptive stopping criterium for linear solver
+                if(this->has_forcing_strategy())
+                {
+                  if(IterativeSolver<Matrix, Vector>* iterative_solver =  dynamic_cast<IterativeSolver<Matrix, Vector>* > (this->linear_solver_.get()))
+                  {
+                    iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
+                  }
+                  else
+                  {
+                    utopia_error("utopia::Newton::you can not use inexact Newton with exact linear solver. ");
+                  }
+                }
 
                 if(this->has_preconditioned_solver() && fun.has_preconditioner())
                 {
-                    fun.hessian(x, hessian, preconditioner);
-                    this->linear_solve(hessian, preconditioner, -grad, step);
-                } else {
-                    fun.hessian(x, hessian);
-                    this->linear_solve(hessian, -grad, step);
+                  fun.hessian(x, hessian, preconditioner);
+                  grad_neg_ = -1.0*grad_;
+
+                  if(!this->check_values(it, fun, x, grad_, hessian)) return false;
+
+                  this->linear_solve(hessian, preconditioner, grad_neg_, step_);
+                }
+                else
+                {
+                  fun.hessian(x, hessian);
+                  grad_neg_ = -1.0*grad_;
+
+                  if(!this->check_values(it, fun, x, grad_, hessian)) return false;
+
+                  this->linear_solve(hessian, grad_neg_, step_);
                 }
 
-                if(ls_strategy_) {
-
-                    ls_strategy_->get_alpha(fun, grad, x, step, alpha_);
-                    x += alpha_ * step;
-                } else {
-                    //update x
-                    if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
-                    {
-                        x += step;
-                    }
-                    else
-                    {
-                        x += alpha_ * step;
-                    }
+                if(ls_strategy_)
+                {
+                  ls_strategy_->get_alpha(fun, grad_, x, step_, alpha_);
+                  x += alpha_ * step_;
+                }
+                else
+                {
+                  //update x
+                  if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
+                  {
+                      x += step_;
+                  }
+                  else
+                  {
+                      x += alpha_ * step_;
+                  }
                 }
 
                 // notify listener
                 fun.update(x);
-                fun.gradient(x, grad);
+                fun.gradient(x, grad_);
 
                 // norms needed for convergence check
-                norms2(grad, step, g_norm, s_norm);
+                norms2(grad_, step_, g_norm, s_norm);
                 r_norm = g_norm/g0_norm;
+
+                Scalar J;
+                fun.value(x, J);
 
 
                 // // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha_});
+                    PrintInfo::print_iter_status(it, {g_norm, J, r_norm, s_norm, alpha_});
 
                 // // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
@@ -141,7 +173,20 @@ namespace utopia
         this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-");
     }
 
+    void init_memory(const SizeType & ls)
+    {
+      // init of linear solver
+      NewtonBase<Matrix, Vector>::init_memory(ls);
 
+      // init of vectors
+      grad_neg_ = local_zeros(ls);
+      step_ = local_zeros(ls);
+      grad_ = local_zeros(ls);
+
+      // init of vectors
+      if(ls_strategy_)
+        ls_strategy_->init_memory(ls);
+    }
 
     /**
      * @brief      Sets strategy for computing step-size.
@@ -159,7 +204,7 @@ namespace utopia
     private:
         Scalar alpha_;   /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
-
+        Vector grad_neg_, step_, grad_;
     };
 
 }

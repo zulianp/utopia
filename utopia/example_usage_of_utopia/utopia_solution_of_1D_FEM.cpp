@@ -1,7 +1,7 @@
 #include <utopia.hpp>
 
 
-void assemble_laplacian_1D(const utopia::SizeType n, utopia::DSMatrixd &A)
+void assemble_laplacian_1D(const utopia::SizeType n, utopia::PetscMatrix &A)
 {
     using namespace utopia;
 
@@ -9,7 +9,7 @@ void assemble_laplacian_1D(const utopia::SizeType n, utopia::DSMatrixd &A)
     A = sparse(n, n, 3);
         
     {
-        Write<DSMatrixd> w(A);
+        Write<PetscMatrix> w(A);
         Range r = row_range(A);
 
         // You can use add instead of set. [Warning] Petsc does not allow to mix add and set.
@@ -47,17 +47,17 @@ int main(int argc, char** argv)
 
     { //Only in the main file: put this scope so that the petsc objects will be destroyed before the call to finalize
 
-        DSMatrixd A;
+        PetscMatrix A;
         assemble_laplacian_1D(n, A);
 
         // exact solution to our problem
-        const DVectord u_exact  = values(n, solution);
+        const PetscVector u_exact  = values(n, solution);
 
         // constructing initial guess
-        DVectord u = zeros(n); 
+        PetscVector u = zeros(n); 
 
         // constructing rhs
-        const DVectord rhs   = A * u_exact;
+        const PetscVector rhs   = A * u_exact;
         
         // solve 
         solve(A, rhs, u); 

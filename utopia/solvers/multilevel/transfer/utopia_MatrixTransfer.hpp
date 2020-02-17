@@ -23,9 +23,12 @@
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
             typedef UTOPIA_SCALAR(Vector)    Scalar;
 
-            MatrixTransfer(const std::shared_ptr<Matrix> & I)//:
+            MatrixTransfer(const std::shared_ptr<Matrix> & I):
                                         // _I(I),
                                         // _R(transpose(I))
+            I_norm_(0.0), 
+            R_norm_(0.0), 
+            P_norm_(0.0)
             {
                 assert(I);
 
@@ -37,7 +40,10 @@
             MatrixTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                     _I(I),
                     _R(std::make_shared<Matrix>(transpose(*I))),
-                    _Pr(P)
+                    _Pr(P), 
+                    I_norm_(0.0), 
+                    R_norm_(0.0), 
+                    P_norm_(0.0)                    
             {
                 assert(I);
                 assert(P);
@@ -49,7 +55,10 @@
             MatrixTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &R, const std::shared_ptr<Matrix> &P):
                     _I(I),
                     _R(R),
-                    _Pr(P)
+                    _Pr(P), 
+                    I_norm_(0.0), 
+                    R_norm_(0.0), 
+                    P_norm_(0.0)                    
             {
                 assert(I);
                 assert(R);
@@ -226,6 +235,24 @@
                 return true;
             }
 
+            bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override
+            {
+                if(empty(P_pos_))
+                {
+                    P_pos_ = *_Pr;
+                    chop_smaller_than(P_pos_, 1e-13); 
+                }
+
+                if(empty(P_neg_))
+                {
+                    P_neg_ = (*_Pr); 
+                    chop_greater_than(P_neg_, -1e-13); 
+                }
+                    
+                x_new = (P_pos_*x_pos) + (P_neg_*x_neg); 
+                return true; 
+            }
+
             const Matrix &I() const
             {
                 return *_I;
@@ -238,22 +265,39 @@
 
             Scalar interpolation_inf_norm() const override
             {
-                return norm_infty(*_I);
+                return I_norm_ > 0 ? I_norm_ : norm_infty(*_I); 
             }
 
             Scalar projection_inf_norm() const override
             {
-                return norm_infty(*_R);
+                // return norm_infty(*_R);
+                return P_norm_ > 0 ? P_norm_ : norm_infty(*_Pr); 
             }
 
             Scalar restriction_inf_norm() const override
             {
-                return norm_infty(*_Pr);
+                // return norm_infty(*_Pr);
+                return R_norm_ > 0 ? R_norm_ : norm_infty(*_R); 
             }
+
+            void init_memory()  override {
+                I_norm_ = norm_infty(*_I);
+                R_norm_ = norm_infty(*_R);
+                P_norm_ = norm_infty(*_Pr);
+
+                P_pos_ = *_Pr;
+                chop_smaller_than(P_pos_, 1e-13); 
+
+                P_neg_ = (*_Pr); 
+                chop_greater_than(P_neg_, -1e-13); 
+            };
 
         private:
             std::shared_ptr<Matrix> _I, _R; // _P;
             std::shared_ptr<Matrix> _Pr;
+            Matrix P_pos_; 
+            Matrix P_neg_; 
+            Scalar I_norm_, R_norm_, P_norm_; 
     };
 
 }

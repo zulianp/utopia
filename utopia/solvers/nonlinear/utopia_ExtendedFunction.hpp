@@ -17,37 +17,30 @@ namespace utopia
     class ExtendedFunction : public Function<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         virtual ~ExtendedFunction() { }
 
         ExtendedFunction() {}
 
-        ExtendedFunction(const Vector & x_init, const Vector & bc_marker, const Vector & rhs) :
-                _x_eq_values(x_init),
-                _rhs(rhs),
-                _eq_constrains_flg(bc_marker)
+        ExtendedFunction(const Vector & x_init, const Vector & bc_marker)
         {
-
+            this->set_equality_constrains(bc_marker, x_init);               
         }
 
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const override = 0;
 
-
-        bool gradient(const Vector & x, Vector & gradient) const override final
-        {
-            this->gradient_no_rhs(x, gradient);
-
-            if(size(gradient) == size(this->_rhs)) {
-                gradient = gradient - this->_rhs;
-            }
-
-            return true;
+        // Copy of vec... 
+        Vector initial_guess() const
+        {   
+            return _x_eq_values; 
         }
 
-
-        virtual bool gradient_no_rhs(const Vector &/*point*/, Vector &/*result*/) const = 0;
-
+        SizeType loc_size() const 
+        {
+            return local_size(_x_eq_values).get(0); 
+        }
 
         virtual bool hessian(const Vector &x, Matrix &H) const override = 0;
         virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const  override
@@ -65,60 +58,166 @@ namespace utopia
             return true;
         }
 
-        virtual bool set_rhs(const Vector & rhs)
-        {
-            _rhs = rhs;
-            return true;
-        }
-
-        virtual bool reset_rhs()
-        {
-            _rhs = local_zeros(local_size(_rhs));
-            return true;
-        }
-
-
-        virtual bool get_rhs( Vector & rhs)
-        {
-            rhs = _rhs;
-            return true;
-        }
-
-        virtual bool has_rhs() const
-        {
-            return !empty(_rhs);
-        }
-
-        virtual bool get_eq_constrains_values(Vector & x)
+        virtual bool get_eq_constrains_values(Vector & x) const 
         {
             x = _x_eq_values;
             return true;
         }
 
-        virtual bool get_eq_constrains_flg(Vector & x)
+        virtual bool get_eq_constrains_flg(Vector & x) const
         {
             x = _eq_constrains_flg;
             return true;
         }
+
+        inline const std::vector<SizeType> & get_indices_related_to_BC() const
+        {
+            return indices_eq_constraints_; 
+        }
+
 
         const Vector &get_eq_constrains_flg() const
         {
             return _eq_constrains_flg;
         }
 
+        const Vector &get_eq_constrains_values() const 
+        {
+            return  _x_eq_values;
+        }        
+
         virtual bool set_equality_constrains(const Vector &eq_constrains_flg, const Vector &x_in)
         {
-            _x_eq_values             =  x_in;
+            _x_eq_values        =  x_in;
             _eq_constrains_flg  = eq_constrains_flg;
+
+            // _eq_constraints_mask_matrix_   = local_identity(local_size(_eq_constrains_flg).get(0), local_size(_eq_constrains_flg).get(0)); 
+            // _eq_constraints_mask_matrix_  -= diag(_eq_constrains_flg); 
+
+            {
+                Read<Vector> r(_eq_constrains_flg);
+
+                Range range_w = range(_eq_constrains_flg);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                {
+                    if(_eq_constrains_flg.get(i) == 1){
+                        indices_eq_constraints_.push_back(i);
+                    }
+                }
+            }            
+
             return true;
         }
 
+
+        virtual bool zero_contribution_to_equality_constrains(Vector & x) const
+        {
+            UTOPIA_NO_ALLOC_BEGIN("RMTR::zero_contribution_to_equality_constrains");
+            // x = _eq_constraints_mask_matrix_ * x; 
+
+            {
+                auto d_flg     = const_device_view(_eq_constrains_flg);
+
+                parallel_transform(
+                          x,
+                          UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar {
+                            Scalar flg = d_flg.get(i);
+                            
+                            // TODO:: use abs with eps tolerance
+                            if(flg==1.0){
+                              return 0.0;
+                            }
+                            else
+                              return xi; 
+                      });
+            }
+
+
+            UTOPIA_NO_ALLOC_END();
+            return true;
+        }
+
+
      protected:
         Vector _x_eq_values;
-        Vector _rhs;
         Vector _eq_constrains_flg;
+        
 
-
+        // Matrix _eq_constraints_mask_matrix_; 
+        std::vector<SizeType> indices_eq_constraints_; 
     };
+
+    template<class Matrix, class Vector>
+    class Function_rhs final: public ExtendedFunction<Matrix, Vector>
+    {
+    public:
+        DEF_UTOPIA_SCALAR(Matrix);
+        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+
+        typedef utopia::ExtendedFunction<Matrix, Vector>    Fun;
+
+        Function_rhs(const std::shared_ptr<Fun> & fun): fun_(fun)
+        {
+
+        }
+
+        bool value(const Vector &x, Scalar &value) const override
+        {
+            fun_->value(x, value); 
+            return true; 
+        }
+
+        bool gradient(const Vector & x, Vector &g) const override
+        {
+            fun_->gradient(x, g); 
+
+            if(size(g) == size(this->rhs_)) {
+                g = g - this->rhs_;
+            }            
+
+            return true; 
+        }
+
+        bool hessian(const Vector &x, Matrix &H) const override
+        {
+            fun_->hessian(x, H); 
+            return true; 
+        }
+
+        virtual bool set_rhs(const Vector & rhs)
+        {
+            rhs_ = rhs;
+            return true;
+        }
+
+        virtual bool reset_rhs()
+        {
+            if(!empty(rhs_)){
+                rhs_.set(0.0);
+            }
+            else{
+                utopia_error("error in reset rhs... \n"); 
+            }
+            return true;
+        }
+
+
+        virtual bool get_rhs( Vector & rhs) const
+        {
+            rhs = rhs_;
+            return true;
+        }
+
+        virtual bool has_rhs() const
+        {
+            return !empty(rhs_);
+        }        
+
+        private:
+            std::shared_ptr<Fun> fun_;   
+            Vector rhs_;
+    };
+
+
 }
 #endif //UTOPIA_EXTENDED_FUNCTION_HPP

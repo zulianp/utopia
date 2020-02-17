@@ -78,10 +78,10 @@ namespace utopia {
             return get_alpha_aux_home_made(fun, g, x, d, alpha);
         }
 
+    private:
         template<class FunctionT>
         bool get_alpha_aux_home_made(FunctionT &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha)
         {
-            Vector x_0 = x, x_k = x;
             Scalar alpha_c, alpha_p, dg = dot(d,g);
             Scalar f, f0, fc, fp, t1, t2, t3, a, b, disc;
             alpha = 1.0;
@@ -97,10 +97,12 @@ namespace utopia {
                 return false;
             }
 
-            fun.value(x_k, f);
+            UTOPIA_NO_ALLOC_BEGIN("Backtracking 1");
+            fun.value(x, f);
             f0 = f;
             fc = f;
             alpha_c = alpha;
+            UTOPIA_NO_ALLOC_END();
 
             Scalar it = 0;
 
@@ -109,8 +111,10 @@ namespace utopia {
 
             while(alpha > c2_ && it < this->max_it())
             {
-                x_k = x_0 + alpha * d;
+                UTOPIA_NO_ALLOC_BEGIN("Backtracking 2");
+                x_k = x + alpha * d;
                 fun.value(x_k, f);
+                UTOPIA_NO_ALLOC_END();
 
                 // check decrease condition (wolfe condition)
                 if(f < f0 + this->c1() * alpha * dg )
@@ -119,19 +123,24 @@ namespace utopia {
                     return true;
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("Backtracking 3");
                 alpha_p = alpha_c;
                 alpha_c = alpha;
                 fp = fc;
                 fc = f;
+                UTOPIA_NO_ALLOC_END();
 
                 //  compute next step size alpha
                 if(it == 0)
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("Backtracking 4");
                     alpha = - dg / (2 * (fc - f0 -dg));
                     it++;
+                    UTOPIA_NO_ALLOC_END();
                 }
                 else
                 {
+                    UTOPIA_NO_ALLOC_BEGIN("Backtracking 5");
                     // all subsequent backtracks: cubic fit
                     t1 = fc - f0 - alpha_c * dg;
                     t2 = fp - f0 - alpha_p * dg;
@@ -140,6 +149,7 @@ namespace utopia {
                     a = t3 * ( t1/std::pow(alpha_c, 2) - t2/std::pow(alpha_p, 2) );
                     b = t3 * ( t2 * alpha_c/ std::pow(alpha_p, 2) - t1 * alpha_p/std::pow(alpha_c, 2) );
                     disc = std::pow(b, 2)  - 3 * a * dg;
+                    UTOPIA_NO_ALLOC_END();
 
                     if( a != 0)
                     {
@@ -153,6 +163,7 @@ namespace utopia {
                     }
                 }
 
+                UTOPIA_NO_ALLOC_BEGIN("Backtracking 6");
                 //  saveguard the step size
                 if(alpha > 0.5 * alpha_c)
                 {
@@ -163,6 +174,8 @@ namespace utopia {
                 {
                     alpha = alpha_c/10;
                 }
+                UTOPIA_NO_ALLOC_END();
+                
                 it++;
                 if(this->verbose())
                     PrintInfo::print_iter_status({it, alpha});
@@ -171,9 +184,21 @@ namespace utopia {
             return true;
         }
 
+    public:
+        void init_memory(const SizeType & ls) override
+        {
+            if(empty(x_k)){
+                x_k = local_zeros(ls);
+            }
+            else if(!x_k.comm().conjunction(ls == local_size(x_k).get(0))){
+                x_k  = local_zeros(ls); 
+            }   
+        }
+
 
     private:
         Scalar c2_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
+        Vector x_k; 
 
     };
 }

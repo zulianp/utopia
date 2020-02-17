@@ -1,57 +1,55 @@
 
-#ifndef UTOPIA_UTOPIA_PETSCTRAITS_HPP
-#define UTOPIA_UTOPIA_PETSCTRAITS_HPP
-
-#include "utopia_Traits.hpp"
-
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_SparseMatrix.hpp"
-#include "utopia_petsc_SerialSparseMatrix.hpp"
-
-#include "utopia_petsc_Vector.hpp"
-#include "utopia_petsc_SerialVector.hpp"
+#ifndef UTOPIA_UTOPIA_PETSC_TRAITS_HPP
+#define UTOPIA_UTOPIA_PETSC_TRAITS_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_BackendInfo.hpp"
+
+#include "utopia_petsc_Base.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_Device.hpp"
 
 #include "petscsys.h"
 #include "petscmat.h"
 
 namespace utopia {
+
+
     class PetscTraits {
     public:
-        typedef PetscScalar Scalar;
-        typedef PetscInt SizeType;
+        using Scalar   = PetscScalar;
+        using SizeType = PetscInt;
 
-        typedef utopia::PetscMatrix Matrix;
-        typedef utopia::PetscSparseMatrix SparseMatrix;
-        typedef utopia::PetscSerialSparseMatrix SerialSparseMatrix;
+        using Matrix            = utopia::PetscMatrix;
+        using SparseMatrix      = utopia::PetscMatrix;
+        using PolymorphicMatrix = utopia::PetscMatrix;
+        using Vector            = utopia::PetscVector;
 
-        typedef utopia::PetscVector Vector;
-        typedef utopia::PetscSerialVector SerialVector;
+        using IndexSet    = utopia::PetscIndexSet;
+        using IndexArray  = utopia::PetscArray<SizeType>;
+        using ScalarArray = utopia::PetscArray<Scalar>;
 
-        enum
-        {
-            Backend = PETSC
-        };
-    };
-
-
-    class PetscCudaTraits {
-    public:
-        typedef PetscScalar Scalar;
-        typedef PetscInt SizeType;
-
-        typedef utopia::PetscCuSparseMatrix Matrix;
-        typedef utopia::PetscCuSparseMatrix SparseMatrix;
-
-        typedef utopia::PetscCuVector Vector;
-        typedef utopia::PetscCuVector SerialVector;
+        using Communicator = utopia::PetscCommunicator;
+        using Device = utopia::Device<PETSC>;
 
         enum
         {
             Backend = PETSC
         };
+
+        static BackendInfo &backend_info()
+        {
+            static BackendInfo instance_("petsc");
+            return instance_;
+        }
     };
+
+    UTOPIA_MAKE_TRAITS_POLYMORPHIC(PetscMatrix, PetscTraits, 2);
+    UTOPIA_MAKE_TRAITS(PetscVector, PetscTraits, 1);
+
+    UTOPIA_MAKE_PARALLEL_TRAITS(PetscMatrix);
+    UTOPIA_MAKE_PARALLEL_TRAITS(PetscVector);
 }
 
 #endif //UTOPIA_UTOPIA_PETSCTRAITS_HPP

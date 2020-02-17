@@ -6,16 +6,38 @@
 #include "utopia_Local2Global.hpp"
 #include "utopia.hpp"
 #include "utopia_Path.hpp"
+#include "utopia_ui.hpp"
 
 #include <memory>
 
 namespace utopia {
 
-    class TransferOptions {
+    class TransferOptions : public Configurable {
     public:
         TransferOptions()
         : from_var_num(0), to_var_num(0), n_var(1), to_trace_space(false), tags({})
         {}
+
+        void read(Input &in) override
+        {
+            in.get("from-var-num", from_var_num);
+            in.get("to-var-num", to_var_num);
+            in.get("n-var", n_var);
+
+            in.get("coupling", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    int master = -1, slave = -1;
+                    
+                    in.get("master", master);
+                    in.get("slave",  slave);
+
+                    assert(master != -1);
+                    assert(slave  != -1);
+
+                    tags.emplace_back(master, slave);
+                });
+            });
+        }
 
         int from_var_num;
         int to_var_num;

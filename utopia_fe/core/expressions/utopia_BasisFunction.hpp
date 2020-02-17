@@ -15,7 +15,7 @@ namespace utopia {
         : space_ptr_(std::make_shared<FunctionSpaceT>(space))
         {}
 
-        BasisFunction(std::shared_ptr<FunctionSpaceT> &space_ptr)
+        BasisFunction(const std::shared_ptr<FunctionSpaceT> &space_ptr)
         : space_ptr_(space_ptr)
         {}
 
@@ -63,6 +63,11 @@ namespace utopia {
         std::size_t codim() const
         {
             return space_ptr()->n_subspaces();
+        }
+
+        inline bool equals(const BasisFunction &other) const
+        {
+            return space_ptr_ == other.space_ptr_;
         }
 
     private:

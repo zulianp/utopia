@@ -1,5 +1,5 @@
 
-#include "utopia_UITest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_ui.hpp"
 
 #include "utopia.hpp"
@@ -82,9 +82,9 @@ namespace utopia {
 
 #ifdef WITH_PETSC
 
-        // auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-        auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        Newton<DSMatrixd, DVectord> newton(cg);
+        // auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>();
+        auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
+        Newton<PetscMatrix, PetscVector> newton(cg);
 
 #ifdef WITH_JSON
         newton.import("Newton", data_path + "/json/default.json");
@@ -94,16 +94,16 @@ namespace utopia {
 #endif //WITH_PETSC
     }
 
-    void run_ui_test()
+    static void ui()
     {
-        UTOPIA_UNIT_TEST_BEGIN("UITest");
         UTOPIA_RUN_TEST(xml_stream);
         UTOPIA_RUN_TEST(input_parameters);
         UTOPIA_RUN_TEST(newton_ui);
 #ifdef WITH_TINY_EXPR
         UTOPIA_RUN_TEST(symbolic_expr);
 #endif //WITH_TINY_EXPR
-        UTOPIA_UNIT_TEST_END("UITest");
     }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(ui);
 
 }

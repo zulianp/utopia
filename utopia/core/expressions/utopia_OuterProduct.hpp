@@ -31,9 +31,9 @@ namespace utopia {
             return _right;
         }
 
-        std::string getClass() const override
+        std::string get_class() const override
         {
-            return "OuterProduct<" + left().getClass() + ", " + right().getClass() + ">";
+            return "OuterProduct<" + left().get_class() + ", " + right().get_class() + ">";
         }
 
     private:

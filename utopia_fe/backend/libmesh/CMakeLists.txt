@@ -2,6 +2,8 @@ list(APPEND LIBMESH_BACKEND_MODULES
     .
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR LIBMESH_BACKEND_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 add_utopiafe_module(utopia_fe_libmesh_backend utopia_fe_core utopia_fe_intersection utopia_fe_base)
