@@ -1,6 +1,7 @@
 #include "utopia_libmesh_DiegoMesh.hpp"
 
 #include <fstream>
+#include <numeric>
 
 #include "libmesh/mesh.h"
 #include "libmesh/node.h"

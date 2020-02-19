@@ -21,6 +21,7 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" OFF)
 option(ENABLE_MARS "Tries to use mars backend" OFF)
 option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
+option(ENABLE_NEW_TRANSFER "Use new transfer features" OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -47,6 +48,10 @@ endif()
 
 if(ENABLE_TRILINOS_ALGEBRA)
     set(WITH_TRILINOS_ALGEBRA TRUE)
+endif()
+
+if(ENABLE_NEW_TRANSFER)
+    set(WITH_NEW_TRANSFER TRUE)
 endif()
 
 set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
