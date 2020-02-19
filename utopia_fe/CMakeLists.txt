@@ -22,6 +22,7 @@ option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" 
 option(ENABLE_MARS "Tries to use mars backend" OFF)
 option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
 option(ENABLE_NEW_TRANSFER "Use new transfer features" OFF)
+option(INSTALL_LIBMESH "install libmesh" OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -171,6 +172,10 @@ list(APPEND UTOPIA_FE_MODULES
     rapidxml
     base
  )
+
+if(INSTALL_LIBMESH)
+    include(InstallLIBMESH)
+endif()
 
 if(ENABLE_INTREPID2)
     list(APPEND UTOPIA_FE_MODULES backend/intrepid2)

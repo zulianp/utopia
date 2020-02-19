@@ -22,6 +22,35 @@ namespace utopia {
 		virtual bool conjunction(const bool &val) const = 0;
 		virtual bool disjunction(const bool &val) const = 0;
 
+		template<typename T>
+		void root_print(T &obj) const
+		{
+			barrier();
+			if(rank() == 0) {
+				std::cout << obj << std::endl;
+			}
+			barrier();
+		}
+
+		template<typename T>
+		void synched_print(T &obj) const
+		{
+			const int n = size();
+			const int r = rank();
+
+			for(int i = 0; i < n; ++i) {
+				barrier();
+
+				if(i == r) {
+					std::cout << "[" << r << "] ---------------------\n";
+					std::cout << obj << std::endl;
+					std::cout << std::flush;
+				}
+			}
+
+			barrier();
+		}
+
 // #ifdef WITH_MPI
 // 		virtual MPI_Comm get() const = 0;
 // #endif //WITH_MPI
