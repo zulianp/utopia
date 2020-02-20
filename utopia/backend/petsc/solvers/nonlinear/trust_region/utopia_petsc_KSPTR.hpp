@@ -44,10 +44,10 @@ namespace utopia
             this->pc_type("jacobi");
         }
 
-        KSP_TR(const std::string type, const std::string pc_type = "jacobi", const bool redundant_flg = false): TRSubproblem(), redundant_solve_flg_(redundant_flg)
+        KSP_TR(const std::string& t, const std::string& pc_t = "jacobi", const bool redundant_flg = false): TRSubproblem(), redundant_solve_flg_(redundant_flg)
         {
-            this->pc_type(pc_type);
-            this->ksp_type(type);
+            this->pc_type(pc_t);
+            this->ksp_type(t);
         }
 
 
@@ -91,7 +91,7 @@ namespace utopia
             }
         }
 
-        virtual void pc_type(const std::string & pc_type_name)
+        virtual void pc_type(const std::string& pc_type_name)
         {
             if(!redundant_solve_flg_)
             {
