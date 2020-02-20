@@ -72,6 +72,10 @@ set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type"
 
 )
+if(CMAKE_CXX_COMPILER MATCHES "nvcc")
+    string(REPLACE "-Werror=reorder" "" UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS}")
+    message(STATUS "Using nvcc so we remove the -Werror-reorder flag due to a bug in nvcc")
+endif()
 
 # set(CMAKE_CXX_FLAGS "-Wall -Wno-clobbered -Wno-vla -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-local-typedefs -Wno-literal-suffix -Wno-deprecated-declarations -Wno-misleading-indentation -Wno-int-in-bool-context -Wno-maybe-uninitialized -Wno-nonnull-compare -Wno-address -Wno-inline -DTRILINOS_HIDE_DEPRECATED_HEADER_WARNINGS -Werror" CACHE STRING "Warnings as errors settings")
 
