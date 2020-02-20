@@ -18,7 +18,7 @@ if(NOT PETSC_FOUND)
     ExternalProject_Add(
         petsc
         UPDATE_COMMAND      "" #FIXME
-        BUILD_IN_SOURCE 1
+        BUILD_IN_SOURCE     1
         PREFIX              ${STAGE_DIR}
         GIT_REPOSITORY      ${PETSC_URL}
         GIT_TAG             maint

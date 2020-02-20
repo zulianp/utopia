@@ -21,7 +21,7 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" OFF)
 option(ENABLE_MARS "Tries to use mars backend" OFF)
 option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
-option(ENABLE_NEW_TRANSFER "Use new transfer features" OFF)
+option(ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 option(INSTALL_LIBMESH "install libmesh" OFF)
 #################################################################################
 #################################################################################

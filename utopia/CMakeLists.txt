@@ -63,6 +63,7 @@ option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)"
 
 option(INSTALL_TRILINOS "Install trilinos directly" OFF)
 option(INSTALL_PETSC "Install petsc directly" OFF)
+option(INSTALL_PETSC_DEBUG "Install petsc directly" OFF)
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 
@@ -284,6 +285,10 @@ endif()
 
 if(INSTALL_PETSC)
     include(InstallPetsc)
+endif()
+
+if(INSTALL_PETSC_DEBUG)
+    include(InstallPetscDebug)
 endif()
 
 # using this to defining UTOPIA_LAMBDA correctly

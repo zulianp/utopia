@@ -25,7 +25,7 @@ if(NOT LIBMESH_FOUND)
         INSTALL_DIR         ${LIBMESH_INSTALL_DIR}
         LOG_CONFIGURE       1
         LOG_BUILD           1
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-methods=opt --enable-silent-rules --enable-unique-id --disable-warnings --disable-maintainer-mode --enable-petsc-hypre-required --enable-metaphysicl-required
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-methods="opt dbg" --enable-silent-rules --enable-unique-id --disable-warnings --disable-maintainer-mode --enable-petsc-hypre-required --enable-metaphysicl-required
         BUILD_COMMAND ${MAKE_COMMAND}
         INSTALL_COMMAND     make install
         # COMMAND       ${MAKE_COMMAND}
