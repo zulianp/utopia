@@ -284,7 +284,8 @@ list(APPEND UTOPIA_FE_INCLUDES ${UTOPIA_INCLUDES})
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_INCLUDES=-I${CMAKE_INSTALL_PREFIX}/include -I${LIBMESH_INCLUDE_DIR} " " " "-I" "${UTOPIA_FE_INCLUDES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" "\n" "-I" "${MOONOLITH_INCLUDES}")
 
-append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib -lutopia_fe ${LIBMESH_LIBRARIES} " " " "-l" "${UTOPIA_FE_LIBRARIES}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib -lutopia_fe " " " "-l" "${UTOPIA_FE_LIBRARIES}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${LIBMESH_LIBRARIES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${UTOPIA_LIBRARIES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${MOONOLITH_LIBRARIES}")
 

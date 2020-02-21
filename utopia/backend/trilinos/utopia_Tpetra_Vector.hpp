@@ -576,13 +576,13 @@ namespace utopia {
 
                 if(has_ghosts()) {
                     view_ptr_ = utopia::make_unique<View>(
-                        ghosted_vec_->getLocalView<Kokkos::HostSpace>(),
+                        ghosted_vec_->getLocalViewHost(),
                         ghosted_vec_->getMap()->getLocalMap()
                     );
 
                 } else {
                     view_ptr_ = utopia::make_unique<View>(
-                        vec_->getLocalView<Kokkos::HostSpace>(),
+                        vec_->getLocalViewHost(),
                         vec_->getMap()->getLocalMap()
                     );
                 }
