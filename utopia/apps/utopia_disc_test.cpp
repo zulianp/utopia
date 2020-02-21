@@ -93,12 +93,7 @@ namespace utopia {
 
         stats.stop_and_collect("solve");
 
-        stats.start();
-
-        rename("x", x);
-        space.write("X.vts", x);
-
-        stats.stop_and_collect("io");
+  
 
 
         stats.start();
@@ -156,7 +151,23 @@ namespace utopia {
         std::cout << "n_dofs="   << x.size() << std::endl;
         std::cout << "l2_error=" << err      << std::endl;
 
+        stats.start();
+
+        bool skip_output = false;
+        in.get("skip_output", skip_output);
+
+
+        if(!skip_output) {
+            rename("x", x);
+            space.write("X.vts", x);
+        }
+
+        stats.stop_and_collect("io");
+
         stats.describe(std::cout);
+
+
+
     }
 
     void disc_test_2(Input &in)
