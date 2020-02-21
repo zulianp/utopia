@@ -46,17 +46,26 @@ namespace utopia {
 
         stats.start();
 
+        auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+            // return x[1];
+            return x[0];
+        };
+
+        auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+            return 0.0;
+        };
+
 
         //f(w) = 4*x^3 + y^2 + 3
         //lapl f(w) = 4*6*x + 2
 
-        auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
-            return 4 * x[0] * x[0] * x[0] + x[1] * x[1] + 3;
-        };
+        // auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+        //     return 4 * x[0] * x[0] * x[0] + x[1] * x[1] + 3;
+        // };
 
-        auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
-            return (4.0 * 6.0) * x[0] + 2.0;
-        };
+        // auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+        //     return (4.0 * 6.0) * x[0] + 2.0;
+        // };
 
         for(auto s : space.mesh().sides()) {
             space.emplace_dirichlet_condition(
@@ -93,8 +102,7 @@ namespace utopia {
 
         stats.stop_and_collect("solve");
 
-  
-
+        ////////////////////////////////////////////////////////////////////////
 
         stats.start();
 
@@ -148,27 +156,30 @@ namespace utopia {
         err = std::sqrt(space.comm().sum(err));
 
         stats.stop_and_collect("error-computation");
+
+        ////////////////////////////////////////////////////////////////////////
+
+
         std::cout << "n_dofs="   << x.size() << std::endl;
         std::cout << "l2_error=" << err      << std::endl;
 
-        
-
         bool skip_output = false;
         in.get("skip_output", skip_output);
-
 
         if(!skip_output) {
             stats.start();
             rename("x", x);
             space.write("X.vts", x);
+
+            PetscVector r = g; r.set(0.0);
+            space.apply_constraints(r);
+
+            rename("r", r);
+            space.write("R.vts", r);
             stats.stop_and_collect("io");
         }
 
-        
-
         stats.describe(std::cout);
-
-
 
     }
 
