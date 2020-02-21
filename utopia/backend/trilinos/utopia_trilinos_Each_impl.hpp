@@ -91,7 +91,7 @@ namespace utopia {
     void TpetraVectorEach::apply_read(const TpetraVector &v, Fun fun)
     {
         auto impl = raw_type(v);
-        auto view = impl->getLocalView<Kokkos::HostSpace>();
+        auto view = impl->getLocalViewHost();
         auto map  = impl->getMap()->getLocalMap();
 
         const auto r = range(v);
@@ -109,7 +109,7 @@ namespace utopia {
     void TpetraVectorEach::apply_write(TpetraVector &v, Fun fun)
     {
         auto impl = raw_type(v);
-        auto view = impl->getLocalView<Kokkos::HostSpace>();
+        auto view = impl->getLocalViewHost();
         auto map  = impl->getMap()->getLocalMap();
 
         const auto r = range(v);
@@ -137,7 +137,7 @@ namespace utopia {
 
         if(in.is_alias(out)) {
             auto impl = raw_type(out);
-            auto view = impl->getLocalView<Kokkos::HostSpace>();
+            auto view = impl->getLocalViewHost();
             auto map  = impl->getMap()->getLocalMap();
 
             For<>::apply(
@@ -152,12 +152,12 @@ namespace utopia {
         } else {
 
             auto impl_in = raw_type(in);
-            auto view_in = impl_in->getLocalView<Kokkos::HostSpace>();
+            auto view_in = impl_in->getLocalViewHost();
             auto map_in  = impl_in->getMap()->getLocalMap();
 
 
             auto impl_out = raw_type(out);
-            auto view_out = impl_out->getLocalView<Kokkos::HostSpace>();
+            auto view_out = impl_out->getLocalViewHost();
             auto map_out  = impl_out->getMap()->getLocalMap();
 
             For<>::apply(

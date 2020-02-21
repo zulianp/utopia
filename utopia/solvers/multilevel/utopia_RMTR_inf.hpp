@@ -62,8 +62,7 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level.
         */
-        RMTR_inf(   const SizeType & n_levels): RMTR(n_levels),
-                                                MLConstraints(this->transfer())
+        RMTR_inf(const SizeType & n_levels) : RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>(n_levels), MLConstraints(this->transfer())
                                                 //has_box_constraints_(false) // not optional parameter
         {
 
@@ -238,7 +237,7 @@ namespace utopia
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]); 
         }
 
-
+    public: // nvcc requires it to be public when using lambdas
         bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
             Scalar radius = this->memory_.delta[level];
