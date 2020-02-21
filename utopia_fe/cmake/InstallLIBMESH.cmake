@@ -23,6 +23,7 @@ if(NOT LIBMESH_FOUND)
         BUILD_IN_SOURCE 1
         PREFIX              ${STAGE_DIR}
         GIT_REPOSITORY      ${LIBMESH_URL}
+	GIT_TAG		    tags/v1.5.1
         DOWNLOAD_DIR        ${STAGE_DIR}
         INSTALL_DIR         ${LIBMESH_INSTALL_DIR}
         LOG_CONFIGURE       1
