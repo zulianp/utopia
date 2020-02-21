@@ -151,18 +151,20 @@ namespace utopia {
         std::cout << "n_dofs="   << x.size() << std::endl;
         std::cout << "l2_error=" << err      << std::endl;
 
-        stats.start();
+        
 
         bool skip_output = false;
         in.get("skip_output", skip_output);
 
 
         if(!skip_output) {
+            stats.start();
             rename("x", x);
             space.write("X.vts", x);
+            stats.stop_and_collect("io");
         }
 
-        stats.stop_and_collect("io");
+        
 
         stats.describe(std::cout);
 
