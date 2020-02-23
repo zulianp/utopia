@@ -16,11 +16,11 @@ namespace utopia {
 
     void run_semigeometric_multigrid_elast(libMesh::Parallel::Communicator &comm)
     {
-        std::cout << "[run_semigeometric_multigrid_elast]" << std::endl;
+        std::cout << "[run_semigeometric_multigrid_elast] " << comm.size() << std::endl;
 
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(comm);
 
-        const unsigned int n = 70;
+        const unsigned int n = (comm.size() * 7);
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,

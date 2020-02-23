@@ -100,7 +100,7 @@ namespace utopia {
         }
 
         // this should be left as virtual once all solvers allocations improve
-        virtual void init_memory(const SizeType & /*ls*/) { }
+        virtual void init_memory(const SizeType & /*ls*/) override { }
 
         // TODO
         virtual void update(const Operator<Vector> & A) { UTOPIA_UNUSED(A); }
@@ -149,7 +149,7 @@ namespace utopia {
             return true;
         }
 
-        void update(const std::shared_ptr<const Matrix> &op) 
+        void update(const std::shared_ptr<const Matrix> &op)
         {
             op_ = op;
         }

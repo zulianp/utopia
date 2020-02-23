@@ -1,5 +1,6 @@
 #include "utopia_blas_Algorithms.hpp"
 
+//Try: https://github.com/flame/blis#documentation
 
 extern "C" {
     // Fortran interface (taken from www.netlib.org/clapack)...
@@ -38,7 +39,7 @@ extern "C" {
     	const double * x,
     	const int *incx,
     	double * y,
-    	const int *incy 
+    	const int *incy
     );
 
 
@@ -80,7 +81,7 @@ namespace utopia {
 			b,
 			&ldb,
 			&beta,
-		    c, 
+		    c,
 		    &ldc
 		 );
 	}
@@ -99,7 +100,7 @@ namespace utopia {
 		    a,
 		    &lda,
 		    x,
-		    &incx, 
+		    &incx,
 		    &beta,
 		    c,
 		    &incy
@@ -134,7 +135,7 @@ namespace utopia {
 			&incx
 		);
 	}
-	
+
 	template<>
 	double BLASAlgorithms<double>::asum(const int n, const double *x, const int incx)
 	{
@@ -146,7 +147,7 @@ namespace utopia {
 	{
 		return idamax_(&n, x, &incx);
 	}
-	
+
 	template<>
 	double BLASAlgorithms<double>::ddot(const int n, const double *sx, const int incx, const double *sy, const int incy)
 	{
@@ -167,7 +168,7 @@ namespace utopia {
 			x,
 			&incx,
 			y,
-			&incy 
+			&incy
 		);
 	}
 

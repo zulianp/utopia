@@ -20,6 +20,9 @@ option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" OFF)
 option(ENABLE_MARS "Tries to use mars backend" OFF)
+option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
+option(ENABLE_NEW_TRANSFER "Use new transfer features" ON)
+option(INSTALL_LIBMESH "install libmesh" OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -46,6 +49,10 @@ endif()
 
 if(ENABLE_TRILINOS_ALGEBRA)
     set(WITH_TRILINOS_ALGEBRA TRUE)
+endif()
+
+if(ENABLE_NEW_TRANSFER)
+    set(WITH_NEW_TRANSFER TRUE)
 endif()
 
 set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
@@ -156,7 +163,6 @@ list(APPEND UTOPIA_FE_MODULES
     visualization
     backend/libmesh
     # backend/homemade
-    backend/intrepid2
     backend/mars
     intersection
     contact
@@ -166,6 +172,14 @@ list(APPEND UTOPIA_FE_MODULES
     rapidxml
     base
  )
+
+if(INSTALL_LIBMESH)
+    include(InstallLIBMESH)
+endif()
+
+if(ENABLE_INTREPID2)
+    list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
+endif()
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 include_directories(BEFORE ${CMAKE_BINARY_DIR})
@@ -270,7 +284,8 @@ list(APPEND UTOPIA_FE_INCLUDES ${UTOPIA_INCLUDES})
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_INCLUDES=-I${CMAKE_INSTALL_PREFIX}/include -I${LIBMESH_INCLUDE_DIR} " " " "-I" "${UTOPIA_FE_INCLUDES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" "\n" "-I" "${MOONOLITH_INCLUDES}")
 
-append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib -lutopia_fe ${LIBMESH_LIBRARIES} " " " "-l" "${UTOPIA_FE_LIBRARIES}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib -lutopia_fe " " " "-l" "${UTOPIA_FE_LIBRARIES}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${LIBMESH_LIBRARIES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${UTOPIA_LIBRARIES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${MOONOLITH_LIBRARIES}")
 

@@ -4,37 +4,109 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Each.hpp"
 
+//Transform calue mpiaij
+//1)  MatMPIAIJGetSeqAIJ (not MatMPIAIJGetLocalMat)
+// PETSC_EXTERN PetscErrorCode MatMPIAIJGetSeqAIJ(Mat,Mat*,Mat*,const PetscInt*[]);
+
+
 namespace utopia {
+
+	namespace internal {
+
+		template<class F>
+		void read_petsc_seqaij_impl(Mat &mat, F op)
+		{
+			PetscInt n;
+			const PetscInt *ia;
+			const PetscInt *ja;
+			PetscBool done;
+			PetscErrorCode err = 0;
+
+			err = MatGetRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done); assert(err == 0);
+			assert(done == PETSC_TRUE);
+
+			if(!done) {
+			    std::cerr << "PetscMatrix::read_petsc_seqaij_impl(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
+			    abort();
+			}
+
+			PetscScalar *array;
+			MatSeqAIJGetArray(mat, &array);
+
+			for(PetscInt i = 0; i < n; ++i) {
+				for(PetscInt k = ia[i]; k < ia[i+1]; ++k) {
+			    	op(i, ja[k], array[k]);
+			    }
+			}
+
+			MatSeqAIJRestoreArray(mat, &array);
+			err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done); assert(err == 0);
+		}
+
+		template<class F>
+		void read_petsc_mpiaij_impl(Mat &mat, F op)
+		{
+			// PetscErrorCode err = 0;
+
+			// const PetscInt* cols;
+			// Mat d, o;
+			// err =  MatMPIAIJGetSeqAIJ(mat, &d, &o, &cols); assert(err == 0);
+
+			assert(false && "IMPLEMENT ME");
+		}
+
+		template<class F>
+		void transform_petsc_impl(Mat &mat, F op)
+		{
+			PetscInt n;
+			const PetscInt *ia;
+			// const PetscInt *ja;
+			PetscBool done;
+			PetscErrorCode err = 0;
+
+			err = MatGetRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done); assert(err == 0);
+			assert(done == PETSC_TRUE);
+
+			if(!done) {
+			    std::cerr << "PetscMatrix::transform_petsc_impl(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
+			    abort();
+			}
+
+			PetscScalar *array;
+			MatSeqAIJGetArray(mat, &array);
+
+			//FIXME is there a better way to get the total number of values???
+			const PetscInt n_values = ia[n] - ia[0];
+
+			for(PetscInt i = 0; i < n_values; ++i) {
+			    array[i] = op(array[i]);
+			}
+
+			MatSeqAIJRestoreArray(mat, &array);
+			err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done); assert(err == 0);
+		}
+	}
+
+	template<class F>
+	void PetscMatrix::transform_values_mpiaij(F op)
+	{
+		PetscErrorCode err = 0;
+
+		const PetscInt* cols;
+		Mat d, o;
+		err =  MatMPIAIJGetSeqAIJ(raw_type(), &d, &o, &cols); assert(err == 0);
+
+		internal::transform_petsc_impl(d, op);
+		internal::transform_petsc_impl(o, op);
+
+		//DOUBT no restore?
+		// err =  MatMPIAIJRestoreSeqAIJ(raw_type(), &d, &o, &cols); assert(err == 0);
+	}
 
 	template<class F>
 	void PetscMatrix::transform_values_seqaij(F op)
 	{
-	    PetscInt n;
-	    const PetscInt *ia;
-	    // const PetscInt *ja;
-	    PetscBool done;
-	    PetscErrorCode err = 0;
-
-	    err = MatGetRowIJ(raw_type(), 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done); assert(err == 0);
-	    assert(done == PETSC_TRUE);
-
-	    if(!done) {
-	        std::cerr << "PetscMatrix::transform_values_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
-	        abort();
-	    } 
-
-	    PetscScalar *array;
-	    MatSeqAIJGetArray(raw_type(), &array);
-
-	    //FIXME is there a better way to get the total number of values???
-	    const PetscInt n_values = ia[n] - ia[0];
-
-	    for(PetscInt i = 0; i < n_values; ++i) {
-	        array[i] = op(array[i]);
-	    }
-
-	    MatSeqAIJRestoreArray(raw_type(), &array);
-	    err = MatRestoreRowIJ(raw_type(), 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done); assert(err == 0);
+		internal::transform_petsc_impl(raw_type(), op);
 	}
 
 	template<class F>
@@ -42,6 +114,8 @@ namespace utopia {
 	{
 	    if(has_type(MATSEQAIJ)) {
 	        transform_values_seqaij(op);
+	    } else if(has_type(MATMPIAIJ)) {
+	    	transform_values_mpiaij(op);
 	    } else {
 	        each_transform(*this, [op](const SizeType &, const SizeType &, const Scalar value) -> Scalar {
 	            return op(value);
@@ -64,7 +138,7 @@ namespace utopia {
 		if(!done) {
 		    std::cerr << "PetscMatrix::transform_values_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
 		    abort();
-		} 
+		}
 
 		PetscScalar *array;
 		MatSeqAIJGetArray(raw_type(), &array);
@@ -103,7 +177,7 @@ namespace utopia {
 	// 	if(!done) {
 	// 	    std::cerr << "PetscMatrix::transform_values_seqaij(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
 	// 	    abort();
-	// 	} 
+	// 	}
 
 	// 	const PetscScalar *array;
 	// 	MatSeqAIJGetArrayRead(raw_type(), &array);
