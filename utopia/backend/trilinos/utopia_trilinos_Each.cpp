@@ -5,7 +5,7 @@ namespace utopia {
     void TpetraVectorEach::apply_read(const TpetraVector &v, std::function<void(const Scalar &)> &fun)
     {
         auto impl = raw_type(v);
-        auto view = impl->getLocalView<Kokkos::HostSpace>();
+        auto view = impl->getLocalViewHost();
 
         const auto r = range(v);
 

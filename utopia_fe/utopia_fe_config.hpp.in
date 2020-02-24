@@ -5,6 +5,7 @@
 
 #cmakedefine WITH_BOOST
 #cmakedefine WITH_INTREPID2
+#cmakedefine WITH_NEW_TRANSFER
 
 #ifdef WITH_TRILINOS
 #cmakedefine WITH_TRILINOS_ALGEBRA

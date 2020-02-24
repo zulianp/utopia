@@ -570,6 +570,50 @@ namespace utopia {
             return !static_cast<bool>(mesh_);
         }
 
+
+        template<class F>
+        void sample(Vector &v, F f, const int c = 0)
+        {
+            auto r = v.range();
+            // auto n = r.extent() * NComponents;
+            assert(!v.empty());
+
+            // Write<Vector> w(v, utopia::AUTO);
+
+            // Point p;
+            // for(auto i = r.begin(); i < r.end(); ++i) {
+            //     this->mesh().node(i/NComponents, p);
+            //     v.set(i, f(p));
+            // }
+
+            //FIXME
+            {
+                auto space_view = view_device();
+                auto v_view = utopia::view_device(v);
+
+                Device::parallel_for(
+                    this->local_element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i)
+                {
+                    Elem e;
+                    space_view.elem(i, e);
+
+
+                    const SizeType n_nodes = e.n_nodes();
+
+                    Point p;
+                    for(SizeType i = 0; i < n_nodes; ++i) {
+                        auto idx = e.node_id(i) * mesh_->n_components() + subspace_id_;
+                        e.node(i, p);
+
+                        if(r.inside(idx)) {
+                            v_view.set(idx, f(p));
+                        }
+                    }
+                });
+            }
+        }
+
     private:
         std::shared_ptr<Mesh> mesh_;
         std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
