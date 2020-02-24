@@ -149,7 +149,6 @@ namespace utopia {
             return true;
         }
 
-    protected:
 
         /**
          * @brief      Function looks up for ids, where we should apply Dirichlet BC and set value to required one
@@ -177,6 +176,7 @@ namespace utopia {
         }
 
 
+    protected:
         /**
          * @brief      Function zeors correction, where we have Dirichlet BC aplied.
          *

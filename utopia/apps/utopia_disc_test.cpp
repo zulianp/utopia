@@ -30,6 +30,29 @@
 namespace utopia {
 
     template<class FunctionSpace>
+    void plot_grid_function(FunctionSpace &space, Input &in)
+    {
+        using Elem             = typename FunctionSpace::Elem;
+        using Mesh             = typename FunctionSpace::Mesh;
+        using ElemView         = typename FunctionSpace::ViewDevice::Elem;
+        using Device           = typename FunctionSpace::Device;
+        using Point            = typename Mesh::Point;
+        using Scalar           = typename Mesh::Scalar;
+        using Comm             = typename FunctionSpace::Comm;
+
+        PetscVector v;
+
+        space.create_vector(v);
+
+        space.sample(v, UTOPIA_LAMBDA(const Point &p) -> Scalar {
+            return p[0];
+        });
+
+        rename("f", v);
+        space.write("F.vts", v);
+    }
+
+    template<class FunctionSpace>
     void poisson_l2_error(FunctionSpace &space, Input &in)
     {
         using Elem             = typename FunctionSpace::Elem;
@@ -45,6 +68,15 @@ namespace utopia {
         MPITimeStatistics stats(space.comm());
 
         stats.start();
+
+        // auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+        //     // return x[1];
+        //     return x[0];
+        // };
+
+        // auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+        //     return 0.0;
+        // };
 
 
         //f(w) = 4*x^3 + y^2 + 3
@@ -93,13 +125,7 @@ namespace utopia {
 
         stats.stop_and_collect("solve");
 
-        stats.start();
-
-        rename("x", x);
-        space.write("X.vts", x);
-
-        stats.stop_and_collect("io");
-
+        ////////////////////////////////////////////////////////////////////////
 
         stats.start();
 
@@ -153,10 +179,31 @@ namespace utopia {
         err = std::sqrt(space.comm().sum(err));
 
         stats.stop_and_collect("error-computation");
+
+        ////////////////////////////////////////////////////////////////////////
+
+
         std::cout << "n_dofs="   << x.size() << std::endl;
         std::cout << "l2_error=" << err      << std::endl;
 
+        bool skip_output = false;
+        in.get("skip_output", skip_output);
+
+        if(!skip_output) {
+            stats.start();
+            rename("x", x);
+            space.write("X.vts", x);
+
+            PetscVector r = g; r.set(0.0);
+            space.apply_constraints(r);
+
+            rename("r", r);
+            space.write("R.vts", r);
+            stats.stop_and_collect("io");
+        }
+
         stats.describe(std::cout);
+
     }
 
     void disc_test_2(Input &in)
@@ -183,6 +230,8 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
+
+        // plot_grid_function(space, in);
 
         poisson_l2_error(space, in);
 
@@ -215,6 +264,9 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
+
+
+        // plot_grid_function(space, in);
 
         poisson_l2_error(space, in);
 

@@ -62,6 +62,8 @@ option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)"
 
 
 option(INSTALL_TRILINOS "Install trilinos directly" OFF)
+option(INSTALL_PETSC "Install petsc directly" OFF)
+option(INSTALL_PETSC_DEBUG "Install petsc directly" OFF)
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 
@@ -72,6 +74,10 @@ set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type"
 
 )
+if(CMAKE_CXX_COMPILER MATCHES "nvcc")
+    string(REPLACE "-Werror=reorder" "" UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS}")
+    message(STATUS "Using nvcc so we remove the -Werror-reorder flag due to a bug in nvcc")
+endif()
 
 # set(CMAKE_CXX_FLAGS "-Wall -Wno-clobbered -Wno-vla -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-local-typedefs -Wno-literal-suffix -Wno-deprecated-declarations -Wno-misleading-indentation -Wno-int-in-bool-context -Wno-maybe-uninitialized -Wno-nonnull-compare -Wno-address -Wno-inline -DTRILINOS_HIDE_DEPRECATED_HEADER_WARNINGS -Werror" CACHE STRING "Warnings as errors settings")
 
@@ -279,6 +285,14 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 
 if(INSTALL_TRILINOS)
     include(InstallTrilinos)
+endif()
+
+if(INSTALL_PETSC)
+    include(InstallPetsc)
+endif()
+
+if(INSTALL_PETSC_DEBUG)
+    include(InstallPetscDebug)
 endif()
 
 # using this to defining UTOPIA_LAMBDA correctly

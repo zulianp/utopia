@@ -39,7 +39,7 @@ namespace utopia {
 
         template<typename T, int Dim>
         inline void make(const libMesh::Elem &elem, moonolith::Line<T, Dim> &poly)
-        {   
+        {
             make(elem.node_ref(0), poly.p0);
             make(elem.node_ref(1), poly.p1);
         }
@@ -47,7 +47,7 @@ namespace utopia {
 
         template<typename T, int Dim>
         inline void make_non_affine(const libMesh::Elem &elem, moonolith::Storage<moonolith::Vector<T, Dim>> &poly_line)
-        {   
+        {
             const int n_nodes = elem.n_nodes();
 
             poly_line.resize(n_nodes);
@@ -149,20 +149,20 @@ namespace utopia {
             poly.el_index[0] = 0;
             poly.el_index[1] = 2;
             poly.el_index[2] = 1;
-       
+
             poly.el_index[3] = 0;
             poly.el_index[4] = 3;
             poly.el_index[5] = 2;
-       
+
             poly.el_index[6] = 0;
             poly.el_index[7] = 1;
             poly.el_index[8] = 3;
-       
+
             poly.el_index[9] = 1;
             poly.el_index[10] = 2;
-            poly.el_index[11] = 3;   
+            poly.el_index[11] = 3;
 
-            poly.type = moonolith::Polyhedron<T>::TET;     
+            poly.type = moonolith::Polyhedron<T>::TET;
         }
 
         template<typename T>
@@ -409,7 +409,7 @@ namespace utopia {
         const auto &w_in = q_in.get_weights();
 
         const std::size_t n_qp = q_in.n_points();
-        
+
         q_out.resize(n_qp);
 
         for(std::size_t k = 0; k < n_qp; ++k) {
@@ -439,7 +439,7 @@ namespace utopia {
         auto &w_out = q_out.get_weights();
 
         const std::size_t n_qp = q_in.n_points();
-        
+
         q_out.resize(n_qp);
 
         for(std::size_t k = 0; k < n_qp; ++k) {
@@ -512,14 +512,14 @@ namespace utopia {
         std::shared_ptr<moonolith::Transform<double, 2, 3>> &trafo)
     {
         trafo = std::make_shared<Transform2>(elem);
-    }   
+    }
 
     inline void make_transform(
         const libMesh::Elem &elem,
         std::shared_ptr<moonolith::Transform<double, 1, 2>> &trafo)
     {
         trafo = std::make_shared<Transform1>(elem);
-    }   
+    }
 
     inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 2, 2> &trafo)
     {
@@ -689,7 +689,7 @@ namespace utopia {
     {
         make_triangle_2(in, out);
         out.set_affine(in.has_affine_map());
-    }   
+    }
 
 
     template<class E>
@@ -849,7 +849,7 @@ namespace utopia {
        using moonolith::Quad4;
        using moonolith::Quad8;
        using moonolith::Quad9;
-      
+
        if(is_tri(elem.type())) {
 
             if(type.order == 2) {
@@ -937,7 +937,7 @@ namespace utopia {
         using moonolith::Tri6;
         using moonolith::Quad4;
         using moonolith::Quad8;
-        
+
         if(is_tri(elem.type())) {
 
              if(type.order == 2) {
@@ -1080,7 +1080,7 @@ namespace utopia {
         using moonolith::Tet10;
         using moonolith::Hex8;
         using moonolith::Hex27;
-        
+
         if(is_tet(elem.type())) {
 
              if(type.order == 2) {
@@ -1121,7 +1121,7 @@ namespace utopia {
     inline void convert_matrix(const moonolith::SparseMatrix<double> &in, USparseMatrix &out)
     {
         auto nnz = in.local_max_entries_x_col();
-        
+
         auto n_local_rows = in.local_rows();
         auto n_local_cols = in.local_cols();
 
@@ -1144,7 +1144,7 @@ namespace utopia {
     inline void convert_tensor(const moonolith::SparseMatrix<double> &in, UVector &out)
     {
         auto nnz = in.local_max_entries_x_col();
-        
+
         auto n_local_rows = in.local_rows();
         auto n_local_cols = in.local_cols();
 
@@ -1209,7 +1209,7 @@ namespace utopia {
                     case libMesh::HEX27: return moonolith::HEX1;
                     case libMesh::QUADSHELL8: return moonolith::QUAD1;
                     case libMesh::QUADSHELL4: return moonolith::QUAD1;
-                   
+
                     default: {
                         assert(false);
                         return moonolith::INVALID;
@@ -1233,7 +1233,7 @@ namespace utopia {
                     case libMesh::HEX27: return moonolith::HEX8;
                     case libMesh::QUADSHELL8: return moonolith::QUAD4;
                     case libMesh::QUADSHELL4: return moonolith::QUAD4;
-                   
+
                     default: {
                         assert(false);
                         return moonolith::INVALID;
@@ -1252,7 +1252,7 @@ namespace utopia {
                     case libMesh::HEX27: return moonolith::HEX27;
                     case libMesh::QUADSHELL8: return moonolith::QUAD8;
                     // case libMesh::QUADSHELL9: return moonolith::QUAD9;
-                   
+
                     default: {
                         assert(false);
                         return moonolith::INVALID;
@@ -1297,14 +1297,14 @@ namespace utopia {
             e.global_idx = elem.unique_id();
 
             const std::size_t nn = elem.n_nodes();
-            
+
             e.nodes.resize(nn);
 
             for(std::size_t i = 0; i < nn; ++i) {
                 const auto node_id = elem.node_id(i);
 
                 auto it = mapping.find(node_id);
-               
+
                 if(it == mapping.end()) {
                     e.nodes[i] = node_idx;
                     mapping[node_id] = node_idx++;
@@ -1330,7 +1330,7 @@ namespace utopia {
         convert(in, out.mesh());
 
         const auto n_local_dofs = dof_map.n_local_dofs();
-        
+
         auto &out_dof_map = out.dof_map();
         out_dof_map.set_n_local_dofs(n_local_dofs);
         out_dof_map.set_n_dofs(dof_map.n_dofs());
@@ -1350,6 +1350,11 @@ namespace utopia {
         moonolith::Communicator comm(in.comm().get());
         comm.exscan(&n_local_elems, &idx, 1, moonolith::MPISum());
 
+        if(idx >= in.n_active_elem()) {
+            std::cout << comm << " " << idx << " < " << in.n_active_elem() << std::endl;
+            std::cout << std::flush;
+        }
+
         assert(idx < in.n_active_elem());
 
         for(long i = 0; i < n_local_elems; ++i) {
@@ -1368,7 +1373,7 @@ namespace utopia {
 
             // dof_map.dof_indices(elem_ptr, dof_indices);
             // auto n_dofs_x_el = dof_indices.size();
-            
+
             const std::size_t nn = elem_ptr->n_nodes();
             dof_object.dofs.resize(nn);
 
@@ -1398,7 +1403,7 @@ namespace utopia {
     {
         const auto n_local_dofs = dof_map.n_local_dofs();
         const bool select_all = tags.empty(); //FOR them moment tags are ignored
-        
+
         auto &out_mesh    = out.mesh();
         auto &out_dof_map = out.dof_map();
 
@@ -1434,7 +1439,7 @@ namespace utopia {
 
                     if(it == mapping.end()) {
                         mapping[node_id] = n_nodes++;
-                    } 
+                    }
                 }
             }
         }
@@ -1456,7 +1461,7 @@ namespace utopia {
 
             for(std::size_t i = 0; i < n_sides; ++i) {
                  if((elem_ptr->neighbor_ptr(i) != libmesh_nullptr)) { continue; }
-                
+
 
                 ///////////////////////////// MESH ////////////////////////////////
                  auto side_ptr = elem_ptr->build_side_ptr(i);
@@ -1471,7 +1476,7 @@ namespace utopia {
                  const std::size_t n_side_nodes = side_ptr->n_nodes();
 
                  e.nodes.resize(n_side_nodes);
-                 
+
                  for(std::size_t k = 0;  k < n_side_nodes; ++k) {
                     auto node_id = side_ptr->node_id(k);
                     auto it = mapping.find(node_id); assert(it != mapping.end());

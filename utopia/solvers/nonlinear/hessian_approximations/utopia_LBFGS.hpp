@@ -473,6 +473,7 @@ namespace utopia
             }
 
 
+        public: // nvcc requires any lambda to be public
             void init_scaling_factors(const Vector & y, const Vector &s)
             {
                 if(scaling_tech_ == LBFGSScalingTechnique::NONE)
@@ -594,6 +595,7 @@ namespace utopia
             } // init_scaling_factors()
 
 
+        private:
             bool init_damping_nocedal(const Vector & y, const Vector & s, Vector & y_hat)
             {
                 bool skip_update = false; 
