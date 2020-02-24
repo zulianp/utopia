@@ -231,7 +231,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        plot_grid_function(space, in);
+        // plot_grid_function(space, in);
 
         poisson_l2_error(space, in);
 
@@ -266,7 +266,7 @@ namespace utopia {
         space.read(in);
 
 
-        plot_grid_function(space, in);
+        // plot_grid_function(space, in);
 
         poisson_l2_error(space, in);
 
