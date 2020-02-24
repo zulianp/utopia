@@ -13,9 +13,6 @@ namespace utopia {
     template<class InnerExpr, class Op>
     class DeviceUnary;
 
-    template<class InnerExpr>
-    using DeviceNegate = utopia::DeviceUnary<InnerExpr, Minus>;
-
     template<class Left, class Right>
     class DeviceAssign;
 

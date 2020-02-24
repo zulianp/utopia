@@ -7,7 +7,7 @@
 namespace utopia {
     //https://www.geometrictools.com/Documentation/RobustEigenSymmetric3x3.pdf
     template<class Expr>
-    class DeviceEigenDecomposition :  public DeviceExpression<DeviceEigenDecomposition<Expr>> {
+    class DeviceEigenDecomposition : public DeviceExpression<DeviceEigenDecomposition<Expr>> {
     public:
         using Scalar   = typename Traits<Expr>::Scalar;
         using SizeType = typename Traits<Expr>::SizeType;

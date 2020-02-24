@@ -16,6 +16,9 @@
 
 namespace utopia {
 
+    template<class InnerExpr>
+    using DeviceNegate = utopia::DeviceUnary<InnerExpr, Minus>;
+
     template<class Expr>
     UTOPIA_INLINE_FUNCTION DeviceBinary<Expr, DeviceNumber<double>, Minus> operator-(const DeviceExpression<Expr> &left, const double &right)
     {
