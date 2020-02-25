@@ -227,6 +227,15 @@ namespace utopia {
             return data_.end();
         }
 
+        UTOPIA_INLINE_FUNCTION void copy(std::initializer_list<T> data)
+        {
+            SizeType i = 0;
+            for(auto it = std::begin(data); it != std::end(data); ++it) {
+                UTOPIA_DEVICE_ASSERT(i < Size);
+                data_[i++] = *it;
+            }
+        }
+
     private:
         ArrayView<T, Size> data_;
     };

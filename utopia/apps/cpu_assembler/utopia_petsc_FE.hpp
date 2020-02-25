@@ -97,6 +97,8 @@ namespace utopia {
         static const int Dim = 2;
         static const int NNodes = 4;
 
+        using Super::node;
+
         virtual ~PetscUniformQuad4() {}
 
         inline Scalar fun(const SizeType &i, const Point &p) const
@@ -172,6 +174,7 @@ namespace utopia {
         using FunValue  = UniformHex8<Scalar>::FunValue;
         using MemType   = Uniform<>;
 
+        using Super::node;
 
         static const int Dim = 3;
         static const int NNodes = 8;

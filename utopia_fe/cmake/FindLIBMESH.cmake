@@ -55,7 +55,7 @@ find_path(LIBMESH_INCLUDE_DIR libmesh/libmesh.h
 )
 
 find_library(LIBMESH_LIBRARY
-             NAMES  mesh_${METHOD} mesh
+             NAMES  mesh_${METHOD} mesh mesh_opt
              HINTS  ${LIBMESH_DIR}/lib
                     $ENV{LIBMESH_DIR}/lib
                     $ENV{LIBMESH_DIR}
@@ -71,7 +71,7 @@ set(LIBMESH_INCLUDE_DIRS ${LIBMESH_INCLUDE_DIR})
 
 get_filename_component(LIBMESH_LIB_DIR ${LIBMESH_LIBRARY} DIRECTORY)
 find_library(TIMPI_LIBRARY
-             NAMES  timpi_${METHOD} timpi
+             NAMES  timpi_${METHOD} timpi timpi_opt
              HINTS  ${LIBMESH_LIB_DIR}
             )
 

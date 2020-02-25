@@ -16,6 +16,7 @@ namespace utopia {
 
         void run()
         {
+            UTOPIA_RUN_TEST(failing_eigen_test);
             UTOPIA_RUN_TEST(array_view_test);
             UTOPIA_RUN_TEST(static_array_view_test);
             UTOPIA_RUN_TEST(vector_view_test);
@@ -408,9 +409,27 @@ namespace utopia {
 
             sum_v = sum(V);
             utopia_test_assert(sum_v == sum_v);
-
-
             utopia_test_assert( approxeq(transpose(V) * diag(e) * V, A) );
+        }
+
+        void failing_eigen_test()
+        {
+            StaticMatrix<Scalar, 3, 3> A, V;
+            A.set(0.0);
+
+            StaticVector<Scalar, 3> e;
+
+            A.raw_type().copy(
+            {
+                0.020000000000000, 0.000001250000000, 0.000001250000000,
+                0.000001250000000, 0.000004436491673, 0.0,
+                0.000001250000000, 0.0, 0.000004436491673
+            });
+
+            eig(A, e, V);
+
+            disp(e);
+            disp(V);
         }
 
         void inner_test()
