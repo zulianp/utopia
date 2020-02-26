@@ -12,9 +12,10 @@ namespace utopia {
         using Point    = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
         using Scalar   = typename FunctionSpace::Scalar;
-        using Device   = typename FunctionSpace::Device;
-        using ElemView = typename FunctionSpace::ViewDevice::Elem;
-        static const int Dim = FunctionSpace::Dim;
+        using Subspace = typename FunctionSpace::template Subspace<1>;
+        using Device   = typename Subspace::Device;
+        using ElemView = typename Subspace::ViewDevice::Elem;
+        static const int Dim = Subspace::Dim;
 
         DirichletBoundaryCondition(
             const FunctionSpace &space,
@@ -51,11 +52,14 @@ namespace utopia {
         {
             auto r = v.range();
 
-            auto space_view = space_.view_device();
+            auto subspace = space_.subspace(component_);
+
+            auto space_view = subspace.view_device();
             auto v_view = utopia::view_device(v);
 
+
             Device::parallel_for(
-                space_.local_element_range(),
+                subspace.local_element_range(),
                 UTOPIA_LAMBDA(const SizeType &i)
             {
                 ElemView e;
@@ -63,7 +67,7 @@ namespace utopia {
 
                 const SizeType n_nodes = e.n_nodes();
 
-                const SizeType nc = space_.mesh().n_components();
+                const SizeType nc = subspace.mesh().n_components();
 
                 Point p;
                 for(SizeType i = 0; i < n_nodes; ++i) {
