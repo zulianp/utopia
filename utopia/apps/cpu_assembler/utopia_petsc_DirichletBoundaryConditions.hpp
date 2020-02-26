@@ -63,9 +63,12 @@ namespace utopia {
 
                 const SizeType n_nodes = e.n_nodes();
 
+                const SizeType nc = space_.mesh().n_components();
+
                 Point p;
                 for(SizeType i = 0; i < n_nodes; ++i) {
-                    auto idx = e.node(i) * space_.mesh().n_components() + component_;
+                    const SizeType node_id = e.node(i);
+                    auto idx = node_id * nc + component_;
                     e.node(i, p);
 
                     //FIXME

@@ -50,6 +50,8 @@ namespace utopia {
         mesh_->cell_point(idx, translation);
         mesh_->cell_size(idx, cell_size);
         e.set(translation, cell_size);
+
+        assert(e.is_valid());
     }
 
     template<class Elem, int NComponents>

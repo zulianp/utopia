@@ -54,6 +54,11 @@ namespace utopia {
             return data_ + size_;
         }
 
+        UTOPIA_INLINE_FUNCTION bool is_null() const
+        {
+            return data_ == nullptr;
+        }
+
         UTOPIA_FUNCTION ArrayView() : data_(nullptr), size_(0) {}
         UTOPIA_FUNCTION ArrayView(T * data, const T &size) : data_(data), size_(size) {}
 
@@ -316,6 +321,11 @@ namespace utopia {
         UTOPIA_FUNCTION ArrayView()
         : data_(nullptr), rows_(0), cols_(0)
         {}
+
+        UTOPIA_INLINE_FUNCTION bool is_null() const
+        {
+            return data_.is_null();
+        }
 
     private:
         ArrayView<T> data_;
