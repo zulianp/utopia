@@ -65,6 +65,12 @@ namespace utopia {
         }
 
         template<typename T>
+        UTOPIA_INLINE_FUNCTION T sin(const T &v)
+        {
+            return Kokkos::Details::ArithTraits<T>::sin(v);
+        }
+
+        template<typename T>
         UTOPIA_INLINE_FUNCTION T cos(const T &v)
         {
             return Kokkos::Details::ArithTraits<T>::cos(v);
@@ -75,6 +81,13 @@ namespace utopia {
         {
             return Kokkos::Details::ArithTraits<T>::acos(v);
         }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T atan2(const T &a, const T &b)
+        {
+            return ::atan2(a, b);
+        }
+
 
         template<typename T>
         UTOPIA_INLINE_FUNCTION T epsilon()
