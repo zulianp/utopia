@@ -54,6 +54,11 @@ namespace utopia {
             return data_ + size_;
         }
 
+        UTOPIA_INLINE_FUNCTION bool is_null() const
+        {
+            return data_ == nullptr;
+        }
+
         UTOPIA_FUNCTION ArrayView() : data_(nullptr), size_(0) {}
         UTOPIA_FUNCTION ArrayView(T * data, const T &size) : data_(data), size_(size) {}
 
@@ -227,6 +232,15 @@ namespace utopia {
             return data_.end();
         }
 
+        UTOPIA_INLINE_FUNCTION void copy(std::initializer_list<T> data)
+        {
+            SizeType i = 0;
+            for(auto it = std::begin(data); it != std::end(data); ++it) {
+                UTOPIA_DEVICE_ASSERT(i < Size);
+                data_[i++] = *it;
+            }
+        }
+
     private:
         ArrayView<T, Size> data_;
     };
@@ -307,6 +321,11 @@ namespace utopia {
         UTOPIA_FUNCTION ArrayView()
         : data_(nullptr), rows_(0), cols_(0)
         {}
+
+        UTOPIA_INLINE_FUNCTION bool is_null() const
+        {
+            return data_.is_null();
+        }
 
     private:
         ArrayView<T> data_;

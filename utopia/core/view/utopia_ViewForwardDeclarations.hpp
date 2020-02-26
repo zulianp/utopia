@@ -13,9 +13,6 @@ namespace utopia {
     template<class InnerExpr, class Op>
     class DeviceUnary;
 
-    template<class InnerExpr>
-    using DeviceNegate = utopia::DeviceUnary<InnerExpr, Minus>;
-
     template<class Left, class Right>
     class DeviceAssign;
 
@@ -66,6 +63,9 @@ namespace utopia {
 
     template<class Expr>
     class DeviceEigenDecomposition;
+
+    template<class Expr>
+    class DeviceEigenDecompositionNew;
 
     template<class Expr>
     class DeviceSingularValues;

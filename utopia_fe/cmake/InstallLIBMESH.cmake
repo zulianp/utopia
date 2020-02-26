@@ -23,13 +23,13 @@ if(NOT LIBMESH_FOUND)
         BUILD_IN_SOURCE 1
         PREFIX              ${STAGE_DIR}
         GIT_REPOSITORY      ${LIBMESH_URL}
-	GIT_TAG		    tags/v1.5.1
+	#GIT_TAG		    tags/v1.3.1
         DOWNLOAD_DIR        ${STAGE_DIR}
         INSTALL_DIR         ${LIBMESH_INSTALL_DIR}
         LOG_CONFIGURE       1
         LOG_BUILD           1
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-methods=${METHODS} --enable-silent-rules --enable-unique-id --disable-warnings --disable-maintainer-mode --enable-petsc-hypre-required --enable-metaphysicl-required
-        BUILD_COMMAND ${MAKE_COMMAND}
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-methods=${METHODS} --enable-silent-rules --enable-unique-id --disable-warnings --disable-maintainer-mode
+        BUILD_COMMAND make
         INSTALL_COMMAND     make install
         # COMMAND       ${MAKE_COMMAND}
     )

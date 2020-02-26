@@ -80,6 +80,24 @@ namespace utopia {
             os << "]\n";
         }
 
+        bool is_valid() const
+        {
+            if(nodes_.is_null() || nodes_.size() == 0) {
+                return false;
+            }
+
+            const SizeType n0 = nodes_[0];
+
+            for(SizeType i = 1; i < nodes_.size(); ++i) {
+                if(n0 == nodes_[i]) {
+                    return false;
+                }
+            }
+
+
+            return true;
+        }
+
     private:
         NodeIndex nodes_;
         SizeType idx_;
@@ -96,6 +114,8 @@ namespace utopia {
         using MemType   = Uniform<>;
         static const int Dim = 2;
         static const int NNodes = 4;
+
+        using Super::node;
 
         virtual ~PetscUniformQuad4() {}
 
@@ -172,6 +192,7 @@ namespace utopia {
         using FunValue  = UniformHex8<Scalar>::FunValue;
         using MemType   = Uniform<>;
 
+        using Super::node;
 
         static const int Dim = 3;
         static const int NNodes = 8;

@@ -12,7 +12,10 @@ namespace utopia {
         using Point    = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
         using Scalar   = typename FunctionSpace::Scalar;
-        static const int Dim = FunctionSpace::Dim;
+        using Subspace = typename FunctionSpace::template Subspace<1>;
+        using Device   = typename Subspace::Device;
+        using ElemView = typename Subspace::ViewDevice::Elem;
+        static const int Dim = Subspace::Dim;
 
         DirichletBoundaryCondition(
             const FunctionSpace &space,
@@ -24,24 +27,8 @@ namespace utopia {
 
         void apply(PetscMatrix &mat, PetscVector &vec) const
         {
-            using IndexSet = Traits<PetscVector>::IndexSet;
-            IndexSet ind;
-            ind.reserve(vec.local_size());
-
-            auto r = vec.range();
-
-            Write<PetscVector> w(vec, utopia::AUTO);
-
-            Point p;
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i - r.begin())) {
-                    ind.push_back(i);
-                    space_.mesh().node(i/Components, p);
-                    vec.set(i, fun_(p));
-                }
-            }
-
-            mat.set_zero_rows(ind, 1.0);
+            apply(mat);
+            apply(vec);
         }
 
         void apply(PetscMatrix &mat) const
@@ -52,30 +39,51 @@ namespace utopia {
 
             auto r = mat.row_range();
 
-            Point p;
             for(auto i = r.begin(); i < r.end(); ++i) {
                 if(is_constrained_dof(i - r.begin())) {
                     ind.push_back(i);
-                    space_.mesh().node(i/Components, p);
                 }
             }
 
             mat.set_zero_rows(ind, 1.0);
         }
 
-        void apply(PetscVector &vec) const
+        void apply(PetscVector &v) const
         {
-            auto r = vec.range();
+            //FIXME should just use the dofmap not the nodes
+            
 
-            Write<PetscVector> w(vec, utopia::AUTO);
+            auto r = v.range();
 
-            Point p;
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(is_constrained_dof(i - r.begin())) {
-                    space_.mesh().node(i/Components, p);
-                    vec.set(i, fun_(p));
+            auto subspace = space_.subspace(component_);
+
+            auto space_view = subspace.view_device();
+            auto v_view = utopia::view_device(v);
+
+
+            Device::parallel_for(
+                subspace.local_element_range(),
+                UTOPIA_LAMBDA(const SizeType &i)
+            {
+                ElemView e;
+                space_view.elem(i, e);
+
+                const SizeType n_nodes = e.n_nodes();
+
+                const SizeType nc = subspace.mesh().n_components();
+
+                Point p;
+                for(SizeType i = 0; i < n_nodes; ++i) {
+                    const SizeType node_id = e.node(i);
+                    auto idx = node_id * nc + component_;
+                    e.node(i, p);
+
+                    //FIXME
+                    if(r.inside(idx) && is_constrained_dof(idx - r.begin())) {
+                        v_view.set(idx, fun_(p));
+                    }
                 }
-            }
+            });
         }
 
         void apply_zero(PetscVector &vec) const

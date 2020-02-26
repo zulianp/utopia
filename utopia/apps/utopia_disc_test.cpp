@@ -30,6 +30,29 @@
 namespace utopia {
 
     template<class FunctionSpace>
+    void plot_grid_function(FunctionSpace &space, Input &in)
+    {
+        using Elem             = typename FunctionSpace::Elem;
+        using Mesh             = typename FunctionSpace::Mesh;
+        using ElemView         = typename FunctionSpace::ViewDevice::Elem;
+        using Device           = typename FunctionSpace::Device;
+        using Point            = typename Mesh::Point;
+        using Scalar           = typename Mesh::Scalar;
+        using Comm             = typename FunctionSpace::Comm;
+
+        PetscVector v;
+
+        space.create_vector(v);
+
+        space.sample(v, UTOPIA_LAMBDA(const Point &p) -> Scalar {
+            return p[0];
+        });
+
+        rename("f", v);
+        space.write("F.vts", v);
+    }
+
+    template<class FunctionSpace>
     void poisson_l2_error(FunctionSpace &space, Input &in)
     {
         using Elem             = typename FunctionSpace::Elem;
@@ -46,26 +69,26 @@ namespace utopia {
 
         stats.start();
 
-        auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
-            // return x[1];
-            return x[0];
-        };
+        // auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+        //     // return x[1];
+        //     return x[0];
+        // };
 
-        auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
-            return 0.0;
-        };
+        // auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+        //     return 0.0;
+        // };
 
 
         //f(w) = 4*x^3 + y^2 + 3
         //lapl f(w) = 4*6*x + 2
 
-        // auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
-        //     return 4 * x[0] * x[0] * x[0] + x[1] * x[1] + 3;
-        // };
+        auto oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+            return 4 * x[0] * x[0] * x[0] + x[1] * x[1] + 3;
+        };
 
-        // auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
-        //     return (4.0 * 6.0) * x[0] + 2.0;
-        // };
+        auto lapl_oracle = UTOPIA_LAMBDA(const Point &x) -> Scalar {
+            return (4.0 * 6.0) * x[0] + 2.0;
+        };
 
         for(auto s : space.mesh().sides()) {
             space.emplace_dirichlet_condition(
@@ -208,6 +231,8 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
+        // plot_grid_function(space, in);
+
         poisson_l2_error(space, in);
 
     }
@@ -239,6 +264,9 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
+
+
+        // plot_grid_function(space, in);
 
         poisson_l2_error(space, in);
 

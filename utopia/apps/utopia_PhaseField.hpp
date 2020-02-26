@@ -479,8 +479,8 @@ namespace utopia {
 
             space_.apply_constraints(H);
 
-            static int iter = 0;
-            write("H" + std::to_string(iter++) + ".m", H);
+            // static int iter = 0;
+            // write("H" + std::to_string(iter++) + ".m", H);
             return true;
         }
 
