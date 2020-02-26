@@ -94,6 +94,13 @@ namespace utopia {
         }
 
         template<class Expr>
+        UTOPIA_INLINE_FUNCTION TensorView &operator-=(const DeviceExpression<Expr> &expr)
+        {
+            DeviceInPlace<TensorView, Expr, Minus, 2>::apply(*this, expr.derived());
+            return *this;
+        }
+
+        template<class Expr>
         UTOPIA_INLINE_FUNCTION TensorView &operator*=(const DeviceExpression<Expr> &expr)
         {
             DeviceInPlace<TensorView, Expr, Multiplies, 2>::apply(*this, expr.derived());
@@ -135,7 +142,7 @@ namespace utopia {
             UTOPIA_DEVICE_ASSERT(rows() == other.rows());
             UTOPIA_DEVICE_ASSERT(cols() == other.cols());
 
-            device::copy(other.view_, view_);
+            device::copy(other.raw_type(), view_);
         }
 
         UTOPIA_INLINE_FUNCTION ArrayView2D &raw_type() { return view_; }

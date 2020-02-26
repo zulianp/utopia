@@ -123,6 +123,11 @@ namespace utopia {
             return (*dest) += val;
         }
 
+        template<typename T>
+        inline T sin(const T &v)
+        {
+            return std::sin(v);
+        }
 
         template<typename T>
         inline T cos(const T &v)
@@ -134,6 +139,12 @@ namespace utopia {
         inline T acos(const T &v)
         {
             return std::acos(v);
+        }
+
+        template<typename T>
+        inline T atan2(const T &a, const T &b)
+        {
+            return std::atan2(a, b);
         }
 
         template<typename T>
@@ -155,6 +166,12 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION constexpr Scalar pi()
         {
             return M_PI;
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION T squared(const T&x)
+        {
+            return x*x;
         }
 
         //FIXME use impl and specialize based on Input type

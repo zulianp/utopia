@@ -50,6 +50,9 @@ namespace utopia {
 
         void apply(PetscVector &v) const
         {
+            //FIXME should just use the dofmap not the nodes
+            
+
             auto r = v.range();
 
             auto subspace = space_.subspace(component_);

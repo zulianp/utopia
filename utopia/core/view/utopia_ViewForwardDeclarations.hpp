@@ -65,6 +65,9 @@ namespace utopia {
     class DeviceEigenDecomposition;
 
     template<class Expr>
+    class DeviceEigenDecompositionNew;
+
+    template<class Expr>
     class DeviceSingularValues;
 
     template<class T>
