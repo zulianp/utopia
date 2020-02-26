@@ -25,10 +25,17 @@ namespace utopia {
             c_.stop();
         }
 
-        void stop_and_collect(const std::string &name)
+        void stop_and_collect(const std::string &collect_name)
         {
             stop();
-            times_[std::to_string(counter_++) + ") " + name] = c_.get_seconds();
+            times_[std::to_string(counter_++) + ") " + collect_name] = c_.get_seconds();
+        }
+
+        void stop_collect_and_restart(const std::string &collect_name)
+        {
+            stop();
+            times_[std::to_string(counter_++) + ") " + collect_name] = c_.get_seconds();
+            start();
         }
 
         void add_stat(const std::string &name, const double &time)

@@ -33,6 +33,7 @@ if(NOT PETSC_FOUND)
         # COMMAND       ${MAKE_COMMAND}
     )
 
-    set(PETSC_DIR ${PETSC_INSTALL_DIR})
-    set(PETSC_DIR ${PETSC_INSTALL_DIR} PARENT_SCOPE)
+    set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+    # set(PETSC_DIR ${PETSC_INSTALL_DIR})
 endif()

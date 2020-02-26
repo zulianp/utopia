@@ -34,6 +34,8 @@ if(NOT LIBMESH_FOUND)
         # COMMAND       ${MAKE_COMMAND}
     )
 
+    set_target_properties(libmesh PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
     set(LIBMESH_DIR ${LIBMESH_INSTALL_DIR})
     set(LIBMESH_DIR ${LIBMESH_INSTALL_DIR} PARENT_SCOPE)
 endif()

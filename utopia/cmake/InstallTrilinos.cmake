@@ -59,6 +59,8 @@ if(NOT TRILINOS_FOUND)
         COMMAND       ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete"
     )
 
+    set_target_properties(trilinos PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
     set(TRILINOS_DIR ${TRILINOS_INSTALL_DIR})
     set(TRILINOS_DIR ${TRILINOS_INSTALL_DIR} PARENT_SCOPE)
     # set(TRILINOS_FOUND TRUE)
