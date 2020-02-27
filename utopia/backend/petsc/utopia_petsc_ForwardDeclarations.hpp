@@ -3,6 +3,7 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 #include <vector>
+#include <petscsystypes.h>
 
 namespace utopia {
 
@@ -10,7 +11,7 @@ namespace utopia {
     class PetscVector;
     // class PetscIndexSet;
     //FIXME
-    using PetscIndexSet = std::vector<int>;
+    using PetscIndexSet = std::vector<PetscInt>;
     class PetscTraits;
 
     //class PetscArray
