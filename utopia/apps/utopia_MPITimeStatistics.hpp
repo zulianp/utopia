@@ -47,9 +47,14 @@ namespace utopia {
         {
             comm_.barrier();
             if(comm_.rank() == 0) {
+                os << "------------------------------------------\n";
+                os << "Timings (seconds), ";
+                os << "comm_size : " << comm_.size() << "\n";
                 for(auto p : times_) {
                     os << p.first << " : " << p.second << "\n";
                 }
+
+                os << "------------------------------------------\n";
             }
             comm_.barrier();
         }

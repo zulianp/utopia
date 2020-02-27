@@ -24,7 +24,7 @@ namespace utopia {
     };
 }
 
-#define UTOPIA_PETSC_COLLECTIVE_MEMUSAGE() {  PetscDebugger::instance().print_current_collective_usage(__FILE__ + std::string(":") + std::to_string(__LINE__)); }
+#define UTOPIA_PETSC_COLLECTIVE_MEMUSAGE_LINE() {  PetscDebugger::instance().print_current_collective_usage(__FILE__ + std::string(":") + std::to_string(__LINE__)); }
 #define UTOPIA_PETSC_COLLECTIVE_MEMUSAGE(macro_marker_) {  PetscDebugger::instance().print_current_collective_usage(macro_marker_); }
 #define UTOPIA_PETSC_MEMUSAGE() {  PetscDebugger::instance().print_current_usage(); }
 #define UTOPIA_PETSC_MEMCHECK_BEGIN() { PetscDebugger::instance().memory_check_begin(); }
