@@ -47,6 +47,10 @@ namespace utopia {
 
         bool check_solution(const Operator<Vector> &A, const Vector &x, const Vector &b) const;
 
+        void gradient_descent_step(
+                const Operator<Vector> &A,
+                const Vector &b,
+                Vector &x);
 
         // std::shared_ptr<Preconditioner> precond_;
         Vector r, p, q, Ap, r_new, z, z_new;

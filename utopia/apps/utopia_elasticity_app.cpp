@@ -30,7 +30,7 @@
 namespace utopia {
 
     template<class FunctionSpace>
-    static void linear_elasticity(FunctionSpace &space, const bool use_direct_solver, const bool debug_matrices = false)
+    static void linear_elasticity(FunctionSpace &space, Input &in)
     {
         // using Mesh             = typename FunctionSpace::Mesh;
         using Elem             = typename FunctionSpace::Elem;
@@ -50,6 +50,13 @@ namespace utopia {
         using Quadrature       = utopia::Quadrature<Elem, 2>;
         using ElementMatrix    = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
         // using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
+
+
+        bool use_direct_solver = true;
+        bool debug_matrices = false;
+
+        in.get("use_direct_solver", use_direct_solver);
+        in.get("debug_matrices", debug_matrices);
 
         Comm &comm = space.comm();
 
@@ -148,11 +155,14 @@ namespace utopia {
 
         space.apply_constraints(mat, rhs);
 
+
         stats.stop_and_collect("boundary conditions ");
 
         stats.start();
         Vector x = rhs;
         x.set(0.0);
+
+        // space.apply_constraints(x);
 
         disp("Solving...");
 
@@ -195,7 +205,7 @@ namespace utopia {
         stats.describe(std::cout);
     }
 
-    static void petsc_elasticity_3()
+    static void petsc_elasticity_3(Input &in)
     {
         static const int Dim = 3;
         static const int NVars = Dim;
@@ -205,23 +215,27 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
 
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 1;
-        SizeType ny = scale * 1;
-        SizeType nz = scale * 1;
 
         FunctionSpace space;
+        space.read(in);
 
-        space.build(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
+        // PetscCommunicator world;
 
-        linear_elasticity(space, false, true);
+        // SizeType scale = (world.size() + 1);
+        // SizeType nx = scale * 1;
+        // SizeType ny = scale * 1;
+        // SizeType nz = scale * 1;
+
+        // FunctionSpace space;
+
+        // space.build(
+        //     world,
+        //     {nx, ny, nz},
+        //     {0.0, 0.0, 0.0},
+        //     {1.0, 1.0, 1.0}
+        // );
+
+        linear_elasticity(space, in);
 
     }
 
