@@ -70,7 +70,7 @@ namespace utopia {
         comm.barrier();
         stats.start();
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("before-create-matrix");
 
         Matrix mat, mass_mat;
         space.create_matrix(mat);
@@ -81,7 +81,7 @@ namespace utopia {
         Vector rhs;
         space.create_vector(rhs);
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after create-matrix");
 
         stats.stop_and_collect("create-matrix");
 
@@ -148,7 +148,7 @@ namespace utopia {
             });
         }
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after assemblies");
 
         stats.stop_collect_and_restart("assemblies");
 
@@ -162,7 +162,7 @@ namespace utopia {
 
         space.apply_constraints(mat, rhs);
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after boundary conditions");
 
         stats.stop_collect_and_restart("boundary conditions ");
 
@@ -199,7 +199,7 @@ namespace utopia {
             solver.solve(mat, rhs, x);
         }
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after solve");
 
         stats.stop_and_collect("solve");
 
@@ -230,8 +230,12 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
 
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
+
         FunctionSpace space;
         space.read(in);
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
         linear_elasticity(space, in);
     }
 
@@ -248,12 +252,12 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
 
         FunctionSpace space;
         space.read(in);
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
 
         linear_elasticity(space, in);
     }

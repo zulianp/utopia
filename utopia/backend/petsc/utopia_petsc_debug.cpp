@@ -67,7 +67,7 @@ namespace utopia {
         os << "[Memory Usage]  " << (space/1024) << "KB" << "\n";
     }
 
-    void PetscDebugger::print_current_collective_usage(std::ostream &os) const
+    void PetscDebugger::print_current_collective_usage(const std::string &marker, std::ostream &os) const
     {
         PetscErrorCode ierr;
         PetscLogDouble space;
@@ -80,7 +80,7 @@ namespace utopia {
 
         PetscCommunicator comm(PETSC_COMM_WORLD);
         space = comm.sum(space);
-        comm.root_print("[Memory Usage]  " + std::to_string(space) + "GB");
+        comm.root_print("[Memory Usage]  (" + marker + ") " + std::to_string(space) + "GB");
     }
 
     void PetscDebugger::describe(std::ostream &os) const
