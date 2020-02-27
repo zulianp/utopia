@@ -751,7 +751,7 @@ namespace utopia {
         auto spatial_dim = to_mesh->spatial_dimension();
         bool has_intersection = false;
 
-        std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
+        // std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
 
         if(handle_adaptive_refinement_) {
             Adaptivity a;
@@ -798,7 +798,7 @@ namespace utopia {
     )
     {
 
-        std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
+        // std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
 
         if(handle_adaptive_refinement_) {
             Adaptivity a;
@@ -872,7 +872,7 @@ namespace utopia {
         auto spatial_dim = to_mesh.spatial_dimension();
         bool has_intersection = false;
 
-        std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
+        // std::cout << "handle_adaptive_refinement_ : " << handle_adaptive_refinement_ << std::endl;
 
         if(handle_adaptive_refinement_) {
             Adaptivity a;

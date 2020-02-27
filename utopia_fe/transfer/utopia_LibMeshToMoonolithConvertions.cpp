@@ -91,10 +91,10 @@ namespace utopia {
 		unsigned int sys_num  = dof_map.sys_number();
 		// std::vector<libMesh::dof_id_type> dof_indices;
 
-		const auto n_elem = in.n_active_local_elem();
+		const long n_elem = in.n_active_local_elem();
 		out_dof_map.resize(n_elem);
 
-		auto fe_type = dof_map.variable(var_num).type();
+		
 
 		long idx = 0;
 		long n_local_elems = in.n_active_local_elem();
@@ -102,45 +102,64 @@ namespace utopia {
 		moonolith::Communicator comm(in.comm().get());
 		comm.exscan(&n_local_elems, &idx, 1, moonolith::MPISum());
 
-		if(idx >= in.n_active_elem()) {
-		    std::cout << comm << " " << idx << " < " << in.n_active_elem() << std::endl;
-		    std::cout << std::flush;
-		}
+		// comm.barrier();
+		// std::cout << comm << "n_local_elems: " << n_elem << std::endl;
 
-		assert(idx < in.n_active_elem());
+		// if(idx >= in.n_active_elem()) {
+		//     std::cout << comm << " " << idx << " < " << in.n_active_elem() << std::endl;
+		//     std::cout << std::flush;
+		// }
 
-		for(long i = 0; i < n_local_elems; ++i) {
-		    out_dof_map.dof_object(i).element_dof = idx++;
-		}
+		assert(idx < n_elem);
 
-		SizeType local_el_idx = -1;
-		for(const auto &elem_ptr : in.active_local_element_ptr_range())
-		{
-		    ++local_el_idx;
+		// if(n_elem > 0) {
 
-		    auto &dof_object      = out_dof_map.dof_object(local_el_idx);
-		    dof_object.global_idx = elem_ptr->id();
-		    dof_object.block      = elem_ptr->subdomain_id();
-		    dof_object.type       = convert(elem_ptr->type(), fe_type);
+			for(long i = 0; i < n_elem; ++i) {
+			    out_dof_map.dof_object(i).element_dof = idx++;
+			}
 
-		    // dof_map.dof_indices(elem_ptr, dof_indices);
-		    // auto n_dofs_x_el = dof_indices.size();
+			// comm.barrier();
+			// std::cout << comm << "idx: " << idx << std::endl;
 
-		    const std::size_t nn = elem_ptr->n_nodes();
-		    dof_object.dofs.resize(nn);
+			auto fe_type = dof_map.variable(var_num).type();
 
-		    for(std::size_t i = 0; i < nn; ++i) {
-		        const auto &node_ref = elem_ptr->node_ref(i);
-		        const auto dof = node_ref.dof_number(
-		            sys_num,
-		            var_num,
-		            0);
+			SizeType local_el_idx = -1;
+			// for(const auto &elem_ptr : in.active_local_element_ptr_range())
 
-		        // assert(dof == dof_indices[i]);
+			for(auto it = elements_begin(in); it != elements_end(in); ++it)
+			{
+				auto elem_ptr = *it;
 
-		        dof_object.dofs[i] = dof;
-		    }
-		}
+			    ++local_el_idx;
+
+			    auto &dof_object      = out_dof_map.dof_object(local_el_idx);
+			    dof_object.global_idx = elem_ptr->id();
+			    dof_object.block      = elem_ptr->subdomain_id();
+			    dof_object.type       = convert(elem_ptr->type(), fe_type);
+
+			    // dof_map.dof_indices(elem_ptr, dof_indices);
+			    // auto n_dofs_x_el = dof_indices.size();
+
+			    const std::size_t nn = elem_ptr->n_nodes();
+			    dof_object.dofs.resize(nn);
+
+			    for(std::size_t i = 0; i < nn; ++i) {
+			        const auto &node_ref = elem_ptr->node_ref(i);
+			        const auto dof = node_ref.dof_number(
+			            sys_num,
+			            var_num,
+			            0);
+
+			        // assert(dof == dof_indices[i]);
+
+			        dof_object.dofs[i] = dof;
+			    }
+			}
+		// }
+
+		// std::cout << comm << " HERE bro" << std::endl << std::flush;
+		// comm.barrier();
+		// if(in.comm().rank() == 0) { moonolith::logger() << "ConvertFunctionSpace::apply end" << std::endl << std::flush; }
 	}
 
 	template class ConvertFunctionSpace<LibMeshFunctionSpace, moonolith::FunctionSpace<moonolith::Mesh<double, 1>> >;
