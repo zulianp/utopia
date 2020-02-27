@@ -142,9 +142,8 @@ namespace utopia {
             });
         }
 
-        stats.stop_and_collect("assemblies");
+        stats.stop_collect_and_restart("assemblies");
 
-        stats.start();
         rhs = mass_mat * rhs;
 
         Scalar vol = sum(mass_mat);
@@ -155,14 +154,10 @@ namespace utopia {
 
         space.apply_constraints(mat, rhs);
 
+        stats.stop_collect_and_restart("boundary conditions ");
 
-        stats.stop_and_collect("boundary conditions ");
-
-        stats.start();
         Vector x = rhs;
         x.set(0.0);
-
-        // space.apply_constraints(x);
 
         disp("Solving...");
 
