@@ -80,7 +80,7 @@ namespace utopia {
 
         PetscCommunicator comm(PETSC_COMM_WORLD);
         space = comm.sum(space);
-        comm.root_print("[Memory Usage]  (" + marker + ") " + std::to_string(space) + "GB");
+        comm.root_print("[Memory Usage] " + std::to_string(space) + " GB\t(" + marker + ")" );
     }
 
     void PetscDebugger::describe(std::ostream &os) const
