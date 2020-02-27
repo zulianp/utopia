@@ -52,11 +52,13 @@ namespace utopia {
         // using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
 
 
-        bool use_direct_solver = true;
+        bool use_direct_solver = false;
         bool debug_matrices = false;
+        std::string output_path = "elasticity.vtr";
 
         in.get("use_direct_solver", use_direct_solver);
         in.get("debug_matrices", debug_matrices);
+        in.get("output_path", output_path);
 
         Comm &comm = space.comm();
 
@@ -189,7 +191,7 @@ namespace utopia {
 
         stats.start();
         rename("x", x);
-        space.write("X.vtk", x);
+        space.write(output_path, x);
         stats.stop_and_collect("write");
 
         // rename("rhs", rhs);
@@ -199,6 +201,24 @@ namespace utopia {
 
         stats.describe(std::cout);
     }
+
+    static void petsc_elasticity_2(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType         = Mesh::SizeType;
+
+        FunctionSpace space;
+        space.read(in);
+        linear_elasticity(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_elasticity_2);
+
 
     static void petsc_elasticity_3(Input &in)
     {
@@ -210,28 +230,9 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
 
-
         FunctionSpace space;
         space.read(in);
-
-        // PetscCommunicator world;
-
-        // SizeType scale = (world.size() + 1);
-        // SizeType nx = scale * 1;
-        // SizeType ny = scale * 1;
-        // SizeType nz = scale * 1;
-
-        // FunctionSpace space;
-
-        // space.build(
-        //     world,
-        //     {nx, ny, nz},
-        //     {0.0, 0.0, 0.0},
-        //     {1.0, 1.0, 1.0}
-        // );
-
         linear_elasticity(space, in);
-
     }
 
     UTOPIA_REGISTER_APP(petsc_elasticity_3);
