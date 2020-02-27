@@ -70,6 +70,8 @@ namespace utopia {
         comm.barrier();
         stats.start();
 
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+
         Matrix mat, mass_mat;
         space.create_matrix(mat);
         // space.create_matrix(mass_mat);
@@ -78,6 +80,8 @@ namespace utopia {
 
         Vector rhs;
         space.create_vector(rhs);
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
 
         stats.stop_and_collect("create-matrix");
 
@@ -144,43 +148,58 @@ namespace utopia {
             });
         }
 
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+
         stats.stop_collect_and_restart("assemblies");
 
         rhs = mass_mat * rhs;
 
         Scalar vol = sum(mass_mat);
-        std::cout << "vol: " << vol << std::endl;
+        comm.root_print("vol: " + std::to_string(vol) );
 
         Scalar zero = sum(mat);
-        std::cout << "zero: " << zero << std::endl;
+        comm.root_print("zero: " + std::to_string(zero) );
 
         space.apply_constraints(mat, rhs);
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
 
         stats.stop_collect_and_restart("boundary conditions ");
 
         Vector x = rhs;
         x.set(0.0);
 
-        disp("Solving...");
+        comm.root_print("Solving...");
+
+        const SizeType n_iter = space.n_dofs(); assert(n_iter > 0);
 
         if(use_direct_solver) {
             Factorization<Matrix, Vector> solver;
             solver.solve(mat, rhs, x);
-        }  else {
-            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+        } else if(x.size() > 1e6) {
+            KSPSolver<Matrix, Vector> solver;
+            solver.verbose(true);
+            
+            solver.max_it(n_iter);
+            solver.rtol(1e-6);
+            solver.atol(1e-6);
+
+            solver.solve(mat, rhs, x);
+
+        } else {
+            ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
+
             auto prec = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
-            cg.set_preconditioner(prec);
-            cg.verbose(true);
+            solver.set_preconditioner(prec);
+            solver.verbose(true);
 
-            const SizeType n_iter = space.n_dofs();
-
-            assert(n_iter > 0);
-
-            cg.max_it(n_iter);
-            cg.rtol(1e-6);
-            cg.atol(1e-6);
-            cg.solve(mat, rhs, x);
+            solver.max_it(n_iter);
+            solver.rtol(1e-6);
+            solver.atol(1e-6);
+            solver.solve(mat, rhs, x);
         }
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
 
         stats.stop_and_collect("solve");
 
@@ -197,8 +216,7 @@ namespace utopia {
         // rename("rhs", rhs);
         // space.write("R.vtk", rhs);
 
-        if(comm.rank() == 0) std::cout << "n_dofs: " << space.n_dofs() << std::endl;
-
+        comm.root_print( "n_dofs: " + std::to_string(space.n_dofs()) );
         stats.describe(std::cout);
     }
 
@@ -230,8 +248,13 @@ namespace utopia {
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
 
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+
         FunctionSpace space;
         space.read(in);
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE();
+
         linear_elasticity(space, in);
     }
 
@@ -252,6 +275,8 @@ namespace utopia {
         using Dev            = FunctionSpace::Device;
         using VectorD        = utopia::StaticVector<Scalar, Dim>;
         // using MatrixDxD        = utopia::StaticMatrix<Scalar, Dim, Dim>;
+
+
 
         PetscCommunicator world;
 

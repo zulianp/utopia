@@ -1,5 +1,6 @@
 #include "utopia_petsc_debug.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_petsc_Communicator.hpp"
 
 #include "petscsys.h"
 #include <stack>
@@ -64,6 +65,22 @@ namespace utopia {
         PetscLogDouble space;
         ierr = PetscMemoryGetCurrentUsage(&space); assert(ierr == 0); (void) ierr;
         os << "[Memory Usage]  " << (space/1024) << "KB" << "\n";
+    }
+
+    void PetscDebugger::print_current_collective_usage(std::ostream &os) const
+    {
+        PetscErrorCode ierr;
+        PetscLogDouble space;
+        ierr = PetscMemoryGetCurrentUsage(&space); assert(ierr == 0); (void) ierr;
+
+        
+        space /= 1024; //to KB
+        space /= 1024; //to MB
+        space /= 1000; //to GB
+
+        PetscCommunicator comm(PETSC_COMM_WORLD);
+        space = comm.sum(space);
+        comm.root_print("[Memory Usage]  " + std::to_string(space) + "GB");
     }
 
     void PetscDebugger::describe(std::ostream &os) const

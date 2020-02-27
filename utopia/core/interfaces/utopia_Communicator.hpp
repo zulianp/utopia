@@ -23,7 +23,7 @@ namespace utopia {
 		virtual bool disjunction(const bool &val) const = 0;
 
 		template<typename T>
-		void root_print(T &obj) const
+		void root_print(const T &obj) const
 		{
 			barrier();
 			if(rank() == 0) {
@@ -33,7 +33,7 @@ namespace utopia {
 		}
 
 		template<typename T>
-		void synched_print(T &obj) const
+		void synched_print(const T &obj) const
 		{
 			const int n = size();
 			const int r = rank();

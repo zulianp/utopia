@@ -1,5 +1,6 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_ui.hpp"
+#include "utopia_MPI.hpp"
 
 namespace utopia {
 
@@ -50,7 +51,9 @@ namespace utopia {
             }
         }
 
-        describe(std::cout);
+        if(mpi_world_rank() == 0) {
+            describe(std::cout);
+        }
     }
 
 }
