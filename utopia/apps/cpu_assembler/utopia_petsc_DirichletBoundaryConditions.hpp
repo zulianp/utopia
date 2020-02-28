@@ -19,7 +19,6 @@ namespace utopia {
 
         static const int Dim = Subspace::Dim;
 
-
         DirichletBoundaryCondition(
             const FunctionSpace &space,
             SideSet::BoundaryIdType side_set,
@@ -38,18 +37,6 @@ namespace utopia {
 
         void apply(PetscMatrix &mat) const
         {
-            
-            // IndexSet ind;
-            // ind.reserve(mat.local_size().get(0));
-
-            // auto r = mat.row_range();
-
-            // for(auto i = r.begin(); i < r.end(); ++i) {
-            //     if(is_constrained_dof(i - r.begin())) {
-            //         ind.push_back(i);
-            //     }
-            // }
-
             mat.set_zero_rows(indices_, 1.0);
         }
 
@@ -57,7 +44,6 @@ namespace utopia {
         {
             //FIXME should just use the dofmap not the nodes
             
-
             auto r = v.range();
 
             auto subspace = space_.subspace(component_);
@@ -93,15 +79,6 @@ namespace utopia {
 
         void apply_zero(PetscVector &vec) const
         {
-            // auto r = vec.range();
-
-            // Write<PetscVector> w(vec, utopia::AUTO);
-            // for(auto i = r.begin(); i < r.end(); ++i) {
-            //     if(is_constrained_dof(i - r.begin())) {
-            //         vec.set(i, 0.0);
-            //     }
-            // }
-
             Write<PetscVector> w(vec, utopia::AUTO);
             for(auto i : indices_) {
                 vec.set(i, 0);
@@ -110,18 +87,6 @@ namespace utopia {
 
         void copy(const PetscVector &in, PetscVector &vec) const
         {
-            // auto r = vec.range();
-
-            // Write<PetscVector> w(vec, utopia::AUTO);
-            // Read<PetscVector> r_in(in);
-
-            // for(auto i = r.begin(); i < r.end(); ++i) {
-            //     if(is_constrained_dof(i - r.begin())) {
-            //         const Scalar val = in.get(i);
-            //         vec.set(i, val);
-            //     }
-            // }
-
             Write<PetscVector> w(vec, utopia::AUTO);
             Read<PetscVector> r_in(in);
 
@@ -133,15 +98,6 @@ namespace utopia {
 
         void set_boundary_id(PetscVector &vec) const
         {
-            // auto r = vec.range();
-
-            // Write<PetscVector> w(vec, utopia::AUTO);
-            // for(auto i = r.begin(); i < r.end(); ++i) {
-            //     if(is_constrained_dof(i - r.begin())) {
-            //         vec.set(i, side_set_);
-            //     }
-            // }
-
             Write<PetscVector> w(vec, utopia::AUTO);
 
             for(auto i : indices_) {
