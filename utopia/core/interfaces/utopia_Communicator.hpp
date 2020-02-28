@@ -22,18 +22,23 @@ namespace utopia {
 		virtual bool conjunction(const bool &val) const = 0;
 		virtual bool disjunction(const bool &val) const = 0;
 
+		inline bool is_root() const
+		{
+			return rank() == 0;
+		}
+
 		template<typename T>
-		void root_print(const T &obj) const
+		void root_print(const T &obj, std::ostream &os = std::cout) const
 		{
 			barrier();
 			if(rank() == 0) {
-				std::cout << obj << std::endl;
+				os << obj << std::endl;
 			}
 			barrier();
 		}
 
 		template<typename T>
-		void synched_print(const T &obj) const
+		void synched_print(const T &obj, std::ostream &os = std::cout) const
 		{
 			const int n = size();
 			const int r = rank();
@@ -42,9 +47,9 @@ namespace utopia {
 				barrier();
 
 				if(i == r) {
-					std::cout << "[" << r << "] ---------------------\n";
-					std::cout << obj << std::endl;
-					std::cout << std::flush;
+					os << "[" << r << "] ---------------------\n";
+					os << obj << std::endl;
+					os << std::flush;
 				}
 			}
 

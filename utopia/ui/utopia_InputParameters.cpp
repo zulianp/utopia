@@ -43,7 +43,9 @@ namespace utopia {
                             set(key.substr(1, key_len - 1), value);
                             ++i; //INCREMENT
                         } else {
-                            std::cerr << "no value for key: " << key << std::endl;
+                            if(mpi_world_rank() == 0) {
+                                std::cerr << "no value for key: " << key << std::endl;
+                            }
                         }
                     }
 
