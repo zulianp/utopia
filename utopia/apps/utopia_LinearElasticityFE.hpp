@@ -60,7 +60,7 @@ namespace utopia {
 		  grad_(space,  quadrature_),
 		  differential_(space, quadrature_)
 		{
-			H_ptr_ = std::make_unique<Matrix>();
+			H_ptr_ = utopia::make_unique<Matrix>();
 		}
 
 		void read(Input &in) override {
