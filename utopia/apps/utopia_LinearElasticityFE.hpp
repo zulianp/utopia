@@ -23,6 +23,7 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_make_unique.hpp"
 
 
 namespace utopia {
