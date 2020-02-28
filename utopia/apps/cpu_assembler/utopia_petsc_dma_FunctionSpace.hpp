@@ -408,6 +408,19 @@ namespace utopia {
             return mesh_->local_element_range();
         }
 
+        Range dof_range() const
+        {
+            // Range node_range  = mesh_->local_node_range();
+            // const SizeType nc = mesh_->n_components();
+
+            // SizeType begin = node_range.begin() * nc;
+            // SizeType end   = node_range.end()   * nc;
+            // return Range(begin, end);
+
+            return  mesh_->local_node_range();
+        }
+
+
         void create_matrix(PetscMatrix &mat) const
         {
             mesh_->create_matrix(mat);
