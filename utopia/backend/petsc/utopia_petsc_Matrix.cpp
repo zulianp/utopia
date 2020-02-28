@@ -284,8 +284,9 @@ namespace utopia {
         }
     }
 
-    void PetscMatrix::select_aux(const std::vector<PetscInt> &row_index,
-       const std::vector<PetscInt> &col_index,
+    void PetscMatrix::select_aux(
+       const PetscIndexSet &row_index,
+       const PetscIndexSet &col_index,
        PetscMatrix &result) const
     {
         // Mat r = raw_type();

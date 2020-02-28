@@ -46,6 +46,8 @@ namespace utopia {
         return DeviceBinary<Left, Right, Plus>(left.derived(), right.derived());
     }
 
+
+
     //Switch left with right
     template<class Left, class L, class R>
     UTOPIA_INLINE_FUNCTION DeviceBinary<DeviceMultiply<TensorView<L, 2>, TensorView<R, 1>>, TensorView<Left, 1>, Plus> operator+(
@@ -92,6 +94,35 @@ namespace utopia {
     UTOPIA_INLINE_FUNCTION DeviceUnary<Derived, Operation> transform(const DeviceExpression<Derived> &expr, const Operation operation = Operation()) {
         return DeviceUnary<Derived, Operation>(expr, operation);
     }
+
+    //FIXME (precison loss)
+    template<class Left>
+    UTOPIA_INLINE_FUNCTION DeviceBinary<
+        DeviceNumber<typename Left::Scalar>,
+        Left,
+        Multiplies
+    >
+    operator/(
+        const DeviceExpression<Left> &left,
+        const typename Left::Scalar &right
+    ) {
+        return DeviceBinary<DeviceNumber<typename Left::Scalar>, Left, Multiplies>(1./right, left.derived());
+    }
+
+
+
+    // template<class Left>
+    // UTOPIA_INLINE_FUNCTION DeviceBinary<
+    //     Left,
+    //     DeviceNumber<typename Left::Scalar>,
+    //     Divides
+    // >
+    // operator/(
+    //     const DeviceExpression<Left> &left,
+    //     const typename Left::Scalar &right
+    // ) {
+    //     return DeviceBinary<Left, DeviceNumber<typename Left::Scalar>, Divides>(left.derived(), right);
+    // }
 
     /**     @defgroup   transforms Transforms
      *       @ingroup    algebra
@@ -396,7 +427,11 @@ namespace utopia {
         Vectors &eigen_vectors
         )
     {
-        DeviceEigenDecomposition<Expr>::apply(expr.derived(), eigen_values, eigen_vectors);
+        // if(eigen_values.size() == 2) {
+            DeviceEigenDecompositionNew<Expr>::apply(expr.derived(), eigen_values, eigen_vectors);
+        // } else {
+        //     DeviceEigenDecomposition<Expr>::apply(expr.derived(), eigen_values, eigen_vectors);
+        // }
     }
 
 

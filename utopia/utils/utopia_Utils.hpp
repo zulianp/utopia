@@ -56,6 +56,11 @@ namespace utopia
         os << value << "\n";
     }
 
+    inline void disp(const long long int value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
+
     template<typename T>
     void disp(const T & val, const std::string & name)
     {

@@ -61,9 +61,9 @@ option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)" OFF)
 
 
-option(INSTALL_TRILINOS "Install trilinos directly" OFF)
-option(INSTALL_PETSC "Install petsc directly" OFF)
-option(INSTALL_PETSC_DEBUG "Install petsc directly" OFF)
+option(INSTALL_TRILINOS "Install trilinos directly" ON)
+option(INSTALL_PETSC "Install petsc directly" ON)
+option(INSTALL_PETSC_DEBUG "Install petsc directly" ON)
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 

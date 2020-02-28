@@ -408,6 +408,19 @@ namespace utopia {
             return mesh_->local_element_range();
         }
 
+        Range dof_range() const
+        {
+            // Range node_range  = mesh_->local_node_range();
+            // const SizeType nc = mesh_->n_components();
+
+            // SizeType begin = node_range.begin() * nc;
+            // SizeType end   = node_range.end()   * nc;
+            // return Range(begin, end);
+
+            return  mesh_->local_node_range();
+        }
+
+
         void create_matrix(PetscMatrix &mat) const
         {
             mesh_->create_matrix(mat);
@@ -516,6 +529,11 @@ namespace utopia {
             return mesh_->n_nodes() * NComponents;
         }
 
+        inline SizeType n_local_dofs() const
+        {
+            return mesh_->n_local_nodes() * NComponents;
+        }
+
         void set_mesh(const std::shared_ptr<Mesh> &mesh)
         {
             mesh_ = mesh;
@@ -555,6 +573,13 @@ namespace utopia {
         {
             for(const auto &bc : dirichlet_bcs_) {
                 bc->apply(vec);
+            }
+        }
+
+        void copy_at_constrained_dofs(const PetscVector &in, PetscVector &vec) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->copy(in, vec);
             }
         }
 

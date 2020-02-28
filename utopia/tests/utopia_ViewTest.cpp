@@ -288,12 +288,12 @@ namespace utopia {
             utopia_test_assert( approxeq(e[1],  3.561552812808830, 1e-10) );
 
             //first vector
-            utopia_test_assert( approxeq(v(0,0),  -0.788205438016109, 1e-10) );
-            utopia_test_assert( approxeq(v(1,0),   0.615412209402636 , 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(0,0)),   0.788205438016109, 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(1,0)),   0.615412209402636 , 1e-10) );
 
             //second vector
-            utopia_test_assert( approxeq(v(0,1),  0.615412209402636, 1e-10) );
-            utopia_test_assert( approxeq(v(1,1),  0.788205438016109, 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(0,1)),  0.615412209402636, 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(1,1)),  0.788205438016109, 1e-10) );
         }
 
         void view_eig_3_test()
@@ -399,17 +399,21 @@ namespace utopia {
             A(0,1) = A(1,0) = 6.35083e-11;
             A(0,2) = A(2,0) = 6.35083e-11;
 
+            // disp("------");
             // disp(A);
 
             V.set(0.0);
             eig(A, e, V);
+
+            // disp("------");
 
             // disp(e);
             // disp(V);
 
             sum_v = sum(V);
             utopia_test_assert(sum_v == sum_v);
-            utopia_test_assert( approxeq(transpose(V) * diag(e) * V, A) );
+
+            utopia_test_assert( approxeq((V) * diag(e) * transpose(V), A) );
         }
 
         void failing_eigen_test()
@@ -427,9 +431,6 @@ namespace utopia {
             });
 
             eig(A, e, V);
-
-            disp(e);
-            disp(V);
         }
 
         void inner_test()

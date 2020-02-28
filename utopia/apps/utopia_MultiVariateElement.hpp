@@ -143,6 +143,11 @@ namespace utopia {
             return univar_elem_.idx();
         }
 
+        inline bool is_valid() const
+        {
+            return univar_elem_.is_valid();
+        }
+
     private:
         Elem univar_elem_;
     };

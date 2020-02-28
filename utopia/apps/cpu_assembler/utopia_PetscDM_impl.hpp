@@ -1037,6 +1037,12 @@ namespace utopia {
     }
 
     template<int Dim>
+    typename PetscDM<Dim>::SizeType PetscDM<Dim>::n_local_nodes() const
+    {
+        return PetscDMImpl<Dim>::local_node_range(impl_->dm).extent();
+    }
+
+    template<int Dim>
     typename PetscDM<Dim>::SizeType PetscDM<Dim>::n_elements() const
     {
         SizeType dims[3];

@@ -80,6 +80,24 @@ namespace utopia {
             os << "]\n";
         }
 
+        bool is_valid() const
+        {
+            if(nodes_.is_null() || nodes_.size() == 0) {
+                return false;
+            }
+
+            const SizeType n0 = nodes_[0];
+
+            for(SizeType i = 1; i < nodes_.size(); ++i) {
+                if(n0 == nodes_[i]) {
+                    return false;
+                }
+            }
+
+
+            return true;
+        }
+
     private:
         NodeIndex nodes_;
         SizeType idx_;

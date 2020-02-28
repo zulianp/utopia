@@ -9,6 +9,35 @@ namespace utopia {
     class Laplacian {};
 
 
+    template<typename Scalar>
+    class LaplacianKernel {
+    public:
+
+        template<class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar apply(
+            const Scalar &diff_coeff,
+            const Grad   &g_trial,
+            const Grad   &g_test,
+            const Scalar &dx
+            )
+        {
+            return diff_coeff * inner(g_trial, g_test) * dx;
+        }
+
+        template<class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar apply(
+            const Scalar &diff_coeff,
+            const Scalar &c_trial,
+            const Grad   &g_trial,
+            const Grad   &g_test,
+            const Scalar &dx
+            )
+        {
+            return diff_coeff * c_trial * inner(g_trial, g_test) * dx;
+        }
+
+    };
+
     template<class T>
     class AssemblerView {
     public:
