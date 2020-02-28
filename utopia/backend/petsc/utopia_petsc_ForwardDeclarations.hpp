@@ -2,8 +2,16 @@
 #define UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_petsc_Base.hpp"
+
 #include <vector>
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,11,3)
 #include <petscsystypes.h>
+#else
+//FIXME find the correct header
+#include "petscvec.h"
+#endif
 
 namespace utopia {
 
