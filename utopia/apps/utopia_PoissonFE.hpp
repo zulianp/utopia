@@ -100,15 +100,25 @@ namespace utopia {
                     auto dx   = dx_view.make(e);
                     
                     const auto n = grad.n_points();
+                    // for(SizeType k = 0; k < n; ++k) {
+                    //     for(SizeType j = 0; j < grad.n_functions(); ++j) {
+                    //         const auto g_test = grad(j, k);
+
+                    //         for(SizeType l = j + 1; l < grad.n_functions(); ++l) {
+                    //             const auto g_trial = grad(l, k);
+
+                    //             el_vec(l) += LKernel::apply(1.0, coeff(j), g_test,  g_trial, dx(k));
+                    //             el_vec(j) += LKernel::apply(1.0, coeff(l), g_trial, g_test,  dx(k));
+                    //         }
+                    //     }
+                    // }
+
                     for(SizeType k = 0; k < n; ++k) {
                         for(SizeType j = 0; j < grad.n_functions(); ++j) {
-                            const auto g_test = grad(j, k);
-
-                            for(SizeType l = j + 1; l < grad.n_functions(); ++l) {
+                            for(SizeType l = 0; l < grad.n_functions(); ++l) {
+                                const auto g_test  = grad(j, k);
                                 const auto g_trial = grad(l, k);
-
-                                el_vec(l) += LKernel::apply(1.0, coeff(j), g_test,  g_trial, dx(k));
-                                el_vec(j) += LKernel::apply(1.0, coeff(l), g_trial, g_test,  dx(k));
+                                el_vec(j) += LKernel::apply(1.0, coeff(l), g_trial, g_test, dx(k));
                             }
                         }
                     }

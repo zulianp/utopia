@@ -33,12 +33,12 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static Scalar apply(
             const Scalar &mu,
             const Scalar &lambda,
-            const Scalar &c_j,
+            const Scalar &c_i,
             const Grad &g_i,
             const Grad &g_j,
             const Scalar &dx)
         {
-            return apply(mu, lambda, g_i, g_j, dx) * c_j;
+            return apply(mu, lambda, g_i, g_j, dx) * c_i;
         }
 
     };

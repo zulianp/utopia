@@ -58,7 +58,9 @@ namespace utopia {
 		  x_coeff_(utopia::make_unique<Coefficient>(space_)),
 		  grad_(space,  quadrature_),
 		  differential_(space, quadrature_)
-		{}
+		{
+			H_ptr_ = std::make_unique<Matrix>();
+		}
 
 		void read(Input &in) override {
 			in.get("debug", debug_);
@@ -117,38 +119,23 @@ namespace utopia {
 						auto grad = grad_view.make(e);
 						auto dx   = dx_view.make(e);
 						
-						const auto n = grad.n_points();
-						for(SizeType k = 0; k < n; ++k) {
-						    for(SizeType j = 0; j < grad.n_functions(); ++j) {
-						        const auto g_test = grad(j, k);
-						        el_vec(j) += LEKernel::apply(
-						        	mu_,
-						        	lambda_,
-						        	coeff(j),
-						        	g_test,
-						        	g_test,
-						        	dx(k)
-						        );
+						const SizeType n_qp  = grad.n_points();
+						const SizeType n_fun = grad.n_functions();
 
-						        for(SizeType l = j + 1; l < grad.n_functions(); ++l) {
-						        	const auto g_trial = grad(l, k);
-						            
+						for(SizeType qp = 0; qp < n_qp; ++qp) {
+						    for(SizeType j = 0; j < n_fun; ++j) {
+						    	const auto g_test  = grad(j, qp);
+
+						        for(SizeType l = 0; l < n_fun; ++l) {
+						        	const auto g_trial = grad(l, qp);
+						        	
 						            el_vec(j) += LEKernel::apply(
 						            	mu_,
 						            	lambda_,
 						            	coeff(l),
 						            	g_trial,
 						            	g_test,
-						            	dx(k)
-						            );
-
-						            el_vec(l) += LEKernel::apply(
-						            	mu_,
-						            	lambda_,
-						            	coeff(j),
-						            	g_test,
-						            	g_trial,
-						            	dx(k)
+						            	dx(qp)
 						            );
 						        }
 						    }
@@ -160,6 +147,59 @@ namespace utopia {
 			}
 
 			space_.copy_at_constrained_dofs(x, y);
+			assert(check_with_matrix(x, y));
+			return true;
+		}
+
+		bool check_with_matrix(const Vector &x, const Vector &y) const
+		{
+			if(H_ptr_->empty()) {
+				space_.create_matrix(*H_ptr_);
+				hessian(x, *H_ptr_);
+			}
+
+			Vector mat_y = (*H_ptr_) * x;
+
+			Scalar norm_diff = norm_infty(y - mat_y);
+
+			// std::cout << "norm_diff: " << norm_diff << std::endl;
+			assert(norm_diff < 1e-10);
+			return norm_diff < 1e-10;
+		}
+
+		bool hessian(const Vector &, Matrix &H) const 
+		{
+			LinearElasticity<FunctionSpace, Quadrature> elast(space_, quadrature_, mu_, lambda_);
+			MassMatrix<FunctionSpace, Quadrature> mass_matrix(space_, quadrature_);
+
+			{
+				auto &&space_view = space_.view_device();
+			    auto mat_view     = space_.assembly_view_device(H);
+			    auto elast_view   = elast.view_device();
+
+			    if(debug_) {
+			        disp("elast");
+			        elast_view.describe();
+			    }
+
+			    Dev::parallel_for(
+			        space_.local_element_range(),
+			        UTOPIA_LAMBDA(const SizeType &i)
+			    {
+			        Elem e;
+
+			        //FIXME this is too big for GPU stack memory for hexas
+			        ElementMatrix el_mat;
+			        space_view.elem(i, e);
+
+			        //Assemble local elast
+			        el_mat.set(0.0);
+			        elast_view.assemble(i, e, el_mat);
+			        space_view.add_matrix(e, el_mat, mat_view);
+			    });
+			}
+
+			space_.apply_constraints(H);
 			return true;
 		}
 
@@ -174,6 +214,8 @@ namespace utopia {
 		Quadrature quadrature_;
 		PhysicalGradient<FunctionSpace, Quadrature> grad_;
 		Differential<FunctionSpace, Quadrature> differential_;
+
+		std::unique_ptr<Matrix> H_ptr_;
 	};
 
 }

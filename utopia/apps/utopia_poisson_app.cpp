@@ -76,16 +76,16 @@ namespace utopia {
         for(int c = 0; c < space.n_components(); ++c) {
             space.emplace_dirichlet_condition(
                 SideSet::left(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return 1.0;
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return p[1];
                 },
                 c
             );
 
             space.emplace_dirichlet_condition(
                 SideSet::right(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return -1.0;
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return -p[1];
                 },
                 c
             );

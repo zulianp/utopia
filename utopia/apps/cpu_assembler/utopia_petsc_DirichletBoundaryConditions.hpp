@@ -107,7 +107,8 @@ namespace utopia {
 
             for(auto i = r.begin(); i < r.end(); ++i) {
                 if(is_constrained_dof(i - r.begin())) {
-                    vec.set(i, in.get(i));
+                    const Scalar val = in.get(i);
+                    vec.set(i, val);
                 }
             }
         }
