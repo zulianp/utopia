@@ -122,21 +122,54 @@ namespace utopia {
 						const SizeType n_qp  = grad.n_points();
 						const SizeType n_fun = grad.n_functions();
 
+						// for(SizeType qp = 0; qp < n_qp; ++qp) {
+						//     for(SizeType j = 0; j < n_fun; ++j) {
+						//     	const auto g_test  = grad(j, qp);
+
+						//         for(SizeType l = 0; l < n_fun; ++l) {
+						//         	const auto g_trial = grad(l, qp);
+						        	
+						//             el_vec(j) += LEKernel::apply(
+						//             	mu_,
+						//             	lambda_,
+						//             	coeff(l),
+						//             	g_trial,
+						//             	g_test,
+						//             	dx(qp)
+						//             );
+						//         }
+						//     }
+						// }
+
+						//taking advantage of symmetry
 						for(SizeType qp = 0; qp < n_qp; ++qp) {
+							const auto dx_qp = dx(qp);
+
 						    for(SizeType j = 0; j < n_fun; ++j) {
 						    	const auto g_test  = grad(j, qp);
 
-						        for(SizeType l = 0; l < n_fun; ++l) {
+						    	el_vec(j) += LEKernel::apply(
+						    		mu_,
+						    		lambda_,
+						    		coeff(j),
+						    		g_test,
+						    		g_test,
+						    		dx_qp
+						    	);
+
+						        for(SizeType l = j + 1; l < n_fun; ++l) {
 						        	const auto g_trial = grad(l, qp);
 						        	
-						            el_vec(j) += LEKernel::apply(
+						        	const auto v = LEKernel::apply(
 						            	mu_,
 						            	lambda_,
-						            	coeff(l),
 						            	g_trial,
 						            	g_test,
-						            	dx(qp)
+						            	dx_qp
 						            );
+						        	
+						            el_vec(l) += v * coeff(j);
+						            el_vec(j) += v * coeff(l);
 						        }
 						    }
 						}
