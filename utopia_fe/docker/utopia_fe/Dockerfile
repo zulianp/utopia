@@ -16,7 +16,7 @@ RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4
 RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
 RUN cd /utopia_cloned && git checkout edsl_refactor && git submodule update --init --recursive && git pull
 
-RUN cd /utopia_cloned git pull
+RUN cd /utopia_cloned && git pull
 
 ##########################################################################
 ##########################################################################
