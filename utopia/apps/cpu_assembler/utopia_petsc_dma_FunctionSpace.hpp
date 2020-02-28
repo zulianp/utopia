@@ -563,6 +563,13 @@ namespace utopia {
             }
         }
 
+        void copy_at_constrained_dofs(const PetscVector &in, PetscVector &vec) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->copy(in, vec);
+            }
+        }
+
         void apply_zero_constraints(PetscVector &vec) const
         {
             for(const auto &bc : dirichlet_bcs_) {

@@ -77,6 +77,7 @@ namespace utopia {
         space.create_vector(x);
         space.create_vector(rhs);
         space.apply_constraints(rhs);
+        space.apply_constraints(x);
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after vector allocation");
         stats.stop_collect_and_restart("vector allocation");
@@ -101,6 +102,10 @@ namespace utopia {
 
         rename("x", x);
         space.write(output_path, x);
+
+        rename("r", rhs);
+        space.write("R.vtr", rhs);
+
         stats.stop_collect_and_restart("io");
         // stats.stop_and_collect("write");
 

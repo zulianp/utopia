@@ -98,6 +98,20 @@ namespace utopia {
             }
         }
 
+        void copy(const PetscVector &in, PetscVector &vec) const
+        {
+            auto r = vec.range();
+
+            Write<PetscVector> w(vec, utopia::AUTO);
+            Read<PetscVector> r_in(in);
+
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(is_constrained_dof(i - r.begin())) {
+                    vec.set(i, in.get(i));
+                }
+            }
+        }
+
         void set_boundary_id(PetscVector &vec) const
         {
             auto r = vec.range();

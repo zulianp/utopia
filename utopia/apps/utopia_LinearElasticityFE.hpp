@@ -117,7 +117,6 @@ namespace utopia {
 						auto grad = grad_view.make(e);
 						auto dx   = dx_view.make(e);
 						
-
 						const auto n = grad.n_points();
 						for(SizeType k = 0; k < n; ++k) {
 						    for(SizeType j = 0; j < grad.n_functions(); ++j) {
@@ -160,7 +159,7 @@ namespace utopia {
 				);
 			}
 
-			space_.apply_zero_constraints(y);
+			space_.copy_at_constrained_dofs(x, y);
 			return true;
 		}
 
