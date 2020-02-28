@@ -8,6 +8,41 @@ namespace utopia {
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
     class LinearElasticity {};
 
+    template<typename Scalar>
+    class LinearElasticityKernel {
+    public:
+
+        template<class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar apply(
+            const Scalar &mu,
+            const Scalar &lambda,
+            const Grad &g_i,
+            const Grad &g_j,
+            const Scalar &dx)
+        {
+            auto e_i = 0.5 * (transpose(g_i) + g_i);
+            auto e_j = 0.5 * (transpose(g_j) + g_j);
+
+            return (
+                (2. * mu) * inner(e_i, e_j) +
+                (lambda) * inner(trace(g_i), trace(g_j))
+            ) * dx;
+        }
+
+        template<class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar apply(
+            const Scalar &mu,
+            const Scalar &lambda,
+            const Scalar &c_j,
+            const Grad &g_i,
+            const Grad &g_j,
+            const Scalar &dx)
+        {
+            return apply(mu, lambda, g_i, g_j, dx) * c_j;
+        }
+
+    };
+
     template<class Mesh, int NComponents, class Quadrature, typename...Args>
     class LinearElasticity< FunctionSpace<Mesh, NComponents, Args...>, Quadrature> {
     public:
@@ -38,17 +73,13 @@ namespace utopia {
             const SizeType &j,
             const SizeType &qp) const
         {
-            auto g_i = grad(i, qp);
-            auto g_j = grad(j, qp);
-
-            auto e_i = 0.5 * (transpose(g_i) + g_i);
-            auto e_j = 0.5 * (transpose(g_j) + g_j);
-
-            return (
-                ((2. * rescaling_) * mu_) * inner(e_i, e_j) +
-                // (rescaling_ * lambda_) * inner(trace(e_i), trace(e_j))
-                (rescaling_ * lambda_) * inner(trace(g_i), trace(g_j))
-                ) * dx(qp);
+            return LinearElasticityKernel<Scalar>::apply(
+                rescaling_ * mu_,
+                rescaling_ * lambda_,
+                grad(i, qp),
+                grad(j, qp),
+                dx(qp)
+            );
         }
 
         template<class Grad, class DX, class Matrix>
@@ -68,6 +99,7 @@ namespace utopia {
                 }
             }
         }
+
 
     private:
         StaticMatrix<Scalar, NDofs, NDofs> mat_;

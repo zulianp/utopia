@@ -24,10 +24,89 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 
+#include "utopia_LinearElasticityFE.hpp"
+
 #include <cmath>
 
 
 namespace utopia {
+
+    template<class FunctionSpace>
+    static void linear_elasticity_mf(FunctionSpace &space, Input &in)
+    {
+        using Matrix = typename FunctionSpace::Matrix;
+        using Vector = typename FunctionSpace::Vector;
+        using Point  = typename FunctionSpace::Point;
+        using Scalar = typename FunctionSpace::Scalar;
+
+
+        auto &comm = space.comm();
+
+        MPITimeStatistics stats(comm);
+
+        stats.start();
+
+        std::string output_path = "elasticity.vtr";
+
+        LinearElasticityFE<FunctionSpace> lin_elast(space);
+        lin_elast.read(in);
+
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::top(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return 0.1 * Scalar(c==1);
+                },
+                c
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return -0.1*Scalar(c==1);
+                },
+                c
+            );
+        }
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after bc");
+        stats.stop_collect_and_restart("setup material + bc");
+
+
+        Vector x, rhs;
+        space.create_vector(x);
+        space.create_vector(rhs);
+        space.apply_constraints(rhs);
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after vector allocation");
+        stats.stop_collect_and_restart("vector allocation");
+
+        const SizeType n_iter = space.n_dofs(); assert(n_iter > 0);
+
+        ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after solver allocation");
+
+        // auto prec = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
+        // solver.set_preconditioner(prec);
+        solver.verbose(true);
+
+        solver.max_it(n_iter);
+        solver.rtol(1e-6);
+        solver.atol(1e-6);
+        solver.solve(lin_elast, rhs, x);
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after solve");
+        stats.stop_collect_and_restart("solve+operator_eval");
+
+        rename("x", x);
+        space.write(output_path, x);
+        stats.stop_collect_and_restart("io");
+        // stats.stop_and_collect("write");
+
+        comm.root_print( "n_dofs: " + std::to_string(space.n_dofs()) );
+        stats.describe(std::cout);
+    }
 
     template<class FunctionSpace>
     static void linear_elasticity(FunctionSpace &space, Input &in)
@@ -236,7 +315,15 @@ namespace utopia {
         space.read(in);
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
-        linear_elasticity(space, in);
+        
+        bool matrix_free = false;
+        in.get("matrix_free", matrix_free);
+
+        if(matrix_free) {
+            linear_elasticity_mf(space, in);
+        } else {
+            linear_elasticity(space, in);
+        }
     }
 
     UTOPIA_REGISTER_APP(petsc_elasticity_2);
@@ -259,7 +346,14 @@ namespace utopia {
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
 
-        linear_elasticity(space, in);
+        bool matrix_free = false;
+        in.get("matrix_free", matrix_free);
+
+        if(matrix_free) {
+            linear_elasticity_mf(space, in);
+        } else {
+            linear_elasticity(space, in);
+        }
     }
 
     UTOPIA_REGISTER_APP(petsc_elasticity_3);
