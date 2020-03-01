@@ -107,9 +107,7 @@ namespace utopia {
             }
         }
 
-        stats.stop_and_collect("BC");
-
-        stats.start();
+        stats.stop_collect_and_restart("BC");
 
         PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
         pp.read(in);
@@ -155,28 +153,27 @@ namespace utopia {
 
         space.apply_constraints(x);
 
-        stats.stop_and_collect("phase-field-init");
+        stats.stop_collect_and_restart("phase-field-init");
 
-        stats.start();
     // TrustRegion<PetscMatrix, PetscVector> solver;
 
         auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
         Newton<PetscMatrix, PetscVector> solver(linear_solver);
         in.get("solver", solver);
 
-        solver.solve(pp, x);
+        //FIXME
+        // solver.solve(pp, x);
 
-    // pp.hessian(x, H);
-    // pp.gradient(x, g);
-
-    // space.apply_constraints(g);
-    // linear_solver->solve(H, g, x);
-
-
-        stats.stop_and_collect("solve+assemble");
+        //REMOVE ME
+        pp.hessian(x, H);
+        pp.gradient(x, g);
+        space.apply_constraints(g);
+        linear_solver->solve(H, g, x);
+        //
 
 
-        stats.start();
+        stats.stop_collect_and_restart("solve+assemble");
+
 
         std::string output_path = "phase_field.vtr";
 

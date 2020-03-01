@@ -27,12 +27,13 @@ if(NOT PETSC_FOUND)
         INSTALL_DIR         ${PETSC_INSTALL_DIR}
         LOG_CONFIGURE       1
         LOG_BUILD           1
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-mpi=1 --download-superlu_dist=yes --download-superlu=yes --download-mumps=yes --download-scalapack=yes --download-hypre=yes --with-cxx-dialect=C++11 --with-debugging=0 ${PETSC_CONFIG_ARGS} #-with-mpi-include=${MPI_INCLUDE_PATH} --with-mpi-lib=${MPI_LIBRARIES}
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-mpi=1 --download-scalapack=yes --download-hypre=yes --with-cxx-dialect=C++11 --with-debugging=0  --with-64-bit-indices=1 ${PETSC_CONFIG_ARGS} #-with-mpi-include=${MPI_INCLUDE_PATH} --with-mpi-lib=${MPI_LIBRARIES} #--download-superlu_dist=yes --download-superlu=yes --download-mumps=yes 
         BUILD_COMMAND       ${MAKE_COMMAND}
         INSTALL_COMMAND     make install
         # COMMAND       ${MAKE_COMMAND}
     )
 
-    set(PETSC_DIR ${PETSC_INSTALL_DIR})
-    set(PETSC_DIR ${PETSC_INSTALL_DIR} PARENT_SCOPE)
+    set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+    # set(PETSC_DIR ${PETSC_INSTALL_DIR})
 endif()

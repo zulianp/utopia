@@ -263,6 +263,8 @@ namespace utopia {
         }
 
         SizeType n_nodes() const;
+        SizeType n_local_nodes() const;
+
         SizeType n_elements() const;
         SizeType n_components() const;
 
