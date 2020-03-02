@@ -45,7 +45,7 @@ namespace utopia {
         space.create_vector(v);
 
         space.sample(v, UTOPIA_LAMBDA(const Point &p) -> Scalar {
-            return p[0];
+            return p[0]*p[1];
         });
 
         rename("f", v);
@@ -273,5 +273,35 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(disc_test_3);
+
+    void plot_fun_2(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using Quadrature       = utopia::Quadrature<Elem, 2>;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView         = FunctionSpace::ViewDevice::Elem;
+        using Device           = FunctionSpace::Device;
+        using Point            = Mesh::Point;
+        using Scalar           = Mesh::Scalar;
+        using Comm             = FunctionSpace::Comm;
+
+
+        Comm comm;
+
+        MPITimeStatistics stats(comm);
+
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        plot_grid_function(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(plot_fun_2);
 
 }

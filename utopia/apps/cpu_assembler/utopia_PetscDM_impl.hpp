@@ -33,6 +33,16 @@ namespace utopia {
 
         virtual ~DMMirror() {}
 
+        virtual void init(DM dm)
+        {
+            dof_ownership_range(dm, dof_range_begin, dof_range_end);
+        }
+
+        SizeType dof_range_begin;
+        SizeType dof_range_end;
+
+    private:
+
         static void dof_ownership_range(const DM &dm, SizeType &begin, SizeType &end)
         {
             Vec v;
@@ -47,14 +57,6 @@ namespace utopia {
             DMGetDimension(dm, &ret);
             return ret;
         }
-
-        virtual void init(DM dm)
-        {
-            dof_ownership_range(dm, dof_range_begin, dof_range_end);
-        }
-
-        SizeType dof_range_begin;
-        SizeType dof_range_end;
     };
 
     template<int Dim>
@@ -65,6 +67,72 @@ namespace utopia {
         using SizeType = PetscInt;
         using IntArray = utopia::ArrayView<SizeType, UDim>;
         using Point    = typename PetscElem<Dim>::Point;
+
+        void init(DM dm) override
+        {
+            Super::init(dm);
+            get_dims(dm, dims);
+            get_corners(dm, corners_begin, corners_extent);
+            get_ghost_corners(dm, ghost_corners_begin, ghost_corners_extent);
+            n_components = get_dof(dm);
+
+            // describe();
+        }
+
+        DMDAMirror()
+        {
+            box_min.set(0.0);
+            box_max.set(1.0);
+        }
+
+        // void describe(std::ostream &os = std::cout)
+        void describe() const
+        {
+            disp("dims");
+            disp(dims);
+
+            disp("corners_begin");
+            disp(corners_begin);
+
+            disp("corners_extent");
+            disp(corners_extent);
+
+            disp("ghost_corners_begin");
+            disp(ghost_corners_begin);
+
+            disp("ghost_corners_extent");
+            disp(ghost_corners_extent);
+
+            disp("n_components");
+            disp(n_components);
+
+            disp("dof_range_begin");
+            disp(this->dof_range_begin);
+
+            disp("dof_range_end");
+            disp(this->dof_range_end);
+
+            //geometry
+            disp("box_min");
+            disp(box_min);
+
+            disp("box_max");
+            disp(box_max);
+        }
+
+        IntArray dims;
+        IntArray corners_begin;
+        IntArray corners_extent;
+
+        IntArray ghost_corners_begin;
+        IntArray ghost_corners_extent;
+
+        SizeType n_components;
+
+        //geometry
+        Point box_min, box_max;
+
+    private:
 
         static void get_dims(DM dm, IntArray &dims)
         {
@@ -114,72 +182,6 @@ namespace utopia {
             DMDAGetDof(dm, &ret);
             return ret;
         }
-
-        void init(DM dm) override
-        {
-            Super::init(dm);
-            get_dims(dm, dims);
-            get_corners(dm, corners_begin, corners_extent);
-            get_ghost_corners(dm, ghost_corners_begin, ghost_corners_extent);
-            n_components = get_dof(dm);
-
-            describe();
-        }
-
-        DMDAMirror()
-        {
-            box_min.set(0.0);
-            box_max.set(1.0);
-        }
-
-        // void describe(std::ostream &os = std::cout)
-        void describe() const
-        {
-            disp("dims");
-            disp(dims);
-
-            disp("corners_begin");
-            disp(corners_begin);
-
-            disp("corners_extent");
-            disp(corners_extent);
-
-
-            disp("ghost_corners_begin");
-            disp(ghost_corners_begin);
-
-            disp("ghost_corners_extent");
-            disp(ghost_corners_extent);
-
-            disp("n_components");
-            disp(n_components);
-
-            disp("dof_range_begin");
-            disp(this->dof_range_begin);
-
-            disp("dof_range_end");
-            disp(this->dof_range_end);
-
-            //geometry
-            disp("box_min");
-            disp(box_min);
-
-            disp("box_max");
-            disp(box_max);
-        }
-
-        IntArray dims;
-        IntArray corners_begin;
-        IntArray corners_extent;
-
-        IntArray ghost_corners_begin;
-        IntArray ghost_corners_extent;
-
-        SizeType n_components;
-
-
-        //geometry
-        Point box_min, box_max;
     };
 
     template<int Dim>
@@ -218,83 +220,80 @@ namespace utopia {
         using PetscNode = utopia::PetscNode<Dim>;
         using Point = typename utopia::PetscDM<Dim>::Point;
 
-        template<class Array>
-        void dims(Array &arr) const
-        {
-            auto ierr = DMDAGetInfo(dm, nullptr, &arr[0], &arr[1], &arr[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
-        }
+        // template<class Array>
+        // void dims(Array &arr) const
+        // {
+        //     auto ierr = DMDAGetInfo(dm, nullptr, &arr[0], &arr[1], &arr[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
+        // }
 
-        template<class Fun>
-        void each_with_ghosts(Fun f)
-        {
-            SizeType dims[3], start[3], extent[3];
-            DMDAGetGhostCorners(dm,
-                &start[0],  &start[1],  &start[2],
-                &extent[0], &extent[1], &extent[2]
-                );
+        // template<class Fun>
+        // void each_with_ghosts(Fun f)
+        // {
+        //     SizeType dims[3], start[3], extent[3];
+        //     DMDAGetGhostCorners(dm,
+        //         &start[0],  &start[1],  &start[2],
+        //         &extent[0], &extent[1], &extent[2]
+        //         );
 
+        //     this->dims(dims);
+        //     each(dims, start, extent, f);
+        // }
 
+        // template<class Fun>
+        // void each(
+        //     const SizeType dims[3],
+        //     const SizeType start[3],
+        //     const SizeType extent[3], Fun f) const
+        // {
+        //     switch(Dim) {
+        //         case 1:
+        //         {
+        //             for(SizeType i = 0; i < extent[0]; ++i) {
+        //                 SizeType idx = i + start[0];
+        //                 PetscNode node(*this, idx);
+        //                 f(node);
+        //             }
 
-            this->dims(dims);
+        //             break;
+        //         }
 
-            each(dims, start, extent, f);
-        }
+        //         case 2:
+        //         {
+        //             for(SizeType j = 0; j < extent[1]; ++j) {
+        //                 for(SizeType i = 0; i < extent[0]; ++i) {
+        //                     SizeType idx = (j + start[1]) * dims[0] + i + start[0];
+        //                     PetscNode node(*this, idx);
+        //                     f(node);
+        //                 }
+        //             }
+        //             break;
+        //         }
 
-        template<class Fun>
-        void each(
-            const SizeType dims[3],
-            const SizeType start[3],
-            const SizeType extent[3], Fun f) const
-        {
-            switch(Dim) {
-                case 1:
-                {
-                    for(SizeType i = 0; i < extent[0]; ++i) {
-                        SizeType idx = i + start[0];
-                        PetscNode node(*this, idx);
-                        f(node);
-                    }
+        //         case 3:
+        //         {
+        //             for(SizeType k = 0; k < extent[2]; ++k) {
+        //                 const SizeType k_offset = (k + start[2]) * dims[2];
 
-                    break;
-                }
+        //                 for(SizeType j = 0; j < extent[1]; ++j) {
+        //                     const SizeType j_offset = (j + start[1]) * dims[0];
 
-                case 2:
-                {
-                    for(SizeType j = 0; j < extent[1]; ++j) {
-                        for(SizeType i = 0; i < extent[0]; ++i) {
-                            SizeType idx = (j + start[1]) * dims[0] + i + start[0];
-                            PetscNode node(*this, idx);
-                            f(node);
-                        }
-                    }
-                    break;
-                }
+        //                     for(SizeType i = 0; i < extent[0]; ++i) {
+        //                         SizeType idx = k_offset + j_offset + i + start[0];
 
-                case 3:
-                {
-                    for(SizeType k = 0; k < extent[2]; ++k) {
-                        const SizeType k_offset = (k + start[2]) * dims[2];
-
-                        for(SizeType j = 0; j < extent[1]; ++j) {
-                            const SizeType j_offset = (j + start[1]) * dims[0];
-
-                            for(SizeType i = 0; i < extent[0]; ++i) {
-                                SizeType idx = k_offset + j_offset + i + start[0];
-
-                                PetscNode node(*this, idx);
-                                f(node);
-                            }
-                        }
-                    }
-                    break;
-                }
-                default:
-                {
-                    assert(false);
-                    break;
-                }
-            }
-        }
+        //                         PetscNode node(*this, idx);
+        //                         f(node);
+        //                     }
+        //                 }
+        //             }
+        //             break;
+        //         }
+        //         default:
+        //         {
+        //             assert(false);
+        //             break;
+        //         }
+        //     }
+        // }
 
         inline bool is_ghost(const SizeType global_idx) const
         {
@@ -434,7 +433,6 @@ namespace utopia {
                 min_z = box_min[2];
                 max_z = box_max[2];
             }
-
 
             DMDASetElementType(dm, elem_type);
             DMSetUp(dm);
@@ -646,18 +644,18 @@ namespace utopia {
                 std::cout << "--------------------------------------------\n";
                 std::cout << i << ")\ndim: " << dim << "\nM: " << M << "\nN: " << N << "\nP: " << P << "\nm: " << m << "\nn: " << n << "\np: " << p << "\ndof: " << dof << "\ns: " << s <<  std::endl;
 
-                DMDANodes<Dim> nodes(*this);
-                nodes.each_with_ghosts([range](const Node &node) {
+                // DMDANodes<Dim> nodes(*this);
+                // nodes.each_with_ghosts([range](const Node &node) {
 
-                    std::cout << node.idx() << " ";
-                    if(range.inside(node.idx())) {
+                //     std::cout << node.idx() << " ";
+                //     if(range.inside(node.idx())) {
 
-                    } else {
-                        std::cout << "g";
-                    }
+                //     } else {
+                //         std::cout << "g";
+                //     }
 
-                    std::cout << std::endl;
-                });
+                //     std::cout << std::endl;
+                // });
 
                 std::cout << "--------------------------------------------\n";
             }

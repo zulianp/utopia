@@ -167,7 +167,6 @@ namespace utopia {
         void cell_size(const SizeType &idx, Point &cell_size);
 
         bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
-        // bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
         void node(const SizeType &idx, Point &node) const;
         void elem(const SizeType &idx, Elem &e) const;
         void nodes(const SizeType &idx, NodeIndex &nodes) const;
@@ -183,40 +182,13 @@ namespace utopia {
 
         void describe() const;
 
-        // void each_element(const std::function<void(const Elem &)> &f);
-        // void each_node(const std::function<void(const Node &)> &f);
-        // void each_node_with_ghosts(const std::function<void(const Node &)> &f);
-
         inline static constexpr SizeType dim() { return Dim; }
         Range local_node_range() const;
         SizeType n_local_nodes_with_ghosts() const;
-
-        // void dims(SizeType *arr) const;
-        // void box(Scalar *min, Scalar *max) const;
-
         Scalar min_spacing() const;
-
-        // void local_node_ranges(SizeType *begin, SizeType *end) const;
 
         Range local_element_range() const;
 
-// #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
-//         void local_element_ranges(SizeType *begin, SizeType *end) const;
-
-//         template<class Array>
-//         void local_element_ranges(Array &begin, Array &end) const
-//         {
-//             SizeType temp_begin[3], temp_end[3];
-//             local_element_ranges(temp_begin, temp_end);
-
-//             SizeType d = dim();
-//             for(SizeType i = 0; i < d; ++i) {
-//                 begin[i] = temp_begin[i];
-//                 end[i] = temp_end[i];
-//             }
-//         }
-
-// #endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
         const DMDAMirror<Dim> &mirror() const;
 
         const IntArray &local_nodes_begin() const;
@@ -244,7 +216,6 @@ namespace utopia {
 
         bool is_ghost(const SizeType &global_node_idx) const;
         bool is_boundary(const SizeType &global_node_idx) const;
-        // SideSet::BoundaryIdType boundary_id(const SizeType &global_node_idx) const;
 
         void set_field_name(const SizeType &nf, const std::string &name);
 
